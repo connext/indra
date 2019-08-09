@@ -2,6 +2,7 @@ import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import {
   AppActionBigNumber,
   AppRegistry,
+  AppState,
   ChannelState,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
@@ -23,13 +24,12 @@ import {
 import {
   CreateChannelMessage,
   EXTENDED_PRIVATE_KEY_PATH,
-  jsonRpcDeserialize,
   Node,
   NODE_EVENTS,
 } from "@counterfactual/node";
 import { Address, AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import "core-js/stable";
-import { Contract, providers, Wallet } from "ethers";
+import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { BigNumber, HDNode, Network } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
@@ -42,11 +42,7 @@ import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger } from "./lib/logger";
-import {
-  freeBalanceAddressFromXpub,
-  logEthFreeBalance,
-  publicIdentifierToAddress,
-} from "./lib/utils";
+import { freeBalanceAddressFromXpub, publicIdentifierToAddress } from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
@@ -63,9 +59,8 @@ import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const { logLevel, ethProviderUrl, mnemonic, natsClusterId, nodeUrl, natsToken, store } = opts;
 
-  // create a new wallet
+  // setup network information
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
-  const wallet = Wallet.fromMnemonic(mnemonic).connect(ethProvider);
   const network = await ethProvider.getNetwork();
 
   // special case for ganache
@@ -162,7 +157,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     network,
     node,
     nodePublicIdentifier: config.nodePublicIdentifier,
-    wallet,
     ...opts, // use any provided opts by default
   });
   await client.registerSubscriptions();
@@ -272,21 +266,19 @@ export abstract class ConnextChannel {
 
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
-  // FIXME: add in rest of methods!
+
+  public cfDeposit = async (
+    amount: BigNumber,
+    assetId: string,
+    notifyCounterparty: boolean = false,
+  ): Promise<NodeTypes.DepositResult> => {
+    return await this.internal.cfDeposit(amount, assetId, notifyCounterparty);
+  };
 
   public getFreeBalance = async (
     assetId: string = AddressZero,
   ): Promise<NodeTypes.GetFreeBalanceStateResult> => {
     return await this.internal.getFreeBalance(assetId);
-  };
-
-  // FIXME: remove
-  public logEthFreeBalance = (
-    assetId: string,
-    freeBalance: NodeTypes.GetFreeBalanceStateResult,
-    log?: Logger,
-  ): void => {
-    logEthFreeBalance(assetId, freeBalance, log);
   };
 
   public getAppInstances = async (): Promise<AppInstanceInfo[]> => {
@@ -303,10 +295,81 @@ export abstract class ConnextChannel {
     return await this.internal.getAppState(appInstanceId);
   };
 
+  public getProposedAppInstances = async (): Promise<
+    NodeTypes.GetProposedAppInstancesResult | undefined
+  > => {
+    return await this.internal.getProposedAppInstances();
+  };
+
+  public getProposedAppInstance = async (
+    appInstanceId: string,
+  ): Promise<NodeTypes.GetProposedAppInstanceResult | undefined> => {
+    return await this.internal.getProposedAppInstance(appInstanceId);
+  };
+
+  public proposeInstallApp = async (
+    params: NodeTypes.ProposeInstallParams,
+  ): Promise<NodeTypes.ProposeInstallResult> => {
+    return await this.internal.proposeInstallApp(params);
+  };
+
+  public proposeInstallVirtualApp = async (
+    params: NodeTypes.ProposeInstallVirtualParams,
+  ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
+    return await this.internal.proposeInstallVirtualApp(params);
+  };
+
+  public installVirtualApp = async (
+    appInstanceId: string,
+  ): Promise<NodeTypes.InstallVirtualResult> => {
+    return await this.internal.installVirtualApp(appInstanceId);
+  };
+
+  public installApp = async (appInstanceId: string): Promise<NodeTypes.InstallResult> => {
+    return await this.internal.installApp(appInstanceId);
+  };
+
+  public rejectInstallApp = async (appInstanceId: string): Promise<NodeTypes.UninstallResult> => {
+    return await this.internal.rejectInstallApp(appInstanceId);
+  };
+
+  public rejectInstallVirtualApp = async (
+    appInstanceId: string,
+  ): Promise<NodeTypes.UninstallVirtualResult> => {
+    return await this.internal.rejectInstallVirtualApp(appInstanceId);
+  };
+
+  public takeAction = async (
+    appInstanceId: string,
+    action: AppActionBigNumber,
+  ): Promise<NodeTypes.TakeActionResult> => {
+    return await this.internal.takeAction(appInstanceId, action);
+  };
+
+  public updateState = async (
+    appInstanceId: string,
+    newState: AppState | any, // cast to any bc no supported apps use
+    // the update state method
+  ): Promise<NodeTypes.UpdateStateResult> => {
+    return await this.updateState(appInstanceId, newState);
+  };
+
+  public uninstallApp = async (appInstanceId: string): Promise<NodeTypes.UninstallResult> => {
+    return await this.uninstallApp(appInstanceId);
+  };
+
   public uninstallVirtualApp = async (
     appInstanceId: string,
   ): Promise<NodeTypes.UninstallVirtualResult> => {
     return await this.internal.uninstallVirtualApp(appInstanceId);
+  };
+
+  public cfWithdraw = async (
+    assetId: string,
+    amount: BigNumber,
+    recipient: string,
+  ): Promise<NodeTypes.WithdrawResult> => {
+    return await this.internal.cfWithdraw(assetId, amount, recipient);
   };
 }
 
@@ -317,7 +380,6 @@ export class ConnextInternal extends ConnextChannel {
   public opts: InternalClientOptions;
   public cfModule: Node;
   public publicIdentifier: string;
-  public wallet: Wallet;
   public ethProvider: providers.JsonRpcProvider;
   public node: NodeApiClient;
   public messaging: IMessagingService;
@@ -345,7 +407,6 @@ export class ConnextInternal extends ConnextChannel {
     this.opts = opts;
 
     this.ethProvider = opts.ethProvider;
-    this.wallet = opts.wallet;
     this.node = opts.node;
     this.messaging = opts.messaging;
 
@@ -429,10 +490,6 @@ export class ConnextInternal extends ConnextChannel {
   ///////////////////////////////////
   // CF MODULE METHODS
 
-  // FIXME: add normal installation methods
-  // and other wrappers for all cf node methods
-
-  // TODO: erc20 support?
   public cfDeposit = async (
     amount: BigNumber,
     assetId: string,
@@ -460,31 +517,26 @@ export class ConnextInternal extends ConnextChannel {
       throw new Error(err);
     }
 
-    const depositResponse = await this.cfModule.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.DEPOSIT,
-        params: {
-          amount,
-          multisigAddress: this.opts.multisigAddress,
-          tokenAddress: assetId,
-        } as NodeTypes.DepositParams,
-      }),
-    );
+    const depositResponse = await this.cfModule.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.DEPOSIT,
+      parameters: {
+        amount,
+        multisigAddress: this.opts.multisigAddress,
+        notifyCounterparty,
+        tokenAddress: assetId,
+      } as NodeTypes.DepositParams,
+    });
     return depositResponse.result.result as NodeTypes.DepositResult;
   };
 
   // TODO: under what conditions will this fail?
   public getAppInstances = async (): Promise<AppInstanceInfo[]> => {
-    const appInstanceResponse = await this.cfModule.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.GET_APP_INSTANCES,
-        params: {} as NodeTypes.GetAppInstancesParams,
-      }),
-    );
+    const appInstanceResponse = await this.cfModule.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.GET_APP_INSTANCES,
+      parameters: {} as NodeTypes.GetAppInstancesParams,
+    });
 
     return appInstanceResponse.result.result.appInstances as AppInstanceInfo[];
   };
@@ -494,17 +546,14 @@ export class ConnextInternal extends ConnextChannel {
     assetId: string = AddressZero,
   ): Promise<NodeTypes.GetFreeBalanceStateResult> => {
     try {
-      const freeBalance = await this.cfModule.rpcRouter.dispatch(
-        jsonRpcDeserialize({
-          id: Date.now(),
-          jsonrpc: "2.0",
-          method: NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
-          params: {
-            multisigAddress: this.multisigAddress,
-            tokenAddress: assetId,
-          },
-        }),
-      );
+      const freeBalance = await this.cfModule.rpcRouter.dispatch({
+        id: Date.now(),
+        methodName: NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
+        parameters: {
+          multisigAddress: this.multisigAddress,
+          tokenAddress: assetId,
+        },
+      });
       return freeBalance.result.result as NodeTypes.GetFreeBalanceStateResult;
     } catch (e) {
       const error = `No free balance exists for the specified token: ${assetId}`;
@@ -523,19 +572,28 @@ export class ConnextInternal extends ConnextChannel {
     }
   };
 
-  public getProposedAppInstanceDetails = async (): Promise<
+  public getProposedAppInstances = async (): Promise<
     NodeTypes.GetProposedAppInstancesResult | undefined
   > => {
-    const proposedRes = await this.cfModule.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
-        params: {} as NodeTypes.GetProposedAppInstancesParams,
-      }),
-    );
-
+    const proposedRes = await this.cfModule.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
+      parameters: {} as NodeTypes.GetProposedAppInstancesParams,
+    });
     return proposedRes.result.result as NodeTypes.GetProposedAppInstancesResult;
+  };
+
+  public getProposedAppInstance = async (
+    appInstanceId: string,
+  ): Promise<NodeTypes.GetProposedAppInstanceResult | undefined> => {
+    const proposedRes = await this.cfModule.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
+      parameters: {
+        appInstanceId,
+      } as NodeTypes.GetProposedAppInstancesParams,
+    });
+    return proposedRes.result.result as NodeTypes.GetProposedAppInstanceResult;
   };
 
   public getAppInstanceDetails = async (
@@ -546,16 +604,13 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.warn(err);
       return undefined;
     }
-    const appInstanceResponse = await this.cfModule.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS,
-        params: {
-          appInstanceId,
-        } as NodeTypes.GetAppInstanceDetailsParams,
-      }),
-    );
+    const appInstanceResponse = await this.cfModule.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS,
+      parameters: {
+        appInstanceId,
+      } as NodeTypes.GetAppInstanceDetailsParams,
+    });
 
     return appInstanceResponse.result.result as NodeTypes.GetAppInstanceDetailsResult;
   };
@@ -569,16 +624,13 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.warn(err);
       return undefined;
     }
-    const stateResponse = await this.cfModule.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.GET_STATE,
-        params: {
-          appInstanceId,
-        } as NodeTypes.GetStateParams,
-      }),
-    );
+    const stateResponse = await this.cfModule.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.GET_STATE,
+      parameters: {
+        appInstanceId,
+      } as NodeTypes.GetStateParams,
+    });
 
     return stateResponse.result.result as NodeTypes.GetStateResult;
   };
@@ -599,19 +651,44 @@ export class ConnextInternal extends ConnextChannel {
     if ((state.state as any).finalized) {
       throw new Error("Cannot take action on an app with a finalized state.");
     }
-    const actionResponse = await this.cfModule.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.TAKE_ACTION,
-        params: {
-          action,
-          appInstanceId,
-        } as NodeTypes.TakeActionParams,
-      }),
-    );
+    const actionResponse = await this.cfModule.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.TAKE_ACTION,
+      parameters: {
+        action,
+        appInstanceId,
+      } as NodeTypes.TakeActionParams,
+    });
 
     return actionResponse.result.result as NodeTypes.TakeActionResult;
+  };
+
+  public updateState = async (
+    appInstanceId: string,
+    newState: AppState | any, // cast to any bc no supported apps use
+    // the update state method
+  ): Promise<NodeTypes.UpdateStateResult> => {
+    // check the app is actually installed
+    const err = await this.appNotInstalled(appInstanceId);
+    if (err) {
+      this.logger.error(err);
+      throw new Error(err);
+    }
+    // check state is not finalized
+    const state: NodeTypes.GetStateResult = await this.getAppState(appInstanceId);
+    // FIXME: casting?
+    if ((state.state as any).finalized) {
+      throw new Error("Cannot take action on an app with a finalized state.");
+    }
+    const updateResponse = await this.cfModule.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.UPDATE_STATE,
+      parameters: {
+        appInstanceId,
+        newState,
+      } as NodeTypes.UpdateStateParams,
+    });
+    return updateResponse.result.result as NodeTypes.UpdateStateResult;
   };
 
   // TODO: add validation after arjuns refactor merged
@@ -627,14 +704,11 @@ export class ConnextInternal extends ConnextChannel {
          got ${JSON.stringify(params.intermediaries)}`);
     }
 
-    const actionRes = await this.cfModule.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
-        params,
-      }),
-    );
+    const actionRes = await this.cfModule.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
+      parameters: params,
+    });
 
     return actionRes.result.result as NodeTypes.ProposeInstallVirtualResult;
   };
@@ -643,14 +717,11 @@ export class ConnextInternal extends ConnextChannel {
   public proposeInstallApp = async (
     params: NodeTypes.ProposeInstallParams,
   ): Promise<NodeTypes.ProposeInstallResult> => {
-    const actionRes = await this.cfModule.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
-        params,
-      }),
-    );
+    const actionRes = await this.cfModule.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
+      parameters: params,
+    });
 
     return actionRes.result.result as NodeTypes.ProposeInstallResult;
   };
@@ -663,17 +734,14 @@ export class ConnextInternal extends ConnextChannel {
     if (alreadyInstalled) {
       throw new Error(alreadyInstalled);
     }
-    const installVirtualResponse = await this.cfModule.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.INSTALL_VIRTUAL,
-        params: {
-          appInstanceId,
-          intermediaries: [this.nodePublicIdentifier],
-        } as NodeTypes.InstallVirtualParams,
-      }),
-    );
+    const installVirtualResponse = await this.cfModule.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.INSTALL_VIRTUAL,
+      parameters: {
+        appInstanceId,
+        intermediaries: [this.nodePublicIdentifier],
+      } as NodeTypes.InstallVirtualParams,
+    });
 
     return installVirtualResponse.result.result;
   };
@@ -684,16 +752,13 @@ export class ConnextInternal extends ConnextChannel {
     if (alreadyInstalled) {
       throw new Error(alreadyInstalled);
     }
-    const installResponse = await this.cfModule.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.INSTALL,
-        params: {
-          appInstanceId,
-        } as NodeTypes.InstallParams,
-      }),
-    );
+    const installResponse = await this.cfModule.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.INSTALL,
+      parameters: {
+        appInstanceId,
+      } as NodeTypes.InstallParams,
+    });
 
     return installResponse.result.result;
   };
@@ -705,16 +770,13 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.error(err);
       throw new Error(err);
     }
-    const uninstallResponse = await this.cfModule.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.UNINSTALL,
-        params: {
-          appInstanceId,
-        },
-      }),
-    );
+    const uninstallResponse = await this.cfModule.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.UNINSTALL,
+      parameters: {
+        appInstanceId,
+      },
+    });
 
     return uninstallResponse.result.result as NodeTypes.UninstallResult;
   };
@@ -728,37 +790,44 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.error(err);
       throw new Error(err);
     }
-    const uninstallVirtualResponse = await this.cfModule.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.UNINSTALL_VIRTUAL,
-        params: {
-          appInstanceId,
-          intermediaryIdentifier: this.nodePublicIdentifier,
-        } as NodeTypes.UninstallVirtualParams,
-      }),
-    );
+    const uninstallVirtualResponse = await this.cfModule.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.UNINSTALL_VIRTUAL,
+      parameters: {
+        appInstanceId,
+        intermediaryIdentifier: this.nodePublicIdentifier,
+      } as NodeTypes.UninstallVirtualParams,
+    });
 
     return uninstallVirtualResponse.result.result as NodeTypes.UninstallVirtualResult;
   };
 
   public rejectInstallApp = async (appInstanceId: string): Promise<NodeTypes.UninstallResult> => {
-    const rejectResponse = await this.cfModule.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.REJECT_INSTALL,
-        params: {
-          appInstanceId,
-        } as NodeTypes.RejectInstallParams,
-      }),
-    );
+    const rejectResponse = await this.cfModule.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.REJECT_INSTALL,
+      parameters: {
+        appInstanceId,
+      } as NodeTypes.RejectInstallParams,
+    });
 
     return rejectResponse.result.result as NodeTypes.RejectInstallResult;
   };
 
-  // TODO: erc20 support?
+  public rejectInstallVirtualApp = async (
+    appInstanceId: string,
+  ): Promise<NodeTypes.UninstallVirtualResult> => {
+    const rejectResponse = await this.cfModule.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.REJECT_INSTALL,
+      parameters: {
+        appInstanceId,
+      } as NodeTypes.RejectInstallParams,
+    });
+
+    return rejectResponse.result.result as NodeTypes.RejectInstallResult;
+  };
+
   public cfWithdraw = async (
     assetId: string,
     amount: BigNumber,
@@ -774,19 +843,16 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.error(err);
       throw new Error(err);
     }
-    const withdrawalResponse = await this.cfModule.rpcRouter.dispatch(
-      jsonRpcDeserialize({
-        id: Date.now(),
-        jsonrpc: "2.0",
-        method: NodeTypes.RpcMethodName.WITHDRAW,
-        params: {
-          amount,
-          multisigAddress: this.multisigAddress,
-          recipient,
-          tokenAddress: assetId,
-        },
-      }),
-    );
+    const withdrawalResponse = await this.cfModule.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.WITHDRAW,
+      parameters: {
+        amount,
+        multisigAddress: this.multisigAddress,
+        recipient,
+        tokenAddress: assetId,
+      },
+    });
 
     return withdrawalResponse.result.result;
   };

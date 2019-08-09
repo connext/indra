@@ -1,11 +1,5 @@
-import { jsonRpcDeserialize, Node } from "@counterfactual/node";
-import { Node as NodeTypes } from "@counterfactual/types";
 import { utils } from "ethers";
 import { isNullOrUndefined } from "util";
-
-import { Logger } from "./logger";
-
-const formatEther = utils.formatEther;
 
 // Capitalizes first char of a string
 export const capitalize = (str: string): string =>
@@ -62,31 +56,3 @@ export const publicIdentifierToAddress = (publicIdentifier: string): string => {
 export const freeBalanceAddressFromXpub = (xpub: string): string => {
   return utils.HDNode.fromExtendedKey(xpub).derivePath("0").address;
 };
-
-// TODO: remove
-export function logEthFreeBalance(
-  assetId: string,
-  freeBalance: NodeTypes.GetFreeBalanceStateResult,
-  log?: Logger,
-): void {
-  const msg = `Channel's free balance of ${assetId}:`;
-  log ? log.info(msg) : console.info(msg);
-  const cb = (k: string, v: any): void => {
-    log ? log.info(`${k} ${formatEther(v)}`) : console.info(k, formatEther(v));
-  };
-  // @ts-ignore
-  objMap(freeBalance, cb);
-}
-
-// TODO: ???
-function timeout(delay: number = 30000): any {
-  const handler = setTimeout(() => {
-    throw new Error("Request timed out");
-  }, delay);
-
-  return {
-    cancel(): any {
-      clearTimeout(handler);
-    },
-  };
-}

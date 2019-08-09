@@ -48,9 +48,15 @@ export const validateTransferApp = async (
   }
 
   // check that the receivers deposit is 0
-  // FIXME: how to check for the receiver?
-  if (!app.responderDeposit.isZero() && !app.initiatorDeposit.isZero()) {
-    return `There must be at least one zero deposit in the application. Proposed app: ${prettyLog(
+  // assume the recipient is always the responder
+  if (!app.responderDeposit.isZero()) {
+    return `Responder (payee) must have a zero balance in proposed app. Proposed app: ${prettyLog(
+      app,
+    )}`;
+  }
+
+  if (app.initiatorDeposit.isZero()) {
+    return `Initiator (payor) must have nonzero balance in proposed app. Proposed app: ${prettyLog(
       app,
     )}`;
   }

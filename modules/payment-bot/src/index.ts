@@ -5,28 +5,25 @@ import {
   ResolveLinkedTransferParameters,
   WithdrawParameters,
 } from "@connext/types";
+import { NODE_EVENTS } from "@counterfactual/node";
 import { AddressZero } from "ethers/constants";
-import { parseEther } from "ethers/utils";
+import { JsonRpcProvider } from "ethers/providers";
+import { formatEther, parseEther } from "ethers/utils";
 
 import { registerClientListeners } from "./bot";
 import { config } from "./config";
 import { store } from "./store";
+import { logEthFreeBalance } from "./utils";
 
-process.on(
-  "warning",
-  (e: any): any => {
-    console.warn(e);
-    process.exit(1);
-  },
-);
+process.on("warning", (e: any): any => {
+  console.warn(e);
+  process.exit(1);
+});
 
-process.on(
-  "unhandledRejection",
-  (e: any): any => {
-    console.error(e);
-    process.exit(1);
-  },
-);
+process.on("unhandledRejection", (e: any): any => {
+  console.error(e);
+  process.exit(1);
+});
 
 let client: connext.ConnextInternal;
 
@@ -45,8 +42,8 @@ export function getMultisigAddress(): string {
   return client.opts.multisigAddress;
 }
 
-export function getWalletAddress(): string {
-  return client.wallet.address;
+export function getFreeBalanceAddress(): string {
+  return client.freeBalanceAddress;
 }
 
 export function getConnextClient(): connext.ConnextInternal {
@@ -163,13 +160,29 @@ async function run(): Promise<void> {
     if (config.recipient) {
       withdrawParams.recipient = config.recipient;
     }
+    const provider = new JsonRpcProvider(config.ethProviderUrl);
+    const preWithdrawBal = await provider.getBalance(config.recipient || client.freeBalanceAddress);
+    console.log(`Found prewithdrawal balance of ${formatEther(preWithdrawBal)}`);
+
+    client.on(NODE_EVENTS.WITHDRAWAL_CONFIRMED, async (data: any) => {
+      console.log(`Caught withdraw confirmed event, data: ${JSON.stringify(data, null, 2)}`);
+      const postWithdrawBal = await provider.getBalance(
+        config.recipient || client.freeBalanceAddress,
+      );
+      console.log(`Found postwithdrawal balance of ${formatEther(postWithdrawBal)}`);
+    });
+
+    client.on(NODE_EVENTS.WITHDRAWAL_FAILED, async (data: any) => {
+      console.log(`Withdrawal failed with data: ${JSON.stringify(data, null, 2)}`);
+    });
+
     console.log(
       `Attempting to withdraw ${withdrawParams.amount} with assetId ` +
         `${withdrawParams.assetId} to address ${withdrawParams.recipient}...`,
     );
     await client.withdraw(withdrawParams);
     console.log(`Successfully withdrawn!`);
-    process.exit(0);
+    // process.exit(0);
   }
 
   if (config.uninstall) {
@@ -186,9 +199,9 @@ async function run(): Promise<void> {
     console.log(`Installed apps: ${await client.getAppInstances()}`);
   }
 
-  client.logEthFreeBalance(AddressZero, await client.getFreeBalance());
+  logEthFreeBalance(AddressZero, await client.getFreeBalance());
   if (config.assetId) {
-    client.logEthFreeBalance(config.assetId, await client.getFreeBalance(config.assetId));
+    logEthFreeBalance(config.assetId, await client.getFreeBalance(config.assetId));
   }
   console.log(`Ready to receive transfers at ${client.opts.cfModule.publicIdentifier}`);
 }

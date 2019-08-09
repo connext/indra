@@ -4,7 +4,7 @@ import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
 
-import { logEthFreeBalance, publicIdentifierToAddress } from "../lib/utils";
+import { publicIdentifierToAddress } from "../lib/utils";
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
@@ -21,21 +21,7 @@ export class DepositController extends AbstractController {
     }
 
     // TODO: remove free balance stuff?
-    this.log.info("trying to get free balance....");
     const preDepositBalances = await this.connext.getFreeBalance(assetId);
-    this.log.info(`preDepositBalances:`);
-    this.connext.logEthFreeBalance(assetId, preDepositBalances, this.log);
-
-    // TODO: why isnt free balance working :(
-    if (preDepositBalances) {
-      if (Object.keys(preDepositBalances).length !== 2) {
-        throw new Error("Unexpected number of entries");
-      }
-
-      if (!preDepositBalances[myFreeBalanceAddress]) {
-        throw new Error("My address not found");
-      }
-    }
 
     this.log.info(
       `\nDepositing ${amount} of ${assetId} into ${this.connext.opts.multisigAddress}\n`,
@@ -53,9 +39,6 @@ export class DepositController extends AbstractController {
 
       const postDepositBalances = await this.connext.getFreeBalance(assetId);
 
-      this.log.info(`postDepositBalances:`);
-      logEthFreeBalance(assetId, postDepositBalances, this.log);
-
       const diff = postDepositBalances[myFreeBalanceAddress].sub(
         preDepositBalances[myFreeBalanceAddress],
       );
@@ -65,7 +48,6 @@ export class DepositController extends AbstractController {
       }
 
       this.log.info("Deposited!");
-      logEthFreeBalance(assetId, await this.connext.getFreeBalance(assetId), this.log);
     } catch (e) {
       this.log.error(`Failed to deposit...`);
       this.removeListeners();
