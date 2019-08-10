@@ -48,6 +48,12 @@ fi
 test -t 0 -a -t 1 -a -t 2 && interactive="--tty"
 my_id="`id -u`:`id -g`"
 
+function cleanup {
+  echo "Stopping the payment bot..."
+  docker container stop ${project}_payment_bot_$identifier
+}
+trap cleanup EXIT
+
 ########################################
 ## Launch payment bot
 
