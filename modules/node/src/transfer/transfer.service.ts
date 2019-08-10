@@ -10,7 +10,7 @@ import { ProposeVirtualMessage, RejectProposalMessage } from "@counterfactual/no
 import { AppInstanceJson, Node as NodeTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
@@ -43,7 +43,7 @@ export class TransferService {
    */
   async savePeerToPeerTransfer(data: ProposeVirtualMessage): Promise<Transfer> {
     const transfer = new Transfer();
-    transfer.amount = data.data.params.initiatorDeposit;
+    transfer.amount = bigNumberify(data.data.params.initiatorDeposit);
     transfer.appInstanceId = data.data.appInstanceId;
     transfer.assetId = data.data.params.initiatorDepositTokenAddress;
 
