@@ -1,6 +1,8 @@
 import {
   AllowedSwap,
   KnownNodeAppNames,
+  UnidirectionalLinkedTransferAppStage,
+  UnidirectionalLinkedTransferAppStateBigNumber,
   UnidirectionalTransferAppStage,
   UnidirectionalTransferAppStateBigNumber,
 } from "@connext/types";
@@ -139,12 +141,48 @@ export class AppRegistryService implements OnModuleInit {
     );
   }
 
+  // TODO: update the linked transfer app so it doesnt use a state machine
+  // and instead uses a computeOutcome, similar to the swap app
   private async validateLinkedTransfer(params: NodeTypes.ProposeInstallParams): Promise<void> {
-    if (bigNumberify(params.responderDeposit).gt(Zero)) {
+    const { responderDeposit, initiatorDeposit, initialState: initialStateBadType } = params;
+    if (responderDeposit.gt(Zero)) {
       throw new Error(
         `Will not accept linked transfer install where node deposit is >0 ${JSON.stringify(
           params,
         )}`,
+      );
+    }
+
+    const initialState = initialStateBadType as UnidirectionalLinkedTransferAppStateBigNumber;
+
+    if (initialState.finalized) {
+      throw new Error(`Cannot install linked transfer app with finalized state`);
+    }
+
+    if (!initialState.turnNum.isZero()) {
+      throw new Error(`Cannot install a linked transfer app with nonzero turn number`);
+    }
+
+    if (initialState.stage !== UnidirectionalLinkedTransferAppStage.POST_FUND) {
+      throw new Error(
+        `Cannot install a linked transfer app with a stage other than the POST_FUND stage`,
+      );
+    }
+
+    if (initialState.transfers[0].amount.lte(Zero)) {
+      throw new Error(`Cannot install a linked transfer app with a sender transfer of <= 0`);
+    }
+
+    if (
+      !initialState.transfers[0].amount.eq(initiatorDeposit) ||
+      !initialState.transfers[1].amount.eq(responderDeposit)
+    ) {
+      throw new Error(`Mismatch between deposits and initial state, refusing to install.`);
+    }
+
+    if (!initialState.transfers[0].amount.isZero()) {
+      throw new Error(
+        `Cannot install a linked transfer app with a nonzero redeemer transfer value`,
       );
     }
   }
