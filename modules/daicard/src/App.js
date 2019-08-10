@@ -115,10 +115,21 @@ class App extends React.Component {
       nodeUrl,
       store,
     });
+
+    const channelAvailable = async () => {
+      const chan = await channel.getChannel();
+      return chan && chan.available;
+    };
+    const interval = 1;
+    while (!(await channelAvailable())) {
+      console.info(`Waiting ${interval} more seconds for channel to be available`);
+      await new Promise(res => setTimeout(() => res(), interval * 1000));
+    }
+
     const freeBalanceAddress = channel.freeBalanceAddress || channel.myFreeBalanceAddress;
     const connextConfig = await channel.config();
     const token = new Contract(connextConfig.contractAddresses.Token, tokenArtifacts.abi, cfWallet);
-    const swapRate = formatEther(await channel.getLatestSwapRate(AddressZero, token.address));
+    const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
     console.log(`Client created successfully!`);
     console.log(` - Public Identifier: ${channel.publicIdentifier}`);
@@ -131,7 +142,7 @@ class App extends React.Component {
     channel.subscribeToSwapRates(AddressZero, token.address, (res) => {
       if (!res || !res.swapRate) return;
       console.log(`Got swap rate upate: ${this.state.swapRate} -> ${formatEther(res.swapRate)}`);
-      this.setState({ swapRate: formatEther(res.swapRate) });
+      this.setState({ swapRate: res.swapRate });
     })
 
     console.log(`Creating a payment profile..`)
@@ -267,7 +278,7 @@ class App extends React.Component {
       await channel.swap({
         amount: weiBalance.toString(),
         fromAssetId: AddressZero,
-        swapRate: parseEther(swapRate).toString(),
+        swapRate,
         toAssetId: token.address,
       });
     }
