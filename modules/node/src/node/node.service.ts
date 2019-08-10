@@ -1,20 +1,7 @@
 import { AppActionBigNumber } from "@connext/types";
-import {
-  CreateChannelMessage,
-  DepositConfirmationMessage,
-  InstallMessage,
-  InstallVirtualMessage,
-  Node,
-  ProposeMessage,
-  ProposeVirtualMessage,
-  RejectInstallVirtualMessage,
-  UninstallMessage,
-  UninstallVirtualMessage,
-  UpdateStateMessage,
-  WithdrawMessage,
-} from "@counterfactual/node";
+import { Node } from "@counterfactual/node";
 import { AppInstanceJson, AppInstanceProposal, Node as NodeTypes } from "@counterfactual/types";
-import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
@@ -24,7 +11,7 @@ import { CLogger, freeBalanceAddressFromXpub } from "../util";
 const logger = new CLogger("NodeService");
 
 Injectable();
-export class NodeService implements OnModuleInit {
+export class NodeService {
   cfNode: Node;
 
   constructor(@Inject(NodeProviderId) private readonly node: Node) {
