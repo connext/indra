@@ -19,7 +19,6 @@ import { EventEmitter } from "events";
 
 import { ConnextInternal } from "./connext";
 import { Logger } from "./lib/logger";
-import { freeBalanceAddressFromXpub } from "./lib/utils";
 import { appProposalValidation } from "./validation/appProposals";
 
 // TODO: index of connext events only?

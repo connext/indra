@@ -13,6 +13,7 @@ import { Zero } from "ethers/constants";
 import { formatEther } from "ethers/utils";
 
 import { ChannelRepository } from "../channel/channel.repository";
+import { ChannelService } from "../channel/channel.service";
 import { NodeService } from "../node/node.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { CLogger, freeBalanceAddressFromXpub } from "../util";
@@ -30,6 +31,7 @@ export class AppRegistryService {
   constructor(
     private readonly nodeService: NodeService,
     private readonly swapRateService: SwapRateService,
+    private readonly channelService: ChannelService,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
   ) {}
@@ -312,6 +314,19 @@ export class AppRegistryService {
     }
   }
 
+  // should perform validation on everything all generic app conditions that
+  // must be satisfied when installing a virtual or ledger app, including:
+  // - matches registry information
+  // - non-negative timeout
+  // - non-negative deposits
+  // - valid token addresses
+  // - apps have value --> maybe not for games?
+  // - sufficient collateral in recipients channel (if virtual)
+  // - sufficient free balance from initiator
+  // - sufficient free balance from node (if ledger)
+
+  // TODO: there is a lot of duplicate logic here + client. ideally, much
+  // of this would be moved to a shared library.
   private async verifyAppProposal(
     proposedAppParams: {
       params: NodeTypes.ProposeInstallParams;
@@ -353,9 +368,42 @@ export class AppRegistryService {
     },
     initiatorIdentifier: string,
   ): Promise<void> {
+    const {
+      initiatorDeposit,
+      initiatorDepositTokenAddress,
+      proposedToIdentifier,
+    } = proposedAppParams.params;
+
     const registryAppInfo = await this.appProposalMatchesRegistry(proposedAppParams.params);
 
     await this.commonAppProposalValidation(proposedAppParams.params, initiatorIdentifier);
+
+    // check if there is sufficient collateral in the channel
+    const recipientChan = await this.channelRepository.findByUserPublicIdentifier(
+      proposedAppParams.params.proposedToIdentifier,
+    );
+
+    const collateralFreeBal = await this.nodeService.getFreeBalance(
+      proposedToIdentifier,
+      recipientChan.multisigAddress,
+      initiatorDepositTokenAddress,
+    );
+
+    const collateralAvailable = collateralFreeBal[this.nodeService.cfNode.freeBalanceAddress];
+
+    if (collateralAvailable.lt(initiatorDeposit)) {
+      // TODO: best way to handle case where user is sending payment
+      // *above* amounts specified in the payment profile
+      // also, do we want to request collateral in a different location?
+      await this.channelService.requestCollateral(
+        proposedToIdentifier,
+        initiatorDepositTokenAddress,
+      );
+      throw new Error(
+        `Insufficient collateral detected in responders channel, ` +
+          `retry after channel has been collateralized.`,
+      );
+    }
 
     switch (registryAppInfo.name) {
       case KnownNodeAppNames.UNIDIRECTIONAL_TRANSFER:
