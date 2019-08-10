@@ -1,6 +1,7 @@
-import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
+import { Transfer } from "../transfer/transfer.entity";
 import { IsEthAddress } from "../validator/isEthAddress";
 import { IsXpub } from "../validator/isXpub";
 
@@ -28,4 +29,7 @@ export class Channel {
   @ManyToMany((type: any) => PaymentProfile, (profile: PaymentProfile) => profile.channels)
   @JoinTable()
   paymentProfiles!: PaymentProfile[];
+
+  @ManyToOne((type: any) => Transfer, (transfer: Transfer) => transfer.channel)
+  transfers!: Transfer[];
 }
