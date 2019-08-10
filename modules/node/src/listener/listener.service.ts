@@ -65,8 +65,10 @@ export default class ListenerService implements OnModuleInit {
         logEvent(NodeTypes.EventName.INSTALL, data);
       },
       // TODO: make cf return app instance id and app def?
-      INSTALL_VIRTUAL: (data: InstallVirtualMessage): void => {
+      INSTALL_VIRTUAL: async (data: InstallVirtualMessage): Promise<void> => {
         logEvent(NodeTypes.EventName.INSTALL_VIRTUAL, data);
+        const info = await this.nodeService.getAppInstanceDetails(data.data.params.appInstanceId);
+        console.log("info: ", info);
       },
       PROPOSE_INSTALL: (data: ProposeMessage): void => {
         logEvent(NodeTypes.EventName.PROPOSE_INSTALL, data);
@@ -100,8 +102,10 @@ export default class ListenerService implements OnModuleInit {
       UNINSTALL: (data: UninstallMessage): void => {
         logEvent(NodeTypes.EventName.UNINSTALL, data);
       },
-      UNINSTALL_VIRTUAL: (data: UninstallVirtualMessage): void => {
+      UNINSTALL_VIRTUAL: async (data: UninstallVirtualMessage): Promise<void> => {
         logEvent(NodeTypes.EventName.UNINSTALL_VIRTUAL, data);
+        const info = await this.nodeService.getAppInstanceDetails(data.data.appInstanceId);
+        console.log("info: ", info);
       },
       UPDATE_STATE: (data: UpdateStateMessage): void => {
         logEvent(NodeTypes.EventName.UPDATE_STATE, data);
