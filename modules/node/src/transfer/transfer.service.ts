@@ -20,7 +20,7 @@ import { Network } from "../constants";
 import { NodeService } from "../node/node.service";
 import { CLogger, createLinkedHash, delay, freeBalanceAddressFromXpub } from "../util";
 
-import { Transfer, TransferTypes, TransferStatus } from "./transfer.entity";
+import { Transfer, TransferStatus, TransferTypes } from "./transfer.entity";
 import { TransferRepository } from "./transfer.repository";
 
 const logger = new CLogger("TransferService");

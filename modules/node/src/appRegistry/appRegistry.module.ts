@@ -14,7 +14,7 @@ import { AppRegistryService } from "./appRegistry.service";
 
 @Module({
   controllers: [AppRegistryController],
-  exports: [],
+  exports: [AppRegistryService],
   imports: [
     ConfigModule,
     TypeOrmModule.forFeature([AppRegistryRepository, ChannelRepository]),
