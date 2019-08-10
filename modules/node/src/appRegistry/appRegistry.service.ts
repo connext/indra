@@ -1,7 +1,7 @@
 import { KnownNodeAppNames } from "@connext/types";
 import { ProposeMessage } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
-import { Injectable, OnModuleInit } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
 import { bigNumberify, parseEther } from "ethers/utils";
 
@@ -25,13 +25,27 @@ type AllowedSwaps = AllowedSwap[];
 const ALLOWED_DISCREPANCY_PCT = 5;
 
 @Injectable()
-export class AppRegistryService implements OnModuleInit {
+export class AppRegistryService {
   constructor(
     private readonly nodeService: NodeService,
     private readonly configService: ConfigService,
     private readonly swapRateService: SwapRateService,
     private readonly appRegistryRepository: AppRegistryRepository,
   ) {}
+
+  async installOrReject(
+    data: ProposeMessage,
+  ): Promise<NodeTypes.InstallResult | NodeTypes.RejectInstallResult> {
+    try {
+      await this.verifyAppProposal(data.data);
+      return await this.nodeService.installApp(data.data.appInstanceId);
+    } catch (e) {
+      logger.error(`Caught error during proposed app validation, rejecting install`);
+      // TODO: why doesn't logger.error log this?
+      console.error(e);
+      return await this.nodeService.rejectInstallApp(data.data.appInstanceId);
+    }
+  }
 
   private async getValidSwaps(): Promise<AllowedSwaps> {
     const allowedSwaps: AllowedSwaps = [
@@ -144,31 +158,5 @@ export class AppRegistryService implements OnModuleInit {
         break;
     }
     logger.log(`Validation completed for app ${registryAppInfo.name}`);
-  }
-
-  private installOrReject = async (
-    data: ProposeMessage,
-  ): Promise<NodeTypes.InstallResult | NodeTypes.RejectInstallResult> => {
-    try {
-      await this.verifyAppProposal(data.data);
-      return await this.nodeService.installApp(data.data.appInstanceId);
-    } catch (e) {
-      logger.error(`Caught error during proposed app validation, rejecting install`);
-      // TODO: why doesn't logger.error log this?
-      console.error(e);
-      return await this.nodeService.rejectInstallApp(data.data.appInstanceId);
-    }
-  };
-
-  private registerNodeListeners(): void {
-    this.nodeService.registerCfNodeListener(
-      NodeTypes.EventName.PROPOSE_INSTALL,
-      this.installOrReject,
-      logger.cxt,
-    );
-  }
-
-  onModuleInit(): void {
-    this.registerNodeListeners();
   }
 }
