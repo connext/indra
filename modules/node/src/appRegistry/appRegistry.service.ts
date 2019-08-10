@@ -1,4 +1,9 @@
-import { AllowedSwap, KnownNodeAppNames } from "@connext/types";
+import {
+  AllowedSwap,
+  KnownNodeAppNames,
+  UnidirectionalTransferAppStage,
+  UnidirectionalTransferAppStateBigNumber,
+} from "@connext/types";
 import { ProposeMessage, ProposeVirtualMessage } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
@@ -7,6 +12,7 @@ import { bigNumberify, formatEther } from "ethers/utils";
 
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
+import { EthAddressRegex } from "../constants";
 import { NodeService } from "../node/node.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { CLogger, freeBalanceAddressFromXpub } from "../util";
@@ -39,34 +45,52 @@ export class AppRegistryService implements OnModuleInit {
     );
   }
 
+  // should validate any of the transfer-specific conditions,
+  // specifically surrounding the initial state of the applications
   private async validateTransfer(params: NodeTypes.ProposeInstallParams): Promise<void> {
     logger.log(`params: ${JSON.stringify(params)}`);
-    // check if there is sufficient collateral in the channel
-    const recipientXpub = params.proposedToIdentifier;
-    const recipientChan = await this.channelRepository.findByUserPublicIdentifier(recipientXpub);
-    if (!recipientChan) {
-      throw new Error(`No open channel found with recipient ${recipientXpub}`);
+    // perform any validation that is relevant to both virtual
+    // and ledger applications sent from a client
+    const { initialState: initialStateBadType, initiatorDeposit, responderDeposit } = params;
+    if (!responderDeposit.isZero()) {
+      throw new Error(`Cannot install virtual transfer app with a nonzero responder deposit.`);
     }
 
-    const recipientFreeBal = await this.nodeService.getFreeBalance(
-      recipientXpub,
-      recipientChan.multisigAddress,
-      params.initiatorDepositTokenAddress,
-    );
+    if (!initiatorDeposit.gt(Zero)) {
+      throw new Error(`Cannot install a transfer app with an initiator deposit greater than zero`);
+    }
 
-    const collateralAvailable =
-      recipientFreeBal[freeBalanceAddressFromXpub(recipientChan.nodePublicIdentifier)];
+    // validate the initial state is kosher
+    const initialState = initialStateBadType as UnidirectionalTransferAppStateBigNumber;
+    if (!initialState.turnNum.isZero()) {
+      throw new Error(`Cannot install a transfer app with a turn number > 0`);
+    }
 
-    if (collateralAvailable.lt(params.initiatorDeposit)) {
-      // TODO: best way to handle case where user is sending payment
-      // *above* amounts specified in the payment profile
-      await this.channelService.requestCollateral(
-        params.proposedToIdentifier,
-        params.initiatorDepositTokenAddress,
-      );
+    if (initialState.finalized) {
+      throw new Error(`Cannot install a transfer app with a finalized initial state`);
+    }
+
+    if (initialState.stage !== UnidirectionalTransferAppStage.POST_FUND) {
       throw new Error(
-        `Insufficient collateral detected in responders channel, ` +
-          `retry after channel has been collateralized.`,
+        `Cannot install a transfer app with a stage that is not the "POST_FUND" stage.`,
+      );
+    }
+
+    // transfers[0] is the senders value in the array, and the transfers[1]
+    // is the recipients value in the array
+    if (
+      initialState.transfers[0].amount.lt(Zero) ||
+      !initialState.transfers[0].amount.eq(initiatorDeposit)
+    ) {
+      throw new Error(
+        `Cannot install a transfer app with initiator deposit values that are ` +
+          `different in the initial state than the params.`,
+      );
+    }
+
+    if (!initialState.transfers[1].amount.isZero()) {
+      throw new Error(
+        `Cannot install a transfer app with nonzero values for the recipient in the initial state.`,
       );
     }
   }
@@ -125,13 +149,31 @@ export class AppRegistryService implements OnModuleInit {
     }
   }
 
+  // should perform validation on everything all generic app conditions that
+  // must be satisfied when installing a virtual or ledger app, including:
+  // - matches registry information
+  // - non-negative timeout
+  // - non-negative deposits
+  // - valid token addresses
+  // - apps have value --> maybe not for games?
+  // - sufficient collateral in recipients channel (if virtual)
+  // - sufficient free balance from initiator
+  // - sufficient free balance from node (if ledger)
+
+  // TODO: there is a lot of duplicate logic here + client. ideally, much
+  // of this would be moved to a shared library.
   private async verifyAppProposal(
     proposedAppParams: {
       params: NodeTypes.ProposeInstallParams;
       appInstanceId: string;
     },
+    initiatorIdentifier: string,
     isVirtual: boolean = false,
   ): Promise<void> {
+    const myIdentifier = await this.nodeService.cfNode.publicIdentifier;
+    if (initiatorIdentifier === myIdentifier) {
+      return;
+    }
     const registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
       proposedAppParams.params.appDefinition,
     );
@@ -155,6 +197,96 @@ export class AppRegistryService implements OnModuleInit {
       );
     }
 
+    const {
+      initiatorDeposit,
+      initiatorDepositTokenAddress,
+      responderDeposit,
+      responderDepositTokenAddress,
+      timeout,
+      proposedToIdentifier,
+    } = proposedAppParams.params;
+
+    if (timeout.lt(Zero)) {
+      throw new Error(`"timeout" in params cannot be negative`);
+    }
+
+    if (initiatorDeposit.lt(Zero) || responderDeposit.lt(Zero)) {
+      throw new Error(`Cannot have negative initiator or responder deposits into applications.`);
+    }
+
+    if (responderDepositTokenAddress && !EthAddressRegex.test(responderDepositTokenAddress)) {
+      throw new Error(`Invalid "responderDepositTokenAddress" provided`);
+    }
+
+    if (initiatorDepositTokenAddress && !EthAddressRegex.test(initiatorDepositTokenAddress)) {
+      throw new Error(`Invalid "initiatorDepositTokenAddress" provided`);
+    }
+
+    // NOTE: may need to remove this condition if we start working
+    // with games
+    if (responderDeposit.isZero() && initiatorDeposit.isZero()) {
+      throw new Error(
+        `Cannot install an app with zero valued deposits for both initiator and responder.`,
+      );
+    }
+
+    // make sure initiator has sufficient funds
+    const initiatorChannel = await this.channelRepository.findByUserPublicIdentifier(
+      initiatorIdentifier,
+    );
+    const freeBalanceInitiatorAsset = await this.nodeService.getFreeBalance(
+      initiatorIdentifier,
+      initiatorChannel.multisigAddress,
+      initiatorDepositTokenAddress,
+    );
+    const initiatorFreeBalance =
+      freeBalanceInitiatorAsset[freeBalanceAddressFromXpub(initiatorIdentifier)];
+    if (initiatorFreeBalance.lt(initiatorDeposit)) {
+      throw new Error(`Initiator has insufficient funds to install proposed app`);
+    }
+
+    // check that node has sufficient funds if it is not virtual, or
+    // that node has sufficient collateral if it is a virtual app
+    if (isVirtual) {
+      // check if there is sufficient collateral in the channel
+      const recipientChan = await this.channelRepository.findByUserPublicIdentifier(
+        proposedToIdentifier,
+      );
+
+      const collateralFreeBal = await this.nodeService.getFreeBalance(
+        proposedToIdentifier,
+        recipientChan.multisigAddress,
+        initiatorDepositTokenAddress,
+      );
+
+      const collateralAvailable = collateralFreeBal[this.nodeService.cfNode.freeBalanceAddress];
+
+      if (collateralAvailable.lt(initiatorDeposit)) {
+        // TODO: best way to handle case where user is sending payment
+        // *above* amounts specified in the payment profile
+        // also, do we want to request collateral in a different location?
+        await this.channelService.requestCollateral(
+          proposedToIdentifier,
+          initiatorDepositTokenAddress,
+        );
+        throw new Error(
+          `Insufficient collateral detected in responders channel, ` +
+            `retry after channel has been collateralized.`,
+        );
+      }
+    } else {
+      // make sure that the node has sufficient balance for requested depost
+      const freeBalanceResponderAsset = await this.nodeService.getFreeBalance(
+        initiatorIdentifier,
+        initiatorChannel.multisigAddress,
+        responderDepositTokenAddress,
+      );
+      const balAvailable = freeBalanceResponderAsset[this.nodeService.cfNode.freeBalanceAddress];
+      if (balAvailable.lt(responderDeposit)) {
+        throw new Error(`Node has insufficient balance to install the app with proposed deposit.`);
+      }
+    }
+
     switch (registryAppInfo.name) {
       case KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP:
         await this.validateSwap(proposedAppParams.params);
@@ -175,7 +307,7 @@ export class AppRegistryService implements OnModuleInit {
     data: ProposeVirtualMessage,
   ): Promise<void | NodeTypes.RejectInstallResult> => {
     try {
-      await this.verifyAppProposal(data.data, true);
+      await this.verifyAppProposal(data.data, data.from, true);
     } catch (e) {
       logger.error(`Caught error during proposed app validation, rejecting virtual install`);
       // TODO: why doesn't logger.error log this?
@@ -192,7 +324,7 @@ export class AppRegistryService implements OnModuleInit {
         logger.log(`Got our own event, not doing anything.`);
         return undefined;
       }
-      await this.verifyAppProposal(data.data);
+      await this.verifyAppProposal(data.data, data.from);
       return await this.nodeService.installApp(data.data.appInstanceId);
     } catch (e) {
       logger.error(`Caught error during proposed app validation, rejecting install`);
