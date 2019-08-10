@@ -194,6 +194,21 @@ export class NodeService {
     return appInstanceResponse.result.result.appInstances as AppInstanceProposal[];
   }
 
+  async getAppInstanceDetails(appInstanceId: string): Promise<AppInstanceJson> {
+    const appInstanceResponse = await this.cfNode.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS,
+      parameters: { appInstanceId } as NodeTypes.GetAppInstanceDetailsParams,
+    });
+
+    logger.log(
+      `getAppInstanceDetails called with result ${JSON.stringify(
+        appInstanceResponse.result.result,
+      )}`,
+    );
+    return appInstanceResponse.result.result.appInstance as AppInstanceJson;
+  }
+
   async getAppState(appInstanceId: string): Promise<NodeTypes.GetStateResult | undefined> {
     // check the app is actually installed, or returned undefined
     const err = await this.appNotInstalled(appInstanceId);

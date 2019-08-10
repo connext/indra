@@ -6,7 +6,7 @@ import {
   UnidirectionalLinkedTransferAppStage,
   UnidirectionalLinkedTransferAppStateBigNumber,
 } from "@connext/types";
-import { RejectProposalMessage } from "@counterfactual/node";
+import { ProposeVirtualMessage, RejectProposalMessage } from "@counterfactual/node";
 import { AppInstanceJson, Node as NodeTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
@@ -20,6 +20,9 @@ import { Network } from "../constants";
 import { NodeService } from "../node/node.service";
 import { CLogger, createLinkedHash, delay, freeBalanceAddressFromXpub } from "../util";
 
+import { Transfer, TransferTypes, TransferStatus } from "./transfer.entity";
+import { TransferRepository } from "./transfer.repository";
+
 const logger = new CLogger("TransferService");
 
 @Injectable()
@@ -31,7 +34,33 @@ export class TransferService {
     private readonly configService: ConfigService,
     private readonly channelRepository: ChannelRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
+    private readonly transferRepository: TransferRepository,
   ) {}
+
+  /**
+   * Save pending transfer
+   * @param data Data from PROPOSE_VIRTUAL event
+   */
+  async savePeerToPeerTransfer(data: ProposeVirtualMessage): Promise<Transfer> {
+    const transfer = new Transfer();
+    transfer.amount = data.data.params.initiatorDeposit;
+    transfer.appInstanceId = data.data.appInstanceId;
+    transfer.assetId = data.data.params.initiatorDepositTokenAddress;
+
+    const senderChannel = await this.channelRepository.findByUserPublicIdentifier(
+      data.data.proposedByIdentifier,
+    );
+    transfer.senderChannel = senderChannel;
+
+    const receiverChannel = await this.channelRepository.findByUserPublicIdentifier(
+      data.data.params.proposedToIdentifier,
+    );
+    transfer.receiverChannel = receiverChannel;
+    transfer.type = TransferTypes.PEER_TO_PEER;
+    transfer.status = TransferStatus.PENDING;
+
+    return await this.transferRepository.save(transfer);
+  }
 
   async resolveLinkedTransfer(
     userPubId: string,

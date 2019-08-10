@@ -30,6 +30,9 @@ export class Channel {
   @JoinTable()
   paymentProfiles!: PaymentProfile[];
 
-  @ManyToOne((type: any) => Transfer, (transfer: Transfer) => transfer.channel)
-  transfers!: Transfer[];
+  @ManyToOne((type: any) => Transfer, (transfer: Transfer) => transfer.senderChannel)
+  senderTransfers!: Transfer[];
+
+  @ManyToOne((type: any) => Transfer, (transfer: Transfer) => transfer.receiverChannel)
+  receiverTransfers!: Transfer[];
 }

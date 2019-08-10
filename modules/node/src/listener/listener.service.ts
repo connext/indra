@@ -17,6 +17,7 @@ import { Injectable, OnModuleInit } from "@nestjs/common";
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { ChannelService } from "../channel/channel.service";
 import { NodeService } from "../node/node.service";
+import { TransferService } from "../transfer/transfer.service";
 import { CLogger } from "../util";
 
 const logger = new CLogger("ListenerService");
@@ -39,6 +40,7 @@ export default class ListenerService implements OnModuleInit {
     private readonly nodeService: NodeService,
     private readonly appRegistryService: AppRegistryService,
     private readonly channelService: ChannelService,
+    private readonly transferService: TransferService,
   ) {}
 
   getEventListeners(): CallbackStruct {
@@ -70,8 +72,14 @@ export default class ListenerService implements OnModuleInit {
         logEvent(NodeTypes.EventName.PROPOSE_INSTALL, data);
         this.appRegistryService.installOrReject(data);
       },
-      PROPOSE_INSTALL_VIRTUAL: (data: ProposeVirtualMessage): void => {
+      PROPOSE_INSTALL_VIRTUAL: async (data: ProposeVirtualMessage): Promise<void> => {
         logEvent(NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data);
+        const rejected = await this.appRegistryService.rejectVirtual(data);
+        if (rejected) {
+          return;
+        }
+        // TODO: move this to install
+        this.transferService.savePeerToPeerTransfer(data);
       },
       PROPOSE_STATE: (data: any): void => {
         // TODO: need to validate all apps here as well?
