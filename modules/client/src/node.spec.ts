@@ -1,5 +1,5 @@
 import { NodeApiClient } from "./node";
-import { MockMessagingService, MockWallet, nodeUrl } from "./testing/mocks";
+import { MockMessagingService, nodeUrl } from "./testing/mocks";
 
 describe("NodeApiClient", () => {
   let nodeClient: NodeApiClient;

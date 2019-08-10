@@ -148,7 +148,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   console.log("multisigAddress: ", multisigAddress);
   // create the new client
-  return new ConnextInternal({
+  const client = new ConnextInternal({
     appRegistry,
     cfModule,
     ethProvider,
@@ -159,6 +159,8 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     nodePublicIdentifier: config.nodePublicIdentifier,
     ...opts, // use any provided opts by default
   });
+  await client.registerSubscriptions();
+  return client;
 }
 
 /**
@@ -369,7 +371,6 @@ export abstract class ConnextChannel {
   ): Promise<NodeTypes.WithdrawResult> => {
     return await this.internal.cfWithdraw(assetId, amount, recipient);
   };
-
 }
 
 /**
@@ -438,6 +439,11 @@ export class ConnextInternal extends ConnextChannel {
       this,
     );
   }
+
+  // register subscriptions
+  public registerSubscriptions = async (): Promise<void> => {
+    await this.listener.register();
+  };
 
   ///////////////////////////////////
   // CORE CHANNEL METHODS

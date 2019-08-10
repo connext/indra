@@ -19,6 +19,7 @@ import { EventEmitter } from "events";
 
 import { ConnextInternal } from "./connext";
 import { Logger } from "./lib/logger";
+import { freeBalanceAddressFromXpub } from "./lib/utils";
 import { appProposalValidation } from "./validation/appProposals";
 
 // TODO: index of connext events only?
@@ -152,6 +153,12 @@ export class ConnextListener extends EventEmitter {
     this.log = new Logger("ConnextListener", connext.opts.logLevel);
   }
 
+  public register = async (): Promise<void> => {
+    await this.registerAvailabilitySubscription();
+    this.registerDefaultCfListeners();
+    return;
+  };
+
   public registerCfListener = (event: NodeTypes.EventName, cb: Function): void => {
     // replace with new fn
     this.log.info(`Registering listener for ${event}`);
@@ -232,13 +239,14 @@ export class ConnextListener extends EventEmitter {
     const invalidProposal = await appProposalValidation[matchedApp.name](
       appInstance,
       matchedApp,
+      isVirtual,
       this.connext,
     );
+
     if (invalidProposal) {
       // reject app installation
       this.log.error(`Proposed app is invalid. ${invalidProposal}`);
-      // TODO: IS THIS RIGHT
-      await this.connext.rejectInstallVirtualApp(appInstance.identityHash);
+      await this.connext.rejectInstallApp(appInstance.identityHash);
       return;
     }
 
@@ -265,5 +273,22 @@ export class ConnextListener extends EventEmitter {
     }
     this.log.info(`App installed, res: ${JSON.stringify(res, null, 2)}`);
     return;
+  };
+
+  private registerAvailabilitySubscription = async (): Promise<void> => {
+    const subject = `online.${this.connext.publicIdentifier}`;
+    await this.connext.messaging.subscribe(subject, async (msg: any) => {
+      if (!msg.reply) {
+        this.log.info(`No reply found for msg: ${msg}`);
+        return;
+      }
+
+      const response = true;
+      this.connext.messaging.publish(msg.reply, {
+        err: null,
+        response,
+      });
+    });
+    this.log.info(`Connected message pattern "${subject}"`);
   };
 }

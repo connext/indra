@@ -1,6 +1,8 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
+import { ChannelModule } from "../channel/channel.module";
+import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigModule } from "../config/config.module";
 import { NodeModule } from "../node/node.module";
 import { SwapRateModule } from "../swapRate/swapRate.module";
@@ -15,9 +17,10 @@ import { AppRegistryService } from "./appRegistry.service";
   exports: [],
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([AppRegistryRepository]),
+    TypeOrmModule.forFeature([AppRegistryRepository, ChannelRepository]),
     NodeModule,
     SwapRateModule,
+    ChannelModule,
   ],
   providers: [appRegistryProviderFactory, AppRegistryService],
 })

@@ -35,6 +35,12 @@ export class TransferController extends AbstractController {
       throw new Error(invalid.toString());
     }
 
+    // make sure recipient is online
+    const res = await this.node.recipientOnline(recipient);
+    if (!res) {
+      throw new Error(`Recipient is offline.`);
+    }
+
     const freeBal = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBal[this.connext.freeBalanceAddress];
 
@@ -124,10 +130,10 @@ export class TransferController extends AbstractController {
   // TODO: fix types of data
   private rejectInstallTransfer = (
     rej: (reason?: any) => void,
-    msg: RejectInstallVirtualMessage,
+    msg: RejectInstallVirtualMessage, // fix typing, not nested in `.data` obj
   ): any => {
     // check app id
-    if (this.appId !== msg.data.appInstanceId) {
+    if (this.appId !== (msg as any).appInstanceId) {
       return;
     }
 
