@@ -18,3 +18,13 @@ export function IsEthAddress(validationOptions?: ValidationOptions): Function {
     });
   };
 }
+
+export function isEthAddress(address: string): boolean {
+  return EthAddressRegex.test(address);
+}
+
+export function assertEthAddress(address: string): void {
+  if (!isEthAddress(address)) {
+    throw new Error(`${address} is not a valid ETH address`);
+  }
+}
