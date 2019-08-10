@@ -1,5 +1,5 @@
 import { BigNumber } from "ethers/utils";
-import { Column, Entity, JoinColumn, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
 
@@ -39,11 +39,9 @@ export class Transfer {
   @Column("enum", { enum: TransferStatus, default: TransferStatus.PENDING })
   status!: TransferStatus;
 
-  @OneToMany((type: any) => Channel, (channel: Channel) => channel.senderTransfers)
-  @JoinColumn()
+  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.senderTransfers)
   senderChannel!: Channel;
 
-  @OneToMany((type: any) => Channel, (channel: Channel) => channel.receiverTransfers)
-  @JoinColumn()
+  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.receiverTransfers)
   receiverChannel!: Channel;
 }

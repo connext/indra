@@ -1,4 +1,4 @@
-import { Column, Entity, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { Transfer } from "../transfer/transfer.entity";
@@ -30,9 +30,9 @@ export class Channel {
   @JoinTable()
   paymentProfiles!: PaymentProfile[];
 
-  @ManyToOne((type: any) => Transfer, (transfer: Transfer) => transfer.senderChannel)
+  @OneToMany((type: any) => Transfer, (transfer: Transfer) => transfer.senderChannel)
   senderTransfers!: Transfer[];
 
-  @ManyToOne((type: any) => Transfer, (transfer: Transfer) => transfer.receiverChannel)
+  @OneToMany((type: any) => Transfer, (transfer: Transfer) => transfer.receiverChannel)
   receiverTransfers!: Transfer[];
 }
