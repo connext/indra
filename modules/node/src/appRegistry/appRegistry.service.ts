@@ -245,6 +245,31 @@ export class AppRegistryService implements OnModuleInit {
       throw new Error(`Initiator has insufficient funds to install proposed app`);
     }
 
+    // make sure that the node has sufficient balance for requested deposit
+    const nodeIsResponder = proposedToIdentifier === this.nodeService.cfNode.publicIdentifier;
+    let freeBalanceResponderAsset: NodeTypes.GetFreeBalanceStateResult;
+    if (nodeIsResponder) {
+      freeBalanceResponderAsset = await this.nodeService.getFreeBalance(
+        initiatorIdentifier,
+        initiatorChannel.multisigAddress,
+        responderDepositTokenAddress,
+      );
+    } else {
+      const responderChannel = await this.channelRepository.findByUserPublicIdentifier(
+        proposedToIdentifier,
+      );
+      freeBalanceResponderAsset = await this.nodeService.getFreeBalance(
+        initiatorIdentifier,
+        responderChannel.multisigAddress,
+        responderDepositTokenAddress,
+      );
+    }
+    const balAvailable =
+      freeBalanceResponderAsset[freeBalanceAddressFromXpub(proposedToIdentifier)];
+    if (balAvailable.lt(responderDeposit)) {
+      throw new Error(`Node has insufficient balance to install the app with proposed deposit.`);
+    }
+
     // check that node has sufficient funds if it is not virtual, or
     // that node has sufficient collateral if it is a virtual app
     if (isVirtual) {
@@ -273,17 +298,6 @@ export class AppRegistryService implements OnModuleInit {
           `Insufficient collateral detected in responders channel, ` +
             `retry after channel has been collateralized.`,
         );
-      }
-    } else {
-      // make sure that the node has sufficient balance for requested depost
-      const freeBalanceResponderAsset = await this.nodeService.getFreeBalance(
-        initiatorIdentifier,
-        initiatorChannel.multisigAddress,
-        responderDepositTokenAddress,
-      );
-      const balAvailable = freeBalanceResponderAsset[this.nodeService.cfNode.freeBalanceAddress];
-      if (balAvailable.lt(responderDeposit)) {
-        throw new Error(`Node has insufficient balance to install the app with proposed deposit.`);
       }
     }
 
