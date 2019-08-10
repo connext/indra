@@ -423,7 +423,6 @@ export class ConnextInternal extends ConnextChannel {
 
     // establish listeners
     this.listener = new ConnextListener(opts.cfModule, this);
-    this.connectDefaultListeners();
 
     // instantiate controllers with logger and cf
     this.depositController = new DepositController("DepositController", this);
