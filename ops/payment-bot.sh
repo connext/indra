@@ -48,8 +48,6 @@ fi
 test -t 0 -a -t 1 -a -t 2 && interactive="--tty"
 my_id="`id -u`:`id -g`"
 
-echo "interactive: $interactive"
-
 ########################################
 ## Launch payment bot
 

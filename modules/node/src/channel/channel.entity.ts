@@ -9,16 +9,16 @@ export class Channel {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column("text")
+  @Column("citext")
   @IsXpub()
   userPublicIdentifier!: string;
 
   // might not need this
-  @Column("text")
+  @Column("citext")
   @IsXpub()
   nodePublicIdentifier!: string;
 
-  @Column("text")
+  @Column("citext")
   @IsEthAddress()
   multisigAddress!: string;
 

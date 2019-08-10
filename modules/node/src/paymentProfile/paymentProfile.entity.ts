@@ -26,7 +26,7 @@ export class PaymentProfile {
   })
   amountToCollateralize!: BigNumber;
 
-  @Column("text")
+  @Column("citext")
   assetId: string;
 
   @ManyToMany((type: any) => Channel, (channel: Channel) => channel.paymentProfiles)
