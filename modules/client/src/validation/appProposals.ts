@@ -160,7 +160,7 @@ const baseAppValidation = async (
     )}`;
   }
 
-  if (isVirtual && !app.intermediaries) {
+  if (isVirtual && app.intermediaries.length < 1) {
     return `Virtual apps should have intermediaries. Proposed app: ${prettyLog(app)}`;
   }
 
