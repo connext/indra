@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@connext/messaging": "0.0.9",
-    "@connext/types": "0.0.10",
+    "@connext/types": "0.0.11",
     "@counterfactual/contracts": "0.1.15",
     "@counterfactual/firebase-client": "0.0.3",
     "@counterfactual/node": "0.2.42",
