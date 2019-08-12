@@ -11,7 +11,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@connext/client": "0.0.10",
+    "@connext/client": "0.0.11",
     "@counterfactual/node": "0.2.42",
     "commander": "3.0.0",
     "dotenv": "8.0.0",
