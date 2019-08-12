@@ -108,8 +108,8 @@ export class AppRegistryService implements OnModuleInit {
     if (
       !validSwaps.find(
         (swap: AllowedSwap) =>
-          swap.from === params.initiatorDepositTokenAddress &&
-          swap.to === params.responderDepositTokenAddress,
+          swap.from.toLowerCase() === params.initiatorDepositTokenAddress.toLowerCase() &&
+          swap.to.toLowerCase() === params.responderDepositTokenAddress.toLowerCase(),
       )
     ) {
       throw new Error(
