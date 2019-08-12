@@ -16,7 +16,7 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { NodeService } from "../node/node.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
-import { CLogger, freeBalanceAddressFromXpub } from "../util";
+import { bigNumberifyObj, CLogger, freeBalanceAddressFromXpub } from "../util";
 import { isEthAddress } from "../validator";
 
 import { AppRegistry } from "./appRegistry.entity";
@@ -102,7 +102,11 @@ export class AppRegistryService {
   private async validateTransfer(params: NodeTypes.ProposeInstallParams): Promise<void> {
     // perform any validation that is relevant to both virtual
     // and ledger applications sent from a client
-    const { initialState: initialStateBadType, initiatorDeposit, responderDeposit } = params;
+    const {
+      initialState: initialStateBadType,
+      initiatorDeposit,
+      responderDeposit,
+    } = bigNumberifyObj(params);
     if (!responderDeposit.isZero()) {
       throw new Error(`Cannot install virtual transfer app with a nonzero responder deposit.`);
     }
@@ -112,7 +116,9 @@ export class AppRegistryService {
     }
 
     // validate the initial state is kosher
-    const initialState = initialStateBadType as UnidirectionalTransferAppStateBigNumber;
+    const initialState = bigNumberifyObj(
+      initialStateBadType,
+    ) as UnidirectionalTransferAppStateBigNumber;
     if (!initialState.turnNum.isZero()) {
       throw new Error(`Cannot install a transfer app with a turn number > 0`);
     }
@@ -193,7 +199,11 @@ export class AppRegistryService {
   // TODO: update the linked transfer app so it doesnt use a state machine
   // and instead uses a computeOutcome, similar to the swap app
   private async validateLinkedTransfer(params: NodeTypes.ProposeInstallParams): Promise<void> {
-    const { responderDeposit, initiatorDeposit, initialState: initialStateBadType } = params;
+    const {
+      responderDeposit,
+      initiatorDeposit,
+      initialState: initialStateBadType,
+    } = bigNumberifyObj(params);
     if (responderDeposit.gt(Zero)) {
       throw new Error(
         `Will not accept linked transfer install where node deposit is >0 ${JSON.stringify(
@@ -202,7 +212,9 @@ export class AppRegistryService {
       );
     }
 
-    const initialState = initialStateBadType as UnidirectionalLinkedTransferAppStateBigNumber;
+    const initialState = bigNumberifyObj(
+      initialStateBadType,
+    ) as UnidirectionalLinkedTransferAppStateBigNumber;
 
     if (initialState.finalized) {
       throw new Error(`Cannot install linked transfer app with finalized state`);
@@ -247,13 +259,13 @@ export class AppRegistryService {
       responderDepositTokenAddress,
       timeout,
       proposedToIdentifier,
-    } = params;
+    } = bigNumberifyObj(params);
 
-    if (bigNumberify(timeout).lt(Zero)) {
+    if (timeout.lt(Zero)) {
       throw new Error(`"timeout" in params cannot be negative`);
     }
 
-    if (bigNumberify(initiatorDeposit).lt(Zero) || bigNumberify(responderDeposit).lt(Zero)) {
+    if (initiatorDeposit.lt(Zero) || bigNumberify(responderDeposit).lt(Zero)) {
       throw new Error(`Cannot have negative initiator or responder deposits into applications.`);
     }
 
@@ -267,7 +279,7 @@ export class AppRegistryService {
 
     // NOTE: may need to remove this condition if we start working
     // with games
-    if (bigNumberify(responderDeposit).isZero() && bigNumberify(initiatorDeposit).isZero()) {
+    if (responderDeposit.isZero() && initiatorDeposit.isZero()) {
       throw new Error(
         `Cannot install an app with zero valued deposits for both initiator and responder.`,
       );
