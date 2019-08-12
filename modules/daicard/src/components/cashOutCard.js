@@ -11,7 +11,7 @@ import {
 } from "@material-ui/core";
 import { Unarchive as UnarchiveIcon } from "@material-ui/icons";
 import { Zero } from "ethers/constants";
-import { arrayify, isHexString, parseEther } from "ethers/utils";
+import { arrayify, isHexString } from "ethers/utils";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { Component } from "react";
 
@@ -19,28 +19,6 @@ import EthIcon from "../assets/Eth.svg";
 import DaiIcon from "../assets/dai.svg";
 
 import { QRScan } from "./qrCode";
-
-/*
-import { AddressZero } from "ethers/constants";
-const displayBals = async (RETRY_COUNT, channel, ethprovider) => {
-  let retries = 0;
-  while (retries < RETRY_COUNT) {
-    const multisigBalance = (await ethprovider.getBalance("0x35936CD28231e22fB68fB556e8121191abdCEEb5")).toString();
-    const recipientBalance = (await ethprovider.getBalance("0x2932b7A2355D6fecc4b5c0B6BD44cC31df247a2e")).toString();
-    const accountBalance = (await ethprovider.getBalance("0xe838a8C673F46F2B1a9f69dB8368ee65e5cf9123")).toString();
-    const freeBalance = await channel.getFreeBalance(AddressZero);
-    const userFreeBalance = freeBalance[channel.freeBalanceAddress].toString();
-    console.log(`*********** BALANCES: ${JSON.stringify({
-      multisigBalance,
-      recipientBalance,
-      accountBalance,
-      userFreeBalance,
-    }, null, 2)}`)
-    retries += 1;
-    await new Promise((res) => setTimeout(res, 1000))
-  }
-}
-*/
 
 const styles = theme => ({
   icon: {
@@ -104,7 +82,7 @@ class CashOutCard extends Component {
     const { balance, channel, history, setPending } = this.props
     const recipient = this.state.recipient.value
     if (!recipient) return
-    const amount = parseEther(balance.channel.ether.toETH().amount)
+    const amount = balance.channel.ether.wad
     if (amount.lte(Zero)) return
     setPending({ type: "withdrawal", complete: false, closed: false })
     this.setState({ withdrawing: true });
@@ -147,7 +125,7 @@ class CashOutCard extends Component {
           <Grid container direction="row" justify="center" alignItems="center">
             <Typography variant="h2">
               <span>
-                {balance.channel.ether.toETH().toString()}
+                {balance.channel.token.toDAI().format()}
               </span>
             </Typography>
           </Grid>

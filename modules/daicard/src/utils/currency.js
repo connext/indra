@@ -64,7 +64,7 @@ export class Currency {
   }
 
   // Just like amountWei when talking about ETH amounts
-  get amountWad() {
+  get wad() {
     return this._amount
   }
 
@@ -122,7 +122,7 @@ export class Currency {
     // roundUp plays same role as 0.5 in above example
     if (typeof decimals === 'number' && decimals < nDecimals) {
       const roundUp = toBN(`5${'0'.repeat(this.precision - decimals - 1)}`)
-      const rounded = this.fromWad(this.amountWad.add(roundUp))
+      const rounded = this.fromWad(this.wad.add(roundUp))
       return rounded.slice(0, amt.length - (nDecimals - decimals)).replace(/\.$/, '')
     }
     // rounding to same decimals as are available: return amount w no changes
@@ -154,7 +154,6 @@ export class Currency {
     return exchangeRates[currency]
   }
 
-  to = (toType, daiRate) => this._convert(toType, daiRate)
   toDAI = (daiRate) => this._convert('DAI', daiRate)
   toDEI = (daiRate) => this._convert('DEI', daiRate)
   toETH = (daiRate) => this._convert('ETH', daiRate)
@@ -169,7 +168,7 @@ export class Currency {
       this.daiRate = daiRate;
       this.daiRateGiven = true;
     }
-    const amountInWei = tokenToWei(this.amountWad, this.getExchangeRate(this.type))
+    const amountInWei = tokenToWei(this.wad, this.getExchangeRate(this.type))
     const targetAmount = fromWei(weiToToken(amountInWei, this.getExchangeRate(targetType)))
     return new Currency(
       targetType,

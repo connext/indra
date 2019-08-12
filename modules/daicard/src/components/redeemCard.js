@@ -208,7 +208,7 @@ class RedeemCard extends Component {
       errs.push("Invalid amount")
       return errs
     }
-    if (value.amountWad.lte(Zero)) {
+    if (value.wad.lte(Zero)) {
       errs.push("Copied token balance should be greater than zero")
     }
     // print amount for easy confirmation
@@ -503,7 +503,7 @@ const RedeemPaymentDialogContent = (redeemPaymentState, amount) => {
           </DialogTitle>
           <DialogContent>
             <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
-              Amount: {Currency.DAI(amount).toETH().toString()}
+              Amount: {Currency.DAI(amount).toETH().format()}
             </DialogContentText>
           </DialogContent>
         </Grid>

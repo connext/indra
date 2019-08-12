@@ -87,10 +87,10 @@ class SendCard extends Component {
     } catch (e) {
       error = e.message
     }
-    if (value && value.amountWad.gt(balance.channel.token.toDAI().amountWad)) {
+    if (value && value.wad.gt(balance.channel.token.wad)) {
       error = `Invalid amount: must be less than your balance`
     }
-    if (value && value.amountWad.lte(Zero)) {
+    if (value && value.wad.lte(Zero)) {
       error = "Invalid amount: must be greater than 0"
     }
     this.setState({
@@ -145,9 +145,9 @@ class SendCard extends Component {
     const { channel, token } = this.props;
     const { amount, recipient } = this.state;
     if (amount.error || recipient.error) return;
-    if (toBN(amount.value.toDAI().amountWad).gt(LINK_LIMIT.toDAI().amountWad)) {
+    if (toBN(amount.value.toDAI().wad).gt(LINK_LIMIT.wad)) {
       this.setState(oldState => {
-        oldState.amount.error = `Linked payments are capped at ${LINK_LIMIT}.`
+        oldState.amount.error = `Linked payments are capped at ${LINK_LIMIT.format()}.`
         return oldState
       })
       return
@@ -211,14 +211,14 @@ class SendCard extends Component {
           <Grid container direction="row" justify="center" alignItems="center">
             <Typography variant="h2">
               <span>
-                {this.props.balance.channel.token.toDAI().toString()}
+                {this.props.balance.channel.token.toDAI().format()}
               </span>
             </Typography>
           </Grid>
         </Grid>
         <Grid item xs={12}>
           <Typography variant="body2">
-            <span>{`Linked payments are capped at ${LINK_LIMIT.toDAI().toString()}.`}</span>
+            <span>{`Linked payments are capped at ${LINK_LIMIT.format()}.`}</span>
           </Typography>
         </Grid>
         <Grid item xs={12}>
