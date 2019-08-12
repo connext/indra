@@ -1,6 +1,6 @@
 import { RegisteredAppDetails, SupportedApplication } from "@connext/types";
 import { AppInstanceInfo } from "@counterfactual/types";
-import { bigNumberify } from "ethers/utils";
+import { bigNumberify, getAddress } from "ethers/utils";
 
 import { ConnextInternal } from "../connext";
 import { freeBalanceAddressFromXpub } from "../lib/utils";
@@ -9,17 +9,18 @@ type ProposalValidator = {
   [index in SupportedApplication]: (
     app: AppInstanceInfo,
     registeredInfo: RegisteredAppDetails,
+    isVirtual: boolean,
     connext: ConnextInternal,
   ) => Promise<string | undefined>;
 };
 
-// TODO: implement
 export const validateSwapApp = async (
   app: AppInstanceInfo,
   registeredInfo: RegisteredAppDetails,
+  isVirtual: boolean,
   connext: ConnextInternal,
 ): Promise<string | undefined> => {
-  const baseValidation = await baseAppValidation(app, registeredInfo, connext);
+  const baseValidation = await baseAppValidation(app, registeredInfo, isVirtual, connext);
   if (baseValidation) {
     return baseValidation;
   }
@@ -27,21 +28,21 @@ export const validateSwapApp = async (
   // validate the timeout is above the minimum (?)
 
   // This is called as a default to the propose app install event
-  // which may not have context into what *your* exchange rate is?
+  // which does not have context into what *your* exchange rate is
 
   return undefined;
 };
 
-// TODO: implement
 export const validateTransferApp = async (
   app: AppInstanceInfo,
   registeredInfo: RegisteredAppDetails,
+  isVirtual: boolean,
   connext: ConnextInternal,
   // TODO: ideally this wouldnt get passed in, but you need it
   // to check things like your public identifier, open apps,
   // free balance, etc.
 ): Promise<string | undefined> => {
-  const baseValidation = await baseAppValidation(app, registeredInfo, connext);
+  const baseValidation = await baseAppValidation(app, registeredInfo, isVirtual, connext);
   if (baseValidation) {
     return baseValidation;
   }
@@ -60,18 +61,14 @@ export const validateTransferApp = async (
     )}`;
   }
 
-  // check the initial state is consistent
-  // FIXME: why isnt this in the cf types?
-
-  // TODO: ordering restrictions (i.e who has to propose it)
-
   return undefined;
 };
 
-// FIXME: implement
+// TODO: implement
 export const validateLinkedTransferApp = async (
   app: AppInstanceInfo,
   registeredInfo: RegisteredAppDetails,
+  isVirtual: boolean,
   connext: ConnextInternal,
 ): Promise<string | undefined> => {
   return undefined;
@@ -95,8 +92,11 @@ const prettyLog = (app: AppInstanceInfo) => {
 const baseAppValidation = async (
   app: AppInstanceInfo,
   registeredInfo: RegisteredAppDetails,
+  isVirtual: boolean,
   connext: ConnextInternal,
 ): Promise<string | undefined> => {
+  // check the initial state is consistent
+  // FIXME: why isnt this in the cf types?
   console.log("******** app", JSON.stringify(app, null, 2));
   console.log("******** has initial state??", (app as any).initialState);
   // check that identity hash isnt used by another app
@@ -125,42 +125,50 @@ const baseAppValidation = async (
   }
 
   // check that the outcome type is the same
-  // TODO: what checks needed for the interpreter params?
   if (bigNumberify(app.initiatorDeposit).isZero() && bigNumberify(app.responderDeposit).isZero()) {
     return `Refusing to install app with two zero value deposits. Proposed app: ${prettyLog(app)}`;
   }
 
   // check that there is enough in the free balance of desired currency
   // to install app
-  // FIXME: how to get assetId
-  const assetId = app.responderDepositTokenAddress;
-  const freeBalance = await connext.getFreeBalance(assetId);
-  if (freeBalance[freeBalanceAddressFromXpub(connext.publicIdentifier)].lt(app.responderDeposit)) {
+  const responderFreeBalance = await connext.getFreeBalance(
+    getAddress(app.responderDepositTokenAddress),
+  );
+  const userFreeBalance =
+    responderFreeBalance[freeBalanceAddressFromXpub(connext.publicIdentifier)];
+  if (userFreeBalance.lt(app.responderDeposit)) {
     return `Insufficient free balance for requested asset,
-      freeBalance: ${freeBalance[freeBalanceAddressFromXpub(connext.publicIdentifier)].toString()}
+      freeBalance: ${userFreeBalance.toString()}
       required: ${app.responderDeposit}. Proposed app: ${prettyLog(app)}`;
+  }
+
+  // if it is a virtual app, check that the intermediary has sufficient
+  // collateral in your channel
+  const initiatorFreeBalance = await connext.getFreeBalance(
+    getAddress(app.initiatorDepositTokenAddress),
+  );
+  const nodeFreeBalance =
+    initiatorFreeBalance[freeBalanceAddressFromXpub(connext.nodePublicIdentifier)];
+  if (isVirtual && nodeFreeBalance.lt(app.initiatorDeposit)) {
+    return `Insufficient collateral for requested asset,
+    freeBalance of node: ${nodeFreeBalance.toString()}
+    required: ${app.initiatorDeposit}. Proposed app: ${prettyLog(app)}`;
   }
 
   // check that the intermediary includes your node if it is not an app with
   // your node
-  const appWithNode =
-    app.proposedByIdentifier === connext.nodePublicIdentifier ||
-    app.proposedToIdentifier === connext.nodePublicIdentifier;
   const hasIntermediaries = app.intermediaries && app.intermediaries.length > 0;
-  if (!hasIntermediaries && !appWithNode) {
+  if (hasIntermediaries && !isVirtual) {
     return `Apps with connected node should have no intermediaries. Proposed app: ${prettyLog(
       app,
     )}`;
   }
 
-  if (!appWithNode && !app.intermediaries) {
-    return (
-      `Apps that are not with connected node should have ` +
-      `intermediaries. Proposed app: ${prettyLog(app)}`
-    );
+  if (isVirtual && app.intermediaries.length < 1) {
+    return `Virtual apps should have intermediaries. Proposed app: ${prettyLog(app)}`;
   }
 
-  if (!appWithNode) {
+  if (isVirtual) {
     const node = app.intermediaries.filter((intermediary: string) => {
       return intermediary === connext.nodePublicIdentifier;
     });

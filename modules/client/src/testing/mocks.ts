@@ -10,7 +10,6 @@ import {
 } from "@connext/types";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { providers } from "ethers";
-import { BigNumber } from "ethers/utils";
 
 import { Logger } from "../lib/logger";
 import { INodeApiClient } from "../node";
@@ -120,6 +119,10 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public async createChannel(): Promise<CreateChannelResponse> {
     return MockNodeClientApi.returnValues.createChannel;
+  }
+
+  public async recipientOnline(recipientPublicIdentifier: string): Promise<boolean> {
+    return true;
   }
 
   public async subscribeToSwapRates(
