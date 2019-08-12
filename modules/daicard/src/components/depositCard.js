@@ -85,8 +85,8 @@ class DepositCard extends Component {
             </Tooltip>
           </Typography>
           <Typography variant="body2">
-            <span>{`Deposits over ${maxEth || "?.??"} Eth 
-                      or ${maxDai || "?.??"} Dai will be refunded`}</span>
+            <span>{`Up to ${maxEth || "?.??"} Eth 
+                      or ${maxDai || "?.??"} Dai will be deposited into the state channel, any leftovers will be kept on-chain`}</span>
           </Typography>
         </Grid>
         <Grid item xs={12}>

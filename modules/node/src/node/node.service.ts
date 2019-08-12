@@ -62,7 +62,7 @@ export class NodeService {
     };
     logger.log(`Calling createChannel with params: ${JSON.stringify(params, null, 2)}`);
     const createRes = await this.cfNode.rpcRouter.dispatch(params);
-    logger.log(`createChannel returned: ${JSON.stringify(createRes.result.result)}`);
+    logger.log(`createChannel called with result: ${JSON.stringify(createRes.result.result)}`);
     return createRes.result.result as NodeTypes.CreateChannelResult;
   }
 
@@ -80,7 +80,7 @@ export class NodeService {
         tokenAddress: assetId,
       } as NodeTypes.DepositParams,
     });
-    logger.log(`createChannel called with result ${JSON.stringify(depositRes.result.result)}`);
+    logger.log(`deposit called with result ${JSON.stringify(depositRes.result.result)}`);
     return depositRes.result.result as NodeTypes.DepositResult;
   }
 
@@ -173,9 +173,11 @@ export class NodeService {
       parameters: {} as NodeTypes.GetAppInstancesParams,
     });
 
-    logger.log(
+    /*
+    logger.debug(
       `getAppInstances called with result ${JSON.stringify(appInstanceResponse.result.result)}`,
     );
+    */
     return appInstanceResponse.result.result.appInstances as AppInstanceJson[];
   }
 

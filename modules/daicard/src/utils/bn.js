@@ -1,9 +1,7 @@
-import { ethers as eth } from 'ethers'
+import { MaxUint256, WeiPerEther, Zero } from "ethers/constants";
+import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
 
-const { Zero, MaxUint256 } = eth.constants
-const { bigNumberify, parseEther, formatEther } = eth.utils
-
-export const isBN = eth.utils.BigNumber.isBigNumber
+export const isBN = BigNumber.isBigNumber
 
 export const toBN = (n) =>
   bigNumberify(n.toString())
@@ -19,9 +17,12 @@ export const weiToToken = (wei, tokenPerEth) =>
 export const tokenToWei = (token, tokenPerEth) =>
   toWei(token).div(toWei(tokenPerEth))
 
-export const maxBN = (lon) =>
-  lon.reduce((max, current) => max.gt(current) ? max : current, Zero)
+export const maxBN = (lobn) =>
+  lobn.reduce((max, current) => max.gt(current) ? max : current, Zero)
 
-export const minBN = (lon) =>
-  lon.reduce((min, current) => min.lt(current) ? min : current, MaxUint256)
+export const minBN = (lobn) =>
+  lobn.reduce((min, current) => min.lt(current) ? min : current, MaxUint256)
+
+export const inverse = (bn) =>
+  formatEther(parseEther(WeiPerEther.toString()).div(parseEther(bn.toString())))
 
