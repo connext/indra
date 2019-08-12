@@ -93,11 +93,22 @@ describe('Daicard', () => {
   })
 
   describe('Withdraw', () => {
-    it(`Should withdraw to a valid address`, () => {
+    it(`Should withdraw eth to a valid address`, () => {
       my.deposit(depositEth).then(tokensDeposited => {
-        my.getOnchainBalance().then(balanceBefore => {
-          my.cashout()
-          cy.resolve(my.getOnchainBalance).should(balanceAfter => {
+        my.getOnchainEtherBalance().then(balanceBefore => {
+          my.cashoutEther()
+          cy.resolve(my.getOnchainEtherBalance).should(balanceAfter => {
+            expect(new BN(balanceAfter)).to.be.a.bignumber.greaterThan(new BN(balanceBefore))
+          })
+        })
+      })
+    })
+
+    it.only(`Should withdraw tokens to a valid address`, () => {
+      my.deposit(depositEth).then(tokensDeposited => {
+        my.getOnchainTokenBalance().then(balanceBefore => {
+          my.cashoutToken()
+          cy.resolve(my.getOnchainTokenBalance).should(balanceAfter => {
             expect(new BN(balanceAfter)).to.be.a.bignumber.greaterThan(new BN(balanceBefore))
           })
         })

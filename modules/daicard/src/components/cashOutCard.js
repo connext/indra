@@ -271,7 +271,7 @@ class CashOutCard extends Component {
                 variant="contained"
                 fullWidth
                 onClick={() => this.withdrawalTokens()}
-                disabled={true}
+                disabled={!recipient.value}
               >
                 Cash Out Dai
                 <img
