@@ -10,13 +10,14 @@ import {
   withStyles,
 } from "@material-ui/core";
 import { Unarchive as UnarchiveIcon } from "@material-ui/icons";
-import { Zero } from "ethers/constants";
+import { AddressZero, Zero } from "ethers/constants";
 import { arrayify, isHexString } from "ethers/utils";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { Component } from "react";
 
 import EthIcon from "../assets/Eth.svg";
 import DaiIcon from "../assets/dai.svg";
+import { inverse } from "../utils";
 
 import { QRScan } from "./qrCode";
 
@@ -78,18 +79,67 @@ class CashOutCard extends Component {
     });
   }
 
-  async withdrawalHandler(withdrawEth) {
-    const { balance, channel, history, setPending } = this.props
+  async withdrawalTokens() {
+    const { balance, channel, history, setPending, swapRate, token } = this.props
     const recipient = this.state.recipient.value
     if (!recipient) return
-    const amount = balance.channel.ether.wad
-    if (amount.lte(Zero)) return
+    const total = balance.channel.total
+    if (total.wad.lte(Zero)) return
+
+    // Put lock on actions, no more autoswaps until we're done withdrawing
     setPending({ type: "withdrawal", complete: false, closed: false })
     this.setState({ withdrawing: true });
-    const result = await channel.withdraw({ amount: amount.toString(), recipient });
+    console.log(`Withdrawing ${total.toETH().format()} to: ${recipient}`);
+
+    const result = await channel.withdraw({
+      amount: balance.channel.token.wad.toString(),
+      assetId: token.address,
+      recipient,
+    });
+
+    console.log(`Cashout result: ${JSON.stringify(result)}`)
     this.setState({ withdrawing: false })
     setPending({ type: "withdrawal", complete: true, closed: false })
+    history.push("/")
+  }
+
+  async withdrawalEther() {
+    const { balance, channel, history, setPending, swapRate, token } = this.props
+    const recipient = this.state.recipient.value
+    if (!recipient) return
+    const total = balance.channel.total
+    if (total.wad.lte(Zero)) return
+
+    // Put lock on actions, no more autoswaps until we're done withdrawing
+    setPending({ type: "withdrawal", complete: false, closed: false })
+    this.setState({ withdrawing: true });
+    console.log(`Withdrawing ${total.toETH().format()} to: ${recipient}`);
+
+    // swap all in-channel tokens for eth
+    if (balance.channel.token.wad.gt(Zero)) {
+      await channel.addPaymentProfile({
+        amountToCollateralize: total.toETH().wad.toString(),
+        minimumMaintainedCollateral: total.toETH().wad.toString(),
+        tokenAddress: AddressZero,
+      });
+      await channel.requestCollateral(AddressZero);
+      await channel.swap({
+        amount: balance.channel.token.wad.toString(),
+        fromAssetId: token.address,
+        swapRate: inverse(swapRate),
+        toAssetId: AddressZero,
+      });
+      await this.props.refreshBalances()
+    }
+
+    const result = await channel.withdraw({
+      amount: balance.channel.ether.wad.toString(),
+      assetId: AddressZero,
+      recipient,
+    });
     console.log(`Cashout result: ${JSON.stringify(result)}`)
+    this.setState({ withdrawing: false })
+    setPending({ type: "withdrawal", complete: true, closed: false })
     history.push("/")
   }
 
@@ -125,7 +175,7 @@ class CashOutCard extends Component {
           <Grid container direction="row" justify="center" alignItems="center">
             <Typography variant="h2">
               <span>
-                {balance.channel.token.toDAI().format()}
+                {balance.channel.total.toDAI().format()}
               </span>
             </Typography>
           </Grid>
@@ -204,7 +254,7 @@ class CashOutCard extends Component {
               <Button
                 className={classes.button}
                 fullWidth
-                onClick={() => this.withdrawalHandler(true)}
+                onClick={() => this.withdrawalEther()}
                 disabled={!recipient.value}
               >
                 Cash Out Eth
@@ -220,8 +270,8 @@ class CashOutCard extends Component {
                 className={classes.button}
                 variant="contained"
                 fullWidth
-                onClick={() => this.withdrawalHandler(false)}
-                disabled
+                onClick={() => this.withdrawalTokens()}
+                disabled={true}
               >
                 Cash Out Dai
                 <img

@@ -24,7 +24,7 @@ import SettingsCard from "./components/settingsCard";
 import SetupCard from "./components/setupCard";
 import SupportCard from "./components/supportCard";
 
-import { Currency, store, minBN, toBN, tokenToWei, weiToToken } from "./utils";
+import { Currency, inverse, store, minBN, toBN, tokenToWei, weiToToken } from "./utils";
 
 // Optional URL overrides for custom urls
 const overrides = {
@@ -98,6 +98,9 @@ class App extends React.Component {
     this.setDepositLimits.bind(this);
     this.autoDeposit.bind(this);
     this.autoSwap.bind(this);
+    this.setPending.bind(this);
+    this.closeConfirmations.bind(this);
+    this.scanQRCode.bind(this);
   }
 
   // ************************************************* //
@@ -141,6 +144,7 @@ class App extends React.Component {
     const connextConfig = await channel.config();
     const token = new Contract(connextConfig.contractAddresses.Token, tokenArtifacts.abi, cfWallet);
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
+    const invSwapRate = inverse(swapRate)
 
     console.log(`Client created successfully!`);
     console.log(` - Public Identifier: ${channel.publicIdentifier}`);
@@ -148,7 +152,7 @@ class App extends React.Component {
     console.log(` - CF Account address: ${cfWallet.address}`);
     console.log(` - Free balance address: ${freeBalanceAddress}`);
     console.log(` - Token address: ${token.address}`);
-    console.log(` - Swap rate: ${swapRate}`)
+    console.log(` - Swap rate: ${swapRate} or ${invSwapRate}`)
 
     channel.subscribeToSwapRates(AddressZero, token.address, (res) => {
       if (!res || !res.swapRate) return;
@@ -189,17 +193,18 @@ class App extends React.Component {
   }
 
   async refreshBalances() {
-    const { address, balance, channel, ethprovider, swapRate, token } = this.state;
+    const { freeBalanceAddress, swapRate, token } = this.state;
+    const { address, balance, channel, ethprovider } = this.state;
     if (!channel) { return; }
-    const getTotal = (chain, channel) => Currency.WEI(chain.wad.add(channel.wad), swapRate).toETH();
+    const getTotal = (ether, token) => Currency.WEI(ether.wad.add(token.toETH().wad), swapRate);
     const freeEtherBalance = await channel.getFreeBalance();
     const freeTokenBalance = await channel.getFreeBalance(token.address);
     balance.onChain.ether = Currency.WEI(await ethprovider.getBalance(address), swapRate).toETH();
     balance.onChain.token = Currency.DEI(await token.balanceOf(address), swapRate).toDAI();
-    balance.onChain.total = getTotal(balance.onChain.ether, balance.onChain.token);
-    balance.channel.ether = Currency.WEI(freeEtherBalance[this.state.freeBalanceAddress], swapRate).toETH();
-    balance.channel.token = Currency.DEI(freeTokenBalance[this.state.freeBalanceAddress], swapRate).toDAI();
-    balance.channel.total = getTotal(balance.channel.ether, balance.channel.token);
+    balance.onChain.total = getTotal(balance.onChain.ether, balance.onChain.token).toETH();
+    balance.channel.ether = Currency.WEI(freeEtherBalance[freeBalanceAddress], swapRate).toETH();
+    balance.channel.token = Currency.DEI(freeTokenBalance[freeBalanceAddress], swapRate).toDAI();
+    balance.channel.total = getTotal(balance.channel.ether, balance.channel.token).toETH();
     this.setState({ balance });
   }
 
@@ -209,7 +214,7 @@ class App extends React.Component {
     let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
     let totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
     const minDeposit = Currency.WEI(totalDepositGasWei.add(totalWithdrawalGasWei), swapRate).toETH();
-    const maxDeposit = MAX_CHANNEL_VALUE.toETH(swapRate); // Or get based on payment profile eventually?
+    const maxDeposit = MAX_CHANNEL_VALUE.toETH(swapRate); // Or get based on payment profile?
     this.setState({ maxDeposit, minDeposit });
   }
 
@@ -230,7 +235,8 @@ class App extends React.Component {
 
     let nowMaxDeposit = maxDeposit.wad.sub(this.state.balance.channel.total.wad);
     if (nowMaxDeposit.lte(Zero)) {
-      console.debug(`Channel balance (${balance.channel.total.toDAI().format()}) is at or above cap of ${maxDeposit.toDAI(swapRate).format()}`)
+      console.debug(`Channel balance (${balance.channel.total.toDAI().format()}) is at or above ` +
+        `cap of ${maxDeposit.toDAI(swapRate).format()}`)
       return;
     }
 
@@ -256,7 +262,8 @@ class App extends React.Component {
 
     nowMaxDeposit = maxDeposit.wad.sub(this.state.balance.channel.total.wad);
     if (nowMaxDeposit.lte(Zero)) {
-      console.debug(`Channel balance (${balance.channel.total.toDAI().format()}) is at or above cap of ${maxDeposit.toDAI(swapRate).format()}`)
+      console.debug(`Channel balance (${balance.channel.total.toDAI().format()}) is at or above ` +
+        `cap of ${maxDeposit.toDAI(swapRate).format()}`)
       return;
     }
     if (balance.onChain.ether.wad.lt(minDeposit.wad)) {
@@ -299,7 +306,7 @@ class App extends React.Component {
     const collateralNeeded = balance.channel.token.wad.add(weiToToken(weiToSwap, swapRate));
     let collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress])
 
-    console.log(`Available collateral: ${collateral} tokens, ${formatEther(collateralNeeded)} needed`);
+    console.log(`Collateral: ${collateral} tokens, ${formatEther(collateralNeeded)} needed`);
     if (collateralNeeded.gt(parseEther(collateral))) {
       console.log(`Requesting more collateral...`)
       await channel.addPaymentProfile({
@@ -309,7 +316,7 @@ class App extends React.Component {
       });
       await channel.requestCollateral(token.address);
       collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress])
-      console.log(`Available collateral: ${collateral} tokens, ${formatEther(collateralNeeded)} needed`);
+      console.log(`Collateral: ${collateral} tokens, ${formatEther(collateralNeeded)} needed`);
     }
 
     console.log(`Attempting to swap ${formatEther(weiToSwap)} eth for dai at rate: ${swapRate}`);
@@ -482,7 +489,8 @@ class App extends React.Component {
                   channel={channel}
                   swapRate={swapRate}
                   setPending={this.setPending.bind(this)}
-                  ethprovider={this.state.ethprovider}
+                  refreshBalances={this.refreshBalances.bind(this)}
+                  token={token}
                 />
               )}
             />

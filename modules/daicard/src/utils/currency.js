@@ -63,7 +63,7 @@ export class Currency {
     return this.fromWad(this._amount)
   }
 
-  // Just like amountWei when talking about ETH amounts
+  // wad is a currency-agnostic wei w 18 units of precision
   get wad() {
     return this._amount
   }

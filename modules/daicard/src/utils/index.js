@@ -1,6 +1,6 @@
-export { hasPendingTransaction } from "./hasOnchainTransaction";
-export { setWallet } from "./actions";
-export { isBN, toBN, toWei, fromWei, weiToToken, tokenToWei, maxBN, minBN } from "./bn";
-export { Currency } from "./currency";
-export { getChannelBalance, getChainBalance, getExchangeRates } from "./getters";
-export { store } from "./store";
+export * from "./hasOnchainTransaction";
+export * from "./actions";
+export * from "./bn";
+export * from "./currency";
+export * from "./getters";
+export * from "./store";
