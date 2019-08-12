@@ -10,7 +10,7 @@ import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import { calculateExchange, delay, freeBalanceAddressFromXpub } from "../lib/utils";
+import { delay, freeBalanceAddressFromXpub } from "../lib/utils";
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
@@ -233,20 +233,22 @@ export class SwapController extends AbstractController {
 
     // adding a promise for now that polls app instances, but its not
     // great and should be removed
-    await new Promise(async (res: any, rej: any): any => {
-      const getAppIds = async (): Promise<string[]> => {
-        return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
-      };
-      let retries = 0;
-      while ((await getAppIds()).indexOf(this.appId) !== -1 && retries <= 5) {
-        this.log.info("found app id in the open apps... retrying...");
-        await delay(500);
-        retries = retries + 1;
-      }
+    await new Promise(
+      async (res: any, rej: any): Promise<any> => {
+        const getAppIds = async (): Promise<string[]> => {
+          return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
+        };
+        let retries = 0;
+        while ((await getAppIds()).indexOf(this.appId) !== -1 && retries <= 5) {
+          this.log.info("found app id in the open apps... retrying...");
+          await delay(500);
+          retries = retries + 1;
+        }
 
-      if (retries > 5) rej();
+        if (retries > 5) rej();
 
-      res();
-    });
+        res();
+      },
+    );
   };
 }
