@@ -7,7 +7,7 @@ import {
 } from "@connext/types";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
-import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
+import { BigNumber, bigNumberify, formatEther, parseEther, getAddress } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { delay, freeBalanceAddressFromXpub } from "../lib/utils";
@@ -19,11 +19,14 @@ import { AbstractController } from "./AbstractController";
 export const calculateExchange = (amount: BigNumber, swapRate: string): BigNumber => {
   return bigNumberify(formatEther(amount.mul(parseEther(swapRate))).replace(/\.[0-9]*$/, ""));
 };
+
 export class SwapController extends AbstractController {
   private appId: string;
   private timeout: NodeJS.Timeout;
 
   public async swap(params: SwapParameters): Promise<NodeChannel> {
+    params.toAssetId = params.toAssetId ? getAddress(params.toAssetId) : undefined;
+    params.fromAssetId = params.fromAssetId ? getAddress(params.fromAssetId) : undefined;
     // convert params + validate
     const { amount, toAssetId, fromAssetId, swapRate } = convert.SwapParameters(
       "bignumber",
@@ -98,9 +101,9 @@ export class SwapController extends AbstractController {
     swapRate: string,
   ): Promise<undefined | string> => {
     // check that there is sufficient free balance for amount
-    const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
+    const preSwapFromBal = await this.connext.getFreeBalance(getAddress(fromAssetId));
     const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
-    const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
+    const preSwapToBal = await this.connext.getFreeBalance(getAddress(toAssetId));
     const nodeBal = preSwapToBal[freeBalanceAddressFromXpub(this.connext.nodePublicIdentifier)];
     const swappedAmount = calculateExchange(amount, swapRate);
     const errs = [
@@ -202,17 +205,19 @@ export class SwapController extends AbstractController {
     // set app instance id
     this.appId = res.appInstanceId;
 
-    await new Promise((res, rej) => {
-      boundReject = this.rejectInstallSwap.bind(null, rej);
-      boundResolve = this.resolveInstallSwap.bind(null, res);
-      this.listener.on(NodeTypes.EventName.INSTALL, boundResolve);
-      this.listener.on(NodeTypes.EventName.REJECT_INSTALL, boundReject);
-      // this.timeout = setTimeout(() => {
-      //   this.log.info("Install swap app timed out, rejecting install.")
-      //   this.cleanupInstallListeners(boundResolve, boundReject);
-      //   boundReject({ data: { appInstanceId: this.appId } });
-      // }, 5000);
-    });
+    await new Promise(
+      (res: any, rej: any): any => {
+        boundReject = this.rejectInstallSwap.bind(null, rej);
+        boundResolve = this.resolveInstallSwap.bind(null, res);
+        this.listener.on(NodeTypes.EventName.INSTALL, boundResolve);
+        this.listener.on(NodeTypes.EventName.REJECT_INSTALL, boundReject);
+        // this.timeout = setTimeout(() => {
+        //   this.log.info("Install swap app timed out, rejecting install.")
+        //   this.cleanupInstallListeners(boundResolve, boundReject);
+        //   boundReject({ data: { appInstanceId: this.appId } });
+        // }, 5000);
+      },
+    );
 
     this.cleanupInstallListeners(boundResolve, boundReject);
     return res.appInstanceId;
@@ -232,20 +237,22 @@ export class SwapController extends AbstractController {
 
     // adding a promise for now that polls app instances, but its not
     // great and should be removed
-    await new Promise(async (res, rej) => {
-      const getAppIds = async (): Promise<string[]> => {
-        return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
-      };
-      let retries = 0;
-      while ((await getAppIds()).indexOf(this.appId) !== -1 && retries <= 5) {
-        this.log.info("found app id in the open apps... retrying...");
-        await delay(500);
-        retries = retries + 1;
-      }
+    await new Promise(
+      async (res: any, rej: any): Promise<any> => {
+        const getAppIds = async (): Promise<string[]> => {
+          return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
+        };
+        let retries = 0;
+        while ((await getAppIds()).indexOf(this.appId) !== -1 && retries <= 5) {
+          this.log.info("found app id in the open apps... retrying...");
+          await delay(500);
+          retries = retries + 1;
+        }
 
-      if (retries > 5) rej();
+        if (retries > 5) rej();
 
-      res();
-    });
+        res();
+      },
+    );
   };
 }

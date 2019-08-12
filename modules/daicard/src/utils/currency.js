@@ -63,8 +63,8 @@ export class Currency {
     return this.fromWad(this._amount)
   }
 
-  // Just like amountWei when talking about ETH amounts
-  get amountWad() {
+  // wad is a currency-agnostic wei w 18 units of precision
+  get wad() {
     return this._amount
   }
 
@@ -94,8 +94,8 @@ export class Currency {
     return ['DAI', 'DEI'].includes(type || this._type)
   }
 
-  floor() {
-    return this.amount.slice(0, this.amount.indexOf('.'))
+  toBN() {
+    return toBN(this.amount.slice(0, this.amount.indexOf('.')))
   }
 
   format(_options) {
@@ -122,7 +122,7 @@ export class Currency {
     // roundUp plays same role as 0.5 in above example
     if (typeof decimals === 'number' && decimals < nDecimals) {
       const roundUp = toBN(`5${'0'.repeat(this.precision - decimals - 1)}`)
-      const rounded = this.fromWad(this.amountWad.add(roundUp))
+      const rounded = this.fromWad(this.wad.add(roundUp))
       return rounded.slice(0, amt.length - (nDecimals - decimals)).replace(/\.$/, '')
     }
     // rounding to same decimals as are available: return amount w no changes
@@ -130,7 +130,7 @@ export class Currency {
   }
 
   toString() {
-    return this.format()
+    return this.amount.slice(0, this.amount.indexOf('.'))
   }
 
   getExchangeRate = (currency) => {
@@ -154,18 +154,21 @@ export class Currency {
     return exchangeRates[currency]
   }
 
-  to = (toType) => this._convert(toType)
-  toDAI = () => this._convert('DAI')
-  toDEI = () => this._convert('DEI')
-  toETH = () => this._convert('ETH')
-  toFIN = () => this._convert('FIN')
-  toWEI = () => this._convert('WEI')
+  toDAI = (daiRate) => this._convert('DAI', daiRate)
+  toDEI = (daiRate) => this._convert('DEI', daiRate)
+  toETH = (daiRate) => this._convert('ETH', daiRate)
+  toFIN = (daiRate) => this._convert('FIN', daiRate)
+  toWEI = (daiRate) => this._convert('WEI', daiRate)
 
   ////////////////////////////////////////
   // Private Methods
 
-  _convert = (targetType) => {
-    const amountInWei = tokenToWei(this.amountWad, this.getExchangeRate(this.type))
+  _convert = (targetType, daiRate) => {
+    if (daiRate) {
+      this.daiRate = daiRate;
+      this.daiRateGiven = true;
+    }
+    const amountInWei = tokenToWei(this.wad, this.getExchangeRate(this.type))
     const targetAmount = fromWei(weiToToken(amountInWei, this.getExchangeRate(targetType)))
     return new Currency(
       targetType,

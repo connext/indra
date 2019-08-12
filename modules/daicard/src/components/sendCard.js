@@ -15,8 +15,7 @@ import {
   withStyles,
 } from "@material-ui/core";
 import { Send as SendIcon, Link as LinkIcon } from "@material-ui/icons";
-import { AddressZero, Zero } from 'ethers/constants';
-import { randomBytes } from 'ethers/utils';
+import { Zero } from 'ethers/constants';
 import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { Component } from "react";
 import queryString from "query-string";
@@ -88,10 +87,10 @@ class SendCard extends Component {
     } catch (e) {
       error = e.message
     }
-    if (value && value.amountWad.gt(balance.channel.ether.toETH().amountWad)) {
+    if (value && value.wad.gt(balance.channel.token.wad)) {
       error = `Invalid amount: must be less than your balance`
     }
-    if (value && value.amountWad.lte(Zero)) {
+    if (value && value.wad.lte(Zero)) {
       error = "Invalid amount: must be greater than 0"
     }
     this.setState({
@@ -123,14 +122,14 @@ class SendCard extends Component {
   }
 
   async paymentHandler() {
-    const { channel } = this.props;
+    const { channel, token } = this.props;
     const { amount, recipient } = this.state;
     if (amount.error || recipient.error) return;
     // TODO: check if recipient needs collateral & tell server to collateralize if more is needed
     try {
       console.log(`Sending ${amount.value} to ${recipient.value}`);
       await channel.transfer({
-        assetId: AddressZero, // TODO: token address
+        assetId: token.address,
         amount: amount.value.toDEI().floor(),
         recipient: recipient.value,
       });
@@ -143,28 +142,31 @@ class SendCard extends Component {
   }
 
   async linkHandler() {
-    const { channel } = this.props;
+    const { channel, token } = this.props;
     const { amount, recipient } = this.state;
     if (amount.error || recipient.error) return;
-    if (toBN(amount.value.toDAI().amountWad).gt(LINK_LIMIT.toDAI().amountWad)) {
+    if (toBN(amount.value.toDAI().wad).gt(LINK_LIMIT.wad)) {
       this.setState(oldState => {
-        oldState.amount.error = "Linked payments are capped at $10."
+        oldState.amount.error = `Linked payments are capped at ${LINK_LIMIT.format()}.`
         return oldState
       })
       return
     }
     try {
-      const secret = randomBytes(32)
-      console.log(`Sending link payment w secret: ${secret}`);
-      await channel.transfer({
-        assetId: AddressZero,
+      console.log(`Creating ${amount.value} link payment`);
+      const link = await channel.conditionalTransfer({
+        assetId: token.address,
         amount: amount.value.toDEI().floor(),
-        meta: { type: 'link', secret },
-        recipient: recipient.value,
+        conditionType: "LINKED_TRANSFER",
       });
+      console.log(`Created link payment: ${JSON.stringify(link, null, 2)}`);
+      console.log(`link params: secret=${link.preImage}&paymentId=${link.paymentId}&` +
+          `assetId=${token.address}&amount=${amount.value.amount}`)
       this.props.history.push({
         pathname: "/redeem",
-        search: `?secret=${secret}&amountToken=${amount.value.amount}`,
+        search: `?secret=${link.preImage}&paymentId=${link.paymentId}&` +
+          `assetId=${token.address}&amount=${amount.value.amount}`,
+        state: { isConfirm: true, secret: link.preImage, amountToken: amount.value.amount },
       });
     } catch (e) {
       console.log("Unexpected error sending payment:", e);
@@ -209,14 +211,14 @@ class SendCard extends Component {
           <Grid container direction="row" justify="center" alignItems="center">
             <Typography variant="h2">
               <span>
-                {this.props.balance.channel.ether.toETH().toString()}
+                {this.props.balance.channel.token.toDAI().format()}
               </span>
             </Typography>
           </Grid>
         </Grid>
         <Grid item xs={12}>
           <Typography variant="body2">
-            <span>{`Linked payments are capped at ${LINK_LIMIT.toDAI().toString()}.`}</span>
+            <span>{`Linked payments are capped at ${LINK_LIMIT.format()}.`}</span>
           </Typography>
         </Grid>
         <Grid item xs={12}>
@@ -369,7 +371,7 @@ function ConfirmationDialogText(paymentState, amountToken, recipient) {
               Recipient's Card is being set up. This should take 20-30 seconds.
             </DialogContentText>
             <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
-              If you stay on this page, your payment will be retried automatically. 
+              If you stay on this page, your payment will be retried automatically.
               If you navigate away or refresh the page, you will have to attempt the payment again yourself.
             </DialogContentText>
           <CircularProgress style={{ marginTop: "1em" }} />

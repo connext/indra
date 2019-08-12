@@ -55,10 +55,10 @@ class RequestCard extends Component {
     } catch (e) {
       error = e.message
     }
-    if (value && value.amountWad.gt(maxDeposit.toDAI().amountWad)) {
-      error = `Channel balances are capped at ${maxDeposit.toDAI()}`
+    if (value && value.wad.gt(maxDeposit.toDAI().wad)) {
+      error = `Channel balances are capped at ${maxDeposit.toDAI().format()}`
     }
-    if (value && value.amountWad.lte(Zero)) {
+    if (value && value.wad.lte(Zero)) {
       error = "Please enter a payment amount above 0"
     }
     this.setState({

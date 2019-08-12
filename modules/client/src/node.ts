@@ -13,8 +13,7 @@ import uuid = require("uuid");
 import { Logger } from "./lib/logger";
 import { NodeInitializationParameters } from "./types";
 
-// TODO: move to types.ts?
-const API_TIMEOUT = 30000;
+const API_TIMEOUT = 5000;
 
 export interface INodeApiClient {
   addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile>;
@@ -33,6 +32,7 @@ export interface INodeApiClient {
     amount: string,
     assetId: string,
   ): Promise<void>;
+  recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   subscribeToSwapRates(from: string, to: string, callback: any): void;
   unsubscribeFromSwapRates(from: string, to: string): void;
 }
@@ -58,67 +58,44 @@ export class NodeApiClient implements INodeApiClient {
   ////////////////////////////////////////
   // PUBLIC
 
-  // @layne why the try catches that dont do anything?
   public async appRegistry(appDetails?: {
     name: SupportedApplication;
     network: SupportedNetwork;
   }): Promise<AppRegistry> {
-    try {
-      return (await this.send("app-registry", appDetails)) as AppRegistry;
-    } catch (e) {
-      return Promise.reject(e);
-    }
+    return (await this.send("app-registry", appDetails)) as AppRegistry;
   }
 
   public async config(): Promise<GetConfigResponse> {
-    try {
-      return (await this.send("config.get")) as GetConfigResponse;
-    } catch (e) {
-      return Promise.reject(e);
-    }
+    return (await this.send("config.get")) as GetConfigResponse;
   }
 
   public async createChannel(): Promise<CreateChannelResponse> {
-    try {
-      return await this.send(`channel.create.${this.userPublicIdentifier}`);
-    } catch (e) {
-      return Promise.reject(e);
-    }
+    return await this.send(`channel.create.${this.userPublicIdentifier}`);
   }
 
   public async getChannel(): Promise<GetChannelResponse> {
-    try {
-      return await this.send(`channel.get.${this.userPublicIdentifier}`);
-    } catch (e) {
-      return Promise.reject(e);
-    }
+    return await this.send(`channel.get.${this.userPublicIdentifier}`);
   }
 
   // TODO: do we want this? thought this would be a blocking operation...
   public async getLatestSwapRate(from: string, to: string): Promise<string> {
-    try {
-      return await this.send(`swap-rate.${from}.${to}`);
-    } catch (e) {
-      return Promise.reject(e);
-    }
+    return await this.send(`swap-rate.${from}.${to}`);
   }
 
-  // FIXME: right now node doesnt return until the deposit has completed
+  // TODO: right now node doesnt return until the deposit has completed
   // which exceeds the timeout.....
   public async requestCollateral(assetId: string): Promise<void> {
     try {
-      const channelRes = await this.send(
-        `channel.request-collateral.${this.userPublicIdentifier}`,
-        { assetId },
-      );
-      return channelRes;
+      return await this.send(`channel.request-collateral.${this.userPublicIdentifier}`, {
+        assetId,
+      });
     } catch (e) {
-      // FIXME: node should return once deposit starts
+      // TODO: node should return once deposit starts
       if (e.message.startsWith("Request timed out")) {
         this.log.info(`request collateral message timed out`);
         return;
       }
-      return Promise.reject(e);
+      throw e;
     }
   }
 
@@ -140,16 +117,20 @@ export class NodeApiClient implements INodeApiClient {
   // otherwise could be a security flaw
   // FIXME: return type
   public async addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile> {
-    try {
-      const profileRes = await this.send(
-        `channel.add-profile.${this.userPublicIdentifier}`,
-        profile,
-      );
-      return profileRes;
-    } catch (e) {
-      return Promise.reject(e);
-    }
+    return await this.send(`channel.add-profile.${this.userPublicIdentifier}`, profile);
   }
+
+  // NOTE: maybe move?
+  public recipientOnline = async (recipientPublicIdentifier: string): Promise<boolean> => {
+    try {
+      return await this.send(`online.${recipientPublicIdentifier}`);
+    } catch (e) {
+      if (e.message.startsWith("Request timed out")) {
+        return false;
+      }
+      throw e;
+    }
+  };
 
   public setUserPublicIdentifier(publicIdentifier: string): void {
     this.userPublicIdentifier = publicIdentifier;
@@ -189,6 +170,7 @@ export class NodeApiClient implements INodeApiClient {
     if (err || responseErr) {
       throw new Error(`Error sending request. Message: ${JSON.stringify(msg, null, 2)}`);
     }
-    return !response || Object.keys(response).length === 0 ? undefined : response;
+    const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
+    return !response || isEmptyObj ? undefined : response;
   }
 }

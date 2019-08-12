@@ -31,7 +31,7 @@ import { Address, AppInstanceInfo, Node as NodeTypes } from "@counterfactual/typ
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { BigNumber, HDNode, Network } from "ethers/utils";
+import { BigNumber, getAddress, HDNode, Network } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
@@ -148,7 +148,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   console.log("multisigAddress: ", multisigAddress);
   // create the new client
-  return new ConnextInternal({
+  const client = new ConnextInternal({
     appRegistry,
     cfModule,
     ethProvider,
@@ -159,6 +159,8 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     nodePublicIdentifier: config.nodePublicIdentifier,
     ...opts, // use any provided opts by default
   });
+  await client.registerSubscriptions();
+  return client;
 }
 
 /**
@@ -369,7 +371,6 @@ export abstract class ConnextChannel {
   ): Promise<NodeTypes.WithdrawResult> => {
     return await this.internal.cfWithdraw(assetId, amount, recipient);
   };
-
 }
 
 /**
@@ -422,7 +423,6 @@ export class ConnextInternal extends ConnextChannel {
 
     // establish listeners
     this.listener = new ConnextListener(opts.cfModule, this);
-    this.connectDefaultListeners();
 
     // instantiate controllers with logger and cf
     this.depositController = new DepositController("DepositController", this);
@@ -438,6 +438,11 @@ export class ConnextInternal extends ConnextChannel {
       this,
     );
   }
+
+  // register subscriptions
+  public registerSubscriptions = async (): Promise<void> => {
+    await this.listener.register();
+  };
 
   ///////////////////////////////////
   // CORE CHANNEL METHODS
@@ -539,18 +544,19 @@ export class ConnextInternal extends ConnextChannel {
   public getFreeBalance = async (
     assetId: string = AddressZero,
   ): Promise<NodeTypes.GetFreeBalanceStateResult> => {
+    const normalizedAssetId = getAddress(assetId);
     try {
       const freeBalance = await this.cfModule.rpcRouter.dispatch({
         id: Date.now(),
         methodName: NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
         parameters: {
           multisigAddress: this.multisigAddress,
-          tokenAddress: assetId,
+          tokenAddress: normalizedAssetId,
         },
       });
       return freeBalance.result.result as NodeTypes.GetFreeBalanceStateResult;
     } catch (e) {
-      const error = `No free balance exists for the specified token: ${assetId}`;
+      const error = `No free balance exists for the specified token: ${normalizedAssetId}`;
       if (e.message.includes(error)) {
         // if there is no balance, return undefined
         // NOTE: can return free balance obj with 0s,
