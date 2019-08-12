@@ -7,7 +7,7 @@ import {
 } from "@connext/types";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
-import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
+import { BigNumber, bigNumberify, formatEther, parseEther, getAddress } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { delay, freeBalanceAddressFromXpub } from "../lib/utils";
@@ -25,6 +25,8 @@ export class SwapController extends AbstractController {
   private timeout: NodeJS.Timeout;
 
   public async swap(params: SwapParameters): Promise<NodeChannel> {
+    params.toAssetId = params.toAssetId ? getAddress(params.toAssetId) : undefined;
+    params.fromAssetId = params.fromAssetId ? getAddress(params.fromAssetId) : undefined;
     // convert params + validate
     const { amount, toAssetId, fromAssetId, swapRate } = convert.SwapParameters(
       "bignumber",
@@ -99,9 +101,9 @@ export class SwapController extends AbstractController {
     swapRate: string,
   ): Promise<undefined | string> => {
     // check that there is sufficient free balance for amount
-    const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
+    const preSwapFromBal = await this.connext.getFreeBalance(getAddress(fromAssetId));
     const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
-    const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
+    const preSwapToBal = await this.connext.getFreeBalance(getAddress(toAssetId));
     const nodeBal = preSwapToBal[freeBalanceAddressFromXpub(this.connext.nodePublicIdentifier)];
     const swappedAmount = calculateExchange(amount, swapRate);
     const errs = [
@@ -203,17 +205,19 @@ export class SwapController extends AbstractController {
     // set app instance id
     this.appId = res.appInstanceId;
 
-    await new Promise((res: any, rej: any): any => {
-      boundReject = this.rejectInstallSwap.bind(null, rej);
-      boundResolve = this.resolveInstallSwap.bind(null, res);
-      this.listener.on(NodeTypes.EventName.INSTALL, boundResolve);
-      this.listener.on(NodeTypes.EventName.REJECT_INSTALL, boundReject);
-      // this.timeout = setTimeout(() => {
-      //   this.log.info("Install swap app timed out, rejecting install.")
-      //   this.cleanupInstallListeners(boundResolve, boundReject);
-      //   boundReject({ data: { appInstanceId: this.appId } });
-      // }, 5000);
-    });
+    await new Promise(
+      (res: any, rej: any): any => {
+        boundReject = this.rejectInstallSwap.bind(null, rej);
+        boundResolve = this.resolveInstallSwap.bind(null, res);
+        this.listener.on(NodeTypes.EventName.INSTALL, boundResolve);
+        this.listener.on(NodeTypes.EventName.REJECT_INSTALL, boundReject);
+        // this.timeout = setTimeout(() => {
+        //   this.log.info("Install swap app timed out, rejecting install.")
+        //   this.cleanupInstallListeners(boundResolve, boundReject);
+        //   boundReject({ data: { appInstanceId: this.appId } });
+        // }, 5000);
+      },
+    );
 
     this.cleanupInstallListeners(boundResolve, boundReject);
     return res.appInstanceId;

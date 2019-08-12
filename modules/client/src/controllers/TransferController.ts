@@ -148,6 +148,8 @@ export class TransferController extends AbstractController {
     assetId: string,
     appInfo: RegisteredAppDetails,
   ): Promise<string | undefined> => {
+    const normalizedAssetId = getAddress(assetId);
+
     let boundResolve: (value?: any) => void;
     let boundReject: (reason?: any) => void;
 
@@ -178,12 +180,12 @@ export class TransferController extends AbstractController {
       // TODO: make initial state types for all apps
       initialState,
       initiatorDeposit: amount,
-      initiatorDepositTokenAddress: getAddress(assetId),
+      initiatorDepositTokenAddress: normalizedAssetId,
       intermediaries: [this.connext.nodePublicIdentifier],
       outcomeType: appInfo.outcomeType,
       proposedToIdentifier: recipient,
       responderDeposit: Zero,
-      responderDepositTokenAddress: getAddress(assetId),
+      responderDepositTokenAddress: normalizedAssetId,
       timeout: Zero, // TODO: fix, add to app info?
     };
 

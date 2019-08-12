@@ -3,7 +3,7 @@ import { Node as NodeTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import { RpcException } from "@nestjs/microservices";
 import { AddressZero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, getAddress } from "ethers/utils";
 
 import { NodeService } from "../node/node.service";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
@@ -47,23 +47,24 @@ export class ChannelService {
       throw new RpcException(`No channel exists for multisigAddress ${multisigAddress}`);
     }
 
-    return await this.nodeService.deposit(multisigAddress, amount, assetId);
+    return await this.nodeService.deposit(multisigAddress, amount, getAddress(assetId));
   }
 
   async requestCollateral(
     userPubId: string,
     assetId: string = AddressZero,
   ): Promise<NodeTypes.DepositResult | undefined> {
+    const normalizedAssetId = getAddress(assetId);
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
     const profile = await this.channelRepository.getPaymentProfileForChannelAndToken(
       userPubId,
-      assetId,
+      normalizedAssetId,
     );
 
     const freeBalance = await this.nodeService.getFreeBalance(
       userPubId,
       channel.multisigAddress,
-      assetId,
+      normalizedAssetId,
     );
     const freeBalanceAddress = freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier);
     const nodeFreeBalance = freeBalance[freeBalanceAddress];
@@ -72,11 +73,13 @@ export class ChannelService {
       const amountDeposit = profile.amountToCollateralize.sub(nodeFreeBalance);
       logger.log(
         `Collateralizing ${channel.multisigAddress} with ${amountDeposit.toString()}, ` +
-          `token: ${assetId}`,
+          `token: ${normalizedAssetId}`,
       );
-      return this.deposit(channel.multisigAddress, amountDeposit, assetId);
+      return this.deposit(channel.multisigAddress, amountDeposit, normalizedAssetId);
     }
-    logger.log(`${userPubId} already has collateral of ${nodeFreeBalance} for asset ${assetId}`);
+    logger.log(
+      `${userPubId} already has collateral of ${nodeFreeBalance} for asset ${normalizedAssetId}`,
+    );
     return undefined;
   }
 

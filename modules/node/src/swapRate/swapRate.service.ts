@@ -50,7 +50,11 @@ export class SwapRateService implements OnModuleInit {
   }
 
   async getSwapRate(from: string, to: string, blockNumber: number = 0): Promise<string> {
-    if (!(await this.getValidSwaps()).find((s: AllowedSwap) => s.from === from && s.to === to)) {
+    if (
+      !(await this.getValidSwaps()).find(
+        (s: AllowedSwap) => s.from === from.toLowerCase() && s.to === to.toLowerCase(),
+      )
+    ) {
       throw new Error(`No valid swap exists for ${from} to ${to}`);
     }
 

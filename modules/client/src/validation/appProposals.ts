@@ -1,6 +1,6 @@
 import { RegisteredAppDetails, SupportedApplication } from "@connext/types";
 import { AppInstanceInfo } from "@counterfactual/types";
-import { bigNumberify } from "ethers/utils";
+import { bigNumberify, getAddress } from "ethers/utils";
 
 import { ConnextInternal } from "../connext";
 import { freeBalanceAddressFromXpub } from "../lib/utils";
@@ -131,7 +131,9 @@ const baseAppValidation = async (
 
   // check that there is enough in the free balance of desired currency
   // to install app
-  const responderFreeBalance = await connext.getFreeBalance(app.responderDepositTokenAddress);
+  const responderFreeBalance = await connext.getFreeBalance(
+    getAddress(app.responderDepositTokenAddress),
+  );
   const userFreeBalance =
     responderFreeBalance[freeBalanceAddressFromXpub(connext.publicIdentifier)];
   if (userFreeBalance.lt(app.responderDeposit)) {
@@ -142,7 +144,9 @@ const baseAppValidation = async (
 
   // if it is a virtual app, check that the intermediary has sufficient
   // collateral in your channel
-  const initiatorFreeBalance = await connext.getFreeBalance(app.initiatorDepositTokenAddress);
+  const initiatorFreeBalance = await connext.getFreeBalance(
+    getAddress(app.initiatorDepositTokenAddress),
+  );
   const nodeFreeBalance =
     initiatorFreeBalance[freeBalanceAddressFromXpub(connext.nodePublicIdentifier)];
   if (isVirtual && nodeFreeBalance.lt(app.initiatorDeposit)) {
