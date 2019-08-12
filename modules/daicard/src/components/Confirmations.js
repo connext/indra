@@ -34,6 +34,14 @@ class Confirmations extends Component {
         />
 
         <MySnackbar
+          variant="warning"
+          openWhen={type === "swap" && !complete && !closed}
+          onClose={() => this.props.closeConfirmations("withdraw")}
+          message="Processing swap, we'll let you know when it's done."
+          duration={30000}
+        />
+
+        <MySnackbar
           variant="success"
           openWhen={type === "deposit" && complete && !closed}
           onClose={() => this.props.closeConfirmations()}
@@ -45,6 +53,13 @@ class Confirmations extends Component {
           openWhen={type === "withdrawal" && complete && !closed}
           onClose={() => this.props.closeConfirmations()}
           message="Pending withdraw confirmed!"
+        />
+
+        <MySnackbar
+          variant="success"
+          openWhen={type === "swap" && complete && !closed}
+          onClose={() => this.props.closeConfirmations()}
+          message="Swap was successful!"
         />
 
       </div>

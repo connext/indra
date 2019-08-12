@@ -19,6 +19,7 @@ import { AbstractController } from "./AbstractController";
 export const calculateExchange = (amount: BigNumber, swapRate: string): BigNumber => {
   return bigNumberify(formatEther(amount.mul(parseEther(swapRate))).replace(/\.[0-9]*$/, ""));
 };
+
 export class SwapController extends AbstractController {
   private appId: string;
   private timeout: NodeJS.Timeout;
@@ -202,7 +203,7 @@ export class SwapController extends AbstractController {
     // set app instance id
     this.appId = res.appInstanceId;
 
-    await new Promise((res, rej) => {
+    await new Promise((res: any, rej: any): any => {
       boundReject = this.rejectInstallSwap.bind(null, rej);
       boundResolve = this.resolveInstallSwap.bind(null, res);
       this.listener.on(NodeTypes.EventName.INSTALL, boundResolve);
@@ -232,20 +233,22 @@ export class SwapController extends AbstractController {
 
     // adding a promise for now that polls app instances, but its not
     // great and should be removed
-    await new Promise(async (res, rej) => {
-      const getAppIds = async (): Promise<string[]> => {
-        return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
-      };
-      let retries = 0;
-      while ((await getAppIds()).indexOf(this.appId) !== -1 && retries <= 5) {
-        this.log.info("found app id in the open apps... retrying...");
-        await delay(500);
-        retries = retries + 1;
-      }
+    await new Promise(
+      async (res: any, rej: any): Promise<any> => {
+        const getAppIds = async (): Promise<string[]> => {
+          return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
+        };
+        let retries = 0;
+        while ((await getAppIds()).indexOf(this.appId) !== -1 && retries <= 5) {
+          this.log.info("found app id in the open apps... retrying...");
+          await delay(500);
+          retries = retries + 1;
+        }
 
-      if (retries > 5) rej();
+        if (retries > 5) rej();
 
-      res();
-    });
+        res();
+      },
+    );
   };
 }

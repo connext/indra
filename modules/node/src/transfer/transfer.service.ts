@@ -41,8 +41,8 @@ export class TransferService {
     assetId: string,
   ): Promise<ResolveLinkedTransferResponse> {
     logger.log(
-      `Resolving linked transfer with userPubId: ${userPubId}, paymentId: ${paymentId}, 
-      preImage: ${preImage}, amount: ${amount}, assetId: ${assetId}`,
+      `Resolving linked transfer with userPubId: ${userPubId}, paymentId: ${paymentId}, ` +
+        `preImage: ${preImage}, amount: ${amount}, assetId: ${assetId}`,
     );
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
     if (!channel) {
@@ -58,7 +58,7 @@ export class TransferService {
         linkedHash,
     );
     if (!senderApp) {
-      throw new Error(`App with provided hash has not been installed.`);
+      throw new Error(`App with provided hash has not been installed: ${linkedHash}`);
     }
 
     const freeBal = await this.nodeService.getFreeBalance(

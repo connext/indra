@@ -70,7 +70,7 @@ const screens = (classes, minEth, minDai, maxEth, maxDai) => [
       minEth || "?.??"} (${ minDai || "?.??"
     }) to cover the gas costs of getting setup. Cards only accept deposits of ${
       maxEth || "?.??"} (${ maxDai || "?.??"
-    }) or less, with any excess eth getting refunded.`
+    }) or less, with any excess eth being kept on-chain & not added to the channel.`
   },
   {
     title: "Depositing Tokens",
