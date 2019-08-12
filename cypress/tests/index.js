@@ -104,7 +104,7 @@ describe('Daicard', () => {
       })
     })
 
-    it.only(`Should withdraw tokens to a valid address`, () => {
+    it(`Should withdraw tokens to a valid address`, () => {
       my.deposit(depositEth).then(tokensDeposited => {
         my.getOnchainTokenBalance().then(balanceBefore => {
           my.cashoutToken()
