@@ -191,7 +191,7 @@ class App extends React.Component {
   async refreshBalances() {
     const { address, balance, channel, ethprovider, swapRate, token } = this.state;
     if (!channel) { return; }
-    const getTotal = (chain, channel) => Currency.WEI(chain.toBN().add(channel.toBN()), swapRate);
+    const getTotal = (chain, channel) => Currency.WEI(chain.toWEI().toBN().add(channel.toWEI().toBN()), swapRate);
     const freeEtherBalance = await channel.getFreeBalance();
     const freeTokenBalance = await channel.getFreeBalance(token.address);
     balance.onChain.ether = Currency.WEI(await ethprovider.getBalance(address), swapRate);
@@ -219,8 +219,8 @@ class App extends React.Component {
       console.warn(`Channel not available yet.`);
       return;
     }
-    if (balance.onChain.ether.toBN().lt(minDeposit.toBN())) {
-      console.log(`Not enough on-chain eth to deposit: ${balance.onChain.ether.toETH().format()}`)
+    if (balance.onChain.ether.toBN().eq(Zero)) {
+      console.debug(`No on-chain eth to deposit`)
       return;
     }
     if (!pending.complete) {
@@ -228,10 +228,10 @@ class App extends React.Component {
       return;
     }
 
-    let nowMaxDeposit = maxDeposit.toWEI(swapRate).toBN().sub(balance.channel.total.toBN());
+    let nowMaxDeposit = maxDeposit.toWEI(swapRate).toBN().sub(this.state.balance.channel.total.toWEI().toBN());
     if (nowMaxDeposit.lte(Zero)) {
-      console.log(`Channel balance is at or above cap of ${maxDeposit.toDAI().format()}`)
-      return; // Channel balance is at/above cap, not depositing any more
+      console.debug(`Channel balance (${balance.channel.total.toDAI().format()}) is at or above cap of ${maxDeposit.toDAI().format()}`)
+      return;
     }
 
     if (balance.onChain.token.toBN().gt(Zero)) {
@@ -251,16 +251,16 @@ class App extends React.Component {
       await this.refreshBalances();
       console.log(`Successfully deposited tokens! Result: ${JSON.stringify(result, null, 2)}`);
     } else {
-      console.log(`No tokens to deposit`);
+      console.debug(`No tokens to deposit`);
     }
 
-    nowMaxDeposit = maxDeposit.toWEI(swapRate).toBN().sub(this.state.balance.channel.total.toBN());
+    nowMaxDeposit = maxDeposit.toWEI(swapRate).toBN().sub(this.state.balance.channel.total.toWEI().toBN());
     if (nowMaxDeposit.lte(Zero)) {
-      console.log(`Channel balance is at or above cap of ${maxDeposit.toDAI().format()}`)
+      console.debug(`Channel balance (${balance.channel.total.toDAI().format()}) is at or above cap of ${maxDeposit.toDAI().format()}`)
       return;
     }
     if (balance.onChain.ether.toBN().lt(minDeposit.toBN())) {
-      console.log(`Not enough on-chain eth to deposit: ${balance.onChain.ether.toETH().format()}`)
+      console.debug(`Not enough on-chain eth to deposit: ${balance.onChain.ether.toETH().format()}`)
       return;
     }
 
@@ -283,7 +283,7 @@ class App extends React.Component {
       return;
     }
     if (balance.channel.ether.toBN().eq(Zero)) {
-      console.log(`No in-channel eth available to swap`)
+      console.debug(`No in-channel eth available to swap`)
       return;
     }
     if (balance.channel.token.toBN().gte(maxDeposit.toDEI(swapRate).toBN())) {
