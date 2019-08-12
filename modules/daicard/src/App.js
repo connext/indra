@@ -310,13 +310,14 @@ class App extends React.Component {
     if (collateralNeeded.gt(parseEther(collateral))) {
       console.log(`Requesting more collateral...`)
       await channel.addPaymentProfile({
-        amountToCollateralize: collateralNeeded,
+        amountToCollateralize: collateralNeeded.add(parseEther("10")), // add a buffer of $10 so you dont collateralize on every payment
         minimumMaintainedCollateral: collateralNeeded,
         tokenAddress: token.address,
       });
       await channel.requestCollateral(token.address);
       collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress])
       console.log(`Collateral: ${collateral} tokens, ${formatEther(collateralNeeded)} needed`);
+      return;
     }
 
     console.log(`Attempting to swap ${formatEther(weiToSwap)} eth for dai at rate: ${swapRate}`);
