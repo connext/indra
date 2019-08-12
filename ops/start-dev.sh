@@ -84,7 +84,7 @@ then
   echo "Created ATTACHABLE network with id $id"
 fi
 
-number_of_services=7 # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services=8 # NOTE: Gotta update this manually when adding/removing services :(
 
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
@@ -198,6 +198,16 @@ services:
       - $project
     ports:
       - "$nats_port:$nats_port"
+
+  hasura:
+    image: hasura/graphql-engine
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: "postgres://$postgres_user:$postgres_user@$postgres_host:5432/$project"
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+    networks:
+      - $project
+    ports:
+      - "8083:8080"
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
