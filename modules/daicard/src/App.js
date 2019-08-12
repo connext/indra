@@ -88,7 +88,7 @@ class App extends React.Component {
       loadingConnext: true,
       maxDeposit: null,
       minDeposit: null,
-      pending: { type: "", complete: false, closed: false },
+      pending: { type: "null", complete: true, closed: true },
       sendScanArgs: { amount: null, recipient: null },
       swapRate,
       token: null,
@@ -220,19 +220,25 @@ class App extends React.Component {
       return;
     }
     if (balance.onChain.ether.toBN().lt(minDeposit.toBN())) {
-      return; // Not enough on-chain eth to deposit. Also, no gas money for depositing tokens
+      console.log(`Not enough on-chain eth to deposit: ${balance.onChain.ether.toETH().format()}`)
+      return;
     }
     if (!pending.complete) {
-      return; // Some other operation is pending, let that finish first
+      console.log(`An operation of type ${pending.type} is pending, waiting to deposit`)
+      return;
     }
 
-    let nowMaxDeposit = maxDeposit.toWei(swapRate).toBN().sub(balance.channel.total.toBN());
+    let nowMaxDeposit = maxDeposit.toWEI(swapRate).toBN().sub(balance.channel.total.toBN());
     if (nowMaxDeposit.lte(Zero)) {
+      console.log(`Channel balance is at or above cap of ${maxDeposit.toDAI().format()}`)
       return; // Channel balance is at/above cap, not depositing any more
     }
 
-    if (balance.chain.token.toBN().gt(Zero)) {
-      const amount = minBN([ nowMaxDeposit.toDEI(swapRate).toBN(), balance.chain.token.toBN() ]);
+    if (balance.onChain.token.toBN().gt(Zero)) {
+      const amount = minBN([
+        Currency.WEI(nowMaxDeposit, swapRate).toDEI(swapRate).toBN(),
+        balance.onChain.token.toBN()
+      ]);
       const depositParams = {
         amount: amount.toString(),
         assetId: token.address.toLowerCase(),
@@ -242,18 +248,25 @@ class App extends React.Component {
       this.setPending({ type: "deposit", complete: false, closed: false });
       const result = await channel.deposit(depositParams);
       this.setPending({ type: "deposit", complete: true, closed: false });
+      await this.refreshBalances();
       console.log(`Successfully deposited tokens! Result: ${JSON.stringify(result, null, 2)}`);
+    } else {
+      console.log(`No tokens to deposit`);
     }
 
-    await this.refreshBalances();
-    nowMaxDeposit = maxDeposit.toWei(swapRate).toBN().sub(balance.channel.total.toBN());
+    nowMaxDeposit = maxDeposit.toWEI(swapRate).toBN().sub(this.state.balance.channel.total.toBN());
     if (nowMaxDeposit.lte(Zero)) {
-      return; // Channel balance is at/above cap, not depositing any more
+      console.log(`Channel balance is at or above cap of ${maxDeposit.toDAI().format()}`)
+      return;
+    }
+    if (balance.onChain.ether.toBN().lt(minDeposit.toBN())) {
+      console.log(`Not enough on-chain eth to deposit: ${balance.onChain.ether.toETH().format()}`)
+      return;
     }
 
     const amount = minBN([
-      balance.chain.ether.toBN().sub(minDeposit.toBN()),
-      nowMaxDeposit.toWEI(swapRate).toBN(),
+      balance.onChain.ether.toBN().sub(minDeposit.toBN()),
+      nowMaxDeposit,
     ]);
     const channelState = JSON.stringify(await channel.getChannel(), null, 2);
     console.log(`Depositing ${amount} wei into channel: ${channelState}`);
@@ -264,40 +277,42 @@ class App extends React.Component {
   }
 
   async autoSwap() {
-    const { balance, channel, pending, swapRate, token } = this.state;
+    const { balance, channel, maxDeposit, pending, swapRate, token } = this.state;
     if (!channel || !(await channel.getChannel()).available) {
       console.warn(`Channel not available yet.`);
       return;
     }
     if (balance.channel.ether.toBN().eq(Zero)) {
-      return; // No eth to swap
+      console.log(`No in-channel eth available to swap`)
+      return;
     }
-    if (balance.channel.token.toBN().gte(MAX_CHANNEL_VALUE)) {
+    if (balance.channel.token.toBN().gte(maxDeposit.toDEI(swapRate).toBN())) {
       return; // swap ceiling has been reached, no need to swap more
     }
     if (!pending.complete) {
-      return; // Some other operation is pending, let that finish first
+      console.log(`An operation of type ${pending.type} is pending, waiting to swap`)
+      return;
     }
-    const maxSwap = tokenToWei(MAX_CHANNEL_VALUE.sub(balance.channel.token.toBN()), swapRate)
+    const maxSwap = tokenToWei(maxDeposit.toBN().sub(balance.channel.token.toBN()), swapRate)
     const weiToSwap = minBN([balance.channel.ether.toBN(), maxSwap])
     const hubFBAddress = connext.utils.freeBalanceAddressFromXpub(channel.nodePublicIdentifier)
-    const collateralNeeded = balance.channel.token.toBN().add(weiToToken(weiToSwap));
+    const collateralNeeded = balance.channel.token.toBN().add(weiToToken(weiToSwap, swapRate));
     let collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress])
 
-    console.log(`Available collateral: ${collateral} tokens, ${collateralNeeded} needed`)
+    console.log(`Available collateral: ${collateral} tokens, ${formatEther(collateralNeeded)} needed`);
     if (collateralNeeded.gt(parseEther(collateral))) {
       console.log(`Requesting more collateral...`)
       await channel.addPaymentProfile({
         amountToCollateralize: collateralNeeded,
-        minimumMaintainedCollateral: Zero.toString(),
+        minimumMaintainedCollateral: collateralNeeded,
         tokenAddress: token.address,
       });
       await channel.requestCollateral(token.address);
       collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress])
-      console.log(`Available collateral: ${collateral} tokens, ${collateralNeeded} needed`)
+      console.log(`Available collateral: ${collateral} tokens, ${formatEther(collateralNeeded)} needed`);
     }
 
-    console.log(`Attempting to swap ${formatEther(weiToSwap)} for dai at rate: ${swapRate}`);
+    console.log(`Attempting to swap ${formatEther(weiToSwap)} eth for dai at rate: ${swapRate}`);
     this.setPending({ type: "swap", complete: false, closed: false });
     await channel.swap({
       amount: weiToSwap.toString(),
