@@ -68,7 +68,6 @@ export class SwapRateService implements OnModuleInit {
       try {
         const bnRate = (await this.medianizer.peek())[0];
         newRate = formatEther(bnRate);
-        logger.debug(`Got swap rate from medianizer at block ${blockNumber}: ${newRate}`);
       } catch (e) {
         console.log("e: ", e);
         logger.warn(`Failed to fetch swap rate from medianizer`);
@@ -80,7 +79,6 @@ export class SwapRateService implements OnModuleInit {
     } else if (from === tokenAddress && to === AddressZero) {
       try {
         newRate = (1 / parseFloat(formatEther((await this.medianizer.peek())[0]))).toString();
-        logger.debug(`Got swap rate from medianizer at block ${blockNumber}: ${newRate}`);
       } catch (e) {
         console.log("e: ", e);
         logger.warn(`Failed to fetch swap rate from medianizer`);
@@ -97,6 +95,7 @@ export class SwapRateService implements OnModuleInit {
       this.latestSwapRates.push(newSwap);
     }
     if (oldRate !== newRate) {
+      logger.log(`Got swap rate from medianizer at block ${blockNumber}: ${newRate}`);
       this.broadcastRate(from, to); // Only broadcast the rate if it's changed
     }
 

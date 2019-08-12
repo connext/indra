@@ -66,7 +66,10 @@ export class ChannelService implements OnModuleInit {
 
     if (nodeFreeBalance.lt(profile.minimumMaintainedCollateral)) {
       const amountDeposit = profile.amountToCollateralize.sub(nodeFreeBalance);
-      logger.log(`Collateralizing ${userPubId} with ${amountDeposit.toString()}, token ${assetId}`);
+      logger.log(
+        `Collateralizing ${channel.multisigAddress} with ${amountDeposit.toString()}, ` +
+          `token: ${assetId}`,
+      );
       return this.deposit(channel.multisigAddress, amountDeposit, assetId);
     }
     logger.log(`${userPubId} already has collateral of ${nodeFreeBalance} for asset ${assetId}`);
