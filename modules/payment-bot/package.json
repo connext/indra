@@ -12,7 +12,6 @@
   "license": "MIT",
   "dependencies": {
     "@connext/client": "0.0.10",
-    "@counterfactual/postgresql-node-connector": "0.0.3",
     "commander": "3.0.0",
     "dotenv": "8.0.0",
     "ethers": "4.0.33",
@@ -20,7 +19,7 @@
   },
   "devDependencies": {
     "@connext/types": "0.0.10",
-    "@counterfactual/types": "0.0.32",
+    "@counterfactual/types": "0.0.31",
     "@types/node-fetch": "2.5.0",
     "env-cmd": "9.0.3",
     "nodemon": "1.19.1",

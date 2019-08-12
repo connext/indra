@@ -1,5 +1,5 @@
 import { MessagingConfig } from "@connext/messaging";
-import { Address, NetworkContext, Node as NodeTypes, OutcomeType } from "@counterfactual/types";
+import { Address, NetworkContext, Node as NodeTypes } from "@counterfactual/types";
 import { constants, utils } from "ethers";
 import { Network } from "ethers/utils";
 
@@ -43,7 +43,7 @@ export type RegisteredAppDetails = {
   id: number;
   name: SupportedApplication;
   network: SupportedNetwork;
-  outcomeType: OutcomeType;
+  outcomeType: number;
   appDefinitionAddress: string;
   stateEncoding: string;
   actionEncoding: string;

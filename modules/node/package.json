@@ -24,7 +24,7 @@
     "@connext/types": "0.0.10",
     "@counterfactual/contracts": "0.1.15",
     "@counterfactual/firebase-client": "0.0.3",
-    "@counterfactual/node": "0.2.42",
+    "@counterfactual/node": "0.2.41",
     "@counterfactual/postgresql-node-connector": "0.0.3",
     "@nestjs/common": "6.5.3",
     "@nestjs/core": "6.5.3",
@@ -43,7 +43,7 @@
     "uuid": "3.3.2"
   },
   "devDependencies": {
-    "@counterfactual/types": "0.0.32",
+    "@counterfactual/types": "0.0.31",
     "@nestjs/testing": "6.5.3",
     "@types/express": "4.17.0",
     "@types/jest": "24.0.17",
