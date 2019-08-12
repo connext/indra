@@ -65,7 +65,7 @@ class SettingsCard extends Component {
 
   generateNewAddress() {
     this.setState({ isBurning: true });
-    // TODO: withdraw channel balance first?
+    // TODO: withdraw channel balance first? Decollateralize?
     localStorage.removeItem("mnemonic");
     window.location.reload();
   };

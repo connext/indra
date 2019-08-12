@@ -58,7 +58,7 @@ export class TransferService {
         linkedHash,
     );
     if (!senderApp) {
-      throw new Error(`App with provided hash has not been installed.`);
+      throw new Error(`App with provided hash has not been installed: ${linkedHash}`);
     }
 
     const freeBal = await this.nodeService.getFreeBalance(

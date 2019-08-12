@@ -71,14 +71,22 @@ my.pay = (to, value) => {
   cy.contains('h5', /in progress/i).should('exist')
 }
 
-// TODO: check the reciepient balance before and after to confirm they got the cashout
-my.cashout = () => {
+my.cashoutEther = () => {
   my.goToCashout()
   cy.log(`cashing out to ${wallet.address}`)
   cy.get('input[type="text"]').clear().type(wallet.address)
   cy.contains('button', /cash out eth/i).click()
-  // cy.contains('span', /processing withdrawal/i).should('exist')
-  // cy.contains('span', /processing withdrawal/i).should('not.exist')
+  cy.contains('span', /processing withdrawal/i).should('exist')
+  cy.contains('span', /withdraw confirmed/i).should('exist')
+  cy.resolve(my.getChannelTokenBalance).should('contain', '0.00')
+}
+
+my.cashoutToken = () => {
+  my.goToCashout()
+  cy.log(`cashing out to ${wallet.address}`)
+  cy.get('input[type="text"]').clear().type(wallet.address)
+  cy.contains('button', /cash out dai/i).click()
+  cy.contains('span', /processing withdrawal/i).should('exist')
   cy.contains('span', /withdraw confirmed/i).should('exist')
   cy.resolve(my.getChannelTokenBalance).should('contain', '0.00')
 }
@@ -140,10 +148,19 @@ my.getAccount = () => {
   }))
 }
 
-my.getOnchainBalance = () => {
+my.getOnchainEtherBalance = () => {
   return cy.wrap(new Cypress.Promise((resolve, reject) => {
     return cy.wrap(wallet.provider.getBalance(wallet.address)).then(balance => {
-      cy.log(`Onchain balance is ${balance.toString()} for ${wallet.address}`)
+      cy.log(`Onchain ether balance is ${balance.toString()} for ${wallet.address}`)
+      resolve(balance.toString())
+    })
+  }))
+}
+
+my.getOnchainTokenBalance = () => {
+  return cy.wrap(new Cypress.Promise((resolve, reject) => {
+    return cy.wrap(token.balanceOf(wallet.address)).then(balance => {
+      cy.log(`Onchain token balance is ${balance.toString()} for ${wallet.address}`)
       resolve(balance.toString())
     })
   }))
