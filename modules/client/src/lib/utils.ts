@@ -1,9 +1,9 @@
-import { jsonRpcDeserialize, Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { utils } from "ethers";
 import { isNullOrUndefined } from "util";
 
 import { Logger } from "./logger";
+import { BigNumber } from "../types";
 
 const formatEther = utils.formatEther;
 
@@ -39,12 +39,14 @@ export const objMapPromise = async <T, F extends keyof T, R>(
 
 export const insertDefault = (val: string, obj: any, keys: string[]): any => {
   const adjusted = {} as any;
-  keys.concat(Object.keys(obj)).map((k: any): any => {
-    // check by index and undefined
-    adjusted[k] = isNullOrUndefined(obj[k])
-      ? val // not supplied set as default val
-      : obj[k];
-  });
+  keys.concat(Object.keys(obj)).map(
+    (k: any): any => {
+      // check by index and undefined
+      adjusted[k] = isNullOrUndefined(obj[k])
+        ? val // not supplied set as default val
+        : obj[k];
+    },
+  );
 
   return adjusted;
 };
@@ -90,3 +92,7 @@ function timeout(delay: number = 30000): any {
     },
   };
 }
+
+export const calculateExchange = (amount: BigNumber, swapRate: BigNumber): BigNumber => {
+  return utils.bigNumberify(formatEther(amount.mul(swapRate)).replace(/\.[0-9]*$/, ""));
+};
