@@ -24,7 +24,7 @@ import SettingsCard from "./components/settingsCard";
 import SetupCard from "./components/setupCard";
 import SupportCard from "./components/supportCard";
 
-import { Currency, store, toBN } from "./utils";
+import { Currency, store, toBN, weiToToken } from "./utils";
 
 // Optional URL overrides for custom urls
 const overrides = {
@@ -250,7 +250,9 @@ class App extends React.Component {
       // update the payment profile to handle the collateral needed
       // for a token to eth swap
       const daiRate = await channel.getLatestSwapRate(AddressZero, token.address.toLowerCase());
-      const exchangedTokenForEthVal = connext.utils.calculateExchange(bigNumberify(ethDepositParams.amount), daiRate)
+
+      const exchangedTokenForEthVal = weiToToken(toBN(ethDepositParams.amount), daiRate)
+
       await channel.addPaymentProfile({
         amountToCollateralize: exchangedTokenForEthVal.toString(),
         minimumMaintainedCollateral: exchangedTokenForEthVal.toString(),
