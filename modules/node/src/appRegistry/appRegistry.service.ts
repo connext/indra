@@ -10,7 +10,7 @@ import { ProposeMessage, ProposeVirtualMessage } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Zero } from "ethers/constants";
-import { formatEther } from "ethers/utils";
+import { BigNumber, bigNumberify, formatEther } from "ethers/utils";
 
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
@@ -53,7 +53,11 @@ export class AppRegistryService implements OnModuleInit {
     logger.log(`params: ${JSON.stringify(params)}`);
     // perform any validation that is relevant to both virtual
     // and ledger applications sent from a client
-    const { initialState: initialStateBadType, initiatorDeposit, responderDeposit } = params;
+    const {
+      initialState: initialStateBadType,
+      initiatorDeposit,
+      responderDeposit,
+    } = this.bigNumberifyObj(params);
     if (!responderDeposit.isZero()) {
       throw new Error(`Cannot install virtual transfer app with a nonzero responder deposit.`);
     }
@@ -63,7 +67,9 @@ export class AppRegistryService implements OnModuleInit {
     }
 
     // validate the initial state is kosher
-    const initialState = initialStateBadType as UnidirectionalTransferAppStateBigNumber;
+    const initialState = this.bigNumberifyObj(
+      initialStateBadType,
+    ) as UnidirectionalTransferAppStateBigNumber;
     if (!initialState.turnNum.isZero()) {
       throw new Error(`Cannot install a transfer app with a turn number > 0`);
     }
@@ -81,8 +87,8 @@ export class AppRegistryService implements OnModuleInit {
     // transfers[0] is the senders value in the array, and the transfers[1]
     // is the recipients value in the array
     if (
-      initialState.transfers[0].amount.lt(Zero) ||
-      !initialState.transfers[0].amount.eq(initiatorDeposit)
+      bigNumberify(initialState.transfers[0].amount).lt(Zero) ||
+      !bigNumberify(initialState.transfers[0].amount).eq(initiatorDeposit)
     ) {
       throw new Error(
         `Cannot install a transfer app with initiator deposit values that are ` +
@@ -90,7 +96,7 @@ export class AppRegistryService implements OnModuleInit {
       );
     }
 
-    if (!initialState.transfers[1].amount.isZero()) {
+    if (!bigNumberify(initialState.transfers[1].amount).isZero()) {
       throw new Error(
         `Cannot install a transfer app with nonzero values for the recipient in the initial state.`,
       );
@@ -144,7 +150,11 @@ export class AppRegistryService implements OnModuleInit {
   // TODO: update the linked transfer app so it doesnt use a state machine
   // and instead uses a computeOutcome, similar to the swap app
   private async validateLinkedTransfer(params: NodeTypes.ProposeInstallParams): Promise<void> {
-    const { responderDeposit, initiatorDeposit, initialState: initialStateBadType } = params;
+    const {
+      responderDeposit,
+      initiatorDeposit,
+      initialState: initialStateBadType,
+    } = this.bigNumberifyObj(params);
     if (responderDeposit.gt(Zero)) {
       throw new Error(
         `Will not accept linked transfer install where node deposit is >0 ${JSON.stringify(
@@ -153,7 +163,9 @@ export class AppRegistryService implements OnModuleInit {
       );
     }
 
-    const initialState = initialStateBadType as UnidirectionalLinkedTransferAppStateBigNumber;
+    const initialState = this.bigNumberifyObj(
+      initialStateBadType,
+    ) as UnidirectionalLinkedTransferAppStateBigNumber;
 
     if (initialState.finalized) {
       throw new Error(`Cannot install linked transfer app with finalized state`);
@@ -169,18 +181,18 @@ export class AppRegistryService implements OnModuleInit {
       );
     }
 
-    if (initialState.transfers[0].amount.lte(Zero)) {
+    if (bigNumberify(initialState.transfers[0].amount).lte(Zero)) {
       throw new Error(`Cannot install a linked transfer app with a sender transfer of <= 0`);
     }
 
     if (
-      !initialState.transfers[0].amount.eq(initiatorDeposit) ||
-      !initialState.transfers[1].amount.eq(responderDeposit)
+      !bigNumberify(initialState.transfers[0].amount).eq(initiatorDeposit) ||
+      !bigNumberify(initialState.transfers[1].amount).eq(responderDeposit)
     ) {
       throw new Error(`Mismatch between deposits and initial state, refusing to install.`);
     }
 
-    if (!initialState.transfers[0].amount.isZero()) {
+    if (!bigNumberify(initialState.transfers[0].amount).isZero()) {
       throw new Error(
         `Cannot install a linked transfer app with a nonzero redeemer transfer value`,
       );
@@ -242,8 +254,9 @@ export class AppRegistryService implements OnModuleInit {
       responderDepositTokenAddress,
       timeout,
       proposedToIdentifier,
-    } = proposedAppParams.params;
+    } = this.bigNumberifyObj(proposedAppParams.params);
 
+    // FIXME: comes through wire as obj not bn
     if (timeout.lt(Zero)) {
       throw new Error(`"timeout" in params cannot be negative`);
     }
@@ -368,6 +381,23 @@ export class AppRegistryService implements OnModuleInit {
     }
   };
 
+  private bigNumberifyObj(obj: any): any {
+    let res = {};
+    Object.entries(obj).forEach(([key, value]) => {
+      if (value["_hex"]) {
+        res[key] = bigNumberify(value as any);
+        return;
+      }
+      res[key] = value;
+      return;
+    });
+    return res;
+  }
+
+  // NOTE: when the data is received by the node at this stage, all the big
+  // number fields will have the shape: {
+  //   "_hex": "0x2386f26fc10000"
+  // }, so you must convert these objs to actual BigNumbers
   private installOrReject = async (
     data: ProposeMessage,
   ): Promise<NodeTypes.InstallResult | NodeTypes.RejectInstallResult | undefined> => {
