@@ -1,5 +1,6 @@
 import { BigNumber, ChannelState, convert, WithdrawParameters } from "@connext/types";
 import { Node as CFModuleTypes } from "@counterfactual/types";
+import { getAddress } from "ethers/utils";
 
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
@@ -8,6 +9,7 @@ import { AbstractController } from "./AbstractController";
 
 export class WithdrawalController extends AbstractController {
   public async withdraw(params: WithdrawParameters): Promise<ChannelState> {
+    params.assetId = params.assetId ? getAddress(params.assetId) : undefined;
     const myFreeBalanceAddress = this.connext.freeBalanceAddress;
 
     const { amount, assetId, recipient } = convert.Withdraw("bignumber", params);

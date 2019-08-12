@@ -9,6 +9,7 @@ import { MessagingModule } from "../messaging/messaging.module";
 import { NodeModule } from "../node/node.module";
 
 import { transferProviderFactory } from "./transfer.provider";
+import { TransferRepository } from "./transfer.repository";
 import { TransferService } from "./transfer.service";
 
 @Module({
@@ -17,7 +18,7 @@ import { TransferService } from "./transfer.service";
   imports: [
     ConfigModule,
     NodeModule,
-    TypeOrmModule.forFeature([ChannelRepository, AppRegistryRepository]),
+    TypeOrmModule.forFeature([ChannelRepository, AppRegistryRepository, TransferRepository]),
     AppRegistryModule,
     MessagingModule,
   ],

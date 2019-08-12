@@ -1,20 +1,7 @@
 import { AppActionBigNumber } from "@connext/types";
-import {
-  CreateChannelMessage,
-  DepositConfirmationMessage,
-  InstallMessage,
-  InstallVirtualMessage,
-  Node,
-  ProposeMessage,
-  ProposeVirtualMessage,
-  RejectInstallVirtualMessage,
-  UninstallMessage,
-  UninstallVirtualMessage,
-  UpdateStateMessage,
-  WithdrawMessage,
-} from "@counterfactual/node";
+import { Node } from "@counterfactual/node";
 import { AppInstanceJson, AppInstanceProposal, Node as NodeTypes } from "@counterfactual/types";
-import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
@@ -23,88 +10,8 @@ import { CLogger, freeBalanceAddressFromXpub } from "../util";
 
 const logger = new CLogger("NodeService");
 
-type CallbackStruct = {
-  [index in keyof typeof NodeTypes.EventName]: (data: any) => Promise<any> | void;
-};
-
-function logEvent(event: NodeTypes.EventName, res: NodeTypes.NodeMessage & { data: any }): void {
-  logger.log(
-    `${event} event fired from ${res && res.from ? res.from : null}, data: ${
-      res ? JSON.stringify(res.data) : "event did not have a result"
-    }`,
-  );
-}
-
-const defaultCallbacks: CallbackStruct = {
-  COUNTER_DEPOSIT_CONFIRMED: (data: DepositConfirmationMessage): void => {
-    logEvent(NodeTypes.EventName.COUNTER_DEPOSIT_CONFIRMED, data);
-  },
-  CREATE_CHANNEL: async (data: CreateChannelMessage): Promise<void> => {
-    logEvent(NodeTypes.EventName.CREATE_CHANNEL, data);
-  },
-  DEPOSIT_CONFIRMED: (data: DepositConfirmationMessage): void => {
-    logEvent(NodeTypes.EventName.DEPOSIT_CONFIRMED, data);
-  },
-  DEPOSIT_FAILED: (data: any): void => {
-    logEvent(NodeTypes.EventName.DEPOSIT_FAILED, data);
-  },
-  DEPOSIT_STARTED: (data: any): void => {
-    logEvent(NodeTypes.EventName.DEPOSIT_STARTED, data);
-  },
-  INSTALL: (data: InstallMessage): void => {
-    logEvent(NodeTypes.EventName.INSTALL, data);
-  },
-  // TODO: make cf return app instance id and app def?
-  INSTALL_VIRTUAL: (data: InstallVirtualMessage): void => {
-    logEvent(NodeTypes.EventName.INSTALL_VIRTUAL, data);
-  },
-  PROPOSE_INSTALL: (data: ProposeMessage): void => {
-    logEvent(NodeTypes.EventName.PROPOSE_INSTALL, data);
-  },
-  PROPOSE_INSTALL_VIRTUAL: (data: ProposeVirtualMessage): void => {
-    logEvent(NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data);
-  },
-  PROPOSE_STATE: (data: any): void => {
-    // TODO: need to validate all apps here as well?
-    logEvent(NodeTypes.EventName.PROPOSE_STATE, data);
-  },
-  PROTOCOL_MESSAGE_EVENT: (data: any): void => {
-    logEvent(NodeTypes.EventName.PROTOCOL_MESSAGE_EVENT, data);
-  },
-  REJECT_INSTALL: (data: any): void => {
-    logEvent(NodeTypes.EventName.REJECT_INSTALL, data);
-  },
-  REJECT_INSTALL_VIRTUAL: (data: RejectInstallVirtualMessage): void => {
-    logEvent(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, data);
-  },
-  REJECT_STATE: (data: any): void => {
-    logEvent(NodeTypes.EventName.REJECT_STATE, data);
-  },
-  UNINSTALL: (data: UninstallMessage): void => {
-    logEvent(NodeTypes.EventName.UNINSTALL, data);
-  },
-  UNINSTALL_VIRTUAL: (data: UninstallVirtualMessage): void => {
-    logEvent(NodeTypes.EventName.UNINSTALL_VIRTUAL, data);
-  },
-  UPDATE_STATE: (data: UpdateStateMessage): void => {
-    logEvent(NodeTypes.EventName.UPDATE_STATE, data);
-  },
-  WITHDRAW_EVENT: (data: any): void => {
-    logEvent(NodeTypes.EventName.WITHDRAW_EVENT, data);
-  },
-  WITHDRAWAL_CONFIRMED: (data: WithdrawMessage): void => {
-    logEvent(NodeTypes.EventName.WITHDRAWAL_CONFIRMED, data);
-  },
-  WITHDRAWAL_FAILED: (data: any): void => {
-    logEvent(NodeTypes.EventName.WITHDRAWAL_FAILED, data);
-  },
-  WITHDRAWAL_STARTED: (data: any): void => {
-    logEvent(NodeTypes.EventName.WITHDRAWAL_STARTED, data);
-  },
-};
-
 Injectable();
-export class NodeService implements OnModuleInit {
+export class NodeService {
   cfNode: Node;
 
   constructor(@Inject(NodeProviderId) private readonly node: Node) {
@@ -289,6 +196,21 @@ export class NodeService implements OnModuleInit {
     return appInstanceResponse.result.result.appInstances as AppInstanceProposal[];
   }
 
+  async getAppInstanceDetails(appInstanceId: string): Promise<AppInstanceJson> {
+    const appInstanceResponse = await this.cfNode.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS,
+      parameters: { appInstanceId } as NodeTypes.GetAppInstanceDetailsParams,
+    });
+
+    logger.log(
+      `getAppInstanceDetails called with result ${JSON.stringify(
+        appInstanceResponse.result.result,
+      )}`,
+    );
+    return appInstanceResponse.result.result.appInstance as AppInstanceJson;
+  }
+
   async getAppState(appInstanceId: string): Promise<NodeTypes.GetStateResult | undefined> {
     // check the app is actually installed, or returned undefined
     const err = await this.appNotInstalled(appInstanceId);
@@ -339,13 +261,5 @@ export class NodeService implements OnModuleInit {
   ): void {
     Logger.log(`Registering node callback for event ${event}`, context);
     this.cfNode.on(event, callback);
-  }
-
-  onModuleInit(): void {
-    Object.entries(defaultCallbacks).forEach(
-      ([event, callback]: [NodeTypes.EventName, () => any]): void => {
-        this.registerCfNodeListener(NodeTypes.EventName[event], callback, "DefaultListener");
-      },
-    );
   }
 }

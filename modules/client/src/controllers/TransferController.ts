@@ -26,6 +26,7 @@ export class TransferController extends AbstractController {
   private timeout: NodeJS.Timeout;
 
   public transfer = async (params: TransferParameters): Promise<NodeChannel> => {
+    params.assetId = params.assetId ? getAddress(params.assetId) : undefined;
     this.log.info(`Transfer called with parameters: ${JSON.stringify(params, null, 2)}`);
 
     // convert params + validate
@@ -148,8 +149,6 @@ export class TransferController extends AbstractController {
     assetId: string,
     appInfo: RegisteredAppDetails,
   ): Promise<string | undefined> => {
-    const normalizedAssetId = getAddress(assetId);
-
     let boundResolve: (value?: any) => void;
     let boundReject: (reason?: any) => void;
 
@@ -180,12 +179,12 @@ export class TransferController extends AbstractController {
       // TODO: make initial state types for all apps
       initialState,
       initiatorDeposit: amount,
-      initiatorDepositTokenAddress: normalizedAssetId,
+      initiatorDepositTokenAddress: assetId,
       intermediaries: [this.connext.nodePublicIdentifier],
       outcomeType: appInfo.outcomeType,
       proposedToIdentifier: recipient,
       responderDeposit: Zero,
-      responderDepositTokenAddress: normalizedAssetId,
+      responderDepositTokenAddress: assetId,
       timeout: Zero, // TODO: fix, add to app info?
     };
 

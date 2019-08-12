@@ -31,7 +31,7 @@ import { Address, AppInstanceInfo, Node as NodeTypes } from "@counterfactual/typ
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { BigNumber, HDNode, Network } from "ethers/utils";
+import { BigNumber, getAddress, HDNode, Network } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
@@ -544,18 +544,19 @@ export class ConnextInternal extends ConnextChannel {
   public getFreeBalance = async (
     assetId: string = AddressZero,
   ): Promise<NodeTypes.GetFreeBalanceStateResult> => {
+    const normalizedAssetId = getAddress(assetId);
     try {
       const freeBalance = await this.cfModule.rpcRouter.dispatch({
         id: Date.now(),
         methodName: NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
         parameters: {
           multisigAddress: this.multisigAddress,
-          tokenAddress: assetId,
+          tokenAddress: normalizedAssetId,
         },
       });
       return freeBalance.result.result as NodeTypes.GetFreeBalanceStateResult;
     } catch (e) {
-      const error = `No free balance exists for the specified token: ${assetId}`;
+      const error = `No free balance exists for the specified token: ${normalizedAssetId}`;
       if (e.message.includes(error)) {
         // if there is no balance, return undefined
         // NOTE: can return free balance obj with 0s,

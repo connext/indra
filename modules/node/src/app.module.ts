@@ -6,6 +6,7 @@ import { AppRegistryModule } from "./appRegistry/appRegistry.module";
 import { ChannelModule } from "./channel/channel.module";
 import { ConfigModule } from "./config/config.module";
 import { DatabaseModule } from "./database/database.module";
+import { ListenerModule } from "./listener/listener.module";
 import { MessagingModule } from "./messaging/messaging.module";
 import { NodeController } from "./node/node.controller";
 import { NodeModule } from "./node/node.module";
@@ -24,6 +25,7 @@ import { TransferModule } from "./transfer/transfer.module";
     SwapRateModule,
     AppRegistryModule,
     TransferModule,
+    ListenerModule,
   ],
   providers: [AppService],
 })

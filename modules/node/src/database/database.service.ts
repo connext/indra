@@ -5,8 +5,9 @@ import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { Channel } from "../channel/channel.entity";
 import { ConfigService } from "../config/config.service";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
+import { Transfer } from "../transfer/transfer.entity";
 
-export const entities = [AppRegistry, Channel, PaymentProfile];
+export const entities = [AppRegistry, Channel, PaymentProfile, Transfer];
 export const viewEntites = [];
 
 @Injectable()

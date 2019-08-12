@@ -8,16 +8,16 @@ import {
 } from "@connext/types";
 import { ProposeMessage, ProposeVirtualMessage } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
-import { Injectable, OnModuleInit } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
-import { BigNumber, bigNumberify, formatEther } from "ethers/utils";
+import { bigNumberify, formatEther } from "ethers/utils";
 
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
-import { EthAddressRegex } from "../constants";
 import { NodeService } from "../node/node.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
-import { CLogger, freeBalanceAddressFromXpub } from "../util";
+import { bigNumberifyObj, CLogger, freeBalanceAddressFromXpub } from "../util";
+import { isEthAddress } from "../validator";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -27,37 +27,86 @@ const logger = new CLogger("AppRegistryService");
 const ALLOWED_DISCREPANCY_PCT = 5;
 
 @Injectable()
-export class AppRegistryService implements OnModuleInit {
+export class AppRegistryService {
   constructor(
     private readonly nodeService: NodeService,
     private readonly swapRateService: SwapRateService,
+    private readonly channelService: ChannelService,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
-    private readonly channelService: ChannelService,
   ) {}
 
-  private appProposalMatchesRegistry(
+  /**
+   * Validate apps that are proposed to be installed on the node by clients and
+   * accept or reject the install.
+   * @param data Data from CF event PROPOSE_INSTALL
+   */
+  async installOrReject(
+    data: ProposeMessage,
+  ): Promise<NodeTypes.InstallResult | NodeTypes.RejectInstallResult> {
+    try {
+      await this.verifyAppProposal(data.data, data.from);
+      return await this.nodeService.installApp(data.data.appInstanceId);
+    } catch (e) {
+      logger.error(`Caught error during proposed app validation, rejecting install`);
+      console.error(e);
+      return await this.nodeService.rejectInstallApp(data.data.appInstanceId);
+    }
+  }
+
+  /**
+   * Reject app installs for virtual apps that node is intermediary of
+   * based on invalid conditions.
+   * @param data Data from CF event PROPOSE_INSTALL_VIRTUAL
+   */
+  async rejectVirtual(data: ProposeVirtualMessage): Promise<void | NodeTypes.RejectInstallResult> {
+    try {
+      await this.verifyVirtualAppProposal(data.data, data.from);
+    } catch (e) {
+      logger.error(`Caught error during proposed app validation, rejecting virtual install`);
+      console.error(e);
+      return await this.nodeService.rejectInstallApp(data.data.appInstanceId);
+    }
+  }
+
+  private async appProposalMatchesRegistry(
     proposal: NodeTypes.ProposeInstallParams,
-    registry: AppRegistry,
-  ): boolean {
-    return (
-      proposal.appDefinition === registry.appDefinitionAddress &&
-      proposal.abiEncodings.actionEncoding === registry.actionEncoding &&
-      proposal.abiEncodings.stateEncoding === registry.stateEncoding
+  ): Promise<AppRegistry> {
+    const registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
+      proposal.appDefinition,
     );
+
+    if (!registryAppInfo) {
+      throw new Error(`App does not exist in registry for definition ${proposal.appDefinition}`);
+    }
+
+    if (
+      !(
+        proposal.appDefinition === registryAppInfo.appDefinitionAddress &&
+        proposal.abiEncodings.actionEncoding === registryAppInfo.actionEncoding &&
+        proposal.abiEncodings.stateEncoding === registryAppInfo.stateEncoding
+      )
+    ) {
+      throw new Error(
+        `Proposed app details ${JSON.stringify(proposal)} do not match registry ${JSON.stringify(
+          registryAppInfo,
+        )}`,
+      );
+    }
+
+    return registryAppInfo;
   }
 
   // should validate any of the transfer-specific conditions,
   // specifically surrounding the initial state of the applications
   private async validateTransfer(params: NodeTypes.ProposeInstallParams): Promise<void> {
-    logger.log(`params: ${JSON.stringify(params)}`);
     // perform any validation that is relevant to both virtual
     // and ledger applications sent from a client
     const {
       initialState: initialStateBadType,
       initiatorDeposit,
       responderDeposit,
-    } = this.bigNumberifyObj(params);
+    } = bigNumberifyObj(params);
     if (!responderDeposit.isZero()) {
       throw new Error(`Cannot install virtual transfer app with a nonzero responder deposit.`);
     }
@@ -67,7 +116,7 @@ export class AppRegistryService implements OnModuleInit {
     }
 
     // validate the initial state is kosher
-    const initialState = this.bigNumberifyObj(
+    const initialState = bigNumberifyObj(
       initialStateBadType,
     ) as UnidirectionalTransferAppStateBigNumber;
     if (!initialState.turnNum.isZero()) {
@@ -87,8 +136,8 @@ export class AppRegistryService implements OnModuleInit {
     // transfers[0] is the senders value in the array, and the transfers[1]
     // is the recipients value in the array
     if (
-      bigNumberify(initialState.transfers[0].amount).lt(Zero) ||
-      !bigNumberify(initialState.transfers[0].amount).eq(initiatorDeposit)
+      initialState.transfers[0].amount.lt(Zero) ||
+      !initialState.transfers[0].amount.eq(initiatorDeposit)
     ) {
       throw new Error(
         `Cannot install a transfer app with initiator deposit values that are ` +
@@ -96,7 +145,7 @@ export class AppRegistryService implements OnModuleInit {
       );
     }
 
-    if (!bigNumberify(initialState.transfers[1].amount).isZero()) {
+    if (!initialState.transfers[1].amount.isZero()) {
       throw new Error(
         `Cannot install a transfer app with nonzero values for the recipient in the initial state.`,
       );
@@ -154,7 +203,7 @@ export class AppRegistryService implements OnModuleInit {
       responderDeposit,
       initiatorDeposit,
       initialState: initialStateBadType,
-    } = this.bigNumberifyObj(params);
+    } = bigNumberifyObj(params);
     if (responderDeposit.gt(Zero)) {
       throw new Error(
         `Will not accept linked transfer install where node deposit is >0 ${JSON.stringify(
@@ -163,7 +212,7 @@ export class AppRegistryService implements OnModuleInit {
       );
     }
 
-    const initialState = this.bigNumberifyObj(
+    const initialState = bigNumberifyObj(
       initialStateBadType,
     ) as UnidirectionalLinkedTransferAppStateBigNumber;
 
@@ -181,72 +230,28 @@ export class AppRegistryService implements OnModuleInit {
       );
     }
 
-    if (bigNumberify(initialState.transfers[0].amount).lte(Zero)) {
+    if (initialState.transfers[0].amount.lte(Zero)) {
       throw new Error(`Cannot install a linked transfer app with a sender transfer of <= 0`);
     }
 
     if (
-      !bigNumberify(initialState.transfers[0].amount).eq(initiatorDeposit) ||
-      !bigNumberify(initialState.transfers[1].amount).eq(responderDeposit)
+      !initialState.transfers[0].amount.eq(initiatorDeposit) ||
+      !initialState.transfers[1].amount.eq(responderDeposit)
     ) {
       throw new Error(`Mismatch between deposits and initial state, refusing to install.`);
     }
 
-    if (!bigNumberify(initialState.transfers[0].amount).isZero()) {
+    if (!initialState.transfers[0].amount.isZero()) {
       throw new Error(
         `Cannot install a linked transfer app with a nonzero redeemer transfer value`,
       );
     }
   }
 
-  // should perform validation on everything all generic app conditions that
-  // must be satisfied when installing a virtual or ledger app, including:
-  // - matches registry information
-  // - non-negative timeout
-  // - non-negative deposits
-  // - valid token addresses
-  // - apps have value --> maybe not for games?
-  // - sufficient collateral in recipients channel (if virtual)
-  // - sufficient free balance from initiator
-  // - sufficient free balance from node (if ledger)
-
-  // TODO: there is a lot of duplicate logic here + client. ideally, much
-  // of this would be moved to a shared library.
-  private async verifyAppProposal(
-    proposedAppParams: {
-      params: NodeTypes.ProposeInstallParams;
-      appInstanceId: string;
-    },
+  private async commonAppProposalValidation(
+    params: NodeTypes.ProposeInstallParams,
     initiatorIdentifier: string,
-    isVirtual: boolean = false,
   ): Promise<void> {
-    const myIdentifier = await this.nodeService.cfNode.publicIdentifier;
-    if (initiatorIdentifier === myIdentifier) {
-      return;
-    }
-    const registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
-      proposedAppParams.params.appDefinition,
-    );
-
-    if (!registryAppInfo) {
-      throw new Error(
-        `App does not exist in registry for definition
-        address ${proposedAppParams.params.appDefinition}`,
-      );
-    }
-
-    if (!isVirtual && !registryAppInfo.allowNodeInstall) {
-      throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
-    }
-
-    if (!this.appProposalMatchesRegistry(proposedAppParams.params, registryAppInfo)) {
-      throw new Error(
-        `Proposed app details ${JSON.stringify(
-          proposedAppParams.params,
-        )} does not match registry ${JSON.stringify(registryAppInfo)}`,
-      );
-    }
-
     const {
       initiatorDeposit,
       initiatorDepositTokenAddress,
@@ -254,22 +259,21 @@ export class AppRegistryService implements OnModuleInit {
       responderDepositTokenAddress,
       timeout,
       proposedToIdentifier,
-    } = this.bigNumberifyObj(proposedAppParams.params);
+    } = bigNumberifyObj(params);
 
-    // FIXME: comes through wire as obj not bn
     if (timeout.lt(Zero)) {
       throw new Error(`"timeout" in params cannot be negative`);
     }
 
-    if (initiatorDeposit.lt(Zero) || responderDeposit.lt(Zero)) {
+    if (initiatorDeposit.lt(Zero) || bigNumberify(responderDeposit).lt(Zero)) {
       throw new Error(`Cannot have negative initiator or responder deposits into applications.`);
     }
 
-    if (responderDepositTokenAddress && !EthAddressRegex.test(responderDepositTokenAddress)) {
+    if (responderDepositTokenAddress && !isEthAddress(responderDepositTokenAddress)) {
       throw new Error(`Invalid "responderDepositTokenAddress" provided`);
     }
 
-    if (initiatorDepositTokenAddress && !EthAddressRegex.test(initiatorDepositTokenAddress)) {
+    if (initiatorDepositTokenAddress && !isEthAddress(initiatorDepositTokenAddress)) {
       throw new Error(`Invalid "initiatorDepositTokenAddress" provided`);
     }
 
@@ -320,37 +324,41 @@ export class AppRegistryService implements OnModuleInit {
     if (balAvailable.lt(responderDeposit)) {
       throw new Error(`Node has insufficient balance to install the app with proposed deposit.`);
     }
+  }
 
-    // check that node has sufficient funds if it is not virtual, or
-    // that node has sufficient collateral if it is a virtual app
-    if (isVirtual) {
-      // check if there is sufficient collateral in the channel
-      const recipientChan = await this.channelRepository.findByUserPublicIdentifier(
-        proposedToIdentifier,
-      );
+  // should perform validation on everything all generic app conditions that
+  // must be satisfied when installing a virtual or ledger app, including:
+  // - matches registry information
+  // - non-negative timeout
+  // - non-negative deposits
+  // - valid token addresses
+  // - apps have value --> maybe not for games?
+  // - sufficient collateral in recipients channel (if virtual)
+  // - sufficient free balance from initiator
+  // - sufficient free balance from node (if ledger)
 
-      const collateralFreeBal = await this.nodeService.getFreeBalance(
-        proposedToIdentifier,
-        recipientChan.multisigAddress,
-        initiatorDepositTokenAddress,
-      );
-
-      const collateralAvailable = collateralFreeBal[this.nodeService.cfNode.freeBalanceAddress];
-
-      if (collateralAvailable.lt(initiatorDeposit)) {
-        // TODO: best way to handle case where user is sending payment
-        // *above* amounts specified in the payment profile
-        // also, do we want to request collateral in a different location?
-        await this.channelService.requestCollateral(
-          proposedToIdentifier,
-          initiatorDepositTokenAddress,
-        );
-        throw new Error(
-          `Insufficient collateral detected in responders channel, ` +
-            `retry after channel has been collateralized.`,
-        );
-      }
+  // TODO: there is a lot of duplicate logic here + client. ideally, much
+  // of this would be moved to a shared library.
+  private async verifyAppProposal(
+    proposedAppParams: {
+      params: NodeTypes.ProposeInstallParams;
+      appInstanceId: string;
+    },
+    initiatorIdentifier: string,
+  ): Promise<void> {
+    const myIdentifier = await this.nodeService.cfNode.publicIdentifier;
+    if (initiatorIdentifier === myIdentifier) {
+      logger.log(`Received proposal from our own node.`);
+      return;
     }
+
+    const registryAppInfo = await this.appProposalMatchesRegistry(proposedAppParams.params);
+
+    if (!registryAppInfo.allowNodeInstall) {
+      throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
+    }
+
+    await this.commonAppProposalValidation(proposedAppParams.params, initiatorIdentifier);
 
     switch (registryAppInfo.name) {
       case KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP:
@@ -359,6 +367,57 @@ export class AppRegistryService implements OnModuleInit {
       case KnownNodeAppNames.UNIDIRECTIONAL_LINKED_TRANSFER:
         await this.validateLinkedTransfer(proposedAppParams.params);
         break;
+      default:
+        break;
+    }
+    logger.log(`Validation completed for app ${registryAppInfo.name}`);
+  }
+
+  private async verifyVirtualAppProposal(
+    proposedAppParams: {
+      params: NodeTypes.ProposeInstallVirtualParams;
+      appInstanceId: string;
+    },
+    initiatorIdentifier: string,
+  ): Promise<void> {
+    const {
+      initiatorDeposit,
+      initiatorDepositTokenAddress,
+      proposedToIdentifier,
+    } = proposedAppParams.params;
+
+    const registryAppInfo = await this.appProposalMatchesRegistry(proposedAppParams.params);
+
+    await this.commonAppProposalValidation(proposedAppParams.params, initiatorIdentifier);
+
+    // check if there is sufficient collateral in the channel
+    const recipientChan = await this.channelRepository.findByUserPublicIdentifier(
+      proposedAppParams.params.proposedToIdentifier,
+    );
+
+    const collateralFreeBal = await this.nodeService.getFreeBalance(
+      proposedToIdentifier,
+      recipientChan.multisigAddress,
+      initiatorDepositTokenAddress,
+    );
+
+    const collateralAvailable = collateralFreeBal[this.nodeService.cfNode.freeBalanceAddress];
+
+    if (collateralAvailable.lt(initiatorDeposit)) {
+      // TODO: best way to handle case where user is sending payment
+      // *above* amounts specified in the payment profile
+      // also, do we want to request collateral in a different location?
+      await this.channelService.requestCollateral(
+        proposedToIdentifier,
+        initiatorDepositTokenAddress,
+      );
+      throw new Error(
+        `Insufficient collateral detected in responders channel, ` +
+          `retry after channel has been collateralized.`,
+      );
+    }
+
+    switch (registryAppInfo.name) {
       case KnownNodeAppNames.UNIDIRECTIONAL_TRANSFER:
         await this.validateTransfer(proposedAppParams.params);
         break;
@@ -366,70 +425,5 @@ export class AppRegistryService implements OnModuleInit {
         break;
     }
     logger.log(`Validation completed for app ${registryAppInfo.name}`);
-  }
-
-  private rejectVirtual = async (
-    data: ProposeVirtualMessage,
-  ): Promise<void | NodeTypes.RejectInstallResult> => {
-    try {
-      await this.verifyAppProposal(data.data, data.from, true);
-    } catch (e) {
-      logger.error(`Caught error during proposed app validation, rejecting virtual install`);
-      // TODO: why doesn't logger.error log this?
-      console.error(e);
-      return await this.nodeService.rejectInstallApp(data.data.appInstanceId);
-    }
-  };
-
-  private bigNumberifyObj(obj: any): any {
-    let res = {};
-    Object.entries(obj).forEach(([key, value]) => {
-      if (value["_hex"]) {
-        res[key] = bigNumberify(value as any);
-        return;
-      }
-      res[key] = value;
-      return;
-    });
-    return res;
-  }
-
-  // NOTE: when the data is received by the node at this stage, all the big
-  // number fields will have the shape: {
-  //   "_hex": "0x2386f26fc10000"
-  // }, so you must convert these objs to actual BigNumbers
-  private installOrReject = async (
-    data: ProposeMessage,
-  ): Promise<NodeTypes.InstallResult | NodeTypes.RejectInstallResult | undefined> => {
-    try {
-      if (data.from === this.nodeService.cfNode.publicIdentifier) {
-        logger.log(`Got our own event, not doing anything.`);
-        return undefined;
-      }
-      await this.verifyAppProposal(data.data, data.from);
-      return await this.nodeService.installApp(data.data.appInstanceId);
-    } catch (e) {
-      logger.error(`Caught error during proposed app validation, rejecting install`);
-      // TODO: why doesn't logger.error log this?
-      console.error(e);
-      return await this.nodeService.rejectInstallApp(data.data.appInstanceId);
-    }
-  };
-
-  private registerNodeListeners(): void {
-    this.nodeService.registerCfNodeListener(
-      NodeTypes.EventName.PROPOSE_INSTALL,
-      this.installOrReject,
-      logger.cxt,
-    );
-    this.nodeService.registerCfNodeListener(
-      NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL,
-      this.rejectVirtual,
-      logger.cxt,
-    );
-  }
-
-  onModuleInit(): void {
-    this.registerNodeListeners();
   }
 }
