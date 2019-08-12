@@ -7,7 +7,7 @@ import {
 } from "@connext/types";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { calculateExchange, delay, freeBalanceAddressFromXpub } from "../lib/utils";
@@ -15,6 +15,10 @@ import { invalidAddress } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
+
+export const calculateExchange = (amount: BigNumber, swapRate: string): BigNumber => {
+  return bigNumberify(formatEther(amount.mul(parseEther(swapRate))).replace(/\.[0-9]*$/, ""));
+};
 
 export class SwapController extends AbstractController {
   private appId: string;
@@ -26,6 +30,7 @@ export class SwapController extends AbstractController {
       "bignumber",
       params,
     );
+
     const invalid = await this.validate(amount, toAssetId, fromAssetId, swapRate);
     if (invalid) {
       throw new Error(invalid.toString());
@@ -48,6 +53,7 @@ export class SwapController extends AbstractController {
 
     this.log.info(`Swap app installed! Uninstalling without updating state.`);
 
+    // FIXME: remove!
     while ((await this.connext.getAppInstances()).length <= preInstallApps) {
       this.log.info(
         `still could not pick up any newly installed apps after ` +
@@ -90,7 +96,7 @@ export class SwapController extends AbstractController {
     amount: BigNumber,
     toAssetId: string,
     fromAssetId: string,
-    swapRate: BigNumber, // (wei tokens) / eth
+    swapRate: string,
   ): Promise<undefined | string> => {
     // check that there is sufficient free balance for amount
     const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
@@ -103,7 +109,7 @@ export class SwapController extends AbstractController {
       invalidAddress(toAssetId),
       notLessThanOrEqualTo(amount, userBal),
       notLessThanOrEqualTo(swappedAmount, nodeBal),
-      notPositive(swapRate),
+      notPositive(parseEther(swapRate)),
     ];
     return errs ? errs.filter(falsy)[0] : undefined;
   };
@@ -136,7 +142,7 @@ export class SwapController extends AbstractController {
     amount: BigNumber,
     toAssetId: string,
     fromAssetId: string,
-    swapRate: BigNumber,
+    swapRate: string,
     appInfo: RegisteredAppDetails,
   ): Promise<any> => {
     let boundResolve;
@@ -145,7 +151,8 @@ export class SwapController extends AbstractController {
     const swappedAmount = calculateExchange(amount, swapRate);
 
     this.log.info(
-      `Installing swap app. Swapping ${amount.toString()} of ${fromAssetId} for ${swappedAmount.toString()} of ${toAssetId}`,
+      `Installing swap app. Swapping ${amount.toString()} of ${fromAssetId}` +
+        ` for ${swappedAmount.toString()} of ${toAssetId}`,
     );
 
     // TODO: is this the right state and typing?? In contract tests, uses
@@ -196,7 +203,7 @@ export class SwapController extends AbstractController {
     // set app instance id
     this.appId = res.appInstanceId;
 
-    await new Promise((res, rej) => {
+    await new Promise((res: any, rej: any): any => {
       boundReject = this.rejectInstallSwap.bind(null, rej);
       boundResolve = this.resolveInstallSwap.bind(null, res);
       this.listener.on(NodeTypes.EventName.INSTALL, boundResolve);
@@ -223,13 +230,10 @@ export class SwapController extends AbstractController {
     // that has called this function but ALSO does not immediately
     // uninstall the apps. This will be a problem when trying to
     // display balances...
-    const openApps = await this.connext.getAppInstances();
-    this.log.info(`Open apps: ${openApps.length}`);
-    this.log.info(`AppIds: ${JSON.stringify(openApps.map(a => a.identityHash))}`);
 
     // adding a promise for now that polls app instances, but its not
     // great and should be removed
-    await new Promise(async (res, rej) => {
+    await new Promise(async (res: any, rej: any): any => {
       const getAppIds = async (): Promise<string[]> => {
         return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
       };

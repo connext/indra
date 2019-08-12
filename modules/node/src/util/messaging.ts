@@ -37,7 +37,7 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
           });
         } catch (e) {
           this.messaging.publish(msg.reply, {
-            err: `Error during processor function: ${processor.name}`,
+            err: e.toString(),
             message: `Error during processor function: ${processor.name}`,
           });
           console.error(e);

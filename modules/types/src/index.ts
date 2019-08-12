@@ -291,6 +291,17 @@ export type CreateChannelResponse = {
 export type RequestCollateralResponse = NodeTypes.DepositResult | undefined;
 
 /////////////////////////////////
+///////// SWAP
+export type AllowedSwap = {
+  from: string;
+  to: string;
+};
+
+export type SwapRate = AllowedSwap & {
+  rate: string;
+};
+
+/////////////////////////////////
 ///////// CLIENT INPUT TYPES
 
 ////// Deposit types
@@ -312,7 +323,7 @@ export type TransferParametersBigNumber = TransferParameters<BigNumber>;
 // TODO: would we ever want to pay people in the same app with multiple currencies?
 export interface SwapParameters<T = string> {
   amount: T;
-  swapRate: T;
+  swapRate: string;
   toAssetId: Address;
   fromAssetId: Address;
   // make sure they are consistent with CF stuffs
@@ -501,8 +512,7 @@ export function convertSwapParameters<To extends NumericTypeName>(
   to: To,
   obj: SwapParameters<any>,
 ): SwapParameters<NumericTypes[To]> {
-  const fromType = getType(obj.swapRate);
-  return convertFields(fromType, to, ["swapRate", "amount"], obj);
+  return convertAmountField(to, obj);
 }
 
 export function convertTransferParametersToAsset<To extends NumericTypeName>(

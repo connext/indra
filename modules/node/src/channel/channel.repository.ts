@@ -80,7 +80,7 @@ export class ChannelRepository extends Repository<Channel> {
     }
 
     const profile = channel.paymentProfiles.find(
-      (prof: PaymentProfile) => prof.assetId === assetId,
+      (prof: PaymentProfile) => prof.assetId === assetId.toLowerCase(),
     );
 
     if (!profile) {

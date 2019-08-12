@@ -1,11 +1,5 @@
-import { Node as NodeTypes } from "@counterfactual/types";
 import { utils } from "ethers";
 import { isNullOrUndefined } from "util";
-
-import { Logger } from "./logger";
-import { BigNumber } from "../types";
-
-const formatEther = utils.formatEther;
 
 // Capitalizes first char of a string
 export const capitalize = (str: string): string =>
@@ -39,14 +33,12 @@ export const objMapPromise = async <T, F extends keyof T, R>(
 
 export const insertDefault = (val: string, obj: any, keys: string[]): any => {
   const adjusted = {} as any;
-  keys.concat(Object.keys(obj)).map(
-    (k: any): any => {
-      // check by index and undefined
-      adjusted[k] = isNullOrUndefined(obj[k])
-        ? val // not supplied set as default val
-        : obj[k];
-    },
-  );
+  keys.concat(Object.keys(obj)).map((k: any): any => {
+    // check by index and undefined
+    adjusted[k] = isNullOrUndefined(obj[k])
+      ? val // not supplied set as default val
+      : obj[k];
+  });
 
   return adjusted;
 };
@@ -63,36 +55,4 @@ export const publicIdentifierToAddress = (publicIdentifier: string): string => {
 
 export const freeBalanceAddressFromXpub = (xpub: string): string => {
   return utils.HDNode.fromExtendedKey(xpub).derivePath("0").address;
-};
-
-// TODO: remove
-export function logEthFreeBalance(
-  assetId: string,
-  freeBalance: NodeTypes.GetFreeBalanceStateResult,
-  log?: Logger,
-): void {
-  const msg = `Channel's free balance of ${assetId}:`;
-  log ? log.info(msg) : console.info(msg);
-  const cb = (k: string, v: any): void => {
-    log ? log.info(`${k} ${formatEther(v)}`) : console.info(k, formatEther(v));
-  };
-  // @ts-ignore
-  objMap(freeBalance, cb);
-}
-
-// TODO: ???
-function timeout(delay: number = 30000): any {
-  const handler = setTimeout(() => {
-    throw new Error("Request timed out");
-  }, delay);
-
-  return {
-    cancel(): any {
-      clearTimeout(handler);
-    },
-  };
-}
-
-export const calculateExchange = (amount: BigNumber, swapRate: BigNumber): BigNumber => {
-  return utils.bigNumberify(formatEther(amount.mul(swapRate)).replace(/\.[0-9]*$/, ""));
 };

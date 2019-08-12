@@ -1,7 +1,6 @@
 import { BigNumber, ChannelState, convert, WithdrawParameters } from "@connext/types";
 import { Node as CFModuleTypes } from "@counterfactual/types";
 
-import { logEthFreeBalance } from "../lib/utils";
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
@@ -18,29 +17,12 @@ export class WithdrawalController extends AbstractController {
       throw new Error(invalid);
     }
 
-    // TODO: remove free balance stuff?
-    this.log.info("trying to get free balance....");
     const preWithdrawBalances = await this.connext.getFreeBalance(assetId);
-    this.log.info(`preWithdrawBalances:`);
-    this.connext.logEthFreeBalance(assetId, preWithdrawBalances, this.log);
-
-    // TODO: why isnt free balance working :(
-    if (preWithdrawBalances) {
-      if (Object.keys(preWithdrawBalances).length !== 2) {
-        throw new Error("Unexpected number of entries");
-      }
-
-      if (!preWithdrawBalances[myFreeBalanceAddress]) {
-        throw new Error("My address not found");
-      }
-    }
 
     this.log.info(`\nWithdrawing ${amount} wei from ${this.connext.opts.multisigAddress}\n`);
 
     // register listeners
-    this.log.info("Registering listeners........");
     this.registerListeners();
-    this.log.info("Registered!");
 
     let transactionHash: string | undefined = undefined;
     try {
@@ -51,9 +33,6 @@ export class WithdrawalController extends AbstractController {
 
       const postWithdrawBalances = await this.connext.getFreeBalance(assetId);
 
-      this.log.info(`postWithdrawBalances:`);
-      logEthFreeBalance(assetId, postWithdrawBalances, this.log);
-
       const expectedFreeBal = preWithdrawBalances[myFreeBalanceAddress].sub(amount);
 
       // sanity check the free balance decrease
@@ -63,7 +42,7 @@ export class WithdrawalController extends AbstractController {
 
       this.log.info("Withdrawn!");
     } catch (e) {
-      this.log.error(`Failed to withdraw... ${e}`);
+      this.log.error(`Failed to withdraw... ${JSON.stringify(e, null, 2)}`);
       this.removeListeners();
       throw new Error(e);
     }
@@ -106,6 +85,7 @@ export class WithdrawalController extends AbstractController {
   };
 
   private withdrawFailedCallback = (data: any): void => {
+    console.log(`Withdrawal failed with data: ${JSON.stringify(data, null, 2)}`)
     this.removeListeners();
   };
 
