@@ -10,7 +10,7 @@ import { ProposeMessage, ProposeVirtualMessage } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
-import { formatEther } from "ethers/utils";
+import { bigNumberify, formatEther } from "ethers/utils";
 
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
@@ -249,11 +249,11 @@ export class AppRegistryService {
       proposedToIdentifier,
     } = params;
 
-    if (timeout.lt(Zero)) {
+    if (bigNumberify(timeout).lt(Zero)) {
       throw new Error(`"timeout" in params cannot be negative`);
     }
 
-    if (initiatorDeposit.lt(Zero) || responderDeposit.lt(Zero)) {
+    if (bigNumberify(initiatorDeposit).lt(Zero) || bigNumberify(responderDeposit).lt(Zero)) {
       throw new Error(`Cannot have negative initiator or responder deposits into applications.`);
     }
 
@@ -267,7 +267,7 @@ export class AppRegistryService {
 
     // NOTE: may need to remove this condition if we start working
     // with games
-    if (responderDeposit.isZero() && initiatorDeposit.isZero()) {
+    if (bigNumberify(responderDeposit).isZero() && bigNumberify(initiatorDeposit).isZero()) {
       throw new Error(
         `Cannot install an app with zero valued deposits for both initiator and responder.`,
       );
