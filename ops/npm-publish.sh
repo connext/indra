@@ -14,12 +14,14 @@ function get_latest_version {
 ## Run some sanity checks to make sure we're really ready to npm publish
 
 if [[ -n "`git status -s`" ]]
-then echo "Aborting: Make sure your git repo is clean" && exit 1
+then echo "Aborting: Make sure you've committed all your changes before publishing" && exit 1
 fi
 
 if [[ ! "`pwd | sed 's|.*/\(.*\)|\1|'`" =~ "indra" ]]
 then echo "Aborting: Make sure you're in the indra project root" && exit 1
 fi
+
+make
 
 package_names=""
 package_versions=""
@@ -28,7 +30,7 @@ echo
 for package in `echo $packages | tr ',' ' '`
 do
   package_name="`cat modules/$package/package.json | grep '"name":' | awk -F '"' '{print $4}'`"
-  package_version="0.0.11" #"`npm view $package_name version 2> /dev/null || echo "N/A"`"
+  package_version="`npm view $package_name version 2> /dev/null || echo "N/A"`"
   package_versions="$package_versions $package_version"
   package_names="$package_names $package_name@$package_version"
   echo "Found previously published npm package: $package_name@$package_version"
@@ -51,7 +53,7 @@ elif [[ "`get_latest_version $package_versions $target_version`" != "$target_ver
 then echo "Aborting: The new version should be bigger than old ones" && exit 1
 fi
 
-echo "Confirm: we'll publish the current branch to npm as @connext/{$packages}@$target_version (y/n)?"
+echo "Confirm: we'll publish the current code to npm as @connext/{$packages}@$target_version (y/n)?"
 read -p "> " -r
 echo
 if [[ ! "$REPLY" =~ ^[Yy]$ ]]
