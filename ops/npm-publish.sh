@@ -100,4 +100,4 @@ git add .
 git commit --allow-empty -m "npm publish @connext/{$packages}@$target_version"
 git tag npm-publish-$target_version
 git push origin HEAD --no-verify
-git push origin messaging-$target_version --no-verify
+git push origin npm-publish-$target_version --no-verify
