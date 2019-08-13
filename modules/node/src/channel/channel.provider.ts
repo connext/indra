@@ -85,12 +85,22 @@ class ChannelMessaging extends AbstractMessagingProvider {
     );
   }
 
+  async getPaymentProfile(
+    subject: string,
+    data: { assetId?: string },
+  ): Promise<PaymentProfile | undefined> {
+    const pubId = this.getPublicIdentifierFromSubject(subject);
+
+    return await this.channelService.getPaymentProfile(pubId, data.assetId);
+  }
+
   setupSubscriptions(): void {
     super.connectRequestReponse("channel.get.>", this.getChannel.bind(this));
     super.connectRequestReponse("channel.create.>", this.createChannel.bind(this));
     super.connectRequestReponse("channel.request-collateral.>", this.requestCollateral.bind(this));
 
     super.connectRequestReponse("channel.add-profile.>", this.addPaymentProfile.bind(this));
+    super.connectRequestReponse("channel.get-profile.>", this.getPaymentProfile.bind(this));
   }
 }
 
