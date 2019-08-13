@@ -584,7 +584,7 @@ export const convert = {
   Deposit: convertDepositParametersToAsset,
   LinkedTransfer: convertLinkedTransferParametersToAsset,
   Multisig: convertMultisig,
-  ResolveLinkedTransfer: convertAmountField,
+  ResolveLinkedTransfer: convertAssetAmountWithId,
   SwapParameters: convertSwapParameters,
   Transfer: convertAssetAmount,
   TransferParameters: convertTransferParametersToAsset,
