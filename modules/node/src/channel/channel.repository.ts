@@ -89,7 +89,7 @@ export class ChannelRepository extends Repository<Channel> {
       }
       // TODO: add default token profiles?
       throw new Error(
-        `Payment profile does not exists for user ${userPublicIdentifier}
+        `Payment profile does not exist for user ${userPublicIdentifier}
         and token ${assetId}`,
       );
     }
