@@ -83,11 +83,11 @@ export class ConditionalTransferController extends AbstractController {
       stage: UnidirectionalLinkedTransferAppStage.POST_FUND,
       transfers: [
         {
-          amount: Zero,
+          amount,
           to: freeBalanceAddressFromXpub(this.connext.publicIdentifier),
         },
         {
-          amount,
+          amount: Zero,
           to: freeBalanceAddressFromXpub(this.connext.nodePublicIdentifier),
         },
       ],
