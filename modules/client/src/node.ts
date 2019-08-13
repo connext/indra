@@ -4,6 +4,7 @@ import {
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
+  makeChecksumOrEthAddress,
   PaymentProfile,
   SupportedApplication,
   SupportedNetwork,
@@ -25,6 +26,7 @@ export interface INodeApiClient {
   createChannel(): Promise<CreateChannelResponse>;
   getChannel(): Promise<GetChannelResponse>;
   getLatestSwapRate(from: string, to: string): Promise<string>;
+  getPaymentProfile(assetId?: string): Promise<PaymentProfile>;
   requestCollateral(assetId: string): Promise<void>;
   resolveLinkedTransfer(
     paymentId: string,
@@ -115,9 +117,14 @@ export class NodeApiClient implements INodeApiClient {
 
   // TODO: best way to check hub side for limitations?
   // otherwise could be a security flaw
-  // FIXME: return type
   public async addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile> {
     return await this.send(`channel.add-profile.${this.userPublicIdentifier}`, profile);
+  }
+
+  public async getPaymentProfile(assetId?: string): Promise<PaymentProfile> {
+    return await this.send(`channel.get-profile.${this.userPublicIdentifier}`, {
+      assetId: makeChecksumOrEthAddress(assetId),
+    });
   }
 
   // NOTE: maybe move?
