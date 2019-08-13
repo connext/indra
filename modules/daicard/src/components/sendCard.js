@@ -23,6 +23,7 @@ import queryString from "query-string";
 import { Currency, toBN } from "../utils";
 
 import { QRScan } from "./qrCode";
+import { formatEther } from "ethers/utils";
 
 const LINK_LIMIT = Currency.DAI("10") // $10 capped linked payments
 
@@ -145,7 +146,7 @@ class SendCard extends Component {
     const { channel, token } = this.props;
     const { amount, recipient } = this.state;
     if (amount.error || recipient.error) return;
-    if (toBN(amount.value.toDAI().wad).gt(LINK_LIMIT.wad)) {
+    if (toBN(amount.value.toDEI()).gt(LINK_LIMIT.wad)) {
       this.setState(oldState => {
         oldState.amount.error = `Linked payments are capped at ${LINK_LIMIT.format()}.`
         return oldState
@@ -153,10 +154,10 @@ class SendCard extends Component {
       return
     }
     try {
-      console.log(`Creating ${amount.value} link payment`);
+      console.log(`Creating ${formatEther(amount.value.toDEI().toString())} link payment`);
       const link = await channel.conditionalTransfer({
         assetId: token.address,
-        amount: amount.value.toDEI().floor(),
+        amount: amount.value.toDEI().toString(),
         conditionType: "LINKED_TRANSFER",
       });
       console.log(`Created link payment: ${JSON.stringify(link, null, 2)}`);
