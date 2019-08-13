@@ -265,6 +265,10 @@ export abstract class ConnextChannel {
     return await this.internal.node.addPaymentProfile(profile);
   };
 
+  public getPaymentProfile = async (assetId?: string): Promise<PaymentProfile | undefined> => {
+    return await this.internal.node.getPaymentProfile(assetId);
+  };
+
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
 
