@@ -96,6 +96,17 @@ export class ChannelService {
     return await this.channelRepository.addPaymentProfileToChannel(userPubId, profile);
   }
 
+  async getPaymentProfile(userPubId: string, assetId: string): Promise<PaymentProfile | undefined> {
+    try {
+      return await this.channelRepository.getPaymentProfileForChannelAndToken(userPubId, assetId);
+    } catch (e) {
+      if (e.message.contains(`Payment profile does not exist`)) {
+        return undefined;
+      }
+      throw e;
+    }
+  }
+
   /**
    * Creates a channel in the database with data from CF node event CREATE_CHANNEL
    * and marks it as available
