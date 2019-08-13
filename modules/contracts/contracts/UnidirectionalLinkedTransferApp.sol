@@ -114,12 +114,12 @@ contract UnidirectionalLinkedTransferApp is CounterfactualApp {
             LibOutcome.CoinTransfer(
               state.transfers[0].to,
               /* should always be 0 */
-              state.transfers[0].amount
+              state.transfers[1].amount
             ),
             LibOutcome.CoinTransfer(
               state.transfers[1].to,
               /* should always be full value of linked payment */
-              state.transfers[1].amount
+              state.transfers[0].amount
             )
           ]),
           /* link hash */
@@ -142,11 +142,11 @@ contract UnidirectionalLinkedTransferApp is CounterfactualApp {
           LibOutcome.CoinTransfer[2]([
             LibOutcome.CoinTransfer(
               state.transfers[0].to,
-              state.transfers[1].amount
+              state.transfers[0].amount
             ),
             LibOutcome.CoinTransfer(
               state.transfers[1].to,
-              state.transfers[0].amount
+              state.transfers[1].amount
             )
           ]),
           /* link hash */
