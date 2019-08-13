@@ -876,12 +876,6 @@ export class ConnextInternal extends ConnextChannel {
     return appInfo[0];
   };
 
-  // TODO: make sure types are all good
-  private connectDefaultListeners = (): void => {
-    // counterfactual listeners
-    this.listener.registerDefaultCfListeners();
-  };
-
   private appNotInstalled = async (appInstanceId: string): Promise<string | undefined> => {
     const apps = await this.getAppInstances();
     const app = apps.filter((app: AppInstanceInfo) => app.identityHash === appInstanceId);
