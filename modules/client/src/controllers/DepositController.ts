@@ -2,7 +2,6 @@ import { BigNumber, ChannelState, convert, DepositParameters } from "@connext/ty
 import { Node as CFModuleTypes } from "@counterfactual/types";
 import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { getAddress } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { publicIdentifierToAddress } from "../lib/utils";
@@ -13,7 +12,6 @@ import { AbstractController } from "./AbstractController";
 
 export class DepositController extends AbstractController {
   public deposit = async (params: DepositParameters): Promise<ChannelState> => {
-    params.assetId = params.assetId ? getAddress(params.assetId) : undefined;
     const myFreeBalanceAddress = this.connext.freeBalanceAddress;
 
     const { assetId, amount } = convert.Deposit("bignumber", params);
