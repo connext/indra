@@ -12,7 +12,7 @@ import {
 import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
-import { BigNumber, getAddress } from "ethers/utils";
+import { BigNumber } from "ethers/utils";
 
 import { delay, freeBalanceAddressFromXpub } from "../lib/utils";
 import { invalidAddress, invalidXpub } from "../validation/addresses";
@@ -26,7 +26,6 @@ export class TransferController extends AbstractController {
   private timeout: NodeJS.Timeout;
 
   public transfer = async (params: TransferParameters): Promise<NodeChannel> => {
-    params.assetId = params.assetId ? getAddress(params.assetId) : undefined;
     this.log.info(`Transfer called with parameters: ${JSON.stringify(params, null, 2)}`);
 
     // convert params + validate
