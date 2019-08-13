@@ -1,12 +1,12 @@
 import { MessagingConfig } from "@connext/messaging";
 import { Address, NetworkContext, Node as NodeTypes, OutcomeType } from "@counterfactual/types";
-import { constants, utils } from "ethers";
-import { Network } from "ethers/utils";
+import { BigNumber as ethersBig, getAddress, Network } from "ethers/utils";
+import { AddressZero } from "ethers/constants";
 
 ////////////////////////////////////
 ////// BASIC TYPINGS
-export type BigNumber = utils.BigNumber;
-export const BigNumber = utils.BigNumber;
+export type BigNumber = ethersBig;
+export const BigNumber = ethersBig;
 
 export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
@@ -456,6 +456,27 @@ export const convertFields = (
  * overloading definitions
  */
 
+// will return the address as input if it cannot be checksum-d
+// this function does no *explicit* validation on addresses,
+// and instead just asserts they are properly checcksum-d
+export function makeChecksum(address: string): string {
+  try {
+    return getAddress(address);
+  } catch (e) {
+    console.log("Caught error converting address, returning original input value.");
+    return address;
+  }
+}
+
+// if the address is undefined, uses the AddressZero constant to
+// represent the ethereum asset
+export function makeChecksumOrEthAddress(address: string | undefined): string {
+  if (!address) {
+    return AddressZero;
+  }
+  return makeChecksum(address);
+}
+
 type GenericAmountObject<T> = any & {
   amount: T;
 };
@@ -482,6 +503,17 @@ export function convertAssetAmount<To extends NumericTypeName>(
   return convertAmountField(to, obj);
 }
 
+export function convertAssetAmountWithId<To extends NumericTypeName>(
+  to: To,
+  obj: GenericAmountObject<any> & { assetId?: string},
+): any {
+  const asset: any = {
+    ...obj,
+    assetId: makeChecksumOrEthAddress(obj.assetId),
+  };
+  return convertAssetAmount(to, asset);
+}
+
 export function convertMultisig<To extends NumericTypeName>(
   to: To,
   obj: MultisigState<any>,
@@ -499,46 +531,40 @@ export function convertDepositParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: DepositParameters<any>,
 ): AssetAmount<NumericTypes[To]> {
-  const asset: any = {
-    ...obj,
-  };
-  if (!asset.assetId) {
-    asset.assetId = constants.AddressZero;
-  }
-  return convertAssetAmount(to, asset);
+  return convertAssetAmountWithId(to, obj);
 }
 
 export function convertSwapParameters<To extends NumericTypeName>(
   to: To,
   obj: SwapParameters<any>,
 ): SwapParameters<NumericTypes[To]> {
-  return convertAmountField(to, obj);
+  const asset: any = {
+    ...obj,
+    fromAssetId: makeChecksumOrEthAddress(obj.fromAssetId),
+    toAssetId: makeChecksumOrEthAddress(obj.toAssetId),
+  };
+  return convertAmountField(to, asset);
 }
 
 export function convertTransferParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: TransferParameters<any>,
 ): TransferParameters<NumericTypes[To]> {
-  const asset: any = {
-    ...obj,
-  };
-  if (!asset.assetId) {
-    asset.assetId = constants.AddressZero;
-  }
-  return convertAmountField(to, asset);
+  return convertAssetAmountWithId(to, obj);
+}
+
+export function convertLinkedTransferParametersToAsset<To extends NumericTypeName>(
+  to: To,
+  obj: LinkedTransferParameters<any>,
+): LinkedTransferParameters<NumericTypes[To]> {
+  return convertAssetAmountWithId(to, obj);
 }
 
 export function convertWithdrawParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: WithdrawParameters<any>,
 ): WithdrawParameters<NumericTypes[To]> {
-  const asset: any = {
-    ...obj,
-  };
-  if (!asset.assetId) {
-    asset.assetId = constants.AddressZero;
-  }
-  return convertAmountField(to, asset);
+  return convertAssetAmountWithId(to, obj);
 }
 
 export function convertAppState<To extends NumericTypeName>(
@@ -556,7 +582,7 @@ export const convert = {
   AppState: convertAppState,
   Asset: convertAssetAmount,
   Deposit: convertDepositParametersToAsset,
-  LinkedTransfer: convertAmountField,
+  LinkedTransfer: convertLinkedTransferParametersToAsset,
   Multisig: convertMultisig,
   ResolveLinkedTransfer: convertAmountField,
   SwapParameters: convertSwapParameters,
