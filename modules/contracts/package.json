@@ -20,7 +20,7 @@
     "ethereum-waffle": "2.0.15",
     "ethers": "4.0.33",
     "openzeppelin-solidity": "2.3.0",
-    "solc": "0.5.10",
+    "solc": "0.5.11",
     "truffle": "5.0.31",
     "truffle-hdwallet-provider": "1.0.16",
     "ts-mocha": "6.0.0",
