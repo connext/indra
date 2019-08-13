@@ -18,7 +18,7 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
       ...this.config.getPostgresConfig(),
       entities: [...entities, ...viewEntites],
       logging: ["error"],
-      synchronize: true,
+      synchronize: true, // TODO: this.config.isDevMode(),
       type: "postgres",
     };
   }

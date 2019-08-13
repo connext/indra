@@ -140,6 +140,10 @@ export class ConfigService {
     return parseInt(this.get("INDRA_LOG_LEVEL") || "3", 10);
   }
 
+  isDevMode(): boolean {
+    return this.get("NODE_ENV") !== "production";
+  }
+
   getMnemonic(): string {
     return this.get("INDRA_ETH_MNEMONIC");
   }

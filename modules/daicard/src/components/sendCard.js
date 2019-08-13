@@ -130,7 +130,7 @@ class SendCard extends Component {
       console.log(`Sending ${amount.value} to ${recipient.value}`);
       await channel.transfer({
         assetId: token.address,
-        amount: amount.value.toDEI().floor(),
+        amount: amount.value.wad.toString(),
         recipient: recipient.value,
       });
       this.setState({ showReceipt: true, paymentState: PaymentStates.Success });
@@ -156,7 +156,7 @@ class SendCard extends Component {
       console.log(`Creating ${amount.value} link payment`);
       const link = await channel.conditionalTransfer({
         assetId: token.address,
-        amount: amount.value.toDEI().floor(),
+        amount: amount.value.wad.toString(),
         conditionType: "LINKED_TRANSFER",
       });
       console.log(`Created link payment: ${JSON.stringify(link, null, 2)}`);
