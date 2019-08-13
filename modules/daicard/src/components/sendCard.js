@@ -128,6 +128,7 @@ class SendCard extends Component {
     // TODO: check if recipient needs collateral & tell server to collateralize if more is needed
     try {
       console.log(`Sending ${amount.value} to ${recipient.value}`);
+      this.setState({ paymentState: PaymentStates.Collateralizing })
       await channel.transfer({
         assetId: token.address,
         amount: amount.value.wad.toString(),
@@ -181,6 +182,7 @@ class SendCard extends Component {
   render() {
     const { classes } = this.props;
     const { amount, recipient, paymentState, scan, showReceipt, sendError } = this.state;
+    console.log('amount: ', amount);
     return (
       <Grid
         container
@@ -315,7 +317,7 @@ class SendCard extends Component {
             <Grid item xs={6}>
               <Button
                 className={classes.button}
-                disabled={!!amount.error || !!recipient.error}
+                disabled={!!amount.error || !!recipient.error || paymentState === PaymentStates.Collateralizing}
                 fullWidth
                 onClick={() => {this.paymentHandler()}}
                 size="large"
@@ -345,7 +347,7 @@ class SendCard extends Component {
         <PaymentConfirmationDialog
           showReceipt={showReceipt}
           sendError={sendError}
-          amountToken={amount.value ? amount.value : "0"}
+          amountToken={amount.display ? amount.display : "0"}
           recipient={recipient.value}
           history={this.props.history}
           closeModal={this.closeModal}
