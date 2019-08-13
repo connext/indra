@@ -39,6 +39,25 @@ wait_for "database" "$INDRA_PG_HOST:$INDRA_PG_PORT"
 wait_for "nats" "$INDRA_NATS_SERVERS"
 wait_for "ethprovider" "$INDRA_ETH_RPC_URL"
 
+if [[ "$NODE_ENV" == "production" ]]
+then
+  # Create a .env file for typeorm to use
+  cat -> .env <<-EOF
+	APP_SECRET=NotSoSecretChangeMe
+	TYPEORM_CONNECTION=postgres
+	TYPEORM_USERNAME=$INDRA_PG_USERNAME
+	TYPEORM_PASSWORD=`cat $INDRA_PG_PASSWORD_FILE`
+	TYPEORM_HOST=$INDRA_PG_HOST
+	TYPEORM_PORT=$INDRA_PG_PORT
+	TYPEORM_DATABASE=$INDRA_PG_DATABASE
+	TYPEORM_ENTITIES=src/**/*.entity.ts
+	TYPEORM_MIGRATIONS=migration/*.ts
+	TYPEORM_MIGRATIONS_DIR=migrations
+	TYPEORM_SYNCHRONIZE=false
+	EOF
+  ./node_modules/.bin/ts-node ./node_modules/.bin/typeorm migration:run
+fi
+
 if [[ "$NODE_ENV" == "development" ]]
 then
   exec ./node_modules/.bin/nodemon \
