@@ -65,7 +65,7 @@ export class LinkedTransfer {
   appInstanceId!: string;
 
   @Column("text")
-  paymentId!: string;
+  linkedHash!: string;
 
   @Column("enum", { enum: LinkedTransferStatus, default: LinkedTransferStatus.PENDING })
   status!: LinkedTransferStatus;

@@ -6,6 +6,7 @@ import {
   UnidirectionalLinkedTransferAppStateBigNumber,
   UnidirectionalTransferAppStage,
   UnidirectionalTransferAppStateBigNumber,
+  UnidirectionalLinkedTransferAppState,
 } from "@connext/types";
 import { ProposeMessage, ProposeVirtualMessage } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
@@ -389,6 +390,14 @@ export class AppRegistryService {
         break;
       case KnownNodeAppNames.UNIDIRECTIONAL_LINKED_TRANSFER:
         await this.validateLinkedTransfer(proposedAppParams.params);
+        await this.transferService.saveLinkedTransfer(
+          initiatorIdentifier,
+          proposedAppParams.params.initiatorDepositTokenAddress,
+          bigNumberify(proposedAppParams.params.initiatorDeposit),
+          proposedAppParams.appInstanceId,
+          (proposedAppParams.params.initialState as UnidirectionalLinkedTransferAppState)
+            .linkedHash,
+        );
         break;
       default:
         break;

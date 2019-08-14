@@ -65,18 +65,18 @@ export class TransferService {
     return await this.p2pTransferRepository.save(transfer);
   }
 
-  async createLinkedTransfer(
+  async saveLinkedTransfer(
     senderPubId: string,
     assetId: string,
     amount: BigNumber,
     appInstanceId: string,
-    paymentId: string,
+    linkedHash: string,
   ): Promise<LinkedTransfer> {
     const transfer = new LinkedTransfer();
     transfer.appInstanceId = appInstanceId;
     transfer.amount = amount;
     transfer.assetId = assetId;
-    transfer.paymentId = paymentId;
+    transfer.linkedHash = linkedHash;
 
     const senderChannel = await this.channelRepository.findByUserPublicIdentifier(senderPubId);
     transfer.senderChannel = senderChannel;
@@ -102,9 +102,19 @@ export class TransferService {
       throw new Error(`No channel exists for userPubId ${userPubId}`);
     }
 
+    const linkedHash = createLinkedHash({ amount, assetId, paymentId, preImage });
+
+    // check that we have recorded this transfer in our db
+    const transfer = await this.linkedTransferRepository.findByLinkedHash(linkedHash);
+    if (!transfer) {
+      throw new Error(`No transfer exists for linkedHash ${linkedHash}`);
+    }
+    if (transfer.status === LinkedTransferStatus.REDEEMED) {
+      throw new Error(`Transfer with linkedHash ${linkedHash} has already been redeemed`);
+    }
+
     // check that linked transfer app has been installed from sender
     const installedApps = await this.nodeService.getAppInstances();
-    const linkedHash = createLinkedHash({ amount, assetId, paymentId, preImage });
     const senderApp = installedApps.find(
       (app: AppInstanceJson) =>
         (app.latestState as UnidirectionalLinkedTransferAppStateBigNumber).linkedHash ===
@@ -181,6 +191,8 @@ export class TransferService {
     ) {
       logger.warn("Free balance after transfer is lte free balance before transfer..");
     }
+
+    this.linkedTransferRepository.markAsRedeemed(transfer, channel);
 
     // uninstall sender app
     // dont await so caller isnt blocked by this

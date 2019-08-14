@@ -74,9 +74,9 @@ export default class ListenerService implements OnModuleInit {
         logEvent(NodeTypes.EventName.PROPOSE_INSTALL, data);
         this.appRegistryService.allowOrReject(data);
       },
-      PROPOSE_INSTALL_VIRTUAL: async (data: ProposeVirtualMessage): Promise<void> => {
+      PROPOSE_INSTALL_VIRTUAL: (data: ProposeVirtualMessage): void => {
         logEvent(NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data);
-        await this.appRegistryService.allowOrRejectVirtual(data);
+        this.appRegistryService.allowOrRejectVirtual(data);
       },
       PROPOSE_STATE: (data: any): void => {
         // TODO: need to validate all apps here as well?
