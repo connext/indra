@@ -1,5 +1,6 @@
 import {
   AllowedSwap,
+  CoinTransfer,
   KnownNodeAppNames,
   UnidirectionalLinkedTransferAppStage,
   UnidirectionalLinkedTransferAppStateBigNumber,
@@ -10,14 +11,19 @@ import { ProposeMessage, ProposeVirtualMessage } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
-import { bigNumberify, formatEther } from "ethers/utils";
+import { BigNumber, bigNumberify, formatEther } from "ethers/utils";
 
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { NodeService } from "../node/node.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { TransferService } from "../transfer/transfer.service";
-import { bigNumberifyObj, CLogger, freeBalanceAddressFromXpub } from "../util";
+import {
+  bigNumberifyObj,
+  CLogger,
+  freeBalanceAddressFromXpub,
+  normalizeEthAddresses,
+} from "../util";
 import { isEthAddress } from "../validator";
 
 import { AppRegistry } from "./appRegistry.entity";
@@ -110,7 +116,7 @@ export class AppRegistryService {
       initialState: initialStateBadType,
       initiatorDeposit,
       responderDeposit,
-    } = bigNumberifyObj(params);
+    } = normalizeEthAddresses(bigNumberifyObj(params));
     if (!responderDeposit.isZero()) {
       throw new Error(`Cannot install virtual transfer app with a nonzero responder deposit.`);
     }
@@ -157,17 +163,23 @@ export class AppRegistryService {
   }
 
   private async validateSwap(params: NodeTypes.ProposeInstallParams): Promise<void> {
+    const {
+      initiatorDeposit,
+      initiatorDepositTokenAddress,
+      responderDeposit,
+      responderDepositTokenAddress,
+    } = normalizeEthAddresses(bigNumberifyObj(params));
+
     const validSwaps = await this.swapRateService.getValidSwaps();
     if (
       !validSwaps.find(
         (swap: AllowedSwap) =>
-          swap.from.toLowerCase() === params.initiatorDepositTokenAddress.toLowerCase() &&
-          swap.to.toLowerCase() === params.responderDepositTokenAddress.toLowerCase(),
+          swap.from === initiatorDepositTokenAddress && swap.to === responderDepositTokenAddress,
       )
     ) {
       throw new Error(
-        `Swap from ${params.initiatorDepositTokenAddress} to ` +
-          `${params.responderDepositTokenAddress} is not valid. Valid swaps: ${JSON.stringify(
+        `Swap from ${initiatorDepositTokenAddress} to ` +
+          `${responderDepositTokenAddress} is not valid. Valid swaps: ${JSON.stringify(
             validSwaps,
           )}`,
       );
@@ -175,13 +187,12 @@ export class AppRegistryService {
 
     // |our rate - derived rate| / our rate = discrepancy
     const derivedRate =
-      parseFloat(formatEther(params.responderDeposit)) /
-      parseFloat(formatEther(params.initiatorDeposit));
+      parseFloat(formatEther(responderDeposit)) / parseFloat(formatEther(initiatorDeposit));
 
     const ourRate = parseFloat(
       await this.swapRateService.getOrFetchRate(
-        params.initiatorDepositTokenAddress,
-        params.responderDepositTokenAddress,
+        initiatorDepositTokenAddress,
+        responderDepositTokenAddress,
       ),
     );
     const discrepancy = Math.abs(ourRate - derivedRate);
@@ -208,6 +219,7 @@ export class AppRegistryService {
       initiatorDeposit,
       initialState: initialStateBadType,
     } = bigNumberifyObj(params);
+
     if (responderDeposit.gt(Zero)) {
       throw new Error(
         `Will not accept linked transfer install where node deposit is >0 ${JSON.stringify(
@@ -219,6 +231,12 @@ export class AppRegistryService {
     const initialState = bigNumberifyObj(
       initialStateBadType,
     ) as UnidirectionalLinkedTransferAppStateBigNumber;
+
+    initialState.transfers = initialState.transfers.map((transfer: CoinTransfer<BigNumber>) =>
+      bigNumberifyObj(transfer),
+    ) as any;
+
+    console.log("initialState: ", JSON.stringify(initialState));
 
     if (initialState.finalized) {
       throw new Error(`Cannot install linked transfer app with finalized state`);
@@ -234,18 +252,18 @@ export class AppRegistryService {
       );
     }
 
-    if (initialState.transfers[0].amount.lte(Zero)) {
-      throw new Error(`Cannot install a linked transfer app with a sender transfer of <= 0`);
+    if (!initialState.transfers[0].amount.isZero()) {
+      throw new Error(`Cannot install a linked transfer app with a sender transfer of > 0`);
     }
 
     if (
-      !initialState.transfers[0].amount.eq(initiatorDeposit) ||
-      !initialState.transfers[1].amount.eq(responderDeposit)
+      !initialState.transfers[1].amount.eq(initiatorDeposit) ||
+      !initialState.transfers[0].amount.eq(responderDeposit)
     ) {
       throw new Error(`Mismatch between deposits and initial state, refusing to install.`);
     }
 
-    if (initialState.transfers[0].amount.isZero()) {
+    if (initialState.transfers[1].amount.isZero()) {
       throw new Error(
         `Cannot install a linked transfer app with zero receiver amount
         `,
@@ -264,7 +282,7 @@ export class AppRegistryService {
       responderDepositTokenAddress,
       timeout,
       proposedToIdentifier,
-    } = bigNumberifyObj(params);
+    } = normalizeEthAddresses(bigNumberifyObj(params));
 
     if (timeout.lt(Zero)) {
       throw new Error(`"timeout" in params cannot be negative`);
