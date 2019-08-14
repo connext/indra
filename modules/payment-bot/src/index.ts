@@ -27,8 +27,6 @@ process.on("unhandledRejection", (e: any): any => {
 });
 
 let client: connext.ConnextInternal;
-
-// TODO: fix for multiple deposited assets
 let assetId: string;
 
 export function getAssetId(): string {
@@ -52,12 +50,21 @@ export function getConnextClient(): connext.ConnextInternal {
 }
 
 async function run(): Promise<void> {
-  const assetId = config.assetId ? config.assetId.toLowerCase() : AddressZero;
+  const assetId = config.assetId ? config.assetId : AddressZero;
   setAssetId(assetId);
   await getOrCreateChannel(assetId);
 
+  if (config.getFreeBalance) {
+    logEthFreeBalance(AddressZero, await client.getFreeBalance(assetId));
+    if (assetId !== AddressZero) {
+      logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
+    }
+    process.exit(0);
+  }
+
   const apps = await client.getAppInstances();
   console.log("apps: ", apps);
+
   if (config.deposit) {
     const depositParams: DepositParameters = {
       amount: parseEther(config.deposit).toString(),
