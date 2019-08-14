@@ -11,12 +11,16 @@ jobs:
     machine: true
     steps:
       - checkout
+      - run: make prod
+      - run: make start-test
       - run: make test-ui
 
   test-bot:
     machine: true
     steps:
       - checkout
+      - run: make prod
+      - run: make start-test
       - run: make test-bot
 
   push-latest-images:
@@ -24,6 +28,7 @@ jobs:
     steps:
       - checkout
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+      - run: make prod
       - run: make push-latest
 
   push-prod-images:

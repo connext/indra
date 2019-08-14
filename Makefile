@@ -94,16 +94,16 @@ deployed-contracts: contracts
 test: test-node
 watch: watch-node
 
-start-e2e: prod deployed-contracts
+start-test: prod deployed-contracts
 	INDRA_V2_ETH_PROVIDER=http://localhost:8545 INDRA_V2_MODE=test bash ops/start-prod.sh
 
-test-ui: start-e2e
+test-ui:
 	bash ops/test-ui.sh
 
 watch-ui: node-modules
 	bash ops/test-ui.sh watch
 
-test-bot: start-e2e
+test-bot:
 	bash ops/test-bot.sh
 
 test-node: node
