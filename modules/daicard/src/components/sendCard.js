@@ -23,7 +23,6 @@ import queryString from "query-string";
 import { Currency, toBN } from "../utils";
 
 import { QRScan } from "./qrCode";
-import { formatEther } from "ethers/utils";
 
 const LINK_LIMIT = Currency.DAI("10") // $10 capped linked payments
 
