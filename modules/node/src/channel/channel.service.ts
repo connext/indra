@@ -108,6 +108,21 @@ export class ChannelService {
   }
 
   /**
+   * Monitors if there is an inflight deposit request from DEPOSIT_STARTED
+   * and DEPOSIT_FAILED events, so deposits are not double sent
+   * @param depositInFlight true if a deposit has started, false otherwise
+   * @param userPublicIdentifier user whos channel is being deposited into
+   */
+  async setInflightDepositByPubId(
+    depositInFlight: boolean,
+    userPublicIdentifier: string,
+  ): Promise<Channel> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    channel.depositInFlight = depositInFlight;
+    return await this.channelRepository.save(channel);
+  }
+
+  /**
    * Creates a channel in the database with data from CF node event CREATE_CHANNEL
    * and marks it as available
    * @param creationData event data
