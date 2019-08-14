@@ -2,6 +2,7 @@ import * as connext from "@connext/client";
 import {
   DepositParameters,
   LinkedTransferParameters,
+  makeChecksum,
   ResolveLinkedTransferParameters,
   WithdrawParameters,
 } from "@connext/types";
@@ -26,8 +27,6 @@ process.on("unhandledRejection", (e: any): any => {
 });
 
 let client: connext.ConnextInternal;
-
-// TODO: fix for multiple deposited assets
 let assetId: string;
 
 export function getAssetId(): string {
@@ -51,12 +50,21 @@ export function getConnextClient(): connext.ConnextInternal {
 }
 
 async function run(): Promise<void> {
-  const assetId = config.assetId ? config.assetId.toLowerCase() : AddressZero;
+  const assetId = config.assetId ? config.assetId : AddressZero;
   setAssetId(assetId);
   await getOrCreateChannel(assetId);
 
+  if (config.getFreeBalance) {
+    logEthFreeBalance(AddressZero, await client.getFreeBalance(assetId));
+    if (assetId !== AddressZero) {
+      logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
+    }
+    process.exit(0);
+  }
+
   const apps = await client.getAppInstances();
   console.log("apps: ", apps);
+
   if (config.deposit) {
     const depositParams: DepositParameters = {
       amount: parseEther(config.deposit).toString(),
@@ -234,16 +242,16 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
 
   await client.addPaymentProfile({
     amountToCollateralize: parseEther("0.1").toString(),
+    assetId: AddressZero,
     minimumMaintainedCollateral: parseEther("0.01").toString(),
-    tokenAddress: AddressZero,
   });
 
   if (assetId) {
     console.log(`Adding payment profile for ${assetId}`);
     await client.addPaymentProfile({
       amountToCollateralize: parseEther("10").toString(),
+      assetId: makeChecksum(assetId),
       minimumMaintainedCollateral: parseEther("5").toString(),
-      tokenAddress: assetId.toLowerCase(),
     });
   }
   registerClientListeners();

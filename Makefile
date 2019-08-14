@@ -94,19 +94,17 @@ deployed-contracts: contracts
 test: test-node
 watch: watch-node
 
-start-e2e: prod deployed-contracts
+start-test: prod deployed-contracts
 	INDRA_V2_ETH_PROVIDER=http://localhost:8545 INDRA_V2_MODE=test bash ops/start-prod.sh
 
-test-e2e-ui: start-e2e
-	./node_modules/.bin/cypress install > /dev/null
-	./node_modules/.bin/cypress run --spec cypress/tests/index.js --env publicUrl=https://localhost
+test-ui:
+	bash ops/test-ui.sh
 
-test-e2e-bot: start-e2e
+watch-ui: node-modules
+	bash ops/test-ui.sh watch
+
+test-bot:
 	bash ops/test-bot.sh
-
-watch-e2e: node-modules
-	./node_modules/.bin/cypress install > /dev/null
-	./node_modules/.bin/cypress open
 
 test-node: node
 	bash ops/test-node.sh --runInBand --forceExit

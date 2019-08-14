@@ -146,7 +146,7 @@ class SendCard extends Component {
     const { channel, token } = this.props;
     const { amount, recipient } = this.state;
     if (amount.error || recipient.error) return;
-    if (toBN(amount.value.toDAI().wad).gt(LINK_LIMIT.wad)) {
+    if (toBN(amount.value.toDEI()).gt(LINK_LIMIT.wad)) {
       this.setState(oldState => {
         oldState.amount.error = `Linked payments are capped at ${LINK_LIMIT.format()}.`
         return oldState
@@ -154,7 +154,7 @@ class SendCard extends Component {
       return
     }
     try {
-      console.log(`Creating ${amount.value} link payment`);
+      console.log(`Creating ${amount.value.format()} link payment`);
       const link = await channel.conditionalTransfer({
         assetId: token.address,
         amount: amount.value.wad.toString(),
@@ -182,7 +182,6 @@ class SendCard extends Component {
   render() {
     const { classes } = this.props;
     const { amount, recipient, paymentState, scan, showReceipt, sendError } = this.state;
-    console.log('amount: ', amount);
     return (
       <Grid
         container

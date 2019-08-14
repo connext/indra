@@ -4,9 +4,10 @@ import BN from 'bn.js'
 const depositEth = '0.05'
 const depositToken = '5'
 const payTokens = '3.14'
+const botTransferAmount = '0.618' // Keep this synced w what recipient expects in ops/test-ui
 
-// hard-code this to the xpub for a daicard you have open in a separate browser
-const externalRecipient = 'xpub6DYJf3DZDovXfvnrnLmypQuCtVT2nq8pGkcqtd98mDBH47Pr7Jk2DDbjx5gyEQuagwimkHNJimeZgZavJbHQLmcktD5PBmkW28fboHNhXbV'
+// You can also hard-code this to the xpub for a daicard you have open in a separate browser
+const recipientBot = 'xpub6DXwZMmWUq4bRZ3LtaBYwu47XV4Td19pnngok2Y7DnRzcCJSKCmD1AcLJDbZZf5dzZpvHqYzmRaKf7Gd2MV9qDvWwwN7VpBPNXQCZCbfyoK'
 
 describe('Daicard', () => {
   beforeEach(() => {
@@ -55,11 +56,12 @@ describe('Daicard', () => {
       })
     })
 
-    it.skip(`Should send a payment to a card that has already been collateralized`, () => {
+    it(`Should transfer tokens to a collateralized payment bot`, () => {
       my.deposit(depositEth).then(tokensDeposited => {
-        my.pay(externalRecipient, '0.01')
+        my.pay(recipientBot, botTransferAmount)
       })
     })
+
   })
 
   describe('Request', () => {

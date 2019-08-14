@@ -120,7 +120,7 @@ class CashOutCard extends Component {
       await channel.addPaymentProfile({
         amountToCollateralize: total.toETH().wad.toString(),
         minimumMaintainedCollateral: total.toETH().wad.toString(),
-        tokenAddress: AddressZero,
+        assetId: AddressZero,
       });
       await channel.requestCollateral(AddressZero);
       await channel.swap({

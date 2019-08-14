@@ -26,6 +26,9 @@ export class Channel {
   @Column("boolean", { default: false })
   available!: boolean;
 
+  @Column("boolean", { default: false })
+  depositInFlight!: boolean;
+
   @ManyToMany((type: any) => PaymentProfile, (profile: PaymentProfile) => profile.channels)
   @JoinTable()
   paymentProfiles!: PaymentProfile[];

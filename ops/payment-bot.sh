@@ -45,14 +45,10 @@ else
   export MNEMONIC="roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult"
 fi
 
+# Damn I forget where I copy/pasted this witchcraft from, yikes.
+# It's supposed to find out whether we're calling this script from a shell & can print stuff
+# Or whether it's running in the background of another script and can't attach to a screen
 test -t 0 -a -t 1 -a -t 2 && interactive="--tty"
-my_id="`id -u`:`id -g`"
-
-# function cleanup {
-#   echo "Stopping the payment bot..."
-#   docker container stop ${project}_payment_bot_$identifier
-# }
-# trap cleanup EXIT
 
 ########################################
 ## Launch payment bot
@@ -70,7 +66,7 @@ docker run \
   --name="${project}_payment_bot_$identifier" \
   --rm \
   --tty \
-  --user="$my_id" \
+  --user="`id -u`:`id -g`" \
   --volume="`pwd`:/root" \
   --workdir="/root" \
   ${project}_builder -c '
