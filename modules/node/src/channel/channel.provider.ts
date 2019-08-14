@@ -3,7 +3,7 @@ import { GetChannelResponse, GetConfigResponse, RequestCollateralResponse } from
 import { Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { bigNumberify } from "ethers/utils";
+import { bigNumberify, getAddress } from "ethers/utils";
 
 import { ConfigService } from "../config/config.service";
 import { ChannelMessagingProviderId, MessagingProviderId, NodeProviderId } from "../constants";
@@ -48,13 +48,11 @@ class ChannelMessaging extends AbstractMessagingProvider {
 
   async getChannel(subject: string): Promise<GetChannelResponse> {
     const pubId = this.getPublicIdentifierFromSubject(subject);
-
     return (await this.channelRepository.findByUserPublicIdentifier(pubId)) as GetChannelResponse;
   }
 
   async createChannel(subject: string): Promise<NodeTypes.CreateChannelResult> {
     const pubId = this.getPublicIdentifierFromSubject(subject);
-
     return await this.channelService.create(pubId);
   }
 
@@ -63,8 +61,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     data: { assetId?: string },
   ): Promise<RequestCollateralResponse> {
     const pubId = this.getPublicIdentifierFromSubject(subject);
-
-    return this.channelService.requestCollateral(pubId, data.assetId);
+    return this.channelService.requestCollateral(pubId, getAddress(data.assetId));
   }
 
   async addPaymentProfile(
@@ -76,10 +73,9 @@ class ChannelMessaging extends AbstractMessagingProvider {
     },
   ): Promise<PaymentProfile> {
     const pubId = this.getPublicIdentifierFromSubject(subject);
-
     return await this.channelService.addPaymentProfileToChannel(
       pubId,
-      data.tokenAddress,
+      getAddress(data.tokenAddress),
       bigNumberify(data.minimumMaintainedCollateral),
       bigNumberify(data.amountToCollateralize),
     );
@@ -89,7 +85,6 @@ class ChannelMessaging extends AbstractMessagingProvider {
     super.connectRequestReponse("channel.get.>", this.getChannel.bind(this));
     super.connectRequestReponse("channel.create.>", this.createChannel.bind(this));
     super.connectRequestReponse("channel.request-collateral.>", this.requestCollateral.bind(this));
-
     super.connectRequestReponse("channel.add-profile.>", this.addPaymentProfile.bind(this));
   }
 }

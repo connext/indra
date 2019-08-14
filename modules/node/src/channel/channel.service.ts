@@ -90,7 +90,7 @@ export class ChannelService {
     amountToCollateralize: BigNumber,
   ): Promise<PaymentProfile> {
     const profile = new PaymentProfile();
-    profile.assetId = assetId;
+    profile.assetId = getAddress(assetId);
     profile.minimumMaintainedCollateral = minimumMaintainedCollateral;
     profile.amountToCollateralize = amountToCollateralize;
     return await this.channelRepository.addPaymentProfileToChannel(userPubId, profile);

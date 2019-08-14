@@ -3,7 +3,7 @@ import { ContractAddresses, KnownNodeAppNames } from "@connext/types";
 import { OutcomeType } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import { JsonRpcProvider } from "ethers/providers";
-import { Network as EthNetwork } from "ethers/utils";
+import { getAddress, Network as EthNetwork } from "ethers/utils";
 
 import { Network } from "../constants";
 
@@ -66,7 +66,7 @@ export class ConfigService {
     const ethAddresses = {} as any;
     const ethAddressBook = JSON.parse(this.get("INDRA_ETH_CONTRACT_ADDRESSES"));
     Object.keys(ethAddressBook[chainId]).map((contract: string): void => {
-      ethAddresses[contract] = ethAddressBook[chainId][contract].address.toLowerCase();
+      ethAddresses[contract] = getAddress(ethAddressBook[chainId][contract].address);
     });
     return ethAddresses as ContractAddresses;
   }
@@ -74,7 +74,7 @@ export class ConfigService {
   async getTokenAddress(): Promise<string> {
     const chainId = (await this.getEthNetwork()).chainId.toString();
     const ethAddressBook = JSON.parse(this.get("INDRA_ETH_CONTRACT_ADDRESSES"));
-    return ethAddressBook[chainId].Token.address.toLowerCase();
+    return getAddress(ethAddressBook[chainId].Token.address);
   }
 
   async getDefaultApps(): Promise<DefaultApp[]> {
