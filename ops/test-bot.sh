@@ -27,9 +27,9 @@ bash ops/payment-bot.sh -i 1 -q -a $tokenAddress
 
 echo;echo "Starting recipient bot in background, waiting for payments";echo;sleep 1
 
-if [[ "$1" == "recieve" ]]
-then bash ops/payment-bot.sh -i 1
-else bash ops/payment-bot.sh -i 1 &
+if [[ "${1:0:1}" == "r" ]]
+then bash ops/payment-bot.sh -i 1 -a $tokenAddress
+else bash ops/payment-bot.sh -i 1 -a $tokenAddress &
 fi
 
 sleep 5;echo;echo "Depositing eth into sender bot";echo;sleep 1
