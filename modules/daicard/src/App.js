@@ -37,6 +37,18 @@ const WITHDRAW_ESTIMATED_GAS = toBN("300000");
 const DEPOSIT_ESTIMATED_GAS = toBN("25000");
 const MAX_CHANNEL_VALUE = Currency.DAI("30");
 
+// it is important to add a default payment
+// profile on initial load in the case the
+// user is being paid without depositing, or
+// in the case where the user is redeeming a link
+
+// NOTE: in the redeem controller, if the default payment is
+// insufficient, then it will be updated. the same thing
+// happens in autodeposit, if the eth deposited > deposit
+// needed for autoswap
+const DEFAULT_COLLATERAL_MINIMUM = Currency.DAI("5");
+const DEFAULT_AMOUNT_TO_COLLATERALIZE = Currency.DAI("10");
+
 const styles = theme => ({
   paper: {
     width: "100%",
@@ -181,6 +193,7 @@ class App extends React.Component {
   async startPoller() {
     await this.refreshBalances();
     await this.setDepositLimits();
+    await this.addDefaultPaymentProfile();
     await this.autoDeposit();
     await this.autoSwap();
     interval(async (iteration, stop) => {
@@ -189,6 +202,28 @@ class App extends React.Component {
       await this.autoDeposit();
       await this.autoSwap();
     }, 3000);
+  }
+
+  async addDefaultPaymentProfile() {
+    // add the payment profile for tokens only
+    // then request collateral of this type
+    const { token, channel } = this.state;
+
+    // TODO: set default eth profile
+    // await channel.addPaymentProfile({
+    //   amountToCollateralize: ,
+    //   assetId: AddressZero,
+    // });
+    if (!token) {
+      console.log("No token found, not setting default token payment profile")
+      return;
+    }
+    await channel.addPaymentProfile({
+      amountToCollateralize: DEFAULT_AMOUNT_TO_COLLATERALIZE.wad.toString(),
+      minimumMaintainedCollateral: DEFAULT_COLLATERAL_MINIMUM.wad.toString(),
+      assetId: token.address,
+    });
+    return;
   }
 
   async refreshBalances() {
@@ -317,7 +352,7 @@ class App extends React.Component {
       await channel.addPaymentProfile({
         amountToCollateralize: collateralNeeded.add(parseEther("10")), // add a buffer of $10 so you dont collateralize on every payment
         minimumMaintainedCollateral: collateralNeeded,
-        tokenAddress: token.address,
+        assetId: token.address,
       });
       await channel.requestCollateral(token.address);
       collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress])

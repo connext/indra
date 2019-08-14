@@ -1,4 +1,5 @@
 import {
+  convert,
   ResolveConditionParameters,
   ResolveConditionResponse,
   ResolveLinkedTransferParameters,
@@ -29,7 +30,10 @@ export class ResolveConditionController extends AbstractController {
     params: ResolveLinkedTransferParameters,
   ): Promise<ResolveLinkedTransferResponse> => {
     // convert and validate
-    const { paymentId, preImage, amount, assetId } = params;
+    const { paymentId, preImage, amount, assetId } = convert.ResolveLinkedTransfer(
+      "bignumber",
+      params,
+    );
 
     const freeBal = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBal[this.connext.freeBalanceAddress];

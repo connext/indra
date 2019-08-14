@@ -96,6 +96,32 @@ export class ChannelService {
     return await this.channelRepository.addPaymentProfileToChannel(userPubId, profile);
   }
 
+  async getPaymentProfile(userPubId: string, assetId: string): Promise<PaymentProfile | undefined> {
+    try {
+      return await this.channelRepository.getPaymentProfileForChannelAndToken(userPubId, assetId);
+    } catch (e) {
+      if (e.message.contains(`Payment profile does not exist`)) {
+        return undefined;
+      }
+      throw e;
+    }
+  }
+
+  /**
+   * Monitors if there is an inflight deposit request from DEPOSIT_STARTED
+   * and DEPOSIT_FAILED events, so deposits are not double sent
+   * @param depositInFlight true if a deposit has started, false otherwise
+   * @param userPublicIdentifier user whos channel is being deposited into
+   */
+  async setInflightDepositByPubId(
+    depositInFlight: boolean,
+    userPublicIdentifier: string,
+  ): Promise<Channel> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    channel.depositInFlight = depositInFlight;
+    return await this.channelRepository.save(channel);
+  }
+
   /**
    * Creates a channel in the database with data from CF node event CREATE_CHANNEL
    * and marks it as available

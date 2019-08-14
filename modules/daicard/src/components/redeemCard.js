@@ -136,7 +136,7 @@ class RedeemCard extends Component {
       console.log(`Redeemed payment with result: ${JSON.stringify(result, null, 2)}`)
       // make sure hub isnt silently failing by returning null purchase id
       // as it processes collateral
-      if (!result.purchaseId || !result.amount) {
+      if (!result.paymentId) {
         // allows for retry logic
         console.log(`Bad redemption, retrying..`)
         this.setState({ redeemPaymentState: RedeemPaymentStates.Redeeming })

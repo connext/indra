@@ -147,8 +147,8 @@ export class AppRegistryService {
     // transfers[0] is the senders value in the array, and the transfers[1]
     // is the recipients value in the array
     if (
-      initialState.transfers[0].amount.lt(Zero) ||
-      !initialState.transfers[0].amount.eq(initiatorDeposit)
+      bigNumberify(initialState.transfers[0].amount).lt(Zero) ||
+      !bigNumberify(initialState.transfers[0].amount).eq(initiatorDeposit)
     ) {
       throw new Error(
         `Cannot install a transfer app with initiator deposit values that are ` +
@@ -156,7 +156,7 @@ export class AppRegistryService {
       );
     }
 
-    if (!initialState.transfers[1].amount.isZero()) {
+    if (!bigNumberify(initialState.transfers[1].amount).isZero()) {
       throw new Error(
         `Cannot install a transfer app with nonzero values for the recipient in the initial state.`,
       );
@@ -253,22 +253,27 @@ export class AppRegistryService {
       );
     }
 
-    if (!initialState.transfers[0].amount.isZero()) {
-      throw new Error(`Cannot install a linked transfer app with a sender transfer of > 0`);
+    if (bigNumberify(initialState.transfers[0].amount).lte(Zero)) {
+      throw new Error(
+        `Cannot install a linked transfer app with a sender transfer of <= 0. Transfer amount: ${bigNumberify(
+          initialState.transfers[0].amount,
+        ).toString()}`,
+      );
+    }
+
+    if (bigNumberify(initialState.transfers[1].amount).lt(Zero)) {
+      throw new Error(
+        `Cannot install a linked transfer app with a redeemer transfer of < 0. Transfer amount: ${bigNumberify(
+          initialState.transfers[1].amount,
+        ).toString()}`,
+      );
     }
 
     if (
-      !initialState.transfers[1].amount.eq(initiatorDeposit) ||
-      !initialState.transfers[0].amount.eq(responderDeposit)
+      !bigNumberify(initialState.transfers[0].amount).eq(initiatorDeposit) ||
+      !bigNumberify(initialState.transfers[1].amount).eq(responderDeposit)
     ) {
       throw new Error(`Mismatch between deposits and initial state, refusing to install.`);
-    }
-
-    if (initialState.transfers[1].amount.isZero()) {
-      throw new Error(
-        `Cannot install a linked transfer app with zero receiver amount
-        `,
-      );
     }
   }
 
@@ -321,7 +326,9 @@ export class AppRegistryService {
     const initiatorFreeBalance =
       freeBalanceInitiatorAsset[freeBalanceAddressFromXpub(initiatorIdentifier)];
     if (initiatorFreeBalance.lt(initiatorDeposit)) {
-      throw new Error(`Initiator has insufficient funds to install proposed app`);
+      throw new Error(
+        `Initiator has insufficient funds to install proposed app. Initiator free balance: ${initiatorFreeBalance.toString()}, deposit requested: ${initiatorDeposit.toString()}`,
+      );
     }
 
     // make sure that the node has sufficient balance for requested deposit
