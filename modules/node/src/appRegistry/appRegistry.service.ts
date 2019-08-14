@@ -16,6 +16,7 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { NodeService } from "../node/node.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
+import { TransferService } from "../transfer/transfer.service";
 import { bigNumberifyObj, CLogger, freeBalanceAddressFromXpub } from "../util";
 import { isEthAddress } from "../validator";
 
@@ -32,6 +33,7 @@ export class AppRegistryService {
     private readonly nodeService: NodeService,
     private readonly swapRateService: SwapRateService,
     private readonly channelService: ChannelService,
+    private readonly transferService: TransferService,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
   ) {}
@@ -41,7 +43,7 @@ export class AppRegistryService {
    * accept or reject the install.
    * @param data Data from CF event PROPOSE_INSTALL
    */
-  async installOrReject(
+  async allowOrReject(
     data: ProposeMessage,
   ): Promise<NodeTypes.InstallResult | NodeTypes.RejectInstallResult> {
     try {
@@ -59,7 +61,9 @@ export class AppRegistryService {
    * based on invalid conditions.
    * @param data Data from CF event PROPOSE_INSTALL_VIRTUAL
    */
-  async rejectVirtual(data: ProposeVirtualMessage): Promise<void | NodeTypes.RejectInstallResult> {
+  async allowOrRejectVirtual(
+    data: ProposeVirtualMessage,
+  ): Promise<void | NodeTypes.RejectInstallResult> {
     try {
       await this.verifyVirtualAppProposal(data.data, data.from);
     } catch (e) {
@@ -241,9 +245,10 @@ export class AppRegistryService {
       throw new Error(`Mismatch between deposits and initial state, refusing to install.`);
     }
 
-    if (!initialState.transfers[0].amount.isZero()) {
+    if (initialState.transfers[0].amount.isZero()) {
       throw new Error(
-        `Cannot install a linked transfer app with a nonzero redeemer transfer value`,
+        `Cannot install a linked transfer app with zero receiver amount
+        `,
       );
     }
   }
@@ -420,6 +425,14 @@ export class AppRegistryService {
     switch (registryAppInfo.name) {
       case KnownNodeAppNames.UNIDIRECTIONAL_TRANSFER:
         await this.validateTransfer(proposedAppParams.params);
+        // TODO: move this to install
+        await this.transferService.savePeerToPeerTransfer(
+          initiatorIdentifier,
+          proposedAppParams.params.proposedToIdentifier,
+          proposedAppParams.params.initiatorDepositTokenAddress,
+          bigNumberify(proposedAppParams.params.initiatorDeposit),
+          proposedAppParams.appInstanceId,
+        );
         break;
       default:
         break;

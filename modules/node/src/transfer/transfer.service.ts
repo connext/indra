@@ -6,11 +6,11 @@ import {
   UnidirectionalLinkedTransferAppStage,
   UnidirectionalLinkedTransferAppStateBigNumber,
 } from "@connext/types";
-import { ProposeVirtualMessage, RejectProposalMessage } from "@counterfactual/node";
+import { RejectProposalMessage } from "@counterfactual/node";
 import { AppInstanceJson, Node as NodeTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
-import { BigNumber, bigNumberify } from "ethers/utils";
+import { BigNumber } from "ethers/utils";
 
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
@@ -20,8 +20,13 @@ import { Network } from "../constants";
 import { NodeService } from "../node/node.service";
 import { CLogger, createLinkedHash, delay, freeBalanceAddressFromXpub } from "../util";
 
-import { Transfer, TransferStatus, TransferTypes } from "./transfer.entity";
-import { TransferRepository } from "./transfer.repository";
+import {
+  LinkedTransfer,
+  LinkedTransferStatus,
+  PeerToPeerTransfer,
+  PeerToPeerTransferStatus,
+} from "./transfer.entity";
+import { LinkedTransferRepository, PeerToPeerTransferRepository } from "./transfer.repository";
 
 const logger = new CLogger("TransferService");
 
@@ -34,32 +39,51 @@ export class TransferService {
     private readonly configService: ConfigService,
     private readonly channelRepository: ChannelRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
-    private readonly transferRepository: TransferRepository,
+    private readonly p2pTransferRepository: PeerToPeerTransferRepository,
+    private readonly linkedTransferRepository: LinkedTransferRepository,
   ) {}
 
-  /**
-   * Save pending transfer
-   * @param data Data from PROPOSE_VIRTUAL event
-   */
-  async savePeerToPeerTransfer(data: ProposeVirtualMessage): Promise<Transfer> {
-    const transfer = new Transfer();
-    transfer.amount = bigNumberify(data.data.params.initiatorDeposit);
-    transfer.appInstanceId = data.data.appInstanceId;
-    transfer.assetId = data.data.params.initiatorDepositTokenAddress;
+  async savePeerToPeerTransfer(
+    senderPubId: string,
+    receiverPubId: string,
+    assetId: string,
+    amount: BigNumber,
+    appInstanceId: string,
+  ): Promise<PeerToPeerTransfer> {
+    const transfer = new PeerToPeerTransfer();
+    transfer.amount = amount;
+    transfer.appInstanceId = appInstanceId;
+    transfer.assetId = assetId;
 
-    const senderChannel = await this.channelRepository.findByUserPublicIdentifier(
-      data.data.proposedByIdentifier,
-    );
+    const senderChannel = await this.channelRepository.findByUserPublicIdentifier(senderPubId);
     transfer.senderChannel = senderChannel;
 
-    const receiverChannel = await this.channelRepository.findByUserPublicIdentifier(
-      data.data.params.proposedToIdentifier,
-    );
+    const receiverChannel = await this.channelRepository.findByUserPublicIdentifier(receiverPubId);
     transfer.receiverChannel = receiverChannel;
-    transfer.type = TransferTypes.PEER_TO_PEER;
-    transfer.status = TransferStatus.PENDING;
+    transfer.status = PeerToPeerTransferStatus.PENDING;
 
-    return await this.transferRepository.save(transfer);
+    return await this.p2pTransferRepository.save(transfer);
+  }
+
+  async createLinkedTransfer(
+    senderPubId: string,
+    assetId: string,
+    amount: BigNumber,
+    appInstanceId: string,
+    paymentId: string,
+  ): Promise<LinkedTransfer> {
+    const transfer = new LinkedTransfer();
+    transfer.appInstanceId = appInstanceId;
+    transfer.amount = amount;
+    transfer.assetId = assetId;
+    transfer.paymentId = paymentId;
+
+    const senderChannel = await this.channelRepository.findByUserPublicIdentifier(senderPubId);
+    transfer.senderChannel = senderChannel;
+
+    transfer.status = LinkedTransferStatus.PENDING;
+
+    return await this.linkedTransferRepository.save(transfer);
   }
 
   async resolveLinkedTransfer(

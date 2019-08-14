@@ -17,7 +17,6 @@ import { Injectable, OnModuleInit } from "@nestjs/common";
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { ChannelService } from "../channel/channel.service";
 import { NodeService } from "../node/node.service";
-import { TransferService } from "../transfer/transfer.service";
 import { CLogger } from "../util";
 
 const logger = new CLogger("ListenerService");
@@ -40,7 +39,6 @@ export default class ListenerService implements OnModuleInit {
     private readonly nodeService: NodeService,
     private readonly appRegistryService: AppRegistryService,
     private readonly channelService: ChannelService,
-    private readonly transferService: TransferService,
   ) {}
 
   getEventListeners(): CallbackStruct {
@@ -61,8 +59,10 @@ export default class ListenerService implements OnModuleInit {
       DEPOSIT_STARTED: (data: any): void => {
         logEvent(NodeTypes.EventName.DEPOSIT_STARTED, data);
       },
-      INSTALL: (data: InstallMessage): void => {
+      INSTALL: async (data: InstallMessage): Promise<void> => {
         logEvent(NodeTypes.EventName.INSTALL, data);
+        const info = await this.nodeService.getAppInstanceDetails(data.data.params.appInstanceId);
+        console.log("info: ", info);
       },
       // TODO: make cf return app instance id and app def?
       INSTALL_VIRTUAL: async (data: InstallVirtualMessage): Promise<void> => {
@@ -72,16 +72,11 @@ export default class ListenerService implements OnModuleInit {
       },
       PROPOSE_INSTALL: (data: ProposeMessage): void => {
         logEvent(NodeTypes.EventName.PROPOSE_INSTALL, data);
-        this.appRegistryService.installOrReject(data);
+        this.appRegistryService.allowOrReject(data);
       },
       PROPOSE_INSTALL_VIRTUAL: async (data: ProposeVirtualMessage): Promise<void> => {
         logEvent(NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data);
-        const rejected = await this.appRegistryService.rejectVirtual(data);
-        if (rejected) {
-          return;
-        }
-        // TODO: move this to install
-        this.transferService.savePeerToPeerTransfer(data);
+        await this.appRegistryService.allowOrRejectVirtual(data);
       },
       PROPOSE_STATE: (data: any): void => {
         // TODO: need to validate all apps here as well?

@@ -6,6 +6,7 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigModule } from "../config/config.module";
 import { NodeModule } from "../node/node.module";
 import { SwapRateModule } from "../swapRate/swapRate.module";
+import { TransferModule } from "../transfer/transfer.module";
 
 import { AppRegistryController } from "./appRegistry.controller";
 import { appRegistryProviderFactory } from "./appRegistry.provider";
@@ -21,6 +22,7 @@ import { AppRegistryService } from "./appRegistry.service";
     NodeModule,
     SwapRateModule,
     ChannelModule,
+    TransferModule,
   ],
   providers: [appRegistryProviderFactory, AppRegistryService],
 })

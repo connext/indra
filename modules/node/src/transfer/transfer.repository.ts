@@ -1,6 +1,9 @@
 import { EntityRepository, Repository } from "typeorm";
 
-import { Transfer } from "./transfer.entity";
+import { LinkedTransfer, PeerToPeerTransfer } from "./transfer.entity";
 
-@EntityRepository(Transfer)
-export class TransferRepository extends Repository<Transfer> {}
+@EntityRepository(PeerToPeerTransfer)
+export class PeerToPeerTransferRepository extends Repository<PeerToPeerTransfer> {}
+
+@EntityRepository(LinkedTransfer)
+export class LinkedTransferRepository extends Repository<LinkedTransfer> {}
