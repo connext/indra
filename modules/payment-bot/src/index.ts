@@ -2,6 +2,7 @@ import * as connext from "@connext/client";
 import {
   DepositParameters,
   LinkedTransferParameters,
+  makeChecksum,
   ResolveLinkedTransferParameters,
   WithdrawParameters,
 } from "@connext/types";
@@ -234,16 +235,16 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
 
   await client.addPaymentProfile({
     amountToCollateralize: parseEther("0.1").toString(),
+    assetId: AddressZero,
     minimumMaintainedCollateral: parseEther("0.01").toString(),
-    tokenAddress: AddressZero,
   });
 
   if (assetId) {
     console.log(`Adding payment profile for ${assetId}`);
     await client.addPaymentProfile({
       amountToCollateralize: parseEther("10").toString(),
+      assetId: makeChecksum(assetId),
       minimumMaintainedCollateral: parseEther("5").toString(),
-      tokenAddress: assetId.toLowerCase(),
     });
   }
   registerClientListeners();

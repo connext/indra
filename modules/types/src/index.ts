@@ -164,7 +164,7 @@ export enum UnidirectionalLinkedTransferAppStage {
 
 // payment setups
 export type PaymentProfile<T = string> = {
-  tokenAddress: string;
+  assetId: string;
   minimumMaintainedCollateral: T;
   amountToCollateralize: T;
 };
@@ -521,6 +521,15 @@ export function convertMultisig<To extends NumericTypeName>(
   const fromType = getType(obj.freeBalanceA);
   return convertFields(fromType, to, ["freeBalanceA", "freeBalanceB"], obj);
 }
+
+export function convertPaymentProfile<To extends NumericTypeName>(
+  to: To,
+  obj: PaymentProfile<any>,
+): PaymentProfile<NumericTypes[To]> {
+  const fromType = getType(obj.amountToCollateralize);
+  return convertFields(fromType, to, ["amountToCollateralize", "minimumMaintainedCollateral"], obj);
+}
+
 ////// INPUT PARAMETER CONVERSIONS
 /**
  * Conversion function for DepositParameter to an AssetAmount. Will also add
@@ -584,6 +593,7 @@ export const convert = {
   Deposit: convertDepositParametersToAsset,
   LinkedTransfer: convertLinkedTransferParametersToAsset,
   Multisig: convertMultisig,
+  PaymentProfile: convertPaymentProfile,
   ResolveLinkedTransfer: convertAssetAmountWithId,
   SwapParameters: convertSwapParameters,
   Transfer: convertAssetAmount,
