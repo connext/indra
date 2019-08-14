@@ -4,6 +4,7 @@ import BN from 'bn.js'
 const depositEth = '0.05'
 const depositToken = '5'
 const payTokens = '3.14'
+const botTransferAmount = '0.618' // Keep this synced w what recipient expects in ops/test-ui
 
 // You can also hard-code this to the xpub for a daicard you have open in a separate browser
 const recipientBot = 'xpub6DXwZMmWUq4bRZ3LtaBYwu47XV4Td19pnngok2Y7DnRzcCJSKCmD1AcLJDbZZf5dzZpvHqYzmRaKf7Gd2MV9qDvWwwN7VpBPNXQCZCbfyoK'
@@ -57,7 +58,7 @@ describe('Daicard', () => {
 
     it(`Should transfer tokens to a collateralized payment bot`, () => {
       my.deposit(depositEth).then(tokensDeposited => {
-        my.pay(recipientBot, '0.618')
+        my.pay(recipientBot, botTransferAmount)
       })
     })
 
