@@ -12,7 +12,7 @@ function cleanup {
   echo "Stopping the recipient payment bot..."
   docker container stop indra_v2_payment_bot_1
 }
-trap cleanup EXIT
+trap cleanup EXIT SIGINT
 
 ########################################
 ## Run Tests
@@ -27,7 +27,10 @@ bash ops/payment-bot.sh -i 1 -q -a $tokenAddress
 
 echo;echo "Starting recipient bot in background, waiting for payments";echo;sleep 1
 
-bash ops/payment-bot.sh -i 1 &
+if [[ "$1" == "recieve" ]]
+then bash ops/payment-bot.sh -i 1
+else bash ops/payment-bot.sh -i 1 &
+fi
 
 sleep 5;echo;echo "Depositing eth into sender bot";echo;sleep 1
 

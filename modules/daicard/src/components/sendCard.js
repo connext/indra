@@ -182,7 +182,6 @@ class SendCard extends Component {
   render() {
     const { classes } = this.props;
     const { amount, recipient, paymentState, scan, showReceipt, sendError } = this.state;
-    console.log('amount: ', amount);
     return (
       <Grid
         container

@@ -98,8 +98,10 @@ start-e2e: prod deployed-contracts
 	INDRA_V2_ETH_PROVIDER=http://localhost:8545 INDRA_V2_MODE=test bash ops/start-prod.sh
 
 test-e2e-ui: start-e2e
+	bash ops/test-bot.sh recieve &
+	sleep 15
 	./node_modules/.bin/cypress install > /dev/null
-	./node_modules/.bin/cypress run --spec cypress/tests/index.js --env publicUrl=https://localhost
+	./node_modules/.bin/cypress run --spec cypress/tests/index.js --env publicUrl=https://localhost --record false
 
 test-e2e-bot: start-e2e
 	bash ops/test-bot.sh
