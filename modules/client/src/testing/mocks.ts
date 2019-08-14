@@ -140,4 +140,8 @@ export class MockNodeClientApi implements INodeApiClient {
   public async addPaymentProfile(): Promise<any> {
     return MockNodeClientApi.returnValues.addPaymentProfile;
   }
+
+  public async getPaymentProfile(): Promise<PaymentProfile | undefined> {
+    return undefined;
+  }
 }
