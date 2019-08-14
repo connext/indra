@@ -36,6 +36,7 @@ jobs:
     steps:
       - checkout
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+      - run: make prod
       - run: make push-prod
 
   deploy-staging:

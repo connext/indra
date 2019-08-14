@@ -7,7 +7,7 @@ cypress="node_modules/.bin/cypress"
 function cleanup {
   echo "Stopping the recipient payment bot..."
   if [[ -n "$bot_pid" ]]
-  then kill $bot_pid
+  then echo "killing $bot_pid" && kill $bot_pid
   fi
   docker container stop indra_v2_payment_bot_1 2> /dev/null || true
   echo "Done!"
