@@ -1,5 +1,11 @@
 import { IMessagingService } from "@connext/messaging";
-import { GetChannelResponse, GetConfigResponse, RequestCollateralResponse } from "@connext/types";
+import {
+  convert,
+  GetChannelResponse,
+  GetConfigResponse,
+  PaymentProfile as PaymentProfileRes,
+  RequestCollateralResponse,
+} from "@connext/types";
 import { Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
@@ -70,28 +76,49 @@ class ChannelMessaging extends AbstractMessagingProvider {
   async addPaymentProfile(
     subject: string,
     data: {
-      tokenAddress: string;
+      assetId: string;
       minimumMaintainedCollateral: string;
       amountToCollateralize: string;
     },
-  ): Promise<PaymentProfile> {
+  ): Promise<PaymentProfileRes> {
     const pubId = this.getPublicIdentifierFromSubject(subject);
 
-    return await this.channelService.addPaymentProfileToChannel(
+    const {
+      amountToCollateralize,
+      minimumMaintainedCollateral,
+      assetId,
+    } = await this.channelService.addPaymentProfileToChannel(
       pubId,
-      data.tokenAddress,
+      data.assetId,
       bigNumberify(data.minimumMaintainedCollateral),
       bigNumberify(data.amountToCollateralize),
     );
+
+    return convert.PaymentProfile("str", {
+      amountToCollateralize,
+      assetId,
+      minimumMaintainedCollateral,
+    });
   }
 
   async getPaymentProfile(
     subject: string,
     data: { assetId?: string },
-  ): Promise<PaymentProfile | undefined> {
+  ): Promise<PaymentProfileRes | undefined> {
     const pubId = this.getPublicIdentifierFromSubject(subject);
 
-    return await this.channelService.getPaymentProfile(pubId, data.assetId);
+    const prof = await this.channelService.getPaymentProfile(pubId, data.assetId);
+
+    if (!prof) {
+      return undefined;
+    }
+
+    const { amountToCollateralize, minimumMaintainedCollateral, assetId } = prof;
+    return convert.PaymentProfile("str", {
+      amountToCollateralize,
+      assetId,
+      minimumMaintainedCollateral,
+    });
   }
 
   setupSubscriptions(): void {
