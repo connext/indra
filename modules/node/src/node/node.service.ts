@@ -152,6 +152,7 @@ export class NodeService {
       logger.error(err);
       throw new Error(err);
     }
+    logger.log(`Calling uninstallApp for appInstanceId ${appInstanceId}`);
     const uninstallResponse = await this.cfNode.rpcRouter.dispatch({
       id: Date.now(),
       methodName: NodeTypes.RpcMethodName.UNINSTALL,
@@ -197,18 +198,24 @@ export class NodeService {
   }
 
   async getAppInstanceDetails(appInstanceId: string): Promise<AppInstanceJson> {
-    const appInstanceResponse = await this.cfNode.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS,
-      parameters: { appInstanceId } as NodeTypes.GetAppInstanceDetailsParams,
-    });
-
-    logger.log(
-      `getAppInstanceDetails called with result ${JSON.stringify(
-        appInstanceResponse.result.result,
-      )}`,
-    );
-    return appInstanceResponse.result.result.appInstance as AppInstanceJson;
+    let appInstance;
+    try {
+      const appInstanceResponse = await this.cfNode.rpcRouter.dispatch({
+        id: Date.now(),
+        methodName: NodeTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS,
+        parameters: { appInstanceId } as NodeTypes.GetAppInstanceDetailsParams,
+      });
+      appInstance = appInstanceResponse.result.result.appInstance;
+    } catch (e) {
+      if (e.message.includes("No multisig address exists for the given appInstanceId")) {
+        logger.warn(`${e.message}: ${appInstanceId}`);
+        appInstance = undefined;
+      } else {
+        throw e;
+      }
+    }
+    logger.log(`getAppInstanceDetails called with result: ${JSON.stringify(appInstance)}`);
+    return appInstance as AppInstanceJson;
   }
 
   async getAppState(appInstanceId: string): Promise<NodeTypes.GetStateResult | undefined> {
@@ -232,6 +239,7 @@ export class NodeService {
   private async appNotInstalled(appInstanceId: string): Promise<string | undefined> {
     const apps = await this.getAppInstances();
     const app = apps.filter((app: AppInstanceJson) => app.identityHash === appInstanceId);
+    logger.log(`App ${appInstanceId} is installed: ${JSON.stringify(app)}`);
     if (!app || app.length === 0) {
       return (
         `Could not find installed app with id: ${appInstanceId}. ` +

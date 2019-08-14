@@ -20,6 +20,9 @@ export function IsEthAddress(validationOptions?: ValidationOptions): Function {
 }
 
 export function isEthAddress(address: string): boolean {
+  if (typeof address !== "string") {
+    return false;
+  }
   return EthAddressRegex.test(address);
 }
 

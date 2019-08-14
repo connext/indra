@@ -10,6 +10,7 @@ import {
   DepositParameters,
   GetChannelResponse,
   GetConfigResponse,
+  makeChecksum,
   NodeChannel,
   PaymentProfile,
   RegisteredAppDetails,
@@ -31,7 +32,7 @@ import { Address, AppInstanceInfo, Node as NodeTypes } from "@counterfactual/typ
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { BigNumber, getAddress, HDNode, Network } from "ethers/utils";
+import { BigNumber, HDNode, Network } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
@@ -262,6 +263,10 @@ export abstract class ConnextChannel {
 
   public addPaymentProfile = async (profile: PaymentProfile): Promise<PaymentProfile> => {
     return await this.internal.node.addPaymentProfile(profile);
+  };
+
+  public getPaymentProfile = async (assetId?: string): Promise<PaymentProfile | undefined> => {
+    return await this.internal.node.getPaymentProfile(assetId);
   };
 
   ///////////////////////////////////
@@ -523,7 +528,7 @@ export class ConnextInternal extends ConnextChannel {
         amount,
         multisigAddress: this.opts.multisigAddress,
         notifyCounterparty,
-        tokenAddress: assetId,
+        tokenAddress: makeChecksum(assetId),
       } as NodeTypes.DepositParams,
     });
     return depositResponse.result.result as NodeTypes.DepositResult;
@@ -544,7 +549,7 @@ export class ConnextInternal extends ConnextChannel {
   public getFreeBalance = async (
     assetId: string = AddressZero,
   ): Promise<NodeTypes.GetFreeBalanceStateResult> => {
-    const normalizedAssetId = getAddress(assetId);
+    const normalizedAssetId = makeChecksum(assetId);
     try {
       const freeBalance = await this.cfModule.rpcRouter.dispatch({
         id: Date.now(),
@@ -850,7 +855,7 @@ export class ConnextInternal extends ConnextChannel {
         amount,
         multisigAddress: this.multisigAddress,
         recipient,
-        tokenAddress: assetId,
+        tokenAddress: makeChecksum(assetId),
       },
     });
 
@@ -873,12 +878,6 @@ export class ConnextInternal extends ConnextChannel {
       throw new Error(`Found multiple ${appName} app details on ${this.network.name} network`);
     }
     return appInfo[0];
-  };
-
-  // TODO: make sure types are all good
-  private connectDefaultListeners = (): void => {
-    // counterfactual listeners
-    this.listener.registerDefaultCfListeners();
   };
 
   private appNotInstalled = async (appInstanceId: string): Promise<string | undefined> => {

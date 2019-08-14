@@ -3,7 +3,7 @@ import { AllowedSwap, SwapRate } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { Contract, ethers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { formatEther } from "ethers/utils";
+import { formatEther, getAddress } from "ethers/utils";
 
 import { medianizerAbi } from "../abi/medianizer.abi";
 import { ConfigService } from "../config/config.service";
@@ -50,14 +50,9 @@ export class SwapRateService implements OnModuleInit {
   }
 
   async getSwapRate(from: string, to: string, blockNumber: number = 0): Promise<string> {
-    if (
-      !(await this.getValidSwaps()).find(
-        (s: AllowedSwap) => s.from === from.toLowerCase() && s.to === to.toLowerCase(),
-      )
-    ) {
+    if (!(await this.getValidSwaps()).find((s: AllowedSwap) => s.from === from && s.to === to)) {
       throw new Error(`No valid swap exists for ${from} to ${to}`);
     }
-
     const rateIndex = this.latestSwapRates.findIndex(
       (s: SwapRate) => s.from === from && s.to === to,
     );
@@ -92,6 +87,7 @@ export class SwapRateService implements OnModuleInit {
         }
       }
     }
+
     const newSwap: SwapRate = { from, to, rate: newRate };
     if (rateIndex !== -1) {
       this.latestSwapRates[rateIndex] = newSwap;
@@ -102,13 +98,11 @@ export class SwapRateService implements OnModuleInit {
       logger.log(`Got swap rate from medianizer at block ${blockNumber}: ${newRate}`);
       this.broadcastRate(from, to); // Only broadcast the rate if it's changed
     }
-
     return newRate;
   }
 
   async broadcastRate(from: string, to: string): Promise<void> {
     const swap = this.latestSwapRates.find((s: SwapRate) => s.from === from && s.to === to);
-
     if (!swap) {
       throw new Error(`No rate exists for ${from} to ${to}`);
     }

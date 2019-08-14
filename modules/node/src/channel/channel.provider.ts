@@ -1,9 +1,15 @@
 import { IMessagingService } from "@connext/messaging";
-import { GetChannelResponse, GetConfigResponse, RequestCollateralResponse } from "@connext/types";
+import {
+  convert,
+  GetChannelResponse,
+  GetConfigResponse,
+  PaymentProfile as PaymentProfileRes,
+  RequestCollateralResponse,
+} from "@connext/types";
 import { Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { bigNumberify } from "ethers/utils";
+import { bigNumberify, getAddress } from "ethers/utils";
 
 import { ConfigService } from "../config/config.service";
 import { ChannelMessagingProviderId, MessagingProviderId, NodeProviderId } from "../constants";
@@ -48,13 +54,11 @@ class ChannelMessaging extends AbstractMessagingProvider {
 
   async getChannel(subject: string): Promise<GetChannelResponse> {
     const pubId = this.getPublicIdentifierFromSubject(subject);
-
     return (await this.channelRepository.findByUserPublicIdentifier(pubId)) as GetChannelResponse;
   }
 
   async createChannel(subject: string): Promise<NodeTypes.CreateChannelResult> {
     const pubId = this.getPublicIdentifierFromSubject(subject);
-
     return await this.channelService.create(pubId);
   }
 
@@ -63,34 +67,62 @@ class ChannelMessaging extends AbstractMessagingProvider {
     data: { assetId?: string },
   ): Promise<RequestCollateralResponse> {
     const pubId = this.getPublicIdentifierFromSubject(subject);
-
-    return this.channelService.requestCollateral(pubId, data.assetId);
+    return this.channelService.requestCollateral(pubId, getAddress(data.assetId));
   }
 
   async addPaymentProfile(
     subject: string,
     data: {
-      tokenAddress: string;
+      assetId: string;
       minimumMaintainedCollateral: string;
       amountToCollateralize: string;
     },
-  ): Promise<PaymentProfile> {
+  ): Promise<PaymentProfileRes> {
     const pubId = this.getPublicIdentifierFromSubject(subject);
-
-    return await this.channelService.addPaymentProfileToChannel(
+    const {
+      amountToCollateralize,
+      minimumMaintainedCollateral,
+      assetId,
+    } = await this.channelService.addPaymentProfileToChannel(
       pubId,
-      data.tokenAddress,
+      data.assetId,
       bigNumberify(data.minimumMaintainedCollateral),
       bigNumberify(data.amountToCollateralize),
     );
+
+    return convert.PaymentProfile("str", {
+      amountToCollateralize,
+      assetId,
+      minimumMaintainedCollateral,
+    });
+  }
+
+  async getPaymentProfile(
+    subject: string,
+    data: { assetId?: string },
+  ): Promise<PaymentProfileRes | undefined> {
+    const pubId = this.getPublicIdentifierFromSubject(subject);
+
+    const prof = await this.channelService.getPaymentProfile(pubId, data.assetId);
+
+    if (!prof) {
+      return undefined;
+    }
+
+    const { amountToCollateralize, minimumMaintainedCollateral, assetId } = prof;
+    return convert.PaymentProfile("str", {
+      amountToCollateralize,
+      assetId,
+      minimumMaintainedCollateral,
+    });
   }
 
   setupSubscriptions(): void {
     super.connectRequestReponse("channel.get.>", this.getChannel.bind(this));
     super.connectRequestReponse("channel.create.>", this.createChannel.bind(this));
     super.connectRequestReponse("channel.request-collateral.>", this.requestCollateral.bind(this));
-
     super.connectRequestReponse("channel.add-profile.>", this.addPaymentProfile.bind(this));
+    super.connectRequestReponse("channel.get-profile.>", this.getPaymentProfile.bind(this));
   }
 }
 

@@ -7,23 +7,28 @@ jobs:
       - checkout
       - run: make test-node
 
-  test-e2e-ui:
+  test-ui:
     machine: true
     steps:
       - checkout
-      - run: make test-e2e-ui
+      - run: make prod
+      - run: make start-test
+      - run: make test-ui
 
-  test-e2e-bot:
+  test-bot:
     machine: true
     steps:
       - checkout
-      - run: make test-e2e-bot
+      - run: make prod
+      - run: make start-test
+      - run: make test-bot
 
   push-latest-images:
     machine: true
     steps:
       - checkout
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+      - run: make prod
       - run: make push-latest
 
   push-prod-images:
@@ -31,6 +36,7 @@ jobs:
     steps:
       - checkout
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+      - run: make prod
       - run: make push-prod
 
   deploy-staging:
@@ -78,8 +84,8 @@ workflows:
   test-and-deploy:
     jobs:
       - test-node
-      - test-e2e-ui
-      - test-e2e-bot
+      - test-ui
+      - test-bot
 
       - push-latest-images:
           filters:
@@ -87,8 +93,8 @@ workflows:
               only: staging
           requires:
             - test-node
-            - test-e2e-ui
-            - test-e2e-bot
+            - test-ui
+            - test-bot
 
       - push-prod-images:
           filters:
@@ -96,8 +102,8 @@ workflows:
               only: master
           requires:
             - test-node
-            - test-e2e-ui
-            - test-e2e-bot
+            - test-ui
+            - test-bot
 
       - deploy-staging:
           requires:

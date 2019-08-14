@@ -21,7 +21,7 @@ export class AppRegistry {
   })
   outcomeType!: OutcomeType;
 
-  @Column("citext")
+  @Column("text")
   appDefinitionAddress!: string;
 
   @Column("text")
