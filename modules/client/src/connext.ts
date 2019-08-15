@@ -862,6 +862,35 @@ export class ConnextInternal extends ConnextChannel {
     return withdrawalResponse.result.result;
   };
 
+  public cfWithdrawCommitment = async (
+    assetId: string,
+    amount: BigNumber,
+    recipient: string,
+  ): Promise<NodeTypes.WithdrawCommitmentResult> => {
+    const freeBalance = await this.getFreeBalance(assetId);
+    const preWithdrawalBal = freeBalance[this.freeBalanceAddress];
+    const err = [
+      notLessThanOrEqualTo(amount, preWithdrawalBal),
+      recipient ? invalidAddress(recipient) : null, // check address of asset
+    ].filter(falsy)[0];
+    if (err) {
+      this.logger.error(err);
+      throw new Error(err);
+    }
+    const withdrawalResponse = await this.cfModule.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.WITHDRAW_COMMITMENT,
+      parameters: {
+        amount,
+        multisigAddress: this.multisigAddress,
+        recipient,
+        tokenAddress: makeChecksum(assetId),
+      } as NodeTypes.WithdrawCommitmentParams,
+    });
+
+    return withdrawalResponse.result.result;
+  };
+
   ///////////////////////////////////
   // LOW LEVEL METHODS
 
