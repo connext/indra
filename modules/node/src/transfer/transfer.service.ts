@@ -144,11 +144,11 @@ export class TransferService {
       stage: UnidirectionalLinkedTransferAppStage.POST_FUND,
       transfers: [
         {
-          amount,
+          amount: Zero,
           to: freeBalanceAddressFromXpub(userPubId),
         },
         {
-          amount: Zero,
+          amount,
           to: freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier),
         },
       ],
@@ -161,7 +161,7 @@ export class TransferService {
     await this.waitForAppInstall();
 
     // finalize
-    await this.finalizeAndUninstallApp(amount, assetId, paymentId, preImage);
+    await this.finalizeAndUninstallApp(this.appId, amount, assetId, paymentId, preImage);
 
     // sanity check, free balance decreased by payment amount
     const postTransferBal = await this.nodeService.getFreeBalance(
@@ -196,7 +196,7 @@ export class TransferService {
 
     // uninstall sender app
     // dont await so caller isnt blocked by this
-    this.nodeService.uninstallApp(senderApp.identityHash);
+    this.finalizeAndUninstallApp(senderApp.identityHash, amount, assetId, paymentId, preImage);
 
     return {
       freeBalance: await this.nodeService.getFreeBalance(
@@ -258,6 +258,7 @@ export class TransferService {
   };
 
   private finalizeAndUninstallApp = async (
+    appInstanceId: string,
     amount: BigNumber,
     assetId: string,
     paymentId: string,
@@ -269,18 +270,20 @@ export class TransferService {
       paymentId,
       preImage,
     };
-    await this.nodeService.takeAction(this.appId, action);
+    await this.nodeService.takeAction(appInstanceId, action);
 
     // display final state of app
-    const appInfo = await this.nodeService.getAppState(this.appId);
+    const appInfo = await this.nodeService.getAppState(appInstanceId);
 
     // TODO: was getting an error here, printing this in case it happens again
-    console.log("this.appId: ", this.appId);
+    console.log("appInstanceId: ", appInstanceId);
     console.log("appInfo: ", appInfo);
-    (appInfo.state as any).transfers[0][1] = (appInfo.state as any).transfers[0][1].toString();
-    (appInfo.state as any).transfers[1][1] = (appInfo.state as any).transfers[1][1].toString();
+    // NOTE: sometimes transfers is a nested array, and sometimes its an
+    // array of objects. super bizzarre, but is what would contribute to errors
+    // with logging and casting.... :shrug:
+    console.log("appInfo.transfers: ", (appInfo.state as any).transfers);
 
-    await this.nodeService.uninstallApp(this.appId);
+    await this.nodeService.uninstallApp(appInstanceId);
     // TODO: cf does not emit uninstall virtual event on the node
     // that has called this function but ALSO does not immediately
     // uninstall the apps. This will be a problem when trying to
