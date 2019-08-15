@@ -4,6 +4,8 @@ set -e
 # turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
 
+registry="docker.io/connextproject"
+
 ####################
 # External Env Vars
 
@@ -112,8 +114,6 @@ eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
 
 ########################################
 ## Docker Image Conig
-
-registry="docker.io/connextproject"
 
 database_image="postgres:9-alpine"
 nats_image="nats:2.0.0-linux"

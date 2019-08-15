@@ -1,5 +1,5 @@
-organization=connextproject
 project=indra_v2
+registry=docker.io/connextproject
 
 # Specify make-specific variables (VPATH = prerequisite search path)
 flags=.makeflags
@@ -8,7 +8,6 @@ SHELL=/bin/bash
 
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
 
-registry=docker.io/$(organization)
 version=$(shell cat package.json | grep '"version":' | awk -F '"' '{print $$4}')
 
 # Get absolute paths to important dirs
@@ -87,6 +86,11 @@ push-prod: prod
 deployed-contracts: contracts
 	bash ops/deploy-contracts.sh ganache
 	touch $(flags)/$@
+
+dls:
+	@docker service ls
+	@echo "====="
+	@docker container ls -a
 
 ########################################
 # Begin Test Rules
