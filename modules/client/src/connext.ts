@@ -11,6 +11,7 @@ import {
   GetChannelResponse,
   GetConfigResponse,
   makeChecksum,
+  makeChecksumOrEthAddress,
   NodeChannel,
   PaymentProfile,
   RegisteredAppDetails,
@@ -370,9 +371,9 @@ export abstract class ConnextChannel {
   };
 
   public cfWithdraw = async (
-    assetId: string,
     amount: BigNumber,
-    recipient: string,
+    assetId?: string,
+    recipient?: string,
   ): Promise<NodeTypes.WithdrawResult> => {
     return await this.internal.cfWithdraw(assetId, amount, recipient);
   };
@@ -834,15 +835,16 @@ export class ConnextInternal extends ConnextChannel {
   };
 
   public cfWithdraw = async (
-    assetId: string,
     amount: BigNumber,
-    recipient: string,
+    assetId?: string,
+    recipient?: string,
   ): Promise<NodeTypes.WithdrawResult> => {
     const freeBalance = await this.getFreeBalance(assetId);
     const preWithdrawalBal = freeBalance[this.freeBalanceAddress];
     const err = [
       notLessThanOrEqualTo(amount, preWithdrawalBal),
-      recipient ? invalidAddress(recipient) : null, // check address of asset
+      assetId ? invalidAddress(assetId) : null,
+      recipient ? invalidAddress(recipient) : null,
     ].filter(falsy)[0];
     if (err) {
       this.logger.error(err);
@@ -855,7 +857,7 @@ export class ConnextInternal extends ConnextChannel {
         amount,
         multisigAddress: this.multisigAddress,
         recipient,
-        tokenAddress: makeChecksum(assetId),
+        tokenAddress: makeChecksumOrEthAddress(assetId),
       },
     });
 
@@ -863,15 +865,16 @@ export class ConnextInternal extends ConnextChannel {
   };
 
   public cfWithdrawCommitment = async (
-    assetId: string,
     amount: BigNumber,
-    recipient: string,
+    assetId?: string,
+    recipient?: string,
   ): Promise<NodeTypes.WithdrawCommitmentResult> => {
     const freeBalance = await this.getFreeBalance(assetId);
     const preWithdrawalBal = freeBalance[this.freeBalanceAddress];
     const err = [
       notLessThanOrEqualTo(amount, preWithdrawalBal),
-      recipient ? invalidAddress(recipient) : null, // check address of asset
+      assetId ? invalidAddress(assetId) : null,
+      recipient ? invalidAddress(recipient) : null,
     ].filter(falsy)[0];
     if (err) {
       this.logger.error(err);
@@ -884,7 +887,7 @@ export class ConnextInternal extends ConnextChannel {
         amount,
         multisigAddress: this.multisigAddress,
         recipient,
-        tokenAddress: makeChecksum(assetId),
+        tokenAddress: makeChecksumOrEthAddress(assetId),
       } as NodeTypes.WithdrawCommitmentParams,
     });
 
