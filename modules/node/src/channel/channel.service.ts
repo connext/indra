@@ -31,7 +31,7 @@ export class ChannelService {
       counterpartyPublicIdentifier,
     );
     if (existing) {
-      throw new RpcException(`Channel already exists for ${counterpartyPublicIdentifier}`);
+      throw new Error(`Channel already exists for ${counterpartyPublicIdentifier}`);
     }
 
     return await this.nodeService.createChannel(counterpartyPublicIdentifier);
@@ -44,7 +44,7 @@ export class ChannelService {
   ): Promise<NodeTypes.DepositResult> {
     const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
     if (!channel) {
-      throw new RpcException(`No channel exists for multisigAddress ${multisigAddress}`);
+      throw new Error(`No channel exists for multisigAddress ${multisigAddress}`);
     }
 
     return await this.nodeService.deposit(multisigAddress, amount, getAddress(assetId));
@@ -60,6 +60,10 @@ export class ChannelService {
       userPubId,
       normalizedAssetId,
     );
+
+    if (!profile) {
+      throw new Error(`Profile does not exist for user ${userPubId} and assetId ${assetId}`);
+    }
 
     const freeBalance = await this.nodeService.getFreeBalance(
       userPubId,
@@ -94,17 +98,6 @@ export class ChannelService {
     profile.minimumMaintainedCollateral = minimumMaintainedCollateral;
     profile.amountToCollateralize = amountToCollateralize;
     return await this.channelRepository.addPaymentProfileToChannel(userPubId, profile);
-  }
-
-  async getPaymentProfile(userPubId: string, assetId: string): Promise<PaymentProfile | undefined> {
-    try {
-      return await this.channelRepository.getPaymentProfileForChannelAndToken(userPubId, assetId);
-    } catch (e) {
-      if (e.message.contains(`Payment profile does not exist`)) {
-        return undefined;
-      }
-      throw e;
-    }
   }
 
   /**
@@ -151,5 +144,9 @@ export class ChannelService {
     channel.multisigAddress = creationData.data.multisigAddress;
     channel.available = true;
     await this.channelRepository.save(channel);
+  }
+
+  async withdrawForClient(userPublicIdentifier: string, tx: string): Promise<void> {
+
   }
 }

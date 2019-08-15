@@ -103,7 +103,10 @@ class ChannelMessaging extends AbstractMessagingProvider {
   ): Promise<PaymentProfileRes | undefined> {
     const pubId = this.getPublicIdentifierFromSubject(subject);
 
-    const prof = await this.channelService.getPaymentProfile(pubId, data.assetId);
+    const prof = await this.channelRepository.getPaymentProfileForChannelAndToken(
+      pubId,
+      data.assetId,
+    );
 
     if (!prof) {
       return undefined;
