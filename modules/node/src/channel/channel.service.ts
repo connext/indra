@@ -1,10 +1,11 @@
 import { CreateChannelMessage } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
-import { RpcException } from "@nestjs/microservices";
 import { AddressZero } from "ethers/constants";
+import { TransactionResponse } from "ethers/providers";
 import { BigNumber, getAddress } from "ethers/utils";
 
+import { ConfigService } from "../config/config.service";
 import { NodeService } from "../node/node.service";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { CLogger, freeBalanceAddressFromXpub } from "../util";
@@ -18,6 +19,7 @@ const logger = new CLogger("ChannelService");
 export class ChannelService {
   constructor(
     private readonly nodeService: NodeService,
+    private readonly configService: ConfigService,
     private readonly channelRepository: ChannelRepository,
   ) {}
 
@@ -26,7 +28,6 @@ export class ChannelService {
    * @param counterpartyPublicIdentifier
    */
   async create(counterpartyPublicIdentifier: string): Promise<NodeTypes.CreateChannelResult> {
-    logger.log(`Creating channel for ${counterpartyPublicIdentifier}`);
     const existing = await this.channelRepository.findByUserPublicIdentifier(
       counterpartyPublicIdentifier,
     );
@@ -111,6 +112,9 @@ export class ChannelService {
     userPublicIdentifier: string,
   ): Promise<Channel> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
+    }
     channel.depositInFlight = depositInFlight;
     return await this.channelRepository.save(channel);
   }
@@ -146,7 +150,16 @@ export class ChannelService {
     await this.channelRepository.save(channel);
   }
 
-  async withdrawForClient(userPublicIdentifier: string, tx: string): Promise<void> {
+  async withdrawForClient(
+    userPublicIdentifier: string,
+    tx: NodeTypes.MinimalTransaction,
+  ): Promise<TransactionResponse> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
+    }
 
+    const wallet = this.configService.getEthWallet();
+    return await wallet.sendTransaction(tx);
   }
 }
