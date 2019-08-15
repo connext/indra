@@ -9,6 +9,7 @@ import {
   SupportedApplication,
   SupportedNetwork,
 } from "@connext/types";
+import { Node as NodeTypes } from "@counterfactual/types";
 import uuid = require("uuid");
 
 import { Logger } from "./lib/logger";
@@ -28,6 +29,7 @@ export interface INodeApiClient {
   getLatestSwapRate(from: string, to: string): Promise<string>;
   getPaymentProfile(assetId?: string): Promise<PaymentProfile>;
   requestCollateral(assetId: string): Promise<void>;
+  withdraw(tx: NodeTypes.MinimalTransaction): Promise<void>;
   resolveLinkedTransfer(
     paymentId: string,
     preImage: string,
@@ -99,6 +101,12 @@ export class NodeApiClient implements INodeApiClient {
       }
       throw e;
     }
+  }
+
+  public async withdraw(tx: NodeTypes.MinimalTransaction): Promise<void> {
+    return await this.send(`channel.withdraw.${this.userPublicIdentifier}`, {
+      tx,
+    });
   }
 
   public async resolveLinkedTransfer(
