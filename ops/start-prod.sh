@@ -84,7 +84,9 @@ fi
 
 echo "eth provider: $INDRA_V2_ETH_PROVIDER w chainId: $chainId"
 
-if [[ "$chainId" == "4" ]]
+if [[ "$chainId" == "1" ]]
+then eth_mnemonic_name="indra_mnemonic_mainnet"
+elif [[ "$chainId" == "4" ]]
 then eth_mnemonic_name="indra_mnemonic_rinkeby"
 elif [[ "$chainId" == "42" ]]
 then eth_mnemonic_name="indra_mnemonic_kovan"
