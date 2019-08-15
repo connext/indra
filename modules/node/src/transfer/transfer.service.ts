@@ -6,7 +6,7 @@ import {
   UnidirectionalLinkedTransferAppStage,
   UnidirectionalLinkedTransferAppStateBigNumber,
 } from "@connext/types";
-import { RejectProposalMessage } from "@counterfactual/node";
+import { InstallMessage, RejectProposalMessage } from "@counterfactual/node";
 import { AppInstanceJson, Node as NodeTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
@@ -275,7 +275,7 @@ export class TransferService {
     // display final state of app
     const appInfo = await this.nodeService.getAppState(appInstanceId);
 
-    // TODO: was getting an error here, printing this in case it happens again
+    // NOTE: was getting an error here, printing this in case it happens again
     console.log("appInstanceId: ", appInstanceId);
     console.log("appInfo: ", appInfo);
     // NOTE: sometimes transfers is a nested array, and sometimes its an
@@ -284,10 +284,6 @@ export class TransferService {
     console.log("appInfo.transfers: ", (appInfo.state as any).transfers);
 
     await this.nodeService.uninstallApp(appInstanceId);
-    // TODO: cf does not emit uninstall virtual event on the node
-    // that has called this function but ALSO does not immediately
-    // uninstall the apps. This will be a problem when trying to
-    // display balances...
     const openApps = await this.nodeService.getAppInstances();
     logger.log(`Open apps: ${openApps.length}`);
     logger.log(`AppIds: ${JSON.stringify(openApps.map((a: AppInstanceJson) => a.identityHash))}`);
@@ -297,8 +293,7 @@ export class TransferService {
     await this.waitForAppUninstall();
   };
 
-  // TODO: fix type of data
-  private resolveInstallTransfer = (res: (value?: any) => void, data: any): any => {
+  private resolveInstallTransfer = (res: (value?: any) => void, data: InstallMessage): any => {
     if (this.appId && this.appId !== data.data.params.appInstanceId) {
       logger.log(
         `Caught INSTALL event for different app ${JSON.stringify(data)}, expected ${this.appId}`,
@@ -309,7 +304,6 @@ export class TransferService {
     return data;
   };
 
-  // TODO: fix types of data
   private rejectInstallTransfer = (
     rej: (reason?: any) => void,
     msg: RejectProposalMessage, // reject install??
