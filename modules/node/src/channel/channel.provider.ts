@@ -67,6 +67,8 @@ class ChannelMessaging extends AbstractMessagingProvider {
     data: { assetId?: string },
   ): Promise<RequestCollateralResponse> {
     const pubId = this.getPublicIdentifierFromSubject(subject);
+    // do not allow clients to specify an amount to
+    // collateralize with
     return this.channelService.requestCollateral(pubId, getAddress(data.assetId));
   }
 
