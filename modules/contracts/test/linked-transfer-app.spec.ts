@@ -174,11 +174,11 @@ describe("LinkedUnidirectionalTransferApp", () => {
       stage: AppStage.POST_FUND,
       transfers: [
         {
-          amount: Zero,
+          amount,
           to: senderAddr,
         },
         {
-          amount,
+          amount: Zero,
           to: redeemerAddr,
         },
       ],
@@ -233,11 +233,11 @@ describe("LinkedUnidirectionalTransferApp", () => {
       stage: AppStage.POST_FUND,
       transfers: [
         {
-          amount: Zero,
+          amount,
           to: senderAddr,
         },
         {
-          amount,
+          amount: Zero,
           to: redeemerAddr,
         },
       ],
