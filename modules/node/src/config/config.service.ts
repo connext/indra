@@ -57,6 +57,8 @@ export class ConfigService {
     const ethNetwork = await this.getEthProvider().getNetwork();
     if (ethNetwork.name === "unknown" && ethNetwork.chainId === 4447) {
       ethNetwork.name = "ganache";
+    } else if (ethNetwork.chainId === 1) {
+      ethNetwork.name = "mainnet";
     }
     return ethNetwork;
   }
