@@ -196,6 +196,7 @@ export class TransferService {
 
     // uninstall sender app
     // dont await so caller isnt blocked by this
+    // TODO: if sender is offline, this will fail
     this.finalizeAndUninstallApp(senderApp.identityHash, amount, assetId, paymentId, preImage);
 
     return {
