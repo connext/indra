@@ -1,5 +1,6 @@
 import { BigNumber, ChannelState, convert, WithdrawParameters } from "@connext/types";
 import { Node as CFModuleTypes } from "@counterfactual/types";
+import { TransactionResponse } from "ethers/providers";
 import { getAddress } from "ethers/utils";
 
 import { invalidAddress } from "../validation/addresses";
@@ -12,7 +13,7 @@ export class WithdrawalController extends AbstractController {
     params.assetId = params.assetId ? getAddress(params.assetId) : undefined;
     const myFreeBalanceAddress = this.connext.freeBalanceAddress;
 
-    const { amount, assetId, recipient } = convert.Withdraw("bignumber", params);
+    const { amount, assetId, recipient, userSubmitted } = convert.Withdraw("bignumber", params);
 
     const invalid = await this.validateInputs(amount, assetId, recipient);
     if (invalid) {
@@ -26,16 +27,26 @@ export class WithdrawalController extends AbstractController {
     // register listeners
     this.registerListeners();
 
-    let transaction: CFModuleTypes.MinimalTransaction | undefined;
+    let transaction: TransactionResponse | undefined;
     try {
-      this.log.info(`Calling ${CFModuleTypes.RpcMethodName.WITHDRAW_COMMITMENT}`);
-      const withdrawResponse = await this.connext.cfWithdrawCommitment(assetId, amount, recipient);
-      this.log.info(`Withdraw Response: ${JSON.stringify(withdrawResponse, null, 2)}`);
-      transaction = withdrawResponse.transaction;
+      if (!userSubmitted) {
+        this.log.info(`Calling ${CFModuleTypes.RpcMethodName.WITHDRAW_COMMITMENT}`);
+        const withdrawResponse = await this.connext.cfWithdrawCommitment(
+          amount,
+          assetId,
+          recipient,
+        );
+        this.log.info(`Withdraw Response: ${JSON.stringify(withdrawResponse, null, 2)}`);
+        const minTx = withdrawResponse.transaction;
 
-      const nodeWithdrawResponse = await this.node.withdraw(transaction);
-      this.log.info(`Node Withdraw Response: ${JSON.stringify(nodeWithdrawResponse, null, 2)}`);
-
+        transaction = await this.node.withdraw(minTx);
+        this.log.info(`Node Withdraw Response: ${JSON.stringify(transaction, null, 2)}`);
+      } else {
+        this.log.info(`Calling ${CFModuleTypes.RpcMethodName.WITHDRAW}`);
+        const withdrawResponse = await this.connext.cfWithdraw(amount, assetId, recipient);
+        this.log.info(`Withdraw Response: ${JSON.stringify(withdrawResponse, null, 2)}`);
+        transaction = await this.ethProvider.getTransaction(withdrawResponse.txHash);
+      }
       const postWithdrawBalances = await this.connext.getFreeBalance(assetId);
 
       const expectedFreeBal = preWithdrawBalances[myFreeBalanceAddress].sub(amount);
@@ -90,7 +101,7 @@ export class WithdrawalController extends AbstractController {
   };
 
   private withdrawFailedCallback = (data: any): void => {
-    console.log(`Withdrawal failed with data: ${JSON.stringify(data, null, 2)}`)
+    console.log(`Withdrawal failed with data: ${JSON.stringify(data, null, 2)}`);
     this.removeListeners();
   };
 
