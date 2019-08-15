@@ -129,6 +129,8 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // TODO: make these types
   const myChannel = await node.getChannel();
 
+  // TODO: Deploy at withdraw - otherwise, every single wallet will deploy
+  //       for every single user when they come online. Yikes.
   let multisigAddress;
   if (!myChannel) {
     // TODO: make these types
