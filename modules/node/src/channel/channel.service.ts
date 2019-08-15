@@ -1,10 +1,11 @@
 import { CreateChannelMessage } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
-import { RpcException } from "@nestjs/microservices";
 import { AddressZero } from "ethers/constants";
+import { TransactionResponse } from "ethers/providers";
 import { BigNumber, getAddress } from "ethers/utils";
 
+import { ConfigService } from "../config/config.service";
 import { NodeService } from "../node/node.service";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { CLogger, freeBalanceAddressFromXpub } from "../util";
@@ -18,6 +19,7 @@ const logger = new CLogger("ChannelService");
 export class ChannelService {
   constructor(
     private readonly nodeService: NodeService,
+    private readonly configService: ConfigService,
     private readonly channelRepository: ChannelRepository,
   ) {}
 
@@ -26,12 +28,11 @@ export class ChannelService {
    * @param counterpartyPublicIdentifier
    */
   async create(counterpartyPublicIdentifier: string): Promise<NodeTypes.CreateChannelResult> {
-    logger.log(`Creating channel for ${counterpartyPublicIdentifier}`);
     const existing = await this.channelRepository.findByUserPublicIdentifier(
       counterpartyPublicIdentifier,
     );
     if (existing) {
-      throw new RpcException(`Channel already exists for ${counterpartyPublicIdentifier}`);
+      throw new Error(`Channel already exists for ${counterpartyPublicIdentifier}`);
     }
 
     return await this.nodeService.createChannel(counterpartyPublicIdentifier);
@@ -44,7 +45,7 @@ export class ChannelService {
   ): Promise<NodeTypes.DepositResult> {
     const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
     if (!channel) {
-      throw new RpcException(`No channel exists for multisigAddress ${multisigAddress}`);
+      throw new Error(`No channel exists for multisigAddress ${multisigAddress}`);
     }
 
     return await this.nodeService.deposit(multisigAddress, amount, getAddress(assetId));
@@ -60,6 +61,10 @@ export class ChannelService {
       userPubId,
       normalizedAssetId,
     );
+
+    if (!profile) {
+      throw new Error(`Profile does not exist for user ${userPubId} and assetId ${assetId}`);
+    }
 
     const freeBalance = await this.nodeService.getFreeBalance(
       userPubId,
@@ -96,17 +101,6 @@ export class ChannelService {
     return await this.channelRepository.addPaymentProfileToChannel(userPubId, profile);
   }
 
-  async getPaymentProfile(userPubId: string, assetId: string): Promise<PaymentProfile | undefined> {
-    try {
-      return await this.channelRepository.getPaymentProfileForChannelAndToken(userPubId, assetId);
-    } catch (e) {
-      if (e.message.contains(`Payment profile does not exist`)) {
-        return undefined;
-      }
-      throw e;
-    }
-  }
-
   /**
    * Monitors if there is an inflight deposit request from DEPOSIT_STARTED
    * and DEPOSIT_FAILED events, so deposits are not double sent
@@ -118,6 +112,9 @@ export class ChannelService {
     userPublicIdentifier: string,
   ): Promise<Channel> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
+    }
     channel.depositInFlight = depositInFlight;
     return await this.channelRepository.save(channel);
   }
@@ -151,5 +148,18 @@ export class ChannelService {
     channel.multisigAddress = creationData.data.multisigAddress;
     channel.available = true;
     await this.channelRepository.save(channel);
+  }
+
+  async withdrawForClient(
+    userPublicIdentifier: string,
+    tx: NodeTypes.MinimalTransaction,
+  ): Promise<TransactionResponse> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
+    }
+
+    const wallet = this.configService.getEthWallet();
+    return await wallet.sendTransaction(tx);
   }
 }

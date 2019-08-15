@@ -123,7 +123,7 @@ docker swarm init "--advertise-addr=\$privateip" 2> /dev/null || true
 if [[ -n "\`docker secret ls | grep "$key_name"\`" ]]
 then echo "A secret called $key_name already exists, aborting key load"
 else
-  id="\`echo $key | tr -d ' \n\r' | docker secret create $key_name -\`"
+  id="\`echo $key | tr -d '\n\r' | docker secret create $key_name -\`"
   if [[ "$?" == "0" ]]
   then
     echo "Successfully loaded private key into secret store"

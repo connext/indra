@@ -9,11 +9,11 @@ import {
 import { Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
+import { TransactionResponse } from "ethers/providers";
 import { bigNumberify, getAddress } from "ethers/utils";
 
 import { ConfigService } from "../config/config.service";
 import { ChannelMessagingProviderId, MessagingProviderId, NodeProviderId } from "../constants";
-import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { AbstractMessagingProvider } from "../util";
 
 import { ChannelRepository } from "./channel.repository";
@@ -70,6 +70,14 @@ class ChannelMessaging extends AbstractMessagingProvider {
     return this.channelService.requestCollateral(pubId, getAddress(data.assetId));
   }
 
+  async withdraw(
+    subject: string,
+    data: { tx: NodeTypes.MinimalTransaction },
+  ): Promise<TransactionResponse> {
+    const pubId = this.getPublicIdentifierFromSubject(subject);
+    return this.channelService.withdrawForClient(pubId, data.tx);
+  }
+
   async addPaymentProfile(
     subject: string,
     data: {
@@ -103,7 +111,10 @@ class ChannelMessaging extends AbstractMessagingProvider {
   ): Promise<PaymentProfileRes | undefined> {
     const pubId = this.getPublicIdentifierFromSubject(subject);
 
-    const prof = await this.channelService.getPaymentProfile(pubId, data.assetId);
+    const prof = await this.channelRepository.getPaymentProfileForChannelAndToken(
+      pubId,
+      data.assetId,
+    );
 
     if (!prof) {
       return undefined;
@@ -121,6 +132,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     super.connectRequestReponse("channel.get.>", this.getChannel.bind(this));
     super.connectRequestReponse("channel.create.>", this.createChannel.bind(this));
     super.connectRequestReponse("channel.request-collateral.>", this.requestCollateral.bind(this));
+    super.connectRequestReponse("channel.withdraw.>", this.withdraw.bind(this));
     super.connectRequestReponse("channel.add-profile.>", this.addPaymentProfile.bind(this));
     super.connectRequestReponse("channel.get-profile.>", this.getPaymentProfile.bind(this));
   }

@@ -10,6 +10,8 @@ $ npm install
 
 ## Running the app
 
+Refer to the instructions at the repo's [root](../../README.md) for the quickstart guide.
+
 ### Local Development
 
 Note: Update these instructions when Docker setup is live.
