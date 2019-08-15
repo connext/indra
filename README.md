@@ -113,6 +113,7 @@ And add a new private key by re-running the `setup-ubuntu` script. Note: this sc
 To deploy the ChannelManager contract & dependencies to Rinkeby:
 
 ```
+export ETH_PROVIDER="https://rinkeby.infura.io/abc123"
 bash ops/deploy.contracts.sh rinkeby
 ```
 
