@@ -1,3 +1,4 @@
+import { convertPaymentProfile } from "@connext/types";
 import { CreateChannelMessage } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
@@ -53,6 +54,7 @@ export class ChannelService {
   async requestCollateral(
     userPubId: string,
     assetId: string = AddressZero,
+    amountToCollateralize?: BigNumber,
   ): Promise<NodeTypes.DepositResult | undefined> {
     const normalizedAssetId = getAddress(assetId);
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
@@ -60,6 +62,11 @@ export class ChannelService {
       userPubId,
       normalizedAssetId,
     );
+
+    let collateralNeeded = profile.minimumMaintainedCollateral;
+    if (amountToCollateralize && profile.minimumMaintainedCollateral.lt(amountToCollateralize)) {
+      collateralNeeded = amountToCollateralize;
+    }
 
     const freeBalance = await this.nodeService.getFreeBalance(
       userPubId,
@@ -69,8 +76,10 @@ export class ChannelService {
     const freeBalanceAddress = freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier);
     const nodeFreeBalance = freeBalance[freeBalanceAddress];
 
-    if (nodeFreeBalance.lt(profile.minimumMaintainedCollateral)) {
-      const amountDeposit = profile.amountToCollateralize.sub(nodeFreeBalance);
+    if (nodeFreeBalance.lt(collateralNeeded)) {
+      const amountDeposit = collateralNeeded.gt(profile.amountToCollateralize)
+        ? collateralNeeded.sub(nodeFreeBalance)
+        : profile.amountToCollateralize.sub(nodeFreeBalance);
       logger.log(
         `Collateralizing ${channel.multisigAddress} with ${amountDeposit.toString()}, ` +
           `token: ${normalizedAssetId}`,
