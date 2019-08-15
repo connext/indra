@@ -345,7 +345,7 @@ export class AppRegistryService {
         proposedToIdentifier,
       );
       freeBalanceResponderAsset = await this.nodeService.getFreeBalance(
-        initiatorIdentifier,
+        proposedToIdentifier,
         responderChannel.multisigAddress,
         responderDepositTokenAddress,
       );
