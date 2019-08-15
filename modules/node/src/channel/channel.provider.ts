@@ -9,11 +9,11 @@ import {
 import { Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
+import { TransactionResponse } from "ethers/providers";
 import { bigNumberify, getAddress } from "ethers/utils";
 
 import { ConfigService } from "../config/config.service";
 import { ChannelMessagingProviderId, MessagingProviderId, NodeProviderId } from "../constants";
-import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { AbstractMessagingProvider } from "../util";
 
 import { ChannelRepository } from "./channel.repository";
@@ -70,7 +70,10 @@ class ChannelMessaging extends AbstractMessagingProvider {
     return this.channelService.requestCollateral(pubId, getAddress(data.assetId));
   }
 
-  async withdraw(subject: string, data: { tx: NodeTypes.MinimalTransaction }): Promise<any> {
+  async withdraw(
+    subject: string,
+    data: { tx: NodeTypes.MinimalTransaction },
+  ): Promise<TransactionResponse> {
     const pubId = this.getPublicIdentifierFromSubject(subject);
     return this.channelService.withdrawForClient(pubId, data.tx);
   }
