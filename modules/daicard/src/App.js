@@ -7,6 +7,7 @@ import interval from "interval-promise";
 import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import tokenArtifacts from "openzeppelin-solidity/build/contracts/ERC20Mintable.json";
+import WalletConnectChannelProvider from "@walletconnect/channel-provider"
 
 import "./App.css";
 
@@ -101,6 +102,7 @@ class App extends React.Component {
       maxDeposit: null,
       minDeposit: null,
       pending: { type: "null", complete: true, closed: true },
+      channelProviderType: "mnemonic",
       sendScanArgs: { amount: null, recipient: null },
       swapRate,
       token: null,
@@ -121,27 +123,53 @@ class App extends React.Component {
   // ************************************************* //
 
   async componentDidMount() {
-    // If no mnemonic, create one and save to local storage
-    let mnemonic = localStorage.getItem("mnemonic");
-    if (!mnemonic) {
-      mnemonic = eth.Wallet.createRandom().mnemonic;
-      localStorage.setItem("mnemonic", mnemonic);
-    }
-
-    const nodeUrl =
-      overrides.nodeUrl || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`;
     const ethUrl = overrides.ethUrl || `${window.location.origin}/api/ethprovider`;
     const ethprovider = new eth.providers.JsonRpcProvider(ethUrl);
+    const nodeUrl =
+    overrides.nodeUrl || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`;
     const cfPath = "m/44'/60'/0'/25446";
-    const cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
+    let cfWallet, channel;
 
-    const channel = await connext.connect({
-      ethProviderUrl: ethUrl,
-      logLevel: 5,
-      mnemonic,
-      nodeUrl,
-      store,
-    });
+    // Choose whether to use WalletConnect or Mnemonic
+    ChooseChannelProviderTypeModal()
+
+    // if choose mnemonic
+    if(this.state.channelProviderType == "mnemonic") {
+      // If no mnemonic, create one and save to local storage
+      let mnemonic = localStorage.getItem("mnemonic");
+      if (!mnemonic) {
+        mnemonic = eth.Wallet.createRandom().mnemonic;
+        localStorage.setItem("mnemonic", mnemonic);
+      }
+      cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
+
+      channel = await connext.connect({
+        ethProviderUrl: ethUrl,
+        logLevel: 5,
+        mnemonic,
+        nodeUrl,
+        store,
+      });
+    }
+
+    // if choose walletconnect
+    if(this.state.channelProviderType == "walletconnect"){
+      const channelProvider = new WalletConnectChannelProvider({})
+      await channelProvider.create()
+      channel = await new Promise((res, rej) => {
+        channelProvider.on('connect', async () => {
+          const connectedChannel = await connext.connect({
+            ethProviderUrl: ethUrl,
+            channelProvider,
+          })
+          res(connectedChannel);
+        });
+        channelProvider.on('error', () => {
+          console.log("WalletConnect Error");
+          rej();
+        });
+      });
+    }
 
     // Wait for channel to be available
     const channelIsAvailable = async (channel) => {
@@ -154,7 +182,7 @@ class App extends React.Component {
 
     const freeBalanceAddress = channel.freeBalanceAddress || channel.myFreeBalanceAddress;
     const connextConfig = await channel.config();
-    const token = new Contract(connextConfig.contractAddresses.Token, tokenArtifacts.abi, cfWallet);
+    const token = new Contract(connextConfig.contractAddresses.Token, tokenArtifacts.abi, ethprovider);
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
     const invSwapRate = inverse(swapRate)
 
@@ -173,14 +201,13 @@ class App extends React.Component {
     })
 
     this.setState({
-      address: cfWallet.address,
+      address: freeBalanceAddress,
       channel,
       ethprovider,
       freeBalanceAddress,
       loadingConnext: false,
       swapRate,
       token,
-      wallet: cfWallet,
       xpub: channel.publicIdentifier,
     });
 
@@ -195,12 +222,18 @@ class App extends React.Component {
     await this.refreshBalances();
     await this.setDepositLimits();
     await this.addDefaultPaymentProfile();
-    await this.autoDeposit();
+    if(this.channelProviderType == "mnemonic") {
+      await this.autoDeposit();
+    } else {
+      console.log("Turning off autodeposit, provider: ", this.channelProviderType)
+    }
     await this.autoSwap();
     interval(async (iteration, stop) => {
       await this.refreshBalances();
       await this.setDepositLimits();
-      await this.autoDeposit();
+      if(this.channelProviderType == "mnemonic") {
+        await this.autoDeposit();
+      }
       await this.autoSwap();
     }, 3000);
   }
