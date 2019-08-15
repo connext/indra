@@ -70,6 +70,11 @@ class ChannelMessaging extends AbstractMessagingProvider {
     return this.channelService.requestCollateral(pubId, getAddress(data.assetId));
   }
 
+  async withdraw(subject: string, data: { tx: NodeTypes.MinimalTransaction }): Promise<any> {
+    const pubId = this.getPublicIdentifierFromSubject(subject);
+    return this.channelService.withdrawForClient(pubId, data.tx);
+  }
+
   async addPaymentProfile(
     subject: string,
     data: {
@@ -124,6 +129,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     super.connectRequestReponse("channel.get.>", this.getChannel.bind(this));
     super.connectRequestReponse("channel.create.>", this.createChannel.bind(this));
     super.connectRequestReponse("channel.request-collateral.>", this.requestCollateral.bind(this));
+    super.connectRequestReponse("channel.withdraw.>", this.withdraw.bind(this));
     super.connectRequestReponse("channel.add-profile.>", this.addPaymentProfile.bind(this));
     super.connectRequestReponse("channel.get-profile.>", this.getPaymentProfile.bind(this));
   }
