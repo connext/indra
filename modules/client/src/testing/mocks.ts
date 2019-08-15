@@ -96,6 +96,7 @@ export class MockNodeClientApi implements INodeApiClient {
     // TODO: mock out properly!! create mocking fns!!!
     createChannel: {} as CreateChannelResponse,
     getChannel: {} as GetChannelResponse,
+    withdraw: {} as TransactionResponse,
   };
 
   public async appRegistry(appDetails?: {
@@ -135,7 +136,9 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public async requestCollateral(): Promise<void> {}
 
-  public async withdraw(): Promise<void> {}
+  public async withdraw(): Promise<TransactionResponse> {
+    return MockNodeClientApi.returnValues.withdraw;
+  }
 
   public async resolveLinkedTransfer(): Promise<void> {}
 
