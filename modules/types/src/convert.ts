@@ -11,14 +11,16 @@ import {
 } from "./inputs";
 import { AssetAmount, MultisigState, PaymentProfile } from "./node";
 
-/////////////////////////////////
+/////////////////////////////////////////////
 ///////// CONVERSION FNS
 
+/////////////////////////////////////////////
 ////// LOW LEVEL HELPERS
 export interface NumericTypes {
   str: string;
   bignumber: BigNumber;
   number: number;
+  any: any;
 }
 
 export type NumericTypeName = keyof NumericTypes;
@@ -70,6 +72,7 @@ export const convertFields = (
   return res;
 };
 
+/////////////////////////////////////////////
 ////// APP AND CHANNEL TYPE CONVERSIONS
 /**
  * Conversion function for AssetAmount or Transfer types. More generally, will
@@ -151,6 +154,7 @@ export function convertPaymentProfile<To extends NumericTypeName>(
   return convertFields(fromType, to, ["amountToCollateralize", "minimumMaintainedCollateral"], obj);
 }
 
+/////////////////////////////////////////////
 ////// INPUT PARAMETER CONVERSIONS
 /**
  * Conversion function for DepositParameter to an AssetAmount. Will also add
