@@ -6,10 +6,10 @@ import {
   ChannelState,
   MultisigState,
 } from "@connext/types";
-import { Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { providers, utils } from "ethers";
 
+import { ChannelRouter } from "./channelRouter";
 import { NodeApiClient } from "./node";
 
 export type BigNumber = utils.BigNumber;
@@ -22,10 +22,10 @@ export interface ClientOptions {
   // node information
   nodeUrl: string; // ws:// or nats:// urls are supported
 
-  // signing options, include at least one of the following
-  mnemonic: string;
+  // signing options, include either a mnemonic directly
+  mnemonic?: string;
 
-  // channel provider
+  // or a channel provider
   channelProvider?: ChannelProvider;
 
   // function passed in by wallets to generate ephemeral keys
@@ -44,7 +44,7 @@ export interface ClientOptions {
 
 export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
-  cfModule: Node; // counterfactual node
+  channelRouter: ChannelRouter;
   contract?: MultisigState;
   messaging: IMessagingService;
   multisigAddress: string;
