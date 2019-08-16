@@ -1,6 +1,7 @@
 import { Node } from "@counterfactual/node";
 import { providers } from "ethers";
 
+import { ChannelRouter } from "../channelRouter";
 import { ConnextInternal } from "../connext";
 import { Logger } from "../lib/logger";
 import { ConnextListener } from "../listener";
@@ -11,7 +12,7 @@ export abstract class AbstractController {
   public connext: ConnextInternal;
   public log: Logger;
   public node: INodeApiClient;
-  public cfModule: Node;
+  public channelRouter: ChannelRouter;
   public listener: ConnextListener;
   public ethProvider: providers.JsonRpcProvider;
 
@@ -19,7 +20,7 @@ export abstract class AbstractController {
     this.connext = connext;
     this.name = name;
     this.node = connext.node;
-    this.cfModule = connext.cfModule;
+    this.channelRouter = connext.channelRouter;
     this.listener = connext.listener;
     this.log = new Logger(name, connext.opts.logLevel);
     this.ethProvider = connext.ethProvider;
