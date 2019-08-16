@@ -201,11 +201,19 @@ export class ChannelRouter extends EventEmitter {
           methodName,
           parameters,
         });
+        // cf module nests the return value in a `.result.result`
+        // should make sure that the channel provider call
+        // does not
         result = ret.result.result;
         break;
 
       case RpcType.ChannelProvider:
-        throw new Error("Not implemented yet");
+        // NOTE: channel provider in wallet connect is expecting an
+        // array type for parameters, it is easy to write a function
+        // that casts object to an array, but seems obnoxious. should
+        // circle up with pedro on that front for final call
+        result = await this.connection._send(methodName, parameters);
+        break;
 
       default:
         throw new Error(`Unknown rpc type: ${this.type}`);
