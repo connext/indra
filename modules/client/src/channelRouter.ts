@@ -1,46 +1,41 @@
 import {
   AppActionBigNumber,
   AppStateBigNumber,
-  ChannelProvider,
+  ChannelProviderConfig,
   makeChecksum,
+  RpcType,
+  RpcConnection,
 } from "@connext/types";
-import { Node } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { BigNumber } from "ethers/utils";
 import { EventEmitter } from "events";
 import { RpcParameters } from "rpc-server";
 
-export enum RpcType {
-  ChannelProvider = "ChannelProvider",
-  CounterfactualNode = "CounterfactualNode", // rename?
-}
-
-// TODO: properly `ChannelProvider` define type
-export type RpcConnection = Node | ChannelProvider;
 export class ChannelRouter extends EventEmitter {
   private type: RpcType;
   private connection: RpcConnection;
 
-  // FIXME: the channel provider should have these static properties
-  // easily accessible somehow
+  // these properties should be easily accessible via the channel
+  // provider config, which should be set on traditional channel
+  // providers by calling `.enable`
   public freeBalanceAddress: string;
   public publicIdentifier: string;
-  // TODO: should we add in the multisig address here as well?
+  // TODO: include here? not included by default in cf instance
+  // since there is no default assumption a multisig has been
+  // deployed
+  public multisigAddress: string;
 
-  constructor(type: RpcType, connection: RpcConnection) {
+  constructor(type: RpcType, connection: RpcConnection, config: ChannelProviderConfig) {
     super();
     this.type = type;
     this.connection = connection;
 
-    // should be the 0th key along the channel path
-    this.freeBalanceAddress = connection.freeBalanceAddress;
-    // the xpub of user
-    this.publicIdentifier = connection.publicIdentifier;
-
-    // TODO: what is conditionally set in the class here?
-    // if (type === RpcType.ChannelProvider) {
-    // } else if (type === RpcType.Rpc) {
-    // }
+    // TODO: seems like these should be consistent, i.e. either
+    // both are accessed directly as props on the connection
+    // or via the `.config` prop on the connection
+    this.freeBalanceAddress = config.freeBalanceAddress;
+    this.publicIdentifier = config.publicIdentifier;
+    this.multisigAddress = config.multisigAddress;
   }
 
   ///////////////////////////////////////////////
