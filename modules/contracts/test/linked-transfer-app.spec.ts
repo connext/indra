@@ -51,9 +51,6 @@ const unidirectionalLinkedTransferAppStateEncoding = `
   )
 `;
 
-// TODO: does this need to be a tuple if ya know... its just
-// one thing....
-// RS: yes it does, tuple is a struct which the action is
 const unidirectionalLinkedTransferAppActionEncoding = `
   tuple(
     uint256 amount,
@@ -174,11 +171,11 @@ describe("LinkedUnidirectionalTransferApp", () => {
       stage: AppStage.POST_FUND,
       transfers: [
         {
-          amount: Zero,
+          amount,
           to: senderAddr,
         },
         {
-          amount,
+          amount: Zero,
           to: redeemerAddr,
         },
       ],
@@ -233,11 +230,11 @@ describe("LinkedUnidirectionalTransferApp", () => {
       stage: AppStage.POST_FUND,
       transfers: [
         {
-          amount: Zero,
+          amount,
           to: senderAddr,
         },
         {
-          amount,
+          amount: Zero,
           to: redeemerAddr,
         },
       ],
