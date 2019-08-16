@@ -71,9 +71,6 @@ export type TransferAction = {
   transferAmount: BigNumber;
 };
 
-// TODO: define properly!!
-export type ChannelProvider = any;
-
 export type MultisigState<T = string> = {
   id: number;
   xpubA: string;
