@@ -71,7 +71,7 @@ export class DepositController extends AbstractController {
   ): Promise<string | undefined> => {
     // check asset balance of address
     // TODO: fix for non-eth balances
-    const depositAddr = publicIdentifierToAddress(this.cfModule.publicIdentifier);
+    const depositAddr = publicIdentifierToAddress(this.connext.publicIdentifier);
     let bal: BigNumber;
     if (assetId === AddressZero) {
       bal = await this.ethProvider.getBalance(depositAddr);
