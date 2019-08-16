@@ -210,7 +210,7 @@ async function run(): Promise<void> {
 
   logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
   exitOrLeaveOpen(config);
-  console.log(`Waiting to receive transfers at ${client.opts.cfModule.publicIdentifier}`);
+  console.log(`Waiting to receive transfers at ${client.opts.channelProvider.publicIdentifier}`);
 }
 
 async function getOrCreateChannel(assetId?: string): Promise<void> {
