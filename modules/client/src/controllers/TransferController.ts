@@ -8,7 +8,7 @@ import {
   TransferParameters,
 } from "@connext/types";
 import { RejectInstallVirtualMessage } from "@counterfactual/node";
-import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
+import { AppInstanceJson, Node as NodeTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
@@ -211,7 +211,7 @@ export class TransferController extends AbstractController {
     return new Promise(
       async (res: any, rej: any): Promise<any> => {
         const getAppIds = async (): Promise<string[]> => {
-          return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
+          return (await this.connext.getAppInstances()).map((a: AppInstanceJson) => a.identityHash);
         };
         let retries = 0;
         while (!(await getAppIds()).includes(this.appId) && retries <= MAX_RETRIES) {
@@ -231,7 +231,7 @@ export class TransferController extends AbstractController {
     return new Promise(
       async (res: any, rej: any): Promise<any> => {
         const getAppIds = async (): Promise<string[]> => {
-          return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
+          return (await this.connext.getAppInstances()).map((a: AppInstanceJson) => a.identityHash);
         };
         let retries = 0;
         while ((await getAppIds()).includes(this.appId) && retries <= MAX_RETRIES) {
