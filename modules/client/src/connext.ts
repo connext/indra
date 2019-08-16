@@ -375,7 +375,7 @@ export abstract class ConnextChannel {
     assetId?: string,
     recipient?: string,
   ): Promise<NodeTypes.WithdrawResult> => {
-    return await this.internal.cfWithdraw(assetId, amount, recipient);
+    return await this.internal.cfWithdraw(amount, assetId, recipient);
   };
 }
 
