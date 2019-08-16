@@ -46,9 +46,6 @@ export class ChannelRouter extends EventEmitter {
   ///////////////////////////////////////////////
   ///// PROVIDER METHODS
 
-  // FIXME: cf types seem to be wrong with experience
-  // they are nested in a result.result obj, so must fix
-  // typings
   public deposit = async (
     amount: BigNumber,
     assetId: string,
