@@ -5,7 +5,7 @@ import {
   SimpleSwapAppStateBigNumber,
   SwapParameters,
 } from "@connext/types";
-import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
+import { AppInstanceJson, Node as NodeTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
@@ -236,7 +236,7 @@ export class SwapController extends AbstractController {
     await new Promise(
       async (res: any, rej: any): Promise<any> => {
         const getAppIds = async (): Promise<string[]> => {
-          return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
+          return (await this.connext.getAppInstances()).map((a: AppInstanceJson) => a.identityHash);
         };
         let retries = 0;
         while ((await getAppIds()).indexOf(this.appId) !== -1 && retries <= 5) {
