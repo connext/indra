@@ -126,9 +126,14 @@ class RedeemCard extends Component {
       freeTokenBalance = await channel.getFreeBalance(token.address);
       console.log(`Hub has collateralized us with ${formatEther(freeTokenBalance[hubFreeBalanceAddress])} tokens`)
 
+      if (assetId.toLowerCase() !== token.address) {
+        console.error("Received link with incorrect token address");
+        return;
+      }
+
       const result = await channel.resolveCondition({
         amount: parseEther(amount).toString(),
-        assetId, // TODO: sanity check this
+        assetId,
         conditionType: "LINKED_TRANSFER",
         paymentId,
         preImage: secret,

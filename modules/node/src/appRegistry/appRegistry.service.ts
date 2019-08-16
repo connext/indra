@@ -345,7 +345,7 @@ export class AppRegistryService {
         proposedToIdentifier,
       );
       freeBalanceResponderAsset = await this.nodeService.getFreeBalance(
-        initiatorIdentifier,
+        proposedToIdentifier,
         responderChannel.multisigAddress,
         responderDepositTokenAddress,
       );
@@ -423,7 +423,7 @@ export class AppRegistryService {
       initiatorDeposit,
       initiatorDepositTokenAddress,
       proposedToIdentifier,
-    } = proposedAppParams.params;
+    } = bigNumberifyObj(proposedAppParams.params);
 
     const registryAppInfo = await this.appProposalMatchesRegistry(proposedAppParams.params);
 
@@ -449,6 +449,7 @@ export class AppRegistryService {
       await this.channelService.requestCollateral(
         proposedToIdentifier,
         initiatorDepositTokenAddress,
+        initiatorDeposit,
       );
       throw new Error(
         `Insufficient collateral detected in responders channel, ` +
