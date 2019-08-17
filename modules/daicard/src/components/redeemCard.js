@@ -98,8 +98,8 @@ class RedeemCard extends Component {
 
   async redeemPayment() {
     const { secret, paymentId, amount, assetId, redeemPaymentState } = this.state;
-    const { channel, token } = this.props;
-    if (!channel) { return; }
+    const { channel, token, tokenProfile } = this.props;
+    if (!channel || !tokenProfile) { return; }
     // only proceed if status is redeeming
     if (redeemPaymentState !== RedeemPaymentStates.Redeeming) {
       console.log("Incorrect payment state, expected Redeeming, got", Object.keys(RedeemPaymentStates)[redeemPaymentState]);
@@ -113,6 +113,10 @@ class RedeemCard extends Component {
       return;
     }
     try {
+
+      // if the token profile cannot handle the amount
+      // update the profile, the hub will collateralize the
+      // correct amount anyway from the listeners
 
       // Request token collateral if we don't have any yet
       let freeTokenBalance = await channel.getFreeBalance(token.address);

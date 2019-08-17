@@ -105,6 +105,7 @@ class App extends React.Component {
       swapRate,
       token: null,
       xpub: "",
+      tokenProfile: null,
     };
     this.refreshBalances.bind(this);
     this.setDepositLimits.bind(this);
@@ -218,11 +219,12 @@ class App extends React.Component {
       console.log("No token found, not setting default token payment profile")
       return;
     }
-    await channel.addPaymentProfile({
+    const tokenProfile = await channel.addPaymentProfile({
       amountToCollateralize: DEFAULT_AMOUNT_TO_COLLATERALIZE.wad.toString(),
       minimumMaintainedCollateral: DEFAULT_COLLATERAL_MINIMUM.wad.toString(),
       assetId: token.address,
     });
+    this.setState({ tokenProfile })
     return;
   }
 
@@ -349,11 +351,12 @@ class App extends React.Component {
     console.log(`Collateral: ${collateral} tokens, need: ${formatEther(collateralNeeded)}`);
     if (collateralNeeded.gt(parseEther(collateral))) {
       console.log(`Requesting more collateral...`)
-      await channel.addPaymentProfile({
+      const tokenProfile = await channel.addPaymentProfile({
         amountToCollateralize: collateralNeeded.add(parseEther("10")), // add a buffer of $10 so you dont collateralize on every payment
         minimumMaintainedCollateral: collateralNeeded,
         assetId: token.address,
       });
+      this.setState({ tokenProfile })
       await channel.requestCollateral(token.address);
       collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress])
       console.log(`Collateral: ${collateral} tokens, need: ${formatEther(collateralNeeded)}`);
@@ -441,6 +444,7 @@ class App extends React.Component {
       pending,
       sendScanArgs,
       token,
+      tokenProfile,
       xpub,
     } = this.state;
     const { classes } = this.props;
@@ -515,6 +519,7 @@ class App extends React.Component {
                   channel={channel}
                   pending={pending}
                   token={token}
+                  tokenProfile={tokenProfile}
                 />
               )}
             />
