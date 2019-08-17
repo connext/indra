@@ -17,7 +17,7 @@ class Home extends React.Component {
     history: [],
   };
 
-  async scanQRCode(data) {
+  scanQRCode = async (data) => {
     const path = await this.props.scanQRCode(data);
     this.setState(oldState => ({
       scanModal: false,

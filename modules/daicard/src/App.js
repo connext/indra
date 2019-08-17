@@ -190,7 +190,7 @@ class App extends React.Component {
   //                    Pollers                        //
   // ************************************************* //
 
-  async startPoller() {
+  startPoller = async () => {
     await this.refreshBalances();
     await this.setDepositLimits();
     await this.addDefaultPaymentProfile();
@@ -204,7 +204,7 @@ class App extends React.Component {
     }, 3000);
   }
 
-  async addDefaultPaymentProfile() {
+  addDefaultPaymentProfile = async () => {
     // add the payment profile for tokens only
     // then request collateral of this type
     const { token, channel } = this.state;
@@ -226,7 +226,7 @@ class App extends React.Component {
     return;
   }
 
-  async refreshBalances() {
+  refreshBalances = async () => {
     const { freeBalanceAddress, swapRate, token } = this.state;
     const { address, balance, channel, ethprovider } = this.state;
     if (!channel) { return; }
@@ -242,7 +242,7 @@ class App extends React.Component {
     this.setState({ balance });
   }
 
-  async setDepositLimits() {
+  setDepositLimits = async () => {
     const { swapRate, ethprovider } = this.state;
     let gasPrice = await ethprovider.getGasPrice();
     let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
@@ -252,7 +252,7 @@ class App extends React.Component {
     this.setState({ maxDeposit, minDeposit });
   }
 
-  async autoDeposit() {
+  autoDeposit = async () => {
     const { balance, channel, minDeposit, maxDeposit, pending, swapRate, token } = this.state;
     if (!channel) {
       console.warn(`Channel not available yet.`);
@@ -318,7 +318,7 @@ class App extends React.Component {
     this.autoSwap();
   }
 
-  async autoSwap() {
+  autoSwap = async () => {
     const { balance, channel, maxDeposit, pending, swapRate, token } = this.state;
     if (!channel) {
       console.warn(`Channel not available yet.`);
@@ -368,11 +368,11 @@ class App extends React.Component {
     this.setPending({ type: "swap", complete: true, closed: false });
   }
 
-  setPending(pending) {
+  setPending = (pending) => {
     this.setState({ pending });
   }
 
-  closeConfirmations() {
+  closeConfirmations = () => {
     const { pending } = this.state;
     this.setState({ pending: { ...pending, closed: true } });
   }
@@ -381,7 +381,7 @@ class App extends React.Component {
   //                    Handlers                       //
   // ************************************************* //
 
-  async scanQRCode(data) {
+  scanQRCode = async (data) => {
     // potential URLs to scan and their params
     const urls = {
       "/send?": ["recipient", "amount"],
@@ -426,7 +426,7 @@ class App extends React.Component {
     return path;
   }
 
-  async closeModal() {
+  closeModal = async () => {
     await this.setState({ loadingConnext: false });
   }
 
@@ -464,7 +464,7 @@ class App extends React.Component {
                   <Home
                     {...props}
                     balance={balance}
-                    scanQRCodee={this.scanQRCode.bind(this)}
+                    scanQRCode={this.scanQRCode}
                   />
                   <SetupCard
                     {...props}
