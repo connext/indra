@@ -122,13 +122,13 @@
       "address": "0xFab46E002BbF0b4509813474841E0716E6730136"
     },
     "SimpleTwoPartySwapApp": {
-      "address": "0x4ef587366633BBb3cbC4deB7d54238B11BE2fdD6"
+      "address": "0x9c9Fa710AF8FCbC31dcD76b70cD8b72BA066d145"
     },
     "UnidirectionalTransferApp": {
-      "address": "0x5402983cAb62beCeB0aac232840eC8D875a78116"
+      "address": "0x9454FeDB89F21fE3b1E3E43Ce059c5C60261828c"
     },
     "UnidirectionalLinkedTransferApp": {
-      "address": "0x649424773412df24A92f2562513b3f6277825d57"
+      "address": "0xccDF8064f30c26eb6Cfa281E802fb9E35356cBba"
     }
   },
   "42": {
