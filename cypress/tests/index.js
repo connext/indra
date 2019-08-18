@@ -25,16 +25,15 @@ describe('Daicard', () => {
   })
 
   describe('Send', (done) => {
-    it.skip(`Should send a payment when a link payment is opened in another card`, () => {
+    it(`Should send a payment when a link payment is opened in another card`, () => {
       my.getMnemonic().then(recipientMnemonic => {
         my.burnCard() // also decollateralizes the channel
         my.deposit(depositEth).then(tokensDeposited => {
           my.linkPay(payTokens).then(redeemLink => {
             my.restoreMnemonic(recipientMnemonic)
             cy.visit(redeemLink)
-            cy.contains('span', /redeeming/i).should('exist')
-            cy.contains('p', payTokens).should('exist')
-            my.goHome()
+            cy.contains('span', /payment.* redeemed/i).should('exist')
+            my.goBack()
             cy.resolve(my.getChannelTokenBalance).should('contain', payTokens)
           })
         })

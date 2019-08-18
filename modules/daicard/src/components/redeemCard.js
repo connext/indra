@@ -158,7 +158,7 @@ class RedeemCard extends Component {
     } catch (e) {
       console.error(`Error redeeming: ${e.message}`)
       // known potential failure: already redeemed or channel not available
-      if (e.message.indexOf("Payment has been redeemed") !== -1) {
+      if (e.message.indexOf("already been redeemed") !== -1) {
         this.setState({ 
           // red: true, 
           redeemPaymentState: RedeemPaymentStates.PaymentAlreadyRedeemed,
@@ -198,6 +198,7 @@ class RedeemCard extends Component {
     // they click to copy. should display a warning text
     // if the secret or if the amount token is not valid
     // or does not correspond to the generated URL
+    const { swapRate } = this.props
     const { secret, amount, copied } = this.state
     let errs = []
     // state not yet set
@@ -211,7 +212,7 @@ class RedeemCard extends Component {
     // valid amount?
     let value
     try {
-      value = Currency.DAI(amount)
+      value = Currency.DAI(amount, swapRate)
     } catch {
       console.log("Invalid amount:", amount)
       errs.push("Invalid amount")
@@ -230,7 +231,7 @@ class RedeemCard extends Component {
   }
 
   render() {
-    const { classes, history } = this.props;
+    const { classes, history, swapRate } = this.props;
     const { secret, paymentId, assetId, amount, showReceipt, redeemPaymentState, copied } = this.state;
     return (
       <Grid>
@@ -261,6 +262,7 @@ class RedeemCard extends Component {
             redeemPaymentState={redeemPaymentState}
             history={history}
             closeModal={this.closeModal.bind(this)}
+            swapRate={swapRate}
           />
         </Grid>
 
@@ -270,7 +272,7 @@ class RedeemCard extends Component {
 
         <Grid item xs={12}>
           <Typography noWrap variant="h5">
-            <span>{getTitle(redeemPaymentState)}</span>
+            <span>{getTitle(redeemPaymentState, amount)}</span>
           </Typography>
         </Grid>
 
@@ -306,7 +308,7 @@ class RedeemCard extends Component {
   }
 }
 
-const getTitle = (redeemPaymentState) => {
+const getTitle = (redeemPaymentState, amount) => {
   let title
   switch (redeemPaymentState) {
     case RedeemPaymentStates.IsSender:
@@ -319,7 +321,7 @@ const getTitle = (redeemPaymentState) => {
       title = "Uh Oh! Payment Failed"
       break
     case RedeemPaymentStates.Success:
-      title = "Payment Redeemed!"
+      title = `Payment of $${amount} Redeemed!`
       break
     case RedeemPaymentStates.Redeeming:
     case RedeemPaymentStates.Collateralizing:
@@ -356,7 +358,7 @@ const RedeemConfirmationDialog = props => (
       }}
       justify="center"
     >
-      {RedeemPaymentDialogContent(props.redeemPaymentState, props.amount)}
+      {RedeemPaymentDialogContent(props.redeemPaymentState, props.amount, props.swapRate)}
       {props.redeemPaymentState === RedeemPaymentStates.Collateralizing ? (
         <></>
       ) : (
@@ -466,7 +468,7 @@ const RedeemCardContent = (props) => {
   )
 }
 
-const RedeemPaymentDialogContent = (redeemPaymentState, amount) => {
+const RedeemPaymentDialogContent = (redeemPaymentState, amount, swapRate) => {
   switch (redeemPaymentState) {
     case RedeemPaymentStates.Timeout:
       return (
@@ -512,7 +514,7 @@ const RedeemPaymentDialogContent = (redeemPaymentState, amount) => {
           </DialogTitle>
           <DialogContent>
             <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
-              Amount: {Currency.DAI(amount).toETH().format()}
+              Amount: {Currency.DAI(amount, swapRate).toETH().format()}
             </DialogContentText>
           </DialogContent>
         </Grid>

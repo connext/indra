@@ -50,7 +50,7 @@ jobs:
               cd indra-v2
               git checkout --force $CIRCLE_BRANCH
               git fetch
-              git reset --hard origin/$CIRCLE_BRANCH
+              git reset --hard $CIRCLE_SHA1
               export INDRA_V2_MODE="staging"
               export INDRA_V2_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
               export INDRA_V2_DOMAINNAME="$STAGING_DOMAINNAME"
@@ -70,7 +70,7 @@ jobs:
               cd indra-v2
               git checkout --force $CIRCLE_BRANCH
               git fetch
-              git reset --hard origin/$CIRCLE_BRANCH
+              git reset --hard $CIRCLE_SHA1
               export INDRA_V2_MODE="prod"
               export INDRA_V2_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
               export INDRA_V2_DOMAINNAME="$RINKEBY_DOMAINNAME"
@@ -84,7 +84,7 @@ jobs:
               cd indra-v2
               git checkout --force $CIRCLE_BRANCH
               git fetch
-              git reset --hard origin/$CIRCLE_BRANCH
+              git reset --hard $CIRCLE_SHA1
               export INDRA_V2_MODE="prod"
               export INDRA_V2_ETH_PROVIDER=$MAINNET_ETH_PROVIDER
               export INDRA_V2_DOMAINNAME="$MAINNET_DOMAINNAME"

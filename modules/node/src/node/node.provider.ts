@@ -1,6 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import { EXTENDED_PRIVATE_KEY_PATH, Node } from "@counterfactual/node";
-import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { Wallet } from "ethers";
@@ -8,7 +7,7 @@ import { HDNode } from "ethers/utils";
 
 import { ConfigService } from "../config/config.service";
 import { MessagingProviderId, NodeProviderId, PostgresProviderId } from "../constants";
-import { CLogger, freeBalanceAddressFromXpub } from "../util";
+import { CLogger, freeBalanceAddressFromXpub, PostgresServiceFactory } from "../util";
 
 const logger = new CLogger("NodeProvider");
 
@@ -26,7 +25,7 @@ export const nodeProviderFactory: Provider = {
     logger.log(`Creating Node with mnemonic: ${config.getMnemonic()}`);
     await store.set([
       {
-        key: EXTENDED_PRIVATE_KEY_PATH,
+        path: EXTENDED_PRIVATE_KEY_PATH,
         value: HDNode.fromMnemonic(config.getMnemonic()).extendedKey,
       },
     ]);
