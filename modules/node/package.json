@@ -20,8 +20,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
-    "@connext/messaging": "0.0.15",
-    "@connext/types": "0.0.15",
+    "@connext/messaging": "0.0.16",
+    "@connext/types": "0.0.16",
     "@counterfactual/contracts": "0.1.15",
     "@counterfactual/firebase-client": "0.0.3",
     "@counterfactual/node": "0.2.43",
