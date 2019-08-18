@@ -158,7 +158,7 @@ class RedeemCard extends Component {
     } catch (e) {
       console.error(`Error redeeming: ${e.message}`)
       // known potential failure: already redeemed or channel not available
-      if (e.message.indexOf("Payment has been redeemed") !== -1) {
+      if (e.message.indexOf("already been redeemed") !== -1) {
         this.setState({ 
           // red: true, 
           redeemPaymentState: RedeemPaymentStates.PaymentAlreadyRedeemed,
@@ -231,7 +231,7 @@ class RedeemCard extends Component {
   }
 
   render() {
-    const { classes, history } = this.props;
+    const { classes, history, swapRate } = this.props;
     const { secret, paymentId, assetId, amount, showReceipt, redeemPaymentState, copied } = this.state;
     return (
       <Grid>
@@ -262,6 +262,7 @@ class RedeemCard extends Component {
             redeemPaymentState={redeemPaymentState}
             history={history}
             closeModal={this.closeModal.bind(this)}
+            swapRate={swapRate}
           />
         </Grid>
 
@@ -271,7 +272,7 @@ class RedeemCard extends Component {
 
         <Grid item xs={12}>
           <Typography noWrap variant="h5">
-            <span>{getTitle(redeemPaymentState)}</span>
+            <span>{getTitle(redeemPaymentState, amount)}</span>
           </Typography>
         </Grid>
 
@@ -307,7 +308,7 @@ class RedeemCard extends Component {
   }
 }
 
-const getTitle = (redeemPaymentState) => {
+const getTitle = (redeemPaymentState, amount) => {
   let title
   switch (redeemPaymentState) {
     case RedeemPaymentStates.IsSender:
@@ -320,7 +321,7 @@ const getTitle = (redeemPaymentState) => {
       title = "Uh Oh! Payment Failed"
       break
     case RedeemPaymentStates.Success:
-      title = "Payment Redeemed!"
+      title = `Payment of $${amount} Redeemed!`
       break
     case RedeemPaymentStates.Redeeming:
     case RedeemPaymentStates.Collateralizing:
