@@ -518,6 +518,7 @@ class App extends React.Component {
                   balance={balance}
                   channel={channel}
                   pending={pending}
+                  swapRate={swapRate}
                   token={token}
                   tokenProfile={tokenProfile}
                 />
