@@ -62,7 +62,7 @@ const saveAddressBook = (addressBook) => {
 }
 
 // Simple sanity checks to make sure contracts from our address book have been deployed
-const contractIsDeployed = async (address, artifcatBytecode) => {
+const contractIsDeployed = async (address) => {
   if (!address) {
     console.log(`This contract is not in our address book.`)
     return false
@@ -72,17 +72,13 @@ const contractIsDeployed = async (address, artifcatBytecode) => {
     console.log(`No bytecode exists at the address in our address book`)
     return false
   }
-  if (bytecode !== artifcatBytecode) {
-    console.log(`Incorrect bytecode exists at the address in our address book`)
-    return false
-  }
   return true
 }
 
 const deployContract = async (name, artifacts, args) => {
   console.log(`\nChecking for valid ${name} contract...`)
   const savedAddress = getSavedData(name, 'address')
-  if (await contractIsDeployed(savedAddress, artifacts.bytecode)) {
+  if (await contractIsDeployed(savedAddress)) {
     console.log(`${name} is up to date, no action required\nAddress: ${savedAddress}`)
     return new eth.Contract(savedAddress, artifacts.abi, wallet)
   }
