@@ -34,13 +34,13 @@
       "address": "0x8952828c0008a9A198f1B77d5eD8CA54c49E4974"
     },
     "SimpleTwoPartySwapApp": {
-      "address": "0x10D966E6198693550aF9FB5c46DE2454F5eeC008"
+      "address": "0x24cA85b84673a49D3094b11eE6Ed57496e3ff4F6"
     },
     "UnidirectionalTransferApp": {
-      "address": "0x7Db8465e9dAB4E10DC970D300EfB09d24f7B94f7"
+      "address": "0xfB146cF56785D43Bf1865Cde3AC2dFe573eA34Ad"
     },
     "UnidirectionalLinkedTransferApp": {
-      "address": "0xC6dbABedBf37DcE41db150975a646910d063Daf0"
+      "address": "0x5A93269023Ef58c9aBE44BE2a4E0c74368D3D912"
     },
     "Token": {
       "address": "0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359"
