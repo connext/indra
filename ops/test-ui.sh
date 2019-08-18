@@ -58,8 +58,8 @@ sleep $n
 
 # If there's no daicard service (webpack dev server) then indra's running in prod mode
 if [[ -n "`docker service ls | grep indra_v2_daicard`" ]]
-then env="--env publicUrl=https://localhost"
-else env="--env publicUrl=http://localhost"
+then env="--env publicUrl=http://localhost"
+else env="--env publicUrl=https://localhost"
 fi
 
 if [[ "$1" == "watch" ]]
