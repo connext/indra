@@ -36,6 +36,7 @@ echo
 echo "token address: $tokenAddress"
 echo "free balance address: $freeBalanceAddress"
 echo "free balance: $freeBalance"
+echo "bot output: $botOutput"
 echo
 
 ########################################
