@@ -89,7 +89,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // Note: added this to the client since this is required for the cf module to work
   // generate extended private key from mnemonic
   const extendedXpriv = HDNode.fromMnemonic(mnemonic).extendedKey;
-  await store.set([{ key: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }]);
+  await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }]);
 
   // create a new node api instance
   // TODO: use local storage for default key value setting!!
