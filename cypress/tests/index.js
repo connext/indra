@@ -25,7 +25,7 @@ describe('Daicard', () => {
   })
 
   describe('Send', (done) => {
-    it(`Should send a payment when a link payment is opened in another card`, () => {
+    it.skip(`Should send a payment when a link payment is opened in another card`, () => {
       my.getMnemonic().then(recipientMnemonic => {
         my.burnCard() // also decollateralizes the channel
         my.deposit(depositEth).then(tokensDeposited => {
