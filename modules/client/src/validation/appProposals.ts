@@ -168,13 +168,8 @@ const baseAppValidation = async (
     return `Virtual apps should have intermediaries. Proposed app: ${prettyLog(app)}`;
   }
 
-  if (isVirtual) {
-    const node = app.intermediaries.filter((intermediary: string) => {
-      return intermediary === connext.nodePublicIdentifier;
-    });
-    if (node.length !== 1) {
-      return `Connected node is not in proposed intermediaries. Proposed app: ${prettyLog(app)}`;
-    }
+  if (isVirtual && app.intermediaryIdentifier !== connext.nodePublicIdentifier) {
+    return `Connected node is not in proposed intermediaries. Proposed app: ${prettyLog(app)}`;
   }
 
   return undefined;
