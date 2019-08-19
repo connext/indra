@@ -699,12 +699,10 @@ export class ConnextInternal extends ConnextChannel {
 
   // TODO: add validation after arjuns refactor merged
   public proposeInstallVirtualApp = async (
-    params: any, // NodeTypes.ProposeInstallVirtualParams,
+    params: NodeTypes.ProposeInstallVirtualParams,
   ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
     this.logger.info(`Proposing install with params: ${JSON.stringify(params, null, 2)}`);
-    if (
-      params.intermediaryIdentifier!== this.nodePublicIdentifier
-    ) {
+    if (params.intermediaryIdentifier !== this.nodePublicIdentifier) {
       throw new Error(`Incorrect intermediaryIdentifier. Expected: ${this.nodePublicIdentifier},
          got ${params.intermediaryIdentifier}`);
     }
@@ -745,7 +743,7 @@ export class ConnextInternal extends ConnextChannel {
       parameters: {
         appInstanceId,
         intermediaryIdentifier: this.nodePublicIdentifier,
-      } as any //NodeTypes.InstallVirtualParams,
+      } as NodeTypes.InstallVirtualParams,
     });
 
     return installVirtualResponse.result.result;
