@@ -12,11 +12,11 @@
   "license": "MIT",
   "dependencies": {
     "@connext/client": "0.0.17",
-    "@counterfactual/node": "0.2.49",
+    "@counterfactual/node": "0.2.50",
     "commander": "3.0.0",
     "dotenv": "8.1.0",
     "ethers": "4.0.33",
-    "uuid": "3.3.2"
+    "uuid": "3.3.3"
   },
   "devDependencies": {
     "@connext/types": "0.0.17",
