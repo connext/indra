@@ -157,7 +157,7 @@ const baseAppValidation = async (
 
   // check that the intermediary includes your node if it is not an app with
   // your node
-  const hasIntermediaries = app.intermediaryIdentifier;
+  const hasIntermediaries = (app as any).intermediaryIdentifier;
   if (hasIntermediaries && !isVirtual) {
     return `Apps with connected node should have no intermediaries. Proposed app: ${prettyLog(
       app,
@@ -168,7 +168,7 @@ const baseAppValidation = async (
     return `Virtual apps should have intermediaries. Proposed app: ${prettyLog(app)}`;
   }
 
-  if (isVirtual && app.intermediaryIdentifier !== connext.nodePublicIdentifier) {
+  if (isVirtual && (app as any).intermediaryIdentifier !== connext.nodePublicIdentifier) {
     return `Connected node is not in proposed intermediaries. Proposed app: ${prettyLog(app)}`;
   }
 

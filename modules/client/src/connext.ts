@@ -699,15 +699,14 @@ export class ConnextInternal extends ConnextChannel {
 
   // TODO: add validation after arjuns refactor merged
   public proposeInstallVirtualApp = async (
-    params: NodeTypes.ProposeInstallVirtualParams,
+    params: any, // NodeTypes.ProposeInstallVirtualParams,
   ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
     this.logger.info(`Proposing install with params: ${JSON.stringify(params, null, 2)}`);
     if (
-      params.intermediaryIdentifier[0] !== this.nodePublicIdentifier ||
-      params.intermediaryIdentifier.length !== 1
+      params.intermediaryIdentifier!== this.nodePublicIdentifier
     ) {
       throw new Error(`Incorrect intermediaryIdentifier. Expected: ${this.nodePublicIdentifier},
-         got ${JSON.stringify(params.intermediaryIdentifier)}`);
+         got ${params.intermediaryIdentifier}`);
     }
 
     const actionRes = await this.cfModule.rpcRouter.dispatch({
@@ -745,8 +744,8 @@ export class ConnextInternal extends ConnextChannel {
       methodName: NodeTypes.RpcMethodName.INSTALL_VIRTUAL,
       parameters: {
         appInstanceId,
-        intermediaryIdentifier: [this.nodePublicIdentifier],
-      } as NodeTypes.InstallVirtualParams,
+        intermediaryIdentifier: this.nodePublicIdentifier,
+      } as any //NodeTypes.InstallVirtualParams,
     });
 
     return installVirtualResponse.result.result;
