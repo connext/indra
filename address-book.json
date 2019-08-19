@@ -33,6 +33,9 @@
     "TwoPartyFixedOutcomeFromVirtualAppInterpreter": {
       "address": "0x8952828c0008a9A198f1B77d5eD8CA54c49E4974"
     },
+    "Token": {
+      "address": "0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359"
+    },
     "SimpleTwoPartySwapApp": {
       "address": "0x24cA85b84673a49D3094b11eE6Ed57496e3ff4F6"
     },
@@ -41,9 +44,6 @@
     },
     "UnidirectionalLinkedTransferApp": {
       "address": "0x5A93269023Ef58c9aBE44BE2a4E0c74368D3D912"
-    },
-    "Token": {
-      "address": "0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359"
     }
   },
   "3": {
@@ -118,52 +118,52 @@
     "TwoPartyFixedOutcomeFromVirtualAppInterpreter": {
       "address": "0x23D7737A7262f5ED5980b0342449E70eE5010B9F"
     },
-    "Token": {
-      "address": "0xFab46E002BbF0b4509813474841E0716E6730136"
-    },
     "SimpleTwoPartySwapApp": {
-      "address": "0x9c9Fa710AF8FCbC31dcD76b70cD8b72BA066d145"
+      "address": "0x87Bb82dc9118009C7f4C5e54865809Ee6E3F9Fcc"
     },
     "UnidirectionalTransferApp": {
-      "address": "0x9454FeDB89F21fE3b1E3E43Ce059c5C60261828c"
+      "address": "0xaa839ce6F6D1033E66B47706220B1983e3De03EF"
     },
     "UnidirectionalLinkedTransferApp": {
-      "address": "0xccDF8064f30c26eb6Cfa281E802fb9E35356cBba"
+      "address": "0x3Af64D7C41DFDB4c68A6066f14529e0292384A07"
+    },
+    "Token": {
+      "address": "0xFab46E002BbF0b4509813474841E0716E6730136"
     }
   },
   "42": {
     "ChallengeRegistry": {
-      "address": "0xBa9194E76AA2eF962BF56ab019B3A97A7164Bc5A"
+      "address": "0x6a6fD42afcABc66f9CFa54597abB554a95B0C709"
     },
     "ConditionalTransactionDelegateTarget": {
-      "address": "0xf3507c26cfDFDFB8A28233F0876cc0a496453222"
+      "address": "0x01D673a9D10eE7047FD4aCEC737c2eFcbeCFbADB"
     },
     "CoinBalanceRefundApp": {
-      "address": "0xC4FB30E09437d707Dc316f5a0189142a755ecA0C"
+      "address": "0xaaa25a08A35D8eEbB0759a4111cc7D64E1b22977"
     },
     "MultiAssetMultiPartyCoinTransferInterpreter": {
-      "address": "0xE9DF2344e3a42C6532F9F615eB39E4e5412fceFC"
+      "address": "0x09595C01e5a69c86bF231f74dFe5816778b52d7D"
     },
     "IdentityApp": {
-      "address": "0xCac7b9C56E9E49E25731453046E179A6dD4BB684"
+      "address": "0xFbc5f59915CbB93346530FEF0F9Ce8103D2468B1"
     },
     "MinimumViableMultisig": {
-      "address": "0x6425A191557834eA24e13398D096724098Cb7629"
+      "address": "0xD2a33338468E3a8c03a51F303695e8D724DD447A"
     },
     "ProxyFactory": {
-      "address": "0xee47fd8A937b563fba3F6360281Af44d3D5b6438"
+      "address": "0x588DE1c1152a9A1a5e9ae5F67aA2AA135e627aF2"
     },
     "SingleAssetTwoPartyCoinTransferInterpreter": {
-      "address": "0x367C794A382138c46C59Cd1fFA3dAa90eE9F3acb"
+      "address": "0x99dE88c1d24308Dea95245DCC63853fFDc84036C"
     },
     "TimeLockedPassThrough": {
-      "address": "0xAf6a69aF62a1a73859658299dEDd3986a8A342Cc"
+      "address": "0x53b876150Fa208108BD151e3F8932cE95a185ae9"
     },
     "TwoPartyFixedOutcomeInterpreter": {
-      "address": "0xbf36a7fc7486EBE219C7C350C553814B59B9137B"
+      "address": "0x7FD4543C031793096d6EfCCc9334002D5F8dcC70"
     },
     "TwoPartyFixedOutcomeFromVirtualAppInterpreter": {
-      "address": "0x8F0867C5E7B179BcFA9eeE22679731861eE6A5A7"
+      "address": "0x2a6F947ECC9D2f92451D884906F0Ec6E5dF6ac78"
     },
     "Token": {
       "address": "0xFab46E002BbF0b4509813474841E0716E6730136"
