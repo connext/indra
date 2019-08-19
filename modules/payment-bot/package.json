@@ -12,7 +12,7 @@
   "license": "MIT",
   "dependencies": {
     "@connext/client": "0.0.17",
-    "@counterfactual/node": "0.2.48",
+    "@counterfactual/node": "0.2.49",
     "commander": "3.0.0",
     "dotenv": "8.1.0",
     "ethers": "4.0.33",
