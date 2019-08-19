@@ -132,7 +132,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     // TODO: make these types
     console.log("no channel detected, creating channel..");
     const creationData = await node.createChannel();
-    console.log("created channel, transaction:", creationData.transactionHash);
+    console.log("created channel, transaction:", creationData);
     const creationEventData: NodeTypes.CreateChannelResult = await new Promise(
       (res: any, rej: any): any => {
         const timer = setTimeout(() => rej("Create channel event not fired within 5s"), 5000);
