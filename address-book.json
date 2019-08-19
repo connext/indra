@@ -151,7 +151,10 @@
       "address": "0xD2a33338468E3a8c03a51F303695e8D724DD447A"
     },
     "ProxyFactory": {
-      "address": "0x588DE1c1152a9A1a5e9ae5F67aA2AA135e627aF2"
+      "address": "0x6CF0c4Ab3F1e66913c0983DC0bb1202d958ABb8f"
+    },
+    "SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter": {
+      "address": "0x24Da083ef789053C531beb8171c7951bb6AbDB2a"
     },
     "SingleAssetTwoPartyCoinTransferInterpreter": {
       "address": "0x99dE88c1d24308Dea95245DCC63853fFDc84036C"
