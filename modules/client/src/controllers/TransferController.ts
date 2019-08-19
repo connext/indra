@@ -169,7 +169,7 @@ export class TransferController extends AbstractController {
 
     // note: intermediary is added in connext.ts as well
     const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding } = appInfo;
-    const params: NodeTypes.ProposeInstallVirtualParams = {
+    const params: any = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,
