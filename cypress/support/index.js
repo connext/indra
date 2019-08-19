@@ -19,26 +19,12 @@ chai.use(require('chai-bn')(require('bn.js')))
 let logs = '';
 
 Cypress.on('window:before:load', (window) => {
-    // Get your apps iframe by id. Ours is called "Your App: 'cypress'". If yours is different
-    // just replace with your apps iframe id
-    // const docIframe = window.parent.document.getElementById("Your App: 'cypress'");
-
-    // Get the window object inside of the iframe
-    // const appWindow = docIframe.contentWindow;
-
-    // This is where I overwrite all of the console methods.
+    // Overwrite all of the console methods.
     ['log', 'info', 'error', 'warn', 'debug'].forEach((consoleProperty) => {
+      const oldConsole = window.console[consoleProperty]
       window.console[consoleProperty] = function (...args) {
-        /*
-         * The args parameter will be all of the values passed as arguments to
-         * the console method. ( If your not using es6 then you can use `arguments`)
-         * Example:
-         *       If your app uses does `console.log('argument1', 'arument2');`
-         *       Then args will be `[ 'argument1', 'arument2' ]`
-         */
-         // Save everything passed into a variable or any other solution
-         // you make to keep track of the logs
-         logs += args.join(' ') + '\n';
+         oldConsole(...args) // Still console log everything
+         logs += args.join(' ') + '\n'; // Also save copy of all logs to dump if tests fail
        };
     });
 });
