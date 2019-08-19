@@ -703,11 +703,11 @@ export class ConnextInternal extends ConnextChannel {
   ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
     this.logger.info(`Proposing install with params: ${JSON.stringify(params, null, 2)}`);
     if (
-      params.intermediaries[0] !== this.nodePublicIdentifier ||
-      params.intermediaries.length !== 1
+      params.intermediaryIdentifier[0] !== this.nodePublicIdentifier ||
+      params.intermediaryIdentifier.length !== 1
     ) {
-      throw new Error(`Incorrect intermediaries. Expected: ${this.nodePublicIdentifier},
-         got ${JSON.stringify(params.intermediaries)}`);
+      throw new Error(`Incorrect intermediaryIdentifier. Expected: ${this.nodePublicIdentifier},
+         got ${JSON.stringify(params.intermediaryIdentifier)}`);
     }
 
     const actionRes = await this.cfModule.rpcRouter.dispatch({
@@ -745,7 +745,7 @@ export class ConnextInternal extends ConnextChannel {
       methodName: NodeTypes.RpcMethodName.INSTALL_VIRTUAL,
       parameters: {
         appInstanceId,
-        intermediaries: [this.nodePublicIdentifier],
+        intermediaryIdentifier: [this.nodePublicIdentifier],
       } as NodeTypes.InstallVirtualParams,
     });
 
