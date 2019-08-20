@@ -265,6 +265,11 @@ export class TransferService {
     paymentId: string,
     preImage: string,
   ): Promise<void> => {
+    // display initial state of app
+    const preActionApp = await this.nodeService.getAppState(appInstanceId);
+
+    // NOTE: was getting an error here, printing this in case it happens again
+    console.log("preAction appInfo: ", (preActionApp.state as any).transfers);
     const action: UnidirectionalLinkedTransferAppActionBigNumber = {
       amount,
       assetId,
