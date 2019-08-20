@@ -24,7 +24,7 @@
     "@connext/types": "0.0.17",
     "@counterfactual/contracts": "0.1.15",
     "@counterfactual/firebase-client": "0.0.3",
-    "@counterfactual/node": "0.2.52",
+    "@counterfactual/node": "0.2.53",
     "@nestjs/common": "6.5.3",
     "@nestjs/core": "6.5.3",
     "@nestjs/microservices": "6.5.3",
