@@ -69,7 +69,7 @@ const saveAddressBook = (addressBook) => {
 
 // Simple sanity checks to make sure contracts from our address book have been deployed
 const contractIsDeployed = async (address) => {
-  if (!address) {
+  if (!address || address === "") {
     console.log(`This contract is not in our address book.`)
     return false
   }
