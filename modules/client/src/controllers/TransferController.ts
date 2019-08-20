@@ -179,7 +179,7 @@ export class TransferController extends AbstractController {
       initialState,
       initiatorDeposit: amount,
       initiatorDepositTokenAddress: assetId,
-      intermediaries: [this.connext.nodePublicIdentifier],
+      intermediaryIdentifier: this.connext.nodePublicIdentifier,
       outcomeType: appInfo.outcomeType,
       proposedToIdentifier: recipient,
       responderDeposit: Zero,

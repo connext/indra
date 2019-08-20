@@ -239,7 +239,6 @@ export class NodeService {
   private async appNotInstalled(appInstanceId: string): Promise<string | undefined> {
     const apps = await this.getAppInstances();
     const app = apps.filter((app: AppInstanceJson) => app.identityHash === appInstanceId);
-    logger.log(`App ${appInstanceId} is installed: ${JSON.stringify(app)}`);
     if (!app || app.length === 0) {
       return (
         `Could not find installed app with id: ${appInstanceId}. ` +

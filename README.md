@@ -62,6 +62,13 @@ Beware! The first time `make start` is run, it will take a very long time (maybe
 
 ## Deploying to Production
 
+### TL;DR
+
+1. Push to staging, make sure CI passes & the staging deployment looks healthy
+2. If there are contracts that have changed, delete their addresses from `address-book.json` and redeploy them with `bash ops/deploy-contracts.sh <network>`
+2. If any npm packages have changed, run `bash ops/npm-publish.sh` from staging
+3. Run `bash ops/deploy-indra.sh` from staging to merge to master & trigger the deployment to prod
+
 ### First, setup CircleCI Environment Variables
 
 **Once per CircleCI account or organization**

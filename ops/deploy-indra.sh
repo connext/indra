@@ -25,7 +25,7 @@ fi
 ########################################
 ## Gather info needed for deployment
 
-current_indra_version="`git show master:package.json | grep '"version":' | awk -F '"' '{print $4}'`"
+current_indra_version="`git show origin/master:package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 
 echo "What version of Indra are we deploying? Current version: $current_indra_version"
 read -p "> " -r
