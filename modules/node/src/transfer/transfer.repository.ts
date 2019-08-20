@@ -13,12 +13,22 @@ export class LinkedTransferRepository extends Repository<LinkedTransfer> {
     return await this.findOne({ where: { linkedHash } });
   }
 
+  async findByReceiverAppInstanceId(appInstanceId: string): Promise<LinkedTransfer | undefined> {
+    return await this.findOne({ where: { appInstanceId } });
+  }
+
   async markAsRedeemed(
     transfer: LinkedTransfer,
     receiverChannel: Channel,
   ): Promise<LinkedTransfer> {
     transfer.status = LinkedTransferStatus.REDEEMED;
     transfer.receiverChannel = receiverChannel;
+    return await this.save(transfer);
+  }
+
+  async addPreImage(transfer: LinkedTransfer, preImage: string): Promise<LinkedTransfer> {
+    transfer.status = LinkedTransferStatus.REDEEMED;
+    transfer.preImage = preImage;
     return await this.save(transfer);
   }
 }

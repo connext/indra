@@ -73,7 +73,7 @@ export class TransferService {
     linkedHash: string,
   ): Promise<LinkedTransfer> {
     const transfer = new LinkedTransfer();
-    transfer.appInstanceId = appInstanceId;
+    transfer.senderAppInstanceId = appInstanceId;
     transfer.amount = amount;
     transfer.assetId = assetId;
     transfer.linkedHash = linkedHash;
@@ -155,14 +155,21 @@ export class TransferService {
       turnNum: Zero,
     };
 
-    await this.conditionalTransferAppInstalled(userPubId, amount, assetId, initialState, appInfo);
+    const receiverApp = await this.installLinkedTransferApp(
+      userPubId,
+      initialState,
+      preImage,
+      paymentId,
+      transfer,
+      appInfo,
+    );
 
     // TODO: why do we have to do this?
-    await this.waitForAppInstall();
+    await this.waitForAppInstall(receiverApp.receiverAppInstanceId);
 
-    // finalize
-    await this.finalizeAndUninstallApp(this.appId, amount, assetId, paymentId, preImage);
+    await this.finalizeAndUninstallTransferApp(receiverApp.receiverAppInstanceId, transfer);
 
+    // pre - post = amount
     // sanity check, free balance decreased by payment amount
     const postTransferBal = await this.nodeService.getFreeBalance(
       userPubId,
@@ -170,10 +177,10 @@ export class TransferService {
       assetId,
     );
 
-    // pre - post = amount
     const diff = preTransferBal.sub(
       postTransferBal[freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier)],
     );
+
     if (!diff.eq(amount)) {
       logger.warn(
         `It appears the difference of the free balance before and after
@@ -197,7 +204,7 @@ export class TransferService {
     // uninstall sender app
     // dont await so caller isnt blocked by this
     // TODO: if sender is offline, this will fail
-    this.finalizeAndUninstallApp(senderApp.identityHash, amount, assetId, paymentId, preImage);
+    this.finalizeAndUninstallTransferApp(senderApp.identityHash, transfer);
 
     return {
       freeBalance: await this.nodeService.getFreeBalance(
@@ -209,18 +216,14 @@ export class TransferService {
     };
   }
 
-  // creates a promise that is resolved once the app is installed
-  // and rejected if the virtual application is rejected
-  private conditionalTransferAppInstalled = async (
+  async installLinkedTransferApp(
     userPubId: string,
-    amount: BigNumber,
-    assetId: string,
     initialState: ConditionalTransferInitialStateBigNumber,
+    preImage: string,
+    paymentId: string,
+    transfer: LinkedTransfer,
     appInfo: AppRegistry,
-  ): Promise<string | undefined> => {
-    let boundResolve: (value?: any) => void;
-    let boundReject: (reason?: any) => void;
-
+  ): Promise<LinkedTransfer> {
     // note: intermediary is added in connext.ts as well
     const {
       actionEncoding,
@@ -235,36 +238,31 @@ export class TransferService {
       },
       appDefinition,
       initialState,
-      initiatorDeposit: amount,
-      initiatorDepositTokenAddress: assetId,
+      initiatorDeposit: transfer.amount,
+      initiatorDepositTokenAddress: transfer.assetId,
       outcomeType,
       proposedToIdentifier: userPubId,
       responderDeposit: Zero,
-      responderDepositTokenAddress: assetId,
+      responderDepositTokenAddress: transfer.assetId,
       timeout: Zero,
     };
 
     const res = await this.nodeService.proposeInstallApp(params);
-    this.appId = res.appInstanceId;
-    // set app instance id
 
-    const installRes = await new Promise((res: () => any, rej: () => any): void => {
-      boundReject = this.rejectInstallTransfer.bind(null, rej);
-      boundResolve = this.resolveInstallTransfer.bind(null, res);
-      this.nodeService.registerCfNodeListener(NodeTypes.EventName.INSTALL, boundResolve);
-      this.nodeService.registerCfNodeListener(NodeTypes.EventName.REJECT_INSTALL, boundReject);
-    });
-    logger.log(`App was installed successfully!: ${JSON.stringify(installRes)}`);
-    return (installRes as any).data.params.appInstanceId;
-  };
+    // add preimage to database to allow unlock from a listener
+    transfer.receiverAppInstanceId = res.appInstanceId;
+    transfer.preImage = preImage;
+    transfer.paymentId = paymentId;
+    return await this.linkedTransferRepository.save(transfer);
 
-  private finalizeAndUninstallApp = async (
+    // app will be finalized and uninstalled by the install listener in listener service
+  }
+
+  async finalizeAndUninstallTransferApp(
     appInstanceId: string,
-    amount: BigNumber,
-    assetId: string,
-    paymentId: string,
-    preImage: string,
-  ): Promise<void> => {
+    transfer: LinkedTransfer,
+  ): Promise<void> {
+    const { amount, assetId, paymentId, preImage } = transfer;
     // display initial state of app
     const preActionApp = await this.nodeService.getAppState(appInstanceId);
 
@@ -305,36 +303,39 @@ export class TransferService {
 
     // adding a promise for now that polls app instances, but its not
     // great and should be removed
-    await this.waitForAppUninstall();
-  };
+    await this.waitForAppUninstall(appInstanceId);
+  }
 
-  private resolveInstallTransfer = (res: (value?: any) => void, data: InstallMessage): any => {
-    if (this.appId && this.appId !== data.data.params.appInstanceId) {
-      logger.log(
-        `Caught INSTALL event for different app ${JSON.stringify(data)}, expected ${this.appId}`,
-      );
-      return;
-    }
-    res(data);
-    return data;
-  };
+  async waitForAppInstall(appInstanceId: string): Promise<unknown> {
+    return new Promise(
+      async (res: (value?: unknown) => void, rej: (reason?: any) => void): Promise<void> => {
+        const getAppIds = async (): Promise<string[]> => {
+          return (await this.nodeService.getAppInstances()).map(
+            (a: AppInstanceJson) => a.identityHash,
+          );
+        };
+        let retries = 0;
+        while (!(await getAppIds()).includes(appInstanceId) && retries <= 30) {
+          logger.log(
+            `did not find app id ${appInstanceId} in the open apps... retry number ${retries}...`,
+          );
+          await delay(200);
+          retries = retries + 1;
+        }
 
-  private rejectInstallTransfer = (
-    rej: (reason?: any) => void,
-    msg: RejectProposalMessage, // reject install??
-  ): any => {
-    // check app id
-    if (this.appId !== msg.data.appInstanceId) {
-      return;
-    }
-
-    return rej(`Install failed. Event data: ${JSON.stringify(msg, null, 2)}`);
-  };
+        if (retries > 30) {
+          rej();
+          return;
+        }
+        logger.log(
+          `found app id ${appInstanceId} in the open apps after retry number ${retries}...`,
+        );
+        res(this.appId);
+      },
+    );
+  }
 
   private waitForFinalize(appInstanceId: string): Promise<unknown> {
-    if (!this.appId) {
-      throw new Error(`appId not set, cannot wait for install`);
-    }
     return new Promise(
       async (res: (value?: unknown) => void, rej: (reason?: any) => void): Promise<void> => {
         const isFinalized = async (): Promise<boolean> => {
@@ -356,10 +357,7 @@ export class TransferService {
     );
   }
 
-  private waitForAppInstall(): Promise<unknown> {
-    if (!this.appId) {
-      throw new Error(`appId not set, cannot wait for install`);
-    }
+  private waitForAppUninstall(appInstanceId: string): Promise<unknown> {
     return new Promise(
       async (res: (value?: unknown) => void, rej: (reason?: any) => void): Promise<void> => {
         const getAppIds = async (): Promise<string[]> => {
@@ -368,41 +366,17 @@ export class TransferService {
           );
         };
         let retries = 0;
-        while (!(await getAppIds()).includes(this.appId) && retries <= 30) {
-          logger.log(
-            `did not find app id ${this.appId} in the open apps... retry number ${retries}...`,
-          );
-          await delay(200);
-          retries = retries + 1;
-        }
-
-        if (retries > 30) rej();
-        logger.log(`found app id ${this.appId} in the open apps after retry number ${retries}...`);
-        res(this.appId);
-      },
-    );
-  }
-
-  private waitForAppUninstall(): Promise<unknown> {
-    if (!this.appId) {
-      throw new Error(`appId not set, cannot wait for uninstall`);
-    }
-    return new Promise(
-      async (res: (value?: unknown) => void, rej: (reason?: any) => void): Promise<void> => {
-        const getAppIds = async (): Promise<string[]> => {
-          return (await this.nodeService.getAppInstances()).map(
-            (a: AppInstanceJson) => a.identityHash,
-          );
-        };
-        let retries = 0;
-        while ((await getAppIds()).indexOf(this.appId) !== -1 && retries <= 5) {
+        while ((await getAppIds()).indexOf(appInstanceId) !== -1 && retries <= 5) {
           logger.log("found app id in the open apps... retrying...");
           await delay(500);
           retries = retries + 1;
         }
 
-        if (retries > 5) rej();
-        logger.log(`${this.appId} no longer in the open apps after retry number ${retries}...`);
+        if (retries > 5) {
+          rej();
+          return;
+        }
+        logger.log(`${appInstanceId} no longer in the open apps after retry number ${retries}...`);
         res();
       },
     );
