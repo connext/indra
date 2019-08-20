@@ -103,8 +103,14 @@
     "MinimumViableMultisig": {
       "address": "0x0e3CA38e42CF5469A17Ad8f473e45521bEE930Ae"
     },
+    "Migrations": {
+      "address": "0x8793a520a67865BC68Aa1B6E0Aa4fb8797903f44"
+    },
     "ProxyFactory": {
-      "address": "0xD891F41c4ba30b1FF4f604e30F64ae387DD85b4F"
+      "address": "0x6CF0c4Ab3F1e66913c0983DC0bb1202d958ABb8f"
+    },
+    "SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter": {
+      "address": "0xb824076414378a4eb8622a9539A786b0dbeFD275",
     },
     "SingleAssetTwoPartyCoinTransferInterpreter": {
       "address": "0xd57C1d5DbEAb07980b5cAB6117831B6C675A5337"
