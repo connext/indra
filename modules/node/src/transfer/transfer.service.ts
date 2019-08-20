@@ -271,7 +271,10 @@ export class TransferService {
     // NOTE: was getting an error here, printing this in case it happens again
     console.log("appInstanceId: ", appInstanceId);
     console.log("preAction appInfo: ", JSON.stringify(preActionApp, null, 2));
-    console.log("preAction appInfo.transfers: ", JSON.stringify((preActionApp.state as any).transfers, null, 2));
+    console.log(
+      "preAction appInfo.transfers: ",
+      JSON.stringify((preActionApp.state as any).transfers, null, 2),
+    );
     const action: UnidirectionalLinkedTransferAppActionBigNumber = {
       amount,
       assetId,
@@ -279,6 +282,8 @@ export class TransferService {
       preImage,
     };
     await this.nodeService.takeAction(appInstanceId, action);
+
+    await this.waitForFinalize(appInstanceId);
 
     // display final state of app
     const appInfo = await this.nodeService.getAppState(appInstanceId);
@@ -288,7 +293,10 @@ export class TransferService {
     // NOTE: sometimes transfers is a nested array, and sometimes its an
     // array of objects. super bizzarre, but is what would contribute to errors
     // with logging and casting.... :shrug:
-    console.log("postAction appInfo.transfers: ", JSON.stringify((appInfo.state as any).transfers, null, 2));
+    console.log(
+      "postAction appInfo.transfers: ",
+      JSON.stringify((appInfo.state as any).transfers, null, 2),
+    );
 
     await this.nodeService.uninstallApp(appInstanceId);
     const openApps = await this.nodeService.getAppInstances();
@@ -323,6 +331,31 @@ export class TransferService {
     return rej(`Install failed. Event data: ${JSON.stringify(msg, null, 2)}`);
   };
 
+  private waitForFinalize(appInstanceId: string): Promise<unknown> {
+    if (!this.appId) {
+      throw new Error(`appId not set, cannot wait for install`);
+    }
+    return new Promise(
+      async (res: (value?: unknown) => void, rej: (reason?: any) => void): Promise<void> => {
+        const isFinalized = async (): Promise<boolean> => {
+          const appInfo = await this.nodeService.getAppState(appInstanceId);
+          const appState = appInfo.state as UnidirectionalLinkedTransferAppStateBigNumber;
+          return appState.finalized;
+        };
+        let retries = 0;
+        while (!(await isFinalized()) && retries <= 30) {
+          logger.log(`transfer has not been finalized... retry number ${retries}...`);
+          await delay(200);
+          retries = retries + 1;
+        }
+
+        if (retries > 30) rej();
+        logger.log(`transfer finalized after retry number ${retries}`);
+        res(this.appId);
+      },
+    );
+  }
+
   private waitForAppInstall(): Promise<unknown> {
     if (!this.appId) {
       throw new Error(`appId not set, cannot wait for install`);
@@ -344,7 +377,7 @@ export class TransferService {
         }
 
         if (retries > 30) rej();
-
+        logger.log(`found app id ${this.appId} in the open apps after retry number ${retries}...`);
         res(this.appId);
       },
     );
@@ -369,7 +402,7 @@ export class TransferService {
         }
 
         if (retries > 5) rej();
-
+        logger.log(`${this.appId} no longer in the open apps after retry number ${retries}...`);
         res();
       },
     );
