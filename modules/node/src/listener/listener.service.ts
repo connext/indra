@@ -17,6 +17,9 @@ import { Injectable, OnModuleInit } from "@nestjs/common";
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { ChannelService } from "../channel/channel.service";
 import { NodeService } from "../node/node.service";
+import { LinkedTransferStatus } from "../transfer/transfer.entity";
+import { LinkedTransferRepository } from "../transfer/transfer.repository";
+import { TransferService } from "../transfer/transfer.service";
 import { CLogger } from "../util";
 
 const logger = new CLogger("ListenerService");
@@ -39,6 +42,8 @@ export default class ListenerService implements OnModuleInit {
     private readonly nodeService: NodeService,
     private readonly appRegistryService: AppRegistryService,
     private readonly channelService: ChannelService,
+    private readonly linkedTransferService: TransferService,
+    private readonly linkedTransferRepository: LinkedTransferRepository,
   ) {}
 
   getEventListeners(): CallbackStruct {
@@ -62,6 +67,24 @@ export default class ListenerService implements OnModuleInit {
       INSTALL: async (data: InstallMessage): Promise<void> => {
         logEvent(NodeTypes.EventName.INSTALL, data);
         const info = await this.nodeService.getAppInstanceDetails(data.data.params.appInstanceId);
+
+        // if transfer, uninstall
+        // TODO: can generalize this better
+        const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(
+          data.data.params.appInstanceId,
+        );
+        if (!transfer || !transfer.preImage) {
+          logger.debug(`Transfer not found or not unlockable ${transfer}`);
+          return;
+        }
+        logger.log(`Transfer App was installed successfully!: ${JSON.stringify(data)}`);
+        await this.linkedTransferService.finalizeAndUninstallApp(
+          data.data.params.appInstanceId,
+          transfer.amount,
+          transfer.assetId,
+          transfer.paymentId,
+          transfer.preImage,
+        );
       },
       // TODO: make cf return app instance id and app def?
       INSTALL_VIRTUAL: async (data: InstallVirtualMessage): Promise<void> => {
@@ -83,8 +106,18 @@ export default class ListenerService implements OnModuleInit {
       PROTOCOL_MESSAGE_EVENT: (data: any): void => {
         logEvent(NodeTypes.EventName.PROTOCOL_MESSAGE_EVENT, data);
       },
-      REJECT_INSTALL: (data: any): void => {
+      REJECT_INSTALL: async (data: any): Promise<void> => {
         logEvent(NodeTypes.EventName.REJECT_INSTALL, data);
+
+        const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(
+          data.data.appInstanceId,
+        );
+        if (!transfer) {
+          logger.debug(`Transfer not found`);
+          return;
+        }
+        transfer.status = LinkedTransferStatus.FAILED;
+        await this.linkedTransferRepository.save(transfer);
       },
       REJECT_INSTALL_VIRTUAL: (data: RejectInstallVirtualMessage): void => {
         logEvent(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, data);
