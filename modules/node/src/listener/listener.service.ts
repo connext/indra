@@ -67,24 +67,6 @@ export default class ListenerService implements OnModuleInit {
       INSTALL: async (data: InstallMessage): Promise<void> => {
         logEvent(NodeTypes.EventName.INSTALL, data);
         const info = await this.nodeService.getAppInstanceDetails(data.data.params.appInstanceId);
-
-        // if transfer, uninstall
-        // TODO: can generalize this better
-        const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(
-          data.data.params.appInstanceId,
-        );
-        if (!transfer || !transfer.preImage) {
-          logger.debug(`Transfer not found or not unlockable ${transfer}`);
-          return;
-        }
-        logger.log(`Transfer App was installed successfully!: ${JSON.stringify(data)}`);
-        await this.linkedTransferService.finalizeAndUninstallApp(
-          data.data.params.appInstanceId,
-          transfer.amount,
-          transfer.assetId,
-          transfer.paymentId,
-          transfer.preImage,
-        );
       },
       // TODO: make cf return app instance id and app def?
       INSTALL_VIRTUAL: async (data: InstallVirtualMessage): Promise<void> => {
