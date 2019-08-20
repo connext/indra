@@ -8,7 +8,13 @@ const appContracts = [ "SimpleTwoPartySwapApp", "UnidirectionalTransferApp", "Un
 
 const artifacts = {}
 for (const contract of coreContracts) {
-  artifacts[contract] = require(`@counterfactual/contracts/build/${contract}.json`)
+  try {
+    artifacts[contract] = require(`@counterfactual/cf-adjudicator-contracts/build/${contract}.json`)
+    console.log(`Imported adjudicator contract: ${contract}`)
+  } catch (e) {
+    artifacts[contract] = require(`@counterfactual/cf-funding-protocol-contracts/build/${contract}.json`)
+    console.log(`Imported funding contract: ${contract}`)
+  }
 }
 for (const contract of appContracts) {
   artifacts[contract] = require(`../modules/contracts/build/${contract}.json`)
@@ -63,7 +69,7 @@ const saveAddressBook = (addressBook) => {
 
 // Simple sanity checks to make sure contracts from our address book have been deployed
 const contractIsDeployed = async (address) => {
-  if (!address) {
+  if (!address || address === "") {
     console.log(`This contract is not in our address book.`)
     return false
   }
@@ -208,9 +214,11 @@ const sendGift = async (address, token) => {
 
   console.log(`\nUpdating addresses for other networks..`)
   for (const chainId of ["3", "4", "42"]) {
-    const artifacts = require(`@counterfactual/contracts/networks/${chainId}.json`)
+    const fundingArtifacts = require(`@counterfactual/cf-funding-protocol-contracts/networks/${chainId}.json`)
+    const adjudicatorArtifacts = require(`@counterfactual/cf-adjudicator-contracts/networks/${chainId}.json`)
     for (const contract of coreContracts) {
-      const artifact = artifacts.filter(c => c.contractName === contract)[0]
+      const artifact = fundingArtifacts.find(c => c.contractName === contract)
+        || adjudicatorArtifacts.find(c => c.contractName === contract)
       if (!artifact || !artifact.address) {
         console.log(`Contract ${contract} not found in network ${chainId}`);
         continue;

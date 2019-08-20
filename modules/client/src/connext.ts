@@ -132,10 +132,10 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     // TODO: make these types
     console.log("no channel detected, creating channel..");
     const creationData = await node.createChannel();
-    console.log("created channel, transaction:", creationData.transactionHash);
+    console.log("created channel, transaction:", creationData);
     const creationEventData: NodeTypes.CreateChannelResult = await new Promise(
       (res: any, rej: any): any => {
-        const timer = setTimeout(() => rej("Create channel event not fired within 5s"), 5000);
+        const timer = setTimeout(() => rej("Create channel event not fired within 30s"), 30000);
         cfModule.once(NODE_EVENTS.CREATE_CHANNEL, (data: CreateChannelMessage) => {
           clearTimeout(timer);
           res(data.data);
@@ -702,12 +702,9 @@ export class ConnextInternal extends ConnextChannel {
     params: NodeTypes.ProposeInstallVirtualParams,
   ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
     this.logger.info(`Proposing install with params: ${JSON.stringify(params, null, 2)}`);
-    if (
-      params.intermediaries[0] !== this.nodePublicIdentifier ||
-      params.intermediaries.length !== 1
-    ) {
-      throw new Error(`Incorrect intermediaries. Expected: ${this.nodePublicIdentifier},
-         got ${JSON.stringify(params.intermediaries)}`);
+    if (params.intermediaryIdentifier !== this.nodePublicIdentifier) {
+      throw new Error(`Incorrect intermediaryIdentifier. Expected: ${this.nodePublicIdentifier},
+         got ${params.intermediaryIdentifier}`);
     }
 
     const actionRes = await this.cfModule.rpcRouter.dispatch({
@@ -745,7 +742,7 @@ export class ConnextInternal extends ConnextChannel {
       methodName: NodeTypes.RpcMethodName.INSTALL_VIRTUAL,
       parameters: {
         appInstanceId,
-        intermediaries: [this.nodePublicIdentifier],
+        intermediaryIdentifier: this.nodePublicIdentifier,
       } as NodeTypes.InstallVirtualParams,
     });
 

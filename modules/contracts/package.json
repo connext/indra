@@ -12,7 +12,7 @@
   "license": "ISC",
   "devDependencies": {
     "@counterfactual/contracts": "0.1.15",
-    "@counterfactual/types": "0.0.35",
+    "@counterfactual/types": "0.0.36",
     "@types/chai": "4.2.0",
     "chai": "4.2.0",
     "dotenv": "8.1.0",

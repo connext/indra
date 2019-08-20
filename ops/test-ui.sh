@@ -57,9 +57,8 @@ sleep $n
 ## Start the UI e2e watcher if in watch mode
 
 # If there's no daicard service (webpack dev server) then indra's running in prod mode
-if [[ -n "`docker service ls | grep indra_v2_daicard`" ]]
-then env="--env publicUrl=http://localhost"
-else env="--env publicUrl=https://localhost"
+if [[ -z "`docker service ls | grep indra_v2_daicard`" ]]
+then env="--env publicUrl=https://localhost"
 fi
 
 if [[ "$1" == "watch" ]]
@@ -72,6 +71,7 @@ fi
 ## Start the UI e2e tests if in standalone test mode
 ## Then, compare the bot's current free balance w what we expect it to be
 
+export ELECTRON_ENABLE_LOGGING=true
 $cypress run $env --spec cypress/tests/index.js
 
 docker container stop indra_v2_payment_bot_1 2> /dev/null || true

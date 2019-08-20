@@ -11,7 +11,7 @@ type ProposalValidator = {
     registeredInfo: RegisteredAppDetails,
     isVirtual: boolean,
     connext: ConnextInternal,
-  ) => Promise<string | undefined>;
+  ) => Promise<string | undefined>
 };
 
 export const validateSwapApp = async (
@@ -157,24 +157,19 @@ const baseAppValidation = async (
 
   // check that the intermediary includes your node if it is not an app with
   // your node
-  const hasIntermediaries = app.intermediaries && app.intermediaries.length > 0;
+  const hasIntermediaries = app.intermediaryIdentifier;
   if (hasIntermediaries && !isVirtual) {
     return `Apps with connected node should have no intermediaries. Proposed app: ${prettyLog(
       app,
     )}`;
   }
 
-  if (isVirtual && app.intermediaries.length < 1) {
+  if (isVirtual && !hasIntermediaries) {
     return `Virtual apps should have intermediaries. Proposed app: ${prettyLog(app)}`;
   }
 
-  if (isVirtual) {
-    const node = app.intermediaries.filter((intermediary: string) => {
-      return intermediary === connext.nodePublicIdentifier;
-    });
-    if (node.length !== 1) {
-      return `Connected node is not in proposed intermediaries. Proposed app: ${prettyLog(app)}`;
-    }
+  if (isVirtual && app.intermediaryIdentifier !== connext.nodePublicIdentifier) {
+    return `Connected node is not in proposed intermediaries. Proposed app: ${prettyLog(app)}`;
   }
 
   return undefined;
