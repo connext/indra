@@ -147,6 +147,9 @@
     "IdentityApp": {
       "address": "0xFbc5f59915CbB93346530FEF0F9Ce8103D2468B1"
     },
+    "Migrations": {
+      "address": "0x42AFD2cc8c8D609046B9e85E5aBf552F09C5b98A"
+    },
     "MinimumViableMultisig": {
       "address": "0xD2a33338468E3a8c03a51F303695e8D724DD447A"
     },
