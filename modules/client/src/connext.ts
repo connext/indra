@@ -135,7 +135,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     console.log("created channel, transaction:", creationData);
     const creationEventData: NodeTypes.CreateChannelResult = await new Promise(
       (res: any, rej: any): any => {
-        const timer = setTimeout(() => rej("Create channel event not fired within 5s"), 5000);
+        const timer = setTimeout(() => rej("Create channel event not fired within 30s"), 30000);
         cfModule.once(NODE_EVENTS.CREATE_CHANNEL, (data: CreateChannelMessage) => {
           clearTimeout(timer);
           res(data.data);
