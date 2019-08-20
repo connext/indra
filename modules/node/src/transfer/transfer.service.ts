@@ -265,6 +265,13 @@ export class TransferService {
     paymentId: string,
     preImage: string,
   ): Promise<void> => {
+    // display initial state of app
+    const preActionApp = await this.nodeService.getAppState(appInstanceId);
+
+    // NOTE: was getting an error here, printing this in case it happens again
+    console.log("appInstanceId: ", appInstanceId);
+    console.log("preAction appInfo: ", JSON.stringify(preActionApp, null, 2));
+    console.log("preAction appInfo.transfers: ", JSON.stringify((preActionApp.state as any).transfers, null, 2));
     const action: UnidirectionalLinkedTransferAppActionBigNumber = {
       amount,
       assetId,
@@ -277,12 +284,11 @@ export class TransferService {
     const appInfo = await this.nodeService.getAppState(appInstanceId);
 
     // NOTE: was getting an error here, printing this in case it happens again
-    console.log("appInstanceId: ", appInstanceId);
-    console.log("appInfo: ", appInfo);
+    console.log("postAction appInfo: ", JSON.stringify(appInfo, null, 2));
     // NOTE: sometimes transfers is a nested array, and sometimes its an
     // array of objects. super bizzarre, but is what would contribute to errors
     // with logging and casting.... :shrug:
-    console.log("appInfo.transfers: ", (appInfo.state as any).transfers);
+    console.log("postAction appInfo.transfers: ", JSON.stringify((appInfo.state as any).transfers, null, 2));
 
     await this.nodeService.uninstallApp(appInstanceId);
     const openApps = await this.nodeService.getAppInstances();
@@ -333,13 +339,13 @@ export class TransferService {
           logger.log(
             `did not find app id ${this.appId} in the open apps... retry number ${retries}...`,
           );
-          await delay(100);
+          await delay(200);
           retries = retries + 1;
         }
 
         if (retries > 30) rej();
 
-        res();
+        res(this.appId);
       },
     );
   }

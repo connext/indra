@@ -19,7 +19,7 @@
       "address": "0x1284958470279156ED4Bca6fA1c012f2208c5CeB"
     },
     "ProxyFactory": {
-      "address": "0x90Bf287B6870A99E32130CED0Da8b02302a8a4dE"
+      "address": "0xA16d9511C743d6D6177A65892DC2Eafd417BfD7A"
     },
     "SingleAssetTwoPartyCoinTransferInterpreter": {
       "address": "0xBf27390426005D697f929f9F30C39c69Fe8501Da"
@@ -131,7 +131,7 @@
       "address": "0xaa839ce6F6D1033E66B47706220B1983e3De03EF"
     },
     "UnidirectionalLinkedTransferApp": {
-      "address": "0x3Af64D7C41DFDB4c68A6066f14529e0292384A07"
+      "address": "0xFfA44Cc7Dce8F568B82C30Cc91CA7dccD2c631A7"
     },
     "Token": {
       "address": "0xFab46E002BbF0b4509813474841E0716E6730136"
