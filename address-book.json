@@ -85,6 +85,9 @@
     }
   },
   "4": {
+    "Token": {
+      "address": "0xFab46E002BbF0b4509813474841E0716E6730136"
+    },
     "ChallengeRegistry": {
       "address": "0xfF532Ae788D2309ad436dc7edD1647CA5fd573ef"
     },
@@ -103,14 +106,8 @@
     "MinimumViableMultisig": {
       "address": "0x0e3CA38e42CF5469A17Ad8f473e45521bEE930Ae"
     },
-    "Migrations": {
-      "address": "0x8793a520a67865BC68Aa1B6E0Aa4fb8797903f44"
-    },
     "ProxyFactory": {
       "address": "0x6CF0c4Ab3F1e66913c0983DC0bb1202d958ABb8f"
-    },
-    "SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter": {
-      "address": "0xb824076414378a4eb8622a9539A786b0dbeFD275"
     },
     "SingleAssetTwoPartyCoinTransferInterpreter": {
       "address": "0xd57C1d5DbEAb07980b5cAB6117831B6C675A5337"
@@ -125,16 +122,13 @@
       "address": "0x23D7737A7262f5ED5980b0342449E70eE5010B9F"
     },
     "SimpleTwoPartySwapApp": {
-      "address": "0x87Bb82dc9118009C7f4C5e54865809Ee6E3F9Fcc"
+      "address": "0xd195cA39494CB6Ea74E0EA0b3d2Bb1Aa6bF3Ce6c"
     },
     "UnidirectionalTransferApp": {
-      "address": "0xaa839ce6F6D1033E66B47706220B1983e3De03EF"
+      "address": "0x1834684957C46fe645Cb3A24C035857B196Ce7E7"
     },
     "UnidirectionalLinkedTransferApp": {
-      "address": "0xFfA44Cc7Dce8F568B82C30Cc91CA7dccD2c631A7"
-    },
-    "Token": {
-      "address": "0xFab46E002BbF0b4509813474841E0716E6730136"
+      "address": "0x63422d23F4e1008B841c40a44D199B9D82B12c21"
     }
   },
   "42": {
