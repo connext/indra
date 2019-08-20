@@ -64,7 +64,7 @@ export type App<T = string> = {
   xpubPartyB: string;
   depositA: T;
   depositB: T;
-  intermediaries: string[];
+  intermediary: string;
   initialState: any; // TODO: BAD!!
   timeout: number;
   updates: AppUpdate[];
