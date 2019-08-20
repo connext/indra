@@ -1,41 +1,70 @@
 #!/user/bin/env bash
 
+# Make sure the recipient bot in the background exits when this script exits
 function cleanup {
   docker ps --filter name=indra_v2_payment_bot* -aq | xargs docker container stop
 }
 trap cleanup EXIT SIGINT
 
-mnemonics=(
-  "hill session album sentence ecology brief sleep delay act cage appear mistake" 
-  "humble sense shrug young vehicle assault destroy cook property average silent travel" 
-  "roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult" 
-  "flee scout proud unfold confirm occur girl three enemy filter puppy keep" 
-  "rail fever primary bread mirror radar insect angle man arena tone extra" 
-  "attend must slice abuse hair top riot squeeze frozen april delay common" 
-  "fury month village tumble bean property correct elephant year knife clock cinnamon" 
-  "second crane day reopen quit few loan room stuff spin orchard frost" 
-)
+# set token address
+tokenAddress="`cat address-book.json | jq '.["4447"].Token.address' | tr -d '"'`"
 
-bash ops/payment-bot.sh -i 1 -q -a $tokenAddress
+# set the number of bots you would like to test with
+bots=$NUMBER_BOTS;
 
-END=1
-echo;echo "Requesting token collateral for recipient bot";echo;sleep 1
-for i in $(seq 1 $END);
-do 
-  bash ops/payment-bot.sh -i ${i} -a $tokenAddress -m "${mnemonics[i]}" &
-  sleep 5
+# generate mnemonics
+node ops/generateBots.js $bots
+
+# create a recipients array
+recipients=()
+senders=()
+
+for i in $(seq 1 $bots);
+do
+  botMnemonic="`cat bots.json | jq -r --arg key "$i" '.[$key].mnemonic'`"
+  # echo;echo $botMnemonic
+  xpub="`cat bots.json | jq -r --arg key "$i" '.[$key].xpub'`"
+  # echo;echo $xpub
+
+  # for 1/4 of bots, request collateral in background
+  if ! (($i % 4)); then
+    recipients+=("$xpub")
+
+    echo;echo "Requesting token collateral for recipient bot";echo;sleep 1
+    bash ops/payment-bot.sh -i ${xpub} -a $tokenAddress -m "${botMnemonic}" -q
+
+
+    echo;echo "Requesting eth collateral for recipient bot";echo;sleep 1
+    bash ops/payment-bot.sh -i ${xpub} -m "${botMnemonic}" -q
+  
+  else
+  # for remaining bots, start and deposit, they will be senders
+    sleep 5;echo;echo "Depositing tokens into sender bot";echo;sleep 1
+    bash ops/payment-bot.sh -i ${xpub} -a $tokenAddress -m "${botMnemonic}" -d 0.1 &
+
+
+    sleep 5;echo;echo "Depositing eth into sender bot";echo;sleep 1
+    bash ops/payment-bot.sh -i ${xpub} -m "${botMnemonic}" -d 0.1 &
+
+    senders+=("$xpub")
+
+  fi
 done
 
-sleep 1;echo;echo "Depositing tokens into sender bot";echo;sleep 1
-for i in $(seq 1 $END);
-do 
-  bash ops/payment-bot.sh -i 2 -d 0.1 -a $tokenAddress -m "${mnemonics[i]}" &
-  sleep 1
-done
+# for all the senders, transfer to a random counterparty
+for i in $(seq 1 ${#senders[@]}):
+do
 
-sleep 1;echo;echo "Sending tokens to recipient bot";echo;sleep 1
-for i in $(seq 1 $END);
-do 
-  bash ops/payment-bot.sh -i 2 -t 0.05 -c $id -a $tokenAddress -m "${mnemonics[i]}" &
-  sleep 1
+  # get id for counterparty at random
+  length=${#recipients[@]}
+  counterpartyIndex=$(($RANDOM % $length))
+  counterparty=${recipients[$counterpartyIndex]}
+
+  sleep 1;echo;echo "Sending eth to random recipient bot";echo;sleep 1
+  bash ops/payment-bot.sh -i ${xpub} -t 0.05 -c ${counterparty}
+
+
+  sleep 1;echo;echo "Sending tokens to random recipient bot";echo;sleep 1
+  bash ops/payment-bot.sh -i ${xpub} -t 0.05 -c ${counterparty} -a ${tokenAddress}
+
 done
