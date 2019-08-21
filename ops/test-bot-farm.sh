@@ -1,4 +1,8 @@
 #!/user/bin/env bash
+set -e
+
+# Turn on swarm mode if it's not already on
+docker swarm init 2> /dev/null || true
 
 # Make sure the recipient bot in the background exits when this script exits
 function cleanup {
@@ -12,8 +16,12 @@ tokenAddress="`cat address-book.json | jq '.["4447"].Token.address' | tr -d '"'`
 # set the number of bots you would like to test with
 bots=$NUMBER_BOTS;
 
-# generate mnemonics
-node ops/generateBots.js $bots
+# generate mnemonics and fund them
+# NOTE: this will obviously only ever work on ganache
+# NOTE 2: idk how to make this hit docker good
+eth_rpc="${ETH_RPC_URL:-http://localhost:8545}"
+sugar_daddy="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+node ops/generateBots.js $bots "$sugar_daddy" $eth_rpc $tokenAddress
 
 # create a recipients array
 recipients=()
