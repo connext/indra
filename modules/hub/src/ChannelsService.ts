@@ -458,7 +458,7 @@ export default class ChannelsService {
       seller: 'user',
       exchangeRate: params.exchangeRate,
       tokensToSell: params.tokensToSell.toString(),
-      weiToSell: '0',
+      weiToSell: params.weiToSell.toString(),
 
       recipient: params.recipient,
 
