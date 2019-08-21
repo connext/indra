@@ -78,13 +78,18 @@ export class WithdrawalController extends AbstractController {
     }
 
     // TODO: token withdrawals
-    if (withdrawalStr.weiToSell && withdrawalStr.weiToSell !== '0') {
-      WithdrawalError(`User exchanging wei at withdrawal is not permitted at this time.`)
+    if (withdrawalStr.weiToSell && toBN(withdrawalStr.weiToSell).lt(channelBN.balanceWeiUser)) {
+      WithdrawalError(`Cannot sell more wei than exist in your channel.`)
     }
 
-    // validate withdrawal token user
-    if (withdrawalStr.withdrawalTokenUser && withdrawalStr.withdrawalTokenUser !== '0') {
-      WithdrawalError(`User token withdrawals are not permitted at this time.`)
+    if (withdrawalStr.withdrawalTokenUser && toBN(withdrawalStr.withdrawalTokenUser).lt(channelBN.balanceTokenUser)) {
+      WithdrawalError(`Cannot withdraw more tokens than exist in your channel.`)
+    }
+
+    // cannot do a double exchange, only one way
+    const sellingWei = withdrawalStr.weiToSell && withdrawalStr.weiToSell !== '0'
+    if (sellingWei && withdrawalStr.tokensToSell !== '0') {
+      WithdrawalError(`Cannot sell both wei and tokens simultaneously`)
     }
 
     const sync = await this.hub.requestWithdrawal(withdrawalStr, getTxCount(this.store.getState()))
