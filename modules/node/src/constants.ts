@@ -9,7 +9,7 @@ export enum Network {
   RINKEBY = "rinkeby",
   ROPSTEN = "ropsten",
   GOERLI = "goerli",
-  MAINNET = "mainnet",
+  HOMESTEAD = "homestead",
 }
 
 // PROVIDERS
