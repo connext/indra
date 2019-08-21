@@ -2,6 +2,9 @@ import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 
 import { MessagingClientProviderId } from "./constants";
+import { CLogger } from "./util";
+
+const logger = new CLogger("AppService");
 
 @Injectable()
 export class AppService implements OnModuleInit {
@@ -12,5 +15,6 @@ export class AppService implements OnModuleInit {
 
   onModuleInit(): void {
     this.messagingClient.connect();
+    logger.log(`Hello Indra version 2.0.15`);
   }
 }

@@ -62,10 +62,19 @@ export class LinkedTransfer {
   assetId!: string;
 
   @Column("text")
-  appInstanceId!: string;
+  senderAppInstanceId!: string;
+
+  @Column("text", { nullable: true })
+  receiverAppInstanceId!: string;
 
   @Column("text")
   linkedHash!: string;
+
+  @Column("text", { nullable: true })
+  preImage!: string;
+
+  @Column("text", { nullable: true })
+  paymentId!: string;
 
   @Column("enum", { enum: LinkedTransferStatus, default: LinkedTransferStatus.PENDING })
   status!: LinkedTransferStatus;
