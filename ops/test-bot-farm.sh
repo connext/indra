@@ -42,17 +42,17 @@ do
     bash ops/payment-bot.sh -i ${xpub} -a $tokenAddress -m "${botMnemonic}" -q
 
 
-    echo;echo "Requesting eth collateral for recipient bot";echo;sleep 1
-    bash ops/payment-bot.sh -i ${xpub} -m "${botMnemonic}" -q
+    echo;echo "Requesting eth collateral for recipient bot";echo;sleep 5
+    sleep 5;bash ops/payment-bot.sh -i ${xpub} -m "${botMnemonic}" -q
   
   else
   # for remaining bots, start and deposit, they will be senders
     sleep 5;echo;echo "Depositing tokens into sender bot";echo;sleep 1
-    bash ops/payment-bot.sh -i ${xpub} -a $tokenAddress -m "${botMnemonic}" -d 0.1 &
+    bash ops/payment-bot.sh -i ${xpub} -a $tokenAddress -m "${botMnemonic}" -d 0.1
 
 
     sleep 5;echo;echo "Depositing eth into sender bot";echo;sleep 1
-    bash ops/payment-bot.sh -i ${xpub} -m "${botMnemonic}" -d 0.1 &
+    bash ops/payment-bot.sh -i ${xpub} -m "${botMnemonic}" -d 0.1
 
     senders+=("$xpub")
 
@@ -60,23 +60,28 @@ do
 done
 
 # for all the senders, transfer to a random counterparty
-for i in $(seq 1 ${#senders[@]}):
+for i in $(seq 1 ${#senders[@]});
 do
 
-  xpub=${senders[$i]}
-  echo "sender";echo ${xpub}
+  xpub=${senders[$((i - 1))]}
+  # echo "sender";echo ${xpub}
 
   # get id for counterparty at random
   length=${#recipients[@]}
+  if [ "$length" -eq "0" ]; then
+    echo "No recipients found"
+    exit;
+  fi
+
   counterpartyIndex=$(($RANDOM % $length))
   counterparty=${recipients[$counterpartyIndex]}
-  echo "recipient";echo ${counterparty}
+  # echo "recipient";echo ${counterparty}
 
-  sleep 1;echo;echo "Sending eth to random recipient bot";echo;sleep 1
+  sleep 5;echo;echo "Sending eth to random recipient bot";echo;sleep 1
   bash ops/payment-bot.sh -i ${xpub} -t 0.05 -c ${counterparty}
 
 
-  sleep 1;echo;echo "Sending tokens to random recipient bot";echo;sleep 1
+  sleep 5;echo;echo "Sending tokens to random recipient bot";echo;sleep 1
   bash ops/payment-bot.sh -i ${xpub} -t 0.05 -c ${counterparty} -a ${tokenAddress}
 
 done
