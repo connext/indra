@@ -12,7 +12,7 @@
   "license": "MIT",
   "dependencies": {
     "@connext/client": "0.0.18",
-    "@counterfactual/node": "0.2.53",
+    "@counterfactual/node": "0.2.56",
     "commander": "3.0.0",
     "dotenv": "8.1.0",
     "ethers": "4.0.33",
@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@connext/types": "0.0.18",
-    "@counterfactual/types": "0.0.36",
+    "@counterfactual/types": "0.0.37",
     "@types/node-fetch": "2.5.0",
     "env-cmd": "9.0.3",
     "nodemon": "1.19.1",
