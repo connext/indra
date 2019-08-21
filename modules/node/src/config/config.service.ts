@@ -66,7 +66,7 @@ export class ConfigService implements OnModuleInit {
     if (ethNetwork.name === "unknown" && ethNetwork.chainId === 4447) {
       ethNetwork.name = "ganache";
     } else if (ethNetwork.chainId === 1) {
-      ethNetwork.name = "mainnet";
+      ethNetwork.name = "homestead";
     }
     return ethNetwork;
   }
