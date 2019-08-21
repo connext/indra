@@ -172,8 +172,8 @@ export class ChannelsApiServiceHandler {
       !Number.isInteger(parseInt(withdrawalWeiUser, 10)) ||
       !Number.isInteger(parseInt(tokensToSell, 10)) ||
       // TODO: token withdrawals
-      // !Number.isInteger(parseInt(weiToSell)) ||
-      // !Number.isInteger(parseInt(withdrawalTokenUser)) ||
+      !Number.isInteger(parseInt(weiToSell, 10)) ||
+      !Number.isInteger(parseInt(withdrawalTokenUser, 10)) ||
       !exchangeRate
     ) {
       getLog(this.config).warn(
