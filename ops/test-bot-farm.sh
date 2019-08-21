@@ -63,10 +63,14 @@ done
 for i in $(seq 1 ${#senders[@]}):
 do
 
+  xpub=${senders[$i]}
+  echo "sender";echo ${xpub}
+
   # get id for counterparty at random
   length=${#recipients[@]}
   counterpartyIndex=$(($RANDOM % $length))
   counterparty=${recipients[$counterpartyIndex]}
+  echo "recipient";echo ${counterparty}
 
   sleep 1;echo;echo "Sending eth to random recipient bot";echo;sleep 1
   bash ops/payment-bot.sh -i ${xpub} -t 0.05 -c ${counterparty}
