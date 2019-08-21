@@ -1,9 +1,15 @@
 const ethers = require("ethers");
 const fs = require('fs');
-const tokenAbi = require("human-standard-token-abi");
+const tokenArtifacts = require('openzeppelin-solidity/build/contracts/ERC20Mintable.json')
 
 
 const generateBots = async (number, funderMnemonic, ethRpc, tokenAddress) => {
+  console.log("Called with opts:")
+  console.log("   - number", number)
+  console.log("   - funderMnemonic", funderMnemonic)
+  console.log("   - ethRpc", ethRpc)
+  console.log("   - tokenAddress", tokenAddress)
+
   // some basic error handling
   if (!number) {
     throw new Error("No number of bots to generate provided");
@@ -18,20 +24,12 @@ const generateBots = async (number, funderMnemonic, ethRpc, tokenAddress) => {
     throw new Error("No token address provided");
   }
 
-  console.log("Called with opts:")
-  console.log("   - number", number)
-  console.log("   - funderMnemonic", funderMnemonic)
-  console.log("   - ethRpc", ethRpc)
-  console.log("   - tokenAddress", tokenAddress)
-
-
   // make the funder account and wallet
   const ethGift = '3'
   const tokenGift = '1000000'
   const provider = new ethers.providers.JsonRpcProvider(ethRpc)
   const funder = new ethers.Wallet.fromMnemonic(funderMnemonic).connect(provider)
-  const token = new ethers.Contract(tokenAddress, tokenAbi, funder)
-
+  const token = new ethers.Contract(tokenAddress, tokenArtifacts.abi, funder)
 
   let obj = {}
   for (let i = 0; i < number; i++) {
@@ -44,11 +42,11 @@ const generateBots = async (number, funderMnemonic, ethRpc, tokenAddress) => {
       value: ethers.utils.parseEther(ethGift)
     })
     await funder.provider.waitForTransaction(ethTx.hash)
-    console.log(`Transaction mined! Hash: ${ethTx.hash}`)
+    console.log(`Transaction mined! Hash: ${ethTx.hash}q`)
 
     // send tokens
     console.log(`Minting ${tokenGift} tokens for ${bot.address}`)
-    const tokenTx = await token.mint(bot.address, parseEther(tokenGift))
+    const tokenTx = await token.mint(bot.address, ethers.utils.parseEther(tokenGift))
     await funder.provider.waitForTransaction(tokenTx.hash)
     console.log(`Transaction mined! Hash: ${tokenTx.hash}`)
 
