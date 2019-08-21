@@ -403,12 +403,6 @@ export default class ChannelsService {
     if (hasNegative)
       throw new Error(`Invalid withdrawal: ${hasNegative}`)
 
-    if (!params.weiToSell.isZero() || !params.withdrawalTokenUser.isZero()) {
-      throw new Error(
-        `Hub is not able to facilitate user exchanging wei for tokens, or withdrawing tokens.`
-      )
-    }
-
     // get exchange rate
     const currentExchangeRate = await this.exchangeRateDao.latest()
     if (currentExchangeRate.retrievedAt < Date.now() - 1000 * 60 * 60 * 24) {
@@ -464,7 +458,7 @@ export default class ChannelsService {
       seller: 'user',
       exchangeRate: params.exchangeRate,
       tokensToSell: params.tokensToSell.toString(),
-      weiToSell: '0',
+      weiToSell: params.weiToSell.toString(),
 
       recipient: params.recipient,
 
