@@ -3,6 +3,7 @@ import {
   AppStateBigNumber,
   ChannelProviderConfig,
   makeChecksum,
+  makeChecksumOrEthAddress,
   RpcType,
   RpcConnection,
 } from "@connext/types";
@@ -173,6 +174,18 @@ export class ChannelRouter extends EventEmitter {
       amount,
       assetId: makeChecksum(assetId),
       multisigAddress,
+      recipient,
+    });
+  };
+
+  public withdrawCommitment = async (
+    amount: BigNumber,
+    assetId?: string,
+    recipient?: string,
+  ): Promise<NodeTypes.WithdrawCommitmentResult> => {
+    return await this._send(NodeTypes.RpcMethodName.WITHDRAW_COMMITMENT, {
+      amount,
+      assetId: makeChecksumOrEthAddress(assetId),
       recipient,
     });
   };
