@@ -53,7 +53,7 @@ class RedeemCard extends Component {
       secret: null,
       paymentId: null,
       assetId: null,
-      amoutn: null,
+      amount: null,
       redeemPaymentState: RedeemPaymentStates.Redeeming,
       showReceipt: false,
       copied: false,
