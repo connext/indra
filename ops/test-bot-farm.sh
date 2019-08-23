@@ -28,7 +28,7 @@ eth_rpc="${ETH_RPC_URL:-http://localhost:8545}"
 sugar_daddy="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 node ops/generateBots.js $bots "$sugar_daddy" $eth_rpc $tokenAddress || { echo;echo "Problem generating or funding bots. Exiting"; exit 1; }
 
-# create a recipients array
+# create recipients and senders arrays
 recipientXpubs=()
 recipientMnemonics=()
 senderXpubs=()
