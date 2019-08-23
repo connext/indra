@@ -32,7 +32,7 @@ export class WithdrawalController extends AbstractController {
     try {
       if (!userSubmitted) {
         this.log.info(`Calling ${CFModuleTypes.RpcMethodName.WITHDRAW_COMMITMENT}`);
-        const withdrawResponse = await this.connext.cfWithdrawCommitment(
+        const withdrawResponse = await this.connext.providerWithdrawCommitment(
           amount,
           assetId,
           recipient,
