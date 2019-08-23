@@ -24,8 +24,8 @@ const generateBots = async (number, funderMnemonic, ethRpc, tokenAddress) => {
   }
 
   // make the funder account and wallet
-  const ethGift = "3";
-  const tokenGift = "1000000";
+  const ethGift = "1";
+  const tokenGift = "10000";
   const cfPath = "m/44'/60'/0'/25446";
   const provider = new ethers.providers.JsonRpcProvider(ethRpc);
   const funder = new ethers.Wallet.fromMnemonic(funderMnemonic).connect(provider);
@@ -34,26 +34,26 @@ const generateBots = async (number, funderMnemonic, ethRpc, tokenAddress) => {
   let obj = {};
   for (let i = 0; i < number; i++) {
     const botMnemonic = ethers.Wallet.createRandom().mnemonic;
-    const bot = ethers.Wallet.fromMnemonic(botMnemonic, cfPath);
+    const hdNode = ethers.utils.HDNode.fromMnemonic(botMnemonic).derivePath(cfPath);
+    const xpub = hdNode.neuter().extendedKey;
+    const addr = ethers.Wallet.fromMnemonic(botMnemonic, cfPath).address;
 
     // send eth
-    console.log(`\nSending ${ethGift} eth to ${bot.address}`);
+    console.log(`\nSending ${ethGift} eth to ${addr}`);
     const ethTx = await funder.sendTransaction({
-      to: bot.address,
+      to: addr,
       value: ethers.utils.parseEther(ethGift),
     });
     await funder.provider.waitForTransaction(ethTx.hash);
     console.log(`Transaction mined! Hash: ${ethTx.hash}q`);
 
     // send tokens
-    console.log(`Minting ${tokenGift} tokens for ${bot.address}`);
-    const tokenTx = await token.mint(bot.address, ethers.utils.parseEther(tokenGift));
+    console.log(`Minting ${tokenGift} tokens for ${addr}`);
+    const tokenTx = await token.mint(addr, ethers.utils.parseEther(tokenGift));
     await funder.provider.waitForTransaction(tokenTx.hash);
     console.log(`Transaction mined! Hash: ${tokenTx.hash}`);
 
-    const node = ethers.utils.HDNode.fromMnemonic(bot.mnemonic);
-    const xpub = node.neuter().extendedKey;
-    obj[i + 1] = { mnemonic: bot.mnemonic, xpub };
+    obj[i + 1] = { mnemonic: botMnemonic, xpub };
   }
   fs.writeFileSync("bots.json", JSON.stringify(obj, null, 2));
 };
