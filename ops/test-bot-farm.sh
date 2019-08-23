@@ -30,6 +30,7 @@ node ops/generateBots.js $bots "$sugar_daddy" $eth_rpc $tokenAddress || { echo;e
 
 # create a recipients array
 recipientXpubs=()
+recipientMnemonics=()
 senderXpubs=()
 senderMnemonics=()
 
@@ -41,8 +42,9 @@ do
   # echo;echo $xpub
 
   # for 1/4 of bots, request collateral in background
-  if ! (($i % 4)); then
+  if ! (($i % 2)); then
     recipientXpubs+=("$xpub")
+    recipientMnemonics+=("$botMnemonic")
 
     echo;echo "Requesting token collateral for recipient bot";echo;sleep 1
     bash ops/payment-bot.sh -i ${xpub} -a $tokenAddress -m "${botMnemonic}" -q
@@ -66,24 +68,33 @@ do
   fi
 done
 
+# start up the recipient bots to receive payments
+for i in $(seq 1 ${#recipientXpubs[@]});
+do
+  xpub=${recipientXpubs[$((i - 1))]}
+  mnemonic=${recipientMnemonics[$((i - 1))]}
+
+  echo;echo "Starting recipient bots";echo;sleep 5
+  bash ops/payment-bot.sh -i ${xpub} -m "${mnemonic}" &
+
+done
+
 # for all the senders, transfer to a random counterparty
 for i in $(seq 1 ${#senderXpubs[@]});
 do
 
   xpub=${senderXpubs[$((i - 1))]}
   mnemonic=${senderMnemonics[$((i - 1))]}
-  # echo "sender";echo ${xpub}
 
   # get id for counterparty at random
   length=${#recipientXpubs[@]}
   if [ "$length" -eq "0" ]; then
     echo "No recipients found"
-    exit;
+    exit 0;
   fi
 
   counterpartyIndex=$(($RANDOM % $length))
   counterparty=${recipientXpubs[$counterpartyIndex]}
-  # echo "recipient";echo ${counterparty}
 
   sleep 5;echo;echo "Sending eth to random recipient bot";echo;sleep 1
   bash ops/payment-bot.sh -i ${xpub} -t 0.05 -c ${counterparty} -m "${mnemonic}"
