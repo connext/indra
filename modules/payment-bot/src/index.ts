@@ -178,7 +178,7 @@ async function run(): Promise<void> {
     );
     await client.withdraw(withdrawParams);
     console.log(`Successfully withdrawn!`);
-    // process.exit(0);
+    process.exit(0);
   }
 
   if (config.uninstall) {
@@ -218,9 +218,6 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
   console.log("Creating connext");
   client = await connext.connect(connextOpts);
   console.log("Client created successfully!");
-
-  const connextConfig = await client.config();
-  console.log("connextConfig:", connextConfig);
 
   console.log("Public Identifier", client.publicIdentifier);
   console.log("Account multisig address:", client.opts.multisigAddress);
