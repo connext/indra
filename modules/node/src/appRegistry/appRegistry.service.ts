@@ -344,6 +344,9 @@ export class AppRegistryService {
       const responderChannel = await this.channelRepository.findByUserPublicIdentifier(
         proposedToIdentifier,
       );
+      if (!responderChannel) {
+        throw new Error(`Could not find channel for user: ${proposedToIdentifier}`);
+      }
       freeBalanceResponderAsset = await this.nodeService.getFreeBalance(
         proposedToIdentifier,
         responderChannel.multisigAddress,
