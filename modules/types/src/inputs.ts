@@ -46,6 +46,7 @@ export type SwapParametersBigNumber = SwapParameters<BigNumber>;
 
 ////// Withdraw types
 export type WithdrawParameters<T = string> = DepositParameters<T> & {
+  userSubmitted?: boolean;
   recipient?: Address; // if not provided, will default to signer addr
 };
 export type WithdrawParametersBigNumber = WithdrawParameters<BigNumber>;
