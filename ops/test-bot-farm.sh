@@ -16,16 +16,22 @@ tokenAddress="`cat address-book.json | jq '.["4447"].Token.address' | tr -d '"'`
 # set the number of bots you would like to test with
 bots=$NUMBER_BOTS;
 
+if ! (($NUMBER_BOTS)); then
+  echo;echo "Must supply a number of bots to test with";
+  exit 0;
+fi
+
 # generate mnemonics and fund them
 # NOTE: this will obviously only ever work on ganache
 # NOTE 2: idk how to make this hit docker good
 eth_rpc="${ETH_RPC_URL:-http://localhost:8545}"
 sugar_daddy="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-node ops/generateBots.js $bots "$sugar_daddy" $eth_rpc $tokenAddress
+node ops/generateBots.js $bots "$sugar_daddy" $eth_rpc $tokenAddress || { echo;echo "Problem generating or funding bots. Exiting"; exit 1; }
 
 # create a recipients array
-recipients=()
-senders=()
+recipientXpubs=()
+senderXpubs=()
+senderMnemonics=()
 
 for i in $(seq 1 $bots);
 do
@@ -36,7 +42,7 @@ do
 
   # for 1/4 of bots, request collateral in background
   if ! (($i % 4)); then
-    recipients+=("$xpub")
+    recipientXpubs+=("$xpub")
 
     echo;echo "Requesting token collateral for recipient bot";echo;sleep 1
     bash ops/payment-bot.sh -i ${xpub} -a $tokenAddress -m "${botMnemonic}" -q
@@ -54,34 +60,36 @@ do
     sleep 5;echo;echo "Depositing eth into sender bot";echo;sleep 1
     bash ops/payment-bot.sh -i ${xpub} -m "${botMnemonic}" -d 0.1
 
-    senders+=("$xpub")
+    senderXpubs+=("$xpub")
+    senderMnemonics+=("$botMnemonic")
 
   fi
 done
 
 # for all the senders, transfer to a random counterparty
-for i in $(seq 1 ${#senders[@]});
+for i in $(seq 1 ${#senderXpubs[@]});
 do
 
-  xpub=${senders[$((i - 1))]}
+  xpub=${senderXpubs[$((i - 1))]}
+  mnemonic=${senderMnemonics[$((i - 1))]}
   # echo "sender";echo ${xpub}
 
   # get id for counterparty at random
-  length=${#recipients[@]}
+  length=${#recipientXpubs[@]}
   if [ "$length" -eq "0" ]; then
     echo "No recipients found"
     exit;
   fi
 
   counterpartyIndex=$(($RANDOM % $length))
-  counterparty=${recipients[$counterpartyIndex]}
+  counterparty=${recipientXpubs[$counterpartyIndex]}
   # echo "recipient";echo ${counterparty}
 
   sleep 5;echo;echo "Sending eth to random recipient bot";echo;sleep 1
-  bash ops/payment-bot.sh -i ${xpub} -t 0.05 -c ${counterparty}
+  bash ops/payment-bot.sh -i ${xpub} -t 0.05 -c ${counterparty} -m "${mnemonic}"
 
 
   sleep 5;echo;echo "Sending tokens to random recipient bot";echo;sleep 1
-  bash ops/payment-bot.sh -i ${xpub} -t 0.05 -c ${counterparty} -a ${tokenAddress}
+  bash ops/payment-bot.sh -i ${xpub} -t 0.05 -c ${counterparty} -a ${tokenAddress} -m "${mnemonic}"
 
 done
