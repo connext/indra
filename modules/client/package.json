@@ -1,6 +1,6 @@
 {
   "name": "@connext/client",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "description": "Shared code between wallet and node",
   "main": "dist/index.js",
   "scripts": {
@@ -11,9 +11,9 @@
     "test": "./node_modules/.bin/jest"
   },
   "dependencies": {
-    "@connext/messaging": "0.0.18",
-    "@connext/types": "0.0.18",
-    "@counterfactual/node": "0.2.53",
+    "@connext/messaging": "0.0.19",
+    "@connext/types": "0.0.19",
+    "@counterfactual/node": "0.2.59",
     "core-js": "3.2.1",
     "ethers": "4.0.33",
     "human-standard-token-abi": "2.0.0",
@@ -22,7 +22,7 @@
   },
   "devDependencies": {
     "@babel/polyfill": "7.4.4",
-    "@counterfactual/types": "0.0.36",
+    "@counterfactual/types": "0.0.37",
     "@types/jest": "24.0.17",
     "@types/uuid": "3.4.5",
     "jest": "24.9.0",
