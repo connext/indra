@@ -1,4 +1,12 @@
-import { Paper, withStyles, Grid } from "@material-ui/core";
+import {
+  Paper,
+  withStyles,
+  Grid,
+  Dialog,
+  DialogActions,
+  Button,
+  DialogTitle,
+} from "@material-ui/core";
 import * as connext from "@connext/client";
 import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -78,6 +86,22 @@ const styles = theme => ({
   grid: {},
 });
 
+const ProviderModal = props => {
+  const { setProvider, open } = props;
+  return (
+    <div>
+      <Dialog open={open}>
+        <DialogTitle>{"Are you using WalletConnext?"}</DialogTitle>
+        <DialogActions>
+          <Button onClick={() => setProvider("walletconnect")}>{"Yes, I'm enlightened"}</Button>
+          <Button onClick={() => setProvider("counterfactual")}>
+            {"No, pls store my mnemonic insecurely :)"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </div>
+  );
+};
 class App extends React.Component {
   constructor(props) {
     super(props);
@@ -102,7 +126,7 @@ class App extends React.Component {
       maxDeposit: null,
       minDeposit: null,
       pending: { type: "null", complete: true, closed: true },
-      channelProviderType: "mnemonic",
+      channelProviderType: null,
       sendScanArgs: { amount: null, recipient: null },
       swapRate,
       token: null,
@@ -130,11 +154,13 @@ class App extends React.Component {
     const cfPath = "m/44'/60'/0'/25446";
     let cfWallet, channel;
 
-    // Choose whether to use WalletConnect or Mnemonic
-    ChooseChannelProviderTypeModal();
+    // Choose whether to use walletConnect or mnemonic in modal
+    while (!this.state.channelProviderType) {
+      await new Promise(res => setTimeout(() => res(), 200));
+    }
 
     // if choose mnemonic
-    if (this.state.channelProviderType == "mnemonic") {
+    if (this.state.channelProviderType === "counterfactual") {
       // If no mnemonic, create one and save to local storage
       let mnemonic = localStorage.getItem("mnemonic");
       if (!mnemonic) {
@@ -150,12 +176,16 @@ class App extends React.Component {
         nodeUrl,
         store,
       });
-    }
-
-    // if choose walletconnect
-    if (this.state.channelProviderType == "walletconnect") {
-      const channelProvider = new WalletConnectChannelProvider({});
-      await channelProvider.create();
+    } else if (this.state.channelProviderType === "walletconnect") {
+      const channelProvider = new WalletConnectChannelProvider({
+        infuraId: "need-infura-id", // NOTE: what happens if you are using ganache
+        // how can we specify our own rpc url that isnt infura?
+      });
+      // do we have to access the connection property here,
+      // or can this be referenced at a higher level?
+      // also, do we have to include this call?
+      // await channelProvider.create();
+      await channelProvider.connection.create();
       channel = await new Promise((res, rej) => {
         channelProvider.on("connect", async () => {
           const connectedChannel = await connext.connect({
@@ -165,10 +195,12 @@ class App extends React.Component {
           res(connectedChannel);
         });
         channelProvider.on("error", () => {
-          console.log("WalletConnect Error");
-          rej();
+          rej("WalletConnect Error");
         });
       });
+    } else {
+      console.error("Could not create channel.")
+      return;
     }
 
     // Wait for channel to be available
@@ -176,6 +208,7 @@ class App extends React.Component {
       const chan = await channel.getChannel();
       return chan && chan.available;
     };
+
     while (!(await channelIsAvailable(channel))) {
       await new Promise(res => setTimeout(() => res(), 1000));
     }
@@ -214,7 +247,6 @@ class App extends React.Component {
       token,
       xpub: channel.publicIdentifier,
     });
-
     await this.startPoller();
   }
 
@@ -240,7 +272,7 @@ class App extends React.Component {
       }
       await this.autoSwap();
     }, 3000);
-  }
+  };
 
   addDefaultPaymentProfile = async () => {
     // add the payment profile for tokens only
@@ -261,9 +293,9 @@ class App extends React.Component {
       minimumMaintainedCollateral: DEFAULT_COLLATERAL_MINIMUM.wad.toString(),
       assetId: token.address,
     });
-    this.setState({ tokenProfile })
+    this.setState({ tokenProfile });
     return;
-  }
+  };
 
   refreshBalances = async () => {
     const { freeBalanceAddress, swapRate, token } = this.state;
@@ -281,7 +313,7 @@ class App extends React.Component {
     balance.channel.token = Currency.DEI(freeTokenBalance[freeBalanceAddress], swapRate).toDAI();
     balance.channel.total = getTotal(balance.channel.ether, balance.channel.token).toETH();
     this.setState({ balance });
-  }
+  };
 
   setDepositLimits = async () => {
     const { swapRate, ethprovider } = this.state;
@@ -294,7 +326,7 @@ class App extends React.Component {
     ).toETH();
     const maxDeposit = MAX_CHANNEL_VALUE.toETH(swapRate); // Or get based on payment profile?
     this.setState({ maxDeposit, minDeposit });
-  }
+  };
 
   autoDeposit = async () => {
     const { balance, channel, minDeposit, maxDeposit, pending, swapRate, token } = this.state;
@@ -365,7 +397,7 @@ class App extends React.Component {
     console.log(`Successfully deposited ether! Result: ${JSON.stringify(result, null, 2)}`);
     this.setPending({ type: "deposit", complete: true, closed: false });
     this.autoSwap();
-  }
+  };
 
   autoSwap = async () => {
     const { balance, channel, maxDeposit, pending, swapRate, token } = this.state;
@@ -397,13 +429,13 @@ class App extends React.Component {
 
     console.log(`Collateral: ${collateral} tokens, need: ${formatEther(collateralNeeded)}`);
     if (collateralNeeded.gt(parseEther(collateral))) {
-      console.log(`Requesting more collateral...`)
+      console.log(`Requesting more collateral...`);
       const tokenProfile = await channel.addPaymentProfile({
         amountToCollateralize: collateralNeeded.add(parseEther("10")), // add a buffer of $10 so you dont collateralize on every payment
         minimumMaintainedCollateral: collateralNeeded,
         assetId: token.address,
       });
-      this.setState({ tokenProfile })
+      this.setState({ tokenProfile });
       await channel.requestCollateral(token.address);
       collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress]);
       console.log(`Collateral: ${collateral} tokens, need: ${formatEther(collateralNeeded)}`);
@@ -416,22 +448,22 @@ class App extends React.Component {
     });
     await this.refreshBalances();
     this.setPending({ type: "swap", complete: true, closed: false });
-  }
+  };
 
-  setPending = (pending) => {
+  setPending = pending => {
     this.setState({ pending });
-  }
+  };
 
   closeConfirmations = () => {
     const { pending } = this.state;
     this.setState({ pending: { ...pending, closed: true } });
-  }
+  };
 
   // ************************************************* //
   //                    Handlers                       //
   // ************************************************* //
 
-  scanQRCode = async (data) => {
+  scanQRCode = async data => {
     // potential URLs to scan and their params
     const urls = {
       "/send?": ["recipient", "amount"],
@@ -474,17 +506,33 @@ class App extends React.Component {
         break;
     }
     return path;
-  }
+  };
 
   closeModal = async () => {
     await this.setState({ loadingConnext: false });
-  }
+  };
+
+  setProvider = providerType => {
+    switch (providerType) {
+      case "walletconnect":
+      case "counterfactual":
+        this.setState({ channelProviderType: providerType });
+        break;
+      default:
+        console.error(
+          "Invalid provider type, this would be better with typescript fwiw",
+          providerType,
+        );
+        return;
+    }
+  };
 
   render() {
     const {
       address,
       balance,
       channel,
+      channelProviderType,
       swapRate,
       maxDeposit,
       minDeposit,
@@ -507,21 +555,17 @@ class App extends React.Component {
               duration={30000}
             />
             <AppBarComponent address={address} />
+            <ProviderModal
+              open={channelProviderType !== "walletconnect" && channelProviderType !== "counterfactual"}
+              setProvider={this.setProvider}
+            />
             <Route
               exact
               path="/"
               render={props => (
                 <Grid>
-                  <Home
-                    {...props}
-                    balance={balance}
-                    scanQRCode={this.scanQRCode}
-                  />
-                  <SetupCard
-                    {...props}
-                    minDeposit={minDeposit}
-                    maxDeposit={maxDeposit}
-                  />
+                  <Home {...props} balance={balance} scanQRCode={this.scanQRCode} />
+                  <SetupCard {...props} minDeposit={minDeposit} maxDeposit={maxDeposit} />
                 </Grid>
               )}
             />
