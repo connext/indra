@@ -1,5 +1,5 @@
 import { MessagingConfig } from "@connext/messaging";
-import { ContractAddresses, KnownNodeAppNames } from "@connext/types";
+import { ContractAddresses, SupportedApplications } from "@connext/types";
 import { OutcomeType } from "@counterfactual/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
@@ -98,8 +98,19 @@ export class ConfigService implements OnModuleInit {
             uint256 amount
           )`,
         allowNodeInstall: false,
-        appDefinitionAddress: addressBook[KnownNodeAppNames.UNIDIRECTIONAL_TRANSFER],
-        name: KnownNodeAppNames.UNIDIRECTIONAL_TRANSFER,
+        appDefinitionAddress: addressBook[SupportedApplications.SimpleTransferApp],
+        name: SupportedApplications.SimpleTransferApp,
+        network: Network[ethNetwork.name.toUpperCase()],
+        outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+        stateEncoding: `
+          tuple(
+            ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers
+          )`,
+      },
+      {
+        allowNodeInstall: false,
+        appDefinitionAddress: addressBook[SupportedApplications.UnidirectionalTransferApp],
+        name: SupportedApplications.UnidirectionalTransferApp,
         network: Network[ethNetwork.name.toUpperCase()],
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
         stateEncoding: `
@@ -112,8 +123,8 @@ export class ConfigService implements OnModuleInit {
       },
       {
         allowNodeInstall: true,
-        appDefinitionAddress: addressBook[KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP],
-        name: KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP,
+        appDefinitionAddress: addressBook[SupportedApplications.SimpleTwoPartySwapApp],
+        name: SupportedApplications.SimpleTwoPartySwapApp,
         network: Network[ethNetwork.name.toUpperCase()],
         outcomeType: OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
         stateEncoding: `
@@ -130,8 +141,8 @@ export class ConfigService implements OnModuleInit {
             bytes32 preImage
           )`,
         allowNodeInstall: true,
-        appDefinitionAddress: addressBook[KnownNodeAppNames.UNIDIRECTIONAL_LINKED_TRANSFER],
-        name: KnownNodeAppNames.UNIDIRECTIONAL_LINKED_TRANSFER,
+        appDefinitionAddress: addressBook[SupportedApplications.UnidirectionalLinkedTransferApp],
+        name: SupportedApplications.UnidirectionalLinkedTransferApp,
         network: Network[ethNetwork.name.toUpperCase()],
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
         stateEncoding: `
