@@ -20,6 +20,8 @@ import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { Component } from "react";
 import queryString from "query-string";
 
+import { createPaymentId, createPreImage } from "@connext/client/utils"
+
 import { Currency, toBN, delay } from "../utils";
 
 import { QRScan } from "./qrCode";
@@ -180,6 +182,8 @@ class SendCard extends Component {
         assetId: token.address,
         amount: amount.value.wad.toString(),
         conditionType: "LINKED_TRANSFER",
+        paymentId: createPaymentId(),
+        preImage: createPreImage(),
       });
       console.log(`Created link payment: ${JSON.stringify(link, null, 2)}`);
       console.log(
