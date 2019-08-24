@@ -112,11 +112,13 @@ async function run(): Promise<void> {
     process.exit(0);
   }
 
-  if (config.linked && !config.paymentId) {
+  if (config.linked) {
     const linkedParams: LinkedTransferParameters = {
       amount: parseEther(config.linked).toString(),
       assetId,
       conditionType: "LINKED_TRANSFER",
+      paymentId: config.paymentId,
+      preImage: config.preImage,
     };
     console.log(`Attempting to create link with ${config.linked} of ${assetId}...`);
     const res = await client.conditionalTransfer(linkedParams);
@@ -124,15 +126,15 @@ async function run(): Promise<void> {
     process.exit(0);
   }
 
-  if (config.paymentId) {
+  if (config.redeem) {
     if (!config.preImage) {
       throw new Error(`Cannot redeem a linked payment without an associated preImage.`);
     }
-    if (!config.linked) {
-      throw new Error(`Cannot redeem a linked payment without an associated amount`);
+    if (!config.paymentId) {
+      throw new Error(`Cannot redeem a linked payment without an associated paymmentId.`);
     }
     const resolveParams: ResolveLinkedTransferParameters = {
-      amount: parseEther(config.linked).toString(),
+      amount: parseEther(config.redeem).toString(),
       assetId,
       conditionType: "LINKED_TRANSFER",
       paymentId: config.paymentId,
