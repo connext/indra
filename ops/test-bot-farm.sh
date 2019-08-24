@@ -15,6 +15,7 @@ tokenAddress="`cat address-book.json | jq '.["4447"].Token.address' | tr -d '"'`
 
 # set the number of bots you would like to test with
 bots=$NUMBER_BOTS;
+links=${NUMBER_LINKS:-5}
 
 if ! (($NUMBER_BOTS)); then
   echo;echo "Must supply a number of bots to test with";
@@ -27,6 +28,11 @@ fi
 eth_rpc="${ETH_RPC_URL:-http://localhost:8545}"
 sugar_daddy="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 node ops/generateBots.js $bots "$sugar_daddy" $eth_rpc $tokenAddress || { echo;echo "Problem generating or funding bots. Exiting"; exit 1; }
+
+# generate several links
+if (($links)); then
+  node ops/generateLinks.js $links
+fi
 
 # create recipients and senders arrays
 recipientXpubs=()
@@ -54,16 +60,16 @@ do
     sleep 5;bash ops/payment-bot.sh -i ${xpub} -m "${botMnemonic}" -q
   
   else
-  # for remaining bots, start and deposit, they will be senders
+    senderXpubs+=("$xpub")
+    senderMnemonics+=("$botMnemonic")
+
+    # for remaining bots, start and deposit, they will be senders
     sleep 5;echo;echo "Depositing tokens into sender bot";echo;sleep 1
     bash ops/payment-bot.sh -i ${xpub} -a $tokenAddress -m "${botMnemonic}" -d 0.1
 
 
     sleep 5;echo;echo "Depositing eth into sender bot";echo;sleep 1
     bash ops/payment-bot.sh -i ${xpub} -m "${botMnemonic}" -d 0.1
-
-    senderXpubs+=("$xpub")
-    senderMnemonics+=("$botMnemonic")
 
   fi
 done
@@ -79,7 +85,9 @@ do
 
 done
 
-# for all the senders, transfer to a random counterparty
+# for all the senders, transfer to a random counterparty,
+# create linked payments and have random recievers redeem
+# them
 for i in $(seq 1 ${#senderXpubs[@]});
 do
 
@@ -104,3 +112,27 @@ do
   bash ops/payment-bot.sh -i ${xpub} -t 0.05 -c ${counterparty} -a ${tokenAddress} -m "${mnemonic}"
 
 done
+
+# create and redeem links if required
+if (($links)); then
+  xpub=${senderXpubs[$1]}
+  mnemonic=${senderMnemonics[$1]}
+  for i in $(seq 1 $links);
+  do
+    preImage="`cat links.json | jq -r --arg key "$i" '.[$key].preImage'`"
+    paymentId="`cat links.json | jq -r --arg key "$i" '.[$key].paymentId'`"
+    echo;echo "preImage";echo $paymentId
+    echo "paymentId";echo $paymentId
+
+    # generate the payment from a single sender
+    # NOTE: make sure whichever sender is generating these links has
+    # the appropriate deposit to do so. The links are by default very
+    # low value, but this is important to keep in mind if weird errors
+    # pop up. (Default collateralized with > 1000 tokens)
+    sleep 5;echo;echo "Generating a linked payment";echo;sleep 1
+    bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -l 0.001 -p ${paymentId} -pr ${preImage} 
+  done
+
+  # redeem links from random receivers
+
+fi
