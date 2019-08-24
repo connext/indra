@@ -23,7 +23,7 @@ const multiAssetMultiPartyCoinTransferEncoding = `
   tuple(address to, uint256 amount)[2]
 `;
 
-const swapAppStateEncoding = `tuple(
+const transferAppStateEncoding = `tuple(
   ${multiAssetMultiPartyCoinTransferEncoding} coinTransfers
 )`;
 
@@ -39,7 +39,7 @@ const encodeAppState = (
   state: SimpleTransferAppState,
   onlyCoinTransfers: boolean = false,
 ): string => {
-  if (!onlyCoinTransfers) return defaultAbiCoder.encode([swapAppStateEncoding], [state]);
+  if (!onlyCoinTransfers) return defaultAbiCoder.encode([transferAppStateEncoding], [state]);
   return defaultAbiCoder.encode([multiAssetMultiPartyCoinTransferEncoding], [state.coinTransfers]);
 };
 
@@ -91,7 +91,6 @@ describe("SimpleTransferApp", () => {
       const ret = await computeOutcome(preState);
       expect(ret).to.eq(encodeAppState(state, true));
       const decoded = decodeAppState(ret);
-      console.log('decoded: ', decoded);
       expect(decoded[0].to).eq(state.coinTransfers[0].to);
       expect(decoded[0].amount.toString()).eq(state.coinTransfers[0].amount.toString());
       expect(decoded[1].to).eq(state.coinTransfers[1].to);
