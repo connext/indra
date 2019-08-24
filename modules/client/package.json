@@ -15,7 +15,7 @@
     "@connext/types": "0.0.19",
     "@counterfactual/node": "0.2.59",
     "core-js": "3.2.1",
-    "ethers": "4.0.33",
+    "ethers": "4.0.36",
     "human-standard-token-abi": "2.0.0",
     "regenerator-runtime": "0.13.3",
     "uuid": "3.3.3"
