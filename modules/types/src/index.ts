@@ -1,7 +1,7 @@
 import { MessagingConfig } from "@connext/messaging";
 import { Address, NetworkContext, Node as NodeTypes, OutcomeType } from "@counterfactual/types";
-import { BigNumber as ethersBig, getAddress, Network } from "ethers/utils";
 import { AddressZero } from "ethers/constants";
+import { BigNumber as ethersBig, getAddress, Network } from "ethers/utils";
 
 ////////////////////////////////////
 ////// BASIC TYPINGS
@@ -9,13 +9,6 @@ export type BigNumber = ethersBig;
 export const BigNumber = ethersBig;
 
 export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
-
-////////////////////////////////////
-////// EMITTED EVENTS
-// TODO: extend CF types, export their import, rename?
-// NOTE: you cannot extend enum types in typescript.
-// to "extend" the cf types with our own events, make it a
-// const, or use a union type if needed
 
 ////////////////////////////////////
 ////// APP REGISTRY
@@ -58,7 +51,7 @@ export type AppRegistry = RegisteredAppDetails[];
 export type App<T = string> = {
   id: number;
   channel: NodeChannel;
-  appRegistry: RegisteredAppDetails; // TODO: is this right?
+  appRegistry: RegisteredAppDetails;
   appId: number;
   xpubPartyA: string;
   xpubPartyB: string;
@@ -368,7 +361,9 @@ export type TransferCondition = keyof typeof TransferConditions;
 export type LinkedTransferParameters<T = string> = {
   conditionType: "LINKED_TRANSFER";
   amount: T;
-  assetId: Address; // make optional?
+  assetId?: Address;
+  paymentId: string;
+  preImage: string;
 };
 export type LinkedTransferParametersBigNumber = LinkedTransferParameters<BigNumber>;
 
@@ -506,7 +501,7 @@ export function convertAssetAmount<To extends NumericTypeName>(
 
 export function convertAssetAmountWithId<To extends NumericTypeName>(
   to: To,
-  obj: GenericAmountObject<any> & { assetId?: string},
+  obj: GenericAmountObject<any> & { assetId?: string },
 ): any {
   const asset: any = {
     ...obj,
