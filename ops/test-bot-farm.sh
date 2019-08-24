@@ -121,8 +121,6 @@ if (($links)); then
   do
     preImage="`cat links.json | jq -r --arg key "$i" '.[$key].preImage'`"
     paymentId="`cat links.json | jq -r --arg key "$i" '.[$key].paymentId'`"
-    echo;echo "preImage";echo $paymentId
-    echo "paymentId";echo $paymentId
 
     # generate the payment from a single sender
     # NOTE: make sure whichever sender is generating these links has
@@ -134,5 +132,25 @@ if (($links)); then
   done
 
   # redeem links from random receivers
+  for i in $(seq 1 $links);
+  do
+    # get id for counterparty at random
+    length=${#recipientXpubs[@]}
+    if [ "$length" -eq "0" ]; then
+      echo "No recipients found"
+      exit 0;
+    fi
+
+    preImage="`cat links.json | jq -r --arg key "$i" '.[$key].preImage'`"
+    paymentId="`cat links.json | jq -r --arg key "$i" '.[$key].paymentId'`"
+
+    redeemerIndex=$(($RANDOM % $length))
+    xpub=${recipientXpubs[$redeemerIndex]}
+    mnemonic=${recipientMnemonics[$redeemerIndex]}
+
+    sleep 5;echo;echo "Redeeming link from random recipient bot";echo;sleep 1
+    bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -t 0.05 -m "${mnemonic}" -rl 0.001 -p ${paymentId} -pr ${preImage} 
+  
+  done
 
 fi
