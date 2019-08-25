@@ -49,6 +49,23 @@ export function getConnextClient(): connext.ConnextInternal {
   return client;
 }
 
+export function checkForLinkedFields(config: any): void {
+  if (!config.preImage) {
+    throw new Error(
+      `Cannot ${
+        config.linked ? "create" : "redeem"
+      } a linked payment without an associated preImage.`,
+    );
+  }
+  if (!config.paymentId) {
+    throw new Error(
+      `Cannot ${
+        config.linked ? "create" : "redeem"
+      } a linked payment without an associated paymmentId.`,
+    );
+  }
+}
+
 async function run(): Promise<void> {
   const assetId = config.assetId ? config.assetId : AddressZero;
   setAssetId(assetId);
@@ -113,6 +130,7 @@ async function run(): Promise<void> {
   }
 
   if (config.linked) {
+    checkForLinkedFields(config);
     const linkedParams: LinkedTransferParameters = {
       amount: parseEther(config.linked).toString(),
       assetId,
@@ -127,12 +145,7 @@ async function run(): Promise<void> {
   }
 
   if (config.redeem) {
-    if (!config.preImage) {
-      throw new Error(`Cannot redeem a linked payment without an associated preImage.`);
-    }
-    if (!config.paymentId) {
-      throw new Error(`Cannot redeem a linked payment without an associated paymmentId.`);
-    }
+    checkForLinkedFields(config);
     const resolveParams: ResolveLinkedTransferParameters = {
       amount: parseEther(config.redeem).toString(),
       assetId,
