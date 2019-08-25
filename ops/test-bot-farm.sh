@@ -17,8 +17,13 @@ tokenAddress="`cat address-book.json | jq '.["4447"].Token.address' | tr -d '"'`
 bots=$NUMBER_BOTS;
 links=${NUMBER_LINKS:-5}
 
-if ! (($NUMBER_BOTS)); then
+if ! (($bots)); then
   echo;echo "Must supply a number of bots to test with";
+  exit 0;
+fi
+
+if ["$bots" -lt "4"]; then
+  echo;echo "Will not have a recipient bot if bots < 4. Exiting."
   exit 0;
 fi
 
@@ -48,7 +53,7 @@ do
   # echo;echo $xpub
 
   # for 1/4 of bots, request collateral in background
-  if ! (($i % 2)); then
+  if ! (($i % 4)); then
     recipientXpubs+=("$xpub")
     recipientMnemonics+=("$botMnemonic")
 
@@ -128,7 +133,7 @@ if (($links)); then
     # low value, but this is important to keep in mind if weird errors
     # pop up. (Default collateralized with > 1000 tokens)
     sleep 5;echo;echo "Generating a linked payment";echo;sleep 1
-    bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -l 0.001 -p ${paymentId} -pr ${preImage} 
+    bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -l 0.001 -p "${paymentId}" -h "${preImage}"
   done
 
   # redeem links from random receivers
@@ -148,8 +153,12 @@ if (($links)); then
     xpub=${recipientXpubs[$redeemerIndex]}
     mnemonic=${recipientMnemonics[$redeemerIndex]}
 
+    # recipients have already been started to receive transfers
+    # so stop them before trying to redeem the link
+    docker stop $(docker ps -qf "name=/indra_v2_payment_bot_${xpub}")
+
     sleep 5;echo;echo "Redeeming link from random recipient bot";echo;sleep 1
-    bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -t 0.05 -m "${mnemonic}" -rl 0.001 -p ${paymentId} -pr ${preImage} 
+    bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -y 0.001 -p "${paymentId}" -h "${preImage}"
   
   done
 
