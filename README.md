@@ -188,7 +188,7 @@ Monitor the prod hub's logs with
 ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash indra/ops/logs.sh hub
 ```
 
-The ChannelManager contract needs collateral to keep doing it's thing. Make sure the hub's wallet has enough funds before deploying. Funds can be moved from the hub's wallet to the contract manually via:
+The ChannelManager contract needs collateral to keep doing its thing. Make sure the hub's wallet has enough funds before deploying. Funds can be moved from the hub's wallet to the contract manually via:
 
 ```
 ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash indra/ops/collateralize.sh 3.14 eth
