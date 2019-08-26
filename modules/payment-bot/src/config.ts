@@ -38,7 +38,8 @@ program
   .option("-u, --uninstall <appDefinitionId>", "Uninstall app")
   .option("-v, --uninstall-virtual <appDefinitionId>", "Uninstall virtual app")
   .option("-w, --withdraw <amount>", "Withdrawal amount in Ether units")
-  .option("-x, --debug", "output extra debugging");
+  .option("-x, --debug", "output extra debugging")
+  .option("-o, --open", "Leave bot open instead of quitting");
 
 program.parse(process.argv);
 
