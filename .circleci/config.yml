@@ -2,13 +2,15 @@ version: 2
 
 jobs:
   test-node:
-    machine: true
+    machine:
+      image: ubuntu-1604:201903-01
     steps:
       - checkout
       - run: make test-node
 
   test-ui:
-    machine: true
+    machine:
+      image: ubuntu-1604:201903-01
     steps:
       - checkout
       - run: make prod
@@ -16,7 +18,8 @@ jobs:
       - run: make test-ui
 
   test-bot:
-    machine: true
+    machine:
+      image: ubuntu-1604:201903-01
     steps:
       - checkout
       - run: make prod
@@ -24,7 +27,8 @@ jobs:
       - run: make test-bot
 
   push-latest-images:
-    machine: true
+    machine:
+      image: ubuntu-1604:201903-01
     steps:
       - checkout
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
@@ -32,7 +36,8 @@ jobs:
       - run: make push-latest
 
   push-prod-images:
-    machine: true
+    machine:
+      image: ubuntu-1604:201903-01
     steps:
       - checkout
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
@@ -40,14 +45,15 @@ jobs:
       - run: make push-prod
 
   deploy-staging:
-    machine: true
+    machine:
+      image: ubuntu-1604:201903-01
     steps:
       - run:
           command: |
             ssh ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
               set -e
-              git clone https://github.com/ConnextProject/indra-v2.git || true
-              cd indra-v2
+              git clone https://github.com/ConnextProject/indra.git || true
+              cd indra
               git checkout --force $CIRCLE_BRANCH
               git fetch
               git reset --hard $CIRCLE_SHA1
@@ -60,14 +66,15 @@ jobs:
             EOF
 
   deploy-prod:
-    machine: true
+    machine:
+      image: ubuntu-1604:201903-01
     steps:
       - run:
           command: |
             ssh ubuntu@$RINKEBY_DOMAINNAME "bash -s" <<EOF
               set -e
-              git clone https://github.com/ConnextProject/indra-v2.git || true
-              cd indra-v2
+              git clone https://github.com/ConnextProject/indra.git || true
+              cd indra
               git checkout --force $CIRCLE_BRANCH
               git fetch
               git reset --hard $CIRCLE_SHA1
@@ -80,8 +87,8 @@ jobs:
             EOF
             ssh ubuntu@$MAINNET_DOMAINNAME "bash -s" <<EOF
               set -e
-              git clone https://github.com/ConnextProject/indra-v2.git || true
-              cd indra-v2
+              git clone https://github.com/ConnextProject/indra.git || true
+              cd indra
               git checkout --force $CIRCLE_BRANCH
               git fetch
               git reset --hard $CIRCLE_SHA1
