@@ -22,11 +22,6 @@ if ! (($bots)); then
   exit 0;
 fi
 
-if ["$bots" -lt "4"]; then
-  echo;echo "Will not have a recipient bot if bots < 4. Exiting."
-  exit 0;
-fi
-
 # generate mnemonics and fund them
 # NOTE: this will obviously only ever work on ganache
 # NOTE 2: idk how to make this hit docker good
@@ -157,8 +152,12 @@ if (($links)); then
     # so stop them before trying to redeem the link
     docker stop $(docker ps -qf "name=/indra_v2_payment_bot_${xpub}")
 
-    sleep 5;echo;echo "Redeeming link from random recipient bot";echo;sleep 1
-    bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -y 0.001 -p "${paymentId}" -h "${preImage}"
+    sleep 5;echo;echo "Redeeming link in background from random recipient bot";echo;sleep 1
+    nohup bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -y 0.001 -p "${paymentId}" -h "${preImage}" -o &
+
+    # also have sender try to send payments while redeeming
+    echo;echo "Sending tokens in background payment to random recipient bot";echo;
+    bash ops/payment-bot.sh -i ${senderXpubs[$1]} -t 0.001 -c ${xpub} -m "${senderMnemonics[$1]}" -a ${tokenAddress} -o
   
   done
 
