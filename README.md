@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/ConnextProject/indra-v2/tree/master.svg?style=shield)](https://circleci.com/gh/ConnextProject/indra-v2/tree/master)
+[![CircleCI](https://circleci.com/gh/ConnextProject/indra/tree/master.svg?style=shield)](https://circleci.com/gh/ConnextProject/indra/tree/master)
 
 # Indra 2.0
 
