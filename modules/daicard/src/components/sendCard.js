@@ -20,13 +20,15 @@ import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { Component } from "react";
 import queryString from "query-string";
 
-import { createPaymentId, createPreImage } from "@connext/client/utils"
+import { utils } from "@connext/client"
 
 import { Currency, toBN, delay } from "../utils";
 
 import { QRScan } from "./qrCode";
 
 const LINK_LIMIT = Currency.DAI("10"); // $10 capped linked payments
+
+const { createPaymentId, createPreImage } = utils;
 
 const styles = theme => ({
   icon: {
@@ -455,7 +457,6 @@ function ConfirmationDialogText(paymentState, amountToken, recipient) {
       return <div />;
   }
 }
-
 function PaymentConfirmationDialog(props) {
   return (
     <Dialog
@@ -511,5 +512,4 @@ function PaymentConfirmationDialog(props) {
     </Dialog>
   );
 }
-
 export default withStyles(styles)(SendCard);
