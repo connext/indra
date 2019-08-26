@@ -14,7 +14,7 @@ trap cleanup EXIT SIGINT
 tokenAddress="`cat address-book.json | jq '.["4447"].Token.address' | tr -d '"'`"
 
 # set the number of bots you would like to test with
-bots=$NUMBER_BOTS;
+bots=${NUMBER_BOTS:-4};
 links=${NUMBER_LINKS:-5}
 
 if ! (($bots)); then
