@@ -1,6 +1,6 @@
 ---
 name: General Todos
-about: Issues, bugfixes, feature requests
+about: Issues
 title: ''
 labels: ''
 assignees: ''
