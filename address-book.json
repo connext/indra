@@ -218,9 +218,6 @@
     "TwoPartyFixedOutcomeFromVirtualAppInterpreter": {
       "address": "0xf204a4Ef082f5c04bB89F7D5E6568B796096735a"
     },
-    "SimpleTwoPartySwapApp": {
-      "address": "0x75c35C980C0d37ef46DF04d31A140b65503c0eEd"
-    },
     "UnidirectionalTransferApp": {
       "address": "0x82D50AD3C1091866E258Fd0f1a7cC9674609D254"
     },
@@ -229,6 +226,12 @@
     },
     "Token": {
       "address": "0xeec918d74c746167564401103096D45BbD494B74"
+    },
+    "SimpleTransferApp": {
+      "address": "0x75c35C980C0d37ef46DF04d31A140b65503c0eEd"
+    },
+    "SimpleTwoPartySwapApp": {
+      "address": "0x82D50AD3C1091866E258Fd0f1a7cC9674609D254"
     }
   }
 }

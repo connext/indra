@@ -2,12 +2,10 @@ import {
   convert,
   NodeChannel,
   RegisteredAppDetails,
+  SimpleTransferAppStateBigNumber,
   SupportedApplication,
   SupportedApplications,
   TransferParameters,
-  UnidirectionalTransferAppActionType,
-  UnidirectionalTransferAppStage,
-  UnidirectionalTransferAppStateBigNumber,
 } from "@connext/types";
 import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
@@ -19,6 +17,8 @@ import { invalidAddress, invalidXpub } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
+
+const MAX_RETRIES = 20;
 
 export class TransferController extends AbstractController {
   private appId: string;
@@ -46,7 +46,7 @@ export class TransferController extends AbstractController {
 
     // verify app is supported without swallowing errors
     const appInfo = this.connext.getRegisteredAppDetails(
-      SupportedApplications.UnidirectionalTransferApp as SupportedApplication,
+      SupportedApplications.SimpleTransferApp as SupportedApplication,
     );
 
     // install the transfer application
@@ -55,19 +55,12 @@ export class TransferController extends AbstractController {
       throw new Error(`App was not installed`);
     }
 
-    // display state of app
-    const appState = await this.connext.getAppState(appId);
-    (appState.state as any).transfers[0].amount = (appState.state as any).transfers[0].amount.toString();
-    (appState.state as any).transfers[1].amount = (appState.state as any).transfers[1].amount.toString();
+    await this.waitForAppInstall();
 
-    // update state
-    await this.connext.takeAction(this.appId, {
-      actionType: UnidirectionalTransferAppActionType.SEND_MONEY,
-      amount,
-    });
+    await this.connext.uninstallVirtualApp(appId);
 
-    // finalize state + uninstall application
-    await this.finalizeAndUninstallApp(this.appId);
+    // TODO: this sucks
+    await this.waitForAppUninstall();
 
     // sanity check, free balance decreased by payment amount
     const postTransferBal = await this.connext.getFreeBalance(assetId);
@@ -151,10 +144,8 @@ export class TransferController extends AbstractController {
     let boundResolve: (value?: any) => void;
     let boundReject: (reason?: any) => void;
 
-    const initialState: UnidirectionalTransferAppStateBigNumber = {
-      finalized: false,
-      stage: UnidirectionalTransferAppStage.POST_FUND,
-      transfers: [
+    const initialState: SimpleTransferAppStateBigNumber = {
+      coinTransfers: [
         {
           amount,
           to: freeBalanceAddressFromXpub(this.connext.publicIdentifier),
@@ -164,7 +155,6 @@ export class TransferController extends AbstractController {
           to: freeBalanceAddressFromXpub(recipient),
         },
       ],
-      turnNum: Zero,
     };
 
     // note: intermediary is added in connext.ts as well
@@ -217,39 +207,39 @@ export class TransferController extends AbstractController {
     this.listener.removeListener(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
   };
 
-  private finalizeAndUninstallApp = async (appId: string): Promise<void> => {
-    await this.connext.takeAction(appId, {
-      actionType: UnidirectionalTransferAppActionType.END_CHANNEL,
-      amount: Zero,
-    });
-
-    // display final state of app
-    const appInfo = await this.connext.getAppState(appId);
-    (appInfo.state as any).transfers[0][1] = (appInfo.state as any).transfers[0][1].toString();
-    (appInfo.state as any).transfers[1][1] = (appInfo.state as any).transfers[1][1].toString();
-
-    await this.connext.uninstallVirtualApp(appId);
-    // TODO: cf does not emit uninstall virtual event on the node
-    // that has called this function but ALSO does not immediately
-    // uninstall the apps. This will be a problem when trying to
-    // display balances...
-
-    // adding a promise for now that polls app instances, but its not
-    // great and should be removed
-    await new Promise(async (res, rej) => {
+  private async waitForAppInstall(): Promise<void> {
+    return new Promise(async (res, rej) => {
       const getAppIds = async (): Promise<string[]> => {
         return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
       };
       let retries = 0;
-      while ((await getAppIds()).indexOf(this.appId) !== -1 && retries <= 5) {
-        this.log.info("found app id in the open apps... retrying...");
-        await delay(500);
+      while (!(await getAppIds()).includes(this.appId) && retries <= MAX_RETRIES) {
+        this.log.info(`found app id in the open apps... retry number ${retries}`);
+        await delay(100);
         retries = retries + 1;
       }
 
-      if (retries > 5) rej();
-
+      if (retries > MAX_RETRIES) rej();
+      this.log.info(`app installed after ${retries} retries`);
       res();
     });
-  };
+  }
+
+  private async waitForAppUninstall(): Promise<void> {
+    return new Promise(async (res, rej) => {
+      const getAppIds = async (): Promise<string[]> => {
+        return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
+      };
+      let retries = 0;
+      while ((await getAppIds()).includes(this.appId) && retries <= MAX_RETRIES) {
+        this.log.info(`found app id in the open apps... retry number ${retries}`);
+        await delay(100);
+        retries = retries + 1;
+      }
+
+      if (retries > MAX_RETRIES) rej();
+      this.log.info(`app uninstalled after ${retries} retries`);
+      res();
+    });
+  }
 }
