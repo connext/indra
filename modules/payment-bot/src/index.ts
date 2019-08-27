@@ -86,8 +86,11 @@ async function run(): Promise<void> {
     exitOrLeaveOpen(config);
   }
 
-  const apps = await client.getAppInstances();
-  console.log("apps: ", apps);
+  // const apps = await client.getAppInstances();
+  // console.log("apps: ", apps);
+
+  console.log("trying to get state channel...")
+  console.log("********* GET STATE CHANNEL",await client.getStateChannel());
 
   if (config.deposit) {
     const depositParams: DepositParameters = {
