@@ -46,8 +46,8 @@ jobs:
           command: |
             ssh ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
               set -e
-              git clone https://github.com/ConnextProject/indra-v2.git || true
-              cd indra-v2
+              git clone https://github.com/ConnextProject/indra.git || true
+              cd indra
               git checkout --force $CIRCLE_BRANCH
               git fetch
               git reset --hard $CIRCLE_SHA1
@@ -66,8 +66,8 @@ jobs:
           command: |
             ssh ubuntu@$RINKEBY_DOMAINNAME "bash -s" <<EOF
               set -e
-              git clone https://github.com/ConnextProject/indra-v2.git || true
-              cd indra-v2
+              git clone https://github.com/ConnextProject/indra.git || true
+              cd indra
               git checkout --force $CIRCLE_BRANCH
               git fetch
               git reset --hard $CIRCLE_SHA1
@@ -80,8 +80,8 @@ jobs:
             EOF
             ssh ubuntu@$MAINNET_DOMAINNAME "bash -s" <<EOF
               set -e
-              git clone https://github.com/ConnextProject/indra-v2.git || true
-              cd indra-v2
+              git clone https://github.com/ConnextProject/indra.git || true
+              cd indra
               git checkout --force $CIRCLE_BRANCH
               git fetch
               git reset --hard $CIRCLE_SHA1

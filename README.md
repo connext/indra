@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/ConnextProject/indra-v2/tree/master.svg?style=shield)](https://circleci.com/gh/ConnextProject/indra-v2/tree/master)
+[![CircleCI](https://circleci.com/gh/ConnextProject/indra/tree/master.svg?style=shield)](https://circleci.com/gh/ConnextProject/indra/tree/master)
 
 # Indra 2.0
 
@@ -20,7 +20,7 @@ When you're done testing it out, shut the whole thing down with `make stop`.
  - [How to interact with the Hub](#how-to-interact-with-hub)
  - [Debugging & Troubleshooting](#debugging)
 
-If you encounter any problems, check out the [debugging guide](#debugging) at the bottom of this doc. For any unanswered questions, open an [issue](https://github.com/ConnextProject/indra-v2/issues/new) or reach out on our Discord channel & we'll be happy to help.
+If you encounter any problems, check out the [debugging guide](#debugging) at the bottom of this doc. For any unanswered questions, open an [issue](https://github.com/ConnextProject/indra/issues/new) or reach out on our Discord channel & we'll be happy to help.
 
 Discord Invitation: https://discord.gg/SmMSFf
 
@@ -35,8 +35,8 @@ Discord Invitation: https://discord.gg/SmMSFf
 To download this repo, build, and deploy in dev-mode, run the following:
 
 ```
-git clone https://github.com/ConnextProject/indra-v2.git
-cd indra-v2
+git clone https://github.com/ConnextProject/indra.git
+cd indra
 make start
 ```
 

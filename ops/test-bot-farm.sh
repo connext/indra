@@ -4,18 +4,16 @@ set -e
 # Turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
 
-# Make sure the recipient bot in the background exits when this script exits
-function cleanup {
-  docker ps --filter name=indra_v2_payment_bot* -aq | xargs docker container stop
-}
-trap cleanup EXIT SIGINT
-
-# set token address
+project="indra"
 tokenAddress="`cat address-book.json | jq '.["4447"].Token.address' | tr -d '"'`"
-
-# set the number of bots you would like to test with
 bots=${NUMBER_BOTS:-4};
 links=${NUMBER_LINKS:-5}
+
+# Make sure the recipient bot in the background exits when this script exits
+function cleanup {
+  docker ps --filter name=${project}_payment_bot* -aq | xargs docker container stop
+}
+trap cleanup EXIT SIGINT
 
 if ! (($bots)); then
   echo;echo "Must supply a number of bots to test with";
@@ -150,7 +148,7 @@ if (($links)); then
 
     # recipients have already been started to receive transfers
     # so stop them before trying to redeem the link
-    docker stop $(docker ps -qf "name=/indra_v2_payment_bot_${xpub}")
+    docker stop $(docker ps -qf "name=/${project}_payment_bot_${xpub}")
 
     sleep 5;echo;echo "Redeeming link in background from random recipient bot";echo;sleep 1
     nohup bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -y 0.001 -p "${paymentId}" -h "${preImage}" -o &

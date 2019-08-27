@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 
+project="indra"
 export ETH_RPC_URL="http://172.17.0.1:8545"
 export NODE_URL="nats://172.17.0.1:4222"
 
@@ -15,7 +16,7 @@ mnemonic2="roof traffic soul urge tenant credit protect conduct enable animal ci
 
 # Make sure the recipient bot in the background exits when this script exits
 function cleanup {
-  docker container stop indra_v2_payment_bot_1 2> /dev/null || true
+  docker container stop ${project}_payment_bot_1 2> /dev/null || true
 }
 trap cleanup EXIT SIGINT
 

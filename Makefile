@@ -1,4 +1,4 @@
-project=indra_v2
+project=indra
 registry=docker.io/connextproject
 
 # Specify make-specific variables (VPATH = prerequisite search path)

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-project="indra_v2"
+project="indra"
 cypress="node_modules/.bin/cypress"
 botTransferAmount="0.618" # Keep this synced w the amount sent in cypress/tests/index
 
@@ -10,12 +10,12 @@ botTransferAmount="0.618" # Keep this synced w the amount sent in cypress/tests/
 
 function cleanup {
   kill $bot_pid 2> /dev/null || true
-  docker container stop indra_v2_payment_bot_1 2> /dev/null || true
+  docker container stop ${project}_payment_bot_1 2> /dev/null || true
 }
 trap cleanup EXIT SIGINT
 
 # make sure no payment bot already exists before we start a new one
-docker container stop indra_v2_payment_bot_1 2> /dev/null || true
+docker container stop ${project}_payment_bot_1 2> /dev/null || true
 
 ########################################
 ## Get a few important data points before we start
@@ -49,15 +49,15 @@ echo
 bash ops/test-bot.sh recieve &
 bot_pid=$!
 
-# Make sure indra's installed while we wait for the recipient bot to do it's thing
+# Make sure cypress is installed while we wait for the recipient bot to do it's thing
 $cypress install > /dev/null
 sleep $n
 
 ########################################
 ## Start the UI e2e watcher if in watch mode
 
-# If there's no daicard service (webpack dev server) then indra's running in prod mode
-if [[ -z "`docker service ls | grep indra_v2_daicard`" ]]
+# If there's no daicard service (webpack dev server) then we're running in prod mode
+if [[ -z "`docker service ls | grep ${project}_daicard`" ]]
 then env="--env publicUrl=https://localhost"
 fi
 
@@ -74,7 +74,7 @@ fi
 export ELECTRON_ENABLE_LOGGING=true
 $cypress run $env --spec cypress/tests/index.js
 
-docker container stop indra_v2_payment_bot_1 2> /dev/null || true
+docker container stop ${project}_payment_bot_1 2> /dev/null || true
 
 expectedFreeBalance="`echo "$freeBalance $botTransferAmount" | awk '{print $1 + $2}'`"
 

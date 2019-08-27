@@ -4,7 +4,12 @@ const linker = require('solc/linker')
 const tokenArtifacts = require('openzeppelin-solidity/build/contracts/ERC20Mintable.json')
 const { EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT: coreContracts } = require(`@counterfactual/types`)
 
-const appContracts = [ "SimpleTransferApp", "SimpleTwoPartySwapApp", "UnidirectionalTransferApp", "UnidirectionalLinkedTransferApp" ]
+const appContracts = [
+  "SimpleTransferApp",
+  "SimpleTwoPartySwapApp",
+  "UnidirectionalLinkedTransferApp",
+  "UnidirectionalTransferApp",
+]
 
 const artifacts = {}
 for (const contract of coreContracts) {
@@ -33,7 +38,7 @@ const botMnemonics = [
 const cfPath = "m/44'/60'/0'/25446"
 const ganacheId = 4447
 
-const project = 'indra-v2'
+const project = 'indra'
 const cwd = process.cwd()
 const HOME = (cwd.indexOf(project) !== -1)  ?
   `${cwd.substring(0,cwd.indexOf(project)+project.length)}` :

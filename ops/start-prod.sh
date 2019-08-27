@@ -22,7 +22,7 @@ log_level="3" # set to 5 for all logs or to 0 for none
 nats_port="4222"
 node_port="8080"
 number_of_services="5" # NOTE: Gotta update this manually when adding/removing services :(
-project="indra_v2"
+project="indra"
 
 ####################
 # Helper Functions
@@ -85,15 +85,15 @@ fi
 echo "eth provider: $INDRA_V2_ETH_PROVIDER w chainId: $chainId"
 
 if [[ "$chainId" == "1" ]]
-then eth_mnemonic_name="indra_mnemonic_mainnet"
+then eth_mnemonic_name="${project}_mnemonic_mainnet"
 elif [[ "$chainId" == "4" ]]
-then eth_mnemonic_name="indra_mnemonic_rinkeby"
+then eth_mnemonic_name="${project}_mnemonic_rinkeby"
 elif [[ "$chainId" == "42" ]]
-then eth_mnemonic_name="indra_mnemonic_kovan"
+then eth_mnemonic_name="${project}_mnemonic_kovan"
 elif [[ "$chainId" == "$ganache_chain_id" && "$INDRA_V2_MODE" == "test" ]]
 then
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-  eth_mnemonic_name="indra_mnemonic_ganache"
+  eth_mnemonic_name="${project}_mnemonic_ganache"
   new_secret "$eth_mnemonic_name" "$eth_mnemonic"
   eth_volume="chain_dev:"
   ethprovider_image="trufflesuite/ganache-cli:v6.4.5"
@@ -130,16 +130,16 @@ then
   then version="latest"
   else echo "Unknown mode ($INDRA_V2_MODE) for domain: $INDRA_V2_DOMAINNAME. Aborting" && exit 1
   fi
-  node_image="$registry/indra_v2_node:$version"
-  proxy_image="$registry/indra_v2_proxy:$version"
-  relay_image="$registry/indra_v2_relay:$version"
+  node_image="$registry/${project}_node:$version"
+  proxy_image="$registry/${project}_proxy:$version"
+  relay_image="$registry/${project}_relay:$version"
   pull_if_unavailable $node_image
   pull_if_unavailable $proxy_image
   pull_if_unavailable $relay_image
 else # local/testing mode, don't use images from registry
-  node_image="indra_v2_node:latest"
-  proxy_image="indra_v2_proxy:latest"
-  relay_image="indra_v2_relay:latest"
+  node_image="${project}_node:latest"
+  proxy_image="${project}_proxy:latest"
+  relay_image="${project}_relay:latest"
 fi
 
 ########################################
