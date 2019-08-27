@@ -175,7 +175,7 @@ export class ChannelService {
     userAppSequenceNumber: number,
   ): Promise<ChannelAppSequences> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
-    const { sc } = (await this.nodeService.getStateChannel(channel.multisigAddress)).data;
+    const sc = (await this.nodeService.getStateChannel(channel.multisigAddress)).data;
     let nodeAppSequenceNumber;
     try {
       nodeAppSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
