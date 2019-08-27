@@ -3,6 +3,7 @@ import {
   AppActionBigNumber,
   AppRegistry,
   AppState,
+  ChannelAppSequences,
   ChannelState,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
