@@ -56,6 +56,12 @@ export function exitOrLeaveOpen(config: any): void {
   console.log("leaving process open");
 }
 
+export function startAppSequencePoller(): void {
+  setInterval(async () => {
+    await client.verifyAppSequenceNumber()
+  }, 1000)
+}
+
 export function checkForLinkedFields(config: any): void {
   if (!config.preImage) {
     throw new Error(
@@ -86,11 +92,10 @@ async function run(): Promise<void> {
     exitOrLeaveOpen(config);
   }
 
+  startAppSequencePoller();
+
   // const apps = await client.getAppInstances();
   // console.log("apps: ", apps);
-
-  console.log("trying to get state channel...")
-  console.log("********* GET STATE CHANNEL",await client.getStateChannel());
 
   if (config.deposit) {
     const depositParams: DepositParameters = {
