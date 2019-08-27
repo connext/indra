@@ -58,7 +58,7 @@ export function exitOrLeaveOpen(config: any): void {
 
 export function startAppSequencePoller(): void {
   setInterval(async () => {
-    await client.verifyAppSequenceNumber()
+    console.log("app sequences:", JSON.stringify(await client.verifyAppSequenceNumber(), null, 2))
   }, 1000)
 }
 
