@@ -59,3 +59,4 @@ counterfactual
 # Regenerated files from tests
 bots.json
 links.json
+nohup.out
