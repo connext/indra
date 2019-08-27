@@ -56,11 +56,13 @@ export function exitOrLeaveOpen(config: any): void {
   console.log("leaving process open");
 }
 
+/*
 export function startAppSequencePoller(): void {
   setInterval(async () => {
     console.log("app sequences:", JSON.stringify(await client.verifyAppSequenceNumber(), null, 2))
   }, 1000)
 }
+*/
 
 export function checkForLinkedFields(config: any): void {
   if (!config.preImage) {
@@ -92,7 +94,7 @@ async function run(): Promise<void> {
     exitOrLeaveOpen(config);
   }
 
-  startAppSequencePoller();
+  // startAppSequencePoller(); // This is noisy - Bo
 
   // const apps = await client.getAppInstances();
   // console.log("apps: ", apps);
