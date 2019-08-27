@@ -918,9 +918,9 @@ export class ConnextInternal extends ConnextChannel {
     const { data: sc } = await this.getStateChannel();
     let appSequenceNumber;
     try {
-      appSequenceNumber = await sc.mostRecentlyInstalledAppInstance();
+      appSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
     } catch (e) {
-      if (e.message.indexOf("There are no installed AppInstances in this StateChannel") !== -1) {
+      if (e.message.includes("There are no installed AppInstances in this StateChannel")) {
         appSequenceNumber = 0;
       } else {
         throw e;
