@@ -1,6 +1,7 @@
 import { IMessagingService } from "@connext/messaging";
 import {
   convert,
+  ChannelAppSequences,
   GetChannelResponse,
   GetConfigResponse,
   PaymentProfile as PaymentProfileRes,
@@ -60,6 +61,14 @@ class ChannelMessaging extends AbstractMessagingProvider {
   async createChannel(subject: string): Promise<NodeTypes.CreateChannelResult> {
     const pubId = this.getPublicIdentifierFromSubject(subject);
     return await this.channelService.create(pubId);
+  }
+
+  async verifyAppSequenceNumber(
+    subject: string,
+    data: { appSequenceNumber: number },
+  ): Promise<ChannelAppSequences> {
+    const userPubId = this.getPublicIdentifierFromSubject(subject);
+    return await this.channelService.verifyAppSequenceNumber(userPubId, data.appSequenceNumber);
   }
 
   async requestCollateral(
@@ -137,6 +146,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     super.connectRequestReponse("channel.withdraw.>", this.withdraw.bind(this));
     super.connectRequestReponse("channel.add-profile.>", this.addPaymentProfile.bind(this));
     super.connectRequestReponse("channel.get-profile.>", this.getPaymentProfile.bind(this));
+    super.connectRequestReponse("channel.verify-app-sequence.>", this.verifyAppSequenceNumber.bind(this));
   }
 }
 
