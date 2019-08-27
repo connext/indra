@@ -1,6 +1,7 @@
 import { IMessagingService } from "@connext/messaging";
 import {
   AppRegistry,
+  ChannelAppSequences,
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
@@ -41,7 +42,7 @@ export interface INodeApiClient {
   subscribeToSwapRates(from: string, to: string, callback: any): void;
   unsubscribeFromSwapRates(from: string, to: string): void;
   // TODO: fix types
-  // verifyAppSequenceNumber(appSequenceNumber: number): Promise<any>;
+  verifyAppSequenceNumber(appSequenceNumber: number): Promise<ChannelAppSequences>;
 }
 
 // NOTE: swap rates are given as a decimal string describing:
@@ -136,9 +137,11 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
-  // public async verifyAppSequenceNumber(appSequenceNumber: number): Promise<any> {
-
-  // }
+  public async verifyAppSequenceNumber(appSequenceNumber: number): Promise<ChannelAppSequences> {
+    return await this.send(`channel.verify-app-sequence.${this.userPublicIdentifier}`, {
+      userAppSequenceNumber: appSequenceNumber,
+    })
+  }
 
   // NOTE: maybe move since its not directly to the node just through messaging?
   public recipientOnline = async (recipientPublicIdentifier: string): Promise<boolean> => {
