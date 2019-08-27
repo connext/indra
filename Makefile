@@ -99,7 +99,7 @@ test: test-node
 watch: watch-node
 
 start-test: prod deployed-contracts
-	INDRA_V2_ETH_PROVIDER=http://localhost:8545 INDRA_V2_MODE=test bash ops/start-prod.sh
+	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test bash ops/start-prod.sh
 
 test-ui:
 	bash ops/test-ui.sh
