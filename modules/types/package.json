@@ -13,7 +13,7 @@
     "test": "./node_modules/.bin/jest"
   },
   "dependencies": {
-    "ethers": "4.0.36"
+    "ethers": "4.0.33"
   },
   "devDependencies": {
     "@connext/messaging": "0.0.20",

@@ -9,10 +9,10 @@ registry="docker.io/connextproject"
 ####################
 # External Env Vars
 
-INDRA_V2_DOMAINNAME="${INDRA_V2_DOMAINNAME:-localhost}"
-INDRA_V2_EMAIL="${INDRA_V2_EMAIL:-noreply@gmail.com}" # for notifications when ssl certs expire
-INDRA_V2_ETH_PROVIDER="${INDRA_V2_ETH_PROVIDER}"
-INDRA_V2_MODE="${INDRA_V2_MODE:-staging}" # set to "prod" to use versioned docker images
+INDRA_DOMAINNAME="${INDRA_DOMAINNAME:-localhost}"
+INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl certs expire
+INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER}"
+INDRA_MODE="${INDRA_MODE:-staging}" # set to "prod" to use versioned docker images
 
 ####################
 # Internal Config
@@ -45,7 +45,7 @@ function pull_if_unavailable {
   if [[ -z "`docker image ls | grep ${1%:*} | grep ${1#*:}`" ]]
   then
     # But actually don't pull images if we're running locally
-    if [[ "$INDRA_V2_DOMAINNAME" != "localhost" ]]
+    if [[ "$INDRA_DOMAINNAME" != "localhost" ]]
     then docker pull $1
     fi
   fi
@@ -54,7 +54,7 @@ function pull_if_unavailable {
 ########################################
 ## Database Conig
 
-if [[ "$INDRA_V2_MODE" == "test" ]]
+if [[ "$INDRA_MODE" == "test" ]]
 then
   db_volume="database_test_`date +%y%m%d_%H%M%S`"
   db_secret="${project}_database_test"
@@ -75,14 +75,14 @@ postgres_user="$project"
 ########################################
 ## Ethereum Config
 
-if [[ -z "$INDRA_V2_ETH_PROVIDER" ]]
-then echo "An env var called INDRA_V2_ETH_PROVIDER is required" && exit 1
-elif [[ "$INDRA_V2_ETH_PROVIDER" =~ .*://localhost:.* ]]
+if [[ -z "$INDRA_ETH_PROVIDER" ]]
+then echo "An env var called INDRA_ETH_PROVIDER is required" && exit 1
+elif [[ "$INDRA_ETH_PROVIDER" =~ .*://localhost:.* ]]
 then chainId="$ganache_chain_id"
-else chainId="`curl -q -k -s -H "Content-Type: application/json" -X POST --data '{"id":1,"jsonrpc":"2.0","method":"net_version","params":[]}' $INDRA_V2_ETH_PROVIDER | jq .result | tr -d '"'`"
+else chainId="`curl -q -k -s -H "Content-Type: application/json" -X POST --data '{"id":1,"jsonrpc":"2.0","method":"net_version","params":[]}' $INDRA_ETH_PROVIDER | jq .result | tr -d '"'`"
 fi
 
-echo "eth provider: $INDRA_V2_ETH_PROVIDER w chainId: $chainId"
+echo "eth provider: $INDRA_ETH_PROVIDER w chainId: $chainId"
 
 if [[ "$chainId" == "1" ]]
 then eth_mnemonic_name="${project}_mnemonic_mainnet"
@@ -90,7 +90,7 @@ elif [[ "$chainId" == "4" ]]
 then eth_mnemonic_name="${project}_mnemonic_rinkeby"
 elif [[ "$chainId" == "42" ]]
 then eth_mnemonic_name="${project}_mnemonic_kovan"
-elif [[ "$chainId" == "$ganache_chain_id" && "$INDRA_V2_MODE" == "test" ]]
+elif [[ "$chainId" == "$ganache_chain_id" && "$INDRA_MODE" == "test" ]]
 then
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
   eth_mnemonic_name="${project}_mnemonic_ganache"
@@ -108,8 +108,8 @@ then
     volumes:
       - $eth_volume/data
   "
-  INDRA_V2_ETH_PROVIDER="http://ethprovider:8545"
-else echo "Eth network \"$chainId\" is not supported for $INDRA_V2_MODE-mode deployments" && exit 1
+  INDRA_ETH_PROVIDER="http://ethprovider:8545"
+else echo "Eth network \"$chainId\" is not supported for $INDRA_MODE-mode deployments" && exit 1
 fi
 
 eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
@@ -122,13 +122,13 @@ nats_image="nats:2.0.0-linux"
 pull_if_unavailable $database_image
 pull_if_unavailable $nats_image
 
-if [[ "$INDRA_V2_DOMAINNAME" != "localhost" ]]
+if [[ "$INDRA_DOMAINNAME" != "localhost" ]]
 then
-  if [[ "$INDRA_V2_MODE" == "prod" ]]
+  if [[ "$INDRA_MODE" == "prod" ]]
   then version="`cat package.json | jq .version | tr -d '"'`"
-  elif [[ "$INDRA_V2_MODE" == "staging" ]]
+  elif [[ "$INDRA_MODE" == "staging" ]]
   then version="latest"
-  else echo "Unknown mode ($INDRA_V2_MODE) for domain: $INDRA_V2_DOMAINNAME. Aborting" && exit 1
+  else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" && exit 1
   fi
   node_image="$registry/${project}_node:$version"
   proxy_image="$registry/${project}_proxy:$version"
@@ -145,7 +145,7 @@ fi
 ########################################
 ## Deploy according to configuration
 
-echo "Deploying node image: $node_image to $INDRA_V2_DOMAINNAME"
+echo "Deploying node image: $node_image to $INDRA_DOMAINNAME"
 
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
@@ -168,9 +168,9 @@ services:
   proxy:
     image: $proxy_image
     environment:
-      DOMAINNAME: $INDRA_V2_DOMAINNAME
-      EMAIL: $INDRA_V2_EMAIL
-      ETH_RPC_URL: $INDRA_V2_ETH_PROVIDER
+      DOMAINNAME: $INDRA_DOMAINNAME
+      EMAIL: $INDRA_EMAIL
+      ETH_RPC_URL: $INDRA_ETH_PROVIDER
       MESSAGING_URL: http://relay:4223
       MODE: prod
     ports:
@@ -189,7 +189,7 @@ services:
     environment:
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC_FILE: /run/secrets/$eth_mnemonic_name
-      INDRA_ETH_RPC_URL: $INDRA_V2_ETH_PROVIDER
+      INDRA_ETH_RPC_URL: $INDRA_ETH_PROVIDER
       INDRA_LOG_LEVEL: $log_level
       INDRA_NATS_CLUSTER_ID: abc123
       INDRA_NATS_SERVERS: nats://nats:$nats_port

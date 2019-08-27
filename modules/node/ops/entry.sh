@@ -70,7 +70,7 @@ then
     --exec ts-node \
     ./src/main.ts
 else
-  echo "Starting indra v2 node!"
+  echo "Starting indra node!"
   exec node dist/main.js
 fi
 
