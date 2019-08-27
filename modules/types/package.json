@@ -13,15 +13,15 @@
     "test": "./node_modules/.bin/jest"
   },
   "dependencies": {
-    "ethers": "4.0.33"
+    "ethers": "4.0.36"
   },
   "devDependencies": {
     "@connext/messaging": "0.0.20",
     "@counterfactual/types": "0.0.37",
     "@types/jest": "24.0.18",
     "jest": "24.9.0",
-    "rollup": "1.19.4",
-    "rollup-plugin-typescript2": "0.22.1",
+    "rollup": "1.20.2",
+    "rollup-plugin-typescript2": "0.23.0",
     "ts-jest": "24.0.2",
     "typescript": "3.5.3"
   }
