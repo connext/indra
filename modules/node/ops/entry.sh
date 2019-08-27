@@ -3,7 +3,7 @@ set -e
 
 if [[ -d "modules/node" ]]
 then cd modules/node
-elif [[ ! -f "src/main.ts" && ! -f "dist/main.js" ]]
+elif [[ ! -f "src/main.ts" && ! -f "dist/src/main.js" ]]
 then echo "Fatal: couldn't find file to run" && exit 1
 fi
 
@@ -70,7 +70,7 @@ then
     --exec ts-node \
     ./src/main.ts
 else
-  echo "Starting indra v2 node!"
-  exec node dist/main.js
+  echo "Starting indra node!"
+  exec node dist/src/main.js
 fi
 

@@ -1,20 +1,20 @@
 {
-	"name": "@connext/indra-v2",
+	"name": "@connext/indra",
 	"version": "2.0.21",
 	"description": "",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/ConnextProject/indra-v2.git"
+		"url": "git+https://github.com/ConnextProject/indra.git"
 	},
 	"author": "Connext & Friends",
 	"license": "MIT",
 	"bugs": {
-		"url": "https://github.com/ConnextProject/indra-v2/issues"
+		"url": "https://github.com/ConnextProject/indra/issues"
 	},
-	"homepage": "https://github.com/ConnextProject/indra-v2#readme",
+	"homepage": "https://github.com/ConnextProject/indra#readme",
 	"devDependencies": {
-		"@counterfactual/cf-adjudicator-contracts": "0.0.2",
-		"@counterfactual/cf-funding-protocol-contracts": "0.0.5",
+		"@counterfactual/cf-adjudicator-contracts": "0.0.3",
+		"@counterfactual/cf-funding-protocol-contracts": "0.0.6",
 		"chai-bn": "0.1.1",
 		"cypress": "3.4.1",
 		"ethers": "4.0.33",
@@ -23,7 +23,7 @@
 		"lerna": "3.16.4",
 		"openzeppelin-solidity": "2.3.0",
 		"solc": "0.5.11",
-		"tslint": "5.18.0",
+		"tslint": "5.19.0",
 		"tslint-config-airbnb": "5.11.1",
 		"tslint-config-prettier": "1.18.0",
 		"tslint-plugin-prettier": "2.0.1"

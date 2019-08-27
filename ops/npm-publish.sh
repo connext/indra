@@ -2,6 +2,7 @@
 
 # This is the order they'll be published in
 packages="messaging,types,client"
+project="indra"
 
 ########################################
 ## Helper functions
@@ -17,8 +18,8 @@ if [[ -n "`git status -s`" ]]
 then echo "Aborting: Make sure you've committed all your changes before publishing" && exit 1
 fi
 
-if [[ ! "`pwd | sed 's|.*/\(.*\)|\1|'`" =~ "indra" ]]
-then echo "Aborting: Make sure you're in the indra project root" && exit 1
+if [[ ! "`pwd | sed 's|.*/\(.*\)|\1|'`" =~ "$project" ]]
+then echo "Aborting: Make sure you're in the $project project root" && exit 1
 fi
 
 make

@@ -1,4 +1,6 @@
+import { UnidirectionalLinkedTransferAppActionBigNumber } from "@connext/types";
 import { utils } from "ethers";
+import { hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
 
 // Capitalizes first char of a string
@@ -56,3 +58,19 @@ export const publicIdentifierToAddress = (publicIdentifier: string): string => {
 export const freeBalanceAddressFromXpub = (xpub: string): string => {
   return utils.HDNode.fromExtendedKey(xpub).derivePath("0").address;
 };
+
+export const createLinkedHash = (
+  action: UnidirectionalLinkedTransferAppActionBigNumber,
+): string => {
+  return solidityKeccak256(
+    ["uint256", "address", "bytes32", "bytes32"],
+    [action.amount, action.assetId, action.paymentId, action.preImage],
+  );
+};
+
+export const createRandom32ByteHexString = (): string => {
+  return hexlify(randomBytes(32));
+};
+
+export const createPaymentId = createRandom32ByteHexString;
+export const createPreImage = createRandom32ByteHexString;

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-project="indra_v2"
+project="indra"
 
 # Turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
@@ -43,9 +43,9 @@ database_image="postgres:9-alpine"
 ethprovider_image="trufflesuite/ganache-cli:v6.4.5"
 node_image="$builder_image"
 nats_image="nats:2.0.0-linux"
-proxy_image="indra_v2_proxy:dev"
+proxy_image="${project}_proxy:dev"
 daicard_devserver_image="$builder_image"
-relay_image="indra_v2_relay"
+relay_image="${project}_relay"
 
 node_port=8080
 nats_port=4222

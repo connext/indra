@@ -1,10 +1,11 @@
 #!/bin/bash
 set -e
 
+project="indra"
 hostname="$1"
 network="${2:-rinkeby}"
 user="ubuntu"
-key_name="indra_mnemonic_$network" # name of docker secret to store mnemonic in
+key_name="${project}_mnemonic_$network" # name of docker secret to store mnemonic in
 pubkey="$HOME/.ssh/circleci.pub"
 prvkey="$HOME/.ssh/connext-aws"
 

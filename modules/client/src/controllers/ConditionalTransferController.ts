@@ -1,4 +1,5 @@
 import {
+  BigNumber,
   ConditionalTransferInitialStateBigNumber,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
@@ -9,17 +10,15 @@ import {
   SupportedApplication,
   SupportedApplications,
   TransferCondition,
-  UnidirectionalLinkedTransferAppActionBigNumber,
   UnidirectionalLinkedTransferAppStage,
   UnidirectionalLinkedTransferAppStateBigNumber,
 } from "@connext/types";
 import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
-import { BigNumber, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 
-import { freeBalanceAddressFromXpub } from "../lib/utils";
-import { falsy, invalidAddress, notLessThanOrEqualTo } from "../validation";
+import { createLinkedHash, freeBalanceAddressFromXpub } from "../lib/utils";
+import { falsy, invalid32ByteHexString, invalidAddress, notLessThanOrEqualTo } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
@@ -27,15 +26,6 @@ type ConditionalExecutors = {
   [index in TransferCondition]: (
     params: ConditionalTransferParameters,
   ) => Promise<ConditionalTransferResponse>;
-};
-
-export const createLinkedHash = (
-  action: UnidirectionalLinkedTransferAppActionBigNumber,
-): string => {
-  return solidityKeccak256(
-    ["uint256", "address", "bytes32", "bytes32"],
-    [action.amount, action.assetId, action.paymentId, action.preImage],
-  );
 };
 
 export class ConditionalTransferController extends AbstractController {
@@ -60,8 +50,8 @@ export class ConditionalTransferController extends AbstractController {
     params: LinkedTransferParameters,
   ): Promise<LinkedTransferResponse> => {
     // convert params + validate
-    const { amount, assetId } = convert.LinkedTransfer("bignumber", params);
-    const invalid = await this.validateLinked(amount, assetId);
+    const { amount, assetId, paymentId, preImage } = convert.LinkedTransfer("bignumber", params);
+    const invalid = await this.validateLinked(amount, assetId, paymentId, preImage);
     if (invalid) {
       throw new Error(invalid);
     }
@@ -70,10 +60,6 @@ export class ConditionalTransferController extends AbstractController {
       SupportedApplications.UnidirectionalLinkedTransferApp as SupportedApplication,
     );
 
-    // generate random payment id
-    const paymentId = hexlify(randomBytes(32));
-    // generate random preimage
-    const preImage = hexlify(randomBytes(32));
     // install the transfer application
     const linkedHash = createLinkedHash({ amount, assetId, paymentId, preImage });
 
@@ -114,11 +100,18 @@ export class ConditionalTransferController extends AbstractController {
   private validateLinked = async (
     amount: BigNumber,
     assetId: string,
+    paymentId: string,
+    preImage: string,
   ): Promise<undefined | string> => {
     // check that there is sufficient free balance for amount
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
-    const errs = [invalidAddress(assetId), notLessThanOrEqualTo(amount, preTransferBal)];
+    const errs = [
+      invalidAddress(assetId),
+      notLessThanOrEqualTo(amount, preTransferBal),
+      invalid32ByteHexString(paymentId),
+      invalid32ByteHexString(preImage),
+    ];
     return errs ? errs.filter(falsy)[0] : undefined;
   };
 

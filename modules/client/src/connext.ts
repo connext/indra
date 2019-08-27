@@ -3,6 +3,7 @@ import {
   AppActionBigNumber,
   AppRegistry,
   AppState,
+  ChannelAppSequences,
   ChannelState,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
@@ -270,6 +271,13 @@ export abstract class ConnextChannel {
     return await this.internal.node.getPaymentProfile(assetId);
   };
 
+  // does not directly call node function because needs to send
+  // some additional information along with the request, as implemented in
+  // ConnextInternal
+  public verifyAppSequenceNumber = async (): Promise<ChannelAppSequences> => {
+    return await this.internal.verifyAppSequenceNumber();
+  };
+
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
 
@@ -494,6 +502,18 @@ export class ConnextInternal extends ConnextChannel {
 
   ///////////////////////////////////
   // CF MODULE METHODS
+
+  public getStateChannel = async (): Promise<{ data: any }> => {
+    const params = {
+      id: Date.now(),
+      methodName: "chan_getStateChannel", // FIXME: NodeTypes.RpcMethodName.GET_STATE_CHANNEL,
+      parameters: {
+        multisigAddress: this.multisigAddress,
+      },
+    };
+    const getStateChannelRes = await this.cfModule.rpcRouter.dispatch(params);
+    return getStateChannelRes.result.result;
+  };
 
   public cfDeposit = async (
     amount: BigNumber,
@@ -889,6 +909,24 @@ export class ConnextInternal extends ConnextChannel {
     });
 
     return withdrawalResponse.result.result;
+  };
+
+  ///////////////////////////////////
+  // NODE METHODS
+
+  public verifyAppSequenceNumber = async () => {
+    const { data: sc } = await this.getStateChannel();
+    let appSequenceNumber;
+    try {
+      appSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
+    } catch (e) {
+      if (e.message.includes("There are no installed AppInstances in this StateChannel")) {
+        appSequenceNumber = 0;
+      } else {
+        throw e;
+      }
+    }
+    return await this.node.verifyAppSequenceNumber(appSequenceNumber);
   };
 
   ///////////////////////////////////

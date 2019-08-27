@@ -1,4 +1,4 @@
-import { convertPaymentProfile } from "@connext/types";
+import { ChannelAppSequences } from "@connext/types";
 import { CreateChannelMessage } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
@@ -162,6 +162,39 @@ export class ChannelService {
     channel.multisigAddress = creationData.data.multisigAddress;
     channel.available = true;
     await this.channelRepository.save(channel);
+  }
+
+  /**
+   * Returns the app sequence number of the node and the user
+   *
+   * @param userPublicIdentifier users xpub
+   * @param userAppSequenceNumber sequence number provided by user
+   */
+  async verifyAppSequenceNumber(
+    userPublicIdentifier: string,
+    userAppSequenceNumber: number,
+  ): Promise<ChannelAppSequences> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    const sc = (await this.nodeService.getStateChannel(channel.multisigAddress)).data;
+    let nodeAppSequenceNumber;
+    try {
+      nodeAppSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
+    } catch (e) {
+      if (e.message.indexOf("There are no installed AppInstances in this StateChannel") !== -1) {
+        nodeAppSequenceNumber = 0;
+      } else {
+        throw e;
+      }
+    }
+    if (nodeAppSequenceNumber !== userAppSequenceNumber) {
+      logger.warn(
+        `Node app sequence number (${nodeAppSequenceNumber}) !== user app sequence number (${userAppSequenceNumber})`,
+      );
+    }
+    return {
+      userAppSequenceNumber,
+      nodeAppSequenceNumber,
+    };
   }
 
   async withdrawForClient(
