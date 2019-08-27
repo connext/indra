@@ -1,6 +1,6 @@
 ## Description
 
-Indra v2 built with [Nest](https://github.com/nestjs/nest) framework.
+Indra built with [Nest](https://github.com/nestjs/nest) framework.
 
 ## Installation
 

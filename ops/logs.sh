@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-project="indra_v2"
+project="indra"
 name=$1
 shift
 

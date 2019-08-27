@@ -64,6 +64,37 @@ export const validateTransferApp = async (
   return undefined;
 };
 
+export const validateSimpleTransferApp = async (
+  app: AppInstanceInfo,
+  registeredInfo: RegisteredAppDetails,
+  isVirtual: boolean,
+  connext: ConnextInternal,
+  // TODO: ideally this wouldnt get passed in, but you need it
+  // to check things like your public identifier, open apps,
+  // free balance, etc.
+): Promise<string | undefined> => {
+  const baseValidation = await baseAppValidation(app, registeredInfo, isVirtual, connext);
+  if (baseValidation) {
+    return baseValidation;
+  }
+
+  // check that the receivers deposit is 0
+  // assume the recipient is always the responder
+  if (!app.responderDeposit.isZero()) {
+    return `Responder (payee) must have a zero balance in proposed app. Proposed app: ${prettyLog(
+      app,
+    )}`;
+  }
+
+  if (app.initiatorDeposit.isZero()) {
+    return `Initiator (payor) must have nonzero balance in proposed app. Proposed app: ${prettyLog(
+      app,
+    )}`;
+  }
+
+  return undefined;
+};
+
 // TODO: implement
 export const validateLinkedTransferApp = async (
   app: AppInstanceInfo,
@@ -75,6 +106,7 @@ export const validateLinkedTransferApp = async (
 };
 
 export const appProposalValidation: ProposalValidator = {
+  SimpleTransferApp: validateSimpleTransferApp,
   SimpleTwoPartySwapApp: validateSwapApp,
   UnidirectionalLinkedTransferApp: validateLinkedTransferApp,
   UnidirectionalTransferApp: validateTransferApp,
@@ -116,6 +148,8 @@ const baseAppValidation = async (
   }
 
   // check that the encoding is the same
+  console.log('app.abiEncodings.actionEncoding: ', JSON.stringify(app.abiEncodings.actionEncoding));
+  console.log('registeredInfo.actionEncoding: ', JSON.stringify(registeredInfo.actionEncoding));
   if (app.abiEncodings.actionEncoding !== registeredInfo.actionEncoding) {
     return `Incorrect action encoding detected. Proposed app: ${prettyLog(app)}`;
   }

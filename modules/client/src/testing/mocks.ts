@@ -1,6 +1,7 @@
 import { IMessagingService } from "@connext/messaging";
 import {
   AppRegistry,
+  ChannelAppSequences,
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
@@ -97,6 +98,7 @@ export class MockNodeClientApi implements INodeApiClient {
     createChannel: {} as CreateChannelResponse,
     getChannel: {} as GetChannelResponse,
     withdraw: {} as TransactionResponse,
+    verifyAppSequenceNumber: {} as ChannelAppSequences,
   };
 
   public async appRegistry(appDetails?: {
@@ -148,5 +150,9 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public async getPaymentProfile(): Promise<PaymentProfile | undefined> {
     return undefined;
+  }
+
+  public async verifyAppSequenceNumber(): Promise<ChannelAppSequences> {
+    return MockNodeClientApi.returnValues.verifyAppSequenceNumber;
   }
 }

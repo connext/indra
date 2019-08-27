@@ -57,9 +57,9 @@ jobs:
               git checkout --force $CIRCLE_BRANCH
               git fetch
               git reset --hard $CIRCLE_SHA1
-              export INDRA_V2_MODE="staging"
-              export INDRA_V2_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
-              export INDRA_V2_DOMAINNAME="$STAGING_DOMAINNAME"
+              export INDRA_MODE="staging"
+              export INDRA_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
+              export INDRA_DOMAINNAME="$STAGING_DOMAINNAME"
               make restart-prod
               docker container prune -f
               docker image ls -q | xargs docker image rm || true
@@ -78,9 +78,9 @@ jobs:
               git checkout --force $CIRCLE_BRANCH
               git fetch
               git reset --hard $CIRCLE_SHA1
-              export INDRA_V2_MODE="prod"
-              export INDRA_V2_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
-              export INDRA_V2_DOMAINNAME="$RINKEBY_DOMAINNAME"
+              export INDRA_MODE="prod"
+              export INDRA_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
+              export INDRA_DOMAINNAME="$RINKEBY_DOMAINNAME"
               make restart-prod
               docker container prune -f
               docker image ls -q | xargs docker image rm || true
@@ -92,9 +92,9 @@ jobs:
               git checkout --force $CIRCLE_BRANCH
               git fetch
               git reset --hard $CIRCLE_SHA1
-              export INDRA_V2_MODE="prod"
-              export INDRA_V2_ETH_PROVIDER=$MAINNET_ETH_PROVIDER
-              export INDRA_V2_DOMAINNAME="$MAINNET_DOMAINNAME"
+              export INDRA_MODE="prod"
+              export INDRA_ETH_PROVIDER=$MAINNET_ETH_PROVIDER
+              export INDRA_DOMAINNAME="$MAINNET_DOMAINNAME"
               make restart-prod
               docker container prune -f
               docker image ls -q | xargs docker image rm || true

@@ -66,12 +66,10 @@ export default class ListenerService implements OnModuleInit {
       },
       INSTALL: async (data: InstallMessage): Promise<void> => {
         logEvent(NodeTypes.EventName.INSTALL, data);
-        const info = await this.nodeService.getAppInstanceDetails(data.data.params.appInstanceId);
       },
       // TODO: make cf return app instance id and app def?
       INSTALL_VIRTUAL: async (data: InstallVirtualMessage): Promise<void> => {
         logEvent(NodeTypes.EventName.INSTALL_VIRTUAL, data);
-        const info = await this.nodeService.getAppInstanceDetails(data.data.params.appInstanceId);
       },
       PROPOSE_INSTALL: (data: ProposeMessage): void => {
         logEvent(NodeTypes.EventName.PROPOSE_INSTALL, data);
@@ -112,7 +110,6 @@ export default class ListenerService implements OnModuleInit {
       },
       UNINSTALL_VIRTUAL: async (data: UninstallVirtualMessage): Promise<void> => {
         logEvent(NodeTypes.EventName.UNINSTALL_VIRTUAL, data);
-        const info = await this.nodeService.getAppInstanceDetails(data.data.appInstanceId);
       },
       UPDATE_STATE: (data: UpdateStateMessage): void => {
         logEvent(NodeTypes.EventName.UPDATE_STATE, data);
