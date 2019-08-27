@@ -495,6 +495,19 @@ export class ConnextInternal extends ConnextChannel {
   ///////////////////////////////////
   // CF MODULE METHODS
 
+  public getStateChannel = async (): Promise<{ data: any }> => {
+    const params = {
+      id: Date.now(),
+      methodName: "chan_getStateChannel", // FIXME: NodeTypes.RpcMethodName.GET_STATE_CHANNEL,
+      parameters: {
+        multisigAddress: this.multisigAddress,
+      },
+    }
+    const getStateChannelRes = await this.cfModule.rpcRouter.dispatch(params);
+    this.logger.info(`\n\ngetStateChannel called with result: ${JSON.stringify(getStateChannelRes.result.result, null, 2)}\n\n`);
+    return getStateChannelRes.result.result;
+  }
+
   public cfDeposit = async (
     amount: BigNumber,
     assetId: string,

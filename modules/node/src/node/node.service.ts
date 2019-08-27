@@ -50,6 +50,20 @@ export class NodeService {
     }
   }
 
+  // TODO: fix typings, is StateChannel exported?
+  async getStateChannel(multisigAddress: string): Promise<{ data: any }> {
+    const params = {
+      id: Date.now(),
+      methodName: "chan_getStateChannel", // FIXME: NodeTypes.RpcMethodName.GET_STATE_CHANNEL,
+      parameters: {
+        multisigAddress,
+      },
+    }
+    const getStateChannelRes = await this.cfNode.rpcRouter.dispatch(params);
+    logger.log(`\n\ngetStateChannel called with result: ${JSON.stringify(getStateChannelRes.result.result, null, 2)}\n\n`);
+    return getStateChannelRes.result.result;
+  }
+
   async createChannel(
     counterpartyPublicIdentifier: string,
   ): Promise<NodeTypes.CreateChannelResult> {
