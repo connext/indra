@@ -4,6 +4,7 @@ set -e
 project="indra"
 cypress="node_modules/.bin/cypress"
 botTransferAmount="0.618" # Keep this synced w the amount sent in cypress/tests/index
+botMnemonic="humble sense shrug young vehicle assault destroy cook property average silent travel"
 
 ########################################
 ## Even if this script exits early, make sure the thing in the background gets killed
@@ -21,7 +22,7 @@ docker container stop ${project}_payment_bot_1 2> /dev/null || true
 ## Get a few important data points before we start
 
 tokenAddress="`cat address-book.json | jq '.["4447"].Token.address' | tr -d '"'`"
-botOutput="`bash ops/payment-bot.sh -g -a $tokenAddress | tr -d '\r'`"
+botOutput="`bash ops/payment-bot.sh -g -a $tokenAddress -m "$botMnemonic" | tr -d '\r'`"
 
 freeBalanceAddress="`echo "$botOutput" \
   | grep "User free balance address" \
@@ -78,7 +79,7 @@ docker container stop ${project}_payment_bot_1 2> /dev/null || true
 
 expectedFreeBalance="`echo "$freeBalance $botTransferAmount" | awk '{print $1 + $2}'`"
 
-freeBalance="`bash ops/payment-bot.sh -g -a $tokenAddress \
+freeBalance="`bash ops/payment-bot.sh -g -a $tokenAddress -m "$botMnemonic" \
   | tr -d '\r' \
   | grep -A 2 "$tokenAddress:" \
   | grep "$freeBalanceAddress" \
