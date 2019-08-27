@@ -59,6 +59,12 @@ mv package.json .package.json
 cat .package.json | sed 's/"version": ".*"/"version": "'$version'"/' > package.json
 rm .package.json
 
+cd modules/node
+mv package.json .package.json
+cat .package.json | sed 's/"version": ".*"/"version": "'$version'"/' > package.json
+rm .package.json
+cd ../..
+
 # Push a new commit to master
 git add package.json
 git commit --amend --no-edit

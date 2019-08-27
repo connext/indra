@@ -1,10 +1,12 @@
 import { NestFactory } from "@nestjs/core";
 import { Transport } from "@nestjs/microservices";
 
+import { version } from "../package.json";
+
 import { AppModule } from "./app.module";
 import { ConfigService } from "./config/config.service";
 
-console.log(`Indra Node Activated!`);
+console.log(`Indra ${version} starting up..`);
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);

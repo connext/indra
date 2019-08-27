@@ -15,6 +15,5 @@ export class AppService implements OnModuleInit {
 
   onModuleInit(): void {
     this.messagingClient.connect();
-    logger.log(`Hello Indra version 2.0.21`);
   }
 }
