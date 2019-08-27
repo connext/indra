@@ -2,7 +2,7 @@
 Functionality of installing, updating, and uninstalling payment threads from state channels.
 
 # Instructions
-Payment functionality is demonstrated by using two payment bots connected to an intermediary (in this demo, the `indra-v2`).
+Payment functionality is demonstrated by using two payment bots connected to an intermediary (in this demo, the `indra`).
 
 ## Initial Setup
 All setup is from root of repository.

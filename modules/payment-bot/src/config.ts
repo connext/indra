@@ -28,7 +28,9 @@ program
   .option("-g, --get-free-balance", "Print bot's free balance and exit")
   .option("-i, --identifier <id>", "Bot identifier")
   .option("-l, --linked <amount>", "Create linked payment")
-  .option("-p, --payment-id <paymentId>", "Redeem a linked payment with paymentId")
+  .option("-y, --redeem <amount>", "Redeem a linked payment")
+  .option("-p, --payment-id <paymentId>", "Linked payment paymentId")
+  .option("-h, --preImage <preImage>", "Create linked payment with preimage")
   .option("-q, --request-collateral", "Request channel collateral from the node")
   .option("-r, --recipient <address>", "Withdrawal recipient address")
   .option("-s, --swap <amount>", "Swap amount in Ether units")
@@ -36,7 +38,8 @@ program
   .option("-u, --uninstall <appDefinitionId>", "Uninstall app")
   .option("-v, --uninstall-virtual <appDefinitionId>", "Uninstall virtual app")
   .option("-w, --withdraw <amount>", "Withdrawal amount in Ether units")
-  .option("-x, --debug", "output extra debugging");
+  .option("-x, --debug", "output extra debugging")
+  .option("-o, --open", "Leave bot open instead of quitting");
 
 program.parse(process.argv);
 

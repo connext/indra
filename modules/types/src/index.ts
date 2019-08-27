@@ -1,7 +1,7 @@
 import { MessagingConfig } from "@connext/messaging";
 import { Address, NetworkContext, Node as NodeTypes, OutcomeType } from "@counterfactual/types";
-import { BigNumber as ethersBig, getAddress, Network } from "ethers/utils";
 import { AddressZero } from "ethers/constants";
+import { BigNumber as ethersBig, getAddress, Network } from "ethers/utils";
 
 ////////////////////////////////////
 ////// BASIC TYPINGS
@@ -11,16 +11,10 @@ export const BigNumber = ethersBig;
 export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
 ////////////////////////////////////
-////// EMITTED EVENTS
-// TODO: extend CF types, export their import, rename?
-// NOTE: you cannot extend enum types in typescript.
-// to "extend" the cf types with our own events, make it a
-// const, or use a union type if needed
-
-////////////////////////////////////
 ////// APP REGISTRY
 
 export const SupportedApplications = {
+  SimpleTransferApp: "SimpleTransferApp",
   SimpleTwoPartySwapApp: "SimpleTwoPartySwapApp",
   UnidirectionalLinkedTransferApp: "UnidirectionalLinkedTransferApp",
   UnidirectionalTransferApp: "UnidirectionalTransferApp",
@@ -58,7 +52,7 @@ export type AppRegistry = RegisteredAppDetails[];
 export type App<T = string> = {
   id: number;
   channel: NodeChannel;
-  appRegistry: RegisteredAppDetails; // TODO: is this right?
+  appRegistry: RegisteredAppDetails;
   appId: number;
   xpubPartyA: string;
   xpubPartyB: string;
@@ -104,6 +98,12 @@ export type SimpleSwapAppState<T = string> = {
   coinTransfers: CoinTransfer<T>[][];
 };
 export type SimpleSwapAppStateBigNumber = SimpleSwapAppState<BigNumber>;
+
+//////// Simple transfer app
+export type SimpleTransferAppState<T = string> = {
+  coinTransfers: CoinTransfer<T>[];
+};
+export type SimpleTransferAppStateBigNumber = SimpleTransferAppState<BigNumber>;
 
 ////// Unidirectional transfer app
 export type UnidirectionalTransferAppState<T = string> = {
@@ -161,6 +161,12 @@ export enum UnidirectionalLinkedTransferAppStage {
 
 ////////////////////////////////////
 ////// CHANNEL TYPES
+
+// used to verify channel is in sequence
+export type ChannelAppSequences = { 
+  userAppSequenceNumber: number,
+  nodeAppSequenceNumber: number
+}
 
 // payment setups
 export type PaymentProfile<T = string> = {
@@ -242,6 +248,7 @@ export type MultisigStateBigNumber = MultisigState<BigNumber>;
 ///////// NODE RESPONSE TYPES
 
 export const KnownNodeAppNames = {
+  SIMPLE_TRANSFER: "SimpleTransferApp",
   SIMPLE_TWO_PARTY_SWAP: "SimpleTwoPartySwapApp",
   UNIDIRECTIONAL_LINKED_TRANSFER: "UnidirectionalLinkedTransferApp",
   UNIDIRECTIONAL_TRANSFER: "UnidirectionalTransferApp",
@@ -368,7 +375,9 @@ export type TransferCondition = keyof typeof TransferConditions;
 export type LinkedTransferParameters<T = string> = {
   conditionType: "LINKED_TRANSFER";
   amount: T;
-  assetId: Address; // make optional?
+  assetId?: Address;
+  paymentId: string;
+  preImage: string;
 };
 export type LinkedTransferParametersBigNumber = LinkedTransferParameters<BigNumber>;
 
@@ -506,7 +515,7 @@ export function convertAssetAmount<To extends NumericTypeName>(
 
 export function convertAssetAmountWithId<To extends NumericTypeName>(
   to: To,
-  obj: GenericAmountObject<any> & { assetId?: string},
+  obj: GenericAmountObject<any> & { assetId?: string },
 ): any {
   const asset: any = {
     ...obj,

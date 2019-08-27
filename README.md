@@ -1,8 +1,8 @@
-[![CircleCI](https://circleci.com/gh/ConnextProject/indra-v2/tree/master.svg?style=shield)](https://circleci.com/gh/ConnextProject/indra-v2/tree/master)
+[![CircleCI](https://circleci.com/gh/ConnextProject/indra/tree/master.svg?style=shield)](https://circleci.com/gh/ConnextProject/indra/tree/master)
 
 # Indra 2.0
 
-V2 of Connext's State Channel Network.
+Connext's State Channel Network.
 
 ## TL;DR
 
@@ -20,7 +20,7 @@ When you're done testing it out, shut the whole thing down with `make stop`.
  - [How to interact with the Hub](#how-to-interact-with-hub)
  - [Debugging & Troubleshooting](#debugging)
 
-If you encounter any problems, check out the [debugging guide](#debugging) at the bottom of this doc. For any unanswered questions, open an [issue](https://github.com/ConnextProject/indra-v2/issues/new) or reach out on our Discord channel & we'll be happy to help.
+If you encounter any problems, check out the [debugging guide](#debugging) at the bottom of this doc. For any unanswered questions, open an [issue](https://github.com/ConnextProject/indra/issues/new) or reach out on our Discord channel & we'll be happy to help.
 
 Discord Invitation: https://discord.gg/SmMSFf
 
@@ -35,8 +35,8 @@ Discord Invitation: https://discord.gg/SmMSFf
 To download this repo, build, and deploy in dev-mode, run the following:
 
 ```
-git clone https://github.com/ConnextProject/indra-v2.git
-cd indra-v2
+git clone https://github.com/ConnextProject/indra.git
+cd indra
 make start
 ```
 
@@ -180,65 +180,11 @@ This script will prompt you for a new version number. See the previous step for 
 
 Pushing to origin/master will trigger another CI run that will deploy a new Indra hub to production if no tests fail.
 
-### Ongoing: Dealing w stuff in production
-
 Monitor the prod hub's logs with
 
 ```
 ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash indra/ops/logs.sh hub
 ```
-
-The ChannelManager contract needs collateral to keep doing it's thing. Make sure the hub's wallet has enough funds before deploying. Funds can be moved from the hub's wallet to the contract manually via:
-
-```
-ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash indra/ops/collateralize.sh 3.14 eth
-# To move Eth, or to move tokens:
-ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash indra/ops/collateralize.sh 1000 token
-```
-
-## How to interact with an Indra hub
-
-A prod-mode indra hub exposes the following API ([source](https://github.com/ConnextProject/indra/blob/master/modules/proxy/prod.conf#L53)):
-
- - `/api/hub` is the prefix for the hub's api
- - `/api/hub/config` returns the hub's config for example
- - `/api/hub/subscribe` connects to the hub's websocket server for real-time exchange rate & gas price updates
- - `/api/eth` connects to the hub's eth provider
- - anything else, redirects the user to a daicard client
-
-### ..from a [dai card](https://github.com/ConnextProject/card)
-
-Dai card in production runs a proxy with endpoints:
-
- - `/api/rinkeby/hub` -> `https://rinkeby.hub.connext.network/api/hub`
- - `/api/rinkeby/eth` -> `https://rinkeby.hub.connext.network/api/eth`
- - `/api/mainnet/hub` -> `https://hub.connext.network/api/hub`
- - `/api/mainnet/eth` -> `https://hub.connext.network/api/eth`
- - anything else: serves the daicard html/css/js files
-
-### Hub API
-
- 1. AuthApiService
-  - GET /auth/status: returns success and address if a valid auth token is provided
-  - POST /auth/challenge: returns a challenge nonce
-  - POST /auth/response: 
-    - nonce: returned by /auth/challenge
-    - address
-    - origin
-    - signature
-
- 2. ChannelsApiService
-  - POST /channel/:user/request-deposit: 
-    - depositWei
-    - depositToken
-    - lastChanTx
-    - lastThreadUpdateId
-  - GET /channel/:user/sync
-    - params
-      - lastChanTx
-      - lastThreadUpdateId
-
-TODO: Complete this section
 
 ## Debugging
 

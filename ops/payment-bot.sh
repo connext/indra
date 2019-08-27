@@ -21,7 +21,7 @@ docker swarm init 2> /dev/null || true
 ########################################
 ## Setup env vars
 
-project="indra_v2"
+project="indra"
 cwd="`pwd`"
 args="$@"
 identifier=1
@@ -30,6 +30,9 @@ while [ "$1" != "" ]; do
         -i | --identifier )     shift
                                 identifier=$1
                                 ;;
+        -m | --mnemonic )     shift
+                                mnemonic=$1
+                                ;;
     esac
     shift
 done
@@ -37,13 +40,6 @@ done
 DB_FILENAME="${DB_FILENAME:-.payment-bot-db/$identifier.json}"
 ETH_RPC_URL="${ETH_RPC_URL:-http://172.17.0.1:8545}"
 NODE_URL="${NODE_URL:-nats://172.17.0.1:4222}"
-
-# Use different mnemonics for different bots
-if [ "$identifier" = "1" ]; then
-  export MNEMONIC="humble sense shrug young vehicle assault destroy cook property average silent travel"
-else
-  export MNEMONIC="roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult"
-fi
 
 # Damn I forget where I copy/pasted this witchcraft from, yikes.
 # It's supposed to find out whether we're calling this script from a shell & can print stuff
@@ -60,7 +56,7 @@ docker run \
   --entrypoint="bash" \
   --env="DB_FILENAME=$DB_FILENAME" \
   --env="ETH_RPC_URL=$ETH_RPC_URL" \
-  --env="MNEMONIC=$MNEMONIC" \
+  --env="MNEMONIC=$mnemonic" \
   --env="NODE_URL=$NODE_URL" \
   $interactive \
   --name="${project}_payment_bot_$identifier" \

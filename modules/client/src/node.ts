@@ -1,6 +1,7 @@
 import { IMessagingService } from "@connext/messaging";
 import {
   AppRegistry,
+  ChannelAppSequences,
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
@@ -40,6 +41,8 @@ export interface INodeApiClient {
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   subscribeToSwapRates(from: string, to: string, callback: any): void;
   unsubscribeFromSwapRates(from: string, to: string): void;
+  // TODO: fix types
+  verifyAppSequenceNumber(appSequenceNumber: number): Promise<ChannelAppSequences>;
 }
 
 // NOTE: swap rates are given as a decimal string describing:
@@ -124,8 +127,6 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
-  // TODO: best way to check hub side for limitations?
-  // otherwise could be a security flaw
   public async addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile> {
     return await this.send(`channel.add-profile.${this.userPublicIdentifier}`, profile);
   }
@@ -136,7 +137,13 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
-  // NOTE: maybe move?
+  public async verifyAppSequenceNumber(appSequenceNumber: number): Promise<ChannelAppSequences> {
+    return await this.send(`channel.verify-app-sequence.${this.userPublicIdentifier}`, {
+      userAppSequenceNumber: appSequenceNumber,
+    })
+  }
+
+  // NOTE: maybe move since its not directly to the node just through messaging?
   public recipientOnline = async (recipientPublicIdentifier: string): Promise<boolean> => {
     try {
       return await this.send(`online.${recipientPublicIdentifier}`);
