@@ -270,6 +270,13 @@ export abstract class ConnextChannel {
     return await this.internal.node.getPaymentProfile(assetId);
   };
 
+  // does not directly call node function because needs to send
+  // some additional information along with the request, as implemented in
+  // ConnextInternal
+  public verifyAppSequenceNumber = async (): Promise<ChannelAppSequences> => {
+    return await this.internal.verifyAppSequenceNumber();
+  };
+
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
 
@@ -502,11 +509,10 @@ export class ConnextInternal extends ConnextChannel {
       parameters: {
         multisigAddress: this.multisigAddress,
       },
-    }
+    };
     const getStateChannelRes = await this.cfModule.rpcRouter.dispatch(params);
-    this.logger.info(`\n\ngetStateChannel called with result: ${JSON.stringify(getStateChannelRes.result.result, null, 2)}\n\n`);
     return getStateChannelRes.result.result;
-  }
+  };
 
   public cfDeposit = async (
     amount: BigNumber,
@@ -902,6 +908,24 @@ export class ConnextInternal extends ConnextChannel {
     });
 
     return withdrawalResponse.result.result;
+  };
+
+  ///////////////////////////////////
+  // NODE METHODS
+
+  public verifyAppSequenceNumber = async () => {
+    const { data: sc } = await this.getStateChannel();
+    let appSequenceNumber;
+    try {
+      appSequenceNumber = await sc.mostRecentlyInstalledAppInstance();
+    } catch (e) {
+      if (e.message.indexOf("There are no installed AppInstances in this StateChannel") !== -1) {
+        appSequenceNumber = 0;
+      } else {
+        throw e;
+      }
+    }
+    return await this.node.verifyAppSequenceNumber(appSequenceNumber);
   };
 
   ///////////////////////////////////
