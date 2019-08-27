@@ -162,6 +162,12 @@ export enum UnidirectionalLinkedTransferAppStage {
 ////////////////////////////////////
 ////// CHANNEL TYPES
 
+// used to verify channel is in sequence
+export type ChannelAppSequences = { 
+  userAppSequenceNumber: number,
+  nodeAppSequenceNumber: number
+}
+
 // payment setups
 export type PaymentProfile<T = string> = {
   assetId: string;
