@@ -1,4 +1,4 @@
-import { convertPaymentProfile } from "@connext/types";
+import { ChannelAppSequences } from "@connext/types";
 import { CreateChannelMessage } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
@@ -162,6 +162,23 @@ export class ChannelService {
     channel.multisigAddress = creationData.data.multisigAddress;
     channel.available = true;
     await this.channelRepository.save(channel);
+  }
+
+  /**
+   * Returns the app sequence number for the most recently installed app
+   */
+  // TODO: fix typings
+  async verifyAppSequenceNumber(userPublicIdentifier: string, userAppSequenceNumber: number): Promise<ChannelAppSequences> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    const { sc } = (await this.nodeService.getStateChannel(channel.multisigAddress)).data
+    const nodeAppSequenceNumber = await sc.mostRecentlyInstalledAppInstance().appSeqNo;
+    if (nodeAppSequenceNumber !== userAppSequenceNumber) {
+      logger.warn(`Node app sequence number (${nodeAppSequenceNumber}) !== user app sequence number (${userAppSequenceNumber})`)
+    }
+    return {
+      userAppSequenceNumber,
+      nodeAppSequenceNumber
+    }
   }
 
   async withdrawForClient(
