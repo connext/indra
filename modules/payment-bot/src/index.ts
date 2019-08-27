@@ -261,7 +261,7 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
     const channel = await client.getChannel();
     return channel && channel.available;
   };
-  const interval = 3;
+  const interval = 1;
   while (!(await channelAvailable())) {
     console.info(`Waiting ${interval} more seconds for channel to be available`);
     await new Promise((res: any): any => setTimeout(() => res(), interval * 1000));
