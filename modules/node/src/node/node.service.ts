@@ -60,7 +60,6 @@ export class NodeService {
       },
     }
     const getStateChannelRes = await this.cfNode.rpcRouter.dispatch(params);
-    logger.log(`\n\ngetStateChannel called with result: ${JSON.stringify(getStateChannelRes.result.result, null, 2)}\n\n`);
     return getStateChannelRes.result.result;
   }
 
