@@ -65,10 +65,10 @@ class ChannelMessaging extends AbstractMessagingProvider {
 
   async verifyAppSequenceNumber(
     subject: string,
-    data: { appSequenceNumber: number },
+    data: { userAppSequenceNumber: number },
   ): Promise<ChannelAppSequences> {
     const userPubId = this.getPublicIdentifierFromSubject(subject);
-    return await this.channelService.verifyAppSequenceNumber(userPubId, data.appSequenceNumber);
+    return await this.channelService.verifyAppSequenceNumber(userPubId, data.userAppSequenceNumber);
   }
 
   async requestCollateral(
