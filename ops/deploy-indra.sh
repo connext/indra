@@ -3,6 +3,7 @@ set -e
 
 project="indra"
 registry_url="https://index.docker.io/v1/repositories/connextproject"
+patch=".deploy-indra.patch"
 
 ########################################
 ## Run some sanity checks to make sure we're really ready to deploy
@@ -27,11 +28,11 @@ fi
 # Thanks to: https://stackoverflow.com/a/6339869
 # temporarily handle errors manually
 set +e
-git format-patch master --stdout > .deploy-indra.patch
 git checkout master > /dev/null
-git apply .deploy-indra.patch --check
+git merge --no-commit --no-ff staging
 if [[ "$?" != "0" ]]
 then
+  git merge --abort && git checkout staging > /dev/null
   echo
   echo "Error: merging staging into master will result in merge conflicts"
   echo "To deploy:"
@@ -39,9 +40,9 @@ then
   echo " - Take care of any merge conflicts & do post-merge testing if needed"
   echo " - Re-run this script"
   echo
-  git checkout staging > /dev/null
   exit 0
 fi
+git merge --abort && git checkout staging > /dev/null
 set -e
 
 ########################################
