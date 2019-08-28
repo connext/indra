@@ -8,7 +8,7 @@ var waffleConfig = {
   "compilerOptions": {
     "evmVersion": "constantinople"
   },
-  "solcVersion": "v0.5.10+commit.5a6ea5b1"
+  "solcVersion": "v0.5.11+commit.c082d0b4"
 };
 
 var selectSolc = () => {
