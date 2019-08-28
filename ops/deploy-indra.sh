@@ -51,7 +51,23 @@ fi
 
 echo "Let's go"
 
+# Create patch to check for conflicts
+# Thanks to: https://stackoverflow.com/a/6339869
+git format-patch master --stdout > .deploy-indra.patch
 git checkout master
+git apply .deploy-indra.patch --check
+if [[ "$?" != "0" ]]
+then
+  cat .deploy-indra.patch
+  echo
+  echo "Error: merging staging into master will result in above merge conflicts"
+  echo "To deploy, first run: git checkout staging && git merge master"
+  echo "Take care of the merge conflicts, make sure everything looks good, then re-run this script"
+  echo
+  exit 0
+fi
+
+# If no merge conflicts, we're good to continue
 git merge --no-ff staging -m "Deploy $project-$version"
 
 # edit package.json to set new version number
@@ -73,3 +89,8 @@ git push origin master --no-verify
 # Push a new release tag
 git tag $project-$version
 git push origin $project-$version --no-verify
+
+# Bring staging up-to-date w master for a cleaner git history
+git checkout staging
+git merge master
+git push origin staging --no-verify
