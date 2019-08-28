@@ -4,33 +4,45 @@ set -e
 # Turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
 
+########################################
+## Env and variable setup
+
 project="indra"
 tokenAddress="`cat address-book.json | jq '.["4447"].Token.address' | tr -d '"'`"
-bots=${NUMBER_BOTS:-4};
-links=${NUMBER_LINKS:-5}
+numBots=${NUMBER_BOTS:-4};
+botsFile="bots.json"
+numLinks=${NUMBER_LINKS:-5}
+linksFile="links.json"
+eth_rpc="${ETH_RPC_URL:-http://localhost:8545}"
+sugar_daddy="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+divider="\n########################################"
+
+########################################
+## Helper Functions
 
 # Make sure the recipient bot in the background exits when this script exits
 function cleanup {
-  docker ps --filter name=${project}_payment_bot* -aq | xargs docker container stop
+  botIds="`docker ps --filter name=${project}_payment_bot* -aq`"
+  echo "Shutting down recipient bots: $botIds"
+  if [[ -n "$botIds" ]]
+  then echo "$botIds" | xargs docker container stop
+  else echo "nvmd none are running" && exit 0
+  fi
 }
 trap cleanup EXIT SIGINT
 
-if ! (($bots)); then
-  echo;echo "Must supply a number of bots to test with";
-  exit 0;
-fi
+########################################
+## Setup bots and links
 
 # generate mnemonics and fund them
 # NOTE: this will obviously only ever work on ganache
 # NOTE 2: idk how to make this hit docker good
-eth_rpc="${ETH_RPC_URL:-http://localhost:8545}"
-sugar_daddy="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-node ops/generateBots.js $bots "$sugar_daddy" $eth_rpc $tokenAddress || { echo;echo "Problem generating or funding bots. Exiting"; exit 1; }
 
-# generate several links
-if (($links)); then
-  node ops/generateLinks.js $links
-fi
+node ops/generateBots.js $numBots "$sugar_daddy" $eth_rpc $tokenAddress $botsFile || { echo;echo "Problem generating or funding bots. Exiting"; exit 1; }
+node ops/generateLinks.js $numLinks $linksFile
+
+########################################
+## Request collateral for recipients, deposit funds for senders
 
 # create recipients and senders arrays
 recipientXpubs=()
@@ -38,125 +50,100 @@ recipientMnemonics=()
 senderXpubs=()
 senderMnemonics=()
 
-for i in $(seq 1 $bots);
+for i in $(seq 1 $numBots);
 do
-  botMnemonic="`cat bots.json | jq -r --arg key "$i" '.[$key].mnemonic'`"
-  # echo;echo $botMnemonic
-  xpub="`cat bots.json | jq -r --arg key "$i" '.[$key].xpub'`"
-  # echo;echo $xpub
-
-  # for 1/4 of bots, request collateral in background
+  botMnemonic="`cat $botsFile | jq -r --arg key "$i" '.[$key].mnemonic'`"
+  xpub="`cat $botsFile | jq -r --arg key "$i" '.[$key].xpub'`"
+  # for some bots, request collateral in background
   if ! (($i % 4)); then
     recipientXpubs+=("$xpub")
     recipientMnemonics+=("$botMnemonic")
-
-    echo;echo "Requesting token collateral for recipient bot";echo;sleep 1
+    echo -e "$divider";echo "Requesting token collateral for recipient bot $i"
     bash ops/payment-bot.sh -i ${xpub} -a $tokenAddress -m "${botMnemonic}" -q
-
-
-    echo;echo "Requesting eth collateral for recipient bot";echo;sleep 5
-    sleep 5;bash ops/payment-bot.sh -i ${xpub} -m "${botMnemonic}" -q
-  
+    echo -e "$divider";echo "Requesting eth collateral for recipient bot $i"
+    bash ops/payment-bot.sh -i ${xpub} -m "${botMnemonic}" -q
+  # for remaining bots, deposit some eth & tokens, they will be senders
   else
     senderXpubs+=("$xpub")
     senderMnemonics+=("$botMnemonic")
-
-    # for remaining bots, start and deposit, they will be senders
-    sleep 5;echo;echo "Depositing tokens into sender bot";echo;sleep 1
-    bash ops/payment-bot.sh -i ${xpub} -a $tokenAddress -m "${botMnemonic}" -d 0.1
-
-
-    sleep 5;echo;echo "Depositing eth into sender bot";echo;sleep 1
-    bash ops/payment-bot.sh -i ${xpub} -m "${botMnemonic}" -d 0.1
-
+    echo -e "$divider";echo "Depositing tokens into sender bot $i"
+    bash ops/payment-bot.sh -i ${xpub} -a $tokenAddress -m "${botMnemonic}" -d 10
+    echo -e "$divider";echo "Depositing eth into sender bot $i"
+    bash ops/payment-bot.sh -i ${xpub} -m "${botMnemonic}" -d 0.05
   fi
 done
+
+########################################
+## Start recipient bots in the background
 
 # start up the recipient bots to receive payments
 for i in $(seq 1 ${#recipientXpubs[@]});
 do
   xpub=${recipientXpubs[$((i - 1))]}
   mnemonic=${recipientMnemonics[$((i - 1))]}
-
-  echo;echo "Starting recipient bots";echo;sleep 5
+  echo -e "$divider";echo "Starting recipient bots"
   bash ops/payment-bot.sh -i ${xpub} -m "${mnemonic}" &
-
+  sleep 7 # give each recipient bot a few seconds to start up
 done
 
+########################################
 # for all the senders, transfer to a random counterparty,
-# create linked payments and have random recievers redeem
-# them
+
 for i in $(seq 1 ${#senderXpubs[@]});
 do
-
   xpub=${senderXpubs[$((i - 1))]}
   mnemonic=${senderMnemonics[$((i - 1))]}
-
-  # get id for counterparty at random
   length=${#recipientXpubs[@]}
-  if [ "$length" -eq "0" ]; then
-    echo "No recipients found"
-    exit 0;
+  if [[ "$length" -eq "0" ]]
+  then echo "No recipients found" && exit 0;
   fi
-
-  counterpartyIndex=$(($RANDOM % $length))
+  counterpartyIndex=$(($RANDOM % $length)) # get id for counterparty at random
   counterparty=${recipientXpubs[$counterpartyIndex]}
-
-  sleep 5;echo;echo "Sending eth to random recipient bot";echo;sleep 1
+  echo -e "$divider";echo "Sending eth to randomly selected recipient bot $counterparty"
   bash ops/payment-bot.sh -i ${xpub} -t 0.05 -c ${counterparty} -m "${mnemonic}"
-
-
-  sleep 5;echo;echo "Sending tokens to random recipient bot";echo;sleep 1
+  echo -e "$divider";echo "Sending tokens to randomly selected recipient bot $counterparty"
   bash ops/payment-bot.sh -i ${xpub} -t 0.05 -c ${counterparty} -a ${tokenAddress} -m "${mnemonic}"
-
 done
 
-# create and redeem links if required
-if (($links)); then
-  xpub=${senderXpubs[$1]}
-  mnemonic=${senderMnemonics[$1]}
-  for i in $(seq 1 $links);
-  do
-    preImage="`cat links.json | jq -r --arg key "$i" '.[$key].preImage'`"
-    paymentId="`cat links.json | jq -r --arg key "$i" '.[$key].paymentId'`"
+########################################
+# Have the first sender create some link payments
 
-    # generate the payment from a single sender
-    # NOTE: make sure whichever sender is generating these links has
-    # the appropriate deposit to do so. The links are by default very
-    # low value, but this is important to keep in mind if weird errors
-    # pop up. (Default collateralized with > 1000 tokens)
-    sleep 5;echo;echo "Generating a linked payment";echo;sleep 1
-    bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -l 0.001 -p "${paymentId}" -h "${preImage}"
-  done
+xpub=${senderXpubs[$1]}
+mnemonic=${senderMnemonics[$1]}
+for i in $(seq 1 $numLinks);
+do
+  preImage="`cat $linksFile | jq -r --arg key "$i" '.[$key].preImage'`"
+  paymentId="`cat $linksFile | jq -r --arg key "$i" '.[$key].paymentId'`"
+  # generate the payment from a single sender
+  # NOTE: make sure whichever sender is generating these links has
+  # the appropriate deposit to do so. The links are by default very
+  # low value, but this is important to keep in mind if weird errors
+  # pop up. (Default collateralized with > 1000 tokens)
+  echo -e "$divider";echo "Generating a linked payment"
+  bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -l 0.01 -p "${paymentId}" -h "${preImage}"
+done
 
-  # redeem links from random receivers
-  for i in $(seq 1 $links);
-  do
-    # get id for counterparty at random
-    length=${#recipientXpubs[@]}
-    if [ "$length" -eq "0" ]; then
-      echo "No recipients found"
-      exit 0;
-    fi
+########################################
+# Have random recievers redeem the link payments
 
-    preImage="`cat links.json | jq -r --arg key "$i" '.[$key].preImage'`"
-    paymentId="`cat links.json | jq -r --arg key "$i" '.[$key].paymentId'`"
-
-    redeemerIndex=$(($RANDOM % $length))
-    xpub=${recipientXpubs[$redeemerIndex]}
-    mnemonic=${recipientMnemonics[$redeemerIndex]}
-
-    # recipients have already been started to receive transfers
-    # so stop them before trying to redeem the link
-    docker stop $(docker ps -qf "name=/${project}_payment_bot_${xpub}")
-
-    sleep 5;echo;echo "Redeeming link in background from random recipient bot";echo;sleep 1
-    nohup bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -y 0.001 -p "${paymentId}" -h "${preImage}" -o &
-
-    # also have sender try to send payments while redeeming
-    echo;echo "Sending tokens in background payment to random recipient bot";echo;
-    bash ops/payment-bot.sh -i ${senderXpubs[$1]} -t 0.001 -c ${xpub} -m "${senderMnemonics[$1]}" -a ${tokenAddress} -o
-  
-  done
-
-fi
+for i in $(seq 1 $numLinks);
+do
+  length=${#recipientXpubs[@]}
+  if [[ "$length" -eq "0" ]]
+  then echo "No recipients found" && exit 0;
+  fi
+  preImage="`cat $linksFile | jq -r --arg key "$i" '.[$key].preImage'`"
+  paymentId="`cat $linksFile | jq -r --arg key "$i" '.[$key].paymentId'`"
+  redeemerIndex=$(($RANDOM % $length)) # get id for counterparty at random
+  xpub=${recipientXpubs[$redeemerIndex]}
+  mnemonic=${recipientMnemonics[$redeemerIndex]}
+  # recipients have already been started to receive transfers
+  # so stop them before trying to redeem the link
+  docker stop $(docker ps -qf "name=/${project}_payment_bot_${xpub}")
+  echo -e "$divider";echo "Redeeming link in background from randomly selected recipient bot: $xpub"
+  nohup bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -y 0.001 -p "${paymentId}" -h "${preImage}" -o &
+  # also have sender try to send payments while redeeming
+  echo -e "$divider";echo "Sending tokens payment to randomly selected recipient bot: $xpub"
+  bash ops/payment-bot.sh -i ${senderXpubs[$1]} -t 0.001 -c ${xpub} -m "${senderMnemonics[$1]}" -a ${tokenAddress} -o
+  sleep 7 # give above actions a sec to finish
+done
