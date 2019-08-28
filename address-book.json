@@ -122,16 +122,16 @@
       "address": "0x23D7737A7262f5ED5980b0342449E70eE5010B9F"
     },
     "SimpleTransferApp": {
-      "address": "0xF3e0395d7366188589bc03154077AE064461FF4A"
+      "address": "0xf58c3dC3b53a066395F6a169923ac65947b0Ea2C"
     },
     "SimpleTwoPartySwapApp": {
-      "address": "0x8452aF7Ea3C740E6E14D2555284bB27725Fd4B48"
+      "address": "0xd540A2f452b54EF62F9EE3687199706BbEaEB766"
     },
     "UnidirectionalLinkedTransferApp": {
-      "address": "0xe488488a49B5781CE97d6C92fe5580dFb013bEe2"
+      "address": "0xd94fAe47455E021Fe681e2B6C782F8E8aDd0425F"
     },
     "UnidirectionalTransferApp": {
-      "address": "0x35623b90Ee997876BA1BB3a874B2a11072162e31"
+      "address": "0x314f6f42BA4917c3dBC5aaBBd009a33a42C5e221"
     }
   },
   "42": {
@@ -178,19 +178,22 @@
       "address": "0x2a6F947ECC9D2f92451D884906F0Ec6E5dF6ac78"
     },
     "SimpleTransferApp": {
-      "address": "0x7D7bA686aF40E460c551583765A6D591455337FB"
+      "address": "0xc9759340113534842770b706598B143D26832828"
     },
     "SimpleTwoPartySwapApp": {
-      "address": "0x93e1eA6000E429fE09f5bA3ECDaa39836Ca39378"
+      "address": "0xB5Df9D2f77D84Eb53167e937646bEbfedc238E9d"
     },
     "UnidirectionalLinkedTransferApp": {
-      "address": "0x5081CC3C5eA4f854d9D092383267a019a0D5494F"
+      "address": "0xe1bed368bf03B545176EaA329f2c42cc18b22884"
     },
     "UnidirectionalTransferApp": {
-      "address": "0xdD9F3730945ae6B95e8bAE241758bc7C9A218bCA"
+      "address": "0xf419B38F6465FBCc4c6b14c860A633195de6db7F"
     }
   },
   "4447": {
+    "Token": {
+      "address": "0x0d8cc4b8d15D4c3eF1d70af0071376fb26B5669b"
+    },
     "ChallengeRegistry": {
       "address": "0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0"
     },
@@ -225,19 +228,16 @@
       "address": "0xf204a4Ef082f5c04bB89F7D5E6568B796096735a"
     },
     "SimpleTransferApp": {
-      "address": "0x75c35C980C0d37ef46DF04d31A140b65503c0eEd"
+      "address": "0x8ACEe021a27779d8E98B9650722676B850b25E11"
     },
     "SimpleTwoPartySwapApp": {
-      "address": "0x82D50AD3C1091866E258Fd0f1a7cC9674609D254"
+      "address": "0xF328c11c4dF88d18FcBd30ad38d8B4714F4b33bF"
     },
     "UnidirectionalLinkedTransferApp": {
-      "address": "0xdDA6327139485221633A1FcD65f4aC932E60A2e1"
+      "address": "0x4e71920b7330515faf5EA0c690f1aD06a85fB60c"
     },
     "UnidirectionalTransferApp": {
-      "address": "0xeec918d74c746167564401103096D45BbD494B74"
-    },
-    "Token": {
-      "address": "0x0d8cc4b8d15D4c3eF1d70af0071376fb26B5669b"
+      "address": "0xB9B7e0cb2EDF5Ea031C8B297A5A1Fa20379b6A0a"
     }
   }
 }
