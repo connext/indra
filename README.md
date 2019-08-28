@@ -2,7 +2,7 @@
 
 # Indra 2.0
 
-Connext's State Channel Network.
+Connext's new & improved state channel network.
 
 ## TL;DR
 
