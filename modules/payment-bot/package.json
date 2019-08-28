@@ -11,7 +11,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@connext/client": "0.0.20",
+    "@connext/client": "0.0.21",
     "@counterfactual/node": "0.2.65",
     "commander": "3.0.0",
     "dotenv": "8.1.0",
@@ -19,7 +19,7 @@
     "uuid": "3.3.3"
   },
   "devDependencies": {
-    "@connext/types": "0.0.20",
+    "@connext/types": "0.0.21",
     "@counterfactual/types": "0.0.37",
     "@types/node-fetch": "2.5.0",
     "env-cmd": "9.0.3",
