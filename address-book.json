@@ -129,6 +129,9 @@
     },
     "UnidirectionalLinkedTransferApp": {
       "address": "0x63422d23F4e1008B841c40a44D199B9D82B12c21"
+    },
+    "SimpleTransferApp": {
+      "address": "0xF3e0395d7366188589bc03154077AE064461FF4A"
     }
   },
   "42": {
@@ -182,6 +185,9 @@
     },
     "UnidirectionalLinkedTransferApp": {
       "address": "0x9e41f5248E2aC39dF0e1c59310D9444E57669f7c"
+    },
+    "SimpleTransferApp": {
+      "address": "0x7D7bA686aF40E460c551583765A6D591455337FB"
     }
   },
   "4447": {
