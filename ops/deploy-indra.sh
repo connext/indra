@@ -33,8 +33,9 @@ git merge --no-commit --no-ff staging
 if [[ "$?" != "0" ]]
 then
   git merge --abort && git checkout staging > /dev/null 2>&1
+  echo "Merge aborted & rolled back, your repo is clean again"
   echo
-  echo "Error: merging staging into master will result in merge conflicts"
+  echo "Error: merging staging into master would result in the above merge conflicts."
   echo "To deploy:"
   echo " - Merge master into staging ie: git checkout staging && git merge master"
   echo " - Take care of any merge conflicts & do post-merge testing if needed"
