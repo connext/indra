@@ -111,6 +111,9 @@ watch-ui: node-modules
 test-bot:
 	bash ops/test-bot.sh
 
+test-bot-farm:
+	bash ops/test-bot-farm.sh
+
 test-node: node
 	bash ops/test-node.sh --runInBand --forceExit
 
