@@ -23,6 +23,27 @@ if [[ ! "`pwd | sed 's|.*/\(.*\)|\1|'`" =~ "$project" ]]
 then echo "Aborting: Make sure you're in the $project project root" && exit 1
 fi
 
+# Create patch to check for conflicts
+# Thanks to: https://stackoverflow.com/a/6339869
+# temporarily handle errors manually
+set +e
+git format-patch master --stdout > .deploy-indra.patch
+git checkout master > /dev/null
+git apply .deploy-indra.patch --check
+if [[ "$?" != "0" ]]
+then
+  echo
+  echo "Error: merging staging into master will result in merge conflicts"
+  echo "To deploy:"
+  echo " - Merge master into staging ie: git checkout staging && git merge master"
+  echo " - Take care of any merge conflicts & do post-merge testing if needed"
+  echo " - Re-run this script"
+  echo
+  git checkout staging > /dev/null
+  exit 0
+fi
+set -e
+
 ########################################
 ## Gather info needed for deployment
 
@@ -51,23 +72,7 @@ fi
 
 echo "Let's go"
 
-# Create patch to check for conflicts
-# Thanks to: https://stackoverflow.com/a/6339869
-git format-patch master --stdout > .deploy-indra.patch
 git checkout master
-git apply .deploy-indra.patch --check
-if [[ "$?" != "0" ]]
-then
-  cat .deploy-indra.patch
-  echo
-  echo "Error: merging staging into master will result in above merge conflicts"
-  echo "To deploy, first run: git checkout staging && git merge master"
-  echo "Take care of the merge conflicts, make sure everything looks good, then re-run this script"
-  echo
-  exit 0
-fi
-
-# If no merge conflicts, we're good to continue
 git merge --no-ff staging -m "Deploy $project-$version"
 
 # edit package.json to set new version number
