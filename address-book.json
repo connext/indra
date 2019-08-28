@@ -1,5 +1,8 @@
 {
   "1": {
+    "Token": {
+      "address": "0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359"
+    },
     "ChallengeRegistry": {
       "address": "0xF208620B4348d258477bb4C878C06f495b779Ab7"
     },
@@ -33,9 +36,6 @@
     "TwoPartyFixedOutcomeFromVirtualAppInterpreter": {
       "address": "0x0E4582522f45eF8E73c3b1C75a5cD3e69BA47188"
     },
-    "Token": {
-      "address": "0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359"
-    },
     "SimpleTwoPartySwapApp": {
       "address": "0x5ed3201F64b56bDE27D26E1B22cb579669757361"
     },
@@ -47,6 +47,9 @@
     }
   },
   "3": {
+    "Token": {
+      "address": "0xFab46E002BbF0b4509813474841E0716E6730136"
+    },
     "ChallengeRegistry": {
       "address": "0x100Db874AC77dc8ddad7421b6464e188A2F533D6"
     },
@@ -79,9 +82,6 @@
     },
     "TwoPartyFixedOutcomeFromVirtualAppInterpreter": {
       "address": "0x23D7737A7262f5ED5980b0342449E70eE5010B9F"
-    },
-    "Token": {
-      "address": "0xFab46E002BbF0b4509813474841E0716E6730136"
     }
   },
   "4": {
@@ -121,17 +121,23 @@
     "TwoPartyFixedOutcomeFromVirtualAppInterpreter": {
       "address": "0x23D7737A7262f5ED5980b0342449E70eE5010B9F"
     },
-    "SimpleTwoPartySwapApp": {
-      "address": "0xd195cA39494CB6Ea74E0EA0b3d2Bb1Aa6bF3Ce6c"
+    "SimpleTransferApp": {
+      "address": "0xf58c3dC3b53a066395F6a169923ac65947b0Ea2C"
     },
-    "UnidirectionalTransferApp": {
-      "address": "0x1834684957C46fe645Cb3A24C035857B196Ce7E7"
+    "SimpleTwoPartySwapApp": {
+      "address": "0xd540A2f452b54EF62F9EE3687199706BbEaEB766"
     },
     "UnidirectionalLinkedTransferApp": {
-      "address": "0x63422d23F4e1008B841c40a44D199B9D82B12c21"
+      "address": "0xd94fAe47455E021Fe681e2B6C782F8E8aDd0425F"
+    },
+    "UnidirectionalTransferApp": {
+      "address": "0x314f6f42BA4917c3dBC5aaBBd009a33a42C5e221"
     }
   },
   "42": {
+    "Token": {
+      "address": "0xFab46E002BbF0b4509813474841E0716E6730136"
+    },
     "ChallengeRegistry": {
       "address": "0x6a6fD42afcABc66f9CFa54597abB554a95B0C709"
     },
@@ -171,20 +177,23 @@
     "TwoPartyFixedOutcomeFromVirtualAppInterpreter": {
       "address": "0x2a6F947ECC9D2f92451D884906F0Ec6E5dF6ac78"
     },
-    "Token": {
-      "address": "0xFab46E002BbF0b4509813474841E0716E6730136"
+    "SimpleTransferApp": {
+      "address": "0xc9759340113534842770b706598B143D26832828"
     },
     "SimpleTwoPartySwapApp": {
-      "address": "0x29c2D7943C1817F7b74aC065EC3a852CF928EC7d"
-    },
-    "UnidirectionalTransferApp": {
-      "address": "0x18652DeF056e3c8A9a9a87e2CB0E361Bf6840668"
+      "address": "0xB5Df9D2f77D84Eb53167e937646bEbfedc238E9d"
     },
     "UnidirectionalLinkedTransferApp": {
-      "address": "0x9e41f5248E2aC39dF0e1c59310D9444E57669f7c"
+      "address": "0xe1bed368bf03B545176EaA329f2c42cc18b22884"
+    },
+    "UnidirectionalTransferApp": {
+      "address": "0xf419B38F6465FBCc4c6b14c860A633195de6db7F"
     }
   },
   "4447": {
+    "Token": {
+      "address": "0x0d8cc4b8d15D4c3eF1d70af0071376fb26B5669b"
+    },
     "ChallengeRegistry": {
       "address": "0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0"
     },
@@ -219,19 +228,16 @@
       "address": "0xf204a4Ef082f5c04bB89F7D5E6568B796096735a"
     },
     "SimpleTransferApp": {
-      "address": "0x75c35C980C0d37ef46DF04d31A140b65503c0eEd"
+      "address": "0x8ACEe021a27779d8E98B9650722676B850b25E11"
     },
     "SimpleTwoPartySwapApp": {
-      "address": "0x82D50AD3C1091866E258Fd0f1a7cC9674609D254"
+      "address": "0xF328c11c4dF88d18FcBd30ad38d8B4714F4b33bF"
     },
     "UnidirectionalLinkedTransferApp": {
-      "address": "0xdDA6327139485221633A1FcD65f4aC932E60A2e1"
+      "address": "0x4e71920b7330515faf5EA0c690f1aD06a85fB60c"
     },
     "UnidirectionalTransferApp": {
-      "address": "0xeec918d74c746167564401103096D45BbD494B74"
-    },
-    "Token": {
-      "address": "0x0d8cc4b8d15D4c3eF1d70af0071376fb26B5669b"
+      "address": "0xB9B7e0cb2EDF5Ea031C8B297A5A1Fa20379b6A0a"
     }
   }
 }

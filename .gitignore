@@ -23,6 +23,7 @@ package.json.lerna_backup
 yarn-debug.log*
 yarn-error.log*
 ops/*.log
+.deploy-indra.patch
 
 # OS
 .bash_history

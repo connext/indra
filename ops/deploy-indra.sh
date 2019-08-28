@@ -3,6 +3,7 @@ set -e
 
 project="indra"
 registry_url="https://index.docker.io/v1/repositories/connextproject"
+patch=".deploy-indra.patch"
 
 ########################################
 ## Run some sanity checks to make sure we're really ready to deploy
@@ -22,6 +23,28 @@ fi
 if [[ ! "`pwd | sed 's|.*/\(.*\)|\1|'`" =~ "$project" ]]
 then echo "Aborting: Make sure you're in the $project project root" && exit 1
 fi
+
+# Create patch to check for conflicts
+# Thanks to: https://stackoverflow.com/a/6339869
+# temporarily handle errors manually
+set +e
+git checkout master > /dev/null 2>&1
+git merge --no-commit --no-ff staging
+if [[ "$?" != "0" ]]
+then
+  git merge --abort && git checkout staging > /dev/null 2>&1
+  echo "Merge aborted & rolled back, your repo is clean again"
+  echo
+  echo "Error: merging staging into master would result in the above merge conflicts."
+  echo "To deploy:"
+  echo " - Merge master into staging ie: git checkout staging && git merge master"
+  echo " - Take care of any merge conflicts & do post-merge testing if needed"
+  echo " - Re-run this script"
+  echo
+  exit 0
+fi
+git merge --abort && git checkout staging > /dev/null 2>&1
+set -e
 
 ########################################
 ## Gather info needed for deployment
@@ -73,3 +96,8 @@ git push origin master --no-verify
 # Push a new release tag
 git tag $project-$version
 git push origin $project-$version --no-verify
+
+# Bring staging up-to-date w master for a cleaner git history
+git checkout staging
+git merge master
+git push origin staging --no-verify

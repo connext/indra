@@ -84,6 +84,9 @@ if [[ "$ETH_NETWORK" != "ganache" ]]
 then SECRET_ENV="--env=ETH_MNEMONIC_FILE=/run/secrets/$ETH_MNEMONIC_FILE --secret=$ETH_MNEMONIC_FILE"
 fi
 
+# Ensure contract artifacts are up-to-date first
+make contracts
+
 echo
 echo "Deploying contract deployer..."
 

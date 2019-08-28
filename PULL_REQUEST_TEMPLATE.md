@@ -13,11 +13,8 @@
 
 ## Checklist:
 <!--- Go over each of the following points & put an `x` in all the boxes that apply. -->
-- [ ] I have incremented the version in the project root's package.json
-- [ ] The commit that increments the version includes the new version number in it's commit message
+- [ ] I am making this PR against staging, not master
 - [ ] My code follows the code style of this project.
-- [ ] This code has passed all CI tests & has been deployed successfully to staging.
-- [ ] I have verified that, the staging site reflected these changes and worked as expected.
 - [ ] I have described any backwards-incompatibility implications above.
 - [ ] I have highlighted which parts of the code should be reviewed most carefully.
 - [ ] If my change requires a change to the documentation, I have updated it accordingly.
