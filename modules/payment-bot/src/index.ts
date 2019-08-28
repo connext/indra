@@ -9,7 +9,7 @@ import {
 import { NODE_EVENTS } from "@counterfactual/node";
 import { AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { formatEther, parseEther } from "ethers/utils";
+import { formatEther, hexlify, parseEther, randomBytes } from "ethers/utils";
 
 import { registerClientListeners } from "./bot";
 import { config } from "./config";
@@ -147,13 +147,19 @@ async function run(): Promise<void> {
   }
 
   if (config.linked) {
-    checkForLinkedFields(config);
+    let { preImage, paymentId } = config;
+    if (!preImage) {
+      preImage = hexlify(randomBytes(32));
+    }
+    if (!paymentId) {
+      paymentId = hexlify(randomBytes(32));
+    }
     const linkedParams: LinkedTransferParameters = {
       amount: parseEther(config.linked).toString(),
       assetId,
       conditionType: "LINKED_TRANSFER",
-      paymentId: config.paymentId,
-      preImage: config.preImage,
+      paymentId,
+      preImage,
     };
     console.log(`Attempting to create link with ${config.linked} of ${assetId}...`);
     const res = await client.conditionalTransfer(linkedParams);

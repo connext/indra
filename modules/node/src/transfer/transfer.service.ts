@@ -6,7 +6,6 @@ import {
   UnidirectionalLinkedTransferAppStage,
   UnidirectionalLinkedTransferAppStateBigNumber,
 } from "@connext/types";
-import { InstallMessage, RejectProposalMessage } from "@counterfactual/node";
 import { AppInstanceJson, Node as NodeTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
@@ -15,6 +14,7 @@ import { BigNumber } from "ethers/utils";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ChannelRepository } from "../channel/channel.repository";
+import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { Network } from "../constants";
 import { NodeService } from "../node/node.service";
@@ -36,6 +36,7 @@ export class TransferService {
 
   constructor(
     private readonly nodeService: NodeService,
+    private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
     private readonly channelRepository: ChannelRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
@@ -131,6 +132,8 @@ export class TransferService {
     );
     const preTransferBal =
       freeBal[freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier)];
+
+    await this.channelService.requestCollateral(userPubId, assetId, amount);
 
     const network = await this.configService.getEthNetwork();
     const appInfo = await this.appRegistryRepository.findByNameAndNetwork(

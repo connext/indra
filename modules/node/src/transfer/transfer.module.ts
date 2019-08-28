@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
+import { ChannelModule } from "../channel/channel.module";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigModule } from "../config/config.module";
 import { MessagingModule } from "../messaging/messaging.module";
@@ -24,6 +25,7 @@ import { TransferService } from "./transfer.service";
       PeerToPeerTransferRepository,
     ]),
     MessagingModule,
+    ChannelModule,
   ],
   providers: [TransferService, transferProviderFactory],
 })
