@@ -89,7 +89,7 @@ rm .package.json
 cd ../..
 
 # Push a new commit to master
-git add package.json
+git add .
 git commit --amend --no-edit
 git push origin master --no-verify
 
