@@ -20,7 +20,7 @@
     "@counterfactual/types": "0.0.37",
     "@types/jest": "24.0.18",
     "jest": "24.9.0",
-    "rollup": "1.20.2",
+    "rollup": "1.20.3",
     "rollup-plugin-typescript2": "0.23.0",
     "ts-jest": "24.0.2",
     "typescript": "3.5.3"
