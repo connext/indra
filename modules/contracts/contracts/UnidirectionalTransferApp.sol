@@ -1,11 +1,11 @@
-pragma solidity 0.5.10;
+pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
+/* solium-disable-next-line */
+import "@counterfactual/cf-adjudicator-contracts/contracts/interfaces/CounterfactualApp.sol";
+/* solium-disable-next-line */
+import "@counterfactual/cf-funding-protocol-contracts/contracts/libs/LibOutcome.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-
-import "@counterfactual/contracts/contracts/interfaces/CounterfactualApp.sol";
-import "@counterfactual/contracts/contracts/libs/LibOutcome.sol";
-
 
 /// @title Unidirectional Transfer App
 /// @notice This contract allows unidirectional coin transfers using the
