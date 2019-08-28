@@ -92,11 +92,6 @@ export class ConfigService implements OnModuleInit {
     const addressBook = await this.getContractAddresses();
     return [
       {
-        actionEncoding: `
-          tuple(
-            uint8 actionType,
-            uint256 amount
-          )`,
         allowNodeInstall: false,
         appDefinitionAddress: addressBook[SupportedApplications.SimpleTransferApp],
         name: SupportedApplications.SimpleTransferApp,
@@ -108,6 +103,11 @@ export class ConfigService implements OnModuleInit {
           )`,
       },
       {
+        actionEncoding: `
+          tuple(
+            uint8 actionType,
+            uint256 amount
+          )`,
         allowNodeInstall: false,
         appDefinitionAddress: addressBook[SupportedApplications.UnidirectionalTransferApp],
         name: SupportedApplications.UnidirectionalTransferApp,
