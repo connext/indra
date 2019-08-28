@@ -63,4 +63,12 @@ sleep 1;echo;echo "Sending tokens to recipient bot";echo;sleep 1
 
 bash ops/payment-bot.sh -i 2 -t 0.05 -c $id -a $tokenAddress -m "$mnemonic2"
 
+sleep 1;echo;echo "Generating a link payment";echo;sleep 1
+
+# bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -l 0.01 -p "${paymentId}" -h "${preImage}"
+
+sleep 1;echo;echo "Redeeming link payment";echo;sleep 1
+
+# bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -y 0.001 -p "${paymentId}" -h "${preImage}"
+
 sleep 3;echo;echo "Tests finished successfully";echo

@@ -11,7 +11,7 @@ project="indra"
 tokenAddress="`cat address-book.json | jq '.["4447"].Token.address' | tr -d '"'`"
 numBots=${NUMBER_BOTS:-4};
 botsFile="bots.json"
-numLinks=${NUMBER_LINKS:-5}
+numLinks=${NUMBER_LINKS:-2}
 linksFile="links.json"
 eth_rpc="${ETH_RPC_URL:-http://localhost:8545}"
 sugar_daddy="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
@@ -119,7 +119,7 @@ do
   # the appropriate deposit to do so. The links are by default very
   # low value, but this is important to keep in mind if weird errors
   # pop up. (Default collateralized with > 1000 tokens)
-  echo -e "$divider";echo "Generating a linked payment"
+  echo -e "$divider";echo "Generating a linked payment from preImage: $preImage and paymentId: $paymentId"
   bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -l 0.01 -p "${paymentId}" -h "${preImage}"
 done
 
@@ -137,13 +137,13 @@ do
   redeemerIndex=$(($RANDOM % $length)) # get id for counterparty at random
   xpub=${recipientXpubs[$redeemerIndex]}
   mnemonic=${recipientMnemonics[$redeemerIndex]}
-  # recipients have already been started to receive transfers
-  # so stop them before trying to redeem the link
+  # recipients have already been started to receive transfers so stop them before trying to redeem the link
   docker stop $(docker ps -qf "name=/${project}_payment_bot_${xpub}")
-  echo -e "$divider";echo "Redeeming link in background from randomly selected recipient bot: $xpub"
-  nohup bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -y 0.001 -p "${paymentId}" -h "${preImage}" -o &
+  echo -e "$divider";echo "Redeeming link from randomly selected recipient bot: $xpub"
+  echo "Linked payment has preImage: $preImage and paymentId: $paymentId"
+  bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -y 0.001 -p "${paymentId}" -h "${preImage}"
   # also have sender try to send payments while redeeming
-  echo -e "$divider";echo "Sending tokens payment to randomly selected recipient bot: $xpub"
-  bash ops/payment-bot.sh -i ${senderXpubs[$1]} -t 0.001 -c ${xpub} -m "${senderMnemonics[$1]}" -a ${tokenAddress} -o
+  # echo -e "$divider";echo "Sending tokens payment to randomly selected recipient bot: $xpub"
+  # bash ops/payment-bot.sh -i ${senderXpubs[$1]} -t 0.001 -c ${xpub} -m "${senderMnemonics[$1]}" -a ${tokenAddress}
   sleep 7 # give above actions a sec to finish
 done
