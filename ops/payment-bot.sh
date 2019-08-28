@@ -46,10 +46,10 @@ NODE_URL="${NODE_URL:-nats://172.17.0.1:4222}"
 # Or whether it's running in the background of another script and can't attach to a screen
 test -t 0 -a -t 1 -a -t 2 && interactive="--tty"
 
-if [ -z $mnemonic ] && [ $identifier == 1 ]
+if [ -z "$mnemonic" ] && [ "$identifier" == 1 ]
 then
   mnemonic="humble sense shrug young vehicle assault destroy cook property average silent travel"
-elif [ -z $mnemonic ] && [ $identifier == 2 ]
+elif [ -z "$mnemonic" ] && [ "$identifier" == 2 ]
 then
   mnemonic="roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult"
 fi
