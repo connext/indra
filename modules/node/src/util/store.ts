@@ -49,22 +49,6 @@ export class PostgresServiceFactory implements Node.ServiceFactory {
 
   async connectDb(): Promise<Connection> {
     await this.connection.connect();
-    await this.connection.query(`
-      CREATE TABLE IF NOT EXISTS "${this.tableName}"
-      (
-        key varchar COLLATE pg_catalog."default" NOT NULL,
-        value json NOT NULL,
-        CONSTRAINT node_record_pkey PRIMARY KEY (key)
-      )
-      WITH (
-        OIDS = FALSE
-      )
-      TABLESPACE pg_default;
-
-      ALTER TABLE "${this.tableName}"
-        OWNER to ${this.configuration.username};
-     `);
-
     return this.connection;
   }
 
