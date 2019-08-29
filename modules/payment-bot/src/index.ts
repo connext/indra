@@ -88,11 +88,6 @@ async function run(): Promise<void> {
     }
   }
 
-  // startAppSequencePoller(); // This is noisy - Bo
-
-  // const apps = await client.getAppInstances();
-  // console.log("apps: ", apps);
-
   if (config.deposit) {
     const depositParams: DepositParameters = {
       amount: parseEther(config.deposit).toString(),
@@ -181,7 +176,6 @@ async function run(): Promise<void> {
     const provider = new JsonRpcProvider(config.ethProviderUrl);
     const preWithdrawBal = await provider.getBalance(config.recipient || client.freeBalanceAddress);
     console.log(`Found prewithdrawal balance of ${formatEther(preWithdrawBal)}`);
-
     client.on(NODE_EVENTS.WITHDRAWAL_CONFIRMED, async (data: any) => {
       console.log(`Caught withdraw confirmed event, data: ${JSON.stringify(data, replaceBN, 2)}`);
       const postWithdrawBal = await provider.getBalance(
@@ -189,11 +183,9 @@ async function run(): Promise<void> {
       );
       console.log(`Found postwithdrawal balance of ${formatEther(postWithdrawBal)}`);
     });
-
     client.on(NODE_EVENTS.WITHDRAWAL_FAILED, async (data: any) => {
       console.log(`Withdrawal failed with data: ${JSON.stringify(data, replaceBN, 2)}`);
     });
-
     console.log(
       `Attempting to withdraw ${withdrawParams.amount} with assetId ` +
         `${withdrawParams.assetId} to address ${withdrawParams.recipient}...`,

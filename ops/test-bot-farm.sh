@@ -107,14 +107,13 @@ do
   mnemonic=${recipientMnemonics[$redeemerIndex]}
   echo -e "$divider";echo "Redeeming link from randomly selected recipient bot: $xpub"
   echo "Linked payment has preImage: $preImage and paymentId: $paymentId"
-  bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -y 0.01 -p "${paymentId}" -h "${preImage}" -o
+  # TODO: link creator should be online too so the node can properly uninstall
+  bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -y 0.01 -p "${paymentId}" -h "${preImage}" &
   # also have sender try to send payments while redeeming
-  # echo -e "$divider";echo "Sending tokens payment to randomly selected recipient bot: $xpub"
-  # bash ops/payment-bot.sh -i ${senderXpubs[$1]} -t 0.01 -c ${xpub} -m "${senderMnemonics[$1]}" -a ${tokenAddress}
-  # sleep 7 # give above actions a sec to finish
+  echo -e "$divider";echo "Sending tokens payment to randomly selected recipient bot: $xpub"
+  bash ops/payment-bot.sh -i ${senderXpubs[$1]} -t 0.01 -c ${xpub} -m "${senderMnemonics[$1]}" -a ${tokenAddress}
+  sleep 10 # give above actions a sec to finish
 done
-
-exit # TODO rm me
 
 ########################################
 ## Start recipient bots in the background
