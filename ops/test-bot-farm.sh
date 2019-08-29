@@ -126,6 +126,9 @@ done
 ########################################
 # Have random recievers redeem the link payments
 
+# recipients have already been started to receive transfers so stop them before trying to redeem these links
+cleanup
+
 for i in $(seq 1 $numLinks);
 do
   length=${#recipientXpubs[@]}
@@ -137,13 +140,13 @@ do
   redeemerIndex=$(($RANDOM % $length)) # get id for counterparty at random
   xpub=${recipientXpubs[$redeemerIndex]}
   mnemonic=${recipientMnemonics[$redeemerIndex]}
-  # recipients have already been started to receive transfers so stop them before trying to redeem the link
-  docker stop $(docker ps -qf "name=/${project}_payment_bot_${xpub}")
   echo -e "$divider";echo "Redeeming link from randomly selected recipient bot: $xpub"
   echo "Linked payment has preImage: $preImage and paymentId: $paymentId"
-  bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -y 0.001 -p "${paymentId}" -h "${preImage}"
+  bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -y 0.01 -p "${paymentId}" -h "${preImage}"
   # also have sender try to send payments while redeeming
   # echo -e "$divider";echo "Sending tokens payment to randomly selected recipient bot: $xpub"
   # bash ops/payment-bot.sh -i ${senderXpubs[$1]} -t 0.001 -c ${xpub} -m "${senderMnemonics[$1]}" -a ${tokenAddress}
   sleep 7 # give above actions a sec to finish
 done
+
+echo 'All Done! Yay!'

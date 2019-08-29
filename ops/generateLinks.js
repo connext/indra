@@ -1,5 +1,6 @@
 const { hexlify, randomBytes } = require("ethers/utils");
 const fs = require("fs");
+
 (function (numberLinks, linksFile) {
   if (!numberLinks) throw Error(`Must have a number of links specified`);
   console.log(`Generating ${numberLinks} paymentIds and preImages for linked payments.`)
