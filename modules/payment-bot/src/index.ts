@@ -16,6 +16,9 @@ import { config } from "./config";
 import { store } from "./store";
 import { logEthFreeBalance } from "./utils";
 
+const replaceBN = (key: string, value: any): any =>
+  value && value._hex ? value.toString() : value;
+
 process.on("warning", (e: any): any => {
   console.warn(e);
   process.exit(1);
@@ -56,14 +59,6 @@ export function exitOrLeaveOpen(config: any): void {
   console.log("leaving process open");
 }
 
-/*
-export function startAppSequencePoller(): void {
-  setInterval(async () => {
-    console.log("app sequences:", JSON.stringify(await client.verifyAppSequenceNumber(), null, 2))
-  }, 1000)
-}
-*/
-
 export function checkForLinkedFields(config: any): void {
   if (!config.preImage) {
     throw new Error(
@@ -91,7 +86,6 @@ async function run(): Promise<void> {
     if (assetId !== AddressZero) {
       logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
     }
-    exitOrLeaveOpen(config);
   }
 
   // startAppSequencePoller(); // This is noisy - Bo
@@ -106,36 +100,31 @@ async function run(): Promise<void> {
     if (assetId !== AddressZero) {
       depositParams.assetId = assetId;
     }
-    console.log(`Attempting to deposit ${depositParams.amount} with assetId ${assetId}...`);
+    console.log(`Depositing ${config.deposit} of asset ${assetId}`);
     await client.deposit(depositParams);
     console.log(`Successfully deposited!`);
-    exitOrLeaveOpen(config);
   }
 
   if (config.requestCollateral) {
     console.log(`Requesting collateral...`);
     await client.requestCollateral(assetId);
     console.log(`Successfully received collateral!`);
-    exitOrLeaveOpen(config);
   }
 
   if (config.transfer) {
-    console.log(`Attempting to transfer ${config.transfer} with assetId ${assetId}...`);
+    console.log(`Transferring ${config.transfer} of asset ${assetId} to ${config.counterparty}`);
     await client.transfer({
       amount: parseEther(config.transfer).toString(),
       assetId,
       recipient: config.counterparty,
     });
     console.log(`Successfully transferred!`);
-    exitOrLeaveOpen(config);
   }
 
   if (config.swap) {
     const tokenAddress = (await client.config()).contractAddresses.Token;
     const swapRate = await client.getLatestSwapRate(AddressZero, tokenAddress);
-    console.log(
-      `Attempting to swap ${config.swap} of eth for ${assetId} at rate ${swapRate.toString()}...`,
-    );
+    console.log(`Swapping ${config.swap} eth for ${assetId} at rate ${swapRate.toString()}`);
     await client.swap({
       amount: parseEther(config.swap).toString(),
       fromAssetId: AddressZero,
@@ -143,7 +132,6 @@ async function run(): Promise<void> {
       toAssetId: assetId,
     });
     console.log(`Successfully swapped!`);
-    exitOrLeaveOpen(config);
   }
 
   if (config.linked) {
@@ -161,10 +149,9 @@ async function run(): Promise<void> {
       paymentId,
       preImage,
     };
-    console.log(`Attempting to create link with ${config.linked} of ${assetId}...`);
+    console.log(`Creating link payment for ${config.linked} of asset ${assetId}`);
     const res = await client.conditionalTransfer(linkedParams);
-    console.log(`Successfully created! Linked response: ${JSON.stringify(res, null, 2)}`);
-    exitOrLeaveOpen(config);
+    console.log(`Successfully created! Linked response: ${JSON.stringify(res, replaceBN, 2)}`);
   }
 
   if (config.redeem) {
@@ -176,12 +163,9 @@ async function run(): Promise<void> {
       paymentId: config.paymentId,
       preImage: config.preImage,
     };
-    console.log(
-      `Attempting to redeem link with parameters: ${JSON.stringify(resolveParams, null, 2)}...`,
-    );
+    console.log(`Redeeming link with parameters: ${JSON.stringify(resolveParams, replaceBN, 2)}`);
     const res = await client.resolveCondition(resolveParams);
-    console.log(`Successfully redeemed! Resolve response: ${JSON.stringify(res, null, 2)}`);
-    exitOrLeaveOpen(config);
+    console.log(`Successfully redeemed! Resolve response: ${JSON.stringify(res, replaceBN, 2)}`);
   }
 
   if (config.withdraw) {
@@ -199,7 +183,7 @@ async function run(): Promise<void> {
     console.log(`Found prewithdrawal balance of ${formatEther(preWithdrawBal)}`);
 
     client.on(NODE_EVENTS.WITHDRAWAL_CONFIRMED, async (data: any) => {
-      console.log(`Caught withdraw confirmed event, data: ${JSON.stringify(data, null, 2)}`);
+      console.log(`Caught withdraw confirmed event, data: ${JSON.stringify(data, replaceBN, 2)}`);
       const postWithdrawBal = await provider.getBalance(
         config.recipient || client.freeBalanceAddress,
       );
@@ -207,7 +191,7 @@ async function run(): Promise<void> {
     });
 
     client.on(NODE_EVENTS.WITHDRAWAL_FAILED, async (data: any) => {
-      console.log(`Withdrawal failed with data: ${JSON.stringify(data, null, 2)}`);
+      console.log(`Withdrawal failed with data: ${JSON.stringify(data, replaceBN, 2)}`);
     });
 
     console.log(
@@ -216,7 +200,6 @@ async function run(): Promise<void> {
     );
     await client.withdraw(withdrawParams);
     console.log(`Successfully withdrawn!`);
-    exitOrLeaveOpen(config);
   }
 
   if (config.uninstall) {
@@ -224,7 +207,6 @@ async function run(): Promise<void> {
     await client.uninstallApp(config.uninstall);
     console.log(`Successfully uninstalled ${config.uninstall}`);
     console.log(`Installed apps: ${await client.getAppInstances()}`);
-    exitOrLeaveOpen(config);
   }
 
   if (config.uninstallVirtual) {
@@ -232,11 +214,11 @@ async function run(): Promise<void> {
     await client.uninstallVirtualApp(config.uninstallVirtual);
     console.log(`Successfully uninstalled ${config.uninstallVirtual}`);
     console.log(`Installed apps: ${await client.getAppInstances()}`);
-    exitOrLeaveOpen(config);
   }
 
   logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
-  console.log(`Ready to receive transfers at ${client.opts.cfModule.publicIdentifier}`);
+  exitOrLeaveOpen(config);
+  console.log(`Waiting to receive transfers at ${client.opts.cfModule.publicIdentifier}`);
 }
 
 async function getOrCreateChannel(assetId?: string): Promise<void> {
@@ -247,23 +229,16 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
     nodeUrl: config.nodeUrl,
     store,
   };
-
-  console.log("Using client options:");
-  console.log("     - mnemonic:", connextOpts.mnemonic);
-  console.log("     - ethProviderUrl:", connextOpts.ethProviderUrl);
-  console.log("     - nodeUrl:", connextOpts.nodeUrl);
-
-  console.log("Creating connext");
   client = await connext.connect(connextOpts);
-  console.log("Client created successfully!");
-
-  console.log("Public Identifier", client.publicIdentifier);
-  console.log("Account multisig address:", client.opts.multisigAddress);
-  console.log("User free balance address:", client.freeBalanceAddress);
-  console.log(
-    "Node free balance address:",
-    connext.utils.freeBalanceAddressFromXpub(client.nodePublicIdentifier),
-  );
+  const nodeFBAddress = connext.utils.freeBalanceAddressFromXpub(client.nodePublicIdentifier);
+  console.log("Payment bot launched:");
+  console.log(` - mnemonic: ${connextOpts.mnemonic}`);
+  console.log(` - ethProviderUrl: ${connextOpts.ethProviderUrl}`);
+  console.log(` - nodeUrl: ${connextOpts.nodeUrl}`);
+  console.log(` - publicIdentifier: ${client.publicIdentifier}`);
+  console.log(` - multisigAddress: ${client.opts.multisigAddress}`);
+  console.log(` - User freeBalanceAddress: ${client.freeBalanceAddress}`);
+  console.log(` - Node freeBalance address: ${nodeFBAddress}`);
 
   const channelAvailable = async (): Promise<boolean> => {
     const channel = await client.getChannel();
@@ -282,7 +257,6 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
   });
 
   if (assetId) {
-    console.log(`Adding payment profile for ${assetId}`);
     await client.addPaymentProfile({
       amountToCollateralize: parseEther("10").toString(),
       assetId: makeChecksum(assetId),

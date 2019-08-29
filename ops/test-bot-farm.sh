@@ -82,7 +82,7 @@ do
   xpub=${recipientXpubs[$((i - 1))]}
   mnemonic=${recipientMnemonics[$((i - 1))]}
   echo -e "$divider";echo "Starting recipient bots"
-  bash ops/payment-bot.sh -i ${xpub} -m "${mnemonic}" &
+  bash ops/payment-bot.sh -i ${xpub} -m "${mnemonic}" -o &
   sleep 7 # give each recipient bot a few seconds to start up
 done
 
@@ -126,8 +126,7 @@ done
 ########################################
 # Have random recievers redeem the link payments
 
-# recipients have already been started to receive transfers so stop them before trying to redeem these links
-cleanup
+cleanup # stop recipient bots before trying to redeem these links
 
 for i in $(seq 1 $numLinks);
 do

@@ -3,7 +3,8 @@ import { utils } from "ethers";
 import { hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
 
-export const replaceBN = (key: string, value: any): any => (value._hex ? value.toString() : value);
+export const replaceBN = (key: string, value: any): any =>
+  value && value._hex ? value.toString() : value;
 
 // Capitalizes first char of a string
 export const capitalize = (str: string): string =>

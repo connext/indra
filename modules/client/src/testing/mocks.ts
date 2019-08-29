@@ -36,36 +36,36 @@ export class MockMessagingService implements IMessagingService {
   }
 
   async connect(): Promise<void> {
-    log.info(`Connect`);
+    this.log.info(`Connect`);
   }
 
   async disconnect(): Promise<void> {
-    log.info(`Disconnect`);
+    this.log.info(`Disconnect`);
   }
 
   async onReceive(subject: string, callback: (msg: any) => void): Promise<void> {
-    log.info(`Registered callback for subject ${subject}`);
+    this.log.info(`Registered callback for subject ${subject}`);
   }
 
   public request(subject: string, timeout: number, body?: any): any {
-    log.info(`Sending request to ${subject}`);
+    this.log.info(`Sending request to ${subject}`);
     return (this.returnVals as any)[subject];
   }
 
   async send(to: string, msg: any): Promise<void> {
-    log.info(`Sending message to ${to}: ${JSON.stringify(msg)}`);
+    this.log.info(`Sending message to ${to}: ${JSON.stringify(msg)}`);
   }
 
   async publish(to: string, msg: any): Promise<void> {
-    log.info(`Publishing message to ${to}: ${JSON.stringify(msg)}`);
+    this.log.info(`Publishing message to ${to}: ${JSON.stringify(msg)}`);
   }
 
   async subscribe(subject: string, callback: (msg: any) => void): Promise<void> {
-    log.info(`Registered subscription for subject ${subject}`);
+    this.log.info(`Registered subscription for subject ${subject}`);
   }
 
   async unsubscribe(subject: string): Promise<void> {
-    log.info(`Unsubscribing from ${subject}`);
+    this.log.info(`Unsubscribing from ${subject}`);
   }
 
   public patch(subject: string, returnValue: any): any {
