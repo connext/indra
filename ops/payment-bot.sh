@@ -57,9 +57,6 @@ fi
 ########################################
 ## Launch payment bot
 
-echo
-echo "Deploying payment bot..."
-
 docker run \
   --entrypoint="bash" \
   --env="DB_FILENAME=$DB_FILENAME" \
@@ -75,7 +72,6 @@ docker run \
   --workdir="/root" \
   ${project}_builder -c '
     set -e
-    echo "payment bot container launched"
     cd modules/payment-bot
     mkdir -p ${DB_FILENAME%/*}
     touch $DB_FILENAME

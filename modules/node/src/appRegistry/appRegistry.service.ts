@@ -3,10 +3,10 @@ import {
   CoinTransfer,
   KnownNodeAppNames,
   UnidirectionalLinkedTransferAppStage,
+  UnidirectionalLinkedTransferAppState,
   UnidirectionalLinkedTransferAppStateBigNumber,
   UnidirectionalTransferAppStage,
   UnidirectionalTransferAppStateBigNumber,
-  UnidirectionalLinkedTransferAppState,
 } from "@connext/types";
 import { ProposeMessage, ProposeVirtualMessage } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
@@ -24,6 +24,7 @@ import {
   CLogger,
   freeBalanceAddressFromXpub,
   normalizeEthAddresses,
+  replaceBN,
 } from "../util";
 import { isEthAddress } from "../validator";
 
@@ -58,7 +59,7 @@ export class AppRegistryService {
       return await this.nodeService.installApp(data.data.appInstanceId);
     } catch (e) {
       logger.error(`Caught error during proposed app validation, rejecting install`);
-      console.error(e);
+      logger.error(e);
       return await this.nodeService.rejectInstallApp(data.data.appInstanceId);
     }
   }
@@ -75,7 +76,7 @@ export class AppRegistryService {
       await this.verifyVirtualAppProposal(data.data, data.from);
     } catch (e) {
       logger.error(`Caught error during proposed app validation, rejecting virtual install`);
-      console.error(e);
+      logger.error(e);
       return await this.nodeService.rejectInstallApp(data.data.appInstanceId);
     }
   }
@@ -237,7 +238,7 @@ export class AppRegistryService {
       bigNumberifyObj(transfer),
     ) as any;
 
-    console.log("initialState: ", JSON.stringify(initialState));
+    logger.log(`initialState: ${JSON.stringify(initialState, replaceBN, 2)}`);
 
     if (initialState.finalized) {
       throw new Error(`Cannot install linked transfer app with finalized state`);

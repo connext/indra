@@ -3,7 +3,8 @@ import { AppInstanceInfo } from "@counterfactual/types";
 import { bigNumberify, getAddress } from "ethers/utils";
 
 import { ConnextInternal } from "../connext";
-import { freeBalanceAddressFromXpub } from "../lib/utils";
+import { Logger } from "../lib/logger";
+import { freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
 
 type ProposalValidator = {
   [index in SupportedApplication]: (
@@ -11,7 +12,7 @@ type ProposalValidator = {
     registeredInfo: RegisteredAppDetails,
     isVirtual: boolean,
     connext: ConnextInternal,
-  ) => Promise<string | undefined>
+  ) => Promise<string | undefined>;
 };
 
 export const validateSwapApp = async (
@@ -112,13 +113,13 @@ export const appProposalValidation: ProposalValidator = {
   UnidirectionalTransferApp: validateTransferApp,
 };
 
-const prettyLog = (app: AppInstanceInfo) => {
+const prettyLog = (app: AppInstanceInfo): string => {
   // convert any field thats a BN to a string
   const asStr = {};
-  Object.entries(app).forEach(([name, value]) => {
+  Object.entries(app).forEach(([name, value]: any): any => {
     asStr[name] = value.toString();
   });
-  return JSON.stringify(asStr, null, 2);
+  return JSON.stringify(asStr, replaceBN, 2);
 };
 
 const baseAppValidation = async (
@@ -127,10 +128,11 @@ const baseAppValidation = async (
   isVirtual: boolean,
   connext: ConnextInternal,
 ): Promise<string | undefined> => {
+  const log = new Logger("baseAppValidation", connext.opts.logLevel);
   // check the initial state is consistent
   // FIXME: why isnt this in the cf types?
-  console.log("******** app", JSON.stringify(app, null, 2));
-  console.log("******** has initial state??", (app as any).initialState);
+  log.info(`Validating app: ${JSON.stringify(app, replaceBN, 2)}`);
+  log.info(`App has initial state? ${(app as any).initialState}`);
   // check that identity hash isnt used by another app
   const apps = await connext.getAppInstances();
   if (apps) {
@@ -148,8 +150,8 @@ const baseAppValidation = async (
   }
 
   // check that the encoding is the same
-  console.log('app.abiEncodings.actionEncoding: ', JSON.stringify(app.abiEncodings.actionEncoding));
-  console.log('registeredInfo.actionEncoding: ', JSON.stringify(registeredInfo.actionEncoding));
+  log.info(`app.abiEncodings.actionEncoding: ${JSON.stringify(app.abiEncodings.actionEncoding)}`);
+  log.info(`registeredInfo.actionEncoding: ${JSON.stringify(registeredInfo.actionEncoding)}`);
   if (app.abiEncodings.actionEncoding !== registeredInfo.actionEncoding) {
     return `Incorrect action encoding detected. Proposed app: ${prettyLog(app)}`;
   }

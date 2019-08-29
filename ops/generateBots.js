@@ -1,63 +1,36 @@
-const ethers = require("ethers");
+const eth = require("ethers");
 const fs = require("fs");
 const tokenArtifacts = require("openzeppelin-solidity/build/contracts/ERC20Mintable.json");
 
-const generateBots = async (number, funderMnemonic, ethRpc, tokenAddress) => {
-  console.log("Called with opts:");
-  console.log("   - number", number);
-  console.log("   - funderMnemonic", funderMnemonic);
-  console.log("   - ethRpc", ethRpc);
-  console.log("   - tokenAddress", tokenAddress);
-
-  // some basic error handling
-  if (!number) {
-    throw new Error("No number of bots to generate provided");
-  }
-  if (!funderMnemonic) {
-    throw new Error("No funder mnemonic provided");
-  }
-  if (!ethRpc) {
-    throw new Error("No eth rpc url provided");
-  }
-  if (!tokenAddress) {
-    throw new Error("No token address provided");
-  }
+(async function(number, funderMnemonic, ethRpc, tokenAddress, botsFile) {
+  // some basic sanity checks
+  if (!number) { throw new Error("No number of bots to generate provided"); }
+  if (!funderMnemonic) { throw new Error("No funder mnemonic provided"); }
+  if (!ethRpc) { throw new Error("No eth rpc url provided"); }
+  if (!tokenAddress) { throw new Error("No token address provided"); }
+  if (!botsFile) { throw new Error("No bots filename provided"); }
 
   // make the funder account and wallet
-  const ethGift = "1";
-  const tokenGift = "10000";
+  const ethGift = "0.1";
+  const tokenGift = "1000";
   const cfPath = "m/44'/60'/0'/25446";
-  const provider = new ethers.providers.JsonRpcProvider(ethRpc);
-  const funder = new ethers.Wallet.fromMnemonic(funderMnemonic).connect(provider);
-  const token = new ethers.Contract(tokenAddress, tokenArtifacts.abi, funder);
+  const provider = new eth.providers.JsonRpcProvider(ethRpc);
+  const funder = new eth.Wallet.fromMnemonic(funderMnemonic).connect(provider);
+  const token = new eth.Contract(tokenAddress, tokenArtifacts.abi, funder);
 
   let obj = {};
-  for (let i = 0; i < number; i++) {
-    const botMnemonic = ethers.Wallet.createRandom().mnemonic;
-    const hdNode = ethers.utils.HDNode.fromMnemonic(botMnemonic).derivePath(cfPath);
+  for (let i = 1; i <= number; i++) {
+    const botMnemonic = eth.Wallet.createRandom().mnemonic;
+    const hdNode = eth.utils.HDNode.fromMnemonic(botMnemonic).derivePath(cfPath);
     const xpub = hdNode.neuter().extendedKey;
-    const addr = ethers.Wallet.fromMnemonic(botMnemonic, cfPath).address;
-
-    // send eth
-    console.log(`\nSending ${ethGift} eth to ${addr}`);
-    const ethTx = await funder.sendTransaction({
-      to: addr,
-      value: ethers.utils.parseEther(ethGift),
-    });
+    const addr = eth.Wallet.fromMnemonic(botMnemonic, cfPath).address;
+    console.log(`Funding bot ${addr} with ${ethGift} eth and ${tokenGift} tokens`)
+    const ethTx = await funder.sendTransaction({ to: addr, value: eth.utils.parseEther(ethGift) });
     await funder.provider.waitForTransaction(ethTx.hash);
-    console.log(`Transaction mined! Hash: ${ethTx.hash}q`);
-
-    // send tokens
-    console.log(`Minting ${tokenGift} tokens for ${addr}`);
-    const tokenTx = await token.mint(addr, ethers.utils.parseEther(tokenGift));
+    const tokenTx = await token.mint(addr, eth.utils.parseEther(tokenGift));
     await funder.provider.waitForTransaction(tokenTx.hash);
-    console.log(`Transaction mined! Hash: ${tokenTx.hash}`);
-
-    obj[i + 1] = { mnemonic: botMnemonic, xpub };
+    obj[i] = { mnemonic: botMnemonic, xpub };
   }
-  fs.writeFileSync("bots.json", JSON.stringify(obj, null, 2));
-};
 
-generateBots(process.argv[2], process.argv[3], process.argv[4], process.argv[5]).then(() =>
-  console.log("Completed"),
-);
+  fs.writeFileSync(botsFile, JSON.stringify(obj, null, 2));
+})(process.argv[2], process.argv[3], process.argv[4], process.argv[5], process.argv[6])
