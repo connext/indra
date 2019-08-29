@@ -19,6 +19,7 @@ import { EventEmitter } from "events";
 
 import { ConnextInternal } from "./connext";
 import { Logger } from "./lib/logger";
+import { replaceBN } from "./lib/utils";
 import { appProposalValidation } from "./validation/appProposals";
 
 // TODO: index of connext events only?
@@ -34,48 +35,17 @@ export class ConnextListener extends EventEmitter {
   // TODO: add custom parsing functions here to convert event data
   // to something more usable?
   private defaultCallbacks: CallbackStruct = {
+    COUNTER_DEPOSIT_CONFIRMED: (data: DepositConfirmationMessage): void => {
+      this.emitAndLog(NodeTypes.EventName.COUNTER_DEPOSIT_CONFIRMED, data.data);
+    },
     CREATE_CHANNEL: (data: CreateChannelMessage): void => {
       this.emitAndLog(NodeTypes.EventName.CREATE_CHANNEL, data.data);
-    },
-    // TODO: make cf return app instance id and app def?
-    INSTALL_VIRTUAL: (data: InstallVirtualMessage): void => {
-      this.emitAndLog(NodeTypes.EventName.INSTALL_VIRTUAL, data.data);
-    },
-    PROPOSE_INSTALL_VIRTUAL: async (data: ProposeVirtualMessage): Promise<void> => {
-      // validate and automatically install for the known and supported
-      // applications
-      this.emitAndLog(NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data.data);
-      // if the from is us, ignore
-      // FIXME: type of ProposeVirtualMessage should extend Node.NodeMessage,
-      // which has a from field, but ProposeVirtualMessage does not
-      if ((data as any).from === this.cfModule.publicIdentifier) {
-        return;
-      }
-      // check based on supported applications
-      // matched app, take appropriate default actions
-      const matchedResult = await this.matchAppInstance(data);
-      if (!matchedResult) {
-        return;
-      }
-      // matched app, take appropriate default actions
-      const { appInfo, matchedApp } = matchedResult;
-      await this.verifyAndInstallKnownApp(appInfo, matchedApp);
-      return;
-    },
-    UNINSTALL_VIRTUAL: (data: UninstallVirtualMessage): void => {
-      this.emitAndLog(NodeTypes.EventName.UNINSTALL_VIRTUAL, data.data);
-    },
-    UPDATE_STATE: (data: UpdateStateMessage): void => {
-      this.emitAndLog(NodeTypes.EventName.UPDATE_STATE, data.data);
     },
     DEPOSIT_CONFIRMED: async (data: DepositConfirmationMessage): Promise<void> => {
       this.emitAndLog(NodeTypes.EventName.DEPOSIT_CONFIRMED, data);
     },
     DEPOSIT_FAILED: (data: any): void => {
       this.emitAndLog(NodeTypes.EventName.DEPOSIT_FAILED, data);
-    },
-    COUNTER_DEPOSIT_CONFIRMED: (data: DepositConfirmationMessage): void => {
-      this.emitAndLog(NodeTypes.EventName.COUNTER_DEPOSIT_CONFIRMED, data.data);
     },
     DEPOSIT_STARTED: (data: any): void => {
       this.log.info(`deposit for ${data.value.toString()} started. hash: ${data.txHash}`);
@@ -84,23 +54,9 @@ export class ConnextListener extends EventEmitter {
     INSTALL: (data: InstallMessage): void => {
       this.emitAndLog(NodeTypes.EventName.INSTALL, data.data);
     },
-    PROPOSE_STATE: (data: any): void => {
-      // TODO: validate the proposed state
-      // TODO: are we using this flow in any of the known/supported
-      // applications
-      this.emitAndLog(NodeTypes.EventName.PROPOSE_STATE, data);
-    },
-    REJECT_INSTALL: (data: any): void => {
-      this.emitAndLog(NodeTypes.EventName.REJECT_INSTALL, data);
-    },
-    REJECT_INSTALL_VIRTUAL: (data: RejectInstallVirtualMessage): void => {
-      this.emitAndLog(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, data.data);
-    },
-    REJECT_STATE: (data: any): void => {
-      this.emitAndLog(NodeTypes.EventName.REJECT_STATE, data);
-    },
-    UNINSTALL: (data: UninstallMessage): void => {
-      this.emitAndLog(NodeTypes.EventName.UNINSTALL, data.data);
+    // TODO: make cf return app instance id and app def?
+    INSTALL_VIRTUAL: (data: InstallVirtualMessage): void => {
+      this.emitAndLog(NodeTypes.EventName.INSTALL_VIRTUAL, data.data);
     },
     PROPOSE_INSTALL: async (data: ProposeMessage): Promise<void> => {
       // validate and automatically install for the known and supported
@@ -127,6 +83,57 @@ export class ConnextListener extends EventEmitter {
       await this.verifyAndInstallKnownApp(appInfo, matchedApp, false);
       return;
     },
+    PROPOSE_INSTALL_VIRTUAL: async (data: ProposeVirtualMessage): Promise<void> => {
+      // validate and automatically install for the known and supported
+      // applications
+      this.emitAndLog(NodeTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data.data);
+      // if the from is us, ignore
+      // FIXME: type of ProposeVirtualMessage should extend Node.NodeMessage,
+      // which has a from field, but ProposeVirtualMessage does not
+      if ((data as any).from === this.cfModule.publicIdentifier) {
+        return;
+      }
+      // check based on supported applications
+      // matched app, take appropriate default actions
+      const matchedResult = await this.matchAppInstance(data);
+      if (!matchedResult) {
+        return;
+      }
+      // matched app, take appropriate default actions
+      const { appInfo, matchedApp } = matchedResult;
+      await this.verifyAndInstallKnownApp(appInfo, matchedApp);
+      return;
+    },
+    PROPOSE_STATE: (data: any): void => {
+      // TODO: validate the proposed state
+      // TODO: are we using this flow in any of the known/supported
+      // applications
+      this.emitAndLog(NodeTypes.EventName.PROPOSE_STATE, data);
+    },
+    PROTOCOL_MESSAGE_EVENT: (data: any): void => {
+      this.emitAndLog(NodeTypes.EventName.PROTOCOL_MESSAGE_EVENT, data);
+    },
+    REJECT_INSTALL: (data: any): void => {
+      this.emitAndLog(NodeTypes.EventName.REJECT_INSTALL, data);
+    },
+    REJECT_INSTALL_VIRTUAL: (data: RejectInstallVirtualMessage): void => {
+      this.emitAndLog(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, data.data);
+    },
+    REJECT_STATE: (data: any): void => {
+      this.emitAndLog(NodeTypes.EventName.REJECT_STATE, data);
+    },
+    UNINSTALL: (data: UninstallMessage): void => {
+      this.emitAndLog(NodeTypes.EventName.UNINSTALL, data.data);
+    },
+    UNINSTALL_VIRTUAL: (data: UninstallVirtualMessage): void => {
+      this.emitAndLog(NodeTypes.EventName.UNINSTALL_VIRTUAL, data.data);
+    },
+    UPDATE_STATE: (data: UpdateStateMessage): void => {
+      this.emitAndLog(NodeTypes.EventName.UPDATE_STATE, data.data);
+    },
+    WITHDRAW_EVENT: (data: any): void => {
+      this.emitAndLog(NodeTypes.EventName.WITHDRAW_EVENT, data);
+    },
     WITHDRAWAL_CONFIRMED: (data: WithdrawMessage): void => {
       this.emitAndLog(NodeTypes.EventName.WITHDRAWAL_CONFIRMED, data.data);
     },
@@ -136,12 +143,6 @@ export class ConnextListener extends EventEmitter {
     WITHDRAWAL_STARTED: (data: any): void => {
       this.log.info(`withdrawal for ${data.value.toString()} started. hash: ${data.txHash}`);
       this.emitAndLog(NodeTypes.EventName.WITHDRAWAL_STARTED, data);
-    },
-    WITHDRAW_EVENT: (data: any): void => {
-      this.emitAndLog(NodeTypes.EventName.WITHDRAW_EVENT, data);
-    },
-    PROTOCOL_MESSAGE_EVENT: (data: any): void => {
-      this.emitAndLog(NodeTypes.EventName.PROTOCOL_MESSAGE_EVENT, data);
     },
   };
 
@@ -182,7 +183,7 @@ export class ConnextListener extends EventEmitter {
   };
 
   public registerDefaultCfListeners = (): void => {
-    Object.entries(this.defaultCallbacks).forEach(([event, callback]) => {
+    Object.entries(this.defaultCallbacks).forEach(([event, callback]: any): any => {
       this.cfModule.on(NodeTypes.EventName[event], callback);
     });
   };
@@ -201,7 +202,7 @@ export class ConnextListener extends EventEmitter {
 
     if (!filteredApps || filteredApps.length === 0) {
       this.log.info(
-        `Proposed app not in registered applications. App: ${JSON.stringify(data, null, 2)}`,
+        `Proposed app not in registered applications. App: ${JSON.stringify(data, replaceBN, 2)}`,
       );
       return undefined;
     }
@@ -211,7 +212,11 @@ export class ConnextListener extends EventEmitter {
       this.log.error(
         `Proposed app matched ${
           filteredApps.length
-        } registered applications by definition address. App: ${JSON.stringify(data, null, 2)}`,
+        } registered applications by definition address. App: ${JSON.stringify(
+          data,
+          replaceBN,
+          2,
+        )}`,
       );
       return undefined;
     }
@@ -270,7 +275,7 @@ export class ConnextListener extends EventEmitter {
     } else {
       res = await this.connext.installApp(appInstance.identityHash);
     }
-    this.log.info(`App installed, res: ${JSON.stringify(res, null, 2)}`);
+    this.log.info(`App installed, res: ${JSON.stringify(res, replaceBN, 2)}`);
     return;
   };
 

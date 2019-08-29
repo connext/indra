@@ -29,38 +29,43 @@ export const nodeUrl: string = process.env.NODE_URL || "nats://morecoolstuffs";
 
 export class MockMessagingService implements IMessagingService {
   private returnVals: any = MockNodeClientApi.returnValues;
+  private log: Logger;
+
+  public constructor(opts: any) {
+    this.log = new Logger("MockMessagingService", opts.logLevel);
+  }
 
   async connect(): Promise<void> {
-    console.log(`[MockMessaging] connect`);
+    log.info(`Connect`);
   }
 
   async disconnect(): Promise<void> {
-    console.log(`[MockMessaging] connect`);
+    log.info(`Disconnect`);
   }
 
   async onReceive(subject: string, callback: (msg: any) => void): Promise<void> {
-    console.log(`[MockMessaging] Registered callback for subject ${subject}`);
+    log.info(`Registered callback for subject ${subject}`);
   }
 
   public request(subject: string, timeout: number, body?: any): any {
-    console.log(`[MockMessaging] Sending request to ${subject}`);
+    log.info(`Sending request to ${subject}`);
     return (this.returnVals as any)[subject];
   }
 
   async send(to: string, msg: any): Promise<void> {
-    console.log(`[MockMessaging] Sending message to ${to}: ${JSON.stringify(msg)}`);
+    log.info(`Sending message to ${to}: ${JSON.stringify(msg)}`);
   }
 
   async publish(to: string, msg: any): Promise<void> {
-    console.log(`[MockMessaging] Publishing message to ${to}: ${JSON.stringify(msg)}`);
+    log.info(`Publishing message to ${to}: ${JSON.stringify(msg)}`);
   }
 
   async subscribe(subject: string, callback: (msg: any) => void): Promise<void> {
-    console.log(`[MockMessaging] Registered subscription for subject ${subject}`);
+    log.info(`Registered subscription for subject ${subject}`);
   }
 
   async unsubscribe(subject: string): Promise<void> {
-    console.log(`[MockMessaging] Unsubscribing from ${subject}`);
+    log.info(`Unsubscribing from ${subject}`);
   }
 
   public patch(subject: string, returnValue: any): any {
@@ -79,7 +84,7 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public constructor(opts: Partial<NodeInitializationParameters> = {}) {
     this.log = new Logger("MockNodeClientApi", opts.logLevel);
-    this.messaging = (opts.messaging as any) || new MockMessagingService();
+    this.messaging = (opts.messaging as any) || new MockMessagingService(opts);
     this.nonce = undefined;
     this.signature = undefined;
   }
@@ -97,8 +102,8 @@ export class MockNodeClientApi implements INodeApiClient {
     // TODO: mock out properly!! create mocking fns!!!
     createChannel: {} as CreateChannelResponse,
     getChannel: {} as GetChannelResponse,
-    withdraw: {} as TransactionResponse,
     verifyAppSequenceNumber: {} as ChannelAppSequences,
+    withdraw: {} as TransactionResponse,
   };
 
   public async appRegistry(appDetails?: {

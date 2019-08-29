@@ -12,7 +12,7 @@ import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
-import { delay, freeBalanceAddressFromXpub } from "../lib/utils";
+import { delay, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
 import { invalidAddress, invalidXpub } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
@@ -26,7 +26,7 @@ export class TransferController extends AbstractController {
   private timeout: NodeJS.Timeout;
 
   public transfer = async (params: TransferParameters): Promise<NodeChannel> => {
-    this.log.info(`Transfer called with parameters: ${JSON.stringify(params, null, 2)}`);
+    this.log.info(`Transfer called with parameters: ${JSON.stringify(params, replaceBN, 2)}`);
 
     // convert params + validate
     const { recipient, amount, assetId } = convert.TransferParameters("bignumber", params);
@@ -130,7 +130,7 @@ export class TransferController extends AbstractController {
       return;
     }
 
-    return rej(`Install virtual failed. Event data: ${JSON.stringify(msg, null, 2)}`);
+    return rej(`Install virtual failed. Event data: ${JSON.stringify(msg, replaceBN, 2)}`);
   };
 
   // creates a promise that is resolved once the app is installed
@@ -182,7 +182,7 @@ export class TransferController extends AbstractController {
     this.appId = res.appInstanceId;
 
     try {
-      await new Promise((res, rej) => {
+      await new Promise((res: any, rej: any): any => {
         boundReject = this.rejectInstallTransfer.bind(null, rej);
         boundResolve = this.resolveInstallTransfer.bind(null, res);
         this.listener.on(NodeTypes.EventName.INSTALL_VIRTUAL, boundResolve);
@@ -208,7 +208,7 @@ export class TransferController extends AbstractController {
   };
 
   private async waitForAppInstall(): Promise<void> {
-    return new Promise(async (res, rej) => {
+    return new Promise(async (res: any, rej: any): Promise<any> => {
       const getAppIds = async (): Promise<string[]> => {
         return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
       };
@@ -226,7 +226,7 @@ export class TransferController extends AbstractController {
   }
 
   private async waitForAppUninstall(): Promise<void> {
-    return new Promise(async (res, rej) => {
+    return new Promise(async (res: any, rej: any): Promise<any> => {
       const getAppIds = async (): Promise<string[]> => {
         return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
       };

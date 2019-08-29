@@ -45,7 +45,7 @@ import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger } from "./lib/logger";
-import { freeBalanceAddressFromXpub, publicIdentifierToAddress } from "./lib/utils";
+import { freeBalanceAddressFromXpub, publicIdentifierToAddress, replaceBN } from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
@@ -144,7 +144,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
         });
       },
     );
-    logger.info(`create channel event data: ${JSON.stringify(creationEventData, null, 2)}`);
+    logger.info(`create channel event data: ${JSON.stringify(creationEventData, replaceBN, 2)}`);
     multisigAddress = creationEventData.multisigAddress;
   } else {
     multisigAddress = myChannel.multisigAddress;
@@ -722,7 +722,7 @@ export class ConnextInternal extends ConnextChannel {
   public proposeInstallVirtualApp = async (
     params: NodeTypes.ProposeInstallVirtualParams,
   ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
-    this.logger.info(`Proposing install with params: ${JSON.stringify(params, null, 2)}`);
+    this.logger.info(`Proposing install with params: ${JSON.stringify(params, replaceBN, 2)}`);
     if (params.intermediaryIdentifier !== this.nodePublicIdentifier) {
       throw new Error(`Incorrect intermediaryIdentifier. Expected: ${this.nodePublicIdentifier},
          got ${params.intermediaryIdentifier}`);
@@ -954,13 +954,13 @@ export class ConnextInternal extends ConnextChannel {
     if (!app || app.length === 0) {
       return (
         `Could not find installed app with id: ${appInstanceId}. ` +
-        `Installed apps: ${JSON.stringify(apps, null, 2)}.`
+        `Installed apps: ${JSON.stringify(apps, replaceBN, 2)}.`
       );
     }
     if (app.length > 1) {
       return (
         `CRITICAL ERROR: found multiple apps with the same id. ` +
-        `Installed apps: ${JSON.stringify(apps, null, 2)}.`
+        `Installed apps: ${JSON.stringify(apps, replaceBN, 2)}.`
       );
     }
     return undefined;
@@ -972,7 +972,7 @@ export class ConnextInternal extends ConnextChannel {
     if (app.length > 0) {
       return (
         `App with id ${appInstanceId} is already installed. ` +
-        `Installed apps: ${JSON.stringify(apps, null, 2)}.`
+        `Installed apps: ${JSON.stringify(apps, replaceBN, 2)}.`
       );
     }
     return undefined;
