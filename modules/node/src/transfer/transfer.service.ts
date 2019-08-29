@@ -29,6 +29,8 @@ import {
 import { LinkedTransferRepository, PeerToPeerTransferRepository } from "./transfer.repository";
 
 const logger = new CLogger("TransferService");
+const maxRetries = 20;
+const delayMs = 250;
 
 @Injectable()
 export class TransferService {
@@ -168,7 +170,11 @@ export class TransferService {
     );
 
     // TODO: why do we have to do this?
-    await this.waitForAppInstall(receiverApp.receiverAppInstanceId);
+    try {
+      await this.waitForAppInstall(receiverApp.receiverAppInstanceId);
+    } catch (e) {
+      throw e;
+    }
 
     await this.finalizeAndUninstallTransferApp(receiverApp.receiverAppInstanceId, transfer);
 
@@ -287,7 +293,11 @@ export class TransferService {
     };
     await this.nodeService.takeAction(appInstanceId, action);
 
-    await this.waitForFinalize(appInstanceId);
+    try {
+      await this.waitForFinalize(appInstanceId);
+    } catch (e) {
+      logger.warn(e);
+    }
 
     // display final state of app
     const appInfo = await this.nodeService.getAppState(appInstanceId);
@@ -312,7 +322,11 @@ export class TransferService {
 
     // adding a promise for now that polls app instances, but its not
     // great and should be removed
-    await this.waitForAppUninstall(appInstanceId);
+    try {
+      await this.waitForAppUninstall(appInstanceId);
+    } catch (e) {
+      throw e;
+    }
   }
 
   async waitForAppInstall(appInstanceId: string): Promise<unknown> {
@@ -323,22 +337,16 @@ export class TransferService {
             (a: AppInstanceJson) => a.identityHash,
           );
         };
-        let retries = 0;
-        while (!(await getAppIds()).includes(appInstanceId) && retries <= 30) {
-          logger.log(
-            `did not find app id ${appInstanceId} in the open apps... retry number ${retries}...`,
-          );
-          await delay(200);
+        let retries = 1;
+        while (!(await getAppIds()).includes(appInstanceId)) {
+          logger.log(`App ${appInstanceId} is not installed yet... retry number ${retries}...`);
+          await delay(delayMs);
           retries = retries + 1;
+          if (retries > maxRetries) {
+            return rej(`Timed out waiting for app ${appInstanceId} to install`);
+          }
         }
-
-        if (retries > 30) {
-          rej();
-          return;
-        }
-        logger.log(
-          `found app id ${appInstanceId} in the open apps after retry number ${retries}...`,
-        );
+        logger.log(`App ${appInstanceId} installed after ${(retries * delayMs) / 1000}s`);
         res(this.appId);
       },
     );
@@ -352,15 +360,16 @@ export class TransferService {
           const appState = appInfo.state as UnidirectionalLinkedTransferAppStateBigNumber;
           return appState.finalized;
         };
-        let retries = 0;
-        while (!(await isFinalized()) && retries <= 30) {
-          logger.log(`transfer has not been finalized... retry number ${retries}...`);
-          await delay(200);
+        let retries = 1;
+        while (!(await isFinalized())) {
+          logger.log(`Transfer has not been finalized... retry number ${retries}...`);
+          await delay(delayMs);
           retries = retries + 1;
+          if (retries > maxRetries) {
+            return rej(`Timed out waiting for app ${appInstanceId} to finalize`);
+          }
         }
-
-        if (retries > 30) rej();
-        logger.log(`transfer finalized after retry number ${retries}`);
+        logger.log(`App ${appInstanceId} finalized after ${(retries * delayMs) / 1000}s`);
         res(this.appId);
       },
     );
@@ -375,17 +384,16 @@ export class TransferService {
           );
         };
         let retries = 0;
-        while ((await getAppIds()).indexOf(appInstanceId) !== -1 && retries <= 5) {
+        while ((await getAppIds()).indexOf(appInstanceId) !== -1) {
+          logger.log(`App ${appInstanceId} is not uninstalled yet... retry number ${retries}...`);
           logger.log("found app id in the open apps... retrying...");
-          await delay(500);
+          await delay(delayMs);
           retries = retries + 1;
+          if (retries > maxRetries) {
+            return rej(`Timed out waiting for app ${appInstanceId} to uninstall`);
+          }
         }
-
-        if (retries > 5) {
-          rej();
-          return;
-        }
-        logger.log(`${appInstanceId} no longer in the open apps after retry number ${retries}...`);
+        logger.log(`App ${appInstanceId} uninstalled after ${(retries * delayMs) / 1000}s`);
         res();
       },
     );

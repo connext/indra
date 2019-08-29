@@ -5,8 +5,10 @@ import { version } from "../package.json";
 
 import { AppModule } from "./app.module";
 import { ConfigService } from "./config/config.service";
+import { CLogger } from "./util";
 
-console.log(`Indra ${version} starting up..`);
+const logger = new CLogger("Main");
+logger.log(`Deploying Indra ${version}`);
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);

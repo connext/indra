@@ -74,6 +74,50 @@ do
 done
 
 ########################################
+# Have the first sender create some link payments
+
+xpub=${senderXpubs[$1]}
+mnemonic=${senderMnemonics[$1]}
+for i in $(seq 1 $numLinks);
+do
+  preImage="`cat $linksFile | jq -r --arg key "$i" '.[$key].preImage'`"
+  paymentId="`cat $linksFile | jq -r --arg key "$i" '.[$key].paymentId'`"
+  # generate the payment from a single sender
+  # NOTE: make sure whichever sender is generating these links has
+  # the appropriate deposit to do so. The links are by default very
+  # low value, but this is important to keep in mind if weird errors
+  # pop up. (Default collateralized with > 1000 tokens)
+  echo -e "$divider";echo "Generating a linked payment from preImage: $preImage and paymentId: $paymentId"
+  bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -l 0.01 -p "${paymentId}" -h "${preImage}"
+done
+
+########################################
+# Have random recievers redeem the link payments
+
+for i in $(seq 1 $numLinks);
+do
+  length=${#recipientXpubs[@]}
+  if [[ "$length" -eq "0" ]]
+  then echo "No recipients found" && exit 0;
+  fi
+  preImage="`cat $linksFile | jq -r --arg key "$i" '.[$key].preImage'`"
+  paymentId="`cat $linksFile | jq -r --arg key "$i" '.[$key].paymentId'`"
+  redeemerIndex=$(($RANDOM % $length)) # get id for counterparty at random
+  xpub=${recipientXpubs[$redeemerIndex]}
+  mnemonic=${recipientMnemonics[$redeemerIndex]}
+  echo -e "$divider";echo "Redeeming link from randomly selected recipient bot: $xpub"
+  echo "Linked payment has preImage: $preImage and paymentId: $paymentId"
+  bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -y 0.01 -p "${paymentId}" -h "${preImage}"
+  # also have sender try to send payments while redeeming
+  # echo -e "$divider";echo "Sending tokens payment to randomly selected recipient bot: $xpub"
+  # bash ops/payment-bot.sh -i ${senderXpubs[$1]} -t 0.01 -c ${xpub} -m "${senderMnemonics[$1]}" -a ${tokenAddress}
+  # sleep 7 # give above actions a sec to finish
+  sleep 15
+done
+
+exit # TODO rm me
+
+########################################
 ## Start recipient bots in the background
 
 # start up the recipient bots to receive payments
@@ -103,49 +147,6 @@ do
   bash ops/payment-bot.sh -i ${xpub} -t 0.05 -c ${counterparty} -m "${mnemonic}"
   echo -e "$divider";echo "Sending tokens to randomly selected recipient bot $counterparty"
   bash ops/payment-bot.sh -i ${xpub} -t 0.05 -c ${counterparty} -a ${tokenAddress} -m "${mnemonic}"
-done
-
-########################################
-# Have the first sender create some link payments
-
-xpub=${senderXpubs[$1]}
-mnemonic=${senderMnemonics[$1]}
-for i in $(seq 1 $numLinks);
-do
-  preImage="`cat $linksFile | jq -r --arg key "$i" '.[$key].preImage'`"
-  paymentId="`cat $linksFile | jq -r --arg key "$i" '.[$key].paymentId'`"
-  # generate the payment from a single sender
-  # NOTE: make sure whichever sender is generating these links has
-  # the appropriate deposit to do so. The links are by default very
-  # low value, but this is important to keep in mind if weird errors
-  # pop up. (Default collateralized with > 1000 tokens)
-  echo -e "$divider";echo "Generating a linked payment from preImage: $preImage and paymentId: $paymentId"
-  bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -l 0.01 -p "${paymentId}" -h "${preImage}"
-done
-
-########################################
-# Have random recievers redeem the link payments
-
-cleanup # stop recipient bots before trying to redeem these links
-
-for i in $(seq 1 $numLinks);
-do
-  length=${#recipientXpubs[@]}
-  if [[ "$length" -eq "0" ]]
-  then echo "No recipients found" && exit 0;
-  fi
-  preImage="`cat $linksFile | jq -r --arg key "$i" '.[$key].preImage'`"
-  paymentId="`cat $linksFile | jq -r --arg key "$i" '.[$key].paymentId'`"
-  redeemerIndex=$(($RANDOM % $length)) # get id for counterparty at random
-  xpub=${recipientXpubs[$redeemerIndex]}
-  mnemonic=${recipientMnemonics[$redeemerIndex]}
-  echo -e "$divider";echo "Redeeming link from randomly selected recipient bot: $xpub"
-  echo "Linked payment has preImage: $preImage and paymentId: $paymentId"
-  bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -y 0.01 -p "${paymentId}" -h "${preImage}"
-  # also have sender try to send payments while redeeming
-  # echo -e "$divider";echo "Sending tokens payment to randomly selected recipient bot: $xpub"
-  # bash ops/payment-bot.sh -i ${senderXpubs[$1]} -t 0.01 -c ${xpub} -m "${senderMnemonics[$1]}" -a ${tokenAddress}
-  # sleep 7 # give above actions a sec to finish
 done
 
 echo 'All Done! Yay!'
