@@ -61,6 +61,7 @@ import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 
 export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const { logLevel, ethProviderUrl, mnemonic, natsClusterId, nodeUrl, natsToken, store } = opts;
+  const logger = new Logger("ConnextConnect", logLevel);
 
   // setup network information
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
@@ -75,7 +76,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     };
   }
 
-  console.log(`Creating messaging service client (logLevel: ${logLevel})`);
+  logger.info(`Creating messaging service client (logLevel: ${logLevel})`);
   const messagingFactory = new MessagingServiceFactory({
     clusterId: natsClusterId,
     logLevel,
@@ -84,7 +85,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   });
   const messaging = messagingFactory.createService("messaging");
   await messaging.connect();
-  console.log("Messaging service is connected");
+  logger.info("Messaging service is connected");
 
   // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
   // Note: added this to the client since this is required for the cf module to work
@@ -98,18 +99,18 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     logLevel,
     messaging,
   };
-  console.log("creating node client");
+  logger.info("creating node client");
   const node: NodeApiClient = new NodeApiClient(nodeConfig);
-  console.log("created node client successfully");
+  logger.info("created node client successfully");
 
   const config = await node.config();
-  console.log(`node eth network: ${JSON.stringify(config.ethNetwork)}`);
+  logger.info(`node eth network: ${JSON.stringify(config.ethNetwork)}`);
   node.setNodePublicIdentifier(config.nodePublicIdentifier);
 
   const appRegistry = await node.appRegistry();
 
   // create new cfModule to inject into internal instance
-  console.log("creating new cf module");
+  logger.info("creating new cf module");
   const cfModule = await Node.create(
     messaging,
     store,
@@ -120,10 +121,10 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     config.contractAddresses,
   );
   node.setUserPublicIdentifier(cfModule.publicIdentifier);
-  console.log("created cf module successfully");
+  logger.info("created cf module successfully");
 
   const signer = await cfModule.signerAddress();
-  console.log("cf module signer address: ", signer);
+  logger.info(`cf module signer address: ${signer}`);
 
   // TODO: make these types
   const myChannel = await node.getChannel();
@@ -131,9 +132,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   let multisigAddress;
   if (!myChannel) {
     // TODO: make these types
-    console.log("no channel detected, creating channel..");
+    logger.info("no channel detected, creating channel..");
     const creationData = await node.createChannel();
-    console.log("created channel, transaction:", creationData);
+    logger.info(`created channel, transaction: ${creationData}`);
     const creationEventData: NodeTypes.CreateChannelResult = await new Promise(
       (res: any, rej: any): any => {
         const timer = setTimeout(() => rej("Create channel event not fired within 30s"), 30000);
@@ -143,13 +144,13 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
         });
       },
     );
-    console.log("create channel event data:", JSON.stringify(creationEventData, null, 2));
+    logger.info(`create channel event data: ${JSON.stringify(creationEventData, null, 2)}`);
     multisigAddress = creationEventData.multisigAddress;
   } else {
     multisigAddress = myChannel.multisigAddress;
   }
 
-  console.log("multisigAddress: ", multisigAddress);
+  logger.info(`multisigAddress: ${multisigAddress}`);
   // create the new client
   const client = new ConnextInternal({
     appRegistry,
@@ -914,7 +915,7 @@ export class ConnextInternal extends ConnextChannel {
   ///////////////////////////////////
   // NODE METHODS
 
-  public verifyAppSequenceNumber = async () => {
+  public verifyAppSequenceNumber = async (): Promise<any> => {
     const { data: sc } = await this.getStateChannel();
     let appSequenceNumber;
     try {
