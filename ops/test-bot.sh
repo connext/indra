@@ -14,6 +14,10 @@ id="xpub6DXwZMmWUq4bRZ3LtaBYwu47XV4Td19pnngok2Y7DnRzcCJSKCmD1AcLJDbZZf5dzZpvHqYz
 mnemonic1="humble sense shrug young vehicle assault destroy cook property average silent travel"
 mnemonic2="roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult"
 
+# Generate some random hex chunks to use in link payments
+paymentId="0x`head -c32 /dev/urandom | xxd -p -c32`"
+preImage="0x`head -c32 /dev/urandom | xxd -p -c32`"
+
 # Make sure the recipient bot in the background exits when this script exits
 function cleanup {
   docker container stop ${project}_payment_bot_1 2> /dev/null || true
@@ -65,10 +69,14 @@ bash ops/payment-bot.sh -i 2 -t 0.05 -c $id -a $tokenAddress -m "$mnemonic2"
 
 sleep 1;echo;echo "Generating a link payment";echo;sleep 1
 
-# bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -l 0.01 -p "${paymentId}" -h "${preImage}"
+bash ops/payment-bot.sh -i 2 -a $tokenAddress -l 0.01 -p "$paymentId" -h "$preImage" -m "$mnemonic2"
+
+sleep 1;echo;echo "Stopping recipient listener so it can redeem a link payment";echo;sleep 1
+
+cleanup
 
 sleep 1;echo;echo "Redeeming link payment";echo;sleep 1
 
-# bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -y 0.001 -p "${paymentId}" -h "${preImage}"
+bash ops/payment-bot.sh -i 1 -a $tokenAddress -y 0.01 -p "$paymentId" -h "$preImage" -m "$mnemonic1"
 
 sleep 3;echo;echo "Tests finished successfully";echo
