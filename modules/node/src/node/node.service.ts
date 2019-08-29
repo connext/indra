@@ -6,7 +6,7 @@ import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
 import { NodeProviderId } from "../constants";
-import { CLogger, freeBalanceAddressFromXpub } from "../util";
+import { CLogger, freeBalanceAddressFromXpub, replaceBN } from "../util";
 
 const logger = new CLogger("NodeService");
 
@@ -58,7 +58,7 @@ export class NodeService {
       parameters: {
         multisigAddress,
       },
-    }
+    };
     const getStateChannelRes = await this.cfNode.rpcRouter.dispatch(params);
     return getStateChannelRes.result.result;
   }
@@ -73,7 +73,7 @@ export class NodeService {
         owners: [this.cfNode.publicIdentifier, counterpartyPublicIdentifier],
       } as NodeTypes.CreateChannelParams,
     };
-    logger.log(`Calling createChannel with params: ${JSON.stringify(params, null, 2)}`);
+    logger.log(`Calling createChannel with params: ${JSON.stringify(params, replaceBN, 2)}`);
     const createRes = await this.cfNode.rpcRouter.dispatch(params);
     logger.log(`createChannel called with result: ${JSON.stringify(createRes.result.result)}`);
     return createRes.result.result as NodeTypes.CreateChannelResult;
@@ -137,6 +137,7 @@ export class NodeService {
     appInstanceId: string,
     action: AppActionBigNumber,
   ): Promise<NodeTypes.TakeActionResult> {
+    logger.log(`Taking action on app ${appInstanceId}: ${JSON.stringify(action, replaceBN, 2)}`);
     // check the app is actually installed
     await this.assertAppInstalled(appInstanceId);
     // check state is not finalized
@@ -154,7 +155,9 @@ export class NodeService {
       } as NodeTypes.TakeActionParams,
     });
 
-    logger.log(`takeAction called with result ${JSON.stringify(actionResponse.result.result)}`);
+    logger.log(
+      `takeAction called with result: ${JSON.stringify(actionResponse.result, replaceBN, 2)}`,
+    );
     return actionResponse.result.result as NodeTypes.TakeActionResult;
   }
 
@@ -255,13 +258,13 @@ export class NodeService {
     if (!app || app.length === 0) {
       return (
         `Could not find installed app with id: ${appInstanceId}. ` +
-        `Installed apps: ${JSON.stringify(apps, null, 2)}.`
+        `Installed apps: ${JSON.stringify(apps, replaceBN, 2)}.`
       );
     }
     if (app.length > 1) {
       return (
         `CRITICAL ERROR: found multiple apps with the same id. ` +
-        `Installed apps: ${JSON.stringify(apps, null, 2)}.`
+        `Installed apps: ${JSON.stringify(apps, replaceBN, 2)}.`
       );
     }
     return undefined;

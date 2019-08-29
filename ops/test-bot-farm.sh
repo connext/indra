@@ -9,7 +9,7 @@ docker swarm init 2> /dev/null || true
 
 project="indra"
 tokenAddress="`cat address-book.json | jq '.["4447"].Token.address' | tr -d '"'`"
-numBots=${NUMBER_BOTS:-4};
+numBots=${NUMBER_BOTS:-3};
 botsFile="bots.json"
 numLinks=${NUMBER_LINKS:-2}
 linksFile="links.json"
@@ -55,7 +55,7 @@ do
   botMnemonic="`cat $botsFile | jq -r --arg key "$i" '.[$key].mnemonic'`"
   xpub="`cat $botsFile | jq -r --arg key "$i" '.[$key].xpub'`"
   # for some bots, request collateral in background
-  if ! (($i % 4)); then
+  if ! (($i % 3)); then
     recipientXpubs+=("$xpub")
     recipientMnemonics+=("$botMnemonic")
     echo -e "$divider";echo "Requesting token collateral for recipient bot $i"
@@ -144,8 +144,8 @@ do
   bash ops/payment-bot.sh -i ${xpub} -a ${tokenAddress} -m "${mnemonic}" -y 0.01 -p "${paymentId}" -h "${preImage}"
   # also have sender try to send payments while redeeming
   # echo -e "$divider";echo "Sending tokens payment to randomly selected recipient bot: $xpub"
-  # bash ops/payment-bot.sh -i ${senderXpubs[$1]} -t 0.001 -c ${xpub} -m "${senderMnemonics[$1]}" -a ${tokenAddress}
-  sleep 7 # give above actions a sec to finish
+  # bash ops/payment-bot.sh -i ${senderXpubs[$1]} -t 0.01 -c ${xpub} -m "${senderMnemonics[$1]}" -a ${tokenAddress}
+  # sleep 7 # give above actions a sec to finish
 done
 
 echo 'All Done! Yay!'

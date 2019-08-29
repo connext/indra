@@ -18,7 +18,7 @@ import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { Network } from "../constants";
 import { NodeService } from "../node/node.service";
-import { CLogger, createLinkedHash, delay, freeBalanceAddressFromXpub } from "../util";
+import { CLogger, createLinkedHash, delay, freeBalanceAddressFromXpub, replaceBN } from "../util";
 
 import {
   LinkedTransfer,
@@ -270,11 +270,14 @@ export class TransferService {
     const preActionApp = await this.nodeService.getAppState(appInstanceId);
 
     // NOTE: was getting an error here, printing this in case it happens again
-    console.log("appInstanceId: ", appInstanceId);
-    console.log("preAction appInfo: ", JSON.stringify(preActionApp, null, 2));
-    console.log(
-      "preAction appInfo.transfers: ",
-      JSON.stringify((preActionApp.state as any).transfers, null, 2),
+    logger.log(`appInstanceId: ${appInstanceId}`);
+    logger.log(`preAction appInfo: ${JSON.stringify(preActionApp, replaceBN, 2)}`);
+    logger.log(
+      `preAction appInfo.transfers: ${JSON.stringify(
+        (preActionApp.state as any).transfers,
+        replaceBN,
+        2,
+      )}`,
     );
     const action: UnidirectionalLinkedTransferAppActionBigNumber = {
       amount,
@@ -290,13 +293,16 @@ export class TransferService {
     const appInfo = await this.nodeService.getAppState(appInstanceId);
 
     // NOTE: was getting an error here, printing this in case it happens again
-    console.log("postAction appInfo: ", JSON.stringify(appInfo, null, 2));
+    logger.log(`postAction appInfo: ${JSON.stringify(appInfo, replaceBN, 2)}`);
     // NOTE: sometimes transfers is a nested array, and sometimes its an
     // array of objects. super bizzarre, but is what would contribute to errors
     // with logging and casting.... :shrug:
-    console.log(
-      "postAction appInfo.transfers: ",
-      JSON.stringify((appInfo.state as any).transfers, null, 2),
+    logger.log(
+      `postAction appInfo.transfers: ${JSON.stringify(
+        (appInfo.state as any).transfers,
+        replaceBN,
+        2,
+      )}`,
     );
 
     await this.nodeService.uninstallApp(appInstanceId);
