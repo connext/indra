@@ -173,10 +173,14 @@ export class TransferService {
     try {
       await this.waitForAppInstall(receiverApp.receiverAppInstanceId);
     } catch (e) {
-      throw e;
+      throw new Error(`waitForAppInstall: ${e}`);
     }
 
-    await this.finalizeAndUninstallTransferApp(receiverApp.receiverAppInstanceId, transfer);
+    try {
+      await this.finalizeAndUninstallTransferApp(receiverApp.receiverAppInstanceId, transfer);
+    } catch (e) {
+      throw new Error(`finalizeAndUninstallTransferApp: ${e}`);
+    }
 
     // pre - post = amount
     // sanity check, free balance decreased by payment amount
@@ -191,10 +195,7 @@ export class TransferService {
     );
 
     if (!diff.eq(amount)) {
-      logger.warn(
-        `It appears the difference of the free balance before and after
-        uninstalling is not what we expected......`,
-      );
+      logger.warn(`Got an unexpected difference of free balances before and after uninstalling`);
       logger.warn(
         `preTransferBal: ${preTransferBal.toString()}, postTransferBalance: ${postTransferBal[
           freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier)
@@ -206,6 +207,11 @@ export class TransferService {
       )
     ) {
       logger.warn("Free balance after transfer is lte free balance before transfer..");
+      logger.warn(
+        `preTransferBal: ${preTransferBal.toString()}, postTransferBalance: ${postTransferBal[
+          freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier)
+        ].toString()}, expected ${amount.toString()}`,
+      );
     }
 
     this.linkedTransferRepository.markAsRedeemed(transfer, channel);
@@ -213,7 +219,7 @@ export class TransferService {
     // uninstall sender app
     // dont await so caller isnt blocked by this
     // TODO: if sender is offline, this will fail
-    this.finalizeAndUninstallTransferApp(senderApp.identityHash, transfer);
+    this.finalizeAndUninstallTransferApp(senderApp.identityHash, transfer).catch(logger.error);
 
     return {
       freeBalance: await this.nodeService.getFreeBalance(
@@ -291,12 +297,17 @@ export class TransferService {
       paymentId,
       preImage,
     };
-    await this.nodeService.takeAction(appInstanceId, action);
+
+    try {
+      await this.nodeService.takeAction(appInstanceId, action);
+    } catch (e) {
+      throw new Error(`nodeService.takeAction: ${e}`);
+    }
 
     try {
       await this.waitForFinalize(appInstanceId);
     } catch (e) {
-      logger.warn(e);
+      logger.error(`waitForFinalize: ${e}`);
     }
 
     // display final state of app

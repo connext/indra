@@ -142,6 +142,7 @@ export class NodeService {
     await this.assertAppInstalled(appInstanceId);
     // check state is not finalized
     const state: NodeTypes.GetStateResult = await this.getAppState(appInstanceId);
+    logger.log(`Taking action against state: ${JSON.stringify(state, replaceBN, 2)}`);
     // FIXME: casting?
     if ((state.state as any).finalized) {
       throw new Error("Cannot take action on an app with a finalized state.");

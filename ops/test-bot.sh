@@ -22,6 +22,7 @@ preImage="0x`head -c32 /dev/urandom | xxd -p -c32`"
 # Make sure the recipient bot in the background exits when this script exits
 function cleanup {
   docker container stop ${project}_payment_bot_1 2> /dev/null || true
+  docker container stop ${project}_payment_bot_2 2> /dev/null || true
 }
 trap cleanup EXIT SIGINT
 
@@ -63,10 +64,14 @@ echo -e "$divider";echo "Sending tokens to recipient bot"
 bash ops/payment-bot.sh -i 2 -t 0.05 -c $id -a $tokenAddress -m "$mnemonic2"
 
 echo -e "$divider";echo "Generating a link payment"
-bash ops/payment-bot.sh -i 2 -a $tokenAddress -l 0.01 -p "$paymentId" -h "$preImage" -m "$mnemonic2"
+bash ops/payment-bot.sh -i 2 -a $tokenAddress -l 0.01 -p "$paymentId" -h "$preImage" -m "$mnemonic2" 
 
 echo -e "$divider";echo "Stopping recipient listener so it can redeem a link payment"
 cleanup
+
+echo -e "$divider";echo "Starting sender in background so they can uninstall link transfer app"
+bash ops/payment-bot.sh -i 2 -m "$mnemonic2" -o &
+sleep 7
 
 echo -e "$divider";echo "Redeeming link payment"
 bash ops/payment-bot.sh -i 1 -a $tokenAddress -y 0.01 -p "$paymentId" -h "$preImage" -m "$mnemonic1"
