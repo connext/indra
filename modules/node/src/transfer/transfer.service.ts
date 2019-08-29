@@ -397,7 +397,6 @@ export class TransferService {
         let retries = 0;
         while ((await getAppIds()).indexOf(appInstanceId) !== -1) {
           logger.log(`App ${appInstanceId} is not uninstalled yet... retry number ${retries}...`);
-          logger.log("found app id in the open apps... retrying...");
           await delay(delayMs);
           retries = retries + 1;
           if (retries > maxRetries) {
