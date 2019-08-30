@@ -1,8 +1,8 @@
 import { Node } from "@counterfactual/types";
 import "reflect-metadata";
-import { Connection, ConnectionManager, ConnectionOptions } from "typeorm";
+import { Connection, ConnectionManager, ConnectionOptions, getRepository } from "typeorm";
 
-import { initialMigration1567091591712 } from "../../migrations/1567091591712-initialMigration";
+import { initNodeRecords1567091591712 } from "../../migrations/1567091591712-init-node-records";
 import { NodeRecord } from "../node/node.entity";
 
 type StringKeyValue = { [key: string]: StringKeyValue };
@@ -41,20 +41,31 @@ export class PostgresServiceFactory implements Node.ServiceFactory {
     readonly tableName: string = "node_records",
   ) {
     this.connectionManager = new ConnectionManager();
-    // TODO: use src/database/service for the db connection instead of creating a new one
+    // TODO: use src/database/service for the db connection instead of creating a new connection
     // Accomplish this by rewriting this module as a nestJs/typeorm repository
     this.connection = this.connectionManager.create({
       ...EMPTY_POSTGRES_CONFIG,
       ...configuration,
       entities: [NodeRecord],
-      migrations: [initialMigration1567091591712],
+      migrations: [initNodeRecords1567091591712],
       migrationsRun: !configuration.isDevMode,
+      name: "NodeRecords",
       synchronize: configuration.isDevMode,
     } as ConnectionOptions);
   }
 
   async connectDb(): Promise<Connection> {
     await this.connection.connect();
+    // wait for node_records
+    const interval = setInterval(async () => {
+      try {
+        await this.connectionManager.get().manager.getRepository(NodeRecord);
+        clearInterval(interval);
+      } catch (e) {
+        console.warn(`node_records table not created yet`);
+        console.warn(e);
+      }
+    }, 100);
     return this.connection;
   }
 
@@ -70,8 +81,10 @@ export class PostgresStoreService implements Node.IStoreService {
   ) {}
 
   async reset(): Promise<void> {
-    const connection = this.connectionMgr.get();
-    await connection.dropDatabase();
+    console.warn(`store.reset() not implemented yet`);
+    // TODO: do not drop the entire db as was done below, clear just one table instead
+    // const connection = this.connectionMgr.get();
+    // await connection.dropDatabase();
   }
 
   async set(pairs: { path: string; value: any }[]): Promise<void> {
