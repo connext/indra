@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from "@nestjs/typeorm";
 
-import { initHubTables1567153366212 } from "../../migrations/1567153366212-init-hub-tables";
+import { InitNodeRecords1567158660577 } from "../../migrations/1567158660577-init-node-records";
+import { InitHubTables1567158805166 } from "../../migrations/1567158805166-init-hub-tables";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { Channel } from "../channel/channel.entity";
 import { ConfigService } from "../config/config.service";
@@ -9,7 +10,7 @@ import { NodeRecord } from "../node/node.entity";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { LinkedTransfer, PeerToPeerTransfer } from "../transfer/transfer.entity";
 
-export const entities = [
+const entities = [
   AppRegistry,
   Channel,
   NodeRecord,
@@ -17,7 +18,8 @@ export const entities = [
   LinkedTransfer,
   PeerToPeerTransfer,
 ];
-export const viewEntites = [];
+
+const migrations = [InitNodeRecords1567158660577, InitHubTables1567158805166];
 
 @Injectable()
 export class TypeOrmConfigService implements TypeOrmOptionsFactory {
@@ -25,12 +27,11 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
   createTypeOrmOptions(): TypeOrmModuleOptions {
     return {
       ...this.config.getPostgresConfig(),
-      entities: [...entities, ...viewEntites],
+      entities,
       logging: ["error"],
-      migrations: [initHubTables1567153366212],
-      migrationsRun: true, // !this.config.isDevMode(),
-      name: "hubTables",
-      synchronize: false, // this.config.isDevMode(),
+      migrations,
+      migrationsRun: true,
+      synchronize: false,
       type: "postgres",
     };
   }
