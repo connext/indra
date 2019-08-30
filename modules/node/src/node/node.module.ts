@@ -6,7 +6,7 @@ import { DatabaseModule } from "../database/database.module";
 import { MessagingModule } from "../messaging/messaging.module";
 
 import { NodeController } from "./node.controller";
-import { nodeProviderFactory, postgresProviderFactory } from "./node.provider";
+import { nodeProviderFactory } from "./node.provider";
 import { NodeRecordRepository } from "./node.repository";
 import { NodeService } from "./node.service";
 
@@ -19,6 +19,6 @@ import { NodeService } from "./node.service";
     MessagingModule,
     TypeOrmModule.forFeature([NodeRecordRepository]),
   ],
-  providers: [nodeProviderFactory, postgresProviderFactory, NodeService],
+  providers: [nodeProviderFactory, NodeService],
 })
 export class NodeModule {}

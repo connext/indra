@@ -5,7 +5,6 @@ import { CLogger } from "../util";
 import { NodeRecord } from "./node.entity";
 
 const logger = new CLogger("NodeRecordRepository");
-export const keyPrefix = "connextHub";
 
 type StringKeyValue = { [path: string]: StringKeyValue };
 
@@ -16,19 +15,16 @@ export class NodeRecordRepository extends Repository<NodeRecord> {
   }
 
   async get(path: string): Promise<StringKeyValue | string | undefined> {
-    const storeKey = `${keyPrefix}_${path}`;
-    logger.log(`Getting path from store: ${storeKey}`);
+    logger.log(`Getting path from store: ${path}`);
     let res;
     // FIXME: this queries for all channels or proposed app instances, which
     // are nested under the respective keywords, hence the 'like' keyword
     // Action item: this hack won't be needed when a more robust schema around
     // node records is implemented
     if (path.endsWith("channel") || path.endsWith("appInstanceIdToProposedAppInstance")) {
-      logger.log(`Ohh it's a special path`);
       res = await this.createQueryBuilder("node_records")
-        .where("node_records.path like :path", { path: `%${storeKey}%` })
+        .where("node_records.path like :path", { path: `%${path}%` })
         .getMany();
-      logger.log(`Got a result ${JSON.stringify(res)}`);
       const nestedRecords = res.map((record: NodeRecord) => {
         const existingKey = Object.keys(record.value)[0];
         const leafKey = existingKey.split("/").pop()!;
@@ -37,8 +33,6 @@ export class NodeRecordRepository extends Repository<NodeRecord> {
         record.value[leafKey] = nestedValue;
         return record.value;
       });
-      logger.log(`Got nested records`);
-      logger.log(`Got nested records: ${JSON.stringify(nestedRecords)}`);
       const records = {};
       nestedRecords.forEach((record: any): void => {
         const key = Object.keys(record)[0];
@@ -51,14 +45,14 @@ export class NodeRecordRepository extends Repository<NodeRecord> {
           records[path] = value;
         }
       });
-      logger.log(`Got records: ${JSON.stringify(records)}`);
+      logger.log(`Got ${Object.keys(records).length} values: ${JSON.stringify(records)}`);
       return records;
     }
-    res = await this.findOne({ path: storeKey });
+    res = await this.findOne({ path });
     if (!res) {
       return undefined;
     }
-    logger.log(`Success, got value: ${JSON.stringify(res.value[path])}`);
+    logger.log(`Got value: ${JSON.stringify(res.value[path])}`);
     return res.value[path];
   }
 
@@ -67,7 +61,7 @@ export class NodeRecordRepository extends Repository<NodeRecord> {
       // Wrapping the value into an object is necessary for Postgres bc the JSON column breaks
       // if you use anything other than JSON (i.e. a raw string).
       // In some cases, the node code is inserting strings as values instead of objects :(
-      const record = { path: `${keyPrefix}_${pair.path}`, value: { [pair.path]: pair.value } };
+      const record = { path: pair.path, value: { [pair.path]: pair.value } };
       logger.log(`Saving record: ${JSON.stringify(record)}`);
       await this.save(record);
     }
