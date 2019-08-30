@@ -60,6 +60,7 @@ export const postgresProviderFactory: Provider = {
   useFactory: async (config: ConfigService): Promise<PostgresServiceFactory> => {
     const pg = new PostgresServiceFactory({
       ...config.getPostgresConfig(),
+      isDevMode: config.isDevMode(),
       type: "postgres",
     });
     await pg.connectDb();

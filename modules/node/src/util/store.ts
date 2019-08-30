@@ -2,6 +2,7 @@ import { Node } from "@counterfactual/types";
 import "reflect-metadata";
 import { Connection, ConnectionManager, ConnectionOptions } from "typeorm";
 
+import { initialMigration1567091591712 } from "../../migrations/1567091591712-initialMigration";
 import { NodeRecord } from "../node/node.entity";
 
 type StringKeyValue = { [key: string]: StringKeyValue };
@@ -36,14 +37,19 @@ export class PostgresServiceFactory implements Node.ServiceFactory {
   private readonly connection: Connection;
 
   constructor(
-    readonly configuration: PostgresConnectionOptions,
+    readonly configuration: PostgresConnectionOptions & { isDevMode: boolean },
     readonly tableName: string = "node_records",
   ) {
     this.connectionManager = new ConnectionManager();
+    // TODO: use src/database/service for the db connection instead of creating a new one
+    // Accomplish this by rewriting this module as a nestJs/typeorm repository
     this.connection = this.connectionManager.create({
       ...EMPTY_POSTGRES_CONFIG,
       ...configuration,
       entities: [NodeRecord],
+      migrations: [initialMigration1567091591712],
+      migrationsRun: !configuration.isDevMode,
+      synchronize: configuration.isDevMode,
     } as ConnectionOptions);
   }
 
@@ -60,7 +66,7 @@ export class PostgresServiceFactory implements Node.ServiceFactory {
 export class PostgresStoreService implements Node.IStoreService {
   constructor(
     private readonly connectionMgr: ConnectionManager,
-    private readonly storeServiceKey: string
+    private readonly storeServiceKey: string,
   ) {}
 
   async reset(): Promise<void> {
@@ -71,27 +77,24 @@ export class PostgresStoreService implements Node.IStoreService {
   async set(pairs: { path: string; value: any }[]): Promise<void> {
     const connection = this.connectionMgr.get();
 
-    await connection.transaction(async transactionalEntityManager => {
-      for (const pair of pairs) {
-        const storeKey = `${this.storeServiceKey}_${pair.path}`;
-        // Wrapping the value into an object is necessary for Postgres because the JSON column breaks
-        // if you use anything other than JSON (i.e. a raw string). In some cases, the node code is
-        // inserting strings as values instead of objects.
-        const storeValue = {
-          [pair.path]: pair.value
-        };
-        let record = await transactionalEntityManager.findOne(
-          NodeRecord,
-          storeKey
-        );
-        if (!record) {
-          record = new NodeRecord();
-          record.key = storeKey;
+    await connection.transaction(
+      async (transactionalEntityManager: any): Promise<any> => {
+        for (const pair of pairs) {
+          const storeKey = `${this.storeServiceKey}_${pair.path}`;
+          // Wrapping the value into an object is necessary for Postgres bc the JSON column breaks
+          // if you use anything other than JSON (i.e. a raw string).
+          // In some cases, the node code is inserting strings as values instead of objects.
+          const storeValue = { [pair.path]: pair.value };
+          let record = await transactionalEntityManager.findOne(NodeRecord, storeKey);
+          if (!record) {
+            record = new NodeRecord();
+            record.key = storeKey;
+          }
+          record.value = storeValue;
+          await transactionalEntityManager.save(record);
         }
-        record.value = storeValue;
-        await transactionalEntityManager.save(record);
-      }
-    });
+      },
+    );
   }
 
   async get(path: string): Promise<StringKeyValue | string | undefined> {
@@ -102,10 +105,7 @@ export class PostgresStoreService implements Node.IStoreService {
     // are nested under the respective keywords, hence the 'like' keyword
     // Action item: this hack won't be needed when a more robust schema around
     // node records is implemented
-    if (
-      path.endsWith("channel") ||
-      path.endsWith("appInstanceIdToProposedAppInstance")
-    ) {
+    if (path.endsWith("channel") || path.endsWith("appInstanceIdToProposedAppInstance")) {
       res = await this.connectionMgr
         .get()
         .manager.getRepository(NodeRecord)
@@ -124,7 +124,7 @@ export class PostgresStoreService implements Node.IStoreService {
 
       const records = {};
 
-      nestedRecords.forEach(record => {
+      nestedRecords.forEach((record: any): void => {
         const key = Object.keys(record)[0];
         const value = Object.values(record)[0];
         // FIXME: the store implementation (firebase) that the node used in the
@@ -148,11 +148,11 @@ export class PostgresStoreService implements Node.IStoreService {
   }
 }
 
-export function confirmPostgresConfigurationEnvVars() {
+export function confirmPostgresConfigurationEnvVars(): void {
   for (const [key, value] of Object.entries(POSTGRES_CONFIGURATION_ENV_KEYS)) {
     if (!process.env[value]) {
       throw new Error(
-        `Postgres ${key} is not set via env var ${POSTGRES_CONFIGURATION_ENV_KEYS[key]}`
+        `Postgres ${key} is not set via env var ${POSTGRES_CONFIGURATION_ENV_KEYS[key]}`,
       );
     }
   }
