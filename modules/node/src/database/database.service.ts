@@ -28,9 +28,9 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
       entities: [...entities, ...viewEntites],
       logging: ["error"],
       migrations: [initHubTables1567153366212],
-      migrationsRun: !this.config.isDevMode(),
+      migrationsRun: true, // !this.config.isDevMode(),
       name: "hubTables",
-      synchronize: this.config.isDevMode(),
+      synchronize: false, // this.config.isDevMode(),
       type: "postgres",
     };
   }

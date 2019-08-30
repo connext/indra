@@ -56,16 +56,6 @@ export class PostgresServiceFactory implements Node.ServiceFactory {
 
   async connectDb(): Promise<Connection> {
     await this.connection.connect();
-    // wait for node_records
-    const interval = setInterval(async () => {
-      try {
-        await this.connectionManager.get().manager.getRepository(NodeRecord);
-        clearInterval(interval);
-      } catch (e) {
-        console.warn(`node_records table not created yet`);
-        console.warn(e);
-      }
-    }, 100);
     return this.connection;
   }
 
