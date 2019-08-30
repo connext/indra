@@ -191,9 +191,6 @@
     }
   },
   "4447": {
-    "Token": {
-      "address": "0x0d8cc4b8d15D4c3eF1d70af0071376fb26B5669b"
-    },
     "ChallengeRegistry": {
       "address": "0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0"
     },
@@ -238,6 +235,9 @@
     },
     "UnidirectionalTransferApp": {
       "address": "0xeec918d74c746167564401103096D45BbD494B74"
+    },
+    "Token": {
+      "address": "0x0d8cc4b8d15D4c3eF1d70af0071376fb26B5669b"
     }
   }
 }

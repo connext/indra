@@ -17,10 +17,10 @@ import { TransferModule } from "./transfer/transfer.module";
   controllers: [AppController, NodeController],
   exports: [ConfigModule],
   imports: [
+    DatabaseModule,
     ConfigModule,
     NodeModule,
     ChannelModule,
-    DatabaseModule,
     MessagingModule,
     SwapRateModule,
     AppRegistryModule,
