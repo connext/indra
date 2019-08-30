@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { ConfigModule } from "../config/config.module";
 import { DatabaseModule } from "../database/database.module";
@@ -6,12 +7,18 @@ import { MessagingModule } from "../messaging/messaging.module";
 
 import { NodeController } from "./node.controller";
 import { nodeProviderFactory, postgresProviderFactory } from "./node.provider";
+import { NodeRecordRepository } from "./node.repository";
 import { NodeService } from "./node.service";
 
 @Module({
   controllers: [NodeController],
   exports: [nodeProviderFactory, NodeService],
-  imports: [ConfigModule, DatabaseModule, MessagingModule],
+  imports: [
+    ConfigModule,
+    DatabaseModule,
+    MessagingModule,
+    TypeOrmModule.forFeature([NodeRecordRepository]),
+  ],
   providers: [nodeProviderFactory, postgresProviderFactory, NodeService],
 })
 export class NodeModule {}

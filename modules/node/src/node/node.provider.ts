@@ -9,20 +9,19 @@ import { ConfigService } from "../config/config.service";
 import { MessagingProviderId, NodeProviderId, PostgresProviderId } from "../constants";
 import { CLogger, freeBalanceAddressFromXpub, PostgresServiceFactory } from "../util";
 
+import { keyPrefix, NodeRecordRepository } from "./node.repository";
+
 const logger = new CLogger("NodeProvider");
 
 export const nodeProviderFactory: Provider = {
-  inject: [ConfigService, MessagingProviderId, PostgresProviderId],
+  inject: [ConfigService, MessagingProviderId, NodeRecordRepository, PostgresProviderId],
   provide: NodeProviderId,
   useFactory: async (
     config: ConfigService,
     messaging: IMessagingService,
+    store: NodeRecordRepository,
     postgres: PostgresServiceFactory,
   ): Promise<Node> => {
-    logger.log("Creating store");
-    const store = postgres.createStoreService("connextHub");
-    logger.log("Store created");
-    logger.log(`Creating Node with mnemonic: ${config.getMnemonic()}`);
     await store.set([
       {
         path: EXTENDED_PRIVATE_KEY_PATH,
@@ -40,7 +39,7 @@ export const nodeProviderFactory: Provider = {
     const node = await Node.create(
       messaging,
       store,
-      { STORE_KEY_PREFIX: "store" },
+      { STORE_KEY_PREFIX: keyPrefix },
       provider,
       await config.getContractAddresses(),
     );
