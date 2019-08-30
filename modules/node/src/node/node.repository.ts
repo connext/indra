@@ -4,7 +4,7 @@ import { CLogger } from "../util";
 
 import { NodeRecord } from "./node.entity";
 
-const logger = new CLogger("NodeRecordRepository");
+// const logger = new CLogger("NodeRecordRepository");
 
 type StringKeyValue = { [path: string]: StringKeyValue };
 
@@ -15,7 +15,7 @@ export class NodeRecordRepository extends Repository<NodeRecord> {
   }
 
   async get(path: string): Promise<StringKeyValue | string | undefined> {
-    logger.log(`Getting path from store: ${path}`);
+    // logger.log(`Getting path from store: ${path}`);
     let res;
     // FIXME: this queries for all channels or proposed app instances, which
     // are nested under the respective keywords, hence the 'like' keyword
@@ -42,17 +42,17 @@ export class NodeRecordRepository extends Repository<NodeRecord> {
         // null wouldn't contain key entries in the returned object so we have to
         // explicitly remove these when Postgres correctly returns even null values
         if (value !== null) {
-          records[path] = value;
+          records[key] = value;
         }
       });
-      logger.log(`Got ${Object.keys(records).length} values: ${JSON.stringify(records)}`);
+      // logger.log(`Got ${Object.keys(records).length} values: ${JSON.stringify(records)}`);
       return records;
     }
     res = await this.findOne({ path });
     if (!res) {
       return undefined;
     }
-    logger.log(`Got value: ${JSON.stringify(res.value[path])}`);
+    // logger.log(`Got value: ${JSON.stringify(res.value[path])}`);
     return res.value[path];
   }
 
@@ -62,7 +62,7 @@ export class NodeRecordRepository extends Repository<NodeRecord> {
       // if you use anything other than JSON (i.e. a raw string).
       // In some cases, the node code is inserting strings as values instead of objects :(
       const record = { path: pair.path, value: { [pair.path]: pair.value } };
-      logger.log(`Saving record: ${JSON.stringify(record)}`);
+      // logger.log(`Saving record: ${JSON.stringify(record)}`);
       await this.save(record);
     }
   }
