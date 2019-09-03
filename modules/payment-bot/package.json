@@ -12,19 +12,19 @@
   "license": "MIT",
   "dependencies": {
     "@connext/client": "0.0.21",
-    "@counterfactual/node": "0.2.65",
-    "commander": "3.0.0",
+    "@counterfactual/node": "0.2.67",
+    "commander": "3.0.1",
     "dotenv": "8.1.0",
-    "ethers": "4.0.33",
+    "ethers": "4.0.36",
     "uuid": "3.3.3"
   },
   "devDependencies": {
     "@connext/types": "0.0.21",
-    "@counterfactual/types": "0.0.37",
+    "@counterfactual/types": "0.0.38",
     "@types/node-fetch": "2.5.0",
-    "env-cmd": "9.0.3",
-    "nodemon": "1.19.1",
+    "env-cmd": "10.0.1",
+    "nodemon": "1.19.2",
     "ts-node": "8.3.0",
-    "typescript": "3.5.3"
+    "typescript": "3.6.2"
   }
 }
