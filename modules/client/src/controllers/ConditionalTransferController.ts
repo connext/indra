@@ -17,7 +17,7 @@ import { RejectInstallVirtualMessage } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 
-import { createLinkedHash, freeBalanceAddressFromXpub } from "../lib/utils";
+import { createLinkedHash, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
 import { falsy, invalid32ByteHexString, invalidAddress, notLessThanOrEqualTo } from "../validation";
 
 import { AbstractController } from "./AbstractController";
@@ -37,7 +37,7 @@ export class ConditionalTransferController extends AbstractController {
     params: ConditionalTransferParameters,
   ): Promise<ConditionalTransferResponse> => {
     this.log.info(
-      `Conditional transfer called with parameters: ${JSON.stringify(params, null, 2)}`,
+      `Conditional transfer called with parameters: ${JSON.stringify(params, replaceBN, 2)}`,
     );
 
     const res = await this.conditionalExecutors[params.conditionType](params);
@@ -195,7 +195,7 @@ export class ConditionalTransferController extends AbstractController {
       return;
     }
 
-    return rej(`Install failed. Event data: ${JSON.stringify(msg, null, 2)}`);
+    return rej(`Install failed. Event data: ${JSON.stringify(msg, replaceBN, 2)}`);
   };
 
   private cleanupInstallListeners = (boundResolve: any, boundReject: any): void => {

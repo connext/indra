@@ -7,8 +7,7 @@ import { NodeProviderId } from "../constants";
 export class NodeController {
   constructor(@Inject(NodeProviderId) private readonly node: Node) {}
   @Get()
-  find() {
-    console.log(this.node);
+  find(): any {
     return this.node.publicIdentifier;
   }
 }

@@ -20,7 +20,6 @@ export const MedianizerProviderId = "MEDIANIZER";
 export const MessagingClientProviderId = "MESSAGING_CLIENT";
 export const MessagingProviderId = "MESSAGING";
 export const NodeProviderId = "NODE";
-export const PostgresProviderId = "POSTGRES";
 export const SwapRateProviderId = "SWAP_RATE";
 export const TransferProviderId = "TRANSFER";
 

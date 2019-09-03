@@ -6,7 +6,6 @@ import {
   UnidirectionalLinkedTransferAppStage,
   UnidirectionalLinkedTransferAppStateBigNumber,
 } from "@connext/types";
-import { InstallMessage, RejectProposalMessage } from "@counterfactual/node";
 import { AppInstanceJson, Node as NodeTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
@@ -15,10 +14,11 @@ import { BigNumber } from "ethers/utils";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ChannelRepository } from "../channel/channel.repository";
+import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { Network } from "../constants";
 import { NodeService } from "../node/node.service";
-import { CLogger, createLinkedHash, delay, freeBalanceAddressFromXpub } from "../util";
+import { CLogger, createLinkedHash, delay, freeBalanceAddressFromXpub, replaceBN } from "../util";
 
 import {
   LinkedTransfer,
@@ -29,6 +29,8 @@ import {
 import { LinkedTransferRepository, PeerToPeerTransferRepository } from "./transfer.repository";
 
 const logger = new CLogger("TransferService");
+const maxRetries = 20;
+const delayMs = 250;
 
 @Injectable()
 export class TransferService {
@@ -36,6 +38,7 @@ export class TransferService {
 
   constructor(
     private readonly nodeService: NodeService,
+    private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
     private readonly channelRepository: ChannelRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
@@ -132,6 +135,8 @@ export class TransferService {
     const preTransferBal =
       freeBal[freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier)];
 
+    await this.channelService.requestCollateral(userPubId, assetId, amount);
+
     const network = await this.configService.getEthNetwork();
     const appInfo = await this.appRegistryRepository.findByNameAndNetwork(
       SupportedApplications.UnidirectionalLinkedTransferApp,
@@ -165,9 +170,17 @@ export class TransferService {
     );
 
     // TODO: why do we have to do this?
-    await this.waitForAppInstall(receiverApp.receiverAppInstanceId);
+    try {
+      await this.waitForAppInstall(receiverApp.receiverAppInstanceId);
+    } catch (e) {
+      throw new Error(`waitForAppInstall: ${e}`);
+    }
 
-    await this.finalizeAndUninstallTransferApp(receiverApp.receiverAppInstanceId, transfer);
+    try {
+      await this.finalizeAndUninstallTransferApp(receiverApp.receiverAppInstanceId, transfer);
+    } catch (e) {
+      throw new Error(`finalizeAndUninstallTransferApp: ${e}`);
+    }
 
     // pre - post = amount
     // sanity check, free balance decreased by payment amount
@@ -182,10 +195,7 @@ export class TransferService {
     );
 
     if (!diff.eq(amount)) {
-      logger.warn(
-        `It appears the difference of the free balance before and after
-        uninstalling is not what we expected......`,
-      );
+      logger.warn(`Got an unexpected difference of free balances before and after uninstalling`);
       logger.warn(
         `preTransferBal: ${preTransferBal.toString()}, postTransferBalance: ${postTransferBal[
           freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier)
@@ -197,6 +207,11 @@ export class TransferService {
       )
     ) {
       logger.warn("Free balance after transfer is lte free balance before transfer..");
+      logger.warn(
+        `preTransferBal: ${preTransferBal.toString()}, postTransferBalance: ${postTransferBal[
+          freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier)
+        ].toString()}, expected ${amount.toString()}`,
+      );
     }
 
     this.linkedTransferRepository.markAsRedeemed(transfer, channel);
@@ -204,7 +219,7 @@ export class TransferService {
     // uninstall sender app
     // dont await so caller isnt blocked by this
     // TODO: if sender is offline, this will fail
-    this.finalizeAndUninstallTransferApp(senderApp.identityHash, transfer);
+    this.finalizeAndUninstallTransferApp(senderApp.identityHash, transfer).catch(logger.error);
 
     return {
       freeBalance: await this.nodeService.getFreeBalance(
@@ -267,11 +282,14 @@ export class TransferService {
     const preActionApp = await this.nodeService.getAppState(appInstanceId);
 
     // NOTE: was getting an error here, printing this in case it happens again
-    console.log("appInstanceId: ", appInstanceId);
-    console.log("preAction appInfo: ", JSON.stringify(preActionApp, null, 2));
-    console.log(
-      "preAction appInfo.transfers: ",
-      JSON.stringify((preActionApp.state as any).transfers, null, 2),
+    logger.log(`appInstanceId: ${appInstanceId}`);
+    logger.log(`preAction appInfo: ${JSON.stringify(preActionApp, replaceBN, 2)}`);
+    logger.log(
+      `preAction appInfo.transfers: ${JSON.stringify(
+        (preActionApp.state as any).transfers,
+        replaceBN,
+        2,
+      )}`,
     );
     const action: UnidirectionalLinkedTransferAppActionBigNumber = {
       amount,
@@ -279,31 +297,44 @@ export class TransferService {
       paymentId,
       preImage,
     };
-    await this.nodeService.takeAction(appInstanceId, action);
 
-    await this.waitForFinalize(appInstanceId);
+    try {
+      await this.nodeService.takeAction(appInstanceId, action);
+    } catch (e) {
+      throw new Error(`nodeService.takeAction: ${e}`);
+    }
+
+    try {
+      await this.waitForFinalize(appInstanceId);
+    } catch (e) {
+      logger.error(`waitForFinalize: ${e}`);
+    }
 
     // display final state of app
     const appInfo = await this.nodeService.getAppState(appInstanceId);
 
     // NOTE: was getting an error here, printing this in case it happens again
-    console.log("postAction appInfo: ", JSON.stringify(appInfo, null, 2));
+    logger.log(`postAction appInfo: ${JSON.stringify(appInfo, replaceBN, 2)}`);
     // NOTE: sometimes transfers is a nested array, and sometimes its an
     // array of objects. super bizzarre, but is what would contribute to errors
     // with logging and casting.... :shrug:
-    console.log(
-      "postAction appInfo.transfers: ",
-      JSON.stringify((appInfo.state as any).transfers, null, 2),
+    logger.log(
+      `postAction appInfo.transfers: ${JSON.stringify(
+        (appInfo.state as any).transfers,
+        replaceBN,
+        2,
+      )}`,
     );
 
     await this.nodeService.uninstallApp(appInstanceId);
-    const openApps = await this.nodeService.getAppInstances();
-    logger.log(`Open apps: ${openApps.length}`);
-    logger.log(`AppIds: ${JSON.stringify(openApps.map((a: AppInstanceJson) => a.identityHash))}`);
 
     // adding a promise for now that polls app instances, but its not
     // great and should be removed
-    await this.waitForAppUninstall(appInstanceId);
+    try {
+      await this.waitForAppUninstall(appInstanceId);
+    } catch (e) {
+      throw e;
+    }
   }
 
   async waitForAppInstall(appInstanceId: string): Promise<unknown> {
@@ -314,22 +345,16 @@ export class TransferService {
             (a: AppInstanceJson) => a.identityHash,
           );
         };
-        let retries = 0;
-        while (!(await getAppIds()).includes(appInstanceId) && retries <= 30) {
-          logger.log(
-            `did not find app id ${appInstanceId} in the open apps... retry number ${retries}...`,
-          );
-          await delay(200);
+        let retries = 1;
+        while (!(await getAppIds()).includes(appInstanceId)) {
+          logger.log(`App ${appInstanceId} is not installed yet... retry number ${retries}...`);
+          await delay(delayMs);
           retries = retries + 1;
+          if (retries > maxRetries) {
+            return rej(`Timed out waiting for app ${appInstanceId} to install`);
+          }
         }
-
-        if (retries > 30) {
-          rej();
-          return;
-        }
-        logger.log(
-          `found app id ${appInstanceId} in the open apps after retry number ${retries}...`,
-        );
+        logger.log(`App ${appInstanceId} installed after ${(retries * delayMs) / 1000}s`);
         res(this.appId);
       },
     );
@@ -343,15 +368,16 @@ export class TransferService {
           const appState = appInfo.state as UnidirectionalLinkedTransferAppStateBigNumber;
           return appState.finalized;
         };
-        let retries = 0;
-        while (!(await isFinalized()) && retries <= 30) {
-          logger.log(`transfer has not been finalized... retry number ${retries}...`);
-          await delay(200);
+        let retries = 1;
+        while (!(await isFinalized())) {
+          logger.log(`Transfer has not been finalized... retry number ${retries}...`);
+          await delay(delayMs);
           retries = retries + 1;
+          if (retries > maxRetries) {
+            return rej(`Timed out waiting for app ${appInstanceId} to finalize`);
+          }
         }
-
-        if (retries > 30) rej();
-        logger.log(`transfer finalized after retry number ${retries}`);
+        logger.log(`App ${appInstanceId} finalized after ${(retries * delayMs) / 1000}s`);
         res(this.appId);
       },
     );
@@ -366,17 +392,15 @@ export class TransferService {
           );
         };
         let retries = 0;
-        while ((await getAppIds()).indexOf(appInstanceId) !== -1 && retries <= 5) {
-          logger.log("found app id in the open apps... retrying...");
-          await delay(500);
+        while ((await getAppIds()).indexOf(appInstanceId) !== -1) {
+          logger.log(`App ${appInstanceId} is not uninstalled yet... retry number ${retries}...`);
+          await delay(delayMs);
           retries = retries + 1;
+          if (retries > maxRetries) {
+            return rej(`Timed out waiting for app ${appInstanceId} to uninstall`);
+          }
         }
-
-        if (retries > 5) {
-          rej();
-          return;
-        }
-        logger.log(`${appInstanceId} no longer in the open apps after retry number ${retries}...`);
+        logger.log(`App ${appInstanceId} uninstalled after ${(retries * delayMs) / 1000}s`);
         res();
       },
     );
