@@ -6,23 +6,21 @@ import { Wallet } from "ethers";
 import { HDNode } from "ethers/utils";
 
 import { ConfigService } from "../config/config.service";
-import { MessagingProviderId, NodeProviderId, PostgresProviderId } from "../constants";
-import { CLogger, freeBalanceAddressFromXpub, PostgresServiceFactory } from "../util";
+import { MessagingProviderId, NodeProviderId } from "../constants";
+import { CLogger, freeBalanceAddressFromXpub } from "../util";
+
+import { NodeRecordRepository } from "./node.repository";
 
 const logger = new CLogger("NodeProvider");
 
 export const nodeProviderFactory: Provider = {
-  inject: [ConfigService, MessagingProviderId, PostgresProviderId],
+  inject: [ConfigService, MessagingProviderId, NodeRecordRepository],
   provide: NodeProviderId,
   useFactory: async (
     config: ConfigService,
     messaging: IMessagingService,
-    postgres: PostgresServiceFactory,
+    store: NodeRecordRepository,
   ): Promise<Node> => {
-    logger.log("Creating store");
-    const store = postgres.createStoreService("connextHub");
-    logger.log("Store created");
-    logger.log(`Creating Node with mnemonic: ${config.getMnemonic()}`);
     await store.set([
       {
         path: EXTENDED_PRIVATE_KEY_PATH,
@@ -40,7 +38,7 @@ export const nodeProviderFactory: Provider = {
     const node = await Node.create(
       messaging,
       store,
-      { STORE_KEY_PREFIX: "store" },
+      { STORE_KEY_PREFIX: "ConnextHub" },
       provider,
       await config.getContractAddresses(),
     );
@@ -50,20 +48,6 @@ export const nodeProviderFactory: Provider = {
       `Free balance address ${JSON.stringify(freeBalanceAddressFromXpub(node.publicIdentifier))}`,
     );
     return node;
-  },
-};
-
-// TODO: bypass factory
-export const postgresProviderFactory: Provider = {
-  inject: [ConfigService],
-  provide: PostgresProviderId,
-  useFactory: async (config: ConfigService): Promise<PostgresServiceFactory> => {
-    const pg = new PostgresServiceFactory({
-      ...config.getPostgresConfig(),
-      type: "postgres",
-    });
-    await pg.connectDb();
-    return pg;
   },
 };
 

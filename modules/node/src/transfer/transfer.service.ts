@@ -327,9 +327,6 @@ export class TransferService {
     );
 
     await this.nodeService.uninstallApp(appInstanceId);
-    const openApps = await this.nodeService.getAppInstances();
-    logger.log(`Open apps: ${openApps.length}`);
-    logger.log(`AppIds: ${JSON.stringify(openApps.map((a: AppInstanceJson) => a.identityHash))}`);
 
     // adding a promise for now that polls app instances, but its not
     // great and should be removed
