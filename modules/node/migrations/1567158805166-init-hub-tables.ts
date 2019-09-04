@@ -75,7 +75,7 @@ export class InitHubTables1567158805166 implements MigrationInterface {
         "nodePublicIdentifier" text NOT NULL,
         "multisigAddress" text NOT NULL,
         "available" boolean NOT NULL DEFAULT false,
-        "collateralizationInFlight" boolean NOT NULL DEFAULT false,
+        "depositInFlight" boolean NOT NULL DEFAULT false,
         CONSTRAINT "PK_590f33ee6ee7d76437acf362e39" PRIMARY KEY ("id")
       )
     `);
