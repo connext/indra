@@ -111,6 +111,15 @@ export class ChannelService {
     return undefined;
   }
 
+  async clearCollateralizationInFlight(multisigAddress: string): Promise<Channel> {
+    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
+    if (!channel) {
+      throw new Error(`No channel exists for multisig ${multisigAddress}`);
+    }
+
+    return await this.channelRepository.setInflightCollateralization(channel, false);
+  }
+
   async addPaymentProfileToChannel(
     userPubId: string,
     assetId: string,
