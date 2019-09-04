@@ -11,6 +11,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@connext/cf-core": "0.0.21",
     "@connext/client": "0.0.21",
     "commander": "3.0.1",
     "dotenv": "8.1.0",
@@ -24,6 +25,6 @@
     "env-cmd": "10.0.1",
     "nodemon": "1.19.2",
     "ts-node": "8.3.0",
-    "typescript": "3.6.2"
+    "typescript": "3.5.3"
   }
 }

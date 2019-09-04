@@ -13,6 +13,7 @@ version=$(shell cat package.json | grep '"version":' | awk -F '"' '{print $$4}')
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
 bot=$(cwd)/modules/payment-bot
+cf-core=$(cwd)/modules/cf-core
 contracts=$(cwd)/modules/contracts
 daicard=$(cwd)/modules/daicard
 client=$(cwd)/modules/client
@@ -128,7 +129,12 @@ builder: ops/builder.dockerfile
 	docker build --file ops/builder.dockerfile --tag $(project)_builder:latest .
 	$(log_finish) && touch $(flags)/$@
 
-client: contracts types messaging $(shell find $(client)/src $(find_options))
+cf-core: node-modules 
+	$(log_start)
+	$(docker_run) "cd modules/cf-core && npm run build:ts"
+	$(log_finish) && touch $(flags)/$@
+
+client: cf-core contracts types messaging $(shell find $(client)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && touch $(flags)/$@
@@ -148,7 +154,7 @@ messaging: node-modules $(shell find $(messaging)/src $(find_options))
 	$(docker_run) "cd modules/messaging && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-node: contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
+node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build"
 	$(log_finish) && touch $(flags)/$@
