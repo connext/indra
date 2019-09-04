@@ -1,6 +1,6 @@
 {
-  "name": "@counterfactual/node",
-  "version": "0.2.70",
+  "name": "@connext/cf-core",
+  "version": "0.0.21",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
   "types": "dist/src/index.d.ts",
