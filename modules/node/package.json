@@ -23,7 +23,7 @@
     "@connext/messaging": "0.0.21",
     "@connext/types": "0.0.21",
     "@counterfactual/contracts": "0.1.15",
-    "@counterfactual/node": "0.2.68",
+    "@counterfactual/node": "0.2.70",
     "@nestjs/common": "6.5.3",
     "@nestjs/core": "6.5.3",
     "@nestjs/microservices": "6.5.3",
