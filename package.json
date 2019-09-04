@@ -14,7 +14,8 @@
 	"homepage": "https://github.com/ConnextProject/indra#readme",
 	"devDependencies": {
 		"@counterfactual/cf-adjudicator-contracts": "0.0.4",
-		"@counterfactual/cf-funding-protocol-contracts": "0.0.7",
+		"@counterfactual/cf-funding-protocol-contracts": "0.0.8",
+		"@counterfactual/types": "0.0.38",
 		"chai-bn": "0.1.1",
 		"cypress": "3.4.1",
 		"ethers": "4.0.36",
