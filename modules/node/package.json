@@ -23,7 +23,6 @@
     "@connext/cf-core": "0.2.72",
     "@connext/messaging": "0.0.21",
     "@counterfactual/contracts": "0.1.15",
-    "@connext/types": "0.0.21",
     "@counterfactual/node": "0.2.73",
     "@nestjs/common": "6.5.3",
     "@nestjs/core": "6.5.3",
@@ -57,7 +56,7 @@
     "ts-jest": "24.0.2",
     "ts-node": "8.3.0",
     "tsconfig-paths": "3.8.0",
-    "typescript": "3.5.3",
+    "typescript": "3.6.2",
     "wait-on": "3.3.0"
   }
 }
