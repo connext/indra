@@ -11,7 +11,6 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@connext/cf-core": "0.0.21",
     "@connext/client": "0.0.21",
     "commander": "3.0.1",
     "dotenv": "8.1.0",
