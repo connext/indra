@@ -21,7 +21,14 @@ export async function createProposedVirtualAppInstance(
 ): Promise<string> {
   const { intermediaryIdentifier, proposedToIdentifier } = params;
 
+  const multisigAddress = getCreate2MultisigAddress(
+    [myIdentifier, proposedToIdentifier],
+    networkContext.ProxyFactory,
+    networkContext.MinimumViableMultisig
+  );
+
   const channel = await getOrCreateStateChannelBetweenVirtualAppParticipants(
+    multisigAddress,
     myIdentifier,
     proposedToIdentifier,
     intermediaryIdentifier,
@@ -66,26 +73,14 @@ export function getNextNodeAddress(
   return intermediaryIdentifier;
 }
 
-export function isNodeIntermediary(
-  thisAddress: string,
-  intermediaryIdentifier: string
-): boolean {
-  return intermediaryIdentifier === thisAddress;
-}
-
 export async function getOrCreateStateChannelBetweenVirtualAppParticipants(
+  multisigAddress: string,
   initiatorXpub: string,
   responderXpub: string,
   hubXpub: string,
   store: Store,
   networkContext: NetworkContext
 ): Promise<StateChannel> {
-  const multisigAddress = getCreate2MultisigAddress(
-    [initiatorXpub, responderXpub],
-    networkContext.ProxyFactory,
-    networkContext.MinimumViableMultisig
-  );
-
   try {
     return await store.getStateChannel(multisigAddress);
   } catch (e) {
@@ -95,12 +90,6 @@ export async function getOrCreateStateChannelBetweenVirtualAppParticipants(
         .includes(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress)) &&
       hubXpub !== undefined
     ) {
-      const multisigAddress = getCreate2MultisigAddress(
-        [initiatorXpub, responderXpub],
-        networkContext.ProxyFactory,
-        networkContext.MinimumViableMultisig
-      );
-
       const stateChannel = StateChannel.createEmptyChannel(multisigAddress, [
         initiatorXpub,
         responderXpub

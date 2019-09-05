@@ -1,8 +1,11 @@
+.env
+.rpt2_cache
+dist
+docs/venv/*
 jest-cache
 jest-coverage/clover.xml
 jest-coverage/coverage-final.json
 jest-coverage/lcov-report/
 jest-coverage/lcov.info
-.env
-networks/
-docs/venv/*
+networks
+node_modules
