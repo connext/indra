@@ -20,6 +20,6 @@
     "@counterfactual/types": "0.0.37",
     "rollup": "1.20.3",
     "rollup-plugin-typescript2": "0.23.0",
-    "typescript": "3.5.3"
+    "typescript": "3.6.2"
   }
 }
