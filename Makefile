@@ -103,6 +103,9 @@ watch: watch-node
 start-test: prod deployed-contracts
 	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test bash ops/start-prod.sh
 
+test-cf: cf-core
+	bash ops/test-cf.sh
+
 test-ui:
 	bash ops/test-ui.sh
 
