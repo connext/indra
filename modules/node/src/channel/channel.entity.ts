@@ -27,7 +27,7 @@ export class Channel {
   available!: boolean;
 
   @Column("boolean", { default: false })
-  depositInFlight!: boolean;
+  collateralizationInFlight!: boolean;
 
   @ManyToMany((type: any) => PaymentProfile, (profile: PaymentProfile) => profile.channels)
   @JoinTable()
