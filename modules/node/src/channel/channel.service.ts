@@ -64,6 +64,12 @@ export class ChannelService {
       throw new Error(`Channel does not exist for user ${userPubId}`);
     }
 
+    // TODO: this wont work until we can set this to false when deposit confirms :(
+    if (channel.collateralizationInFlight) {
+      logger.log(`Collateral request is in flight, try request again for user ${userPubId} later`);
+      return undefined;
+    }
+
     const profile = await this.channelRepository.getPaymentProfileForChannelAndToken(
       userPubId,
       normalizedAssetId,
@@ -94,12 +100,24 @@ export class ChannelService {
         `Collateralizing ${channel.multisigAddress} with ${amountDeposit.toString()}, ` +
           `token: ${normalizedAssetId}`,
       );
+
+      // set in flight so that it cant be double sent
+      await this.channelRepository.setInflightCollateralization(channel, true);
       return this.deposit(channel.multisigAddress, amountDeposit, normalizedAssetId);
     }
     logger.log(
       `${userPubId} already has collateral of ${nodeFreeBalance} for asset ${normalizedAssetId}`,
     );
     return undefined;
+  }
+
+  async clearCollateralizationInFlight(multisigAddress: string): Promise<Channel> {
+    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
+    if (!channel) {
+      throw new Error(`No channel exists for multisig ${multisigAddress}`);
+    }
+
+    return await this.channelRepository.setInflightCollateralization(channel, false);
   }
 
   async addPaymentProfileToChannel(
@@ -113,24 +131,6 @@ export class ChannelService {
     profile.minimumMaintainedCollateral = minimumMaintainedCollateral;
     profile.amountToCollateralize = amountToCollateralize;
     return await this.channelRepository.addPaymentProfileToChannel(userPubId, profile);
-  }
-
-  /**
-   * Monitors if there is an inflight deposit request from DEPOSIT_STARTED
-   * and DEPOSIT_FAILED events, so deposits are not double sent
-   * @param depositInFlight true if a deposit has started, false otherwise
-   * @param userPublicIdentifier user whos channel is being deposited into
-   */
-  async setInflightDepositByPubId(
-    depositInFlight: boolean,
-    userPublicIdentifier: string,
-  ): Promise<Channel> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
-    if (!channel) {
-      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
-    }
-    channel.depositInFlight = depositInFlight;
-    return await this.channelRepository.save(channel);
   }
 
   /**
@@ -188,12 +188,13 @@ export class ChannelService {
     }
     if (nodeAppSequenceNumber !== userAppSequenceNumber) {
       logger.warn(
-        `Node app sequence number (${nodeAppSequenceNumber}) !== user app sequence number (${userAppSequenceNumber})`,
+        `Node app sequence number (${nodeAppSequenceNumber}) ` +
+          `!== user app sequence number (${userAppSequenceNumber})`,
       );
     }
     return {
-      userAppSequenceNumber,
       nodeAppSequenceNumber,
+      userAppSequenceNumber,
     };
   }
 

@@ -90,4 +90,12 @@ export class ChannelRepository extends Repository<Channel> {
     }
     return profile;
   }
+
+  async setInflightCollateralization(
+    channel: Channel,
+    collateralizationInFlight: boolean,
+  ): Promise<Channel> {
+    channel.collateralizationInFlight = collateralizationInFlight;
+    return await this.save(channel);
+  }
 }
