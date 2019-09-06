@@ -1,5 +1,6 @@
 module.exports = {
   "bail": true,
+  "cacheDirectory": "./.jest.cache",
   "coverageDirectory": "jest-coverage",
   "coveragePathIgnorePatterns": [ "test" ],
   "coverageThreshold": { "global": { "branches": 90, "functions": 90, "lines": 90, "statements": 90 } },

@@ -4,11 +4,11 @@ set -e
 project="indra"
 
 test_command='
-  jest --setupFiles dotenv-extended/config --runInBand --bail --forceExit '"$@"'
+  jest --setupFiles dotenv-extended/config --runInBand --forceExit '"$@"'
 '
 
 watch_command='
-  exec jest --setupFiles dotenv-extended/config --runInBand --bail --forceExit --watch '"$@"'
+  exec jest --setupFiles dotenv-extended/config --runInBand --forceExit --watch '"$@"'
 '
 
 if [[ "$1" == "--watch" ]]
@@ -89,6 +89,7 @@ docker run \
   --env="POSTGRES_STORE_KEY=dev" \
   --interactive \
   --name="${project}_test_cf_core" \
+  --network="$network" \
   --rm \
   --tty \
   --volume="`pwd`:/root" \
