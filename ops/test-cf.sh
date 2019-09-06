@@ -5,7 +5,6 @@ project="indra"
 
 test_command='
   jest --setupFiles dotenv-extended/config --runInBand --bail --forceExit '"$@"'
-  # yarn test
 '
 
 watch_command='
@@ -95,13 +94,13 @@ docker run \
   --volume="`pwd`:/root" \
   ${project}_builder -c '
     set -e
-    echo "CF Tester Container launched!";echo
+    echo "CF tester container launched!";echo
     cd modules/cf-core
     rm -rf .env
     env > .env
     export PATH=./node_modules/.bin:$PATH
     function finish {
-      echo && echo "Node tester container exiting.." && exit
+      echo && echo "CF tester container exiting.." && exit
     }
     trap finish SIGTERM SIGINT
     '"$command"'
