@@ -1,7 +1,7 @@
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
-import { Zero, AddressZero } from "ethers/constants";
+import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
 
 import SimpleLinkedTransferApp from "../build/SimpleLinkedTransferApp.json";
