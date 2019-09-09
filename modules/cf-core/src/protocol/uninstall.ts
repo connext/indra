@@ -50,7 +50,12 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessage
     ];
 
-    assertIsValidSignature(responderAddress, uninstallCommitment, theirSig);
+    try {
+      assertIsValidSignature(responderAddress, uninstallCommitment, theirSig);
+    } catch (e) {
+      console.trace("hello darkness my old friend");
+      throw e;
+    }
 
     const finalCommitment = uninstallCommitment.getSignedTransaction([
       mySig,
@@ -75,8 +80,12 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     const theirSig = context.message.customData.signature;
-
-    assertIsValidSignature(initiatorAddress, uninstallCommitment, theirSig);
+    try {
+      assertIsValidSignature(initiatorAddress, uninstallCommitment, theirSig);
+    } catch (e) {
+      console.trace("hello darkness my old friend");
+      throw e;
+    }
 
     const mySig = yield [Opcode.OP_SIGN, uninstallCommitment];
 
@@ -122,6 +131,9 @@ async function proposeStateTransition(
     sc.getAppInstance(appIdentityHash),
     provider
   );
+
+  console.log("multisig address from uninstall protocol");
+  console.log(sc.multisigAddress);
 
   const newStateChannel = sc.uninstallApp(
     appIdentityHash,

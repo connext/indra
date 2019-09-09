@@ -42,8 +42,6 @@ export async function handleReceivedProtocolMessage(
 
   if (seq === UNASSIGNED_SEQ_NO) return;
 
-  const preProtocolStateChannelsMap = await store.getStateChannelsMap();
-
   const queueNames = await getQueueNamesListByProtocolName(
     protocol,
     params!,
@@ -53,10 +51,33 @@ export async function handleReceivedProtocolMessage(
   const postProtocolStateChannelsMap = await executeFunctionWithinQueues(
     queueNames.map(requestHandler.getShardedQueue.bind(requestHandler)),
     async () => {
-      const stateChannelsMap = await instructionExecutor.runProtocolWithMessage(
-        data,
-        preProtocolStateChannelsMap
-      );
+      let stateChannelsMap;
+
+      for (let i = 0; i < 5; i += 1) {
+        const preProtocolStateChannelsMap = await store.getStateChannelsMap();
+        try {
+          console.log("running protocol: ", protocol);
+          stateChannelsMap = await instructionExecutor.runProtocolWithMessage(
+            data,
+            preProtocolStateChannelsMap
+          );
+          break;
+        } catch (e) {
+          console.log(
+            `Caught the protocol execution failing after ${i} retries`,
+            e
+          );
+          console.log(preProtocolStateChannelsMap);
+          console.log(data);
+          if (i < 5) {
+            console.log("Retrying protocol...");
+          }
+        }
+      }
+      console.log("finished protocol");
+      if (!stateChannelsMap) {
+        throw Error("Couldn't successfully run the protocol");
+      }
 
       for (const stateChannel of stateChannelsMap.values()) {
         await store.saveStateChannel(stateChannel);
@@ -215,12 +236,10 @@ async function getQueueNamesListByProtocolName(
      */
     case Protocol.Install:
     case Protocol.Setup:
-    case Protocol.Uninstall:
     case Protocol.Withdraw:
       const { multisigAddress } = params as
         | InstallParams
         | SetupParams
-        | UninstallParams
         | WithdrawParams;
 
       return [multisigAddress];
@@ -234,14 +253,23 @@ async function getQueueNamesListByProtocolName(
 
       return [appIdentityHash];
 
+    case Protocol.Uninstall:
+      const {
+        multisigAddress: addr,
+        appIdentityHash: appInstanceId
+      } = params as UninstallParams;
+
+      return [addr, appInstanceId];
+
     /**
      * Queue on the multisig addresses of both direct channels involved.
      */
     case Protocol.InstallVirtualApp:
-    case Protocol.UninstallVirtualApp:
-      const { initiatorXpub, intermediaryXpub, responderXpub } = params as
-        | UninstallVirtualAppParams
-        | InstallVirtualAppParams;
+      const {
+        initiatorXpub,
+        intermediaryXpub,
+        responderXpub
+      } = params as InstallVirtualAppParams;
 
       if (publicIdentifier === intermediaryXpub) {
         return [
@@ -254,6 +282,30 @@ async function getQueueNamesListByProtocolName(
         return [
           multisigAddressFor([responderXpub, intermediaryXpub]),
           multisigAddressFor([responderXpub, initiatorXpub])
+        ];
+      }
+
+    case Protocol.UninstallVirtualApp:
+      const {
+        initiatorXpub: initiator,
+        intermediaryXpub: intermediary,
+        responderXpub: responder,
+        targetAppIdentityHash
+      } = params as UninstallVirtualAppParams;
+
+      if (publicIdentifier === intermediary) {
+        return [
+          multisigAddressFor([initiator, intermediary]),
+          multisigAddressFor([responder, intermediary]),
+          targetAppIdentityHash
+        ];
+      }
+
+      if (publicIdentifier === responder) {
+        return [
+          multisigAddressFor([responder, intermediary]),
+          multisigAddressFor([responder, initiator]),
+          targetAppIdentityHash
         ];
       }
 

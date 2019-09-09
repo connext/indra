@@ -1,4 +1,5 @@
 .env
+.jest.cache
 .rpt2_cache
 dist
 docs/venv/*
