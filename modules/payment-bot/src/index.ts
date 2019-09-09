@@ -208,7 +208,6 @@ async function run(): Promise<void> {
     console.log(`Installed apps: ${await client.getAppInstances()}`);
   }
 
-  logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
   exitOrLeaveOpen(config);
   console.log(`Waiting to receive transfers at ${client.opts.cfCore.publicIdentifier}`);
 }
