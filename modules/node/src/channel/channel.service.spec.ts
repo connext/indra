@@ -6,16 +6,16 @@ import { Connection } from "typeorm";
 
 import { ChannelModule } from "../channel/channel.module";
 import { ConfigModule } from "../config/config.module";
-import { defaultPaymentProfileEth, NodeProviderId } from "../constants";
+import { defaultPaymentProfileEth, CFCoreProviderId } from "../constants";
 import { DatabaseModule } from "../database/database.module";
-import { NodeModule } from "../node/node.module";
+import { CFCoreModule } from "../cfCore/cfCore.module";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import {
   clearDb,
   createTestChannel,
   mkAddress,
   mkXpub,
-  mockNodeProvider,
+  mockCFCoreProvider,
   mockStateDepositHolderAddress,
 } from "../test";
 
@@ -30,10 +30,10 @@ describe("ChannelService", () => {
 
   beforeAll(async () => {
     module = await Test.createTestingModule({
-      imports: [ConfigModule, ChannelModule, NodeModule, DatabaseModule],
+      imports: [ConfigModule, ChannelModule, CFCoreModule, DatabaseModule],
     })
-      .overrideProvider(NodeProviderId)
-      .useValue(mockNodeProvider)
+      .overrideProvider(CFCoreProviderId)
+      .useValue(mockCFCoreProvider)
       .compile();
 
     service = module.get<ChannelService>(ChannelService);

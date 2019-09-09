@@ -6,7 +6,7 @@ import {
   UnidirectionalLinkedTransferAppStage,
   UnidirectionalLinkedTransferAppStateBigNumber,
 } from "@connext/types";
-import { AppInstanceJson, Node as NodeTypes } from "@counterfactual/types";
+import { AppInstanceJson, Node as CFCoreTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -17,7 +17,7 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { Network } from "../constants";
-import { NodeService } from "../node/node.service";
+import { CFCoreService } from "../cfCore/cfCore.service";
 import { CLogger, createLinkedHash, delay, freeBalanceAddressFromXpub, replaceBN } from "../util";
 
 import {
@@ -37,7 +37,7 @@ export class TransferService {
   appId: string;
 
   constructor(
-    private readonly nodeService: NodeService,
+    private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
     private readonly channelRepository: ChannelRepository,
@@ -117,7 +117,7 @@ export class TransferService {
     }
 
     // check that linked transfer app has been installed from sender
-    const installedApps = await this.nodeService.getAppInstances();
+    const installedApps = await this.cfCoreService.getAppInstances();
     const senderApp = installedApps.find(
       (app: AppInstanceJson) =>
         (app.latestState as UnidirectionalLinkedTransferAppStateBigNumber).linkedHash ===
@@ -127,13 +127,13 @@ export class TransferService {
       throw new Error(`App with provided hash has not been installed: ${linkedHash}`);
     }
 
-    const freeBal = await this.nodeService.getFreeBalance(
+    const freeBal = await this.cfCoreService.getFreeBalance(
       userPubId,
       channel.multisigAddress,
       assetId,
     );
     const preTransferBal =
-      freeBal[freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier)];
+      freeBal[freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)];
 
     await this.channelService.requestCollateral(userPubId, assetId, amount);
 
@@ -154,7 +154,7 @@ export class TransferService {
         },
         {
           amount,
-          to: freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier),
+          to: freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier),
         },
       ],
       turnNum: Zero,
@@ -184,32 +184,32 @@ export class TransferService {
 
     // pre - post = amount
     // sanity check, free balance decreased by payment amount
-    const postTransferBal = await this.nodeService.getFreeBalance(
+    const postTransferBal = await this.cfCoreService.getFreeBalance(
       userPubId,
       channel.multisigAddress,
       assetId,
     );
 
     const diff = preTransferBal.sub(
-      postTransferBal[freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier)],
+      postTransferBal[freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)],
     );
 
     if (!diff.eq(amount)) {
       logger.warn(`Got an unexpected difference of free balances before and after uninstalling`);
       logger.warn(
         `preTransferBal: ${preTransferBal.toString()}, postTransferBalance: ${postTransferBal[
-          freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier)
+          freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)
         ].toString()}, expected ${amount.toString()}`,
       );
     } else if (
-      postTransferBal[freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier)].lte(
+      postTransferBal[freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)].lte(
         preTransferBal,
       )
     ) {
       logger.warn("Free balance after transfer is lte free balance before transfer..");
       logger.warn(
         `preTransferBal: ${preTransferBal.toString()}, postTransferBalance: ${postTransferBal[
-          freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier)
+          freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)
         ].toString()}, expected ${amount.toString()}`,
       );
     }
@@ -222,7 +222,7 @@ export class TransferService {
     this.finalizeAndUninstallTransferApp(senderApp.identityHash, transfer).catch(logger.error);
 
     return {
-      freeBalance: await this.nodeService.getFreeBalance(
+      freeBalance: await this.cfCoreService.getFreeBalance(
         userPubId,
         channel.multisigAddress,
         assetId,
@@ -246,7 +246,7 @@ export class TransferService {
       outcomeType,
       stateEncoding,
     } = appInfo;
-    const params: NodeTypes.ProposeInstallParams = {
+    const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,
@@ -262,7 +262,7 @@ export class TransferService {
       timeout: Zero,
     };
 
-    const res = await this.nodeService.proposeInstallApp(params);
+    const res = await this.cfCoreService.proposeInstallApp(params);
 
     // add preimage to database to allow unlock from a listener
     transfer.receiverAppInstanceId = res.appInstanceId;
@@ -279,7 +279,7 @@ export class TransferService {
   ): Promise<void> {
     const { amount, assetId, paymentId, preImage } = transfer;
     // display initial state of app
-    const preActionApp = await this.nodeService.getAppState(appInstanceId);
+    const preActionApp = await this.cfCoreService.getAppState(appInstanceId);
 
     // NOTE: was getting an error here, printing this in case it happens again
     logger.log(`appInstanceId: ${appInstanceId}`);
@@ -299,9 +299,9 @@ export class TransferService {
     };
 
     try {
-      await this.nodeService.takeAction(appInstanceId, action);
+      await this.cfCoreService.takeAction(appInstanceId, action);
     } catch (e) {
-      throw new Error(`nodeService.takeAction: ${e}`);
+      throw new Error(`cfCoreService.takeAction: ${e}`);
     }
 
     try {
@@ -311,7 +311,7 @@ export class TransferService {
     }
 
     // display final state of app
-    const appInfo = await this.nodeService.getAppState(appInstanceId);
+    const appInfo = await this.cfCoreService.getAppState(appInstanceId);
 
     // NOTE: was getting an error here, printing this in case it happens again
     logger.log(`postAction appInfo: ${JSON.stringify(appInfo, replaceBN, 2)}`);
@@ -326,7 +326,7 @@ export class TransferService {
       )}`,
     );
 
-    await this.nodeService.uninstallApp(appInstanceId);
+    await this.cfCoreService.uninstallApp(appInstanceId);
 
     // adding a promise for now that polls app instances, but its not
     // great and should be removed
@@ -341,7 +341,7 @@ export class TransferService {
     return new Promise(
       async (res: (value?: unknown) => void, rej: (reason?: any) => void): Promise<void> => {
         const getAppIds = async (): Promise<string[]> => {
-          return (await this.nodeService.getAppInstances()).map(
+          return (await this.cfCoreService.getAppInstances()).map(
             (a: AppInstanceJson) => a.identityHash,
           );
         };
@@ -364,7 +364,7 @@ export class TransferService {
     return new Promise(
       async (res: (value?: unknown) => void, rej: (reason?: any) => void): Promise<void> => {
         const isFinalized = async (): Promise<boolean> => {
-          const appInfo = await this.nodeService.getAppState(appInstanceId);
+          const appInfo = await this.cfCoreService.getAppState(appInstanceId);
           const appState = appInfo.state as UnidirectionalLinkedTransferAppStateBigNumber;
           return appState.finalized;
         };
@@ -387,7 +387,7 @@ export class TransferService {
     return new Promise(
       async (res: (value?: unknown) => void, rej: (reason?: any) => void): Promise<void> => {
         const getAppIds = async (): Promise<string[]> => {
-          return (await this.nodeService.getAppInstances()).map(
+          return (await this.cfCoreService.getAppInstances()).map(
             (a: AppInstanceJson) => a.identityHash,
           );
         };

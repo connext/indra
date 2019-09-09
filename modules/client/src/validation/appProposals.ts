@@ -191,8 +191,7 @@ const baseAppValidation = async (
     required: ${app.initiatorDeposit}. Proposed app: ${prettyLog(app)}`;
   }
 
-  // check that the intermediary includes your node if it is not an app with
-  // your node
+  // check that the intermediary includes your node if it is not an app with your node
   const hasIntermediaries = app.intermediaryIdentifier;
   if (hasIntermediaries && !isVirtual) {
     return `Apps with connected node should have no intermediaries. Proposed app: ${prettyLog(

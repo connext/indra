@@ -1,47 +1,44 @@
 import { AppActionBigNumber } from "@connext/types";
-import { Node } from "@counterfactual/node";
-import { AppInstanceJson, AppInstanceProposal, Node as NodeTypes } from "@counterfactual/types";
+import { AppInstanceJson, AppInstanceProposal, Node as CFCoreTypes } from "@counterfactual/types";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
-import { NodeProviderId } from "../constants";
+import { CFCoreProviderId } from "../constants";
 import { CLogger, freeBalanceAddressFromXpub, replaceBN } from "../util";
+import { CFCore } from "../util/cfCore";
 
-const logger = new CLogger("NodeService");
+const logger = new CLogger("CFCoreService");
 
 Injectable();
-export class NodeService {
-  cfNode: Node;
-
-  constructor(@Inject(NodeProviderId) private readonly node: Node) {
-    this.cfNode = node;
+export class CFCoreService {
+  constructor(@Inject(CFCoreProviderId) public readonly cfCore: CFCore) {
+    this.cfCore = cfCore;
   }
 
   async getFreeBalance(
     userPubId: string,
     multisigAddress: string,
     assetId: string = AddressZero,
-  ): Promise<NodeTypes.GetFreeBalanceStateResult> {
+  ): Promise<CFCoreTypes.GetFreeBalanceStateResult> {
     try {
-      const freeBalance = await this.node.rpcRouter.dispatch({
+      const freeBalance = await this.cfCore.rpcRouter.dispatch({
         id: Date.now(),
-        methodName: NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
+        methodName: CFCoreTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
         parameters: {
           multisigAddress,
           tokenAddress: assetId,
         },
       });
-      return freeBalance.result.result as NodeTypes.GetFreeBalanceStateResult;
+      return freeBalance.result.result as CFCoreTypes.GetFreeBalanceStateResult;
     } catch (e) {
       const error = `No free balance exists for the specified token: ${assetId}`;
       if (e.message.includes(error)) {
         // if there is no balance, return undefined
         // NOTE: can return free balance obj with 0s,
-        // but need the nodes free balance
-        // address in the multisig
+        // but need the free balance address in the multisig
         const obj = {};
-        obj[freeBalanceAddressFromXpub(this.node.publicIdentifier)] = Zero;
+        obj[freeBalanceAddressFromXpub(this.cfCore.publicIdentifier)] = Zero;
         obj[freeBalanceAddressFromXpub(userPubId)] = Zero;
         return obj;
       }
@@ -54,115 +51,115 @@ export class NodeService {
   async getStateChannel(multisigAddress: string): Promise<{ data: any }> {
     const params = {
       id: Date.now(),
-      methodName: "chan_getStateChannel", // FIXME: NodeTypes.RpcMethodName.GET_STATE_CHANNEL,
+      methodName: "chan_getStateChannel", // FIXME: CFCoreTypes.RpcMethodName.GET_STATE_CHANNEL,
       parameters: {
         multisigAddress,
       },
     };
-    const getStateChannelRes = await this.cfNode.rpcRouter.dispatch(params);
+    const getStateChannelRes = await this.cfCore.rpcRouter.dispatch(params);
     return getStateChannelRes.result.result;
   }
 
   async createChannel(
     counterpartyPublicIdentifier: string,
-  ): Promise<NodeTypes.CreateChannelResult> {
+  ): Promise<CFCoreTypes.CreateChannelResult> {
     const params = {
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.CREATE_CHANNEL,
+      methodName: CFCoreTypes.RpcMethodName.CREATE_CHANNEL,
       parameters: {
-        owners: [this.cfNode.publicIdentifier, counterpartyPublicIdentifier],
-      } as NodeTypes.CreateChannelParams,
+        owners: [this.cfCore.publicIdentifier, counterpartyPublicIdentifier],
+      } as CFCoreTypes.CreateChannelParams,
     };
     logger.log(`Calling createChannel with params: ${JSON.stringify(params, replaceBN, 2)}`);
-    const createRes = await this.cfNode.rpcRouter.dispatch(params);
+    const createRes = await this.cfCore.rpcRouter.dispatch(params);
     logger.log(`createChannel called with result: ${JSON.stringify(createRes.result.result)}`);
-    return createRes.result.result as NodeTypes.CreateChannelResult;
+    return createRes.result.result as CFCoreTypes.CreateChannelResult;
   }
 
   async deposit(
     multisigAddress: string,
     amount: BigNumber,
     assetId: string = AddressZero,
-  ): Promise<NodeTypes.DepositResult> {
-    const depositRes = await this.cfNode.rpcRouter.dispatch({
+  ): Promise<CFCoreTypes.DepositResult> {
+    const depositRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.DEPOSIT,
+      methodName: CFCoreTypes.RpcMethodName.DEPOSIT,
       parameters: {
         amount,
         multisigAddress,
         tokenAddress: assetId,
-      } as NodeTypes.DepositParams,
+      } as CFCoreTypes.DepositParams,
     });
     logger.log(`deposit called with result ${JSON.stringify(depositRes.result.result)}`);
-    return depositRes.result.result as NodeTypes.DepositResult;
+    return depositRes.result.result as CFCoreTypes.DepositResult;
   }
 
   async proposeInstallApp(
-    params: NodeTypes.ProposeInstallParams,
-  ): Promise<NodeTypes.ProposeInstallResult> {
-    const proposeRes = await this.cfNode.rpcRouter.dispatch({
+    params: CFCoreTypes.ProposeInstallParams,
+  ): Promise<CFCoreTypes.ProposeInstallResult> {
+    const proposeRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
+      methodName: CFCoreTypes.RpcMethodName.PROPOSE_INSTALL,
       parameters: params,
     });
     logger.log(`proposeInstallApp called with result ${JSON.stringify(proposeRes.result.result)}`);
-    return proposeRes.result.result as NodeTypes.ProposeInstallResult;
+    return proposeRes.result.result as CFCoreTypes.ProposeInstallResult;
   }
 
-  async installApp(appInstanceId: string): Promise<NodeTypes.InstallResult> {
-    const installRes = await this.cfNode.rpcRouter.dispatch({
+  async installApp(appInstanceId: string): Promise<CFCoreTypes.InstallResult> {
+    const installRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.INSTALL,
+      methodName: CFCoreTypes.RpcMethodName.INSTALL,
       parameters: {
         appInstanceId,
-      } as NodeTypes.InstallParams,
+      } as CFCoreTypes.InstallParams,
     });
     logger.log(`installApp called with result ${JSON.stringify(installRes.result.result)}`);
-    return installRes.result.result as NodeTypes.InstallResult;
+    return installRes.result.result as CFCoreTypes.InstallResult;
   }
 
-  async rejectInstallApp(appInstanceId: string): Promise<NodeTypes.RejectInstallResult> {
-    const rejectRes = await this.cfNode.rpcRouter.dispatch({
+  async rejectInstallApp(appInstanceId: string): Promise<CFCoreTypes.RejectInstallResult> {
+    const rejectRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.REJECT_INSTALL,
+      methodName: CFCoreTypes.RpcMethodName.REJECT_INSTALL,
       parameters: {
         appInstanceId,
-      } as NodeTypes.RejectInstallParams,
+      } as CFCoreTypes.RejectInstallParams,
     });
     logger.log(`rejectInstallApp called with result ${JSON.stringify(rejectRes.result.result)}`);
-    return rejectRes.result.result as NodeTypes.RejectInstallResult;
+    return rejectRes.result.result as CFCoreTypes.RejectInstallResult;
   }
 
   async takeAction(
     appInstanceId: string,
     action: AppActionBigNumber,
-  ): Promise<NodeTypes.TakeActionResult> {
+  ): Promise<CFCoreTypes.TakeActionResult> {
     logger.log(`Taking action on app ${appInstanceId}: ${JSON.stringify(action, replaceBN, 2)}`);
     // check the app is actually installed
     await this.assertAppInstalled(appInstanceId);
     // check state is not finalized
-    const state: NodeTypes.GetStateResult = await this.getAppState(appInstanceId);
+    const state: CFCoreTypes.GetStateResult = await this.getAppState(appInstanceId);
     logger.log(`Taking action against state: ${JSON.stringify(state, replaceBN, 2)}`);
     // FIXME: casting?
     if ((state.state as any).finalized) {
       throw new Error("Cannot take action on an app with a finalized state.");
     }
-    const actionResponse = await this.cfNode.rpcRouter.dispatch({
+    const actionResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.TAKE_ACTION,
+      methodName: CFCoreTypes.RpcMethodName.TAKE_ACTION,
       parameters: {
         action,
         appInstanceId,
-      } as NodeTypes.TakeActionParams,
+      } as CFCoreTypes.TakeActionParams,
     });
 
     logger.log(
       `takeAction called with result: ${JSON.stringify(actionResponse.result, replaceBN, 2)}`,
     );
-    return actionResponse.result.result as NodeTypes.TakeActionResult;
+    return actionResponse.result.result as CFCoreTypes.TakeActionResult;
   }
 
-  async uninstallApp(appInstanceId: string): Promise<NodeTypes.UninstallResult> {
+  async uninstallApp(appInstanceId: string): Promise<CFCoreTypes.UninstallResult> {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
@@ -170,9 +167,9 @@ export class NodeService {
       throw new Error(err);
     }
     logger.log(`Calling uninstallApp for appInstanceId ${appInstanceId}`);
-    const uninstallResponse = await this.cfNode.rpcRouter.dispatch({
+    const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.UNINSTALL,
+      methodName: CFCoreTypes.RpcMethodName.UNINSTALL,
       parameters: {
         appInstanceId,
       },
@@ -181,14 +178,14 @@ export class NodeService {
     logger.log(
       `uninstallApp called with result ${JSON.stringify(uninstallResponse.result.result)}`,
     );
-    return uninstallResponse.result.result as NodeTypes.UninstallResult;
+    return uninstallResponse.result.result as CFCoreTypes.UninstallResult;
   }
 
   async getAppInstances(): Promise<AppInstanceJson[]> {
-    const appInstanceResponse = await this.cfNode.rpcRouter.dispatch({
+    const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.GET_APP_INSTANCES,
-      parameters: {} as NodeTypes.GetAppInstancesParams,
+      methodName: CFCoreTypes.RpcMethodName.GET_APP_INSTANCES,
+      parameters: {} as CFCoreTypes.GetAppInstancesParams,
     });
 
     /*
@@ -200,10 +197,10 @@ export class NodeService {
   }
 
   async getProposedAppInstances(): Promise<AppInstanceProposal[]> {
-    const appInstanceResponse = await this.cfNode.rpcRouter.dispatch({
+    const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
-      parameters: {} as NodeTypes.GetAppInstancesParams,
+      methodName: CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
+      parameters: {} as CFCoreTypes.GetAppInstancesParams,
     });
 
     logger.log(
@@ -217,10 +214,10 @@ export class NodeService {
   async getAppInstanceDetails(appInstanceId: string): Promise<AppInstanceJson> {
     let appInstance;
     try {
-      const appInstanceResponse = await this.cfNode.rpcRouter.dispatch({
+      const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
         id: Date.now(),
-        methodName: NodeTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS,
-        parameters: { appInstanceId } as NodeTypes.GetAppInstanceDetailsParams,
+        methodName: CFCoreTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS,
+        parameters: { appInstanceId } as CFCoreTypes.GetAppInstanceDetailsParams,
       });
       appInstance = appInstanceResponse.result.result.appInstance;
     } catch (e) {
@@ -235,22 +232,22 @@ export class NodeService {
     return appInstance as AppInstanceJson;
   }
 
-  async getAppState(appInstanceId: string): Promise<NodeTypes.GetStateResult | undefined> {
+  async getAppState(appInstanceId: string): Promise<CFCoreTypes.GetStateResult | undefined> {
     // check the app is actually installed, or returned undefined
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
       Logger.warn(err);
       return undefined;
     }
-    const stateResponse = await this.cfNode.rpcRouter.dispatch({
+    const stateResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.GET_STATE,
+      methodName: CFCoreTypes.RpcMethodName.GET_STATE,
       parameters: {
         appInstanceId,
-      } as NodeTypes.GetStateParams,
+      } as CFCoreTypes.GetStateParams,
     });
 
-    return stateResponse.result.result as NodeTypes.GetStateResult;
+    return stateResponse.result.result as CFCoreTypes.GetStateResult;
   }
 
   private async appNotInstalled(appInstanceId: string): Promise<string | undefined> {
@@ -278,12 +275,12 @@ export class NodeService {
     }
   }
 
-  registerCfNodeListener(
-    event: NodeTypes.EventName,
+  registerCfCoreListener(
+    event: CFCoreTypes.EventName,
     callback: (data: any) => any,
-    context: string = "NodeService",
+    context: string = "CFCoreService",
   ): void {
-    Logger.log(`Registering node callback for event ${event}`, context);
-    this.cfNode.on(event, callback);
+    Logger.log(`Registering cfCore callback for event ${event}`, context);
+    this.cfCore.on(event, callback);
   }
 }

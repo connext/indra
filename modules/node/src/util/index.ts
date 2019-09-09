@@ -1,5 +1,5 @@
 export * from "./logger";
-export * from "./cfNode";
+export * from "./cfCore";
 export * from "./messaging";
 export * from "./transfer";
 export * from "./utils";

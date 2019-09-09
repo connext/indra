@@ -1,17 +1,17 @@
 import {
+  CFCoreChannel,
   convert,
-  NodeChannel,
   RegisteredAppDetails,
   SimpleTransferAppStateBigNumber,
   SupportedApplication,
   SupportedApplications,
   TransferParameters,
 } from "@connext/types";
-import { RejectInstallVirtualMessage } from "@counterfactual/node";
-import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
+import { AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
+import { RejectInstallVirtualMessage } from "../lib/cfCore";
 import { delay, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
 import { invalidAddress, invalidXpub } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
@@ -25,7 +25,7 @@ export class TransferController extends AbstractController {
 
   private timeout: NodeJS.Timeout;
 
-  public transfer = async (params: TransferParameters): Promise<NodeChannel> => {
+  public transfer = async (params: TransferParameters): Promise<CFCoreChannel> => {
     this.log.info(`Transfer called with parameters: ${JSON.stringify(params, replaceBN, 2)}`);
 
     // convert params + validate
@@ -159,7 +159,7 @@ export class TransferController extends AbstractController {
 
     // note: intermediary is added in connext.ts as well
     const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding } = appInfo;
-    const params: NodeTypes.ProposeInstallVirtualParams = {
+    const params: CFCoreTypes.ProposeInstallVirtualParams = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,
@@ -185,8 +185,8 @@ export class TransferController extends AbstractController {
       await new Promise((res: any, rej: any): any => {
         boundReject = this.rejectInstallTransfer.bind(null, rej);
         boundResolve = this.resolveInstallTransfer.bind(null, res);
-        this.listener.on(NodeTypes.EventName.INSTALL_VIRTUAL, boundResolve);
-        this.listener.on(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
+        this.listener.on(CFCoreTypes.EventName.INSTALL_VIRTUAL, boundResolve);
+        this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
         // this.timeout = setTimeout(() => {
         //   this.cleanupInstallListeners(boundResolve, boundReject);
         //   boundReject({ data: { appInstanceId: this.appId } });
@@ -203,8 +203,8 @@ export class TransferController extends AbstractController {
   };
 
   private cleanupInstallListeners = (boundResolve: any, boundReject: any): void => {
-    this.listener.removeListener(NodeTypes.EventName.INSTALL_VIRTUAL, boundResolve);
-    this.listener.removeListener(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
+    this.listener.removeListener(CFCoreTypes.EventName.INSTALL_VIRTUAL, boundResolve);
+    this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
   };
 
   private async waitForAppInstall(): Promise<void> {
