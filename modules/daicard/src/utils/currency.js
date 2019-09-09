@@ -34,22 +34,25 @@ export class Currency {
   ////////////////////////////////////////
   // Private Properties
 
-  // _amount is in units like MakerDAO's "wad" aka a decimal w 18 units of precision
-  // So: this._amount is to the currency amount as wei is to an ether amount
-  // This lets us handle decimals cleanly w/out needing a BigDecimal library
+  // wad is in units like MakerDAO's wad aka an integer w 18 extra units of precision
+  // ray is in units like MakerDAO's ray aka an integer w 36 extra units of precision
+  // So: this.wad is to the currency amount as wei is to an ether amount
+  // These let us handle divisions & decimals cleanly w/out needing a BigDecimal library
   precision = 18
-  _amount
-  _type
+  wad
+  ray
+  type
 
   ////////////////////////////////////////
   // Constructor
 
   constructor (type, amount, daiRate) {
-    this._type = type
+    this.type = type
     this.daiRate = typeof daiRate !== 'undefined' ? daiRate : '1'
     this.daiRateGiven = !!daiRate
     try {
-      this._amount = this.toWad(amount)
+      this.wad = this.toWad(amount)
+      this.ray = this.toRay(amount)
     } catch (e) {
       throw new Error(`Invalid currency amount: ${amount}`)
     }
@@ -60,38 +63,29 @@ export class Currency {
 
   // Returns a decimal string
   get amount() {
-    return this.fromWad(this._amount)
-  }
-
-  // wad is a currency-agnostic wei w 18 units of precision
-  get wad() {
-    return this._amount
+    return this.fromWad(this.wad)
   }
 
   get currency() {
     return {
       amount: this.amount,
-      type: this._type,
+      type: this.type,
     }
   }
 
   get symbol() {
-    return this.typeToSymbol[this._type]
-  }
-
-  get type() {
-    return this._type
+    return this.typeToSymbol[this.type]
   }
 
   ////////////////////////////////////////
   // Public Methods
 
   isEthType(type) {
-    return ['ETH', 'FIN', 'WEI'].includes(type || this._type)
+    return ['ETH', 'FIN', 'WEI'].includes(type || this.type)
   }
 
   isTokenType(type) {
-    return ['DAI', 'DEI'].includes(type || this._type)
+    return ['DAI', 'DEI'].includes(type || this.type)
   }
 
   toBN() {
@@ -100,7 +94,7 @@ export class Currency {
 
   format(_options) {
     const options = {
-      ...this.defaultOptions[this._type],
+      ...this.defaultOptions[this.type],
       ..._options || {},
     }
     const symbol = options.symbol ? `${this.symbol}` : ``
@@ -133,13 +127,14 @@ export class Currency {
     return this.amount.slice(0, this.amount.indexOf('.'))
   }
 
+  // In units of Ray aka an extra 36 units of precision
   getExchangeRate = (currency) => {
     const exchangeRates = {
-      DAI: this.daiRate,
-      DEI: parseUnits(this.daiRate, 18).toString(),
-      ETH: '1',
-      FIN: parseUnits('1', 3).toString(),
-      WEI: parseUnits('1', 18).toString(),
+      DAI: this.toRay(this.daiRate),
+      DEI: this.toRay(parseUnits(this.daiRate, 18).toString()),
+      ETH: this.toRay('1'),
+      FIN: this.toRay(parseUnits('1', 3).toString()),
+      WEI: this.toRay(parseUnits('1', 18).toString()),
     }
     if (
       (this.isEthType() && this.isEthType(currency)) ||
@@ -168,19 +163,61 @@ export class Currency {
       this.daiRate = daiRate;
       this.daiRateGiven = true;
     }
-    const amountInWei = tokenToWei(this.wad, this.getExchangeRate(this.type))
-    const targetAmount = fromWei(weiToToken(amountInWei, this.getExchangeRate(targetType)))
+    let log
+    if (this.type === 'DEI' && targetType === 'DAI') {
+      this.wad = this.toWad('12345')
+      this.ray = this.toRay('12345')
+      log = console.log
+    } else {
+      log = () => {}
+    }
+
+    log(`========================================`)
+    log(`Input: ${this.ray} ray ${this.type}`)
+
+    // units: rays of current type per 1 eth eg return 1e36 if current type is eth
+    const thisToEthRate = this.getExchangeRate(this.type)
+    log(`DEItoETH: ${thisToEthRate}`)
+
+    // (ray^2 / ray =) rays of eth per target type
+    const ethToTargetRate = this.toRay(this.toRay('1')).div(this.getExchangeRate(targetType))
+    log(`ETHtoDAI: ${ethToTargetRate}`)
+
+    // After multiplying two rays, gotta Strip off 36 decimals to return result to ray
+    const thisToTargetRate = this.fromRoundRay(thisToEthRate.mul(ethToTargetRate))
+    log(`DEItoDAI: ${thisToTargetRate}`)
+
+    // Strip off two layer of ray accumulated during multiplication to return to wad
+    const targetAmount = this.fromRoundRay(this.fromRoundRay(this.ray.mul(thisToTargetRate)))
+    log(`Result: ${this.amount} ${this.type} => ${this.fromRay(targetAmount)} ${targetType}`)
+
     return new Currency(
       targetType,
-      targetAmount.toString(),
+      this.fromRay(targetAmount).toString(),
       this.daiRateGiven ? this.daiRate : undefined,
     )
   }
 
+  // convert to wad, add 0.5 wad, convert back to dec string, then truncate decimal
+  _round = (decStr) =>
+    this._floor(this.fromWad(this.toWad(decStr).add(this.toWad('0.5'))).toString())
+
+  _floor = (decStr) =>
+    decStr.substring(0, decStr.indexOf('.'))
+
   toWad = (n) =>
     parseUnits(n.toString(), this.precision)
 
+  toRay = (n) =>
+    this.toWad(this.toWad(n.toString()))
+
   fromWad = (n) =>
     formatUnits(n.toString(), this.precision)
+
+  fromRoundRay = (n) =>
+    this._round(this.fromRay(n))
+
+  fromRay = (n) =>
+    this.fromWad(this._round(this.fromWad(n.toString())))
 
 }
