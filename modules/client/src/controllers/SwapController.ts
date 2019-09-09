@@ -10,7 +10,7 @@ import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import { delay, freeBalanceAddressFromXpub } from "../lib/utils";
+import { delay, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
@@ -133,7 +133,7 @@ export class SwapController extends AbstractController {
       return;
     }
 
-    rej(`Install rejected. Event data: ${JSON.stringify(msg.data, null, 2)}`);
+    rej(`Install rejected. Event data: ${JSON.stringify(msg.data, replaceBN, 2)}`);
     return msg.data;
   };
 
@@ -203,19 +203,17 @@ export class SwapController extends AbstractController {
     // set app instance id
     this.appId = res.appInstanceId;
 
-    await new Promise(
-      (res: any, rej: any): any => {
-        boundReject = this.rejectInstallSwap.bind(null, rej);
-        boundResolve = this.resolveInstallSwap.bind(null, res);
-        this.listener.on(NodeTypes.EventName.INSTALL, boundResolve);
-        this.listener.on(NodeTypes.EventName.REJECT_INSTALL, boundReject);
-        // this.timeout = setTimeout(() => {
-        //   this.log.info("Install swap app timed out, rejecting install.")
-        //   this.cleanupInstallListeners(boundResolve, boundReject);
-        //   boundReject({ data: { appInstanceId: this.appId } });
-        // }, 5000);
-      },
-    );
+    await new Promise((res: any, rej: any): any => {
+      boundReject = this.rejectInstallSwap.bind(null, rej);
+      boundResolve = this.resolveInstallSwap.bind(null, res);
+      this.listener.on(NodeTypes.EventName.INSTALL, boundResolve);
+      this.listener.on(NodeTypes.EventName.REJECT_INSTALL, boundReject);
+      // this.timeout = setTimeout(() => {
+      //   this.log.info("Install swap app timed out, rejecting install.")
+      //   this.cleanupInstallListeners(boundResolve, boundReject);
+      //   boundReject({ data: { appInstanceId: this.appId } });
+      // }, 5000);
+    });
 
     this.cleanupInstallListeners(boundResolve, boundReject);
     return res.appInstanceId;

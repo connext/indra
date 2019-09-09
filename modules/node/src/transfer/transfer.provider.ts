@@ -5,7 +5,7 @@ import { RpcException } from "@nestjs/microservices";
 import { bigNumberify } from "ethers/utils";
 
 import { MessagingProviderId, TransferProviderId } from "../constants";
-import { AbstractMessagingProvider, CLogger } from "../util";
+import { AbstractMessagingProvider, CLogger, replaceBN } from "../util";
 
 import { TransferService } from "./transfer.service";
 
@@ -25,7 +25,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
       assetId: string;
     },
   ): Promise<ResolveLinkedTransferResponse> {
-    logger.log(`Got resolve link request with data: ${JSON.stringify(data, null, 2)}`);
+    logger.log(`Got resolve link request with data: ${JSON.stringify(data, replaceBN, 2)}`);
     const userPubId = this.getPublicIdentifierFromSubject(subject);
     const { paymentId, preImage, amount, assetId } = data;
     if (!paymentId || !preImage || !amount || !assetId) {

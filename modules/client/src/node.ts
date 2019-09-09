@@ -14,6 +14,7 @@ import { Node as NodeTypes } from "@counterfactual/types";
 import { TransactionResponse } from "ethers/providers";
 import uuid = require("uuid");
 
+import { replaceBN } from "./lib/utils";
 import { Logger } from "./lib/logger";
 import { NodeInitializationParameters } from "./types";
 
@@ -177,7 +178,7 @@ export class NodeApiClient implements INodeApiClient {
   private async send(subject: string, data?: any): Promise<any | undefined> {
     this.log.debug(
       `Sending request to ${subject} ${
-        data ? `with data: ${JSON.stringify(data, null, 2)}` : `without data`
+        data ? `with data: ${JSON.stringify(data, replaceBN, 2)}` : `without data`
       }`,
     );
     const msg = await this.messaging.request(subject, API_TIMEOUT, {
@@ -185,13 +186,13 @@ export class NodeApiClient implements INodeApiClient {
       id: uuid.v4(),
     });
     if (!msg.data) {
-      console.log("could this message be malformed?", JSON.stringify(msg, null, 2));
+      this.log.info(`Maybe this message is malformed: ${JSON.stringify(msg, replaceBN, 2)}`);
       return undefined;
     }
     const { err, response, ...rest } = msg.data;
     const responseErr = response && response.err;
     if (err || responseErr) {
-      throw new Error(`Error sending request. Message: ${JSON.stringify(msg, null, 2)}`);
+      throw new Error(`Error sending request. Message: ${JSON.stringify(msg, replaceBN, 2)}`);
     }
     const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
     return !response || isEmptyObj ? undefined : response;

@@ -1,7 +1,11 @@
 import { JsonRpcResponse } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 
+import { CLogger } from "../util";
+
 import { mkAddress, mkXpub } from "./utils";
+
+const logger = new CLogger("NodeTest");
 
 export const mockStateDepositHolderAddress = mkAddress("0xfefe");
 export const mockNodePublicIdentifier = mkXpub("xpubCONNEXTNODE");
@@ -20,7 +24,7 @@ export const mockNodeProvider = {
   publicIdentifier: mockNodePublicIdentifier,
   rpcRouter: {
     dispatch: (param: any): JsonRpcResponse | undefined => {
-      console.log(`Called mocked router.dispatch with params: ${JSON.stringify(param)}`);
+      logger.log(`Called mocked router.dispatch with params: ${JSON.stringify(param)}`);
       switch (param.methodName) {
         case NodeTypes.RpcMethodName.CREATE_CHANNEL:
           return createMockJsonRpcResponse({

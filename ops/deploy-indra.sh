@@ -28,13 +28,14 @@ fi
 # Thanks to: https://stackoverflow.com/a/6339869
 # temporarily handle errors manually
 set +e
-git checkout master > /dev/null
+git checkout master > /dev/null 2>&1
 git merge --no-commit --no-ff staging
 if [[ "$?" != "0" ]]
 then
-  git merge --abort && git checkout staging > /dev/null
+  git merge --abort && git checkout staging > /dev/null 2>&1
+  echo "Merge aborted & rolled back, your repo is clean again"
   echo
-  echo "Error: merging staging into master will result in merge conflicts"
+  echo "Error: merging staging into master would result in the above merge conflicts."
   echo "To deploy:"
   echo " - Merge master into staging ie: git checkout staging && git merge master"
   echo " - Take care of any merge conflicts & do post-merge testing if needed"
@@ -42,7 +43,7 @@ then
   echo
   exit 0
 fi
-git merge --abort && git checkout staging > /dev/null
+git merge --abort && git checkout staging > /dev/null 2>&1
 set -e
 
 ########################################
@@ -88,7 +89,7 @@ rm .package.json
 cd ../..
 
 # Push a new commit to master
-git add package.json
+git add .
 git commit --amend --no-edit
 git push origin master --no-verify
 

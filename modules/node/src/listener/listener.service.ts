@@ -42,7 +42,6 @@ export default class ListenerService implements OnModuleInit {
     private readonly nodeService: NodeService,
     private readonly appRegistryService: AppRegistryService,
     private readonly channelService: ChannelService,
-    private readonly linkedTransferService: TransferService,
     private readonly linkedTransferRepository: LinkedTransferRepository,
   ) {}
 
@@ -57,6 +56,11 @@ export default class ListenerService implements OnModuleInit {
       },
       DEPOSIT_CONFIRMED: (data: DepositConfirmationMessage): void => {
         logEvent(NodeTypes.EventName.DEPOSIT_CONFIRMED, data);
+
+        // if it's from us, clear the in flight collateralization
+        if (data.from === this.nodeService.cfNode.publicIdentifier) {
+          this.channelService.clearCollateralizationInFlight(data.data.multisigAddress);
+        }
       },
       DEPOSIT_FAILED: (data: any): void => {
         logEvent(NodeTypes.EventName.DEPOSIT_FAILED, data);

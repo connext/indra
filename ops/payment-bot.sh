@@ -30,7 +30,7 @@ while [ "$1" != "" ]; do
         -i | --identifier )     shift
                                 identifier=$1
                                 ;;
-        -m | --mnemonic )     shift
+        -m | --mnemonic )       shift
                                 mnemonic=$1
                                 ;;
     esac
@@ -46,11 +46,16 @@ NODE_URL="${NODE_URL:-nats://172.17.0.1:4222}"
 # Or whether it's running in the background of another script and can't attach to a screen
 test -t 0 -a -t 1 -a -t 2 && interactive="--tty"
 
+if [ -z "$mnemonic" ] && [ "$identifier" == 1 ]
+then
+  mnemonic="humble sense shrug young vehicle assault destroy cook property average silent travel"
+elif [ -z "$mnemonic" ] && [ "$identifier" == 2 ]
+then
+  mnemonic="roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult"
+fi
+
 ########################################
 ## Launch payment bot
-
-echo
-echo "Deploying payment bot..."
 
 docker run \
   --entrypoint="bash" \
@@ -67,7 +72,6 @@ docker run \
   --workdir="/root" \
   ${project}_builder -c '
     set -e
-    echo "payment bot container launched"
     cd modules/payment-bot
     mkdir -p ${DB_FILENAME%/*}
     touch $DB_FILENAME
