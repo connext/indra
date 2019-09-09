@@ -4,11 +4,11 @@ set -e
 project="indra"
 
 test_command='
-  jest --setupFiles dotenv-extended/config --runInBand --forceExit '"$@"'
+  jest --setupFiles dotenv-extended/config --runInBand --forceExit '"'$@'"'
 '
 
 watch_command='
-  exec jest --setupFiles dotenv-extended/config --runInBand --forceExit --watch '"$@"'
+  CI=true exec jest --color --setupFiles dotenv-extended/config --runInBand --watch '"$@"'
 '
 
 if [[ "$1" == "--watch" ]]

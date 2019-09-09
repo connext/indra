@@ -62,7 +62,7 @@ if [[ -z "`docker service ls | grep ${project}_daicard`" ]]
 then env="--env publicUrl=https://localhost"
 fi
 
-if [[ "$1" == "watch" ]]
+if [[ "$1" == "--watch" ]]
 then
   $cypress open $env
   exit 0

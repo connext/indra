@@ -106,11 +106,14 @@ start-test: prod deployed-contracts
 test-cf: cf-core
 	bash ops/test-cf.sh
 
+watch-cf: cf-core
+	bash ops/test-cf.sh --watch
+
 test-ui:
 	bash ops/test-ui.sh
 
 watch-ui: node-modules
-	bash ops/test-ui.sh watch
+	bash ops/test-ui.sh --watch
 
 test-bot:
 	bash ops/test-bot.sh
