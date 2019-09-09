@@ -9,7 +9,7 @@ import {
   SupportedApplication,
   SupportedNetwork,
 } from "@connext/types";
-import { Node as NodeTypes } from "@counterfactual/types";
+import { Node as CFCoreTypes } from "@counterfactual/types";
 import { providers } from "ethers";
 
 import { Logger } from "../lib/logger";
@@ -136,7 +136,7 @@ export class MockNodeClientApi implements INodeApiClient {
   public async subscribeToSwapRates(
     from: string,
     to: string,
-    store: NodeTypes.IStoreService,
+    store: CFCoreTypes.IStoreService,
   ): Promise<void> {}
 
   public async unsubscribeFromSwapRates(from: string, to: string): Promise<void> {}

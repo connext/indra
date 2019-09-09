@@ -1,4 +1,4 @@
-import { Node as NodeTypes } from "@counterfactual/types";
+import { Node as CFCoreTypes } from "@counterfactual/types";
 import { formatEther } from "ethers/utils";
 
 // TODO: use the client fn?
@@ -18,7 +18,7 @@ export const objMap = <T, F extends keyof T, R>(
 // TODO: remove
 export function logEthFreeBalance(
   assetId: string,
-  freeBalance: NodeTypes.GetFreeBalanceStateResult,
+  freeBalance: CFCoreTypes.GetFreeBalanceStateResult,
 ): void {
   console.info(`Channel's free balance of ${assetId}:`);
   const cb = (k: string, v: any): void => console.info(k, formatEther(v));

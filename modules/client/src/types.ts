@@ -6,10 +6,10 @@ import {
   ChannelState,
   MultisigState,
 } from "@connext/types";
-import { Node } from "@counterfactual/node";
-import { Node as NodeTypes } from "@counterfactual/types";
+import { Node as CFCoreTypes } from "@counterfactual/types";
 import { providers, utils } from "ethers";
 
+import { CFCore } from "./lib/cfCore";
 import { NodeApiClient } from "./node";
 
 export type BigNumber = utils.BigNumber;
@@ -32,7 +32,7 @@ export interface ClientOptions {
   // used when signing applications
   keyGen?: () => Promise<string>; // TODO: what will the type look like?
   safeSignHook?: (state: ChannelState | AppState) => Promise<string>;
-  store: NodeTypes.IStoreService;
+  store: CFCoreTypes.IStoreService;
   // TODO: state: string?
   logLevel?: number; // see logger.ts for meaning, optional
 
@@ -44,7 +44,7 @@ export interface ClientOptions {
 
 export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
-  cfModule: Node; // counterfactual node
+  cfCore: CFCore;
   contract?: MultisigState;
   messaging: IMessagingService;
   multisigAddress: string;

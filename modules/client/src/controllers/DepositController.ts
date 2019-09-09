@@ -1,5 +1,5 @@
 import { BigNumber, ChannelState, convert, DepositParameters } from "@connext/types";
-import { Node as CFModuleTypes } from "@counterfactual/types";
+import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
@@ -33,7 +33,7 @@ export class DepositController extends AbstractController {
     this.log.info("Registered!");
 
     try {
-      this.log.info(`Calling ${CFModuleTypes.RpcMethodName.DEPOSIT}`);
+      this.log.info(`Calling ${CFCoreTypes.RpcMethodName.DEPOSIT}`);
       const depositResponse = await this.connext.cfDeposit(amount, assetId);
       this.log.info(`Deposit Response: ${JSON.stringify(depositResponse, replaceBN, 2)}`);
 
@@ -71,7 +71,7 @@ export class DepositController extends AbstractController {
   ): Promise<string | undefined> => {
     // check asset balance of address
     // TODO: fix for non-eth balances
-    const depositAddr = publicIdentifierToAddress(this.cfModule.publicIdentifier);
+    const depositAddr = publicIdentifierToAddress(this.cfCore.publicIdentifier);
     let bal: BigNumber;
     if (assetId === AddressZero) {
       bal = await this.ethProvider.getBalance(depositAddr);
@@ -101,24 +101,24 @@ export class DepositController extends AbstractController {
   ////// Listener registration/deregistration
   private registerListeners(): void {
     this.listener.registerCfListener(
-      CFModuleTypes.EventName.DEPOSIT_CONFIRMED,
+      CFCoreTypes.EventName.DEPOSIT_CONFIRMED,
       this.depositConfirmedCallback,
     );
 
     this.listener.registerCfListener(
-      CFModuleTypes.EventName.DEPOSIT_FAILED,
+      CFCoreTypes.EventName.DEPOSIT_FAILED,
       this.depositFailedCallback,
     );
   }
 
   private removeListeners(): void {
     this.listener.removeCfListener(
-      CFModuleTypes.EventName.DEPOSIT_CONFIRMED,
+      CFCoreTypes.EventName.DEPOSIT_CONFIRMED,
       this.depositConfirmedCallback,
     );
 
     this.listener.removeCfListener(
-      CFModuleTypes.EventName.DEPOSIT_FAILED,
+      CFCoreTypes.EventName.DEPOSIT_FAILED,
       this.depositFailedCallback,
     );
   }

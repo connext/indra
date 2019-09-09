@@ -13,10 +13,10 @@ import {
   UnidirectionalLinkedTransferAppStage,
   UnidirectionalLinkedTransferAppStateBigNumber,
 } from "@connext/types";
-import { RejectInstallVirtualMessage } from "@counterfactual/node";
-import { Node as NodeTypes } from "@counterfactual/types";
+import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 
+import { RejectInstallVirtualMessage } from "../lib/cfCore";
 import { createLinkedHash, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
 import { falsy, invalid32ByteHexString, invalidAddress, notLessThanOrEqualTo } from "../validation";
 
@@ -133,7 +133,7 @@ export class ConditionalTransferController extends AbstractController {
       outcomeType,
       stateEncoding,
     } = appInfo;
-    const params: NodeTypes.ProposeInstallParams = {
+    const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,
@@ -157,8 +157,8 @@ export class ConditionalTransferController extends AbstractController {
       await new Promise((res: () => any, rej: () => any): void => {
         boundReject = this.rejectInstallTransfer.bind(null, rej);
         boundResolve = this.resolveInstallTransfer.bind(null, res);
-        this.listener.on(NodeTypes.EventName.INSTALL, boundResolve);
-        this.listener.on(NodeTypes.EventName.REJECT_INSTALL, boundReject);
+        this.listener.on(CFCoreTypes.EventName.INSTALL, boundResolve);
+        this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
       });
       this.log.info(`App was installed successfully!: ${JSON.stringify(res)}`);
       return res.appInstanceId;
@@ -199,8 +199,8 @@ export class ConditionalTransferController extends AbstractController {
   };
 
   private cleanupInstallListeners = (boundResolve: any, boundReject: any): void => {
-    this.listener.removeListener(NodeTypes.EventName.INSTALL, boundResolve);
-    this.listener.removeListener(NodeTypes.EventName.REJECT_INSTALL, boundReject);
+    this.listener.removeListener(CFCoreTypes.EventName.INSTALL, boundResolve);
+    this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
   };
 
   // add all executors/handlers here

@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
+import { CFCoreModule } from "../cfCore/cfCore.module";
 import { ConfigModule } from "../config/config.module";
 import { MessagingModule } from "../messaging/messaging.module";
-import { NodeModule } from "../node/node.module";
 import { PaymentProfileRepository } from "../paymentProfile/paymentProfile.repository";
 
 import { channelProviderFactory } from "./channel.provider";
@@ -15,7 +15,7 @@ import { ChannelService } from "./channel.service";
   exports: [ChannelService],
   imports: [
     MessagingModule,
-    NodeModule,
+    CFCoreModule,
     TypeOrmModule.forFeature([ChannelRepository, PaymentProfileRepository]),
     ConfigModule,
   ],

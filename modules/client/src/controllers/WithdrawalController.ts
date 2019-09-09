@@ -1,5 +1,5 @@
 import { BigNumber, ChannelState, convert, WithdrawParameters } from "@connext/types";
-import { Node as CFModuleTypes } from "@counterfactual/types";
+import { Node as CFCoreTypes } from "@counterfactual/types";
 import { TransactionResponse } from "ethers/providers";
 import { getAddress } from "ethers/utils";
 
@@ -31,7 +31,7 @@ export class WithdrawalController extends AbstractController {
     let transaction: TransactionResponse | undefined;
     try {
       if (!userSubmitted) {
-        this.log.info(`Calling ${CFModuleTypes.RpcMethodName.WITHDRAW_COMMITMENT}`);
+        this.log.info(`Calling ${CFCoreTypes.RpcMethodName.WITHDRAW_COMMITMENT}`);
         const withdrawResponse = await this.connext.cfWithdrawCommitment(
           amount,
           assetId,
@@ -43,7 +43,7 @@ export class WithdrawalController extends AbstractController {
         transaction = await this.node.withdraw(minTx);
         this.log.info(`Node Withdraw Response: ${JSON.stringify(transaction, replaceBN, 2)}`);
       } else {
-        this.log.info(`Calling ${CFModuleTypes.RpcMethodName.WITHDRAW}`);
+        this.log.info(`Calling ${CFCoreTypes.RpcMethodName.WITHDRAW}`);
         const withdrawResponse = await this.connext.cfWithdraw(amount, assetId, recipient);
         this.log.info(`Withdraw Response: ${JSON.stringify(withdrawResponse, replaceBN, 2)}`);
         transaction = await this.ethProvider.getTransaction(withdrawResponse.txHash);
@@ -109,24 +109,24 @@ export class WithdrawalController extends AbstractController {
   ////// Listener registration/deregistration
   private registerListeners(): void {
     this.listener.registerCfListener(
-      CFModuleTypes.EventName.WITHDRAWAL_CONFIRMED,
+      CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED,
       this.withdrawConfirmedCallback,
     );
 
     this.listener.registerCfListener(
-      CFModuleTypes.EventName.WITHDRAWAL_FAILED,
+      CFCoreTypes.EventName.WITHDRAWAL_FAILED,
       this.withdrawFailedCallback,
     );
   }
 
   private removeListeners(): void {
     this.listener.removeCfListener(
-      CFModuleTypes.EventName.WITHDRAWAL_CONFIRMED,
+      CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED,
       this.withdrawConfirmedCallback,
     );
 
     this.listener.removeCfListener(
-      CFModuleTypes.EventName.WITHDRAWAL_FAILED,
+      CFCoreTypes.EventName.WITHDRAWAL_FAILED,
       this.withdrawFailedCallback,
     );
   }
