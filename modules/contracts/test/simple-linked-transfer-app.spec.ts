@@ -1,7 +1,7 @@
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
-import { AddressZero, Zero } from "ethers/constants";
+import { Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
 
 import SimpleLinkedTransferApp from "../build/SimpleLinkedTransferApp.json";
@@ -17,7 +17,6 @@ type SimpleLinkedTransferAppState = {
   coinTransfers: CoinTransfer[];
   linkedHash: string;
   amount: BigNumber;
-  assetId: string;
   paymentId: string;
   preImage: string;
 };
@@ -30,8 +29,8 @@ const singleAssetTwoPartyCoinTransferEncoding = `
 
 const linkedTransferAppStateEncoding = `tuple(
   ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
+  bytes32 linkedHash,
   uint256 amount,
-  address assetId,
   bytes32 paymentId,
   bytes32 preImage
 )`;
@@ -56,16 +55,8 @@ const encodeAppState = (
   return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.coinTransfers]);
 };
 
-function createLinkedHash(
-  amount: BigNumber,
-  assetId: string,
-  paymentId: string,
-  preImage: string,
-): string {
-  return solidityKeccak256(
-    ["uint256", "address", "bytes32", "bytes32"],
-    [amount, assetId, paymentId, preImage],
-  );
+function createLinkedHash(amount: BigNumber, paymentId: string, preImage: string): string {
+  return solidityKeccak256(["uint256", "bytes32", "bytes32"], [amount, paymentId, preImage]);
 }
 
 describe("SimpleLinkedTransferApp", () => {
@@ -89,12 +80,10 @@ describe("SimpleLinkedTransferApp", () => {
       const paymentId = mkHash("0xa");
       const preImage = mkHash("0xb");
 
-      const linkedHash = createLinkedHash(transferAmount, senderAddr, paymentId, preImage);
-      console.log('linkedHash: ', linkedHash);
+      const linkedHash = createLinkedHash(transferAmount, paymentId, preImage);
 
       const preState: SimpleLinkedTransferAppState = {
         amount: transferAmount,
-        assetId: senderAddr,
         coinTransfers: [
           {
             amount: transferAmount,
@@ -109,11 +98,9 @@ describe("SimpleLinkedTransferApp", () => {
         paymentId,
         preImage,
       };
-      console.log('preState: ', preState);
 
       const postState: SimpleLinkedTransferAppState = {
         amount: transferAmount,
-        assetId: AddressZero,
         coinTransfers: [
           {
             amount: Zero,
@@ -130,8 +117,9 @@ describe("SimpleLinkedTransferApp", () => {
       };
 
       const ret = await computeOutcome(preState);
-      expect(ret).to.eq(encodeAppState(postState, true));
       const decoded = decodeAppState(ret);
+
+      expect(ret).to.eq(encodeAppState(postState, true));
       expect(decoded[0].to).eq(postState.coinTransfers[0].to);
       expect(decoded[0].amount.toString()).eq(postState.coinTransfers[0].amount.toString());
       expect(decoded[1].to).eq(postState.coinTransfers[1].to);
