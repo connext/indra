@@ -46,6 +46,8 @@ nats_image="nats:2.0.0-linux"
 proxy_image="${project}_proxy:dev"
 daicard_devserver_image="$builder_image"
 relay_image="${project}_relay"
+redis_image=redis:5-alpine
+redis_url="redis://redis:6379"
 
 node_port=8080
 nats_port=4222
@@ -155,6 +157,7 @@ services:
       INDRA_PG_USERNAME: $postgres_user
       INDRA_PORT: $node_port
       NODE_ENV: development
+      REDIS_URL: $redis_url
     networks:
       - $project
     ports:
@@ -198,6 +201,9 @@ services:
       - $project
     ports:
       - "$nats_port:$nats_port"
+
+  redis:
+    image: $redis_image
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
