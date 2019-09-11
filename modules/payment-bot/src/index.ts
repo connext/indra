@@ -213,11 +213,12 @@ async function run(): Promise<void> {
 }
 
 async function getOrCreateChannel(assetId?: string): Promise<void> {
-  const connextOpts = {
+  const connextOpts: connext.ClientOptions = {
     ethProviderUrl: config.ethProviderUrl,
     logLevel: config.logLevel,
     mnemonic: config.mnemonic,
     nodeUrl: config.nodeUrl,
+    webdisUrl: config.webdisUrl,
     store,
   };
   client = await connext.connect(connextOpts);

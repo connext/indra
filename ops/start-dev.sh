@@ -48,6 +48,7 @@ daicard_devserver_image="$builder_image"
 relay_image="${project}_relay"
 redis_image=redis:5-alpine
 redis_url="redis://redis:6379"
+webdis_image="anapsix/webdis"
 
 node_port=8080
 nats_port=4222
@@ -86,7 +87,7 @@ then
   echo "Created ATTACHABLE network with id $id"
 fi
 
-number_of_services=7 # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services=9 # NOTE: Gotta update this manually when adding/removing services :(
 
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
@@ -201,6 +202,13 @@ services:
       - $project
     ports:
       - "$nats_port:$nats_port"
+
+  webdis:
+    image: $webdis_image
+    ports:
+      - "7379:7379"
+    depends_on:
+      - "redis"
 
   redis:
     image: $redis_image

@@ -40,6 +40,7 @@ done
 DB_FILENAME="${DB_FILENAME:-.payment-bot-db/$identifier.json}"
 ETH_RPC_URL="${ETH_RPC_URL:-http://172.17.0.1:8545}"
 NODE_URL="${NODE_URL:-nats://172.17.0.1:4222}"
+WEBDIS_URL="${REDIS_URL:-http://172.17.0.1:7379}"
 
 # Damn I forget where I copy/pasted this witchcraft from, yikes.
 # It's supposed to find out whether we're calling this script from a shell & can print stuff
@@ -63,6 +64,7 @@ docker run \
   --env="ETH_RPC_URL=$ETH_RPC_URL" \
   --env="MNEMONIC=$mnemonic" \
   --env="NODE_URL=$NODE_URL" \
+  --env="WEBDIS_URL=$REDIS_URL" \
   $interactive \
   --name="${project}_payment_bot_$identifier" \
   --rm \

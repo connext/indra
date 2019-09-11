@@ -38,6 +38,7 @@ function wait_for {
 wait_for "database" "$INDRA_PG_HOST:$INDRA_PG_PORT"
 wait_for "nats" "$INDRA_NATS_SERVERS"
 wait_for "ethprovider" "$INDRA_ETH_RPC_URL"
+wait_for "redis" "$INDRA_REDIS_URL"
 
 if [[ "$NODE_ENV" == "development" ]]
 then

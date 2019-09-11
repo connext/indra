@@ -5,6 +5,10 @@ if (!process.env.NODE_URL) {
   throw Error("No node url specified in env. Exiting.");
 }
 
+if (!process.env.WEBDIS_URL) {
+  throw Error("No node url specified in env. Exiting.");
+}
+
 if (!process.env.ETH_RPC_URL) {
   throw Error("No eth rpc url specified in env. Exiting.");
 }
@@ -49,5 +53,6 @@ export const config: any = {
   logLevel: 2,
   mnemonic: process.env.MNEMONIC!,
   nodeUrl: process.env.NODE_URL!,
+  webdisUrl: process.env.WEBDIS_URL!,
   ...program,
 };

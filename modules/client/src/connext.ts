@@ -1,4 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
+import { WebdisLockService } from "@connext/redis-lock";
 import {
   AppActionBigNumber,
   AppRegistry,
@@ -55,7 +56,16 @@ import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
  */
 
 export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
-  const { logLevel, ethProviderUrl, mnemonic, natsClusterId, nodeUrl, natsToken, store } = opts;
+  const {
+    logLevel,
+    ethProviderUrl,
+    mnemonic,
+    natsClusterId,
+    nodeUrl,
+    natsToken,
+    webdisUrl,
+    store,
+  } = opts;
   const logger = new Logger("ConnextConnect", logLevel);
 
   // setup network information
@@ -104,11 +114,15 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   const appRegistry = await node.appRegistry();
 
+  // create the lock service for cfCore
+  const lockService = new WebdisLockService(webdisUrl);
+
   // create new cfCore to inject into internal instance
   logger.info("creating new cf module");
   const cfCore = await CFCore.create(
     messaging,
     store,
+    lockService,
     {
       STORE_KEY_PREFIX: "store",
     }, // TODO: proper config

@@ -14,7 +14,8 @@
   },
   "dependencies": {
     "@counterfactual/types": "0.0.38",
-    "handy-redis": "^1.6.2"
+    "handy-redis": "^1.6.2",
+    "node-fetch": "^2.6.0"
   },
   "devDependencies": {
     "rollup": "1.21.2",
