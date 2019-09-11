@@ -22,6 +22,9 @@ export interface ClientOptions {
   // node information
   nodeUrl: string; // ws:// or nats:// urls are supported
 
+  // webdis URL for lock service
+  webdisUrl: string;
+
   // signing options, include at least one of the following
   mnemonic: string;
 
