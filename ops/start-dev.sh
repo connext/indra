@@ -205,6 +205,8 @@ services:
 
   webdis:
     image: $webdis_image
+    networks:
+      - $project
     ports:
       - "7379:7379"
     depends_on:
@@ -212,6 +214,11 @@ services:
 
   redis:
     image: $redis_image
+    networks:
+      - $project
+    ports:
+      - "6379:6379"
+
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
