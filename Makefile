@@ -148,7 +148,7 @@ messaging: node-modules $(shell find $(messaging)/src $(find_options))
 	$(docker_run) "cd modules/messaging && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-node: contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
+node: contracts types messaging redis-lock $(shell find $(node)/src $(node)/migrations $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build"
 	$(log_finish) && touch $(flags)/$@
@@ -176,6 +176,11 @@ proxy: $(shell find $(proxy) $(find_options))
 proxy-prod: daicard-prod $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/prod.dockerfile --tag $(project)_proxy:latest .
+	$(log_finish) && touch $(flags)/$@
+
+redis-lock: node-modules $(shell find $(types)/src $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/redis-lock && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
 types: node-modules messaging $(shell find $(types)/src $(find_options))
