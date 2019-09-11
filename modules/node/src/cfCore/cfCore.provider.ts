@@ -1,4 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
+import { RedisLockService } from "@connext/redis-lock";
 import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { Wallet } from "ethers";
@@ -21,6 +22,9 @@ export const cfCoreProviderFactory: Provider = {
     messaging: IMessagingService,
     store: CFCoreRecordRepository,
   ): Promise<CFCore> => {
+    // create redis lock servuce
+    const lockService = new RedisLockService(config.getRedisUrl);
+
     await store.set([
       {
         path: EXTENDED_PRIVATE_KEY_PATH,
@@ -38,6 +42,7 @@ export const cfCoreProviderFactory: Provider = {
     const cfCore = await CFCore.create(
       messaging,
       store,
+      lockService,
       { STORE_KEY_PREFIX: "ConnextHub" },
       provider,
       await config.getContractAddresses(),

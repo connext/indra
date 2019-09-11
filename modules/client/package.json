@@ -14,7 +14,7 @@
     "@connext/cf-core": "0.2.72",
     "@connext/messaging": "0.0.21",
     "@connext/types": "0.0.21",
-    "@counterfactual/node": "0.2.73",
+    "@counterfactual/node": "0.2.75",
     "core-js": "3.2.1",
     "ethers": "4.0.36",
     "human-standard-token-abi": "2.0.0",
@@ -28,6 +28,6 @@
     "@types/uuid": "3.4.5",
     "jest": "24.9.0",
     "ts-jest": "24.0.2",
-    "typescript": "3.5.3"
+    "typescript": "3.6.3"
   }
 }

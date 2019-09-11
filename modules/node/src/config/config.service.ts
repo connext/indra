@@ -192,6 +192,10 @@ export class ConfigService implements OnModuleInit {
     };
   }
 
+  getRedisUrl(): string {
+    return this.get("INDRA_REDIS_URL");
+  }
+
   onModuleInit(): void {
     const wallet = Wallet.fromMnemonic(this.getMnemonic());
     this.wallet = wallet.connect(this.getEthProvider());

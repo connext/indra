@@ -156,8 +156,8 @@ services:
       INDRA_PG_PORT: $postgres_port
       INDRA_PG_USERNAME: $postgres_user
       INDRA_PORT: $node_port
+      INDRA_REDIS_URL: $redis_url
       NODE_ENV: development
-      REDIS_URL: $redis_url
     networks:
       - $project
     ports:
