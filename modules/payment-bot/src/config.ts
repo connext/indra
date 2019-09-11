@@ -6,7 +6,7 @@ if (!process.env.NODE_URL) {
 }
 
 if (!process.env.WEBDIS_URL) {
-  throw Error("No node url specified in env. Exiting.");
+  throw Error("No webdis url specified in env. Exiting.");
 }
 
 if (!process.env.ETH_RPC_URL) {

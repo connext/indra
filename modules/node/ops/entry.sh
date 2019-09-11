@@ -31,7 +31,7 @@ function wait_for {
     else echo "Error: missing port for host $host derived from target $target" && exit 1
     fi
   fi
-  echo "Waiting for $name ($host) to wake up..."
+  echo "Waiting for $name at $target ($host) to wake up..."
   bash ops/wait-for.sh -t 60 $host 2> /dev/null
 }
 

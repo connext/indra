@@ -64,7 +64,7 @@ docker run \
   --env="ETH_RPC_URL=$ETH_RPC_URL" \
   --env="MNEMONIC=$mnemonic" \
   --env="NODE_URL=$NODE_URL" \
-  --env="WEBDIS_URL=$REDIS_URL" \
+  --env="WEBDIS_URL=$WEBDIS_URL" \
   $interactive \
   --name="${project}_payment_bot_$identifier" \
   --rm \
