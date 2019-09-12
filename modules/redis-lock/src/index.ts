@@ -1,30 +1,57 @@
 import { Node } from "@counterfactual/types";
 import { createHandyClient, IHandyRedis } from "handy-redis";
 import nodeFetch from "node-fetch";
+import uuid from "uuid";
 
-export class RedisLockService implements Node.ILockService {
+export class RedisLockService implements Node.ILockInterface {
   private client?: IHandyRedis;
 
   constructor(redisUrl: string) {
     this.client = createHandyClient({ url: redisUrl });
   }
-  async get(path: string): Promise<Node.Lock> {
-    const stringified = await this.client!.get(path);
-    if (!stringified) {
-      return {
-        locked: false,
-        operation: "",
-      } as Node.Lock;
+
+  async acquireLock(
+    lockName: string,
+    callback: (...args: any[]) => any,
+    timeout: number,
+  ): Promise<any> {
+    let retval = null;
+    let rejectReason = null;
+    const unlockKey = await this.getOrCreateLock(lockName, timeout);
+
+    try {
+      retval = await callback();
+    } catch (e) {
+      // TODO: check exception... if the lock failed
+      rejectReason = e;
+    } finally {
+      await this.releaseLock(lockName, unlockKey!);
     }
-    return JSON.parse(stringified);
+
+    if (rejectReason) throw new Error(rejectReason);
+
+    return retval;
   }
 
-  async set(path: string, value: Node.Lock): Promise<void> {
-    await this.client!.set(path, JSON.stringify(value));
+  private async getOrCreateLock(lockName: string, timeout: number): Promise<string | null> {
+    const exists = this.client!.get(lockName);
+    const unlockKey = uuid.v1();
+    if (!exists) {
+      await this.client!.setex(lockName, timeout, unlockKey);
+      return unlockKey;
+    }
+    return exists;
+  }
+
+  private async releaseLock(lockName: string, unlockKey: string): Promise<void> {
+    const lock = await this.client!.get(lockName);
+    if (unlockKey === lock) {
+      await this.client!.set(lockName, "");
+    }
   }
 }
 
-export class WebdisLockService implements Node.ILockService {
+export class WebdisLockService implements Node.ILockInterface {
   private myFetch?: (url: RequestInfo, init?: RequestInit | undefined) => Promise<Response>;
 
   constructor(private readonly webdisUrl: string) {
@@ -40,22 +67,51 @@ export class WebdisLockService implements Node.ILockService {
     return this.constructWebdisCommandUrl("GET", [key]);
   }
 
+  private constructSetExCommand(key: string, timeout: number, value: string): string {
+    return this.constructWebdisCommandUrl("SETEX", [key, timeout.toString(), value]);
+  }
+
   private constructSetCommand(key: string, value: string): string {
     return this.constructWebdisCommandUrl("SET", [key, value]);
   }
 
-  async get(path: string): Promise<Node.Lock> {
-    const response = await this.myFetch!(this.constructGetCommand(path));
-    if (!response) {
-      return {
-        locked: false,
-        operation: "",
-      } as Node.Lock;
+  async acquireLock(
+    lockName: string,
+    callback: (...args: any[]) => any,
+    timeout: number,
+  ): Promise<any> {
+    let retval = null;
+    let rejectReason = null;
+    const unlockKey = await this.getOrCreateLock(lockName, timeout);
+
+    try {
+      retval = await callback();
+    } catch (e) {
+      // TODO: check exception... if the lock failed
+      rejectReason = e;
+    } finally {
+      await this.releaseLock(lockName, unlockKey!);
     }
-    return response.json();
+
+    if (rejectReason) throw new Error(rejectReason);
+
+    return retval;
   }
 
-  async set(path: string, value: Node.Lock): Promise<void> {
-    await this.myFetch!(this.constructSetCommand(path, JSON.stringify(value)));
+  private async getOrCreateLock(lockName: string, timeout: number): Promise<string | null> {
+    const exists = await this.myFetch!(this.constructGetCommand(lockName));
+    const unlockKey = uuid.v1();
+    if (!exists) {
+      await this.myFetch!(this.constructSetExCommand(lockName, timeout, unlockKey));
+      return unlockKey;
+    }
+    return exists.json();
+  }
+
+  private async releaseLock(lockName: string, unlockKey: string): Promise<void> {
+    const lock = await this.myFetch!(this.constructGetCommand(lockName));
+    if (unlockKey === (await lock.json())) {
+      await this.myFetch!(this.constructSetCommand(lockName, ""));
+    }
   }
 }
