@@ -59,7 +59,7 @@ export class AppRegistryService {
       return await this.cfCoreService.installApp(data.data.appInstanceId);
     } catch (e) {
       logger.error(`Caught error during proposed app validation, rejecting install`);
-      logger.error(e);
+      console.log(e);
       return await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
     }
   }
@@ -76,7 +76,7 @@ export class AppRegistryService {
       await this.verifyVirtualAppProposal(data.data, data.from);
     } catch (e) {
       logger.error(`Caught error during proposed app validation, rejecting virtual install`);
-      logger.error(e);
+      console.log(e);
       return await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
     }
   }
@@ -392,6 +392,8 @@ export class AppRegistryService {
     if (!registryAppInfo.allowNodeInstall) {
       throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
     }
+
+    logger.log(`App with params ${proposedAppParams.params} allowed to be installed`);
 
     await this.commonAppProposalValidation(proposedAppParams.params, initiatorIdentifier);
 
