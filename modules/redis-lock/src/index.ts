@@ -45,6 +45,7 @@ export class RedisLockService implements Node.ILockService {
     // acquire lock
     // if this function errors out, presumably it is because the lock
     // could not be acquired. this will bubble up to the caller
+    console.log(`Acquiring lock for ${lockName}`);
     const lock = await this.redlock.lock(lockName, timeout);
     console.log(`Lock acquired: ${lock.resource}: ${lock.value}`);
 
