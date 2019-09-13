@@ -25,7 +25,7 @@ export class RedisLockService implements Node.ILockService {
       retryCount: 10,
 
       // the time in ms between attempts
-      retryDelay: 200, // time in ms
+      retryDelay: 500, // time in ms
 
       // the max time in ms randomly added to retries
       // to improve performance under high contention
@@ -57,6 +57,7 @@ export class RedisLockService implements Node.ILockService {
       rejectReason = e;
     } finally {
       // unlock
+      console.log(`Releasing lock ${lock.resource}: ${lock.value}`);
       await lock.unlock();
       console.log(`Lock released: ${lock.resource}: ${lock.value}`);
     }
