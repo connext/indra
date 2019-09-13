@@ -1,9 +1,9 @@
-import { Node } from "@counterfactual/types";
+// import { Node } from "@counterfactual/types";
 import { createHandyClient, IHandyRedis } from "handy-redis";
 import nodeFetch from "node-fetch";
 import uuid from "uuid";
 
-export class RedisLockService implements Node.ILockInterface {
+export class RedisLockService /* implements Node.ILockInterface */ {
   private client?: IHandyRedis;
 
   constructor(redisUrl: string) {
@@ -51,7 +51,7 @@ export class RedisLockService implements Node.ILockInterface {
   }
 }
 
-export class WebdisLockService implements Node.ILockInterface {
+export class WebdisLockService /* implements Node.ILockInterface */ {
   private myFetch?: (url: RequestInfo, init?: RequestInit | undefined) => Promise<Response>;
 
   constructor(private readonly webdisUrl: string) {
