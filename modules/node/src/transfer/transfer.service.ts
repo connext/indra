@@ -1,10 +1,8 @@
 import {
-  ConditionalTransferInitialStateBigNumber,
   ResolveLinkedTransferResponse,
   SupportedApplications,
   UnidirectionalLinkedTransferAppActionBigNumber,
-  UnidirectionalLinkedTransferAppStage,
-  UnidirectionalLinkedTransferAppStateBigNumber,
+  SimpleLinkedTransferAppStateBigNumber,
 } from "@connext/types";
 import { AppInstanceJson, Node as CFCoreTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
@@ -13,11 +11,11 @@ import { BigNumber } from "ethers/utils";
 
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
+import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { Network } from "../constants";
-import { CFCoreService } from "../cfCore/cfCore.service";
 import { CLogger, createLinkedHash, delay, freeBalanceAddressFromXpub, replaceBN } from "../util";
 
 import {
@@ -117,11 +115,11 @@ export class TransferService {
     }
 
     // check that linked transfer app has been installed from sender
+    // TODO: i couldnt test this bc of install issues, make sure this still works
     const installedApps = await this.cfCoreService.getAppInstances();
     const senderApp = installedApps.find(
       (app: AppInstanceJson) =>
-        (app.latestState as UnidirectionalLinkedTransferAppStateBigNumber).linkedHash ===
-        linkedHash,
+        (app.latestState as SimpleLinkedTransferAppStateBigNumber).linkedHash === linkedHash,
     );
     if (!senderApp) {
       throw new Error(`App with provided hash has not been installed: ${linkedHash}`);
@@ -139,15 +137,13 @@ export class TransferService {
 
     const network = await this.configService.getEthNetwork();
     const appInfo = await this.appRegistryRepository.findByNameAndNetwork(
-      SupportedApplications.UnidirectionalLinkedTransferApp,
+      SupportedApplications.SimpleLinkedTransferApp,
       network.name as Network,
     );
 
-    const initialState: UnidirectionalLinkedTransferAppStateBigNumber = {
-      finalized: false,
-      linkedHash,
-      stage: UnidirectionalLinkedTransferAppStage.POST_FUND,
-      transfers: [
+    const initialState: SimpleLinkedTransferAppStateBigNumber = {
+      amount,
+      coinTransfers: [
         {
           amount: Zero,
           to: freeBalanceAddressFromXpub(userPubId),
@@ -157,7 +153,9 @@ export class TransferService {
           to: freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier),
         },
       ],
-      turnNum: Zero,
+      linkedHash,
+      paymentId,
+      preImage,
     };
 
     const receiverApp = await this.installLinkedTransferApp(
@@ -233,7 +231,7 @@ export class TransferService {
 
   async installLinkedTransferApp(
     userPubId: string,
-    initialState: ConditionalTransferInitialStateBigNumber,
+    initialState: SimpleLinkedTransferAppStateBigNumber,
     preImage: string,
     paymentId: string,
     transfer: LinkedTransfer,
@@ -304,12 +302,6 @@ export class TransferService {
       throw new Error(`cfCoreService.takeAction: ${e}`);
     }
 
-    try {
-      await this.waitForFinalize(appInstanceId);
-    } catch (e) {
-      logger.error(`waitForFinalize: ${e}`);
-    }
-
     // display final state of app
     const appInfo = await this.cfCoreService.getAppState(appInstanceId);
 
@@ -355,29 +347,6 @@ export class TransferService {
           }
         }
         logger.log(`App ${appInstanceId} installed after ${(retries * delayMs) / 1000}s`);
-        res(this.appId);
-      },
-    );
-  }
-
-  private waitForFinalize(appInstanceId: string): Promise<unknown> {
-    return new Promise(
-      async (res: (value?: unknown) => void, rej: (reason?: any) => void): Promise<void> => {
-        const isFinalized = async (): Promise<boolean> => {
-          const appInfo = await this.cfCoreService.getAppState(appInstanceId);
-          const appState = appInfo.state as UnidirectionalLinkedTransferAppStateBigNumber;
-          return appState.finalized;
-        };
-        let retries = 1;
-        while (!(await isFinalized())) {
-          logger.log(`Transfer has not been finalized... retry number ${retries}...`);
-          await delay(delayMs);
-          retries = retries + 1;
-          if (retries > maxRetries) {
-            return rej(`Timed out waiting for app ${appInstanceId} to finalize`);
-          }
-        }
-        logger.log(`App ${appInstanceId} finalized after ${(retries * delayMs) / 1000}s`);
         res(this.appId);
       },
     );
