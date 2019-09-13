@@ -7,20 +7,21 @@ import {
   LinkedTransferParameters,
   LinkedTransferResponse,
   RegisteredAppDetails,
+  SimpleLinkedTransferAppStateBigNumber,
   SupportedApplication,
   SupportedApplications,
   TransferCondition,
-  UnidirectionalLinkedTransferAppStage,
-  UnidirectionalLinkedTransferAppStateBigNumber,
 } from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
+import { AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 
 import { RejectInstallVirtualMessage } from "../lib/cfCore";
-import { createLinkedHash, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
+import { createLinkedHash, delay, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
 import { falsy, invalid32ByteHexString, invalidAddress, notLessThanOrEqualTo } from "../validation";
 
 import { AbstractController } from "./AbstractController";
+
+const MAX_RETRIES = 20;
 
 type ConditionalExecutors = {
   [index in TransferCondition]: (
@@ -57,17 +58,15 @@ export class ConditionalTransferController extends AbstractController {
     }
 
     const appInfo = this.connext.getRegisteredAppDetails(
-      SupportedApplications.UnidirectionalLinkedTransferApp as SupportedApplication,
+      SupportedApplications.SimpleLinkedTransferApp as SupportedApplication,
     );
 
     // install the transfer application
     const linkedHash = createLinkedHash({ amount, assetId, paymentId, preImage });
 
-    const initialState: UnidirectionalLinkedTransferAppStateBigNumber = {
-      finalized: false,
-      linkedHash,
-      stage: UnidirectionalLinkedTransferAppStage.POST_FUND,
-      transfers: [
+    const initialState: SimpleLinkedTransferAppStateBigNumber = {
+      amount,
+      coinTransfers: [
         {
           amount,
           to: freeBalanceAddressFromXpub(this.connext.publicIdentifier),
@@ -77,7 +76,9 @@ export class ConditionalTransferController extends AbstractController {
           to: freeBalanceAddressFromXpub(this.connext.nodePublicIdentifier),
         },
       ],
-      turnNum: Zero,
+      linkedHash,
+      paymentId,
+      preImage,
     };
 
     const appId = await this.conditionalTransferAppInstalled(
@@ -89,6 +90,8 @@ export class ConditionalTransferController extends AbstractController {
     if (!appId) {
       throw new Error(`App was not installed`);
     }
+
+    await this.waitForAppInstall();
 
     return {
       freeBalance: await this.connext.getFreeBalance(assetId),
@@ -120,7 +123,7 @@ export class ConditionalTransferController extends AbstractController {
   private conditionalTransferAppInstalled = async (
     initiatorDeposit: BigNumber,
     assetId: string,
-    initialState: ConditionalTransferInitialStateBigNumber,
+    initialState: SimpleLinkedTransferAppStateBigNumber,
     appInfo: RegisteredAppDetails,
   ): Promise<string | undefined> => {
     let boundResolve: (value?: any) => void;
@@ -128,10 +131,10 @@ export class ConditionalTransferController extends AbstractController {
 
     // note: intermediary is added in connext.ts as well
     const {
-      actionEncoding,
       appDefinitionAddress: appDefinition,
       outcomeType,
       stateEncoding,
+      actionEncoding,
     } = appInfo;
     const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {
@@ -207,4 +210,24 @@ export class ConditionalTransferController extends AbstractController {
   private conditionalExecutors: ConditionalExecutors = {
     LINKED_TRANSFER: this.handleLinkedTransfers,
   };
+
+  private async waitForAppInstall(): Promise<void> {
+    return new Promise(
+      async (res: any, rej: any): Promise<any> => {
+        const getAppIds = async (): Promise<string[]> => {
+          return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
+        };
+        let retries = 0;
+        while (!(await getAppIds()).includes(this.appId) && retries <= MAX_RETRIES) {
+          this.log.info(`found app id in the open apps... retry number ${retries}`);
+          await delay(100);
+          retries = retries + 1;
+        }
+
+        if (retries > MAX_RETRIES) rej();
+        this.log.info(`app installed after ${retries} retries`);
+        res();
+      },
+    );
+  }
 }
