@@ -122,12 +122,12 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const cfCore = await CFCore.create(
     messaging,
     store,
-    lockService,
     {
       STORE_KEY_PREFIX: "store",
     }, // TODO: proper config
     ethProvider,
     config.contractAddresses,
+    lockService,
   );
   node.setUserPublicIdentifier(cfCore.publicIdentifier);
   logger.info("created cf module successfully");
@@ -142,15 +142,16 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   if (!myChannel) {
     // TODO: make these types
     logger.info("no channel detected, creating channel..");
-    const creationData = await node.createChannel();
-    logger.info(`created channel, transaction: ${creationData}`);
     const creationEventData: CFCoreTypes.CreateChannelResult = await new Promise(
-      (res: any, rej: any): any => {
+      async (res: any, rej: any): Promise<any> => {
         const timer = setTimeout(() => rej("Create channel event not fired within 30s"), 30000);
         cfCore.once(CFCoreTypes.EventName.CREATE_CHANNEL, (data: CreateChannelMessage) => {
           clearTimeout(timer);
           res(data.data);
         });
+
+        const creationData = await node.createChannel();
+        logger.info(`created channel, transaction: ${creationData}`);
       },
     );
     logger.info(`create channel event data: ${JSON.stringify(creationEventData, replaceBN, 2)}`);

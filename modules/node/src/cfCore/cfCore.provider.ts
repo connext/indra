@@ -42,10 +42,10 @@ export const cfCoreProviderFactory: Provider = {
     const cfCore = await CFCore.create(
       messaging,
       store,
-      lockService,
       { STORE_KEY_PREFIX: "ConnextHub" },
       provider,
       await config.getContractAddresses(),
+      lockService,
     );
     logger.log("CFCore created");
     logger.log(`Public Identifier ${JSON.stringify(cfCore.publicIdentifier)}`);
