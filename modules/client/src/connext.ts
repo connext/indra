@@ -1,5 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { WebdisLockService } from "@connext/redis-lock";
+import { RedisLockService } from "@connext/redis-lock";
 import {
   AppActionBigNumber,
   AppRegistry,
@@ -115,7 +115,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const appRegistry = await node.appRegistry();
 
   // create the lock service for cfCore
-  const lockService = new WebdisLockService(webdisUrl);
+  // const lockService = new WebdisLockService(webdisUrl);
+  // TODO: switch back to webdis!!
+  const lockService = new RedisLockService(webdisUrl);
 
   // create new cfCore to inject into internal instance
   logger.info("creating new cf module");
