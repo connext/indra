@@ -218,8 +218,8 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
     logLevel: config.logLevel,
     mnemonic: config.mnemonic,
     nodeUrl: config.nodeUrl,
-    webdisUrl: config.webdisUrl,
     store,
+    webdisUrl: "172.17.0.1:6379" // config.webdisUrl,
   };
   client = await connext.connect(connextOpts);
   const nodeFBAddress = connext.utils.freeBalanceAddressFromXpub(client.nodePublicIdentifier);
