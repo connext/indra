@@ -45,9 +45,9 @@ export class RedisLockService implements Node.ILockService {
     // acquire lock
     // if this function errors out, presumably it is because the lock
     // could not be acquired. this will bubble up to the caller
-    console.log(`Acquiring lock for ${lockName}`);
+    console.log(`RedisLockService: Acquiring lock for ${lockName} ${Date.now()}`);
     const lock = await this.redlock.lock(lockName, timeout);
-    console.log(`Lock acquired: ${lock.resource}: ${lock.value}`);
+    console.log(`RedisLockService: Lock acquired: ${lock.resource}: ${lock.value}`);
 
     try {
       // run callback
@@ -57,9 +57,9 @@ export class RedisLockService implements Node.ILockService {
       rejectReason = e;
     } finally {
       // unlock
-      console.log(`Releasing lock ${lock.resource}: ${lock.value}`);
+      console.log(`RedisLockService: Releasing lock ${lock.resource}: ${lock.value}`);
       await lock.unlock();
-      console.log(`Lock released: ${lock.resource}: ${lock.value}`);
+      console.log(`RedisLockService: Lock released: ${lock.resource}: ${lock.value} ${Date.now()}`);
     }
 
     if (rejectReason) throw new Error(rejectReason);
@@ -104,7 +104,9 @@ export class WebdisLockService implements Node.ILockService {
       // TODO: check exception... if the lock failed
       rejectReason = e;
     } finally {
+      console.log(`WebdisLockService: Trying to release lock ${lockName}`);
       await this.releaseLock(lockName, unlockKey!);
+      console.log(`WebdisLockService: Lock released: ${lockName} ${Date.now()}`);
     }
 
     if (rejectReason) throw new Error(rejectReason);
@@ -113,6 +115,7 @@ export class WebdisLockService implements Node.ILockService {
   }
 
   private async tryToGetLock(lockName: string, timeout: number, unlockKey: string): Promise<void> {
+    console.log(`WebdisLockService: Acquiring lock for ${lockName} ${Date.now()}`);
     let retries = 1;
     while (retries < this.retryCount) {
       retries += 1;
@@ -130,8 +133,10 @@ export class WebdisLockService implements Node.ILockService {
   }
 
   private async releaseLock(lockName: string, unlockKey: string): Promise<void> {
+    console.log(`WebdisLockService: Fetching lock ${lockName}`);
     const lock = await this.myFetch(this.constructGetCommand(lockName));
     if (unlockKey === (await lock.json())) {
+      console.log(`WebdisLockService: Releasing lock ${lockName}`);
       await this.myFetch(this.constructDeleteCommand(lockName));
     }
   }
