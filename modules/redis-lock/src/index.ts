@@ -2,11 +2,11 @@ import { Node } from "@counterfactual/types";
 import Redis from "ioredis";
 import Redlock from "redlock";
 
-async function delay(ms: number): Promise<void> {
-  return new Promise(res => {
-    setTimeout(() => res(), ms);
-  });
-}
+// async function delay(ms: number): Promise<void> {
+//   return new Promise(res => {
+//     setTimeout(() => res(), ms);
+//   });
+// }
 
 export class RedisLockService implements Node.ILockService {
   private redlock: Redlock;
