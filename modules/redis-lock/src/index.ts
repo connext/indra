@@ -35,7 +35,7 @@ export class RedisLockService implements Node.ILockService {
       // the max time in ms randomly added to retries
       // to improve performance under high contention
       // see https://www.awsarchitectureblog.com/2015/03/backoff.html
-      retryJitter: 200, // time in ms
+      retryJitter: 50, // time in ms
     });
 
     this.redlock.on("clientError", err => {
