@@ -27,7 +27,7 @@ export class RedisLockService implements Node.ILockService {
 
       // the max number of times Redlock will attempt
       // to lock a resource before erroring
-      retryCount: 10,
+      retryCount: 100,
 
       // the time in ms between attempts
       retryDelay: 100, // time in ms
@@ -48,24 +48,21 @@ export class RedisLockService implements Node.ILockService {
     callback: (...args: any[]) => any,
     timeout: number,
   ): Promise<any> {
-    let retVal = null;
-    // let rejectReason = null;
+    const lockTTL = 10000;
+    timeout = lockTTL; // HACK-- switch bck to using given timeout
+    console.log(`Using lock ttl of ${timeout / 1000} seconds`);
 
-    const lockTTL = 1000;
-    console.log("Using lock ttl of 1 second");
-
-    // acquire lock
-    // if this function errors out, presumably it is because the lock
-    // could not be acquired. this will bubble up to the caller
     console.log(`RedisLockService: Acquiring lock for ${lockName} ${Date.now()}`);
 
-    return await new Promise((resolve, reject) => {
-      console.log("Put try/catch around lock acquisition");
+    return new Promise((resolve, reject) => {
       this.redlock
         .lock(lockName, lockTTL)
         .then(async (lock: Redlock.Lock) => {
-          console.log("Acquired the lock");
+          const acquiredAt = Date.now();
+          console.log(`Acquired lock at ${acquiredAt}:`);
           console.log(lock);
+
+          let retVal;
 
           try {
             // run callback
@@ -85,8 +82,14 @@ export class RedisLockService implements Node.ILockService {
                 resolve(retVal);
               })
               .catch((e: any) => {
-                console.error(`Failed to release the lock: ${e}`);
-                reject(e);
+                const acquisitionDelta = Date.now() - acquiredAt;
+                if (acquisitionDelta < timeout) {
+                  console.error(`Failed to release lock: ${e}; delta since lock acquisition: ${acquisitionDelta}`);
+                  reject(e);
+                } else {
+                  console.debug(`Failed to release the lock due to expired ttl: ${e}; `);
+                  if (retVal) resolve(retVal);
+                }
               });
           }
         })
@@ -96,7 +99,5 @@ export class RedisLockService implements Node.ILockService {
           reject(e);
         });
     });
-
-    // console.log(`RedisLockService: Lock acquired: ${lock.resource}: ${lock.value}`);
   }
 }
