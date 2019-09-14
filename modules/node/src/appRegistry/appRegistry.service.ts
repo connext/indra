@@ -1,7 +1,8 @@
 import {
   AllowedSwap,
   CoinTransfer,
-  KnownNodeAppNames,
+  SimpleLinkedTransferAppStateBigNumber,
+  SupportedApplications,
   UnidirectionalLinkedTransferAppStage,
   UnidirectionalLinkedTransferAppState,
   UnidirectionalLinkedTransferAppStateBigNumber,
@@ -213,6 +214,67 @@ export class AppRegistryService {
     );
   }
 
+  private async validateSimpleTransfer(params: CFCoreTypes.ProposeInstallParams): Promise<void> {
+    const {
+      responderDeposit,
+      initiatorDeposit,
+      initialState: initialStateBadType,
+    } = bigNumberifyObj(params);
+
+    const initialState = bigNumberifyObj(
+      initialStateBadType,
+    ) as SimpleLinkedTransferAppStateBigNumber;
+
+    initialState.coinTransfers = initialState.coinTransfers.map(
+      (transfer: CoinTransfer<BigNumber>) => bigNumberifyObj(transfer),
+    ) as any;
+
+    if (responderDeposit.gt(Zero)) {
+      throw new Error(
+        `Will not accept linked transfer install where node deposit is >0 ${JSON.stringify(
+          params,
+        )}`,
+      );
+    }
+
+    if (initiatorDeposit.lte(Zero)) {
+      throw new Error(
+        `Will not accept linked transfer install where initiator deposit is <=0 ${JSON.stringify(
+          params,
+        )}`,
+      );
+    }
+
+    if (!initialState.amount.eq(initiatorDeposit)) {
+      throw new Error(
+        `Payment amount bust be the same as initiator deposit ${JSON.stringify(params)}`,
+      );
+    }
+
+    if (bigNumberify(initialState.coinTransfers[0].amount).lte(Zero)) {
+      throw new Error(
+        `Cannot install a linked transfer app with a sender transfer of <= 0. Transfer amount: ${bigNumberify(
+          initialState.coinTransfers[0].amount,
+        ).toString()}`,
+      );
+    }
+
+    if (bigNumberify(initialState.coinTransfers[1].amount).lt(Zero)) {
+      throw new Error(
+        `Cannot install a linked transfer app with a redeemer transfer of < 0. Transfer amount: ${bigNumberify(
+          initialState.coinTransfers[1].amount,
+        ).toString()}`,
+      );
+    }
+
+    if (
+      !bigNumberify(initialState.coinTransfers[0].amount).eq(initiatorDeposit) ||
+      !bigNumberify(initialState.coinTransfers[1].amount).eq(responderDeposit)
+    ) {
+      throw new Error(`Mismatch between deposits and initial state, refusing to install.`);
+    }
+  }
+
   // TODO: update the linked transfer app so it doesnt use a state machine
   // and instead uses a computeOutcome, similar to the swap app
   private async validateLinkedTransfer(params: CFCoreTypes.ProposeInstallParams): Promise<void> {
@@ -393,15 +455,21 @@ export class AppRegistryService {
       throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
     }
 
-    logger.log(`App with params ${proposedAppParams.params} allowed to be installed`);
+    logger.log(
+      `App with params ${JSON.stringify(
+        proposedAppParams.params,
+        null,
+        2,
+      )} allowed to be installed`,
+    );
 
     await this.commonAppProposalValidation(proposedAppParams.params, initiatorIdentifier);
 
     switch (registryAppInfo.name) {
-      case KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP:
+      case SupportedApplications.SimpleTwoPartySwapApp:
         await this.validateSwap(proposedAppParams.params);
         break;
-      case KnownNodeAppNames.UNIDIRECTIONAL_LINKED_TRANSFER:
+      case SupportedApplications.UnidirectionalLinkedTransferApp:
         await this.validateLinkedTransfer(proposedAppParams.params);
         await this.transferService.saveLinkedTransfer(
           initiatorIdentifier,
@@ -411,6 +479,20 @@ export class AppRegistryService {
           (proposedAppParams.params.initialState as UnidirectionalLinkedTransferAppState)
             .linkedHash,
         );
+        break;
+      case SupportedApplications.SimpleLinkedTransferApp:
+        // TODO: add validation of simple transfer validateSimpleTransfer
+        await this.validateSimpleTransfer(proposedAppParams.params);
+        console.log(`saving linked transfer`);
+        await this.transferService.saveLinkedTransfer(
+          initiatorIdentifier,
+          proposedAppParams.params.initiatorDepositTokenAddress,
+          bigNumberify(proposedAppParams.params.initiatorDeposit),
+          proposedAppParams.appInstanceId,
+          (proposedAppParams.params.initialState as UnidirectionalLinkedTransferAppState)
+            .linkedHash,
+        );
+        console.log(`saved!`);
         break;
       default:
         break;
@@ -464,7 +546,7 @@ export class AppRegistryService {
     }
 
     switch (registryAppInfo.name) {
-      case KnownNodeAppNames.UNIDIRECTIONAL_TRANSFER:
+      case SupportedApplications.UnidirectionalTransferApp:
         await this.validateTransfer(proposedAppParams.params);
         // TODO: move this to install
         await this.transferService.savePeerToPeerTransfer(
