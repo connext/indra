@@ -50,8 +50,8 @@ if [[ -z "$target_version" ]]
 then echo "Aborting: A new, unique version is required" && exit 1
 elif [[ "$package_versions" =~ "$target_version" ]]
 then echo "Aborting: A new, unique version is required" && exit 1
-# elif [[ "`get_latest_version $package_versions $target_version`" != "$target_version" ]]
-# then echo "Aborting: The new version should be bigger than old ones" && exit 1
+elif [[ "`get_latest_version $package_versions $target_version`" != "$target_version" ]]
+then echo "Aborting: The new version should be bigger than old ones" && exit 1
 fi
 
 echo "Confirm: we'll publish the current code to npm as @connext/{$packages}@$target_version (y/n)?"
