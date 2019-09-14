@@ -22,7 +22,7 @@ export class RedisLockService implements Node.ILockService {
 
       // the max number of times Redlock will attempt
       // to lock a resource before erroring
-      retryCount: 40,
+      retryCount: 50,
 
       // the time in ms between attempts
       retryDelay: 500, // time in ms
@@ -50,7 +50,7 @@ export class RedisLockService implements Node.ILockService {
     // if this function errors out, presumably it is because the lock
     // could not be acquired. this will bubble up to the caller
     console.log(`RedisLockService: Acquiring lock for ${lockName} ${Date.now()}`);
-    const lock = await this.redlock.lock(lockName, 15000);
+    const lock = await this.redlock.lock(lockName, 10000);
     console.log(`RedisLockService: Lock acquired: ${lock.resource}: ${lock.value}`);
 
     try {
@@ -62,14 +62,14 @@ export class RedisLockService implements Node.ILockService {
     } finally {
       // unlock
       console.log(`RedisLockService: Releasing lock ${lock.resource}: ${lock.value}`);
-      for (let i = 0; i < 20; i += 1) {
+      for (let i = 0; i < 30; i += 1) {
         try {
           await lock.unlock();
           break;
         } catch (e) {
           console.log(e);
           console.log(`Could not release lock, retry ${i}...`);
-          delay(100);
+          delay(500);
           if (i === 19) {
             throw e;
           }
