@@ -71,7 +71,6 @@ export class RedisLockService implements Node.ILockService {
             // run callback
             retVal = await callback();
             // return
-            resolve(retVal);
           } catch (e) {
             // TODO: check exception... if the lock failed
             console.error("Failed to execute callback while lock is held");
@@ -79,27 +78,16 @@ export class RedisLockService implements Node.ILockService {
           } finally {
             // unlock
             console.log(`RedisLockService: Releasing lock ${lock.resource}: ${lock.value}`);
-            let successfulUnlock = false;
-            for (let i = 0; i < 5; i += 1) {
-              lock
-                .unlock()
-                .then((value: any) => {
-                  console.log(`RedisLockService: Lock released: ${value}: ${Date.now()}`);
-                  successfulUnlock = true;
-                })
-                .catch((e: any) => {
-                  console.error(`Failed to release the lock: ${e}`);
-                  delay(500);
-                  if (i === 4) {
-                    reject(e);
-                  }
-                  console.log(`Could not release lock, retry ${i}...`);
-                });
-
-              if (successfulUnlock) {
-                break;
-              }
-            }
+            lock
+              .unlock()
+              .then(() => {
+                console.log(`RedisLockService: Lock released at: ${Date.now()}`);
+                resolve(retVal);
+              })
+              .catch((e: any) => {
+                console.error(`Failed to release the lock: ${e}`);
+                reject(e);
+              });
           }
         })
         .catch((e: any) => {
