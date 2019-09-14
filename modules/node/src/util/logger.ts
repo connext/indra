@@ -6,19 +6,19 @@ export class CLogger extends Logger {
     super();
     this.cxt = context || "";
   }
-  log(message: string) {
+  log(message: string): void {
     super.log(message, this.cxt);
   }
-  error(message: string, trace?: string) {
+  error(message: string, trace?: string): void {
     super.error(message, trace, this.cxt);
   }
-  warn(message: string) {
+  warn(message: string): void {
     super.warn(message, this.cxt);
   }
-  debug(message: string) {
+  debug(message: string): void {
     super.debug(message, this.cxt);
   }
-  verbose(message: string) {
+  verbose(message: string): void {
     super.verbose(message, this.cxt);
   }
 }
