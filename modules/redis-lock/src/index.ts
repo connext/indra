@@ -19,13 +19,6 @@ export class RedisLockService implements Node.ILockService {
         return delay;
       },
     });
-    const redisMonitor = new Redis(redisUrl);
-    console.log("Got redis client");
-    console.log(redis);
-
-    redisMonitor.monitor().then((monitor: NodeJS.EventEmitter) => {
-      monitor.on("monitor", console.log);
-    });
 
     this.redlock = new Redlock([redis], {
       // the expected clock drift; for more details
