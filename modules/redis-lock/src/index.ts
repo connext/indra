@@ -22,7 +22,7 @@ export class RedisLockService implements Node.ILockService {
 
       // the max number of times Redlock will attempt
       // to lock a resource before erroring
-      retryCount: 10,
+      retryCount: 30,
 
       // the time in ms between attempts
       retryDelay: 500, // time in ms
