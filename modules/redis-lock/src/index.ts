@@ -49,55 +49,62 @@ export class RedisLockService implements Node.ILockService {
     timeout: number,
   ): Promise<any> {
     let retVal = null;
-    let rejectReason = null;
+    // let rejectReason = null;
 
-    const lockTTL = 10000;
+    const lockTTL = 1000;
+    console.log("Using lock ttl of 1 second");
 
     // acquire lock
     // if this function errors out, presumably it is because the lock
     // could not be acquired. this will bubble up to the caller
     console.log(`RedisLockService: Acquiring lock for ${lockName} ${Date.now()}`);
 
-    let lock: Redlock.Lock;
-    try {
-      lock = await this.redlock.lock(lockName, lockTTL);
-    } catch (e) {
-      console.log(`Error while acquiring lock`);
-      console.log(e);
-      return;
-    }
+    return await new Promise((resolve, reject) => {
+      console.log("Put try/catch around lock acquisition");
+      this.redlock
+        .lock(lockName, lockTTL)
+        .then(async (lock: Redlock.Lock) => {
+          console.log("Acquired the lock");
+          console.log(lock);
 
-    console.log(`RedisLockService: Lock acquired: ${lock.resource}: ${lock.value}`);
-
-    try {
-      // run callback
-      retVal = await callback();
-    } catch (e) {
-      // TODO: check exception... if the lock failed
-      rejectReason = e;
-    } finally {
-      // unlock
-      console.log(`RedisLockService: Releasing lock ${lock.resource}: ${lock.value}`);
-      for (let i = 0; i < 30; i += 1) {
-        try {
-          await lock.unlock();
-          break;
-        } catch (e) {
-          console.log(e);
-          console.log(`Could not release lock, retry ${i}...`);
-          delay(500);
-          if (i === 19) {
-            throw e;
+          try {
+            // run callback
+            retVal = await callback();
+            // return
+            resolve(retVal);
+          } catch (e) {
+            // TODO: check exception... if the lock failed
+            console.error("Failed to execute callback while lock is held");
+            console.error(e);
+          } finally {
+            // unlock
+            console.log(`RedisLockService: Releasing lock ${lock.resource}: ${lock.value}`);
+            for (let i = 0; i < 5; i += 1) {
+              try {
+                await lock.unlock();
+                break;
+              } catch (e) {
+                console.log(e);
+                console.log(`Could not release lock, retry ${i}...`);
+                delay(500);
+                if (i === 4) {
+                  reject(e);
+                }
+                continue;
+              }
+            }
+            console.log(
+              `RedisLockService: Lock released: ${lock.resource}: ${lock.value} ${Date.now()}`,
+            );
           }
-          continue;
-        }
-      }
-      console.log(`RedisLockService: Lock released: ${lock.resource}: ${lock.value} ${Date.now()}`);
-    }
+        })
+        .catch((e: any) => {
+          console.error("Failed to acquire the lock");
+          console.error(e);
+          reject(e);
+        });
+    });
 
-    if (rejectReason) throw new Error(rejectReason);
-
-    // return
-    return retVal;
+    // console.log(`RedisLockService: Lock acquired: ${lock.resource}: ${lock.value}`);
   }
 }
