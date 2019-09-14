@@ -56,7 +56,7 @@ export class RedisLockService implements Node.ILockService {
 
     return new Promise((resolve, reject) => {
       this.redlock
-        .lock(lockName, lockTTL)
+        .lock(lockName, timeout)
         .then(async (lock: Redlock.Lock) => {
           const acquiredAt = Date.now();
           console.log(`Acquired lock at ${acquiredAt}:`);
