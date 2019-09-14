@@ -13,7 +13,7 @@ export class RedisLockService implements Node.ILockService {
 
   constructor(redisUrl: string) {
     const redis = new Redis(redisUrl, {
-      retryStrategy: function(times) {
+      retryStrategy: times => {
         console.log("Lost connection to redis. Retrying to connect...");
         const delay = Math.min(times * 50, 2000);
         return delay;
