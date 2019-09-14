@@ -116,11 +116,16 @@ export class TransferService {
 
     // check that linked transfer app has been installed from sender
     // TODO: i couldnt test this bc of install issues, make sure this still works
+    const defaultApp = (await this.configService.getDefaultApps()).find(
+      app => app.name === SupportedApplications.SimpleLinkedTransferApp,
+    );
     const installedApps = await this.cfCoreService.getAppInstances();
     const senderApp = installedApps.find(
       (app: AppInstanceJson) =>
+        app.appInterface.addr === defaultApp.appDefinitionAddress &&
         (app.latestState as SimpleLinkedTransferAppStateBigNumber).linkedHash === linkedHash,
     );
+
     if (!senderApp) {
       throw new Error(`App with provided hash has not been installed: ${linkedHash}`);
     }
@@ -175,7 +180,7 @@ export class TransferService {
     }
 
     try {
-      await this.finalizeAndUninstallTransferApp(receiverApp.receiverAppInstanceId, transfer);
+      await this.uninstallLinkedTransferApp(receiverApp.receiverAppInstanceId);
     } catch (e) {
       throw new Error(`finalizeAndUninstallTransferApp: ${e}`);
     }
@@ -217,7 +222,7 @@ export class TransferService {
     // uninstall sender app
     // dont await so caller isnt blocked by this
     // TODO: if sender is offline, this will fail
-    this.finalizeAndUninstallTransferApp(senderApp.identityHash, transfer).catch(logger.error);
+    this.uninstallLinkedTransferApp(senderApp.identityHash).catch(logger.error);
 
     return {
       freeBalance: await this.cfCoreService.getFreeBalance(
@@ -271,53 +276,7 @@ export class TransferService {
     // app will be finalized and uninstalled by the install listener in listener service
   }
 
-  async finalizeAndUninstallTransferApp(
-    appInstanceId: string,
-    transfer: LinkedTransfer,
-  ): Promise<void> {
-    const { amount, assetId, paymentId, preImage } = transfer;
-    // display initial state of app
-    const preActionApp = await this.cfCoreService.getAppState(appInstanceId);
-
-    // NOTE: was getting an error here, printing this in case it happens again
-    logger.log(`appInstanceId: ${appInstanceId}`);
-    logger.log(`preAction appInfo: ${JSON.stringify(preActionApp, replaceBN, 2)}`);
-    logger.log(
-      `preAction appInfo.transfers: ${JSON.stringify(
-        (preActionApp.state as any).transfers,
-        replaceBN,
-        2,
-      )}`,
-    );
-    const action: UnidirectionalLinkedTransferAppActionBigNumber = {
-      amount,
-      assetId,
-      paymentId,
-      preImage,
-    };
-
-    try {
-      await this.cfCoreService.takeAction(appInstanceId, action);
-    } catch (e) {
-      throw new Error(`cfCoreService.takeAction: ${e}`);
-    }
-
-    // display final state of app
-    const appInfo = await this.cfCoreService.getAppState(appInstanceId);
-
-    // NOTE: was getting an error here, printing this in case it happens again
-    logger.log(`postAction appInfo: ${JSON.stringify(appInfo, replaceBN, 2)}`);
-    // NOTE: sometimes transfers is a nested array, and sometimes its an
-    // array of objects. super bizzarre, but is what would contribute to errors
-    // with logging and casting.... :shrug:
-    logger.log(
-      `postAction appInfo.transfers: ${JSON.stringify(
-        (appInfo.state as any).transfers,
-        replaceBN,
-        2,
-      )}`,
-    );
-
+  async uninstallLinkedTransferApp(appInstanceId: string): Promise<void> {
     await this.cfCoreService.uninstallApp(appInstanceId);
 
     // adding a promise for now that polls app instances, but its not
