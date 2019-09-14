@@ -79,23 +79,27 @@ export class RedisLockService implements Node.ILockService {
           } finally {
             // unlock
             console.log(`RedisLockService: Releasing lock ${lock.resource}: ${lock.value}`);
+            let successfulUnlock = false;
             for (let i = 0; i < 5; i += 1) {
-              try {
-                await lock.unlock();
+              lock
+                .unlock()
+                .then((value: any) => {
+                  console.log(`RedisLockService: Lock released: ${value}: ${Date.now()}`);
+                  successfulUnlock = true;
+                })
+                .catch((e: any) => {
+                  console.error(`Failed to release the lock: ${e}`);
+                  delay(500);
+                  if (i === 4) {
+                    reject(e);
+                  }
+                  console.log(`Could not release lock, retry ${i}...`);
+                });
+
+              if (successfulUnlock) {
                 break;
-              } catch (e) {
-                console.log(e);
-                console.log(`Could not release lock, retry ${i}...`);
-                delay(500);
-                if (i === 4) {
-                  reject(e);
-                }
-                continue;
               }
             }
-            console.log(
-              `RedisLockService: Lock released: ${lock.resource}: ${lock.value} ${Date.now()}`,
-            );
           }
         })
         .catch((e: any) => {
