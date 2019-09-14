@@ -258,14 +258,6 @@ export type MultisigStateBigNumber = MultisigState<BigNumber>;
 ////////////////////////////////////
 ///////// NODE RESPONSE TYPES
 
-export const KnownNodeAppNames = {
-  SIMPLE_TRANSFER: "SimpleTransferApp",
-  SIMPLE_TWO_PARTY_SWAP: "SimpleTwoPartySwapApp",
-  UNIDIRECTIONAL_LINKED_TRANSFER: "UnidirectionalLinkedTransferApp",
-  UNIDIRECTIONAL_TRANSFER: "UnidirectionalTransferApp",
-};
-export type KnownNodeApp = keyof typeof KnownNodeAppNames;
-
 export type ContractAddresses = NetworkContext & {
   Token: string;
   [KnownNodeApp: string]: string;
