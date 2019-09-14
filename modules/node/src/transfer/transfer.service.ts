@@ -1,8 +1,7 @@
 import {
   ResolveLinkedTransferResponse,
-  SupportedApplications,
-  UnidirectionalLinkedTransferAppActionBigNumber,
   SimpleLinkedTransferAppStateBigNumber,
+  SupportedApplications,
 } from "@connext/types";
 import { AppInstanceJson, Node as CFCoreTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
