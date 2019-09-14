@@ -19,7 +19,7 @@ client=$(cwd)/modules/client
 messaging=$(cwd)/modules/messaging
 node=$(cwd)/modules/node
 proxy=$(cwd)/modules/proxy
-redis_lock=$(cwd)/modules/redis_lock
+redis-lock=$(cwd)/modules/redis-lock
 types=$(cwd)/modules/types
 
 # Setup docker run time
