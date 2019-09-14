@@ -214,7 +214,9 @@ export class AppRegistryService {
     );
   }
 
-  private async validateSimpleTransfer(params: CFCoreTypes.ProposeInstallParams): Promise<void> {
+  private async validateSimpleLinkedTransfer(
+    params: CFCoreTypes.ProposeInstallParams,
+  ): Promise<void> {
     const {
       responderDeposit,
       initiatorDeposit,
@@ -270,71 +272,6 @@ export class AppRegistryService {
     if (
       !bigNumberify(initialState.coinTransfers[0].amount).eq(initiatorDeposit) ||
       !bigNumberify(initialState.coinTransfers[1].amount).eq(responderDeposit)
-    ) {
-      throw new Error(`Mismatch between deposits and initial state, refusing to install.`);
-    }
-  }
-
-  // TODO: update the linked transfer app so it doesnt use a state machine
-  // and instead uses a computeOutcome, similar to the swap app
-  private async validateLinkedTransfer(params: CFCoreTypes.ProposeInstallParams): Promise<void> {
-    const {
-      responderDeposit,
-      initiatorDeposit,
-      initialState: initialStateBadType,
-    } = bigNumberifyObj(params);
-
-    if (responderDeposit.gt(Zero)) {
-      throw new Error(
-        `Will not accept linked transfer install where node deposit is >0 ${JSON.stringify(
-          params,
-        )}`,
-      );
-    }
-
-    const initialState = bigNumberifyObj(
-      initialStateBadType,
-    ) as UnidirectionalLinkedTransferAppStateBigNumber;
-
-    initialState.transfers = initialState.transfers.map((transfer: CoinTransfer<BigNumber>) =>
-      bigNumberifyObj(transfer),
-    ) as any;
-
-    logger.log(`initialState: ${JSON.stringify(initialState, replaceBN, 2)}`);
-
-    if (initialState.finalized) {
-      throw new Error(`Cannot install linked transfer app with finalized state`);
-    }
-
-    if (!initialState.turnNum.isZero()) {
-      throw new Error(`Cannot install a linked transfer app with nonzero turn number`);
-    }
-
-    if (initialState.stage !== UnidirectionalLinkedTransferAppStage.POST_FUND) {
-      throw new Error(
-        `Cannot install a linked transfer app with a stage other than the POST_FUND stage`,
-      );
-    }
-
-    if (bigNumberify(initialState.transfers[0].amount).lte(Zero)) {
-      throw new Error(
-        `Cannot install a linked transfer app with a sender transfer of <= 0. Transfer amount: ${bigNumberify(
-          initialState.transfers[0].amount,
-        ).toString()}`,
-      );
-    }
-
-    if (bigNumberify(initialState.transfers[1].amount).lt(Zero)) {
-      throw new Error(
-        `Cannot install a linked transfer app with a redeemer transfer of < 0. Transfer amount: ${bigNumberify(
-          initialState.transfers[1].amount,
-        ).toString()}`,
-      );
-    }
-
-    if (
-      !bigNumberify(initialState.transfers[0].amount).eq(initiatorDeposit) ||
-      !bigNumberify(initialState.transfers[1].amount).eq(responderDeposit)
     ) {
       throw new Error(`Mismatch between deposits and initial state, refusing to install.`);
     }
@@ -469,20 +406,9 @@ export class AppRegistryService {
       case SupportedApplications.SimpleTwoPartySwapApp:
         await this.validateSwap(proposedAppParams.params);
         break;
-      case SupportedApplications.UnidirectionalLinkedTransferApp:
-        await this.validateLinkedTransfer(proposedAppParams.params);
-        await this.transferService.saveLinkedTransfer(
-          initiatorIdentifier,
-          proposedAppParams.params.initiatorDepositTokenAddress,
-          bigNumberify(proposedAppParams.params.initiatorDeposit),
-          proposedAppParams.appInstanceId,
-          (proposedAppParams.params.initialState as UnidirectionalLinkedTransferAppState)
-            .linkedHash,
-        );
-        break;
       case SupportedApplications.SimpleLinkedTransferApp:
         // TODO: add validation of simple transfer validateSimpleTransfer
-        await this.validateSimpleTransfer(proposedAppParams.params);
+        await this.validateSimpleLinkedTransfer(proposedAppParams.params);
         console.log(`saving linked transfer`);
         await this.transferService.saveLinkedTransfer(
           initiatorIdentifier,
