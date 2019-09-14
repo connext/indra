@@ -203,15 +203,6 @@ services:
     ports:
       - "$nats_port:$nats_port"
 
-  webdis:
-    image: $webdis_image
-    networks:
-      - $project
-    ports:
-      - "7379:7379"
-    depends_on:
-      - "redis"
-
   redis:
     image: $redis_image
     networks:
