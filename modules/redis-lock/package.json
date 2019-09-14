@@ -19,7 +19,7 @@
     "ioredis": "^4.14.0",
     "node-fetch": "^2.6.0",
     "redlock": "^4.0.0",
-    "uuid": "^3.3.3"
+    "uuid": "3.3.3"
   },
   "devDependencies": {
     "rollup": "1.21.2",

@@ -1,8 +1,6 @@
 import { Node } from "@counterfactual/types";
 import Redis from "ioredis";
-import nodeFetch from "node-fetch";
 import Redlock from "redlock";
-import uuid from "uuid";
 
 async function delay(ms: number): Promise<void> {
   return new Promise(res => {
@@ -14,7 +12,21 @@ export class RedisLockService implements Node.ILockService {
   private redlock: Redlock;
 
   constructor(redisUrl: string) {
-    const redis = new Redis(redisUrl);
+    const redis = new Redis(redisUrl, {
+      retryStrategy: function(times) {
+        console.log("Lost connection to redis. Retrying to connect...");
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+      },
+    });
+    const redisMonitor = new Redis(redisUrl);
+    console.log("Got redis client");
+    console.log(redis);
+
+    redisMonitor.monitor().then((monitor: NodeJS.EventEmitter) => {
+      monitor.on("monitor", console.log);
+    });
+
     this.redlock = new Redlock([redis], {
       // the expected clock drift; for more details
       // see http://redis.io/topics/distlock
@@ -46,11 +58,13 @@ export class RedisLockService implements Node.ILockService {
     let retVal = null;
     let rejectReason = null;
 
+    const lockTTL = 10000;
+
     // acquire lock
     // if this function errors out, presumably it is because the lock
     // could not be acquired. this will bubble up to the caller
     console.log(`RedisLockService: Acquiring lock for ${lockName} ${Date.now()}`);
-    const lock = await this.redlock.lock(lockName, 10000);
+    const lock = await this.redlock.lock(lockName, lockTTL);
     console.log(`RedisLockService: Lock acquired: ${lock.resource}: ${lock.value}`);
 
     try {

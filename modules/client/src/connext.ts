@@ -117,6 +117,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // create the lock service for cfCore
   // const lockService = new WebdisLockService(webdisUrl);
   // TODO: switch back to webdis!!
+  console.log("lock service url being used: ", webdisUrl);
   const lockService = new RedisLockService(webdisUrl);
 
   // create new cfCore to inject into internal instance
