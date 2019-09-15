@@ -60,7 +60,6 @@ export class RedisLockService implements Node.ILockService {
         .then(async (lock: Redlock.Lock) => {
           const acquiredAt = Date.now();
           console.log(`Acquired lock at ${acquiredAt}:`);
-          console.log(lock);
 
           let retVal;
 
@@ -84,7 +83,9 @@ export class RedisLockService implements Node.ILockService {
               .catch((e: any) => {
                 const acquisitionDelta = Date.now() - acquiredAt;
                 if (acquisitionDelta < timeout) {
-                  console.error(`Failed to release lock: ${e}; delta since lock acquisition: ${acquisitionDelta}`);
+                  console.error(
+                    `Failed to release lock: ${e}; delta since lock acquisition: ${acquisitionDelta}`,
+                  );
                   reject(e);
                 } else {
                   console.debug(`Failed to release the lock due to expired ttl: ${e}; `);
