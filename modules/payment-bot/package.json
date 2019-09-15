@@ -12,7 +12,6 @@
   "license": "MIT",
   "dependencies": {
     "@connext/client": "0.0.21",
-    "@counterfactual/node": "0.2.72",
     "commander": "3.0.1",
     "dotenv": "8.1.0",
     "ethers": "4.0.36",
@@ -25,6 +24,6 @@
     "env-cmd": "10.0.1",
     "nodemon": "1.19.2",
     "ts-node": "8.3.0",
-    "typescript": "3.6.2"
+    "typescript": "3.5.3"
   }
 }

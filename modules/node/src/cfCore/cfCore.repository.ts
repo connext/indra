@@ -2,14 +2,14 @@ import { EntityManager, EntityRepository, Repository } from "typeorm";
 
 import { CLogger } from "../util";
 
-import { NodeRecord } from "./node.entity";
+import { CFCoreRecord } from "./cfCore.entity";
 
-// const logger = new CLogger("NodeRecordRepository");
+// const logger = new CLogger("CFCoreRecordRepository");
 
 type StringKeyValue = { [path: string]: StringKeyValue };
 
-@EntityRepository(NodeRecord)
-export class NodeRecordRepository extends Repository<NodeRecord> {
+@EntityRepository(CFCoreRecord)
+export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
   async reset(): Promise<void> {
     await this.clear();
   }
@@ -25,7 +25,7 @@ export class NodeRecordRepository extends Repository<NodeRecord> {
       res = await this.createQueryBuilder("node_records")
         .where("node_records.path like :path", { path: `%${path}%` })
         .getMany();
-      const nestedRecords = res.map((record: NodeRecord) => {
+      const nestedRecords = res.map((record: CFCoreRecord) => {
         const existingKey = Object.keys(record.value)[0];
         const leafKey = existingKey.split("/").pop()!;
         const nestedValue = record.value[existingKey];
@@ -37,7 +37,7 @@ export class NodeRecordRepository extends Repository<NodeRecord> {
       nestedRecords.forEach((record: any): void => {
         const key = Object.keys(record)[0];
         const value = Object.values(record)[0];
-        // FIXME: the store implementation (firebase) that the node used in the
+        // FIXME: the store implementation (firebase) that the cf core used in the
         // very first implementation of the store assumed that values which are
         // null wouldn't contain key entries in the returned object so we have to
         // explicitly remove these when Postgres correctly returns even null values
@@ -60,7 +60,7 @@ export class NodeRecordRepository extends Repository<NodeRecord> {
     for (const pair of pairs) {
       // Wrapping the value into an object is necessary for Postgres bc the JSON column breaks
       // if you use anything other than JSON (i.e. a raw string).
-      // In some cases, the node code is inserting strings as values instead of objects :(
+      // In some cases, the cf core code is inserting strings as values instead of objects :(
       const record = { path: pair.path, value: { [pair.path]: pair.value } };
       // logger.log(`Saving record: ${JSON.stringify(record)}`);
       await this.save(record);

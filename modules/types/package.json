@@ -12,16 +12,17 @@
     "prepare": "npm run build",
     "test": "./node_modules/.bin/jest"
   },
-  "dependencies": {},
+  "dependencies": {
+    "ethers": "4.0.36"
+  },
   "devDependencies": {
     "@connext/messaging": "0.0.21",
     "@counterfactual/types": "0.0.38",
     "@types/jest": "24.0.18",
-    "ethers": "4.0.36",
     "jest": "24.9.0",
-    "rollup": "1.20.3",
+    "rollup": "1.21.2",
     "rollup-plugin-typescript2": "0.24.0",
     "ts-jest": "24.0.2",
-    "typescript": "3.6.2"
+    "typescript": "3.5.3"
   }
 }

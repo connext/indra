@@ -1,5 +1,5 @@
 import { MessagingConfig } from "@connext/messaging";
-import { Address, NetworkContext, Node as NodeTypes, OutcomeType } from "@counterfactual/types";
+import { Address, NetworkContext, Node as CFCoreTypes, OutcomeType } from "@counterfactual/types";
 import { AddressZero } from "ethers/constants";
 import { BigNumber as ethersBig, getAddress, Network } from "ethers/utils";
 
@@ -29,7 +29,7 @@ export type SupportedNetwork = keyof typeof SupportedNetworks;
 
 export type IRegisteredAppDetails = {
   [index in SupportedApplication]: Partial<
-    NodeTypes.ProposeInstallVirtualParams & { initialStateFinalized: boolean }
+    CFCoreTypes.ProposeInstallVirtualParams & { initialStateFinalized: boolean }
   >;
 };
 
@@ -51,7 +51,7 @@ export type AppRegistry = RegisteredAppDetails[];
 //////// General
 export type App<T = string> = {
   id: number;
-  channel: NodeChannel;
+  channel: CFCoreChannel;
   appRegistry: RegisteredAppDetails;
   appId: number;
   xpubPartyA: string;
@@ -163,10 +163,10 @@ export enum UnidirectionalLinkedTransferAppStage {
 ////// CHANNEL TYPES
 
 // used to verify channel is in sequence
-export type ChannelAppSequences = { 
-  userAppSequenceNumber: number,
-  nodeAppSequenceNumber: number
-}
+export type ChannelAppSequences = {
+  userAppSequenceNumber: number;
+  nodeAppSequenceNumber: number;
+};
 
 // payment setups
 export type PaymentProfile<T = string> = {
@@ -186,10 +186,10 @@ export type AssetAmountBigNumber = AssetAmount<BigNumber>;
 export type User = {
   id: number;
   xpub: string;
-  channels: NodeChannel[];
+  channels: CFCoreChannel[];
 };
 
-export type NodeChannel = {
+export type CFCoreChannel = {
   id: number;
   nodePublicIdentifier: string;
   userPublicIdentifier: string;
@@ -221,7 +221,7 @@ export type ChannelState<T = string> = {
   apps: AppState<T>[];
   // TODO: CF types should all be generic, this will be
   // a BigNumber
-  freeBalance: NodeTypes.GetFreeBalanceStateResult;
+  freeBalance: CFCoreTypes.GetFreeBalanceStateResult;
 };
 export type ChannelStateBigNumber = ChannelState<BigNumber>;
 
@@ -287,7 +287,7 @@ export type GetConfigResponse = {
   messaging: MessagingConfig;
 };
 
-export type GetChannelResponse = NodeChannel;
+export type GetChannelResponse = CFCoreChannel;
 
 // returns the transaction hash of the multisig deployment
 // TODO: this will likely change
@@ -295,7 +295,7 @@ export type CreateChannelResponse = {
   transactionHash: string;
 };
 
-export type RequestCollateralResponse = NodeTypes.DepositResult | undefined;
+export type RequestCollateralResponse = CFCoreTypes.DepositResult | undefined;
 
 /////////////////////////////////
 ///////// SWAP
@@ -352,7 +352,7 @@ export type ResolveLinkedTransferParameters<T = string> = LinkedTransferParamete
   preImage: string;
 };
 export type ResolveLinkedTransferResponse = {
-  freeBalance: NodeTypes.GetFreeBalanceStateResult;
+  freeBalance: CFCoreTypes.GetFreeBalanceStateResult;
   paymentId: string;
 };
 
@@ -384,7 +384,7 @@ export type LinkedTransferParametersBigNumber = LinkedTransferParameters<BigNumb
 export type LinkedTransferResponse = {
   paymentId: string;
   preImage: string;
-  freeBalance: NodeTypes.GetFreeBalanceStateResult;
+  freeBalance: CFCoreTypes.GetFreeBalanceStateResult;
 };
 
 // FIXME: should be union type of all supported conditions

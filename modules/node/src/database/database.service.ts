@@ -5,16 +5,16 @@ import { InitNodeRecords1567158660577 } from "../../migrations/1567158660577-ini
 import { InitHubTables1567158805166 } from "../../migrations/1567158805166-init-hub-tables";
 import { AddCollateralizationInFlight1567601573372 } from "../../migrations/1567601573372-add-collateralization-in-flight";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
+import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { Channel } from "../channel/channel.entity";
 import { ConfigService } from "../config/config.service";
-import { NodeRecord } from "../node/node.entity";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { LinkedTransfer, PeerToPeerTransfer } from "../transfer/transfer.entity";
 
 const entities = [
   AppRegistry,
   Channel,
-  NodeRecord,
+  CFCoreRecord,
   PaymentProfile,
   LinkedTransfer,
   PeerToPeerTransfer,

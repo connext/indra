@@ -13,8 +13,10 @@
   "devDependencies": {
     "@counterfactual/cf-adjudicator-contracts": "0.0.6",
     "@counterfactual/cf-funding-protocol-contracts": "0.0.10",
+    "@counterfactual/cf-adjudicator-contracts": "0.0.6",
+    "@counterfactual/cf-funding-protocol-contracts": "0.0.10",
     "@counterfactual/types": "0.0.38",
-    "@types/chai": "4.2.1",
+    "@types/chai": "4.2.2",
     "chai": "4.2.0",
     "dotenv": "8.1.0",
     "eth-gas-reporter": "0.2.11",
@@ -22,7 +24,7 @@
     "ethers": "4.0.36",
     "openzeppelin-solidity": "2.3.0",
     "solc": "0.5.11",
-    "truffle": "5.0.34",
+    "truffle": "5.0.35",
     "truffle-hdwallet-provider": "1.0.17",
     "ts-mocha": "6.0.0",
     "ts-node": "8.3.0"

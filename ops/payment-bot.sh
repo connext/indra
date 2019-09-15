@@ -75,5 +75,5 @@ docker run \
     cd modules/payment-bot
     mkdir -p ${DB_FILENAME%/*}
     touch $DB_FILENAME
-    ts-node src/index.ts '"$args"'
+    ./node_modules/.bin/ts-node src/index.ts '"$args"'
   '

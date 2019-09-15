@@ -1,6 +1,6 @@
 {
-  "name": "indra-hub",
-	"version": "2.0.29",
+  "name": "indra-node",
+	"version": "2.0.30",
   "description": "",
   "author": "",
   "license": "MIT",
@@ -20,9 +20,11 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
+    "@connext/cf-core": "0.2.72",
     "@connext/messaging": "0.0.21",
+    "@counterfactual/contracts": "0.1.15",
     "@connext/types": "0.0.21",
-    "@counterfactual/node": "0.2.72",
+    "@counterfactual/node": "0.2.73",
     "@nestjs/common": "6.5.3",
     "@nestjs/core": "6.5.3",
     "@nestjs/microservices": "6.5.3",
@@ -40,6 +42,7 @@
     "uuid": "3.3.3"
   },
   "devDependencies": {
+    "@connext/types": "0.0.21",
     "@counterfactual/types": "0.0.38",
     "@nestjs/testing": "6.5.3",
     "@types/express": "4.17.1",
@@ -54,7 +57,7 @@
     "ts-jest": "24.0.2",
     "ts-node": "8.3.0",
     "tsconfig-paths": "3.8.0",
-    "typescript": "3.6.2",
+    "typescript": "3.5.3",
     "wait-on": "3.3.0"
   }
 }

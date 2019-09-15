@@ -11,9 +11,10 @@
     "test": "./node_modules/.bin/jest"
   },
   "dependencies": {
+    "@connext/cf-core": "0.2.72",
     "@connext/messaging": "0.0.21",
     "@connext/types": "0.0.21",
-    "@counterfactual/node": "0.2.72",
+    "@counterfactual/node": "0.2.73",
     "core-js": "3.2.1",
     "ethers": "4.0.36",
     "human-standard-token-abi": "2.0.0",
@@ -21,12 +22,12 @@
     "uuid": "3.3.3"
   },
   "devDependencies": {
-    "@babel/polyfill": "7.4.4",
+    "@babel/polyfill": "7.6.0",
     "@counterfactual/types": "0.0.38",
     "@types/jest": "24.0.18",
     "@types/uuid": "3.4.5",
     "jest": "24.9.0",
     "ts-jest": "24.0.2",
-    "typescript": "3.6.2"
+    "typescript": "3.5.3"
   }
 }

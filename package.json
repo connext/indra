@@ -1,6 +1,6 @@
 {
 	"name": "@connext/indra",
-	"version": "2.0.29",
+	"version": "2.0.30",
 	"description": "",
 	"repository": {
 		"type": "git",
@@ -20,7 +20,6 @@
 		"cypress": "3.4.1",
 		"ethers": "4.0.36",
 		"ganache-cli": "6.6.0",
-		"husky": "3.0.5",
 		"lerna": "3.16.4",
 		"openzeppelin-solidity": "2.3.0",
 		"solc": "0.5.11",

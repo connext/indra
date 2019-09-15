@@ -1,26 +1,26 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { EXTENDED_PRIVATE_KEY_PATH, Node } from "@counterfactual/node";
 import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { Wallet } from "ethers";
 import { HDNode } from "ethers/utils";
 
 import { ConfigService } from "../config/config.service";
-import { MessagingProviderId, NodeProviderId } from "../constants";
+import { CFCoreProviderId, MessagingProviderId } from "../constants";
 import { CLogger, freeBalanceAddressFromXpub } from "../util";
+import { CFCore, EXTENDED_PRIVATE_KEY_PATH } from "../util/cfCore";
 
-import { NodeRecordRepository } from "./node.repository";
+import { CFCoreRecordRepository } from "./cfCore.repository";
 
-const logger = new CLogger("NodeProvider");
+const logger = new CLogger("CFCoreProvider");
 
-export const nodeProviderFactory: Provider = {
-  inject: [ConfigService, MessagingProviderId, NodeRecordRepository],
-  provide: NodeProviderId,
+export const cfCoreProviderFactory: Provider = {
+  inject: [ConfigService, MessagingProviderId, CFCoreRecordRepository],
+  provide: CFCoreProviderId,
   useFactory: async (
     config: ConfigService,
     messaging: IMessagingService,
-    store: NodeRecordRepository,
-  ): Promise<Node> => {
+    store: CFCoreRecordRepository,
+  ): Promise<CFCore> => {
     await store.set([
       {
         path: EXTENDED_PRIVATE_KEY_PATH,
@@ -35,19 +35,19 @@ export const nodeProviderFactory: Provider = {
     logger.log(
       `Balance of signer address ${addr} on ${networkName} (chainId ${chainId}): ${balance}`,
     );
-    const node = await Node.create(
+    const cfCore = await CFCore.create(
       messaging,
       store,
       { STORE_KEY_PREFIX: "ConnextHub" },
       provider,
       await config.getContractAddresses(),
     );
-    logger.log("Node created");
-    logger.log(`Public Identifier ${JSON.stringify(node.publicIdentifier)}`);
+    logger.log("CFCore created");
+    logger.log(`Public Identifier ${JSON.stringify(cfCore.publicIdentifier)}`);
     logger.log(
-      `Free balance address ${JSON.stringify(freeBalanceAddressFromXpub(node.publicIdentifier))}`,
+      `Free balance address ${JSON.stringify(freeBalanceAddressFromXpub(cfCore.publicIdentifier))}`,
     );
-    return node;
+    return cfCore;
   },
 };
 

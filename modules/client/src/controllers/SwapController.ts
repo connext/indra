@@ -1,11 +1,11 @@
 import {
+  CFCoreChannel,
   convert,
-  NodeChannel,
   RegisteredAppDetails,
   SimpleSwapAppStateBigNumber,
   SwapParameters,
 } from "@connext/types";
-import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
+import { AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
@@ -24,7 +24,7 @@ export class SwapController extends AbstractController {
   private appId: string;
   private timeout: NodeJS.Timeout;
 
-  public async swap(params: SwapParameters): Promise<NodeChannel> {
+  public async swap(params: SwapParameters): Promise<CFCoreChannel> {
     // convert params + validate
     const { amount, toAssetId, fromAssetId, swapRate } = convert.SwapParameters(
       "bignumber",
@@ -87,7 +87,7 @@ export class SwapController extends AbstractController {
     const newState = await this.connext.getChannel();
 
     // TODO: fix the state / types!!
-    return newState as NodeChannel;
+    return newState as CFCoreChannel;
   }
 
   /////////////////////////////////
@@ -182,7 +182,7 @@ export class SwapController extends AbstractController {
 
     const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding } = appInfo;
 
-    const params: NodeTypes.ProposeInstallParams = {
+    const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,
@@ -206,8 +206,8 @@ export class SwapController extends AbstractController {
     await new Promise((res: any, rej: any): any => {
       boundReject = this.rejectInstallSwap.bind(null, rej);
       boundResolve = this.resolveInstallSwap.bind(null, res);
-      this.listener.on(NodeTypes.EventName.INSTALL, boundResolve);
-      this.listener.on(NodeTypes.EventName.REJECT_INSTALL, boundReject);
+      this.listener.on(CFCoreTypes.EventName.INSTALL, boundResolve);
+      this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
       // this.timeout = setTimeout(() => {
       //   this.log.info("Install swap app timed out, rejecting install.")
       //   this.cleanupInstallListeners(boundResolve, boundReject);
@@ -220,8 +220,8 @@ export class SwapController extends AbstractController {
   };
 
   private cleanupInstallListeners = (boundResolve: any, boundReject: any): void => {
-    this.listener.removeListener(NodeTypes.EventName.INSTALL, boundResolve);
-    this.listener.removeListener(NodeTypes.EventName.REJECT_INSTALL, boundReject);
+    this.listener.removeListener(CFCoreTypes.EventName.INSTALL, boundResolve);
+    this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
   };
 
   private swapAppUninstall = async (appId: string): Promise<void> => {

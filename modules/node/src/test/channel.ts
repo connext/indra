@@ -1,7 +1,7 @@
 import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 
-import { mockNodePublicIdentifier } from "./node";
+import { mockNodePublicIdentifier } from "./cfCore";
 import { mkXpub } from "./utils";
 
 export async function createTestChannel(

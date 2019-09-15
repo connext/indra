@@ -8,15 +8,14 @@ import {
   UnidirectionalTransferAppStage,
   UnidirectionalTransferAppStateBigNumber,
 } from "@connext/types";
-import { ProposeMessage, ProposeVirtualMessage } from "@counterfactual/node";
-import { Node as NodeTypes } from "@counterfactual/types";
+import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther } from "ethers/utils";
 
+import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
-import { NodeService } from "../node/node.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { TransferService } from "../transfer/transfer.service";
 import {
@@ -26,6 +25,7 @@ import {
   normalizeEthAddresses,
   replaceBN,
 } from "../util";
+import { ProposeMessage, ProposeVirtualMessage } from "../util/cfCore";
 import { isEthAddress } from "../validator";
 
 import { AppRegistry } from "./appRegistry.entity";
@@ -38,7 +38,7 @@ const ALLOWED_DISCREPANCY_PCT = 5;
 @Injectable()
 export class AppRegistryService {
   constructor(
-    private readonly nodeService: NodeService,
+    private readonly cfCoreService: CFCoreService,
     private readonly swapRateService: SwapRateService,
     private readonly channelService: ChannelService,
     private readonly transferService: TransferService,
@@ -53,14 +53,14 @@ export class AppRegistryService {
    */
   async allowOrReject(
     data: ProposeMessage,
-  ): Promise<NodeTypes.InstallResult | NodeTypes.RejectInstallResult> {
+  ): Promise<CFCoreTypes.InstallResult | CFCoreTypes.RejectInstallResult> {
     try {
       await this.verifyAppProposal(data.data, data.from);
-      return await this.nodeService.installApp(data.data.appInstanceId);
+      return await this.cfCoreService.installApp(data.data.appInstanceId);
     } catch (e) {
       logger.error(`Caught error during proposed app validation, rejecting install`);
       logger.error(e);
-      return await this.nodeService.rejectInstallApp(data.data.appInstanceId);
+      return await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
     }
   }
 
@@ -71,18 +71,18 @@ export class AppRegistryService {
    */
   async allowOrRejectVirtual(
     data: ProposeVirtualMessage,
-  ): Promise<void | NodeTypes.RejectInstallResult> {
+  ): Promise<void | CFCoreTypes.RejectInstallResult> {
     try {
       await this.verifyVirtualAppProposal(data.data, data.from);
     } catch (e) {
       logger.error(`Caught error during proposed app validation, rejecting virtual install`);
       logger.error(e);
-      return await this.nodeService.rejectInstallApp(data.data.appInstanceId);
+      return await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
     }
   }
 
   private async appProposalMatchesRegistry(
-    proposal: NodeTypes.ProposeInstallParams,
+    proposal: CFCoreTypes.ProposeInstallParams,
   ): Promise<AppRegistry> {
     const registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
       proposal.appDefinition,
@@ -111,7 +111,7 @@ export class AppRegistryService {
 
   // should validate any of the transfer-specific conditions,
   // specifically surrounding the initial state of the applications
-  private async validateTransfer(params: NodeTypes.ProposeInstallParams): Promise<void> {
+  private async validateTransfer(params: CFCoreTypes.ProposeInstallParams): Promise<void> {
     // perform any validation that is relevant to both virtual
     // and ledger applications sent from a client
     const {
@@ -164,7 +164,7 @@ export class AppRegistryService {
     }
   }
 
-  private async validateSwap(params: NodeTypes.ProposeInstallParams): Promise<void> {
+  private async validateSwap(params: CFCoreTypes.ProposeInstallParams): Promise<void> {
     const {
       initiatorDeposit,
       initiatorDepositTokenAddress,
@@ -215,7 +215,7 @@ export class AppRegistryService {
 
   // TODO: update the linked transfer app so it doesnt use a state machine
   // and instead uses a computeOutcome, similar to the swap app
-  private async validateLinkedTransfer(params: NodeTypes.ProposeInstallParams): Promise<void> {
+  private async validateLinkedTransfer(params: CFCoreTypes.ProposeInstallParams): Promise<void> {
     const {
       responderDeposit,
       initiatorDeposit,
@@ -279,7 +279,7 @@ export class AppRegistryService {
   }
 
   private async commonAppProposalValidation(
-    params: NodeTypes.ProposeInstallParams,
+    params: CFCoreTypes.ProposeInstallParams,
     initiatorIdentifier: string,
   ): Promise<void> {
     const {
@@ -319,7 +319,7 @@ export class AppRegistryService {
     const initiatorChannel = await this.channelRepository.findByUserPublicIdentifier(
       initiatorIdentifier,
     );
-    const freeBalanceInitiatorAsset = await this.nodeService.getFreeBalance(
+    const freeBalanceInitiatorAsset = await this.cfCoreService.getFreeBalance(
       initiatorIdentifier,
       initiatorChannel.multisigAddress,
       initiatorDepositTokenAddress,
@@ -333,10 +333,10 @@ export class AppRegistryService {
     }
 
     // make sure that the node has sufficient balance for requested deposit
-    const nodeIsResponder = proposedToIdentifier === this.nodeService.cfNode.publicIdentifier;
-    let freeBalanceResponderAsset: NodeTypes.GetFreeBalanceStateResult;
+    const nodeIsResponder = proposedToIdentifier === this.cfCoreService.cfCore.publicIdentifier;
+    let freeBalanceResponderAsset: CFCoreTypes.GetFreeBalanceStateResult;
     if (nodeIsResponder) {
-      freeBalanceResponderAsset = await this.nodeService.getFreeBalance(
+      freeBalanceResponderAsset = await this.cfCoreService.getFreeBalance(
         initiatorIdentifier,
         initiatorChannel.multisigAddress,
         responderDepositTokenAddress,
@@ -348,7 +348,7 @@ export class AppRegistryService {
       if (!responderChannel) {
         throw new Error(`Could not find channel for user: ${proposedToIdentifier}`);
       }
-      freeBalanceResponderAsset = await this.nodeService.getFreeBalance(
+      freeBalanceResponderAsset = await this.cfCoreService.getFreeBalance(
         proposedToIdentifier,
         responderChannel.multisigAddress,
         responderDepositTokenAddress,
@@ -376,12 +376,12 @@ export class AppRegistryService {
   // of this would be moved to a shared library.
   private async verifyAppProposal(
     proposedAppParams: {
-      params: NodeTypes.ProposeInstallParams;
+      params: CFCoreTypes.ProposeInstallParams;
       appInstanceId: string;
     },
     initiatorIdentifier: string,
   ): Promise<void> {
-    const myIdentifier = await this.nodeService.cfNode.publicIdentifier;
+    const myIdentifier = await this.cfCoreService.cfCore.publicIdentifier;
     if (initiatorIdentifier === myIdentifier) {
       logger.log(`Received proposal from our own node.`);
       return;
@@ -418,7 +418,7 @@ export class AppRegistryService {
 
   private async verifyVirtualAppProposal(
     proposedAppParams: {
-      params: NodeTypes.ProposeInstallVirtualParams;
+      params: CFCoreTypes.ProposeInstallVirtualParams;
       appInstanceId: string;
     },
     initiatorIdentifier: string,
@@ -438,13 +438,13 @@ export class AppRegistryService {
       proposedAppParams.params.proposedToIdentifier,
     );
 
-    const collateralFreeBal = await this.nodeService.getFreeBalance(
+    const collateralFreeBal = await this.cfCoreService.getFreeBalance(
       proposedToIdentifier,
       recipientChan.multisigAddress,
       initiatorDepositTokenAddress,
     );
 
-    const collateralAvailable = collateralFreeBal[this.nodeService.cfNode.freeBalanceAddress];
+    const collateralAvailable = collateralFreeBal[this.cfCoreService.cfCore.freeBalanceAddress];
 
     if (collateralAvailable.lt(initiatorDeposit)) {
       // TODO: best way to handle case where user is sending payment
