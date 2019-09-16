@@ -1,6 +1,8 @@
+import { IMessagingService } from "@connext/messaging";
 import { Node } from "@counterfactual/types";
 import Redis from "ioredis";
 import Redlock from "redlock";
+import { v4 as uuidV4 } from "uuid";
 
 // async function delay(ms: number): Promise<void> {
 //   return new Promise(res => {
@@ -13,7 +15,7 @@ export class RedisLockService implements Node.ILockService {
 
   constructor(redisUrl: string) {
     const redis = new Redis(redisUrl, {
-      retryStrategy: times => {
+      retryStrategy: (times: number): number => {
         console.log("Lost connection to redis. Retrying to connect...");
         const delay = Math.min(times * 50, 2000);
         return delay;
@@ -38,7 +40,7 @@ export class RedisLockService implements Node.ILockService {
       retryJitter: 1000, // time in ms
     });
 
-    this.redlock.on("clientError", err => {
+    this.redlock.on("clientError", (err: any) => {
       console.error("A redis error has occurred:", err);
     });
   }
@@ -49,19 +51,20 @@ export class RedisLockService implements Node.ILockService {
     timeout: number,
   ): Promise<any> {
     const lockTTL = 10000;
+    // @ts-ignore
     timeout = lockTTL; // HACK-- switch bck to using given timeout
     console.log(`Using lock ttl of ${timeout / 1000} seconds`);
 
     console.log(`RedisLockService: Acquiring lock for ${lockName} ${Date.now()}`);
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve: any, reject: any): any => {
       this.redlock
         .lock(lockName, timeout)
         .then(async (lock: Redlock.Lock) => {
           const acquiredAt = Date.now();
           console.log(`Acquired lock at ${acquiredAt}:`);
 
-          let retVal;
+          let retVal: any;
 
           try {
             // run callback
@@ -100,5 +103,33 @@ export class RedisLockService implements Node.ILockService {
           reject(e);
         });
     });
+  }
+}
+
+export class ProxyLockService implements Node.ILockService {
+  constructor(private readonly messaging: IMessagingService) {}
+
+  async acquireLock(
+    lockName: string,
+    callback: (...args: any[]) => any,
+    timeout: number,
+  ): Promise<any> {
+    await this.messaging.request(`lock.acquire.${lockName}`, 30_000, {
+      id: uuidV4(),
+    });
+
+    let retVal: any;
+    try {
+      retVal = await callback();
+    } catch (e) {
+      console.error("Failed to execute callback while lock is held");
+      console.error(e);
+    } finally {
+      await this.messaging.request(`lock.release.${lockName}`, 30_000, {
+        id: uuidV4(),
+      });
+    }
+
+    return retVal;
   }
 }
