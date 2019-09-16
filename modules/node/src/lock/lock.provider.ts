@@ -17,9 +17,9 @@ class LockMessaging extends AbstractMessagingProvider {
     return await this.lockService.acquireLock(lockName);
   }
 
-  async releaseLock(subject: string): Promise<Lock> {
+  async releaseLock(subject: string): Promise<void> {
     const lockName = subject.split(".").pop(); // last item of subject is lock name
-    return await this.lockService.acquireLock(lockName);
+    return await this.lockService.releaseLock(lockName);
   }
 
   async setupSubscriptions(): Promise<void> {
