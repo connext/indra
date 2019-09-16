@@ -1,6 +1,5 @@
 import {
   BigNumber,
-  ConditionalTransferInitialStateBigNumber,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
   convert,
