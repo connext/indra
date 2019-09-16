@@ -203,17 +203,6 @@ export class TransferService {
           freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)
         ].toString()}, expected ${amount.toString()}`,
       );
-    } else if (
-      postTransferBal[freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)].lte(
-        preTransferBal,
-      )
-    ) {
-      logger.warn("Free balance after transfer is lte free balance before transfer..");
-      logger.warn(
-        `preTransferBal: ${preTransferBal.toString()}, postTransferBalance: ${postTransferBal[
-          freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)
-        ].toString()}, expected ${amount.toString()}`,
-      );
     }
 
     this.linkedTransferRepository.markAsRedeemed(transfer, channel);
