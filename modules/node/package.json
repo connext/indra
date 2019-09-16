@@ -23,7 +23,6 @@
     "@connext/cf-core": "0.2.72",
     "@connext/messaging": "0.0.21",
     "@counterfactual/contracts": "0.1.15",
-    "@connext/types": "0.0.21",
     "@counterfactual/node": "0.2.73",
     "@nestjs/common": "6.5.3",
     "@nestjs/core": "6.5.3",
@@ -43,7 +42,7 @@
   },
   "devDependencies": {
     "@connext/types": "0.0.21",
-    "@counterfactual/types": "0.0.38",
+    "@counterfactual/types": "0.0.39",
     "@nestjs/testing": "6.5.3",
     "@types/express": "4.17.1",
     "@types/jest": "24.0.18",
