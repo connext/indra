@@ -13,6 +13,7 @@
     "prepare": "npm run build"
   },
   "dependencies": {
+    "@connext/messaging": "0.0.22",
     "@counterfactual/types": "0.0.39",
     "@types/ioredis": "^4.0.17",
     "@types/redlock": "^3.0.4",
