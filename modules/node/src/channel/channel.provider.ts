@@ -139,14 +139,17 @@ class ChannelMessaging extends AbstractMessagingProvider {
     });
   }
 
-  setupSubscriptions(): void {
-    super.connectRequestReponse("channel.get.>", this.getChannel.bind(this));
-    super.connectRequestReponse("channel.create.>", this.createChannel.bind(this));
-    super.connectRequestReponse("channel.request-collateral.>", this.requestCollateral.bind(this));
-    super.connectRequestReponse("channel.withdraw.>", this.withdraw.bind(this));
-    super.connectRequestReponse("channel.add-profile.>", this.addPaymentProfile.bind(this));
-    super.connectRequestReponse("channel.get-profile.>", this.getPaymentProfile.bind(this));
-    super.connectRequestReponse(
+  async setupSubscriptions(): Promise<void> {
+    await super.connectRequestReponse("channel.get.>", this.getChannel.bind(this));
+    await super.connectRequestReponse("channel.create.>", this.createChannel.bind(this));
+    await super.connectRequestReponse(
+      "channel.request-collateral.>",
+      this.requestCollateral.bind(this),
+    );
+    await super.connectRequestReponse("channel.withdraw.>", this.withdraw.bind(this));
+    await super.connectRequestReponse("channel.add-profile.>", this.addPaymentProfile.bind(this));
+    await super.connectRequestReponse("channel.get-profile.>", this.getPaymentProfile.bind(this));
+    await super.connectRequestReponse(
       "channel.verify-app-sequence.>",
       this.verifyAppSequenceNumber.bind(this),
     );

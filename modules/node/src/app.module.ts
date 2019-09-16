@@ -9,7 +9,9 @@ import { ChannelModule } from "./channel/channel.module";
 import { ConfigModule } from "./config/config.module";
 import { DatabaseModule } from "./database/database.module";
 import { ListenerModule } from "./listener/listener.module";
+import { LockModule } from "./lock/lock.module";
 import { MessagingModule } from "./messaging/messaging.module";
+import { RedisModule } from "./redis/redis.module";
 import { SwapRateModule } from "./swapRate/swapRate.module";
 import { TransferModule } from "./transfer/transfer.module";
 
@@ -26,6 +28,8 @@ import { TransferModule } from "./transfer/transfer.module";
     AppRegistryModule,
     TransferModule,
     ListenerModule,
+    RedisModule,
+    LockModule,
   ],
   providers: [AppService],
 })

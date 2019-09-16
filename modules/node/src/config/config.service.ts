@@ -154,6 +154,21 @@ export class ConfigService implements OnModuleInit {
             bool finalized
           )`,
       },
+      {
+        allowNodeInstall: true,
+        appDefinitionAddress: addressBook[SupportedApplications.SimpleLinkedTransferApp],
+        name: SupportedApplications.SimpleLinkedTransferApp,
+        network: Network[ethNetwork.name.toUpperCase()],
+        outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+        stateEncoding: `
+          tuple(
+            ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
+            bytes32 linkedHash,
+            uint256 amount,
+            bytes32 paymentId,
+            bytes32 preImage
+          )`,
+      },
     ];
   }
 
@@ -190,6 +205,10 @@ export class ConfigService implements OnModuleInit {
       port: parseInt(this.get("INDRA_PG_PORT"), 10),
       username: this.get("INDRA_PG_USERNAME"),
     };
+  }
+
+  getRedisUrl(): string {
+    return this.get("INDRA_REDIS_URL");
   }
 
   onModuleInit(): void {

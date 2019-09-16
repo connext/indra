@@ -22,6 +22,11 @@ export interface ClientOptions {
   // node information
   nodeUrl: string; // ws:// or nats:// urls are supported
 
+  // redis URL for lock service, if directly using
+  // if useRedisLock is set, must provide redis URL
+  useRedisLock?: boolean;
+  redisUrl?: string;
+
   // signing options, include at least one of the following
   mnemonic: string;
 

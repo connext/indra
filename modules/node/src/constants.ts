@@ -14,12 +14,15 @@ export enum Network {
 
 // PROVIDERS
 export const AppRegistryProviderId = "APP_REGISTRY";
+export const CFCoreProviderId = "CF_CORE";
 export const ChannelMessagingProviderId = "CHANNEL_MESSAGING";
 export const ConfigMessagingProviderId = "CONFIG_MESSAGING";
+export const LockProviderId = "LOCK";
 export const MedianizerProviderId = "MEDIANIZER";
 export const MessagingClientProviderId = "MESSAGING_CLIENT";
 export const MessagingProviderId = "MESSAGING";
-export const CFCoreProviderId = "CF_CORE";
+export const RedisProviderId = "REDIS";
+export const RedlockProviderId = "REDLOCK";
 export const SwapRateProviderId = "SWAP_RATE";
 export const TransferProviderId = "TRANSFER";
 

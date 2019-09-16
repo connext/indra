@@ -14,6 +14,7 @@ export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 ////// APP REGISTRY
 
 export const SupportedApplications = {
+  SimpleLinkedTransferApp: "SimpleLinkedTransferApp",
   SimpleTransferApp: "SimpleTransferApp",
   SimpleTwoPartySwapApp: "SimpleTwoPartySwapApp",
   UnidirectionalLinkedTransferApp: "UnidirectionalLinkedTransferApp",
@@ -104,6 +105,16 @@ export type SimpleTransferAppState<T = string> = {
   coinTransfers: CoinTransfer<T>[];
 };
 export type SimpleTransferAppStateBigNumber = SimpleTransferAppState<BigNumber>;
+
+//////// Simple linked transfer app
+export type SimpleLinkedTransferAppState<T = string> = {
+  coinTransfers: CoinTransfer<T>[];
+  linkedHash: string;
+  amount: T;
+  paymentId: string;
+  preImage: string;
+};
+export type SimpleLinkedTransferAppStateBigNumber = SimpleLinkedTransferAppState<BigNumber>;
 
 ////// Unidirectional transfer app
 export type UnidirectionalTransferAppState<T = string> = {
@@ -246,14 +257,6 @@ export type MultisigStateBigNumber = MultisigState<BigNumber>;
 
 ////////////////////////////////////
 ///////// NODE RESPONSE TYPES
-
-export const KnownNodeAppNames = {
-  SIMPLE_TRANSFER: "SimpleTransferApp",
-  SIMPLE_TWO_PARTY_SWAP: "SimpleTwoPartySwapApp",
-  UNIDIRECTIONAL_LINKED_TRANSFER: "UnidirectionalLinkedTransferApp",
-  UNIDIRECTIONAL_TRANSFER: "UnidirectionalTransferApp",
-};
-export type KnownNodeApp = keyof typeof KnownNodeAppNames;
 
 export type ContractAddresses = NetworkContext & {
   Token: string;

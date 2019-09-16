@@ -5,6 +5,7 @@ const tokenArtifacts = require('openzeppelin-solidity/build/contracts/ERC20Minta
 const { EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT: coreContracts } = require(`@counterfactual/types`)
 
 const appContracts = [
+  "SimpleLinkedTransferApp",
   "SimpleTransferApp",
   "SimpleTwoPartySwapApp",
   "UnidirectionalLinkedTransferApp",
@@ -31,6 +32,7 @@ const { formatEther, parseEther } = eth.utils
 ////////////////////////////////////////
 // Environment Setup
 
+const shouldPullUpdatesFromCF = false
 const botMnemonics = [
   'humble sense shrug young vehicle assault destroy cook property average silent travel',
   'roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult',
@@ -215,26 +217,28 @@ const sendGift = async (address, token) => {
   }
 
   ////////////////////////////////////////
-  // Update other network addresses
+  // Maybe update other network addresses
 
-  console.log(`\nUpdating addresses for other networks..`)
-  for (const chainId of ["3", "4", "42"]) {
-    const fundingArtifacts = require(`@counterfactual/cf-funding-protocol-contracts/networks/${chainId}.json`)
-    const adjudicatorArtifacts = require(`@counterfactual/cf-adjudicator-contracts/networks/${chainId}.json`)
-    for (const contract of coreContracts) {
-      const artifact = fundingArtifacts.find(c => c.contractName === contract)
-        || adjudicatorArtifacts.find(c => c.contractName === contract)
-      if (!artifact || !artifact.address) {
-        console.log(`Contract ${contract} not found in network ${chainId}`);
-        continue;
+  if (shouldPullUpdatesFromCF) {
+    console.log(`\nUpdating addresses for other networks..`)
+    for (const otherChainId of ["3", "4", "42"]) {
+      const fundingArtifacts = require(`@counterfactual/cf-funding-protocol-contracts/networks/${otherChainId}.json`)
+      const adjudicatorArtifacts = require(`@counterfactual/cf-adjudicator-contracts/networks/${otherChainId}.json`)
+      for (const contract of coreContracts) {
+        const artifact = fundingArtifacts.find(c => c.contractName === contract)
+          || adjudicatorArtifacts.find(c => c.contractName === contract)
+        if (!artifact || !artifact.address) {
+          console.log(`Contract ${contract} not found in network ${otherChainId}`);
+          continue;
+        }
+        address = artifact.address;
+        if (!addressBook[otherChainId]) addressBook[otherChainId] = {}
+        if (!addressBook[otherChainId][contract]) addressBook[otherChainId][contract] = {}
+        addressBook[otherChainId][contract] = { address }
       }
-      address = artifact.address;
-      if (!addressBook[chainId]) addressBook[chainId] = {}
-      if (!addressBook[chainId][contract]) addressBook[chainId][contract] = {}
-      addressBook[chainId][contract] = { address }
     }
+    saveAddressBook(addressBook)
   }
-  saveAddressBook(addressBook)
 
   ////////////////////////////////////////
   // Print summary

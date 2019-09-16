@@ -1,6 +1,6 @@
 {
 	"name": "@connext/indra",
-	"version": "2.0.29",
+	"version": "2.0.31",
 	"description": "",
 	"repository": {
 		"type": "git",
@@ -15,19 +15,18 @@
 	"devDependencies": {
 		"@counterfactual/cf-adjudicator-contracts": "0.0.6",
 		"@counterfactual/cf-funding-protocol-contracts": "0.0.10",
+		"@counterfactual/types": "0.0.39",
 		"chai-bn": "0.1.1",
 		"cypress": "3.4.1",
 		"ethers": "4.0.36",
-		"ganache-cli": "6.6.0",
+		"ganache-cli": "6.7.0",
 		"lerna": "3.16.4",
 		"openzeppelin-solidity": "2.3.0",
 		"solc": "0.5.11",
-		"tslint": "5.19.0",
+		"tslint": "5.20.0",
 		"tslint-config-airbnb": "5.11.1",
 		"tslint-config-prettier": "1.18.0",
 		"tslint-plugin-prettier": "2.0.1"
 	},
-	"dependencies": {
-		"@counterfactual/node": "^0.2.71"
-	}
+	"dependencies": {}
 }

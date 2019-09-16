@@ -88,9 +88,7 @@ export class ConnextListener extends EventEmitter {
       // applications
       this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data.data);
       // if the from is us, ignore
-      // FIXME: type of ProposeVirtualMessage should extend CFCore.NodeMessage,
-      // which has a from field, but ProposeVirtualMessage does not
-      if ((data as any).from === this.cfCore.publicIdentifier) {
+      if (data.from === this.cfCore.publicIdentifier) {
         return;
       }
       // check based on supported applications
