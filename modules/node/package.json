@@ -1,6 +1,6 @@
 {
   "name": "indra-node",
-  "version": "2.0.30",
+	"version": "2.0.31",
   "description": "",
   "author": "",
   "license": "MIT",
@@ -41,7 +41,7 @@
     "redlock": "^4.0.0",
     "reflect-metadata": "0.1.13",
     "rxjs": "6.5.3",
-    "typeorm": "0.2.18",
+    "typeorm": "0.2.19",
     "uuid": "3.3.3"
   },
   "devDependencies": {
@@ -57,10 +57,10 @@
     "nodemon": "1.19.2",
     "prettier": "1.18.2",
     "supertest": "4.0.2",
-    "ts-jest": "24.0.2",
-    "ts-node": "8.3.0",
-    "tsconfig-paths": "3.8.0",
-    "typescript": "3.6.3",
+    "ts-jest": "24.1.0",
+    "ts-node": "8.4.1",
+    "tsconfig-paths": "3.9.0",
+    "typescript": "3.5.3",
     "wait-on": "3.3.0"
   }
 }
