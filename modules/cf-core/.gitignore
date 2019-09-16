@@ -1,6 +1,5 @@
+*.sw[op]
 .env
-.jest.cache
-.rpt2_cache
 dist
 docs/venv/*
 jest-cache

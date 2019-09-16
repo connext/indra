@@ -9,17 +9,14 @@ import { Memoize } from "typescript-memoize";
 import { createRpcRouter } from "./api";
 import AutoNonceWallet from "./auto-nonce-wallet";
 import { Deferred } from "./deferred";
-import {
-  InstructionExecutor,
-  Opcode,
-  Protocol,
-  ProtocolMessage
-} from "./machine";
+import { Opcode, Protocol, ProtocolMessage, ProtocolRunner } from "./machine";
+import { StateChannel } from "./models";
 import { getFreeBalanceAddress } from "./models/free-balance";
 import {
   EthereumNetworkName,
   getNetworkContextForNetworkName
 } from "./network-configuration";
+import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
 import { getHDNode } from "./signer";
@@ -38,7 +35,7 @@ export class Node {
   private readonly incoming: EventEmitter;
   private readonly outgoing: EventEmitter;
 
-  private readonly instructionExecutor: InstructionExecutor;
+  private readonly protocolRunner: ProtocolRunner;
   private readonly networkContext: NetworkContext;
 
   private readonly ioSendDeferrals = new Map<
@@ -63,6 +60,7 @@ export class Node {
     nodeConfig: NodeConfig,
     provider: BaseProvider,
     networkOrNetworkContext: EthereumNetworkName | NetworkContext,
+    lockService?: NodeTypes.ILockService,
     blocksNeededForConfirmation?: number
   ): Promise<Node> {
     const node = new Node(
@@ -71,7 +69,8 @@ export class Node {
       nodeConfig,
       provider,
       networkOrNetworkContext,
-      blocksNeededForConfirmation
+      blocksNeededForConfirmation,
+      lockService
     );
 
     return await node.asynchronouslySetupUsingRemoteServices();
@@ -83,7 +82,8 @@ export class Node {
     private readonly nodeConfig: NodeConfig,
     private readonly provider: BaseProvider,
     networkContext: EthereumNetworkName | NetworkContext,
-    readonly blocksNeededForConfirmation: number = REASONABLE_NUM_BLOCKS_TO_WAIT
+    readonly blocksNeededForConfirmation: number = REASONABLE_NUM_BLOCKS_TO_WAIT,
+    private readonly lockService?: NodeTypes.ILockService
   ) {
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
@@ -93,7 +93,7 @@ export class Node {
         ? getNetworkContextForNetworkName(networkContext)
         : networkContext;
 
-    this.instructionExecutor = this.buildInstructionExecutor();
+    this.protocolRunner = this.buildProtocolRunner();
 
     log.info(
       `Waiting for ${this.blocksNeededForConfirmation} block confirmations`
@@ -110,12 +110,13 @@ export class Node {
       this.outgoing,
       this.storeService,
       this.messagingService,
-      this.instructionExecutor,
+      this.protocolRunner,
       this.networkContext,
       this.provider,
       new AutoNonceWallet(this.signer.privateKey, this.provider),
       `${this.nodeConfig.STORE_KEY_PREFIX}/${this.publicIdentifier}`,
-      this.blocksNeededForConfirmation!
+      this.blocksNeededForConfirmation!,
+      new ProcessQueue(this.lockService)
     );
     this.registerMessagingConnection();
     this.rpcRouter = createRpcRouter(this.requestHandler);
@@ -140,16 +141,16 @@ export class Node {
   }
 
   /**
-   * Instantiates a new _InstructionExecutor_ object and attaches middleware
+   * Instantiates a new _ProtocolRunner_ object and attaches middleware
    * for the OP_SIGN, IO_SEND, and IO_SEND_AND_WAIT opcodes.
    */
-  private buildInstructionExecutor(): InstructionExecutor {
-    const instructionExecutor = new InstructionExecutor(
+  private buildProtocolRunner(): ProtocolRunner {
+    const protocolRunner = new ProtocolRunner(
       this.networkContext,
       this.provider
     );
 
-    instructionExecutor.register(Opcode.OP_SIGN, async (args: any[]) => {
+    protocolRunner.register(Opcode.OP_SIGN, async (args: any[]) => {
       if (args.length !== 1 && args.length !== 2) {
         throw Error("OP_SIGN middleware received wrong number of arguments.");
       }
@@ -164,26 +165,22 @@ export class Node {
       return signingKey.signDigest(commitment.hashToSign());
     });
 
-    instructionExecutor.register(
-      Opcode.IO_SEND,
-      async (args: [ProtocolMessage]) => {
-        const [data] = args;
-        const fromXpub = this.publicIdentifier;
-        const to = data.toXpub;
+    protocolRunner.register(Opcode.IO_SEND, async (args: [ProtocolMessage]) => {
+      const [data] = args;
+      const fromXpub = this.publicIdentifier;
+      const to = data.toXpub;
 
-        await this.messagingService.send(to, {
-          data,
-          from: fromXpub,
-          type: NODE_EVENTS.PROTOCOL_MESSAGE_EVENT
-        } as NodeMessageWrappedProtocolMessage);
-      }
-    );
+      await this.messagingService.send(to, {
+        data,
+        from: fromXpub,
+        type: NODE_EVENTS.PROTOCOL_MESSAGE_EVENT
+      } as NodeMessageWrappedProtocolMessage);
+    });
 
-    instructionExecutor.register(
+    protocolRunner.register(
       Opcode.IO_SEND_AND_WAIT,
       async (args: [ProtocolMessage]) => {
         const [data] = args;
-        const fromXpub = this.publicIdentifier;
         const to = data.toXpub;
 
         const deferral = new Deferred<NodeMessageWrappedProtocolMessage>();
@@ -194,7 +191,7 @@ export class Node {
 
         await this.messagingService.send(to, {
           data,
-          from: fromXpub,
+          from: this.publicIdentifier,
           type: NODE_EVENTS.PROTOCOL_MESSAGE_EVENT
         } as NodeMessageWrappedProtocolMessage);
 
@@ -216,23 +213,32 @@ export class Node {
       }
     );
 
-    instructionExecutor.register(
-      Opcode.WRITE_COMMITMENT,
-      async (args: any[]) => {
+    protocolRunner.register(Opcode.WRITE_COMMITMENT, async (args: any[]) => {
+      const { store } = this.requestHandler;
+
+      const [protocol, commitment, ...key] = args;
+
+      if (protocol === Protocol.Withdraw) {
+        const [multisigAddress] = key;
+        await store.storeWithdrawalCommitment(multisigAddress, commitment);
+      } else {
+        await store.setCommitment([protocol, ...key], commitment);
+      }
+    });
+
+    protocolRunner.register(
+      Opcode.PERSIST_STATE_CHANNEL,
+      async (args: [StateChannel[]]) => {
         const { store } = this.requestHandler;
+        const [stateChannels] = args;
 
-        const [protocol, commitment, ...key] = args;
-
-        if (protocol === Protocol.Withdraw) {
-          const [multisigAddress] = key;
-          await store.storeWithdrawalCommitment(multisigAddress, commitment);
-        } else {
-          await store.setCommitment([protocol, ...key], commitment);
+        for (const stateChannel of stateChannels) {
+          await store.saveStateChannel(stateChannel);
         }
       }
     );
 
-    return instructionExecutor;
+    return protocolRunner;
   }
 
   /**

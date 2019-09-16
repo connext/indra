@@ -2,11 +2,7 @@ import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server
 import { parseEther } from "ethers/utils";
 
 import { Node } from "../../src";
-import {
-  InstallVirtualMessage,
-  NODE_EVENTS,
-  UpdateStateMessage
-} from "../../src/types";
+import { NODE_EVENTS } from "../../src/types";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
@@ -14,7 +10,9 @@ import { validAction } from "./tic-tac-toe";
 import {
   collateralizeChannel,
   constructTakeActionRpc,
+  constructUninstallVirtualRpc,
   createChannel,
+  installApp,
   installVirtualApp
 } from "./utils";
 
@@ -22,12 +20,15 @@ expect.extend({ toBeLt });
 
 jest.setTimeout(15000);
 
-describe("Concurrently taking action on virtual apps without issue", () => {
+describe("Concurrently taking action on regular app and uninstallling virtual app without issue", () => {
   let multisigAddressAB: string;
   let multisigAddressBC: string;
   let nodeA: Node;
   let nodeB: Node;
   let nodeC: Node;
+
+  let virtualId: string;
+  let appId: string;
 
   beforeEach(async () => {
     const context: SetupContext = await setup(global, true);
@@ -51,42 +52,38 @@ describe("Concurrently taking action on virtual apps without issue", () => {
       nodeC,
       parseEther("2")
     );
+
+    // install a virtual app to uninstall
+    const appDef = (global["networkContext"] as NetworkContextForTestSuite)
+      .TicTacToeApp;
+    virtualId = await installVirtualApp(nodeA, nodeB, nodeC, appDef);
+
+    // install regular app to take action
+    [appId] = await installApp(nodeA, nodeB, appDef);
   });
 
-  it("can handle two concurrent TTT virtual app take actions", async done => {
-    const INSTALLED_APPS = 2;
-    const appIds: string[] = [];
+  it("can handle concurrent uninstall virtual and take action by the same node", async done => {
+    let executedActions = 0;
 
-    nodeA.on(NODE_EVENTS.INSTALL_VIRTUAL, (msg: InstallVirtualMessage) => {
-      expect(msg.data.params.appInstanceId).toBeTruthy();
-      appIds.push(msg.data.params.appInstanceId);
+    const incrementAndEnd = () => {
+      executedActions += 1;
+      if (executedActions === 2) done();
+    };
+
+    nodeC.on(NODE_EVENTS.UNINSTALL_VIRTUAL, () => {
+      incrementAndEnd();
     });
 
-    for (const i of Array(INSTALLED_APPS)) {
-      await installVirtualApp(
-        nodeA,
-        nodeB,
-        nodeC,
-        (global["networkContext"] as NetworkContextForTestSuite).TicTacToeApp
-      );
-    }
-
-    while (appIds.length !== INSTALLED_APPS) {
-      await new Promise(resolve => setTimeout(resolve, 20));
-    }
-
-    let appsTakenActionOn = 0;
-    nodeC.on(NODE_EVENTS.UPDATE_STATE, async (msg: UpdateStateMessage) => {
-      appsTakenActionOn += 1;
-      if (appsTakenActionOn === 2) {
-        done();
-      }
+    nodeB.on(NODE_EVENTS.UPDATE_STATE, async () => {
+      incrementAndEnd();
     });
 
     const takeActionReq = (appId: string) =>
       constructTakeActionRpc(appId, validAction);
 
-    nodeA.rpcRouter.dispatch(takeActionReq(appIds[0]));
-    nodeA.rpcRouter.dispatch(takeActionReq(appIds[1]));
+    const uninstallReq = (appId: string) =>
+      constructUninstallVirtualRpc(appId, nodeB.publicIdentifier);
+    nodeB.rpcRouter.dispatch(takeActionReq(appId));
+    nodeA.rpcRouter.dispatch(uninstallReq(virtualId));
   });
 });

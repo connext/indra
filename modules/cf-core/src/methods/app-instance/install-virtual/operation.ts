@@ -1,7 +1,6 @@
 import { AppInstanceProposal, Node } from "@counterfactual/types";
 
-import { InstructionExecutor, Protocol } from "../../../machine";
-import { StateChannel } from "../../../models";
+import { Protocol, ProtocolRunner } from "../../../machine";
 import { Store } from "../../../store";
 import {
   NO_APP_INSTANCE_ID_TO_INSTALL,
@@ -10,7 +9,7 @@ import {
 
 export async function installVirtual(
   store: Store,
-  instructionExecutor: InstructionExecutor,
+  protocolRunner: ProtocolRunner,
   params: Node.InstallParams
 ): Promise<AppInstanceProposal> {
   const { appInstanceId } = params;
@@ -36,14 +35,12 @@ export async function installVirtual(
     timeout
   } = proposal;
 
-  let updatedStateChannelsMap: Map<string, StateChannel>;
-
   if (initiatorDepositTokenAddress !== responderDepositTokenAddress) {
     throw Error("Cannot install virtual app with different token addresses");
   }
 
   try {
-    updatedStateChannelsMap = await instructionExecutor.initiateProtocol(
+    await protocolRunner.initiateProtocol(
       Protocol.InstallVirtualApp,
       await store.getStateChannelsMap(),
       {
@@ -66,10 +63,6 @@ export async function installVirtual(
       `Node Error: ${VIRTUAL_APP_INSTALLATION_FAIL}\nStack Trace: ${e.stack}`
     );
   }
-
-  updatedStateChannelsMap.forEach(
-    async stateChannel => await store.saveStateChannel(stateChannel)
-  );
 
   await store.saveRealizedProposedAppInstance(proposal);
 

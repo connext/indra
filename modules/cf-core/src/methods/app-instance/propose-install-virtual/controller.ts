@@ -1,5 +1,4 @@
 import { Node } from "@counterfactual/types";
-import Queue from "p-queue";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
@@ -23,10 +22,10 @@ export default class ProposeInstallVirtualController extends NodeController {
   @jsonRpcMethod(Node.RpcMethodName.PROPOSE_INSTALL_VIRTUAL)
   public executeMethod = super.executeMethod;
 
-  protected async enqueueByShard(
+  protected async getRequiredLockNames(
     requestHandler: RequestHandler,
     params: Node.ProposeInstallVirtualParams
-  ): Promise<Queue[]> {
+  ): Promise<string[]> {
     const { publicIdentifier, networkContext } = requestHandler;
     const { proposedToIdentifier, intermediaryIdentifier } = params;
 
@@ -42,10 +41,7 @@ export default class ProposeInstallVirtualController extends NodeController {
       networkContext.MinimumViableMultisig
     );
 
-    return [
-      requestHandler.getShardedQueue(multisigAddress),
-      requestHandler.getShardedQueue(metachannelAddress)
-    ];
+    return [multisigAddress, metachannelAddress];
   }
 
   protected async executeMethodImplementation(
@@ -58,7 +54,8 @@ export default class ProposeInstallVirtualController extends NodeController {
       messagingService,
       networkContext
     } = requestHandler;
-    const { initialState } = params;
+
+    const { initialState, proposedToIdentifier } = params;
 
     if (!initialState) {
       throw Error(NULL_INITIAL_STATE_FOR_PROPOSAL);
@@ -85,13 +82,7 @@ export default class ProposeInstallVirtualController extends NodeController {
       }
     };
 
-    const nextNodeAddress = getNextNodeAddress(
-      publicIdentifier,
-      params.intermediaryIdentifier,
-      params.proposedToIdentifier
-    );
-
-    await messagingService.send(nextNodeAddress, proposalMsg);
+    await messagingService.send(proposedToIdentifier, proposalMsg);
 
     return {
       appInstanceId
