@@ -10,11 +10,12 @@ const logger = new CLogger("LockService");
 export class LockService {
   public locks: Record<string, Lock>;
 
-  constructor(@Inject(RedlockProviderId) private readonly redlockClient: Redlock) {}
+  constructor(@Inject(RedlockProviderId) private readonly redlockClient: Redlock) {
+    this.locks = {};
+  }
 
   async acquireLock(lockName: string, lockTTL: number = 10000): Promise<Lock> {
     logger.log(`Using lock ttl of ${lockTTL / 1000} seconds`);
-
     logger.log(`Acquiring lock for ${lockName} at ${Date.now()}`);
     return new Promise((resolve: any, reject: any): any => {
       this.redlockClient
@@ -24,6 +25,7 @@ export class LockService {
 
           // make lock automatically release in the hub's storage, in case we can't unlock
           setTimeout(() => {
+            logger.log(`Timeout, deleting lock ${lockName}`);
             delete this.locks[lockName];
           }, lockTTL);
 
