@@ -4,6 +4,9 @@ import Redlock from "redlock";
 
 import { ConfigService } from "../config/config.service";
 import { RedisProviderId, RedlockProviderId } from "../constants";
+import { CLogger } from "../util";
+
+const logger = new CLogger("RedisService");
 
 export const redisClientFactory: FactoryProvider = {
   inject: [ConfigService],
@@ -11,7 +14,7 @@ export const redisClientFactory: FactoryProvider = {
   useFactory: (config: ConfigService): Redis.Redis => {
     const redisClient = new Redis(config.getRedisUrl(), {
       retryStrategy: (times: number): number => {
-        console.log("Lost connection to redis. Retrying to connect...");
+        logger.warn("Lost connection to redis. Retrying to connect...");
         const delay = Math.min(times * 50, 2000);
         return delay;
       },

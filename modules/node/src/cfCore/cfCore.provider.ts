@@ -23,7 +23,7 @@ export const cfCoreProviderFactory: Provider = {
     store: CFCoreRecordRepository,
   ): Promise<CFCore> => {
     // create redis lock servuce
-    console.log("instantiating hub locking service: ", config.getRedisUrl());
+    logger.log(`instantiating hub locking service with redis: ${config.getRedisUrl()}`);
     const lockService = new RedisLockService(config.getRedisUrl());
 
     await store.set([
