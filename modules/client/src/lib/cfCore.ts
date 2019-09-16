@@ -13,7 +13,9 @@ export {
   UninstallVirtualMessage,
   UpdateStateMessage,
   WithdrawMessage,
-} from "@counterfactual/node";
+} from "@connext/cf-core";
+// } from "@counterfactual/node";
 
-// cf-core imports are segregated so that later,
-// importing from a local module is an easy option
+// Uncomment the desired source:
+// - @connext/cf-core is better for local dev bc you can add logs galore w/out wrestling w lerna
+// - @counterfactual/node might be better for prod once it stabilizes
