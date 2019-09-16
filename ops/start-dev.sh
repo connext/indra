@@ -48,7 +48,6 @@ daicard_devserver_image="$builder_image"
 relay_image="${project}_relay"
 redis_image=redis:5-alpine
 redis_url="redis://redis:6379"
-webdis_image="anapsix/webdis"
 
 node_port=8080
 nats_port=4222
