@@ -1,5 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { RedisLockService } from "@connext/redis-lock";
+import { ProxyLockService, RedisLockService } from "@connext/redis-lock";
 import {
   AppActionBigNumber,
   AppRegistry,
@@ -63,7 +63,8 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     natsClusterId,
     nodeUrl,
     natsToken,
-    webdisUrl,
+    useRedisLock,
+    redisUrl,
     store,
   } = opts;
   const logger = new Logger("ConnextConnect", logLevel);
@@ -115,10 +116,17 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const appRegistry = await node.appRegistry();
 
   // create the lock service for cfCore
-  // const lockService = new WebdisLockService(webdisUrl);
-  // TODO: switch back to webdis!!
-  console.log("lock service url being used: ", webdisUrl);
-  const lockService = new RedisLockService(webdisUrl);
+  let lockService: RedisLockService|ProxyLockService;
+  if (useRedisLock) {
+    logger.info("using redis directly as lock service");
+    if (!redisUrl) {
+      throw new Error(`redisUrl must be provided with useRedisLock`);
+    }
+    lockService = new RedisLockService(redisUrl);
+  } else {
+    logger.info("using node's proxy lock service");
+    lockService = new ProxyLockService(messaging);
+  }
 
   // create new cfCore to inject into internal instance
   logger.info("creating new cf module");
@@ -141,7 +149,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // TODO: make these types
   const myChannel = await node.getChannel();
 
-  let multisigAddress;
+  let multisigAddress: string;
   if (!myChannel) {
     // TODO: make these types
     logger.info("no channel detected, creating channel..");
