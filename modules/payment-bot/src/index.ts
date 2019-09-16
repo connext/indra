@@ -219,9 +219,8 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
     mnemonic: config.mnemonic,
     nodeUrl: config.nodeUrl,
     store,
-    webdisUrl: "172.17.0.1:6379", // config.webdisUrl,
+    useRedisLock: false,
   };
-  console.log("using webdisURL 172.17.0.1:6379");
   client = await connext.connect(connextOpts);
   const nodeFBAddress = connext.utils.freeBalanceAddressFromXpub(client.nodePublicIdentifier);
   console.log("Payment bot launched:");
