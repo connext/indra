@@ -1,7 +1,6 @@
 {
   "packages": [
-    "modules/*",
-    "counterfactual/packages/*"
+    "modules/*"
   ],
   "version": "0.0.0"
 }
