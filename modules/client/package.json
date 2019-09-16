@@ -1,6 +1,6 @@
 {
   "name": "@connext/client",
-  "version": "0.0.21",
+  "version": "0.1.0",
   "description": "Shared code between wallet and node",
   "main": "dist/index.js",
   "scripts": {
@@ -12,9 +12,10 @@
   },
   "dependencies": {
     "@connext/cf-core": "0.2.72",
-    "@connext/messaging": "0.0.21",
-    "@connext/types": "0.0.21",
-    "@counterfactual/node": "0.2.73",
+    "@connext/messaging": "0.1.0",
+    "@connext/redis-lock": "0.1.0",
+    "@connext/types": "0.1.0",
+    "@counterfactual/node": "0.2.76",
     "core-js": "3.2.1",
     "ethers": "4.0.36",
     "human-standard-token-abi": "2.0.0",
