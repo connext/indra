@@ -53,16 +53,16 @@ export class RedisLockService implements Node.ILockService {
     const lockTTL = 10000;
     // @ts-ignore
     timeout = lockTTL; // HACK-- switch bck to using given timeout
-    console.log(`Using lock ttl of ${timeout / 1000} seconds`);
+    console.log(`[RedisLockService] Using lock ttl of ${timeout / 1000} seconds`);
 
-    console.log(`RedisLockService: Acquiring lock for ${lockName} ${Date.now()}`);
+    console.log(`[RedisLockService] Acquiring lock for ${lockName} ${Date.now()}`);
 
     return new Promise((resolve: any, reject: any): any => {
       this.redlock
         .lock(lockName, timeout)
         .then(async (lock: Redlock.Lock) => {
           const acquiredAt = Date.now();
-          console.log(`Acquired lock at ${acquiredAt}:`);
+          console.log(`[RedisLockService] Acquired lock at ${acquiredAt} for ${lockName}:`);
 
           let retVal: any;
 
@@ -72,33 +72,37 @@ export class RedisLockService implements Node.ILockService {
             // return
           } catch (e) {
             // TODO: check exception... if the lock failed
-            console.error("Failed to execute callback while lock is held");
+            console.error("[RedisLockService] Failed to execute callback while lock is held");
             console.error(e);
           } finally {
             // unlock
-            console.log(`RedisLockService: Releasing lock ${lock.resource}: ${lock.value}`);
+            console.log(
+              `[RedisLockService] Releasing lock for ${lock.resource} with secret ${lock.value}`,
+            );
             lock
               .unlock()
               .then(() => {
-                console.log(`RedisLockService: Lock released at: ${Date.now()}`);
+                console.log(`[RedisLockService] Lock released at: ${Date.now()}`);
                 resolve(retVal);
               })
               .catch((e: any) => {
                 const acquisitionDelta = Date.now() - acquiredAt;
                 if (acquisitionDelta < timeout) {
                   console.error(
-                    `Failed to release lock: ${e}; delta since lock acquisition: ${acquisitionDelta}`,
+                    `[RedisLockService] Failed to release lock: ${e}; delta since lock acquisition: ${acquisitionDelta}`,
                   );
                   reject(e);
                 } else {
-                  console.debug(`Failed to release the lock due to expired ttl: ${e}; `);
+                  console.debug(
+                    `[RedisLockService] Failed to release the lock due to expired ttl: ${e}; `,
+                  );
                   if (retVal) resolve(retVal);
                 }
               });
           }
         })
         .catch((e: any) => {
-          console.error("Failed to acquire the lock");
+          console.error("[RedisLockService] Failed to acquire the lock");
           console.error(e);
           reject(e);
         });
@@ -114,22 +118,43 @@ export class ProxyLockService implements Node.ILockService {
     callback: (...args: any[]) => any,
     timeout: number,
   ): Promise<any> {
-    await this.messaging.request(`lock.acquire.${lockName}`, 30_000, {
-      id: uuidV4(),
-    });
+    const lockValue = await this.send(`lock.acquire.${lockName}`);
+    console.log("lockValue: ", lockValue);
+    console.log(
+      `[ProxyLockService] Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`,
+    );
 
     let retVal: any;
     try {
       retVal = await callback();
     } catch (e) {
-      console.error("Failed to execute callback while lock is held");
+      console.error("[ProxyLockService] Failed to execute callback while lock is held");
       console.error(e);
     } finally {
-      await this.messaging.request(`lock.release.${lockName}`, 30_000, {
-        id: uuidV4(),
+      await this.send(`lock.release.${lockName}`, {
+        lockValue,
       });
+      console.log(`[ProxyLockService] Released lock at ${Date.now()} for ${lockName}`);
     }
 
     return retVal;
+  }
+
+  private async send(subject: string, data?: any): Promise<any | undefined> {
+    const msg = await this.messaging.request(subject, 30_000, {
+      ...data,
+      id: uuidV4(),
+    });
+    if (!msg.data) {
+      console.log(`Maybe this message is malformed: ${JSON.stringify(msg, null, 2)}`);
+      return undefined;
+    }
+    const { err, response } = msg.data;
+    const responseErr = response && response.err;
+    if (err || responseErr) {
+      throw new Error(`Error sending request. Message: ${JSON.stringify(msg, null, 2)}`);
+    }
+    const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
+    return !response || isEmptyObj ? undefined : response;
   }
 }
