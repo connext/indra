@@ -81,10 +81,12 @@ export class ConditionalTransferController extends AbstractController {
     };
 
     await new Promise(async (resolve, reject) => {
-      this.connext.messaging.subscribe("connext-node-install", (data: any) => {
+      this.connext.messaging.subscribe("connext-node-install", (message: any) => {
         console.log(`CAUGHT INSTALL EVENT FROM NODE`);
-        console.log("data: ", JSON.stringify(data.data.result));
-        resolve();
+        console.log(`Message: ${JSON.stringify(message.data.data)}`);
+        if (paymentId === message.data.data.appInstance.latestState.paymentId) {
+          resolve();
+        }
       });
 
       const appId = await this.conditionalTransferAppInstalled(
