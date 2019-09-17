@@ -208,7 +208,7 @@ export class ConnextListener extends EventEmitter {
   };
 
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
-    this.log.info(`Emitted ${event}`);
+    this.log.info(`Emitted ${event} with data ${JSON.stringify(data)} at ${Date.now()}`);
     this.emit(event, data);
   };
 
