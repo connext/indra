@@ -19,6 +19,7 @@ import { createLinkedHash, delay, freeBalanceAddressFromXpub, replaceBN } from "
 import { falsy, invalid32ByteHexString, invalidAddress, notLessThanOrEqualTo } from "../validation";
 
 import { AbstractController } from "./AbstractController";
+// import { NODE_EVENTS } from "@counterfactual/node";
 
 const MAX_RETRIES = 20;
 
@@ -82,12 +83,23 @@ export class ConditionalTransferController extends AbstractController {
 
     await new Promise(async (resolve, reject) => {
       this.connext.messaging.subscribe("connext-node-install", (message: any) => {
-        console.log(`CAUGHT INSTALL EVENT FROM NODE`);
-        console.log(`Message: ${JSON.stringify(message.data.data)}`);
-        if (paymentId === message.data.data.appInstance.latestState.paymentId) {
+        console.log(`CAUGHT INSTALL EVENT FROM CONNEXT NODE at ${Date.now()}`);
+        console.log(`Message: ${JSON.stringify(message)} ${Date.now()}`);
+        const msgPaymentId = message.data.data
+          ? message.data.data.appInstance.latestState.paymentId
+          : message.data.data.appInstance.latestState.paymentId;
+        console.log("msgPaymentId: ", msgPaymentId);
+        if (msgPaymentId === message.data.data.appInstance.latestState.paymentId) {
+          this.connext.messaging.unsubscribe("connext-node-install");
           resolve();
         }
       });
+
+      // this.cfCore.rpcRouter.subscribe(NODE_EVENTS.INSTALL_FINISHED, (data: any): any => {
+      //   console.log(`CAUGHT INSTALL FINISHED EVENT FROM CF NODE ${Date.now()}`);
+      //   console.log(`Message: ${JSON.stringify(data)} ${Date.now()}`);
+      //   resolve();
+      // });
 
       const appId = await this.conditionalTransferAppInstalled(
         amount,
