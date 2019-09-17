@@ -173,7 +173,7 @@ export default class ListenerService implements OnModuleInit {
     this.cfCoreService.registerCfCoreListener(
       CFCoreTypes.RpcMethodName.INSTALL as any,
       (data: any) => {
-        console.log("EMITTING INSTALL EVENT");
+        logger.log("Emitting install event");
         this.messagingClient.emit("connext-node-install", data).toPromise();
       },
       logger.cxt,
