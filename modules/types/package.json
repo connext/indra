@@ -1,6 +1,6 @@
 {
   "name": "@connext/types",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "TypeScript typings for common Connext types",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -16,7 +16,7 @@
     "ethers": "4.0.36"
   },
   "devDependencies": {
-    "@connext/messaging": "0.1.0",
+    "@connext/messaging": "0.1.1",
     "@counterfactual/types": "0.0.40",
     "@types/jest": "24.0.18",
     "jest": "24.9.0",
