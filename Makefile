@@ -109,7 +109,7 @@ test-ui:
 watch-ui: node-modules
 	bash ops/test-ui.sh watch
 
-test-bot:
+test-bot: payment-bot
 	bash ops/test-bot.sh
 
 test-bot-farm:
