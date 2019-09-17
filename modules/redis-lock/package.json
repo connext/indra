@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@connext/messaging": "0.1.0",
-    "@counterfactual/types": "0.0.39",
+    "@counterfactual/types": "0.0.40",
     "@types/ioredis": "4.0.17",
     "@types/redlock": "3.0.4",
     "ioredis": "4.14.1",
