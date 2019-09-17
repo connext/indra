@@ -103,7 +103,7 @@ watch: watch-node
 start-test: prod deployed-contracts
 	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test bash ops/start-prod.sh
 
-test-ui:
+test-ui: payment-bot
 	bash ops/test-ui.sh
 
 watch-ui: node-modules
