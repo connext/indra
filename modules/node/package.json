@@ -25,7 +25,7 @@
     "@connext/redis-lock": "0.1.0",
     "@connext/types": "0.1.0",
     "@counterfactual/contracts": "0.1.15",
-    "@counterfactual/node": "0.2.76",
+    "@counterfactual/node": "0.2.77",
     "@nestjs/common": "6.5.3",
     "@nestjs/core": "6.5.3",
     "@nestjs/microservices": "6.5.3",
@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "@connext/types": "0.1.0",
-    "@counterfactual/types": "0.0.39",
+    "@counterfactual/types": "0.0.40",
     "@nestjs/testing": "6.5.3",
     "@types/express": "4.17.1",
     "@types/jest": "24.0.18",

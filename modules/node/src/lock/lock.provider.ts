@@ -12,14 +12,14 @@ class LockMessaging extends AbstractMessagingProvider {
     super(messaging);
   }
 
-  async acquireLock(subject: string): Promise<Lock> {
+  async acquireLock(subject: string, data: { lockTTL: number }): Promise<string> {
     const lockName = subject.split(".").pop(); // last item of subject is lock name
-    return await this.lockService.acquireLock(lockName);
+    return await this.lockService.acquireLock(lockName, data.lockTTL);
   }
 
-  async releaseLock(subject: string): Promise<void> {
+  async releaseLock(subject: string, data: { lockValue: string }): Promise<void> {
     const lockName = subject.split(".").pop(); // last item of subject is lock name
-    return await this.lockService.releaseLock(lockName);
+    return await this.lockService.releaseLock(lockName, data.lockValue);
   }
 
   async setupSubscriptions(): Promise<void> {

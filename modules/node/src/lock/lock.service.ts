@@ -8,28 +8,17 @@ const logger = new CLogger("LockService");
 
 @Injectable()
 export class LockService {
-  public locks: Record<string, Lock>;
+  constructor(@Inject(RedlockProviderId) private readonly redlockClient: Redlock) {}
 
-  constructor(@Inject(RedlockProviderId) private readonly redlockClient: Redlock) {
-    this.locks = {};
-  }
-
-  async acquireLock(lockName: string, lockTTL: number = 10000): Promise<Lock> {
-    logger.log(`Using lock ttl of ${lockTTL / 1000} seconds`);
-    logger.log(`Acquiring lock for ${lockName} at ${Date.now()}`);
+  async acquireLock(lockName: string, lockTTL: number = 10000): Promise<string> {
+    logger.debug(`Using lock ttl of ${lockTTL / 1000} seconds`);
+    logger.debug(`Acquiring lock for ${lockName} at ${Date.now()}`);
     return new Promise((resolve: any, reject: any): any => {
       this.redlockClient
         .lock(lockName, lockTTL)
         .then((lock: Lock) => {
-          this.locks[lockName] = lock;
-
-          // make lock automatically release in the hub's storage, in case we can't unlock
-          setTimeout(() => {
-            logger.log(`Timeout, deleting lock ${lockName}`);
-            delete this.locks[lockName];
-          }, lockTTL);
-
-          resolve(lock);
+          logger.debug(`Acquired lock for ${lock.resource} with secret ${lock.value}`);
+          resolve(lock.value);
         })
         .catch((e: any) => {
           logger.error(`Caught error locking resource ${lockName}`);
@@ -39,18 +28,15 @@ export class LockService {
     });
   }
 
-  async releaseLock(lockName: string): Promise<void> {
-    logger.log(`Releasing lock for ${lockName} at ${Date.now()}`);
-    const lock = this.locks[lockName];
-    if (!lock) {
-      throw new Error(`Lock does not exist in node's storage for ${lockName}`);
-    }
-
+  async releaseLock(lockName: string, lockValue: string): Promise<void> {
+    logger.debug(`Releasing lock for ${lockName} at ${Date.now()}`);
     return new Promise((resolve: any, reject: any): any => {
-      lock
-        .unlock()
+      this.redlockClient
+        // "trick" the library into unlocking by construciing an object that contains
+        // only the parameters in the Lock object that are used in the unlock function
+        .unlock({ resource: lockName, value: lockValue } as Lock)
         .then(() => {
-          delete this.locks[lockName];
+          logger.debug(`Released lock for ${lockName}`);
           resolve();
         })
         .catch((reason: any) => {

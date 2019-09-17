@@ -64,7 +64,7 @@ echo -e "$divider";echo "Sending tokens to recipient bot"
 bash ops/payment-bot.sh -i 2 -t 0.05 -c $id -a $tokenAddress -m "$mnemonic2"
 
 echo -e "$divider";echo "Generating a link payment"
-bash ops/payment-bot.sh -i 2 -a $tokenAddress -l 0.01 -p "$paymentId" -h "$preImage" -m "$mnemonic2" 
+bash ops/payment-bot.sh -i 2 -a $tokenAddress -l 0.01 -p "$paymentId" -h "$preImage" -m "$mnemonic2"
 
 echo -e "$divider";echo "Stopping recipient listener so it can redeem a link payment"
 cleanup

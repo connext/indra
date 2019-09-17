@@ -60,7 +60,7 @@ export class AppRegistryService {
       return await this.cfCoreService.installApp(data.data.appInstanceId);
     } catch (e) {
       logger.error(`Caught error during proposed app validation, rejecting install`);
-      console.log(e);
+      console.error(e);
       return await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
     }
   }
@@ -77,7 +77,7 @@ export class AppRegistryService {
       await this.verifyVirtualAppProposal(data.data, data.from);
     } catch (e) {
       logger.error(`Caught error during proposed app validation, rejecting virtual install`);
-      console.log(e);
+      console.error(e);
       return await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
     }
   }
@@ -409,7 +409,7 @@ export class AppRegistryService {
       case SupportedApplications.SimpleLinkedTransferApp:
         // TODO: add validation of simple transfer validateSimpleTransfer
         await this.validateSimpleLinkedTransfer(proposedAppParams.params);
-        console.log(`saving linked transfer`);
+        logger.log(`saving linked transfer`);
         await this.transferService.saveLinkedTransfer(
           initiatorIdentifier,
           proposedAppParams.params.initiatorDepositTokenAddress,
@@ -418,7 +418,7 @@ export class AppRegistryService {
           (proposedAppParams.params.initialState as UnidirectionalLinkedTransferAppState)
             .linkedHash,
         );
-        console.log(`saved!`);
+        logger.log(`saved!`);
         break;
       default:
         break;

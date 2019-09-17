@@ -80,17 +80,25 @@ export class ConditionalTransferController extends AbstractController {
       preImage,
     };
 
-    const appId = await this.conditionalTransferAppInstalled(
-      amount,
-      assetId,
-      initialState,
-      appInfo,
-    );
-    if (!appId) {
-      throw new Error(`App was not installed`);
-    }
+    await new Promise(async (resolve, reject) => {
+      this.connext.messaging.subscribe("connext-node-install", (message: any) => {
+        console.log(`CAUGHT INSTALL EVENT FROM NODE`);
+        console.log(`Message: ${JSON.stringify(message.data.data)}`);
+        if (paymentId === message.data.data.appInstance.latestState.paymentId) {
+          resolve();
+        }
+      });
 
-    await this.waitForAppInstall();
+      const appId = await this.conditionalTransferAppInstalled(
+        amount,
+        assetId,
+        initialState,
+        appInfo,
+      );
+      if (!appId) {
+        throw new Error(`App was not installed`);
+      }
+    });
 
     return {
       freeBalance: await this.connext.getFreeBalance(assetId),

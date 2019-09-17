@@ -41,7 +41,7 @@ export const cfCoreProviderFactory: Provider = {
       `Balance of signer address ${addr} on ${networkName} (chainId ${chainId}): ${balance}`,
     );
     const cfCore = await CFCore.create(
-      messaging,
+      messaging as any, // TODO: FIX
       store,
       { STORE_KEY_PREFIX: "ConnextHub" },
       provider,

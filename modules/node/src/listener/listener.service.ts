@@ -1,12 +1,13 @@
 import { Node as CFCoreTypes } from "@counterfactual/types";
-import { Injectable, OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
+import { ClientProxy } from "@nestjs/microservices";
 
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelService } from "../channel/channel.service";
+import { MessagingClientProviderId } from "../constants";
 import { LinkedTransferStatus } from "../transfer/transfer.entity";
 import { LinkedTransferRepository } from "../transfer/transfer.repository";
-import { TransferService } from "../transfer/transfer.service";
 import { CLogger } from "../util";
 import {
   CreateChannelMessage,
@@ -45,6 +46,7 @@ export default class ListenerService implements OnModuleInit {
     private readonly cfCoreService: CFCoreService,
     private readonly appRegistryService: AppRegistryService,
     private readonly channelService: ChannelService,
+    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
     private readonly linkedTransferRepository: LinkedTransferRepository,
   ) {}
 
@@ -68,15 +70,24 @@ export default class ListenerService implements OnModuleInit {
       DEPOSIT_FAILED: (data: any): void => {
         logEvent(CFCoreTypes.EventName.DEPOSIT_FAILED, data);
       },
+      DEPOSIT_FINISHED: (data: any): void => {
+        logEvent(CFCoreTypes.EventName.DEPOSIT_FINISHED, data);
+      },
       DEPOSIT_STARTED: (data: any): void => {
         logEvent(CFCoreTypes.EventName.DEPOSIT_STARTED, data);
       },
       INSTALL: async (data: InstallMessage): Promise<void> => {
         logEvent(CFCoreTypes.EventName.INSTALL, data);
       },
+      INSTALL_FINISHED: async (data: InstallMessage): Promise<void> => {
+        logEvent(CFCoreTypes.EventName.INSTALL_FINISHED, data);
+      },
       // TODO: make cf return app instance id and app def?
       INSTALL_VIRTUAL: async (data: InstallVirtualMessage): Promise<void> => {
         logEvent(CFCoreTypes.EventName.INSTALL_VIRTUAL, data);
+      },
+      INSTALL_VIRTUAL_FINISHED: async (data: InstallVirtualMessage): Promise<void> => {
+        logEvent(CFCoreTypes.EventName.INSTALL_VIRTUAL_FINISHED, data);
       },
       PROPOSE_INSTALL: (data: ProposeMessage): void => {
         logEvent(CFCoreTypes.EventName.PROPOSE_INSTALL, data);
@@ -112,11 +123,20 @@ export default class ListenerService implements OnModuleInit {
       REJECT_STATE: (data: any): void => {
         logEvent(CFCoreTypes.EventName.REJECT_STATE, data);
       },
+      SETUP_FINISHED: (data: any): void => {
+        logEvent(CFCoreTypes.EventName.SETUP_FINISHED, data);
+      },
       UNINSTALL: (data: UninstallMessage): void => {
         logEvent(CFCoreTypes.EventName.UNINSTALL, data);
       },
+      UNINSTALL_FINISHED: (data: UninstallMessage): void => {
+        logEvent(CFCoreTypes.EventName.UNINSTALL_FINISHED, data);
+      },
       UNINSTALL_VIRTUAL: async (data: UninstallVirtualMessage): Promise<void> => {
         logEvent(CFCoreTypes.EventName.UNINSTALL_VIRTUAL, data);
+      },
+      UNINSTALL_VIRTUAL_FINISHED: async (data: UninstallVirtualMessage): Promise<void> => {
+        logEvent(CFCoreTypes.EventName.UNINSTALL_VIRTUAL_FINISHED, data);
       },
       UPDATE_STATE: (data: UpdateStateMessage): void => {
         logEvent(CFCoreTypes.EventName.UPDATE_STATE, data);
@@ -129,6 +149,9 @@ export default class ListenerService implements OnModuleInit {
       },
       WITHDRAWAL_FAILED: (data: any): void => {
         logEvent(CFCoreTypes.EventName.WITHDRAWAL_FAILED, data);
+      },
+      WITHDRAWAL_FINISHED: (data: any): void => {
+        logEvent(CFCoreTypes.EventName.WITHDRAWAL_FINISHED, data);
       },
       WITHDRAWAL_STARTED: (data: any): void => {
         logEvent(CFCoreTypes.EventName.WITHDRAWAL_STARTED, data);
@@ -145,6 +168,15 @@ export default class ListenerService implements OnModuleInit {
           logger.cxt,
         );
       },
+    );
+
+    this.cfCoreService.registerCfCoreListener(
+      CFCoreTypes.RpcMethodName.INSTALL as any,
+      (data: any) => {
+        logger.log(`Emitting install event: ${JSON.stringify(data.result.result)}`);
+        this.messagingClient.emit("connext-node-install", data.result.result).toPromise();
+      },
+      logger.cxt,
     );
   }
 }
