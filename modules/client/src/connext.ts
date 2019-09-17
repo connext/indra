@@ -131,7 +131,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // create new cfCore to inject into internal instance
   logger.info("creating new cf module");
   const cfCore = await CFCore.create(
-    messaging,
+    messaging as any, // TODO: FIX
     store,
     {
       STORE_KEY_PREFIX: "store",
