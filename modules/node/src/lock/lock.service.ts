@@ -25,8 +25,10 @@ export class LockService {
 
           // make lock automatically release in the hub's storage, in case we can't unlock
           setTimeout(() => {
-            logger.log(`Timeout, deleting lock ${lockName}`);
-            delete this.locks[lockName];
+            if (this.locks[lockName]) {
+              logger.log(`Timeout, deleting lock ${lockName}`);
+              delete this.locks[lockName];
+            }
           }, lockTTL);
 
           resolve(lock);
