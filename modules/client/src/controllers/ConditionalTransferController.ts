@@ -85,11 +85,12 @@ export class ConditionalTransferController extends AbstractController {
       this.connext.messaging.subscribe("connext-node-install", (message: any) => {
         console.log(`CAUGHT INSTALL EVENT FROM CONNEXT NODE at ${Date.now()}`);
         console.log(`Message: ${JSON.stringify(message)} ${Date.now()}`);
+        // TODO: why is it sometimes data vs data.data?
         const msgPaymentId = message.data.data
           ? message.data.data.appInstance.latestState.paymentId
-          : message.data.data.appInstance.latestState.paymentId;
+          : message.data.appInstance.latestState.paymentId;
         console.log("msgPaymentId: ", msgPaymentId);
-        if (msgPaymentId === message.data.data.appInstance.latestState.paymentId) {
+        if (msgPaymentId === msgPaymentId) {
           this.connext.messaging.unsubscribe("connext-node-install");
           resolve();
         }
