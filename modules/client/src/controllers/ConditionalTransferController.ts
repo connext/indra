@@ -83,7 +83,7 @@ export class ConditionalTransferController extends AbstractController {
 
     // install app
     await new Promise(async (resolve, reject) => {
-      this.connext.messaging.subscribe("connext-node-install", (message: any) => {
+      this.connext.messaging.subscribe("indra.node.install", (message: any) => {
         console.log(`CAUGHT INSTALL EVENT FROM CONNEXT NODE at ${Date.now()}`);
         console.log(`Message: ${JSON.stringify(message)} ${Date.now()}`);
         // TODO: why is it sometimes data vs data.data?
