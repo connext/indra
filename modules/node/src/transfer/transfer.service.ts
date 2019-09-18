@@ -1,11 +1,12 @@
+import { NatsMessagingService } from "@connext/messaging";
 import {
   ResolveLinkedTransferResponse,
   SimpleLinkedTransferAppStateBigNumber,
   SupportedApplications,
 } from "@connext/types";
 import { AppInstanceJson, Node as CFCoreTypes } from "@counterfactual/types";
-import { Injectable } from "@nestjs/common";
-import { Zero } from "ethers/constants";
+import { Inject, Injectable } from "@nestjs/common";
+import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
@@ -14,7 +15,7 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService, DefaultApp } from "../config/config.service";
-import { Network } from "../constants";
+import { MessagingProviderId, Network } from "../constants";
 import { CLogger, createLinkedHash, delay, freeBalanceAddressFromXpub, replaceBN } from "../util";
 
 import {
@@ -37,6 +38,7 @@ export class TransferService {
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
+    @Inject(MessagingProviderId) private readonly messagingProvider: NatsMessagingService,
     private readonly channelRepository: ChannelRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly p2pTransferRepository: PeerToPeerTransferRepository,
@@ -93,7 +95,7 @@ export class TransferService {
     amount: BigNumber,
     assetId: string,
   ): Promise<ResolveLinkedTransferResponse> {
-    logger.log(
+    logger.debug(
       `Resolving linked transfer with userPubId: ${userPubId}, paymentId: ${paymentId}, ` +
         `preImage: ${preImage}, amount: ${amount}, assetId: ${assetId}`,
     );
@@ -112,6 +114,7 @@ export class TransferService {
     if (transfer.status === LinkedTransferStatus.REDEEMED) {
       throw new Error(`Transfer with linkedHash ${linkedHash} has already been redeemed`);
     }
+    logger.debug(`Found linked transfer in our database, attempting to resolve...`);
 
     // check that linked transfer app has been installed from sender
     const defaultApp = (await this.configService.getDefaultApps()).find(
@@ -161,24 +164,31 @@ export class TransferService {
       preImage,
     };
 
-    const receiverApp = await this.installLinkedTransferApp(
-      userPubId,
-      initialState,
-      preImage,
-      paymentId,
-      transfer,
-      appInfo,
-    );
+    let receiverApp: LinkedTransfer;
+    await new Promise(async (resolve, reject) => {
+      this.messagingProvider.subscribe("indra.client.install", (data: any) => {
+        console.log("data: ", data);
+        resolve();
+      });
 
-    // TODO: why do we have to do this?
-    try {
-      await this.waitForAppInstall(receiverApp.receiverAppInstanceId);
-    } catch (e) {
-      throw new Error(`waitForAppInstall: ${e}`);
-    }
+      receiverApp = await this.installLinkedTransferApp(
+        userPubId,
+        initialState,
+        AddressZero,
+        paymentId,
+        transfer,
+        appInfo,
+      );
+    });
+
+    console.log(`Taking action on app at ${Date.now()}`);
+    this.cfCoreService.cfCore.on(CFCoreTypes.RpcMethodName.TAKE_ACTION, (data: any) => {
+      console.log("data: ", data);
+    });
+    await this.cfCoreService.takeAction(receiverApp.receiverAppInstanceId, { preImage });
 
     try {
-      await this.uninstallLinkedTransferApp(receiverApp.receiverAppInstanceId);
+      await this.cfCoreService.uninstallApp(receiverApp.receiverAppInstanceId);
     } catch (e) {
       throw new Error(`finalizeAndUninstallTransferApp: ${e}`);
     }
