@@ -11,6 +11,7 @@ import {
   SupportedApplications,
   TransferCondition,
 } from "@connext/types";
+import { NODE_EVENTS } from "@counterfactual/node";
 import { AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 
@@ -19,7 +20,6 @@ import { createLinkedHash, delay, freeBalanceAddressFromXpub, replaceBN } from "
 import { falsy, invalid32ByteHexString, invalidAddress, notLessThanOrEqualTo } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-// import { NODE_EVENTS } from "@counterfactual/node";
 
 const MAX_RETRIES = 20;
 

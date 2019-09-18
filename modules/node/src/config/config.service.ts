@@ -16,7 +16,7 @@ type PostgresConfig = {
   username: string;
 };
 
-type DefaultApp = {
+export type DefaultApp = {
   actionEncoding?: string;
   allowNodeInstall: boolean;
   appDefinitionAddress: string;

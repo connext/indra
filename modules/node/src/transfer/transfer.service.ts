@@ -13,7 +13,7 @@ import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
-import { ConfigService } from "../config/config.service";
+import { ConfigService, DefaultApp } from "../config/config.service";
 import { Network } from "../constants";
 import { CLogger, createLinkedHash, delay, freeBalanceAddressFromXpub, replaceBN } from "../util";
 
@@ -114,9 +114,8 @@ export class TransferService {
     }
 
     // check that linked transfer app has been installed from sender
-    // TODO: i couldnt test this bc of install issues, make sure this still works
     const defaultApp = (await this.configService.getDefaultApps()).find(
-      app => app.name === SupportedApplications.SimpleLinkedTransferApp,
+      (app: DefaultApp) => app.name === SupportedApplications.SimpleLinkedTransferApp,
     );
     const installedApps = await this.cfCoreService.getAppInstances();
     const senderApp = installedApps.find(
