@@ -13,7 +13,7 @@ import {
 } from "@connext/types";
 import { NODE_EVENTS } from "@counterfactual/node";
 import { AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
-import { Zero } from "ethers/constants";
+import { Zero, AddressZero } from "ethers/constants";
 
 import { RejectInstallVirtualMessage } from "../lib/cfCore";
 import { createLinkedHash, delay, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
@@ -78,9 +78,10 @@ export class ConditionalTransferController extends AbstractController {
       ],
       linkedHash,
       paymentId,
-      preImage,
+      preImage: AddressZero,
     };
 
+    // install app
     await new Promise(async (resolve, reject) => {
       this.connext.messaging.subscribe("connext-node-install", (message: any) => {
         console.log(`CAUGHT INSTALL EVENT FROM CONNEXT NODE at ${Date.now()}`);

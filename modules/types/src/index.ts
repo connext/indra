@@ -81,17 +81,14 @@ export type CoinTransfer<T = string> = {
 export type CoinTransferBigNumber = CoinTransfer<BigNumber>;
 
 // all the types of counterfactual app states
-// TODO: add swap app
 export type AppState<T = string> =
-  | UnidirectionalTransferAppState<T>
-  | UnidirectionalLinkedTransferAppState<T>;
+  | SimpleTransferAppState<T>
+  | SimpleLinkedTransferAppState<T>
+  | SimpleSwapAppState<T>;
 export type AppStateBigNumber = AppState<BigNumber>;
 
 // all the types of counterfactual app actions
-// TODO: add swap app
-export type AppAction<T = string> =
-  | UnidirectionalTransferAppAction<T>
-  | UnidirectionalLinkedTransferAppAction<T>;
+export type AppAction<T = string> = SimpleLinkedTransferAppAction;
 export type AppActionBigNumber = AppAction<BigNumber>;
 
 //////// Swap apps
@@ -115,60 +112,9 @@ export type SimpleLinkedTransferAppState<T = string> = {
   preImage: string;
 };
 export type SimpleLinkedTransferAppStateBigNumber = SimpleLinkedTransferAppState<BigNumber>;
-
-////// Unidirectional transfer app
-export type UnidirectionalTransferAppState<T = string> = {
-  finalized: false;
-  transfers: [CoinTransfer<T>, CoinTransfer<T>];
-  stage: UnidirectionalTransferAppStage;
-  turnNum: T;
-};
-export type UnidirectionalTransferAppStateBigNumber = UnidirectionalTransferAppState<BigNumber>;
-
-export enum UnidirectionalTransferAppActionType {
-  SEND_MONEY,
-  END_CHANNEL,
-}
-
-export type UnidirectionalTransferAppAction<T = string> = {
-  actionType: UnidirectionalTransferAppActionType;
-  amount: T;
-};
-
-export enum UnidirectionalTransferAppStage {
-  POST_FUND,
-  MONEY_SENT,
-  CHANNEL_CLOSED,
-}
-
-////// Unidirectional linked transfer app
-export type UnidirectionalLinkedTransferAppState<T = string> = {
-  stage: UnidirectionalLinkedTransferAppStage;
-  transfers: [CoinTransfer<T>, CoinTransfer<T>];
-  linkedHash: string;
-  turnNum: T;
-  finalized: false;
-};
-export type UnidirectionalLinkedTransferAppStateBigNumber = UnidirectionalLinkedTransferAppState<
-  BigNumber
->;
-
-export type UnidirectionalLinkedTransferAppAction<T = string> = {
-  amount: T;
-  assetId: Address;
-  paymentId: string;
+export type SimpleLinkedTransferAppAction = {
   preImage: string;
 };
-
-export type UnidirectionalLinkedTransferAppActionBigNumber = UnidirectionalLinkedTransferAppAction<
-  BigNumber
->;
-
-export enum UnidirectionalLinkedTransferAppStage {
-  POST_FUND,
-  PAYMENT_CLAIMED,
-  CHANNEL_CLOSED,
-}
 
 ////////////////////////////////////
 ////// CHANNEL TYPES
