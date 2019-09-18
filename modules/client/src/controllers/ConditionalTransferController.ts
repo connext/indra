@@ -62,7 +62,7 @@ export class ConditionalTransferController extends AbstractController {
     );
 
     // install the transfer application
-    const linkedHash = createLinkedHash({ amount, assetId, paymentId, preImage });
+    const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
 
     const initialState: SimpleLinkedTransferAppStateBigNumber = {
       amount,
