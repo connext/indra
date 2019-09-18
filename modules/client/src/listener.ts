@@ -283,7 +283,7 @@ export class ConnextListener extends EventEmitter {
       return;
     }
 
-    if (matchedApp.name === SupportedApplications.UnidirectionalTransferApp) {
+    if (matchedApp.name === SupportedApplications.SimpleTransferApp) {
       // request collateral in token of the app
       await this.connext.requestCollateral(appInstance.initiatorDepositTokenAddress);
     }

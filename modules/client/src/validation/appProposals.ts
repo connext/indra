@@ -110,8 +110,6 @@ export const appProposalValidation: ProposalValidator = {
   SimpleLinkedTransferApp: validateLinkedTransferApp,
   SimpleTransferApp: validateSimpleTransferApp,
   SimpleTwoPartySwapApp: validateSwapApp,
-  UnidirectionalLinkedTransferApp: validateLinkedTransferApp,
-  UnidirectionalTransferApp: validateTransferApp,
 };
 
 const prettyLog = (app: AppInstanceInfo): string => {
