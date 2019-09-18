@@ -150,6 +150,7 @@ export class TransferService {
 
     const initialState: SimpleLinkedTransferAppStateBigNumber = {
       amount,
+      assetId,
       coinTransfers: [
         {
           amount,
@@ -160,7 +161,6 @@ export class TransferService {
           to: freeBalanceAddressFromXpub(userPubId),
         },
       ],
-      assetId,
       linkedHash,
       paymentId,
       preImage: mkHash("0x0"),

@@ -12,10 +12,10 @@ import {
   TransferCondition,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
-import { Zero } from "ethers/constants";
+import { HashZero, Zero } from "ethers/constants";
 
 import { RejectInstallVirtualMessage } from "../lib/cfCore";
-import { createLinkedHash, freeBalanceAddressFromXpub, mkHash, replaceBN } from "../lib/utils";
+import { createLinkedHash, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
 import { falsy, invalid32ByteHexString, invalidAddress, notLessThanOrEqualTo } from "../validation";
 
 import { AbstractController } from "./AbstractController";
@@ -63,6 +63,7 @@ export class ConditionalTransferController extends AbstractController {
 
     const initialState: SimpleLinkedTransferAppStateBigNumber = {
       amount,
+      assetId,
       coinTransfers: [
         {
           amount,
@@ -73,13 +74,11 @@ export class ConditionalTransferController extends AbstractController {
           to: freeBalanceAddressFromXpub(this.connext.nodePublicIdentifier),
         },
       ],
-      assetId,
       linkedHash,
       paymentId,
-      preImage: mkHash("0x0"),
+      preImage: HashZero,
     };
 
-    // install app
     await new Promise(async (resolve, reject) => {
       this.connext.messaging.subscribe("indra.node.install", (message: any) => {
         console.log(`CAUGHT INSTALL EVENT FROM CONNEXT NODE at ${Date.now()}`);

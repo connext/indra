@@ -29,7 +29,6 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
   struct AppState {
     LibOutcome.CoinTransfer[2] coinTransfers;
     bytes32 linkedHash;
-
     // need these for computing outcome
     uint256 amount;
     address assetId;
