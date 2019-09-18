@@ -2,12 +2,8 @@ import {
   AllowedSwap,
   CoinTransfer,
   SimpleLinkedTransferAppStateBigNumber,
+  SimpleTransferAppStateBigNumber,
   SupportedApplications,
-  UnidirectionalLinkedTransferAppStage,
-  UnidirectionalLinkedTransferAppState,
-  UnidirectionalLinkedTransferAppStateBigNumber,
-  UnidirectionalTransferAppStage,
-  UnidirectionalTransferAppStateBigNumber,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
@@ -131,26 +127,13 @@ export class AppRegistryService {
     // validate the initial state is kosher
     const initialState = bigNumberifyObj(
       initialStateBadType,
-    ) as UnidirectionalTransferAppStateBigNumber;
-    if (!initialState.turnNum.isZero()) {
-      throw new Error(`Cannot install a transfer app with a turn number > 0`);
-    }
-
-    if (initialState.finalized) {
-      throw new Error(`Cannot install a transfer app with a finalized initial state`);
-    }
-
-    if (initialState.stage !== UnidirectionalTransferAppStage.POST_FUND) {
-      throw new Error(
-        `Cannot install a transfer app with a stage that is not the "POST_FUND" stage.`,
-      );
-    }
+    ) as SimpleTransferAppStateBigNumber;
 
     // transfers[0] is the senders value in the array, and the transfers[1]
     // is the recipients value in the array
     if (
-      bigNumberify(initialState.transfers[0].amount).lt(Zero) ||
-      !bigNumberify(initialState.transfers[0].amount).eq(initiatorDeposit)
+      bigNumberify(initialState.coinTransfers[0].amount).lt(Zero) ||
+      !bigNumberify(initialState.coinTransfers[0].amount).eq(initiatorDeposit)
     ) {
       throw new Error(
         `Cannot install a transfer app with initiator deposit values that are ` +
@@ -158,7 +141,7 @@ export class AppRegistryService {
       );
     }
 
-    if (!bigNumberify(initialState.transfers[1].amount).isZero()) {
+    if (!bigNumberify(initialState.coinTransfers[1].amount).isZero()) {
       throw new Error(
         `Cannot install a transfer app with nonzero values for the recipient in the initial state.`,
       );
@@ -415,7 +398,7 @@ export class AppRegistryService {
           proposedAppParams.params.initiatorDepositTokenAddress,
           bigNumberify(proposedAppParams.params.initiatorDeposit),
           proposedAppParams.appInstanceId,
-          (proposedAppParams.params.initialState as UnidirectionalLinkedTransferAppState)
+          (proposedAppParams.params.initialState as SimpleLinkedTransferAppStateBigNumber)
             .linkedHash,
         );
         logger.log(`saved!`);
@@ -472,8 +455,7 @@ export class AppRegistryService {
     }
 
     switch (registryAppInfo.name) {
-      case SupportedApplications.UnidirectionalTransferApp:
-        await this.validateTransfer(proposedAppParams.params);
+      case SupportedApplications.SimpleTransferApp:
         // TODO: move this to install
         await this.transferService.savePeerToPeerTransfer(
           initiatorIdentifier,

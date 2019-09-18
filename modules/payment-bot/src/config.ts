@@ -46,7 +46,7 @@ program.parse(process.argv);
 export const config: any = {
   dbFile: process.env.DB_FILENAME!,
   ethProviderUrl: process.env.ETH_RPC_URL!,
-  logLevel: 2,
+  logLevel: 5,
   mnemonic: process.env.MNEMONIC!,
   nodeUrl: process.env.NODE_URL!,
   ...program,

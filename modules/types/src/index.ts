@@ -17,8 +17,6 @@ export const SupportedApplications = {
   SimpleLinkedTransferApp: "SimpleLinkedTransferApp",
   SimpleTransferApp: "SimpleTransferApp",
   SimpleTwoPartySwapApp: "SimpleTwoPartySwapApp",
-  UnidirectionalLinkedTransferApp: "UnidirectionalLinkedTransferApp",
-  UnidirectionalTransferApp: "UnidirectionalTransferApp",
 };
 export type SupportedApplication = keyof typeof SupportedApplications;
 
@@ -345,7 +343,7 @@ export type ConditionalTransferResponse = LinkedTransferResponse;
 
 // condition initial states
 // FIXME: should be union type of all supported conditions
-export type ConditionalTransferInitialState<T = string> = UnidirectionalLinkedTransferAppState<T>;
+export type ConditionalTransferInitialState<T = string> = SimpleLinkedTransferAppState<T>;
 // FIXME: should be union type of all supported conditions
 export type ConditionalTransferInitialStateBigNumber = ConditionalTransferInitialState<BigNumber>;
 
@@ -541,7 +539,7 @@ export function convertAppState<To extends NumericTypeName>(
 ): AppState<NumericTypes[To]> {
   return {
     ...obj,
-    transfers: [convertAmountField(to, obj.transfers[0]), convertAmountField(to, obj.transfers[1])],
+    // transfers: [convertAmountField(to, obj.transfers[0]), convertAmountField(to, obj.transfers[1])],
   };
 }
 

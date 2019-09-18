@@ -102,7 +102,7 @@ export class TransferService {
       throw new Error(`No channel exists for userPubId ${userPubId}`);
     }
 
-    const linkedHash = createLinkedHash({ amount, assetId, paymentId, preImage });
+    const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
 
     // check that we have recorded this transfer in our db
     const transfer = await this.linkedTransferRepository.findByLinkedHash(linkedHash);
