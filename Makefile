@@ -115,7 +115,7 @@ test-bot: payment-bot
 test-bot-farm:
 	bash ops/test-bot-farm.sh
 
-test-contracts:
+test-contracts: contracts
 	bash ops/test-contracts.sh
 
 test-node: node

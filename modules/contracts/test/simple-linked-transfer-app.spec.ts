@@ -17,6 +17,7 @@ type SimpleLinkedTransferAppState = {
   coinTransfers: CoinTransfer[];
   linkedHash: string;
   amount: BigNumber;
+  assetId: string;
   paymentId: string;
   preImage: string;
 };
@@ -31,6 +32,7 @@ const linkedTransferAppStateEncoding = `tuple(
   ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
   bytes32 linkedHash,
   uint256 amount,
+  address assetId,
   bytes32 paymentId,
   bytes32 preImage
 )`;
@@ -55,8 +57,16 @@ const encodeAppState = (
   return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.coinTransfers]);
 };
 
-function createLinkedHash(amount: BigNumber, paymentId: string, preImage: string): string {
-  return solidityKeccak256(["uint256", "bytes32", "bytes32"], [amount, paymentId, preImage]);
+function createLinkedHash(
+  amount: BigNumber,
+  paymentId: string,
+  preImage: string,
+  assetId: string,
+): string {
+  return solidityKeccak256(
+    ["uint256", "address", "bytes32", "bytes32"],
+    [amount, assetId, paymentId, preImage],
+  );
 }
 
 describe("SimpleLinkedTransferApp", () => {
@@ -76,14 +86,16 @@ describe("SimpleLinkedTransferApp", () => {
     it("can redeem a payment with correct hash", async () => {
       const senderAddr = mkAddress("0xa");
       const receiverAddr = mkAddress("0xB");
+      const assetId = mkAddress("0x0");
       const transferAmount = new BigNumber(10000);
       const paymentId = mkHash("0xa");
       const preImage = mkHash("0xb");
 
-      const linkedHash = createLinkedHash(transferAmount, paymentId, preImage);
+      const linkedHash = createLinkedHash(transferAmount, paymentId, preImage, assetId);
 
       const preState: SimpleLinkedTransferAppState = {
         amount: transferAmount,
+        assetId,
         coinTransfers: [
           {
             amount: transferAmount,
@@ -101,6 +113,7 @@ describe("SimpleLinkedTransferApp", () => {
 
       const postState: SimpleLinkedTransferAppState = {
         amount: transferAmount,
+        assetId,
         coinTransfers: [
           {
             amount: Zero,

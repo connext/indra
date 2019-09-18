@@ -32,7 +32,7 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
 
     // need these for computing outcome
     uint256 amount;
-    // address assetId;
+    address assetId;
     bytes32 paymentId;
     bytes32 preImage;
   }
@@ -47,7 +47,7 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
 
     bytes32 generatedHash = keccak256(abi.encodePacked(
       state.amount,
-      // state.assetId,
+      state.assetId,
       state.paymentId,
       state.preImage
     ));
