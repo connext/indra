@@ -15,7 +15,7 @@
     "@connext/messaging": "0.1.1",
     "@connext/redis-lock": "0.1.1",
     "@connext/types": "0.1.1",
-    "@counterfactual/node": "0.2.77",
+    "@counterfactual/node": "0.2.76",
     "@counterfactual/types": "0.0.40",
     "core-js": "3.2.1",
     "ethers": "4.0.36",
