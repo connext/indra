@@ -18,7 +18,7 @@ import { Logger } from "./lib/logger";
 import { replaceBN } from "./lib/utils";
 import { NodeInitializationParameters } from "./types";
 
-const API_TIMEOUT = 5000;
+const API_TIMEOUT = 35_000;
 
 export interface INodeApiClient {
   addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile>;
