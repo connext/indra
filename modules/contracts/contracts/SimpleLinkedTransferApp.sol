@@ -32,9 +32,29 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
 
     // need these for computing outcome
     uint256 amount;
-    // address assetId;
+    address assetId;
     bytes32 paymentId;
     bytes32 preImage;
+  }
+
+  struct Action {
+    bytes32 preImage;
+  }
+
+  function applyAction(
+    bytes calldata encodedState,
+    bytes calldata encodedAction
+  )
+    external
+    pure
+    returns (bytes memory)
+  {
+    AppState memory state = abi.decode(encodedState, (AppState));
+    Action memory action = abi.decode(encodedAction, (Action));
+
+    state.preImage = action.preImage;
+
+    return abi.encode(state);
   }
 
   function computeOutcome(bytes calldata encodedState)
@@ -47,7 +67,7 @@ contract SimpleLinkedTransferApp is CounterfactualApp {
 
     bytes32 generatedHash = keccak256(abi.encodePacked(
       state.amount,
-      // state.assetId,
+      state.assetId,
       state.paymentId,
       state.preImage
     ));
