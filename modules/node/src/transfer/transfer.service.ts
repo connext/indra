@@ -6,7 +6,7 @@ import {
 } from "@connext/types";
 import { AppInstanceJson, Node as CFCoreTypes } from "@counterfactual/types";
 import { Inject, Injectable } from "@nestjs/common";
-import { AddressZero, Zero } from "ethers/constants";
+import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
@@ -168,8 +168,8 @@ export class TransferService {
 
     let receiverApp: LinkedTransfer;
     await new Promise(
-      async (resolve, reject): Promise<void> => {
-        this.messagingProvider.subscribe("indra.client.install", (data: any) => {
+      async (resolve: any): Promise<void> => {
+        this.messagingProvider.subscribe(`indra.client.install.${userPubId}`, (data: any) => {
           console.log("RECEIVED CLIENT INSTALL EVENT: ", data);
           resolve();
         });
