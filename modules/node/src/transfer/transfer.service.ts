@@ -16,6 +16,7 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService, DefaultApp } from "../config/config.service";
 import { MessagingProviderId, Network } from "../constants";
+import { mkHash } from "../test";
 import { CLogger, createLinkedHash, delay, freeBalanceAddressFromXpub, replaceBN } from "../util";
 
 import {
@@ -161,7 +162,7 @@ export class TransferService {
       ],
       linkedHash,
       paymentId,
-      preImage,
+      preImage: mkHash("0x0"),
     };
 
     let receiverApp: LinkedTransfer;
@@ -174,18 +175,22 @@ export class TransferService {
       receiverApp = await this.installLinkedTransferApp(
         userPubId,
         initialState,
-        AddressZero,
+        mkHash("0x0"),
         paymentId,
         transfer,
         appInfo,
       );
     });
 
-    console.log(`Taking action on app at ${Date.now()}`);
+    // TODO: TESTING IF THIS IS METHOD IS THROWN TO SEE IF WE NEED TO WAIT ON IT
     this.cfCoreService.cfCore.on(CFCoreTypes.RpcMethodName.TAKE_ACTION, (data: any) => {
       console.log("RECEIVED CF NODE TAKE ACTION EVENT: ", data);
     });
+
+    console.log(`Taking action on app at ${Date.now()}`);
     await this.cfCoreService.takeAction(receiverApp.receiverAppInstanceId, { preImage });
+
+    // TODO: REMOVE THIS AFTER TAKE ACTION EVENT IS CONFIRMED
     await delay(5000);
 
     try {
