@@ -161,7 +161,7 @@ export class TransferService {
       ],
       linkedHash,
       paymentId,
-      preImage,
+      preImage: AddressZero,
     };
 
     let receiverApp: LinkedTransfer;
@@ -181,11 +181,15 @@ export class TransferService {
       );
     });
 
-    console.log(`Taking action on app at ${Date.now()}`);
+    // TODO: TESTING IF THIS IS METHOD IS THROWN TO SEE IF WE NEED TO WAIT ON IT
     this.cfCoreService.cfCore.on(CFCoreTypes.RpcMethodName.TAKE_ACTION, (data: any) => {
       console.log("RECEIVED CF NODE TAKE ACTION EVENT: ", data);
     });
+
+    console.log(`Taking action on app at ${Date.now()}`);
     await this.cfCoreService.takeAction(receiverApp.receiverAppInstanceId, { preImage });
+
+    // TODO: REMOVE THIS AFTER TAKE ACTION EVENT IS CONFIRMED
     await delay(5000);
 
     try {
