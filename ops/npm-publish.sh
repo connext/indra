@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 # This is the order they'll be published in
 packages="messaging,types,client,redis-lock"
