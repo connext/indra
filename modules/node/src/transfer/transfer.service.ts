@@ -167,7 +167,7 @@ export class TransferService {
     let receiverApp: LinkedTransfer;
     await new Promise(async (resolve, reject) => {
       this.messagingProvider.subscribe("indra.client.install", (data: any) => {
-        console.log("data: ", data);
+        console.log("RECEIVED CLIENT INSTALL EVENT: ", data);
         resolve();
       });
 
@@ -183,9 +183,10 @@ export class TransferService {
 
     console.log(`Taking action on app at ${Date.now()}`);
     this.cfCoreService.cfCore.on(CFCoreTypes.RpcMethodName.TAKE_ACTION, (data: any) => {
-      console.log("data: ", data);
+      console.log("RECEIVED CF NODE TAKE ACTION EVENT: ", data);
     });
     await this.cfCoreService.takeAction(receiverApp.receiverAppInstanceId, { preImage });
+    await delay(5000);
 
     try {
       await this.cfCoreService.uninstallApp(receiverApp.receiverAppInstanceId);
