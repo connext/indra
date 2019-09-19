@@ -208,9 +208,22 @@ export class ConnextListener extends EventEmitter {
 
     this.cfCore.on(CFCoreTypes.RpcMethodName.INSTALL, (data: any) => {
       this.log.debug(
-        `Emitting RPC METHOD NAME INSTALL event: ${JSON.stringify(data.result.result)}`,
+        `Emitting CFCoreTypes.RpcMethodName.INSTALL event: ${JSON.stringify(data.result.result)}`,
       );
-      this.connext.messaging.publish(`indra.client.install`, JSON.stringify(data.result.result));
+      this.connext.messaging.publish(
+        `indra.client.install.${this.cfCore.publicIdentifier}`,
+        JSON.stringify(data.result.result),
+      );
+    });
+
+    this.cfCore.on(CFCoreTypes.RpcMethodName.UNINSTALL, (data: any) => {
+      this.log.debug(
+        `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(data.result.result)}`,
+      );
+      this.connext.messaging.publish(
+        `indra.client.uninstall.${this.cfCore.publicIdentifier}`,
+        JSON.stringify(data.result.result),
+      );
     });
   };
 
