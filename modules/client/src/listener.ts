@@ -210,7 +210,7 @@ export class ConnextListener extends EventEmitter {
       this.log.debug(
         `Emitting RPC METHOD NAME INSTALL event: ${JSON.stringify(data.result.result)}`,
       );
-      this.connext.messaging.publish(`indra.client.install`, data.result.result);
+      this.connext.messaging.publish(`indra.client.install`, JSON.stringify(data.result.result));
     });
   };
 
