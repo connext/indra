@@ -89,7 +89,7 @@ export class ConditionalTransferController extends AbstractController {
           : message.data.appInstance.latestState.paymentId;
         console.log("msgPaymentId: ", msgPaymentId);
         if (msgPaymentId === msgPaymentId) {
-          this.connext.messaging.unsubscribe("connext-node-install");
+          this.connext.messaging.unsubscribe("indra.node.install");
           resolve();
         }
       });
