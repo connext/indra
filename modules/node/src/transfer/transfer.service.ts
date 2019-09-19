@@ -152,12 +152,12 @@ export class TransferService {
       amount,
       coinTransfers: [
         {
-          amount: Zero,
-          to: freeBalanceAddressFromXpub(userPubId),
-        },
-        {
           amount,
           to: freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier),
+        },
+        {
+          amount: Zero,
+          to: freeBalanceAddressFromXpub(userPubId),
         },
       ],
       linkedHash,
@@ -166,38 +166,25 @@ export class TransferService {
     };
 
     let receiverApp: LinkedTransfer;
-    await new Promise(async (resolve, reject) => {
-      this.messagingProvider.subscribe("indra.client.install", (data: any) => {
-        console.log("RECEIVED CLIENT INSTALL EVENT: ", data);
-        resolve();
-      });
+    await new Promise(
+      async (resolve, reject): Promise<void> => {
+        this.messagingProvider.subscribe("indra.client.install", (data: any) => {
+          console.log("RECEIVED CLIENT INSTALL EVENT: ", data);
+          resolve();
+        });
 
-      receiverApp = await this.installLinkedTransferApp(
-        userPubId,
-        initialState,
-        mkHash("0x0"),
-        paymentId,
-        transfer,
-        appInfo,
-      );
-    });
+        receiverApp = await this.installLinkedTransferApp(
+          userPubId,
+          initialState,
+          mkHash("0x0"),
+          paymentId,
+          transfer,
+          appInfo,
+        );
+      },
+    );
 
-    // TODO: TESTING IF THIS IS METHOD IS THROWN TO SEE IF WE NEED TO WAIT ON IT
-    this.cfCoreService.cfCore.on(CFCoreTypes.RpcMethodName.TAKE_ACTION, (data: any) => {
-      console.log("RECEIVED CF NODE TAKE ACTION EVENT: ", data);
-    });
-
-    console.log(`Taking action on app at ${Date.now()}`);
-    await this.cfCoreService.takeAction(receiverApp.receiverAppInstanceId, { preImage });
-
-    // TODO: REMOVE THIS AFTER TAKE ACTION EVENT IS CONFIRMED
-    await delay(5000);
-
-    try {
-      await this.cfCoreService.uninstallApp(receiverApp.receiverAppInstanceId);
-    } catch (e) {
-      throw new Error(`finalizeAndUninstallTransferApp: ${e}`);
-    }
+    await this.takeActionAndUninstallLink(receiverApp.receiverAppInstanceId, preImage);
 
     // pre - post = amount
     // sanity check, free balance decreased by payment amount
@@ -225,7 +212,7 @@ export class TransferService {
     // uninstall sender app
     // dont await so caller isnt blocked by this
     // TODO: if sender is offline, this will fail
-    this.uninstallLinkedTransferApp(senderApp.identityHash)
+    this.takeActionAndUninstallLink(senderApp.identityHash, preImage)
       .then(() => {
         this.linkedTransferRepository.markAsReclaimed(transfer);
       })
@@ -239,6 +226,25 @@ export class TransferService {
       ),
       paymentId,
     };
+  }
+
+  async takeActionAndUninstallLink(appId: string, preImage: string): Promise<void> {
+    // TODO: TESTING IF THIS IS METHOD IS THROWN TO SEE IF WE NEED TO WAIT ON IT
+    this.cfCoreService.cfCore.on(CFCoreTypes.RpcMethodName.TAKE_ACTION, (data: any) => {
+      console.log("RECEIVED CF NODE TAKE ACTION EVENT: ", data);
+    });
+
+    console.log(`Taking action on app at ${Date.now()}`);
+    await this.cfCoreService.takeAction(appId, { preImage });
+
+    // TODO: REMOVE THIS AFTER TAKE ACTION EVENT IS CONFIRMED
+    await delay(5000);
+
+    try {
+      await this.cfCoreService.uninstallApp(appId);
+    } catch (e) {
+      throw new Error(`finalizeAndUninstallTransferApp: ${e}`);
+    }
   }
 
   async installLinkedTransferApp(
