@@ -12,10 +12,10 @@ import {
   TransferCondition,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
-import { AddressZero, Zero } from "ethers/constants";
+import { Zero } from "ethers/constants";
 
 import { RejectInstallVirtualMessage } from "../lib/cfCore";
-import { createLinkedHash, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
+import { createLinkedHash, freeBalanceAddressFromXpub, mkHash, replaceBN } from "../lib/utils";
 import { falsy, invalid32ByteHexString, invalidAddress, notLessThanOrEqualTo } from "../validation";
 
 import { AbstractController } from "./AbstractController";
@@ -75,7 +75,7 @@ export class ConditionalTransferController extends AbstractController {
       ],
       linkedHash,
       paymentId,
-      preImage: AddressZero,
+      preImage: mkHash("0x0"),
     };
 
     // install app
