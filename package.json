@@ -24,7 +24,7 @@
 		"openzeppelin-solidity": "2.3.0",
 		"solc": "0.5.11",
 		"tslint": "5.20.0",
-		"tslint-config-airbnb": "5.11.1",
+		"tslint-config-airbnb": "5.11.2",
 		"tslint-config-prettier": "1.18.0",
 		"tslint-plugin-prettier": "2.0.1"
 	},
