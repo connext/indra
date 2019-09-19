@@ -55,12 +55,7 @@ export class TransferController extends AbstractController {
       throw new Error(`App was not installed`);
     }
 
-    await this.waitForAppInstall();
-
     await this.connext.uninstallVirtualApp(appId);
-
-    // TODO: this sucks
-    await this.waitForAppUninstall();
 
     // sanity check, free balance decreased by payment amount
     const postTransferBal = await this.connext.getFreeBalance(assetId);
@@ -206,44 +201,4 @@ export class TransferController extends AbstractController {
     this.listener.removeListener(CFCoreTypes.EventName.INSTALL_VIRTUAL, boundResolve);
     this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
   };
-
-  private async waitForAppInstall(): Promise<void> {
-    return new Promise(
-      async (res: any, rej: any): Promise<any> => {
-        const getAppIds = async (): Promise<string[]> => {
-          return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
-        };
-        let retries = 0;
-        while (!(await getAppIds()).includes(this.appId) && retries <= MAX_RETRIES) {
-          this.log.info(`found app id in the open apps... retry number ${retries}`);
-          await delay(100);
-          retries = retries + 1;
-        }
-
-        if (retries > MAX_RETRIES) rej();
-        this.log.info(`app installed after ${retries} retries`);
-        res();
-      },
-    );
-  }
-
-  private async waitForAppUninstall(): Promise<void> {
-    return new Promise(
-      async (res: any, rej: any): Promise<any> => {
-        const getAppIds = async (): Promise<string[]> => {
-          return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
-        };
-        let retries = 0;
-        while ((await getAppIds()).includes(this.appId) && retries <= MAX_RETRIES) {
-          this.log.info(`found app id in the open apps... retry number ${retries}`);
-          await delay(100);
-          retries = retries + 1;
-        }
-
-        if (retries > MAX_RETRIES) rej();
-        this.log.info(`app uninstalled after ${retries} retries`);
-        res();
-      },
-    );
-  }
 }
