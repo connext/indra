@@ -238,9 +238,6 @@ export class TransferService {
     console.log(`Taking action on app at ${Date.now()}`);
     await this.cfCoreService.takeAction(appId, { preImage });
 
-    // TODO: REMOVE THIS AFTER TAKE ACTION EVENT IS CONFIRMED
-    await delay(5000);
-
     try {
       await this.cfCoreService.uninstallApp(appId);
     } catch (e) {
