@@ -1,5 +1,5 @@
 {
-  "name": "@connext/messaging",
+  "name": "@connext/redis-lock",
   "version": "0.1.2",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
@@ -13,11 +13,16 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "ts-nats": "1.2.4",
-    "websocket-nats": "0.3.3"
+    "@connext/messaging": "0.1.2",
+    "@counterfactual/types": "0.0.40",
+    "@types/ioredis": "4.0.17",
+    "@types/redlock": "3.0.4",
+    "ioredis": "4.14.1",
+    "node-fetch": "2.6.0",
+    "redlock": "4.0.0",
+    "uuid": "3.3.3"
   },
   "devDependencies": {
-    "@counterfactual/types": "0.0.40",
     "rollup": "1.21.4",
     "rollup-plugin-typescript2": "0.24.2",
     "typescript": "3.5.3"

@@ -224,20 +224,23 @@
     "TwoPartyFixedOutcomeFromVirtualAppInterpreter": {
       "address": "0xf204a4Ef082f5c04bB89F7D5E6568B796096735a"
     },
-    "SimpleTransferApp": {
+    "SimpleLinkedTransferApp": {
       "address": "0x75c35C980C0d37ef46DF04d31A140b65503c0eEd"
     },
-    "SimpleTwoPartySwapApp": {
+    "SimpleTransferApp": {
       "address": "0x82D50AD3C1091866E258Fd0f1a7cC9674609D254"
     },
-    "UnidirectionalLinkedTransferApp": {
+    "SimpleTwoPartySwapApp": {
       "address": "0xdDA6327139485221633A1FcD65f4aC932E60A2e1"
     },
-    "UnidirectionalTransferApp": {
+    "UnidirectionalLinkedTransferApp": {
       "address": "0xeec918d74c746167564401103096D45BbD494B74"
     },
-    "Token": {
+    "UnidirectionalTransferApp": {
       "address": "0x0d8cc4b8d15D4c3eF1d70af0071376fb26B5669b"
+    },
+    "Token": {
+      "address": "0xEcFcaB0A285d3380E488A39B4BB21e777f8A4EaC"
     }
   }
 }

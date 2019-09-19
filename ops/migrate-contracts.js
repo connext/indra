@@ -5,6 +5,7 @@ const tokenArtifacts = require('openzeppelin-solidity/build/contracts/ERC20Minta
 const { EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT: coreContracts } = require(`@counterfactual/types`)
 
 const appContracts = [
+  "SimpleLinkedTransferApp",
   "SimpleTransferApp",
   "SimpleTwoPartySwapApp",
   "UnidirectionalLinkedTransferApp",

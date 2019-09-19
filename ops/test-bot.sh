@@ -63,11 +63,17 @@ bash ops/payment-bot.sh -i 2 -t 0.05 -c $id -m "$mnemonic2"
 echo -e "$divider";echo "Sending tokens to recipient bot"
 bash ops/payment-bot.sh -i 2 -t 0.05 -c $id -a $tokenAddress -m "$mnemonic2"
 
-echo -e "$divider";echo "Generating a link payment"
-bash ops/payment-bot.sh -i 2 -a $tokenAddress -l 0.01 -p "$paymentId" -h "$preImage" -m "$mnemonic2" 
-
 echo -e "$divider";echo "Stopping recipient listener so it can redeem a link payment"
 cleanup
+
+echo -e "$divider";echo "Printing recipient pre-link balances"
+bash ops/payment-bot.sh -i 1 -g -a $tokenAddress -m "$mnemonic1"
+
+echo -e "$divider";echo "Printing sender pre-link balances"
+bash ops/payment-bot.sh -i 2 -g -a $tokenAddress -m "$mnemonic2"
+
+echo -e "$divider";echo "Generating a link payment"
+bash ops/payment-bot.sh -i 2 -a $tokenAddress -l 0.01 -p "$paymentId" -h "$preImage" -m "$mnemonic2"
 
 echo -e "$divider";echo "Starting sender in background so they can uninstall link transfer app"
 bash ops/payment-bot.sh -i 2 -m "$mnemonic2" -o &
@@ -77,4 +83,10 @@ echo -e "$divider";echo "Redeeming link payment"
 bash ops/payment-bot.sh -i 1 -a $tokenAddress -y 0.01 -p "$paymentId" -h "$preImage" -m "$mnemonic1"
 
 echo -e "$divider";echo "Tests finished successfully"
-echo
+cleanup
+
+echo -e "$divider";echo "Printing recipient post-link balances"
+bash ops/payment-bot.sh -i 1 -g -a $tokenAddress -m "$mnemonic1"
+
+echo -e "$divider";echo "Printing sender post-link balances"
+bash ops/payment-bot.sh -i 2 -g -a $tokenAddress -m "$mnemonic2"

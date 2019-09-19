@@ -1,20 +1,18 @@
 import {
   BigNumber,
-  ConditionalTransferInitialStateBigNumber,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
   convert,
   LinkedTransferParameters,
   LinkedTransferResponse,
   RegisteredAppDetails,
+  SimpleLinkedTransferAppStateBigNumber,
   SupportedApplication,
   SupportedApplications,
   TransferCondition,
-  UnidirectionalLinkedTransferAppStage,
-  UnidirectionalLinkedTransferAppStateBigNumber,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
-import { Zero } from "ethers/constants";
+import { HashZero, Zero } from "ethers/constants";
 
 import { RejectInstallVirtualMessage } from "../lib/cfCore";
 import { createLinkedHash, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
@@ -57,17 +55,16 @@ export class ConditionalTransferController extends AbstractController {
     }
 
     const appInfo = this.connext.getRegisteredAppDetails(
-      SupportedApplications.UnidirectionalLinkedTransferApp as SupportedApplication,
+      SupportedApplications.SimpleLinkedTransferApp as SupportedApplication,
     );
 
     // install the transfer application
-    const linkedHash = createLinkedHash({ amount, assetId, paymentId, preImage });
+    const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
 
-    const initialState: UnidirectionalLinkedTransferAppStateBigNumber = {
-      finalized: false,
-      linkedHash,
-      stage: UnidirectionalLinkedTransferAppStage.POST_FUND,
-      transfers: [
+    const initialState: SimpleLinkedTransferAppStateBigNumber = {
+      amount,
+      assetId,
+      coinTransfers: [
         {
           amount,
           to: freeBalanceAddressFromXpub(this.connext.publicIdentifier),
@@ -77,18 +74,42 @@ export class ConditionalTransferController extends AbstractController {
           to: freeBalanceAddressFromXpub(this.connext.nodePublicIdentifier),
         },
       ],
-      turnNum: Zero,
+      linkedHash,
+      paymentId,
+      preImage: HashZero,
     };
 
-    const appId = await this.conditionalTransferAppInstalled(
-      amount,
-      assetId,
-      initialState,
-      appInfo,
-    );
-    if (!appId) {
-      throw new Error(`App was not installed`);
-    }
+    await new Promise(async (resolve, reject) => {
+      this.connext.messaging.subscribe("indra.node.install", (message: any) => {
+        console.log(`CAUGHT INSTALL EVENT FROM CONNEXT NODE at ${Date.now()}`);
+        console.log(`Message: ${JSON.stringify(message)} ${Date.now()}`);
+        // TODO: why is it sometimes data vs data.data?
+        const msgPaymentId = message.data.data
+          ? message.data.data.appInstance.latestState.paymentId
+          : message.data.appInstance.latestState.paymentId;
+        console.log("msgPaymentId: ", msgPaymentId);
+        if (msgPaymentId === msgPaymentId) {
+          this.connext.messaging.unsubscribe("indra.node.install");
+          resolve();
+        }
+      });
+
+      // this.cfCore.rpcRouter.subscribe(NODE_EVENTS.INSTALL_FINISHED, (data: any): any => {
+      //   console.log(`CAUGHT INSTALL FINISHED EVENT FROM CF NODE ${Date.now()}`);
+      //   console.log(`Message: ${JSON.stringify(data)} ${Date.now()}`);
+      //   resolve();
+      // });
+
+      const appId = await this.conditionalTransferAppInstalled(
+        amount,
+        assetId,
+        initialState,
+        appInfo,
+      );
+      if (!appId) {
+        throw new Error(`App was not installed`);
+      }
+    });
 
     return {
       freeBalance: await this.connext.getFreeBalance(assetId),
@@ -120,7 +141,7 @@ export class ConditionalTransferController extends AbstractController {
   private conditionalTransferAppInstalled = async (
     initiatorDeposit: BigNumber,
     assetId: string,
-    initialState: ConditionalTransferInitialStateBigNumber,
+    initialState: SimpleLinkedTransferAppStateBigNumber,
     appInfo: RegisteredAppDetails,
   ): Promise<string | undefined> => {
     let boundResolve: (value?: any) => void;
@@ -128,10 +149,10 @@ export class ConditionalTransferController extends AbstractController {
 
     // note: intermediary is added in connext.ts as well
     const {
-      actionEncoding,
       appDefinitionAddress: appDefinition,
       outcomeType,
       stateEncoding,
+      actionEncoding,
     } = appInfo;
     const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {

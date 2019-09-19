@@ -21,7 +21,7 @@ ganache_chain_id="4447"
 log_level="3" # set to 5 for all logs or to 0 for none
 nats_port="4222"
 node_port="8080"
-number_of_services="5" # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services="6" # NOTE: Gotta update this manually when adding/removing services :(
 project="indra"
 
 ####################
@@ -115,12 +115,16 @@ fi
 eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
 
 ########################################
-## Docker Image Conig
+## Docker Image Config
+
+redis_url="redis://redis:6379"
 
 database_image="postgres:9-alpine"
 nats_image="nats:2.0.0-linux"
+redis_image="redis:5-alpine"
 pull_if_unavailable $database_image
 pull_if_unavailable $nats_image
+pull_if_unavailable $redis_image
 
 if [[ "$INDRA_DOMAINNAME" != "localhost" ]]
 then
@@ -200,6 +204,7 @@ services:
       INDRA_PG_PORT: $postgres_port
       INDRA_PG_USERNAME: $postgres_user
       INDRA_PORT: $node_port
+      INDRA_REDIS_URL: $redis_url
       NODE_ENV: production
     secrets:
       - $db_secret
@@ -223,6 +228,11 @@ services:
     image: $nats_image
     ports:
       - "4222:4222"
+
+  redis:
+    image: $redis_image
+    ports:
+      - "6379:6379"
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project

@@ -14,10 +14,9 @@ export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 ////// APP REGISTRY
 
 export const SupportedApplications = {
+  SimpleLinkedTransferApp: "SimpleLinkedTransferApp",
   SimpleTransferApp: "SimpleTransferApp",
   SimpleTwoPartySwapApp: "SimpleTwoPartySwapApp",
-  UnidirectionalLinkedTransferApp: "UnidirectionalLinkedTransferApp",
-  UnidirectionalTransferApp: "UnidirectionalTransferApp",
 };
 export type SupportedApplication = keyof typeof SupportedApplications;
 
@@ -80,17 +79,14 @@ export type CoinTransfer<T = string> = {
 export type CoinTransferBigNumber = CoinTransfer<BigNumber>;
 
 // all the types of counterfactual app states
-// TODO: add swap app
 export type AppState<T = string> =
-  | UnidirectionalTransferAppState<T>
-  | UnidirectionalLinkedTransferAppState<T>;
+  | SimpleTransferAppState<T>
+  | SimpleLinkedTransferAppState<T>
+  | SimpleSwapAppState<T>;
 export type AppStateBigNumber = AppState<BigNumber>;
 
 // all the types of counterfactual app actions
-// TODO: add swap app
-export type AppAction<T = string> =
-  | UnidirectionalTransferAppAction<T>
-  | UnidirectionalLinkedTransferAppAction<T>;
+export type AppAction<T = string> = SimpleLinkedTransferAppAction;
 export type AppActionBigNumber = AppAction<BigNumber>;
 
 //////// Swap apps
@@ -105,59 +101,19 @@ export type SimpleTransferAppState<T = string> = {
 };
 export type SimpleTransferAppStateBigNumber = SimpleTransferAppState<BigNumber>;
 
-////// Unidirectional transfer app
-export type UnidirectionalTransferAppState<T = string> = {
-  finalized: false;
-  transfers: [CoinTransfer<T>, CoinTransfer<T>];
-  stage: UnidirectionalTransferAppStage;
-  turnNum: T;
-};
-export type UnidirectionalTransferAppStateBigNumber = UnidirectionalTransferAppState<BigNumber>;
-
-export enum UnidirectionalTransferAppActionType {
-  SEND_MONEY,
-  END_CHANNEL,
-}
-
-export type UnidirectionalTransferAppAction<T = string> = {
-  actionType: UnidirectionalTransferAppActionType;
-  amount: T;
-};
-
-export enum UnidirectionalTransferAppStage {
-  POST_FUND,
-  MONEY_SENT,
-  CHANNEL_CLOSED,
-}
-
-////// Unidirectional linked transfer app
-export type UnidirectionalLinkedTransferAppState<T = string> = {
-  stage: UnidirectionalLinkedTransferAppStage;
-  transfers: [CoinTransfer<T>, CoinTransfer<T>];
+//////// Simple linked transfer app
+export type SimpleLinkedTransferAppState<T = string> = {
+  coinTransfers: CoinTransfer<T>[];
   linkedHash: string;
-  turnNum: T;
-  finalized: false;
-};
-export type UnidirectionalLinkedTransferAppStateBigNumber = UnidirectionalLinkedTransferAppState<
-  BigNumber
->;
-
-export type UnidirectionalLinkedTransferAppAction<T = string> = {
   amount: T;
-  assetId: Address;
+  assetId: string;
   paymentId: string;
   preImage: string;
 };
-
-export type UnidirectionalLinkedTransferAppActionBigNumber = UnidirectionalLinkedTransferAppAction<
-  BigNumber
->;
-
-export enum UnidirectionalLinkedTransferAppStage {
-  POST_FUND,
-  PAYMENT_CLAIMED,
-  CHANNEL_CLOSED,
-}
+export type SimpleLinkedTransferAppStateBigNumber = SimpleLinkedTransferAppState<BigNumber>;
+export type SimpleLinkedTransferAppAction = {
+  preImage: string;
+};
 
 ////////////////////////////////////
 ////// CHANNEL TYPES
@@ -246,14 +202,6 @@ export type MultisigStateBigNumber = MultisigState<BigNumber>;
 
 ////////////////////////////////////
 ///////// NODE RESPONSE TYPES
-
-export const KnownNodeAppNames = {
-  SIMPLE_TRANSFER: "SimpleTransferApp",
-  SIMPLE_TWO_PARTY_SWAP: "SimpleTwoPartySwapApp",
-  UNIDIRECTIONAL_LINKED_TRANSFER: "UnidirectionalLinkedTransferApp",
-  UNIDIRECTIONAL_TRANSFER: "UnidirectionalTransferApp",
-};
-export type KnownNodeApp = keyof typeof KnownNodeAppNames;
 
 export type ContractAddresses = NetworkContext & {
   Token: string;
@@ -396,7 +344,7 @@ export type ConditionalTransferResponse = LinkedTransferResponse;
 
 // condition initial states
 // FIXME: should be union type of all supported conditions
-export type ConditionalTransferInitialState<T = string> = UnidirectionalLinkedTransferAppState<T>;
+export type ConditionalTransferInitialState<T = string> = SimpleLinkedTransferAppState<T>;
 // FIXME: should be union type of all supported conditions
 export type ConditionalTransferInitialStateBigNumber = ConditionalTransferInitialState<BigNumber>;
 
@@ -592,7 +540,7 @@ export function convertAppState<To extends NumericTypeName>(
 ): AppState<NumericTypes[To]> {
   return {
     ...obj,
-    transfers: [convertAmountField(to, obj.transfers[0]), convertAmountField(to, obj.transfers[1])],
+    // transfers: [convertAmountField(to, obj.transfers[0]), convertAmountField(to, obj.transfers[1])],
   };
 }
 
