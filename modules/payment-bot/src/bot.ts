@@ -14,13 +14,6 @@ export function registerClientListeners(): void {
     CFCoreTypes.EventName.UNINSTALL_VIRTUAL,
     async (data: CFCoreTypes.UninstallVirtualResult) => {
       console.log(`Bot event caught: ${CFCoreTypes.EventName.UNINSTALL_VIRTUAL}`);
-      while ((await client.getAppInstances()).length > 0) {
-        console.log(
-          "app still found in client, waiting 1s to uninstall. open apps: ",
-          (await client.getAppInstances()).length,
-        );
-        await delay(1000);
-      }
       logEthFreeBalance(AddressZero, await client.getFreeBalance());
       if (getAssetId()) {
         logEthFreeBalance(getAssetId(), await client.getFreeBalance(getAssetId()));
