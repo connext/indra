@@ -108,6 +108,7 @@ export type SimpleLinkedTransferAppState<T = string> = {
   amount: T;
   paymentId: string;
   preImage: string;
+  assetId: string;
 };
 export type SimpleLinkedTransferAppStateBigNumber = SimpleLinkedTransferAppState<BigNumber>;
 export type SimpleLinkedTransferAppAction = {

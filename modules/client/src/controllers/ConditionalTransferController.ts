@@ -73,6 +73,7 @@ export class ConditionalTransferController extends AbstractController {
           to: freeBalanceAddressFromXpub(this.connext.nodePublicIdentifier),
         },
       ],
+      assetId,
       linkedHash,
       paymentId,
       preImage: mkHash("0x0"),
