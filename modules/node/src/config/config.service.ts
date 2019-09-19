@@ -129,6 +129,7 @@ export class ConfigService implements OnModuleInit {
             ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
             bytes32 linkedHash,
             uint256 amount,
+            address assetId,
             bytes32 paymentId,
             bytes32 preImage
           )`,
