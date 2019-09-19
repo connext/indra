@@ -25,6 +25,7 @@ import {
   PeerToPeerTransferStatus,
 } from "./transfer.entity";
 import { LinkedTransferRepository, PeerToPeerTransferRepository } from "./transfer.repository";
+import { mkHash } from "src/test";
 
 const logger = new CLogger("TransferService");
 const maxRetries = 20;
@@ -161,7 +162,7 @@ export class TransferService {
       ],
       linkedHash,
       paymentId,
-      preImage: AddressZero,
+      preImage: mkHash("0x0"),
     };
 
     let receiverApp: LinkedTransfer;
@@ -174,7 +175,7 @@ export class TransferService {
       receiverApp = await this.installLinkedTransferApp(
         userPubId,
         initialState,
-        AddressZero,
+        mkHash("0x0"),
         paymentId,
         transfer,
         appInfo,
