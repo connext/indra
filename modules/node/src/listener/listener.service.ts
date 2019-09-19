@@ -50,6 +50,7 @@ export default class ListenerService implements OnModuleInit {
     private readonly linkedTransferRepository: LinkedTransferRepository,
   ) {}
 
+  // TODO: move the business logic into the respective modules?
   getEventListeners(): CallbackStruct {
     return {
       COUNTER_DEPOSIT_CONFIRMED: (data: DepositConfirmationMessage): void => {
