@@ -7,9 +7,7 @@ const { EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT: coreContracts } = require(`@
 const appContracts = [
   "SimpleLinkedTransferApp",
   "SimpleTransferApp",
-  "SimpleTwoPartySwapApp",
-  "UnidirectionalLinkedTransferApp",
-  "UnidirectionalTransferApp",
+  "SimpleTwoPartySwapApp"
 ]
 
 const artifacts = {}
