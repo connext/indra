@@ -11,17 +11,14 @@ import {
   SupportedApplications,
   TransferCondition,
 } from "@connext/types";
-import { NODE_EVENTS } from "@counterfactual/node";
-import { AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
-import { Zero, AddressZero } from "ethers/constants";
+import { Node as CFCoreTypes } from "@counterfactual/types";
+import { AddressZero, Zero } from "ethers/constants";
 
 import { RejectInstallVirtualMessage } from "../lib/cfCore";
-import { createLinkedHash, delay, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
+import { createLinkedHash, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
 import { falsy, invalid32ByteHexString, invalidAddress, notLessThanOrEqualTo } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-
-const MAX_RETRIES = 20;
 
 type ConditionalExecutors = {
   [index in TransferCondition]: (
