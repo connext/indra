@@ -114,6 +114,11 @@ export class ConfigService implements OnModuleInit {
           )`,
       },
       {
+        actionEncoding: `
+          tuple(
+            bytes32 preImage
+          )
+        `,
         allowNodeInstall: true,
         appDefinitionAddress: addressBook[SupportedApplications.SimpleLinkedTransferApp],
         name: SupportedApplications.SimpleLinkedTransferApp,
