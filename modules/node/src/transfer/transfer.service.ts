@@ -16,6 +16,7 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService, DefaultApp } from "../config/config.service";
 import { MessagingProviderId, Network } from "../constants";
+import { mkHash } from "../test";
 import { CLogger, createLinkedHash, delay, freeBalanceAddressFromXpub, replaceBN } from "../util";
 
 import {
@@ -25,7 +26,6 @@ import {
   PeerToPeerTransferStatus,
 } from "./transfer.entity";
 import { LinkedTransferRepository, PeerToPeerTransferRepository } from "./transfer.repository";
-import { mkHash } from "src/test";
 
 const logger = new CLogger("TransferService");
 const maxRetries = 20;
