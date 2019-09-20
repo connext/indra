@@ -19,6 +19,8 @@ client=$(cwd)/modules/client
 messaging=$(cwd)/modules/messaging
 node=$(cwd)/modules/node
 proxy=$(cwd)/modules/proxy
+redis-lock=$(cwd)/modules/redis-lock
+proxy-lock=$(cwd)/modules/proxy-lock
 types=$(cwd)/modules/types
 
 # Setup docker run time
@@ -102,17 +104,20 @@ watch: watch-node
 start-test: prod deployed-contracts
 	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test bash ops/start-prod.sh
 
-test-ui:
+test-ui: payment-bot
 	bash ops/test-ui.sh
 
 watch-ui: node-modules
 	bash ops/test-ui.sh watch
 
-test-bot:
+test-bot: payment-bot
 	bash ops/test-bot.sh
 
 test-bot-farm:
 	bash ops/test-bot-farm.sh
+
+test-contracts: contracts
+	bash ops/test-contracts.sh
 
 test-node: node
 	bash ops/test-node.sh --runInBand --forceExit
@@ -128,7 +133,7 @@ builder: ops/builder.dockerfile
 	docker build --file ops/builder.dockerfile --tag $(project)_builder:latest .
 	$(log_finish) && touch $(flags)/$@
 
-client: contracts types messaging $(shell find $(client)/src $(find_options))
+client: contracts types messaging proxy-lock $(shell find $(client)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && touch $(flags)/$@
@@ -148,7 +153,7 @@ messaging: node-modules $(shell find $(messaging)/src $(find_options))
 	$(docker_run) "cd modules/messaging && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-node: contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
+node: contracts types messaging redis-lock $(shell find $(node)/src $(node)/migrations $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build"
 	$(log_finish) && touch $(flags)/$@
@@ -176,6 +181,16 @@ proxy: $(shell find $(proxy) $(find_options))
 proxy-prod: daicard-prod $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/prod.dockerfile --tag $(project)_proxy:latest .
+	$(log_finish) && touch $(flags)/$@
+
+redis-lock: node-modules $(shell find $(redis-lock)/src $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/redis-lock && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
+proxy-lock: node-modules $(shell find $(proxy-lock)/src $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/proxy-lock && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
 types: node-modules messaging $(shell find $(types)/src $(find_options))

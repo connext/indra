@@ -1,4 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
+import { ProxyLockService } from "@connext/proxy-lock";
 import {
   AppActionBigNumber,
   AppRegistry,
@@ -55,7 +56,15 @@ import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
  */
 
 export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
-  const { logLevel, ethProviderUrl, mnemonic, natsClusterId, nodeUrl, natsToken, store } = opts;
+  const {
+    logLevel,
+    ethProviderUrl,
+    mnemonic,
+    natsClusterId,
+    nodeUrl,
+    natsToken,
+    store,
+  } = opts;
   const logger = new Logger("ConnextConnect", logLevel);
 
   // setup network information
@@ -104,16 +113,21 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   const appRegistry = await node.appRegistry();
 
+  // create the lock service for cfCore
+  logger.info("using node's proxy lock service");
+  let lockService: ProxyLockService = new ProxyLockService(messaging);
+
   // create new cfCore to inject into internal instance
   logger.info("creating new cf module");
   const cfCore = await CFCore.create(
-    messaging,
+    messaging as any, // TODO: FIX
     store,
     {
       STORE_KEY_PREFIX: "store",
     }, // TODO: proper config
     ethProvider,
     config.contractAddresses,
+    lockService,
   );
   node.setUserPublicIdentifier(cfCore.publicIdentifier);
   logger.info("created cf module successfully");
@@ -124,19 +138,20 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // TODO: make these types
   const myChannel = await node.getChannel();
 
-  let multisigAddress;
+  let multisigAddress: string;
   if (!myChannel) {
     // TODO: make these types
     logger.info("no channel detected, creating channel..");
-    const creationData = await node.createChannel();
-    logger.info(`created channel, transaction: ${creationData}`);
     const creationEventData: CFCoreTypes.CreateChannelResult = await new Promise(
-      (res: any, rej: any): any => {
+      async (res: any, rej: any): Promise<any> => {
         const timer = setTimeout(() => rej("Create channel event not fired within 30s"), 30000);
         cfCore.once(CFCoreTypes.EventName.CREATE_CHANNEL, (data: CreateChannelMessage) => {
           clearTimeout(timer);
           res(data.data);
         });
+
+        const creationData = await node.createChannel();
+        logger.info(`created channel, transaction: ${creationData}`);
       },
     );
     logger.info(`create channel event data: ${JSON.stringify(creationEventData, replaceBN, 2)}`);
@@ -719,23 +734,19 @@ export class ConnextInternal extends ConnextChannel {
     return updateResponse.result.result as CFCoreTypes.UpdateStateResult;
   };
 
-  // TODO: add validation after arjuns refactor merged
   public proposeInstallVirtualApp = async (
     params: CFCoreTypes.ProposeInstallVirtualParams,
   ): Promise<CFCoreTypes.ProposeInstallVirtualResult> => {
-    this.logger.info(`Proposing install with params: ${JSON.stringify(params, replaceBN, 2)}`);
     if (params.intermediaryIdentifier !== this.nodePublicIdentifier) {
-      throw new Error(`Incorrect intermediaryIdentifier. Expected: ${this.nodePublicIdentifier},
-         got ${params.intermediaryIdentifier}`);
+      throw new Error(`Cannot install virtual app without node as intermediary`);
     }
-
     const actionRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: CFCoreTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
       parameters: params,
     });
 
-    return actionRes.result.result as CFCoreTypes.ProposeInstallVirtualResult;
+    return actionRes.result.result as CFCoreTypes.ProposeInstallResult;
   };
 
   // TODO: add validation after arjuns refactor merged

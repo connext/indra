@@ -53,7 +53,7 @@ export class NatsMessagingService implements IMessagingService {
   async send(to: string, msg: Node.NodeMessage): Promise<void> {
     this.assertConnected();
     this.log.debug(`Sending message to ${to}: ${JSON.stringify(msg)}`);
-    this.connection!.publish(this.prependKey(`${to}.${msg.from}`), msg);
+    await this.connection!.publish(this.prependKey(`${to}.${msg.from}`), msg);
   }
 
   ////////////////////////////////////////
@@ -62,7 +62,7 @@ export class NatsMessagingService implements IMessagingService {
   async publish(subject: string, data: any): Promise<void> {
     this.assertConnected();
     this.log.debug(`Publishing ${subject}: ${JSON.stringify(data)}`);
-    this.connection!.publish(subject, data);
+    await this.connection!.publish(subject, data);
   }
 
   async request(subject: string, timeout: number, data: object = {}): Promise<nats.Msg | void> {

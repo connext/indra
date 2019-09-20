@@ -1,20 +1,18 @@
 import {
   BigNumber,
-  ConditionalTransferInitialStateBigNumber,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
   convert,
   LinkedTransferParameters,
   LinkedTransferResponse,
   RegisteredAppDetails,
+  SimpleLinkedTransferAppStateBigNumber,
   SupportedApplication,
   SupportedApplications,
   TransferCondition,
-  UnidirectionalLinkedTransferAppStage,
-  UnidirectionalLinkedTransferAppStateBigNumber,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
-import { Zero } from "ethers/constants";
+import { HashZero, Zero } from "ethers/constants";
 
 import { RejectInstallVirtualMessage } from "../lib/cfCore";
 import { createLinkedHash, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
@@ -57,17 +55,16 @@ export class ConditionalTransferController extends AbstractController {
     }
 
     const appInfo = this.connext.getRegisteredAppDetails(
-      SupportedApplications.UnidirectionalLinkedTransferApp as SupportedApplication,
+      SupportedApplications.SimpleLinkedTransferApp as SupportedApplication,
     );
 
     // install the transfer application
-    const linkedHash = createLinkedHash({ amount, assetId, paymentId, preImage });
+    const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
 
-    const initialState: UnidirectionalLinkedTransferAppStateBigNumber = {
-      finalized: false,
-      linkedHash,
-      stage: UnidirectionalLinkedTransferAppStage.POST_FUND,
-      transfers: [
+    const initialState: SimpleLinkedTransferAppStateBigNumber = {
+      amount,
+      assetId,
+      coinTransfers: [
         {
           amount,
           to: freeBalanceAddressFromXpub(this.connext.publicIdentifier),
@@ -77,7 +74,9 @@ export class ConditionalTransferController extends AbstractController {
           to: freeBalanceAddressFromXpub(this.connext.nodePublicIdentifier),
         },
       ],
-      turnNum: Zero,
+      linkedHash,
+      paymentId,
+      preImage: HashZero,
     };
 
     const appId = await this.conditionalTransferAppInstalled(
@@ -86,6 +85,7 @@ export class ConditionalTransferController extends AbstractController {
       initialState,
       appInfo,
     );
+
     if (!appId) {
       throw new Error(`App was not installed`);
     }
@@ -120,7 +120,7 @@ export class ConditionalTransferController extends AbstractController {
   private conditionalTransferAppInstalled = async (
     initiatorDeposit: BigNumber,
     assetId: string,
-    initialState: ConditionalTransferInitialStateBigNumber,
+    initialState: SimpleLinkedTransferAppStateBigNumber,
     appInfo: RegisteredAppDetails,
   ): Promise<string | undefined> => {
     let boundResolve: (value?: any) => void;
@@ -128,10 +128,10 @@ export class ConditionalTransferController extends AbstractController {
 
     // note: intermediary is added in connext.ts as well
     const {
-      actionEncoding,
       appDefinitionAddress: appDefinition,
       outcomeType,
       stateEncoding,
+      actionEncoding,
     } = appInfo;
     const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {
@@ -155,9 +155,12 @@ export class ConditionalTransferController extends AbstractController {
 
     try {
       await new Promise((res: () => any, rej: () => any): void => {
-        boundReject = this.rejectInstallTransfer.bind(null, rej);
         boundResolve = this.resolveInstallTransfer.bind(null, res);
-        this.listener.on(CFCoreTypes.EventName.INSTALL, boundResolve);
+        boundReject = this.rejectInstallTransfer.bind(null, rej);
+        this.connext.messaging.subscribe(
+          `indra.node.install.${this.connext.nodePublicIdentifier}`,
+          boundResolve,
+        );
         this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
       });
       this.log.info(`App was installed successfully!: ${JSON.stringify(res)}`);
@@ -171,18 +174,21 @@ export class ConditionalTransferController extends AbstractController {
   };
 
   // TODO: fix type of data
-  private resolveInstallTransfer = (res: (value?: unknown) => void, data: any): any => {
-    if (this.appId !== data.params.appInstanceId) {
+  private resolveInstallTransfer = (res: (value?: unknown) => void, message: any): any => {
+    // TODO: why is it sometimes data vs data.data?
+    const appInstance = message.data.data
+      ? message.data.data.appInstance
+      : message.data.appInstance;
+
+    if (appInstance.identityHash !== this.appId) {
+      // not our app
       this.log.info(
-        `Caught INSTALL event for different app ${JSON.stringify(data)}, expected ${this.appId}`,
+        `Caught INSTALL event for different app ${JSON.stringify(message)}, expected ${this.appId}`,
       );
       return;
     }
-    if (this.timeout) {
-      clearTimeout(this.timeout);
-    }
-    res(data);
-    return data;
+    res(message);
+    return message;
   };
 
   // TODO: fix types of data
@@ -199,7 +205,7 @@ export class ConditionalTransferController extends AbstractController {
   };
 
   private cleanupInstallListeners = (boundResolve: any, boundReject: any): void => {
-    this.listener.removeListener(CFCoreTypes.EventName.INSTALL, boundResolve);
+    this.connext.messaging.unsubscribe(`indra.node.install.${this.connext.nodePublicIdentifier}`);
     this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
   };
 

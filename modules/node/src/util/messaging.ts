@@ -28,6 +28,7 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
   ): Promise<void> {
     // TODO: timeout
     await this.messaging.subscribe(pattern, async (msg: any) => {
+      logger.debug(`Got NATS message for subject ${msg.subject}`);
       if (msg.reply) {
         try {
           const response = await processor(msg.subject, msg.data);
@@ -40,7 +41,8 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
             err: e ? e.toString() : e,
             message: `Error during processor function: ${processor.name}`,
           });
-          logger.error(e);
+          logger.error(JSON.stringify(e));
+          console.error(e);
         }
       }
     });

@@ -8,7 +8,6 @@ export {
   JsonRpcResponse,
   Node as CFCore,
   ProposeMessage,
-  ProposeVirtualMessage,
   RejectInstallVirtualMessage,
   UninstallMessage,
   UninstallVirtualMessage,

@@ -1,12 +1,9 @@
 import {
   AllowedSwap,
   CoinTransfer,
-  KnownNodeAppNames,
-  UnidirectionalLinkedTransferAppStage,
-  UnidirectionalLinkedTransferAppState,
-  UnidirectionalLinkedTransferAppStateBigNumber,
-  UnidirectionalTransferAppStage,
-  UnidirectionalTransferAppStateBigNumber,
+  SimpleLinkedTransferAppStateBigNumber,
+  SimpleTransferAppStateBigNumber,
+  SupportedApplications,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
@@ -23,9 +20,8 @@ import {
   CLogger,
   freeBalanceAddressFromXpub,
   normalizeEthAddresses,
-  replaceBN,
 } from "../util";
-import { ProposeMessage, ProposeVirtualMessage } from "../util/cfCore";
+import { ProposeMessage } from "../util/cfCore";
 import { isEthAddress } from "../validator";
 
 import { AppRegistry } from "./appRegistry.entity";
@@ -59,7 +55,7 @@ export class AppRegistryService {
       return await this.cfCoreService.installApp(data.data.appInstanceId);
     } catch (e) {
       logger.error(`Caught error during proposed app validation, rejecting install`);
-      logger.error(e);
+      console.error(e);
       return await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
     }
   }
@@ -70,13 +66,13 @@ export class AppRegistryService {
    * @param data Data from CF event PROPOSE_INSTALL_VIRTUAL
    */
   async allowOrRejectVirtual(
-    data: ProposeVirtualMessage,
+    data: ProposeMessage,
   ): Promise<void | CFCoreTypes.RejectInstallResult> {
     try {
       await this.verifyVirtualAppProposal(data.data, data.from);
     } catch (e) {
       logger.error(`Caught error during proposed app validation, rejecting virtual install`);
-      logger.error(e);
+      console.error(e);
       return await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
     }
   }
@@ -128,28 +124,13 @@ export class AppRegistryService {
     }
 
     // validate the initial state is kosher
-    const initialState = bigNumberifyObj(
-      initialStateBadType,
-    ) as UnidirectionalTransferAppStateBigNumber;
-    if (!initialState.turnNum.isZero()) {
-      throw new Error(`Cannot install a transfer app with a turn number > 0`);
-    }
-
-    if (initialState.finalized) {
-      throw new Error(`Cannot install a transfer app with a finalized initial state`);
-    }
-
-    if (initialState.stage !== UnidirectionalTransferAppStage.POST_FUND) {
-      throw new Error(
-        `Cannot install a transfer app with a stage that is not the "POST_FUND" stage.`,
-      );
-    }
+    const initialState = bigNumberifyObj(initialStateBadType) as SimpleTransferAppStateBigNumber;
 
     // transfers[0] is the senders value in the array, and the transfers[1]
     // is the recipients value in the array
     if (
-      bigNumberify(initialState.transfers[0].amount).lt(Zero) ||
-      !bigNumberify(initialState.transfers[0].amount).eq(initiatorDeposit)
+      bigNumberify(initialState.coinTransfers[0].amount).lt(Zero) ||
+      !bigNumberify(initialState.coinTransfers[0].amount).eq(initiatorDeposit)
     ) {
       throw new Error(
         `Cannot install a transfer app with initiator deposit values that are ` +
@@ -157,7 +138,7 @@ export class AppRegistryService {
       );
     }
 
-    if (!bigNumberify(initialState.transfers[1].amount).isZero()) {
+    if (!bigNumberify(initialState.coinTransfers[1].amount).isZero()) {
       throw new Error(
         `Cannot install a transfer app with nonzero values for the recipient in the initial state.`,
       );
@@ -213,14 +194,22 @@ export class AppRegistryService {
     );
   }
 
-  // TODO: update the linked transfer app so it doesnt use a state machine
-  // and instead uses a computeOutcome, similar to the swap app
-  private async validateLinkedTransfer(params: CFCoreTypes.ProposeInstallParams): Promise<void> {
+  private async validateSimpleLinkedTransfer(
+    params: CFCoreTypes.ProposeInstallParams,
+  ): Promise<void> {
     const {
       responderDeposit,
       initiatorDeposit,
       initialState: initialStateBadType,
     } = bigNumberifyObj(params);
+
+    const initialState = bigNumberifyObj(
+      initialStateBadType,
+    ) as SimpleLinkedTransferAppStateBigNumber;
+
+    initialState.coinTransfers = initialState.coinTransfers.map(
+      (transfer: CoinTransfer<BigNumber>) => bigNumberifyObj(transfer),
+    ) as any;
 
     if (responderDeposit.gt(Zero)) {
       throw new Error(
@@ -230,49 +219,39 @@ export class AppRegistryService {
       );
     }
 
-    const initialState = bigNumberifyObj(
-      initialStateBadType,
-    ) as UnidirectionalLinkedTransferAppStateBigNumber;
-
-    initialState.transfers = initialState.transfers.map((transfer: CoinTransfer<BigNumber>) =>
-      bigNumberifyObj(transfer),
-    ) as any;
-
-    logger.log(`initialState: ${JSON.stringify(initialState, replaceBN, 2)}`);
-
-    if (initialState.finalized) {
-      throw new Error(`Cannot install linked transfer app with finalized state`);
-    }
-
-    if (!initialState.turnNum.isZero()) {
-      throw new Error(`Cannot install a linked transfer app with nonzero turn number`);
-    }
-
-    if (initialState.stage !== UnidirectionalLinkedTransferAppStage.POST_FUND) {
+    if (initiatorDeposit.lte(Zero)) {
       throw new Error(
-        `Cannot install a linked transfer app with a stage other than the POST_FUND stage`,
+        `Will not accept linked transfer install where initiator deposit is <=0 ${JSON.stringify(
+          params,
+        )}`,
       );
     }
 
-    if (bigNumberify(initialState.transfers[0].amount).lte(Zero)) {
+    if (!initialState.amount.eq(initiatorDeposit)) {
+      throw new Error(
+        `Payment amount bust be the same as initiator deposit ${JSON.stringify(params)}`,
+      );
+    }
+
+    if (bigNumberify(initialState.coinTransfers[0].amount).lte(Zero)) {
       throw new Error(
         `Cannot install a linked transfer app with a sender transfer of <= 0. Transfer amount: ${bigNumberify(
-          initialState.transfers[0].amount,
+          initialState.coinTransfers[0].amount,
         ).toString()}`,
       );
     }
 
-    if (bigNumberify(initialState.transfers[1].amount).lt(Zero)) {
+    if (bigNumberify(initialState.coinTransfers[1].amount).lt(Zero)) {
       throw new Error(
         `Cannot install a linked transfer app with a redeemer transfer of < 0. Transfer amount: ${bigNumberify(
-          initialState.transfers[1].amount,
+          initialState.coinTransfers[1].amount,
         ).toString()}`,
       );
     }
 
     if (
-      !bigNumberify(initialState.transfers[0].amount).eq(initiatorDeposit) ||
-      !bigNumberify(initialState.transfers[1].amount).eq(responderDeposit)
+      !bigNumberify(initialState.coinTransfers[0].amount).eq(initiatorDeposit) ||
+      !bigNumberify(initialState.coinTransfers[1].amount).eq(responderDeposit)
     ) {
       throw new Error(`Mismatch between deposits and initial state, refusing to install.`);
     }
@@ -389,26 +368,44 @@ export class AppRegistryService {
 
     const registryAppInfo = await this.appProposalMatchesRegistry(proposedAppParams.params);
 
+    if (registryAppInfo.name === "SimpleTransferApp") {
+      logger.debug(
+        `Caught propose install for what should always be a virtual app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
+      );
+      return;
+    }
+
     if (!registryAppInfo.allowNodeInstall) {
       throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
     }
 
+    logger.log(
+      `App with params ${JSON.stringify(
+        proposedAppParams.params,
+        null,
+        2,
+      )} allowed to be installed`,
+    );
+
     await this.commonAppProposalValidation(proposedAppParams.params, initiatorIdentifier);
 
     switch (registryAppInfo.name) {
-      case KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP:
+      case SupportedApplications.SimpleTwoPartySwapApp:
         await this.validateSwap(proposedAppParams.params);
         break;
-      case KnownNodeAppNames.UNIDIRECTIONAL_LINKED_TRANSFER:
-        await this.validateLinkedTransfer(proposedAppParams.params);
+      case SupportedApplications.SimpleLinkedTransferApp:
+        // TODO: add validation of simple transfer validateSimpleTransfer
+        await this.validateSimpleLinkedTransfer(proposedAppParams.params);
+        logger.log(`saving linked transfer`);
         await this.transferService.saveLinkedTransfer(
           initiatorIdentifier,
           proposedAppParams.params.initiatorDepositTokenAddress,
           bigNumberify(proposedAppParams.params.initiatorDeposit),
           proposedAppParams.appInstanceId,
-          (proposedAppParams.params.initialState as UnidirectionalLinkedTransferAppState)
+          (proposedAppParams.params.initialState as SimpleLinkedTransferAppStateBigNumber)
             .linkedHash,
         );
+        logger.log(`saved!`);
         break;
       default:
         break;
@@ -418,7 +415,8 @@ export class AppRegistryService {
 
   private async verifyVirtualAppProposal(
     proposedAppParams: {
-      params: CFCoreTypes.ProposeInstallVirtualParams;
+      params: CFCoreTypes.ProposeInstallParams;
+      // ^^ may be propose install virtual despite what package types say..
       appInstanceId: string;
     },
     initiatorIdentifier: string,
@@ -430,6 +428,13 @@ export class AppRegistryService {
     } = bigNumberifyObj(proposedAppParams.params);
 
     const registryAppInfo = await this.appProposalMatchesRegistry(proposedAppParams.params);
+
+    if (registryAppInfo.name !== "SimpleTransferApp") {
+      logger.debug(
+        `Caught propose install virtual for what should always be a regular app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
+      );
+      return;
+    }
 
     await this.commonAppProposalValidation(proposedAppParams.params, initiatorIdentifier);
 
@@ -462,8 +467,7 @@ export class AppRegistryService {
     }
 
     switch (registryAppInfo.name) {
-      case KnownNodeAppNames.UNIDIRECTIONAL_TRANSFER:
-        await this.validateTransfer(proposedAppParams.params);
+      case SupportedApplications.SimpleTransferApp:
         // TODO: move this to install
         await this.transferService.savePeerToPeerTransfer(
           initiatorIdentifier,

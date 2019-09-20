@@ -213,7 +213,7 @@ async function run(): Promise<void> {
 }
 
 async function getOrCreateChannel(assetId?: string): Promise<void> {
-  const connextOpts = {
+  const connextOpts: connext.ClientOptions = {
     ethProviderUrl: config.ethProviderUrl,
     logLevel: config.logLevel,
     mnemonic: config.mnemonic,

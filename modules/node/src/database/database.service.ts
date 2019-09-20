@@ -4,6 +4,7 @@ import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from "@nestjs/typeorm";
 import { InitNodeRecords1567158660577 } from "../../migrations/1567158660577-init-node-records";
 import { InitHubTables1567158805166 } from "../../migrations/1567158805166-init-hub-tables";
 import { AddCollateralizationInFlight1567601573372 } from "../../migrations/1567601573372-add-collateralization-in-flight";
+import { AddReclaimedLinks1568746114079 } from "../../migrations/1568746114079-add-reclaimed-links";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { Channel } from "../channel/channel.entity";
@@ -24,6 +25,7 @@ const migrations = [
   InitNodeRecords1567158660577,
   InitHubTables1567158805166,
   AddCollateralizationInFlight1567601573372,
+  AddReclaimedLinks1568746114079,
 ];
 
 @Injectable()

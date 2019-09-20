@@ -11,7 +11,6 @@ import {
   InstallMessage,
   InstallVirtualMessage,
   ProposeMessage,
-  ProposeVirtualMessage,
   RejectInstallVirtualMessage,
   UninstallMessage,
   UninstallVirtualMessage,
@@ -78,25 +77,35 @@ export class ConnextListener extends EventEmitter {
         this.log.warn(`No matched app, doing nothing, ${JSON.stringify(data)}`);
         return;
       }
+      if (matchedResult.matchedApp.name === "SimpleTransferApp") {
+        this.log.debug(
+          `Caught propose install for what should always be a virtual app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
+        );
+        return;
+      }
       // matched app, take appropriate default actions
       const { appInfo, matchedApp } = matchedResult;
       await this.verifyAndInstallKnownApp(appInfo, matchedApp, false);
       return;
     },
-    PROPOSE_INSTALL_VIRTUAL: async (data: ProposeVirtualMessage): Promise<void> => {
+    PROPOSE_INSTALL_VIRTUAL: async (data: ProposeMessage): Promise<void> => {
       // validate and automatically install for the known and supported
       // applications
       this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data.data);
       // if the from is us, ignore
-      // FIXME: type of ProposeVirtualMessage should extend CFCore.NodeMessage,
-      // which has a from field, but ProposeVirtualMessage does not
-      if ((data as any).from === this.cfCore.publicIdentifier) {
+      if (data.from === this.cfCore.publicIdentifier) {
         return;
       }
       // check based on supported applications
       // matched app, take appropriate default actions
       const matchedResult = await this.matchAppInstance(data);
       if (!matchedResult) {
+        return;
+      }
+      if (matchedResult.matchedApp.name !== "SimpleTransferApp") {
+        this.log.debug(
+          `Caught propose install virtual for what should always be a regular app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
+        );
         return;
       }
       // matched app, take appropriate default actions
@@ -186,15 +195,35 @@ export class ConnextListener extends EventEmitter {
     Object.entries(this.defaultCallbacks).forEach(([event, callback]: any): any => {
       this.cfCore.on(CFCoreTypes.EventName[event], callback);
     });
+
+    this.cfCore.on(CFCoreTypes.RpcMethodName.INSTALL, (data: any) => {
+      this.log.debug(
+        `Emitting CFCoreTypes.RpcMethodName.INSTALL event: ${JSON.stringify(data.result.result)}`,
+      );
+      this.connext.messaging.publish(
+        `indra.client.install.${this.cfCore.publicIdentifier}`,
+        JSON.stringify(data.result.result),
+      );
+    });
+
+    this.cfCore.on(CFCoreTypes.RpcMethodName.UNINSTALL, (data: any) => {
+      this.log.debug(
+        `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(data.result.result)}`,
+      );
+      this.connext.messaging.publish(
+        `indra.client.uninstall.${this.cfCore.publicIdentifier}`,
+        JSON.stringify(data.result.result),
+      );
+    });
   };
 
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
-    this.log.info(`Emitted ${event}`);
+    this.log.info(`Emitted ${event} with data ${JSON.stringify(data)} at ${Date.now()}`);
     this.emit(event, data);
   };
 
   private matchAppInstance = async (
-    data: ProposeVirtualMessage | ProposeMessage,
+    data: ProposeMessage,
   ): Promise<{ matchedApp: RegisteredAppDetails; appInfo: AppInstanceInfo } | undefined> => {
     const filteredApps = this.connext.appRegistry.filter((app: RegisteredAppDetails) => {
       return app.appDefinitionAddress === data.data.params.appDefinition;
@@ -264,7 +293,7 @@ export class ConnextListener extends EventEmitter {
       return;
     }
 
-    if (matchedApp.name === SupportedApplications.UnidirectionalTransferApp) {
+    if (matchedApp.name === SupportedApplications.SimpleTransferApp) {
       // request collateral in token of the app
       await this.connext.requestCollateral(appInstance.initiatorDepositTokenAddress);
     }
