@@ -1,5 +1,5 @@
 {
-  "name": "@connext/redis-lock",
+  "name": "@connext/proxy-lock",
   "version": "0.1.6",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
@@ -13,12 +13,9 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "@counterfactual/types": "0.0.42",
-    "@types/ioredis": "4.0.17",
-    "@types/redlock": "3.0.4",
-    "ioredis": "4.14.1",
-    "node-fetch": "2.6.0",
-    "redlock": "4.0.0"
+    "@connext/messaging": "0.1.6",
+    "@counterfactual/types": "0.0.40",
+    "uuid": "3.3.3"
   },
   "devDependencies": {
     "rollup": "1.21.4",
