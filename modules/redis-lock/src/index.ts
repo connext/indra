@@ -76,9 +76,7 @@ export class RedisLockService implements Node.ILockService {
             error(e);
           } finally {
             // unlock
-            log(
-              `Releasing lock for ${lock.resource} with secret ${lock.value}`,
-            );
+            log(`Releasing lock for ${lock.resource} with secret ${lock.value}`);
             lock
               .unlock()
               .then(() => {
@@ -93,9 +91,7 @@ export class RedisLockService implements Node.ILockService {
                   );
                   reject(e);
                 } else {
-                  log(
-                    `Failed to release the lock due to expired ttl: ${e}; `,
-                  );
+                  log(`Failed to release the lock due to expired ttl: ${e}; `);
                   if (retVal) resolve(retVal);
                 }
               });
@@ -118,7 +114,7 @@ export class ProxyLockService implements Node.ILockService {
     callback: (...args: any[]) => any,
     timeout: number,
   ): Promise<any> {
-    const lockValue = await this.send(`lock.acquire.${lockName}`);
+    const lockValue = await this.send(`lock.acquire.${lockName}`, { lockTTL: timeout });
     log(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
 
     let retVal: any;
