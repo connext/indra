@@ -17,7 +17,14 @@ import { ChannelService } from "../channel/channel.service";
 import { ConfigService, DefaultApp } from "../config/config.service";
 import { MessagingProviderId, Network } from "../constants";
 import { mkHash } from "../test";
-import { CLogger, createLinkedHash, delay, freeBalanceAddressFromXpub, replaceBN } from "../util";
+import {
+  CLogger,
+  createLinkedHash,
+  delay,
+  freeBalanceAddressFromXpub,
+  RejectInstallVirtualMessage,
+  replaceBN,
+} from "../util";
 
 import {
   LinkedTransfer,
@@ -166,23 +173,13 @@ export class TransferService {
       preImage: mkHash("0x0"),
     };
 
-    let receiverApp: LinkedTransfer;
-    await new Promise(
-      async (resolve: any): Promise<void> => {
-        this.messagingProvider.subscribe(`indra.client.install.${userPubId}`, (data: any) => {
-          console.log("RECEIVED CLIENT INSTALL EVENT: ", data);
-          resolve();
-        });
-
-        receiverApp = await this.installLinkedTransferApp(
-          userPubId,
-          initialState,
-          mkHash("0x0"),
-          paymentId,
-          transfer,
-          appInfo,
-        );
-      },
+    const receiverApp = await this.installLinkedTransferApp(
+      userPubId,
+      initialState,
+      mkHash("0x0"),
+      paymentId,
+      transfer,
+      appInfo,
     );
 
     await this.takeActionAndUninstallLink(receiverApp.receiverAppInstanceId, preImage);
@@ -230,18 +227,12 @@ export class TransferService {
   }
 
   async takeActionAndUninstallLink(appId: string, preImage: string): Promise<void> {
-    // TODO: TESTING IF THIS IS METHOD IS THROWN TO SEE IF WE NEED TO WAIT ON IT
-    this.cfCoreService.cfCore.on(CFCoreTypes.RpcMethodName.TAKE_ACTION, (data: any) => {
-      console.log("RECEIVED CF NODE TAKE ACTION EVENT: ", data);
-    });
-
     console.log(`Taking action on app at ${Date.now()}`);
-    await this.cfCoreService.takeAction(appId, { preImage });
-
     try {
+      await this.cfCoreService.takeAction(appId, { preImage });
       await this.cfCoreService.uninstallApp(appId);
     } catch (e) {
-      throw new Error(`finalizeAndUninstallTransferApp: ${e}`);
+      throw new Error(`takeActionAndUninstallLink: ${e}`);
     }
   }
 
@@ -253,6 +244,9 @@ export class TransferService {
     transfer: LinkedTransfer,
     appInfo: AppRegistry,
   ): Promise<LinkedTransfer> {
+    let boundResolve: (value?: any) => void;
+    let boundReject: (reason?: any) => void;
+
     // note: intermediary is added in connext.ts as well
     const {
       actionEncoding,
@@ -276,14 +270,64 @@ export class TransferService {
       timeout: Zero,
     };
 
-    const res = await this.cfCoreService.proposeInstallApp(params);
+    const proposeRes = await this.cfCoreService.proposeInstallApp(params);
 
     // add preimage to database to allow unlock from a listener
-    transfer.receiverAppInstanceId = res.appInstanceId;
+    transfer.receiverAppInstanceId = proposeRes.appInstanceId;
     transfer.preImage = preImage;
     transfer.paymentId = paymentId;
-    return await this.linkedTransferRepository.save(transfer);
 
-    // app will be finalized and uninstalled by the install listener in listener service
+    try {
+      await new Promise((res: () => any, rej: () => any): void => {
+        boundResolve = this.resolveInstallTransfer.bind(null, res);
+        boundReject = this.rejectInstallTransfer.bind(null, rej);
+        this.messagingProvider.subscribe(
+          `indra.client.${userPubId}.install.${proposeRes.appInstanceId}`,
+          boundResolve,
+        );
+        this.cfCoreService.cfCore.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
+      });
+      logger.log(`App was installed successfully!: ${JSON.stringify(proposeRes)}`);
+      return await this.linkedTransferRepository.save(transfer);
+    } catch (e) {
+      logger.error(`Error installing app: ${e.toString()}`);
+      return undefined;
+    } finally {
+      this.cleanupInstallListeners(boundReject, proposeRes.appInstanceId, userPubId);
+    }
   }
+
+  // TODO: fix type of data
+  private resolveInstallTransfer = (res: (value?: unknown) => void, message: any): any => {
+    // TODO: why is it sometimes data vs data.data?
+    const appInstance = message.data.data ? message.data.database : message.data;
+
+    if (appInstance.identityHash !== this.appId) {
+      // not our app
+      logger.log(
+        `Caught INSTALL event for different app ${JSON.stringify(message)}, expected ${this.appId}`,
+      );
+      return;
+    }
+    res(message);
+    return message;
+  };
+
+  // TODO: fix types of data
+  private rejectInstallTransfer = (
+    rej: (reason?: any) => void,
+    msg: RejectInstallVirtualMessage,
+  ): any => {
+    // check app id
+    if (this.appId !== msg.data.appInstanceId) {
+      return;
+    }
+
+    return rej(`Install failed. Event data: ${JSON.stringify(msg, replaceBN, 2)}`);
+  };
+
+  private cleanupInstallListeners = (boundReject: any, appId: string, userPubId: string): void => {
+    this.messagingProvider.unsubscribe(`indra.client.${userPubId}.install.${appId}`);
+    this.cfCoreService.cfCore.off(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
+  };
 }
