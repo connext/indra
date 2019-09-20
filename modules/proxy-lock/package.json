@@ -1,6 +1,6 @@
 {
   "name": "@connext/proxy-lock",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
   "types": "dist/index.d.ts",
@@ -13,7 +13,7 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "@connext/messaging": "0.1.7",
+    "@connext/messaging": "0.1.8",
     "@counterfactual/types": "0.0.40",
     "uuid": "3.3.3"
   },
