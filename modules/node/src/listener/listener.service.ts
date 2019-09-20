@@ -15,7 +15,6 @@ import {
   InstallMessage,
   InstallVirtualMessage,
   ProposeMessage,
-  ProposeVirtualMessage,
   RejectInstallVirtualMessage,
   UninstallMessage,
   UninstallVirtualMessage,
@@ -71,30 +70,21 @@ export default class ListenerService implements OnModuleInit {
       DEPOSIT_FAILED: (data: any): void => {
         logEvent(CFCoreTypes.EventName.DEPOSIT_FAILED, data);
       },
-      DEPOSIT_FINISHED: (data: any): void => {
-        logEvent(CFCoreTypes.EventName.DEPOSIT_FINISHED, data);
-      },
       DEPOSIT_STARTED: (data: any): void => {
         logEvent(CFCoreTypes.EventName.DEPOSIT_STARTED, data);
       },
       INSTALL: async (data: InstallMessage): Promise<void> => {
         logEvent(CFCoreTypes.EventName.INSTALL, data);
       },
-      INSTALL_FINISHED: async (data: InstallMessage): Promise<void> => {
-        logEvent(CFCoreTypes.EventName.INSTALL_FINISHED, data);
-      },
       // TODO: make cf return app instance id and app def?
       INSTALL_VIRTUAL: async (data: InstallVirtualMessage): Promise<void> => {
         logEvent(CFCoreTypes.EventName.INSTALL_VIRTUAL, data);
-      },
-      INSTALL_VIRTUAL_FINISHED: async (data: InstallVirtualMessage): Promise<void> => {
-        logEvent(CFCoreTypes.EventName.INSTALL_VIRTUAL_FINISHED, data);
       },
       PROPOSE_INSTALL: (data: ProposeMessage): void => {
         logEvent(CFCoreTypes.EventName.PROPOSE_INSTALL, data);
         this.appRegistryService.allowOrReject(data);
       },
-      PROPOSE_INSTALL_VIRTUAL: (data: ProposeVirtualMessage): void => {
+      PROPOSE_INSTALL_VIRTUAL: (data: ProposeMessage): void => {
         logEvent(CFCoreTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data);
         this.appRegistryService.allowOrRejectVirtual(data);
       },
@@ -124,20 +114,11 @@ export default class ListenerService implements OnModuleInit {
       REJECT_STATE: (data: any): void => {
         logEvent(CFCoreTypes.EventName.REJECT_STATE, data);
       },
-      SETUP_FINISHED: (data: any): void => {
-        logEvent(CFCoreTypes.EventName.SETUP_FINISHED, data);
-      },
       UNINSTALL: (data: UninstallMessage): void => {
         logEvent(CFCoreTypes.EventName.UNINSTALL, data);
       },
-      UNINSTALL_FINISHED: (data: UninstallMessage): void => {
-        logEvent(CFCoreTypes.EventName.UNINSTALL_FINISHED, data);
-      },
       UNINSTALL_VIRTUAL: async (data: UninstallVirtualMessage): Promise<void> => {
         logEvent(CFCoreTypes.EventName.UNINSTALL_VIRTUAL, data);
-      },
-      UNINSTALL_VIRTUAL_FINISHED: async (data: UninstallVirtualMessage): Promise<void> => {
-        logEvent(CFCoreTypes.EventName.UNINSTALL_VIRTUAL_FINISHED, data);
       },
       UPDATE_STATE: (data: UpdateStateMessage): void => {
         logEvent(CFCoreTypes.EventName.UPDATE_STATE, data);
@@ -150,9 +131,6 @@ export default class ListenerService implements OnModuleInit {
       },
       WITHDRAWAL_FAILED: (data: any): void => {
         logEvent(CFCoreTypes.EventName.WITHDRAWAL_FAILED, data);
-      },
-      WITHDRAWAL_FINISHED: (data: any): void => {
-        logEvent(CFCoreTypes.EventName.WITHDRAWAL_FINISHED, data);
       },
       WITHDRAWAL_STARTED: (data: any): void => {
         logEvent(CFCoreTypes.EventName.WITHDRAWAL_STARTED, data);
