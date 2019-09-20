@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@connext/types": "0.1.2",
-    "@counterfactual/types": "0.0.40",
+    "@counterfactual/types": "0.0.42",
     "@types/node-fetch": "2.5.0",
     "env-cmd": "10.0.1",
     "nodemon": "1.19.2",
