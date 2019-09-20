@@ -11,14 +11,14 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@connext/client": "0.1.2",
+    "@connext/client": "0.1.5",
     "commander": "3.0.1",
     "dotenv": "8.1.0",
     "ethers": "4.0.36",
     "uuid": "3.3.3"
   },
   "devDependencies": {
-    "@connext/types": "0.1.2",
+    "@connext/types": "0.1.5",
     "@counterfactual/types": "0.0.40",
     "@types/node-fetch": "2.5.0",
     "env-cmd": "10.0.1",

@@ -11,7 +11,7 @@
 		"logs": "bash ops/logs.sh"
 	},
 	"dependencies": {
-		"@connext/client": "0.1.2",
+		"@connext/client": "0.1.5",
 		"@material-ui/core": "4.4.2",
 		"@material-ui/icons": "4.4.1",
 		"browserslist": "4.7.0",
