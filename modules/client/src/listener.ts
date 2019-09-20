@@ -11,7 +11,6 @@ import {
   InstallMessage,
   InstallVirtualMessage,
   ProposeMessage,
-  ProposeVirtualMessage,
   RejectInstallVirtualMessage,
   UninstallMessage,
   UninstallVirtualMessage,
@@ -47,9 +46,6 @@ export class ConnextListener extends EventEmitter {
     DEPOSIT_FAILED: (data: any): void => {
       this.emitAndLog(CFCoreTypes.EventName.DEPOSIT_FAILED, data);
     },
-    DEPOSIT_FINISHED: (data: any): void => {
-      this.emitAndLog(CFCoreTypes.EventName.DEPOSIT_FINISHED, data);
-    },
     DEPOSIT_STARTED: (data: any): void => {
       this.log.info(`deposit for ${data.value.toString()} started. hash: ${data.txHash}`);
       this.emitAndLog(CFCoreTypes.EventName.DEPOSIT_STARTED, data);
@@ -57,15 +53,9 @@ export class ConnextListener extends EventEmitter {
     INSTALL: (data: InstallMessage): void => {
       this.emitAndLog(CFCoreTypes.EventName.INSTALL, data.data);
     },
-    INSTALL_FINISHED: (data: InstallMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.INSTALL_FINISHED, data.data);
-    },
     // TODO: make cf return app instance id and app def?
     INSTALL_VIRTUAL: (data: InstallVirtualMessage): void => {
       this.emitAndLog(CFCoreTypes.EventName.INSTALL_VIRTUAL, data.data);
-    },
-    INSTALL_VIRTUAL_FINISHED: (data: InstallVirtualMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.INSTALL_VIRTUAL_FINISHED, data.data);
     },
     PROPOSE_INSTALL: async (data: ProposeMessage): Promise<void> => {
       // validate and automatically install for the known and supported
@@ -87,12 +77,18 @@ export class ConnextListener extends EventEmitter {
         this.log.warn(`No matched app, doing nothing, ${JSON.stringify(data)}`);
         return;
       }
+      if (matchedResult.matchedApp.name === "SimpleTransferApp") {
+        this.log.debug(
+          `Caught propose install for what should always be a virtual app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
+        );
+        return;
+      }
       // matched app, take appropriate default actions
       const { appInfo, matchedApp } = matchedResult;
       await this.verifyAndInstallKnownApp(appInfo, matchedApp, false);
       return;
     },
-    PROPOSE_INSTALL_VIRTUAL: async (data: ProposeVirtualMessage): Promise<void> => {
+    PROPOSE_INSTALL_VIRTUAL: async (data: ProposeMessage): Promise<void> => {
       // validate and automatically install for the known and supported
       // applications
       this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data.data);
@@ -104,6 +100,12 @@ export class ConnextListener extends EventEmitter {
       // matched app, take appropriate default actions
       const matchedResult = await this.matchAppInstance(data);
       if (!matchedResult) {
+        return;
+      }
+      if (matchedResult.matchedApp.name !== "SimpleTransferApp") {
+        this.log.debug(
+          `Caught propose install virtual for what should always be a regular app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
+        );
         return;
       }
       // matched app, take appropriate default actions
@@ -129,20 +131,11 @@ export class ConnextListener extends EventEmitter {
     REJECT_STATE: (data: any): void => {
       this.emitAndLog(CFCoreTypes.EventName.REJECT_STATE, data);
     },
-    SETUP_FINISHED: (data: any): void => {
-      this.emitAndLog(CFCoreTypes.EventName.SETUP_FINISHED, data);
-    },
     UNINSTALL: (data: UninstallMessage): void => {
       this.emitAndLog(CFCoreTypes.EventName.UNINSTALL, data.data);
     },
-    UNINSTALL_FINISHED: (data: UninstallMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.UNINSTALL_FINISHED, data.data);
-    },
     UNINSTALL_VIRTUAL: (data: UninstallVirtualMessage): void => {
       this.emitAndLog(CFCoreTypes.EventName.UNINSTALL_VIRTUAL, data.data);
-    },
-    UNINSTALL_VIRTUAL_FINISHED: (data: UninstallVirtualMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.UNINSTALL_VIRTUAL_FINISHED, data.data);
     },
     UPDATE_STATE: (data: UpdateStateMessage): void => {
       this.emitAndLog(CFCoreTypes.EventName.UPDATE_STATE, data.data);
@@ -155,9 +148,6 @@ export class ConnextListener extends EventEmitter {
     },
     WITHDRAWAL_FAILED: (data: any): void => {
       this.emitAndLog(CFCoreTypes.EventName.WITHDRAWAL_FAILED, data);
-    },
-    WITHDRAWAL_FINISHED: (data: any): void => {
-      this.emitAndLog(CFCoreTypes.EventName.WITHDRAWAL_FINISHED, data);
     },
     WITHDRAWAL_STARTED: (data: any): void => {
       this.log.info(`withdrawal for ${data.value.toString()} started. hash: ${data.txHash}`);
@@ -233,7 +223,7 @@ export class ConnextListener extends EventEmitter {
   };
 
   private matchAppInstance = async (
-    data: ProposeVirtualMessage | ProposeMessage,
+    data: ProposeMessage,
   ): Promise<{ matchedApp: RegisteredAppDetails; appInfo: AppInstanceInfo } | undefined> => {
     const filteredApps = this.connext.appRegistry.filter((app: RegisteredAppDetails) => {
       return app.appDefinitionAddress === data.data.params.appDefinition;

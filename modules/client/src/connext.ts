@@ -734,23 +734,19 @@ export class ConnextInternal extends ConnextChannel {
     return updateResponse.result.result as CFCoreTypes.UpdateStateResult;
   };
 
-  // TODO: add validation after arjuns refactor merged
   public proposeInstallVirtualApp = async (
     params: CFCoreTypes.ProposeInstallVirtualParams,
   ): Promise<CFCoreTypes.ProposeInstallVirtualResult> => {
-    this.logger.info(`Proposing install with params: ${JSON.stringify(params, replaceBN, 2)}`);
     if (params.intermediaryIdentifier !== this.nodePublicIdentifier) {
-      throw new Error(`Incorrect intermediaryIdentifier. Expected: ${this.nodePublicIdentifier},
-         got ${params.intermediaryIdentifier}`);
+      throw new Error(`Cannot install virtual app without node as intermediary`);
     }
-
     const actionRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: CFCoreTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
       parameters: params,
     });
 
-    return actionRes.result.result as CFCoreTypes.ProposeInstallVirtualResult;
+    return actionRes.result.result as CFCoreTypes.ProposeInstallResult;
   };
 
   // TODO: add validation after arjuns refactor merged

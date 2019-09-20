@@ -18,8 +18,8 @@
     "uuid": "3.3.3"
   },
   "devDependencies": {
+    "@counterfactual/types": "0.0.42",
     "@connext/types": "0.1.6",
-    "@counterfactual/types": "0.0.40",
     "@types/node-fetch": "2.5.1",
     "env-cmd": "10.0.1",
     "nodemon": "1.19.2",

@@ -20,9 +20,8 @@ import {
   CLogger,
   freeBalanceAddressFromXpub,
   normalizeEthAddresses,
-  replaceBN,
 } from "../util";
-import { ProposeMessage, ProposeVirtualMessage } from "../util/cfCore";
+import { ProposeMessage } from "../util/cfCore";
 import { isEthAddress } from "../validator";
 
 import { AppRegistry } from "./appRegistry.entity";
@@ -67,7 +66,7 @@ export class AppRegistryService {
    * @param data Data from CF event PROPOSE_INSTALL_VIRTUAL
    */
   async allowOrRejectVirtual(
-    data: ProposeVirtualMessage,
+    data: ProposeMessage,
   ): Promise<void | CFCoreTypes.RejectInstallResult> {
     try {
       await this.verifyVirtualAppProposal(data.data, data.from);
@@ -125,9 +124,7 @@ export class AppRegistryService {
     }
 
     // validate the initial state is kosher
-    const initialState = bigNumberifyObj(
-      initialStateBadType,
-    ) as SimpleTransferAppStateBigNumber;
+    const initialState = bigNumberifyObj(initialStateBadType) as SimpleTransferAppStateBigNumber;
 
     // transfers[0] is the senders value in the array, and the transfers[1]
     // is the recipients value in the array
@@ -371,6 +368,13 @@ export class AppRegistryService {
 
     const registryAppInfo = await this.appProposalMatchesRegistry(proposedAppParams.params);
 
+    if (registryAppInfo.name === "SimpleTransferApp") {
+      logger.debug(
+        `Caught propose install for what should always be a virtual app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
+      );
+      return;
+    }
+
     if (!registryAppInfo.allowNodeInstall) {
       throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
     }
@@ -411,7 +415,8 @@ export class AppRegistryService {
 
   private async verifyVirtualAppProposal(
     proposedAppParams: {
-      params: CFCoreTypes.ProposeInstallVirtualParams;
+      params: CFCoreTypes.ProposeInstallParams;
+      // ^^ may be propose install virtual despite what package types say..
       appInstanceId: string;
     },
     initiatorIdentifier: string,
@@ -423,6 +428,13 @@ export class AppRegistryService {
     } = bigNumberifyObj(proposedAppParams.params);
 
     const registryAppInfo = await this.appProposalMatchesRegistry(proposedAppParams.params);
+
+    if (registryAppInfo.name !== "SimpleTransferApp") {
+      logger.debug(
+        `Caught propose install virtual for what should always be a regular app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
+      );
+      return;
+    }
 
     await this.commonAppProposalValidation(proposedAppParams.params, initiatorIdentifier);
 
