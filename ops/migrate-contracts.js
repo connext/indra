@@ -79,6 +79,7 @@ const contractIsDeployed = async (address) => {
     return false
   }
   const bytecode = await wallet.provider.getCode(address)
+  console.log(`Got bytecode hash for ${address}: ${eth.utils.keccak256(bytecode)}`)
   if (bytecode === "0x00" || bytecode === "0x") {
     console.log(`No bytecode exists at the address in our address book`)
     return false
@@ -100,12 +101,13 @@ const deployContract = async (name, artifacts, args) => {
   await wallet.provider.waitForTransaction(txHash)
   const address = contract.address
   console.log(`${name} has been deployed to address: ${address}`)
+  const bytecode = eth.utils.keccak256(await wallet.provider.getCode(address))
   // Update address-book w new address + the args we deployed with
   const saveArgs = {}
   args.forEach(a=> saveArgs[a.name] = a.value)
   if (!addressBook[chainId]) addressBook[chainId] = {}
   if (!addressBook[chainId][name]) addressBook[chainId][name] = {}
-  addressBook[chainId][name] = { address, ...saveArgs }
+  addressBook[chainId][name] = { address, bytecode, txHash, ...saveArgs }
   saveAddressBook(addressBook)
   return contract
 }
@@ -190,7 +192,9 @@ const sendGift = async (address, token) => {
   // Deploy contracts
 
   for (const contract of coreContracts) {
-    await deployContract(contract, artifacts[contract], [])
+    if (chainId === ganacheId || contract !== "ProxyFactory") {
+      await deployContract(contract, artifacts[contract], [])
+    }
   }
 
   for (const contract of appContracts) {
@@ -217,12 +221,12 @@ const sendGift = async (address, token) => {
   ////////////////////////////////////////
   // Maybe update other network addresses
 
-  if (shouldPullUpdatesFromCF) {
-    console.log(`\nUpdating addresses for other networks..`)
-    for (const otherChainId of ["3", "4", "42"]) {
-      const fundingArtifacts = require(`@counterfactual/cf-funding-protocol-contracts/networks/${otherChainId}.json`)
-      const adjudicatorArtifacts = require(`@counterfactual/cf-adjudicator-contracts/networks/${otherChainId}.json`)
-      for (const contract of coreContracts) {
+  console.log(`\nUpdating addresses for other networks..`)
+  for (const otherChainId of ["1", "4"]) {
+    const fundingArtifacts = require(`@counterfactual/cf-funding-protocol-contracts/networks/${otherChainId}.json`)
+    const adjudicatorArtifacts = require(`@counterfactual/cf-adjudicator-contracts/networks/${otherChainId}.json`)
+    for (const contract of coreContracts) {
+      if (contract === "ProxyFactory" || shouldPullUpdatesFromCF) {
         const artifact = fundingArtifacts.find(c => c.contractName === contract)
           || adjudicatorArtifacts.find(c => c.contractName === contract)
         if (!artifact || !artifact.address) {
@@ -232,11 +236,13 @@ const sendGift = async (address, token) => {
         address = artifact.address;
         if (!addressBook[otherChainId]) addressBook[otherChainId] = {}
         if (!addressBook[otherChainId][contract]) addressBook[otherChainId][contract] = {}
-        addressBook[otherChainId][contract] = { address }
+        if (addressBook[otherChainId][contract].address.toLowerCase() !== address.toLowerCase()) {
+          addressBook[otherChainId][contract] = { address }
+        }
       }
     }
-    saveAddressBook(addressBook)
   }
+  saveAddressBook(addressBook)
 
   ////////////////////////////////////////
   // Print summary
