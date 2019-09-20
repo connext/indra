@@ -429,6 +429,13 @@ export class AppRegistryService {
 
     const registryAppInfo = await this.appProposalMatchesRegistry(proposedAppParams.params);
 
+    if (registryAppInfo.name !== "SimpleTransferApp") {
+      logger.debug(
+        `Caught propose install virtual for what should always be a regular app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
+      );
+      return;
+    }
+
     await this.commonAppProposalValidation(proposedAppParams.params, initiatorIdentifier);
 
     // check if there is sufficient collateral in the channel

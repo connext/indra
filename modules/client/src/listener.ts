@@ -102,6 +102,12 @@ export class ConnextListener extends EventEmitter {
       if (!matchedResult) {
         return;
       }
+      if (matchedResult.matchedApp.name !== "SimpleTransferApp") {
+        this.log.debug(
+          `Caught propose install virtual for what should always be a regular app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
+        );
+        return;
+      }
       // matched app, take appropriate default actions
       const { appInfo, matchedApp } = matchedResult;
       await this.verifyAndInstallKnownApp(appInfo, matchedApp);
