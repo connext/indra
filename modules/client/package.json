@@ -18,7 +18,7 @@
     "@counterfactual/node": "0.2.80",
     "@counterfactual/types": "0.0.42",
     "core-js": "3.2.1",
-    "ethers": "4.0.36",
+    "ethers": "4.0.37",
     "human-standard-token-abi": "2.0.0",
     "regenerator-runtime": "0.13.3",
     "uuid": "3.3.3"

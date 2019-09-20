@@ -14,7 +14,7 @@
     "@connext/client": "0.1.6",
     "commander": "3.0.1",
     "dotenv": "8.1.0",
-    "ethers": "4.0.36",
+    "ethers": "4.0.37",
     "uuid": "3.3.3"
   },
   "devDependencies": {

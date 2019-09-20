@@ -15,7 +15,7 @@
   "dependencies": {
     "@connext/messaging": "0.1.6",
     "@counterfactual/types": "0.0.42",
-    "ethers": "4.0.36"
+    "ethers": "4.0.37"
   },
   "devDependencies": {
     "@types/jest": "24.0.18",

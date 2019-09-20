@@ -18,7 +18,7 @@
 		"@counterfactual/types": "0.0.42",
 		"chai-bn": "0.2.0",
 		"cypress": "3.4.1",
-		"ethers": "4.0.36",
+		"ethers": "4.0.37",
 		"ganache-cli": "6.7.0",
 		"lerna": "3.16.4",
 		"openzeppelin-solidity": "2.3.0",
