@@ -52,12 +52,12 @@ export class RedisLockService implements Node.ILockService {
     callback: (...args: any[]) => any,
     timeout: number,
   ): Promise<any> {
-    log(`Using lock ttl of ${timeout / 1000} seconds`);
+    const hardcodedTTL = 90_000;
+    log(`Using lock ttl of ${hardcodedTTL / 1000} seconds`);
     log(`Acquiring lock for ${lockName} ${Date.now()}`);
-
     return new Promise((resolve: any, reject: any): any => {
       this.redlock
-        .lock(lockName, timeout)
+        .lock(lockName, hardcodedTTL)
         .then(async (lock: Redlock.Lock) => {
           const acquiredAt = Date.now();
           log(`Acquired lock at ${acquiredAt} for ${lockName}:`);
@@ -83,7 +83,7 @@ export class RedisLockService implements Node.ILockService {
               })
               .catch((e: any) => {
                 const acquisitionDelta = Date.now() - acquiredAt;
-                if (acquisitionDelta < timeout) {
+                if (acquisitionDelta < hardcodedTTL) {
                   error(
                     `Failed to release lock: ${e}; delta since lock acquisition: ${acquisitionDelta}`,
                   );
