@@ -236,7 +236,9 @@ const sendGift = async (address, token) => {
         address = artifact.address;
         if (!addressBook[otherChainId]) addressBook[otherChainId] = {}
         if (!addressBook[otherChainId][contract]) addressBook[otherChainId][contract] = {}
-        addressBook[otherChainId][contract] = { address }
+        if (addressBook[otherChainId][contract].address.toLowerCase() !== address.toLowerCase()) {
+          addressBook[otherChainId][contract] = { address }
+        }
       }
     }
   }
