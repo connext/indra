@@ -21,9 +21,9 @@
   },
   "dependencies": {
     "@connext/cf-core": "0.2.72",
-    "@connext/messaging": "0.1.5",
-    "@connext/redis-lock": "0.1.5",
-    "@connext/types": "0.1.5",
+    "@connext/messaging": "0.1.6",
+    "@connext/redis-lock": "0.1.6",
+    "@connext/types": "0.1.6",
     "@counterfactual/contracts": "0.1.15",
     "@counterfactual/node": "0.2.76",
     "@nestjs/common": "6.5.3",
@@ -45,7 +45,7 @@
     "uuid": "3.3.3"
   },
   "devDependencies": {
-    "@connext/types": "0.1.5",
+    "@connext/types": "0.1.6",
     "@counterfactual/types": "0.0.40",
     "@nestjs/testing": "6.5.3",
     "@types/express": "4.17.1",
