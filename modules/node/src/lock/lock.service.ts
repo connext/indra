@@ -10,7 +10,7 @@ const logger = new CLogger("LockService");
 export class LockService {
   constructor(@Inject(RedlockProviderId) private readonly redlockClient: Redlock) {}
 
-  async acquireLock(lockName: string, lockTTL: number = 10000): Promise<string> {
+  async acquireLock(lockName: string, lockTTL: number = 30_000): Promise<string> {
     logger.debug(`Using lock ttl of ${lockTTL / 1000} seconds`);
     logger.debug(`Acquiring lock for ${lockName} at ${Date.now()}`);
     return new Promise((resolve: any, reject: any): any => {
