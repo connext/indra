@@ -2,9 +2,9 @@ import { IMessagingService } from "@connext/messaging";
 import { Node } from "@counterfactual/types";
 import { v4 as uuidV4 } from "uuid";
 
-const log = (msg: string): void => console.log(`[RedisLockService] ${msg}`);
-const warn = (msg: string): void => console.warn(`[RedisLockService WARNING] ${msg}`);
-const error = (msg: string): void => console.error(`[RedisLockService ERROR] ${msg}`);
+const log = (msg: string): void => console.log(`[ProxyLockService] ${msg}`);
+const warn = (msg: string): void => console.warn(`[ProxyLockService WARNING] ${msg}`);
+const error = (msg: string): void => console.error(`[ProxyLockService ERROR] ${msg}`);
 
 export class ProxyLockService implements Node.ILockService {
   constructor(private readonly messaging: IMessagingService) {}

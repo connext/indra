@@ -219,7 +219,6 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
     mnemonic: config.mnemonic,
     nodeUrl: config.nodeUrl,
     store,
-    useRedisLock: false,
   };
   client = await connext.connect(connextOpts);
   const nodeFBAddress = connext.utils.freeBalanceAddressFromXpub(client.nodePublicIdentifier);

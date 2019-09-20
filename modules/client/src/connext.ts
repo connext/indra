@@ -63,8 +63,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     natsClusterId,
     nodeUrl,
     natsToken,
-    useRedisLock,
-    redisUrl,
     store,
   } = opts;
   const logger = new Logger("ConnextConnect", logLevel);
@@ -116,17 +114,8 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const appRegistry = await node.appRegistry();
 
   // create the lock service for cfCore
-  let lockService: RedisLockService|ProxyLockService;
-  if (useRedisLock) {
-    logger.info("using redis directly as lock service");
-    if (!redisUrl) {
-      throw new Error(`redisUrl must be provided with useRedisLock`);
-    }
-    lockService = new RedisLockService(redisUrl);
-  } else {
-    logger.info("using node's proxy lock service");
-    lockService = new ProxyLockService(messaging);
-  }
+  logger.info("using node's proxy lock service");
+  let lockService: ProxyLockService = new ProxyLockService(messaging);
 
   // create new cfCore to inject into internal instance
   logger.info("creating new cf module");
