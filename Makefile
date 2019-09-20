@@ -20,6 +20,7 @@ messaging=$(cwd)/modules/messaging
 node=$(cwd)/modules/node
 proxy=$(cwd)/modules/proxy
 redis-lock=$(cwd)/modules/redis-lock
+proxy-lock=$(cwd)/modules/proxy-lock
 types=$(cwd)/modules/types
 
 # Setup docker run time
@@ -132,7 +133,7 @@ builder: ops/builder.dockerfile
 	docker build --file ops/builder.dockerfile --tag $(project)_builder:latest .
 	$(log_finish) && touch $(flags)/$@
 
-client: contracts types messaging $(shell find $(client)/src $(find_options))
+client: contracts types messaging proxy-lock $(shell find $(client)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && touch $(flags)/$@
@@ -185,6 +186,11 @@ proxy-prod: daicard-prod $(shell find $(proxy) $(find_options))
 redis-lock: node-modules $(shell find $(redis-lock)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/redis-lock && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
+proxy-lock: node-modules $(shell find $(proxy-lock)/src $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/proxy-lock && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
 types: node-modules messaging $(shell find $(types)/src $(find_options))
