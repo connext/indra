@@ -6,7 +6,7 @@ import {
 } from "@connext/types";
 import { AppInstanceJson, Node as CFCoreTypes } from "@counterfactual/types";
 import { Inject, Injectable } from "@nestjs/common";
-import { AddressZero, Zero } from "ethers/constants";
+import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
@@ -168,8 +168,8 @@ export class TransferService {
 
     let receiverApp: LinkedTransfer;
     await new Promise(
-      async (resolve, reject): Promise<void> => {
-        this.messagingProvider.subscribe("indra.client.install", (data: any) => {
+      async (resolve: any): Promise<void> => {
+        this.messagingProvider.subscribe(`indra.client.install.${userPubId}`, (data: any) => {
           console.log("RECEIVED CLIENT INSTALL EVENT: ", data);
           resolve();
         });
@@ -238,9 +238,6 @@ export class TransferService {
     console.log(`Taking action on app at ${Date.now()}`);
     await this.cfCoreService.takeAction(appId, { preImage });
 
-    // TODO: REMOVE THIS AFTER TAKE ACTION EVENT IS CONFIRMED
-    await delay(5000);
-
     try {
       await this.cfCoreService.uninstallApp(appId);
     } catch (e) {
@@ -288,63 +285,5 @@ export class TransferService {
     return await this.linkedTransferRepository.save(transfer);
 
     // app will be finalized and uninstalled by the install listener in listener service
-  }
-
-  async uninstallLinkedTransferApp(appInstanceId: string): Promise<void> {
-    await this.cfCoreService.uninstallApp(appInstanceId);
-
-    // adding a promise for now that polls app instances, but its not
-    // great and should be removed
-    try {
-      await this.waitForAppUninstall(appInstanceId);
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  async waitForAppInstall(appInstanceId: string): Promise<unknown> {
-    return new Promise(
-      async (res: (value?: unknown) => void, rej: (reason?: any) => void): Promise<void> => {
-        const getAppIds = async (): Promise<string[]> => {
-          return (await this.cfCoreService.getAppInstances()).map(
-            (a: AppInstanceJson) => a.identityHash,
-          );
-        };
-        let retries = 1;
-        while (!(await getAppIds()).includes(appInstanceId)) {
-          logger.log(`App ${appInstanceId} is not installed yet... retry number ${retries}...`);
-          await delay(delayMs);
-          retries = retries + 1;
-          if (retries > maxRetries) {
-            return rej(`Timed out waiting for app ${appInstanceId} to install`);
-          }
-        }
-        logger.log(`App ${appInstanceId} installed after ${(retries * delayMs) / 1000}s`);
-        res(this.appId);
-      },
-    );
-  }
-
-  private waitForAppUninstall(appInstanceId: string): Promise<unknown> {
-    return new Promise(
-      async (res: (value?: unknown) => void, rej: (reason?: any) => void): Promise<void> => {
-        const getAppIds = async (): Promise<string[]> => {
-          return (await this.cfCoreService.getAppInstances()).map(
-            (a: AppInstanceJson) => a.identityHash,
-          );
-        };
-        let retries = 0;
-        while ((await getAppIds()).indexOf(appInstanceId) !== -1) {
-          logger.log(`App ${appInstanceId} is not uninstalled yet... retry number ${retries}...`);
-          await delay(delayMs);
-          retries = retries + 1;
-          if (retries > maxRetries) {
-            return rej(`Timed out waiting for app ${appInstanceId} to uninstall`);
-          }
-        }
-        logger.log(`App ${appInstanceId} uninstalled after ${(retries * delayMs) / 1000}s`);
-        res();
-      },
-    );
   }
 }

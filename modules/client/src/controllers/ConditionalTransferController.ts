@@ -79,37 +79,16 @@ export class ConditionalTransferController extends AbstractController {
       preImage: HashZero,
     };
 
-    await new Promise(async (resolve, reject) => {
-      this.connext.messaging.subscribe("indra.node.install", (message: any) => {
-        console.log(`CAUGHT INSTALL EVENT FROM CONNEXT NODE at ${Date.now()}`);
-        console.log(`Message: ${JSON.stringify(message)} ${Date.now()}`);
-        // TODO: why is it sometimes data vs data.data?
-        const msgPaymentId = message.data.data
-          ? message.data.data.appInstance.latestState.paymentId
-          : message.data.appInstance.latestState.paymentId;
-        console.log("msgPaymentId: ", msgPaymentId);
-        if (msgPaymentId === msgPaymentId) {
-          this.connext.messaging.unsubscribe("indra.node.install");
-          resolve();
-        }
-      });
+    const appId = await this.conditionalTransferAppInstalled(
+      amount,
+      assetId,
+      initialState,
+      appInfo,
+    );
 
-      // this.cfCore.rpcRouter.subscribe(NODE_EVENTS.INSTALL_FINISHED, (data: any): any => {
-      //   console.log(`CAUGHT INSTALL FINISHED EVENT FROM CF NODE ${Date.now()}`);
-      //   console.log(`Message: ${JSON.stringify(data)} ${Date.now()}`);
-      //   resolve();
-      // });
-
-      const appId = await this.conditionalTransferAppInstalled(
-        amount,
-        assetId,
-        initialState,
-        appInfo,
-      );
-      if (!appId) {
-        throw new Error(`App was not installed`);
-      }
-    });
+    if (!appId) {
+      throw new Error(`App was not installed`);
+    }
 
     return {
       freeBalance: await this.connext.getFreeBalance(assetId),
@@ -176,9 +155,12 @@ export class ConditionalTransferController extends AbstractController {
 
     try {
       await new Promise((res: () => any, rej: () => any): void => {
-        boundReject = this.rejectInstallTransfer.bind(null, rej);
         boundResolve = this.resolveInstallTransfer.bind(null, res);
-        this.listener.on(CFCoreTypes.EventName.INSTALL, boundResolve);
+        boundReject = this.rejectInstallTransfer.bind(null, rej);
+        this.connext.messaging.subscribe(
+          `indra.node.install.${this.connext.nodePublicIdentifier}`,
+          boundResolve,
+        );
         this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
       });
       this.log.info(`App was installed successfully!: ${JSON.stringify(res)}`);
@@ -192,18 +174,21 @@ export class ConditionalTransferController extends AbstractController {
   };
 
   // TODO: fix type of data
-  private resolveInstallTransfer = (res: (value?: unknown) => void, data: any): any => {
-    if (this.appId !== data.params.appInstanceId) {
+  private resolveInstallTransfer = (res: (value?: unknown) => void, message: any): any => {
+    // TODO: why is it sometimes data vs data.data?
+    const appInstance = message.data.data
+      ? message.data.data.appInstance
+      : message.data.appInstance;
+
+    if (appInstance.identityHash !== this.appId) {
+      // not our app
       this.log.info(
-        `Caught INSTALL event for different app ${JSON.stringify(data)}, expected ${this.appId}`,
+        `Caught INSTALL event for different app ${JSON.stringify(message)}, expected ${this.appId}`,
       );
       return;
     }
-    if (this.timeout) {
-      clearTimeout(this.timeout);
-    }
-    res(data);
-    return data;
+    res(message);
+    return message;
   };
 
   // TODO: fix types of data
@@ -220,7 +205,7 @@ export class ConditionalTransferController extends AbstractController {
   };
 
   private cleanupInstallListeners = (boundResolve: any, boundReject: any): void => {
-    this.listener.removeListener(CFCoreTypes.EventName.INSTALL, boundResolve);
+    this.connext.messaging.unsubscribe(`indra.node.install.${this.connext.nodePublicIdentifier}`);
     this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
   };
 

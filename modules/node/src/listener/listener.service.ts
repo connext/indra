@@ -174,8 +174,33 @@ export default class ListenerService implements OnModuleInit {
     this.cfCoreService.registerCfCoreListener(
       CFCoreTypes.RpcMethodName.INSTALL as any,
       (data: any) => {
-        logger.log(`Emitting RPC METHOD NAME INSTALL event: ${JSON.stringify(data.result.result)}`);
-        this.messagingClient.emit("indra.node.install", data.result.result).toPromise();
+        logger.debug(
+          `Emitting CFCoreTypes.RpcMethodName.INSTALL event: ${JSON.stringify(data.result.result)}`,
+        );
+        this.messagingClient
+          .emit(
+            `indra.node.install.${this.cfCoreService.cfCore.publicIdentifier}`,
+            data.result.result,
+          )
+          .toPromise();
+      },
+      logger.cxt,
+    );
+
+    this.cfCoreService.registerCfCoreListener(
+      CFCoreTypes.RpcMethodName.UNINSTALL as any,
+      (data: any) => {
+        logger.debug(
+          `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(
+            data.result.result,
+          )}`,
+        );
+        this.messagingClient
+          .emit(
+            `indra.node.uninstall.${this.cfCoreService.cfCore.publicIdentifier}`,
+            data.result.result,
+          )
+          .toPromise();
       },
       logger.cxt,
     );
