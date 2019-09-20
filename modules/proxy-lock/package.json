@@ -1,23 +1,25 @@
 {
-    "name": "@connext/proxy-lock",
-    "version": "0.0.1",
-    "main": "dist/index.js",
-    "iife": "dist/index.iife.js",
-    "types": "dist/index.d.ts",
-    "license": "MIT",
-    "scripts": {
-      "build": "tsc -p . && rollup -c",
-      "build:watch": "tsc -p . && rollup -c -w",
-      "lint": "tslint -c tslint.json -p .",
-      "lint:fix": "tslint -c tslint.json -p . --fix",
-      "prepare": "npm run build"
-    },
-    "dependencies": {
-    },
-    "devDependencies": {
-      "rollup": "1.21.4",
-      "rollup-plugin-typescript2": "0.24.2",
-      "typescript": "3.5.3"
-    }
+  "name": "@connext/proxy-lock",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "iife": "dist/index.iife.js",
+  "types": "dist/index.d.ts",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc -p . && rollup -c",
+    "build:watch": "tsc -p . && rollup -c -w",
+    "lint": "tslint -c tslint.json -p .",
+    "lint:fix": "tslint -c tslint.json -p . --fix",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "@connext/messaging": "0.1.2",
+    "@counterfactual/types": "0.0.40",
+    "uuid": "3.3.3"
+  },
+  "devDependencies": {
+    "rollup": "1.21.4",
+    "rollup-plugin-typescript2": "0.24.2",
+    "typescript": "3.5.3"
   }
-  
+}
