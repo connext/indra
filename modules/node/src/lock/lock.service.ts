@@ -10,12 +10,13 @@ const logger = new CLogger("LockService");
 export class LockService {
   constructor(@Inject(RedlockProviderId) private readonly redlockClient: Redlock) {}
 
-  async acquireLock(lockName: string, lockTTL: number = 30_000): Promise<string> {
-    logger.debug(`Using lock ttl of ${lockTTL / 1000} seconds`);
+  async acquireLock(lockName: string, lockTTL: number = 90_000): Promise<string> {
+    const hardcodedTTL = 90_000;
+    logger.debug(`Using lock ttl of ${hardcodedTTL / 1000} seconds`);
     logger.debug(`Acquiring lock for ${lockName} at ${Date.now()}`);
     return new Promise((resolve: any, reject: any): any => {
       this.redlockClient
-        .lock(lockName, lockTTL)
+        .lock(lockName, hardcodedTTL)
         .then((lock: Lock) => {
           logger.debug(`Acquired lock for ${lock.resource} with secret ${lock.value}`);
           resolve(lock.value);
