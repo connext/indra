@@ -13,7 +13,7 @@
   "dependencies": {
     "@connext/cf-core": "0.2.72",
     "@connext/messaging": "0.1.2",
-    "@connext/redis-lock": "0.1.2",
+    "@connext/proxy-lock": "0.1.2",
     "@connext/types": "0.1.2",
     "@counterfactual/node": "0.2.76",
     "@counterfactual/types": "0.0.40",

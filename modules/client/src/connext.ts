@@ -1,5 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { ProxyLockService, RedisLockService } from "@connext/redis-lock";
+import { ProxyLockService } from "@connext/proxy-lock";
 import {
   AppActionBigNumber,
   AppRegistry,
