@@ -116,7 +116,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const appRegistry = await node.appRegistry();
 
   // create the lock service for cfCore
-  let lockService: RedisLockService|ProxyLockService;
+  let lockService: RedisLockService | ProxyLockService;
   if (useRedisLock) {
     logger.info("using redis directly as lock service");
     if (!redisUrl) {
@@ -743,25 +743,6 @@ export class ConnextInternal extends ConnextChannel {
       } as CFCoreTypes.UpdateStateParams,
     });
     return updateResponse.result.result as CFCoreTypes.UpdateStateResult;
-  };
-
-  // TODO: add validation after arjuns refactor merged
-  public proposeInstallVirtualApp = async (
-    params: CFCoreTypes.ProposeInstallVirtualParams,
-  ): Promise<CFCoreTypes.ProposeInstallVirtualResult> => {
-    this.logger.info(`Proposing install with params: ${JSON.stringify(params, replaceBN, 2)}`);
-    if (params.intermediaryIdentifier !== this.nodePublicIdentifier) {
-      throw new Error(`Incorrect intermediaryIdentifier. Expected: ${this.nodePublicIdentifier},
-         got ${params.intermediaryIdentifier}`);
-    }
-
-    const actionRes = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
-      parameters: params,
-    });
-
-    return actionRes.result.result as CFCoreTypes.ProposeInstallVirtualResult;
   };
 
   // TODO: add validation after arjuns refactor merged
