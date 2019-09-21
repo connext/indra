@@ -3,6 +3,9 @@ import { Address, NetworkContext, Node as CFCoreTypes, OutcomeType } from "@coun
 import { AddressZero } from "ethers/constants";
 import { BigNumber as ethersBig, getAddress, Network } from "ethers/utils";
 
+export const ConnextEvents = CFCoreTypes.EventName;
+export type ConnextEvent = keyof typeof ConnextEvents;
+
 ////////////////////////////////////
 ////// BASIC TYPINGS
 export type BigNumber = ethersBig;
