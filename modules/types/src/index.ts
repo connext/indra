@@ -1,9 +1,13 @@
 import { MessagingConfig } from "@connext/messaging";
-import { Address, NetworkContext, Node as CFCoreTypes, OutcomeType } from "@counterfactual/types";
+import {
+  Address,
+  NetworkContext,
+  Node as CFCoreTypes,
+  OutcomeType,
+  SolidityValueType,
+} from "@counterfactual/types";
 import { AddressZero } from "ethers/constants";
 import { BigNumber as ethersBig, getAddress, Network } from "ethers/utils";
-
-export const ConnextEvents = CFCoreTypes.EventName;
 
 ////////////////////////////////////
 ////// BASIC TYPINGS
@@ -11,6 +15,10 @@ export type BigNumber = ethersBig;
 export const BigNumber = ethersBig;
 
 export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
+
+export type SolidityValueType = SolidityValueType;
+
+export const ConnextEvents = CFCoreTypes.EventName;
 
 ////////////////////////////////////
 ////// APP REGISTRY
@@ -88,8 +96,8 @@ export type AppState<T = string> =
 export type AppStateBigNumber = AppState<BigNumber>;
 
 // all the types of counterfactual app actions
-export type AppAction<T = string> = SimpleLinkedTransferAppAction;
-export type AppActionBigNumber = AppAction<BigNumber>;
+export type AppAction<T = string> = SimpleLinkedTransferAppAction | SolidityValueType;
+export type AppActionBigNumber = AppAction<BigNumber> | SolidityValueType;
 
 //////// Swap apps
 export type SimpleSwapAppState<T = string> = {
