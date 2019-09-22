@@ -42,36 +42,36 @@ export const ChannelCard = withStyles(styles)(props => {
         >
 
         <Grid item xs={12}>
-          <Typography style={{ color: 'white' }}> Channel </Typography>
+          {/* <Typography style={{ color: 'white' }}> Channel </Typography> */}
           <span id="balance-channel-token">
-            <Typography style={{display: 'inline-block'}} variant="h4" className={classes.row}>
+            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
               {"$ "}
             </Typography>
-            <Typography style={{display: 'inline-block'}} variant="h2" className={classes.row}>
+            <Typography style={{display: 'inline-block'}} variant="h1" className={classes.row}>
               <span>{split(balance.channel.token.toDAI()).whole}</span>
             </Typography>
-            <Typography style={{display: 'inline-block'}} variant="h4" className={classes.row}>
+            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
               <span>{split(balance.channel.token.toDAI()).part}</span>
             </Typography>
           </span>
-          <span style={{fontSize: 64}}>&nbsp;&nbsp;&nbsp;</span>
-          <span id="balance-channel-ether">
-            <Typography style={{display: 'inline-block'}} variant="h4" className={classes.row}>
+          {/* <span style={{fontSize: 64}}>&nbsp;&nbsp;&nbsp;</span> */}
+          {/* <span id="balance-channel-ether">
+            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
               {`${eth.constants.EtherSymbol} `}
             </Typography>
-            <Typography style={{display: 'inline-block'}} variant="h2" className={classes.row}>
+            <Typography style={{display: 'inline-block'}} variant="h1" className={classes.row}>
               <span>{split(balance.channel.ether.toETH()).whole}</span>
             </Typography>
-            <Typography style={{display: 'inline-block'}} variant="h4" className={classes.row}>
+            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
               <span>{split(balance.channel.ether.toETH()).part}</span>
             </Typography>
-          </span>
+          </span> */}
         </Grid>
 
         <br/>
 
         <Grid item xs={12}>
-          <Typography style={{ color: 'white' }}> On-Chain </Typography>
+          {/* <Typography style={{ color: 'white' }}> On-Chain </Typography>
           <span id="balance-onchain-token">
             <Typography style={{display: 'inline-block'}} variant="h5" className={classes.row}>
               {"$ "}
@@ -94,7 +94,7 @@ export const ChannelCard = withStyles(styles)(props => {
             <Typography style={{display: 'inline-block'}} variant="h5" className={classes.row}>
               <span>{split(balance.onChain.ether.toETH()).part}</span>
             </Typography>
-          </span>
+          </span> */}
         </Grid>
 
       </Grid>
