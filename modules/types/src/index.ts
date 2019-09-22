@@ -1,11 +1,5 @@
 import { MessagingConfig } from "@connext/messaging";
-import {
-  Address,
-  NetworkContext,
-  Node as CFCoreTypes,
-  OutcomeType,
-  SolidityValueType,
-} from "@counterfactual/types";
+import { Address, NetworkContext, Node as CFCoreTypes, OutcomeType } from "@counterfactual/types";
 import { AddressZero } from "ethers/constants";
 import { BigNumber as ethersBig, getAddress, Network } from "ethers/utils";
 
@@ -16,7 +10,7 @@ export const BigNumber = ethersBig;
 
 export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
-export type SolidityValueType = SolidityValueType;
+export type SolidityValueType = any; // FIXME: use cf type
 
 export const ConnextEvents = CFCoreTypes.EventName;
 

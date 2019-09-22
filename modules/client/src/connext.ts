@@ -19,6 +19,7 @@ import {
   RegisteredAppDetails,
   ResolveConditionParameters,
   ResolveConditionResponse,
+  SolidityValueType,
   SupportedApplication,
   SupportedNetwork,
   SwapParameters,
@@ -56,15 +57,7 @@ import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
  */
 
 export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
-  const {
-    logLevel,
-    ethProviderUrl,
-    mnemonic,
-    natsClusterId,
-    nodeUrl,
-    natsToken,
-    store,
-  } = opts;
+  const { logLevel, ethProviderUrl, mnemonic, natsClusterId, nodeUrl, natsToken, store } = opts;
   const logger = new Logger("ConnextConnect", logLevel);
 
   // setup network information
@@ -708,7 +701,7 @@ export class ConnextInternal extends ConnextChannel {
 
   public updateState = async (
     appInstanceId: string,
-    newState: AppState | CFCoreTypes.SolidityValueTypes, 
+    newState: AppState | SolidityValueType,
   ): Promise<CFCoreTypes.UpdateStateResult> => {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
