@@ -3,5 +3,6 @@
   "extends": [
     "config:base"
   ],
-  "ignoreDeps": ["ethers", "typescript"]
+  "ignoreDeps": ["ethers", "typescript"],
+  "schedule": ["every weekend"]
 }
