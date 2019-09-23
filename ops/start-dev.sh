@@ -88,7 +88,7 @@ fi
 
 number_of_services=8 # NOTE: Gotta update this manually when adding/removing services :(
 
-mkdir -p /tmp/$project
+mkdir -p modules/database/snapshots /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
 
@@ -193,6 +193,7 @@ services:
       - ${project}_database_dev
     volumes:
       - database_dev:/var/lib/postgresql/data
+      - `pwd`/modules/database/snapshots:/root/snapshots
 
   nats:
     command: -V
