@@ -1,0 +1,10 @@
+{
+  "name": "indra-database",
+  "version": "1.0.0",
+  "description": "database migrations to set the scene for connext payment channels",
+  "license": "MIT",
+  "dependencies": {
+    "db-migrate": "0.11.4",
+    "db-migrate-pg": "0.4.0"
+  }
+}
