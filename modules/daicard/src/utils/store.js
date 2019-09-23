@@ -32,5 +32,12 @@ export const store = {
         typeof pair.value === 'string' ? pair.value : JSON.stringify(pair.value),
       );
     }
+  },
+  reset: () => {
+    for (const k of Object.keys(localStorage)) {
+      if (k.startsWith('CF_NODE')) {
+        localStorage.removeItem(k);
+      }
+    }
   }
 };

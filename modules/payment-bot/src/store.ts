@@ -50,4 +50,17 @@ export const store = {
     fs.unlinkSync(config.dbFile);
     fs.writeFileSync(config.dbFile, JSON.stringify(storeObj, null, 2));
   },
+
+  reset: async (): Promise<void> => {
+    if (!storeObj) {
+      storeObj = JSON.parse(fs.readFileSync(config.dbFile, "utf8") || "{}");
+    }
+    for (const k of Object.keys(storeObj)) {
+      if (k.startsWith("CF_NODE")) {
+        delete storeObj[k];
+      }
+    }
+    fs.unlinkSync(config.dbFile);
+    fs.writeFileSync(config.dbFile, JSON.stringify(storeObj, null, 2));
+  },
 };
