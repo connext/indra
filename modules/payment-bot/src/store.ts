@@ -8,7 +8,7 @@ export const store = {
     if (!storeObj) {
       storeObj = JSON.parse(fs.readFileSync(config.dbFile, "utf8") || "{}");
     }
-    const raw = storeObj[path];
+    const raw = storeObj[`CF_NODE:${path}`];
     if (raw) {
       try {
         return JSON.parse(raw);
@@ -23,9 +23,11 @@ export const store = {
       for (const k of Object.keys(storeObj)) {
         if (k.includes(`${path}/`)) {
           try {
-            partialMatches[k.replace(`${path}/`, "")] = JSON.parse(storeObj[k]);
+            partialMatches[k.replace("CF_NODE:", "").replace(`${path}/`, "")] = JSON.parse(
+              storeObj[k],
+            );
           } catch {
-            partialMatches[k.replace(`${path}/`, "")] = storeObj[k];
+            partialMatches[k.replace("CF_NODE:", "").replace(`${path}/`, "")] = storeObj[k];
           }
         }
       }
@@ -42,7 +44,7 @@ export const store = {
       storeObj = JSON.parse(fs.readFileSync(config.dbFile, "utf8") || "{}");
     }
     for (const pair of pairs) {
-      storeObj[pair.path] =
+      storeObj[`CF_NODE:${pair.path}`] =
         typeof pair.value === "string" ? pair.value : JSON.stringify(pair.value);
     }
     fs.unlinkSync(config.dbFile);
