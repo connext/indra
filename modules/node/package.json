@@ -24,7 +24,7 @@
     "@connext/messaging": "0.1.7",
     "@connext/redis-lock": "0.1.7",
     "@connext/types": "0.1.7",
-    "@counterfactual/node": "0.2.80",
+    "@counterfactual/node": "0.2.81",
     "@counterfactual/types": "0.0.42",
     "@nestjs/common": "6.5.3",
     "@nestjs/core": "6.5.3",
