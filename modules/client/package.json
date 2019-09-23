@@ -15,7 +15,7 @@
     "@connext/messaging": "0.1.9",
     "@connext/proxy-lock": "0.1.9",
     "@connext/types": "0.1.9",
-    "@counterfactual/node": "0.2.80",
+    "@counterfactual/node": "0.2.81",
     "@counterfactual/types": "0.0.42",
     "core-js": "3.2.1",
     "ethers": "4.0.36",
