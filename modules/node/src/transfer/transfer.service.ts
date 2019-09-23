@@ -21,6 +21,7 @@ import {
   CLogger,
   createLinkedHash,
   freeBalanceAddressFromXpub,
+  InstallMessage,
   RejectProposalMessage,
   replaceBN,
 } from "../util";
@@ -276,16 +277,13 @@ export class TransferService {
 
     try {
       await new Promise((res: () => any, rej: (msg: string) => any): void => {
+        boundResolve = this.resolveInstallTransfer.bind(null, res);
+        boundReject = this.rejectInstallTransfer.bind(null, rej);
         this.messagingProvider.subscribe(
           `indra.client.${userPubId}.install.${proposeRes.appInstanceId}`,
-          res,
+          boundResolve,
         );
-        this.cfCoreService.cfCore.on(
-          CFCoreTypes.EventName.REJECT_INSTALL,
-          (data: RejectProposalMessage) => {
-            rej(`Install failed. Event data: ${JSON.stringify(data, replaceBN, 2)}`);
-          },
-        );
+        this.cfCoreService.cfCore.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
       });
       logger.log(`App was installed successfully!: ${JSON.stringify(proposeRes)}`);
       return await this.linkedTransferRepository.save(transfer);
@@ -297,10 +295,19 @@ export class TransferService {
     }
   }
 
-  // TODO: fix type of data
-  private resolveInstallTransfer = (res: (value?: unknown) => void, message: any): any => {
+  private resolveInstallTransfer = (
+    res: (value?: unknown) => void,
+    message: InstallMessage,
+  ): InstallMessage => {
     res(message);
     return message;
+  };
+
+  private rejectInstallTransfer = (
+    rej: (reason?: string) => void,
+    msg: RejectProposalMessage,
+  ): any => {
+    return rej(`Install failed. Event data: ${JSON.stringify(msg, replaceBN, 2)}`);
   };
 
   private cleanupInstallListeners = (boundReject: any, appId: string, userPubId: string): void => {
