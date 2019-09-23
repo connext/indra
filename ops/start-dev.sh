@@ -39,7 +39,7 @@ postgres_user="$project"
 
 # docker images
 builder_image="${project}_builder"
-database_image="${project}_database"
+database_image="postgres:9-alpine"
 ethprovider_image="trufflesuite/ganache-cli:v6.4.5"
 node_image="$builder_image"
 nats_image="nats:2.0.0-linux"
@@ -88,7 +88,7 @@ fi
 
 number_of_services=8 # NOTE: Gotta update this manually when adding/removing services :(
 
-mkdir -p modules/database/snapshots /tmp/$project
+mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
 
@@ -193,7 +193,6 @@ services:
       - ${project}_database_dev
     volumes:
       - database_dev:/var/lib/postgresql/data
-      - `pwd`/modules/database/snapshots:/root/snapshots
 
   nats:
     command: -V

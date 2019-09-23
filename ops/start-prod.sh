@@ -152,7 +152,7 @@ pull_if_unavailable $redis_image
 
 echo "Deploying node image: $node_image to $INDRA_DOMAINNAME"
 
-mkdir -p /tmp/$project
+mkdir -p modules/database/snapshots /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
 
@@ -223,6 +223,7 @@ services:
       - $db_secret
     volumes:
       - $db_volume:/var/lib/postgresql/data
+      - `pwd`/modules/database/snapshots:/root/snapshots
 
   nats:
     command: -V
