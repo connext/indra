@@ -164,6 +164,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     network,
     node,
     nodePublicIdentifier: config.nodePublicIdentifier,
+    store,
     ...opts, // use any provided opts by default
   });
   await client.registerSubscriptions();
@@ -500,9 +501,26 @@ export class ConnextInternal extends ConnextChannel {
     return await this.conditionalTransferController.conditionalTransfer(params);
   };
 
-  public restoreState = async (): Promise<void> => {
+  public restoreState = async (): Promise<any> => {
     const states = await this.node.restoreStates(this.publicIdentifier);
-    console.log("states: ", states);
+    const actualStates = states.map((state: { path: string; value: object }) => {
+      const newVal = {};
+      for (const k in state.value) {
+        const newKey = k.replace(this.nodePublicIdentifier, this.publicIdentifier);
+        newVal[newKey] = state.value[k];
+      }
+      return {
+        path: state.path.replace(this.nodePublicIdentifier, this.publicIdentifier),
+        value: newVal,
+      };
+    });
+    this.opts.store.reset();
+    const extendedXpriv = HDNode.fromMnemonic(this.opts.mnemonic).extendedKey;
+    await this.opts.store.set([
+      { path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv },
+      ...actualStates,
+    ]);
+    return actualStates;
   };
 
   ///////////////////////////////////
