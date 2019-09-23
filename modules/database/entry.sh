@@ -35,7 +35,7 @@ function unlock {
 # Set an exit trap so that the database will do one final backup before shutting down
 function cleanup {
   log "Database exiting, creating final snapshot"
-  bash ops/backup.sh
+  bash backup.sh
   log "Shutting the database down"
   kill "$db_pid"
   unlock smart
@@ -60,7 +60,7 @@ then
   should_restore_backup="yes"
 
   # Start temp database & wait until it wakes up
-  log "Starting temp database for migrations/recovery.."
+  log "Starting temp database for backup recovery.."
   unlock fast
   /docker-entrypoint.sh postgres &
   PID=$!
@@ -83,7 +83,7 @@ fi
 # Start backing up the db periodically
 log "===> Starting backer upper"
 while true
-do sleep $backup_frequency && bash ops/backup.sh
+do sleep $backup_frequency && bash backup.sh
 done &
 
 # Start database to serve requests from clients

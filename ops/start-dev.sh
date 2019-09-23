@@ -39,7 +39,7 @@ postgres_user="$project"
 
 # docker images
 builder_image="${project}_builder"
-database_image="postgres:9-alpine"
+database_image="${project}_database"
 ethprovider_image="trufflesuite/ganache-cli:v6.4.5"
 node_image="$builder_image"
 nats_image="nats:2.0.0-linux"

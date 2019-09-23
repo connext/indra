@@ -10,4 +10,4 @@ if [[ -z "`docker service ps -q $service`" ]]
 then echo "Error: expected to see $service running" && exit 1
 fi
 
-docker exec $id bash ops/backup.sh
+docker exec $id bash backup.sh

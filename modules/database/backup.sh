@@ -3,7 +3,7 @@ set -e
 
 project="indra"
 bucket_name=backups.indra.connext.network
-lifecycle=ops/backup-lifecycle.json
+lifecycle=backup-lifecycle.json
 if [[ -n "$ETH_NETWORK" ]]
 then network=$ETH_NETWORK
 else network=ganache
