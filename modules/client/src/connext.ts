@@ -108,7 +108,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   // create the lock service for cfCore
   logger.info("using node's proxy lock service");
-  let lockService: ProxyLockService = new ProxyLockService(messaging);
+  const lockService: ProxyLockService = new ProxyLockService(messaging);
 
   // create new cfCore to inject into internal instance
   logger.info("creating new cf module");
@@ -144,7 +144,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
         });
 
         const creationData = await node.createChannel();
-        logger.info(`created channel, transaction: ${creationData}`);
+        logger.info(`created channel, transaction: ${JSON.stringify(creationData)}`);
       },
     );
     logger.info(`create channel event data: ${JSON.stringify(creationEventData, replaceBN, 2)}`);
@@ -229,6 +229,10 @@ export abstract class ConnextChannel {
     params: ConditionalTransferParameters,
   ): Promise<ConditionalTransferResponse> => {
     return await this.internal.conditionalTransfer(params);
+  };
+
+  public restoreState = async (): Promise<void> => {
+    return await this.internal.restoreState();
   };
 
   ///////////////////////////////////
@@ -494,6 +498,11 @@ export class ConnextInternal extends ConnextChannel {
     params: ConditionalTransferParameters,
   ): Promise<ConditionalTransferResponse> => {
     return await this.conditionalTransferController.conditionalTransfer(params);
+  };
+
+  public restoreState = async (): Promise<void> => {
+    const states = await this.node.restoreStates(this.publicIdentifier);
+    console.log("states: ", states);
   };
 
   ///////////////////////////////////
