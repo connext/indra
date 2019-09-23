@@ -20,9 +20,8 @@ import { mkHash } from "../test";
 import {
   CLogger,
   createLinkedHash,
-  delay,
   freeBalanceAddressFromXpub,
-  RejectInstallVirtualMessage,
+  RejectProposalMessage,
   replaceBN,
 } from "../util";
 
@@ -35,8 +34,6 @@ import {
 import { LinkedTransferRepository, PeerToPeerTransferRepository } from "./transfer.repository";
 
 const logger = new CLogger("TransferService");
-const maxRetries = 20;
-const delayMs = 250;
 
 @Injectable()
 export class TransferService {
@@ -278,14 +275,17 @@ export class TransferService {
     transfer.paymentId = paymentId;
 
     try {
-      await new Promise((res: () => any, rej: () => any): void => {
-        boundResolve = this.resolveInstallTransfer.bind(null, res);
-        boundReject = this.rejectInstallTransfer.bind(null, rej);
+      await new Promise((res: () => any, rej: (msg: string) => any): void => {
         this.messagingProvider.subscribe(
           `indra.client.${userPubId}.install.${proposeRes.appInstanceId}`,
-          boundResolve,
+          res,
         );
-        this.cfCoreService.cfCore.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
+        this.cfCoreService.cfCore.on(
+          CFCoreTypes.EventName.REJECT_INSTALL,
+          (data: RejectProposalMessage) => {
+            rej(`Install failed. Event data: ${JSON.stringify(data, replaceBN, 2)}`);
+          },
+        );
       });
       logger.log(`App was installed successfully!: ${JSON.stringify(proposeRes)}`);
       return await this.linkedTransferRepository.save(transfer);
@@ -299,31 +299,8 @@ export class TransferService {
 
   // TODO: fix type of data
   private resolveInstallTransfer = (res: (value?: unknown) => void, message: any): any => {
-    // TODO: why is it sometimes data vs data.data?
-    const appInstance = message.data.data ? message.data.database : message.data;
-
-    if (appInstance.identityHash !== this.appId) {
-      // not our app
-      logger.log(
-        `Caught INSTALL event for different app ${JSON.stringify(message)}, expected ${this.appId}`,
-      );
-      return;
-    }
     res(message);
     return message;
-  };
-
-  // TODO: fix types of data
-  private rejectInstallTransfer = (
-    rej: (reason?: any) => void,
-    msg: RejectInstallVirtualMessage,
-  ): any => {
-    // check app id
-    if (this.appId !== msg.data.appInstanceId) {
-      return;
-    }
-
-    return rej(`Install failed. Event data: ${JSON.stringify(msg, replaceBN, 2)}`);
   };
 
   private cleanupInstallListeners = (boundReject: any, appId: string, userPubId: string): void => {
