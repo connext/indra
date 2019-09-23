@@ -20,7 +20,6 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
-    "@connext/cf-core": "0.2.72",
     "@connext/messaging": "0.1.9",
     "@connext/redis-lock": "0.1.9",
     "@connext/types": "0.1.9",
@@ -33,7 +32,7 @@
     "@nestjs/typeorm": "6.1.3",
     "class-validator": "0.10.0",
     "dotenv": "8.1.0",
-    "ethers": "4.0.36",
+    "ethers": "4.0.37",
     "interval-promise": "1.3.0",
     "ioredis": "4.14.1",
     "nats": "1.3.0",
