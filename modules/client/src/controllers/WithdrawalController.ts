@@ -38,7 +38,17 @@ export class WithdrawalController extends AbstractController {
           recipient,
         );
         this.log.info(`Withdraw Response: ${JSON.stringify(withdrawResponse, replaceBN, 2)}`);
-        const minTx = withdrawResponse.transaction;
+        const minTx: CFCoreTypes.MinimalTransaction = withdrawResponse.transaction;
+        // set the withdrawal tx in the store
+        // TODO: better way to set store path
+        await this.connext.store.set([
+          {
+            path: `CF_NODE:store/${this.cfCore.publicIdentifier}/latestNodeSubmittedWithdrawal`,
+            value: transaction,
+          },
+        ]);
+
+        await this.connext.watchForUserWithdrawal(minTx);
 
         transaction = await this.node.withdraw(minTx);
         this.log.info(`Node Withdraw Response: ${JSON.stringify(transaction, replaceBN, 2)}`);
