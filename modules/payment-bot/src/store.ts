@@ -1,14 +1,15 @@
+import { ConnextClientStorePrefix } from "@connext/types";
 import fs from "fs";
 
 import { config } from "./config";
 
-let storeObj;
+let storeObj: any;
 export const store = {
   get: (path: string): any => {
     if (!storeObj) {
       storeObj = JSON.parse(fs.readFileSync(config.dbFile, "utf8") || "{}");
     }
-    const raw = storeObj[`CF_NODE:${path}`];
+    const raw = storeObj[`${ConnextClientStorePrefix}:${path}`];
     if (raw) {
       try {
         return JSON.parse(raw);
@@ -23,11 +24,12 @@ export const store = {
       for (const k of Object.keys(storeObj)) {
         if (k.includes(`${path}/`)) {
           try {
-            partialMatches[k.replace("CF_NODE:", "").replace(`${path}/`, "")] = JSON.parse(
-              storeObj[k],
-            );
+            partialMatches[
+              k.replace(`${ConnextClientStorePrefix}:`, "").replace(`${path}/`, "")
+            ] = JSON.parse(storeObj[k]);
           } catch {
-            partialMatches[k.replace("CF_NODE:", "").replace(`${path}/`, "")] = storeObj[k];
+            partialMatches[k.replace(`${ConnextClientStorePrefix}:`, "").replace(`${path}/`, "")] =
+              storeObj[k];
           }
         }
       }
@@ -44,7 +46,7 @@ export const store = {
       storeObj = JSON.parse(fs.readFileSync(config.dbFile, "utf8") || "{}");
     }
     for (const pair of pairs) {
-      storeObj[`CF_NODE:${pair.path}`] =
+      storeObj[`${ConnextClientStorePrefix}:${pair.path}`] =
         typeof pair.value === "string" ? pair.value : JSON.stringify(pair.value);
     }
     fs.unlinkSync(config.dbFile);
@@ -56,7 +58,7 @@ export const store = {
       storeObj = JSON.parse(fs.readFileSync(config.dbFile, "utf8") || "{}");
     }
     for (const k of Object.keys(storeObj)) {
-      if (k.startsWith("CF_NODE")) {
+      if (k.startsWith(ConnextClientStorePrefix)) {
         delete storeObj[k];
       }
     }
