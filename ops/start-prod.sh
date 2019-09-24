@@ -188,6 +188,11 @@ services:
       - "443:443"
     volumes:
       - certs:/etc/letsencrypt
+    logging:
+      driver: "json-file"
+      options:
+          max-file: 10
+          max-size: 10m
 
   relay:
     image: $relay_image
