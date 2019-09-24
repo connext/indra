@@ -9,7 +9,7 @@ export const QRGenerate = (props) => {
   )
 }
 
-export const QRScan = (props) => {
+export const QRScan = React.forwardRef((props, ref) => {
   const [delay, setDelay] = useState(300);
   const [result, setResult] = useState("No result");
   const [error, setError] = useState(undefined);
@@ -22,16 +22,16 @@ export const QRScan = (props) => {
   };
 
   return (
-    <div>
+    <div tabIndex={-1} ref={ref}>
       <QrReader
         delay={delay}
         onError={setError}
         onScan={handleScan}
         style={{ width: "100%" }}
       />
-      <Typography style={{padding: "2%", backgroundColor: "#FFF"}}>
-        Not currently supported on Brave and iOS 11 browsers other than Safari.
-      </Typography>
+        <Typography style={{padding: "2%", backgroundColor: "#FFF"}}>
+          Not currently supported on Brave and iOS 11 browsers other than Safari.
+        </Typography>
     </div>
   );
-}
+})

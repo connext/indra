@@ -24,8 +24,11 @@ export const SupportCard = style((props) => {
   const [error, setError] = useState(undefined);
   const [channelState, setChannelState] = useState(undefined);
 
-  useEffect(async () => {
-    setChannelState(await props.channel.getChannel());
+  useEffect(() => {
+    const supportCardEffect = async () => {
+      setChannelState(await props.channel.getChannel());
+    };
+    supportCardEffect();
   }, []);
 
   const openDiscord = () => {

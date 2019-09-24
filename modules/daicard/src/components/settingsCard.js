@@ -54,7 +54,7 @@ export const SettingsCard = style((props) => {
   const [showRecovery, setShowRecovery] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
-  const { classes } = this.props;
+  const { classes } = props;
 
   const closeModal = () => {
     setCopied(false);

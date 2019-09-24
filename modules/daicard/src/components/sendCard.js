@@ -62,7 +62,7 @@ export const SendCard = style((props) => {
 
   const { balance, channel, classes, location, token  } = props;
 
-  useEffect(async () => {
+  useEffect(() => {
     const query = queryString.parse(location.search);
     if (query.amountToken) {
       updateAmountHandler(query.amountToken);
@@ -72,7 +72,7 @@ export const SendCard = style((props) => {
     }
   }, [])
 
-  const handleQRData = async (scanResult) => {
+  const handleQRData = (scanResult) => {
     let data = scanResult.split("/send?");
     if (data[0] === window.location.origin) {
       const query = queryString.parse(data[1]);
@@ -109,7 +109,7 @@ export const SendCard = style((props) => {
     });
   }
 
-  const updateRecipientHandler = async (rawValue) => {
+  const updateRecipientHandler = (rawValue) => {
     const xpubLen = 111;
     let value = null,
       error = null;

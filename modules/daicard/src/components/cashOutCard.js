@@ -21,7 +21,7 @@ import { inverse } from "../utils";
 
 import { QRScan } from "./qrCode";
 
-const styles = theme => ({
+export const CashoutCard = withStyles((theme) => ({
   icon: {
     width: "40px",
     height: "40px"
@@ -41,11 +41,7 @@ const styles = theme => ({
     padding: theme.spacing(4),
     outline: "none"
   }
-});
-
-export const CashoutCard = withStyles(styles)(props => {
-  const { balance, classes, channel, history, refreshBalances, setPending, swapRate, token } = props
-
+}))(({ balance, classes, channel, history, refreshBalances, setPending, swapRate, token }) => {
   const [recipient, setRecipient] = useState({ display: "", value: undefined, error: undefined });
   const [scan, setScan] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);

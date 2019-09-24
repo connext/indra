@@ -22,20 +22,20 @@ const style = withStyles(theme => ({
   }
 }));
 
+const generateQrUrl = (value, xpub) =>
+  `${window.location.origin}/send?amountToken=${value || "0"}&recipient=${xpub}`;
+
 export const RequestCard = style((props) => {
+  const { maxDeposit, xpub } = props;
+
   const [displayValue, setDisplayValue] = useState("");
   const [error, setError] = useState(undefined);
-  const [qrUrl, setQrUrl] = useState(generateQrUrl("0"));
+  const [qrUrl, setQrUrl] = useState(generateQrUrl("0", xpub));
   const [copied, setCopied] = useState(false);
-
-  const { maxDeposit, xpub } = props;
 
   const closeModal = () => {
     setCopied(false);
   };
-
-  const generateQrUrl = (value) =>
-    `${window.location.origin}/send?amountToken=${value || "0"}&recipient=${xpub}`;
 
   const handleCopy = () => {
     setCopied(error ? false : true);
@@ -54,7 +54,7 @@ export const RequestCard = style((props) => {
     if (value && value.wad.lte(Zero)) {
       error = "Please enter a payment amount above 0"
     }
-    setQrUrl(generateQrUrl(error ? "0" : value.amount));
+    setQrUrl(generateQrUrl(error ? "0" : value.amount, xpub));
     setDisplayValue(rawValue);
     setError(error);
   };

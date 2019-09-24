@@ -57,33 +57,35 @@ export const RedeemCard = style(props => {
 
   const { channel, classes, history, location, swapRate, token, tokenProfile } = props;
 
-  useEffect(async () => {
-    const query = queryString.parse(location.search);
-    console.log(`Redeem card launched with url query: ${JSON.stringify(query)}`)
-    setSecret(query.setSecret);
-    setPaymentId(query.paymentId);
-    setAssetId(query.assetId);
-    setAmount(query.amount);
-    // set state vars if they exist
-    if (location.state && location.state.isConfirm) {
-      // TODO: test what happens if not routed with isConfirm
-      setRedeemPaymentState(RedeemPaymentStates.IsSender);
-      setShowReceipt(false);
-      return;
-    }
-    // set status to redeeming on mount if not sender
-    setRedeemPaymentState(RedeemPaymentStates.Redeeming);
-    await interval(
-      async (iteration, stop) => {
-        const processing = redeemPaymentState === RedeemPaymentStates.Redeeming || redeemPaymentState === RedeemPaymentStates.Collateralizing
-        if (redeemPaymentState && !processing) {
-          stop()
-        }
-        await redeemPayment()
-        setRedeemPaymentState(redeemPaymentState)
-      },
-      1000,
-    )
+  useEffect(() => {
+    (async () => {
+      const query = queryString.parse(location.search);
+      console.log(`Redeem card launched with url query: ${JSON.stringify(query)}`)
+      setSecret(query.setSecret);
+      setPaymentId(query.paymentId);
+      setAssetId(query.assetId);
+      setAmount(query.amount);
+      // set state vars if they exist
+      if (location.state && location.state.isConfirm) {
+        // TODO: test what happens if not routed with isConfirm
+        setRedeemPaymentState(RedeemPaymentStates.IsSender);
+        setShowReceipt(false);
+        return;
+      }
+      // set status to redeeming on mount if not sender
+      setRedeemPaymentState(RedeemPaymentStates.Redeeming);
+      await interval(
+        async (iteration, stop) => {
+          const processing = redeemPaymentState === RedeemPaymentStates.Redeeming || redeemPaymentState === RedeemPaymentStates.Collateralizing
+          if (redeemPaymentState && !processing) {
+            stop()
+          }
+          await redeemPayment()
+          setRedeemPaymentState(redeemPaymentState)
+        },
+        1000,
+      )
+    })()
   }, []);
 
   const redeemPayment = async () => {
