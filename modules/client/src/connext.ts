@@ -9,6 +9,7 @@ import {
   ChannelState,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
+  ConnextNodeStorePrefix,
   CreateChannelResponse,
   DepositParameters,
   GetChannelResponse,
@@ -232,8 +233,8 @@ export abstract class ConnextChannel {
     return await this.internal.conditionalTransfer(params);
   };
 
-  public restoreState = async (): Promise<void> => {
-    return await this.internal.restoreState();
+  public restoreStateFromNode = async (mnemonic: string): Promise<void> => {
+    return await this.internal.restoreStateFromNode(mnemonic);
   };
 
   ///////////////////////////////////
@@ -501,23 +502,27 @@ export class ConnextInternal extends ConnextChannel {
     return await this.conditionalTransferController.conditionalTransfer(params);
   };
 
-  public restoreState = async (): Promise<any> => {
-    const states = await this.node.restoreStates(this.publicIdentifier);
+  public restoreStateFromNode = async (mnemonic: string): Promise<any> => {
+    const hdNode = HDNode.fromMnemonic(mnemonic);
+    const xpriv = hdNode.extendedKey;
+    const xpub = hdNode.derivePath("m/44'/60'/0'/25446").neuter().extendedKey;
+    const states = await this.node.restoreStates(xpub);
+    this.logger.info(`Found states to restore: ${JSON.stringify(states)}`);
+
+    // TODO: this should prob not be hardcoded like this
     const actualStates = states.map((state: { path: string; value: object }) => {
       return {
         path: state.path
           .replace(this.nodePublicIdentifier, this.publicIdentifier)
-          .replace("ConnextHub", "store"),
+          .replace(ConnextNodeStorePrefix, "store"),
         value: state.value[state.path],
       };
     });
     this.opts.store.reset();
-    const extendedXpriv = HDNode.fromMnemonic(this.opts.mnemonic).extendedKey;
-    await this.opts.store.set([
-      { path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv },
-      ...actualStates,
-    ]);
-    return actualStates;
+    await this.opts.store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }, ...actualStates]);
+    // recreate client with new mnemonic
+    const client = await connect({ ...this.opts, mnemonic });
+    return client;
   };
 
   ///////////////////////////////////
