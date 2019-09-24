@@ -513,7 +513,7 @@ export class ConnextInternal extends ConnextChannel {
     const actualStates = states.map((state: { path: string; value: object }) => {
       return {
         path: state.path
-          .replace(this.nodePublicIdentifier, this.publicIdentifier)
+          .replace(this.nodePublicIdentifier, xpub)
           .replace(ConnextNodeStorePrefix, "store"),
         value: state.value[state.path],
       };
