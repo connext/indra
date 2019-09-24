@@ -13,7 +13,7 @@ import { Link } from "react-router-dom";
 
 const noAddrBlocky = require("../assets/noAddress.png");
 
-export const AppBarComponent = props => (
+export const AppBarComponent = (props) => (
   <Grid>
     <Grid container spacing={2}>
       <AppBar position="sticky" color="secondary" elevation={0} style={{ paddingTop: "2%"}}>
@@ -77,5 +77,3 @@ export const AppBarComponent = props => (
     </Grid>
   </Grid>
 );
-
-export default AppBarComponent;

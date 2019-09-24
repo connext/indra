@@ -11,18 +11,18 @@ import tokenArtifacts from "openzeppelin-solidity/build/contracts/ERC20Mintable.
 import "./App.css";
 
 // Pages
-import AppBarComponent from "./components/AppBar";
-import CashOutCard from "./components/cashOutCard";
-import Confirmations from "./components/Confirmations";
-import DepositCard from "./components/depositCard";
-import Home from "./components/Home";
-import MySnackbar from "./components/snackBar";
-import RequestCard from "./components/requestCard";
-import RedeemCard from "./components/redeemCard";
-import SendCard from "./components/sendCard";
-import SettingsCard from "./components/settingsCard";
-import SetupCard from "./components/setupCard";
-import SupportCard from "./components/supportCard";
+import { AppBarComponent } from "./components/AppBar";
+import { CashoutCard } from "./components/cashOutCard";
+import { Confirmations } from "./components/Confirmations";
+import { DepositCard } from "./components/depositCard";
+import { Home } from "./components/Home";
+import { MySnackbar } from "./components/snackBar";
+import { RequestCard } from "./components/requestCard";
+import { RedeemCard } from "./components/redeemCard";
+import { SendCard } from "./components/sendCard";
+import { SettingsCard } from "./components/settingsCard";
+import { SetupCard } from "./components/setupCard";
+import { SupportCard } from "./components/supportCard";
 
 import { Currency, inverse, store, minBN, toBN, tokenToWei, weiToToken } from "./utils";
 
@@ -527,7 +527,7 @@ class App extends React.Component {
             <Route
               path="/cashout"
               render={props => (
-                <CashOutCard
+                <CashoutCard
                   {...props}
                   balance={balance}
                   channel={channel}

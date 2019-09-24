@@ -18,7 +18,7 @@ const variantIcon = {
   info: InfoIcon
 };
 
-const styles = theme => ({
+const style = withStyles((theme) => ({
   success: {
     backgroundColor: green[600]
   },
@@ -39,9 +39,9 @@ const styles = theme => ({
     display: "flex",
     alignItems: "center"
   }
-});
+}));
 
-function MySnackbar(props) {
+export const MySnackbar = style((props) => {
   const { classes, className, variant, openWhen, onClose, message, duration } = props;
   const Icon = variantIcon[variant];
   return (
@@ -77,16 +77,4 @@ function MySnackbar(props) {
       />
     </Snackbar>
   );
-}
-
-MySnackbar.propTypes = {
-  classes: PropTypes.object.isRequired,
-  className: PropTypes.string,
-  variant: PropTypes.oneOf(["success", "warning", "error"]).isRequired,
-  openWhen: PropTypes.bool.isRequired,
-  onClose: PropTypes.func,
-  message: PropTypes.node.isRequired,
-  duration: PropTypes.number
-};
-
-export default withStyles(styles)(MySnackbar);
+});
