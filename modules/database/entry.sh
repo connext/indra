@@ -82,7 +82,7 @@ fi
 # Start backing up the db periodically
 log "===> Starting backer upper"
 while true
-do sleep $backup_frequency && bash backup.sh
+do sleep $backup_frequency && bash backup.sh $ETH_NETWORK
 done &
 
 # Start database to serve requests from clients
