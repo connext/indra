@@ -265,7 +265,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       LOGDNA_KEY: $INDRA_LOGDNA_KEY
-      TAGS: logdna
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
