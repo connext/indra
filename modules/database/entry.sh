@@ -4,6 +4,8 @@ set -e
 ########################################
 ## Setup Env
 
+export ETH_NETWORK=$ETH_NETWORK
+
 # 60 sec/min * 30 min = 1800
 backup_frequency="1800"
 should_restore_backup="no"
