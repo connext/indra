@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@connext/messaging": "0.1.10",
-    "@counterfactual/types": "0.0.40",
+    "@counterfactual/types": "0.0.42",
     "uuid": "3.3.3"
   },
   "devDependencies": {
