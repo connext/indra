@@ -82,10 +82,10 @@ reset: stop
 	rm -rf $(flags)/deployed-contracts
 
 push-latest: prod
-	bash ops/push-images.sh latest node proxy relay
+	bash ops/push-images.sh latest database node proxy relay
 
 push-prod: prod
-	bash ops/push-images.sh $(version) node proxy relay
+	bash ops/push-images.sh $(version) database node proxy relay
 
 deployed-contracts: contracts
 	bash ops/deploy-contracts.sh ganache
