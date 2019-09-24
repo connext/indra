@@ -17,7 +17,7 @@ import {
 import { Send as SendIcon, Link as LinkIcon } from "@material-ui/icons";
 import { Zero } from "ethers/constants";
 import QRIcon from "mdi-material-ui/QrcodeScan";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import queryString from "query-string";
 
 import { utils } from "@connext/client"
@@ -29,6 +29,14 @@ import { QRScan } from "./qrCode";
 const LINK_LIMIT = Currency.DAI("10"); // $10 capped linked payments
 
 const { createPaymentId, createPreImage } = utils;
+
+const PaymentStates = {
+  None: 0,
+  Collateralizing: 1,
+  CollateralTimeout: 2,
+  OtherError: 3,
+  Success: 4,
+};
 
 const style = withStyles(theme => ({
   icon: {
@@ -44,33 +52,51 @@ const style = withStyles(theme => ({
   },
 }));
 
-const PaymentStates = {
-  None: 0,
-  Collateralizing: 1,
-  CollateralTimeout: 2,
-  OtherError: 3,
-  Success: 4,
-};
-
-export const SendCard = style((props) => {
+export const SendCard = style(({ balance, channel, classes, history, location, token  }) => {
   const [amount, setAmount] = useState({ display: "", error: null, value: null });
   const [recipient, setRecipient] = useState({ display: "", error: null, value: null });
-  const [sendError, setSendError] = useState(undefined);
   const [scan, setScan] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [paymentState, setPaymentState] = useState(PaymentStates.None);
 
-  const { balance, channel, classes, location, token  } = props;
+  const updateAmountHandler = useCallback((rawValue) => {
+    let value = null;
+    let error = null;
+    try {
+      value = Currency.DAI(rawValue);
+    } catch (e) {
+      error = e.message;
+    }
+    if (value && value.wad.gt(balance.channel.token.wad)) {
+      error = `Invalid amount: must be less than your balance`;
+    }
+    if (value && value.wad.lte(Zero)) {
+      error = "Invalid amount: must be greater than 0";
+    }
+    setAmount({
+      display: rawValue,
+      error,
+      value: error ? null : value,
+    });
+  }, [balance])
 
-  useEffect(() => {
-    const query = queryString.parse(location.search);
-    if (query.amountToken) {
-      updateAmountHandler(query.amountToken);
+  const updateRecipientHandler = (rawValue) => {
+    const xpubLen = 111;
+    let value = null;
+    let error = null;
+    value = rawValue;
+    if (!value.startsWith("xpub")) {
+      error = "Invalid recipient: should start with xpub";
     }
-    if (query.recipient) {
-      updateRecipientHandler(query.recipient);
+    if (!error && value.length !== xpubLen) {
+      error = `Invalid recipient: expected ${xpubLen} characters, got ${value.length}`;
     }
-  }, [])
+    setRecipient({
+      display: rawValue,
+      error,
+      value: error ? null : value,
+    });
+  }
 
   const handleQRData = (scanResult) => {
     let data = scanResult.split("/send?");
@@ -88,51 +114,10 @@ export const SendCard = style((props) => {
     setScan(false);
   };
 
-  const updateAmountHandler = (rawValue) => {
-    let value = null,
-      error = null;
-    try {
-      value = Currency.DAI(rawValue);
-    } catch (e) {
-      error = e.message;
-    }
-    if (value && value.wad.gt(balance.channel.token.wad)) {
-      error = `Invalid amount: must be less than your balance`;
-    }
-    if (value && value.wad.lte(Zero)) {
-      error = "Invalid amount: must be greater than 0";
-    }
-    setAmount({
-      display: rawValue,
-      error,
-      value: error ? null : value,
-    });
-  }
-
-  const updateRecipientHandler = (rawValue) => {
-    const xpubLen = 111;
-    let value = null,
-      error = null;
-    value = rawValue;
-    if (!value.startsWith("xpub")) {
-      error = "Invalid recipient: should start with xpub";
-    }
-    if (!error && value.length !== xpubLen) {
-      error = `Invalid recipient: expected ${xpubLen} characters, got ${value.length}`;
-    }
-    setRecipient({
-      display: rawValue,
-      error,
-      value: error ? null : value,
-    });
-  }
-
   const paymentHandler = async () => {
     if (amount.error || recipient.error) return;
-
     console.log(`Sending ${amount.value} to ${recipient.value}`);
     setPaymentState(PaymentStates.Collateralizing);
-
     // there is a chance the payment will fail when it is first sent
     // due to lack of collateral. collateral will be auto-triggered on the
     // hub side. retry for 1min, then fail
@@ -179,7 +164,7 @@ export const SendCard = style((props) => {
         `link params: secret=${link.preImage}&paymentId=${link.paymentId}&` +
           `assetId=${token.address}&amount=${amount.value.amount}`,
       );
-      props.history.push({
+      history.push({
         pathname: "/redeem",
         search:
           `?secret=${link.preImage}&paymentId=${link.paymentId}&` +
@@ -197,6 +182,16 @@ export const SendCard = style((props) => {
     setShowReceipt(false);
     setPaymentState(PaymentStates.None);
   };
+
+  useEffect(() => {
+    const query = queryString.parse(location.search);
+    if (query.amountToken) {
+      updateAmountHandler(query.amountToken);
+    }
+    if (query.recipient) {
+      updateRecipientHandler(query.recipient);
+    }
+  }, [location, updateAmountHandler])
 
   return (
     <Grid
@@ -291,7 +286,7 @@ export const SendCard = style((props) => {
           right: "0",
         }}
       >
-        <QRScan handleResult={handleQRData} history={props.history} />
+        <QRScan handleResult={handleQRData} history={history} />
       </Modal>
       <Grid item xs={12}>
         <Grid container direction="row" alignItems="center" justify="center" spacing={8}>
@@ -341,17 +336,16 @@ export const SendCard = style((props) => {
             width: "15%",
           }}
           size="medium"
-          onClick={() => props.history.push("/")}
+          onClick={() => history.push("/")}
         >
           Back
         </Button>
       </Grid>
       <PaymentConfirmationDialog
         showReceipt={showReceipt}
-        sendError={sendError}
         amountToken={amount.display ? amount.display : "0"}
         recipient={recipient.value}
-        history={props.history}
+        history={history}
         closeModal={closeModal}
         paymentState={paymentState}
       />

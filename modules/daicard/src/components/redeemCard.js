@@ -19,7 +19,7 @@ import {
 import { Zero } from "ethers/constants";
 import { isHexString, parseEther, formatEther } from "ethers/utils";
 import interval from "interval-promise";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import queryString from "query-string";
 
@@ -57,38 +57,9 @@ export const RedeemCard = style(props => {
 
   const { channel, classes, history, location, swapRate, token, tokenProfile } = props;
 
-  useEffect(() => {
-    (async () => {
-      const query = queryString.parse(location.search);
-      console.log(`Redeem card launched with url query: ${JSON.stringify(query)}`)
-      setSecret(query.setSecret);
-      setPaymentId(query.paymentId);
-      setAssetId(query.assetId);
-      setAmount(query.amount);
-      // set state vars if they exist
-      if (location.state && location.state.isConfirm) {
-        // TODO: test what happens if not routed with isConfirm
-        setRedeemPaymentState(RedeemPaymentStates.IsSender);
-        setShowReceipt(false);
-        return;
-      }
-      // set status to redeeming on mount if not sender
-      setRedeemPaymentState(RedeemPaymentStates.Redeeming);
-      await interval(
-        async (iteration, stop) => {
-          const processing = redeemPaymentState === RedeemPaymentStates.Redeeming || redeemPaymentState === RedeemPaymentStates.Collateralizing
-          if (redeemPaymentState && !processing) {
-            stop()
-          }
-          await redeemPayment()
-          setRedeemPaymentState(redeemPaymentState)
-        },
-        1000,
-      )
-    })()
-  }, []);
-
-  const redeemPayment = async () => {
+  // Wrapping this in useCallback so that useEffect knows when to re-render
+  // https://reactjs.org/docs/hooks-faq.html#is-it-safe-to-omit-functions-from-the-list-of-dependencies
+  const redeemPayment = useCallback(async () => {
     if (!channel || !tokenProfile) { return; }
     // only proceed if status is redeeming
     if (redeemPaymentState !== RedeemPaymentStates.Redeeming) {
@@ -155,7 +126,7 @@ export const RedeemCard = style(props => {
       setRedeemPaymentState(RedeemPaymentStates.OtherError);
       setShowReceipt(false);
     }
-  }
+  }, [amount, assetId, channel, paymentId, redeemPaymentState, secret, token, tokenProfile])
 
   const generateQrUrl = (secret, paymentId, assetId, amount) => {
     return `${window.location.origin}/redeem?secret=${secret}&paymentId=${paymentId}&` +
@@ -208,6 +179,37 @@ export const RedeemCard = style(props => {
     }
     return errs
   }
+
+  useEffect(() => {
+    (async () => {
+      const query = queryString.parse(location.search);
+      console.log(`Redeem card launched with url query: ${JSON.stringify(query)}`)
+      setSecret(query.setSecret);
+      setPaymentId(query.paymentId);
+      setAssetId(query.assetId);
+      setAmount(query.amount);
+      // set state vars if they exist
+      if (location.state && location.state.isConfirm) {
+        // TODO: test what happens if not routed with isConfirm
+        setRedeemPaymentState(RedeemPaymentStates.IsSender);
+        setShowReceipt(false);
+        return;
+      }
+      // set status to redeeming on mount if not sender
+      setRedeemPaymentState(RedeemPaymentStates.Redeeming);
+      await interval(
+        async (iteration, stop) => {
+          const processing = redeemPaymentState === RedeemPaymentStates.Redeeming || redeemPaymentState === RedeemPaymentStates.Collateralizing
+          if (redeemPaymentState && !processing) {
+            stop()
+          }
+          await redeemPayment()
+          setRedeemPaymentState(redeemPaymentState)
+        },
+        1000,
+      )
+    })()
+  }, [location, redeemPayment, redeemPaymentState]);
 
   return (
     <Grid>

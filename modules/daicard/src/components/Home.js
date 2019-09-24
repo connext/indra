@@ -13,7 +13,6 @@ const style = withStyles({});
 
 export const Home = style(props => {
   const [scanModal, setScanModal] = useState(false);
-  const [history, setHistory] = useState([]);
 
   const { balance } = props
 
@@ -61,7 +60,6 @@ export const Home = style(props => {
           >
             <QRScan
               handleResult={scanQRCode}
-              history={history}
             />
           </Modal>
         </Grid>

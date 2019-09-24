@@ -8,7 +8,6 @@ import {
   Info as InfoIcon,
 } from "@material-ui/icons";
 import React from "react";
-import PropTypes from "prop-types";
 import classNames from "classnames";
 
 const variantIcon = {

@@ -1,6 +1,5 @@
 import { withStyles } from "@material-ui/core";
-import PropTypes from "prop-types";
-import React, { useState } from "react";
+import React from "react";
 
 import { MySnackbar } from './snackBar';
 

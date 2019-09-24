@@ -8,28 +8,14 @@ const style = withStyles(theme => ({
   }
 }));
 
-function channelRender(channelState) {
-  return Object.entries(channelState).map(([key, value], i) => {
-    return (
-      <div>
-        <span>
-          {key}: {value}{" "}
-        </span>
-      </div>
-    );
-  });
-}
-
-export const SupportCard = style((props) => {
-  const [error, setError] = useState(undefined);
+export const SupportCard = style(({ channel }) => {
   const [channelState, setChannelState] = useState(undefined);
 
   useEffect(() => {
-    const supportCardEffect = async () => {
-      setChannelState(await props.channel.getChannel());
-    };
-    supportCardEffect();
-  }, []);
+    (async () => {
+      setChannelState(await channel.getChannel());
+    })()
+  }, [channel]);
 
   const openDiscord = () => {
     window.open("https://discord.gg/q2cakRc", "_blank");
@@ -43,6 +29,14 @@ export const SupportCard = style((props) => {
     channelState.sigHub &&
     channelState.sigUser !== "0x0" &&
     channelState.sigHub !== "0x0";
+
+  const channelRender = (channelState) => {
+    return Object.entries(channelState).map(([key, value], i) => { return(
+      <div>
+        <span>{key}: {value}{" "}</span>
+      </div>
+    )});
+  }
 
   return (
     <Grid

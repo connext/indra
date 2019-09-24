@@ -86,10 +86,6 @@ export const SetupCard = style((props) => {
 
   const { classes, minDeposit, maxDeposit } = props;
 
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
-
   const handleClickNext = () => {
     setIndex(index + 1);
   };

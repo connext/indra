@@ -1,32 +1,21 @@
 import { Typography } from "@material-ui/core";
 import QrCode from "qrcode.react";
-import React, { useState } from "react";
+import React from "react";
 import QrReader from "react-qr-reader";
 
-export const QRGenerate = (props) => {
+export const QRGenerate = ({ value }) => {
   return (
-    <QrCode value={props.value} size={256} />
+    <QrCode value={value} size={256} />
   )
 }
 
-export const QRScan = React.forwardRef((props, ref) => {
-  const [delay, setDelay] = useState(300);
-  const [result, setResult] = useState("No result");
-  const [error, setError] = useState(undefined);
-  const { handleResult } = props;
-
-  const handleScan = data => {
-    if (data) {
-      handleResult(data);
-    }
-  };
-
+export const QRScan = React.forwardRef(({ handleResult }, ref) => {
   return (
     <div tabIndex={-1} ref={ref}>
       <QrReader
-        delay={delay}
-        onError={setError}
-        onScan={handleScan}
+        delay={300}
+        onError={console.error}
+        onScan={(data) => data ? handleResult(data) : undefined}
         style={{ width: "100%" }}
       />
         <Typography style={{padding: "2%", backgroundColor: "#FFF"}}>
