@@ -31,6 +31,7 @@ const { formatEther, parseEther } = eth.utils
 // Environment Setup
 
 const shouldPullUpdatesFromCF = false
+const shouldUpdateProxyFactory = false
 const botMnemonics = [
   'humble sense shrug young vehicle assault destroy cook property average silent travel',
   'roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult',
@@ -226,7 +227,7 @@ const sendGift = async (address, token) => {
     const fundingArtifacts = require(`@counterfactual/cf-funding-protocol-contracts/networks/${otherChainId}.json`)
     const adjudicatorArtifacts = require(`@counterfactual/cf-adjudicator-contracts/networks/${otherChainId}.json`)
     for (const contract of coreContracts) {
-      if (contract === "ProxyFactory" || shouldPullUpdatesFromCF) {
+      if ((contract === "ProxyFactory" && shouldUpdateProxyFactory)|| shouldPullUpdatesFromCF) {
         const artifact = fundingArtifacts.find(c => c.contractName === contract)
           || adjudicatorArtifacts.find(c => c.contractName === contract)
         if (!artifact || !artifact.address) {

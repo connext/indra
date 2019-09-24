@@ -10,6 +10,10 @@ export const BigNumber = ethersBig;
 
 export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
+export type SolidityValueType = any; // FIXME: use cf type
+
+export const ConnextEvents = CFCoreTypes.EventName;
+
 ////////////////////////////////////
 ////// APP REGISTRY
 
@@ -86,8 +90,8 @@ export type AppState<T = string> =
 export type AppStateBigNumber = AppState<BigNumber>;
 
 // all the types of counterfactual app actions
-export type AppAction<T = string> = SimpleLinkedTransferAppAction;
-export type AppActionBigNumber = AppAction<BigNumber>;
+export type AppAction<T = string> = SimpleLinkedTransferAppAction | SolidityValueType;
+export type AppActionBigNumber = AppAction<BigNumber> | SolidityValueType;
 
 //////// Swap apps
 export type SimpleSwapAppState<T = string> = {

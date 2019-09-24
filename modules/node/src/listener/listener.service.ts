@@ -152,13 +152,16 @@ export default class ListenerService implements OnModuleInit {
     this.cfCoreService.registerCfCoreListener(
       CFCoreTypes.RpcMethodName.INSTALL as any,
       (data: any) => {
+        const appInstance = data.result.result.appInstance;
         logger.debug(
-          `Emitting CFCoreTypes.RpcMethodName.INSTALL event: ${JSON.stringify(data.result.result)}`,
+          `Emitting CFCoreTypes.RpcMethodName.INSTALL event at subject indra.node.${
+            this.cfCoreService.cfCore.publicIdentifier
+          }.install.${appInstance.identityHash}: ${JSON.stringify(appInstance)}`,
         );
         this.messagingClient
           .emit(
-            `indra.node.install.${this.cfCoreService.cfCore.publicIdentifier}`,
-            data.result.result,
+            `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.install.${appInstance.identityHash}`,
+            appInstance,
           )
           .toPromise();
       },
@@ -171,11 +174,13 @@ export default class ListenerService implements OnModuleInit {
         logger.debug(
           `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(
             data.result.result,
-          )}`,
+          )} at subject indra.node.${this.cfCoreService.cfCore.publicIdentifier}.uninstall.${
+            data.result.result.appInstanceId
+          }`,
         );
         this.messagingClient
           .emit(
-            `indra.node.uninstall.${this.cfCoreService.cfCore.publicIdentifier}`,
+            `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.uninstall.${data.result.result.appInstanceId}`,
             data.result.result,
           )
           .toPromise();

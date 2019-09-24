@@ -7,18 +7,16 @@ import {
   SupportedApplications,
   TransferParameters,
 } from "@connext/types";
-import { AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
+import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
 import { RejectInstallVirtualMessage } from "../lib/cfCore";
-import { delay, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
+import { freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
 import { invalidAddress, invalidXpub } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
-
-const MAX_RETRIES = 20;
 
 export class TransferController extends AbstractController {
   private appId: string;

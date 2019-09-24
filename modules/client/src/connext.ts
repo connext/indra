@@ -19,6 +19,7 @@ import {
   RegisteredAppDetails,
   ResolveConditionParameters,
   ResolveConditionResponse,
+  SolidityValueType,
   SupportedApplication,
   SupportedNetwork,
   SwapParameters,
@@ -56,15 +57,7 @@ import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
  */
 
 export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
-  const {
-    logLevel,
-    ethProviderUrl,
-    mnemonic,
-    natsClusterId,
-    nodeUrl,
-    natsToken,
-    store,
-  } = opts;
+  const { logLevel, ethProviderUrl, mnemonic, natsClusterId, nodeUrl, natsToken, store } = opts;
   const logger = new Logger("ConnextConnect", logLevel);
 
   // setup network information
@@ -379,11 +372,11 @@ export abstract class ConnextChannel {
     newState: AppState | any, // cast to any bc no supported apps use
     // the update state method
   ): Promise<CFCoreTypes.UpdateStateResult> => {
-    return await this.updateState(appInstanceId, newState);
+    return await this.internal.updateState(appInstanceId, newState);
   };
 
   public uninstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
-    return await this.uninstallApp(appInstanceId);
+    return await this.internal.uninstallApp(appInstanceId);
   };
 
   public uninstallVirtualApp = async (
@@ -708,8 +701,7 @@ export class ConnextInternal extends ConnextChannel {
 
   public updateState = async (
     appInstanceId: string,
-    newState: AppState | any, // cast to any bc no supported apps use
-    // the update state method
+    newState: AppState | SolidityValueType,
   ): Promise<CFCoreTypes.UpdateStateResult> => {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);

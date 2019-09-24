@@ -9,6 +9,8 @@ registry="docker.io/connextproject"
 ####################
 # External Env Vars
 
+INDRA_AWS_ACCESS_KEY_ID="${INDRA_AWS_ACCESS_KEY_ID:-}"
+INDRA_AWS_SECRET_ACCESS_KEY="${INDRA_AWS_SECRET_ACCESS_KEY:-}"
 INDRA_DOMAINNAME="${INDRA_DOMAINNAME:-localhost}"
 INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl certs expire
 INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER}"
@@ -85,15 +87,16 @@ fi
 echo "eth provider: $INDRA_ETH_PROVIDER w chainId: $chainId"
 
 if [[ "$chainId" == "1" ]]
-then eth_mnemonic_name="${project}_mnemonic_mainnet"
+then eth_network_name="mainnet"
 elif [[ "$chainId" == "4" ]]
-then eth_mnemonic_name="${project}_mnemonic_rinkeby"
+then eth_network_name="rinkeby"
 elif [[ "$chainId" == "42" ]]
-then eth_mnemonic_name="${project}_mnemonic_kovan"
+then eth_network_name="kovan"
 elif [[ "$chainId" == "$ganache_chain_id" && "$INDRA_MODE" == "test" ]]
 then
+  eth_network_name="ganache"
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-  eth_mnemonic_name="${project}_mnemonic_ganache"
+  eth_mnemonic_name="${project}_mnemonic_$eth_network_name"
   new_secret "$eth_mnemonic_name" "$eth_mnemonic"
   eth_volume="chain_dev:"
   ethprovider_image="trufflesuite/ganache-cli:v6.4.5"
@@ -112,6 +115,7 @@ then
 else echo "Eth network \"$chainId\" is not supported for $INDRA_MODE-mode deployments" && exit 1
 fi
 
+eth_mnemonic_name="${project}_mnemonic_$eth_network_name"
 eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
 
 ########################################
@@ -122,10 +126,6 @@ redis_url="redis://redis:6379"
 database_image="postgres:9-alpine"
 nats_image="nats:2.0.0-linux"
 redis_image="redis:5-alpine"
-pull_if_unavailable $database_image
-pull_if_unavailable $nats_image
-pull_if_unavailable $redis_image
-
 if [[ "$INDRA_DOMAINNAME" != "localhost" ]]
 then
   if [[ "$INDRA_MODE" == "prod" ]]
@@ -134,9 +134,11 @@ then
   then version="latest"
   else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" && exit 1
   fi
+  database_image="$registry/${project}_database:$version"
   node_image="$registry/${project}_node:$version"
   proxy_image="$registry/${project}_proxy:$version"
   relay_image="$registry/${project}_relay:$version"
+  pull_if_unavailable $database_image
   pull_if_unavailable $node_image
   pull_if_unavailable $proxy_image
   pull_if_unavailable $relay_image
@@ -145,13 +147,16 @@ else # local/testing mode, don't use images from registry
   proxy_image="${project}_proxy:latest"
   relay_image="${project}_relay:latest"
 fi
+pull_if_unavailable $database_image
+pull_if_unavailable $nats_image
+pull_if_unavailable $redis_image
 
 ########################################
 ## Deploy according to configuration
 
 echo "Deploying node image: $node_image to $INDRA_DOMAINNAME"
 
-mkdir -p /tmp/$project
+mkdir -p modules/database/snapshots /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
 
@@ -215,6 +220,9 @@ services:
     deploy:
       mode: global
     environment:
+      AWS_ACCESS_KEY_ID: $INDRA_AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY: $INDRA_AWS_SECRET_ACCESS_KEY
+      ETH_NETWORK: $eth_network_name
       POSTGRES_DB: $project
       POSTGRES_PASSWORD_FILE: $postgres_password_file
       POSTGRES_USER: $project
@@ -222,6 +230,7 @@ services:
       - $db_secret
     volumes:
       - $db_volume:/var/lib/postgresql/data
+      - `pwd`/modules/database/snapshots:/root/snapshots
 
   nats:
     command: -V
