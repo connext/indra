@@ -504,14 +504,11 @@ export class ConnextInternal extends ConnextChannel {
   public restoreState = async (): Promise<any> => {
     const states = await this.node.restoreStates(this.publicIdentifier);
     const actualStates = states.map((state: { path: string; value: object }) => {
-      const newVal = {};
-      for (const k in state.value) {
-        const newKey = k.replace(this.nodePublicIdentifier, this.publicIdentifier);
-        newVal[newKey] = state.value[k];
-      }
       return {
-        path: state.path.replace(this.nodePublicIdentifier, this.publicIdentifier),
-        value: newVal,
+        path: state.path
+          .replace(this.nodePublicIdentifier, this.publicIdentifier)
+          .replace("ConnextHub", "store"),
+        value: state.value[state.path],
       };
     });
     this.opts.store.reset();
