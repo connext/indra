@@ -15,6 +15,7 @@ INDRA_DOMAINNAME="${INDRA_DOMAINNAME:-localhost}"
 INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl certs expire
 INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER}"
 INDRA_MODE="${INDRA_MODE:-staging}" # set to "prod" to use versioned docker images
+INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
 
 ####################
 # Internal Config
@@ -214,6 +215,11 @@ services:
     secrets:
       - $db_secret
       - $eth_mnemonic_name
+    logging:
+      driver: "json-file"
+      options:
+          max-file: 10
+          max-size: 10m
 
   database:
     image: $database_image
@@ -237,11 +243,24 @@ services:
     image: $nats_image
     ports:
       - "4222:4222"
+    logging:
+      driver: "json-file"
+      options:
+          max-file: 10
+          max-size: 10m
 
   redis:
     image: $redis_image
     ports:
       - "6379:6379"
+
+  logdna:
+    image: logdna/logspout:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      LOGDNA_KEY: $INDRA_LOGDNA_KEY
+      TAGS: logdna
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
