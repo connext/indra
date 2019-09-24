@@ -21,23 +21,15 @@ export class TransferMessaging extends AbstractMessagingProvider {
     data: {
       paymentId: string;
       preImage: string;
-      amount: string;
-      assetId: string;
     },
   ): Promise<ResolveLinkedTransferResponse> {
     logger.log(`Got resolve link request with data: ${JSON.stringify(data, replaceBN, 2)}`);
     const userPubId = this.getPublicIdentifierFromSubject(subject);
-    const { paymentId, preImage, amount, assetId } = data;
-    if (!paymentId || !preImage || !amount || !assetId) {
+    const { paymentId, preImage } = data;
+    if (!paymentId || !preImage) {
       throw new RpcException(`Incorrect data received. Data: ${data}`);
     }
-    return await this.transferService.resolveLinkedTransfer(
-      userPubId,
-      paymentId,
-      preImage,
-      bigNumberify(amount),
-      assetId,
-    );
+    return await this.transferService.resolveLinkedTransfer(userPubId, paymentId, preImage);
   }
 
   setupSubscriptions(): void {

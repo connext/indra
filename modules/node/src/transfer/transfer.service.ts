@@ -7,7 +7,7 @@ import {
 import { AppInstanceJson, Node as CFCoreTypes } from "@counterfactual/types";
 import { Inject, Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
@@ -98,23 +98,27 @@ export class TransferService {
     userPubId: string,
     paymentId: string,
     preImage: string,
-    amount: BigNumber,
-    assetId: string,
   ): Promise<ResolveLinkedTransferResponse> {
     logger.debug(
-      `Resolving linked transfer with userPubId: ${userPubId}, paymentId: ${paymentId}, ` +
-        `preImage: ${preImage}, amount: ${amount}, assetId: ${assetId}`,
+      `Resolving linked transfer with userPubId: ${userPubId}, ` +
+        `paymentId: ${paymentId}, preImage: ${preImage}`,
     );
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
     if (!channel) {
       throw new Error(`No channel exists for userPubId ${userPubId}`);
     }
 
-    const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
-
     // check that we have recorded this transfer in our db
-    const transfer = await this.linkedTransferRepository.findByLinkedHash(linkedHash);
+    const transfer = await this.linkedTransferRepository.findByPaymentId(paymentId);
     if (!transfer) {
+      throw new Error(`No transfer exists for paymentId ${paymentId}`);
+    }
+
+    const { assetId, amount } = transfer;
+    const amountBN = bigNumberify(amount);
+
+    const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
+    if (linkedHash !== transfer.linkedHash) {
       throw new Error(`No transfer exists for linkedHash ${linkedHash}`);
     }
     if (transfer.status === LinkedTransferStatus.REDEEMED) {
@@ -145,7 +149,7 @@ export class TransferService {
     const preTransferBal =
       freeBal[freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)];
 
-    await this.channelService.requestCollateral(userPubId, assetId, amount);
+    await this.channelService.requestCollateral(userPubId, assetId, amountBN);
 
     const network = await this.configService.getEthNetwork();
     const appInfo = await this.appRegistryRepository.findByNameAndNetwork(
@@ -154,11 +158,11 @@ export class TransferService {
     );
 
     const initialState: SimpleLinkedTransferAppStateBigNumber = {
-      amount,
+      amount: amountBN,
       assetId,
       coinTransfers: [
         {
-          amount,
+          amount: amountBN,
           to: freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier),
         },
         {
@@ -194,12 +198,12 @@ export class TransferService {
       postTransferBal[freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)],
     );
 
-    if (!diff.eq(amount)) {
+    if (!diff.eq(amountBN)) {
       logger.warn(`Got an unexpected difference of free balances before and after uninstalling`);
       logger.warn(
         `preTransferBal: ${preTransferBal.toString()}, postTransferBalance: ${postTransferBal[
           freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)
-        ].toString()}, expected ${amount.toString()}`,
+        ].toString()}, expected ${amount}`,
       );
     }
 

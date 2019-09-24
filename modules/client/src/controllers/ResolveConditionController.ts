@@ -16,6 +16,7 @@ type ConditionResolvers = {
     params: ResolveConditionParameters,
   ) => Promise<ResolveConditionResponse>;
 };
+
 export class ResolveConditionController extends AbstractController {
   public resolve = async (
     params: ResolveConditionParameters,
@@ -34,7 +35,7 @@ export class ResolveConditionController extends AbstractController {
     params: ResolveLinkedTransferParameters,
   ): Promise<ResolveLinkedTransferResponse> => {
     // convert and validate
-    const { paymentId, preImage, amount, assetId } = convert.ResolveLinkedTransfer(
+    const { paymentId, preImage } = convert.ResolveLinkedTransfer(
       "bignumber",
       params,
     );
@@ -44,7 +45,7 @@ export class ResolveConditionController extends AbstractController {
 
     // TODO: dont listen to linked transfer app in default listener, only listen for it here
 
-    await this.node.resolveLinkedTransfer(paymentId, preImage, amount, assetId);
+    await this.node.resolveLinkedTransfer(paymentId, preImage);
 
     // sanity check, free balance increased by payment amount
     const postTransferBal = await this.connext.getFreeBalance(assetId);
