@@ -3,13 +3,13 @@ set -e
 
 project="indra"
 bucket_name=backups.indra.connext.network
-lifecycle=ops/backup-lifecycle.json
+lifecycle=backup-lifecycle.json
 if [[ -n "$ETH_NETWORK" ]]
 then network=$ETH_NETWORK
 else network=ganache
 fi
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." >/dev/null 2>&1 && pwd )"
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 timestamp="`date +"%y%m%d-%H%M%S"`"
 backup_file=$network-$timestamp.sql
 backup_dir=$dir/snapshots

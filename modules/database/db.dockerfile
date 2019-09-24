@@ -5,4 +5,4 @@ RUN chown -R postgres:postgres /root
 RUN apk add --update --no-cache coreutils groff less mailcap nodejs py-pip && \
     pip install --upgrade awscli
 COPY . .
-ENTRYPOINT ["bash", "ops/entry.sh"]
+ENTRYPOINT ["bash", "entry.sh"]

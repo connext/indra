@@ -36,9 +36,7 @@
       "txHash": "0x156fb068dd41d768bda1425522992cb46aa26792be6b30f427ec842a4d934c80"
     },
     "ProxyFactory": {
-      "address": "0x711C655e08aaA9081e0BDc431920507CCD96b7a0",
-      "bytecode": "0x42add9c313080d37d30d3ade2a9f6a9a3e1a1ed774076d06763da38108ec8f25",
-      "txHash": "0x9520c12eed8d6ed9068e6a3f1353904e493463b5fecf22a4c9f565857526b821"
+      "address": "0x6CF0c4Ab3F1e66913c0983DC0bb1202d958ABb8f"
     },
     "SingleAssetTwoPartyCoinTransferInterpreter": {
       "address": "0x42f1E0990beb10FfeE2E884C82a37D425268eD1e",
@@ -148,7 +146,7 @@
       "txHash": "0xf37e0373c7b06380bdce387627628c7223b61b5719a949036244cf16625199b8"
     },
     "ProxyFactory": {
-      "address": "0x8eb543b35DE94B0E636402C7cA32947b22853eDF"
+      "address": "0xc8d7Cf5638dfa5b79A070c5aC983716575bEF4B0"
     }
   },
   "4447": {

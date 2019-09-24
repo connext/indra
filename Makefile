@@ -43,7 +43,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev prod
-dev: node types client payment-bot proxy ws-tcp-relay
+dev: database node types client payment-bot proxy ws-tcp-relay
 prod: database node-prod proxy-prod ws-tcp-relay
 
 start: dev
@@ -151,7 +151,7 @@ daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))
 
 database: node-modules $(shell find $(database) $(find_options))
 	$(log_start)
-	docker build --file $(database)/db.dockerfile --tag $(project)_database:latest .
+	docker build --file $(database)/db.dockerfile --tag $(project)_database:latest $(database)
 	$(log_finish) && touch $(flags)/$@
 
 messaging: node-modules $(shell find $(messaging)/src $(find_options))
