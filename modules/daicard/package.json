@@ -32,6 +32,7 @@
 		"react-scripts": "3.1.2"
 	},
 	"devDependencies": {
+		"@connext/types": "0.1.7",
 		"bn.js": "5.0.0",
 		"chai-bn": "0.2.0"
 	},
