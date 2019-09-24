@@ -70,14 +70,17 @@ class SettingsCard extends Component {
     window.location.reload();
   };
 
-  recoverAddressFromMnemonic() {
-    localStorage.setItem("mnemonic", this.state.mnemonic);
+  async recoverAddressFromMnemonic() {
+    const { channel } = this.props;
+    const { mnemonic } = this.state;
+    await channel.restoreStateFromNode(mnemonic);
+    localStorage.setItem("mnemonic", mnemonic);
     window.location.reload();
   }
 
   render() {
     const { classes } = this.props;
-    const { copied } = this.state;
+    const { copied, mnemonic } = this.state;
     return (
       <Grid
         container
@@ -178,7 +181,7 @@ class SettingsCard extends Component {
               variant="outlined"
               size="large"
               placeholder="Enter backup phrase and submit"
-              value={this.state.mnemonic}
+              value={mnemonic}
               onChange={event =>
                 this.setState({ mnemonic: event.target.value })
               }
