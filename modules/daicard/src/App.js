@@ -356,6 +356,7 @@ class App extends React.Component {
         minimumMaintainedCollateral: collateralNeeded,
         assetId: token.address,
       });
+      console.log(`Got a token profile: ${JSON.stringify(tokenProfile)}`)
       this.setState({ tokenProfile })
       await channel.requestCollateral(token.address);
       collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress])
