@@ -40,7 +40,7 @@ program
   .option("-w, --withdraw <amount>", "Withdrawal amount in Ether units")
   .option("-x, --debug", "output extra debugging")
   .option("-y, --redeem <amount>", "Redeem a linked payment")
-  .option("-z, --restore", "Restore state using node's records");
+  .option("-z, --restore <mnemonic>", "Restore state from mnemonic using node's records");
 
 program.parse(process.argv);
 
