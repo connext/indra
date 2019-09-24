@@ -107,10 +107,9 @@ export const validateLinkedTransferApp = async (
 };
 
 export const appProposalValidation: ProposalValidator = {
+  SimpleLinkedTransferApp: validateLinkedTransferApp,
   SimpleTransferApp: validateSimpleTransferApp,
   SimpleTwoPartySwapApp: validateSwapApp,
-  UnidirectionalLinkedTransferApp: validateLinkedTransferApp,
-  UnidirectionalTransferApp: validateTransferApp,
 };
 
 const prettyLog = (app: AppInstanceInfo): string => {
@@ -131,8 +130,8 @@ const baseAppValidation = async (
   const log = new Logger("baseAppValidation", connext.opts.logLevel);
   // check the initial state is consistent
   // FIXME: why isnt this in the cf types?
-  log.info(`Validating app: ${JSON.stringify(app, replaceBN, 2)}`);
-  log.info(`App has initial state? ${(app as any).initialState}`);
+  log.info(`Validating app: ${prettyLog(app)}`);
+  log.info(`App has initial state? ${prettyLog((app as any).initialState)}`);
   // check that identity hash isnt used by another app
   const apps = await connext.getAppInstances();
   if (apps) {
@@ -186,13 +185,14 @@ const baseAppValidation = async (
   const nodeFreeBalance =
     initiatorFreeBalance[freeBalanceAddressFromXpub(connext.nodePublicIdentifier)];
   if (isVirtual && nodeFreeBalance.lt(app.initiatorDeposit)) {
+    const reqRes = await connext.requestCollateral(app.initiatorDepositTokenAddress);
+    connext.logger.info(`Collateral Request result: ${JSON.stringify(reqRes, replaceBN, 2)}`);
     return `Insufficient collateral for requested asset,
     freeBalance of node: ${nodeFreeBalance.toString()}
     required: ${app.initiatorDeposit}. Proposed app: ${prettyLog(app)}`;
   }
 
-  // check that the intermediary includes your node if it is not an app with
-  // your node
+  // check that the intermediary includes your node if it is not an app with your node
   const hasIntermediaries = app.intermediaryIdentifier;
   if (hasIntermediaries && !isVirtual) {
     return `Apps with connected node should have no intermediaries. Proposed app: ${prettyLog(

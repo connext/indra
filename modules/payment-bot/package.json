@@ -11,20 +11,19 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@connext/client": "0.0.21",
-    "@counterfactual/node": "0.2.72",
+    "@connext/client": "0.1.10",
     "commander": "3.0.1",
     "dotenv": "8.1.0",
-    "ethers": "4.0.36",
+    "ethers": "4.0.37",
     "uuid": "3.3.3"
   },
   "devDependencies": {
-    "@connext/types": "0.0.21",
-    "@counterfactual/types": "0.0.38",
-    "@types/node-fetch": "2.5.0",
+    "@counterfactual/types": "0.0.42",
+    "@connext/types": "0.1.10",
+    "@types/node-fetch": "2.5.2",
     "env-cmd": "10.0.1",
     "nodemon": "1.19.2",
-    "ts-node": "8.3.0",
-    "typescript": "3.6.2"
+    "ts-node": "8.4.1",
+    "typescript": "3.5.3"
   }
 }

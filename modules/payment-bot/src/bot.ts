@@ -1,4 +1,4 @@
-import { Node as NodeTypes } from "@counterfactual/types";
+import { Node as CFCoreTypes } from "@counterfactual/types";
 import { AddressZero } from "ethers/constants";
 
 import { getAssetId, getConnextClient } from "./";
@@ -11,16 +11,9 @@ export function registerClientListeners(): void {
   const client = getConnextClient();
 
   client.on(
-    NodeTypes.EventName.UNINSTALL_VIRTUAL,
-    async (data: NodeTypes.UninstallVirtualResult) => {
-      console.log(`Bot event caught: ${NodeTypes.EventName.UNINSTALL_VIRTUAL}`);
-      while ((await client.getAppInstances()).length > 0) {
-        console.log(
-          "app still found in client, waiting 1s to uninstall. open apps: ",
-          (await client.getAppInstances()).length,
-        );
-        await delay(1000);
-      }
+    CFCoreTypes.EventName.UNINSTALL_VIRTUAL,
+    async (data: CFCoreTypes.UninstallVirtualResult) => {
+      console.log(`Bot event caught: ${CFCoreTypes.EventName.UNINSTALL_VIRTUAL}`);
       logEthFreeBalance(AddressZero, await client.getFreeBalance());
       if (getAssetId()) {
         logEthFreeBalance(getAssetId(), await client.getFreeBalance(getAssetId()));
@@ -28,7 +21,7 @@ export function registerClientListeners(): void {
     },
   );
 
-  client.on(NodeTypes.EventName.WITHDRAWAL_CONFIRMED, async (data: any) => {
+  client.on(CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED, async (data: any) => {
     logEthFreeBalance(AddressZero, await client.getFreeBalance());
     if (getAssetId()) {
       logEthFreeBalance(getAssetId(), await client.getFreeBalance(getAssetId()));
@@ -36,8 +29,8 @@ export function registerClientListeners(): void {
   });
 
   if (
-    client.listener.listenerCount(NodeTypes.EventName.UNINSTALL_VIRTUAL) === 0 ||
-    client.listener.listenerCount(NodeTypes.EventName.WITHDRAWAL_CONFIRMED) === 0
+    client.listener.listenerCount(CFCoreTypes.EventName.UNINSTALL_VIRTUAL) === 0 ||
+    client.listener.listenerCount(CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED) === 0
   ) {
     throw Error("Listeners failed to register.");
   }

@@ -1,10 +1,11 @@
 import { Module } from "@nestjs/common";
+import { ClientProxy } from "@nestjs/microservices";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { AppRegistryModule } from "../appRegistry/appRegistry.module";
+import { CFCoreModule } from "../cfCore/cfCore.module";
 import { ChannelModule } from "../channel/channel.module";
-import { NodeModule } from "../node/node.module";
-import { TransferModule } from "../transfer/transfer.module";
+import { MessagingModule } from "../messaging/messaging.module";
 import { LinkedTransferRepository } from "../transfer/transfer.repository";
 
 import ListenerService from "./listener.service";
@@ -13,11 +14,12 @@ import ListenerService from "./listener.service";
   controllers: [],
   exports: [ListenerService],
   imports: [
-    NodeModule,
+    CFCoreModule,
     AppRegistryModule,
     ChannelModule,
-    TransferModule,
+    MessagingModule,
     TypeOrmModule.forFeature([LinkedTransferRepository]),
+    MessagingModule,
   ],
   providers: [ListenerService],
 })

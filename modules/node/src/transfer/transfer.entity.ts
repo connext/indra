@@ -43,6 +43,7 @@ export enum LinkedTransferStatus {
   CREATED = "CREATED",
   REDEEMED = "REDEEMED",
   FAILED = "FAILED",
+  RECLAIMED = "RECLAIMED",
 }
 
 @Entity()

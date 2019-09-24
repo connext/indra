@@ -1,14 +1,16 @@
 # Cache
 .cache
 .config
+.jest.cache
 .node-gyp
 .npm
+.payment-bot-db
 modules/**/.cache
 modules/**/.config
 modules/**/.node-gyp
 modules/**/.npm
 modules/daicard/src/react-app-env.d.ts
-.payment-bot-db
+modules/database/snapshots
 
 # Compiled output
 build/
@@ -53,6 +55,7 @@ cypress/videos
 # Git submodules
 modules/**/.git
 modules/**/.circleci
+.cf-core-bridge
 
 # Local packages
 counterfactual

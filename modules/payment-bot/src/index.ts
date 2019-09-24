@@ -6,7 +6,7 @@ import {
   ResolveLinkedTransferParameters,
   WithdrawParameters,
 } from "@connext/types";
-import { NODE_EVENTS } from "@counterfactual/node";
+import { Node as CFCoreTypes } from "@counterfactual/types";
 import { AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { formatEther, hexlify, parseEther, randomBytes } from "ethers/utils";
@@ -176,14 +176,14 @@ async function run(): Promise<void> {
     const provider = new JsonRpcProvider(config.ethProviderUrl);
     const preWithdrawBal = await provider.getBalance(config.recipient || client.freeBalanceAddress);
     console.log(`Found prewithdrawal balance of ${formatEther(preWithdrawBal)}`);
-    client.on(NODE_EVENTS.WITHDRAWAL_CONFIRMED, async (data: any) => {
+    client.on(CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED, async (data: any) => {
       console.log(`Caught withdraw confirmed event, data: ${JSON.stringify(data, replaceBN, 2)}`);
       const postWithdrawBal = await provider.getBalance(
         config.recipient || client.freeBalanceAddress,
       );
       console.log(`Found postwithdrawal balance of ${formatEther(postWithdrawBal)}`);
     });
-    client.on(NODE_EVENTS.WITHDRAWAL_FAILED, async (data: any) => {
+    client.on(CFCoreTypes.EventName.WITHDRAWAL_FAILED, async (data: any) => {
       console.log(`Withdrawal failed with data: ${JSON.stringify(data, replaceBN, 2)}`);
     });
     console.log(
@@ -208,13 +208,12 @@ async function run(): Promise<void> {
     console.log(`Installed apps: ${await client.getAppInstances()}`);
   }
 
-  logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
   exitOrLeaveOpen(config);
-  console.log(`Waiting to receive transfers at ${client.opts.cfModule.publicIdentifier}`);
+  console.log(`Waiting to receive transfers at ${client.opts.cfCore.publicIdentifier}`);
 }
 
 async function getOrCreateChannel(assetId?: string): Promise<void> {
-  const connextOpts = {
+  const connextOpts: connext.ClientOptions = {
     ethProviderUrl: config.ethProviderUrl,
     logLevel: config.logLevel,
     mnemonic: config.mnemonic,

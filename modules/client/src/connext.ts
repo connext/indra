@@ -1,8 +1,10 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
+import { ProxyLockService } from "@connext/proxy-lock";
 import {
   AppActionBigNumber,
   AppRegistry,
   AppState,
+  CFCoreChannel,
   ChannelAppSequences,
   ChannelState,
   ConditionalTransferParameters,
@@ -13,24 +15,18 @@ import {
   GetConfigResponse,
   makeChecksum,
   makeChecksumOrEthAddress,
-  NodeChannel,
   PaymentProfile,
   RegisteredAppDetails,
   ResolveConditionParameters,
   ResolveConditionResponse,
+  SolidityValueType,
   SupportedApplication,
   SupportedNetwork,
   SwapParameters,
   TransferParameters,
   WithdrawParameters,
 } from "@connext/types";
-import {
-  CreateChannelMessage,
-  EXTENDED_PRIVATE_KEY_PATH,
-  Node,
-  NODE_EVENTS,
-} from "@counterfactual/node";
-import { Address, AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
+import { Address, AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -44,6 +40,7 @@ import { ResolveConditionController } from "./controllers/ResolveConditionContro
 import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
+import { CFCore, CreateChannelMessage, EXTENDED_PRIVATE_KEY_PATH } from "./lib/cfCore";
 import { Logger } from "./lib/logger";
 import { freeBalanceAddressFromXpub, publicIdentifierToAddress, replaceBN } from "./lib/utils";
 import { ConnextListener } from "./listener";
@@ -95,53 +92,59 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   // create a new node api instance
   // TODO: use local storage for default key value setting!!
-  const nodeConfig = {
+  const nodeApiConfig = {
     logLevel,
     messaging,
   };
-  logger.info("creating node client");
-  const node: NodeApiClient = new NodeApiClient(nodeConfig);
-  logger.info("created node client successfully");
+  logger.info("creating node api client");
+  const node: NodeApiClient = new NodeApiClient(nodeApiConfig);
+  logger.info("created node api client successfully");
 
   const config = await node.config();
-  logger.info(`node eth network: ${JSON.stringify(config.ethNetwork)}`);
+  logger.info(`node is connected to eth network: ${JSON.stringify(config.ethNetwork)}`);
   node.setNodePublicIdentifier(config.nodePublicIdentifier);
 
   const appRegistry = await node.appRegistry();
 
-  // create new cfModule to inject into internal instance
+  // create the lock service for cfCore
+  logger.info("using node's proxy lock service");
+  let lockService: ProxyLockService = new ProxyLockService(messaging);
+
+  // create new cfCore to inject into internal instance
   logger.info("creating new cf module");
-  const cfModule = await Node.create(
-    messaging,
+  const cfCore = await CFCore.create(
+    messaging as any, // TODO: FIX
     store,
     {
       STORE_KEY_PREFIX: "store",
     }, // TODO: proper config
     ethProvider,
     config.contractAddresses,
+    lockService,
   );
-  node.setUserPublicIdentifier(cfModule.publicIdentifier);
+  node.setUserPublicIdentifier(cfCore.publicIdentifier);
   logger.info("created cf module successfully");
 
-  const signer = await cfModule.signerAddress();
+  const signer = await cfCore.signerAddress();
   logger.info(`cf module signer address: ${signer}`);
 
   // TODO: make these types
   const myChannel = await node.getChannel();
 
-  let multisigAddress;
+  let multisigAddress: string;
   if (!myChannel) {
     // TODO: make these types
     logger.info("no channel detected, creating channel..");
-    const creationData = await node.createChannel();
-    logger.info(`created channel, transaction: ${creationData}`);
-    const creationEventData: NodeTypes.CreateChannelResult = await new Promise(
-      (res: any, rej: any): any => {
+    const creationEventData: CFCoreTypes.CreateChannelResult = await new Promise(
+      async (res: any, rej: any): Promise<any> => {
         const timer = setTimeout(() => rej("Create channel event not fired within 30s"), 30000);
-        cfModule.once(NODE_EVENTS.CREATE_CHANNEL, (data: CreateChannelMessage) => {
+        cfCore.once(CFCoreTypes.EventName.CREATE_CHANNEL, (data: CreateChannelMessage) => {
           clearTimeout(timer);
           res(data.data);
         });
+
+        const creationData = await node.createChannel();
+        logger.info(`created channel, transaction: ${creationData}`);
       },
     );
     logger.info(`create channel event data: ${JSON.stringify(creationEventData, replaceBN, 2)}`);
@@ -154,7 +157,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // create the new client
   const client = new ConnextInternal({
     appRegistry,
-    cfModule,
+    cfCore,
     ethProvider,
     messaging,
     multisigAddress,
@@ -185,11 +188,14 @@ export abstract class ConnextChannel {
 
   ///////////////////////////////////
   // LISTENER METHODS
-  public on = (event: NodeTypes.EventName, callback: (...args: any[]) => void): ConnextListener => {
+  public on = (
+    event: CFCoreTypes.EventName,
+    callback: (...args: any[]) => void,
+  ): ConnextListener => {
     return this.internal.on(event, callback);
   };
 
-  public emit = (event: NodeTypes.EventName, data: any): boolean => {
+  public emit = (event: CFCoreTypes.EventName, data: any): boolean => {
     return this.internal.emit(event, data);
   };
 
@@ -201,11 +207,11 @@ export abstract class ConnextChannel {
     return await this.internal.deposit(params);
   };
 
-  public swap = async (params: SwapParameters): Promise<NodeChannel> => {
+  public swap = async (params: SwapParameters): Promise<CFCoreChannel> => {
     return await this.internal.swap(params);
   };
 
-  public transfer = async (params: TransferParameters): Promise<NodeChannel> => {
+  public transfer = async (params: TransferParameters): Promise<CFCoreChannel> => {
     return await this.internal.transfer(params);
   };
 
@@ -286,13 +292,13 @@ export abstract class ConnextChannel {
     amount: BigNumber,
     assetId: string,
     notifyCounterparty: boolean = false,
-  ): Promise<NodeTypes.DepositResult> => {
+  ): Promise<CFCoreTypes.DepositResult> => {
     return await this.internal.cfDeposit(amount, assetId, notifyCounterparty);
   };
 
   public getFreeBalance = async (
     assetId: string = AddressZero,
-  ): Promise<NodeTypes.GetFreeBalanceStateResult> => {
+  ): Promise<CFCoreTypes.GetFreeBalanceStateResult> => {
     return await this.internal.getFreeBalance(assetId);
   };
 
@@ -302,62 +308,62 @@ export abstract class ConnextChannel {
 
   public getAppInstanceDetails = async (
     appInstanceId: string,
-  ): Promise<NodeTypes.GetAppInstanceDetailsResult> => {
+  ): Promise<CFCoreTypes.GetAppInstanceDetailsResult> => {
     return await this.internal.getAppInstanceDetails(appInstanceId);
   };
 
-  public getAppState = async (appInstanceId: string): Promise<NodeTypes.GetStateResult> => {
+  public getAppState = async (appInstanceId: string): Promise<CFCoreTypes.GetStateResult> => {
     return await this.internal.getAppState(appInstanceId);
   };
 
   public getProposedAppInstances = async (): Promise<
-    NodeTypes.GetProposedAppInstancesResult | undefined
+    CFCoreTypes.GetProposedAppInstancesResult | undefined
   > => {
     return await this.internal.getProposedAppInstances();
   };
 
   public getProposedAppInstance = async (
     appInstanceId: string,
-  ): Promise<NodeTypes.GetProposedAppInstanceResult | undefined> => {
+  ): Promise<CFCoreTypes.GetProposedAppInstanceResult | undefined> => {
     return await this.internal.getProposedAppInstance(appInstanceId);
   };
 
   public proposeInstallApp = async (
-    params: NodeTypes.ProposeInstallParams,
-  ): Promise<NodeTypes.ProposeInstallResult> => {
+    params: CFCoreTypes.ProposeInstallParams,
+  ): Promise<CFCoreTypes.ProposeInstallResult> => {
     return await this.internal.proposeInstallApp(params);
   };
 
   public proposeInstallVirtualApp = async (
-    params: NodeTypes.ProposeInstallVirtualParams,
-  ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
+    params: CFCoreTypes.ProposeInstallVirtualParams,
+  ): Promise<CFCoreTypes.ProposeInstallVirtualResult> => {
     return await this.internal.proposeInstallVirtualApp(params);
   };
 
   public installVirtualApp = async (
     appInstanceId: string,
-  ): Promise<NodeTypes.InstallVirtualResult> => {
+  ): Promise<CFCoreTypes.InstallVirtualResult> => {
     return await this.internal.installVirtualApp(appInstanceId);
   };
 
-  public installApp = async (appInstanceId: string): Promise<NodeTypes.InstallResult> => {
+  public installApp = async (appInstanceId: string): Promise<CFCoreTypes.InstallResult> => {
     return await this.internal.installApp(appInstanceId);
   };
 
-  public rejectInstallApp = async (appInstanceId: string): Promise<NodeTypes.UninstallResult> => {
+  public rejectInstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
     return await this.internal.rejectInstallApp(appInstanceId);
   };
 
   public rejectInstallVirtualApp = async (
     appInstanceId: string,
-  ): Promise<NodeTypes.UninstallVirtualResult> => {
+  ): Promise<CFCoreTypes.UninstallVirtualResult> => {
     return await this.internal.rejectInstallVirtualApp(appInstanceId);
   };
 
   public takeAction = async (
     appInstanceId: string,
     action: AppActionBigNumber,
-  ): Promise<NodeTypes.TakeActionResult> => {
+  ): Promise<CFCoreTypes.TakeActionResult> => {
     return await this.internal.takeAction(appInstanceId, action);
   };
 
@@ -365,17 +371,17 @@ export abstract class ConnextChannel {
     appInstanceId: string,
     newState: AppState | any, // cast to any bc no supported apps use
     // the update state method
-  ): Promise<NodeTypes.UpdateStateResult> => {
-    return await this.updateState(appInstanceId, newState);
+  ): Promise<CFCoreTypes.UpdateStateResult> => {
+    return await this.internal.updateState(appInstanceId, newState);
   };
 
-  public uninstallApp = async (appInstanceId: string): Promise<NodeTypes.UninstallResult> => {
-    return await this.uninstallApp(appInstanceId);
+  public uninstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
+    return await this.internal.uninstallApp(appInstanceId);
   };
 
   public uninstallVirtualApp = async (
     appInstanceId: string,
-  ): Promise<NodeTypes.UninstallVirtualResult> => {
+  ): Promise<CFCoreTypes.UninstallVirtualResult> => {
     return await this.internal.uninstallVirtualApp(appInstanceId);
   };
 
@@ -383,7 +389,7 @@ export abstract class ConnextChannel {
     amount: BigNumber,
     assetId?: string,
     recipient?: string,
-  ): Promise<NodeTypes.WithdrawResult> => {
+  ): Promise<CFCoreTypes.WithdrawResult> => {
     return await this.internal.cfWithdraw(amount, assetId, recipient);
   };
 }
@@ -393,7 +399,7 @@ export abstract class ConnextChannel {
  */
 export class ConnextInternal extends ConnextChannel {
   public opts: InternalClientOptions;
-  public cfModule: Node;
+  public cfCore: CFCore;
   public publicIdentifier: string;
   public ethProvider: providers.JsonRpcProvider;
   public node: NodeApiClient;
@@ -427,9 +433,9 @@ export class ConnextInternal extends ConnextChannel {
 
     this.appRegistry = opts.appRegistry;
 
-    this.cfModule = opts.cfModule;
-    this.freeBalanceAddress = this.cfModule.freeBalanceAddress;
-    this.publicIdentifier = this.cfModule.publicIdentifier;
+    this.cfCore = opts.cfCore;
+    this.freeBalanceAddress = this.cfCore.freeBalanceAddress;
+    this.publicIdentifier = this.cfCore.publicIdentifier;
     this.multisigAddress = this.opts.multisigAddress;
     this.nodePublicIdentifier = this.opts.nodePublicIdentifier;
 
@@ -437,7 +443,7 @@ export class ConnextInternal extends ConnextChannel {
     this.network = opts.network;
 
     // establish listeners
-    this.listener = new ConnextListener(opts.cfModule, this);
+    this.listener = new ConnextListener(opts.cfCore, this);
 
     // instantiate controllers with logger and cf
     this.depositController = new DepositController("DepositController", this);
@@ -466,11 +472,11 @@ export class ConnextInternal extends ConnextChannel {
     return await this.depositController.deposit(params);
   };
 
-  public swap = async (params: SwapParameters): Promise<NodeChannel> => {
+  public swap = async (params: SwapParameters): Promise<CFCoreChannel> => {
     return await this.swapController.swap(params);
   };
 
-  public transfer = async (params: TransferParameters): Promise<NodeChannel> => {
+  public transfer = async (params: TransferParameters): Promise<CFCoreChannel> => {
     return await this.transferController.transfer(params);
   };
 
@@ -493,11 +499,14 @@ export class ConnextInternal extends ConnextChannel {
   ///////////////////////////////////
   // EVENT METHODS
 
-  public on = (event: NodeTypes.EventName, callback: (...args: any[]) => void): ConnextListener => {
+  public on = (
+    event: CFCoreTypes.EventName,
+    callback: (...args: any[]) => void,
+  ): ConnextListener => {
     return this.listener.on(event, callback);
   };
 
-  public emit = (event: NodeTypes.EventName, data: any): boolean => {
+  public emit = (event: CFCoreTypes.EventName, data: any): boolean => {
     return this.listener.emit(event, data);
   };
 
@@ -507,12 +516,12 @@ export class ConnextInternal extends ConnextChannel {
   public getStateChannel = async (): Promise<{ data: any }> => {
     const params = {
       id: Date.now(),
-      methodName: "chan_getStateChannel", // FIXME: NodeTypes.RpcMethodName.GET_STATE_CHANNEL,
+      methodName: "chan_getStateChannel", // FIXME: CFCoreTypes.RpcMethodName.GET_STATE_CHANNEL,
       parameters: {
         multisigAddress: this.multisigAddress,
       },
     };
-    const getStateChannelRes = await this.cfModule.rpcRouter.dispatch(params);
+    const getStateChannelRes = await this.cfCore.rpcRouter.dispatch(params);
     return getStateChannelRes.result.result;
   };
 
@@ -520,8 +529,8 @@ export class ConnextInternal extends ConnextChannel {
     amount: BigNumber,
     assetId: string,
     notifyCounterparty: boolean = false,
-  ): Promise<NodeTypes.DepositResult> => {
-    const depositAddr = publicIdentifierToAddress(this.cfModule.publicIdentifier);
+  ): Promise<CFCoreTypes.DepositResult> => {
+    const depositAddr = publicIdentifierToAddress(this.cfCore.publicIdentifier);
     let bal: BigNumber;
 
     if (assetId === AddressZero) {
@@ -543,25 +552,25 @@ export class ConnextInternal extends ConnextChannel {
       throw new Error(err);
     }
 
-    const depositResponse = await this.cfModule.rpcRouter.dispatch({
+    const depositResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.DEPOSIT,
+      methodName: CFCoreTypes.RpcMethodName.DEPOSIT,
       parameters: {
         amount,
         multisigAddress: this.opts.multisigAddress,
         notifyCounterparty,
         tokenAddress: makeChecksum(assetId),
-      } as NodeTypes.DepositParams,
+      } as CFCoreTypes.DepositParams,
     });
-    return depositResponse.result.result as NodeTypes.DepositResult;
+    return depositResponse.result.result as CFCoreTypes.DepositResult;
   };
 
   // TODO: under what conditions will this fail?
   public getAppInstances = async (): Promise<AppInstanceInfo[]> => {
-    const appInstanceResponse = await this.cfModule.rpcRouter.dispatch({
+    const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.GET_APP_INSTANCES,
-      parameters: {} as NodeTypes.GetAppInstancesParams,
+      methodName: CFCoreTypes.RpcMethodName.GET_APP_INSTANCES,
+      parameters: {} as CFCoreTypes.GetAppInstancesParams,
     });
 
     return appInstanceResponse.result.result.appInstances as AppInstanceInfo[];
@@ -570,18 +579,18 @@ export class ConnextInternal extends ConnextChannel {
   // TODO: under what conditions will this fail?
   public getFreeBalance = async (
     assetId: string = AddressZero,
-  ): Promise<NodeTypes.GetFreeBalanceStateResult> => {
+  ): Promise<CFCoreTypes.GetFreeBalanceStateResult> => {
     const normalizedAssetId = makeChecksum(assetId);
     try {
-      const freeBalance = await this.cfModule.rpcRouter.dispatch({
+      const freeBalance = await this.cfCore.rpcRouter.dispatch({
         id: Date.now(),
-        methodName: NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
+        methodName: CFCoreTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
         parameters: {
           multisigAddress: this.multisigAddress,
           tokenAddress: normalizedAssetId,
         },
       });
-      return freeBalance.result.result as NodeTypes.GetFreeBalanceStateResult;
+      return freeBalance.result.result as CFCoreTypes.GetFreeBalanceStateResult;
     } catch (e) {
       const error = `No free balance exists for the specified token: ${normalizedAssetId}`;
       if (e.message.includes(error)) {
@@ -600,72 +609,72 @@ export class ConnextInternal extends ConnextChannel {
   };
 
   public getProposedAppInstances = async (): Promise<
-    NodeTypes.GetProposedAppInstancesResult | undefined
+    CFCoreTypes.GetProposedAppInstancesResult | undefined
   > => {
-    const proposedRes = await this.cfModule.rpcRouter.dispatch({
+    const proposedRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
-      parameters: {} as NodeTypes.GetProposedAppInstancesParams,
+      methodName: CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
+      parameters: {} as CFCoreTypes.GetProposedAppInstancesParams,
     });
-    return proposedRes.result.result as NodeTypes.GetProposedAppInstancesResult;
+    return proposedRes.result.result as CFCoreTypes.GetProposedAppInstancesResult;
   };
 
   public getProposedAppInstance = async (
     appInstanceId: string,
-  ): Promise<NodeTypes.GetProposedAppInstanceResult | undefined> => {
-    const proposedRes = await this.cfModule.rpcRouter.dispatch({
+  ): Promise<CFCoreTypes.GetProposedAppInstanceResult | undefined> => {
+    const proposedRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
+      methodName: CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
       parameters: {
         appInstanceId,
-      } as NodeTypes.GetProposedAppInstancesParams,
+      } as CFCoreTypes.GetProposedAppInstancesParams,
     });
-    return proposedRes.result.result as NodeTypes.GetProposedAppInstanceResult;
+    return proposedRes.result.result as CFCoreTypes.GetProposedAppInstanceResult;
   };
 
   public getAppInstanceDetails = async (
     appInstanceId: string,
-  ): Promise<NodeTypes.GetAppInstanceDetailsResult | undefined> => {
+  ): Promise<CFCoreTypes.GetAppInstanceDetailsResult | undefined> => {
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
       this.logger.warn(err);
       return undefined;
     }
-    const appInstanceResponse = await this.cfModule.rpcRouter.dispatch({
+    const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS,
+      methodName: CFCoreTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS,
       parameters: {
         appInstanceId,
-      } as NodeTypes.GetAppInstanceDetailsParams,
+      } as CFCoreTypes.GetAppInstanceDetailsParams,
     });
 
-    return appInstanceResponse.result.result as NodeTypes.GetAppInstanceDetailsResult;
+    return appInstanceResponse.result.result as CFCoreTypes.GetAppInstanceDetailsResult;
   };
 
   public getAppState = async (
     appInstanceId: string,
-  ): Promise<NodeTypes.GetStateResult | undefined> => {
+  ): Promise<CFCoreTypes.GetStateResult | undefined> => {
     // check the app is actually installed, or returned undefined
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
       this.logger.warn(err);
       return undefined;
     }
-    const stateResponse = await this.cfModule.rpcRouter.dispatch({
+    const stateResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.GET_STATE,
+      methodName: CFCoreTypes.RpcMethodName.GET_STATE,
       parameters: {
         appInstanceId,
-      } as NodeTypes.GetStateParams,
+      } as CFCoreTypes.GetStateParams,
     });
 
-    return stateResponse.result.result as NodeTypes.GetStateResult;
+    return stateResponse.result.result as CFCoreTypes.GetStateResult;
   };
 
   public takeAction = async (
     appInstanceId: string,
     action: AppActionBigNumber,
-  ): Promise<NodeTypes.TakeActionResult> => {
+  ): Promise<CFCoreTypes.TakeActionResult> => {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
@@ -673,28 +682,27 @@ export class ConnextInternal extends ConnextChannel {
       throw new Error(err);
     }
     // check state is not finalized
-    const state: NodeTypes.GetStateResult = await this.getAppState(appInstanceId);
+    const state: CFCoreTypes.GetStateResult = await this.getAppState(appInstanceId);
     // FIXME: casting?
     if ((state.state as any).finalized) {
       throw new Error("Cannot take action on an app with a finalized state.");
     }
-    const actionResponse = await this.cfModule.rpcRouter.dispatch({
+    const actionResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.TAKE_ACTION,
+      methodName: CFCoreTypes.RpcMethodName.TAKE_ACTION,
       parameters: {
         action,
         appInstanceId,
-      } as NodeTypes.TakeActionParams,
+      } as CFCoreTypes.TakeActionParams,
     });
 
-    return actionResponse.result.result as NodeTypes.TakeActionResult;
+    return actionResponse.result.result as CFCoreTypes.TakeActionResult;
   };
 
   public updateState = async (
     appInstanceId: string,
-    newState: AppState | any, // cast to any bc no supported apps use
-    // the update state method
-  ): Promise<NodeTypes.UpdateStateResult> => {
+    newState: AppState | SolidityValueType,
+  ): Promise<CFCoreTypes.UpdateStateResult> => {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
@@ -702,161 +710,157 @@ export class ConnextInternal extends ConnextChannel {
       throw new Error(err);
     }
     // check state is not finalized
-    const state: NodeTypes.GetStateResult = await this.getAppState(appInstanceId);
+    const state: CFCoreTypes.GetStateResult = await this.getAppState(appInstanceId);
     // FIXME: casting?
     if ((state.state as any).finalized) {
       throw new Error("Cannot take action on an app with a finalized state.");
     }
-    const updateResponse = await this.cfModule.rpcRouter.dispatch({
+    const updateResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.UPDATE_STATE,
+      methodName: CFCoreTypes.RpcMethodName.UPDATE_STATE,
       parameters: {
         appInstanceId,
         newState,
-      } as NodeTypes.UpdateStateParams,
+      } as CFCoreTypes.UpdateStateParams,
     });
-    return updateResponse.result.result as NodeTypes.UpdateStateResult;
+    return updateResponse.result.result as CFCoreTypes.UpdateStateResult;
   };
 
-  // TODO: add validation after arjuns refactor merged
   public proposeInstallVirtualApp = async (
-    params: NodeTypes.ProposeInstallVirtualParams,
-  ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
-    this.logger.info(`Proposing install with params: ${JSON.stringify(params, replaceBN, 2)}`);
+    params: CFCoreTypes.ProposeInstallVirtualParams,
+  ): Promise<CFCoreTypes.ProposeInstallVirtualResult> => {
     if (params.intermediaryIdentifier !== this.nodePublicIdentifier) {
-      throw new Error(`Incorrect intermediaryIdentifier. Expected: ${this.nodePublicIdentifier},
-         got ${params.intermediaryIdentifier}`);
+      throw new Error(`Cannot install virtual app without node as intermediary`);
     }
-
-    const actionRes = await this.cfModule.rpcRouter.dispatch({
+    const actionRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
+      methodName: CFCoreTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
       parameters: params,
     });
 
-    return actionRes.result.result as NodeTypes.ProposeInstallVirtualResult;
+    return actionRes.result.result as CFCoreTypes.ProposeInstallResult;
   };
 
   // TODO: add validation after arjuns refactor merged
   public proposeInstallApp = async (
-    params: NodeTypes.ProposeInstallParams,
-  ): Promise<NodeTypes.ProposeInstallResult> => {
-    const actionRes = await this.cfModule.rpcRouter.dispatch({
+    params: CFCoreTypes.ProposeInstallParams,
+  ): Promise<CFCoreTypes.ProposeInstallResult> => {
+    const actionRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
+      methodName: CFCoreTypes.RpcMethodName.PROPOSE_INSTALL,
       parameters: params,
     });
 
-    return actionRes.result.result as NodeTypes.ProposeInstallResult;
+    return actionRes.result.result as CFCoreTypes.ProposeInstallResult;
   };
 
   public installVirtualApp = async (
     appInstanceId: string,
-  ): Promise<NodeTypes.InstallVirtualResult> => {
+  ): Promise<CFCoreTypes.InstallVirtualResult> => {
     // check the app isnt actually installed
     const alreadyInstalled = await this.appInstalled(appInstanceId);
     if (alreadyInstalled) {
       throw new Error(alreadyInstalled);
     }
-    const installVirtualResponse = await this.cfModule.rpcRouter.dispatch({
+    const installVirtualResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.INSTALL_VIRTUAL,
+      methodName: CFCoreTypes.RpcMethodName.INSTALL_VIRTUAL,
       parameters: {
         appInstanceId,
         intermediaryIdentifier: this.nodePublicIdentifier,
-      } as NodeTypes.InstallVirtualParams,
+      } as CFCoreTypes.InstallVirtualParams,
     });
 
     return installVirtualResponse.result.result;
   };
 
-  public installApp = async (appInstanceId: string): Promise<NodeTypes.InstallResult> => {
+  public installApp = async (appInstanceId: string): Promise<CFCoreTypes.InstallResult> => {
     // check the app isnt actually installed
     const alreadyInstalled = await this.appInstalled(appInstanceId);
     if (alreadyInstalled) {
       throw new Error(alreadyInstalled);
     }
-    const installResponse = await this.cfModule.rpcRouter.dispatch({
+    const installResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.INSTALL,
+      methodName: CFCoreTypes.RpcMethodName.INSTALL,
       parameters: {
         appInstanceId,
-      } as NodeTypes.InstallParams,
+      } as CFCoreTypes.InstallParams,
     });
 
     return installResponse.result.result;
   };
 
-  public uninstallApp = async (appInstanceId: string): Promise<NodeTypes.UninstallResult> => {
+  public uninstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
       this.logger.error(err);
       throw new Error(err);
     }
-    const uninstallResponse = await this.cfModule.rpcRouter.dispatch({
+    const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.UNINSTALL,
+      methodName: CFCoreTypes.RpcMethodName.UNINSTALL,
       parameters: {
         appInstanceId,
       },
     });
 
-    return uninstallResponse.result.result as NodeTypes.UninstallResult;
+    return uninstallResponse.result.result as CFCoreTypes.UninstallResult;
   };
 
   public uninstallVirtualApp = async (
     appInstanceId: string,
-  ): Promise<NodeTypes.UninstallVirtualResult> => {
+  ): Promise<CFCoreTypes.UninstallVirtualResult> => {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
       this.logger.error(err);
       throw new Error(err);
     }
-    const uninstallVirtualResponse = await this.cfModule.rpcRouter.dispatch({
+    const uninstallVirtualResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.UNINSTALL_VIRTUAL,
+      methodName: CFCoreTypes.RpcMethodName.UNINSTALL_VIRTUAL,
       parameters: {
         appInstanceId,
         intermediaryIdentifier: this.nodePublicIdentifier,
-      } as NodeTypes.UninstallVirtualParams,
+      } as CFCoreTypes.UninstallVirtualParams,
     });
 
-    return uninstallVirtualResponse.result.result as NodeTypes.UninstallVirtualResult;
+    return uninstallVirtualResponse.result.result as CFCoreTypes.UninstallVirtualResult;
   };
 
-  public rejectInstallApp = async (appInstanceId: string): Promise<NodeTypes.UninstallResult> => {
-    const rejectResponse = await this.cfModule.rpcRouter.dispatch({
+  public rejectInstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
+    const rejectResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.REJECT_INSTALL,
+      methodName: CFCoreTypes.RpcMethodName.REJECT_INSTALL,
       parameters: {
         appInstanceId,
-      } as NodeTypes.RejectInstallParams,
+      } as CFCoreTypes.RejectInstallParams,
     });
 
-    return rejectResponse.result.result as NodeTypes.RejectInstallResult;
+    return rejectResponse.result.result as CFCoreTypes.RejectInstallResult;
   };
 
   public rejectInstallVirtualApp = async (
     appInstanceId: string,
-  ): Promise<NodeTypes.UninstallVirtualResult> => {
-    const rejectResponse = await this.cfModule.rpcRouter.dispatch({
+  ): Promise<CFCoreTypes.UninstallVirtualResult> => {
+    const rejectResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.REJECT_INSTALL,
+      methodName: CFCoreTypes.RpcMethodName.REJECT_INSTALL,
       parameters: {
         appInstanceId,
-      } as NodeTypes.RejectInstallParams,
+      } as CFCoreTypes.RejectInstallParams,
     });
 
-    return rejectResponse.result.result as NodeTypes.RejectInstallResult;
+    return rejectResponse.result.result as CFCoreTypes.RejectInstallResult;
   };
 
   public cfWithdraw = async (
     amount: BigNumber,
     assetId?: string,
     recipient?: string,
-  ): Promise<NodeTypes.WithdrawResult> => {
+  ): Promise<CFCoreTypes.WithdrawResult> => {
     const freeBalance = await this.getFreeBalance(assetId);
     const preWithdrawalBal = freeBalance[this.freeBalanceAddress];
     const err = [
@@ -868,9 +872,9 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.error(err);
       throw new Error(err);
     }
-    const withdrawalResponse = await this.cfModule.rpcRouter.dispatch({
+    const withdrawalResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.WITHDRAW,
+      methodName: CFCoreTypes.RpcMethodName.WITHDRAW,
       parameters: {
         amount,
         multisigAddress: this.multisigAddress,
@@ -886,7 +890,7 @@ export class ConnextInternal extends ConnextChannel {
     amount: BigNumber,
     assetId?: string,
     recipient?: string,
-  ): Promise<NodeTypes.WithdrawCommitmentResult> => {
+  ): Promise<CFCoreTypes.WithdrawCommitmentResult> => {
     const freeBalance = await this.getFreeBalance(assetId);
     const preWithdrawalBal = freeBalance[this.freeBalanceAddress];
     const err = [
@@ -898,15 +902,15 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.error(err);
       throw new Error(err);
     }
-    const withdrawalResponse = await this.cfModule.rpcRouter.dispatch({
+    const withdrawalResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.WITHDRAW_COMMITMENT,
+      methodName: CFCoreTypes.RpcMethodName.WITHDRAW_COMMITMENT,
       parameters: {
         amount,
         multisigAddress: this.multisigAddress,
         recipient,
         tokenAddress: makeChecksumOrEthAddress(assetId),
-      } as NodeTypes.WithdrawCommitmentParams,
+      } as CFCoreTypes.WithdrawCommitmentParams,
     });
 
     return withdrawalResponse.result.result;

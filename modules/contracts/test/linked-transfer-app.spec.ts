@@ -1,4 +1,4 @@
-import { Address, SolidityABIEncoderV2Type } from "@counterfactual/types";
+import { Address, SolidityValueType } from "@counterfactual/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
@@ -68,11 +68,11 @@ function decodeAppState(encodedAppState: string): UnidirectionalLinkedTransferAp
   return defaultAbiCoder.decode([unidirectionalLinkedTransferAppStateEncoding], encodedAppState)[0];
 }
 
-function encodeAppState(state: SolidityABIEncoderV2Type): string {
+function encodeAppState(state: SolidityValueType): string {
   return defaultAbiCoder.encode([unidirectionalLinkedTransferAppStateEncoding], [state]);
 }
 
-function encodeAppAction(state: SolidityABIEncoderV2Type): string {
+function encodeAppAction(state: SolidityValueType): string {
   return defaultAbiCoder.encode([unidirectionalLinkedTransferAppActionEncoding], [state]);
 }
 
