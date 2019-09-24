@@ -4,7 +4,7 @@ set -e
 project="indra"
 bucket_name=backups.indra.connext.network
 lifecycle=backup-lifecycle.json
-network="${ETH_NETWORK:-ganache}"
+network="${1:-ganache}"
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 timestamp="`date +"%y%m%d-%H%M%S"`"
