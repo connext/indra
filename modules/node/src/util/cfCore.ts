@@ -9,6 +9,7 @@ export {
   Node as CFCore,
   ProposeMessage,
   RejectInstallVirtualMessage,
+  RejectProposalMessage,
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,

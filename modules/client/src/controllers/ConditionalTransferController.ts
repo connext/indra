@@ -149,36 +149,34 @@ export class ConditionalTransferController extends AbstractController {
       timeout: Zero,
     };
 
-    const res = await this.connext.proposeInstallApp(params);
+    const proposeRes = await this.connext.proposeInstallApp(params);
     // set app instance id
-    this.appId = res.appInstanceId;
+    this.appId = proposeRes.appInstanceId;
 
     try {
       await new Promise((res: () => any, rej: () => any): void => {
         boundResolve = this.resolveInstallTransfer.bind(null, res);
         boundReject = this.rejectInstallTransfer.bind(null, rej);
         this.connext.messaging.subscribe(
-          `indra.node.install.${this.connext.nodePublicIdentifier}`,
+          `indra.node.${this.connext.nodePublicIdentifier}.install.${proposeRes.appInstanceId}`,
           boundResolve,
         );
         this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
       });
-      this.log.info(`App was installed successfully!: ${JSON.stringify(res)}`);
-      return res.appInstanceId;
+      this.log.info(`App was installed successfully!: ${JSON.stringify(proposeRes)}`);
+      return proposeRes.appInstanceId;
     } catch (e) {
       this.log.error(`Error installing app: ${e.toString()}`);
       return undefined;
     } finally {
-      this.cleanupInstallListeners(boundResolve, boundReject);
+      this.cleanupInstallListeners(boundReject, proposeRes.appInstanceId);
     }
   };
 
   // TODO: fix type of data
   private resolveInstallTransfer = (res: (value?: unknown) => void, message: any): any => {
     // TODO: why is it sometimes data vs data.data?
-    const appInstance = message.data.data
-      ? message.data.data.appInstance
-      : message.data.appInstance;
+    const appInstance = message.data.data ? message.data.data : message.data;
 
     if (appInstance.identityHash !== this.appId) {
       // not our app
@@ -204,8 +202,10 @@ export class ConditionalTransferController extends AbstractController {
     return rej(`Install failed. Event data: ${JSON.stringify(msg, replaceBN, 2)}`);
   };
 
-  private cleanupInstallListeners = (boundResolve: any, boundReject: any): void => {
-    this.connext.messaging.unsubscribe(`indra.node.install.${this.connext.nodePublicIdentifier}`);
+  private cleanupInstallListeners = (boundReject: any, appId: string): void => {
+    this.connext.messaging.unsubscribe(
+      `indra.node.${this.connext.nodePublicIdentifier}.install.${appId}`,
+    );
     this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
   };
 

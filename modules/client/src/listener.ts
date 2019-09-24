@@ -197,12 +197,13 @@ export class ConnextListener extends EventEmitter {
     });
 
     this.cfCore.on(CFCoreTypes.RpcMethodName.INSTALL, (data: any) => {
+      const appInstance = data.result.result.appInstance;
       this.log.debug(
-        `Emitting CFCoreTypes.RpcMethodName.INSTALL event: ${JSON.stringify(data.result.result)}`,
+        `Emitting CFCoreTypes.RpcMethodName.INSTALL event: ${JSON.stringify(appInstance)}`,
       );
       this.connext.messaging.publish(
-        `indra.client.install.${this.cfCore.publicIdentifier}`,
-        JSON.stringify(data.result.result),
+        `indra.client.${this.cfCore.publicIdentifier}.install.${appInstance.identityHash}`,
+        JSON.stringify(appInstance),
       );
     });
 
@@ -211,7 +212,7 @@ export class ConnextListener extends EventEmitter {
         `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(data.result.result)}`,
       );
       this.connext.messaging.publish(
-        `indra.client.uninstall.${this.cfCore.publicIdentifier}`,
+        `indra.client.${this.cfCore.publicIdentifier}.uninstall.${data.result.result.appInstanceId}`,
         JSON.stringify(data.result.result),
       );
     });
