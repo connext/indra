@@ -17,13 +17,12 @@ import {
   SaveAlt as ReceiveIcon,
 } from "@material-ui/icons";
 import { Zero } from "ethers/constants";
-import { isHexString, parseEther, formatEther } from "ethers/utils";
-import interval from "interval-promise";
+import { isHexString, formatEther } from "ethers/utils";
 import React, { useCallback, useEffect, useState } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import queryString from "query-string";
 
-import { Currency } from "../utils";
+import { Currency, toBN } from "../utils";
 import { MySnackbar } from "../components/snackBar";
 
 import { QRGenerate } from "./qrCode";
@@ -47,6 +46,8 @@ const style = withStyles(theme => ({
   button: {
     backgroundColor: "#FCA311",
     color: "#FFF",
+    marginBottom: "2em",
+    marginTop: "2em",
   },
 }));
 
@@ -121,7 +122,7 @@ export const RedeemCard = style(props => {
       setRedeemPaymentState(RedeemPaymentStates.OtherError);
       setShowReceipt(false);
     }
-  }, [amount, assetId, channel, paymentId, redeemPaymentState, secret, token, tokenProfile])
+  }, [channel, paymentId, redeemPaymentState, secret, token, tokenProfile])
 
   const generateQrUrl = (secret, paymentId) => {
     return `${window.location.origin}/redeem?secret=${secret}&paymentId=${paymentId}`
@@ -185,7 +186,7 @@ export const RedeemCard = style(props => {
       const link = await channel.getLinkedTransfer(query.paymentId);
       console.log(`Got linked transfer ${paymentId}: ${JSON.stringify(link)}`);
       setAssetId(link.assetId);
-      setAmount(link.amount);
+      setAmount(Currency.DEI(link.amount));
     })()
   }, [channel, location]);
 
@@ -262,6 +263,22 @@ export const RedeemCard = style(props => {
         </Typography>
       </Grid>
 
+      <Grid item xs={12}>
+        <Typography noWrap variant="h5" visible={assetId}>
+          Payment:
+        </Typography>
+      </Grid>
+
+      <Grid item xs={12}>
+        <Typography noWrap variant="p" visible={assetId}>
+           Amount: {amount ? amount.toDAI().format() : "N/A"}
+        </Typography>
+      </Grid>
+
+      <Typography noWrap variant="p" visible={assetId}>
+         Asset: {assetId || "N/A"}
+      </Typography>
+
       {/*
       <Grid item xs={12} style={{marginTop: "5%"}}>
         <RedeemCardContent
@@ -274,7 +291,7 @@ export const RedeemCard = style(props => {
       </Grid>
       */}
 
-      <Grid item xs={6}>
+      <Grid item xs={12}>
         <Button
           className={classes.button}
           disabled={false}
@@ -321,7 +338,7 @@ const getTitle = (redeemPaymentState, amount) => {
       title = "Uh Oh! Payment Failed"
       break
     case RedeemPaymentStates.Success:
-      title = `Payment of $${amount} Redeemed!`
+      title = `Payment of ${amount.format()} Redeemed!`
       break
     case RedeemPaymentStates.Redeeming:
     case RedeemPaymentStates.Collateralizing:
@@ -514,7 +531,7 @@ const RedeemPaymentDialogContent = (redeemPaymentState, amount, swapRate) => {
           </DialogTitle>
           <DialogContent>
             <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
-              Amount: {Currency.DAI(amount, swapRate).toETH().format()}
+              Amount: {amount.format()}
             </DialogContentText>
           </DialogContent>
         </Grid>
