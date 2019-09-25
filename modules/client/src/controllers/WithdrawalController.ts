@@ -3,7 +3,7 @@ import { Node as CFCoreTypes } from "@counterfactual/types";
 import { TransactionResponse } from "ethers/providers";
 import { getAddress } from "ethers/utils";
 
-import { replaceBN } from "../lib/utils";
+import { replaceBN, withdrawalKey } from "../lib/utils";
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
@@ -40,17 +40,17 @@ export class WithdrawalController extends AbstractController {
         this.log.info(`Withdraw Response: ${JSON.stringify(withdrawResponse, replaceBN, 2)}`);
         const minTx: CFCoreTypes.MinimalTransaction = withdrawResponse.transaction;
         // set the withdrawal tx in the store
-        // TODO: better way to set store path
         await this.connext.store.set([
           {
-            path: `CF_NODE:store/${this.cfCore.publicIdentifier}/latestNodeSubmittedWithdrawal`,
-            value: transaction,
+            path: withdrawalKey(this.connext.publicIdentifier),
+            value: { tx: minTx, retry: 0 },
           },
         ]);
 
-        await this.connext.watchForUserWithdrawal(minTx);
-
         transaction = await this.node.withdraw(minTx);
+
+        await this.connext.watchForUserWithdrawal();
+
         this.log.info(`Node Withdraw Response: ${JSON.stringify(transaction, replaceBN, 2)}`);
       } else {
         this.log.info(`Calling ${CFCoreTypes.RpcMethodName.WITHDRAW}`);
