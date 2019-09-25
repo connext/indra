@@ -147,6 +147,8 @@ export class MockNodeClientApi implements INodeApiClient {
     return MockNodeClientApi.returnValues.withdraw;
   }
 
+  public async fetchLinkedTransfer(paymentId: string): Promise<any> {}
+
   public async resolveLinkedTransfer(): Promise<void> {}
 
   public async addPaymentProfile(): Promise<any> {

@@ -108,7 +108,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   // create the lock service for cfCore
   logger.info("using node's proxy lock service");
-  let lockService: ProxyLockService = new ProxyLockService(messaging);
+  const lockService: ProxyLockService = new ProxyLockService(messaging);
 
   // create new cfCore to inject into internal instance
   logger.info("creating new cf module");
@@ -239,6 +239,10 @@ export abstract class ConnextChannel {
 
   public getChannel = async (): Promise<GetChannelResponse> => {
     return await this.internal.node.getChannel();
+  };
+
+  public getLinkedTransfer = async (paymentId: string): Promise<any> => {
+    return await this.internal.node.fetchLinkedTransfer(paymentId);
   };
 
   // TODO: do we need to expose here?
