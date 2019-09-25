@@ -52,6 +52,7 @@ export type InternalClientOptions = ClientOptions & {
   node: NodeApiClient;
   nodePublicIdentifier: string;
   ethProvider: providers.JsonRpcProvider;
+  store: CFCoreTypes.IStoreService;
 };
 
 // TODO: define properly!!

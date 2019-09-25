@@ -9,6 +9,7 @@ import {
   ChannelState,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
+  ConnextNodeStorePrefix,
   CreateChannelResponse,
   DepositParameters,
   GetChannelResponse,
@@ -108,7 +109,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   // create the lock service for cfCore
   logger.info("using node's proxy lock service");
-  let lockService: ProxyLockService = new ProxyLockService(messaging);
+  const lockService: ProxyLockService = new ProxyLockService(messaging);
 
   // create new cfCore to inject into internal instance
   logger.info("creating new cf module");
@@ -144,7 +145,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
         });
 
         const creationData = await node.createChannel();
-        logger.info(`created channel, transaction: ${creationData}`);
+        logger.info(`created channel, transaction: ${JSON.stringify(creationData)}`);
       },
     );
     logger.info(`create channel event data: ${JSON.stringify(creationEventData, replaceBN, 2)}`);
@@ -164,6 +165,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     network,
     node,
     nodePublicIdentifier: config.nodePublicIdentifier,
+    store,
     ...opts, // use any provided opts by default
   });
   await client.registerSubscriptions();
@@ -229,6 +231,10 @@ export abstract class ConnextChannel {
     params: ConditionalTransferParameters,
   ): Promise<ConditionalTransferResponse> => {
     return await this.internal.conditionalTransfer(params);
+  };
+
+  public restoreStateFromNode = async (mnemonic: string): Promise<void> => {
+    return await this.internal.restoreStateFromNode(mnemonic);
   };
 
   ///////////////////////////////////
@@ -494,6 +500,29 @@ export class ConnextInternal extends ConnextChannel {
     params: ConditionalTransferParameters,
   ): Promise<ConditionalTransferResponse> => {
     return await this.conditionalTransferController.conditionalTransfer(params);
+  };
+
+  public restoreStateFromNode = async (mnemonic: string): Promise<any> => {
+    const hdNode = HDNode.fromMnemonic(mnemonic);
+    const xpriv = hdNode.extendedKey;
+    const xpub = hdNode.derivePath("m/44'/60'/0'/25446").neuter().extendedKey;
+    const states = await this.node.restoreStates(xpub);
+    this.logger.info(`Found states to restore: ${JSON.stringify(states)}`);
+
+    // TODO: this should prob not be hardcoded like this
+    const actualStates = states.map((state: { path: string; value: object }) => {
+      return {
+        path: state.path
+          .replace(this.nodePublicIdentifier, xpub)
+          .replace(ConnextNodeStorePrefix, "store"),
+        value: state.value[state.path],
+      };
+    });
+    this.opts.store.reset();
+    await this.opts.store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }, ...actualStates]);
+    // recreate client with new mnemonic
+    const client = await connect({ ...this.opts, mnemonic });
+    return client;
   };
 
   ///////////////////////////////////

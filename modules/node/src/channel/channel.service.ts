@@ -5,6 +5,8 @@ import { AddressZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { BigNumber, getAddress } from "ethers/utils";
 
+import { CFCoreRecord } from "../cfCore/cfCore.entity";
+import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
@@ -22,6 +24,7 @@ export class ChannelService {
     private readonly cfCoreService: CFCoreService,
     private readonly configService: ConfigService,
     private readonly channelRepository: ChannelRepository,
+    private readonly cfCoreRepository: CFCoreRecordRepository,
   ) {}
 
   /**
@@ -216,5 +219,14 @@ export class ChannelService {
 
     const wallet = this.configService.getEthWallet();
     return await wallet.sendTransaction(tx);
+  }
+
+  async getChannelStates(userPublicIdentifier: string): Promise<CFCoreRecord[]> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
+    }
+
+    return await this.cfCoreRepository.findRecordsForRestore(channel.multisigAddress);
   }
 }

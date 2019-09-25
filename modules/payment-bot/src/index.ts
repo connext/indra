@@ -208,6 +208,11 @@ async function run(): Promise<void> {
     console.log(`Installed apps: ${await client.getAppInstances()}`);
   }
 
+  if (config.restore) {
+    console.log(`Restoring states from the node with mnemonic: ${config.restore}`);
+    client = await client.restoreStateFromNode(config.restore);
+  }
+
   exitOrLeaveOpen(config);
   console.log(`Waiting to receive transfers at ${client.opts.cfCore.publicIdentifier}`);
 }

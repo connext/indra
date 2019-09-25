@@ -21,6 +21,8 @@ my.xpubRegex = /xpub[a-zA-Z0-9]{107}/i
 // Vanilla cypress compilations
 // These functions behave a lot like cy.whatever functions
 
+my.isStarting = () => cy.contains('span', /starting/i).should('exist')
+
 my.doneStarting = () => cy.contains('span', /starting/i).should('not.exist')
 
 my.goToDeposit = () => cy.get(`a[href="/deposit"]`).click() && my.doneStarting()
@@ -60,6 +62,7 @@ my.restoreMnemonic = (mnemonic) => {
   cy.get('input[type="text"]').clear().type(mnemonic)
   cy.get('button').find('svg').click()
   my.goBack()
+  my.isStarting()
   my.doneStarting()
 }
 
