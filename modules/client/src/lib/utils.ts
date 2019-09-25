@@ -1,3 +1,4 @@
+import { ConnextClientStorePrefix } from "@connext/types";
 import { utils } from "ethers";
 import { BigNumber, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
@@ -80,7 +81,7 @@ export const createRandom32ByteHexString = (): string => {
 };
 
 export const withdrawalKey = (xpub: string): string => {
-  return `store/${xpub}/latestNodeSubmittedWithdrawal`;
+  return `${ConnextClientStorePrefix}/${xpub}/latestNodeSubmittedWithdrawal`;
 };
 
 export const createPaymentId = createRandom32ByteHexString;
