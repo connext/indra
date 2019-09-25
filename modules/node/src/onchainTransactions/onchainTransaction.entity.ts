@@ -1,0 +1,71 @@
+import { BigNumber } from "ethers/utils";
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+
+import { Channel } from "../channel/channel.entity";
+
+export enum TransactionReason {
+  USER_WITHDRAWAL = "USER_WITHDRAWAL",
+}
+
+@Entity()
+export class OnchainTransaction {
+  @PrimaryGeneratedColumn()
+  id!: number;
+
+  @Column("text", {
+    default: TransactionReason.USER_WITHDRAWAL,
+  })
+  reason!: TransactionReason;
+
+  @Column("text", {
+    transformer: {
+      from: (value: string): BigNumber => new BigNumber(value),
+      to: (value: BigNumber): string => value.toString(),
+    },
+  })
+  value!: BigNumber;
+
+  @Column("text", {
+    transformer: {
+      from: (value: string): BigNumber => new BigNumber(value),
+      to: (value: BigNumber): string => value.toString(),
+    },
+  })
+  gasPrice!: BigNumber;
+
+  @Column("text", {
+    transformer: {
+      from: (value: string): BigNumber => new BigNumber(value),
+      to: (value: BigNumber): string => value.toString(),
+    },
+  })
+  gasLimit!: BigNumber;
+
+  @Column("number")
+  nonce!: number;
+
+  @Column("text")
+  to!: string;
+
+  @Column("text")
+  from!: string;
+
+  @Column("text")
+  hash!: string;
+
+  @Column("text")
+  data!: string;
+
+  @Column("number")
+  v!: number;
+
+  @Column("text")
+  r!: string;
+
+  @Column("text")
+  s!: string;
+
+  // should this just be a ref to user pub id?
+  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.transactions)
+  channel!: Channel;
+}
