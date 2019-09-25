@@ -1,10 +1,6 @@
-import { EntityManager, EntityRepository, Repository } from "typeorm";
-
-import { CLogger } from "../util";
+import { EntityRepository, Like, Repository } from "typeorm";
 
 import { CFCoreRecord } from "./cfCore.entity";
-
-// const logger = new CLogger("CFCoreRecordRepository");
 
 type StringKeyValue = { [path: string]: StringKeyValue };
 
@@ -16,7 +12,7 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
 
   async get(path: string): Promise<StringKeyValue | string | undefined> {
     // logger.log(`Getting path from store: ${path}`);
-    let res;
+    let res: any;
     // FIXME: this queries for all channels or proposed app instances, which
     // are nested under the respective keywords, hence the 'like' keyword
     // Action item: this hack won't be needed when a more robust schema around
@@ -65,5 +61,9 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
       // logger.log(`Saving record: ${JSON.stringify(record)}`);
       await this.save(record);
     }
+  }
+
+  async findRecordsForRestore(multisigAddress: string): Promise<CFCoreRecord[]> {
+    return await this.find({ path: Like(`%${multisigAddress}`) });
   }
 }
