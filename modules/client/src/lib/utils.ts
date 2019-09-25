@@ -79,5 +79,9 @@ export const createRandom32ByteHexString = (): string => {
   return hexlify(randomBytes(32));
 };
 
+export const withdrawalKey = (xpub: string): string => {
+  return `store/${xpub}/latestNodeSubmittedWithdrawal`;
+};
+
 export const createPaymentId = createRandom32ByteHexString;
 export const createPreImage = createRandom32ByteHexString;
