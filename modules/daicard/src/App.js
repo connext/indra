@@ -184,6 +184,7 @@ class App extends React.Component {
       xpub: channel.publicIdentifier,
     });
 
+    await this.addDefaultPaymentProfile();
     await this.startPoller();
   }
 
@@ -194,7 +195,6 @@ class App extends React.Component {
   startPoller = async () => {
     await this.refreshBalances();
     await this.setDepositLimits();
-    await this.addDefaultPaymentProfile();
     await this.autoDeposit();
     await this.autoSwap();
     interval(async (iteration, stop) => {
@@ -225,7 +225,8 @@ class App extends React.Component {
       assetId: token.address,
     });
     this.setState({ tokenProfile })
-    return;
+    console.log(`Got a default token profile: ${JSON.stringify(this.state.tokenProfile)}`)
+    return tokenProfile;
   }
 
   refreshBalances = async () => {
@@ -356,7 +357,7 @@ class App extends React.Component {
         minimumMaintainedCollateral: collateralNeeded,
         assetId: token.address,
       });
-      console.log(`Got a token profile: ${JSON.stringify(tokenProfile)}`)
+      console.log(`Got a new token profile: ${JSON.stringify(tokenProfile)}`)
       this.setState({ tokenProfile })
       await channel.requestCollateral(token.address);
       collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress])
@@ -521,7 +522,7 @@ class App extends React.Component {
                   pending={pending}
                   swapRate={swapRate}
                   token={token}
-                  tokenProfile={tokenProfile}
+                  tokenProfile={this.state.tokenProfile}
                 />
               )}
             />

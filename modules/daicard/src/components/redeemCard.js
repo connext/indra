@@ -43,7 +43,11 @@ const style = withStyles(theme => ({
   icon: {
     width: "40px",
     height: "40px"
-  }
+  },
+  button: {
+    backgroundColor: "#FCA311",
+    color: "#FFF",
+  },
 }));
 
 export const RedeemCard = style(props => {
@@ -60,9 +64,8 @@ export const RedeemCard = style(props => {
   // Wrapping this in useCallback so that useEffect knows when to re-render
   // https://reactjs.org/docs/hooks-faq.html#is-it-safe-to-omit-functions-from-the-list-of-dependencies
   const redeemPayment = useCallback(async () => {
-    console.log(`Attempting to redeem payment..`)
+    console.log(`Attempting to redeem payment.`)
     if (!channel || !tokenProfile) { return; }
-    console.log(`We have a channel & token profile...`)
     // only proceed if status is redeeming
     if (redeemPaymentState !== RedeemPaymentStates.Redeeming) {
       console.log("Incorrect payment state, expected Redeeming, got", Object.keys(RedeemPaymentStates)[redeemPaymentState]);
@@ -74,11 +77,9 @@ export const RedeemCard = style(props => {
       return;
     }
     try {
-
       // if the token profile cannot handle the amount
       // update the profile, the hub will collateralize the
       // correct amount anyway from the listeners
-
       // Request token collateral if we don't have any yet
       let freeTokenBalance = await channel.getFreeBalance(token.address);
       let hubFreeBalanceAddress = Object.keys(freeTokenBalance).filter(
@@ -90,15 +91,7 @@ export const RedeemCard = style(props => {
       }
       freeTokenBalance = await channel.getFreeBalance(token.address);
       console.log(`Hub has collateralized us with ${formatEther(freeTokenBalance[hubFreeBalanceAddress])} tokens`)
-
-      if (assetId.toLowerCase() !== token.address.toLowerCase()) {
-        console.error("Received link with incorrect token address");
-        return;
-      }
-
       const result = await channel.resolveCondition({
-        amount: parseEther(amount).toString(),
-        assetId,
         conditionType: "LINKED_TRANSFER",
         paymentId,
         preImage: secret,
@@ -130,9 +123,8 @@ export const RedeemCard = style(props => {
     }
   }, [amount, assetId, channel, paymentId, redeemPaymentState, secret, token, tokenProfile])
 
-  const generateQrUrl = (secret, paymentId, assetId, amount) => {
-    return `${window.location.origin}/redeem?secret=${secret}&paymentId=${paymentId}&` +
-      `assetId=${assetId}&amount=${amount}`
+  const generateQrUrl = (secret, paymentId) => {
+    return `${window.location.origin}/redeem?secret=${secret}&paymentId=${paymentId}`
   }
 
   const closeModal = () => {
@@ -183,15 +175,21 @@ export const RedeemCard = style(props => {
   }
 
   useEffect(() => {
-    console.log(`useEffect location activated!`)
-    const query = queryString.parse(location.search);
-    console.log(`Redeem card launched with url query: ${JSON.stringify(query)}`)
-    setSecret(query.setSecret);
-    setPaymentId(query.paymentId);
-    setAssetId(query.assetId);
-    setAmount(query.amount);
-  }, [location]);
+    (async () => {
+      console.log(`useEffect location activated!`)
+      const query = queryString.parse(location.search);
+      console.log(`Redeem card launched with url query: ${JSON.stringify(query)}`)
+      setSecret(query.secret);
+      setPaymentId(query.paymentId);
+      if (!channel) { return; }
+      const link = await channel.getLinkedTransfer(query.paymentId);
+      console.log(`Got linked transfer ${paymentId}: ${JSON.stringify(link)}`);
+      setAssetId(link.assetId);
+      setAmount(link.amount);
+    })()
+  }, [channel, location]);
 
+  /*
   useEffect(() => {
     console.log(`Other useEffect activated!`)
     // set state vars if they exist
@@ -219,6 +217,7 @@ export const RedeemCard = style(props => {
     return () => { clearInterval(interval) };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  */
 
   return (
     <Grid>
@@ -263,6 +262,7 @@ export const RedeemCard = style(props => {
         </Typography>
       </Grid>
 
+      {/*
       <Grid item xs={12} style={{marginTop: "5%"}}>
         <RedeemCardContent
           url={generateQrUrl(secret, paymentId, assetId, amount)}
@@ -271,6 +271,20 @@ export const RedeemCard = style(props => {
           validateUrl={validateUrl}
           redeemPaymentState={redeemPaymentState}
         />
+      </Grid>
+      */}
+
+      <Grid item xs={6}>
+        <Button
+          className={classes.button}
+          disabled={false}
+          fullWidth
+          onClick={redeemPayment}
+          size="large"
+          variant="contained"
+        >
+          Redeem
+        </Button>
       </Grid>
 
       <Grid item xs={12}>
@@ -312,7 +326,7 @@ const getTitle = (redeemPaymentState, amount) => {
     case RedeemPaymentStates.Redeeming:
     case RedeemPaymentStates.Collateralizing:
     default:
-      title = "Redeeming Payment..."
+      title = "What's up?"
       break
   }
   return title

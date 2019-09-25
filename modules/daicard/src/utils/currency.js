@@ -50,10 +50,10 @@ export class Currency {
     this.daiRate = typeof daiRate !== 'undefined' ? daiRate : '1'
     this.daiRateGiven = !!daiRate
     try {
-      this.wad = this.toWad(amount)
-      this.ray = this.toRay(amount)
+      this.wad = this.toWad(amount._hex ? toBN(amount._hex) : amount)
+      this.ray = this.toRay(amount._hex ? toBN(amount._hex) : amount)
     } catch (e) {
-      throw new Error(`Invalid currency amount: ${amount}`)
+      throw new Error(`Invalid currency amount (${amount}): ${e}`)
     }
   }
 

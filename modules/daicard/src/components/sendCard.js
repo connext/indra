@@ -166,9 +166,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
       );
       history.push({
         pathname: "/redeem",
-        search:
-          `?secret=${link.preImage}&paymentId=${link.paymentId}&` +
-          `assetId=${token.address}&amount=${amount.value.amount}`,
+        search: `?paymentId=${link.paymentId}&secret=${link.preImage}`,
         state: { isConfirm: true, secret: link.preImage, amountToken: amount.value.amount },
       });
     } catch (e) {
