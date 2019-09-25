@@ -26,14 +26,12 @@ import {
   TransferParameters,
   WithdrawParameters,
 } from "@connext/types";
-import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
 import { Address, AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { BigNumber, HDNode, Network } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
-import interval from "interval-promise";
 import "regenerator-runtime/runtime";
 
 import { ConditionalTransferController } from "./controllers/ConditionalTransferController";
@@ -44,7 +42,12 @@ import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { CFCore, CreateChannelMessage, EXTENDED_PRIVATE_KEY_PATH } from "./lib/cfCore";
 import { Logger } from "./lib/logger";
-import { freeBalanceAddressFromXpub, publicIdentifierToAddress, replaceBN } from "./lib/utils";
+import {
+  freeBalanceAddressFromXpub,
+  publicIdentifierToAddress,
+  replaceBN,
+  withdrawalKey,
+} from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
@@ -425,10 +428,6 @@ export class ConnextInternal extends ConnextChannel {
   private conditionalTransferController: ConditionalTransferController;
   private resolveConditionController: ResolveConditionController;
 
-  ////////////////////////////////////////
-  // Private monitoring
-  private withdrawalRetries: number = 0;
-
   constructor(opts: InternalClientOptions) {
     super(opts);
 
@@ -504,29 +503,59 @@ export class ConnextInternal extends ConnextChannel {
     return await this.conditionalTransferController.conditionalTransfer(params);
   };
 
-  public watchForUserWithdrawal = async (tx: CFCoreTypes.MinimalTransaction): Promise<void> => {
-    // poll for withdrawal tx submitted to multisig matching tx data
-    const maxBlocks = 15; // wait 15 blocks before retrying/self-submitting
-    const startingBlock = await this.ethProvider.getBlockNumber();
-    let found;
-    interval(async (iteration, stop): Promise<void> => {
-      const currentBlock = await this.ethProvider.getBlockNumber();
-      if (currentBlock <= startingBlock) {
-        return;
-      }
-      found = await this.checkForUserWithdrawal(currentBlock, tx);
-      if (found || currentBlock - startingBlock > maxBlocks) {
-        stop();
-      }
-    }, 3000);
+  public getLatestNodeSubmittedWithdrawal = async (): Promise<
+    { retry: number; tx: CFCoreTypes.MinimalTransaction } | undefined
+  > => {
+    const value = await this.store.get(withdrawalKey(this.cfCore.publicIdentifier));
 
-    if (found) {
-      this.withdrawalRetries = 0;
-      return;
+    if (!value) {
+      return undefined;
     }
 
-    // retry or self-submit
-    await this.retryNodeSubmittedWithdrawal(tx);
+    const noRetry = value.retry === undefined || value.retry === null;
+    if (!value.tx || noRetry) {
+      const msg = `Can not find tx or retry in store under key ${withdrawalKey(
+        this.cfCore.publicIdentifier,
+      )}`;
+      this.logger.error(msg);
+      throw new Error(msg);
+    }
+    return value;
+  };
+
+  public watchForUserWithdrawal = async (): Promise<void> => {
+    // poll for withdrawal tx submitted to multisig matching tx data
+    const maxBlocks = 15;
+    const startingBlock = await this.ethProvider.getBlockNumber();
+
+    // TODO: poller should not be completely blocking, but safe to leave for now
+    // because the channel should be blocked
+    try {
+      await new Promise((resolve, reject) => {
+        this.ethProvider.on("block", async (blockNumber: number) => {
+          const found = await this.checkForUserWithdrawal(blockNumber);
+          if (found) {
+            await this.store.set([
+              { path: withdrawalKey(this.publicIdentifier), value: undefined },
+            ]);
+            this.ethProvider.removeAllListeners("block");
+            resolve();
+          }
+          if (blockNumber - startingBlock >= maxBlocks) {
+            this.ethProvider.removeAllListeners("block");
+            console.log(`try to retry`);
+            reject(
+              `More than ${maxBlocks} have passed, blocks elapsed: ${blockNumber - startingBlock}`,
+            );
+          }
+        });
+      });
+    } catch (e) {
+      if (e.includes(`More than ${maxBlocks} have passed`)) {
+        console.log(`retrying this whole thing`);
+        await this.retryNodeSubmittedWithdrawal();
+      }
+    }
   };
 
   ///////////////////////////////////
@@ -1015,48 +1044,57 @@ export class ConnextInternal extends ConnextChannel {
     return undefined;
   };
 
-  private retryNodeSubmittedWithdrawal = async (
-    tx: CFCoreTypes.MinimalTransaction,
-  ): Promise<void> => {
-    this.withdrawalRetries += 1;
-    if (this.withdrawalRetries >= 3) {
-      this.logger.error(
-        `Tried to have node submit withdrawal 3 times and it did not work, submitting from wallet.`,
-      );
+  private retryNodeSubmittedWithdrawal = async (): Promise<void> => {
+    const val = await this.getLatestNodeSubmittedWithdrawal();
+    if (!val) {
+      this.logger.error(`No transaction found to retry`);
+      return;
+    }
+    let { retry, tx } = val;
+    retry += 1;
+    if (retry >= 3) {
+      const msg = `Tried to have node submit withdrawal 3 times and it did not work, try submitting from wallet.`;
+      this.logger.error(msg);
       // TODO: make this submit from wallet :)
       // but this is weird, could take a while and may have gas issues.
       // may not be the best way to do this
-      throw new Error(`Someone should implement this lul`);
+      throw new Error(msg);
     }
     await this.node.withdraw(tx);
-    await this.watchForUserWithdrawal(tx);
+    await this.watchForUserWithdrawal();
   };
 
-  private checkForUserWithdrawal = async (
-    inBlock: number,
-    tx: CFCoreTypes.MinimalTransaction,
-  ): Promise<boolean> => {
-    // get the transaction hash that we should be looking for from
-    // the contract method
-    const multisigTxs = await this.ethProvider.getTransactionCount(this.multisigAddress, inBlock);
-    if (multisigTxs === 0) {
+  private checkForUserWithdrawal = async (inBlock: number): Promise<boolean> => {
+    const val = await this.getLatestNodeSubmittedWithdrawal();
+    if (!val) {
+      this.logger.error(`No transaction found in store.`);
       return false;
     }
 
-    const multisig = new Contract(
-      this.multisigAddress,
-      MinimumViableMultisig.abi,
-      this.ethProvider,
-    );
-
-    const expectedHash = await multisig.functions.getTransactionHash(
-      tx.to,
-      tx.value,
-      tx.data,
-      0, // TODO: use enum MultisigOperation.Call
-    );
+    const { tx } = val;
+    // get the transaction hash that we should be looking for from
+    // the contract method
+    const txsTo = await this.ethProvider.getTransactionCount(tx.to, inBlock);
+    if (txsTo === 0) {
+      return false;
+    }
 
     const block = await this.ethProvider.getBlock(inBlock);
-    return block.transactions.includes(expectedHash);
+    const { transactions } = block;
+    if (transactions.length === 0) {
+      return false;
+    }
+
+    for (const transactionHash of transactions) {
+      const transaction = await this.ethProvider.getTransaction(transactionHash);
+      if (
+        transaction.to === tx.to &&
+        transaction.value.eq(tx.value) &&
+        transaction.data === tx.data
+      ) {
+        return true;
+      }
+    }
+    return false;
   };
 }
