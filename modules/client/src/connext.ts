@@ -543,7 +543,6 @@ export class ConnextInternal extends ConnextChannel {
           }
           if (blockNumber - startingBlock >= maxBlocks) {
             this.ethProvider.removeAllListeners("block");
-            console.log(`try to retry`);
             reject(
               `More than ${maxBlocks} have passed, blocks elapsed: ${blockNumber - startingBlock}`,
             );
@@ -552,7 +551,7 @@ export class ConnextInternal extends ConnextChannel {
       });
     } catch (e) {
       if (e.includes(`More than ${maxBlocks} have passed`)) {
-        console.log(`retrying this whole thing`);
+        this.log.debug(`retrying node submission`);
         await this.retryNodeSubmittedWithdrawal();
       }
     }
