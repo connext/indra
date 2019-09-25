@@ -67,7 +67,7 @@ export class ChannelRepository extends Repository<Channel> {
   async getPaymentProfileForChannelAndToken(
     userPublicIdentifier: string,
     assetId: string = AddressZero,
-  ): Promise<PaymentProfile> {
+  ): Promise<PaymentProfile | undefined> {
     const channel = await this.createQueryBuilder("channel")
       .leftJoinAndSelect("channel.paymentProfiles", "paymentProfiles")
       .where("channel.userPublicIdentifier = :userPublicIdentifier", { userPublicIdentifier })
@@ -80,19 +80,22 @@ export class ChannelRepository extends Repository<Channel> {
     }
 
     const profile = channel.paymentProfiles.find(
-      (prof: PaymentProfile) => prof.assetId === assetId.toLowerCase(),
+      (prof: PaymentProfile) => prof.assetId.toLowerCase() === assetId.toLowerCase(),
     );
 
     if (!profile) {
       if (assetId === AddressZero) {
         return defaultPaymentProfileEth;
       }
-      // TODO: add default token profiles?
-      throw new Error(
-        `Payment profile does not exists for user ${userPublicIdentifier}
-        and token ${assetId}`,
-      );
     }
     return profile;
+  }
+
+  async setInflightCollateralization(
+    channel: Channel,
+    collateralizationInFlight: boolean,
+  ): Promise<Channel> {
+    channel.collateralizationInFlight = collateralizationInFlight;
+    return await this.save(channel);
   }
 }

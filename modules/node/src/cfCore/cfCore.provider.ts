@@ -1,32 +1,34 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { EXTENDED_PRIVATE_KEY_PATH, Node } from "@counterfactual/node";
-import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
+import { RedisLockService } from "@connext/redis-lock";
 import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { Wallet } from "ethers";
 import { HDNode } from "ethers/utils";
 
 import { ConfigService } from "../config/config.service";
-import { MessagingProviderId, NodeProviderId, PostgresProviderId } from "../constants";
+import { CFCoreProviderId, MessagingProviderId } from "../constants";
 import { CLogger, freeBalanceAddressFromXpub } from "../util";
+import { CFCore, EXTENDED_PRIVATE_KEY_PATH } from "../util/cfCore";
 
-const logger = new CLogger("NodeProvider");
+import { CFCoreRecordRepository } from "./cfCore.repository";
 
-export const nodeProviderFactory: Provider = {
-  inject: [ConfigService, MessagingProviderId, PostgresProviderId],
-  provide: NodeProviderId,
+const logger = new CLogger("CFCoreProvider");
+
+export const cfCoreProviderFactory: Provider = {
+  inject: [ConfigService, MessagingProviderId, CFCoreRecordRepository],
+  provide: CFCoreProviderId,
   useFactory: async (
     config: ConfigService,
     messaging: IMessagingService,
-    postgres: PostgresServiceFactory,
-  ): Promise<Node> => {
-    logger.log("Creating store");
-    const store = postgres.createStoreService("connextHub");
-    logger.log("Store created");
-    logger.log(`Creating Node with mnemonic: ${config.getMnemonic()}`);
+    store: CFCoreRecordRepository,
+  ): Promise<CFCore> => {
+    // create redis lock servuce
+    logger.log(`instantiating hub locking service with redis: ${config.getRedisUrl()}`);
+    const lockService = new RedisLockService(config.getRedisUrl());
+
     await store.set([
       {
-        key: EXTENDED_PRIVATE_KEY_PATH,
+        path: EXTENDED_PRIVATE_KEY_PATH,
         value: HDNode.fromMnemonic(config.getMnemonic()).extendedKey,
       },
     ]);
@@ -38,33 +40,20 @@ export const nodeProviderFactory: Provider = {
     logger.log(
       `Balance of signer address ${addr} on ${networkName} (chainId ${chainId}): ${balance}`,
     );
-    const node = await Node.create(
-      messaging,
+    const cfCore = await CFCore.create(
+      messaging as any, // TODO: FIX
       store,
-      { STORE_KEY_PREFIX: "store" },
+      { STORE_KEY_PREFIX: "ConnextHub" },
       provider,
       await config.getContractAddresses(),
+      lockService,
     );
-    logger.log("Node created");
-    logger.log(`Public Identifier ${JSON.stringify(node.publicIdentifier)}`);
+    logger.log("CFCore created");
+    logger.log(`Public Identifier ${JSON.stringify(cfCore.publicIdentifier)}`);
     logger.log(
-      `Free balance address ${JSON.stringify(freeBalanceAddressFromXpub(node.publicIdentifier))}`,
+      `Free balance address ${JSON.stringify(freeBalanceAddressFromXpub(cfCore.publicIdentifier))}`,
     );
-    return node;
-  },
-};
-
-// TODO: bypass factory
-export const postgresProviderFactory: Provider = {
-  inject: [ConfigService],
-  provide: PostgresProviderId,
-  useFactory: async (config: ConfigService): Promise<PostgresServiceFactory> => {
-    const pg = new PostgresServiceFactory({
-      ...config.getPostgresConfig(),
-      type: "postgres",
-    });
-    await pg.connectDb();
-    return pg;
+    return cfCore;
   },
 };
 

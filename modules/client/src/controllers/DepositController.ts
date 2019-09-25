@@ -1,11 +1,10 @@
 import { BigNumber, ChannelState, convert, DepositParameters } from "@connext/types";
-import { Node as CFModuleTypes } from "@counterfactual/types";
+import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { getAddress } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
-import { publicIdentifierToAddress } from "../lib/utils";
+import { publicIdentifierToAddress, replaceBN } from "../lib/utils";
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
@@ -13,7 +12,6 @@ import { AbstractController } from "./AbstractController";
 
 export class DepositController extends AbstractController {
   public deposit = async (params: DepositParameters): Promise<ChannelState> => {
-    params.assetId = params.assetId ? getAddress(params.assetId) : undefined;
     const myFreeBalanceAddress = this.connext.freeBalanceAddress;
 
     const { assetId, amount } = convert.Deposit("bignumber", params);
@@ -35,9 +33,9 @@ export class DepositController extends AbstractController {
     this.log.info("Registered!");
 
     try {
-      this.log.info(`Calling ${CFModuleTypes.RpcMethodName.DEPOSIT}`);
+      this.log.info(`Calling ${CFCoreTypes.RpcMethodName.DEPOSIT}`);
       const depositResponse = await this.connext.cfDeposit(amount, assetId);
-      this.log.info(`Deposit Response: ${JSON.stringify(depositResponse, null, 2)}`);
+      this.log.info(`Deposit Response: ${JSON.stringify(depositResponse, replaceBN, 2)}`);
 
       const postDepositBalances = await this.connext.getFreeBalance(assetId);
 
@@ -73,7 +71,7 @@ export class DepositController extends AbstractController {
   ): Promise<string | undefined> => {
     // check asset balance of address
     // TODO: fix for non-eth balances
-    const depositAddr = publicIdentifierToAddress(this.cfModule.publicIdentifier);
+    const depositAddr = publicIdentifierToAddress(this.cfCore.publicIdentifier);
     let bal: BigNumber;
     if (assetId === AddressZero) {
       bal = await this.ethProvider.getBalance(depositAddr);
@@ -103,24 +101,24 @@ export class DepositController extends AbstractController {
   ////// Listener registration/deregistration
   private registerListeners(): void {
     this.listener.registerCfListener(
-      CFModuleTypes.EventName.DEPOSIT_CONFIRMED,
+      CFCoreTypes.EventName.DEPOSIT_CONFIRMED,
       this.depositConfirmedCallback,
     );
 
     this.listener.registerCfListener(
-      CFModuleTypes.EventName.DEPOSIT_FAILED,
+      CFCoreTypes.EventName.DEPOSIT_FAILED,
       this.depositFailedCallback,
     );
   }
 
   private removeListeners(): void {
     this.listener.removeCfListener(
-      CFModuleTypes.EventName.DEPOSIT_CONFIRMED,
+      CFCoreTypes.EventName.DEPOSIT_CONFIRMED,
       this.depositConfirmedCallback,
     );
 
     this.listener.removeCfListener(
-      CFModuleTypes.EventName.DEPOSIT_FAILED,
+      CFCoreTypes.EventName.DEPOSIT_FAILED,
       this.depositFailedCallback,
     );
   }

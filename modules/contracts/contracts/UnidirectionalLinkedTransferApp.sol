@@ -1,10 +1,11 @@
-pragma solidity 0.5.10;
+pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
+/* solium-disable-next-line */
+import "@counterfactual/cf-adjudicator-contracts/contracts/interfaces/CounterfactualApp.sol";
+/* solium-disable-next-line */
+import "@counterfactual/cf-funding-protocol-contracts/contracts/libs/LibOutcome.sol";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-
-import "@counterfactual/contracts/contracts/interfaces/CounterfactualApp.sol";
-import "@counterfactual/contracts/contracts/libs/LibOutcome.sol";
 
 
 /// @title Unidirectional Linked Transfer App
@@ -114,12 +115,12 @@ contract UnidirectionalLinkedTransferApp is CounterfactualApp {
             LibOutcome.CoinTransfer(
               state.transfers[0].to,
               /* should always be 0 */
-              state.transfers[0].amount
+              state.transfers[1].amount
             ),
             LibOutcome.CoinTransfer(
               state.transfers[1].to,
               /* should always be full value of linked payment */
-              state.transfers[1].amount
+              state.transfers[0].amount
             )
           ]),
           /* link hash */
@@ -142,11 +143,11 @@ contract UnidirectionalLinkedTransferApp is CounterfactualApp {
           LibOutcome.CoinTransfer[2]([
             LibOutcome.CoinTransfer(
               state.transfers[0].to,
-              state.transfers[1].amount
+              state.transfers[0].amount
             ),
             LibOutcome.CoinTransfer(
               state.transfers[1].to,
-              state.transfers[0].amount
+              state.transfers[1].amount
             )
           ]),
           /* link hash */

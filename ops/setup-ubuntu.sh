@@ -1,10 +1,11 @@
 #!/bin/bash
 set -e
 
+project="indra"
 hostname="$1"
 network="${2:-rinkeby}"
 user="ubuntu"
-key_name="indra_mnemonic_$network" # name of docker secret to store mnemonic in
+key_name="${project}_mnemonic_$network" # name of docker secret to store mnemonic in
 pubkey="$HOME/.ssh/circleci.pub"
 prvkey="$HOME/.ssh/connext-aws"
 
@@ -123,7 +124,7 @@ docker swarm init "--advertise-addr=\$privateip" 2> /dev/null || true
 if [[ -n "\`docker secret ls | grep "$key_name"\`" ]]
 then echo "A secret called $key_name already exists, aborting key load"
 else
-  id="\`echo $key | tr -d ' \n\r' | docker secret create $key_name -\`"
+  id="\`echo $key | tr -d '\n\r' | docker secret create $key_name -\`"
   if [[ "$?" == "0" ]]
   then
     echo "Successfully loaded private key into secret store"

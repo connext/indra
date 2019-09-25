@@ -1,5 +1,9 @@
 import { utils } from "ethers";
+import { BigNumber, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
+
+export const replaceBN = (key: string, value: any): any =>
+  value && value._hex ? value.toString() : value;
 
 // Capitalizes first char of a string
 export const capitalize = (str: string): string =>
@@ -43,6 +47,8 @@ export const insertDefault = (val: string, obj: any, keys: string[]): any => {
   return adjusted;
 };
 
+export const mkHash = (prefix: string = "0x"): string => prefix.padEnd(66, "0");
+
 export const delay = (ms: number): Promise<void> =>
   new Promise((res: any): any => setTimeout(res, ms));
 
@@ -56,3 +62,22 @@ export const publicIdentifierToAddress = (publicIdentifier: string): string => {
 export const freeBalanceAddressFromXpub = (xpub: string): string => {
   return utils.HDNode.fromExtendedKey(xpub).derivePath("0").address;
 };
+
+export const createLinkedHash = (
+  amount: BigNumber,
+  assetId: string,
+  paymentId: string,
+  preImage: string,
+): string => {
+  return solidityKeccak256(
+    ["uint256", "address", "bytes32", "bytes32"],
+    [amount, assetId, paymentId, preImage],
+  );
+};
+
+export const createRandom32ByteHexString = (): string => {
+  return hexlify(randomBytes(32));
+};
+
+export const createPaymentId = createRandom32ByteHexString;
+export const createPreImage = createRandom32ByteHexString;

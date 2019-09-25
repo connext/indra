@@ -1,27 +1,38 @@
+import { NatsMessagingService } from "@connext/messaging";
 import {
-  ConditionalTransferInitialStateBigNumber,
   ResolveLinkedTransferResponse,
+  SimpleLinkedTransferAppStateBigNumber,
   SupportedApplications,
-  UnidirectionalLinkedTransferAppActionBigNumber,
-  UnidirectionalLinkedTransferAppStage,
-  UnidirectionalLinkedTransferAppStateBigNumber,
 } from "@connext/types";
-import { ProposeVirtualMessage, RejectProposalMessage } from "@counterfactual/node";
-import { AppInstanceJson, Node as NodeTypes } from "@counterfactual/types";
-import { Injectable } from "@nestjs/common";
+import { AppInstanceJson, Node as CFCoreTypes } from "@counterfactual/types";
+import { Inject, Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
-import { BigNumber, bigNumberify } from "ethers/utils";
+import { BigNumber } from "ethers/utils";
 
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
+import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
-import { ConfigService } from "../config/config.service";
-import { Network } from "../constants";
-import { NodeService } from "../node/node.service";
-import { CLogger, createLinkedHash, delay, freeBalanceAddressFromXpub } from "../util";
+import { ChannelService } from "../channel/channel.service";
+import { ConfigService, DefaultApp } from "../config/config.service";
+import { MessagingProviderId, Network } from "../constants";
+import { mkHash } from "../test";
+import {
+  CLogger,
+  createLinkedHash,
+  freeBalanceAddressFromXpub,
+  InstallMessage,
+  RejectProposalMessage,
+  replaceBN,
+} from "../util";
 
-import { Transfer, TransferStatus, TransferTypes } from "./transfer.entity";
-import { TransferRepository } from "./transfer.repository";
+import {
+  LinkedTransfer,
+  LinkedTransferStatus,
+  PeerToPeerTransfer,
+  PeerToPeerTransferStatus,
+} from "./transfer.entity";
+import { LinkedTransferRepository, PeerToPeerTransferRepository } from "./transfer.repository";
 
 const logger = new CLogger("TransferService");
 
@@ -30,36 +41,57 @@ export class TransferService {
   appId: string;
 
   constructor(
-    private readonly nodeService: NodeService,
+    private readonly cfCoreService: CFCoreService,
+    private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
+    @Inject(MessagingProviderId) private readonly messagingProvider: NatsMessagingService,
     private readonly channelRepository: ChannelRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
-    private readonly transferRepository: TransferRepository,
+    private readonly p2pTransferRepository: PeerToPeerTransferRepository,
+    private readonly linkedTransferRepository: LinkedTransferRepository,
   ) {}
 
-  /**
-   * Save pending transfer
-   * @param data Data from PROPOSE_VIRTUAL event
-   */
-  async savePeerToPeerTransfer(data: ProposeVirtualMessage): Promise<Transfer> {
-    const transfer = new Transfer();
-    transfer.amount = bigNumberify(data.data.params.initiatorDeposit);
-    transfer.appInstanceId = data.data.appInstanceId;
-    transfer.assetId = data.data.params.initiatorDepositTokenAddress;
+  async savePeerToPeerTransfer(
+    senderPubId: string,
+    receiverPubId: string,
+    assetId: string,
+    amount: BigNumber,
+    appInstanceId: string,
+  ): Promise<PeerToPeerTransfer> {
+    const transfer = new PeerToPeerTransfer();
+    transfer.amount = amount;
+    transfer.appInstanceId = appInstanceId;
+    transfer.assetId = assetId;
 
-    const senderChannel = await this.channelRepository.findByUserPublicIdentifier(
-      data.data.proposedByIdentifier,
-    );
+    const senderChannel = await this.channelRepository.findByUserPublicIdentifier(senderPubId);
     transfer.senderChannel = senderChannel;
 
-    const receiverChannel = await this.channelRepository.findByUserPublicIdentifier(
-      data.data.params.proposedToIdentifier,
-    );
+    const receiverChannel = await this.channelRepository.findByUserPublicIdentifier(receiverPubId);
     transfer.receiverChannel = receiverChannel;
-    transfer.type = TransferTypes.PEER_TO_PEER;
-    transfer.status = TransferStatus.PENDING;
+    transfer.status = PeerToPeerTransferStatus.PENDING;
 
-    return await this.transferRepository.save(transfer);
+    return await this.p2pTransferRepository.save(transfer);
+  }
+
+  async saveLinkedTransfer(
+    senderPubId: string,
+    assetId: string,
+    amount: BigNumber,
+    appInstanceId: string,
+    linkedHash: string,
+  ): Promise<LinkedTransfer> {
+    const transfer = new LinkedTransfer();
+    transfer.senderAppInstanceId = appInstanceId;
+    transfer.amount = amount;
+    transfer.assetId = assetId;
+    transfer.linkedHash = linkedHash;
+
+    const senderChannel = await this.channelRepository.findByUserPublicIdentifier(senderPubId);
+    transfer.senderChannel = senderChannel;
+
+    transfer.status = LinkedTransferStatus.PENDING;
+
+    return await this.linkedTransferRepository.save(transfer);
   }
 
   async resolveLinkedTransfer(
@@ -69,7 +101,7 @@ export class TransferService {
     amount: BigNumber,
     assetId: string,
   ): Promise<ResolveLinkedTransferResponse> {
-    logger.log(
+    logger.debug(
       `Resolving linked transfer with userPubId: ${userPubId}, paymentId: ${paymentId}, ` +
         `preImage: ${preImage}, amount: ${amount}, assetId: ${assetId}`,
     );
@@ -78,92 +110,112 @@ export class TransferService {
       throw new Error(`No channel exists for userPubId ${userPubId}`);
     }
 
+    const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
+
+    // check that we have recorded this transfer in our db
+    const transfer = await this.linkedTransferRepository.findByLinkedHash(linkedHash);
+    if (!transfer) {
+      throw new Error(`No transfer exists for linkedHash ${linkedHash}`);
+    }
+    if (transfer.status === LinkedTransferStatus.REDEEMED) {
+      throw new Error(`Transfer with linkedHash ${linkedHash} has already been redeemed`);
+    }
+    logger.debug(`Found linked transfer in our database, attempting to resolve...`);
+
     // check that linked transfer app has been installed from sender
-    const installedApps = await this.nodeService.getAppInstances();
-    const linkedHash = createLinkedHash({ amount, assetId, paymentId, preImage });
+    const defaultApp = (await this.configService.getDefaultApps()).find(
+      (app: DefaultApp) => app.name === SupportedApplications.SimpleLinkedTransferApp,
+    );
+    const installedApps = await this.cfCoreService.getAppInstances();
     const senderApp = installedApps.find(
       (app: AppInstanceJson) =>
-        (app.latestState as UnidirectionalLinkedTransferAppStateBigNumber).linkedHash ===
-        linkedHash,
+        app.appInterface.addr === defaultApp.appDefinitionAddress &&
+        (app.latestState as SimpleLinkedTransferAppStateBigNumber).linkedHash === linkedHash,
     );
+
     if (!senderApp) {
       throw new Error(`App with provided hash has not been installed: ${linkedHash}`);
     }
 
-    const freeBal = await this.nodeService.getFreeBalance(
+    const freeBal = await this.cfCoreService.getFreeBalance(
       userPubId,
       channel.multisigAddress,
       assetId,
     );
     const preTransferBal =
-      freeBal[freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier)];
+      freeBal[freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)];
+
+    await this.channelService.requestCollateral(userPubId, assetId, amount);
 
     const network = await this.configService.getEthNetwork();
     const appInfo = await this.appRegistryRepository.findByNameAndNetwork(
-      SupportedApplications.UnidirectionalLinkedTransferApp,
+      SupportedApplications.SimpleLinkedTransferApp,
       network.name as Network,
     );
 
-    const initialState: UnidirectionalLinkedTransferAppStateBigNumber = {
-      finalized: false,
-      linkedHash,
-      stage: UnidirectionalLinkedTransferAppStage.POST_FUND,
-      transfers: [
+    const initialState: SimpleLinkedTransferAppStateBigNumber = {
+      amount,
+      assetId,
+      coinTransfers: [
         {
           amount,
-          to: freeBalanceAddressFromXpub(userPubId),
+          to: freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier),
         },
         {
           amount: Zero,
-          to: freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier),
+          to: freeBalanceAddressFromXpub(userPubId),
         },
       ],
-      turnNum: Zero,
+      linkedHash,
+      paymentId,
+      preImage: mkHash("0x0"),
     };
 
-    await this.conditionalTransferAppInstalled(userPubId, amount, assetId, initialState, appInfo);
+    const receiverApp = await this.installLinkedTransferApp(
+      userPubId,
+      initialState,
+      mkHash("0x0"),
+      paymentId,
+      transfer,
+      appInfo,
+    );
 
-    // TODO: why do we have to do this?
-    await this.waitForAppInstall();
+    await this.takeActionAndUninstallLink(receiverApp.receiverAppInstanceId, preImage);
 
-    // finalize
-    await this.finalizeAndUninstallApp(amount, assetId, paymentId, preImage);
-
+    // pre - post = amount
     // sanity check, free balance decreased by payment amount
-    const postTransferBal = await this.nodeService.getFreeBalance(
+    const postTransferBal = await this.cfCoreService.getFreeBalance(
       userPubId,
       channel.multisigAddress,
       assetId,
     );
 
-    // pre - post = amount
     const diff = preTransferBal.sub(
-      postTransferBal[freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier)],
+      postTransferBal[freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)],
     );
+
     if (!diff.eq(amount)) {
-      logger.warn(
-        `It appears the difference of the free balance before and after
-        uninstalling is not what we expected......`,
-      );
+      logger.warn(`Got an unexpected difference of free balances before and after uninstalling`);
       logger.warn(
         `preTransferBal: ${preTransferBal.toString()}, postTransferBalance: ${postTransferBal[
-          freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier)
+          freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)
         ].toString()}, expected ${amount.toString()}`,
       );
-    } else if (
-      postTransferBal[freeBalanceAddressFromXpub(this.nodeService.cfNode.publicIdentifier)].lte(
-        preTransferBal,
-      )
-    ) {
-      logger.warn("Free balance after transfer is lte free balance before transfer..");
     }
+
+    this.linkedTransferRepository.markAsRedeemed(transfer, channel);
 
     // uninstall sender app
     // dont await so caller isnt blocked by this
-    this.nodeService.uninstallApp(senderApp.identityHash);
+    // TODO: if sender is offline, this will fail
+    this.takeActionAndUninstallLink(senderApp.identityHash, preImage)
+      .then(() => {
+        this.linkedTransferRepository.markAsReclaimed(transfer);
+      })
+      .catch(logger.error);
 
     return {
-      freeBalance: await this.nodeService.getFreeBalance(
+      freeBalance: await this.cfCoreService.getFreeBalance(
         userPubId,
         channel.multisigAddress,
         assetId,
@@ -172,15 +224,24 @@ export class TransferService {
     };
   }
 
-  // creates a promise that is resolved once the app is installed
-  // and rejected if the virtual application is rejected
-  private conditionalTransferAppInstalled = async (
+  async takeActionAndUninstallLink(appId: string, preImage: string): Promise<void> {
+    console.log(`Taking action on app at ${Date.now()}`);
+    try {
+      await this.cfCoreService.takeAction(appId, { preImage });
+      await this.cfCoreService.uninstallApp(appId);
+    } catch (e) {
+      throw new Error(`takeActionAndUninstallLink: ${e}`);
+    }
+  }
+
+  async installLinkedTransferApp(
     userPubId: string,
-    amount: BigNumber,
-    assetId: string,
-    initialState: ConditionalTransferInitialStateBigNumber,
+    initialState: SimpleLinkedTransferAppStateBigNumber,
+    preImage: string,
+    paymentId: string,
+    transfer: LinkedTransfer,
     appInfo: AppRegistry,
-  ): Promise<string | undefined> => {
+  ): Promise<LinkedTransfer> {
     let boundResolve: (value?: any) => void;
     let boundReject: (reason?: any) => void;
 
@@ -191,147 +252,66 @@ export class TransferService {
       outcomeType,
       stateEncoding,
     } = appInfo;
-    const params: NodeTypes.ProposeInstallParams = {
+    const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,
       },
       appDefinition,
       initialState,
-      initiatorDeposit: amount,
-      initiatorDepositTokenAddress: assetId,
+      initiatorDeposit: transfer.amount,
+      initiatorDepositTokenAddress: transfer.assetId,
       outcomeType,
       proposedToIdentifier: userPubId,
       responderDeposit: Zero,
-      responderDepositTokenAddress: assetId,
+      responderDepositTokenAddress: transfer.assetId,
       timeout: Zero,
     };
 
-    const res = await this.nodeService.proposeInstallApp(params);
-    this.appId = res.appInstanceId;
-    // set app instance id
+    const proposeRes = await this.cfCoreService.proposeInstallApp(params);
 
-    const installRes = await new Promise((res: () => any, rej: () => any): void => {
-      boundReject = this.rejectInstallTransfer.bind(null, rej);
-      boundResolve = this.resolveInstallTransfer.bind(null, res);
-      this.nodeService.registerCfNodeListener(NodeTypes.EventName.INSTALL, boundResolve);
-      this.nodeService.registerCfNodeListener(NodeTypes.EventName.REJECT_INSTALL, boundReject);
-    });
-    logger.log(`App was installed successfully!: ${JSON.stringify(installRes)}`);
-    return (installRes as any).data.params.appInstanceId;
-  };
+    // add preimage to database to allow unlock from a listener
+    transfer.receiverAppInstanceId = proposeRes.appInstanceId;
+    transfer.preImage = preImage;
+    transfer.paymentId = paymentId;
 
-  private finalizeAndUninstallApp = async (
-    amount: BigNumber,
-    assetId: string,
-    paymentId: string,
-    preImage: string,
-  ): Promise<void> => {
-    const action: UnidirectionalLinkedTransferAppActionBigNumber = {
-      amount,
-      assetId,
-      paymentId,
-      preImage,
-    };
-    await this.nodeService.takeAction(this.appId, action);
-
-    // display final state of app
-    const appInfo = await this.nodeService.getAppState(this.appId);
-
-    // TODO: was getting an error here, printing this in case it happens again
-    console.log("this.appId: ", this.appId);
-    console.log("appInfo: ", appInfo);
-    (appInfo.state as any).transfers[0][1] = (appInfo.state as any).transfers[0][1].toString();
-    (appInfo.state as any).transfers[1][1] = (appInfo.state as any).transfers[1][1].toString();
-
-    await this.nodeService.uninstallApp(this.appId);
-    // TODO: cf does not emit uninstall virtual event on the node
-    // that has called this function but ALSO does not immediately
-    // uninstall the apps. This will be a problem when trying to
-    // display balances...
-    const openApps = await this.nodeService.getAppInstances();
-    logger.log(`Open apps: ${openApps.length}`);
-    logger.log(`AppIds: ${JSON.stringify(openApps.map((a: AppInstanceJson) => a.identityHash))}`);
-
-    // adding a promise for now that polls app instances, but its not
-    // great and should be removed
-    await this.waitForAppUninstall();
-  };
-
-  // TODO: fix type of data
-  private resolveInstallTransfer = (res: (value?: any) => void, data: any): any => {
-    if (this.appId && this.appId !== data.data.params.appInstanceId) {
-      logger.log(
-        `Caught INSTALL event for different app ${JSON.stringify(data)}, expected ${this.appId}`,
-      );
-      return;
+    try {
+      await new Promise((res: () => any, rej: (msg: string) => any): void => {
+        boundResolve = this.resolveInstallTransfer.bind(null, res);
+        boundReject = this.rejectInstallTransfer.bind(null, rej);
+        this.messagingProvider.subscribe(
+          `indra.client.${userPubId}.install.${proposeRes.appInstanceId}`,
+          boundResolve,
+        );
+        this.cfCoreService.cfCore.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
+      });
+      logger.log(`App was installed successfully!: ${JSON.stringify(proposeRes)}`);
+      return await this.linkedTransferRepository.save(transfer);
+    } catch (e) {
+      logger.error(`Error installing app: ${e.toString()}`);
+      return undefined;
+    } finally {
+      this.cleanupInstallListeners(boundReject, proposeRes.appInstanceId, userPubId);
     }
-    res(data);
-    return data;
+  }
+
+  private resolveInstallTransfer = (
+    res: (value?: unknown) => void,
+    message: InstallMessage,
+  ): InstallMessage => {
+    res(message);
+    return message;
   };
 
-  // TODO: fix types of data
   private rejectInstallTransfer = (
-    rej: (reason?: any) => void,
-    msg: RejectProposalMessage, // reject install??
+    rej: (reason?: string) => void,
+    msg: RejectProposalMessage,
   ): any => {
-    // check app id
-    if (this.appId !== msg.data.appInstanceId) {
-      return;
-    }
-
-    return rej(`Install failed. Event data: ${JSON.stringify(msg, null, 2)}`);
+    return rej(`Install failed. Event data: ${JSON.stringify(msg, replaceBN, 2)}`);
   };
 
-  private waitForAppInstall(): Promise<unknown> {
-    if (!this.appId) {
-      throw new Error(`appId not set, cannot wait for install`);
-    }
-    return new Promise(
-      async (res: (value?: unknown) => void, rej: (reason?: any) => void): Promise<void> => {
-        const getAppIds = async (): Promise<string[]> => {
-          return (await this.nodeService.getAppInstances()).map(
-            (a: AppInstanceJson) => a.identityHash,
-          );
-        };
-        let retries = 0;
-        while (!(await getAppIds()).includes(this.appId) && retries <= 30) {
-          logger.log(
-            `did not find app id ${this.appId} in the open apps... retry number ${retries}...`,
-          );
-          await delay(100);
-          retries = retries + 1;
-        }
-
-        if (retries > 30) rej();
-
-        res();
-      },
-    );
-  }
-
-  private waitForAppUninstall(): Promise<unknown> {
-    if (!this.appId) {
-      throw new Error(`appId not set, cannot wait for uninstall`);
-    }
-    return new Promise(
-      async (res: (value?: unknown) => void, rej: (reason?: any) => void): Promise<void> => {
-        const getAppIds = async (): Promise<string[]> => {
-          return (await this.nodeService.getAppInstances()).map(
-            (a: AppInstanceJson) => a.identityHash,
-          );
-        };
-        let retries = 0;
-        while ((await getAppIds()).indexOf(this.appId) !== -1 && retries <= 5) {
-          logger.log("found app id in the open apps... retrying...");
-          await delay(500);
-          retries = retries + 1;
-        }
-
-        if (retries > 5) rej();
-
-        res();
-      },
-    );
-  }
+  private cleanupInstallListeners = (boundReject: any, appId: string, userPubId: string): void => {
+    this.messagingProvider.unsubscribe(`indra.client.${userPubId}.install.${appId}`);
+    this.cfCoreService.cfCore.off(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
+  };
 }

@@ -10,7 +10,7 @@ watch_command='
   exec jest --config ops/jest.config.json --watch '"$@"'
 '
 
-project="indra_v2"
+project="indra"
 
 if [[ "$1" == "--watch" ]]
 then

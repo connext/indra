@@ -3,7 +3,7 @@ set -e
 
 if [[ -d "modules/node" ]]
 then cd modules/node
-elif [[ ! -f "src/main.ts" && ! -f "dist/main.js" ]]
+elif [[ ! -f "src/main.ts" && ! -f "dist/src/main.js" ]]
 then echo "Fatal: couldn't find file to run" && exit 1
 fi
 
@@ -31,16 +31,18 @@ function wait_for {
     else echo "Error: missing port for host $host derived from target $target" && exit 1
     fi
   fi
-  echo "Waiting for $name ($host) to wake up..."
+  echo "Waiting for $name at $target ($host) to wake up..."
   bash ops/wait-for.sh -t 60 $host 2> /dev/null
 }
 
 wait_for "database" "$INDRA_PG_HOST:$INDRA_PG_PORT"
 wait_for "nats" "$INDRA_NATS_SERVERS"
 wait_for "ethprovider" "$INDRA_ETH_RPC_URL"
+wait_for "redis" "$INDRA_REDIS_URL"
 
 if [[ "$NODE_ENV" == "development" ]]
 then
+  echo "Starting indra node in dev-mode"
   exec ./node_modules/.bin/nodemon \
     --delay 1 \
     --exitcrash \
@@ -51,7 +53,7 @@ then
     --exec ts-node \
     ./src/main.ts
 else
-  echo "Starting indra v2 node!"
-  exec node dist/main.js
+  echo "Starting indra node in prod-mode"
+  exec node dist/src/main.js
 fi
 

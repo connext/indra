@@ -2,6 +2,9 @@ import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 
 import { MessagingClientProviderId } from "./constants";
+import { CLogger } from "./util";
+
+const logger = new CLogger("AppService");
 
 @Injectable()
 export class AppService implements OnModuleInit {

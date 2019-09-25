@@ -26,14 +26,6 @@ export const medianizerAbi = [
     type: "function",
   },
   {
-    constant: false,
-    inputs: [],
-    name: "poke",
-    outputs: [],
-    payable: false,
-    type: "function",
-  },
-  {
     constant: true,
     inputs: [],
     name: "compute",
@@ -47,19 +39,6 @@ export const medianizerAbi = [
         type: "bool",
       },
     ],
-    payable: false,
-    type: "function",
-  },
-  {
-    constant: false,
-    inputs: [
-      {
-        name: "wat",
-        type: "address",
-      },
-    ],
-    name: "set",
-    outputs: [],
     payable: false,
     type: "function",
   },
@@ -229,19 +208,6 @@ export const medianizerAbi = [
         type: "address",
       },
     ],
-    payable: false,
-    type: "function",
-  },
-  {
-    constant: false,
-    inputs: [
-      {
-        name: "pos",
-        type: "bytes12",
-      },
-    ],
-    name: "unset",
-    outputs: [],
     payable: false,
     type: "function",
   },

@@ -1,4 +1,4 @@
-import { MaxUint256, WeiPerEther, Zero } from "ethers/constants";
+import { MaxUint256, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
 
 export const isBN = BigNumber.isBigNumber
@@ -24,5 +24,5 @@ export const minBN = (lobn) =>
   lobn.reduce((min, current) => min.lt(current) ? min : current, MaxUint256)
 
 export const inverse = (bn) =>
-  formatEther(parseEther(WeiPerEther.toString()).div(parseEther(bn.toString())))
+  formatEther(toWei(toWei('1')).div(toWei(bn)))
 

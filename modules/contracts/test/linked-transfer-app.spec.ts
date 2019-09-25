@@ -1,4 +1,4 @@
-import { Address, SolidityABIEncoderV2Type } from "@counterfactual/types";
+import { Address, SolidityValueType } from "@counterfactual/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
@@ -51,9 +51,6 @@ const unidirectionalLinkedTransferAppStateEncoding = `
   )
 `;
 
-// TODO: does this need to be a tuple if ya know... its just
-// one thing....
-// RS: yes it does, tuple is a struct which the action is
 const unidirectionalLinkedTransferAppActionEncoding = `
   tuple(
     uint256 amount,
@@ -71,11 +68,11 @@ function decodeAppState(encodedAppState: string): UnidirectionalLinkedTransferAp
   return defaultAbiCoder.decode([unidirectionalLinkedTransferAppStateEncoding], encodedAppState)[0];
 }
 
-function encodeAppState(state: SolidityABIEncoderV2Type): string {
+function encodeAppState(state: SolidityValueType): string {
   return defaultAbiCoder.encode([unidirectionalLinkedTransferAppStateEncoding], [state]);
 }
 
-function encodeAppAction(state: SolidityABIEncoderV2Type): string {
+function encodeAppAction(state: SolidityValueType): string {
   return defaultAbiCoder.encode([unidirectionalLinkedTransferAppActionEncoding], [state]);
 }
 
@@ -174,11 +171,11 @@ describe("LinkedUnidirectionalTransferApp", () => {
       stage: AppStage.POST_FUND,
       transfers: [
         {
-          amount: Zero,
+          amount,
           to: senderAddr,
         },
         {
-          amount,
+          amount: Zero,
           to: redeemerAddr,
         },
       ],
@@ -233,11 +230,11 @@ describe("LinkedUnidirectionalTransferApp", () => {
       stage: AppStage.POST_FUND,
       transfers: [
         {
-          amount: Zero,
+          amount,
           to: senderAddr,
         },
         {
-          amount,
+          amount: Zero,
           to: redeemerAddr,
         },
       ],

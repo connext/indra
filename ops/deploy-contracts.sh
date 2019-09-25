@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-project="indra_v2"
+project="indra"
 name=${project}_contract_deployer
 cwd="`pwd`"
 
@@ -39,7 +39,7 @@ sleep 1 # give the user a sec to ctrl-c in case above is wrong
 # Docker swarm mode needs to be enabled to use the secret store
 docker swarm init 2> /dev/null || true
 
-ETH_MNEMONIC_FILE=indra_mnemonic_$ETH_NETWORK
+ETH_MNEMONIC_FILE=${project}_mnemonic_$ETH_NETWORK
 if [[ "$ETH_NETWORK" != "ganache" ]]
 then
   # Sanity check: does this secret already exist?
@@ -83,6 +83,9 @@ trap cleanup EXIT
 if [[ "$ETH_NETWORK" != "ganache" ]]
 then SECRET_ENV="--env=ETH_MNEMONIC_FILE=/run/secrets/$ETH_MNEMONIC_FILE --secret=$ETH_MNEMONIC_FILE"
 fi
+
+# Ensure contract artifacts are up-to-date first
+make contracts
 
 echo
 echo "Deploying contract deployer..."

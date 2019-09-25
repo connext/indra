@@ -1,20 +1,18 @@
 import {
+  CFCoreChannel,
   convert,
-  NodeChannel,
   RegisteredAppDetails,
+  SimpleTransferAppStateBigNumber,
   SupportedApplication,
   SupportedApplications,
   TransferParameters,
-  UnidirectionalTransferAppActionType,
-  UnidirectionalTransferAppStage,
-  UnidirectionalTransferAppStateBigNumber,
 } from "@connext/types";
-import { RejectInstallVirtualMessage } from "@counterfactual/node";
-import { AppInstanceInfo, Node as NodeTypes } from "@counterfactual/types";
+import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
-import { BigNumber, getAddress } from "ethers/utils";
+import { BigNumber } from "ethers/utils";
 
-import { delay, freeBalanceAddressFromXpub } from "../lib/utils";
+import { RejectInstallVirtualMessage } from "../lib/cfCore";
+import { freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
 import { invalidAddress, invalidXpub } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
@@ -25,9 +23,8 @@ export class TransferController extends AbstractController {
 
   private timeout: NodeJS.Timeout;
 
-  public transfer = async (params: TransferParameters): Promise<NodeChannel> => {
-    params.assetId = params.assetId ? getAddress(params.assetId) : undefined;
-    this.log.info(`Transfer called with parameters: ${JSON.stringify(params, null, 2)}`);
+  public transfer = async (params: TransferParameters): Promise<CFCoreChannel> => {
+    this.log.info(`Transfer called with parameters: ${JSON.stringify(params, replaceBN, 2)}`);
 
     // convert params + validate
     const { recipient, amount, assetId } = convert.TransferParameters("bignumber", params);
@@ -37,17 +34,17 @@ export class TransferController extends AbstractController {
     }
 
     // make sure recipient is online
-    const res = await this.node.recipientOnline(recipient);
-    if (!res) {
-      throw new Error(`Recipient is offline.`);
-    }
+    // const res = await this.node.recipientOnline(recipient);
+    // if (!res) {
+    //   throw new Error(`Recipient is offline.`);
+    // }
 
     const freeBal = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBal[this.connext.freeBalanceAddress];
 
     // verify app is supported without swallowing errors
     const appInfo = this.connext.getRegisteredAppDetails(
-      SupportedApplications.UnidirectionalTransferApp as SupportedApplication,
+      SupportedApplications.SimpleTransferApp as SupportedApplication,
     );
 
     // install the transfer application
@@ -56,19 +53,7 @@ export class TransferController extends AbstractController {
       throw new Error(`App was not installed`);
     }
 
-    // display state of app
-    const appState = await this.connext.getAppState(appId);
-    (appState.state as any).transfers[0].amount = (appState.state as any).transfers[0].amount.toString();
-    (appState.state as any).transfers[1].amount = (appState.state as any).transfers[1].amount.toString();
-
-    // update state
-    await this.connext.takeAction(this.appId, {
-      actionType: UnidirectionalTransferAppActionType.SEND_MONEY,
-      amount,
-    });
-
-    // finalize state + uninstall application
-    await this.finalizeAndUninstallApp(this.appId);
+    await this.connext.uninstallVirtualApp(appId);
 
     // sanity check, free balance decreased by payment amount
     const postTransferBal = await this.connext.getFreeBalance(assetId);
@@ -138,7 +123,7 @@ export class TransferController extends AbstractController {
       return;
     }
 
-    return rej(`Install virtual failed. Event data: ${JSON.stringify(msg, null, 2)}`);
+    return rej(`Install virtual failed. Event data: ${JSON.stringify(msg, replaceBN, 2)}`);
   };
 
   // creates a promise that is resolved once the app is installed
@@ -152,10 +137,8 @@ export class TransferController extends AbstractController {
     let boundResolve: (value?: any) => void;
     let boundReject: (reason?: any) => void;
 
-    const initialState: UnidirectionalTransferAppStateBigNumber = {
-      finalized: false,
-      stage: UnidirectionalTransferAppStage.POST_FUND,
-      transfers: [
+    const initialState: SimpleTransferAppStateBigNumber = {
+      coinTransfers: [
         {
           amount,
           to: freeBalanceAddressFromXpub(this.connext.publicIdentifier),
@@ -165,12 +148,11 @@ export class TransferController extends AbstractController {
           to: freeBalanceAddressFromXpub(recipient),
         },
       ],
-      turnNum: Zero,
     };
 
     // note: intermediary is added in connext.ts as well
     const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding } = appInfo;
-    const params: NodeTypes.ProposeInstallVirtualParams = {
+    const params: CFCoreTypes.ProposeInstallVirtualParams = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,
@@ -180,7 +162,7 @@ export class TransferController extends AbstractController {
       initialState,
       initiatorDeposit: amount,
       initiatorDepositTokenAddress: assetId,
-      intermediaries: [this.connext.nodePublicIdentifier],
+      intermediaryIdentifier: this.connext.nodePublicIdentifier,
       outcomeType: appInfo.outcomeType,
       proposedToIdentifier: recipient,
       responderDeposit: Zero,
@@ -193,11 +175,11 @@ export class TransferController extends AbstractController {
     this.appId = res.appInstanceId;
 
     try {
-      await new Promise((res, rej) => {
+      await new Promise((res: any, rej: any): any => {
         boundReject = this.rejectInstallTransfer.bind(null, rej);
         boundResolve = this.resolveInstallTransfer.bind(null, res);
-        this.listener.on(NodeTypes.EventName.INSTALL_VIRTUAL, boundResolve);
-        this.listener.on(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
+        this.listener.on(CFCoreTypes.EventName.INSTALL_VIRTUAL, boundResolve);
+        this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
         // this.timeout = setTimeout(() => {
         //   this.cleanupInstallListeners(boundResolve, boundReject);
         //   boundReject({ data: { appInstanceId: this.appId } });
@@ -214,43 +196,7 @@ export class TransferController extends AbstractController {
   };
 
   private cleanupInstallListeners = (boundResolve: any, boundReject: any): void => {
-    this.listener.removeListener(NodeTypes.EventName.INSTALL_VIRTUAL, boundResolve);
-    this.listener.removeListener(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
-  };
-
-  private finalizeAndUninstallApp = async (appId: string): Promise<void> => {
-    await this.connext.takeAction(appId, {
-      actionType: UnidirectionalTransferAppActionType.END_CHANNEL,
-      amount: Zero,
-    });
-
-    // display final state of app
-    const appInfo = await this.connext.getAppState(appId);
-    (appInfo.state as any).transfers[0][1] = (appInfo.state as any).transfers[0][1].toString();
-    (appInfo.state as any).transfers[1][1] = (appInfo.state as any).transfers[1][1].toString();
-
-    await this.connext.uninstallVirtualApp(appId);
-    // TODO: cf does not emit uninstall virtual event on the node
-    // that has called this function but ALSO does not immediately
-    // uninstall the apps. This will be a problem when trying to
-    // display balances...
-
-    // adding a promise for now that polls app instances, but its not
-    // great and should be removed
-    await new Promise(async (res, rej) => {
-      const getAppIds = async (): Promise<string[]> => {
-        return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
-      };
-      let retries = 0;
-      while ((await getAppIds()).indexOf(this.appId) !== -1 && retries <= 5) {
-        this.log.info("found app id in the open apps... retrying...");
-        await delay(500);
-        retries = retries + 1;
-      }
-
-      if (retries > 5) rej();
-
-      res();
-    });
+    this.listener.removeListener(CFCoreTypes.EventName.INSTALL_VIRTUAL, boundResolve);
+    this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
   };
 }

@@ -80,7 +80,7 @@ class CashOutCard extends Component {
   }
 
   async withdrawalTokens() {
-    const { balance, channel, history, setPending, swapRate, token } = this.props
+    const { balance, channel, history, setPending, token } = this.props
     const recipient = this.state.recipient.value
     if (!recipient) return
     const total = balance.channel.total
@@ -120,7 +120,7 @@ class CashOutCard extends Component {
       await channel.addPaymentProfile({
         amountToCollateralize: total.toETH().wad.toString(),
         minimumMaintainedCollateral: total.toETH().wad.toString(),
-        tokenAddress: AddressZero,
+        assetId: AddressZero,
       });
       await channel.requestCollateral(AddressZero);
       await channel.swap({

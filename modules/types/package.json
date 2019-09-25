@@ -1,6 +1,6 @@
 {
   "name": "@connext/types",
-  "version": "0.0.11",
+  "version": "0.1.10",
   "description": "TypeScript typings for common Connext types",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -13,16 +13,16 @@
     "test": "./node_modules/.bin/jest"
   },
   "dependencies": {
-    "ethers": "4.0.33"
+    "@connext/messaging": "0.1.10",
+    "@counterfactual/types": "0.0.42",
+    "ethers": "4.0.37"
   },
   "devDependencies": {
-    "@connext/messaging": "0.0.9",
-    "@counterfactual/types": "0.0.33",
-    "@types/jest": "24.0.17",
-    "jest": "24.8.0",
-    "rollup": "1.19.4",
-    "rollup-plugin-typescript2": "0.22.1",
-    "ts-jest": "24.0.2",
+    "@types/jest": "24.0.18",
+    "jest": "24.9.0",
+    "rollup": "1.21.4",
+    "rollup-plugin-typescript2": "0.24.2",
+    "ts-jest": "24.1.0",
     "typescript": "3.5.3"
   }
 }

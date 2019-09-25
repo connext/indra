@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-project="indra_v2"
+project="indra"
 
 docker container stop ${project}_builder 2> /dev/null || true
 docker stack rm $project 2> /dev/null || true

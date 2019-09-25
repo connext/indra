@@ -1,29 +1,26 @@
 import { MessagingConfig } from "@connext/messaging";
-import { Address, NetworkContext, Node as NodeTypes, OutcomeType } from "@counterfactual/types";
-import { constants, utils } from "ethers";
-import { Network } from "ethers/utils";
+import { Address, NetworkContext, Node as CFCoreTypes, OutcomeType } from "@counterfactual/types";
+import { AddressZero } from "ethers/constants";
+import { BigNumber as ethersBig, getAddress, Network } from "ethers/utils";
 
 ////////////////////////////////////
 ////// BASIC TYPINGS
-export type BigNumber = utils.BigNumber;
-export const BigNumber = utils.BigNumber;
+export type BigNumber = ethersBig;
+export const BigNumber = ethersBig;
 
 export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
-////////////////////////////////////
-////// EMITTED EVENTS
-// TODO: extend CF types, export their import, rename?
-// NOTE: you cannot extend enum types in typescript.
-// to "extend" the cf types with our own events, make it a
-// const, or use a union type if needed
+export type SolidityValueType = any; // FIXME: use cf type
+
+export const ConnextEvents = CFCoreTypes.EventName;
 
 ////////////////////////////////////
 ////// APP REGISTRY
 
 export const SupportedApplications = {
+  SimpleLinkedTransferApp: "SimpleLinkedTransferApp",
+  SimpleTransferApp: "SimpleTransferApp",
   SimpleTwoPartySwapApp: "SimpleTwoPartySwapApp",
-  UnidirectionalLinkedTransferApp: "UnidirectionalLinkedTransferApp",
-  UnidirectionalTransferApp: "UnidirectionalTransferApp",
 };
 export type SupportedApplication = keyof typeof SupportedApplications;
 
@@ -35,7 +32,7 @@ export type SupportedNetwork = keyof typeof SupportedNetworks;
 
 export type IRegisteredAppDetails = {
   [index in SupportedApplication]: Partial<
-    NodeTypes.ProposeInstallVirtualParams & { initialStateFinalized: boolean }
+    CFCoreTypes.ProposeInstallVirtualParams & { initialStateFinalized: boolean }
   >;
 };
 
@@ -57,14 +54,14 @@ export type AppRegistry = RegisteredAppDetails[];
 //////// General
 export type App<T = string> = {
   id: number;
-  channel: NodeChannel;
-  appRegistry: RegisteredAppDetails; // TODO: is this right?
+  channel: CFCoreChannel;
+  appRegistry: RegisteredAppDetails;
   appId: number;
   xpubPartyA: string;
   xpubPartyB: string;
   depositA: T;
   depositB: T;
-  intermediaries: string[];
+  intermediary: string;
   initialState: any; // TODO: BAD!!
   timeout: number;
   updates: AppUpdate[];
@@ -86,18 +83,15 @@ export type CoinTransfer<T = string> = {
 export type CoinTransferBigNumber = CoinTransfer<BigNumber>;
 
 // all the types of counterfactual app states
-// TODO: add swap app
 export type AppState<T = string> =
-  | UnidirectionalTransferAppState<T>
-  | UnidirectionalLinkedTransferAppState<T>;
+  | SimpleTransferAppState<T>
+  | SimpleLinkedTransferAppState<T>
+  | SimpleSwapAppState<T>;
 export type AppStateBigNumber = AppState<BigNumber>;
 
 // all the types of counterfactual app actions
-// TODO: add swap app
-export type AppAction<T = string> =
-  | UnidirectionalTransferAppAction<T>
-  | UnidirectionalLinkedTransferAppAction<T>;
-export type AppActionBigNumber = AppAction<BigNumber>;
+export type AppAction<T = string> = SimpleLinkedTransferAppAction | SolidityValueType;
+export type AppActionBigNumber = AppAction<BigNumber> | SolidityValueType;
 
 //////// Swap apps
 export type SimpleSwapAppState<T = string> = {
@@ -105,66 +99,38 @@ export type SimpleSwapAppState<T = string> = {
 };
 export type SimpleSwapAppStateBigNumber = SimpleSwapAppState<BigNumber>;
 
-////// Unidirectional transfer app
-export type UnidirectionalTransferAppState<T = string> = {
-  finalized: false;
-  transfers: [CoinTransfer<T>, CoinTransfer<T>];
-  stage: UnidirectionalTransferAppStage;
-  turnNum: T;
+//////// Simple transfer app
+export type SimpleTransferAppState<T = string> = {
+  coinTransfers: CoinTransfer<T>[];
 };
-export type UnidirectionalTransferAppStateBigNumber = UnidirectionalTransferAppState<BigNumber>;
+export type SimpleTransferAppStateBigNumber = SimpleTransferAppState<BigNumber>;
 
-export enum UnidirectionalTransferAppActionType {
-  SEND_MONEY,
-  END_CHANNEL,
-}
-
-export type UnidirectionalTransferAppAction<T = string> = {
-  actionType: UnidirectionalTransferAppActionType;
-  amount: T;
-};
-
-export enum UnidirectionalTransferAppStage {
-  POST_FUND,
-  MONEY_SENT,
-  CHANNEL_CLOSED,
-}
-
-////// Unidirectional linked transfer app
-export type UnidirectionalLinkedTransferAppState<T = string> = {
-  stage: UnidirectionalLinkedTransferAppStage;
-  transfers: [CoinTransfer<T>, CoinTransfer<T>];
+//////// Simple linked transfer app
+export type SimpleLinkedTransferAppState<T = string> = {
+  coinTransfers: CoinTransfer<T>[];
   linkedHash: string;
-  turnNum: T;
-  finalized: false;
-};
-export type UnidirectionalLinkedTransferAppStateBigNumber = UnidirectionalLinkedTransferAppState<
-  BigNumber
->;
-
-export type UnidirectionalLinkedTransferAppAction<T = string> = {
   amount: T;
-  assetId: Address;
+  assetId: string;
   paymentId: string;
   preImage: string;
 };
-
-export type UnidirectionalLinkedTransferAppActionBigNumber = UnidirectionalLinkedTransferAppAction<
-  BigNumber
->;
-
-export enum UnidirectionalLinkedTransferAppStage {
-  POST_FUND,
-  PAYMENT_CLAIMED,
-  CHANNEL_CLOSED,
-}
+export type SimpleLinkedTransferAppStateBigNumber = SimpleLinkedTransferAppState<BigNumber>;
+export type SimpleLinkedTransferAppAction = {
+  preImage: string;
+};
 
 ////////////////////////////////////
 ////// CHANNEL TYPES
 
+// used to verify channel is in sequence
+export type ChannelAppSequences = {
+  userAppSequenceNumber: number;
+  nodeAppSequenceNumber: number;
+};
+
 // payment setups
 export type PaymentProfile<T = string> = {
-  tokenAddress: string;
+  assetId: string;
   minimumMaintainedCollateral: T;
   amountToCollateralize: T;
 };
@@ -180,10 +146,10 @@ export type AssetAmountBigNumber = AssetAmount<BigNumber>;
 export type User = {
   id: number;
   xpub: string;
-  channels: NodeChannel[];
+  channels: CFCoreChannel[];
 };
 
-export type NodeChannel = {
+export type CFCoreChannel = {
   id: number;
   nodePublicIdentifier: string;
   userPublicIdentifier: string;
@@ -215,7 +181,7 @@ export type ChannelState<T = string> = {
   apps: AppState<T>[];
   // TODO: CF types should all be generic, this will be
   // a BigNumber
-  freeBalance: NodeTypes.GetFreeBalanceStateResult;
+  freeBalance: CFCoreTypes.GetFreeBalanceStateResult;
 };
 export type ChannelStateBigNumber = ChannelState<BigNumber>;
 
@@ -240,13 +206,6 @@ export type MultisigStateBigNumber = MultisigState<BigNumber>;
 
 ////////////////////////////////////
 ///////// NODE RESPONSE TYPES
-
-export const KnownNodeAppNames = {
-  SIMPLE_TWO_PARTY_SWAP: "SimpleTwoPartySwapApp",
-  UNIDIRECTIONAL_LINKED_TRANSFER: "UnidirectionalLinkedTransferApp",
-  UNIDIRECTIONAL_TRANSFER: "UnidirectionalTransferApp",
-};
-export type KnownNodeApp = keyof typeof KnownNodeAppNames;
 
 export type ContractAddresses = NetworkContext & {
   Token: string;
@@ -280,7 +239,7 @@ export type GetConfigResponse = {
   messaging: MessagingConfig;
 };
 
-export type GetChannelResponse = NodeChannel;
+export type GetChannelResponse = CFCoreChannel;
 
 // returns the transaction hash of the multisig deployment
 // TODO: this will likely change
@@ -288,7 +247,7 @@ export type CreateChannelResponse = {
   transactionHash: string;
 };
 
-export type RequestCollateralResponse = NodeTypes.DepositResult | undefined;
+export type RequestCollateralResponse = CFCoreTypes.DepositResult | undefined;
 
 /////////////////////////////////
 ///////// SWAP
@@ -332,6 +291,7 @@ export type SwapParametersBigNumber = SwapParameters<BigNumber>;
 
 ////// Withdraw types
 export type WithdrawParameters<T = string> = DepositParameters<T> & {
+  userSubmitted?: boolean;
   recipient?: Address; // if not provided, will default to signer addr
 };
 export type WithdrawParametersBigNumber = WithdrawParameters<BigNumber>;
@@ -344,7 +304,7 @@ export type ResolveLinkedTransferParameters<T = string> = LinkedTransferParamete
   preImage: string;
 };
 export type ResolveLinkedTransferResponse = {
-  freeBalance: NodeTypes.GetFreeBalanceStateResult;
+  freeBalance: CFCoreTypes.GetFreeBalanceStateResult;
   paymentId: string;
 };
 
@@ -367,14 +327,16 @@ export type TransferCondition = keyof typeof TransferConditions;
 export type LinkedTransferParameters<T = string> = {
   conditionType: "LINKED_TRANSFER";
   amount: T;
-  assetId: Address; // make optional?
+  assetId?: Address;
+  paymentId: string;
+  preImage: string;
 };
 export type LinkedTransferParametersBigNumber = LinkedTransferParameters<BigNumber>;
 
 export type LinkedTransferResponse = {
   paymentId: string;
   preImage: string;
-  freeBalance: NodeTypes.GetFreeBalanceStateResult;
+  freeBalance: CFCoreTypes.GetFreeBalanceStateResult;
 };
 
 // FIXME: should be union type of all supported conditions
@@ -386,7 +348,7 @@ export type ConditionalTransferResponse = LinkedTransferResponse;
 
 // condition initial states
 // FIXME: should be union type of all supported conditions
-export type ConditionalTransferInitialState<T = string> = UnidirectionalLinkedTransferAppState<T>;
+export type ConditionalTransferInitialState<T = string> = SimpleLinkedTransferAppState<T>;
 // FIXME: should be union type of all supported conditions
 export type ConditionalTransferInitialStateBigNumber = ConditionalTransferInitialState<BigNumber>;
 
@@ -456,6 +418,27 @@ export const convertFields = (
  * overloading definitions
  */
 
+// will return the address as input if it cannot be checksum-d
+// this function does no *explicit* validation on addresses,
+// and instead just asserts they are properly checcksum-d
+export function makeChecksum(address: string): string {
+  try {
+    return getAddress(address);
+  } catch (e) {
+    console.log("Caught error converting address, returning original input value.");
+    return address;
+  }
+}
+
+// if the address is undefined, uses the AddressZero constant to
+// represent the ethereum asset
+export function makeChecksumOrEthAddress(address: string | undefined): string {
+  if (!address) {
+    return AddressZero;
+  }
+  return makeChecksum(address);
+}
+
 type GenericAmountObject<T> = any & {
   amount: T;
 };
@@ -482,6 +465,17 @@ export function convertAssetAmount<To extends NumericTypeName>(
   return convertAmountField(to, obj);
 }
 
+export function convertAssetAmountWithId<To extends NumericTypeName>(
+  to: To,
+  obj: GenericAmountObject<any> & { assetId?: string },
+): any {
+  const asset: any = {
+    ...obj,
+    assetId: makeChecksumOrEthAddress(obj.assetId),
+  };
+  return convertAssetAmount(to, asset);
+}
+
 export function convertMultisig<To extends NumericTypeName>(
   to: To,
   obj: MultisigState<any>,
@@ -489,6 +483,15 @@ export function convertMultisig<To extends NumericTypeName>(
   const fromType = getType(obj.freeBalanceA);
   return convertFields(fromType, to, ["freeBalanceA", "freeBalanceB"], obj);
 }
+
+export function convertPaymentProfile<To extends NumericTypeName>(
+  to: To,
+  obj: PaymentProfile<any>,
+): PaymentProfile<NumericTypes[To]> {
+  const fromType = getType(obj.amountToCollateralize);
+  return convertFields(fromType, to, ["amountToCollateralize", "minimumMaintainedCollateral"], obj);
+}
+
 ////// INPUT PARAMETER CONVERSIONS
 /**
  * Conversion function for DepositParameter to an AssetAmount. Will also add
@@ -499,46 +502,40 @@ export function convertDepositParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: DepositParameters<any>,
 ): AssetAmount<NumericTypes[To]> {
-  const asset: any = {
-    ...obj,
-  };
-  if (!asset.assetId) {
-    asset.assetId = constants.AddressZero;
-  }
-  return convertAssetAmount(to, asset);
+  return convertAssetAmountWithId(to, obj);
 }
 
 export function convertSwapParameters<To extends NumericTypeName>(
   to: To,
   obj: SwapParameters<any>,
 ): SwapParameters<NumericTypes[To]> {
-  return convertAmountField(to, obj);
+  const asset: any = {
+    ...obj,
+    fromAssetId: makeChecksumOrEthAddress(obj.fromAssetId),
+    toAssetId: makeChecksumOrEthAddress(obj.toAssetId),
+  };
+  return convertAmountField(to, asset);
 }
 
 export function convertTransferParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: TransferParameters<any>,
 ): TransferParameters<NumericTypes[To]> {
-  const asset: any = {
-    ...obj,
-  };
-  if (!asset.assetId) {
-    asset.assetId = constants.AddressZero;
-  }
-  return convertAmountField(to, asset);
+  return convertAssetAmountWithId(to, obj);
+}
+
+export function convertLinkedTransferParametersToAsset<To extends NumericTypeName>(
+  to: To,
+  obj: LinkedTransferParameters<any>,
+): LinkedTransferParameters<NumericTypes[To]> {
+  return convertAssetAmountWithId(to, obj);
 }
 
 export function convertWithdrawParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: WithdrawParameters<any>,
 ): WithdrawParameters<NumericTypes[To]> {
-  const asset: any = {
-    ...obj,
-  };
-  if (!asset.assetId) {
-    asset.assetId = constants.AddressZero;
-  }
-  return convertAmountField(to, asset);
+  return convertAssetAmountWithId(to, obj);
 }
 
 export function convertAppState<To extends NumericTypeName>(
@@ -547,7 +544,7 @@ export function convertAppState<To extends NumericTypeName>(
 ): AppState<NumericTypes[To]> {
   return {
     ...obj,
-    transfers: [convertAmountField(to, obj.transfers[0]), convertAmountField(to, obj.transfers[1])],
+    // transfers: [convertAmountField(to, obj.transfers[0]), convertAmountField(to, obj.transfers[1])],
   };
 }
 
@@ -556,9 +553,10 @@ export const convert = {
   AppState: convertAppState,
   Asset: convertAssetAmount,
   Deposit: convertDepositParametersToAsset,
-  LinkedTransfer: convertAmountField,
+  LinkedTransfer: convertLinkedTransferParametersToAsset,
   Multisig: convertMultisig,
-  ResolveLinkedTransfer: convertAmountField,
+  PaymentProfile: convertPaymentProfile,
+  ResolveLinkedTransfer: convertAssetAmountWithId,
   SwapParameters: convertSwapParameters,
   Transfer: convertAssetAmount,
   TransferParameters: convertTransferParametersToAsset,

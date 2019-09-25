@@ -1,9 +1,10 @@
 import { MessagingConfig } from "@connext/messaging";
-import { ContractAddresses, KnownNodeAppNames } from "@connext/types";
+import { ContractAddresses, SupportedApplications } from "@connext/types";
 import { OutcomeType } from "@counterfactual/types";
-import { Injectable } from "@nestjs/common";
+import { Injectable, OnModuleInit } from "@nestjs/common";
+import { Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
-import { Network as EthNetwork } from "ethers/utils";
+import { getAddress, Network as EthNetwork } from "ethers/utils";
 
 import { Network } from "../constants";
 
@@ -15,7 +16,7 @@ type PostgresConfig = {
   username: string;
 };
 
-type DefaultApp = {
+export type DefaultApp = {
   actionEncoding?: string;
   allowNodeInstall: boolean;
   appDefinitionAddress: string;
@@ -34,11 +35,14 @@ const multiAssetMultiPartyCoinTransferEncoding = `
 `;
 
 @Injectable()
-export class ConfigService {
+export class ConfigService implements OnModuleInit {
   private readonly envConfig: { [key: string]: string };
+  private readonly ethProvider: JsonRpcProvider;
+  private wallet: Wallet;
 
   constructor() {
     this.envConfig = process.env;
+    this.ethProvider = new JsonRpcProvider(this.getEthRpcUrl());
   }
 
   get(key: string): string {
@@ -50,13 +54,19 @@ export class ConfigService {
   }
 
   getEthProvider(): JsonRpcProvider {
-    return new JsonRpcProvider(this.getEthRpcUrl());
+    return this.ethProvider;
+  }
+
+  getEthWallet(): Wallet {
+    return this.wallet;
   }
 
   async getEthNetwork(): Promise<EthNetwork> {
     const ethNetwork = await this.getEthProvider().getNetwork();
     if (ethNetwork.name === "unknown" && ethNetwork.chainId === 4447) {
       ethNetwork.name = "ganache";
+    } else if (ethNetwork.chainId === 1) {
+      ethNetwork.name = "homestead";
     }
     return ethNetwork;
   }
@@ -66,7 +76,7 @@ export class ConfigService {
     const ethAddresses = {} as any;
     const ethAddressBook = JSON.parse(this.get("INDRA_ETH_CONTRACT_ADDRESSES"));
     Object.keys(ethAddressBook[chainId]).map((contract: string): void => {
-      ethAddresses[contract] = ethAddressBook[chainId][contract].address.toLowerCase();
+      ethAddresses[contract] = getAddress(ethAddressBook[chainId][contract].address);
     });
     return ethAddresses as ContractAddresses;
   }
@@ -74,7 +84,7 @@ export class ConfigService {
   async getTokenAddress(): Promise<string> {
     const chainId = (await this.getEthNetwork()).chainId.toString();
     const ethAddressBook = JSON.parse(this.get("INDRA_ETH_CONTRACT_ADDRESSES"));
-    return ethAddressBook[chainId].Token.address.toLowerCase();
+    return getAddress(ethAddressBook[chainId].Token.address);
   }
 
   async getDefaultApps(): Promise<DefaultApp[]> {
@@ -82,28 +92,20 @@ export class ConfigService {
     const addressBook = await this.getContractAddresses();
     return [
       {
-        actionEncoding: `
-          tuple(
-            uint8 actionType,
-            uint256 amount
-          )`,
         allowNodeInstall: false,
-        appDefinitionAddress: addressBook[KnownNodeAppNames.UNIDIRECTIONAL_TRANSFER],
-        name: KnownNodeAppNames.UNIDIRECTIONAL_TRANSFER,
+        appDefinitionAddress: addressBook[SupportedApplications.SimpleTransferApp],
+        name: SupportedApplications.SimpleTransferApp,
         network: Network[ethNetwork.name.toUpperCase()],
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
         stateEncoding: `
           tuple(
-            uint8 stage,
-            ${singleAssetTwoPartyCoinTransferEncoding} transfers,
-            uint256 turnNum,
-            bool finalized
+            ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers
           )`,
       },
       {
         allowNodeInstall: true,
-        appDefinitionAddress: addressBook[KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP],
-        name: KnownNodeAppNames.SIMPLE_TWO_PARTY_SWAP,
+        appDefinitionAddress: addressBook[SupportedApplications.SimpleTwoPartySwapApp],
+        name: SupportedApplications.SimpleTwoPartySwapApp,
         network: Network[ethNetwork.name.toUpperCase()],
         outcomeType: OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
         stateEncoding: `
@@ -114,23 +116,22 @@ export class ConfigService {
       {
         actionEncoding: `
           tuple(
-            uint256 amount,
-            address assetId,
-            bytes32 paymentId,
             bytes32 preImage
-          )`,
+          )
+        `,
         allowNodeInstall: true,
-        appDefinitionAddress: addressBook[KnownNodeAppNames.UNIDIRECTIONAL_LINKED_TRANSFER],
-        name: KnownNodeAppNames.UNIDIRECTIONAL_LINKED_TRANSFER,
+        appDefinitionAddress: addressBook[SupportedApplications.SimpleLinkedTransferApp],
+        name: SupportedApplications.SimpleLinkedTransferApp,
         network: Network[ethNetwork.name.toUpperCase()],
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
         stateEncoding: `
           tuple(
-            uint8 stage,
-            ${singleAssetTwoPartyCoinTransferEncoding} transfers,
+            ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
             bytes32 linkedHash,
-            uint256 turnNum,
-            bool finalized
+            uint256 amount,
+            address assetId,
+            bytes32 paymentId,
+            bytes32 preImage
           )`,
       },
     ];
@@ -138,6 +139,10 @@ export class ConfigService {
 
   getLogLevel(): number {
     return parseInt(this.get("INDRA_LOG_LEVEL") || "3", 10);
+  }
+
+  isDevMode(): boolean {
+    return this.get("NODE_ENV") !== "production";
   }
 
   getMnemonic(): string {
@@ -165,5 +170,14 @@ export class ConfigService {
       port: parseInt(this.get("INDRA_PG_PORT"), 10),
       username: this.get("INDRA_PG_USERNAME"),
     };
+  }
+
+  getRedisUrl(): string {
+    return this.get("INDRA_REDIS_URL");
+  }
+
+  onModuleInit(): void {
+    const wallet = Wallet.fromMnemonic(this.getMnemonic());
+    this.wallet = wallet.connect(this.getEthProvider());
   }
 }

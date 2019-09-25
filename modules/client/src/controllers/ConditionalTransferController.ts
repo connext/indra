@@ -1,25 +1,22 @@
 import {
-  ConditionalTransferInitialStateBigNumber,
+  BigNumber,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
   convert,
   LinkedTransferParameters,
   LinkedTransferResponse,
   RegisteredAppDetails,
+  SimpleLinkedTransferAppStateBigNumber,
   SupportedApplication,
   SupportedApplications,
   TransferCondition,
-  UnidirectionalLinkedTransferAppActionBigNumber,
-  UnidirectionalLinkedTransferAppStage,
-  UnidirectionalLinkedTransferAppStateBigNumber,
 } from "@connext/types";
-import { RejectInstallVirtualMessage } from "@counterfactual/node";
-import { Node as NodeTypes } from "@counterfactual/types";
-import { Zero } from "ethers/constants";
-import { BigNumber, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
+import { Node as CFCoreTypes } from "@counterfactual/types";
+import { HashZero, Zero } from "ethers/constants";
 
-import { freeBalanceAddressFromXpub } from "../lib/utils";
-import { falsy, invalidAddress, notLessThanOrEqualTo } from "../validation";
+import { RejectInstallVirtualMessage } from "../lib/cfCore";
+import { createLinkedHash, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
+import { falsy, invalid32ByteHexString, invalidAddress, notLessThanOrEqualTo } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
@@ -27,15 +24,6 @@ type ConditionalExecutors = {
   [index in TransferCondition]: (
     params: ConditionalTransferParameters,
   ) => Promise<ConditionalTransferResponse>;
-};
-
-export const createLinkedHash = (
-  action: UnidirectionalLinkedTransferAppActionBigNumber,
-): string => {
-  return solidityKeccak256(
-    ["uint256", "address", "bytes32", "bytes32"],
-    [action.amount, action.assetId, action.paymentId, action.preImage],
-  );
 };
 
 export class ConditionalTransferController extends AbstractController {
@@ -47,7 +35,7 @@ export class ConditionalTransferController extends AbstractController {
     params: ConditionalTransferParameters,
   ): Promise<ConditionalTransferResponse> => {
     this.log.info(
-      `Conditional transfer called with parameters: ${JSON.stringify(params, null, 2)}`,
+      `Conditional transfer called with parameters: ${JSON.stringify(params, replaceBN, 2)}`,
     );
 
     const res = await this.conditionalExecutors[params.conditionType](params);
@@ -60,38 +48,35 @@ export class ConditionalTransferController extends AbstractController {
     params: LinkedTransferParameters,
   ): Promise<LinkedTransferResponse> => {
     // convert params + validate
-    const { amount, assetId } = convert.LinkedTransfer("bignumber", params);
-    const invalid = await this.validateLinked(amount, assetId);
+    const { amount, assetId, paymentId, preImage } = convert.LinkedTransfer("bignumber", params);
+    const invalid = await this.validateLinked(amount, assetId, paymentId, preImage);
     if (invalid) {
       throw new Error(invalid);
     }
 
     const appInfo = this.connext.getRegisteredAppDetails(
-      SupportedApplications.UnidirectionalLinkedTransferApp as SupportedApplication,
+      SupportedApplications.SimpleLinkedTransferApp as SupportedApplication,
     );
 
-    // generate random payment id
-    const paymentId = hexlify(randomBytes(32));
-    // generate random preimage
-    const preImage = hexlify(randomBytes(32));
     // install the transfer application
-    const linkedHash = createLinkedHash({ amount, assetId, paymentId, preImage });
+    const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
 
-    const initialState: UnidirectionalLinkedTransferAppStateBigNumber = {
-      finalized: false,
-      linkedHash,
-      stage: UnidirectionalLinkedTransferAppStage.POST_FUND,
-      transfers: [
+    const initialState: SimpleLinkedTransferAppStateBigNumber = {
+      amount,
+      assetId,
+      coinTransfers: [
         {
-          amount: Zero,
+          amount,
           to: freeBalanceAddressFromXpub(this.connext.publicIdentifier),
         },
         {
-          amount,
+          amount: Zero,
           to: freeBalanceAddressFromXpub(this.connext.nodePublicIdentifier),
         },
       ],
-      turnNum: Zero,
+      linkedHash,
+      paymentId,
+      preImage: HashZero,
     };
 
     const appId = await this.conditionalTransferAppInstalled(
@@ -100,6 +85,7 @@ export class ConditionalTransferController extends AbstractController {
       initialState,
       appInfo,
     );
+
     if (!appId) {
       throw new Error(`App was not installed`);
     }
@@ -114,11 +100,18 @@ export class ConditionalTransferController extends AbstractController {
   private validateLinked = async (
     amount: BigNumber,
     assetId: string,
+    paymentId: string,
+    preImage: string,
   ): Promise<undefined | string> => {
     // check that there is sufficient free balance for amount
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
-    const errs = [invalidAddress(assetId), notLessThanOrEqualTo(amount, preTransferBal)];
+    const errs = [
+      invalidAddress(assetId),
+      notLessThanOrEqualTo(amount, preTransferBal),
+      invalid32ByteHexString(paymentId),
+      invalid32ByteHexString(preImage),
+    ];
     return errs ? errs.filter(falsy)[0] : undefined;
   };
 
@@ -127,7 +120,7 @@ export class ConditionalTransferController extends AbstractController {
   private conditionalTransferAppInstalled = async (
     initiatorDeposit: BigNumber,
     assetId: string,
-    initialState: ConditionalTransferInitialStateBigNumber,
+    initialState: SimpleLinkedTransferAppStateBigNumber,
     appInfo: RegisteredAppDetails,
   ): Promise<string | undefined> => {
     let boundResolve: (value?: any) => void;
@@ -135,12 +128,12 @@ export class ConditionalTransferController extends AbstractController {
 
     // note: intermediary is added in connext.ts as well
     const {
-      actionEncoding,
       appDefinitionAddress: appDefinition,
       outcomeType,
       stateEncoding,
+      actionEncoding,
     } = appInfo;
-    const params: NodeTypes.ProposeInstallParams = {
+    const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,
@@ -156,40 +149,44 @@ export class ConditionalTransferController extends AbstractController {
       timeout: Zero,
     };
 
-    const res = await this.connext.proposeInstallApp(params);
+    const proposeRes = await this.connext.proposeInstallApp(params);
     // set app instance id
-    this.appId = res.appInstanceId;
+    this.appId = proposeRes.appInstanceId;
 
     try {
       await new Promise((res: () => any, rej: () => any): void => {
-        boundReject = this.rejectInstallTransfer.bind(null, rej);
         boundResolve = this.resolveInstallTransfer.bind(null, res);
-        this.listener.on(NodeTypes.EventName.INSTALL, boundResolve);
-        this.listener.on(NodeTypes.EventName.REJECT_INSTALL, boundReject);
+        boundReject = this.rejectInstallTransfer.bind(null, rej);
+        this.connext.messaging.subscribe(
+          `indra.node.${this.connext.nodePublicIdentifier}.install.${proposeRes.appInstanceId}`,
+          boundResolve,
+        );
+        this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
       });
-      this.log.info(`App was installed successfully!: ${JSON.stringify(res)}`);
-      return res.appInstanceId;
+      this.log.info(`App was installed successfully!: ${JSON.stringify(proposeRes)}`);
+      return proposeRes.appInstanceId;
     } catch (e) {
       this.log.error(`Error installing app: ${e.toString()}`);
       return undefined;
     } finally {
-      this.cleanupInstallListeners(boundResolve, boundReject);
+      this.cleanupInstallListeners(boundReject, proposeRes.appInstanceId);
     }
   };
 
   // TODO: fix type of data
-  private resolveInstallTransfer = (res: (value?: unknown) => void, data: any): any => {
-    if (this.appId !== data.params.appInstanceId) {
+  private resolveInstallTransfer = (res: (value?: unknown) => void, message: any): any => {
+    // TODO: why is it sometimes data vs data.data?
+    const appInstance = message.data.data ? message.data.data : message.data;
+
+    if (appInstance.identityHash !== this.appId) {
+      // not our app
       this.log.info(
-        `Caught INSTALL event for different app ${JSON.stringify(data)}, expected ${this.appId}`,
+        `Caught INSTALL event for different app ${JSON.stringify(message)}, expected ${this.appId}`,
       );
       return;
     }
-    if (this.timeout) {
-      clearTimeout(this.timeout);
-    }
-    res(data);
-    return data;
+    res(message);
+    return message;
   };
 
   // TODO: fix types of data
@@ -202,12 +199,14 @@ export class ConditionalTransferController extends AbstractController {
       return;
     }
 
-    return rej(`Install failed. Event data: ${JSON.stringify(msg, null, 2)}`);
+    return rej(`Install failed. Event data: ${JSON.stringify(msg, replaceBN, 2)}`);
   };
 
-  private cleanupInstallListeners = (boundResolve: any, boundReject: any): void => {
-    this.listener.removeListener(NodeTypes.EventName.INSTALL, boundResolve);
-    this.listener.removeListener(NodeTypes.EventName.REJECT_INSTALL, boundReject);
+  private cleanupInstallListeners = (boundReject: any, appId: string): void => {
+    this.connext.messaging.unsubscribe(
+      `indra.node.${this.connext.nodePublicIdentifier}.install.${appId}`,
+    );
+    this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
   };
 
   // add all executors/handlers here

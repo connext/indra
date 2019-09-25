@@ -1,14 +1,16 @@
 # Cache
 .cache
 .config
+.jest.cache
 .node-gyp
 .npm
+.payment-bot-db
 modules/**/.cache
 modules/**/.config
 modules/**/.node-gyp
 modules/**/.npm
 modules/daicard/src/react-app-env.d.ts
-.payment-bot-db
+modules/database/snapshots
 
 # Compiled output
 build/
@@ -23,6 +25,7 @@ package.json.lerna_backup
 yarn-debug.log*
 yarn-error.log*
 ops/*.log
+.deploy-indra.patch
 
 # OS
 .bash_history
@@ -52,6 +55,12 @@ cypress/videos
 # Git submodules
 modules/**/.git
 modules/**/.circleci
+.cf-core-bridge
 
 # Local packages
 counterfactual
+
+# Regenerated files from tests
+bots.json
+links.json
+nohup.out

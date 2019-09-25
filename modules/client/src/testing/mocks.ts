@@ -1,6 +1,7 @@
 import { IMessagingService } from "@connext/messaging";
 import {
   AppRegistry,
+  ChannelAppSequences,
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
@@ -8,7 +9,7 @@ import {
   SupportedApplication,
   SupportedNetwork,
 } from "@connext/types";
-import { Node as NodeTypes } from "@counterfactual/types";
+import { Node as CFCoreTypes } from "@counterfactual/types";
 import { providers } from "ethers";
 
 import { Logger } from "../lib/logger";
@@ -28,38 +29,43 @@ export const nodeUrl: string = process.env.NODE_URL || "nats://morecoolstuffs";
 
 export class MockMessagingService implements IMessagingService {
   private returnVals: any = MockNodeClientApi.returnValues;
+  private log: Logger;
+
+  public constructor(opts: any) {
+    this.log = new Logger("MockMessagingService", opts.logLevel);
+  }
 
   async connect(): Promise<void> {
-    console.log(`[MockMessaging] connect`);
+    this.log.info(`Connect`);
   }
 
   async disconnect(): Promise<void> {
-    console.log(`[MockMessaging] connect`);
+    this.log.info(`Disconnect`);
   }
 
   async onReceive(subject: string, callback: (msg: any) => void): Promise<void> {
-    console.log(`[MockMessaging] Registered callback for subject ${subject}`);
+    this.log.info(`Registered callback for subject ${subject}`);
   }
 
   public request(subject: string, timeout: number, body?: any): any {
-    console.log(`[MockMessaging] Sending request to ${subject}`);
+    this.log.info(`Sending request to ${subject}`);
     return (this.returnVals as any)[subject];
   }
 
   async send(to: string, msg: any): Promise<void> {
-    console.log(`[MockMessaging] Sending message to ${to}: ${JSON.stringify(msg)}`);
+    this.log.info(`Sending message to ${to}: ${JSON.stringify(msg)}`);
   }
 
   async publish(to: string, msg: any): Promise<void> {
-    console.log(`[MockMessaging] Publishing message to ${to}: ${JSON.stringify(msg)}`);
+    this.log.info(`Publishing message to ${to}: ${JSON.stringify(msg)}`);
   }
 
   async subscribe(subject: string, callback: (msg: any) => void): Promise<void> {
-    console.log(`[MockMessaging] Registered subscription for subject ${subject}`);
+    this.log.info(`Registered subscription for subject ${subject}`);
   }
 
   async unsubscribe(subject: string): Promise<void> {
-    console.log(`[MockMessaging] Unsubscribing from ${subject}`);
+    this.log.info(`Unsubscribing from ${subject}`);
   }
 
   public patch(subject: string, returnValue: any): any {
@@ -78,7 +84,7 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public constructor(opts: Partial<NodeInitializationParameters> = {}) {
     this.log = new Logger("MockNodeClientApi", opts.logLevel);
-    this.messaging = (opts.messaging as any) || new MockMessagingService();
+    this.messaging = (opts.messaging as any) || new MockMessagingService(opts);
     this.nonce = undefined;
     this.signature = undefined;
   }
@@ -96,6 +102,8 @@ export class MockNodeClientApi implements INodeApiClient {
     // TODO: mock out properly!! create mocking fns!!!
     createChannel: {} as CreateChannelResponse,
     getChannel: {} as GetChannelResponse,
+    verifyAppSequenceNumber: {} as ChannelAppSequences,
+    withdraw: {} as TransactionResponse,
   };
 
   public async appRegistry(appDetails?: {
@@ -128,16 +136,28 @@ export class MockNodeClientApi implements INodeApiClient {
   public async subscribeToSwapRates(
     from: string,
     to: string,
-    store: NodeTypes.IStoreService,
+    store: CFCoreTypes.IStoreService,
   ): Promise<void> {}
 
   public async unsubscribeFromSwapRates(from: string, to: string): Promise<void> {}
 
   public async requestCollateral(): Promise<void> {}
 
+  public async withdraw(): Promise<TransactionResponse> {
+    return MockNodeClientApi.returnValues.withdraw;
+  }
+
   public async resolveLinkedTransfer(): Promise<void> {}
 
   public async addPaymentProfile(): Promise<any> {
     return MockNodeClientApi.returnValues.addPaymentProfile;
+  }
+
+  public async getPaymentProfile(): Promise<PaymentProfile | undefined> {
+    return undefined;
+  }
+
+  public async verifyAppSequenceNumber(): Promise<ChannelAppSequences> {
+    return MockNodeClientApi.returnValues.verifyAppSequenceNumber;
   }
 }

@@ -21,7 +21,7 @@ docker swarm init 2> /dev/null || true
 ########################################
 ## Setup env vars
 
-project="indra_v2"
+project="indra"
 cwd="`pwd`"
 args="$@"
 identifier=1
@@ -30,6 +30,9 @@ while [ "$1" != "" ]; do
         -i | --identifier )     shift
                                 identifier=$1
                                 ;;
+        -m | --mnemonic )       shift
+                                mnemonic=$1
+                                ;;
     esac
     shift
 done
@@ -37,47 +40,42 @@ done
 DB_FILENAME="${DB_FILENAME:-.payment-bot-db/$identifier.json}"
 ETH_RPC_URL="${ETH_RPC_URL:-http://172.17.0.1:8545}"
 NODE_URL="${NODE_URL:-nats://172.17.0.1:4222}"
+WEBDIS_URL="${REDIS_URL:-redis://172.17.0.1:6379}"
 
-# Use different mnemonics for different bots
-if [ "$identifier" = "1" ]; then
-  export MNEMONIC="humble sense shrug young vehicle assault destroy cook property average silent travel"
-else
-  export MNEMONIC="roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult"
-fi
-
+# Damn I forget where I copy/pasted this witchcraft from, yikes.
+# It's supposed to find out whether we're calling this script from a shell & can print stuff
+# Or whether it's running in the background of another script and can't attach to a screen
 test -t 0 -a -t 1 -a -t 2 && interactive="--tty"
-my_id="`id -u`:`id -g`"
 
-# function cleanup {
-#   echo "Stopping the payment bot..."
-#   docker container stop ${project}_payment_bot_$identifier
-# }
-# trap cleanup EXIT
+if [ -z "$mnemonic" ] && [ "$identifier" == 1 ]
+then
+  mnemonic="humble sense shrug young vehicle assault destroy cook property average silent travel"
+elif [ -z "$mnemonic" ] && [ "$identifier" == 2 ]
+then
+  mnemonic="roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult"
+fi
 
 ########################################
 ## Launch payment bot
-
-echo
-echo "Deploying payment bot..."
 
 docker run \
   --entrypoint="bash" \
   --env="DB_FILENAME=$DB_FILENAME" \
   --env="ETH_RPC_URL=$ETH_RPC_URL" \
-  --env="MNEMONIC=$MNEMONIC" \
+  --env="MNEMONIC=$mnemonic" \
   --env="NODE_URL=$NODE_URL" \
+  --env="WEBDIS_URL=$WEBDIS_URL" \
   $interactive \
   --name="${project}_payment_bot_$identifier" \
   --rm \
   --tty \
-  --user="$my_id" \
+  --user="`id -u`:`id -g`" \
   --volume="`pwd`:/root" \
   --workdir="/root" \
   ${project}_builder -c '
     set -e
-    echo "payment bot container launched"
     cd modules/payment-bot
     mkdir -p ${DB_FILENAME%/*}
     touch $DB_FILENAME
-    ts-node src/index.ts '"$args"'
+    ./node_modules/.bin/ts-node src/index.ts '"$args"'
   '

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-project="indra_v2"
+project="indra"
 
 username=$project
 database=$project

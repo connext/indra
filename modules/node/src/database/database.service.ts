@@ -1,14 +1,32 @@
 import { Injectable } from "@nestjs/common";
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from "@nestjs/typeorm";
 
+import { InitNodeRecords1567158660577 } from "../../migrations/1567158660577-init-node-records";
+import { InitHubTables1567158805166 } from "../../migrations/1567158805166-init-hub-tables";
+import { AddCollateralizationInFlight1567601573372 } from "../../migrations/1567601573372-add-collateralization-in-flight";
+import { AddReclaimedLinks1568746114079 } from "../../migrations/1568746114079-add-reclaimed-links";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
+import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { Channel } from "../channel/channel.entity";
 import { ConfigService } from "../config/config.service";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
-import { Transfer } from "../transfer/transfer.entity";
+import { LinkedTransfer, PeerToPeerTransfer } from "../transfer/transfer.entity";
 
-export const entities = [AppRegistry, Channel, PaymentProfile, Transfer];
-export const viewEntites = [];
+const entities = [
+  AppRegistry,
+  Channel,
+  CFCoreRecord,
+  PaymentProfile,
+  LinkedTransfer,
+  PeerToPeerTransfer,
+];
+
+const migrations = [
+  InitNodeRecords1567158660577,
+  InitHubTables1567158805166,
+  AddCollateralizationInFlight1567601573372,
+  AddReclaimedLinks1568746114079,
+];
 
 @Injectable()
 export class TypeOrmConfigService implements TypeOrmOptionsFactory {
@@ -16,9 +34,11 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
   createTypeOrmOptions(): TypeOrmModuleOptions {
     return {
       ...this.config.getPostgresConfig(),
-      entities: [...entities, ...viewEntites],
+      entities,
       logging: ["error"],
-      synchronize: true,
+      migrations,
+      migrationsRun: true,
+      synchronize: false,
       type: "postgres",
     };
   }

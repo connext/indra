@@ -1,6 +1,6 @@
 ## Description
 
-Indra v2 built with [Nest](https://github.com/nestjs/nest) framework.
+Indra built with [Nest](https://github.com/nestjs/nest) framework.
 
 ## Installation
 
@@ -9,6 +9,8 @@ $ npm install
 ```
 
 ## Running the app
+
+Refer to the instructions at the repo's [root](../../README.md) for the quickstart guide.
 
 ### Local Development
 

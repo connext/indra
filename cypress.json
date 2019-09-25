@@ -1,12 +1,13 @@
 {
-  "ignoreTestFiles": "**/examples/**",
-  "integrationFolder": "cypress/tests",
+  "defaultCommandTimeout": 120000,
   "env": {
     "mnemonic": "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat",
     "provider": "/api/ethprovider",
     "publicUrl": "http://localhost"
   },
-  "defaultCommandTimeout": 180000,
+  "ignoreTestFiles": "**/examples/**",
+  "integrationFolder": "cypress/tests",
+  "video": false,
   "viewportWidth": 600,
   "viewportHeight": 800
 }

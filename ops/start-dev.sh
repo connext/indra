@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-project="indra_v2"
+project="indra"
 
 # Turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
@@ -43,9 +43,11 @@ database_image="postgres:9-alpine"
 ethprovider_image="trufflesuite/ganache-cli:v6.4.5"
 node_image="$builder_image"
 nats_image="nats:2.0.0-linux"
-proxy_image="indra_v2_proxy:dev"
+proxy_image="${project}_proxy:dev"
 daicard_devserver_image="$builder_image"
-relay_image="indra_v2_relay"
+relay_image="${project}_relay"
+redis_image=redis:5-alpine
+redis_url="redis://redis:6379"
 
 node_port=8080
 nats_port=4222
@@ -154,6 +156,7 @@ services:
       INDRA_PG_PORT: $postgres_port
       INDRA_PG_USERNAME: $postgres_user
       INDRA_PORT: $node_port
+      INDRA_REDIS_URL: $redis_url
       NODE_ENV: development
     networks:
       - $project
@@ -166,7 +169,7 @@ services:
 
   ethprovider:
     image: $ethprovider_image
-    command: ["--db=/data", "--mnemonic=$eth_mnemonic", "--networkId=4447"]
+    command: ["--db=/data", "--mnemonic=$eth_mnemonic", "--networkId=4447", "--blockTime=15"]
     networks:
       - $project
     ports:
@@ -208,6 +211,13 @@ services:
       - $project
     ports:
       - "8083:8080"
+  redis:
+    image: $redis_image
+    networks:
+      - $project
+    ports:
+      - "6379:6379"
+
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project

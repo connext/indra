@@ -2,72 +2,99 @@ version: 2
 
 jobs:
   test-node:
-    machine: true
+    machine:
+      image: ubuntu-1604:201903-01
     steps:
       - checkout
       - run: make test-node
 
-  test-e2e-ui:
-    machine: true
+  test-ui:
+    machine:
+      image: ubuntu-1604:201903-01
     steps:
       - checkout
-      - run: make test-e2e-ui
+      - run: make prod
+      - run: make start-test
+      - run: make test-ui
 
-  test-e2e-bot:
-    machine: true
+  test-bot:
+    machine:
+      image: ubuntu-1604:201903-01
     steps:
       - checkout
-      - run: make test-e2e-bot
+      - run: make prod
+      - run: make start-test
+      - run: make test-bot
 
   push-latest-images:
-    machine: true
+    machine:
+      image: ubuntu-1604:201903-01
     steps:
       - checkout
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+      - run: make prod
       - run: make push-latest
 
   push-prod-images:
-    machine: true
+    machine:
+      image: ubuntu-1604:201903-01
     steps:
       - checkout
       - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+      - run: make prod
       - run: make push-prod
 
   deploy-staging:
-    machine: true
+    machine:
+      image: ubuntu-1604:201903-01
     steps:
       - run:
           command: |
-            ssh ubuntu@$STAGING_URL "bash -s" <<EOF
+            ssh ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
               set -e
-              git clone https://github.com/ConnextProject/indra-v2.git || true
-              cd indra-v2
+              git clone https://github.com/ConnextProject/indra.git || true
+              cd indra
               git checkout --force $CIRCLE_BRANCH
               git fetch
-              git reset --hard origin/$CIRCLE_BRANCH
-              export INDRA_V2_MODE="staging"
-              export INDRA_V2_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
-              export INDRA_V2_DOMAINNAME="$STAGING_URL"
+              git reset --hard $CIRCLE_SHA1
+              export INDRA_MODE="staging"
+              export INDRA_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
+              export INDRA_DOMAINNAME="$STAGING_DOMAINNAME"
               make restart-prod
               docker container prune -f
               docker image ls -q | xargs docker image rm || true
             EOF
 
   deploy-prod:
-    machine: true
+    machine:
+      image: ubuntu-1604:201903-01
     steps:
       - run:
           command: |
-            ssh ubuntu@$RINKEBY_URL "bash -s" <<EOF
+            ssh ubuntu@$RINKEBY_DOMAINNAME "bash -s" <<EOF
               set -e
-              git clone https://github.com/ConnextProject/indra-v2.git || true
-              cd indra-v2
+              git clone https://github.com/ConnextProject/indra.git || true
+              cd indra
               git checkout --force $CIRCLE_BRANCH
               git fetch
-              git reset --hard origin/$CIRCLE_BRANCH
-              export INDRA_V2_MODE="staging"
-              export INDRA_V2_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
-              export INDRA_V2_DOMAINNAME="$RINKEBY_URL"
+              git reset --hard $CIRCLE_SHA1
+              export INDRA_MODE="prod"
+              export INDRA_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
+              export INDRA_DOMAINNAME="$RINKEBY_DOMAINNAME"
+              make restart-prod
+              docker container prune -f
+              docker image ls -q | xargs docker image rm || true
+            EOF
+            ssh ubuntu@$MAINNET_DOMAINNAME "bash -s" <<EOF
+              set -e
+              git clone https://github.com/ConnextProject/indra.git || true
+              cd indra
+              git checkout --force $CIRCLE_BRANCH
+              git fetch
+              git reset --hard $CIRCLE_SHA1
+              export INDRA_MODE="prod"
+              export INDRA_ETH_PROVIDER=$MAINNET_ETH_PROVIDER
+              export INDRA_DOMAINNAME="$MAINNET_DOMAINNAME"
               make restart-prod
               docker container prune -f
               docker image ls -q | xargs docker image rm || true
@@ -78,8 +105,8 @@ workflows:
   test-and-deploy:
     jobs:
       - test-node
-      - test-e2e-ui
-      - test-e2e-bot
+      - test-ui
+      - test-bot
 
       - push-latest-images:
           filters:
@@ -87,8 +114,8 @@ workflows:
               only: staging
           requires:
             - test-node
-            - test-e2e-ui
-            - test-e2e-bot
+            - test-ui
+            - test-bot
 
       - push-prod-images:
           filters:
@@ -96,8 +123,8 @@ workflows:
               only: master
           requires:
             - test-node
-            - test-e2e-ui
-            - test-e2e-bot
+            - test-ui
+            - test-bot
 
       - deploy-staging:
           requires:

@@ -68,7 +68,7 @@ my.pay = (to, value) => {
   cy.get('input[type="string"]').clear().type(to)
   cy.get('input[type="number"]').clear().type(value)
   cy.contains('button', /send/i).click()
-  cy.contains('h5', /in progress/i).should('exist')
+  cy.contains('h5', /payment success/i).should('exist')
 }
 
 my.cashoutEther = () => {
