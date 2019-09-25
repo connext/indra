@@ -22,7 +22,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import queryString from "query-string";
 
-import { Currency, toBN } from "../utils";
+import { Currency } from "../utils";
 import { MySnackbar } from "../components/snackBar";
 
 import { QRGenerate } from "./qrCode";
@@ -182,9 +182,9 @@ export const RedeemCard = style(props => {
       console.log(`Redeem card launched with url query: ${JSON.stringify(query)}`)
       setSecret(query.secret);
       setPaymentId(query.paymentId);
-      if (!channel) { return; }
+      if (!channel || !query.paymentId) { return; }
       const link = await channel.getLinkedTransfer(query.paymentId);
-      console.log(`Got linked transfer ${paymentId}: ${JSON.stringify(link)}`);
+      console.log(`Got linked transfer ${query.paymentId}: ${JSON.stringify(link)}`);
       setAssetId(link.assetId);
       setAmount(Currency.DEI(link.amount));
     })()
@@ -270,12 +270,12 @@ export const RedeemCard = style(props => {
       </Grid>
 
       <Grid item xs={12}>
-        <Typography noWrap variant="p" visible={assetId}>
+        <Typography noWrap variant="body1" visible={assetId}>
            Amount: {amount ? amount.toDAI().format() : "N/A"}
         </Typography>
       </Grid>
 
-      <Typography noWrap variant="p" visible={assetId}>
+      <Typography noWrap variant="body1" visible={assetId}>
          Asset: {assetId || "N/A"}
       </Typography>
 

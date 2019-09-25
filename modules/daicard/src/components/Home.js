@@ -112,18 +112,53 @@ export const Home = style(props => {
             </Grid>
           </Grid>
         </Grid>
-        <Grid item xs={12}>
-          <Button
-            style={{ marginBottom: "20%" }}
-            fullWidth
-            color="primary"
-            variant="outlined"
-            size="large"
-            component={Link}
-            to="/cashout"
+
+        <Grid item xs={12} style={{ paddingTop: "10%" }}>
+          <Grid
+            container
+            spacing={8}
+            direction="row"
+            alignItems="center"
+            justify="center"
           >
-            Cash Out
-          </Button>
+            <Grid item xs={12} sm={6}>
+              <Button
+                fullWidth
+                style={{
+                  color: "#FFF",
+                  backgroundColor: "#FCA311"
+                }}
+                variant="contained"
+                size="large"
+                component={Link}
+                to="/redeem"
+              >
+                Redeem
+                <ReceiveIcon style={{ marginLeft: "5px" }} />
+              </Button>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Button
+                style={{
+                  color: "#FFF",
+                  backgroundColor: "#FCA311",
+                }}
+                fullWidth
+                color="primary"
+                variant="contained"
+                size="large"
+                component={Link}
+                to="/cashout"
+              >
+                Cash Out
+              </Button>
+            </Grid>
+          </Grid>
+        </Grid>
+
+
+
+        <Grid item xs={12}>
         </Grid>
       </Grid>
     </>
