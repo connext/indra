@@ -326,7 +326,7 @@ export type TransferCondition = keyof typeof TransferConditions;
 // linked transfer types
 export type LinkedTransferParameters<T = string> = {
   conditionType: "LINKED_TRANSFER";
-  amount: T;
+  amount?: T;
   assetId?: Address;
   paymentId: string;
   preImage: string;
@@ -544,7 +544,8 @@ export function convertAppState<To extends NumericTypeName>(
 ): AppState<NumericTypes[To]> {
   return {
     ...obj,
-    // transfers: [convertAmountField(to, obj.transfers[0]), convertAmountField(to, obj.transfers[1])],
+    // transfers: [convertAmountField(to, obj.transfers[0]),
+    //   convertAmountField(to, obj.transfers[1])],
   };
 }
 

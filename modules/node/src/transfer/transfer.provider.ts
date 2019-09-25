@@ -16,6 +16,19 @@ export class TransferMessaging extends AbstractMessagingProvider {
     super(messaging);
   }
 
+  async fetchLinkedTransfer(
+    subject: string,
+    data: {
+      paymentId: string;
+    },
+  ): Promise<any> {
+    if (!data.paymentId) {
+      throw new RpcException(`Incorrect data received. Data: ${data}`);
+    }
+    logger.log(`Got fetch link request for: ${data.paymentId}`);
+    return await this.transferService.fetchLinkedTransfer(data.paymentId);
+  }
+
   async resolveLinkedTransfer(
     subject: string,
     data: {
@@ -33,6 +46,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
   }
 
   setupSubscriptions(): void {
+    super.connectRequestReponse("transfer.fetch-linked.>", this.fetchLinkedTransfer.bind(this));
     super.connectRequestReponse("transfer.resolve-linked.>", this.resolveLinkedTransfer.bind(this));
   }
 }

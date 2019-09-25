@@ -79,12 +79,14 @@ export class TransferService {
     amount: BigNumber,
     appInstanceId: string,
     linkedHash: string,
+    paymentId: string,
   ): Promise<LinkedTransfer> {
     const transfer = new LinkedTransfer();
     transfer.senderAppInstanceId = appInstanceId;
     transfer.amount = amount;
     transfer.assetId = assetId;
     transfer.linkedHash = linkedHash;
+    transfer.paymentId = paymentId;
 
     const senderChannel = await this.channelRepository.findByUserPublicIdentifier(senderPubId);
     transfer.senderChannel = senderChannel;
@@ -92,6 +94,10 @@ export class TransferService {
     transfer.status = LinkedTransferStatus.PENDING;
 
     return await this.linkedTransferRepository.save(transfer);
+  }
+
+  async fetchLinkedTransfer(paymentId: string): Promise<any> {
+    return await this.linkedTransferRepository.findByPaymentId(paymentId);
   }
 
   async resolveLinkedTransfer(

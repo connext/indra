@@ -404,6 +404,8 @@ export class AppRegistryService {
           proposedAppParams.appInstanceId,
           (proposedAppParams.params.initialState as SimpleLinkedTransferAppStateBigNumber)
             .linkedHash,
+          (proposedAppParams.params.initialState as SimpleLinkedTransferAppStateBigNumber)
+            .paymentId,
         );
         logger.log(`saved!`);
         break;
