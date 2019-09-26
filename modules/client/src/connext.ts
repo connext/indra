@@ -4,9 +4,9 @@ import {
   AppActionBigNumber,
   AppRegistry,
   AppState,
+  AppStateBigNumber,
   CFCoreChannel,
   ChannelAppSequences,
-  AppStateBigNumber,
   ChannelState,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
@@ -21,14 +21,13 @@ import {
   ResolveConditionParameters,
   ResolveConditionResponse,
   RpcType,
-  SolidityValueType,
   SupportedApplication,
   SupportedNetwork,
   SwapParameters,
   TransferParameters,
   WithdrawParameters,
 } from "@connext/types";
-import { Address, Node as CFCoreTypes, AppInstanceJson } from "@counterfactual/types";
+import { Address, AppInstanceJson, Node as CFCoreTypes } from "@counterfactual/types";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
