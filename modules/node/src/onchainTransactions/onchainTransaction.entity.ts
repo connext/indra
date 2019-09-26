@@ -14,9 +14,7 @@ export class OnchainTransaction {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column("text", {
-    default: TransactionReason.USER_WITHDRAWAL,
-  })
+  @Column("text")
   reason!: TransactionReason;
 
   @Column("text", {
