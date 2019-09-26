@@ -3,6 +3,7 @@ import { Address, NetworkContext, Node as NodeTypes } from "@counterfactual/type
 import { BigNumber, Network } from "ethers/utils";
 
 import { App, AppState } from "./app";
+import { CFCoreChannel } from ".";
 
 export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
@@ -27,10 +28,10 @@ export type AssetAmountBigNumber = AssetAmount<BigNumber>;
 export type User = {
   id: number;
   xpub: string;
-  channels: NodeChannel[];
+  channels: CFCoreChannel[];
 };
 
-export type NodeChannel = {
+export type CFCoreChannel = {
   id: number;
   nodePublicIdentifier: string;
   userPublicIdentifier: string;
@@ -117,7 +118,7 @@ export type GetConfigResponse = {
   messaging: MessagingConfig;
 };
 
-export type GetChannelResponse = NodeChannel;
+export type GetChannelResponse = CFCoreChannel;
 
 // returns the transaction hash of the multisig deployment
 // TODO: this will likely change

@@ -1,7 +1,7 @@
 import { Address, Node as NodeTypes, OutcomeType } from "@counterfactual/types";
 import { BigNumber } from "ethers/utils";
 
-import { NodeChannel } from ".";
+import { CFCoreChannel } from ".";
 
 ////////////////////////////////////
 ////// APP REGISTRY
@@ -50,7 +50,7 @@ export type KnownNodeApp = keyof typeof KnownNodeAppNames;
 //////// General
 export type App<T = string> = {
   id: number;
-  channel: NodeChannel;
+  channel: CFCoreChannel;
   appRegistry: RegisteredAppDetails; // TODO: is this right?
   appId: number;
   xpubPartyA: string;
