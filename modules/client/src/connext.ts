@@ -31,7 +31,7 @@ import { Address, AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/t
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { BigNumber, HDNode, Network } from "ethers/utils";
+import { BigNumber, HDNode, Network, Transaction, bigNumberify } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
@@ -174,6 +174,36 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     ...opts, // use any provided opts by default
   });
   await client.registerSubscriptions();
+
+  // make sure there is not an active withdrawal with >= 3 retries
+  const withdrawal = await client.store.get(withdrawalKey(client.publicIdentifier));
+
+  if (withdrawal && withdrawal.retry < 3) {
+    // get the latest submitted withdrawal from the hub
+    // and check the tx to see if the data matches what we
+    // expect from our store.
+    const tx = await client.node.getLatestWithdrawal();
+    if (client.matchTx(tx, withdrawal.tx)) {
+      // if so, clear tx
+      await client.store.set([
+        {
+          path: withdrawalKey(client.publicIdentifier),
+          value: undefined,
+        },
+      ]);
+      return client;
+    }
+    // if not, and there are retries remaining, retry
+    logger.debug(
+      `Found active withdrawal with ${withdrawal.retry} retries, waiting for withdrawal to be caught`,
+    );
+    await client.retryNodeSubmittedWithdrawal();
+  } else if (withdrawal && withdrawal.retry >= 3) {
+    // otherwise, do not start client.
+    const msg = `Cannot connect client, hub failed to submit latest withdrawal 3 times.`;
+    logger.error(msg);
+    throw new Error(msg);
+  }
   return client;
 }
 
@@ -1042,6 +1072,37 @@ export class ConnextInternal extends ConnextChannel {
     return appInfo[0];
   };
 
+  public matchTx = (
+    givenTransaction: Transaction,
+    expected: CFCoreTypes.MinimalTransaction,
+  ): boolean => {
+    return (
+      givenTransaction.to === expected.to &&
+      bigNumberify(givenTransaction.value).eq(expected.value) &&
+      givenTransaction.data === expected.data
+    );
+  };
+
+  public retryNodeSubmittedWithdrawal = async (): Promise<void> => {
+    const val = await this.getLatestNodeSubmittedWithdrawal();
+    if (!val) {
+      this.logger.error(`No transaction found to retry`);
+      return;
+    }
+    let { retry, tx } = val;
+    retry += 1;
+    if (retry >= 3) {
+      const msg = `Tried to have node submit withdrawal 3 times and it did not work, try submitting from wallet.`;
+      this.logger.error(msg);
+      // TODO: make this submit from wallet :)
+      // but this is weird, could take a while and may have gas issues.
+      // may not be the best way to do this
+      throw new Error(msg);
+    }
+    await this.node.withdraw(tx);
+    await this.watchForUserWithdrawal();
+  };
+
   private appNotInstalled = async (appInstanceId: string): Promise<string | undefined> => {
     const apps = await this.getAppInstances();
     const app = apps.filter((app: AppInstanceInfo) => app.identityHash === appInstanceId);
@@ -1072,26 +1133,6 @@ export class ConnextInternal extends ConnextChannel {
     return undefined;
   };
 
-  private retryNodeSubmittedWithdrawal = async (): Promise<void> => {
-    const val = await this.getLatestNodeSubmittedWithdrawal();
-    if (!val) {
-      this.logger.error(`No transaction found to retry`);
-      return;
-    }
-    let { retry, tx } = val;
-    retry += 1;
-    if (retry >= 3) {
-      const msg = `Tried to have node submit withdrawal 3 times and it did not work, try submitting from wallet.`;
-      this.logger.error(msg);
-      // TODO: make this submit from wallet :)
-      // but this is weird, could take a while and may have gas issues.
-      // may not be the best way to do this
-      throw new Error(msg);
-    }
-    await this.node.withdraw(tx);
-    await this.watchForUserWithdrawal();
-  };
-
   private checkForUserWithdrawal = async (inBlock: number): Promise<boolean> => {
     const val = await this.getLatestNodeSubmittedWithdrawal();
     if (!val) {
@@ -1115,11 +1156,7 @@ export class ConnextInternal extends ConnextChannel {
 
     for (const transactionHash of transactions) {
       const transaction = await this.ethProvider.getTransaction(transactionHash);
-      if (
-        transaction.to === tx.to &&
-        transaction.value.eq(tx.value) &&
-        transaction.data === tx.data
-      ) {
+      if (this.matchTx(transaction, tx)) {
         return true;
       }
     }
