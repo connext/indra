@@ -28,13 +28,7 @@ import {
   TransferParameters,
   WithdrawParameters,
 } from "@connext/types";
-import {
-  CreateChannelMessage,
-  EXTENDED_PRIVATE_KEY_PATH,
-  Node,
-  NODE_EVENTS,
-} from "@counterfactual/node";
-import { Address, AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
+import { Address, Node as CFCoreTypes, AppInstanceJson } from "@counterfactual/types";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -543,30 +537,8 @@ export class ConnextInternal extends ConnextChannel {
 
   ///////////////////////////////////
   // PROVIDER/ROUTER METHODS
-
-  // FIXME: add into router!!!
-  // public getStateChannel = async (): Promise<{ data: any }> => {
-  //   const params = {
-  //     id: Date.now(),
-  //     methodName: "chan_getStateChannel", // FIXME: NodeTypes.RpcMethodName.GET_STATE_CHANNEL,
-  //     parameters: {
-  //       multisigAddress: this.multisigAddress,
-  //     },
-  //   };
-  //   const getStateChannelRes = await this.channelRouter.rpcRouter.dispatch(params);
-  //   return getStateChannelRes.result.result;
-  // };
-
-  public getStateChannel = async (): Promise<{ data: any }> => {
-    const params = {
-      id: Date.now(),
-      methodName: "chan_getStateChannel", // FIXME: CFCoreTypes.RpcMethodName.GET_STATE_CHANNEL,
-      parameters: {
-        multisigAddress: this.multisigAddress,
-      },
-    };
-    const getStateChannelRes = await this.channelRouter.getStateChannel(params); //TODO
-    return getStateChannelRes.result.result;
+  public getState = async (): Promise<CFCoreTypes.GetStateResult> => {
+    return await this.channelRouter.getState(this.multisigAddress);
   };
 
   public providerDeposit = async (
@@ -808,7 +780,6 @@ export class ConnextInternal extends ConnextChannel {
     }
     return await this.channelRouter.withdrawCommitment(
       amount,
-      this.multisigAddress,
       makeChecksumOrEthAddress(assetId),
       recipient,
     );

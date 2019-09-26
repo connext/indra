@@ -16,9 +16,9 @@ export class ChannelRouter extends EventEmitter {
   private type: RpcType;
   private connection: RpcConnection;
 
-  // these properties should be easily accessible via the channel
-  // provider config, which should be set on traditional channel
-  // providers by calling `.enable`
+  // these properties should be easEXTENDEDthe channel
+  // provider config, which should EXTENDEDal channel
+  // providers by calling `.enable`EXTENDED
   public freeBalanceAddress: string;
   public publicIdentifier: string;
   // TODO: include here? not included by default in cf instance
@@ -53,6 +53,12 @@ export class ChannelRouter extends EventEmitter {
       assetId: makeChecksum(assetId),
       multisigAddress,
       notifyCounterparty,
+    });
+  };
+
+  public getState = async (multisigAddress: string): Promise<NodeTypes.GetStateResult> => {
+    return await this._send(NodeTypes.RpcMethodName.GET_STATE, {
+      multisigAddress,
     });
   };
 
