@@ -19,6 +19,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     const txs = await this.createQueryBuilder("onchainTransaction")
       .leftJoinAndSelect("onchainTransaction.channel", "channel")
       .where("channel.userPublicIdentifier = :userPublicIdentifier", { userPublicIdentifier })
+      .orderBy("onchainTransaction.id", "ASC")
       .getMany();
     return txs;
   }
@@ -30,7 +31,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
       .leftJoinAndSelect("onchainTransaction.channel", "channel")
       .where("channel.userPublicIdentifier = :userPublicIdentifier", { userPublicIdentifier })
       .where("onchainTransaction.reason = :reason", { reason: TransactionReason.USER_WITHDRAWAL })
-      .orderBy("id", "DESC")
+      .orderBy("onchainTransaction.id", "DESC")
       .getOne();
     return tx;
   }
