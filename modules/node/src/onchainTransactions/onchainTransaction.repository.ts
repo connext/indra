@@ -50,8 +50,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     onchain.r = tx.r;
     onchain.s = tx.s;
 
-    // TODO: how to add channel?
-    // onchain.channel = channel;
+    onchain.channel = channel;
     return await this.save(onchain);
   }
 }
