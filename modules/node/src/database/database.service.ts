@@ -9,6 +9,7 @@ import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { Channel } from "../channel/channel.entity";
 import { ConfigService } from "../config/config.service";
+import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { LinkedTransfer, PeerToPeerTransfer } from "../transfer/transfer.entity";
 
@@ -19,6 +20,7 @@ const entities = [
   PaymentProfile,
   LinkedTransfer,
   PeerToPeerTransfer,
+  OnchainTransaction,
 ];
 
 const migrations = [
