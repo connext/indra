@@ -259,7 +259,16 @@ services:
     image: $redis_image
     ports:
       - "6379:6379"
-
+  hasura:
+    image: hasura/graphql-engine
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: "postgres://$postgres_user:$postgres_user@$postgres_host:5432/$project"
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+    networks:
+      - $project
+    ports:
+      - "8083:8080"
+      
   logdna:
     image: logdna/logspout:latest
     volumes:
