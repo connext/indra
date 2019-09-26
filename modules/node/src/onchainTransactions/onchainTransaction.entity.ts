@@ -5,6 +5,8 @@ import { Channel } from "../channel/channel.entity";
 
 export enum TransactionReason {
   USER_WITHDRAWAL = "USER_WITHDRAWAL",
+  COLLATERALIZATION = "COLLATERALIZATION",
+  NODE_WITHDRAWAL = "NODE_WITHDRAWAL",
 }
 
 @Entity()
@@ -41,7 +43,7 @@ export class OnchainTransaction {
   })
   gasLimit!: BigNumber;
 
-  @Column("number")
+  @Column("integer")
   nonce!: number;
 
   @Column("text")
@@ -56,7 +58,7 @@ export class OnchainTransaction {
   @Column("text")
   data!: string;
 
-  @Column("number")
+  @Column("integer")
   v!: number;
 
   @Column("text")
