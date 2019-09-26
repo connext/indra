@@ -1,31 +1,29 @@
 import {
+  CFCoreChannel,
   convert,
-  NodeChannel,
   RegisteredAppDetails,
   SimpleTransferAppStateBigNumber,
   SupportedApplication,
   SupportedApplications,
   TransferParameters,
 } from "@connext/types";
-import { RejectInstallVirtualMessage } from "@counterfactual/node";
-import { AppInstanceJson, Node as NodeTypes } from "@counterfactual/types";
+import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
-import { delay, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
+import { RejectInstallVirtualMessage } from "../lib/cfCore";
+import { freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
 import { invalidAddress, invalidXpub } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
-
-const MAX_RETRIES = 20;
 
 export class TransferController extends AbstractController {
   private appId: string;
 
   private timeout: NodeJS.Timeout;
 
-  public transfer = async (params: TransferParameters): Promise<NodeChannel> => {
+  public transfer = async (params: TransferParameters): Promise<CFCoreChannel> => {
     this.log.info(`Transfer called with parameters: ${JSON.stringify(params, replaceBN, 2)}`);
 
     // convert params + validate
@@ -55,12 +53,7 @@ export class TransferController extends AbstractController {
       throw new Error(`App was not installed`);
     }
 
-    await this.waitForAppInstall();
-
     await this.connext.uninstallVirtualApp(appId);
-
-    // TODO: this sucks
-    await this.waitForAppUninstall();
 
     // sanity check, free balance decreased by payment amount
     const postTransferBal = await this.connext.getFreeBalance(assetId);
@@ -159,7 +152,7 @@ export class TransferController extends AbstractController {
 
     // note: intermediary is added in connext.ts as well
     const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding } = appInfo;
-    const params: NodeTypes.ProposeInstallVirtualParams = {
+    const params: CFCoreTypes.ProposeInstallVirtualParams = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,
@@ -185,8 +178,8 @@ export class TransferController extends AbstractController {
       await new Promise((res: any, rej: any): any => {
         boundReject = this.rejectInstallTransfer.bind(null, rej);
         boundResolve = this.resolveInstallTransfer.bind(null, res);
-        this.listener.on(NodeTypes.EventName.INSTALL_VIRTUAL, boundResolve);
-        this.listener.on(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
+        this.listener.on(CFCoreTypes.EventName.INSTALL_VIRTUAL, boundResolve);
+        this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
         // this.timeout = setTimeout(() => {
         //   this.cleanupInstallListeners(boundResolve, boundReject);
         //   boundReject({ data: { appInstanceId: this.appId } });
@@ -203,47 +196,7 @@ export class TransferController extends AbstractController {
   };
 
   private cleanupInstallListeners = (boundResolve: any, boundReject: any): void => {
-    this.listener.removeListener(NodeTypes.EventName.INSTALL_VIRTUAL, boundResolve);
-    this.listener.removeListener(NodeTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
+    this.listener.removeListener(CFCoreTypes.EventName.INSTALL_VIRTUAL, boundResolve);
+    this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
   };
-
-  private async waitForAppInstall(): Promise<void> {
-    return new Promise(
-      async (res: any, rej: any): Promise<any> => {
-        const getAppIds = async (): Promise<string[]> => {
-          return (await this.connext.getAppInstances()).map((a: AppInstanceJson) => a.identityHash);
-        };
-        let retries = 0;
-        while (!(await getAppIds()).includes(this.appId) && retries <= MAX_RETRIES) {
-          this.log.info(`found app id in the open apps... retry number ${retries}`);
-          await delay(100);
-          retries = retries + 1;
-        }
-
-        if (retries > MAX_RETRIES) rej();
-        this.log.info(`app installed after ${retries} retries`);
-        res();
-      },
-    );
-  }
-
-  private async waitForAppUninstall(): Promise<void> {
-    return new Promise(
-      async (res: any, rej: any): Promise<any> => {
-        const getAppIds = async (): Promise<string[]> => {
-          return (await this.connext.getAppInstances()).map((a: AppInstanceJson) => a.identityHash);
-        };
-        let retries = 0;
-        while ((await getAppIds()).includes(this.appId) && retries <= MAX_RETRIES) {
-          this.log.info(`found app id in the open apps... retry number ${retries}`);
-          await delay(100);
-          retries = retries + 1;
-        }
-
-        if (retries > MAX_RETRIES) rej();
-        this.log.info(`app uninstalled after ${retries} retries`);
-        res();
-      },
-    );
-  }
 }

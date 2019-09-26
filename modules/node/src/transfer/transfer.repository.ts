@@ -26,6 +26,11 @@ export class LinkedTransferRepository extends Repository<LinkedTransfer> {
     return await this.save(transfer);
   }
 
+  async markAsReclaimed(transfer: LinkedTransfer): Promise<LinkedTransfer> {
+    transfer.status = LinkedTransferStatus.RECLAIMED;
+    return await this.save(transfer);
+  }
+
   async addPreImage(transfer: LinkedTransfer, preImage: string): Promise<LinkedTransfer> {
     transfer.status = LinkedTransferStatus.REDEEMED;
     transfer.preImage = preImage;

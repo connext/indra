@@ -1,8 +1,8 @@
-import { Node } from "@counterfactual/node";
 import { providers } from "ethers";
 
 import { ChannelRouter } from "../channelRouter";
 import { ConnextInternal } from "../connext";
+import { CFCore } from "../lib/cfCore";
 import { Logger } from "../lib/logger";
 import { ConnextListener } from "../listener";
 import { INodeApiClient } from "../node";

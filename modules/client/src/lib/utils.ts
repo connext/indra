@@ -1,6 +1,5 @@
-import { UnidirectionalLinkedTransferAppActionBigNumber } from "@connext/types";
 import { utils } from "ethers";
-import { hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
+import { BigNumber, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
 
 export const replaceBN = (key: string, value: any): any =>
@@ -48,6 +47,8 @@ export const insertDefault = (val: string, obj: any, keys: string[]): any => {
   return adjusted;
 };
 
+export const mkHash = (prefix: string = "0x"): string => prefix.padEnd(66, "0");
+
 export const delay = (ms: number): Promise<void> =>
   new Promise((res: any): any => setTimeout(res, ms));
 
@@ -63,11 +64,14 @@ export const freeBalanceAddressFromXpub = (xpub: string): string => {
 };
 
 export const createLinkedHash = (
-  action: UnidirectionalLinkedTransferAppActionBigNumber,
+  amount: BigNumber,
+  assetId: string,
+  paymentId: string,
+  preImage: string,
 ): string => {
   return solidityKeccak256(
     ["uint256", "address", "bytes32", "bytes32"],
-    [action.amount, action.assetId, action.paymentId, action.preImage],
+    [amount, assetId, paymentId, preImage],
   );
 };
 

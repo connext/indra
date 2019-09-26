@@ -25,8 +25,8 @@ tokenAddress="`cat address-book.json | jq '.["4447"].Token.address' | tr -d '"'`
 botOutput="`bash ops/payment-bot.sh -g -a $tokenAddress -m "$botMnemonic" | tr -d '\r'`"
 
 freeBalanceAddress="`echo "$botOutput" \
-  | grep "User free balance address" \
-  | awk -F ' ' '{print $5}'`"
+  | grep "User freeBalanceAddress:" \
+  | awk -F ' ' '{print $4}'`"
 
 freeBalance="`echo "$botOutput" \
   | grep -A 2 "$tokenAddress:" \
@@ -34,11 +34,12 @@ freeBalance="`echo "$botOutput" \
   | awk -F ' ' '{print $2}'`"
 
 echo
-echo "token address: $tokenAddress"
-echo "free balance address: $freeBalanceAddress"
-echo "free balance: $freeBalance"
-echo "bot output: $botOutput"
+echo "$botOutput"
 echo
+echo "Extracted info:"
+echo "- token address: $tokenAddress"
+echo "- free balance address: $freeBalanceAddress"
+echo "- free balance: $freeBalance"
 
 ########################################
 ## Start the recipient payment bot in the background

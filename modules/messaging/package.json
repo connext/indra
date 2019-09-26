@@ -1,6 +1,6 @@
 {
   "name": "@connext/messaging",
-  "version": "0.0.21",
+  "version": "0.1.10",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
   "types": "dist/index.d.ts",
@@ -17,9 +17,9 @@
     "websocket-nats": "0.3.3"
   },
   "devDependencies": {
-    "@counterfactual/types": "0.0.38",
-    "rollup": "1.20.3",
-    "rollup-plugin-typescript2": "0.24.0",
-    "typescript": "3.6.2"
+    "@counterfactual/types": "0.0.42",
+    "rollup": "1.21.4",
+    "rollup-plugin-typescript2": "0.24.2",
+    "typescript": "3.5.3"
   }
 }

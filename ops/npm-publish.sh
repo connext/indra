@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
+set -e
 
 # This is the order they'll be published in
-packages="messaging,types,client"
+packages="messaging,types,redis-lock,proxy-lock,client"
 project="indra"
 
 ########################################
@@ -31,7 +32,7 @@ echo
 for package in `echo $packages | tr ',' ' '`
 do
   package_name="`cat modules/$package/package.json | grep '"name":' | awk -F '"' '{print $4}'`"
-  package_version="`npm view $package_name version 2> /dev/null || echo "N/A"`"
+  package_version="`npm view $package_name version 2> /dev/null || echo "0.0.0"`"
   package_versions="$package_versions $package_version"
   package_names="$package_names $package_name@$package_version"
   echo "Found previously published npm package: $package_name@$package_version"
