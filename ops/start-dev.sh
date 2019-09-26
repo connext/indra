@@ -112,6 +112,7 @@ services:
       DAICARD_URL: http://daicard:3000
       ETH_RPC_URL: $eth_rpc_url
       MESSAGING_URL: http://relay:4223
+      HASURA_URL: http://hasura:8083
       MODE: dev
     networks:
       - $project

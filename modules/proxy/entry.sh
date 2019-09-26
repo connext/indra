@@ -8,7 +8,7 @@ eth_rpc_url="${ETH_RPC_URL:-http://ethprovider:8545}"
 messaging_url="${MESSAGING_URL:-http://relay:4223}"
 hasura_url="${HASURA_URL:-http://hasura:8083}"
 mode="${MODE:-dev}"
-echo "domain=$domain email=$email eth=$eth_rpc_url messaging=$messaging_url daicard=$daicard_url mode=$mode"
+echo "domain=$domain email=$email eth=$eth_rpc_url messaging=$messaging_url daicard=$daicard_url hasura=$hasura_url mode=$mode"
 
 # Provide a message indicating that we're still waiting for everything to wake up
 function loading_msg {
@@ -32,6 +32,12 @@ done
 echo "waiting for ${messaging_url#*://}..."
 bash wait_for.sh -t 60 ${messaging_url#*://} 2> /dev/null
 while ! curl -s $messaging_url > /dev/null
+do sleep 2
+done
+
+echo "waiting for ${hasura_url#*://}..."
+bash wait_for.sh -t 60 ${hasura_url#*://} 2> /dev/null
+while ! curl -s $hasura_url > /dev/null
 do sleep 2
 done
 
