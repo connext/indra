@@ -5,6 +5,7 @@ import { CFCoreModule } from "../cfCore/cfCore.module";
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { ConfigModule } from "../config/config.module";
 import { MessagingModule } from "../messaging/messaging.module";
+import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { PaymentProfileRepository } from "../paymentProfile/paymentProfile.repository";
 
 import { channelProviderFactory } from "./channel.provider";
@@ -17,7 +18,12 @@ import { ChannelService } from "./channel.service";
   imports: [
     MessagingModule,
     CFCoreModule,
-    TypeOrmModule.forFeature([ChannelRepository, PaymentProfileRepository, CFCoreRecordRepository]),
+    TypeOrmModule.forFeature([
+      ChannelRepository,
+      PaymentProfileRepository,
+      CFCoreRecordRepository,
+      OnchainTransactionRepository,
+    ]),
     ConfigModule,
   ],
   providers: [ChannelService, channelProviderFactory],
