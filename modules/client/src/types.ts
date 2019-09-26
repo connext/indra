@@ -47,7 +47,6 @@ export interface ClientOptions {
 export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
   channelRouter: ChannelRouter;
-  cfCore: CFCore;
   contract?: MultisigState;
   messaging: IMessagingService;
   multisigAddress: string;

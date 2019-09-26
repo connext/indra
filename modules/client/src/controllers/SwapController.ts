@@ -203,30 +203,4 @@ export class SwapController extends AbstractController {
     this.listener.removeListener(CFCoreTypes.EventName.INSTALL, boundResolve);
     this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
   };
-
-  private swapAppUninstall = async (appId: string): Promise<void> => {
-    await this.connext.uninstallApp(appId);
-    // TODO: cf does not emit uninstall event on the node
-    // that has called this function but ALSO does not immediately
-    // uninstall the apps. This will be a problem when trying to
-    // display balances...
-
-    // adding a promise for now that polls app instances, but its not
-    // great and should be removed
-    await new Promise(
-      async (res: any, rej: any): Promise<any> => {
-        const getAppIds = async (): Promise<string[]> => {
-          return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
-        };
-        let retries = 0;
-        while ((await getAppIds()).indexOf(this.appId) !== -1 && retries <= 5) {
-          this.log.info("found app id in the open apps... retrying...");
-          await delay(500);
-          retries = retries + 1;
-        }
-        if (retries > 5) rej();
-        res();
-      },
-    );
-  };
 }
