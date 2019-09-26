@@ -191,7 +191,7 @@ export type TransferAction = {
 };
 
 // TODO: define properly!!
-export type ChannelProvider = any;
+export * from "./channelProvider";
 
 export type MultisigState<T = string> = {
   id: number;
