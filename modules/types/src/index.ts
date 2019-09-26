@@ -14,6 +14,10 @@ export type SolidityValueType = any; // FIXME: use cf type
 
 export const ConnextEvents = CFCoreTypes.EventName;
 
+export const ConnextNodeStorePrefix = "INDRA_NODE_CF_CORE";
+
+export const ConnextClientStorePrefix = "INDRA_CLIENT_CF_CORE";
+
 ////////////////////////////////////
 ////// APP REGISTRY
 

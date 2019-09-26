@@ -20,9 +20,9 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
-    "@connext/messaging": "0.1.10",
-    "@connext/redis-lock": "0.1.10",
-    "@connext/types": "0.1.10",
+    "@connext/messaging": "0.1.11",
+    "@connext/redis-lock": "0.1.11",
+    "@connext/types": "0.1.11",
     "@counterfactual/node": "0.2.81",
     "@counterfactual/types": "0.0.42",
     "@nestjs/common": "6.5.3",

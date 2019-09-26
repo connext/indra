@@ -1,5 +1,6 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import { RedisLockService } from "@connext/redis-lock";
+import { ConnextNodeStorePrefix } from "@connext/types";
 import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { Wallet } from "ethers";
@@ -43,7 +44,7 @@ export const cfCoreProviderFactory: Provider = {
     const cfCore = await CFCore.create(
       messaging as any, // TODO: FIX
       store,
-      { STORE_KEY_PREFIX: "ConnextHub" },
+      { STORE_KEY_PREFIX: ConnextNodeStorePrefix },
       provider,
       await config.getContractAddresses(),
       lockService,
