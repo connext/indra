@@ -129,6 +129,7 @@ export class TransferService {
     preImage: string,
     amount: BigNumber,
     assetId: string,
+    recipientPublicIdentifier: string,
   ): Promise<ResolveLinkedTransferResponse> {
     logger.debug(
       `Resolving linked transfer with userPubId: ${userPubId}, paymentId: ${paymentId}, ` +
@@ -149,6 +150,15 @@ export class TransferService {
     if (transfer.status === LinkedTransferStatus.REDEEMED) {
       throw new Error(`Transfer with linkedHash ${linkedHash} has already been redeemed`);
     }
+    if (
+      transfer.recipientPublicIdentifier &&
+      transfer.recipientPublicIdentifier !== recipientPublicIdentifier
+    ) {
+      throw new Error(
+        `Transfer is linked to recipient ${transfer.recipientPublicIdentifier}, received request for ${recipientPublicIdentifier}`,
+      );
+    }
+
     logger.debug(`Found linked transfer in our database, attempting to resolve...`);
 
     // check that linked transfer app has been installed from sender
@@ -251,6 +261,10 @@ export class TransferService {
       ),
       paymentId,
     };
+  }
+
+  async getPendingTransfers(userPublicIdentifier: string): Promise<LinkedTransfer[]> {
+    return await this.linkedTransferRepository.findPendingByRecipient(userPublicIdentifier);
   }
 
   private async takeActionAndUninstallLink(appId: string, preImage: string): Promise<void> {
