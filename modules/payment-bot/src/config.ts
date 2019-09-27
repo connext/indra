@@ -39,7 +39,8 @@ program
   .option("-v, --uninstall-virtual <appDefinitionId>", "Uninstall virtual app")
   .option("-w, --withdraw <amount>", "Withdrawal amount in Ether units")
   .option("-x, --debug", "output extra debugging")
-  .option("-y, --redeem <amount>", "Redeem a linked payment");
+  .option("-y, --redeem <amount>", "Redeem a linked payment")
+  .option("-z, --restore <mnemonic>", "Restore state from mnemonic using node's records");
 
 program.parse(process.argv);
 
