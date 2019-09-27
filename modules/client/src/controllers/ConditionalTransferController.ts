@@ -5,6 +5,8 @@ import {
   convert,
   LinkedTransferParameters,
   LinkedTransferResponse,
+  LinkedTransferToRecipientParameters,
+  LinkedTransferToRecipientResponse,
   RegisteredAppDetails,
   SimpleLinkedTransferAppStateBigNumber,
   SupportedApplication,
@@ -44,6 +46,24 @@ export class ConditionalTransferController extends AbstractController {
 
   /////////////////////////////////
   ////// PRIVATE METHODS
+  // TODO: types
+  private handleLinkedTransferToRecipient = async (
+    params: LinkedTransferToRecipientParameters,
+  ): Promise<LinkedTransferToRecipientResponse> => {
+    const { amount, assetId, paymentId, preImage, recipient } = convert.LinkedTransferToRecipient(
+      "bignumber",
+      params,
+    );
+    const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
+
+    // wait for linked transfer
+    const ret = await this.handleLinkedTransfers(params);
+
+    // set recipient on linked transfer
+    await this.connext.setRecipientForLinkedTransfer(recipient, linkedHash);
+    return { ...ret, recipient };
+  };
+
   private handleLinkedTransfers = async (
     params: LinkedTransferParameters,
   ): Promise<LinkedTransferResponse> => {
@@ -212,5 +232,6 @@ export class ConditionalTransferController extends AbstractController {
   // add all executors/handlers here
   private conditionalExecutors: ConditionalExecutors = {
     LINKED_TRANSFER: this.handleLinkedTransfers,
+    LINKED_TRANSFER_TO_RECIPIENT: this.handleLinkedTransferToRecipient,
   };
 }
