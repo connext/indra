@@ -5,6 +5,7 @@ import {
   ChannelProvider,
   ChannelState,
   MultisigState,
+  ContractAddresses,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { providers, utils } from "ethers";
@@ -53,6 +54,7 @@ export type InternalClientOptions = ClientOptions & {
   nodePublicIdentifier: string;
   ethProvider: providers.JsonRpcProvider;
   store: CFCoreTypes.IStoreService;
+  contractAddresses: ContractAddresses;
 };
 
 // TODO: define properly!!
