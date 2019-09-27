@@ -5,8 +5,9 @@ import { RpcException } from "@nestjs/microservices";
 import { bigNumberify } from "ethers/utils";
 
 import { MessagingProviderId, TransferProviderId } from "../constants";
-import { AbstractMessagingProvider, CLogger, replaceBN } from "../util";
+import { AbstractMessagingProvider, CLogger } from "../util";
 
+import { LinkedTransfer } from "./transfer.entity";
 import { TransferService } from "./transfer.service";
 
 const logger = new CLogger("TransferMessaging");
@@ -23,10 +24,11 @@ export class TransferMessaging extends AbstractMessagingProvider {
       preImage: string;
       amount: string;
       assetId: string;
+      recipientPublicIdentifier?: string;
     },
   ): Promise<ResolveLinkedTransferResponse> {
     const userPubId = this.getPublicIdentifierFromSubject(subject);
-    const { paymentId, preImage, amount, assetId } = data;
+    const { paymentId, preImage, amount, assetId, recipientPublicIdentifier } = data;
     if (!paymentId || !preImage || !amount || !assetId) {
       throw new RpcException(`Incorrect data received. Data: ${data}`);
     }
@@ -36,11 +38,12 @@ export class TransferMessaging extends AbstractMessagingProvider {
       preImage,
       bigNumberify(amount),
       assetId,
+      recipientPublicIdentifier,
     );
   }
 
   // TODO: types
-  async setRecipient(
+  async setRecipientOnLinkedTransfer(
     subject: string,
     data: { recipientPublicIdentifier: string; linkedHash: string },
   ): Promise<{ linkedHash: string }> {
@@ -58,9 +61,28 @@ export class TransferMessaging extends AbstractMessagingProvider {
     return { linkedHash: transfer.linkedHash };
   }
 
-  setupSubscriptions(): void {
-    super.connectRequestReponse("transfer.resolve-linked.>", this.resolveLinkedTransfer.bind(this));
-    super.connectRequestReponse("transfer.set-recipient.>", this.setRecipient.bind(this));
+  async getPendingTransfers(subject: string): Promise<{ paymentId: string }[]> {
+    const userPubId = this.getPublicIdentifierFromSubject(subject);
+
+    const transfers = await this.transferService.getPendingTransfers(userPubId);
+    return transfers.map((transfer: LinkedTransfer) => {
+      return { paymentId: transfer.paymentId };
+    });
+  }
+
+  async setupSubscriptions(): Promise<void> {
+    await super.connectRequestReponse(
+      "transfer.resolve-linked.>",
+      this.resolveLinkedTransfer.bind(this),
+    );
+    await super.connectRequestReponse(
+      "transfer.set-recipient.>",
+      this.setRecipientOnLinkedTransfer.bind(this),
+    );
+    await super.connectRequestReponse(
+      "transfer.get-pending.>",
+      this.getPendingTransfers.bind(this),
+    );
   }
 }
 
