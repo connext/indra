@@ -9,6 +9,8 @@ import "../App.css";
 import { ChannelCard } from "./channelCard";
 import { QRScan } from "./qrCode";
 
+import {initWalletConnect} from "../utils/clientWalletConnectMapping";
+
 const styles = {};
 
 class Home extends React.Component {
@@ -21,6 +23,10 @@ class Home extends React.Component {
     const path = await this.props.scanQRCode(data);
     this.setState({ scanModal: false })
     this.props.history.push(path)
+
+    if(data.startsWith("wc:")){
+      initWalletConnect(data);
+    }
   };
 
   render() {

@@ -7,7 +7,6 @@ import {
   Button,
   DialogTitle,
 } from "@material-ui/core";
-import * as connext from "@connext/client";
 import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { formatEther, parseEther } from "ethers/utils";
@@ -16,6 +15,8 @@ import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import tokenArtifacts from "openzeppelin-solidity/build/contracts/ERC20Mintable.json";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
+import WalletConnectBrowser from "@walletconnect/browser";
+import * as connext from "@connext/client";
 
 import "./App.css";
 
@@ -34,6 +35,7 @@ import SetupCard from "./components/setupCard";
 import SupportCard from "./components/supportCard";
 
 import { Currency, inverse, store, minBN, toBN, tokenToWei, weiToToken } from "./utils";
+import { instantiateClient } from "./utils/instantiateClient";
 
 // Optional URL overrides for custom urls
 const overrides = {
@@ -169,13 +171,7 @@ class App extends React.Component {
       }
       cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
 
-      channel = await connext.connect({
-        ethProviderUrl: ethUrl,
-        logLevel: 5,
-        mnemonic,
-        nodeUrl,
-        store,
-      });
+      channel = await instantiateClient(ethUrl, mnemonic, nodeUrl);
     } else if (this.state.channelProviderType === "walletconnect") {
       const channelProvider = new WalletConnectChannelProvider({
         infuraId: "need-infura-id", // NOTE: what happens if you are using ganache
