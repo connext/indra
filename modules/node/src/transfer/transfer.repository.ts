@@ -17,6 +17,12 @@ export class LinkedTransferRepository extends Repository<LinkedTransfer> {
     return await this.findOne({ where: { appInstanceId } });
   }
 
+  async findPendingByRecipient(recipientPublicIdentifier: string): Promise<LinkedTransfer[]> {
+    return await this.find({
+      where: { recipientPublicIdentifier, status: LinkedTransferStatus.PENDING },
+    });
+  }
+
   async markAsRedeemed(
     transfer: LinkedTransfer,
     receiverChannel: Channel,
