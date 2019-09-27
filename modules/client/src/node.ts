@@ -38,6 +38,7 @@ export interface INodeApiClient {
     preImage: string,
     amount: string,
     assetId: string,
+    recipient?: string,
   ): Promise<void>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   subscribeToSwapRates(from: string, to: string, callback: any): void;
@@ -119,12 +120,14 @@ export class NodeApiClient implements INodeApiClient {
     preImage: string,
     amount: string,
     assetId: string,
+    recipient?: string,
   ): Promise<void> {
     return await this.send(`transfer.resolve-linked.${this.userPublicIdentifier}`, {
       amount,
       assetId,
       paymentId,
       preImage,
+      recipient,
     });
   }
 
