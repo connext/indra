@@ -284,6 +284,13 @@ export abstract class ConnextChannel {
     return await this.internal.node.getPaymentProfile(assetId);
   };
 
+  public setRecipientForLinkedTransfer = async (
+    recipient: string,
+    linkedHash: string,
+  ): Promise<any> => {
+    return await this.internal.node.setRecipientForLinkedTransfer(recipient, linkedHash);
+  };
+
   // does not directly call node function because needs to send
   // some additional information along with the request, as implemented in
   // ConnextInternal
