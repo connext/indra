@@ -77,6 +77,9 @@ export class LinkedTransfer {
   @Column("text", { nullable: true })
   paymentId!: string;
 
+  @Column("text", { nullable: true })
+  recipientPublicIdentifier!: string;
+
   @Column("enum", { enum: LinkedTransferStatus, default: LinkedTransferStatus.PENDING })
   status!: LinkedTransferStatus;
 

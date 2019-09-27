@@ -36,4 +36,12 @@ export class LinkedTransferRepository extends Repository<LinkedTransfer> {
     transfer.preImage = preImage;
     return await this.save(transfer);
   }
+
+  async addRecipientPublicIdentifier(
+    transfer: LinkedTransfer,
+    recipientPublicIdentifier: string,
+  ): Promise<LinkedTransfer> {
+    transfer.recipientPublicIdentifier = recipientPublicIdentifier;
+    return await this.save(transfer);
+  }
 }

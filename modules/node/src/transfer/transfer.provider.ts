@@ -25,7 +25,6 @@ export class TransferMessaging extends AbstractMessagingProvider {
       assetId: string;
     },
   ): Promise<ResolveLinkedTransferResponse> {
-    logger.log(`Got resolve link request with data: ${JSON.stringify(data, replaceBN, 2)}`);
     const userPubId = this.getPublicIdentifierFromSubject(subject);
     const { paymentId, preImage, amount, assetId } = data;
     if (!paymentId || !preImage || !amount || !assetId) {
@@ -40,8 +39,28 @@ export class TransferMessaging extends AbstractMessagingProvider {
     );
   }
 
+  // TODO: types
+  async setRecipient(
+    subject: string,
+    data: { recipientPublicIdentifier: string; linkedHash: string },
+  ): Promise<{ linkedHash: string }> {
+    const userPubId = this.getPublicIdentifierFromSubject(subject);
+    const { recipientPublicIdentifier, linkedHash } = data;
+    if (!recipientPublicIdentifier) {
+      throw new RpcException(`Incorrect data received. Data: ${data}`);
+    }
+
+    const transfer = await this.transferService.setRecipientOnLinkedTransfer(
+      userPubId,
+      recipientPublicIdentifier,
+      linkedHash,
+    );
+    return { linkedHash: transfer.linkedHash };
+  }
+
   setupSubscriptions(): void {
     super.connectRequestReponse("transfer.resolve-linked.>", this.resolveLinkedTransfer.bind(this));
+    super.connectRequestReponse("transfer.set-recipient.>", this.setRecipient.bind(this));
   }
 }
 

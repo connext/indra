@@ -94,6 +94,35 @@ export class TransferService {
     return await this.linkedTransferRepository.save(transfer);
   }
 
+  async setRecipientOnLinkedTransfer(
+    senderPublicIdentifier: string,
+    recipientPublicIdentifier: string,
+    linkedHash: string,
+  ): Promise<LinkedTransfer> {
+    logger.debug(`Setting recipient ${recipientPublicIdentifier} on linkedHash ${linkedHash}`);
+    const channel = await this.channelRepository.findByUserPublicIdentifier(
+      recipientPublicIdentifier,
+    );
+    if (!channel) {
+      throw new Error(`No channel exists for userPubId ${recipientPublicIdentifier}`);
+    }
+
+    // check that we have recorded this transfer in our db
+    const transfer = await this.linkedTransferRepository.findByLinkedHash(linkedHash);
+    if (!transfer) {
+      throw new Error(`No transfer exists for linkedHash ${linkedHash}`);
+    }
+
+    if (senderPublicIdentifier !== transfer.senderChannel.nodePublicIdentifier) {
+      throw new Error(`Can only modify transfer that you sent`);
+    }
+
+    return await this.linkedTransferRepository.addRecipientPublicIdentifier(
+      transfer,
+      recipientPublicIdentifier,
+    );
+  }
+
   async resolveLinkedTransfer(
     userPubId: string,
     paymentId: string,
@@ -224,7 +253,7 @@ export class TransferService {
     };
   }
 
-  async takeActionAndUninstallLink(appId: string, preImage: string): Promise<void> {
+  private async takeActionAndUninstallLink(appId: string, preImage: string): Promise<void> {
     console.log(`Taking action on app at ${Date.now()}`);
     try {
       await this.cfCoreService.takeAction(appId, { preImage });
@@ -234,7 +263,7 @@ export class TransferService {
     }
   }
 
-  async installLinkedTransferApp(
+  private async installLinkedTransferApp(
     userPubId: string,
     initialState: SimpleLinkedTransferAppStateBigNumber,
     preImage: string,
