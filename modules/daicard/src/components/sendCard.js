@@ -15,12 +15,13 @@ import {
   withStyles,
 } from "@material-ui/core";
 import { Send as SendIcon, Link as LinkIcon } from "@material-ui/icons";
+import { useMachine } from '@xstate/react';
 import { Zero } from "ethers/constants";
+import { hexlify, randomBytes } from "ethers/utils";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { useCallback, useEffect, useState } from "react";
 import queryString from "query-string";
-
-import { utils } from "@connext/client"
+import { Machine, interpret } from 'xstate';
 
 import { Currency, toBN, delay } from "../utils";
 
@@ -28,15 +29,34 @@ import { QRScan } from "./qrCode";
 
 const LINK_LIMIT = Currency.DAI("10"); // $10 capped linked payments
 
-const { createPaymentId, createPreImage } = utils;
-
-const PaymentStates = {
-  None: 0,
-  Collateralizing: 1,
-  CollateralTimeout: 2,
-  OtherError: 3,
-  Success: 4,
-};
+const PaymentStateMachine = Machine({
+  id: 'payment',
+  initial: 'none',
+  states: {
+    'none': { on: {
+      'NEW_P2P': 'processing-p2p',
+      'NEW_LINK': 'processing-link',
+      'ERROR': 'error',
+    }},
+    'processingP2p': { on: {
+      'DONE': 'success-p2p',
+      'ERROR': 'error',
+    }},
+    'processingLink': { on: {
+      'DONE': 'success-link',
+      'ERROR': 'error',
+    }},
+    'successP2p': { on: {
+      'DISMISS': 'none'
+    }},
+    'successLink': { on: {
+      'DISMISS': 'none'
+    }},
+    'error': { on: {
+      'DISMISS': 'none'
+    }},
+  }
+});
 
 const style = withStyles(theme => ({
   icon: {
@@ -56,8 +76,8 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
   const [amount, setAmount] = useState({ display: "", error: null, value: null });
   const [recipient, setRecipient] = useState({ display: "", error: null, value: null });
   const [scan, setScan] = useState(false);
-  const [showReceipt, setShowReceipt] = useState(false);
-  const [paymentState, setPaymentState] = useState(PaymentStates.None);
+  const [showModal, setShowModal] = useState(false);
+  const [paymentState, paymentAction] = useMachine(PaymentStateMachine);
 
   const updateAmountHandler = useCallback((rawValue) => {
     let value = null;
@@ -117,7 +137,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
   const paymentHandler = async () => {
     if (amount.error || recipient.error) return;
     console.log(`Sending ${amount.value} to ${recipient.value}`);
-    setPaymentState(PaymentStates.Collateralizing);
+    paymentAction('NEW_P2P');
     // there is a chance the payment will fail when it is first sent
     // due to lack of collateral. collateral will be auto-triggered on the
     // hub side. retry for 1min, then fail
@@ -136,12 +156,12 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
       }
     }
     if (!transferRes) {
-      setPaymentState(PaymentStates.OtherError);
-      setShowReceipt(true);
+      paymentAction('ERROR');
+      setShowModal(true);
       return;
     }
-    setPaymentState(PaymentStates.Success);
-    setShowReceipt(true);
+    paymentAction('DONE');
+    setShowModal(true);
   }
 
   const linkHandler = async () => {
@@ -150,14 +170,15 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
       setAmount({ ...amount, error: `Linked payments are capped at ${LINK_LIMIT.format()}.` });
       return;
     }
+    paymentAction('NEW_LINK');
     try {
       console.log(`Creating ${amount.value.format()} link payment`);
       const link = await channel.conditionalTransfer({
         assetId: token.address,
         amount: amount.value.wad.toString(),
         conditionType: "LINKED_TRANSFER",
-        paymentId: createPaymentId(),
-        preImage: createPreImage(),
+        paymentId: hexlify(randomBytes(32)),
+        preImage: hexlify(randomBytes(32)),
       });
       console.log(`Created link payment: ${JSON.stringify(link, null, 2)}`);
       console.log(
@@ -171,14 +192,14 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
       });
     } catch (e) {
       console.log("Unexpected error sending payment:", e);
-      setPaymentState(PaymentStates.OtherError);
-      setShowReceipt(true);
+      paymentAction('ERROR');
+      setShowModal(true);
     }
   }
 
   const closeModal = () => {
-    setShowReceipt(false);
-    setPaymentState(PaymentStates.None);
+    setShowModal(false);
+    paymentAction('DISMISS');
   };
 
   useEffect(() => {
@@ -309,7 +330,8 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
               disabled={
                 !!amount.error ||
                 !!recipient.error ||
-                paymentState === PaymentStates.Collateralizing
+                paymentState === 'processingP2p' ||
+                paymentState === 'processingLink'
               }
               fullWidth
               onClick={() => {
@@ -339,8 +361,8 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
           Back
         </Button>
       </Grid>
-      <PaymentConfirmationDialog
-        showReceipt={showReceipt}
+      <SendCardModal
+        showModal={showModal}
         amountToken={amount.display ? amount.display : "0"}
         recipient={recipient.value}
         history={history}
@@ -351,142 +373,161 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
   );
 })
 
-function ConfirmationDialogText(paymentState, amountToken, recipient) {
-  switch (paymentState) {
-    case PaymentStates.Collateralizing:
-      return (
-        <Grid>
-          <DialogTitle disableTypography>
-            <Typography variant="h5" color="primary">
-              Payment In Progress
-            </Typography>
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
-              Recipient's Card is being set up. This should take 20-30 seconds.
-            </DialogContentText>
-            <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
-              If you stay on this page, your payment will be retried automatically. If you navigate
-              away or refresh the page, you will have to attempt the payment again yourself.
-            </DialogContentText>
-            <CircularProgress style={{ marginTop: "1em" }} />
-          </DialogContent>
-        </Grid>
-      );
-    case PaymentStates.CollateralTimeout:
-      return (
-        <Grid>
-          <DialogTitle disableTypography>
-            <Typography variant="h5" style={{ color: "#F22424" }}>
-              Payment Failed
-            </Typography>
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
-              After some time, recipient channel could not be initialized.
-            </DialogContentText>
-            <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
-              Is the receiver online to set up their Card? Please try your payment again later. If
-              you have any questions, please contact support. (Settings --> Support)
-            </DialogContentText>
-          </DialogContent>
-        </Grid>
-      );
-    case PaymentStates.OtherError:
-      return (
-        <Grid>
-          <DialogTitle disableTypography>
-            <Typography variant="h5" style={{ color: "#F22424" }}>
-              Payment Failed
-            </Typography>
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
-              An unknown error occured when making your payment.
-            </DialogContentText>
-            <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
-              Please try again in 30s and contact support if you continue to experience issues.
-              (Settings --> Support)
-            </DialogContentText>
-          </DialogContent>
-        </Grid>
-      );
-    case PaymentStates.Success:
-      return (
-        <Grid>
-          <DialogTitle disableTypography>
-            <Typography variant="h5" style={{ color: "#009247" }}>
-              Payment Success!
-            </Typography>
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
-              Amount: ${amountToken}
-            </DialogContentText>
-            <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
-              To: {recipient.substr(0, 5)}...
-            </DialogContentText>
-          </DialogContent>
-        </Grid>
-      );
-    case PaymentStates.None:
-    default:
-      return <div />;
-  }
-}
-
-function PaymentConfirmationDialog(props) {
-  return (
-    <Dialog
-      open={props.showReceipt}
-      onBackdropClick={
-        props.paymentState === PaymentStates.Collateralizing ? null : () => props.closeModal()
-      }
-      fullWidth
+const SendCardModal = ({ showModal, amountToken, recipient, history, closeModal, paymentState }) => (
+  <Dialog
+    open={showModal}
+    onBackdropClick={
+      (paymentState === 'processingP2p' || paymentState === 'processingLink') ? null : () => closeModal()
+    }
+    fullWidth
+    style={{
+      justifyContent: "center",
+      alignItems: "center",
+      textAlign: "center",
+    }}
+  >
+    <Grid
+      container
       style={{
-        justifyContent: "center",
-        alignItems: "center",
-        textAlign: "center",
+        backgroundColor: "#FFF",
+        paddingTop: "10%",
+        paddingBottom: "10%",
       }}
+      justify="center"
     >
-      <Grid
-        container
-        style={{
-          backgroundColor: "#FFF",
-          paddingTop: "10%",
-          paddingBottom: "10%",
-        }}
-        justify="center"
-      >
-        {ConfirmationDialogText(props.paymentState, props.amountToken, props.recipient)}
-        {props.paymentState === PaymentStates.Collateralizing ? (
-          <></>
-        ) : (
-          <DialogActions>
-            <Button
-              color="primary"
-              variant="outlined"
-              size="medium"
-              onClick={() => props.closeModal()}
-            >
-              Pay Again
-            </Button>
-            <Button
-              style={{
-                background: "#FFF",
-                border: "1px solid #F22424",
-                color: "#F22424",
-                marginLeft: "5%",
-              }}
-              variant="outlined"
-              size="medium"
-              onClick={() => props.history.push("/")}
-            >
-              Home
-            </Button>
-          </DialogActions>
-        )}
-      </Grid>
-    </Dialog>
-  );
-}
+
+      {(() => {
+        switch (paymentState) {
+          case 'processingP2p':
+            return (
+              <Grid>
+                <DialogTitle disableTypography>
+                  <Typography variant="h5" color="primary">
+                    Payment In Progress
+                  </Typography>
+                </DialogTitle>
+                <DialogContent>
+                  <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
+                    Recipient's Card is being set up. This should take 20-30 seconds.
+                  </DialogContentText>
+                  <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
+                    If you stay on this page, your payment will be retried automatically. If you navigate
+                    away or refresh the page, you will have to attempt the payment again yourself.
+                  </DialogContentText>
+                  <CircularProgress style={{ marginTop: "1em" }} />
+                </DialogContent>
+              </Grid>
+            );
+          case 'processingLink':
+            return (
+              <Grid>
+                <DialogTitle disableTypography>
+                  <Typography variant="h5" color="primary">
+                    Payment In Progress
+                  </Typography>
+                </DialogTitle>
+                <DialogContent>
+                  <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
+                    Link payment is being generated. This should take just a couple seconds.
+                  </DialogContentText>
+                  <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
+                    Payment ID: {'0xabc123...'}
+                  </DialogContentText>
+                  <CircularProgress style={{ marginTop: "1em" }} />
+                </DialogContent>
+              </Grid>
+            );
+          case 'successP2p':
+            return (
+              <Grid>
+                <DialogTitle disableTypography>
+                  <Typography variant="h5" style={{ color: "#009247" }}>
+                    Payment Success!
+                  </Typography>
+                </DialogTitle>
+                <DialogContent>
+                  <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
+                    Amount: ${amountToken}
+                  </DialogContentText>
+                  <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
+                    To: {recipient.substr(0, 5)}...
+                  </DialogContentText>
+                </DialogContent>
+              </Grid>
+            );
+          case 'successLink':
+            return (
+              <Grid>
+                <DialogTitle disableTypography>
+                  <Typography variant="h5" style={{ color: "#009247" }}>
+                    Payment Success!
+                  </Typography>
+                </DialogTitle>
+                <DialogContent>
+                  <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
+                    Payment ID: {'0xabc123'}
+                  </DialogContentText>
+                  <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
+                    Amount: ${amountToken}
+                  </DialogContentText>
+                  <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
+                    To: anyone's guess...
+                  </DialogContentText>
+                </DialogContent>
+              </Grid>
+            );
+          case 'error':
+            return (
+              <Grid>
+                <DialogTitle disableTypography>
+                  <Typography variant="h5" style={{ color: "#F22424" }}>
+                    Payment Failed
+                  </Typography>
+                </DialogTitle>
+                <DialogContent>
+                  <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
+                    An unknown error occured when making your payment.
+                  </DialogContentText>
+                  <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
+                    Please try again in 30s and contact support if you continue to experience issues.
+                    (Settings --> Support)
+                  </DialogContentText>
+                </DialogContent>
+              </Grid>
+            );
+          case 'none':
+          default:
+            return <div />;
+        }
+      })()}
+
+      {(paymentState === 'processingP2p' || paymentState === 'processingLink') ? (
+        <></>
+      ) : (
+        <DialogActions>
+          <Button
+            color="primary"
+            variant="outlined"
+            size="medium"
+            onClick={() => closeModal()}
+          >
+            Close
+          </Button>
+          <Button
+            style={{
+              background: "#FFF",
+              border: "1px solid #F22424",
+              color: "#F22424",
+              marginLeft: "5%",
+            }}
+            variant="outlined"
+            size="medium"
+            onClick={() => history.push("/")}
+          >
+            Home
+          </Button>
+        </DialogActions>
+      )}
+    </Grid>
+  </Dialog>
+);

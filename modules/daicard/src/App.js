@@ -446,7 +446,6 @@ class App extends React.Component {
       pending,
       sendScanArgs,
       token,
-      tokenProfile,
       xpub,
     } = this.state;
     const { classes } = this.props;
