@@ -94,7 +94,7 @@
 		"rollup-plugin-typescript2": "0.24.2",
 		"rxjs": "6.5.3",
 		"supertest": "4.0.2",
-		"truffle": "5.0.37",
+		"truffle": "5.0.38",
 		"truffle-hdwallet-provider": "1.0.17",
 		"ts-jest": "24.1.0",
 		"ts-mocha": "6.0.0",
