@@ -123,7 +123,7 @@ export class Currency {
   }
 
   toString() {
-    return this.amount.slice(0, this.amount.indexOf('.'))
+    return this.amount
   }
 
   // In units of ray aka append an extra 36 units of precision

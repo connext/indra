@@ -3,9 +3,9 @@ import QrCode from "qrcode.react";
 import React from "react";
 import QrReader from "react-qr-reader";
 
-export const QRGenerate = ({ value }) => {
+export const QRGenerate = ({ size, value }) => {
   return (
-    <QrCode value={value} size={256} />
+    <QrCode value={value} size={size || 256} />
   )
 }
 

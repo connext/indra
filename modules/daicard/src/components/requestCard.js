@@ -1,6 +1,6 @@
-import { Button, Grid, TextField, withStyles } from "@material-ui/core";
+import { Button, Grid, TextField, Typography, withStyles } from "@material-ui/core";
 import { Zero } from "ethers/constants";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import { Currency } from "../utils";
 
@@ -14,32 +14,33 @@ const style = withStyles(theme => ({
   }
 }));
 
-const generateQrUrl = (value, xpub) =>
-  `${window.location.origin}/send?amountToken=${value || "0"}&recipient=${xpub}`;
+const zero = "0.0"
+const generateQrUrl = (amount, xpub) =>
+  `${window.location.origin}/send?amount=${amount || zero}&recipient=${xpub}`;
 
 export const RequestCard = style((props) => {
   const { maxDeposit, xpub } = props;
 
-  const [displayValue, setDisplayValue] = useState("");
-  const [error, setError] = useState(undefined);
-  const [qrUrl, setQrUrl] = useState(generateQrUrl("0", xpub));
+  const [amount, setAmount] = useState({ value: Currency.DAI(zero), display: "0" });
+  const [qrUrl, setQrUrl] = useState(generateQrUrl(zero, xpub));
 
-  const updatePaymentHandler = (rawValue) => {
+  useEffect(() => setQrUrl(generateQrUrl(amount.value, xpub)), [xpub]);
+
+  const updateAmountHandler = (input) => {
     let value, error
     try {
-      value = Currency.DAI(rawValue)
+      value = Currency.DAI(input)
     } catch (e) {
-      error = e.message
+      error = `Invalid Currency amount`
     }
     if (value && value.wad.gt(maxDeposit.toDAI().wad)) {
       error = `Channel balances are capped at ${maxDeposit.toDAI().format()}`
     }
-    if (value && value.wad.lte(Zero)) {
+    if (value && value.wad.lt(Zero)) {
       error = "Please enter a payment amount above 0"
     }
-    setQrUrl(generateQrUrl(error ? "0" : value.amount, xpub));
-    setDisplayValue(rawValue);
-    setError(error);
+    setQrUrl(generateQrUrl(error ? zero : value.amount, xpub));
+    setAmount({ value: value ? value.toString() : zero, display: input, error });
   };
 
   return (
@@ -56,15 +57,14 @@ export const RequestCard = style((props) => {
         justifyContent: "center"
       }}
     >
+
+      <Typography>Payment Request Url:</Typography>
       <Grid item xs={12}>
         <QRGenerate value={qrUrl} />
       </Grid>
-
-      <Copyable text={xpub} />
-
       <Copyable
-        text={error ? 'error' : qrUrl}
-        tooltip={error ? "Fix amount first" : "Click to Copy"}
+        text={amount.error ? 'error' : qrUrl}
+        tooltip={amount.error ? "Fix amount first" : "Click to Copy"}
       />
 
       <Grid item xs={12}>
@@ -72,13 +72,12 @@ export const RequestCard = style((props) => {
           fullWidth
           id="outlined-number"
           label="Amount"
-          value={displayValue}
+          value={amount.display}
           type="number"
-          margin="dense"
           variant="outlined"
-          onChange={evt => updatePaymentHandler(evt.target.value)}
-          error={!!error}
-          helperText={error}
+          onChange={evt => updateAmountHandler(evt.target.value)}
+          error={!!amount.error}
+          helperText={amount.error}
         />
       </Grid>
       <Grid item xs={12}>
