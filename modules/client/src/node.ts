@@ -167,6 +167,11 @@ export class NodeApiClient implements INodeApiClient {
     this.messaging.unsubscribe(`swap-rate.${from}.${to}`);
   }
 
+  // TODO: need to add auth for this!
+  public async restoreStates(publicIdentifier: string): Promise<{ path: string; value: object }[]> {
+    return await this.send(`channel.restore-states.${publicIdentifier}`);
+  }
+
   ////////////////////////////////////////
   // PRIVATE
 

@@ -12,6 +12,7 @@ import { FactoryProvider } from "@nestjs/common/interfaces";
 import { TransactionResponse } from "ethers/providers";
 import { bigNumberify, getAddress } from "ethers/utils";
 
+import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { ConfigService } from "../config/config.service";
 import { CFCoreProviderId, ChannelMessagingProviderId, MessagingProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
@@ -39,7 +40,7 @@ class ConfigMessaging extends AbstractMessagingProvider {
     };
   }
 
-  setupSubscriptions(): void {
+  async setupSubscriptions(): Promise<void> {
     super.connectRequestReponse("config.get", this.getConfig.bind(this));
   }
 }
@@ -139,6 +140,15 @@ class ChannelMessaging extends AbstractMessagingProvider {
     });
   }
 
+  async getStatesForRestore(subject: string): Promise<{ path: string; value: object }[]> {
+    const pubId = this.getPublicIdentifierFromSubject(subject);
+
+    const states = await this.channelService.getChannelStates(pubId);
+    return states.map((state: CFCoreRecord) => {
+      return { path: state.path, value: state.value };
+    });
+  }
+
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse("channel.get.>", this.getChannel.bind(this));
     await super.connectRequestReponse("channel.create.>", this.createChannel.bind(this));
@@ -152,6 +162,10 @@ class ChannelMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "channel.verify-app-sequence.>",
       this.verifyAppSequenceNumber.bind(this),
+    );
+    await super.connectRequestReponse(
+      "channel.restore-states.>",
+      this.getStatesForRestore.bind(this),
     );
   }
 }

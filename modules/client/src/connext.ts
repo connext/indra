@@ -9,6 +9,7 @@ import {
   ChannelState,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
+  ConnextNodeStorePrefix,
   CreateChannelResponse,
   DepositParameters,
   GetChannelResponse,
@@ -30,7 +31,15 @@ import { Address, AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/t
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { BigNumber, HDNode, Network } from "ethers/utils";
+import {
+  BigNumber,
+  HDNode,
+  Network,
+  getAddress,
+  solidityKeccak256,
+  keccak256,
+  Interface,
+} from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
@@ -48,6 +57,9 @@ import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
+import { xkeysToSortedKthAddresses } from "./lib/utils";
+import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
+import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
 
 /**
  * Creates a new client-node connection with node at specified url
@@ -144,7 +156,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
         });
 
         const creationData = await node.createChannel();
-        logger.info(`created channel, transaction: ${creationData}`);
+        logger.info(`created channel, transaction: ${JSON.stringify(creationData)}`);
       },
     );
     logger.info(`create channel event data: ${JSON.stringify(creationEventData, replaceBN, 2)}`);
@@ -158,12 +170,14 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const client = new ConnextInternal({
     appRegistry,
     cfCore,
+    contractAddresses: config.contractAddresses,
     ethProvider,
     messaging,
     multisigAddress,
     network,
     node,
     nodePublicIdentifier: config.nodePublicIdentifier,
+    store,
     ...opts, // use any provided opts by default
   });
   await client.registerSubscriptions();
@@ -229,6 +243,10 @@ export abstract class ConnextChannel {
     params: ConditionalTransferParameters,
   ): Promise<ConditionalTransferResponse> => {
     return await this.internal.conditionalTransfer(params);
+  };
+
+  public restoreStateFromNode = async (mnemonic: string): Promise<void> => {
+    return await this.internal.restoreStateFromNode(mnemonic);
   };
 
   ///////////////////////////////////
@@ -498,6 +516,59 @@ export class ConnextInternal extends ConnextChannel {
     params: ConditionalTransferParameters,
   ): Promise<ConditionalTransferResponse> => {
     return await this.conditionalTransferController.conditionalTransfer(params);
+  };
+
+  public restoreStateFromNode = async (mnemonic: string): Promise<any> => {
+    const hdNode = HDNode.fromMnemonic(mnemonic);
+    const xpriv = hdNode.extendedKey;
+    const xpub = hdNode.derivePath("m/44'/60'/0'/25446").neuter().extendedKey;
+    const states = await this.node.restoreStates(xpub);
+    this.logger.info(`Found states to restore: ${JSON.stringify(states)}`);
+
+    // TODO: this should prob not be hardcoded like this
+    const actualStates = states.map((state: { path: string; value: object }) => {
+      return {
+        path: state.path
+          .replace(this.nodePublicIdentifier, xpub)
+          .replace(ConnextNodeStorePrefix, "store"),
+        value: state.value[state.path],
+      };
+    });
+    this.opts.store.reset();
+    await this.opts.store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }, ...actualStates]);
+    // recreate client with new mnemonic
+    const client = await connect({ ...this.opts, mnemonic });
+    return client;
+  };
+
+  public getMultisigAddressfromXpub = async (xpub: string): Promise<string> => {
+    const owners: string[] = [xpub, this.nodePublicIdentifier];
+    const proxyFactoryAddress: string = this.opts.contractAddresses.ProxyFactory;
+    const minimumViableMultisigAddress: string = this.opts.contractAddresses.MinimumViableMultisig;
+    return getAddress(
+      solidityKeccak256(
+        ["bytes1", "address", "uint256", "bytes32"],
+        [
+          "0xff",
+          proxyFactoryAddress,
+          solidityKeccak256(
+            ["bytes32", "uint256"],
+            [
+              keccak256(
+                new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+                  xkeysToSortedKthAddresses(owners, 0),
+                ]),
+              ),
+              0,
+            ],
+          ),
+          solidityKeccak256(
+            ["bytes", "uint256"],
+            [`0x${Proxy.evm.bytecode.object}`, minimumViableMultisigAddress],
+          ),
+        ],
+      ).slice(-40),
+    );
   };
 
   ///////////////////////////////////

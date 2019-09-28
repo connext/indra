@@ -491,7 +491,7 @@ class App extends React.Component {
                 />
               )}
             />
-            <Route path="/settings" render={props => <SettingsCard {...props} />} />
+            <Route path="/settings" render={props => <SettingsCard {...props} channel={channel} />} />
             <Route
               path="/request"
               render={props => <RequestCard

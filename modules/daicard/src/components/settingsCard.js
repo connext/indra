@@ -54,7 +54,7 @@ export const SettingsCard = style((props) => {
   const [showRecovery, setShowRecovery] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
-  const { classes } = props;
+  const { classes, channel } = props;
 
   const closeModal = () => {
     setCopied(false);
@@ -67,7 +67,8 @@ export const SettingsCard = style((props) => {
     window.location.reload();
   };
 
-  const recoverAddressFromMnemonic = () => {
+  const recoverAddressFromMnemonic = async () => {
+    await channel.restoreStateFromNode(mnemonic);
     localStorage.setItem("mnemonic", mnemonic);
     window.location.reload();
   }
