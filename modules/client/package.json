@@ -14,7 +14,7 @@
     "@connext/messaging": "0.1.13",
     "@connext/proxy-lock": "0.1.13",
     "@connext/types": "0.1.13",
-    "@counterfactual/node": "0.2.81",
+    "@counterfactual/node": "0.2.82",
     "@counterfactual/types": "0.0.42",
     "@counterfactual/cf-funding-protocol-contracts": "0.0.11",
     "core-js": "3.2.1",
