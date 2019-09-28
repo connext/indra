@@ -44,7 +44,7 @@
 		"@types/express": "4.17.1",
 		"@types/ioredis": "4.0.17",
 		"@types/jest": "24.0.18",
-		"@types/node": "12.7.5",
+		"@types/node": "12.7.8",
 		"@types/node-fetch": "2.5.1",
 		"@types/redlock": "3.0.4",
 		"@types/supertest": "2.0.8",
