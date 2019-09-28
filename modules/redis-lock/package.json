@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@counterfactual/types": "0.0.42",
-    "@types/ioredis": "4.0.17",
+    "@types/ioredis": "4.0.18",
     "@types/redlock": "3.0.4",
     "ioredis": "4.14.1",
     "node-fetch": "2.6.0",
