@@ -16,22 +16,39 @@ import {
 } from "@material-ui/core";
 import { Send as SendIcon, Link as LinkIcon } from "@material-ui/icons";
 import { useMachine } from '@xstate/react';
+import clsx from 'clsx';
 import { Zero } from "ethers/constants";
 import { hexlify, randomBytes } from "ethers/utils";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { useCallback, useEffect, useState } from "react";
 import queryString from "query-string";
-import { Machine, interpret } from 'xstate';
+import { Machine } from 'xstate';
 
 import { Currency, toBN, delay } from "../utils";
 
+import { Copyable } from "./copyable";
 import { QRScan } from "./qrCode";
 
 const LINK_LIMIT = Currency.DAI("10"); // $10 capped linked payments
 
-const generateRedeemUrl = (paymentId, secret) => {
-  return `${window.location.origin}/redeem?paymentId=${paymentId}&secret=${secret}`
-}
+const style = withStyles((theme) => ({
+  modalContent: {
+    margin: "0% 4% 4% 4%",
+    padding: "0px",
+    width: "92%",
+  },
+  icon: {
+    width: "40px",
+    height: "40px",
+  },
+  input: {
+    width: "100%",
+  },
+  button: {
+    backgroundColor: "#FCA311",
+    color: "#FFF",
+  },
+}));
 
 const PaymentStateMachine = Machine({
   id: 'payment',
@@ -61,20 +78,6 @@ const PaymentStateMachine = Machine({
     }},
   }
 });
-
-const style = withStyles(theme => ({
-  icon: {
-    width: "40px",
-    height: "40px",
-  },
-  input: {
-    width: "100%",
-  },
-  button: {
-    backgroundColor: "#FCA311",
-    color: "#FFF",
-  },
-}));
 
 export const SendCard = style(({ balance, channel, classes, history, location, token  }) => {
   const [amount, setAmount] = useState({ display: "", error: null, value: null });
@@ -188,7 +191,11 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
           `assetId=${token.address}&amount=${amount.value.amount}`,
       );
       paymentAction('DONE');
-      setLink({ paymentId: link.paymentId, secret: link.preImage });
+      setLink({
+        baseUrl: `${window.location.origin}/redeem`,
+        paymentId: link.paymentId,
+        secret: link.preImage,
+      });
     } catch (e) {
       console.warn("Unexpected error creating link payment:", e);
       paymentAction('ERROR');
@@ -360,6 +367,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
       </Grid>
       <SendCardModal
         amountToken={amount.display ? amount.display : "0"}
+        classes={classes}
         closeModal={closeModal}
         history={history}
         link={link}
@@ -372,6 +380,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
 
 const SendCardModal = ({
   amountToken,
+  classes,
   closeModal,
   history,
   link,
@@ -457,27 +466,23 @@ const SendCardModal = ({
         </Grid>
 
       ) : paymentState.matches('successLink') ? (
-        <Grid>
+        <div style={{ width: "100%" }}>
           <DialogTitle disableTypography>
             <Typography variant="h5" style={{ color: "#009247" }}>
-              Payment Success!
+              Payment Link Created!
             </Typography>
           </DialogTitle>
-          <DialogContent>
+          <DialogContent className={classes.modalContent}>
             <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
-              Payment ID: {link ? link.paymentId : '???'}
+              Anyone with this link can redeem the payment. Save a copy of it somewhere safe and only share it with the person you want to pay.
             </DialogContentText>
-            <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
-              Amount: ${link ? link.amount : '???'}
-            </DialogContentText>
-            <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
-              Secret: {link ? link.secret : '???'}
-            </DialogContentText>
-            <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
-              link: {link ? generateRedeemUrl(link.paymentId, link.secret) : '???'}
-            </DialogContentText>
+            <Copyable
+              text={link
+                ? `${link.baseUrl}?paymentId=${link.paymentId}&secret=${link.secret}`
+                : '???'}
+            />
           </DialogContent>
-        </Grid>
+        </div>
 
         ) : paymentState.matches('error') ? (
         <Grid>
@@ -497,15 +502,12 @@ const SendCardModal = ({
           </DialogContent>
         </Grid>
 
-      ) : paymentState.matches('idle') ? (
-        <div />
-
       ) : (
-        <div />
+        <div/>
       )}
 
       {(paymentState === 'processingP2p' || paymentState === 'processingLink') ? (
-        <></>
+        <div/>
       ) : (
         <DialogActions>
           <Button

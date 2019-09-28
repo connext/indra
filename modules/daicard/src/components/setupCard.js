@@ -1,19 +1,15 @@
 import {
-  Grid,
-  withStyles,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
   Dialog,
-  Typography,
+  DialogActions,
+  DialogContent,
   DialogContentText,
+  DialogTitle,
+  Grid,
   LinearProgress,
-  Tooltip,
+  withStyles,
 } from "@material-ui/core";
-import { FileCopy as CopyIcon } from "@material-ui/icons";
 import React, { useState } from "react";
-import { CopyToClipboard } from "react-copy-to-clipboard";
 
 const style = withStyles((theme) => ({
   icon: {
@@ -35,34 +31,7 @@ const screens = (classes, minEth, minDai, maxEth, maxDai) => [
   {
     title: "Your Mnemonic",
     message:
-      "This mnemonic is required to access your card's funds. It's available anytime via the settings page, be sure to write it down somewhere before you deposit money.",
-    extra: (
-      <Grid container style={{ padding: "2% 2% 2% 2%" }}>
-        <CopyToClipboard
-          text={localStorage.getItem("mnemonic")}
-          color="primary"
-        >
-          <Button
-            fullWidth
-            className={classes.button}
-            variant="outlined"
-            color="primary"
-            size="small"
-          >
-            <CopyIcon style={{ marginRight: "5px" }} />
-            <Typography noWrap variant="body1" color="primary">
-              <Tooltip
-                disableFocusListener
-                disableTouchListener
-                title="Click to Copy"
-              >
-                <span>{localStorage.getItem("mnemonic")}</span>
-              </Tooltip>
-            </Typography>
-          </Button>
-        </CopyToClipboard>
-      </Grid>
-    )
+      "This mnemonic is required to access your card's funds. It's available anytime via the settings page, be sure to write it down somewhere before you deposit money."
   },
   {
     title: "Deposit Boundaries",

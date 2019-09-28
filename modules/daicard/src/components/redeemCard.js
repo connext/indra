@@ -7,7 +7,6 @@ import {
   DialogContentText,
   DialogTitle,
   Grid,
-  Tooltip,
   Typography,
   withStyles,
 } from "@material-ui/core";
@@ -19,13 +18,10 @@ import {
 import { Zero } from "ethers/constants";
 import { isHexString, formatEther } from "ethers/utils";
 import React, { useCallback, useEffect, useState } from "react";
-import { CopyToClipboard } from "react-copy-to-clipboard";
 import queryString from "query-string";
 
 import { Currency } from "../utils";
 import { MySnackbar } from "../components/snackBar";
-
-import { QRGenerate } from "./qrCode";
 
 const RedeemPaymentStates = {
   IsSender: 0,
@@ -58,7 +54,6 @@ export const RedeemCard = style(props => {
   const [amount, setAmount] = useState(undefined);
   const [redeemPaymentState, setRedeemPaymentState] = useState(RedeemPaymentStates.Redeeming);
   const [showReceipt, setShowReceipt] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const { channel, classes, history, location, swapRate, token, tokenProfile } = props;
 
@@ -124,20 +119,8 @@ export const RedeemCard = style(props => {
     }
   }, [channel, paymentId, redeemPaymentState, secret, token, tokenProfile])
 
-  const generateQrUrl = (secret, paymentId) => {
-    return `${window.location.origin}/redeem?secret=${secret}&paymentId=${paymentId}`
-  }
-
   const closeModal = () => {
     setShowReceipt(false);
-  }
-
-  const closeSnackBar = () => {
-    setCopied(false);
-  }
-
-  const handleCopy = () => {
-    setCopied(true);
   }
 
   const validateUrl = () => {
@@ -152,7 +135,7 @@ export const RedeemCard = style(props => {
     }
     // valid secret?
     if (!isHexString(secret)) {
-      errs.push("Secret copied is invalid")
+      errs.push("Secret is invalid")
     }
     // valid amount?
     let value
@@ -164,14 +147,12 @@ export const RedeemCard = style(props => {
       return errs
     }
     if (value.wad.lte(Zero)) {
-      errs.push("Copied token balance should be greater than zero")
+      errs.push("Token balance should be greater than zero")
     }
     // print amount for easy confirmation
     // TODO: display more helpful messages here
-    if (copied) {
-      errs.push(`Amount: ${amount}`)
-      errs.push(`Secret: ${secret.substr(0, 10)}...`)
-    }
+    errs.push(`Amount: ${amount}`)
+    errs.push(`Secret: ${secret.substr(0, 10)}...`)
     return errs
   }
 
@@ -234,12 +215,6 @@ export const RedeemCard = style(props => {
         justifyContent: "center",
       }}
     >
-    <MySnackbar
-      variant="success"
-      openWhen={copied}
-      onClose={closeSnackBar}
-      message="Copied!"
-    />
 
     <Grid container>
       <Grid item xs={12}>
@@ -410,31 +385,6 @@ const RedeemCardContent = (props) => {
   }
   let senderInfo, icon, warnings
   switch(redeemPaymentState) {
-    case RedeemPaymentStates.IsSender:
-      senderInfo = (
-        <Grid container>
-          <Grid item xs={12} style={{paddingBottom: "5%"}}>
-            <QRGenerate value={url} />
-          </Grid>
-          <Grid item xs={12}>
-            <CopyToClipboard text={url} onCopy={onCopy}>
-              <Button variant="outlined" fullWidth>
-                <Typography noWrap variant="body1">
-                  <Tooltip
-                    disableFocusListener
-                    disableTouchListener
-                    title="Click to Copy"
-                  >
-                    <span>{url}</span>
-                  </Tooltip>
-                </Typography>
-              </Button>
-            </CopyToClipboard>
-          </Grid>
-        </Grid>
-      )
-      warnings = ["Make sure to copy this link!"].concat(validateUrl())
-      break
     case RedeemPaymentStates.PaymentAlreadyRedeemed:
       icon = (<ErrorIcon className={classes.icon} />)
       warnings = ["Payment has already been redeemed."]

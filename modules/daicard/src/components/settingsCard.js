@@ -9,18 +9,16 @@ import {
   Grid,
   InputAdornment,
   TextField,
-  Tooltip,
   Typography,
   withStyles,
 } from "@material-ui/core";
 import {
   ArrowRight as SubmitIcon,
-  FileCopy as CopyIcon,
   Settings as SettingsIcon,
 } from "@material-ui/icons";
 import React, { useState } from "react";
-import { CopyToClipboard } from "react-copy-to-clipboard";
 
+import { Copyable } from "./copyable";
 import { MySnackbar } from "./snackBar";
 
 const style = withStyles(theme => ({
@@ -127,31 +125,11 @@ export const SettingsCard = style((props) => {
             Show Backup Phrase
           </Button>
         ) : (
-          <CopyToClipboard
-            onCopy={() => setCopied(true)}
-            text={localStorage.getItem("mnemonic")}
+          <Copyable
             color="primary"
-          >
-            <Button
-              fullWidth
-              className={classes.button}
-              variant="outlined"
-              color="primary"
-              size="large"
-              onClick={() => setShowRecovery(true)}
-            >
-              <CopyIcon style={{ marginRight: "5px" }} />
-              <Typography noWrap variant="body1" color="primary">
-                <Tooltip
-                  disableFocusListener
-                  disableTouchListener
-                  title="Click to Copy"
-                >
-                  <span>{localStorage.getItem("mnemonic")}</span>
-                </Tooltip>
-              </Typography>
-            </Button>
-          </CopyToClipboard>
+            size="large"
+            text={localStorage.getItem("mnemonic")}
+          />
         )}
       </Grid>
       <Grid item xs={12} className={classes.button}>

@@ -1,19 +1,11 @@
-import {
-  Button,
-  Grid,
-  TextField,
-  Tooltip,
-  Typography,
-  withStyles,
-} from "@material-ui/core";
+import { Button, Grid, TextField, withStyles } from "@material-ui/core";
 import { Zero } from "ethers/constants";
 import React, { useState } from "react";
-import { CopyToClipboard } from "react-copy-to-clipboard";
 
 import { Currency } from "../utils";
 
+import { Copyable } from "./copyable";
 import { QRGenerate } from "./qrCode";
-import { MySnackbar } from "./snackBar";
 
 const style = withStyles(theme => ({
   icon: {
@@ -31,15 +23,6 @@ export const RequestCard = style((props) => {
   const [displayValue, setDisplayValue] = useState("");
   const [error, setError] = useState(undefined);
   const [qrUrl, setQrUrl] = useState(generateQrUrl("0", xpub));
-  const [copied, setCopied] = useState(false);
-
-  const closeModal = () => {
-    setCopied(false);
-  };
-
-  const handleCopy = () => {
-    setCopied(error ? false : true);
-  }
 
   const updatePaymentHandler = (rawValue) => {
     let value, error
@@ -73,51 +56,17 @@ export const RequestCard = style((props) => {
         justifyContent: "center"
       }}
     >
-      <MySnackbar
-        variant="success"
-        openWhen={copied}
-        onClose={closeModal}
-        message="Copied!"
-      />
       <Grid item xs={12}>
         <QRGenerate value={qrUrl} />
       </Grid>
-      <Grid item xs={12}>
-        <CopyToClipboard
-          onCopy={handleCopy}
-          text={xpub}
-        >
-          <Button variant="outlined" fullWidth>
-            <Typography noWrap variant="body1">
-              <Tooltip
-                disableFocusListener
-                disableTouchListener
-                title={"Click to Copy"}
-              >
-                <span>{xpub}</span>
-              </Tooltip>
-            </Typography>
-          </Button>
-        </CopyToClipboard>
-      </Grid>
-      <Grid item xs={12}>
-        <CopyToClipboard
-          onCopy={handleCopy}
-          text={error ? '' : qrUrl}
-        >
-          <Button variant="outlined" fullWidth>
-            <Typography noWrap variant="body1">
-              <Tooltip
-                disableFocusListener
-                disableTouchListener
-                title={error ? "Fix amount first" : "Click to Copy"}
-              >
-                <span>{qrUrl}</span>
-              </Tooltip>
-            </Typography>
-          </Button>
-        </CopyToClipboard>
-      </Grid>
+
+      <Copyable text={xpub} />
+
+      <Copyable
+        text={error ? 'error' : qrUrl}
+        tooltip={error ? "Fix amount first" : "Click to Copy"}
+      />
+
       <Grid item xs={12}>
         <TextField
           fullWidth
