@@ -52,7 +52,7 @@
 		"bn.js": "5.0.0",
 		"browserslist": "4.7.0",
 		"chai": "4.2.0",
-		"class-validator": "0.10.0",
+		"class-validator": "0.10.1",
 		"classnames": "2.2.6",
 		"clsx": "1.0.4",
 		"commander": "3.0.1",
