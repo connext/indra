@@ -76,8 +76,16 @@ export class Currency {
     return this.typeToSymbol[this.type]
   }
 
+  get floor() {
+    return this._floor(this.amount)
+  }
+
   ////////////////////////////////////////
   // Public Methods
+
+  toString() {
+    return this.amount.slice(0, this.amount.indexOf('.'))
+  }
 
   isEthType(type) {
     return ['ETH', 'FIN', 'WEI'].includes(type || this.type)
@@ -119,10 +127,6 @@ export class Currency {
       return rounded.slice(0, amt.length - (nDecimals - decimals)).replace(/\.$/, '')
     }
     // rounding to same decimals as are available: return amount w no changes
-    return this.amount
-  }
-
-  toString() {
     return this.amount
   }
 

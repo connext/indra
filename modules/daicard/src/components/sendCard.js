@@ -16,7 +16,6 @@ import {
 } from "@material-ui/core";
 import { Send as SendIcon, Link as LinkIcon } from "@material-ui/icons";
 import { useMachine } from '@xstate/react';
-import clsx from 'clsx';
 import { Zero } from "ethers/constants";
 import { hexlify, randomBytes } from "ethers/utils";
 import QRIcon from "mdi-material-ui/QrcodeScan";
