@@ -24,7 +24,7 @@ export const RequestCard = style((props) => {
   const [amount, setAmount] = useState({ value: Currency.DAI(zero), display: "0" });
   const [qrUrl, setQrUrl] = useState(generateQrUrl(zero, xpub));
 
-  useEffect(() => setQrUrl(generateQrUrl(amount.value, xpub)), [xpub]);
+  useEffect(() => setQrUrl(generateQrUrl(amount.value, xpub)), [amount, xpub]);
 
   const updateAmountHandler = (input) => {
     let value, error

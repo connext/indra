@@ -80,7 +80,7 @@ const styles = theme => ({
 class App extends React.Component {
   constructor(props) {
     super(props);
-    const swapRate = "314.08";
+    const swapRate = "100.00";
     this.state = {
       address: "",
       balance: {
@@ -192,6 +192,10 @@ class App extends React.Component {
   //                    Pollers                        //
   // ************************************************* //
 
+  // What's the minimum I need to be polling for here?
+  //  - on-chain balance to see if we need to deposit
+  //  - channel messages to see if there anything to sign
+  //  - channel eth to see if I need to swap?
   startPoller = async () => {
     await this.refreshBalances();
     await this.setDepositLimits();
@@ -255,6 +259,8 @@ class App extends React.Component {
     this.setState({ maxDeposit, minDeposit });
   }
 
+  // Core Function
+  // Merge deposit limits
   autoDeposit = async () => {
     const { balance, channel, minDeposit, maxDeposit, pending, swapRate, token } = this.state;
     if (!channel) {
@@ -458,7 +464,7 @@ class App extends React.Component {
               openWhen={this.state.loadingConnext}
               onClose={() => this.closeModal()}
               message="Starting Channel Controllers.."
-              duration={30000}
+              duration={30 * 60 * 1000}
             />
             <AppBarComponent address={address} />
             <Route
@@ -516,11 +522,7 @@ class App extends React.Component {
               render={props => (
                 <RedeemCard
                   {...props}
-                  balance={balance}
                   channel={channel}
-                  pending={pending}
-                  swapRate={swapRate}
-                  token={token}
                   tokenProfile={this.state.tokenProfile}
                 />
               )}

@@ -15,29 +15,24 @@ import {
   ErrorOutline as ErrorIcon,
   SaveAlt as ReceiveIcon,
 } from "@material-ui/icons";
-import { Zero } from "ethers/constants";
-import { isHexString, formatEther } from "ethers/utils";
+import { useMachine } from '@xstate/react';
+import { AddressZero } from "ethers/constants";
+import { formatEther } from "ethers/utils";
 import React, { useCallback, useEffect, useState } from "react";
 import queryString from "query-string";
+import { Machine } from 'xstate';
 
 import { Currency } from "../utils";
-import { MySnackbar } from "../components/snackBar";
-
-const RedeemPaymentStates = {
-  IsSender: 0,
-  Redeeming: 1,
-  PaymentAlreadyRedeemed: 2,
-  Collateralizing: 3,
-  Timeout: 4,
-  SecretError: 5,
-  OtherError: 6,
-  Success: 7,
-}
 
 const style = withStyles(theme => ({
   icon: {
     width: "40px",
     height: "40px"
+  },
+  backButton: {
+    background: "#FFF",
+    border: "1px solid #F22424",
+    color: "#F22424",
   },
   button: {
     backgroundColor: "#FCA311",
@@ -47,46 +42,154 @@ const style = withStyles(theme => ({
   },
 }));
 
-export const RedeemCard = style(props => {
-  const [secret, setSecret] = useState(undefined);
-  const [paymentId, setPaymentId] = useState(undefined);
-  const [assetId, setAssetId] = useState(undefined);
-  const [amount, setAmount] = useState(undefined);
-  const [redeemPaymentState, setRedeemPaymentState] = useState(RedeemPaymentStates.Redeeming);
-  const [showReceipt, setShowReceipt] = useState(false);
+const RedeemStateMachine = Machine({
+  id: 'redeem',
+  initial: 'idle',
+  states: {
+    'idle': { on: {
+      'CHECK': 'checking',
+    }},
+    'checking': { on: {
+      'ERROR': 'error',
+      'INVALIDATE': 'invalid',
+      'VALIDATE': 'ready',
+    }},
+    'invalid': { on: {
+      'CLEAR': 'idle',
+      'CHECK': 'checking',
+    }},
+    'ready': { on: {
+      'CONFIRM': 'modal.confirm',
+    }},
+    'error': { on: {
+      'CHECK': 'checking',
+      'CLEAR': 'idle',
+    }},
+    modal: {
+      id: 'modal',
+      initial: 'confirm',
+      on: {
+        'GO_BACK': 'ready',
+        'DISMISS': 'idle',
+      },
+      states: {
+        'confirm': { on: {
+          'COLLATERALIZE': 'collateralizing',
+          'REDEEM': 'redeeming',
+        }},
+        'collateralizing': { on: {
+          'ERROR': 'error',
+          'REDEEM': 'redeeming',
+        }},
+        'redeeming': { on: {
+          'ERROR': 'error',
+          'SUCCESS': 'success',
+        }},
+        'error': {},
+        'success': {},
+      },
+    },
+  },
+});
 
-  const { channel, classes, history, location, swapRate, token, tokenProfile } = props;
+export const RedeemCard = style(({ channel, classes, history, location, tokenProfile }) => {
+  const [paymentId, setPaymentId] = useState('')
+  const [secret, setSecret] = useState('')
+  const [link, setLink] = useState({
+    amount: Currency.DAI('0'),
+    assetId: AddressZero,
+    status: 'UNKNOWN',
+  });
+  const [message, setMessage] = useState('');
+  const [state, takeAction] = useMachine(RedeemStateMachine);
 
-  // Wrapping this in useCallback so that useEffect knows when to re-render
-  // https://reactjs.org/docs/hooks-faq.html#is-it-safe-to-omit-functions-from-the-list-of-dependencies
-  const redeemPayment = useCallback(async () => {
-    console.log(`Attempting to redeem payment.`)
-    if (!channel || !tokenProfile) { return; }
-    // only proceed if status is redeeming
-    if (redeemPaymentState !== RedeemPaymentStates.Redeeming) {
-      console.log("Incorrect payment state, expected Redeeming, got", Object.keys(RedeemPaymentStates)[redeemPaymentState]);
+  const validateLink = useCallback(async () => {
+    takeAction(`CHECK`)
+    setMessage(`Verifying info...`)
+    if (!channel || !tokenProfile) {
+      setMessage(`Channel isn't ready yet..`)
+      return;
+    }
+    if (!paymentId || typeof paymentId !== 'string') {
+      takeAction(`INVALIDATE`)
+      setMessage(`Missing a valid paymentId`)
+      return;
+    }
+    const info = await channel.getLinkedTransfer(paymentId);
+    console.log(`Got linked transfer ${paymentId}: ${JSON.stringify(info, null, 2)}`);
+    if (!info) {
+      takeAction(`INVALIDATE`)
+      setMessage(`Unknown Payment Id`)
+      return;
+    }
+    if (info.status !== 'PENDING') {
+      takeAction('INVALIDATE')
+      setMessage(`Payment has already been redeemed...`)
+      return;
+    }
+    if (info.assetId !== tokenProfile.assetId) {
+      takeAction(`INVALIDATE`)
+      setMessage(`Only link payments for DAI are supported`)
       return;
     }
     if (!secret) {
-      console.log("No secret detected, cannot redeem payment.");
-      setRedeemPaymentState(RedeemPaymentStates.SecretError);
+      takeAction(`INVALIDATE`)
+      setMessage(`No secret detected, cannot redeem payment.`);
       return;
     }
+    takeAction(`VALIDATE`);
+    setMessage(`Redeem whenever you're ready`);
+    setLink({
+      amount: Currency.DEI(info.amount).toDAI(),
+      status: info.status,
+      assetId: info.assetId,
+    })
+  }, [channel, paymentId, secret, takeAction, tokenProfile])
+
+  useEffect(() => {
+    (async () => {
+      const query = queryString.parse(location.search);
+      setPaymentId(query.paymentId)
+      setSecret(query.secret)
+      await validateLink();
+    })()
+  }, [location, validateLink]);
+
+  const redeemPayment = async () => {
+    if (!state.matches('modal.confirm')) { return; }
+    console.log(`Attempting to redeem payment.`)
+    let hubFreeBalanceAddress
     try {
       // if the token profile cannot handle the amount
       // update the profile, the hub will collateralize the
       // correct amount anyway from the listeners
       // Request token collateral if we don't have any yet
-      let freeTokenBalance = await channel.getFreeBalance(token.address);
-      let hubFreeBalanceAddress = Object.keys(freeTokenBalance).filter(
+      let freeTokenBalance = await channel.getFreeBalance(tokenProfile.assetId);
+      hubFreeBalanceAddress = Object.keys(freeTokenBalance).find(
         addr => addr.toLowerCase() !== channel.freeBalanceAddress.toLowerCase(),
-      )[0]
-      if (freeTokenBalance[hubFreeBalanceAddress].eq(Zero)) {
-        console.log(`Requesting collateral for token ${token.address}`)
-        await channel.requestCollateral(token.address);
+      )
+      // TODO: compare to default collateralization?
+      if (freeTokenBalance[hubFreeBalanceAddress].lt(link.amount.wad)) {
+        takeAction(`COLLATERALIZE`);
+        setMessage(`Requesting ${link.amount.format()} of collateral`)
+        const collateralNeeded = link.amount.wad.sub(freeTokenBalance[hubFreeBalanceAddress]);
+        await channel.addPaymentProfile({
+          amountToCollateralize: collateralNeeded.toString(),
+          minimumMaintainedCollateral: link.amount.wad.toString(),
+          assetId: tokenProfile.assetId,
+        });
+        await channel.requestCollateral(tokenProfile.assetId);
       }
-      freeTokenBalance = await channel.getFreeBalance(token.address);
+    } catch (e) {
+      takeAction('ERROR')
+      setMessage(`Error collateralizing: ${e.message}`)
+    }
+
+    try {
+      const freeTokenBalance = await channel.getFreeBalance(tokenProfile.assetId);
       console.log(`Hub has collateralized us with ${formatEther(freeTokenBalance[hubFreeBalanceAddress])} tokens`)
+      takeAction(`REDEEM`);
+      setMessage(`This should take just a few seconds`)
       const result = await channel.resolveCondition({
         conditionType: "LINKED_TRANSFER",
         paymentId,
@@ -97,112 +200,53 @@ export const RedeemCard = style(props => {
       // as it processes collateral
       if (!result.paymentId) {
         // allows for retry logic
-        console.log(`Bad redemption, retrying..`)
-        setRedeemPaymentState(RedeemPaymentStates.Redeeming);
+        takeAction(`ERROR`)
+        setMessage(`Payment redemption failed, try again soon`)
         return;
       }
-      setShowReceipt(false);
-      setRedeemPaymentState(RedeemPaymentStates.Success);
+      takeAction('SUCCESS');
+      setMessage(`Redeemed payment of ${link.amount.format()}`)
     } catch (e) {
-      console.error(`Error redeeming: ${e.message}`)
       // known potential failure: already redeemed or channel not available
       if (e.message.indexOf("already been redeemed") !== -1) {
-        setRedeemPaymentState(RedeemPaymentStates.PaymentAlreadyRedeemed);
+        takeAction('INVALIDATE');
+        setMessage('Payment has already been redeemed');
         return;
       }
-      if (!(await channel.getChannel()).available) {
-        console.warn(`Channel not available yet.`);
-        return;
-      }
-      setRedeemPaymentState(RedeemPaymentStates.OtherError);
-      setShowReceipt(false);
+      takeAction('ERROR');
+      setMessage(`Error redeeming`);
+      console.error(e);
     }
-  }, [channel, paymentId, redeemPaymentState, secret, token, tokenProfile])
-
-  const closeModal = () => {
-    setShowReceipt(false);
   }
 
-  const validateUrl = () => {
-    // called by the sender of the redeemed payment as
-    // they click to copy. should display a warning text
-    // if the secret or if the amount token is not valid
-    // or does not correspond to the generated URL
-    let errs = []
-    // state not yet set
-    if (!secret || !amount) {
-      return errs
-    }
-    // valid secret?
-    if (!isHexString(secret)) {
-      errs.push("Secret is invalid")
-    }
-    // valid amount?
-    let value
-    try {
-      value = Currency.DAI(amount, swapRate)
-    } catch {
-      console.log("Invalid amount:", amount)
-      errs.push("Invalid amount")
-      return errs
-    }
-    if (value.wad.lte(Zero)) {
-      errs.push("Token balance should be greater than zero")
-    }
-    // print amount for easy confirmation
-    // TODO: display more helpful messages here
-    errs.push(`Amount: ${amount}`)
-    errs.push(`Secret: ${secret.substr(0, 10)}...`)
-    return errs
+  let icon, title
+  if (state.matches('idle')) {
+    icon = (<ReceiveIcon className={classes.icon} />)
+    title = "Input paymentId & secret to redeem"
+  } else if (state.matches('checking')) {
+    icon = (<CircularProgress className={classes.icon} />)
+    title = "Verifying Payment"
+  } else if (state.matches('invalid')) {
+    icon = (<ErrorIcon className={classes.icon} />)
+    title = "Invalid"
+  } else if (state.matches('error')) {
+    icon = (<ErrorIcon className={classes.icon} />)
+    title = "Error"
+  } else if (state.matches('ready')) {
+    icon = (<DoneIcon className={classes.icon} />)
+    title = "Ready"
+  } else if (state.matches('collateralizing')) {
+    icon = (<CircularProgress className={classes.icon} />)
+    title = "Collateralizing"
+  } else if (state.matches('redeeming')) {
+    icon = (<CircularProgress className={classes.icon} />)
+    title = "Redeeming link"
+  } else if (state.matches('success')) {
+    icon = (<DoneIcon className={classes.icon} />)
+    title = "Success"
   }
-
-  useEffect(() => {
-    (async () => {
-      console.log(`useEffect location activated!`)
-      const query = queryString.parse(location.search);
-      console.log(`Redeem card launched with url query: ${JSON.stringify(query)}`)
-      setSecret(query.secret);
-      setPaymentId(query.paymentId);
-      if (!channel || !query.paymentId) { return; }
-      const link = await channel.getLinkedTransfer(query.paymentId);
-      console.log(`Got linked transfer ${query.paymentId}: ${JSON.stringify(link)}`);
-      setAssetId(link.assetId);
-      setAmount(Currency.DEI(link.amount));
-    })()
-  }, [channel, location]);
-
-  /*
-  useEffect(() => {
-    console.log(`Other useEffect activated!`)
-    // set state vars if they exist
-    if (location.state && location.state.isConfirm) {
-      // TODO: test what happens if not routed with isConfirm
-      setRedeemPaymentState(RedeemPaymentStates.IsSender);
-      setShowReceipt(false);
-      return;
-    }
-    // set status to redeeming on mount if not sender
-    setRedeemPaymentState(RedeemPaymentStates.Redeeming);
-    let stopExternal = false
-    const interval = setInterval(
-      async (iteration, stop) => {
-        const processing = redeemPaymentState === RedeemPaymentStates.Redeeming || redeemPaymentState === RedeemPaymentStates.Collateralizing
-        if (stopExternal || (redeemPaymentState && !processing)) {
-          stop()
-        }
-        await redeemPayment()
-        setRedeemPaymentState(redeemPaymentState)
-      },
-      3000,
-    )
-    // Return the cleanup function which halts the interval
-    return () => { clearInterval(interval) };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  */
 
   return (
-    <Grid>
     <Grid
       container
       spacing={1}
@@ -216,62 +260,54 @@ export const RedeemCard = style(props => {
       }}
     >
 
-    <Grid container>
       <Grid item xs={12}>
-        <RedeemConfirmationDialog
-          open={showReceipt}
-          amount={amount}
-          redeemPaymentState={redeemPaymentState}
-          history={history}
-          closeModal={closeModal}
-          swapRate={swapRate}
-        />
-      </Grid>
-
-      <Grid item xs={12}>
-        <ReceiveIcon className={classes.icon} />
+        {icon}
       </Grid>
 
       <Grid item xs={12}>
         <Typography noWrap variant="h5">
-          <span>{getTitle(redeemPaymentState, amount)}</span>
+          <span>{title}</span>
         </Typography>
       </Grid>
 
       <Grid item xs={12}>
-        <Typography noWrap variant="h5" visible={assetId}>
-          Payment:
+        <Typography variant="body1" style={{margin: "0.1em"}}>
+          <span>{message}</span>
+        </Typography>
+      </Grid>
+
+      <Grid container style={{marginBottom: "3%", marginTop: "3%"}}>
+        <Grid item xs={5}>
+          <Typography noWrap variant="body1">
+             Amount: {link.amount.format() || "$0.00"}
+          </Typography>
+        </Grid>
+        <Grid item xs={7}>
+          <Typography variant="body1">
+             Status: {link.status}
+          </Typography>
+        </Grid>
+      </Grid>
+
+      <Grid item xs={12}>
+        <Typography noWrap variant="body1" style={{ width: "100%" }}>
+          PaymentId: {paymentId}
         </Typography>
       </Grid>
 
       <Grid item xs={12}>
-        <Typography noWrap variant="body1" visible={assetId}>
-           Amount: {amount ? amount.toDAI().format() : "N/A"}
+        <Typography noWrap variant="body1" style={{ width: "100%" }}>
+          Secret: {secret}
         </Typography>
       </Grid>
-
-      <Typography noWrap variant="body1" visible={assetId}>
-         Asset: {assetId || "N/A"}
-      </Typography>
-
-      {/*
-      <Grid item xs={12} style={{marginTop: "5%"}}>
-        <RedeemCardContent
-          url={generateQrUrl(secret, paymentId, assetId, amount)}
-          onCopy={handleCopy}
-          classes={classes}
-          validateUrl={validateUrl}
-          redeemPaymentState={redeemPaymentState}
-        />
-      </Grid>
-      */}
 
       <Grid item xs={12}>
         <Button
+          disableTouchRipple
           className={classes.button}
-          disabled={false}
+          disabled={!state.matches('ready')}
           fullWidth
-          onClick={redeemPayment}
+          onClick={() => takeAction('CONFIRM')}
           size="large"
           variant="contained"
         >
@@ -281,62 +317,48 @@ export const RedeemCard = style(props => {
 
       <Grid item xs={12}>
         <Button
+          disableTouchRipple
           variant="outlined"
-          style={{
-            background: "#FFF",
-            border: "1px solid #F22424",
-            color: "#F22424",
-            marginTop: "5%"
-          }}
+          className={classes.backButton}
           size="medium"
-          onClick={() => props.history.push("/")}
+          onClick={() => history.push("/")}
         >
           Back
         </Button>
       </Grid>
-     </Grid>
-     </Grid>
+
+      <RedeemCardModal
+        amount={link.amount}
+        history={history}
+        message={message}
+        redeemPayment={redeemPayment}
+        state={state}
+        takeAction={takeAction}
+      />
      </Grid>
   )
 })
 
-const getTitle = (redeemPaymentState, amount) => {
-  let title
-  switch (redeemPaymentState) {
-    case RedeemPaymentStates.IsSender:
-      title = "Scan to Redeem"
-      break
-    case RedeemPaymentStates.PaymentAlreadyRedeemed:
-    case RedeemPaymentStates.Timeout:
-    case RedeemPaymentStates.SecretError:
-    case RedeemPaymentStates.OtherError:
-      title = "Uh Oh! Payment Failed"
-      break
-    case RedeemPaymentStates.Success:
-      title = `Payment of ${amount.format()} Redeemed!`
-      break
-    case RedeemPaymentStates.Redeeming:
-    case RedeemPaymentStates.Collateralizing:
-    default:
-      title = "What's up?"
-      break
-  }
-  return title
-}
-
-const RedeemConfirmationDialog = (props) => (
+const RedeemCardModal = ({
+  amount,
+  history,
+  message,
+  redeemPayment,
+  state,
+  takeAction,
+}) => (
   <Dialog
-    open={props.open}
-    onBackdropClick={() =>
-      props.redeemPaymentState === RedeemPaymentStates.Collateralizing
-        ? null
-        : props.closeModal()
+    open={state.matches('modal')}
+    onBackdropClick={() => state.matches('confirm') ? takeAction('GO_BACK')
+      : state.matches('collateralizing') || state.matches('redeeming') ? undefined
+      : takeAction('DISMISS')
     }
     fullWidth
     style={{
       justifyContent: "center",
       alignItems: "center",
       textAlign: "center",
+      margin: "0",
     }}
   >
     <Grid
@@ -347,132 +369,95 @@ const RedeemConfirmationDialog = (props) => (
         textAlign: "center",
         justifyContent: "center",
         backgroundColor: "#FFF",
+        margin: "0",
+        width: "100%",
       }}
       justify="center"
     >
-      {RedeemPaymentDialogContent(props.redeemPaymentState, props.amount, props.swapRate)}
-      {props.redeemPaymentState === RedeemPaymentStates.Collateralizing ? (
-        <></>
-      ) : (
-        <DialogActions 
-          style={{
-            textAlign: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Button
-            style={{
-              border: "1px solid #F22424",
-              color: "#F22424",
-              marginBottom: "1.5em"
-            }}
-            variant="outlined"
-            size="medium"
-            onClick={() => props.history.push("/")}
-          >
-            Home
-          </Button>
-        </DialogActions>
-      )}
-    </Grid>
-  </Dialog>
-);
 
-const RedeemCardContent = (props) => {
-  const {redeemPaymentState, url, classes, validateUrl, onCopy} = props
-  if (!classes) {
-    return
-  }
-  let senderInfo, icon, warnings
-  switch(redeemPaymentState) {
-    case RedeemPaymentStates.PaymentAlreadyRedeemed:
-      icon = (<ErrorIcon className={classes.icon} />)
-      warnings = ["Payment has already been redeemed."]
-      break
-    case RedeemPaymentStates.Timeout:
-      icon = (<ErrorIcon className={classes.icon} />)
-      warnings = ["Payment timed out"]
-      break
-    case RedeemPaymentStates.SecretError:
-      icon = (<ErrorIcon className={classes.icon} />)
-      warnings = ["Are you sure your secret is right?"]
-      break
-    case RedeemPaymentStates.OtherError:
-      icon = (<ErrorIcon className={classes.icon} />)
-      warnings = ["Something went wrong"]
-      break
-    case RedeemPaymentStates.Collateralizing:
-      icon = (<CircularProgress className={classes.icon} />)
-      warnings = ["Setting up your card too. This will take 30-40s."]
-      break
-    case RedeemPaymentStates.Success:
-      icon = (<DoneIcon className={classes.icon} />)
-      break
-    case RedeemPaymentStates.Redeeming:
-    default:
-      icon = (<CircularProgress className={classes.icon} />)
-      break
-  }
-  const finalWarnings = warnings ? warnings.map((w, index) => {
-    return (
-      <Typography key={index} variant="body1" style={{margin: "0.1em"}}>
-        <span>{w}</span>
-      </Typography>
-    )
-  }) : warnings
-  return (
-    <div>
-    <Grid container>
-      <Grid item xs={12}>{senderInfo}</Grid>
-      <Grid item xs={12} color="primary" style={{
-          paddingTop: "5%",
-        }}>{icon}</Grid>
-      <Grid item xs={12}>
-        {finalWarnings}
-      </Grid>
-    </Grid>
-    </div>
-  )
-}
-
-const RedeemPaymentDialogContent = (redeemPaymentState, amount, swapRate) => {
-  switch (redeemPaymentState) {
-    case RedeemPaymentStates.Timeout:
-      return (
-      <Grid>
-        <DialogTitle disableTypography>
-          <Typography variant="h5" style={{ color: "#F22424" }}>
-            Payment Failed
-          </Typography>
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
-            This is most likely because your Card is being set up.
-          </DialogContentText>
-          <DialogContentText variant="body1" style={{ color: "#0F1012", paddingTop: "5%" }}>
-            Please try again in 30s and contact support if you
-            continue to experience issues. (Settings --> Support)
-          </DialogContentText>
+      {state.matches('modal.confirm') ? (
+        <div>
+          <DialogTitle disableTypography>
+            <Typography variant="h5" style={{ color: "#F22424" }}>
+              Are you sure you want to redeem?
+            </Typography>
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText variant="body1" style={{ color: "#0F1012", paddingTop: "5%" }}>
+              The redeemed money will be saved to this browser's local storage.
+            </DialogContentText>
+            <DialogContentText variant="body1" style={{ color: "#0F1012", paddingTop: "5%" }}>
+              WARNING: If you redeem this link in an incognito window or
+              a temporary in-app browser then you will lose your money
+              unless you back up your seed phrase (do so by visiting settings).
+            </DialogContentText>
+            <DialogActions style={{ textAlign: "center", justifyContent: "center" }} >
+              <Button
+                style={{ border: "1px solid #F22424", color: "#F22424", marginBottom: "1.5em" }}
+                variant="outlined"
+                size="medium"
+                onClick={() => {
+                  console.log(`Confirmed: redeeming payment`)
+                  redeemPayment()
+                }}
+              >
+                Redeem
+              </Button>
+              <Button
+                style={{ border: "1px solid #F22424", color: "#F22424", marginBottom: "1.5em" }}
+                variant="outlined"
+                size="medium"
+                onClick={() => takeAction('GO_BACK')}
+              >
+                Go Back
+              </Button>
+            </DialogActions>
           </DialogContent>
-      </Grid>
-      )
-    case RedeemPaymentStates.PaymentAlreadyRedeemed:
-      return (
+        </div>
+
+      ) : state.matches('modal.collateralizing') ? (
         <Grid>
             <DialogTitle disableTypography>
               <Typography variant="h5" style={{ color: "#F22424" }}>
-                Payment Failed
+                Requesting Collateral...
               </Typography>
             </DialogTitle>
           <DialogContent>
             <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
-              It appears this payment has already been redeemed.
+              {message}
             </DialogContentText>
           </DialogContent>
         </Grid>
-      )
-    case RedeemPaymentStates.Success:
-      return (
+
+      ) : state.matches('modal.redeeming') ? (
+        <Grid>
+            <DialogTitle disableTypography>
+              <Typography variant="h5" style={{ color: "#F22424" }}>
+                Redeeming Payment...
+              </Typography>
+            </DialogTitle>
+          <DialogContent>
+            <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
+              {message}
+            </DialogContentText>
+          </DialogContent>
+        </Grid>
+
+      ) : state.matches('modal.error') ? (
+        <Grid>
+            <DialogTitle disableTypography>
+              <Typography variant="h5" style={{ color: "#F22424" }}>
+                Failed to redeem payment
+              </Typography>
+            </DialogTitle>
+          <DialogContent>
+            <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
+              {message}
+            </DialogContentText>
+          </DialogContent>
+        </Grid>
+
+      ) : state.matches('modal.success') ? (
         <Grid>
           <DialogTitle disableTypography>
             <Typography variant="h5" style={{ color: "#009247" }}>
@@ -483,10 +468,20 @@ const RedeemPaymentDialogContent = (redeemPaymentState, amount, swapRate) => {
             <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
               Amount: {amount.format()}
             </DialogContentText>
+            <DialogActions style={{ textAlign: "center", justifyContent: "center" }} >
+              <Button
+                style={{ border: "1px solid #F22424", color: "#F22424", marginBottom: "1.5em" }}
+                variant="outlined"
+                size="medium"
+                onClick={() => history.push("/")}
+              >
+                Home
+              </Button>
+            </DialogActions>
           </DialogContent>
         </Grid>
-      )
-    default:
-      return
-  }
-}
+      ) : (<div/>)}
+
+    </Grid>
+  </Dialog>
+);

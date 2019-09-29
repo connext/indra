@@ -230,11 +230,13 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
         justify: "center",
       }}
     >
+
       <Grid container wrap="nowrap" direction="row" justify="center" alignItems="center">
         <Grid item xs={12}>
           <SendIcon className={classes.icon} />
         </Grid>
       </Grid>
+
       <Grid item xs={12}>
         <Grid container direction="row" justify="center" alignItems="center">
           <Typography variant="h2">
@@ -242,25 +244,29 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
           </Typography>
         </Grid>
       </Grid>
+
       <Grid item xs={12}>
         <Typography variant="body2">
           <span>{`Linked payments are capped at ${LINK_LIMIT.format()}.`}</span>
         </Typography>
       </Grid>
+
       <Grid item xs={12}>
         <TextField
+          error={amount.error !== null}
           fullWidth
+          helperText={amount.error}
           id="outlined-number"
           label="Amount"
-          value={amount.display}
-          type="number"
           margin="normal"
-          variant="outlined"
           onChange={evt => updateAmountHandler(evt.target.value)}
-          error={amount.error !== null}
-          helperText={amount.error}
+          style={{ width: "100%" }}
+          type="number"
+          value={amount.display}
+          variant="outlined"
         />
       </Grid>
+
       <Grid item xs={12}>
         <TextField
           style={{ width: "100%" }}
@@ -278,6 +284,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
               <InputAdornment position="end">
                 <Tooltip disableFocusListener disableTouchListener title="Scan with QR code">
                   <Button
+                    disableTouchRipple
                     variant="contained"
                     color="primary"
                     style={{ color: "#FFF" }}
@@ -291,29 +298,12 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
           }}
         />
       </Grid>
-      <Modal
-        id="qrscan"
-        open={scan}
-        onClose={() => setScan(false)}
-        style={{
-          justifyContent: "center",
-          alignItems: "center",
-          textAlign: "center",
-          position: "absolute",
-          top: "10%",
-          width: "375px",
-          marginLeft: "auto",
-          marginRight: "auto",
-          left: "0",
-          right: "0",
-        }}
-      >
-        <QRScan handleResult={handleQRData} history={history} />
-      </Modal>
+
       <Grid item xs={12}>
         <Grid container direction="row" alignItems="center" justify="center" spacing={8}>
           <Grid item xs={6}>
             <Button
+              disableTouchRipple
               className={classes.button}
               disabled={!!amount.error || !!recipient.error}
               fullWidth
@@ -329,6 +319,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
           </Grid>
           <Grid item xs={6}>
             <Button
+              disableTouchRipple
               className={classes.button}
               disabled={
                 !!amount.error ||
@@ -349,8 +340,10 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
           </Grid>
         </Grid>
       </Grid>
+
       <Grid item xs={12}>
         <Button
+          disableTouchRipple
           variant="outlined"
           style={{
             background: "#FFF",
@@ -364,6 +357,27 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
           Back
         </Button>
       </Grid>
+
+      <Modal
+        id="qrscan"
+        open={scan}
+        onClose={() => setScan(false)}
+        style={{
+          justifyContent: "center",
+          alignItems: "center",
+          textAlign: "center",
+          position: "absolute",
+          top: "10%",
+          width: "375px",
+          marginLeft: "auto",
+          marginRight: "auto",
+          left: "0",
+          right: "0",
+        }}
+      >
+        <QRScan handleResult={handleQRData} history={history} />
+      </Modal>
+
       <SendCardModal
         amountToken={amount.display ? amount.display : "0"}
         classes={classes}
@@ -440,9 +454,6 @@ const SendCardModal = ({
             <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
               Link payment is being generated. This should take just a couple seconds.
             </DialogContentText>
-            <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
-              Payment ID: {'0xabc123...'}
-            </DialogContentText>
             <CircularProgress style={{ marginTop: "1em" }} />
           </DialogContent>
         </Grid>
@@ -510,6 +521,7 @@ const SendCardModal = ({
       ) : (
         <DialogActions>
           <Button
+            disableTouchRipple
             color="primary"
             variant="outlined"
             size="medium"
@@ -518,6 +530,7 @@ const SendCardModal = ({
             Close
           </Button>
           <Button
+            disableTouchRipple
             style={{
               background: "#FFF",
               border: "1px solid #F22424",
