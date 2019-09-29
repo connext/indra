@@ -90,7 +90,7 @@
 		"redlock": "4.0.0",
 		"reflect-metadata": "0.1.13",
 		"regenerator-runtime": "0.13.3",
-		"rollup": "1.21.4",
+		"rollup": "1.22.0",
 		"rollup-plugin-typescript2": "0.24.2",
 		"rxjs": "6.5.3",
 		"supertest": "4.0.2",
