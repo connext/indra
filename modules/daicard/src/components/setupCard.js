@@ -24,60 +24,36 @@ const screens = (classes, minEth, minDai, maxEth, maxDai) => [
     message: "Here are some helpful tips to get you started with the next generation of payments."
   },
   {
-    title: "Beta Software",
-    message:
-      `This is beta software, and there are still bugs. Don't hesitate to contact us by going to Settings > Support if you find any!`
-  },
-  {
     title: "Your Mnemonic",
-    message:
-      "This mnemonic is required to access your card's funds. It's available anytime via the settings page, be sure to write it down somewhere before you deposit money."
+    message: `
+      A mnemonic is required to access your card's funds.
+      Before you deposit or redeem, copy it somewhere you won't lose it.
+      You can access your mnemonic anytime via the settings page.
+      BEWARE: If you're using an incognito or temporary in-app browser,
+      your mnemonic will be burned when you close this page.
+    `
   },
   {
     title: "Deposit Boundaries",
-    message: `The card needs a minimum deposit of ${
-      minEth || "?.??"} (${ minDai || "?.??"
-    }) to cover the gas costs of getting setup. Cards only accept deposits of ${
-      maxEth || "?.??"} (${ maxDai || "?.??"
-    }) or less, with any excess eth being kept on-chain & not added to the channel.`
+    message:
+      `The card needs a minimum deposit of ${minEth} (${minDai}) to cover the gas costs
+      of getting setup. No more than ${maxEth} (${maxDai}) will be added to your channel at a time,
+      any excess funds you send will be kept on-chain & not deposited into your channel.`
   },
-  {
-    title: "Depositing Tokens",
-    message: `If you want to deposit dai directly, there are no deposit maximums enforced! Just make sure to send at least ${
-      minEth || "?.??"} (${ minDai || "?.??"
-    }) for gas to your new wallet.`
-  }
 ];
 
-export const SetupCard = style((props) => {
+export const SetupCard = style(({ classes, minDeposit, maxDeposit }) => {
   const [index, setIndex] = useState(0);
   const [open, setOpen] = useState(!localStorage.getItem("hasBeenWarned"));
-
-  const { classes, minDeposit, maxDeposit } = props;
-
-  const handleClickNext = () => {
-    setIndex(index + 1);
-  };
-
-  const handleClickPrevious = () => {
-    setIndex(index - 1);
-  };
-
   const handleClose = () => {
     localStorage.setItem("hasBeenWarned", "true");
     setOpen(false);
   };
 
-  // get proper display values
-  // max token in DEI, min in wei and DAI
-  let minDai, minEth, maxDai, maxEth;
-
-  if (maxDeposit && minDeposit) {
-    minEth = minDeposit.toETH().format()
-    minDai = minDeposit.toDAI().format();
-    maxEth = maxDeposit.toETH().format()
-    maxDai = maxDeposit.toDAI().format();
-  }
+  const minEth = minDeposit ? minDeposit.toETH().format() : '$?.??';
+  const minDai = minDeposit ? minDeposit.toDAI().format() : '$?.??';
+  const maxEth = maxDeposit ? maxDeposit.toETH().format() : '$?.??';
+  const maxDai = maxDeposit ? maxDeposit.toDAI().format() : '$?.??';
 
   const display = screens(classes, minEth, minDai, maxEth, maxDai);
   const isFinal = index === display.length - 1;
@@ -109,15 +85,9 @@ export const SetupCard = style((props) => {
               <DialogTitle variant="h5">{display[index].title}</DialogTitle>
             </Grid>
 
-            {display[index].extra && (
-              <Grid item xs={12}>
-                {display[index].extra}
-              </Grid>
-            )}
-
             <DialogContent>
               <Grid item xs={12} style={{ padding: "2% 2% 2% 2%" }}>
-                <DialogContentText variant="body1">
+                <DialogContentText variant="body1" style={{ minHeight: "9em" }}>
                   {display[index].message}
                 </DialogContentText>
               </Grid>
@@ -126,7 +96,7 @@ export const SetupCard = style((props) => {
                 <DialogActions style={{ padding: "2% 2% 2% 2%" }}>
                   {index !== 0 && (
                     <Button
-                      onClick={handleClickPrevious}
+                      onClick={() => setIndex(index - 1)}
                       className={classes.button}
                       variant="outlined"
                       color="primary"
@@ -147,7 +117,7 @@ export const SetupCard = style((props) => {
                     </Button>
                   ) : (
                     <Button
-                      onClick={handleClickNext}
+                      onClick={() => setIndex(index + 1)}
                       className={classes.button}
                       variant="outlined"
                       color="primary"
