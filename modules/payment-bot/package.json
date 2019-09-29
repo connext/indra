@@ -22,7 +22,7 @@
     "@connext/types": "0.1.13",
     "@types/node-fetch": "2.5.2",
     "env-cmd": "10.0.1",
-    "nodemon": "1.19.2",
+    "nodemon": "1.19.3",
     "ts-node": "8.4.1",
     "typescript": "3.5.3"
   }
