@@ -41,7 +41,7 @@ export const CashoutCard = withStyles((theme) => ({
     padding: theme.spacing(4),
     outline: "none"
   }
-}))(({ balance, classes, channel, history, refreshBalances, setPending, swapRate, token }) => {
+}))(({ balance, classes, channel, history, setPending, swapRate, token }) => {
   const [recipient, setRecipient] = useState({ display: "", value: undefined, error: undefined });
   const [scan, setScan] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
@@ -110,7 +110,6 @@ export const CashoutCard = withStyles((theme) => ({
         swapRate: inverse(swapRate),
         toAssetId: AddressZero,
       });
-      await refreshBalances()
     }
     const result = await channel.withdraw({
       amount: balance.channel.ether.wad.toString(),
@@ -152,7 +151,7 @@ export const CashoutCard = withStyles((theme) => ({
         <Grid container direction="row" justify="center" alignItems="center">
           <Typography variant="h2">
             <span>
-              {balance.channel.total.toDAI().format()}
+              {balance.channel.total.toDAI(swapRate).format()}
             </span>
           </Typography>
         </Grid>

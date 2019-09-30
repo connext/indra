@@ -147,8 +147,8 @@ export class Currency {
       return exchangeRates[currency]
     }
     if (!this.daiRateGiven) {
-      console.warn(`Provide DAI:ETH rate for accurate conversions between currency types`)
-      console.warn(`Using default eth price of $${this.daiRate}`)
+      console.warn(`Provide DAI:ETH rate for accurate ${this.type} -> ${currency} conversions`)
+      console.warn(`Using default eth price of $${this.daiRate} (amount: ${this.amount})`)
     }
     return exchangeRates[currency]
   }

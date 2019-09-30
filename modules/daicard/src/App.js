@@ -4,7 +4,7 @@ import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { formatEther, parseEther } from "ethers/utils";
 import interval from "interval-promise";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import tokenArtifacts from "openzeppelin-solidity/build/contracts/ERC20Mintable.json";
 
@@ -24,12 +24,12 @@ import { SettingsCard } from "./components/settingsCard";
 import { SetupCard } from "./components/setupCard";
 import { SupportCard } from "./components/supportCard";
 
-import { Currency, inverse, store, minBN, toBN, tokenToWei, weiToToken } from "./utils";
+import { Currency, store, minBN, toBN, tokenToWei, weiToToken } from "./utils";
 
 // Optional URL overrides for custom urls
 const overrides = {
   nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE,
-  ethUrl: process.env.REACT_APP_ETH_URL_OVERRIDE,
+  ethProviderUrl: process.env.REACT_APP_ETH_URL_OVERRIDE,
 };
 
 // Constants for channel max/min - this is also enforced on the hub
@@ -78,58 +78,57 @@ const style = withStyles((theme) => ({
 }));
 
 export const App = style(({ classes }) => {
-  const [swapRate, setSwapRate] = useState('100.00');
-  const [address, setAddress] = useState('');
+  const [swapRate, setSwapRate] = useState('1');
   const [balance, setBalance] = useState({
     channel: {
-      ether: Currency.ETH("0", swapRate),
-      token: Currency.DAI("0", swapRate),
-      total: Currency.ETH("0", swapRate),
+      ether: Currency.ETH("0"),
+      token: Currency.DAI("0"),
+      total: Currency.ETH("0"),
     },
     onChain: {
-      ether: Currency.ETH("0", swapRate),
-      token: Currency.DAI("0", swapRate),
-      total: Currency.ETH("0", swapRate),
+      ether: Currency.ETH("0"),
+      token: Currency.DAI("0"),
+      total: Currency.ETH("0"),
     },
   });
   const [channel, setChannel] = useState(null);
-  const [freeBalanceAddress, setFreeBalanceAddress] = useState(null);
   const [loadingConnext, setLoadingConnext] = useState(true);
   const [maxDeposit, setMaxDeposit] = useState(null);
-  const [minDeposit, setMinDeposit] = useState(null);
+  const [minDeposit, setMinDeposit] = useState(Currency.DAI("0", swapRate));
   const [pending, setPending] = useState({ type: "", complete: true, closed: true });
   const [sendScanArgs, setSendScanArgs] = useState({ amount: null, recipient: null });
   const [redeemScanArgs, setRedeemScanArgs] = useState({ amount: null, recipient: null });
   const [token, setToken] = useState(null);
   const [tokenProfile, setTokenProfile] = useState(null);
-  const [xpub, setXpub] = useState('');
+  const [wallet, setWallet] = useState({});
 
   ////////////////////////////////////////
   // Init some misc variables
-
-  // If no mnemonic, create one and save to local storage
-  let mnemonic = localStorage.getItem("mnemonic");
-  if (!mnemonic) {
-    mnemonic = eth.Wallet.createRandom().mnemonic;
-    localStorage.setItem("mnemonic", mnemonic);
-  }
-
-  const nodeUrl =
-    overrides.nodeUrl || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`;
-  const ethUrl = overrides.ethUrl || `${window.location.origin}/api/ethprovider`;
-  const ethprovider = new eth.providers.JsonRpcProvider(ethUrl);
-  const cfPath = "m/44'/60'/0'/25446";
-  const cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
 
   // ************************************************* //
   //                     Hooks                         //
   // ************************************************* //
 
   useEffect(() => {
+
+    // If no mnemonic, create one and save to local storage
+    let mnemonic = localStorage.getItem("mnemonic");
+    if (!mnemonic) {
+      mnemonic = eth.Wallet.createRandom().mnemonic;
+      localStorage.setItem("mnemonic", mnemonic);
+    }
+
+    const nodeUrl =
+      overrides.nodeUrl || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`;
+    const ethProviderUrl = overrides.ethProviderUrl || `${window.location.origin}/api/ethprovider`;
+    const ethProvider = new eth.providers.JsonRpcProvider(ethProviderUrl);
+    const cfPath = "m/44'/60'/0'/25446";
+    const cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethProvider);
+
     (async () => {
 
       const channel = await connext.connect({
-        ethProviderUrl: ethUrl,
+        ethProviderUrl,
         logLevel: 5,
         mnemonic,
         nodeUrl,
@@ -145,233 +144,188 @@ export const App = style(({ classes }) => {
         await new Promise(res => setTimeout(() => res(), 1000));
       }
 
-      const freeBalanceAddress = channel.freeBalanceAddress
-      const connextConfig = await channel.config();
-      const token = new Contract(connextConfig.contractAddresses.Token, tokenArtifacts.abi, cfWallet);
-      const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
-      const invSwapRate = inverse(swapRate)
+      const token = new Contract(channel.config.contractAddresses.Token, tokenArtifacts.abi, cfWallet);
+      const currentSwapRate = await channel.getLatestSwapRate(AddressZero, token.address)
 
       console.log(`Client created successfully!`);
-      console.log(` - Public Identifier: ${channel.publicIdentifier}`);
       console.log(` - Account multisig address: ${channel.opts.multisigAddress}`);
-      console.log(` - CF Account address: ${cfWallet.address}`);
-      console.log(` - Free balance address: ${freeBalanceAddress}`);
-      console.log(` - Token address: ${token.address}`);
-      console.log(` - Swap rate: ${swapRate} or ${invSwapRate}`)
+      console.log(` - Free balance address: ${channel.freeBalanceAddress}`);
+      console.log(` - Token address: ${channel.config.contractAddresses.Token}`);
+      console.log(` - Swap rate: ${currentSwapRate}`)
 
       channel.subscribeToSwapRates(AddressZero, token.address, (res) => {
         if (!res || !res.swapRate) return;
-        console.log(`Got swap rate upate: ${swapRate} -> ${res.swapRate}`);
+        console.log(`Got swap rate upate: ${currentSwapRate} -> ${res.swapRate}`);
         setSwapRate(res.swapRate)
       })
 
-      setAddress(cfWallet.address)
+      const tokenProfile = await channel.addPaymentProfile({
+        amountToCollateralize: DEFAULT_AMOUNT_TO_COLLATERALIZE.wad.toString(),
+        minimumMaintainedCollateral: DEFAULT_COLLATERAL_MINIMUM.wad.toString(),
+        assetId: channel.config.contractAddresses.Token,
+      });
+
       setChannel(channel)
-      setFreeBalanceAddress(freeBalanceAddress)
-      setLoadingConnext(false)
-      setSwapRate(swapRate)
+      setSwapRate(currentSwapRate)
       setToken(token)
-      setXpub(channel.publicIdentifier)
+      setTokenProfile(tokenProfile);
+      setWallet(cfWallet)
+      setLoadingConnext(false)
 
-      console.log(`Done setting up channel: ${Object.keys(channel)}`)
-
-      await startPoller();
     })()
   }, [])
 
-  // What's the minimum we need to be polling for here?
-  //  - on-chain balance to see if we need to deposit
-  //  - channel messages to see if there anything to sign
-  //  - channel eth to see if I need to swap?
-  const startPoller = async () => {
-    await addDefaultPaymentProfile();
-    await refreshBalances();
-    await setDepositLimits();
-    await autoDeposit();
-    await autoSwap();
-    let shouldStop = false;
-    interval(async (iteration, stop) => {
-      if (shouldStop) { return stop(); }
-      console.log(`address: ${address}`)
-      console.log(`channel: ${channel}`)
-      await refreshBalances();
-      await setDepositLimits();
-      await autoDeposit();
-      await autoSwap();
-    }, 3000);
-    // Function returned from useEffect is the cleanup function
-    // Use it to stop the poller.. once useEffect works
-    // return () => { shouldStop = true }
-  }
-
   // ************************************************* //
-  //                    Pollers                        //
+  //                 Core Poller                       //
   // ************************************************* //
 
-  const addDefaultPaymentProfile = async () => {
-    // add the payment profile for tokens only
-    // then request collateral of this type
-    // TODO: set default eth profile
-    // await channel.addPaymentProfile({
-    //   amountToCollateralize: ,
-    //   assetId: AddressZero,
-    // });
-    if (!token) {
-      console.log("No token found, not setting default token payment profile")
-      return;
-    }
-    const tokenProfile = await channel.addPaymentProfile({
-      amountToCollateralize: DEFAULT_AMOUNT_TO_COLLATERALIZE.wad.toString(),
-      minimumMaintainedCollateral: DEFAULT_COLLATERAL_MINIMUM.wad.toString(),
-      assetId: token.address,
-    });
-    setTokenProfile(tokenProfile);
-    console.log(`Got a default token profile: ${JSON.stringify(tokenProfile)}`)
-    return tokenProfile;
-  }
+  useEffect(() => {
+    // Wait until channel is set up before this effect should be applied
+    if (loadingConnext) { return; }
 
-  const refreshBalances = async () => {
-    if (!channel || !token) { return; }
-    const getTotal = (ether, token) => Currency.WEI(ether.wad.add(token.toETH().wad), swapRate);
-    const freeEtherBalance = await channel.getFreeBalance();
-    const freeTokenBalance = await channel.getFreeBalance(token.address);
-    balance.onChain.ether = Currency.WEI(await ethprovider.getBalance(address), swapRate).toETH();
-    balance.onChain.token = Currency.DEI(await token.balanceOf(address), swapRate).toDAI();
-    balance.onChain.total = getTotal(balance.onChain.ether, balance.onChain.token).toETH();
-    balance.channel.ether = Currency.WEI(freeEtherBalance[freeBalanceAddress], swapRate).toETH();
-    balance.channel.token = Currency.DEI(freeTokenBalance[freeBalanceAddress], swapRate).toDAI();
-    balance.channel.total = getTotal(balance.channel.ether, balance.channel.token).toETH();
-    setBalance(balance);
-  }
-
-  const setDepositLimits = async () => {
-    let gasPrice = await ethprovider.getGasPrice();
-    let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
-    let totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
-    const minDeposit = Currency.WEI(totalDepositGasWei.add(totalWithdrawalGasWei), swapRate).toETH();
-    const maxDeposit = MAX_CHANNEL_VALUE.toETH(swapRate); // Or get based on payment profile?
-    setMaxDeposit(maxDeposit)
-    setMinDeposit(minDeposit)
-  }
-
-  const autoDeposit = async () => {
-    if (!channel) {
-      console.warn(`Channel not available yet: ${channel}`);
-      return;
-    }
-    if (balance.onChain.ether.wad.eq(Zero)) {
-      console.debug(`No on-chain eth to deposit`)
-      return;
-    }
-    if (!pending.complete) {
-      console.log(`An operation of type ${pending.type} is pending, waiting to deposit`)
-      return;
+    const refreshBalances = async () => {
+      const getTotal = (etherAmt, tokenAmt) => Currency.WEI(etherAmt.wad.add(tokenAmt.toETH(swapRate).wad));
+      const freeEtherBalance = await channel.getFreeBalance();
+      const freeTokenBalance = await channel.getFreeBalance(token.address);
+      balance.onChain.ether = Currency.WEI(await wallet.provider.getBalance(wallet.address)).toETH(swapRate);
+      balance.onChain.token = Currency.DEI(await token.balanceOf(wallet.address)).toDAI(swapRate);
+      balance.onChain.total = getTotal(balance.onChain.ether, balance.onChain.token).toETH(swapRate);
+      balance.channel.ether = Currency.WEI(freeEtherBalance[channel.freeBalanceAddress]).toETH(swapRate);
+      balance.channel.token = Currency.DEI(freeTokenBalance[channel.freeBalanceAddress]).toDAI(swapRate);
+      balance.channel.total = getTotal(balance.channel.ether, balance.channel.token).toETH(swapRate);
+      setBalance(balance);
+      const gasPrice = await wallet.provider.getGasPrice();
+      const totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
+      const totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
+      const minDeposit = Currency.WEI(totalDepositGasWei.add(totalWithdrawalGasWei)).toETH(swapRate);
+      const maxDeposit = MAX_CHANNEL_VALUE.toETH(swapRate); // Or get based on payment profile?
+      setMaxDeposit(maxDeposit)
+      setMinDeposit(minDeposit)
     }
 
-    let nowMaxDeposit = maxDeposit.wad.sub(balance.channel.total.wad);
-    if (nowMaxDeposit.lte(Zero)) {
-      console.debug(`Channel balance (${balance.channel.total.toDAI().format()}) is at or above ` +
-        `cap of ${maxDeposit.toDAI(swapRate).format()}`)
-      return;
-    }
-
-    if (balance.onChain.token.wad.gt(Zero)) {
+    const autoDeposit = async () => {
+      if (!channel || !token || !swapRate || !maxDeposit || !minDeposit) { return; }
+      if (balance.onChain.ether.wad.eq(Zero)) {
+        console.debug(`No on-chain eth to deposit`)
+        return;
+      }
+      if (!pending.complete) {
+        console.log(`An operation of type ${pending.type} is pending, waiting to deposit`)
+        return;
+      }
+      let nowMaxDeposit = maxDeposit.wad.sub(balance.channel.total.wad);
+      if (nowMaxDeposit.lte(Zero)) {
+        console.debug(`Channel balance (${balance.channel.total.toDAI(swapRate).format()}) is at or above ` +
+          `cap of ${maxDeposit.toDAI(swapRate).format()}`)
+        return;
+      }
+      if (balance.onChain.token.wad.gt(Zero)) {
+        setPending({ type: "deposit", complete: false, closed: false });
+        const amount = minBN([
+          Currency.WEI(nowMaxDeposit).toDAI(swapRate).wad,
+          balance.onChain.token.wad
+        ]);
+        const depositParams = {
+          amount: amount.toString(),
+          assetId: token.address.toLowerCase(),
+        };
+        console.log(`Depositing ${depositParams.amount} tokens into channel: ${channel.opts.multisigAddress}`);
+        const result = await channel.deposit(depositParams);
+        await refreshBalances();
+        console.log(`Successfully deposited tokens! Result: ${JSON.stringify(result, null, 2)}`);
+        setPending({ type: "deposit", complete: true, closed: false });
+      } else {
+        console.debug(`No tokens to deposit`);
+      }
+      nowMaxDeposit = maxDeposit.wad.sub(balance.channel.total.wad);
+      if (nowMaxDeposit.lte(Zero)) {
+        console.debug(`Channel balance (${balance.channel.total.toDAI(swapRate).format()}) is at or above ` +
+          `cap of ${maxDeposit.toDAI(swapRate).format()}`)
+        return;
+      }
+      if (balance.onChain.ether.wad.lt(minDeposit.wad)) {
+        console.debug(`Not enough on-chain eth to deposit: ${balance.onChain.ether.toETH().format()}`)
+        return;
+      }
       setPending({ type: "deposit", complete: false, closed: false });
       const amount = minBN([
-        Currency.WEI(nowMaxDeposit, swapRate).toDAI().wad,
-        balance.onChain.token.wad
+        balance.onChain.ether.wad.sub(minDeposit.wad),
+        nowMaxDeposit,
       ]);
-      const depositParams = {
-        amount: amount.toString(),
-        assetId: token.address.toLowerCase(),
-      };
-      console.log(`Depositing ${depositParams.amount} tokens into channel: ${channel.opts.multisigAddress}`);
-      const result = await channel.deposit(depositParams);
+      console.log(`Depositing ${amount} wei into channel: ${channel.opts.multisigAddress}`);
+      const result = await channel.deposit({ amount: amount.toString() });
       await refreshBalances();
-      console.log(`Successfully deposited tokens! Result: ${JSON.stringify(result, null, 2)}`);
+      console.log(`Successfully deposited ether! Result: ${JSON.stringify(result, null, 2)}`);
       setPending({ type: "deposit", complete: true, closed: false });
-    } else {
-      console.debug(`No tokens to deposit`);
+      autoSwap();
     }
 
-    nowMaxDeposit = maxDeposit.wad.sub(balance.channel.total.wad);
-    if (nowMaxDeposit.lte(Zero)) {
-      console.debug(`Channel balance (${balance.channel.total.toDAI().format()}) is at or above ` +
-        `cap of ${maxDeposit.toDAI(swapRate).format()}`)
-      return;
-    }
-    if (balance.onChain.ether.wad.lt(minDeposit.wad)) {
-      console.debug(`Not enough on-chain eth to deposit: ${balance.onChain.ether.toETH().format()}`)
-      return;
-    }
-
-    setPending({ type: "deposit", complete: false, closed: false });
-    const amount = minBN([
-      balance.onChain.ether.wad.sub(minDeposit.wad),
-      nowMaxDeposit,
-    ]);
-    console.log(`Depositing ${amount} wei into channel: ${channel.opts.multisigAddress}`);
-    const result = await channel.deposit({ amount: amount.toString() });
-    await refreshBalances();
-    console.log(`Successfully deposited ether! Result: ${JSON.stringify(result, null, 2)}`);
-    setPending({ type: "deposit", complete: true, closed: false });
-    autoSwap();
-  }
-
-  const autoSwap = async () => {
-    if (!channel) {
-      console.warn(`Channel not available yet: ${channel}`);
-      return;
-    }
-    if (balance.channel.ether.wad.eq(Zero)) {
-      console.debug(`No in-channel eth available to swap`)
-      return;
-    }
-    if (balance.channel.token.wad.gte(maxDeposit.toDAI(swapRate).wad)) {
-      return; // swap ceiling has been reached, no need to swap more
-    }
-    if (!pending.complete) {
-      console.log(`An operation of type ${pending.type} is pending, waiting to swap`)
-      return;
-    }
-
-    const maxSwap = tokenToWei(maxDeposit.toDAI().wad.sub(balance.channel.token.wad), swapRate)
-    const weiToSwap = minBN([balance.channel.ether.wad, maxSwap])
-
-    console.log(`Attempting to swap ${formatEther(weiToSwap)} eth for dai at rate: ${swapRate}`);
-    setPending({ type: "swap", complete: false, closed: false });
-
-    const hubFBAddress = connext.utils.freeBalanceAddressFromXpub(channel.nodePublicIdentifier)
-    const collateralNeeded = balance.channel.token.wad.add(weiToToken(weiToSwap, swapRate));
-    let collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress])
-
-    console.log(`Collateral: ${collateral} tokens, need: ${formatEther(collateralNeeded)}`);
-    if (collateralNeeded.gt(parseEther(collateral))) {
-      console.log(`Requesting more collateral...`)
-      const tokenProfile = await channel.addPaymentProfile({
-        amountToCollateralize: collateralNeeded.add(parseEther("10")), // add a buffer of $10 so you dont collateralize on every payment
-        minimumMaintainedCollateral: collateralNeeded,
-        assetId: token.address,
-      });
-      console.log(`Got a new token profile: ${JSON.stringify(tokenProfile)}`)
-      setTokenProfile(tokenProfile);
-      await channel.requestCollateral(token.address);
-      collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress])
+    const autoSwap = async () => {
+      if (!channel || !token || !swapRate || !maxDeposit || !minDeposit) { return; }
+      if (balance.channel.ether.wad.eq(Zero)) {
+        console.debug(`No in-channel eth available to swap`)
+        return;
+      }
+      if (balance.channel.token.wad.gte(maxDeposit.toDAI(swapRate).wad)) {
+        return; // swap ceiling has been reached, no need to swap more
+      }
+      if (!pending.complete) {
+        console.log(`An operation of type ${pending.type} is pending, waiting to swap`)
+        return;
+      }
+      const maxSwap = tokenToWei(maxDeposit.toDAI(swapRate).wad.sub(balance.channel.token.wad), swapRate)
+      const weiToSwap = minBN([balance.channel.ether.wad, maxSwap])
+      console.log(`Attempting to swap ${formatEther(weiToSwap)} eth for dai at rate: ${swapRate}`);
+      setPending({ type: "swap", complete: false, closed: false });
+      const hubFBAddress = connext.utils.freeBalanceAddressFromXpub(channel.nodePublicIdentifier)
+      const collateralNeeded = balance.channel.token.wad.add(weiToToken(weiToSwap, swapRate));
+      let collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress])
       console.log(`Collateral: ${collateral} tokens, need: ${formatEther(collateralNeeded)}`);
+      if (collateralNeeded.gt(parseEther(collateral))) {
+        console.log(`Requesting more collateral...`)
+        const tokenProfile = await channel.addPaymentProfile({
+          amountToCollateralize: collateralNeeded.add(parseEther("10")), // add a buffer of $10 so you dont collateralize on every payment
+          minimumMaintainedCollateral: collateralNeeded,
+          assetId: token.address,
+        });
+        console.log(`Got a new token profile: ${JSON.stringify(tokenProfile)}`)
+        setTokenProfile(tokenProfile);
+        await channel.requestCollateral(token.address);
+        collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress])
+        console.log(`Collateral: ${collateral} tokens, need: ${formatEther(collateralNeeded)}`);
+      }
+      await channel.swap({
+        amount: weiToSwap.toString(),
+        fromAssetId: AddressZero,
+        swapRate,
+        toAssetId: token.address,
+      });
+      await refreshBalances();
+      setPending({ type: "swap", complete: true, closed: false });
     }
-    await channel.swap({
-      amount: weiToSwap.toString(),
-      fromAssetId: AddressZero,
-      swapRate,
-      toAssetId: token.address,
-    });
-    await refreshBalances();
-    setPending({ type: "swap", complete: true, closed: false });
-  }
 
-  const closeConfirmations = () => {
-    setPending({ ...pending, closed: true });
-  }
+    (async () => {
+      await refreshBalances();
+      await autoDeposit();
+      await autoSwap();
+      // What's the minimum we need to be polling for here?
+      //  - on-chain balance to see if we need to deposit
+      //  - channel messages to see if there anything to sign
+      //  - channel eth to see if I need to swap?
+      let shouldStop = false;
+      interval(async (iteration, stop) => {
+        if (shouldStop) { return stop(); }
+        await refreshBalances();
+        await autoDeposit();
+        await autoSwap();
+      }, 3000);
+      // Function returned from useEffect is the cleanup function, use it to stop the poller
+      return () => {
+        console.log(`Killing old poller w swapRate ${swapRate}`)
+        shouldStop = true
+      }
+    })()
+  }, [loadingConnext]); // This effect should re-fire every time these dependencies change
 
   // ************************************************* //
   //                    Handlers                       //
@@ -418,10 +372,6 @@ export const App = style(({ classes }) => {
     return path;
   }
 
-  const closeModal = async () => {
-    setLoadingConnext(false);
-  }
-
   return (
     <Router>
       <Grid className={classes.app}>
@@ -429,11 +379,11 @@ export const App = style(({ classes }) => {
           <MySnackbar
             variant="warning"
             openWhen={loadingConnext}
-            onClose={closeModal}
+            onClose={() => setLoadingConnext(false)}
             message="Starting Channel Controllers.."
             duration={30 * 60 * 1000}
           />
-          <AppBarComponent address={address} />
+          <AppBarComponent address={wallet.address} />
           <Route
             exact
             path="/"
@@ -457,7 +407,7 @@ export const App = style(({ classes }) => {
             render={props => (
               <DepositCard
                 {...props}
-                address={address}
+                address={wallet.address}
                 maxDeposit={maxDeposit}
                 minDeposit={minDeposit}
               />
@@ -468,7 +418,7 @@ export const App = style(({ classes }) => {
             path="/request"
             render={props => <RequestCard
               {...props}
-              xpub={xpub}
+              xpub={channel.publicIdentifier}
               maxDeposit={maxDeposit}
             />}
           />
@@ -504,7 +454,6 @@ export const App = style(({ classes }) => {
                 channel={channel}
                 swapRate={swapRate}
                 setPending={setPending}
-                refreshBalances={refreshBalances}
                 token={token}
               />
             )}
@@ -520,7 +469,7 @@ export const App = style(({ classes }) => {
           />
           <Confirmations
             pending={pending}
-            closeConfirmations={closeConfirmations}
+            closeConfirmations={() => setPending(pending => ({ ...pending, closed: true }))}
           />
         </Paper>
       </Grid>
