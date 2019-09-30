@@ -15,7 +15,6 @@ import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import tokenArtifacts from "openzeppelin-solidity/build/contracts/ERC20Mintable.json";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
-import WalletConnectBrowser from "@walletconnect/browser";
 import * as connext from "@connext/client";
 
 import "./App.css";
