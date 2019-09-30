@@ -10,7 +10,7 @@ export class PeerToPeerTransferRepository extends Repository<PeerToPeerTransfer>
 @EntityRepository(LinkedTransfer)
 export class LinkedTransferRepository extends Repository<LinkedTransfer> {
   async findByLinkedHash(linkedHash: string): Promise<LinkedTransfer | undefined> {
-    return await this.findOne({ where: { linkedHash } });
+    return await this.findOne({ where: { linkedHash }, relations: ["senderChannel"] });
   }
 
   async findByReceiverAppInstanceId(appInstanceId: string): Promise<LinkedTransfer | undefined> {
