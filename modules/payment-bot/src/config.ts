@@ -29,6 +29,8 @@ program
   .option("-h, --preImage <preImage>", "Create linked payment with preimage")
   .option("-i, --identifier <id>", "Bot identifier")
   .option("-l, --linked <amount>", "Create linked payment")
+  .option("-m, --redeem-linked-to <amount>", "Redeem linked payment to recipient")
+  .option("-n, --linked-to <amount>", "Create linked payment only unlockable by the recipient")
   .option("-o, --open", "Leave bot open instead of quitting")
   .option("-p, --payment-id <paymentId>", "Linked payment paymentId")
   .option("-q, --request-collateral", "Request channel collateral from the node")
