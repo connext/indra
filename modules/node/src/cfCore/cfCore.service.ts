@@ -212,7 +212,7 @@ export class CFCoreService {
   }
 
   async getAppInstanceDetails(appInstanceId: string): Promise<AppInstanceJson> {
-    let appInstance;
+    let appInstance: any;
     try {
       const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
         id: Date.now(),
