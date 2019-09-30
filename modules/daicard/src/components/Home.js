@@ -25,7 +25,7 @@ class Home extends React.Component {
     this.props.history.push(path)
 
     if(data.startsWith("wc:")){
-      initWalletConnect(data);
+      await initWalletConnect(data);
     }
   };
 

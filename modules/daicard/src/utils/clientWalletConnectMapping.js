@@ -35,7 +35,7 @@ export async function initWalletConnect(uri) {
     });
     
     // Subscribe to call requests
-    walletConnector.on("call_request", (error, payload) => {
+    walletConnector.on("call_request", async (error, payload) => {
         if (error) {
             throw error;
         }
@@ -142,6 +142,5 @@ async function mapPayloadToClient(payload) {
     } catch (e) {
         console.log("AHIOFEJOIFEJIOFEAJ: ", e);
     }
-
     walletConnector.approveRequest({id: payload.id, result})
 }
