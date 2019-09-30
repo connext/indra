@@ -14,7 +14,10 @@ import {
   TransferCondition,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
+import EthCrypto from "eth-crypto";
 import { HashZero, Zero } from "ethers/constants";
+import { fromExtendedKey } from "ethers/utils/hdnode";
+import uuid from "uuid";
 
 import { RejectInstallVirtualMessage } from "../lib/cfCore";
 import { createLinkedHash, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
@@ -61,6 +64,23 @@ export class ConditionalTransferController extends AbstractController {
 
     // set recipient on linked transfer
     await this.connext.setRecipientForLinkedTransfer(recipient, linkedHash);
+
+    // publish encrypted secret
+    const recipientPublicKey = fromExtendedKey(recipient).publicKey;
+    const encryptedPreImage = await EthCrypto.encryptWithPublicKey(
+      recipientPublicKey.slice(2), // remove 0x
+      preImage,
+    );
+
+    // TODO: should we move this to its own file?
+    await this.connext.messaging.publish(`transfer.send-async.${recipient}`, {
+      amount,
+      assetId,
+      encryptedPreImage,
+      id: uuid.v4(),
+      paymentId,
+    });
+
     return { ...ret, recipient };
   };
 
