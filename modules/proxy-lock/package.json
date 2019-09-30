@@ -14,12 +14,12 @@
   },
   "dependencies": {
     "@connext/messaging": "0.1.13",
-    "@counterfactual/types": "0.0.42",
+    "@counterfactual/types": "0.0.43",
     "uuid": "3.3.3"
   },
   "devDependencies": {
-    "rollup": "1.21.4",
-    "rollup-plugin-typescript2": "0.24.2",
+    "rollup": "1.22.0",
+    "rollup-plugin-typescript2": "0.24.3",
     "typescript": "3.5.3"
   }
 }
