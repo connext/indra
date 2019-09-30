@@ -1,7 +1,7 @@
 import { ChannelAppSequences } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
-import { AddressZero } from "ethers/constants";
+import { AddressZero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { BigNumber, getAddress } from "ethers/utils";
 
@@ -220,7 +220,20 @@ export class ChannelService {
       throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
     }
 
+    const { transactionHash: deployTx } = await this.cfCoreService.deployMultisig(
+      channel.multisigAddress,
+    );
+    logger.debug(`Deploy multisig tx: ${deployTx}`);
+
     const wallet = this.configService.getEthWallet();
+    if (deployTx !== HashZero) {
+      logger.debug(`Waiting for deployment transaction...`);
+      wallet.provider.waitForTransaction(deployTx);
+      logger.debug(`Deployment transaction complete!`);
+    } else {
+      logger.debug(`Multisig already deployed, proceeding with withdrawal`);
+    }
+
     const txRes = await wallet.sendTransaction(tx);
     await this.onchainRepository.addUserWithdrawal(txRes, channel);
     return txRes;

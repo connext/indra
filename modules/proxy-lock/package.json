@@ -1,6 +1,6 @@
 {
   "name": "@connext/proxy-lock",
-  "version": "0.1.11",
+  "version": "0.1.14",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
   "types": "dist/index.d.ts",
@@ -13,13 +13,13 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "@connext/messaging": "0.1.11",
-    "@counterfactual/types": "0.0.42",
+    "@connext/messaging": "0.1.14",
+    "@counterfactual/types": "0.0.43",
     "uuid": "3.3.3"
   },
   "devDependencies": {
-    "rollup": "1.21.4",
-    "rollup-plugin-typescript2": "0.24.2",
+    "rollup": "1.22.0",
+    "rollup-plugin-typescript2": "0.24.3",
     "typescript": "3.5.3"
   }
 }

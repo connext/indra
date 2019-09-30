@@ -31,7 +31,17 @@ import { Address, AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/t
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { BigNumber, HDNode, Network, Transaction, bigNumberify } from "ethers/utils";
+import {
+  BigNumber,
+  getAddress,
+  HDNode,
+  Network,
+  solidityKeccak256,
+  keccak256,
+  Interface,
+  Transaction,
+  bigNumberify,
+} from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
@@ -54,6 +64,9 @@ import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
+import { xkeysToSortedKthAddresses } from "./lib/utils";
+import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
+import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
 
 /**
  * Creates a new client-node connection with node at specified url
@@ -164,6 +177,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const client = new ConnextInternal({
     appRegistry,
     cfCore,
+    contractAddresses: config.contractAddresses,
     ethProvider,
     messaging,
     multisigAddress,
@@ -614,6 +628,36 @@ export class ConnextInternal extends ConnextChannel {
     // recreate client with new mnemonic
     const client = await connect({ ...this.opts, mnemonic });
     return client;
+  };
+
+  public getMultisigAddressfromXpub = async (xpub: string): Promise<string> => {
+    const owners: string[] = [xpub, this.nodePublicIdentifier];
+    const proxyFactoryAddress: string = this.opts.contractAddresses.ProxyFactory;
+    const minimumViableMultisigAddress: string = this.opts.contractAddresses.MinimumViableMultisig;
+    return getAddress(
+      solidityKeccak256(
+        ["bytes1", "address", "uint256", "bytes32"],
+        [
+          "0xff",
+          proxyFactoryAddress,
+          solidityKeccak256(
+            ["bytes32", "uint256"],
+            [
+              keccak256(
+                new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+                  xkeysToSortedKthAddresses(owners, 0),
+                ]),
+              ),
+              0,
+            ],
+          ),
+          solidityKeccak256(
+            ["bytes", "uint256"],
+            [`0x${Proxy.evm.bytecode.object}`, minimumViableMultisigAddress],
+          ),
+        ],
+      ).slice(-40),
+    );
   };
 
   ///////////////////////////////////
