@@ -330,7 +330,7 @@ export type TransferCondition = keyof typeof TransferConditions;
 
 // linked transfer types
 export type LinkedTransferParameters<T = string> = {
-  conditionType: "LINKED_TRANSFER";
+  conditionType: TransferCondition;
   amount: T;
   assetId?: Address;
   paymentId: string;
