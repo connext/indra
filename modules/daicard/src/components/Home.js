@@ -20,13 +20,11 @@ class Home extends React.Component {
   };
 
   scanQRCode = async (data) => {
-    const path = await this.props.scanQRCode(data);
-    this.setState({ scanModal: false })
-    this.props.history.push(path)
-
+    this.setState({ scanModal: false });
     if(data.startsWith("wc:")){
       await initWalletConnect(data);
     }
+    this.props.history.push(data);
   };
 
   render() {
@@ -68,7 +66,6 @@ class Home extends React.Component {
             >
               <QRScan
                 handleResult={this.scanQRCode}
-                history={this.state.history}
               />
             </Modal>
           </Grid>
