@@ -22,7 +22,6 @@ my.xpubRegex = /xpub[a-zA-Z0-9]{107}/i
 // These functions behave a lot like cy.whatever functions
 
 my.isStarting = () => cy.contains('span', /starting/i).should('exist')
-
 my.doneStarting = () => cy.contains('span', /starting/i).should('not.exist')
 
 my.goToDeposit = () => cy.get(`a[href="/deposit"]`).click() && my.doneStarting()
@@ -32,15 +31,13 @@ my.goToSend = () => cy.get(`a[href="/send"]`).click() && my.doneStarting()
 my.goToCashout = () => cy.get(`a[href="/cashout"]`).click() && my.doneStarting()
 my.goHome = () => cy.contains('button', /^home$/i).click() && my.doneStarting()
 my.goBack = () => cy.contains('button', /^back$/i).click() && my.doneStarting()
-my.goNextIntro = () => cy.contains('button', /^next$/i).click() && my.doneStarting()
-my.goCloseIntro = () => cy.contains('button', /^got it!$/i).click() && my.doneStarting()
+my.goNextIntro = () => cy.contains('button', /^next$/i).click()
+my.goCloseIntro = () => cy.contains('button', /^got it!$/i).click()
 
 my.closeIntroModal = () => {
+  my.isStarting()
+  my.doneStarting()
   my.goNextIntro()
-  my.goNextIntro()
-  cy.contains('button', my.mnemonicRegex).should('exist')
-  my.goNextIntro()
-  cy.contains('p', '??').should('not.exist')
   my.goNextIntro()
   cy.contains('p', '??').should('not.exist')
   my.goCloseIntro()

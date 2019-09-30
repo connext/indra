@@ -11,8 +11,7 @@ const style = withStyles((theme) => ({
   }
 }));
 
-export const DepositCard = style((props) => {
-  const { address, history, maxDeposit, minDeposit } = props;
+export const DepositCard = style(({ address, history, maxDeposit, minDeposit }) => {
 
   const minEth = minDeposit ? minDeposit.toETH().format() : '?.??'
   const maxEth = maxDeposit ? maxDeposit.toETH().format() : '?.??'

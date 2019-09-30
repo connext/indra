@@ -77,20 +77,14 @@ const style = withStyles((theme) => ({
   grid: {},
 }));
 
+const zeroBalance = {
+  channel: { ether: Currency.ETH("0"), token: Currency.DAI("0"), total: Currency.ETH("0") },
+  onChain: { ether: Currency.ETH("0"), token: Currency.DAI("0"), total: Currency.ETH("0") },
+}
+
 export const App = style(({ classes }) => {
   const [swapRate, setSwapRate] = useState('1');
-  const [balance, setBalance] = useState({
-    channel: {
-      ether: Currency.ETH("0"),
-      token: Currency.DAI("0"),
-      total: Currency.ETH("0"),
-    },
-    onChain: {
-      ether: Currency.ETH("0"),
-      token: Currency.DAI("0"),
-      total: Currency.ETH("0"),
-    },
-  });
+  const [balance, setBalance] = useState(zeroBalance);
   const [channel, setChannel] = useState(null);
   const [loadingConnext, setLoadingConnext] = useState(true);
   const [maxDeposit, setMaxDeposit] = useState(null);
@@ -182,6 +176,15 @@ export const App = style(({ classes }) => {
   useEffect(() => {
     // Wait until channel is set up before this effect should be applied
     if (loadingConnext) { return; }
+    console.log(`Starting core poller effect | loading ${loadingConnext} | channel ${channel} | swapRate ${swapRate}`)
+
+    // setState functions apply between renders but autoDeposit runs right after refreshBalances
+    // regardless of render status. Keep a local copy of these vars so that status updates eg
+    // made by refreshBalances are available in autoDeposit
+    let balance = zeroBalance
+    let minDeposit
+    let maxDeposit
+    let pending = { type: "", complete: true, closed: true }
 
     const refreshBalances = async () => {
       const getTotal = (etherAmt, tokenAmt) => Currency.WEI(etherAmt.wad.add(tokenAmt.toETH(swapRate).wad));
@@ -197,14 +200,25 @@ export const App = style(({ classes }) => {
       const gasPrice = await wallet.provider.getGasPrice();
       const totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
       const totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
-      const minDeposit = Currency.WEI(totalDepositGasWei.add(totalWithdrawalGasWei)).toETH(swapRate);
-      const maxDeposit = MAX_CHANNEL_VALUE.toETH(swapRate); // Or get based on payment profile?
+      minDeposit = Currency.WEI(totalDepositGasWei.add(totalWithdrawalGasWei)).toETH(swapRate);
+      maxDeposit = MAX_CHANNEL_VALUE.toETH(swapRate); // Or get based on payment profile?
+      console.log(`Setting`)
       setMaxDeposit(maxDeposit)
       setMinDeposit(minDeposit)
     }
 
     const autoDeposit = async () => {
-      if (!channel || !token || !swapRate || !maxDeposit || !minDeposit) { return; }
+      console.log(`AutoDeposit | swapRate ${swapRate} | balance ${JSON.stringify(
+        balance,
+        (key, value) => (typeof value.format === 'function') ? value.format() : value,
+        2
+      )}`);
+      if (!channel || !token || !swapRate || !maxDeposit || !minDeposit) {
+        console.log(`Aborting autoDeposit, stuff missing`)
+        console.log(`channel ${channel} | token ${token} | swapRate ${swapRate} | maxDeposit ${maxDeposit} | minDeposit ${minDeposit}`)
+        return;
+      }
+      console.log(`Autodeposit ready to proceed!`)
       if (balance.onChain.ether.wad.eq(Zero)) {
         console.debug(`No on-chain eth to deposit`)
         return;
@@ -294,6 +308,12 @@ export const App = style(({ classes }) => {
         collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress])
         console.log(`Collateral: ${collateral} tokens, need: ${formatEther(collateralNeeded)}`);
       }
+      console.log(`Executing channel.swap ${JSON.stringify({
+        amount: weiToSwap.toString(),
+        fromAssetId: AddressZero,
+        swapRate,
+        toAssetId: token.address,
+      })}`);
       await channel.swap({
         amount: weiToSwap.toString(),
         fromAssetId: AddressZero,
@@ -315,6 +335,11 @@ export const App = style(({ classes }) => {
       let shouldStop = false;
       interval(async (iteration, stop) => {
         if (shouldStop) { return stop(); }
+        console.log(`Polling | swapRate ${swapRate} | balance ${JSON.stringify(
+          balance,
+          (key, value) => (typeof value.format === 'function') ? value.format() : value,
+          2
+        )}`);
         await refreshBalances();
         await autoDeposit();
         await autoSwap();
@@ -325,7 +350,11 @@ export const App = style(({ classes }) => {
         shouldStop = true
       }
     })()
-  }, [loadingConnext]); // This effect should re-fire every time these dependencies change
+  // This effect should re-fire every time these dependencies change (just the loading flag)
+  // We're getting warnings bc this effect technically depends on lots of other stuff
+  // But including other dependencies makes this core poller effect fire too often
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingConnext]);
 
   // ************************************************* //
   //                    Handlers                       //
@@ -379,11 +408,11 @@ export const App = style(({ classes }) => {
           <MySnackbar
             variant="warning"
             openWhen={loadingConnext}
-            onClose={() => setLoadingConnext(false)}
+            onClose={() => {}}
             message="Starting Channel Controllers.."
             duration={30 * 60 * 1000}
           />
-          <AppBarComponent address={wallet.address} />
+          <AppBarComponent address={wallet.address || AddressZero} />
           <Route
             exact
             path="/"
@@ -407,7 +436,7 @@ export const App = style(({ classes }) => {
             render={props => (
               <DepositCard
                 {...props}
-                address={wallet.address}
+                address={wallet.address || AddressZero}
                 maxDeposit={maxDeposit}
                 minDeposit={minDeposit}
               />

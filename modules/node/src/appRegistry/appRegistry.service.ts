@@ -20,6 +20,7 @@ import {
   CLogger,
   freeBalanceAddressFromXpub,
   normalizeEthAddresses,
+  stringify,
 } from "../util";
 import { ProposeMessage } from "../util/cfCore";
 import { isEthAddress } from "../validator";
@@ -96,7 +97,7 @@ export class AppRegistryService {
       )
     ) {
       throw new Error(
-        `Proposed app details ${JSON.stringify(proposal)} do not match registry ${JSON.stringify(
+        `Proposed app details ${stringify(proposal)} do not match registry ${stringify(
           registryAppInfo,
         )}`,
       );
@@ -162,7 +163,7 @@ export class AppRegistryService {
     ) {
       throw new Error(
         `Swap from ${initiatorDepositTokenAddress} to ` +
-          `${responderDepositTokenAddress} is not valid. Valid swaps: ${JSON.stringify(
+          `${responderDepositTokenAddress} is not valid. Valid swaps: ${stringify(
             validSwaps,
           )}`,
       );
@@ -213,7 +214,7 @@ export class AppRegistryService {
 
     if (responderDeposit.gt(Zero)) {
       throw new Error(
-        `Will not accept linked transfer install where node deposit is >0 ${JSON.stringify(
+        `Will not accept linked transfer install where node deposit is >0 ${stringify(
           params,
         )}`,
       );
@@ -221,7 +222,7 @@ export class AppRegistryService {
 
     if (initiatorDeposit.lte(Zero)) {
       throw new Error(
-        `Will not accept linked transfer install where initiator deposit is <=0 ${JSON.stringify(
+        `Will not accept linked transfer install where initiator deposit is <=0 ${stringify(
           params,
         )}`,
       );
@@ -229,7 +230,7 @@ export class AppRegistryService {
 
     if (!initialState.amount.eq(initiatorDeposit)) {
       throw new Error(
-        `Payment amount bust be the same as initiator deposit ${JSON.stringify(params)}`,
+        `Payment amount bust be the same as initiator deposit ${stringify(params)}`,
       );
     }
 
@@ -380,9 +381,8 @@ export class AppRegistryService {
     }
 
     logger.log(
-      `App with params ${JSON.stringify(
+      `App with params ${stringify(
         proposedAppParams.params,
-        null,
         2,
       )} allowed to be installed`,
     );

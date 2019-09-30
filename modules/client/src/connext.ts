@@ -449,6 +449,7 @@ export class ConnextInternal extends ConnextChannel {
   constructor(opts: InternalClientOptions) {
     super(opts);
     this.opts = opts;
+    this.appRegistry = opts.appRegistry;
     this.config = opts.config;
     this.ethProvider = opts.ethProvider;
     this.messaging = opts.messaging;
