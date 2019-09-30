@@ -393,10 +393,11 @@ export class AppRegistryService {
       case SupportedApplications.SimpleTwoPartySwapApp:
         await this.validateSwap(proposedAppParams.params);
         break;
+      // TODO: add validation of simple transfer validateSimpleTransfer
       case SupportedApplications.SimpleLinkedTransferApp:
-        // TODO: add validation of simple transfer validateSimpleTransfer
         await this.validateSimpleLinkedTransfer(proposedAppParams.params);
-        logger.log(`saving linked transfer`);
+        logger.debug(`Saving linked transfer`);
+        // TODO: maybe move this?
         await this.transferService.saveLinkedTransfer(
           initiatorIdentifier,
           proposedAppParams.params.initiatorDepositTokenAddress,
@@ -405,7 +406,7 @@ export class AppRegistryService {
           (proposedAppParams.params.initialState as SimpleLinkedTransferAppStateBigNumber)
             .linkedHash,
         );
-        logger.log(`saved!`);
+        logger.log(`Linked transfer saved!`);
         break;
       default:
         break;
