@@ -1,6 +1,8 @@
 import { RegisteredAppDetails, SupportedApplications } from "@connext/types";
 import { AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
+import EthCrypto from "eth-crypto";
 import { bigNumberify } from "ethers/utils";
+import { fromMnemonic } from "ethers/utils/hdnode";
 import { EventEmitter } from "events";
 
 import { ConnextInternal } from "./connext";
@@ -164,6 +166,7 @@ export class ConnextListener extends EventEmitter {
 
   public register = async (): Promise<void> => {
     await this.registerAvailabilitySubscription();
+    await this.registerLinkedTransferSubscription();
     this.registerDefaultCfListeners();
     return;
   };
@@ -324,5 +327,27 @@ export class ConnextListener extends EventEmitter {
       });
     });
     this.log.info(`Connected message pattern "${subject}"`);
+  };
+
+  private registerLinkedTransferSubscription = async (): Promise<void> => {
+    const subject = `online.${this.connext.publicIdentifier}`;
+    await this.connext.messaging.subscribe(subject, async (msg: any) => {
+      this.log.debug(`Received message for subscription: ${JSON.stringify(msg)}`);
+      const { amount, assetId, encryptedPreImage, paymentId } = msg.data;
+      const privateKey = fromMnemonic(this.connext.opts.mnemonic).privateKey;
+      const preImage = await EthCrypto.decryptWithPrivateKey(
+        privateKey.slice(2), // remove 0x
+        encryptedPreImage,
+      );
+      this.log.debug(`Decrypted message and recovered preImage: ${preImage}`);
+      // decrypt secret and resolve
+      await this.connext.resolveCondition({
+        amount,
+        assetId,
+        conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
+        paymentId,
+        preImage,
+      });
+    });
   };
 }
