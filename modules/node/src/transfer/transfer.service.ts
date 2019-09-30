@@ -100,11 +100,23 @@ export class TransferService {
     linkedHash: string,
   ): Promise<LinkedTransfer> {
     logger.debug(`Setting recipient ${recipientPublicIdentifier} on linkedHash ${linkedHash}`);
-    const channel = await this.channelRepository.findByUserPublicIdentifier(
+
+    const senderChannel = await this.channelRepository.findByUserPublicIdentifier(
+      senderPublicIdentifier,
+    );
+
+    if (!senderChannel) {
+      throw new Error(`No channel exists for senderPublicIdentifier ${senderPublicIdentifier}`);
+    }
+
+    const recipientChannel = await this.channelRepository.findByUserPublicIdentifier(
       recipientPublicIdentifier,
     );
-    if (!channel) {
-      throw new Error(`No channel exists for userPubId ${recipientPublicIdentifier}`);
+
+    if (!recipientChannel) {
+      throw new Error(
+        `No channel exists for recipientPublicIdentifier ${recipientPublicIdentifier}`,
+      );
     }
 
     // check that we have recorded this transfer in our db
@@ -113,7 +125,7 @@ export class TransferService {
       throw new Error(`No transfer exists for linkedHash ${linkedHash}`);
     }
 
-    if (senderPublicIdentifier !== transfer.senderChannel.nodePublicIdentifier) {
+    if (senderPublicIdentifier !== transfer.senderChannel.userPublicIdentifier) {
       throw new Error(`Can only modify transfer that you sent`);
     }
 
