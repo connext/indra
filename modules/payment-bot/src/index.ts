@@ -117,7 +117,7 @@ async function run(): Promise<void> {
   }
 
   if (config.swap) {
-    const tokenAddress = (await client.config()).contractAddresses.Token;
+    const tokenAddress = client.config.contractAddresses.Token;
     const swapRate = await client.getLatestSwapRate(AddressZero, tokenAddress);
     console.log(`Swapping ${config.swap} eth for ${assetId} at rate ${swapRate.toString()}`);
     await client.swap({

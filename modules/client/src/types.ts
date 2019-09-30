@@ -4,6 +4,7 @@ import {
   AppState,
   ChannelProvider,
   ChannelState,
+  GetConfigResponse,
   MultisigState,
   ContractAddresses,
 } from "@connext/types";
@@ -46,15 +47,14 @@ export interface ClientOptions {
 export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
   cfCore: CFCore;
+  config: GetConfigResponse;
   contract?: MultisigState;
+  ethProvider: providers.JsonRpcProvider;
   messaging: IMessagingService;
   multisigAddress: string;
   network: utils.Network; // TODO: delete! use bos branch!
   node: NodeApiClient;
-  nodePublicIdentifier: string;
-  ethProvider: providers.JsonRpcProvider;
   store: CFCoreTypes.IStoreService;
-  contractAddresses: ContractAddresses;
 };
 
 // TODO: define properly!!

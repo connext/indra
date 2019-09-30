@@ -27,18 +27,20 @@ import {
   TransferParameters,
   WithdrawParameters,
 } from "@connext/types";
+import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
+import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
 import { Address, AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import {
   BigNumber,
-  HDNode,
-  Network,
   getAddress,
-  solidityKeccak256,
-  keccak256,
+  HDNode,
   Interface,
+  keccak256,
+  Network,
+  solidityKeccak256,
 } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
@@ -51,15 +53,17 @@ import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { CFCore, CreateChannelMessage, EXTENDED_PRIVATE_KEY_PATH } from "./lib/cfCore";
 import { Logger } from "./lib/logger";
-import { freeBalanceAddressFromXpub, publicIdentifierToAddress, replaceBN } from "./lib/utils";
+import {
+  freeBalanceAddressFromXpub,
+  publicIdentifierToAddress,
+  replaceBN,
+  xkeysToSortedKthAddresses,
+} from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
-import { xkeysToSortedKthAddresses } from "./lib/utils";
-import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
-import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
 
 /**
  * Creates a new client-node connection with node at specified url
@@ -170,13 +174,12 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const client = new ConnextInternal({
     appRegistry,
     cfCore,
-    contractAddresses: config.contractAddresses,
+    config,
     ethProvider,
     messaging,
     multisigAddress,
     network,
     node,
-    nodePublicIdentifier: config.nodePublicIdentifier,
     store,
     ...opts, // use any provided opts by default
   });
@@ -193,10 +196,12 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
  */
 export abstract class ConnextChannel {
   public opts: InternalClientOptions;
+  public config: GetConfigResponse;
   private internal: ConnextInternal;
 
   public constructor(opts: InternalClientOptions) {
     this.opts = opts;
+    this.config = opts.config;
     this.internal = this as any;
   }
 
@@ -251,9 +256,6 @@ export abstract class ConnextChannel {
 
   ///////////////////////////////////
   // NODE EASY ACCESS METHODS
-  public config = async (): Promise<GetConfigResponse> => {
-    return await this.internal.node.config();
-  };
 
   public getChannel = async (): Promise<GetChannelResponse> => {
     return await this.internal.node.getChannel();
@@ -446,23 +448,18 @@ export class ConnextInternal extends ConnextChannel {
 
   constructor(opts: InternalClientOptions) {
     super(opts);
-
     this.opts = opts;
-
+    this.config = opts.config;
     this.ethProvider = opts.ethProvider;
-    this.node = opts.node;
     this.messaging = opts.messaging;
-
-    this.appRegistry = opts.appRegistry;
-
+    this.network = opts.network;
+    this.node = opts.node;
     this.cfCore = opts.cfCore;
     this.freeBalanceAddress = this.cfCore.freeBalanceAddress;
     this.publicIdentifier = this.cfCore.publicIdentifier;
     this.multisigAddress = this.opts.multisigAddress;
-    this.nodePublicIdentifier = this.opts.nodePublicIdentifier;
-
+    this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
     this.logger = new Logger("ConnextInternal", opts.logLevel);
-    this.network = opts.network;
 
     // establish listeners
     this.listener = new ConnextListener(opts.cfCore, this);
@@ -543,8 +540,9 @@ export class ConnextInternal extends ConnextChannel {
 
   public getMultisigAddressfromXpub = async (xpub: string): Promise<string> => {
     const owners: string[] = [xpub, this.nodePublicIdentifier];
-    const proxyFactoryAddress: string = this.opts.contractAddresses.ProxyFactory;
-    const minimumViableMultisigAddress: string = this.opts.contractAddresses.MinimumViableMultisig;
+    const proxyFactoryAddress: string = this.opts.config.contractAddresses.ProxyFactory;
+    const minimumViableMultisigAddress: string = this.opts.config.contractAddresses
+      .MinimumViableMultisig;
     return getAddress(
       solidityKeccak256(
         ["bytes1", "address", "uint256", "bytes32"],
