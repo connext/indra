@@ -11,9 +11,7 @@ export class Logger {
   public constructor(name?: string, logLevel?: number) {
     this.name = typeof name !== "undefined" ? name : this.name;
     this.logLevel =
-      typeof logLevel !== "undefined"
-        ? parseInt(logLevel.toString(), 10)
-        : this.logLevel;
+      typeof logLevel !== "undefined" ? parseInt(logLevel.toString(), 10) : this.logLevel;
   }
 
   public error(msg: string): void {
