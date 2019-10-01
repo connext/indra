@@ -38,8 +38,6 @@ const logger = new CLogger("TransferService");
 
 @Injectable()
 export class TransferService {
-  appId: string;
-
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
@@ -64,9 +62,15 @@ export class TransferService {
     transfer.assetId = assetId;
 
     const senderChannel = await this.channelRepository.findByUserPublicIdentifier(senderPubId);
+    if (!senderChannel) {
+      throw new Error(`Sender channel does not exist for ${senderPubId}`);
+    }
     transfer.senderChannel = senderChannel;
 
     const receiverChannel = await this.channelRepository.findByUserPublicIdentifier(receiverPubId);
+    if (!receiverChannel) {
+      throw new Error(`Receiver channel does not exist for ${receiverPubId}`);
+    }
     transfer.receiverChannel = receiverChannel;
     transfer.status = PeerToPeerTransferStatus.PENDING;
 
@@ -79,24 +83,29 @@ export class TransferService {
     amount: BigNumber,
     appInstanceId: string,
     linkedHash: string,
+    paymentId: string,
   ): Promise<LinkedTransfer> {
+    const senderChannel = await this.channelRepository.findByUserPublicIdentifier(senderPubId);
+    if (!senderChannel) {
+      throw new Error(`Sender channel does not exist for ${senderPubId}`);
+    }
+
     const transfer = new LinkedTransfer();
     transfer.senderAppInstanceId = appInstanceId;
     transfer.amount = amount;
     transfer.assetId = assetId;
     transfer.linkedHash = linkedHash;
-
-    const senderChannel = await this.channelRepository.findByUserPublicIdentifier(senderPubId);
+    transfer.paymentId = paymentId;
     transfer.senderChannel = senderChannel;
-
     transfer.status = LinkedTransferStatus.PENDING;
 
     return await this.linkedTransferRepository.save(transfer);
   }
 
-  async setRecipientOnLinkedTransfer(
+  async setRecipientAndEncryptedPreImageOnLinkedTransfer(
     senderPublicIdentifier: string,
     recipientPublicIdentifier: string,
+    encryptedPreImage: string,
     linkedHash: string,
   ): Promise<LinkedTransfer> {
     logger.debug(`Setting recipient ${recipientPublicIdentifier} on linkedHash ${linkedHash}`);
@@ -104,7 +113,6 @@ export class TransferService {
     const senderChannel = await this.channelRepository.findByUserPublicIdentifier(
       senderPublicIdentifier,
     );
-
     if (!senderChannel) {
       throw new Error(`No channel exists for senderPublicIdentifier ${senderPublicIdentifier}`);
     }
@@ -112,7 +120,6 @@ export class TransferService {
     const recipientChannel = await this.channelRepository.findByUserPublicIdentifier(
       recipientPublicIdentifier,
     );
-
     if (!recipientChannel) {
       throw new Error(
         `No channel exists for recipientPublicIdentifier ${recipientPublicIdentifier}`,
@@ -129,9 +136,10 @@ export class TransferService {
       throw new Error(`Can only modify transfer that you sent`);
     }
 
-    return await this.linkedTransferRepository.addRecipientPublicIdentifier(
+    return await this.linkedTransferRepository.addRecipientPublicIdentifierAndEncryptedPreImage(
       transfer,
       recipientPublicIdentifier,
+      encryptedPreImage,
     );
   }
 
@@ -141,7 +149,7 @@ export class TransferService {
     preImage: string,
     amount: BigNumber,
     assetId: string,
-    recipientPublicIdentifier: string,
+    recipientPublicIdentifier?: string,
   ): Promise<ResolveLinkedTransferResponse> {
     logger.debug(
       `Resolving linked transfer with userPubId: ${userPubId}, paymentId: ${paymentId}, ` +
@@ -180,7 +188,7 @@ export class TransferService {
     const installedApps = await this.cfCoreService.getAppInstances();
     const senderApp = installedApps.find(
       (app: AppInstanceJson) =>
-        app.appInterface.addr === defaultApp.appDefinitionAddress &&
+        app.appInterface.addr === defaultApp!.appDefinitionAddress &&
         (app.latestState as SimpleLinkedTransferAppStateBigNumber).linkedHash === linkedHash,
     );
 
@@ -296,7 +304,7 @@ export class TransferService {
     paymentId: string,
     transfer: LinkedTransfer,
     appInfo: AppRegistry,
-  ): Promise<LinkedTransfer> {
+  ): Promise<LinkedTransfer | undefined> {
     let boundResolve: (value?: any) => void;
     let boundReject: (reason?: any) => void;
 
