@@ -81,11 +81,15 @@ async function run(): Promise<void> {
   setAssetId(assetId);
   await getOrCreateChannel(assetId);
 
-  if (config.getFreeBalance) {
+  const logEthAndAssetFreeBalance = async (): Promise<void> => {
     logEthFreeBalance(AddressZero, await client.getFreeBalance(assetId));
     if (assetId !== AddressZero) {
       logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
     }
+  };
+
+  if (config.getFreeBalance) {
+    await logEthAndAssetFreeBalance();
   }
 
   if (config.deposit) {
@@ -98,12 +102,14 @@ async function run(): Promise<void> {
     console.log(`Depositing ${config.deposit} of asset ${assetId}`);
     await client.deposit(depositParams);
     console.log(`Successfully deposited!`);
+    await logEthAndAssetFreeBalance();
   }
 
   if (config.requestCollateral) {
     console.log(`Requesting collateral...`);
     await client.requestCollateral(assetId);
     console.log(`Successfully received collateral!`);
+    await logEthAndAssetFreeBalance();
   }
 
   if (config.transfer) {
@@ -114,6 +120,7 @@ async function run(): Promise<void> {
       recipient: config.counterparty,
     });
     console.log(`Successfully transferred!`);
+    await logEthAndAssetFreeBalance();
   }
 
   if (config.swap) {
@@ -127,6 +134,7 @@ async function run(): Promise<void> {
       toAssetId: assetId,
     });
     console.log(`Successfully swapped!`);
+    await logEthAndAssetFreeBalance();
   }
 
   if (config.linked) {
@@ -147,6 +155,7 @@ async function run(): Promise<void> {
     console.log(`Creating link payment for ${config.linked} of asset ${assetId}`);
     const res = await client.conditionalTransfer(linkedParams);
     console.log(`Successfully created! Linked response: ${JSON.stringify(res, replaceBN, 2)}`);
+    await logEthAndAssetFreeBalance();
   }
 
   if (config.redeem) {
@@ -161,6 +170,7 @@ async function run(): Promise<void> {
     console.log(`Redeeming link with parameters: ${JSON.stringify(resolveParams, replaceBN, 2)}`);
     const res = await client.resolveCondition(resolveParams);
     console.log(`Successfully redeemed! Resolve response: ${JSON.stringify(res, replaceBN, 2)}`);
+    await logEthAndAssetFreeBalance();
   }
 
   if (config.withdraw) {
@@ -192,6 +202,7 @@ async function run(): Promise<void> {
     );
     await client.withdraw(withdrawParams);
     console.log(`Successfully withdrawn!`);
+    await logEthAndAssetFreeBalance();
   }
 
   if (config.uninstall) {
@@ -240,11 +251,13 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
     const channel = await client.getChannel();
     return channel && channel.available;
   };
-  const interval = 1;
+  const interval = 0.1;
   while (!(await channelAvailable())) {
     console.info(`Waiting ${interval} more seconds for channel to be available`);
     await new Promise((res: any): any => setTimeout(() => res(), interval * 1000));
   }
+
+  console.info(`Channel is available!`);
 
   await client.addPaymentProfile({
     amountToCollateralize: parseEther("0.1").toString(),
