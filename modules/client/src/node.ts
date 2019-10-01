@@ -19,6 +19,9 @@ import { Logger } from "./lib/logger";
 import { replaceBN } from "./lib/utils";
 import { NodeInitializationParameters } from "./types";
 
+// Include our access token when interacting with these subjects
+const guardedSubjects = ["channel", "transfer"];
+
 const API_TIMEOUT = 35_000;
 
 export interface INodeApiClient {
@@ -58,6 +61,7 @@ export class NodeApiClient implements INodeApiClient {
   public userPublicIdentifier: string | undefined;
   public nodePublicIdentifier: string | undefined;
   private wallet: Wallet;
+  private token: Promise<string> | undefined;
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
@@ -65,7 +69,7 @@ export class NodeApiClient implements INodeApiClient {
     this.userPublicIdentifier = opts.userPublicIdentifier;
     this.nodePublicIdentifier = opts.nodePublicIdentifier;
     this.wallet = opts.wallet;
-    this.auth();
+    this.token = this.getAuthToken();
   }
 
   ////////////////////////////////////////
@@ -184,11 +188,18 @@ export class NodeApiClient implements INodeApiClient {
   ////////////////////////////////////////
   // PRIVATE
 
-  private async auth(): Promise<any> {
-    console.log(`Sending auth message`);
-    const res = await this.send("auth.getNonce", { address: this.wallet.address });
-    console.log(`Auth result: ${JSON.stringify(res)}`);
-    return res;
+  private async getAuthToken(): Promise<string> {
+    return new Promise(
+      async (resolve: any, reject: any): Promise<any> => {
+        const nonce = await this.send("auth.getNonce", { address: this.wallet.address });
+        this.log.info(`Got nonce: ${nonce}`);
+        const sig = await this.wallet.signMessage(nonce);
+        this.log.info(`Got sig: ${sig}`);
+        const token = `${nonce}:${sig}`;
+        this.log.info(`Got new token: ${token}`);
+        return resolve(token);
+      },
+    );
   }
 
   private async send(subject: string, data?: any): Promise<any | undefined> {
@@ -197,10 +208,18 @@ export class NodeApiClient implements INodeApiClient {
         data ? `with data: ${JSON.stringify(data, replaceBN, 2)}` : `without data`
       }`,
     );
-    const msg = await this.messaging.request(subject, API_TIMEOUT, {
+    const payload = {
       ...data,
       id: uuid.v4(),
-    });
+    };
+    if (guardedSubjects.includes(subject.split(".")[0])) {
+      if (!this.token) {
+        this.log.warn(`Didn't have an auth token while sending, getting a new one.`);
+        this.token = this.getAuthToken();
+      }
+      payload.token = await this.token;
+    }
+    const msg = await this.messaging.request(subject, API_TIMEOUT, payload);
     if (!msg.data) {
       this.log.info(`Maybe this message is malformed: ${JSON.stringify(msg, replaceBN, 2)}`);
       return undefined;

@@ -12,6 +12,7 @@ import { FactoryProvider } from "@nestjs/common/interfaces";
 import { TransactionResponse } from "ethers/providers";
 import { bigNumberify, getAddress } from "ethers/utils";
 
+import { AuthService } from "../auth/auth.service";
 import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { ConfigService } from "../config/config.service";
 import { CFCoreProviderId, ChannelMessagingProviderId, MessagingProviderId } from "../constants";
@@ -50,13 +51,16 @@ class ChannelMessaging extends AbstractMessagingProvider {
     messaging: IMessagingService,
     private readonly channelRepository: ChannelRepository,
     private readonly channelService: ChannelService,
+    private readonly authService: AuthService,
   ) {
     super(messaging);
   }
 
-  async getChannel(subject: string): Promise<GetChannelResponse> {
-    const pubId = this.getPublicIdentifierFromSubject(subject);
-    return (await this.channelRepository.findByUserPublicIdentifier(pubId)) as GetChannelResponse;
+  async getChannel(subject: string, data: { token?: string }): Promise<GetChannelResponse> {
+    const pubId = await this.authService.getPublicIdentifier(subject, data.token);
+    return pubId
+      ? ((await this.channelRepository.findByUserPublicIdentifier(pubId)) as GetChannelResponse)
+      : (`Oh no invalid subject or token: ${data.token}` as any);
   }
 
   async createChannel(subject: string): Promise<CFCoreTypes.CreateChannelResult> {
@@ -171,7 +175,14 @@ class ChannelMessaging extends AbstractMessagingProvider {
 }
 
 export const channelProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [MessagingProviderId, ChannelRepository, ConfigService, CFCoreProviderId, ChannelService],
+  inject: [
+    MessagingProviderId,
+    ChannelRepository,
+    ConfigService,
+    CFCoreProviderId,
+    ChannelService,
+    AuthService,
+  ],
   provide: ChannelMessagingProviderId,
   useFactory: async (
     messaging: IMessagingService,
@@ -179,8 +190,9 @@ export const channelProviderFactory: FactoryProvider<Promise<void>> = {
     configService: ConfigService,
     cfCore: CFCore,
     channelService: ChannelService,
+    authService: AuthService,
   ): Promise<void> => {
-    const channel = new ChannelMessaging(messaging, channelRepo, channelService);
+    const channel = new ChannelMessaging(messaging, channelRepo, channelService, authService);
     await channel.setupSubscriptions();
     const config = new ConfigMessaging(messaging, cfCore, configService);
     await config.setupSubscriptions();

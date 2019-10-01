@@ -12,6 +12,7 @@ import { Redis } from "ioredis";
 
 import { RedisProviderId } from "../constants";
 import { CLogger } from "../util";
+import { isXpub } from "../validator";
 
 const logger = new CLogger("AuthService");
 
@@ -32,10 +33,31 @@ export class AuthService implements OnModuleInit {
     }
     const nonce = eth.utils.hexlify(eth.utils.randomBytes(32));
     await this.redis.set(`nonce:${address}`, nonce);
-    logger.log(`Set nonce ${nonce} for address ${address}`);
-    return JSON.stringify({ nonce: hexlify(randomBytes(32)) });
+    await this.redis.set(`nonce:${nonce}`, address);
+    return nonce;
   }
 
+  async getPublicIdentifier(subject: string, token: string): Promise<string> {
+    const nonce = token.split(":")[0];
+    const sig = token.split(":")[1];
+    const address = await this.redis.get(`nonce:${nonce}`);
+    const signer = verifyMessage(nonce, sig);
+    logger.log(`Auth check: ${address} === ${signer}`);
+    if (address !== signer) {
+      logger.log(`Oh no`);
+      return undefined;
+    }
+    logger.log(`Oh yea`);
+    // TODO: verify that this address matches the xpub in the subject
+
+    const pubId = subject.split(".").pop(); // last item of subscription is pubId
+    if (!pubId || !isXpub(pubId)) {
+      throw new Error("Invalid public identifier in message subject");
+    }
+    return pubId;
+  }
+
+  // legacy code from v1, not used for anything
   getAuthMiddleware = (config: any, acl: any): any => async (
     req: any,
     res: any,
@@ -45,7 +67,6 @@ export class AuthService implements OnModuleInit {
     const nonce = req.get("x-nonce");
     const signature = req.get("x-signature");
     const authorization = req.get("authorization");
-
     const redis = {} as any;
 
     req.address = address;
