@@ -43,11 +43,13 @@ export class LinkedTransferRepository extends Repository<LinkedTransfer> {
     return await this.save(transfer);
   }
 
-  async addRecipientPublicIdentifier(
+  async addRecipientPublicIdentifierAndEncryptedPreImage(
     transfer: LinkedTransfer,
     recipientPublicIdentifier: string,
+    encryptedPreImage: string,
   ): Promise<LinkedTransfer> {
     transfer.recipientPublicIdentifier = recipientPublicIdentifier;
+    transfer.encryptedPreImage = encryptedPreImage;
     return await this.save(transfer);
   }
 }
