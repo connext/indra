@@ -77,7 +77,7 @@ export class ConditionalTransferController extends AbstractController {
     // publish encrypted secret
     // TODO: should we move this to its own file?
     this.connext.messaging.publish(`transfer.send-async.${recipient}`, {
-      amount,
+      amount: amount.toString(),
       assetId,
       encryptedPreImage,
       paymentId,
