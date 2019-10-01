@@ -88,7 +88,7 @@ then
   echo "Created ATTACHABLE network with id $id"
 fi
 
-number_of_services=8 # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services=9 # NOTE: Gotta update this manually when adding/removing services :(
 
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF

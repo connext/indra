@@ -24,7 +24,7 @@ ganache_chain_id="4447"
 log_level="3" # set to 5 for all logs or to 0 for none
 nats_port="4222"
 node_port="8080"
-number_of_services="7" # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services="8" # NOTE: Gotta update this manually when adding/removing services :(
 project="indra"
 
 ####################
@@ -69,11 +69,11 @@ else
 fi
 
 # database connection settings
-postgres_db="$project"
-postgres_host="database"
-postgres_password_file="/run/secrets/$db_secret"
-postgres_port="5432"
-postgres_user="$project"
+pg_db="$project"
+pg_host="database"
+pg_password_file="/run/secrets/$db_secret"
+pg_port="5432"
+pg_user="$project"
 
 ########################################
 ## Ethereum Config
@@ -210,11 +210,11 @@ services:
       INDRA_NATS_CLUSTER_ID: abc123
       INDRA_NATS_SERVERS: nats://nats:$nats_port
       INDRA_NATS_TOKEN: abc123
-      INDRA_PG_DATABASE: $postgres_db
-      INDRA_PG_HOST: $postgres_host
-      INDRA_PG_PASSWORD_FILE: $postgres_password_file
-      INDRA_PG_PORT: $postgres_port
-      INDRA_PG_USERNAME: $postgres_user
+      INDRA_PG_DATABASE: $pg_db
+      INDRA_PG_HOST: $pg_host
+      INDRA_PG_PASSWORD_FILE: $pg_password_file
+      INDRA_PG_PORT: $pg_port
+      INDRA_PG_USERNAME: $pg_user
       INDRA_PORT: $node_port
       INDRA_REDIS_URL: $redis_url
       NODE_ENV: production
@@ -236,7 +236,7 @@ services:
       AWS_SECRET_ACCESS_KEY: $INDRA_AWS_SECRET_ACCESS_KEY
       ETH_NETWORK: $eth_network_name
       POSTGRES_DB: $project
-      POSTGRES_PASSWORD_FILE: $postgres_password_file
+      POSTGRES_PASSWORD_FILE: $pg_password_file
       POSTGRES_USER: $project
     secrets:
       - $db_secret
@@ -259,16 +259,15 @@ services:
     image: $redis_image
     ports:
       - "6379:6379"
+
   hasura:
     image: hasura/graphql-engine
     environment:
-      HASURA_GRAPHQL_DATABASE_URL: "postgres://$postgres_user:$postgres_user@$postgres_host:5432/$project"
+      HASURA_GRAPHQL_DATABASE_URL: "postgres://$pg_user:$pg_user@$pg_host:$pg_port/$project"
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
-    networks:
-      - $project
     ports:
       - "8083:8080"
-      
+
   logdna:
     image: logdna/logspout:latest
     volumes:
