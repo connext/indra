@@ -22,9 +22,11 @@ class Home extends React.Component {
   scanQRCode = async (data) => {
     this.setState({ scanModal: false });
     if(data.startsWith("wc:")){
+      console.log("DATA: " + data)
       await initWalletConnect(data);
+    } else {
+      this.props.history.push(data);
     }
-    this.props.history.push(data);
   };
 
   render() {
