@@ -181,7 +181,7 @@ services:
       DOMAINNAME: $INDRA_DOMAINNAME
       EMAIL: $INDRA_EMAIL
       ETH_RPC_URL: $INDRA_ETH_PROVIDER
-      MESSAGING_URL: http://relay
+      MESSAGING_URL: http://relay:4223
       HASURA_URL: http://hasura:8083
       MODE: prod
     ports:
