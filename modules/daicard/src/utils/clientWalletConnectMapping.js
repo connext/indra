@@ -6,12 +6,14 @@ export let walletConnector = null;
 
 export async function initWalletConnect(uri) {
     walletConnector = new WalletConnectBrowser({uri})
+    console.log("INITING")
 
     walletConnector.on("session_request", (error, payload) => {
+        console.log("Received session request")
         if (error) {
             throw error;
         }
-        displaySessionApproval(payload); //TODO
+        displaySessionApproval(payload);
 
         // Handle Session Request
         
@@ -36,6 +38,7 @@ export async function initWalletConnect(uri) {
     
     // Subscribe to call requests
     walletConnector.on("call_request", async (error, payload) => {
+        console.log("Received call request")
         if (error) {
             throw error;
         }
@@ -70,7 +73,7 @@ export async function initWalletConnect(uri) {
 }
 
 export function displaySessionApproval(payload) {
-    walletConnector.approveSession({accounts: [], chainId: 0})
+    walletConnector.approveSession({accounts: [], chainId: 4447})
     //TODO: proc modal that approves the walletconnection from the wallet
 }
 
