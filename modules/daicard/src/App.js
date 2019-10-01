@@ -173,13 +173,18 @@ class App extends React.Component {
       channel = await instantiateClient(ethUrl, mnemonic, nodeUrl);
     } else if (this.state.channelProviderType === "walletconnect") {
       const channelProvider = new WalletConnectChannelProvider({
-        infuraId: "need-infura-id", // NOTE: what happens if you are using ganache
-        // how can we specify our own rpc url that isnt infura?
+        rpc: {
+          1: ethUrl,
+          4: ethUrl,
+          4447: ethUrl
+        }
       });
+      console.log("GOT CHANNEL PROVIDER")
       // do we have to access the connection property here,
       // or can this be referenced at a higher level?
       // also, do we have to include this call?
       // await channelProvider.create();
+      console.log("CREATING CONNECTION")
       await channelProvider.connection.create();
       channel = await new Promise((res, rej) => {
         channelProvider.on("connect", async () => {
@@ -187,12 +192,15 @@ class App extends React.Component {
             ethProviderUrl: ethUrl,
             channelProvider,
           });
+          console.log("CONNECTED!")
+          console.log(connectedChannel)
           res(connectedChannel);
         });
         channelProvider.on("error", () => {
           rej("WalletConnect Error");
         });
       });
+      console.log("SUCCESSFULLY GOT CHANNEL")
     } else {
       console.error("Could not create channel.")
       return;
