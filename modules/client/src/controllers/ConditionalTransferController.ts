@@ -17,7 +17,6 @@ import { Node as CFCoreTypes } from "@counterfactual/types";
 import EthCrypto from "eth-crypto";
 import { HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
-import uuid from "uuid";
 
 import { RejectInstallVirtualMessage } from "../lib/cfCore";
 import { createLinkedHash, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
@@ -73,13 +72,15 @@ export class ConditionalTransferController extends AbstractController {
     );
 
     // TODO: should we move this to its own file?
-    await this.connext.messaging.publish(`transfer.send-async.${recipient}`, {
+    this.connext.messaging.publish(`transfer.send-async.${recipient}`, {
       amount,
       assetId,
       encryptedPreImage,
-      id: uuid.v4(),
       paymentId,
     });
+
+    // need to flush here so that the client can exit knowing that messages are in the NATS server
+    await this.connext.messaging.flush();
 
     return { ...ret, recipient };
   };
