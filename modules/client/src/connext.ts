@@ -20,6 +20,7 @@ import {
   RegisteredAppDetails,
   ResolveConditionParameters,
   ResolveConditionResponse,
+  ResolveLinkedTransferResponse,
   SolidityValueType,
   SupportedApplication,
   SupportedNetwork,
@@ -29,9 +30,11 @@ import {
 } from "@connext/types";
 import { Address, AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
 import "core-js/stable";
+import EthCrypto from "eth-crypto";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { BigNumber, HDNode, Network } from "ethers/utils";
+import { fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
@@ -42,6 +45,7 @@ import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { CFCore, CreateChannelMessage, EXTENDED_PRIVATE_KEY_PATH } from "./lib/cfCore";
+import { CF_PATH } from "./lib/constants";
 import { Logger } from "./lib/logger";
 import { freeBalanceAddressFromXpub, publicIdentifierToAddress, replaceBN } from "./lib/utils";
 import { ConnextListener } from "./listener";
@@ -168,7 +172,10 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     store,
     ...opts, // use any provided opts by default
   });
+
   await client.registerSubscriptions();
+  await client.reclaimPendingAsyncTransfers();
+
   return client;
 }
 
@@ -284,11 +291,34 @@ export abstract class ConnextChannel {
     return await this.internal.node.getPaymentProfile(assetId);
   };
 
-  public setRecipientForLinkedTransfer = async (
+  public setRecipientAndEncryptedPreImageForLinkedTransfer = async (
     recipient: string,
+    encryptedPreImage: string,
     linkedHash: string,
   ): Promise<any> => {
-    return await this.internal.node.setRecipientForLinkedTransfer(recipient, linkedHash);
+    return await this.internal.node.setRecipientAndEncryptedPreImageForLinkedTransfer(
+      recipient,
+      encryptedPreImage,
+      linkedHash,
+    );
+  };
+
+  public reclaimPendingAsyncTransfers = async (): Promise<void> => {
+    return await this.internal.reclaimPendingAsyncTransfers();
+  };
+
+  public reclaimPendingAsyncTransfer = async (
+    amount: string,
+    assetId: string,
+    paymentId: string,
+    encryptedPreImage: string,
+  ): Promise<ResolveLinkedTransferResponse> => {
+    return await this.internal.reclaimPendingAsyncTransfer(
+      amount,
+      assetId,
+      paymentId,
+      encryptedPreImage,
+    );
   };
 
   // does not directly call node function because needs to send
@@ -957,7 +987,7 @@ export class ConnextInternal extends ConnextChannel {
 
   public verifyAppSequenceNumber = async (): Promise<any> => {
     const { data: sc } = await this.getStateChannel();
-    let appSequenceNumber;
+    let appSequenceNumber: number;
     try {
       appSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
     } catch (e) {
@@ -968,6 +998,40 @@ export class ConnextInternal extends ConnextChannel {
       }
     }
     return await this.node.verifyAppSequenceNumber(appSequenceNumber);
+  };
+
+  public reclaimPendingAsyncTransfers = async (): Promise<void> => {
+    const pendingTransfers = await this.node.getPendingAsyncTransfers();
+    for (const transfer of pendingTransfers) {
+      const { amount, assetId, encryptedPreImage, paymentId } = transfer;
+      await this.reclaimPendingAsyncTransfer(amount, assetId, paymentId, encryptedPreImage);
+    }
+  };
+
+  public reclaimPendingAsyncTransfer = async (
+    amount: string,
+    assetId: string,
+    paymentId: string,
+    encryptedPreImage: string,
+  ): Promise<ResolveLinkedTransferResponse> => {
+    this.logger.info(
+      `Reclaiming transfer ${JSON.stringify({ amount, assetId, paymentId, encryptedPreImage })}`,
+    );
+    // decrypt secret and resolve
+    const privateKey = fromMnemonic(this.opts.mnemonic).derivePath(CF_PATH).privateKey;
+    const cipher = EthCrypto.cipher.parse(encryptedPreImage);
+
+    const preImage = await EthCrypto.decryptWithPrivateKey(privateKey, cipher);
+    this.logger.debug(`Decrypted message and recovered preImage: ${preImage}`);
+    const response = await this.resolveCondition({
+      amount,
+      assetId,
+      conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
+      paymentId,
+      preImage,
+    });
+    this.logger.info(`Reclaimed transfer ${JSON.stringify(response)}`);
+    return response;
   };
 
   ///////////////////////////////////
