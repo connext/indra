@@ -28,12 +28,21 @@ import {
   TransferParameters,
   WithdrawParameters,
 } from "@connext/types";
+import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
+import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
 import { Address, AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { BigNumber, HDNode, Network } from "ethers/utils";
+import {
+  BigNumber,
+  getAddress,
+  Interface,
+  keccak256,
+  Network,
+  solidityKeccak256,
+} from "ethers/utils";
 import { fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
@@ -47,7 +56,12 @@ import { WithdrawalController } from "./controllers/WithdrawalController";
 import { CFCore, CreateChannelMessage, EXTENDED_PRIVATE_KEY_PATH } from "./lib/cfCore";
 import { CF_PATH } from "./lib/constants";
 import { Logger } from "./lib/logger";
-import { freeBalanceAddressFromXpub, publicIdentifierToAddress, replaceBN } from "./lib/utils";
+import {
+  freeBalanceAddressFromXpub,
+  publicIdentifierToAddress,
+  replaceBN,
+  xkeysToSortedKthAddresses,
+} from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
@@ -92,7 +106,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
   // Note: added this to the client since this is required for the cf module to work
   // generate extended private key from mnemonic
-  const extendedXpriv = HDNode.fromMnemonic(mnemonic).extendedKey;
+  const extendedXpriv = fromMnemonic(mnemonic).extendedKey;
   await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }]);
 
   // create a new node api instance
@@ -163,6 +177,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const client = new ConnextInternal({
     appRegistry,
     cfCore,
+    contractAddresses: config.contractAddresses,
     ethProvider,
     messaging,
     multisigAddress,
@@ -540,7 +555,7 @@ export class ConnextInternal extends ConnextChannel {
   };
 
   public restoreStateFromNode = async (mnemonic: string): Promise<any> => {
-    const hdNode = HDNode.fromMnemonic(mnemonic);
+    const hdNode = fromMnemonic(mnemonic);
     const xpriv = hdNode.extendedKey;
     const xpub = hdNode.derivePath("m/44'/60'/0'/25446").neuter().extendedKey;
     const states = await this.node.restoreStates(xpub);
@@ -560,6 +575,36 @@ export class ConnextInternal extends ConnextChannel {
     // recreate client with new mnemonic
     const client = await connect({ ...this.opts, mnemonic });
     return client;
+  };
+
+  public getMultisigAddressfromXpub = async (xpub: string): Promise<string> => {
+    const owners: string[] = [xpub, this.nodePublicIdentifier];
+    const proxyFactoryAddress: string = this.opts.contractAddresses.ProxyFactory;
+    const minimumViableMultisigAddress: string = this.opts.contractAddresses.MinimumViableMultisig;
+    return getAddress(
+      solidityKeccak256(
+        ["bytes1", "address", "uint256", "bytes32"],
+        [
+          "0xff",
+          proxyFactoryAddress,
+          solidityKeccak256(
+            ["bytes32", "uint256"],
+            [
+              keccak256(
+                new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+                  xkeysToSortedKthAddresses(owners, 0),
+                ]),
+              ),
+              0,
+            ],
+          ),
+          solidityKeccak256(
+            ["bytes", "uint256"],
+            [`0x${Proxy.evm.bytecode.object}`, minimumViableMultisigAddress],
+          ),
+        ],
+      ).slice(-40),
+    );
   };
 
   ///////////////////////////////////

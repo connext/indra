@@ -1,5 +1,6 @@
 import { utils } from "ethers";
-import { BigNumber, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
+import { BigNumber, hexlify, randomBytes, solidityKeccak256, computeAddress } from "ethers/utils";
+import { fromExtendedKey, HDNode } from "ethers/utils/hdnode";
 import { isNullOrUndefined } from "util";
 
 export const replaceBN = (key: string, value: any): any =>
@@ -81,3 +82,19 @@ export const createRandom32ByteHexString = (): string => {
 
 export const createPaymentId = createRandom32ByteHexString;
 export const createPreImage = createRandom32ByteHexString;
+
+export function xkeyKthAddress(xkey: string, k: number): string {
+  return computeAddress(xkeyKthHDNode(xkey, k).publicKey);
+}
+
+export function sortAddresses(addrs: string[]): string[] {
+  return addrs.sort((a, b) => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
+}
+
+export function xkeysToSortedKthAddresses(xkeys: string[], k: number): string[] {
+  return sortAddresses(xkeys.map(xkey => xkeyKthAddress(xkey, k)));
+}
+
+export function xkeyKthHDNode(xkey: string, k: number): HDNode {
+  return fromExtendedKey(xkey).derivePath(`${k}`);
+}
