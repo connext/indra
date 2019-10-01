@@ -64,3 +64,6 @@ counterfactual
 bots.json
 links.json
 nohup.out
+
+# Docs
+modules/client/docs
