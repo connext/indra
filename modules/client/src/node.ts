@@ -62,6 +62,7 @@ export class NodeApiClient implements INodeApiClient {
     this.log = new Logger("NodeApiClient", opts.logLevel);
     this.userPublicIdentifier = opts.userPublicIdentifier;
     this.nodePublicIdentifier = opts.nodePublicIdentifier;
+    this.auth();
   }
 
   ////////////////////////////////////////
@@ -174,11 +175,17 @@ export class NodeApiClient implements INodeApiClient {
 
   // TODO: need to add auth for this!
   public async restoreStates(publicIdentifier: string): Promise<{ path: string; value: object }[]> {
-    return await this.send(`channel.restore-states.${publicIdentifier}`);
+    return this.send(`channel.restore-states.${publicIdentifier}`);
   }
 
   ////////////////////////////////////////
   // PRIVATE
+
+  private async auth(): Promise<any> {
+    console.log(`Sending auth message`);
+    const res = await this.send("auth.get");
+    return console.log(`Auth result: ${JSON.stringify(res)}`);
+  }
 
   private async send(subject: string, data?: any): Promise<any | undefined> {
     this.log.debug(

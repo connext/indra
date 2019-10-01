@@ -1,20 +1,30 @@
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { ethers as eth } from "ethers";
-import { arrayify, isHexString, toUtf8Bytes, verifyMessage } from "ethers/utils";
+import {
+  arrayify,
+  hexlify,
+  isHexString,
+  randomBytes,
+  toUtf8Bytes,
+  verifyMessage,
+} from "ethers/utils";
 
 const isValidHex = (hex: string, length: number): boolean =>
   isHexString(hex) && arrayify(hex).length === length;
 
 const nonceExpiry = 1000 * 60 * 60 * 2; // 2 hours
 
-// This module should only ever create one redis client
-// Store this instance in the global scope
-
 @Injectable()
 export class AuthService implements OnModuleInit {
   constructor() {}
 
   onModuleInit = (): void => {};
+
+  async getAuth(foo: any, bar: any): Promise<string> {
+    return JSON.stringify({
+      nonce: hexlify(randomBytes(32)),
+    });
+  }
 
   getAuthMiddleware = (config: any, acl: any): any => async (
     req: any,
