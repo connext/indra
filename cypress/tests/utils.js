@@ -48,9 +48,9 @@ my.burnCard = () => {
   my.goToSettings()
   cy.contains('button', /burn card/i).click()
   cy.contains('button', /burn$/i).click()
-  // cy.contains('p', /burning/i).should('exist')
-  // cy.contains('p', /burning/i).should('not.exist')
   cy.reload()
+  my.isStarting()
+  my.doneStarting()
 }
 
 my.restoreMnemonic = (mnemonic) => {
@@ -194,7 +194,8 @@ my.deposit = (value) => {
       })).then(tx => {
         return cy.wrap(wallet.provider.waitForTransaction(tx.hash)).then(() => {
           cy.contains('span', /processing deposit/i).should('exist')
-          cy.contains('span', /deposit confirmed/i).should('exist')
+          cy.contains('span', /processing swap/i).should('exist')
+          cy.contains('span', /swap was successful/i).should('exist')
           cy.resolve(my.getChannelTokenBalance).should('not.contain', '0.00')
           my.getChannelTokenBalance().then(resolve)
         })
@@ -237,6 +238,7 @@ my.linkPay = (value) => {
     cy.get('input[type="number"]').clear().type(value)
     cy.contains('button', /link/i).click()
     cy.contains('button', origin).invoke('text').then(redeemLink => {
+      cy.contains('button', /home/i).click()
       resolve(redeemLink)
     })
   }))

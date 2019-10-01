@@ -32,8 +32,10 @@ describe('Daicard', () => {
           my.linkPay(payTokens).then(redeemLink => {
             my.restoreMnemonic(recipientMnemonic)
             cy.visit(redeemLink)
-            cy.contains('span', /payment.* redeemed/i).should('exist')
-            my.goBack()
+            cy.contains('button', /redeem/i).click()
+            cy.contains('button', /confirm/i).click()
+            cy.contains('h5', /redeemed successfully/i).should('exist')
+            cy.contains('button', /home/i).click()
             cy.resolve(my.getChannelTokenBalance).should('contain', payTokens)
           })
         })

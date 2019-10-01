@@ -401,7 +401,7 @@ const RedeemCardModal = ({
                   redeemPayment()
                 }}
               >
-                Redeem
+                Confirm
               </Button>
               <Button
                 style={{ border: "1px solid #F22424", color: "#F22424", marginBottom: "1.5em" }}
