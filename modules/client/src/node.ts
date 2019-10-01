@@ -38,7 +38,7 @@ export interface INodeApiClient {
     preImage: string,
     amount: string,
     assetId: string,
-    recipient?: string,
+    recipientPublicIdentifier?: string,
   ): Promise<void>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   subscribeToSwapRates(from: string, to: string, callback: any): void;
@@ -87,6 +87,18 @@ export class NodeApiClient implements INodeApiClient {
     return await this.send(`channel.get.${this.userPublicIdentifier}`);
   }
 
+  public async getPendingAsyncTransfers(): Promise<
+    {
+      assetId: string;
+      amount: string;
+      encryptedPreImage: string;
+      linkedHash: string;
+      paymentId: string;
+    }[]
+  > {
+    return (await this.send(`transfer.get-pending.${this.userPublicIdentifier}`)) || [];
+  }
+
   // TODO: do we want this? thought this would be a blocking operation...
   public async getLatestSwapRate(from: string, to: string): Promise<string> {
     return await this.send(`swap-rate.${from}.${to}`);
@@ -120,14 +132,14 @@ export class NodeApiClient implements INodeApiClient {
     preImage: string,
     amount: string,
     assetId: string,
-    recipient?: string,
+    recipientPublicIdentifier?: string,
   ): Promise<void> {
     return await this.send(`transfer.resolve-linked.${this.userPublicIdentifier}`, {
       amount,
       assetId,
       paymentId,
       preImage,
-      recipient,
+      recipientPublicIdentifier,
     });
   }
 
@@ -141,11 +153,13 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
-  public async setRecipientForLinkedTransfer(
+  public async setRecipientAndEncryptedPreImageForLinkedTransfer(
     recipientPublicIdentifier: string,
+    encryptedPreImage: string,
     linkedHash: string,
   ): Promise<any> {
     return await this.send(`transfer.set-recipient.${this.userPublicIdentifier}`, {
+      encryptedPreImage,
       linkedHash,
       recipientPublicIdentifier,
     });
