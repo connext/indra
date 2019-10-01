@@ -61,16 +61,20 @@ export class ConditionalTransferController extends AbstractController {
     // wait for linked transfer
     const ret = await this.handleLinkedTransfers(params);
 
-    // set recipient on linked transfer
-    await this.connext.setRecipientForLinkedTransfer(recipient, linkedHash);
-
-    // publish encrypted secret
+    // set recipient and encrypted pre-image on linked transfer
     const recipientPublicKey = fromExtendedKey(recipient).publicKey;
-    const encryptedPreImage = await EthCrypto.encryptWithPublicKey(
+    const encryptedPreImageCipher = await EthCrypto.encryptWithPublicKey(
       recipientPublicKey.slice(2), // remove 0x
       preImage,
     );
+    const encryptedPreImage = EthCrypto.cipher.stringify(encryptedPreImageCipher);
+    await this.connext.setRecipientAndEncryptedPreImageForLinkedTransfer(
+      recipient,
+      encryptedPreImage,
+      linkedHash,
+    );
 
+    // publish encrypted secret
     // TODO: should we move this to its own file?
     this.connext.messaging.publish(`transfer.send-async.${recipient}`, {
       amount,
