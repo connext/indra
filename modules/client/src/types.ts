@@ -4,11 +4,12 @@ import {
   AppState,
   ChannelProvider,
   ChannelState,
-  MultisigState,
   ContractAddresses,
+  MultisigState,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { providers, utils } from "ethers";
+import { Wallet } from "ethers/wallet";
 
 import { CFCore } from "./lib/cfCore";
 import { NodeApiClient } from "./node";
@@ -70,4 +71,5 @@ export interface NodeInitializationParameters {
   logLevel?: number;
   userPublicIdentifier?: string;
   nodePublicIdentifier?: string;
+  wallet?: Wallet;
 }

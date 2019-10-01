@@ -12,6 +12,7 @@ import {
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { TransactionResponse } from "ethers/providers";
+import { Wallet } from "ethers/wallet";
 import uuid = require("uuid");
 
 import { Logger } from "./lib/logger";
@@ -56,12 +57,14 @@ export class NodeApiClient implements INodeApiClient {
   public log: Logger;
   public userPublicIdentifier: string | undefined;
   public nodePublicIdentifier: string | undefined;
+  private wallet: Wallet;
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
     this.log = new Logger("NodeApiClient", opts.logLevel);
     this.userPublicIdentifier = opts.userPublicIdentifier;
     this.nodePublicIdentifier = opts.nodePublicIdentifier;
+    this.wallet = opts.wallet;
     this.auth();
   }
 
@@ -183,8 +186,9 @@ export class NodeApiClient implements INodeApiClient {
 
   private async auth(): Promise<any> {
     console.log(`Sending auth message`);
-    const res = await this.send("auth.get");
-    return console.log(`Auth result: ${JSON.stringify(res)}`);
+    const res = await this.send("auth.getNonce", { address: this.wallet.address });
+    console.log(`Auth result: ${JSON.stringify(res)}`);
+    return res;
   }
 
   private async send(subject: string, data?: any): Promise<any | undefined> {

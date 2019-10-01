@@ -8,7 +8,10 @@ import { AbstractMessagingProvider } from "../util";
 import { LockService } from "./lock.service";
 
 class LockMessaging extends AbstractMessagingProvider {
-  constructor(messaging: IMessagingService, private readonly lockService: LockService) {
+  constructor(
+    messaging: IMessagingService,
+    private readonly lockService: LockService,
+  ) {
     super(messaging);
   }
 

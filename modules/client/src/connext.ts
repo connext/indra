@@ -27,18 +27,20 @@ import {
   TransferParameters,
   WithdrawParameters,
 } from "@connext/types";
+import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
+import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
 import { Address, AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
 import "core-js/stable";
-import { Contract, providers } from "ethers";
+import { Contract, providers, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import {
   BigNumber,
-  HDNode,
-  Network,
   getAddress,
-  solidityKeccak256,
-  keccak256,
+  HDNode,
   Interface,
+  keccak256,
+  Network,
+  solidityKeccak256,
 } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
@@ -51,15 +53,17 @@ import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { CFCore, CreateChannelMessage, EXTENDED_PRIVATE_KEY_PATH } from "./lib/cfCore";
 import { Logger } from "./lib/logger";
-import { freeBalanceAddressFromXpub, publicIdentifierToAddress, replaceBN } from "./lib/utils";
+import {
+  freeBalanceAddressFromXpub,
+  publicIdentifierToAddress,
+  replaceBN,
+  xkeysToSortedKthAddresses,
+} from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
-import { xkeysToSortedKthAddresses } from "./lib/utils";
-import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
-import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
 
 /**
  * Creates a new client-node connection with node at specified url
@@ -107,6 +111,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const nodeApiConfig = {
     logLevel,
     messaging,
+    wallet: Wallet.fromMnemonic(mnemonic),
   };
   logger.info("creating node api client");
   const node: NodeApiClient = new NodeApiClient(nodeApiConfig);

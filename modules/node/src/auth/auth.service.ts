@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ethers as eth } from "ethers";
 import {
   arrayify,
@@ -8,6 +8,12 @@ import {
   toUtf8Bytes,
   verifyMessage,
 } from "ethers/utils";
+import { Redis } from "ioredis";
+
+import { RedisProviderId } from "../constants";
+import { CLogger } from "../util";
+
+const logger = new CLogger("AuthService");
 
 const isValidHex = (hex: string, length: number): boolean =>
   isHexString(hex) && arrayify(hex).length === length;
@@ -16,14 +22,18 @@ const nonceExpiry = 1000 * 60 * 60 * 2; // 2 hours
 
 @Injectable()
 export class AuthService implements OnModuleInit {
-  constructor() {}
+  constructor(@Inject(RedisProviderId) private readonly redis: Redis) {}
 
   onModuleInit = (): void => {};
 
-  async getAuth(foo: any, bar: any): Promise<string> {
-    return JSON.stringify({
-      nonce: hexlify(randomBytes(32)),
-    });
+  async getNonce(address: string): Promise<string> {
+    if (!isValidHex(address, 20)) {
+      return JSON.stringify({ err: "Invalid address" });
+    }
+    const nonce = eth.utils.hexlify(eth.utils.randomBytes(32));
+    await this.redis.set(`nonce:${address}`, nonce);
+    logger.log(`Set nonce ${nonce} for address ${address}`);
+    return JSON.stringify({ nonce: hexlify(randomBytes(32)) });
   }
 
   getAuthMiddleware = (config: any, acl: any): any => async (
@@ -31,7 +41,6 @@ export class AuthService implements OnModuleInit {
     res: any,
     next: () => void,
   ): Promise<void> => {
-    const log = { ...console, info: console.log };
     const address = req.get("x-address");
     const nonce = req.get("x-nonce");
     const signature = req.get("x-signature");
@@ -44,7 +53,7 @@ export class AuthService implements OnModuleInit {
 
     // Skip auth checks if requesting unpermissioned route
     if (acl.permissionForRoute(req.path) === "NONE") {
-      log.debug(`Route ${req.path} doesn't require any permissions, skipping authentication`);
+      logger.debug(`Route ${req.path} doesn't require any permissions, skipping authentication`);
       next();
       return;
     }
@@ -53,7 +62,7 @@ export class AuthService implements OnModuleInit {
     if (config.serviceKey && authorization) {
       const authHeaderParts = authorization.split(" ");
       if (authHeaderParts.length !== 2 || authHeaderParts[0].toLowerCase() !== "bearer") {
-        log.warn(`Malformed bearer authorization header`);
+        logger.warn(`Malformed bearer authorization header`);
         res.status(403).send(`Malformed bearer authorization header`);
         return;
       }
@@ -62,9 +71,9 @@ export class AuthService implements OnModuleInit {
       if (config.serviceKey === serviceKey) {
         req.roles.push("AUTHENTICATED");
         req.roles.push("SERVICE");
-        log.info(`Successfully authenticated service key for user ${address}`);
+        logger.log(`Successfully authenticated service key for user ${address}`);
       } else {
-        log.warn(`Service key provided by ${address} doesn't match the one set in hub config`);
+        logger.warn(`Service key provided by ${address} doesn't match the one set in hub config`);
         res.status(403).send(`Invalid service key`);
         return;
       }
@@ -75,26 +84,28 @@ export class AuthService implements OnModuleInit {
         // TODO: Why aren't redis errors hitting the catch block?!
         const expectedNonce = await redis.get(`nonce:${address}`);
         if (!expectedNonce) {
-          log.warn(`No nonce available for address ${address}`);
+          logger.warn(`No nonce available for address ${address}`);
           res.status(403).send(`Invalid nonce`);
           return;
         }
         if (expectedNonce !== nonce) {
-          log.warn(`Invalid nonce for address ${address}: Got ${nonce}, expected ${expectedNonce}`);
+          logger.warn(
+            `Invalid nonce for address ${address}: Got ${nonce}, expected ${expectedNonce}`,
+          );
           res.status(403).send(`Invalid nonce`);
           return;
         }
-        // check whether this nonce has expired
+        // check whether this nonce has expired // TODO check if sig has expired
         const nonceTimestamp = (await redis.get(`nonce-timestamp:${address}`)) || "0";
         const nonceAge = Date.now() - parseInt(nonceTimestamp, 10);
-        log.debug(`Nonce for ${address} was created ${nonceAge} ms ago`);
+        logger.debug(`Nonce for ${address} was created ${nonceAge} ms ago`);
         if (nonceAge > nonceExpiry) {
-          log.warn(`Invalid nonce for ${address}: expired ${nonceAge - nonceExpiry} ms ago`);
+          logger.warn(`Invalid nonce for ${address}: expired ${nonceAge - nonceExpiry} ms ago`);
           res.status(403).send(`Invalid nonce`);
           return;
         }
       } catch (e) {
-        log.warn(`Not connected to redis ${config.redisUrl}`);
+        logger.warn(`Not connected to redis ${config.redisUrl}`);
         res.status(500).send(`Server Error`);
         return;
       }
@@ -105,20 +116,22 @@ export class AuthService implements OnModuleInit {
         const bytes = isHexString(nonce) ? arrayify(nonce) : toUtf8Bytes(nonce);
         const signer = verifyMessage(bytes, signature).toLowerCase();
         if (signer !== address.toLowerCase()) {
-          log.warn(`Invalid sig for nonce "${nonce}": Got "${signer}", expected "${address}"`);
+          logger.warn(`Invalid sig for nonce "${nonce}": Got "${signer}", expected "${address}"`);
           res.status(403).send("Invalid signature");
           return;
         }
         await redis.set(`signature:${address}`, signature);
       } else if (cachedSig && cachedSig !== signature) {
-        log.warn(`Invalid signature for address "${address}": Doesn't match cache: ${cachedSig}`);
+        logger.warn(
+          `Invalid signature for address "${address}": Doesn't match cache: ${cachedSig}`,
+        );
         res.status(403).send("Invalid signature");
         return;
       }
       req.roles.push("AUTHENTICATED");
-      log.debug(`Successfully authenticated signature for ${address}`);
+      logger.debug(`Successfully authenticated signature for ${address}`);
     } else {
-      log.warn(`Invalid auth headers: address=${address} nonce=${nonce} sig=${signature}`);
+      logger.warn(`Invalid auth headers: address=${address} nonce=${nonce} sig=${signature}`);
       res.status(403).send(`Invalid auth headers`);
       return;
     }
@@ -126,14 +139,14 @@ export class AuthService implements OnModuleInit {
     // Check if we should also assign an admin role
     if (config.adminAddresses.indexOf(address) > -1) {
       req.roles.push("ADMIN");
-      log.info(`Admin role added for user ${address}`);
+      logger.log(`Admin role added for user ${address}`);
     }
 
     // Given the set roles, do we have permission to access this route?
     const perm = acl.permissionForRoute(req.path);
     if (req.roles.indexOf(perm) === -1) {
       const roleStrings = JSON.stringify(req.roles.map((role: number): string => "NONE"));
-      log.warn(`${address} ${roleStrings} is missing ? role for route ${req.path}`);
+      logger.warn(`${address} ${roleStrings} is missing ? role for route ${req.path}`);
       res.status(403).send(`You don't have the required role: ?}`);
       return;
     }

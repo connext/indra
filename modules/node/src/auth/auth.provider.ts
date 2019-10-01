@@ -12,13 +12,12 @@ class AuthMessaging extends AbstractMessagingProvider {
     super(messaging);
   }
 
-  async getAuth(subject: string, data: { authValue: string }): Promise<string> {
-    const authName = subject.split(".").pop(); // last item of subject is auth name
-    return this.authService.getAuth(authName, data.authValue);
+  async getNonce(subject: string, data: { address: string }): Promise<string> {
+    return this.authService.getNonce(data.address);
   }
 
   async setupSubscriptions(): Promise<void> {
-    super.connectRequestReponse("auth.get", this.getAuth.bind(this));
+    super.connectRequestReponse("auth.getNonce", this.getNonce.bind(this));
   }
 }
 
