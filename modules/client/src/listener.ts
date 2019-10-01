@@ -211,11 +211,12 @@ export class ConnextListener extends EventEmitter {
     });
 
     this.cfCore.on(CFCoreTypes.RpcMethodName.UNINSTALL, (data: any) => {
+      const result = data.result.result;
       this.log.debug(
-        `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(data.result.result)}`,
+        `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(result)}`,
       );
       this.connext.messaging.publish(
-        `indra.client.${this.cfCore.publicIdentifier}.uninstall.${data.result.result.appInstanceId}`,
+        `indra.client.${this.cfCore.publicIdentifier}.uninstall.${result.appInstanceId}`,
         JSON.stringify(data.result.result),
       );
     });
@@ -334,20 +335,7 @@ export class ConnextListener extends EventEmitter {
     await this.connext.messaging.subscribe(subject, async (msg: any) => {
       this.log.debug(`Received message for subscription: ${JSON.stringify(msg)}`);
       const { amount, assetId, encryptedPreImage, paymentId } = msg.data;
-      const privateKey = fromMnemonic(this.connext.opts.mnemonic).privateKey;
-      const preImage = await EthCrypto.decryptWithPrivateKey(
-        privateKey.slice(2), // remove 0x
-        encryptedPreImage,
-      );
-      this.log.debug(`Decrypted message and recovered preImage: ${preImage}`);
-      // decrypt secret and resolve
-      await this.connext.resolveCondition({
-        amount,
-        assetId,
-        conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
-        paymentId,
-        preImage,
-      });
+      await this.connext.reclaimPendingAsyncTransfer(amount, assetId, paymentId, encryptedPreImage);
     });
   };
 }
