@@ -30,6 +30,7 @@ contract SimpleTransferApp is CounterfactualApp {
     state.coinTransfers[0].amount = 0;
     state.coinTransfers[1].amount = transferAmount;
 
+    require(false, "Show me the stack trace");
     return abi.encode(state.coinTransfers);
   }
 }
