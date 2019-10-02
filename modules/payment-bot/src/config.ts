@@ -22,6 +22,7 @@ program.version("0.0.1");
 
 program
   .option("-a, --asset-id <address>", "Asset ID (token address) to take action with")
+  .option("-b, --redeem-linked-to <amount>", "Redeem linked payment to recipient")
   .option("-c, --counterparty <id>", "Counterparty public identifier")
   .option("-d, --deposit <amount>", "Deposit amount in Ether units")
   .option("-e, --pre-image <preImage>", "Redeem a linked payment with preImage")
@@ -29,6 +30,8 @@ program
   .option("-h, --preImage <preImage>", "Create linked payment with preimage")
   .option("-i, --identifier <id>", "Bot identifier")
   .option("-l, --linked <amount>", "Create linked payment")
+  // -m is used by script for mnemonic insertion
+  .option("-n, --linked-to <amount>", "Create linked payment only unlockable by the recipient")
   .option("-o, --open", "Leave bot open instead of quitting")
   .option("-p, --payment-id <paymentId>", "Linked payment paymentId")
   .option("-q, --request-collateral", "Request channel collateral from the node")

@@ -9,12 +9,22 @@ export class PeerToPeerTransferRepository extends Repository<PeerToPeerTransfer>
 
 @EntityRepository(LinkedTransfer)
 export class LinkedTransferRepository extends Repository<LinkedTransfer> {
+  async findByPaymentId(paymentId: string): Promise<LinkedTransfer | undefined> {
+    return await this.findOne({ where: { paymentId } });
+  }
+
   async findByLinkedHash(linkedHash: string): Promise<LinkedTransfer | undefined> {
-    return await this.findOne({ where: { linkedHash } });
+    return await this.findOne({ where: { linkedHash }, relations: ["senderChannel"] });
   }
 
   async findByReceiverAppInstanceId(appInstanceId: string): Promise<LinkedTransfer | undefined> {
     return await this.findOne({ where: { appInstanceId } });
+  }
+
+  async findPendingByRecipient(recipientPublicIdentifier: string): Promise<LinkedTransfer[]> {
+    return await this.find({
+      where: { recipientPublicIdentifier, status: LinkedTransferStatus.PENDING },
+    });
   }
 
   async markAsRedeemed(
@@ -34,6 +44,16 @@ export class LinkedTransferRepository extends Repository<LinkedTransfer> {
   async addPreImage(transfer: LinkedTransfer, preImage: string): Promise<LinkedTransfer> {
     transfer.status = LinkedTransferStatus.REDEEMED;
     transfer.preImage = preImage;
+    return await this.save(transfer);
+  }
+
+  async addRecipientPublicIdentifierAndEncryptedPreImage(
+    transfer: LinkedTransfer,
+    recipientPublicIdentifier: string,
+    encryptedPreImage: string,
+  ): Promise<LinkedTransfer> {
+    transfer.recipientPublicIdentifier = recipientPublicIdentifier;
+    transfer.encryptedPreImage = encryptedPreImage;
     return await this.save(transfer);
   }
 }
