@@ -163,9 +163,7 @@ export class AppRegistryService {
     ) {
       throw new Error(
         `Swap from ${initiatorDepositTokenAddress} to ` +
-          `${responderDepositTokenAddress} is not valid. Valid swaps: ${stringify(
-            validSwaps,
-          )}`,
+          `${responderDepositTokenAddress} is not valid. Valid swaps: ${stringify(validSwaps)}`,
       );
     }
 
@@ -184,7 +182,7 @@ export class AppRegistryService {
 
     if (discrepancyPct > ALLOWED_DISCREPANCY_PCT) {
       throw new Error(
-        `Derived rate is ${derivedRate.toString()}, more than ${ALLOWED_DISCREPANCY_PCT}% ` +
+        `Derived rate is ${derivedRate.toString()} (vs ${ourRate}), more than ${ALLOWED_DISCREPANCY_PCT}% ` +
           `larger discrepancy than our rate of ${ourRate.toString()}`,
       );
     }
@@ -214,9 +212,7 @@ export class AppRegistryService {
 
     if (responderDeposit.gt(Zero)) {
       throw new Error(
-        `Will not accept linked transfer install where node deposit is >0 ${stringify(
-          params,
-        )}`,
+        `Will not accept linked transfer install where node deposit is >0 ${stringify(params)}`,
       );
     }
 
@@ -229,9 +225,7 @@ export class AppRegistryService {
     }
 
     if (!initialState.amount.eq(initiatorDeposit)) {
-      throw new Error(
-        `Payment amount bust be the same as initiator deposit ${stringify(params)}`,
-      );
+      throw new Error(`Payment amount bust be the same as initiator deposit ${stringify(params)}`);
     }
 
     if (bigNumberify(initialState.coinTransfers[0].amount).lte(Zero)) {
@@ -380,12 +374,7 @@ export class AppRegistryService {
       throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
     }
 
-    logger.log(
-      `App with params ${stringify(
-        proposedAppParams.params,
-        2,
-      )} allowed to be installed`,
-    );
+    logger.log(`App with params ${stringify(proposedAppParams.params, 2)} allowed to be installed`);
 
     await this.commonAppProposalValidation(proposedAppParams.params, initiatorIdentifier);
 

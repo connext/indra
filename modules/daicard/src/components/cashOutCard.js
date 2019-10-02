@@ -21,7 +21,7 @@ import { inverse } from "../utils";
 
 import { QRScan } from "./qrCode";
 
-export const CashoutCard = withStyles((theme) => ({
+const style = withStyles((theme) => ({
   icon: {
     width: "40px",
     height: "40px"
@@ -41,7 +41,18 @@ export const CashoutCard = withStyles((theme) => ({
     padding: theme.spacing(4),
     outline: "none"
   }
-}))(({ balance, classes, channel, history, setPending, swapRate, token }) => {
+}));
+
+export const CashoutCard = style(({
+  balance,
+  channel,
+  classes,
+  history,
+  refreshBalances,
+  setPending,
+  swapRate,
+  token,
+}) => {
   const [recipient, setRecipient] = useState({ display: "", value: undefined, error: undefined });
   const [scan, setScan] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
@@ -110,6 +121,7 @@ export const CashoutCard = withStyles((theme) => ({
         swapRate: inverse(swapRate),
         toAssetId: AddressZero,
       });
+      await refreshBalances()
     }
     const result = await channel.withdraw({
       amount: balance.channel.ether.wad.toString(),

@@ -24,7 +24,7 @@ import { SettingsCard } from "./components/settingsCard";
 import { SetupCard } from "./components/setupCard";
 import { SupportCard } from "./components/supportCard";
 
-import { Currency, inverse, store, minBN, toBN, tokenToWei, weiToToken } from "./utils";
+import { Currency, store, minBN, toBN, tokenToWei, weiToToken } from "./utils";
 
 // Optional URL overrides for custom urls
 const overrides = {
@@ -108,7 +108,6 @@ class App extends React.Component {
       tokenProfile: null,
     };
     this.refreshBalances.bind(this);
-    this.setDepositLimits.bind(this);
     this.autoDeposit.bind(this);
     this.autoSwap.bind(this);
     this.setPending.bind(this);
@@ -155,7 +154,6 @@ class App extends React.Component {
     const freeBalanceAddress = channel.freeBalanceAddress || channel.myFreeBalanceAddress;
     const token = new Contract(channel.config.contractAddresses.Token, tokenArtifacts.abi, cfWallet);
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
-    const invSwapRate = inverse(swapRate)
 
     console.log(`Client created successfully!`);
     console.log(` - Public Identifier: ${channel.publicIdentifier}`);
@@ -163,7 +161,7 @@ class App extends React.Component {
     console.log(` - CF Account address: ${cfWallet.address}`);
     console.log(` - Free balance address: ${freeBalanceAddress}`);
     console.log(` - Token address: ${token.address}`);
-    console.log(` - Swap rate: ${swapRate} or ${invSwapRate}`)
+    console.log(` - Swap rate: ${swapRate}`)
 
     channel.subscribeToSwapRates(AddressZero, token.address, (res) => {
       if (!res || !res.swapRate) return;
@@ -197,12 +195,10 @@ class App extends React.Component {
   //  - channel eth to see if I need to swap?
   startPoller = async () => {
     await this.refreshBalances();
-    await this.setDepositLimits();
     await this.autoDeposit();
     await this.autoSwap();
     interval(async (iteration, stop) => {
       await this.refreshBalances();
-      await this.setDepositLimits();
       await this.autoDeposit();
       await this.autoSwap();
     }, 3000);
@@ -233,9 +229,16 @@ class App extends React.Component {
   }
 
   refreshBalances = async () => {
-    const { freeBalanceAddress, swapRate, token } = this.state;
-    const { address, balance, channel, ethprovider } = this.state;
-    if (!channel) { return; }
+    const {
+      address, balance, channel, ethprovider, freeBalanceAddress, swapRate, token,
+    } = this.state;
+    let gasPrice = await ethprovider.getGasPrice();
+    let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
+    let totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
+    const minDeposit = Currency.WEI(totalDepositGasWei.add(totalWithdrawalGasWei), swapRate).toETH();
+    const maxDeposit = MAX_CHANNEL_VALUE.toETH(swapRate); // Or get based on payment profile?
+    this.setState({ maxDeposit, minDeposit });
+    if (!channel || !swapRate) { return; }
     const getTotal = (ether, token) => Currency.WEI(ether.wad.add(token.toETH().wad), swapRate);
     const freeEtherBalance = await channel.getFreeBalance();
     const freeTokenBalance = await channel.getFreeBalance(token.address);
@@ -246,16 +249,6 @@ class App extends React.Component {
     balance.channel.token = Currency.DEI(freeTokenBalance[freeBalanceAddress], swapRate).toDAI();
     balance.channel.total = getTotal(balance.channel.ether, balance.channel.token).toETH();
     this.setState({ balance });
-  }
-
-  setDepositLimits = async () => {
-    const { swapRate, ethprovider } = this.state;
-    let gasPrice = await ethprovider.getGasPrice();
-    let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
-    let totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
-    const minDeposit = Currency.WEI(totalDepositGasWei.add(totalWithdrawalGasWei), swapRate).toETH();
-    const maxDeposit = MAX_CHANNEL_VALUE.toETH(swapRate); // Or get based on payment profile?
-    this.setState({ maxDeposit, minDeposit });
   }
 
   // Core Function

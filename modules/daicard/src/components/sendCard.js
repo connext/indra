@@ -128,8 +128,8 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
     let data = scanResult.split("/send?");
     if (data[0] === window.location.origin) {
       const query = queryString.parse(data[1]);
-      if (query.amountToken) {
-        updateAmountHandler(query.amountToken);
+      if (query.amount) {
+        updateAmountHandler(query.amount);
       }
       if (query.recipient) {
         updateRecipientHandler(query.recipient);
@@ -207,8 +207,8 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
 
   useEffect(() => {
     const query = queryString.parse(location.search);
-    if (query.amountToken) {
-      updateAmountHandler(query.amountToken);
+    if (query.amount) {
+      updateAmountHandler(query.amount);
     }
     if (query.recipient) {
       updateRecipientHandler(query.recipient);
@@ -379,7 +379,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
       </Modal>
 
       <SendCardModal
-        amountToken={amount.display ? amount.display : "0"}
+        amount={amount.display ? amount.display : "0"}
         classes={classes}
         closeModal={closeModal}
         history={history}
@@ -392,7 +392,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
 })
 
 const SendCardModal = ({
-  amountToken,
+  amount,
   classes,
   closeModal,
   history,
@@ -467,7 +467,7 @@ const SendCardModal = ({
           </DialogTitle>
           <DialogContent>
             <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
-              Amount: ${amountToken}
+              Amount: ${amount}
             </DialogContentText>
             <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
               To: {recipient.substr(0, 5)}...

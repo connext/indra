@@ -71,7 +71,7 @@ describe('Daicard', () => {
         my.goToRequest()
         cy.get('input[type="number"]').clear().type(payTokens)
         cy.contains('button', `recipient=${xpub}`).should('exist')
-        cy.contains('button', `amountToken=${payTokens}`).invoke('text').then(requestLink => {
+        cy.contains('button', `amount=${payTokens}`).invoke('text').then(requestLink => {
           my.burnCard()
           cy.visit(requestLink)
           cy.get(`input[value="${payTokens}"]`).should('exist')

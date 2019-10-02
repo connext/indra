@@ -15,7 +15,7 @@ const my = {}
 
 my.mnemonicRegex = /([A-Za-z]{3,}\s?){12}/
 my.addressRegex = /.*0x[0-9a-z]{40}.*/i
-my.xpubRegex = /xpub[a-zA-Z0-9]{107}/i
+my.xpubRegex = /^xpub[a-zA-Z0-9]{107}/i
 
 ////////////////////////////////////////
 // Vanilla cypress compilations
