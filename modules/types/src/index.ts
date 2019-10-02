@@ -331,7 +331,7 @@ export type TransferCondition = keyof typeof TransferConditions;
 // linked transfer types
 export type LinkedTransferParameters<T = string> = {
   conditionType: TransferCondition;
-  amount: T;
+  amount?: T;
   assetId?: Address;
   paymentId: string;
   preImage: string;
@@ -345,13 +345,13 @@ export type LinkedTransferResponse = {
 };
 
 export type LinkedTransferToRecipientParameters<T = string> = LinkedTransferParameters<T> & {
-  recipient: string;
+  recipient?: string;
 };
 export type LinkedTransferToRecipientParametersBigNumber = LinkedTransferToRecipientParameters<
   BigNumber
 >;
 export type LinkedTransferToRecipientResponse = LinkedTransferResponse & {
-  recipient: string;
+  recipient?: string;
 };
 
 export type ConditionalTransferParameters<T = string> =
@@ -568,7 +568,8 @@ export function convertAppState<To extends NumericTypeName>(
 ): AppState<NumericTypes[To]> {
   return {
     ...obj,
-    // transfers: [convertAmountField(to, obj.transfers[0]), convertAmountField(to, obj.transfers[1])],
+    // transfers: [convertAmountField(to, obj.transfers[0]),
+    //   convertAmountField(to, obj.transfers[1])],
   };
 }
 

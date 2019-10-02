@@ -125,7 +125,7 @@ async function run(): Promise<void> {
   }
 
   if (config.swap) {
-    const tokenAddress = (await client.config()).contractAddresses.Token;
+    const tokenAddress = client.config.contractAddresses.Token;
     const swapRate = await client.getLatestSwapRate(AddressZero, tokenAddress);
     console.log(`Swapping ${config.swap} eth for ${assetId} at rate ${swapRate.toString()}`);
     await client.swap({
@@ -183,8 +183,6 @@ async function run(): Promise<void> {
   if (config.redeem) {
     checkForLinkedFields(config);
     const resolveParams: ResolveLinkedTransferParameters = {
-      amount: parseEther(config.redeem).toString(),
-      assetId,
       conditionType: "LINKED_TRANSFER",
       paymentId: config.paymentId,
       preImage: config.preImage,
@@ -198,8 +196,6 @@ async function run(): Promise<void> {
   if (config.redeemLinkedTo) {
     checkForLinkedFields(config);
     const resolveParams: ResolveLinkedTransferParameters = {
-      amount: parseEther(config.redeemLinkedTo).toString(),
-      assetId,
       conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
       paymentId: config.paymentId,
       preImage: config.preImage,
