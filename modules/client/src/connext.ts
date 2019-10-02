@@ -68,6 +68,8 @@ import { xkeysToSortedKthAddresses } from "./lib/utils";
 import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
 import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
 
+const MAX_WITHDRAWAL_RETRIES = 3;
+
 /**
  * Creates a new client-node connection with node at specified url
  *
@@ -189,10 +191,10 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   });
   await client.registerSubscriptions();
 
-  // make sure there is not an active withdrawal with >= 3 retries
+  // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
   const withdrawal = await client.store.get(withdrawalKey(client.publicIdentifier));
 
-  if (withdrawal && withdrawal.retry < 3) {
+  if (withdrawal && withdrawal.retry < MAX_WITHDRAWAL_RETRIES) {
     // get the latest submitted withdrawal from the hub
     // and check the tx to see if the data matches what we
     // expect from our store.
@@ -212,9 +214,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
       `Found active withdrawal with ${withdrawal.retry} retries, waiting for withdrawal to be caught`,
     );
     await client.retryNodeSubmittedWithdrawal();
-  } else if (withdrawal && withdrawal.retry >= 3) {
+  } else if (withdrawal && withdrawal.retry >= MAX_WITHDRAWAL_RETRIES) {
     // otherwise, do not start client.
-    const msg = `Cannot connect client, hub failed to submit latest withdrawal 3 times.`;
+    const msg = `Cannot connect client, hub failed to submit latest withdrawal ${MAX_WITHDRAWAL_RETRIES} times.`;
     logger.error(msg);
     throw new Error(msg);
   }
@@ -1135,8 +1137,8 @@ export class ConnextInternal extends ConnextChannel {
     }
     let { retry, tx } = val;
     retry += 1;
-    if (retry >= 3) {
-      const msg = `Tried to have node submit withdrawal 3 times and it did not work, try submitting from wallet.`;
+    if (retry >= MAX_WITHDRAWAL_RETRIES) {
+      const msg = `Tried to have node submit withdrawal ${MAX_WITHDRAWAL_RETRIES} times and it did not work, try submitting from wallet.`;
       this.logger.error(msg);
       // TODO: make this submit from wallet :)
       // but this is weird, could take a while and may have gas issues.
