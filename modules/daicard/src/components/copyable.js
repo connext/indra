@@ -33,7 +33,7 @@ export const Copyable = style((props) => {
             <Tooltip
               disableFocusListener
               disableTouchListener
-              title={tooltip || "Click to Copy"}
+              title={tooltip || text}
             >
               <span>{text}</span>
             </Tooltip>

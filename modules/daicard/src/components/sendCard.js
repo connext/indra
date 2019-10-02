@@ -251,10 +251,10 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
         </Typography>
       </Grid>
 
-      <Grid item xs={12}>
+      <Grid item xs={12} style={{ width: "100%" }}>
         <TextField
-          error={amount.error !== null}
           fullWidth
+          error={amount.error !== null}
           helperText={amount.error}
           id="outlined-number"
           label="Amount"
@@ -267,9 +267,9 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
         />
       </Grid>
 
-      <Grid item xs={12}>
+      <Grid item xs={12} style={{ width: "100%" }}>
         <TextField
-          style={{ width: "100%" }}
+          fullWidth
           id="outlined"
           label="Recipient Address"
           type="string"

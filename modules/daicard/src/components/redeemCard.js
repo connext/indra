@@ -384,12 +384,13 @@ const RedeemCardModal = ({
           </DialogTitle>
           <DialogContent>
             <DialogContentText variant="body1" style={{ color: "#0F1012", paddingTop: "5%" }}>
-              The redeemed money will be saved to this browser's local storage.
+              The payment will be saved to this browser's local storage.
             </DialogContentText>
             <DialogContentText variant="body1" style={{ color: "#0F1012", paddingTop: "5%" }}>
-              WARNING: If you redeem this link in an incognito window or
-              a temporary in-app browser then you will lose your money
-              unless you back up your seed phrase (do so by visiting settings).
+              WARNING: If you redeem in an incognito window and you have not backed up your seed phrase, you will lose this money.
+            </DialogContentText>
+              Get a copy of your seed phrase anytime by visiting settings.
+            <DialogContentText variant="body1" style={{ color: "#0F1012", paddingTop: "5%" }}>
             </DialogContentText>
             <DialogActions style={{ textAlign: "center", justifyContent: "center" }} >
               <Button

@@ -66,10 +66,7 @@ export const RequestCard = style((props) => {
           <Typography style={{ marginTop: "6px" }}>Channel ID:</Typography>
         </Grid>
         <Grid item xs={8}>
-          <Copyable
-            text={xpub}
-            tooltip={xpub}
-          />
+          <Copyable text={xpub}/>
         </Grid>
       </Grid>
 
@@ -78,10 +75,7 @@ export const RequestCard = style((props) => {
           <Typography style={{ marginTop: "6px" }}>Request Link:</Typography>
         </Grid>
         <Grid item xs={8}>
-          <Copyable
-            text={amount.error ? 'error' : qrUrl}
-            tooltip={qrUrl}
-          />
+          <Copyable text={amount.error ? 'error' : qrUrl}/>
         </Grid>
       </Grid>
 
@@ -89,7 +83,7 @@ export const RequestCard = style((props) => {
         <QRGenerate value={qrUrl} size={225} />
       </Grid>
 
-      <Grid item xs={12}>
+      <Grid item xs={12} style={{ width: "100%", padding: "0px" }}>
         <TextField
           fullWidth
           id="outlined-number"
@@ -103,7 +97,7 @@ export const RequestCard = style((props) => {
         />
       </Grid>
 
-      <Grid item xs={12}>
+      <Grid item xs={12} style={{ marginTop: "12px" }}>
         <Button
           disableTouchRipple
           variant="outlined"
