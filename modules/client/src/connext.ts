@@ -325,17 +325,10 @@ export abstract class ConnextChannel {
   };
 
   public reclaimPendingAsyncTransfer = async (
-    amount: string,
-    assetId: string,
     paymentId: string,
     encryptedPreImage: string,
   ): Promise<ResolveLinkedTransferResponse> => {
-    return await this.internal.reclaimPendingAsyncTransfer(
-      amount,
-      assetId,
-      paymentId,
-      encryptedPreImage,
-    );
+    return await this.internal.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
   };
 
   // does not directly call node function because needs to send
@@ -1048,19 +1041,15 @@ export class ConnextInternal extends ConnextChannel {
     const pendingTransfers = await this.node.getPendingAsyncTransfers();
     for (const transfer of pendingTransfers) {
       const { amount, assetId, encryptedPreImage, paymentId } = transfer;
-      await this.reclaimPendingAsyncTransfer(amount, assetId, paymentId, encryptedPreImage);
+      await this.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
     }
   };
 
   public reclaimPendingAsyncTransfer = async (
-    amount: string,
-    assetId: string,
     paymentId: string,
     encryptedPreImage: string,
   ): Promise<ResolveLinkedTransferResponse> => {
-    this.logger.info(
-      `Reclaiming transfer ${JSON.stringify({ amount, assetId, paymentId, encryptedPreImage })}`,
-    );
+    this.logger.info(`Reclaiming transfer ${JSON.stringify({ paymentId, encryptedPreImage })}`);
     // decrypt secret and resolve
     const privateKey = fromMnemonic(this.opts.mnemonic).derivePath(CF_PATH).privateKey;
     const cipher = EthCrypto.cipher.parse(encryptedPreImage);
@@ -1068,8 +1057,6 @@ export class ConnextInternal extends ConnextChannel {
     const preImage = await EthCrypto.decryptWithPrivateKey(privateKey, cipher);
     this.logger.debug(`Decrypted message and recovered preImage: ${preImage}`);
     const response = await this.resolveCondition({
-      amount,
-      assetId,
       conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
       paymentId,
       preImage,

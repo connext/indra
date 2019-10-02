@@ -32,23 +32,14 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
   async resolveLinkedTransfer(
     subject: string,
-    data: {
-      paymentId: string;
-      preImage: string;
-      recipientPublicIdentifier?: string;
-    },
+    data: { paymentId: string; preImage: string },
   ): Promise<ResolveLinkedTransferResponse> {
     const userPubId = this.getPublicIdentifierFromSubject(subject);
-    const { paymentId, preImage, recipientPublicIdentifier } = data;
+    const { paymentId, preImage } = data;
     if (!paymentId || !preImage) {
       throw new RpcException(`Incorrect data received. Data: ${data}`);
     }
-    return await this.transferService.resolveLinkedTransfer(
-      userPubId,
-      paymentId,
-      preImage,
-      recipientPublicIdentifier,
-    );
+    return await this.transferService.resolveLinkedTransfer(userPubId, paymentId, preImage);
   }
 
   // TODO: types
@@ -77,7 +68,6 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
   async getPendingTransfers(subject: string): Promise<{ paymentId: string }[]> {
     const userPubId = this.getPublicIdentifierFromSubject(subject);
-
     const transfers = await this.transferService.getPendingTransfers(userPubId);
     return transfers.map((transfer: LinkedTransfer) => {
       const { assetId, amount, encryptedPreImage, linkedHash, paymentId } = transfer;

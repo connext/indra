@@ -76,22 +76,24 @@ export class ResolveConditionController extends AbstractController {
     params: ResolveLinkedTransferParameters,
   ): Promise<ResolveLinkedTransferResponse> => {
     // convert and validate
-    const { paymentId, preImage, amount, assetId } = convert.ResolveLinkedTransfer(
-      "bignumber",
-      params,
-    );
+    const { paymentId, preImage } = params;
+
+    // convert and validate
+    const { assetId, amount } = await this.node.fetchLinkedTransfer(params.paymentId);
+    const amountBN = bigNumberify(amount);
+    this.log.info(`Found link payment for ${amountBN.toString()} ${assetId}`);
 
     const freeBal = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBal[this.connext.freeBalanceAddress];
 
     // TODO: dont listen to linked transfer app in default listener, only listen for it here
 
-    await this.node.resolveLinkedTransfer(paymentId, preImage, this.connext.publicIdentifier);
+    await this.node.resolveLinkedTransfer(paymentId, preImage);
 
     // sanity check, free balance increased by payment amount
     const postTransferBal = await this.connext.getFreeBalance(assetId);
     const diff = postTransferBal[this.connext.freeBalanceAddress].sub(preTransferBal);
-    if (!diff.eq(amount)) {
+    if (!diff.eq(amountBN)) {
       this.log.error(
         "Welp it appears the difference of the free balance before and after " +
           "uninstalling is not what we expected......",

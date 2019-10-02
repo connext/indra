@@ -151,7 +151,6 @@ export class TransferService {
     userPubId: string,
     paymentId: string,
     preImage: string,
-    recipientPublicIdentifier?: string,
   ): Promise<ResolveLinkedTransferResponse> {
     logger.debug(
       `Resolving linked transfer with userPubId: ${userPubId}, ` +
@@ -177,15 +176,6 @@ export class TransferService {
     }
     if (transfer.status === LinkedTransferStatus.REDEEMED) {
       throw new Error(`Transfer with linkedHash ${linkedHash} has already been redeemed`);
-    }
-
-    if (
-      transfer.recipientPublicIdentifier &&
-      transfer.recipientPublicIdentifier !== recipientPublicIdentifier
-    ) {
-      throw new Error(
-        `Transfer is linked to recipient ${transfer.recipientPublicIdentifier}, received request for ${recipientPublicIdentifier}`,
-      );
     }
 
     logger.debug(`Found linked transfer in our database, attempting to resolve...`);
