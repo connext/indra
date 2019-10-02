@@ -16,6 +16,7 @@ INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl cer
 INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER}"
 INDRA_MODE="${INDRA_MODE:-staging}" # set to "prod" to use versioned docker images
 INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
+HASURA_GRAPHQL_DATABASE_URL="${HASURA_GRAPHQL_DATABASE_URL:-}"
 
 ####################
 # Internal Config
@@ -263,7 +264,7 @@ services:
   hasura:
     image: hasura/graphql-engine
     environment:
-      HASURA_GRAPHQL_DATABASE_URL: "postgres://$pg_user:$pg_user@$pg_host:$pg_port/$project"
+      HASURA_GRAPHQL_DATABASE_URL: $HASURA_GRAPHQL_DATABASE_URL
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
     ports:
       - "8083:8080"

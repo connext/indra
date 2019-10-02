@@ -44,7 +44,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 default: dev
 all: dev prod
 dev: database node types client payment-bot proxy ws-tcp-relay
-prod: database node-prod proxy-prod ws-tcp-relay
+prod: database hasura node-prod proxy-prod ws-tcp-relay
 
 start: dev
 	bash ops/start-dev.sh ganache
@@ -152,6 +152,11 @@ daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))
 database: node-modules $(shell find $(database) $(find_options))
 	$(log_start)
 	docker build --file $(database)/db.dockerfile --tag $(project)_database:latest $(database)
+	$(log_finish) && touch $(flags)/$@
+
+hasura: node-modules $(shell find $(hasura) $(find_options))
+	$(log_start)
+	docker build --file $(database)/db.dockerfile --tag $(project)_hasura:latest $(database)
 	$(log_finish) && touch $(flags)/$@
 
 messaging: node-modules $(shell find $(messaging)/src $(find_options))
