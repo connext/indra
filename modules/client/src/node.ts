@@ -38,6 +38,7 @@ export interface INodeApiClient {
     preImage: string,
     amount: string,
     assetId: string,
+    recipientPublicIdentifier?: string,
   ): Promise<void>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   subscribeToSwapRates(from: string, to: string, callback: any): void;
@@ -86,6 +87,18 @@ export class NodeApiClient implements INodeApiClient {
     return await this.send(`channel.get.${this.userPublicIdentifier}`);
   }
 
+  public async getPendingAsyncTransfers(): Promise<
+    {
+      assetId: string;
+      amount: string;
+      encryptedPreImage: string;
+      linkedHash: string;
+      paymentId: string;
+    }[]
+  > {
+    return (await this.send(`transfer.get-pending.${this.userPublicIdentifier}`)) || [];
+  }
+
   // TODO: do we want this? thought this would be a blocking operation...
   public async getLatestSwapRate(from: string, to: string): Promise<string> {
     return await this.send(`swap-rate.${from}.${to}`);
@@ -119,12 +132,14 @@ export class NodeApiClient implements INodeApiClient {
     preImage: string,
     amount: string,
     assetId: string,
+    recipientPublicIdentifier?: string,
   ): Promise<void> {
     return await this.send(`transfer.resolve-linked.${this.userPublicIdentifier}`, {
       amount,
       assetId,
       paymentId,
       preImage,
+      recipientPublicIdentifier,
     });
   }
 
@@ -135,6 +150,18 @@ export class NodeApiClient implements INodeApiClient {
   public async getPaymentProfile(assetId?: string): Promise<PaymentProfile> {
     return await this.send(`channel.get-profile.${this.userPublicIdentifier}`, {
       assetId: makeChecksumOrEthAddress(assetId),
+    });
+  }
+
+  public async setRecipientAndEncryptedPreImageForLinkedTransfer(
+    recipientPublicIdentifier: string,
+    encryptedPreImage: string,
+    linkedHash: string,
+  ): Promise<any> {
+    return await this.send(`transfer.set-recipient.${this.userPublicIdentifier}`, {
+      encryptedPreImage,
+      linkedHash,
+      recipientPublicIdentifier,
     });
   }
 
@@ -164,12 +191,12 @@ export class NodeApiClient implements INodeApiClient {
     this.nodePublicIdentifier = publicIdentifier;
   }
 
-  public subscribeToSwapRates(from: string, to: string, callback: any): void {
-    this.messaging.subscribe(`swap-rate.${from}.${to}`, callback);
+  public async subscribeToSwapRates(from: string, to: string, callback: any): Promise<void> {
+    await this.messaging.subscribe(`swap-rate.${from}.${to}`, callback);
   }
 
-  public unsubscribeFromSwapRates(from: string, to: string): void {
-    this.messaging.unsubscribe(`swap-rate.${from}.${to}`);
+  public async unsubscribeFromSwapRates(from: string, to: string): Promise<void> {
+    await this.messaging.unsubscribe(`swap-rate.${from}.${to}`);
   }
 
   // TODO: need to add auth for this!

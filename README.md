@@ -1,4 +1,6 @@
 [![CircleCI](https://circleci.com/gh/ConnextProject/indra/tree/master.svg?style=shield)](https://circleci.com/gh/ConnextProject/indra/tree/master)
+![Discord](https://img.shields.io/discord/454734546869551114)
+![Twitter Follow](https://img.shields.io/twitter/follow/ConnextNetwork?style=social)
 
 # Indra 2.0
 

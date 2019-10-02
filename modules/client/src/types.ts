@@ -4,8 +4,8 @@ import {
   AppState,
   ChannelProvider,
   ChannelState,
-  MultisigState,
   ContractAddresses,
+  MultisigState,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { providers, utils } from "ethers";

@@ -324,12 +324,13 @@ export type ResolveConditionResponse<T = string> = ResolveLinkedTransferResponse
 // TODO: maybe not an enum?
 export const TransferConditions = {
   LINKED_TRANSFER: "LINKED_TRANSFER",
+  LINKED_TRANSFER_TO_RECIPIENT: "LINKED_TRANSFER_TO_RECIPIENT",
 };
 export type TransferCondition = keyof typeof TransferConditions;
 
 // linked transfer types
 export type LinkedTransferParameters<T = string> = {
-  conditionType: "LINKED_TRANSFER";
+  conditionType: TransferCondition;
   amount: T;
   assetId?: Address;
   paymentId: string;
@@ -343,12 +344,24 @@ export type LinkedTransferResponse = {
   freeBalance: CFCoreTypes.GetFreeBalanceStateResult;
 };
 
-// FIXME: should be union type of all supported conditions
-export type ConditionalTransferParameters<T = string> = LinkedTransferParameters<T>;
+export type LinkedTransferToRecipientParameters<T = string> = LinkedTransferParameters<T> & {
+  recipient: string;
+};
+export type LinkedTransferToRecipientParametersBigNumber = LinkedTransferToRecipientParameters<
+  BigNumber
+>;
+export type LinkedTransferToRecipientResponse = LinkedTransferResponse & {
+  recipient: string;
+};
+
+export type ConditionalTransferParameters<T = string> =
+  | LinkedTransferParameters<T>
+  | LinkedTransferToRecipientParameters<T>;
 export type ConditionalTransferParametersBigNumber = ConditionalTransferParameters<BigNumber>;
 
-// FIXME: should be union type of all supported conditions
-export type ConditionalTransferResponse = LinkedTransferResponse;
+export type ConditionalTransferResponse =
+  | LinkedTransferResponse
+  | LinkedTransferToRecipientResponse;
 
 // condition initial states
 // FIXME: should be union type of all supported conditions
@@ -535,6 +548,13 @@ export function convertLinkedTransferParametersToAsset<To extends NumericTypeNam
   return convertAssetAmountWithId(to, obj);
 }
 
+export function convertLinkedTransferToRecipientParametersToAsset<To extends NumericTypeName>(
+  to: To,
+  obj: LinkedTransferToRecipientParameters<any>,
+): LinkedTransferToRecipientParameters<NumericTypes[To]> {
+  return convertAssetAmountWithId(to, obj);
+}
+
 export function convertWithdrawParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: WithdrawParameters<any>,
@@ -558,6 +578,7 @@ export const convert = {
   Asset: convertAssetAmount,
   Deposit: convertDepositParametersToAsset,
   LinkedTransfer: convertLinkedTransferParametersToAsset,
+  LinkedTransferToRecipient: convertLinkedTransferToRecipientParametersToAsset,
   Multisig: convertMultisig,
   PaymentProfile: convertPaymentProfile,
   ResolveLinkedTransfer: convertAssetAmountWithId,

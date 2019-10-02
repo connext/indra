@@ -38,8 +38,6 @@ const logger = new CLogger("TransferService");
 
 @Injectable()
 export class TransferService {
-  appId: string;
-
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
@@ -64,9 +62,15 @@ export class TransferService {
     transfer.assetId = assetId;
 
     const senderChannel = await this.channelRepository.findByUserPublicIdentifier(senderPubId);
+    if (!senderChannel) {
+      throw new Error(`Sender channel does not exist for ${senderPubId}`);
+    }
     transfer.senderChannel = senderChannel;
 
     const receiverChannel = await this.channelRepository.findByUserPublicIdentifier(receiverPubId);
+    if (!receiverChannel) {
+      throw new Error(`Receiver channel does not exist for ${receiverPubId}`);
+    }
     transfer.receiverChannel = receiverChannel;
     transfer.status = PeerToPeerTransferStatus.PENDING;
 
@@ -79,19 +83,64 @@ export class TransferService {
     amount: BigNumber,
     appInstanceId: string,
     linkedHash: string,
+    paymentId: string,
   ): Promise<LinkedTransfer> {
+    const senderChannel = await this.channelRepository.findByUserPublicIdentifier(senderPubId);
+    if (!senderChannel) {
+      throw new Error(`Sender channel does not exist for ${senderPubId}`);
+    }
+
     const transfer = new LinkedTransfer();
     transfer.senderAppInstanceId = appInstanceId;
     transfer.amount = amount;
     transfer.assetId = assetId;
     transfer.linkedHash = linkedHash;
-
-    const senderChannel = await this.channelRepository.findByUserPublicIdentifier(senderPubId);
+    transfer.paymentId = paymentId;
     transfer.senderChannel = senderChannel;
-
     transfer.status = LinkedTransferStatus.PENDING;
 
     return await this.linkedTransferRepository.save(transfer);
+  }
+
+  async setRecipientAndEncryptedPreImageOnLinkedTransfer(
+    senderPublicIdentifier: string,
+    recipientPublicIdentifier: string,
+    encryptedPreImage: string,
+    linkedHash: string,
+  ): Promise<LinkedTransfer> {
+    logger.debug(`Setting recipient ${recipientPublicIdentifier} on linkedHash ${linkedHash}`);
+
+    const senderChannel = await this.channelRepository.findByUserPublicIdentifier(
+      senderPublicIdentifier,
+    );
+    if (!senderChannel) {
+      throw new Error(`No channel exists for senderPublicIdentifier ${senderPublicIdentifier}`);
+    }
+
+    const recipientChannel = await this.channelRepository.findByUserPublicIdentifier(
+      recipientPublicIdentifier,
+    );
+    if (!recipientChannel) {
+      throw new Error(
+        `No channel exists for recipientPublicIdentifier ${recipientPublicIdentifier}`,
+      );
+    }
+
+    // check that we have recorded this transfer in our db
+    const transfer = await this.linkedTransferRepository.findByLinkedHash(linkedHash);
+    if (!transfer) {
+      throw new Error(`No transfer exists for linkedHash ${linkedHash}`);
+    }
+
+    if (senderPublicIdentifier !== transfer.senderChannel.userPublicIdentifier) {
+      throw new Error(`Can only modify transfer that you sent`);
+    }
+
+    return await this.linkedTransferRepository.addRecipientPublicIdentifierAndEncryptedPreImage(
+      transfer,
+      recipientPublicIdentifier,
+      encryptedPreImage,
+    );
   }
 
   async resolveLinkedTransfer(
@@ -100,6 +149,7 @@ export class TransferService {
     preImage: string,
     amount: BigNumber,
     assetId: string,
+    recipientPublicIdentifier?: string,
   ): Promise<ResolveLinkedTransferResponse> {
     logger.debug(
       `Resolving linked transfer with userPubId: ${userPubId}, paymentId: ${paymentId}, ` +
@@ -120,6 +170,15 @@ export class TransferService {
     if (transfer.status === LinkedTransferStatus.REDEEMED) {
       throw new Error(`Transfer with linkedHash ${linkedHash} has already been redeemed`);
     }
+    if (
+      transfer.recipientPublicIdentifier &&
+      transfer.recipientPublicIdentifier !== recipientPublicIdentifier
+    ) {
+      throw new Error(
+        `Transfer is linked to recipient ${transfer.recipientPublicIdentifier}, received request for ${recipientPublicIdentifier}`,
+      );
+    }
+
     logger.debug(`Found linked transfer in our database, attempting to resolve...`);
 
     // check that linked transfer app has been installed from sender
@@ -129,7 +188,7 @@ export class TransferService {
     const installedApps = await this.cfCoreService.getAppInstances();
     const senderApp = installedApps.find(
       (app: AppInstanceJson) =>
-        app.appInterface.addr === defaultApp.appDefinitionAddress &&
+        app.appInterface.addr === defaultApp!.appDefinitionAddress &&
         (app.latestState as SimpleLinkedTransferAppStateBigNumber).linkedHash === linkedHash,
     );
 
@@ -224,7 +283,11 @@ export class TransferService {
     };
   }
 
-  async takeActionAndUninstallLink(appId: string, preImage: string): Promise<void> {
+  async getPendingTransfers(userPublicIdentifier: string): Promise<LinkedTransfer[]> {
+    return await this.linkedTransferRepository.findPendingByRecipient(userPublicIdentifier);
+  }
+
+  private async takeActionAndUninstallLink(appId: string, preImage: string): Promise<void> {
     console.log(`Taking action on app at ${Date.now()}`);
     try {
       await this.cfCoreService.takeAction(appId, { preImage });
@@ -234,14 +297,14 @@ export class TransferService {
     }
   }
 
-  async installLinkedTransferApp(
+  private async installLinkedTransferApp(
     userPubId: string,
     initialState: SimpleLinkedTransferAppStateBigNumber,
     preImage: string,
     paymentId: string,
     transfer: LinkedTransfer,
     appInfo: AppRegistry,
-  ): Promise<LinkedTransfer> {
+  ): Promise<LinkedTransfer | undefined> {
     let boundResolve: (value?: any) => void;
     let boundReject: (reason?: any) => void;
 

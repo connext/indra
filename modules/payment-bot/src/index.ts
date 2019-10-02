@@ -5,6 +5,7 @@ import {
   makeChecksum,
   ResolveLinkedTransferParameters,
   WithdrawParameters,
+  LinkedTransferToRecipientParameters,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { AddressZero } from "ethers/constants";
@@ -158,6 +159,27 @@ async function run(): Promise<void> {
     await logEthAndAssetFreeBalance();
   }
 
+  if (config.linkedTo) {
+    let { preImage, paymentId } = config;
+    if (!preImage) {
+      preImage = hexlify(randomBytes(32));
+    }
+    if (!paymentId) {
+      paymentId = hexlify(randomBytes(32));
+    }
+    const linkedParams: LinkedTransferToRecipientParameters = {
+      amount: parseEther(config.linkedTo).toString(),
+      assetId,
+      conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
+      paymentId,
+      preImage,
+      recipient: config.counterparty,
+    };
+    console.log(`Creating link payment for ${config.linkedTo} of asset ${assetId}`);
+    const res = await client.conditionalTransfer(linkedParams);
+    console.log(`Successfully created! Linked response: ${JSON.stringify(res, replaceBN, 2)}`);
+  }
+
   if (config.redeem) {
     checkForLinkedFields(config);
     const resolveParams: ResolveLinkedTransferParameters = {
@@ -171,6 +193,20 @@ async function run(): Promise<void> {
     const res = await client.resolveCondition(resolveParams);
     console.log(`Successfully redeemed! Resolve response: ${JSON.stringify(res, replaceBN, 2)}`);
     await logEthAndAssetFreeBalance();
+  }
+
+  if (config.redeemLinkedTo) {
+    checkForLinkedFields(config);
+    const resolveParams: ResolveLinkedTransferParameters = {
+      amount: parseEther(config.redeemLinkedTo).toString(),
+      assetId,
+      conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
+      paymentId: config.paymentId,
+      preImage: config.preImage,
+    };
+    console.log(`Redeeming link with parameters: ${JSON.stringify(resolveParams, replaceBN, 2)}`);
+    const res = await client.resolveCondition(resolveParams);
+    console.log(`Successfully redeemed! Resolve response: ${JSON.stringify(res, replaceBN, 2)}`);
   }
 
   if (config.withdraw) {
@@ -256,6 +292,7 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
     console.info(`Waiting ${interval} more seconds for channel to be available`);
     await new Promise((res: any): any => setTimeout(() => res(), interval * 1000));
   }
+  console.info(`Channel is available!`);
 
   console.info(`Channel is available!`);
 
