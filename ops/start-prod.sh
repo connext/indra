@@ -105,8 +105,8 @@ then
   number_of_services=$(( $number_of_services + 1 ))
   ethprovider_service="
   ethprovider:
-    image: $ethprovider_image
     command: [\"--db=/data\", \"--mnemonic=$eth_mnemonic\", \"--networkId=$ganache_chain_id\"]
+    image: $ethprovider_image
     ports:
       - 8545:8545
     volumes:
@@ -186,16 +186,16 @@ services:
       MESSAGING_URL: http://relay:4223
       HASURA_URL: http://hasura:8080
       MODE: prod
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - certs:/etc/letsencrypt
     logging:
       driver: "json-file"
       options:
           max-file: 10
           max-size: 10m
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certs:/etc/letsencrypt
 
   relay:
     image: $relay_image
@@ -220,14 +220,14 @@ services:
       INDRA_PORT: $node_port
       INDRA_REDIS_URL: $redis_url
       NODE_ENV: production
-    secrets:
-      - $db_secret
-      - $eth_mnemonic_name
     logging:
       driver: "json-file"
       options:
           max-file: 10
           max-size: 10m
+    secrets:
+      - $db_secret
+      - $eth_mnemonic_name
 
   database:
     image: $database_image
@@ -247,15 +247,15 @@ services:
       - `pwd`/modules/database/snapshots:/root/snapshots
 
   nats:
-    command: -V
     image: $nats_image
-    ports:
-      - "4222:4222"
+    command: -V
     logging:
       driver: "json-file"
       options:
           max-file: 10
           max-size: 10m
+    ports:
+      - "4222:4222"
 
   redis:
     image: $redis_image
@@ -273,13 +273,15 @@ services:
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
     ports:
       - "8083:8080"
+    secrets:
+      - $db_secret
 
   logdna:
     image: logdna/logspout:latest
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       LOGDNA_KEY: $INDRA_LOGDNA_KEY
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project
