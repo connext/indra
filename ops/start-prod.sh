@@ -149,6 +149,7 @@ then
   pull_if_unavailable "$proxy_image"
   pull_if_unavailable "$relay_image"
 else # local/testing mode, don't use images from registry
+  hasura_image="${project}_hasura:latest"
   node_image="${project}_node:latest"
   proxy_image="${project}_proxy:latest"
   relay_image="${project}_relay:latest"
