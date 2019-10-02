@@ -2,6 +2,7 @@ import { Address, SolidityValueType } from "@counterfactual/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
+import { ethers } from "@nomiclabs/buidler"
 import { AddressZero, One, Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 
@@ -135,7 +136,7 @@ describe("LinkedUnidirectionalTransferApp", () => {
     unidirectionalLinkedTransferApp.functions.computeOutcome(encodeAppState(state));
 
   before(async () => {
-    const provider = waffle.createMockProvider();
+    const provider = ethers.provider;
     const wallet = await waffle.getWallets(provider)[0];
     unidirectionalLinkedTransferApp = await waffle.deployContract(
       wallet,

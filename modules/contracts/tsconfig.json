@@ -4,5 +4,9 @@
     "module": "commonjs",
     "noImplicitAny": true
   },
-  "include": ["test"]
+  "include": ["test"],
+  "files": [
+    "./buidler.config.ts",
+    "./node_modules/@nomiclabs/buidler-ethers/src/type-extensions.d.ts"
+  ]
 }

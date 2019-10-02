@@ -2,6 +2,7 @@ import { SolidityABIEncoderV2Type } from "@counterfactual/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
+import { ethers } from "@nomiclabs/buidler"
 import { Zero } from "ethers/constants";
 import { BigNumber, BigNumberish, defaultAbiCoder } from "ethers/utils";
 
@@ -78,7 +79,7 @@ describe("UnidirectionalTransferApp", () => {
     unidirectionalTransferApp.functions.computeOutcome(encodeAppState(state));
 
   before(async () => {
-    const provider = waffle.createMockProvider();
+    const provider = ethers.provider;
     const wallet = (await waffle.getWallets(provider))[0];
     unidirectionalTransferApp = await waffle.deployContract(wallet, UnidirectionalTransferApp);
   });
