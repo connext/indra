@@ -1,4 +1,4 @@
-import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { ethers as eth } from "ethers";
 import {
   arrayify,
@@ -22,10 +22,8 @@ const isValidHex = (hex: string, length: number): boolean =>
 const nonceExpiry = 1000 * 60 * 60 * 2; // 2 hours
 
 @Injectable()
-export class AuthService implements OnModuleInit {
+export class AuthService {
   constructor(@Inject(RedisProviderId) private readonly redis: Redis) {}
-
-  onModuleInit = (): void => {};
 
   async getNonce(address: string): Promise<string> {
     if (!isValidHex(address, 20)) {
@@ -37,27 +35,33 @@ export class AuthService implements OnModuleInit {
     return nonce;
   }
 
-  async getPublicIdentifier(subject: string, token: string): Promise<string> {
-    const nonce = token.split(":")[0];
-    const sig = token.split(":")[1];
-    const address = await this.redis.get(`nonce:${nonce}`);
-    const signer = verifyMessage(nonce, sig);
-    logger.log(`Auth check: ${address} === ${signer}`);
-    if (address !== signer) {
-      logger.log(`Oh no`);
-      return undefined;
-    }
-    logger.log(`Oh yea`);
-    // TODO: verify that this address matches the xpub in the subject
+  useVerifiedPublicIdentifier = (callback: any): any => {
+    return async (subject: string, data: { token: string }): Promise<string> => {
+      const token = data.token;
+      const nonce = token.split(":")[0];
+      const sig = token.split(":")[1];
+      const address = await this.redis.get(`nonce:${nonce}`);
+      const signer = verifyMessage(nonce, sig);
+      logger.log(`Auth check: ${address} === ${signer}`);
+      if (address !== signer) {
+        logger.log(`Oh no`);
+        return `Invalid token` as any;
+      }
+      logger.log(`Oh yea`);
 
-    const pubId = subject.split(".").pop(); // last item of subscription is pubId
-    if (!pubId || !isXpub(pubId)) {
-      throw new Error("Invalid public identifier in message subject");
-    }
-    return pubId;
-  }
+      const pubId = subject.split(".").pop(); // last item of subscription is pubId
 
-  // legacy code from v1, not used for anything
+      // TODO: verify that this address matches the xpub in the subject
+
+      if (!pubId || !isXpub(pubId)) {
+        throw new Error("Invalid public identifier in message subject");
+      }
+      return callback(pubId, data);
+    };
+  };
+
+  ////////////////////////////////////////
+  // legacy code from v1. Just a reference, not actually used for anything
   getAuthMiddleware = (config: any, acl: any): any => async (
     req: any,
     res: any,

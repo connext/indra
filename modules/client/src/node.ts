@@ -192,9 +192,7 @@ export class NodeApiClient implements INodeApiClient {
     return new Promise(
       async (resolve: any, reject: any): Promise<any> => {
         const nonce = await this.send("auth.getNonce", { address: this.wallet.address });
-        this.log.info(`Got nonce: ${nonce}`);
         const sig = await this.wallet.signMessage(nonce);
-        this.log.info(`Got sig: ${sig}`);
         const token = `${nonce}:${sig}`;
         this.log.info(`Got new token: ${token}`);
         return resolve(token);

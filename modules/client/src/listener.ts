@@ -65,7 +65,7 @@ export class ConnextListener extends EventEmitter {
       // FIXME: type of ProposeMessage should extend CFCore.NodeMessage, which
       // has a from field, but ProposeMessage does not
       if ((data as any).from === this.cfCore.publicIdentifier) {
-        this.log.info(
+        this.log.debug(
           `Received proposal from our own node, doing nothing: ${JSON.stringify(data)}`,
         );
         return;
@@ -212,14 +212,15 @@ export class ConnextListener extends EventEmitter {
         `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(data.result.result)}`,
       );
       this.connext.messaging.publish(
-        `indra.client.${this.cfCore.publicIdentifier}.uninstall.${data.result.result.appInstanceId}`,
+        `indra.client.${this.cfCore.publicIdentifier}.` +
+          `uninstall.${data.result.result.appInstanceId}`,
         JSON.stringify(data.result.result),
       );
     });
   };
 
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
-    this.log.info(`Emitted ${event} with data ${JSON.stringify(data)} at ${Date.now()}`);
+    this.log.debug(`Emitted ${event} with data ${JSON.stringify(data)} at ${Date.now()}`);
     this.emit(event, data);
   };
 
