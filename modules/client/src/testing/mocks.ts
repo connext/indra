@@ -68,6 +68,10 @@ export class MockMessagingService implements IMessagingService {
     this.log.info(`Unsubscribing from ${subject}`);
   }
 
+  async flush(): Promise<void> {
+    this.log.info(`Flushing messaging connection`);
+  }
+
   public patch(subject: string, returnValue: any): any {
     (this.returnVals as any)[subject] = returnValue;
   }

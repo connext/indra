@@ -5,8 +5,9 @@ import { RpcException } from "@nestjs/microservices";
 import { bigNumberify } from "ethers/utils";
 
 import { MessagingProviderId, TransferProviderId } from "../constants";
-import { AbstractMessagingProvider, CLogger, replaceBN } from "../util";
+import { AbstractMessagingProvider, CLogger } from "../util";
 
+import { LinkedTransfer } from "./transfer.entity";
 import { TransferService } from "./transfer.service";
 
 const logger = new CLogger("TransferMessaging");
@@ -34,20 +35,73 @@ export class TransferMessaging extends AbstractMessagingProvider {
     data: {
       paymentId: string;
       preImage: string;
+      recipientPublicIdentifier?: string;
     },
   ): Promise<ResolveLinkedTransferResponse> {
-    logger.log(`Got resolve link request with data: ${JSON.stringify(data, replaceBN, 2)}`);
     const userPubId = this.getPublicIdentifierFromSubject(subject);
-    const { paymentId, preImage } = data;
+    const { paymentId, preImage, recipientPublicIdentifier } = data;
     if (!paymentId || !preImage) {
       throw new RpcException(`Incorrect data received. Data: ${data}`);
     }
-    return await this.transferService.resolveLinkedTransfer(userPubId, paymentId, preImage);
+    return await this.transferService.resolveLinkedTransfer(
+      userPubId,
+      paymentId,
+      preImage,
+      recipientPublicIdentifier,
+    );
   }
 
-  setupSubscriptions(): void {
-    super.connectRequestReponse("transfer.fetch-linked.>", this.fetchLinkedTransfer.bind(this));
-    super.connectRequestReponse("transfer.resolve-linked.>", this.resolveLinkedTransfer.bind(this));
+  // TODO: types
+  async setRecipientOnLinkedTransfer(
+    subject: string,
+    data: {
+      recipientPublicIdentifier: string;
+      linkedHash: string;
+      encryptedPreImage: string;
+    },
+  ): Promise<{ linkedHash: string }> {
+    const userPubId = this.getPublicIdentifierFromSubject(subject);
+    const { recipientPublicIdentifier, linkedHash, encryptedPreImage } = data;
+    if (!recipientPublicIdentifier) {
+      throw new RpcException(`Incorrect data received. Data: ${data}`);
+    }
+
+    const transfer = await this.transferService.setRecipientAndEncryptedPreImageOnLinkedTransfer(
+      userPubId,
+      recipientPublicIdentifier,
+      encryptedPreImage,
+      linkedHash,
+    );
+    return { linkedHash: transfer.linkedHash };
+  }
+
+  async getPendingTransfers(subject: string): Promise<{ paymentId: string }[]> {
+    const userPubId = this.getPublicIdentifierFromSubject(subject);
+
+    const transfers = await this.transferService.getPendingTransfers(userPubId);
+    return transfers.map((transfer: LinkedTransfer) => {
+      const { assetId, amount, encryptedPreImage, linkedHash, paymentId } = transfer;
+      return { assetId, amount: amount.toString(), encryptedPreImage, linkedHash, paymentId };
+    });
+  }
+
+  async setupSubscriptions(): Promise<void> {
+    await super.connectRequestReponse(
+      "transfer.fetch-linked.>",
+      this.fetchLinkedTransfer.bind(this),
+    );
+    await super.connectRequestReponse(
+      "transfer.resolve-linked.>",
+      this.resolveLinkedTransfer.bind(this),
+    );
+    await super.connectRequestReponse(
+      "transfer.set-recipient.>",
+      this.setRecipientOnLinkedTransfer.bind(this),
+    );
+    await super.connectRequestReponse(
+      "transfer.get-pending.>",
+      this.getPendingTransfers.bind(this),
+    );
   }
 }
 

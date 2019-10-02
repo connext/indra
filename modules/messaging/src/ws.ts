@@ -91,6 +91,11 @@ export class WsMessagingService implements IMessagingService {
     }
   }
 
+  async flush(): Promise<void> {
+    this.assertConnected();
+    await this.connection!.flush();
+  }
+
   ////////////////////////////////////////
   // Private
 
