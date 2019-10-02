@@ -96,6 +96,7 @@ export const SetupCard = style(({ classes, minDeposit, maxDeposit }) => {
                 <DialogActions style={{ padding: "2% 2% 2% 2%" }}>
                   {index !== 0 && (
                     <Button
+                      disableTouchRipple
                       onClick={() => setIndex(index - 1)}
                       className={classes.button}
                       variant="outlined"
@@ -107,6 +108,7 @@ export const SetupCard = style(({ classes, minDeposit, maxDeposit }) => {
                   )}
                   {isFinal ? (
                     <Button
+                      disableTouchRipple
                       onClick={handleClose}
                       className={classes.button}
                       variant="outlined"
@@ -117,6 +119,7 @@ export const SetupCard = style(({ classes, minDeposit, maxDeposit }) => {
                     </Button>
                   ) : (
                     <Button
+                      disableTouchRipple
                       onClick={() => setIndex(index + 1)}
                       className={classes.button}
                       variant="outlined"

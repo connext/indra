@@ -28,6 +28,7 @@ export const AppBarComponent = (props) => (
           >
             <Grid item xs={3}>
               <IconButton
+                disableTouchRipple
                 color="inherit"
                 variant="contained"
                 component={Link}
@@ -57,6 +58,7 @@ export const AppBarComponent = (props) => (
             </Grid>
             <Grid item xs={5}>
               <Button
+                disableTouchRipple
                 size="small"
                 variant="outlined"
                 style={{

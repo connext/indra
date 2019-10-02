@@ -21,6 +21,7 @@ export const Copyable = style((props) => {
         text={text}
       >
         <Button
+          disableTouchRipple
           classes={classes}
           color={color || "inherit"}
           fullWidth

@@ -96,6 +96,7 @@ export const SettingsCard = style((props) => {
       </Grid>
       <Grid item xs={12} className={classes.button}>
         <Button
+          disableTouchRipple
           fullWidth
           style={{
             background: "#FFF",
@@ -115,6 +116,7 @@ export const SettingsCard = style((props) => {
       <Grid item xs={12} className={classes.button}>
         {!showRecovery ? (
           <Button
+            disableTouchRipple
             fullWidth
             className={classes.button}
             variant="outlined"
@@ -135,6 +137,7 @@ export const SettingsCard = style((props) => {
       <Grid item xs={12} className={classes.button}>
         {!inputRecovery ? (
           <Button
+            disableTouchRipple
             fullWidth
             className={classes.button}
             color="primary"
@@ -157,6 +160,7 @@ export const SettingsCard = style((props) => {
               endAdornment: (
                 <InputAdornment position="end">
                   <Button
+                    disableTouchRipple
                     fullWidth
                     variant="contained"
                     color="primary"
@@ -173,6 +177,7 @@ export const SettingsCard = style((props) => {
       </Grid>
       <Grid item xs={12} className={classes.button}>
         <Button
+          disableTouchRipple
           fullWidth
           style={{
             background: "#FFF",
@@ -227,6 +232,7 @@ export const SettingsCard = style((props) => {
                   <Grid item xs={12}>
                 <DialogActions>
                   <Button
+                    disableTouchRipple
                     style={{
                       background: "#F22424",
                       border: "1px solid #F22424",
@@ -239,6 +245,7 @@ export const SettingsCard = style((props) => {
                     Burn
                   </Button>
                   <Button
+                    disableTouchRipple
                     style={{
                       background: "#FFF",
                       border: "1px solid #F22424",
@@ -262,6 +269,7 @@ export const SettingsCard = style((props) => {
       </Grid>
       <Grid item xs={12}>
         <Button
+          disableTouchRipple
           variant="outlined"
           style={{
             background: "#FFF",

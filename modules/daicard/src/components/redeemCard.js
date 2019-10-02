@@ -393,6 +393,7 @@ const RedeemCardModal = ({
             </DialogContentText>
             <DialogActions style={{ textAlign: "center", justifyContent: "center" }} >
               <Button
+                disableTouchRipple
                 style={{ border: "1px solid #F22424", color: "#F22424", marginBottom: "1.5em" }}
                 variant="outlined"
                 size="medium"
@@ -404,6 +405,7 @@ const RedeemCardModal = ({
                 Confirm
               </Button>
               <Button
+                disableTouchRipple
                 style={{ border: "1px solid #F22424", color: "#F22424", marginBottom: "1.5em" }}
                 variant="outlined"
                 size="medium"
@@ -470,6 +472,7 @@ const RedeemCardModal = ({
             </DialogContentText>
             <DialogActions style={{ textAlign: "center", justifyContent: "center" }} >
               <Button
+                disableTouchRipple
                 style={{ border: "1px solid #F22424", color: "#F22424", marginBottom: "1.5em" }}
                 variant="outlined"
                 size="medium"

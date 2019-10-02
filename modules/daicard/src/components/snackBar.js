@@ -64,6 +64,7 @@ export const MySnackbar = style((props) => {
         }
         action={[
           <IconButton
+            disableTouchRipple
             key="close"
             aria-label="Close"
             color="inherit"

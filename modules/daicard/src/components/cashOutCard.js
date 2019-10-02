@@ -195,6 +195,7 @@ export const CashoutCard = style(({
                   title="Scan with QR code"
                 >
                   <Button
+                    disableTouchRipple
                     variant="contained"
                     color="primary"
                     style={{ color: "primary" }}
@@ -240,6 +241,7 @@ export const CashoutCard = style(({
         >
           <Grid item xs={6}>
             <Button
+              disableTouchRipple
               className={classes.button}
               fullWidth
               onClick={cashoutEther}
@@ -255,6 +257,7 @@ export const CashoutCard = style(({
           </Grid>
           <Grid item xs={6}>
             <Button
+              disableTouchRipple
               className={classes.button}
               variant="contained"
               fullWidth
@@ -273,6 +276,7 @@ export const CashoutCard = style(({
       </Grid>
       <Grid item xs={12}>
         <Button
+          disableTouchRipple
           variant="outlined"
           style={{
             background: "#FFF",

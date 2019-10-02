@@ -91,7 +91,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
     try {
       value = Currency.DAI(rawValue);
     } catch (e) {
-      error = e.message;
+      error = `Please enter a valid amount`;
     }
     if (value && value.wad.gt(balance.channel.token.wad)) {
       error = `Invalid amount: must be less than your balance`;

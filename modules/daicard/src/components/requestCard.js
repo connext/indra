@@ -24,7 +24,7 @@ export const RequestCard = style((props) => {
   const [amount, setAmount] = useState({ value: Currency.DAI(zero), display: "0" });
   const [qrUrl, setQrUrl] = useState(generateQrUrl(zero, xpub));
 
-  useEffect(() => setQrUrl(generateQrUrl(amount.value, xpub)), [amount, xpub]);
+  useEffect(() => setQrUrl(generateQrUrl(amount.value, xpub)), [amount.value, xpub]);
 
   const updateAmountHandler = (input) => {
     let value, error
@@ -33,14 +33,17 @@ export const RequestCard = style((props) => {
     } catch (e) {
       error = `Invalid Currency amount`
     }
-    if (value && value.wad.gt(maxDeposit.toDAI().wad)) {
+    if (!maxDeposit) {
+      error = `Channels are still starting up, please wait.`
+    }
+    if (value && maxDeposit && value.wad.gt(maxDeposit.toDAI().wad)) {
       error = `Channel balances are capped at ${maxDeposit.toDAI().format()}`
     }
     if (value && value.wad.lt(Zero)) {
       error = "Please enter a payment amount above 0"
     }
     setQrUrl(generateQrUrl(error ? zero : value.amount, xpub));
-    setAmount({ value: value ? value.toString() : zero, display: input, error });
+    setAmount({ value: value ? value.amount : zero, display: input, error });
   };
 
   return (
@@ -58,14 +61,33 @@ export const RequestCard = style((props) => {
       }}
     >
 
-      <Typography>Payment Request Url:</Typography>
-      <Grid item xs={12}>
-        <QRGenerate value={qrUrl} />
+      <Grid container>
+        <Grid item xs={4}>
+          <Typography style={{ marginTop: "6px" }}>Channel ID:</Typography>
+        </Grid>
+        <Grid item xs={8}>
+          <Copyable
+            text={xpub}
+            tooltip={xpub}
+          />
+        </Grid>
       </Grid>
-      <Copyable
-        text={amount.error ? 'error' : qrUrl}
-        tooltip={amount.error ? "Fix amount first" : "Click to Copy"}
-      />
+
+      <Grid container style={{ marginTop: "12px" }}>
+        <Grid item xs={4}>
+          <Typography style={{ marginTop: "6px" }}>Request Link:</Typography>
+        </Grid>
+        <Grid item xs={8}>
+          <Copyable
+            text={amount.error ? 'error' : qrUrl}
+            tooltip={qrUrl}
+          />
+        </Grid>
+      </Grid>
+
+      <Grid item xs={12} style={{ margin: "12px" }}>
+        <QRGenerate value={qrUrl} size={225} />
+      </Grid>
 
       <Grid item xs={12}>
         <TextField
@@ -80,8 +102,10 @@ export const RequestCard = style((props) => {
           helperText={amount.error}
         />
       </Grid>
+
       <Grid item xs={12}>
         <Button
+          disableTouchRipple
           variant="outlined"
           style={{
             background: "#FFF",

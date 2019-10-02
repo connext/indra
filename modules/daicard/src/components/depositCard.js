@@ -55,6 +55,7 @@ export const DepositCard = style(({ address, history, maxDeposit, minDeposit }) 
       </Grid>
       <Grid item xs={12}>
         <Button
+          disableTouchRipple
           variant="outlined"
           style={{
             background: "#FFF",

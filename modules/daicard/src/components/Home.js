@@ -80,6 +80,7 @@ export const Home = style(props => {
           >
             <Grid item xs={12} sm={6}>
               <Button
+                disableTouchRipple
                 fullWidth
                 style={{
                   color: "#FFF",
@@ -96,6 +97,7 @@ export const Home = style(props => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <Button
+                disableTouchRipple
                 fullWidth
                 style={{
                   color: "#FFF",
@@ -115,6 +117,7 @@ export const Home = style(props => {
 
         <Grid item xs={12} style={{ paddingTop: "10%" }}>
           <Button
+            disableTouchRipple
             style={{
               color: "#FFF",
               backgroundColor: "#FCA311",

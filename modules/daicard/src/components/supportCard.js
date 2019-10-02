@@ -83,6 +83,7 @@ export const SupportCard = style(({ channel }) => {
 
       <Grid item xs={12}>
         <Button
+          disableTouchRipple
           variant="outlined"
           style={{
             background: "#FFF",
