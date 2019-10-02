@@ -154,9 +154,9 @@ database: node-modules $(shell find $(database) $(find_options))
 	docker build --file $(database)/db.dockerfile --tag $(project)_database:latest $(database)
 	$(log_finish) && touch $(flags)/$@
 
-hasura: node-modules $(shell find $(hasura) $(find_options))
+hasura: ops/hasura.dockerfile ops/hasura.entry.sh
 	$(log_start)
-	docker build --file $(database)/db.dockerfile --tag $(project)_hasura:latest $(database)
+	docker build --file ops/hasura.dockerfile --tag $(project)_hasura:latest .
 	$(log_finish) && touch $(flags)/$@
 
 messaging: node-modules $(shell find $(messaging)/src $(find_options))

@@ -16,7 +16,6 @@ INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl cer
 INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER}"
 INDRA_MODE="${INDRA_MODE:-staging}" # set to "prod" to use versioned docker images
 INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
-HASURA_GRAPHQL_DATABASE_URL="${HASURA_GRAPHQL_DATABASE_URL:-}"
 
 ####################
 # Internal Config
@@ -128,6 +127,9 @@ redis_url="redis://redis:6379"
 database_image="postgres:9-alpine"
 nats_image="nats:2.0.0-linux"
 redis_image="redis:5-alpine"
+pull_if_unavailable "$database_image"
+pull_if_unavailable "$nats_image"
+pull_if_unavailable "$redis_image"
 if [[ "$INDRA_DOMAINNAME" != "localhost" ]]
 then
   if [[ "$INDRA_MODE" == "prod" ]]
@@ -137,21 +139,20 @@ then
   else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" && exit 1
   fi
   database_image="$registry/${project}_database:$version"
+  hasura_image="$registry/${project}_hasura:$version"
   node_image="$registry/${project}_node:$version"
   proxy_image="$registry/${project}_proxy:$version"
   relay_image="$registry/${project}_relay:$version"
-  pull_if_unavailable $database_image
-  pull_if_unavailable $node_image
-  pull_if_unavailable $proxy_image
-  pull_if_unavailable $relay_image
+  pull_if_unavailable "$database_image"
+  pull_if_unavailable "$hasura_image"
+  pull_if_unavailable "$node_image"
+  pull_if_unavailable "$proxy_image"
+  pull_if_unavailable "$relay_image"
 else # local/testing mode, don't use images from registry
   node_image="${project}_node:latest"
   proxy_image="${project}_proxy:latest"
   relay_image="${project}_relay:latest"
 fi
-pull_if_unavailable $database_image
-pull_if_unavailable $nats_image
-pull_if_unavailable $redis_image
 
 ########################################
 ## Deploy according to configuration
@@ -262,9 +263,13 @@ services:
       - "6379:6379"
 
   hasura:
-    image: hasura/graphql-engine
+    image: $hasura_image
     environment:
-      HASURA_GRAPHQL_DATABASE_URL: $HASURA_GRAPHQL_DATABASE_URL
+      PG_DATABASE: $pg_db
+      PG_HOST: $pg_host
+      PG_PASSWORD_FILE: $pg_password_file
+      PG_PORT: $pg_port
+      PG_USERNAME: $pg_user
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
     ports:
       - "8083:8080"
