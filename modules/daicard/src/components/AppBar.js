@@ -13,7 +13,7 @@ import { Link } from "react-router-dom";
 
 const noAddrBlocky = require("../assets/noAddress.png");
 
-export const AppBarComponent = props => (
+export const AppBarComponent = (props) => (
   <Grid>
     <Grid container spacing={2}>
       <AppBar position="sticky" color="secondary" elevation={0} style={{ paddingTop: "2%"}}>
@@ -28,6 +28,7 @@ export const AppBarComponent = props => (
           >
             <Grid item xs={3}>
               <IconButton
+                disableTouchRipple
                 color="inherit"
                 variant="contained"
                 component={Link}
@@ -57,6 +58,7 @@ export const AppBarComponent = props => (
             </Grid>
             <Grid item xs={5}>
               <Button
+                disableTouchRipple
                 size="small"
                 variant="outlined"
                 style={{
@@ -77,5 +79,3 @@ export const AppBarComponent = props => (
     </Grid>
   </Grid>
 );
-
-export default AppBarComponent;

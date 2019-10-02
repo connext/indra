@@ -17,29 +17,29 @@ export class TransferMessaging extends AbstractMessagingProvider {
     super(messaging);
   }
 
-  async resolveLinkedTransfer(
+  async fetchLinkedTransfer(
     subject: string,
     data: {
       paymentId: string;
-      preImage: string;
-      amount: string;
-      assetId: string;
-      recipientPublicIdentifier?: string;
     },
-  ): Promise<ResolveLinkedTransferResponse> {
-    const userPubId = this.getPublicIdentifierFromSubject(subject);
-    const { paymentId, preImage, amount, assetId, recipientPublicIdentifier } = data;
-    if (!paymentId || !preImage || !amount || !assetId) {
+  ): Promise<any> {
+    if (!data.paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${data}`);
     }
-    return await this.transferService.resolveLinkedTransfer(
-      userPubId,
-      paymentId,
-      preImage,
-      bigNumberify(amount),
-      assetId,
-      recipientPublicIdentifier,
-    );
+    logger.log(`Got fetch link request for: ${data.paymentId}`);
+    return await this.transferService.fetchLinkedTransfer(data.paymentId);
+  }
+
+  async resolveLinkedTransfer(
+    subject: string,
+    data: { paymentId: string; preImage: string },
+  ): Promise<ResolveLinkedTransferResponse> {
+    const userPubId = this.getPublicIdentifierFromSubject(subject);
+    const { paymentId, preImage } = data;
+    if (!paymentId || !preImage) {
+      throw new RpcException(`Incorrect data received. Data: ${data}`);
+    }
+    return await this.transferService.resolveLinkedTransfer(userPubId, paymentId, preImage);
   }
 
   // TODO: types
@@ -68,7 +68,6 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
   async getPendingTransfers(subject: string): Promise<{ paymentId: string }[]> {
     const userPubId = this.getPublicIdentifierFromSubject(subject);
-
     const transfers = await this.transferService.getPendingTransfers(userPubId);
     return transfers.map((transfer: LinkedTransfer) => {
       const { assetId, amount, encryptedPreImage, linkedHash, paymentId } = transfer;
@@ -77,6 +76,10 @@ export class TransferMessaging extends AbstractMessagingProvider {
   }
 
   async setupSubscriptions(): Promise<void> {
+    await super.connectRequestReponse(
+      "transfer.fetch-linked.>",
+      this.fetchLinkedTransfer.bind(this),
+    );
     await super.connectRequestReponse(
       "transfer.resolve-linked.>",
       this.resolveLinkedTransfer.bind(this),

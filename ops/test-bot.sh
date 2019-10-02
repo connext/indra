@@ -71,12 +71,6 @@ bash ops/payment-bot.sh -i 2 -t 0.05 -c $id -a $tokenAddress -m "$mnemonic2"
 echo -e "$divider";echo "Stopping recipient listener so it can redeem a link payment"
 cleanup
 
-echo -e "$divider";echo "Printing recipient pre-link balances"
-bash ops/payment-bot.sh -i 1 -g -a $tokenAddress -m "$mnemonic1"
-
-echo -e "$divider";echo "Printing sender pre-link balances"
-bash ops/payment-bot.sh -i 2 -g -a $tokenAddress -m "$mnemonic2"
-
 echo -e "$divider";echo "Generating a link payment"
 bash ops/payment-bot.sh -i 2 -a $tokenAddress -l 0.01 -p "$paymentId1" -h "$preImage1" -m "$mnemonic2"
 
@@ -102,9 +96,3 @@ bash ops/payment-bot.sh -i 1 -a $tokenAddress
 
 echo -e "$divider";echo "Tests finished successfully"
 cleanup
-
-echo -e "$divider";echo "Printing recipient post-link balances"
-bash ops/payment-bot.sh -i 1 -g -a $tokenAddress -m "$mnemonic1"
-
-echo -e "$divider";echo "Printing sender post-link balances"
-bash ops/payment-bot.sh -i 2 -g -a $tokenAddress -m "$mnemonic2"

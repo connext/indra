@@ -33,11 +33,10 @@ export interface INodeApiClient {
   getPaymentProfile(assetId?: string): Promise<PaymentProfile>;
   requestCollateral(assetId: string): Promise<void>;
   withdraw(tx: CFCoreTypes.MinimalTransaction): Promise<TransactionResponse>;
+  fetchLinkedTransfer(paymentId: string): Promise<any>;
   resolveLinkedTransfer(
     paymentId: string,
     preImage: string,
-    amount: string,
-    assetId: string,
     recipientPublicIdentifier?: string,
   ): Promise<void>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
@@ -127,16 +126,18 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
+  public async fetchLinkedTransfer(paymentId: string): Promise<any> {
+    return await this.send(`transfer.fetch-linked.${this.userPublicIdentifier}`, {
+      paymentId,
+    });
+  }
+
   public async resolveLinkedTransfer(
     paymentId: string,
     preImage: string,
-    amount: string,
-    assetId: string,
     recipientPublicIdentifier?: string,
   ): Promise<void> {
     return await this.send(`transfer.resolve-linked.${this.userPublicIdentifier}`, {
-      amount,
-      assetId,
       paymentId,
       preImage,
       recipientPublicIdentifier,

@@ -9,6 +9,10 @@ export class PeerToPeerTransferRepository extends Repository<PeerToPeerTransfer>
 
 @EntityRepository(LinkedTransfer)
 export class LinkedTransferRepository extends Repository<LinkedTransfer> {
+  async findByPaymentId(paymentId: string): Promise<LinkedTransfer | undefined> {
+    return await this.findOne({ where: { paymentId } });
+  }
+
   async findByLinkedHash(linkedHash: string): Promise<LinkedTransfer | undefined> {
     return await this.findOne({ where: { linkedHash }, relations: ["senderChannel"] });
   }
