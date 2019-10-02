@@ -582,9 +582,9 @@ export class ConnextInternal extends ConnextChannel {
 
     // TODO: poller should not be completely blocking, but safe to leave for now
     // because the channel should be blocked
-    try {
-      await new Promise((resolve, reject) => {
-        this.ethProvider.on("block", async (blockNumber: number) => {
+    await new Promise((resolve, reject) => {
+      this.ethProvider.on("block", async (blockNumber: number) => {
+        try {
           const found = await this.checkForUserWithdrawal(blockNumber);
           if (found) {
             await this.store.set([
@@ -599,14 +599,14 @@ export class ConnextInternal extends ConnextChannel {
               `More than ${maxBlocks} have passed, blocks elapsed: ${blockNumber - startingBlock}`,
             );
           }
-        });
+        } catch (e) {
+          if (e.includes(`More than ${maxBlocks} have passed`)) {
+            this.logger.debug(`retrying node submission`);
+            await this.retryNodeSubmittedWithdrawal();
+          }
+        }
       });
-    } catch (e) {
-      if (e.includes(`More than ${maxBlocks} have passed`)) {
-        this.logger.debug(`retrying node submission`);
-        await this.retryNodeSubmittedWithdrawal();
-      }
-    }
+    });
   };
 
   public restoreStateFromNode = async (mnemonic: string): Promise<any> => {
