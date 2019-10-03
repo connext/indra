@@ -8,7 +8,6 @@ import {
   Info as InfoIcon,
 } from "@material-ui/icons";
 import React from "react";
-import PropTypes from "prop-types";
 import classNames from "classnames";
 
 const variantIcon = {
@@ -18,7 +17,7 @@ const variantIcon = {
   info: InfoIcon
 };
 
-const styles = theme => ({
+const style = withStyles((theme) => ({
   success: {
     backgroundColor: green[600]
   },
@@ -39,9 +38,9 @@ const styles = theme => ({
     display: "flex",
     alignItems: "center"
   }
-});
+}));
 
-function MySnackbar(props) {
+export const MySnackbar = style((props) => {
   const { classes, className, variant, openWhen, onClose, message, duration } = props;
   const Icon = variantIcon[variant];
   return (
@@ -65,6 +64,7 @@ function MySnackbar(props) {
         }
         action={[
           <IconButton
+            disableTouchRipple
             key="close"
             aria-label="Close"
             color="inherit"
@@ -77,16 +77,4 @@ function MySnackbar(props) {
       />
     </Snackbar>
   );
-}
-
-MySnackbar.propTypes = {
-  classes: PropTypes.object.isRequired,
-  className: PropTypes.string,
-  variant: PropTypes.oneOf(["success", "warning", "error"]).isRequired,
-  openWhen: PropTypes.bool.isRequired,
-  onClose: PropTypes.func,
-  message: PropTypes.node.isRequired,
-  duration: PropTypes.number
-};
-
-export default withStyles(styles)(MySnackbar);
+});

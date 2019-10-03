@@ -71,7 +71,7 @@ export class SwapRateService implements OnModuleInit {
         logger.warn(`Failed to fetch swap rate from medianizer`);
         logger.warn(e);
         if (process.env.NODE_ENV === "development" && !oldRate) {
-          newRate = "200";
+          newRate = "100";
           logger.log(`Dev-mode: using hard coded swap rate: ${newRate.toString()}`);
         }
       }
