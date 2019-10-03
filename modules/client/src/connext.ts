@@ -9,6 +9,8 @@ import {
   ChannelState,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
+  ConnextEvent,
+  ConnextEvents,
   ConnextNodeStorePrefix,
   CreateChannelResponse,
   DepositParameters,
@@ -20,6 +22,7 @@ import {
   RegisteredAppDetails,
   ResolveConditionParameters,
   ResolveConditionResponse,
+  ResolveLinkedTransferResponse,
   SolidityValueType,
   SupportedApplication,
   SupportedNetwork,
@@ -27,21 +30,24 @@ import {
   TransferParameters,
   WithdrawParameters,
 } from "@connext/types";
+import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
+import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
 import { Address, AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
 import "core-js/stable";
+import EthCrypto from "eth-crypto";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import {
   BigNumber,
+  bigNumberify,
   getAddress,
-  HDNode,
+  Interface,
+  keccak256,
   Network,
   solidityKeccak256,
-  keccak256,
-  Interface,
   Transaction,
-  bigNumberify,
 } from "ethers/utils";
+import { fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
@@ -52,21 +58,20 @@ import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { CFCore, CreateChannelMessage, EXTENDED_PRIVATE_KEY_PATH } from "./lib/cfCore";
+import { CF_PATH } from "./lib/constants";
 import { Logger } from "./lib/logger";
 import {
   freeBalanceAddressFromXpub,
   publicIdentifierToAddress,
   replaceBN,
   withdrawalKey,
+  xkeysToSortedKthAddresses,
 } from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
-import { xkeysToSortedKthAddresses } from "./lib/utils";
-import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
-import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
 
 const MAX_WITHDRAWAL_RETRIES = 3;
 
@@ -108,7 +113,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
   // Note: added this to the client since this is required for the cf module to work
   // generate extended private key from mnemonic
-  const extendedXpriv = HDNode.fromMnemonic(mnemonic).extendedKey;
+  const extendedXpriv = fromMnemonic(mnemonic).extendedKey;
   await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }]);
 
   // create a new node api instance
@@ -179,17 +184,19 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const client = new ConnextInternal({
     appRegistry,
     cfCore,
-    contractAddresses: config.contractAddresses,
+    config,
     ethProvider,
     messaging,
     multisigAddress,
     network,
     node,
-    nodePublicIdentifier: config.nodePublicIdentifier,
     store,
     ...opts, // use any provided opts by default
   });
+
   await client.registerSubscriptions();
+
+  await client.reclaimPendingAsyncTransfers();
 
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
   const withdrawal = await client.store.get(withdrawalKey(client.publicIdentifier));
@@ -220,6 +227,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     logger.error(msg);
     throw new Error(msg);
   }
+
   return client;
 }
 
@@ -232,23 +240,25 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
  */
 export abstract class ConnextChannel {
   public opts: InternalClientOptions;
+  public config: GetConfigResponse;
   private internal: ConnextInternal;
 
   public constructor(opts: InternalClientOptions) {
     this.opts = opts;
+    this.config = opts.config;
     this.internal = this as any;
   }
 
   ///////////////////////////////////
   // LISTENER METHODS
   public on = (
-    event: CFCoreTypes.EventName,
+    event: ConnextEvent | CFCoreTypes.EventName,
     callback: (...args: any[]) => void,
   ): ConnextListener => {
     return this.internal.on(event, callback);
   };
 
-  public emit = (event: CFCoreTypes.EventName, data: any): boolean => {
+  public emit = (event: ConnextEvent | CFCoreTypes.EventName, data: any): boolean => {
     return this.internal.emit(event, data);
   };
 
@@ -290,12 +300,13 @@ export abstract class ConnextChannel {
 
   ///////////////////////////////////
   // NODE EASY ACCESS METHODS
-  public config = async (): Promise<GetConfigResponse> => {
-    return await this.internal.node.config();
-  };
 
   public getChannel = async (): Promise<GetChannelResponse> => {
     return await this.internal.node.getChannel();
+  };
+
+  public getLinkedTransfer = async (paymentId: string): Promise<any> => {
+    return await this.internal.node.fetchLinkedTransfer(paymentId);
   };
 
   // TODO: do we need to expose here?
@@ -333,6 +344,29 @@ export abstract class ConnextChannel {
 
   public getPaymentProfile = async (assetId?: string): Promise<PaymentProfile | undefined> => {
     return await this.internal.node.getPaymentProfile(assetId);
+  };
+
+  public setRecipientAndEncryptedPreImageForLinkedTransfer = async (
+    recipient: string,
+    encryptedPreImage: string,
+    linkedHash: string,
+  ): Promise<any> => {
+    return await this.internal.node.setRecipientAndEncryptedPreImageForLinkedTransfer(
+      recipient,
+      encryptedPreImage,
+      linkedHash,
+    );
+  };
+
+  public reclaimPendingAsyncTransfers = async (): Promise<void> => {
+    return await this.internal.reclaimPendingAsyncTransfers();
+  };
+
+  public reclaimPendingAsyncTransfer = async (
+    paymentId: string,
+    encryptedPreImage: string,
+  ): Promise<ResolveLinkedTransferResponse> => {
+    return await this.internal.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
   };
 
   // does not directly call node function because needs to send
@@ -482,21 +516,18 @@ export class ConnextInternal extends ConnextChannel {
 
   constructor(opts: InternalClientOptions) {
     super(opts);
-
     this.opts = opts;
-
-    this.ethProvider = opts.ethProvider;
-    this.node = opts.node;
-    this.messaging = opts.messaging;
-
     this.appRegistry = opts.appRegistry;
-
+    this.config = opts.config;
+    this.ethProvider = opts.ethProvider;
+    this.messaging = opts.messaging;
+    this.network = opts.network;
+    this.node = opts.node;
     this.cfCore = opts.cfCore;
     this.freeBalanceAddress = this.cfCore.freeBalanceAddress;
     this.publicIdentifier = this.cfCore.publicIdentifier;
     this.multisigAddress = this.opts.multisigAddress;
-    this.nodePublicIdentifier = this.opts.nodePublicIdentifier;
-
+    this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
     this.logger = new Logger("ConnextInternal", opts.logLevel);
     this.network = opts.network;
     this.store = opts.store;
@@ -610,7 +641,7 @@ export class ConnextInternal extends ConnextChannel {
   };
 
   public restoreStateFromNode = async (mnemonic: string): Promise<any> => {
-    const hdNode = HDNode.fromMnemonic(mnemonic);
+    const hdNode = fromMnemonic(mnemonic);
     const xpriv = hdNode.extendedKey;
     const xpub = hdNode.derivePath("m/44'/60'/0'/25446").neuter().extendedKey;
     const states = await this.node.restoreStates(xpub);
@@ -634,8 +665,9 @@ export class ConnextInternal extends ConnextChannel {
 
   public getMultisigAddressfromXpub = async (xpub: string): Promise<string> => {
     const owners: string[] = [xpub, this.nodePublicIdentifier];
-    const proxyFactoryAddress: string = this.opts.contractAddresses.ProxyFactory;
-    const minimumViableMultisigAddress: string = this.opts.contractAddresses.MinimumViableMultisig;
+    const proxyFactoryAddress: string = this.opts.config.contractAddresses.ProxyFactory;
+    const minimumViableMultisigAddress: string = this.opts.config.contractAddresses
+      .MinimumViableMultisig;
     return getAddress(
       solidityKeccak256(
         ["bytes1", "address", "uint256", "bytes32"],
@@ -666,13 +698,13 @@ export class ConnextInternal extends ConnextChannel {
   // EVENT METHODS
 
   public on = (
-    event: CFCoreTypes.EventName,
+    event: ConnextEvent | CFCoreTypes.EventName,
     callback: (...args: any[]) => void,
   ): ConnextListener => {
     return this.listener.on(event, callback);
   };
 
-  public emit = (event: CFCoreTypes.EventName, data: any): boolean => {
+  public emit = (event: ConnextEvent | CFCoreTypes.EventName, data: any): boolean => {
     return this.listener.emit(event, data);
   };
 
@@ -1087,7 +1119,7 @@ export class ConnextInternal extends ConnextChannel {
 
   public verifyAppSequenceNumber = async (): Promise<any> => {
     const { data: sc } = await this.getStateChannel();
-    let appSequenceNumber;
+    let appSequenceNumber: number;
     try {
       appSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
     } catch (e) {
@@ -1098,6 +1130,34 @@ export class ConnextInternal extends ConnextChannel {
       }
     }
     return await this.node.verifyAppSequenceNumber(appSequenceNumber);
+  };
+
+  public reclaimPendingAsyncTransfers = async (): Promise<void> => {
+    const pendingTransfers = await this.node.getPendingAsyncTransfers();
+    for (const transfer of pendingTransfers) {
+      const { amount, assetId, encryptedPreImage, paymentId } = transfer;
+      await this.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
+    }
+  };
+
+  public reclaimPendingAsyncTransfer = async (
+    paymentId: string,
+    encryptedPreImage: string,
+  ): Promise<ResolveLinkedTransferResponse> => {
+    this.logger.info(`Reclaiming transfer ${JSON.stringify({ paymentId, encryptedPreImage })}`);
+    // decrypt secret and resolve
+    const privateKey = fromMnemonic(this.opts.mnemonic).derivePath(CF_PATH).privateKey;
+    const cipher = EthCrypto.cipher.parse(encryptedPreImage);
+
+    const preImage = await EthCrypto.decryptWithPrivateKey(privateKey, cipher);
+    this.logger.debug(`Decrypted message and recovered preImage: ${preImage}`);
+    const response = await this.resolveCondition({
+      conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
+      paymentId,
+      preImage,
+    });
+    this.logger.info(`Reclaimed transfer ${JSON.stringify(response)}`);
+    return response;
   };
 
   ///////////////////////////////////

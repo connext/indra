@@ -6,6 +6,7 @@ import { InitHubTables1567158805166 } from "../../migrations/1567158805166-init-
 import { AddCollateralizationInFlight1567601573372 } from "../../migrations/1567601573372-add-collateralization-in-flight";
 import { AddReclaimedLinks1568746114079 } from "../../migrations/1568746114079-add-reclaimed-links";
 import { AddOnchainTransactions1569489199954 } from "../../migrations/1569489199954-add-onchain-transaction";
+import { AddRecipientToLinks1569862328684 } from "../../migrations/1569862328684-add-recipient-to-links";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { Channel } from "../channel/channel.entity";
@@ -30,6 +31,7 @@ const migrations = [
   AddCollateralizationInFlight1567601573372,
   AddReclaimedLinks1568746114079,
   AddOnchainTransactions1569489199954,
+  AddRecipientToLinks1569862328684,
 ];
 
 @Injectable()

@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@counterfactual/cf-adjudicator-contracts": "0.0.7",
+    "@counterfactual/cf-adjudicator-contracts": "0.0.8",
     "@counterfactual/cf-funding-protocol-contracts": "0.0.11",
     "@counterfactual/types": "0.0.43",
     "@types/chai": "4.2.3",

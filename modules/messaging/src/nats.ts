@@ -53,7 +53,7 @@ export class NatsMessagingService implements IMessagingService {
   async send(to: string, msg: Node.NodeMessage): Promise<void> {
     this.assertConnected();
     this.log.debug(`Sending message to ${to}: ${JSON.stringify(msg)}`);
-    await this.connection!.publish(this.prependKey(`${to}.${msg.from}`), msg);
+    this.connection!.publish(this.prependKey(`${to}.${msg.from}`), msg);
   }
 
   ////////////////////////////////////////
@@ -62,7 +62,7 @@ export class NatsMessagingService implements IMessagingService {
   async publish(subject: string, data: any): Promise<void> {
     this.assertConnected();
     this.log.debug(`Publishing ${subject}: ${JSON.stringify(data)}`);
-    await this.connection!.publish(subject, data);
+    this.connection!.publish(subject, data);
   }
 
   async request(subject: string, timeout: number, data: object = {}): Promise<nats.Msg | void> {
@@ -92,11 +92,16 @@ export class NatsMessagingService implements IMessagingService {
   async unsubscribe(subject: string): Promise<void> {
     this.assertConnected();
     if (this.subscriptions[subject]) {
-      await this.subscriptions[subject].unsubscribe();
+      this.subscriptions[subject].unsubscribe();
       this.log.debug(`Unsubscribed from ${subject}`);
     } else {
       this.log.warn(`Not subscribed to ${subject}, doing nothing`);
     }
+  }
+
+  async flush(): Promise<void> {
+    this.assertConnected();
+    await this.connection!.flush();
   }
 
   ////////////////////////////////////////
