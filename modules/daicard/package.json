@@ -12,7 +12,7 @@
 	},
 	"dependencies": {
 		"@connext/client": "0.1.14",
-		"@material-ui/core": "4.4.3",
+		"@material-ui/core": "4.5.0",
 		"@material-ui/icons": "4.4.3",
 		"@walletconnect/browser": "^1.0.0-beta.37",
 		"@walletconnect/channel-provider": "^1.0.0-beta.37",
@@ -32,7 +32,7 @@
 		"react-dom": "16.10.1",
 		"react-qr-reader": "2.2.1",
 		"react-router-dom": "5.1.2",
-		"react-scripts": "3.1.2",
+		"react-scripts": "3.2.0",
 		"xstate": "4.6.7"
 	},
 	"devDependencies": {
