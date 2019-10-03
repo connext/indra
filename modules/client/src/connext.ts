@@ -23,9 +23,8 @@ import {
   RegisteredAppDetails,
   ResolveConditionParameters,
   ResolveConditionResponse,
-  RpcType,
   ResolveLinkedTransferResponse,
-  SolidityValueType,
+  RpcType,
   SupportedApplication,
   SupportedNetwork,
   SwapParameters,
@@ -34,7 +33,7 @@ import {
 } from "@connext/types";
 import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
 import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
-import { Address, AppInstanceInfo, Node as CFCoreTypes, AppInstanceJson } from "@counterfactual/types";
+import { Address, AppInstanceJson, Node as CFCoreTypes } from "@counterfactual/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
 import { Contract, providers } from "ethers";
