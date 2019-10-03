@@ -5,3 +5,4 @@ export * from "./currency";
 export * from "./getters";
 export * from "./store";
 export * from "./delay";
+export * from "./instantiateClient"

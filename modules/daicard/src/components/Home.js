@@ -18,14 +18,14 @@ export const Home = style(props => {
 
   const { balance } = props
 
-  scanQRCode = async (data) => {
+  const scanQRCode = async (data) => {
     const path = await props.scanQRCode(data);
     setScanModal(false);
     if(data.startsWith("wc:")){
       console.log("DATA: " + data)
       await initWalletConnect(data);
     } else {
-      this.props.history.push(data);
+      props.history.push(data);
     }
   };
 

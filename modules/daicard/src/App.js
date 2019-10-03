@@ -32,8 +32,7 @@ import { SendCard } from "./components/sendCard";
 import { SettingsCard } from "./components/settingsCard";
 import { SetupCard } from "./components/setupCard";
 import { SupportCard } from "./components/supportCard";
-
-import { Currency, store, minBN, toBN, tokenToWei, weiToToken } from "./utils";
+import { Currency, instantiateClient, minBN, toBN, tokenToWei, weiToToken } from "./utils";
 
 // Optional URL overrides for custom urls
 const overrides = {
@@ -58,7 +57,7 @@ const MAX_CHANNEL_VALUE = Currency.DAI("30");
 const DEFAULT_COLLATERAL_MINIMUM = Currency.DAI("5");
 const DEFAULT_AMOUNT_TO_COLLATERALIZE = Currency.DAI("10");
 
-const style = withStyles((theme) => ({
+const style = withStyles(theme => ({
   paper: {
     width: "100%",
     padding: `0px ${theme.spacing(1)}px 0 ${theme.spacing(1)}px`,
@@ -102,6 +101,7 @@ const ProviderModal = props => {
     </div>
   );
 };
+
 class App extends React.Component {
   constructor(props) {
     super(props);
@@ -179,39 +179,39 @@ class App extends React.Component {
       }
       cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
 
-      channel = await instantiateClient(ethUrl, mnemonic, nodeUrl);
+      channel = instantiateClient();
     } else if (this.state.channelProviderType === "walletconnect") {
       const channelProvider = new WalletConnectChannelProvider({
         rpc: {
-          1: ethUrl,
-          4: ethUrl,
-          4447: ethUrl
-        }
+          1: ethProviderUrl,
+          4: ethProviderUrl,
+          4447: ethProviderUrl,
+        },
       });
-      console.log("GOT CHANNEL PROVIDER")
+      console.log("GOT CHANNEL PROVIDER");
       // do we have to access the connection property here,
       // or can this be referenced at a higher level?
       // also, do we have to include this call?
       // await channelProvider.create();
-      console.log("CREATING CONNECTION")
-      await channelProvider.connection.create();
+      console.log("CREATING CONNECTION");
+      channelProvider.connection.create();
       channel = await new Promise((res, rej) => {
-        channelProvider.on("connect", async () => {
+        channelProvider.once("connect", async () => {
           const connectedChannel = await connext.connect({
-            ethProviderUrl: ethUrl,
+            ethProviderUrl,
             channelProvider,
           });
-          console.log("CONNECTED!")
-          console.log(connectedChannel)
+          console.log("CONNECTED!");
+          console.log(connectedChannel);
           res(connectedChannel);
         });
         channelProvider.on("error", () => {
           rej("WalletConnect Error");
         });
       });
-      console.log("SUCCESSFULLY GOT CHANNEL")
+      console.log("SUCCESSFULLY GOT CHANNEL");
     } else {
-      console.error("Could not create channel.")
+      console.error("Could not create channel.");
       return;
     }
 
@@ -226,7 +226,11 @@ class App extends React.Component {
     }
 
     const freeBalanceAddress = channel.freeBalanceAddress || channel.myFreeBalanceAddress;
-    const token = new Contract(channel.config.contractAddresses.Token, tokenArtifacts.abi, cfWallet);
+    const token = new Contract(
+      channel.config.contractAddresses.Token,
+      tokenArtifacts.abi,
+      cfWallet,
+    );
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
     console.log(`Client created successfully!`);
@@ -235,7 +239,7 @@ class App extends React.Component {
     console.log(` - CF Account address: ${cfWallet.address}`);
     console.log(` - Free balance address: ${freeBalanceAddress}`);
     console.log(` - Token address: ${token.address}`);
-    console.log(` - Swap rate: ${swapRate}`)
+    console.log(` - Swap rate: ${swapRate}`);
 
     channel.subscribeToSwapRates(AddressZero, token.address, res => {
       if (!res || !res.swapRate) return;
@@ -244,19 +248,19 @@ class App extends React.Component {
     });
 
     channel.on("RECIEVE_TRANSFER_STARTED", data => {
-      console.log('Received RECIEVE_TRANSFER_STARTED event: ', data);
-      this.setState({ receivingTransferStarted: true })
-    })
+      console.log("Received RECIEVE_TRANSFER_STARTED event: ", data);
+      this.setState({ receivingTransferStarted: true });
+    });
 
     channel.on("RECIEVE_TRANSFER_FINISHED", data => {
-      console.log('Received RECIEVE_TRANSFER_FINISHED event: ', data);
-      this.setState({ receivingTransferCompleted: true })
-    })
+      console.log("Received RECIEVE_TRANSFER_FINISHED event: ", data);
+      this.setState({ receivingTransferCompleted: true });
+    });
 
     channel.on("RECIEVE_TRANSFER_FAILED", data => {
-      console.log('Received RECIEVE_TRANSFER_FAILED event: ', data);
-      this.setState({ receivingTransferFailed: true })
-    })
+      console.log("Received RECIEVE_TRANSFER_FAILED event: ", data);
+      this.setState({ receivingTransferFailed: true });
+    });
 
     this.setState({
       address: freeBalanceAddress,
@@ -320,22 +324,33 @@ class App extends React.Component {
       minimumMaintainedCollateral: DEFAULT_COLLATERAL_MINIMUM.wad.toString(),
       assetId: token.address,
     });
-    this.setState({ tokenProfile })
-    console.log(`Got a default token profile: ${JSON.stringify(this.state.tokenProfile)}`)
+    this.setState({ tokenProfile });
+    console.log(`Got a default token profile: ${JSON.stringify(this.state.tokenProfile)}`);
     return tokenProfile;
-  }
+  };
 
   refreshBalances = async () => {
     const {
-      address, balance, channel, ethprovider, freeBalanceAddress, swapRate, token,
+      address,
+      balance,
+      channel,
+      ethprovider,
+      freeBalanceAddress,
+      swapRate,
+      token,
     } = this.state;
     let gasPrice = await ethprovider.getGasPrice();
     let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
     let totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
-    const minDeposit = Currency.WEI(totalDepositGasWei.add(totalWithdrawalGasWei), swapRate).toETH();
+    const minDeposit = Currency.WEI(
+      totalDepositGasWei.add(totalWithdrawalGasWei),
+      swapRate,
+    ).toETH();
     const maxDeposit = MAX_CHANNEL_VALUE.toETH(swapRate); // Or get based on payment profile?
     this.setState({ maxDeposit, minDeposit });
-    if (!channel || !swapRate) { return; }
+    if (!channel || !swapRate) {
+      return;
+    }
     const getTotal = (ether, token) => Currency.WEI(ether.wad.add(token.toETH().wad), swapRate);
     const freeEtherBalance = await channel.getFreeBalance();
     const freeTokenBalance = await channel.getFreeBalance(token.address);
@@ -468,8 +483,8 @@ class App extends React.Component {
         minimumMaintainedCollateral: collateralNeeded,
         assetId: token.address,
       });
-      console.log(`Got a new token profile: ${JSON.stringify(tokenProfile)}`)
-      this.setState({ tokenProfile })
+      console.log(`Got a new token profile: ${JSON.stringify(tokenProfile)}`);
+      this.setState({ tokenProfile });
       await channel.requestCollateral(token.address);
       collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress]);
       console.log(`Collateral: ${collateral} tokens, need: ${formatEther(collateralNeeded)}`);
@@ -610,7 +625,9 @@ class App extends React.Component {
             />
             <AppBarComponent address={address} />
             <ProviderModal
-              open={channelProviderType !== "walletconnect" && channelProviderType !== "counterfactual"}
+              open={
+                channelProviderType !== "walletconnect" && channelProviderType !== "counterfactual"
+              }
               setProvider={this.setProvider}
             />
             <Route
@@ -634,7 +651,10 @@ class App extends React.Component {
                 />
               )}
             />
-            <Route path="/settings" render={props => <SettingsCard {...props} channel={channel} />} />
+            <Route
+              path="/settings"
+              render={props => <SettingsCard {...props} channel={channel} />}
+            />
             <Route
               path="/request"
               render={props => <RequestCard {...props} xpub={xpub} maxDeposit={maxDeposit} />}
@@ -654,11 +674,7 @@ class App extends React.Component {
             <Route
               path="/redeem"
               render={props => (
-                <RedeemCard
-                  {...props}
-                  channel={channel}
-                  tokenProfile={this.state.tokenProfile}
-                />
+                <RedeemCard {...props} channel={channel} tokenProfile={this.state.tokenProfile} />
               )}
             />
             <Route
