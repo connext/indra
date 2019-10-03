@@ -151,9 +151,12 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
     let transferRes = undefined;
     while (Date.now() < endingTs) {
       try {
-        transferRes = await channel.transfer({
+        transferRes = await channel.conditionalTransfer({
           assetId: token.address,
           amount: amount.value.wad.toString(),
+          conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
+          paymentId: hexlify(randomBytes(32)),
+          preImage: hexlify(randomBytes(32)),
           recipient: recipient.value,
         });
         break;

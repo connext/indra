@@ -9,6 +9,8 @@ import {
   ChannelState,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
+  ConnextEvent,
+  ConnextEvents,
   ConnextNodeStorePrefix,
   CreateChannelResponse,
   DepositParameters,
@@ -215,13 +217,13 @@ export abstract class ConnextChannel {
   ///////////////////////////////////
   // LISTENER METHODS
   public on = (
-    event: CFCoreTypes.EventName,
+    event: ConnextEvent | CFCoreTypes.EventName,
     callback: (...args: any[]) => void,
   ): ConnextListener => {
     return this.internal.on(event, callback);
   };
 
-  public emit = (event: CFCoreTypes.EventName, data: any): boolean => {
+  public emit = (event: ConnextEvent | CFCoreTypes.EventName, data: any): boolean => {
     return this.internal.emit(event, data);
   };
 
@@ -604,13 +606,13 @@ export class ConnextInternal extends ConnextChannel {
   // EVENT METHODS
 
   public on = (
-    event: CFCoreTypes.EventName,
+    event: ConnextEvent | CFCoreTypes.EventName,
     callback: (...args: any[]) => void,
   ): ConnextListener => {
     return this.listener.on(event, callback);
   };
 
-  public emit = (event: CFCoreTypes.EventName, data: any): boolean => {
+  public emit = (event: ConnextEvent | CFCoreTypes.EventName, data: any): boolean => {
     return this.listener.emit(event, data);
   };
 

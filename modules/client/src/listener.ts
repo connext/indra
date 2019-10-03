@@ -332,9 +332,9 @@ export class ConnextListener extends EventEmitter {
 
   private registerLinkedTransferSubscription = async (): Promise<void> => {
     const subject = `transfer.send-async.${this.connext.publicIdentifier}`;
-    await this.connext.messaging.subscribe(subject, async (msg: any) => {
-      this.log.info(`Received message for subscription: ${JSON.stringify(msg)}`);
-      const { encryptedPreImage, paymentId } = msg.data;
+    await this.connext.messaging.subscribe(subject, async (data: any) => {
+      this.log.info(`Received message for subscription: ${JSON.stringify(data)}`);
+      const { encryptedPreImage, paymentId } = data;
       await this.connext.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
     });
   };
