@@ -172,12 +172,12 @@ class App extends React.Component {
 
       channel = await instantiateClient(ethUrl, mnemonic, nodeUrl);
     } else if (this.state.channelProviderType === "walletconnect") {
-      const channelProvider = new WalletConnectChannelProvider({
+      let channelProvider;
+      channelProvider = new WalletConnectChannelProvider({
         rpc: {
-          1: ethUrl,
-          4: ethUrl,
-          4447: ethUrl
-        }
+          "4447": ethUrl
+        },
+        chainId: 4447
       });
       console.log("GOT CHANNEL PROVIDER")
       // do we have to access the connection property here,
@@ -185,6 +185,9 @@ class App extends React.Component {
       // also, do we have to include this call?
       // await channelProvider.create();
       console.log("CREATING CONNECTION")
+      console.log(channelProvider.connection.chainId)
+      console.log(channelProvider.connection.rpc)
+      console.log(channelProvider.connection.networkId)
       await channelProvider.connection.create();
       channel = await new Promise((res, rej) => {
         channelProvider.on("connect", async () => {
