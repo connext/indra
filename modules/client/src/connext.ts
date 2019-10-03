@@ -116,7 +116,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const nodeApiConfig = {
     logLevel,
     messaging,
-    wallet: Wallet.fromMnemonic(mnemonic),
+    wallet: Wallet.fromMnemonic(mnemonic, "m/44'/60'/0'/25446"),
   };
   logger.info("creating node api client");
   const node: NodeApiClient = new NodeApiClient(nodeApiConfig);

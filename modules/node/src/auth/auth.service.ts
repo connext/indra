@@ -1,13 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { ethers as eth } from "ethers";
-import {
-  arrayify,
-  hexlify,
-  isHexString,
-  randomBytes,
-  toUtf8Bytes,
-  verifyMessage,
-} from "ethers/utils";
+import { arrayify, HDNode, hexlify, randomBytes, verifyMessage } from "ethers/utils";
 import { Redis } from "ioredis";
 
 import { RedisProviderId } from "../constants";
@@ -29,7 +21,7 @@ export class AuthService {
     if (!isValidHex(address, 20)) {
       return JSON.stringify({ err: "Invalid address" });
     }
-    const nonce = eth.utils.hexlify(eth.utils.randomBytes(32));
+    const nonce = hexlify(randomBytes(32));
     await this.redis.set(`nonce:${address}`, nonce);
     await this.redis.set(`nonce:${nonce}`, address);
     return nonce;
@@ -37,26 +29,38 @@ export class AuthService {
 
   useVerifiedPublicIdentifier = (callback: any): any => {
     return async (subject: string, data: { token: string }): Promise<string> => {
+      if (!data.token || data.token.indexOf(":") === -1) {
+        logger.log(`Invalid token: ${data.token}`);
+        return `Invalid token`;
+      }
       const token = data.token;
       const nonce = token.split(":")[0];
       const sig = token.split(":")[1];
+      if (!isValidHex(nonce, 32) || !isValidHex(sig, 65)) {
+        logger.log(`Invalid token: ${token}`);
+        return `Invalid token`;
+      }
       const address = await this.redis.get(`nonce:${nonce}`);
       const signer = verifyMessage(nonce, sig);
-      logger.log(`Auth check: ${address} === ${signer}`);
       if (address !== signer) {
-        logger.log(`Oh no`);
+        logger.log(`Auth check 1 failed: ${address} !== ${signer}`);
+        return `Invalid token`;
+      }
+      logger.debug(`Auth check 1: ${address} !== ${signer}`);
+
+      const xpub = subject.split(".").pop(); // last item of subscription is xpub
+      if (!xpub || !isXpub(xpub)) {
+        return `Invalid xpub in subject`;
+      }
+      const xpubAddress = HDNode.fromExtendedKey(xpub).address;
+
+      if (xpubAddress !== signer) {
+        logger.log(`Auth check 2 failed: ${xpubAddress} !== ${signer}`);
         return `Invalid token` as any;
       }
-      logger.log(`Oh yea`);
+      logger.debug(`Auth check 2: ${xpubAddress} !== ${signer}`);
 
-      const pubId = subject.split(".").pop(); // last item of subscription is pubId
-
-      // TODO: verify that this address matches the xpub in the subject
-
-      if (!pubId || !isXpub(pubId)) {
-        throw new Error("Invalid public identifier in message subject");
-      }
-      return callback(pubId, data);
+      return callback(xpub, data);
     };
   };
 
@@ -138,7 +142,7 @@ export class AuthService {
       // Have we cached the verification for this signature?
       const cachedSig = await redis.get(`signature:${address}`);
       if (!cachedSig) {
-        const bytes = isHexString(nonce) ? arrayify(nonce) : toUtf8Bytes(nonce);
+        const bytes = arrayify(nonce);
         const signer = verifyMessage(bytes, signature).toLowerCase();
         if (signer !== address.toLowerCase()) {
           logger.warn(`Invalid sig for nonce "${nonce}": Got "${signer}", expected "${address}"`);
