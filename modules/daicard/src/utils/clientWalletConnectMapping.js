@@ -1,5 +1,5 @@
 import WalletConnectBrowser from "@walletconnect/browser";
-import { channel } from "./instantiateClient";
+import { channel } from ".";
 import { Node as NodeTypes } from "@counterfactual/types";
 
 export let walletConnector = null;

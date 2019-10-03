@@ -28,7 +28,9 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
   ): Promise<void> {
     // TODO: timeout
     await this.messaging.subscribe(pattern, async (msg: any) => {
-      logger.debug(`Got NATS message for subject ${msg.subject}`);
+      logger.debug(
+        `Got NATS message for subject ${msg.subject} with data ${JSON.stringify(msg.data)}`,
+      );
       if (msg.reply) {
         try {
           const response = await processor(msg.subject, msg.data);

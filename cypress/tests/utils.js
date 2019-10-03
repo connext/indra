@@ -15,14 +15,13 @@ const my = {}
 
 my.mnemonicRegex = /([A-Za-z]{3,}\s?){12}/
 my.addressRegex = /.*0x[0-9a-z]{40}.*/i
-my.xpubRegex = /xpub[a-zA-Z0-9]{107}/i
+my.xpubRegex = /^xpub[a-zA-Z0-9]{107}/i
 
 ////////////////////////////////////////
 // Vanilla cypress compilations
 // These functions behave a lot like cy.whatever functions
 
 my.isStarting = () => cy.contains('span', /starting/i).should('exist')
-
 my.doneStarting = () => cy.contains('span', /starting/i).should('not.exist')
 
 my.goToDeposit = () => cy.get(`a[href="/deposit"]`).click() && my.doneStarting()
@@ -32,15 +31,13 @@ my.goToSend = () => cy.get(`a[href="/send"]`).click() && my.doneStarting()
 my.goToCashout = () => cy.get(`a[href="/cashout"]`).click() && my.doneStarting()
 my.goHome = () => cy.contains('button', /^home$/i).click() && my.doneStarting()
 my.goBack = () => cy.contains('button', /^back$/i).click() && my.doneStarting()
-my.goNextIntro = () => cy.contains('button', /^next$/i).click() && my.doneStarting()
-my.goCloseIntro = () => cy.contains('button', /^got it!$/i).click() && my.doneStarting()
+my.goNextIntro = () => cy.contains('button', /^next$/i).click()
+my.goCloseIntro = () => cy.contains('button', /^got it!$/i).click()
 
 my.closeIntroModal = () => {
+  my.isStarting()
+  my.doneStarting()
   my.goNextIntro()
-  my.goNextIntro()
-  cy.contains('button', my.mnemonicRegex).should('exist')
-  my.goNextIntro()
-  cy.contains('p', '??').should('not.exist')
   my.goNextIntro()
   cy.contains('p', '??').should('not.exist')
   my.goCloseIntro()
@@ -51,9 +48,9 @@ my.burnCard = () => {
   my.goToSettings()
   cy.contains('button', /burn card/i).click()
   cy.contains('button', /burn$/i).click()
-  // cy.contains('p', /burning/i).should('exist')
-  // cy.contains('p', /burning/i).should('not.exist')
   cy.reload()
+  my.isStarting()
+  my.doneStarting()
 }
 
 my.restoreMnemonic = (mnemonic) => {
@@ -197,7 +194,8 @@ my.deposit = (value) => {
       })).then(tx => {
         return cy.wrap(wallet.provider.waitForTransaction(tx.hash)).then(() => {
           cy.contains('span', /processing deposit/i).should('exist')
-          cy.contains('span', /deposit confirmed/i).should('exist')
+          cy.contains('span', /processing swap/i).should('exist')
+          cy.contains('span', /swap was successful/i).should('exist')
           cy.resolve(my.getChannelTokenBalance).should('not.contain', '0.00')
           my.getChannelTokenBalance().then(resolve)
         })
@@ -240,6 +238,7 @@ my.linkPay = (value) => {
     cy.get('input[type="number"]').clear().type(value)
     cy.contains('button', /link/i).click()
     cy.contains('button', origin).invoke('text').then(redeemLink => {
+      cy.contains('button', /home/i).click()
       resolve(redeemLink)
     })
   }))

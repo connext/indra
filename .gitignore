@@ -59,9 +59,12 @@ modules/**/.circleci
 
 # Local packages
 counterfactual
+walletconnect
 
 # Regenerated files from tests
 bots.json
 links.json
 nohup.out
-walletconnect
+
+# Docs
+modules/client/docs

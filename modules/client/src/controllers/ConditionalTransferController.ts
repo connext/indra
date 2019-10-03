@@ -5,6 +5,8 @@ import {
   convert,
   LinkedTransferParameters,
   LinkedTransferResponse,
+  LinkedTransferToRecipientParameters,
+  LinkedTransferToRecipientResponse,
   RegisteredAppDetails,
   SimpleLinkedTransferAppStateBigNumber,
   SupportedApplication,
@@ -12,7 +14,9 @@ import {
   TransferCondition,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
+import EthCrypto from "eth-crypto";
 import { HashZero, Zero } from "ethers/constants";
+import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { RejectInstallVirtualMessage } from "../lib/cfCore";
 import { createLinkedHash, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
@@ -44,6 +48,50 @@ export class ConditionalTransferController extends AbstractController {
 
   /////////////////////////////////
   ////// PRIVATE METHODS
+  // TODO: types
+  private handleLinkedTransferToRecipient = async (
+    params: LinkedTransferToRecipientParameters,
+  ): Promise<LinkedTransferToRecipientResponse> => {
+    const { amount, assetId, paymentId, preImage, recipient } = convert.LinkedTransferToRecipient(
+      "bignumber",
+      params,
+    );
+    const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
+
+    // wait for linked transfer
+    const ret = await this.handleLinkedTransfers(params);
+
+    // set recipient and encrypted pre-image on linked transfer
+    const recipientPublicKey = fromExtendedKey(recipient).publicKey;
+    const encryptedPreImageCipher = await EthCrypto.encryptWithPublicKey(
+      recipientPublicKey.slice(2), // remove 0x
+      preImage,
+    );
+    const encryptedPreImage = EthCrypto.cipher.stringify(encryptedPreImageCipher);
+    await this.connext.setRecipientAndEncryptedPreImageForLinkedTransfer(
+      recipient,
+      encryptedPreImage,
+      linkedHash,
+    );
+
+    // publish encrypted secret
+    // TODO: should we move this to its own file?
+    this.connext.messaging.publish(
+      `transfer.send-async.${recipient}`,
+      JSON.stringify({
+        amount: amount.toString(),
+        assetId,
+        encryptedPreImage,
+        paymentId,
+      }),
+    );
+
+    // need to flush here so that the client can exit knowing that messages are in the NATS server
+    await this.connext.messaging.flush();
+
+    return { ...ret, recipient };
+  };
+
   private handleLinkedTransfers = async (
     params: LinkedTransferParameters,
   ): Promise<LinkedTransferResponse> => {
@@ -212,5 +260,6 @@ export class ConditionalTransferController extends AbstractController {
   // add all executors/handlers here
   private conditionalExecutors: ConditionalExecutors = {
     LINKED_TRANSFER: this.handleLinkedTransfers,
+    LINKED_TRANSFER_TO_RECIPIENT: this.handleLinkedTransferToRecipient,
   };
 }

@@ -4,8 +4,9 @@ import {
   AppState,
   ChannelProvider,
   ChannelState,
-  MultisigState,
   ContractAddresses,
+  GetConfigResponse,
+  MultisigState,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { providers, utils } from "ethers";
@@ -13,7 +14,6 @@ import { providers, utils } from "ethers";
 import { ChannelRouter } from "./channelRouter";
 import { CFCore } from "./lib/cfCore";
 import { NodeApiClient } from "./node";
-
 
 export type BigNumber = utils.BigNumber;
 export const BigNumber = utils.BigNumber;
@@ -48,15 +48,14 @@ export interface ClientOptions {
 export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
   channelRouter: ChannelRouter;
+  config: GetConfigResponse;
   contract?: MultisigState;
+  ethProvider: providers.JsonRpcProvider;
   messaging: IMessagingService;
   multisigAddress: string;
   network: utils.Network; // TODO: delete! use bos branch!
   node: NodeApiClient;
-  nodePublicIdentifier: string;
-  ethProvider: providers.JsonRpcProvider;
   store: CFCoreTypes.IStoreService;
-  contractAddresses: ContractAddresses;
 };
 
 // TODO: define properly!!
