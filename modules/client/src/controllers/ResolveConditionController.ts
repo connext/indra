@@ -1,4 +1,5 @@
 import {
+  ConnextEvents,
   convert,
   LinkedTransferParameters,
   ResolveConditionParameters,
@@ -78,6 +79,8 @@ export class ResolveConditionController extends AbstractController {
     // convert and validate
     const { paymentId, preImage } = params;
 
+    this.connext.emit("RECIEVE_TRANSFER_STARTED", { paymentId });
+
     // convert and validate
     const { assetId, amount } = await this.node.fetchLinkedTransfer(params.paymentId);
     const amountBN = bigNumberify(amount);
@@ -88,7 +91,12 @@ export class ResolveConditionController extends AbstractController {
 
     // TODO: dont listen to linked transfer app in default listener, only listen for it here
 
-    await this.node.resolveLinkedTransfer(paymentId, preImage);
+    try {
+      await this.node.resolveLinkedTransfer(paymentId, preImage);
+    } catch (e) {
+      this.connext.emit("RECIEVE_TRANSFER_FAILED", { paymentId });
+      throw e;
+    }
 
     // sanity check, free balance increased by payment amount
     const postTransferBal = await this.connext.getFreeBalance(assetId);
@@ -104,6 +112,8 @@ export class ResolveConditionController extends AbstractController {
           "before transfer..... That's not great..",
       );
     }
+
+    this.connext.emit("RECIEVE_TRANSFER_FINISHED", { paymentId });
 
     return {
       freeBalance: await this.connext.getFreeBalance(assetId),
