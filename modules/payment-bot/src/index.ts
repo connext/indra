@@ -288,16 +288,11 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
     console.info(`Waiting ${interval} more seconds for channel to be available`);
     await new Promise((res: any): any => setTimeout(() => res(), interval * 1000));
   }
-  console.info(`Channel is available!`);
-
-  console.info(`Channel is available!`);
-
   await client.addPaymentProfile({
     amountToCollateralize: parseEther("0.1").toString(),
     assetId: AddressZero,
     minimumMaintainedCollateral: parseEther("0.01").toString(),
   });
-
   if (assetId) {
     await client.addPaymentProfile({
       amountToCollateralize: parseEther("10").toString(),
@@ -305,6 +300,7 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
       minimumMaintainedCollateral: parseEther("5").toString(),
     });
   }
+  console.info(`Channel is available!`);
   registerClientListeners();
 }
 
