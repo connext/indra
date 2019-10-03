@@ -49,6 +49,7 @@ proxy_image="${project}_proxy:dev"
 redis_image=redis:5-alpine
 redis_url="redis://redis:6379"
 relay_image="${project}_relay"
+pisa_image="pisaresearch/pisa:v0.1.4-connext-beta.0"
 
 node_port=8080
 nats_port=4222
@@ -122,6 +123,28 @@ services:
       - "80:80"
     volumes:
       - certs:/etc/letsencrypt
+  
+  pisa:
+    image: $pisa_image
+    ports:
+      - "5487:3000"
+    entrypoint: >-
+      node ./build/src/startUp.js 
+      --json-rpc-url $eth_rpc_url 
+      --host-name 0.0.0.0 
+      --host-port 3000 
+      --responder-key 0x388c684f0ba1ef5017716adb5d21a053ea8e90277d0868337519f97bede61418 
+      --receipt-key 0x388c684f0ba1ef5017716adb5d21a053ea8e90277d0868337519f97bede61418
+      --db-dir ./db
+      --loglevel info
+      --pisa-contract-address 0x0000000000000000000000000000000000000000 
+      --instance-name connext-test
+      --rate-limit-user-window-ms 1000
+      --rate-limit-user-max 100
+      --rate-limit-global-window-ms 1000
+      --rate-limit-global-max 100
+    networks:
+      - $project
 
   daicard:
     image: $daicard_devserver_image

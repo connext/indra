@@ -24,12 +24,15 @@ import { SettingsCard } from "./components/settingsCard";
 import { SetupCard } from "./components/setupCard";
 import { SupportCard } from "./components/supportCard";
 
-import { Currency, store, minBN, toBN, tokenToWei, weiToToken } from "./utils";
+import { Currency, storeFactory, minBN, toBN, tokenToWei, weiToToken } from "./utils";
+import { PisaClient } from "pisa-client";
 
 // Optional URL overrides for custom urls
 const overrides = {
   nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE,
   ethProviderUrl: process.env.REACT_APP_ETH_URL_OVERRIDE,
+  pisaUrl: process.env.PISA_URL_OVERRIDE,
+  pisaContractAddress: process.env.PISA_CONTRACT_ADDRESS_OVERRIDE,
 };
 
 // Constants for channel max/min - this is also enforced on the hub
@@ -136,6 +139,15 @@ class App extends React.Component {
     const ethprovider = new eth.providers.JsonRpcProvider(ethProviderUrl);
     const cfPath = "m/44'/60'/0'/25446";
     const cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
+    const pisaClient = new PisaClient(
+      overrides.pisaUrl || `http://127.17.0.1:5487`,
+      overrides.pisaContractAddress || "0x0000000000000000000000000000000000000000",
+    );
+    const store = storeFactory({
+      provider: new eth.providers.JsonRpcProvider(ethUrl),
+      wallet: cfWallet,
+      pisaClient: pisaClient,
+    });
 
     const channel = await connext.connect({
       ethProviderUrl,

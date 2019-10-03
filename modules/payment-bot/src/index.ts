@@ -8,13 +8,15 @@ import {
   LinkedTransferToRecipientParameters,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
+import { Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { formatEther, hexlify, parseEther, randomBytes } from "ethers/utils";
+import { formatEther, HDNode, hexlify, parseEther, randomBytes } from "ethers/utils";
+import PisaClient from "pisa-client";
 
 import { registerClientListeners } from "./bot";
 import { config } from "./config";
-import { store } from "./store";
+import { Store } from "./store";
 import { logEthFreeBalance } from "./utils";
 
 const replaceBN = (key: string, value: any): any =>
@@ -253,7 +255,7 @@ async function run(): Promise<void> {
 
   if (config.restore) {
     console.log(`Restoring states from the node with mnemonic: ${config.restore}`);
-    client = await client.restoreStateFromNode(config.restore);
+    client = await client.restoreState(config.restore);
   }
 
   exitOrLeaveOpen(config);
@@ -261,6 +263,11 @@ async function run(): Promise<void> {
 }
 
 async function getOrCreateChannel(assetId?: string): Promise<void> {
+  const provider = new JsonRpcProvider(config.ethProviderUrl);
+  const wallet = new Wallet(HDNode.fromMnemonic(config.mnemonic).derivePath("m/44'/60'/0'/25446"));
+  const pisaClient = new PisaClient(config.pisaUrl, config.pisaContractAddress);
+  const store = new Store({ provider, wallet, pisaClient });
+
   const connextOpts: connext.ClientOptions = {
     ethProviderUrl: config.ethProviderUrl,
     logLevel: config.logLevel,

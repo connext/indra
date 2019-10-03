@@ -53,5 +53,7 @@ export const config: any = {
   logLevel: 2,
   mnemonic: process.env.MNEMONIC!,
   nodeUrl: process.env.NODE_URL!,
+  pisaContractAddress: process.env.PISA_CONTRACT_ADDRESS!,
+  pisaUrl: process.env.PISA_URL!,
   ...program,
 };

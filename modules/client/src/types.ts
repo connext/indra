@@ -9,7 +9,7 @@ import {
   MultisigState,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
-import { providers, utils } from "ethers";
+import { providers, utils, Wallet } from "ethers";
 
 import { CFCore } from "./lib/cfCore";
 import { NodeApiClient } from "./node";
@@ -34,7 +34,7 @@ export interface ClientOptions {
   // used when signing applications
   keyGen?: () => Promise<string>; // TODO: what will the type look like?
   safeSignHook?: (state: ChannelState | AppState) => Promise<string>;
-  store: CFCoreTypes.IStoreService;
+  store: PisaStore;
   // TODO: state: string?
   logLevel?: number; // see logger.ts for meaning, optional
 
@@ -42,6 +42,20 @@ export interface ClientOptions {
   // nats communication config, client must provide
   natsClusterId?: string;
   natsToken?: string;
+}
+
+interface PisaStore extends CFCoreTypes.IStoreService {
+  set(
+    pairs: {
+      path: string;
+      value: any;
+    }[],
+    allowDelete?: Boolean,
+    updatePisa?: Boolean,
+  ): Promise<void>;
+
+  restore(): Promise<{ path: string; value: any }[]>;
+  reset(wallet?: Wallet): Promise<void>;
 }
 
 export type InternalClientOptions = ClientOptions & {
@@ -54,7 +68,7 @@ export type InternalClientOptions = ClientOptions & {
   multisigAddress: string;
   network: utils.Network; // TODO: delete! use bos branch!
   node: NodeApiClient;
-  store: CFCoreTypes.IStoreService;
+  store: PisaStore;
 };
 
 // TODO: define properly!!

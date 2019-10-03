@@ -35,7 +35,7 @@ import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-
 import { Address, AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
-import { Contract, providers } from "ethers";
+import { Contract, providers, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import {
   BigNumber,
@@ -109,7 +109,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // Note: added this to the client since this is required for the cf module to work
   // generate extended private key from mnemonic
   const extendedXpriv = fromMnemonic(mnemonic).extendedKey;
-  await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }]);
+  await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }], undefined, false);
 
   // create a new node api instance
   // TODO: use local storage for default key value setting!!
@@ -258,8 +258,8 @@ export abstract class ConnextChannel {
     return await this.internal.conditionalTransfer(params);
   };
 
-  public restoreStateFromNode = async (mnemonic: string): Promise<void> => {
-    return await this.internal.restoreStateFromNode(mnemonic);
+  public restoreState = async (mnemonic: string): Promise<ConnextInternal> => {
+    return await this.internal.restoreState(mnemonic);
   };
 
   ///////////////////////////////////
@@ -547,10 +547,20 @@ export class ConnextInternal extends ConnextChannel {
     return await this.conditionalTransferController.conditionalTransfer(params);
   };
 
-  public restoreStateFromNode = async (mnemonic: string): Promise<any> => {
-    const hdNode = fromMnemonic(mnemonic);
-    const xpriv = hdNode.extendedKey;
-    const xpub = hdNode.derivePath("m/44'/60'/0'/25446").neuter().extendedKey;
+  public restoreStateFromBackup = async (xpub: string, wallet: Wallet): Promise<boolean> => {
+    const restoreStates = await this.opts.store.restore();
+    const multisigAddress = await this.getMultisigAddressfromXpub(xpub);
+    const relevantPair = restoreStates.find(
+      (p: { path: string; value: any }) => p.path === `store/${xpub}/channel/${multisigAddress}`,
+    );
+    if (!relevantPair) return false;
+
+    this.logger.info(`Found state to restore from backup: ${JSON.stringify(relevantPair)}`);
+    await this.opts.store.set([relevantPair], undefined, false);
+    return true;
+  };
+
+  public restoreStateFromNode = async (xpub: string): Promise<void> => {
     const states = await this.node.restoreStates(xpub);
     this.logger.info(`Found states to restore: ${JSON.stringify(states)}`);
 
@@ -563,8 +573,27 @@ export class ConnextInternal extends ConnextChannel {
         value: state.value[state.path],
       };
     });
-    this.opts.store.reset();
-    await this.opts.store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }, ...actualStates]);
+    await this.opts.store.set(actualStates, undefined, false);
+  };
+
+  public restoreState = async (mnemonic: string): Promise<ConnextInternal> => {
+    const hdNode = fromMnemonic(mnemonic);
+    const xpriv = hdNode.extendedKey;
+    const xpub = hdNode.derivePath("m/44'/60'/0'/25446").neuter().extendedKey;
+    const wallet = new Wallet(hdNode.derivePath("m/44'/60'/0'/25446"));
+
+    // always set the mnemonic in the store
+    this.opts.store.reset(wallet);
+    await this.opts.store.set(
+      [{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }],
+      undefined,
+      false,
+    );
+
+    // try to recover the rest of the stateS
+    const restoredFromPisa = await this.restoreStateFromBackup(xpub, wallet);
+    if (!restoredFromPisa) await this.restoreStateFromNode(xpub);
+
     // recreate client with new mnemonic
     const client = await connect({ ...this.opts, mnemonic });
     return client;
