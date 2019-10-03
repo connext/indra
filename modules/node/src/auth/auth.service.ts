@@ -42,7 +42,7 @@ export class AuthService {
       if (!isValidHex(multisig, 20)) {
         const authRes = badSubject(`Subject's last item isn't a valid eth address: ${subject}`);
         if (authRes) {
-          logger.error(`Auth failed (${authRes}) but we're just gonna ignore that for now..`);
+          logger.error(`Auth failed (${authRes.err}) but we're just gonna ignore that for now..`);
           return callback(multisig, data);
         }
       }
@@ -71,7 +71,12 @@ export class AuthService {
         return badSubject(`Subject's last item isn't a valid xpub: ${subject}`);
       }
       const xpubAddress = HDNode.fromExtendedKey(xpub).address;
-      return this.verifySig(xpubAddress, data) || callback(xpub, data);
+      const authRes = this.verifySig(xpubAddress, data);
+      if (authRes && subject.startsWith("channel.restore-states")) {
+        logger.error(`Auth failed (${authRes.err}) but we're just gonna ignore that for now..`);
+        return callback(xpub, data);
+      }
+      return authRes || callback(xpub, data);
     };
   };
 

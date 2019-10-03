@@ -187,11 +187,6 @@ proxy-prod: daicard-prod $(shell find $(proxy) $(find_options))
 	docker build --file $(proxy)/prod.dockerfile --tag $(project)_proxy:latest .
 	$(log_finish) && touch $(flags)/$@
 
-redis-lock: node-modules $(shell find $(redis-lock)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/redis-lock && npm run build"
-	$(log_finish) && touch $(flags)/$@
-
 types: node-modules messaging $(shell find $(types)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/types && npm run build"
