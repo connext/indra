@@ -3,15 +3,11 @@ import { arrayify, HDNode, hexlify, randomBytes, verifyMessage } from "ethers/ut
 import { Redis } from "ioredis";
 
 import { RedisProviderId } from "../constants";
-import { CLogger } from "../util";
-import { isXpub } from "../validator";
+import { CLogger, isValidHex, isXpub } from "../util";
 
 const logger = new CLogger("AuthService");
 
-const isValidHex = (hex: string, length: number): boolean =>
-  isHexString(hex) && arrayify(hex).length === length;
-
-const nonceExpiry = 1000 * 60 * 60 * 2; // 2 hours
+const nonceExpiry = 1000 * 60 * 60 * 2;
 
 @Injectable()
 export class AuthService {

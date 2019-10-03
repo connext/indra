@@ -19,11 +19,11 @@ import {
   bigNumberifyObj,
   CLogger,
   freeBalanceAddressFromXpub,
+  isEthAddress,
   normalizeEthAddresses,
   stringify,
 } from "../util";
 import { ProposeMessage } from "../util/cfCore";
-import { isEthAddress } from "../validator";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";

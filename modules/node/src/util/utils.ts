@@ -1,6 +1,6 @@
 import { bigNumberify, getAddress } from "ethers/utils";
 
-import { isEthAddress } from "../validator";
+import { isEthAddress } from "./validate";
 
 export const stringify = (obj: object, space: number = 0): string =>
   JSON.stringify(obj, replaceBN, space);
