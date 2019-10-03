@@ -12,7 +12,12 @@ export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
 export type SolidityValueType = any; // FIXME: use cf type
 
-export const ConnextEvents = CFCoreTypes.EventName;
+export const ConnextEvents = {
+  RECIEVE_TRANSFER_FAILED: "receiveTransferFailedEvent",
+  RECIEVE_TRANSFER_FINISHED: "receiveTransferFinishedEvent",
+  RECIEVE_TRANSFER_STARTED: "receiveTransferStartedEvent",
+};
+export type ConnextEvent = keyof typeof ConnextEvents;
 
 export const ConnextNodeStorePrefix = "INDRA_NODE_CF_CORE";
 

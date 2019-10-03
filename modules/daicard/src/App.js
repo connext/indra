@@ -101,6 +101,9 @@ class App extends React.Component {
       maxDeposit: null,
       minDeposit: null,
       pending: { type: "null", complete: true, closed: true },
+      receivingTransferCompleted: false,
+      receivingTransferFailed: false,
+      receivingTransferStarted: false,
       sendScanArgs: { amount: null, recipient: null },
       swapRate,
       token: null,
@@ -167,6 +170,21 @@ class App extends React.Component {
       if (!res || !res.swapRate) return;
       console.log(`Got swap rate upate: ${this.state.swapRate} -> ${res.swapRate}`);
       this.setState({ swapRate: res.swapRate });
+    })
+
+    channel.on("RECIEVE_TRANSFER_STARTED", data => {
+      console.log('Received RECIEVE_TRANSFER_STARTED event: ', data);
+      this.setState({ receivingTransferStarted: true })
+    })
+
+    channel.on("RECIEVE_TRANSFER_FINISHED", data => {
+      console.log('Received RECIEVE_TRANSFER_FINISHED event: ', data);
+      this.setState({ receivingTransferCompleted: true })
+    })
+
+    channel.on("RECIEVE_TRANSFER_FAILED", data => {
+      console.log('Received RECIEVE_TRANSFER_FAILED event: ', data);
+      this.setState({ receivingTransferFailed: true })
     })
 
     this.setState({
@@ -429,10 +447,6 @@ class App extends React.Component {
     return path;
   }
 
-  closeModal = async () => {
-    await this.setState({ loadingConnext: false });
-  }
-
   render() {
     const {
       address,
@@ -454,8 +468,29 @@ class App extends React.Component {
             <MySnackbar
               variant="warning"
               openWhen={this.state.loadingConnext}
-              onClose={() => this.closeModal()}
+              onClose={() => this.setState({ loadingConnext: false })}
               message="Starting Channel Controllers.."
+              duration={30 * 60 * 1000}
+            />
+            <MySnackbar
+              variant="info"
+              openWhen={this.state.receivingTransferStarted}
+              onClose={() => this.setState({ receivingTransferStarted: false })}
+              message="Receiving Transfer..."
+              duration={30 * 60 * 1000}
+            />
+            <MySnackbar
+              variant="success"
+              openWhen={this.state.receivingTransferCompleted}
+              onClose={() => this.setState({ receivingTransferCompleted: false })}
+              message="Receiving Transfer..."
+              duration={30 * 60 * 1000}
+            />
+            <MySnackbar
+              variant="error"
+              openWhen={this.state.receivingTransferFailed}
+              onClose={() => this.setState({ receivingTransferFailed: false })}
+              message="Receiving Transfer..."
               duration={30 * 60 * 1000}
             />
             <AppBarComponent address={address} />
