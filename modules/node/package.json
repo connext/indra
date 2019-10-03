@@ -21,7 +21,6 @@
   },
   "dependencies": {
     "@connext/messaging": "0.1.14",
-    "@connext/redis-lock": "0.1.14",
     "@connext/types": "0.1.14",
     "@counterfactual/node": "0.2.82",
     "@counterfactual/types": "0.0.43",
