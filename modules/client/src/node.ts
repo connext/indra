@@ -244,7 +244,7 @@ export class NodeApiClient implements INodeApiClient {
         const nonce = await this.send("auth.getNonce", { address: this.wallet.address });
         const sig = await this.wallet.signMessage(arrayify(nonce));
         const token = `${nonce}:${sig}`;
-        this.log.info(`Got new token: ${token}`);
+        this.log.info(`Got new token for ${this.wallet.address}: ${token}`);
         return resolve(token);
       },
     );

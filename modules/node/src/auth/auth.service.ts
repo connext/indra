@@ -40,11 +40,26 @@ export class AuthService {
     return async (subject: string, data: { token: string }): Promise<string> => {
       const multisig = subject.split(".").pop(); // last item of subject is lock name
       if (!isValidHex(multisig, 20)) {
-        return badSubject(`Subject's last item isn't a valid eth address`);
+        const authRes = badSubject(`Subject's last item isn't a valid eth address: ${subject}`);
+        if (authRes) {
+          logger.error(`Auth failed (${authRes}) but we're just gonna ignore that for now..`);
+          return callback(multisig, data);
+        }
       }
-      const { userPublicIdentifier } = await this.channelRepo.findByMultisigAddress(multisig);
+      const channel = await this.channelRepo.findByMultisigAddress(multisig);
+      logger.log(`Got channel ${multisig}: ${JSON.stringify(channel)}`);
+      if (!channel) {
+        logger.error(`Acquiring a lock for a multisig w/out a channel: ${subject}`);
+        return callback(multisig, data);
+      }
+      const { userPublicIdentifier } = channel;
       const xpubAddress = HDNode.fromExtendedKey(userPublicIdentifier).address;
-      return this.verifySig(xpubAddress, data) || callback(multisig, data);
+      logger.debug(`Got addres ${xpubAddress} from xpub ${userPublicIdentifier}`);
+      const authRes = this.verifySig(xpubAddress, data);
+      if (authRes) {
+        logger.error(`Auth failed (${authRes.err}) but we're just gonna ignore that for now..`);
+      }
+      return callback(multisig, data);
     };
   };
 
@@ -60,7 +75,7 @@ export class AuthService {
     };
   };
 
-  verifySig = (xpubAddress: string, data: { token: string }): string | undefined => {
+  verifySig = (xpubAddress: string, data: { token: string }): { err: string } | undefined => {
     // Get & validate the nonce + signature from provided token
     if (!data || !data.token || data.token.indexOf(":") === -1) {
       return badToken(`Missing or malformed token in data: ${data || data.token}`);
@@ -78,11 +93,11 @@ export class AuthService {
     }
     const { address, expiry } = this.nonces[nonce];
     if (xpubAddress !== address) {
-      return badToken(`Given nonce is for address ${address} but xpub maps to ${xpubAddress}`);
+      return badToken(`Nonce ${nonce} for address ${address}, but xpub maps to ${xpubAddress}`);
     }
     if (Date.now() >= expiry) {
       delete this.nonces[nonce];
-      return badToken(`Nonce for ${address} expired at ${expiry}`);
+      return badToken(`Nonce ${nonce} for ${address} expired at ${expiry}`);
     }
 
     // Cache sig recovery calculation
