@@ -2,10 +2,10 @@ import * as connext from "@connext/client";
 import {
   DepositParameters,
   LinkedTransferParameters,
+  LinkedTransferToRecipientParameters,
   makeChecksum,
   ResolveLinkedTransferParameters,
   WithdrawParameters,
-  LinkedTransferToRecipientParameters,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { AddressZero } from "ethers/constants";

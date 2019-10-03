@@ -12,6 +12,7 @@ import {
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { TransactionResponse } from "ethers/providers";
+import { arrayify } from "ethers/utils";
 import { Wallet } from "ethers/wallet";
 import uuid = require("uuid");
 
@@ -220,7 +221,7 @@ export class NodeApiClient implements INodeApiClient {
     return new Promise(
       async (resolve: any, reject: any): Promise<any> => {
         const nonce = await this.send("auth.getNonce", { address: this.wallet.address });
-        const sig = await this.wallet.signMessage(nonce);
+        const sig = await this.wallet.signMessage(arrayify(nonce));
         const token = `${nonce}:${sig}`;
         this.log.info(`Got new token: ${token}`);
         return resolve(token);
@@ -240,19 +241,27 @@ export class NodeApiClient implements INodeApiClient {
     };
     if (guardedSubjects.includes(subject.split(".")[0])) {
       if (!this.token) {
-        this.log.warn(`Didn't have an auth token while sending, getting a new one.`);
+        this.log.warn(`Didn't get an auth token before sending, getting a new one.`);
         this.token = this.getAuthToken();
       }
       payload.token = await this.token;
     }
-    const msg = await this.messaging.request(subject, API_TIMEOUT, payload);
+    let msg = await this.messaging.request(subject, API_TIMEOUT, payload);
+    // console.log(`Got msg: ${JSON.stringify(msg, replaceBN, 2)}`);
+    let error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
+    if (error && error.startsWith("Invalid token")) {
+      this.log.warn(`Auth error, token might have expired. Let's get a fresh token & try again.`);
+      this.token = this.getAuthToken();
+      payload.token = await this.token;
+      msg = await this.messaging.request(subject, API_TIMEOUT, payload);
+      error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
+    }
     if (!msg.data) {
       this.log.info(`Maybe this message is malformed: ${JSON.stringify(msg, replaceBN, 2)}`);
       return undefined;
     }
     const { err, response, ...rest } = msg.data;
-    const responseErr = response && response.err;
-    if (err || responseErr) {
+    if (err || error) {
       throw new Error(`Error sending request. Message: ${JSON.stringify(msg, replaceBN, 2)}`);
     }
     const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
