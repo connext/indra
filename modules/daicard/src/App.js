@@ -144,7 +144,7 @@ class App extends React.Component {
       overrides.pisaContractAddress || "0x0000000000000000000000000000000000000000",
     );
     const store = storeFactory({
-      provider: new eth.providers.JsonRpcProvider(ethUrl),
+      provider: new eth.providers.JsonRpcProvider(ethProviderUrl),
       wallet: cfWallet,
       pisaClient: pisaClient,
     });
