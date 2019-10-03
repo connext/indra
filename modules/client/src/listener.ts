@@ -213,12 +213,13 @@ export class ConnextListener extends EventEmitter {
     });
 
     this.channelRouter.on(CFCoreTypes.RpcMethodName.UNINSTALL, (data: any) => {
+      const result = data.result.result;
       this.log.debug(
         `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(result)}`,
       );
       this.connext.messaging.publish(
-        `indra.client.${this.channelRouter.publicIdentifier}.uninstall.${data.result.result.appInstanceId}`,
-        JSON.stringify(data.result.result),
+        `indra.client.${this.channelRouter.publicIdentifier}.uninstall.${result.appInstanceId}`,
+        JSON.stringify(result),
       );
     });
   };

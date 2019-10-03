@@ -15,7 +15,6 @@ import { ChannelRouter } from "./channelRouter";
 import { CFCore } from "./lib/cfCore";
 import { NodeApiClient } from "./node";
 
-
 export type BigNumber = utils.BigNumber;
 export const BigNumber = utils.BigNumber;
 
@@ -49,7 +48,6 @@ export interface ClientOptions {
 export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
   channelRouter: ChannelRouter;
-  cfCore: CFCore;
   config: GetConfigResponse;
   contract?: MultisigState;
   ethProvider: providers.JsonRpcProvider;

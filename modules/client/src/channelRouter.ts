@@ -4,8 +4,8 @@ import {
   ChannelProviderConfig,
   makeChecksum,
   makeChecksumOrEthAddress,
-  RpcType,
   RpcConnection,
+  RpcType,
 } from "@connext/types";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { BigNumber } from "ethers/utils";
@@ -53,6 +53,12 @@ export class ChannelRouter extends EventEmitter {
       assetId: makeChecksum(assetId),
       multisigAddress,
       notifyCounterparty,
+    });
+  };
+
+  public getStateChannel = async (): Promise<{ data: any }> => {
+    return await this._send("chan_getStateChannel" as any, {
+      multisigAddress: this.multisigAddress,
     });
   };
 

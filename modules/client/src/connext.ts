@@ -34,7 +34,7 @@ import {
 } from "@connext/types";
 import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
 import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
-import { Address, AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
+import { Address, AppInstanceInfo, Node as CFCoreTypes, AppInstanceJson } from "@counterfactual/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
 import { Contract, providers } from "ethers";
@@ -156,7 +156,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     multisigAddress = channelProvider.config.multisigAddress;
   } else if (mnemonic) {
     // generate extended private key from mnemonic
-    const extendedXpriv = HDNode.fromMnemonic(mnemonic).extendedKey;
+    const extendedXpriv = fromMnemonic(mnemonic).extendedKey;
     await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }]);
     // create new cfCore to inject into internal instance
     logger.info("creating new cf module");
@@ -210,8 +210,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const client = new ConnextInternal({
     appRegistry,
     channelRouter,
-    contractAddresses: config.contractAddresses,
-    cfCore,
     config,
     ethProvider,
     messaging,
@@ -524,9 +522,8 @@ export class ConnextInternal extends ConnextChannel {
     this.freeBalanceAddress = this.channelRouter.freeBalanceAddress;
     this.network = opts.network;
     this.node = opts.node;
-    this.cfCore = opts.cfCore;
-    this.freeBalanceAddress = this.cfCore.freeBalanceAddress;
-    this.publicIdentifier = this.cfCore.publicIdentifier;
+    this.freeBalanceAddress = this.channelRouter.freeBalanceAddress;
+    this.publicIdentifier = this.channelRouter.publicIdentifier;
     this.multisigAddress = this.opts.multisigAddress;
     this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
     this.logger = new Logger("ConnextInternal", opts.logLevel);
@@ -907,7 +904,7 @@ export class ConnextInternal extends ConnextChannel {
   // NODE METHODS
 
   public verifyAppSequenceNumber = async (): Promise<any> => {
-    const { data: sc } = await this.getStateChannel();
+    const { data: sc } = await this.channelRouter.getStateChannel();
     let appSequenceNumber: number;
     try {
       appSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
