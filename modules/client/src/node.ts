@@ -21,11 +21,12 @@ import { replaceBN } from "./lib/utils";
 import { NodeInitializationParameters } from "./types";
 
 // Include our access token when interacting with these subjects
-const guardedSubjects = ["channel", "transfer"];
+const guardedSubjects = ["channel", "lock", "transfer"];
 
 const API_TIMEOUT = 35_000;
 
 export interface INodeApiClient {
+  acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;
   addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile>;
   appRegistry(appDetails?: {
     name: SupportedApplication;
@@ -75,6 +76,26 @@ export class NodeApiClient implements INodeApiClient {
 
   ////////////////////////////////////////
   // PUBLIC
+
+  async acquireLock(
+    lockName: string,
+    callback: (...args: any[]) => any,
+    timeout: number,
+  ): Promise<any> {
+    const lockValue = await this.send(`lock.acquire.${lockName}`, { lockTTL: timeout });
+    this.log.info(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
+    let retVal: any;
+    try {
+      retVal = await callback();
+    } catch (e) {
+      this.log.error("Failed to execute callback while lock is held");
+      this.log.error(e);
+    } finally {
+      await this.send(`lock.release.${lockName}`, { lockValue });
+      this.log.info(`Released lock at ${Date.now()} for ${lockName}`);
+    }
+    return retVal;
+  }
 
   public async appRegistry(appDetails?: {
     name: SupportedApplication;
