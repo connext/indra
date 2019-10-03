@@ -20,7 +20,6 @@ database=$(cwd)/modules/database
 messaging=$(cwd)/modules/messaging
 node=$(cwd)/modules/node
 proxy=$(cwd)/modules/proxy
-redis-lock=$(cwd)/modules/redis-lock
 types=$(cwd)/modules/types
 
 # Setup docker run time
@@ -158,7 +157,7 @@ messaging: node-modules $(shell find $(messaging)/src $(find_options))
 	$(docker_run) "cd modules/messaging && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-node: contracts types messaging redis-lock $(shell find $(node)/src $(node)/migrations $(find_options))
+node: contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build"
 	$(log_finish) && touch $(flags)/$@

@@ -2,7 +2,7 @@
 set -e
 
 # This is the order they'll be published in
-packages="messaging,types,redis-lock,client"
+packages="messaging,types,client"
 project="indra"
 
 ########################################
