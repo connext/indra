@@ -1,5 +1,4 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { ProxyLockService } from "@connext/proxy-lock";
 import {
   AppActionBigNumber,
   AppRegistry,
@@ -35,7 +34,7 @@ import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-
 import { Address, AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
-import { Contract, providers } from "ethers";
+import { Contract, providers, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import {
   BigNumber,
@@ -116,6 +115,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const nodeApiConfig = {
     logLevel,
     messaging,
+    wallet: Wallet.fromMnemonic(mnemonic, "m/44'/60'/0'/25446"),
   };
   logger.info("creating node api client");
   const node: NodeApiClient = new NodeApiClient(nodeApiConfig);
@@ -129,7 +129,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   // create the lock service for cfCore
   logger.info("using node's proxy lock service");
-  const lockService: ProxyLockService = new ProxyLockService(messaging);
+  const lockService: CFCoreTypes.ILockService = {
+    acquireLock: node.acquireLock.bind(node),
+  };
 
   // create new cfCore to inject into internal instance
   logger.info("creating new cf module");
