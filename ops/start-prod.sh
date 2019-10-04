@@ -184,6 +184,7 @@ services:
       MESSAGING_URL: http://relay:4223
       HASURA_URL: http://hasura:8080
       MODE: prod
+      PISA_URL: $INDRA_PISA_URL
     ports:
       - "80:80"
       - "443:443"
