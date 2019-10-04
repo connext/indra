@@ -138,7 +138,7 @@ then
         --rate-limit-global-window-ms 1000
         --rate-limit-global-max 100
   "
-  INDRA_ETH_PROVIDER="http://ethprovider:8545"
+  INDRA_PISA_URL="http://pisa:5487"
 else echo "Eth network \"$chainId\" is not supported for $INDRA_MODE-mode deployments" && exit 1
 fi
 
