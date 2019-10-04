@@ -59,6 +59,7 @@ jobs:
               git reset --hard $CIRCLE_SHA1
               export INDRA_MODE="staging"
               export INDRA_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
+              export INDRA_PISA_URL=$RINKEBY_PISA_URL
               export INDRA_DOMAINNAME="$STAGING_DOMAINNAME"
               make restart-prod
               docker container prune -f
@@ -80,6 +81,7 @@ jobs:
               git reset --hard $CIRCLE_SHA1
               export INDRA_MODE="prod"
               export INDRA_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
+              export INDRA_PISA_URL=$RINKEBY_PISA_URL
               export INDRA_DOMAINNAME="$RINKEBY_DOMAINNAME"
               make restart-prod
               docker container prune -f
@@ -94,6 +96,7 @@ jobs:
               git reset --hard $CIRCLE_SHA1
               export INDRA_MODE="prod"
               export INDRA_ETH_PROVIDER=$MAINNET_ETH_PROVIDER
+              export INDRA_PISA_URL=$MAINNET_PISA_URL
               export INDRA_DOMAINNAME="$MAINNET_DOMAINNAME"
               make restart-prod
               docker container prune -f
