@@ -253,7 +253,7 @@ async function run(): Promise<void> {
 
   if (config.restore) {
     console.log(`Restoring states from the node with mnemonic: ${config.restore}`);
-    client = await client.restoreState(config.restore, false);
+    client = await client.restoreState(config.restore);
   }
 
   exitOrLeaveOpen(config);
