@@ -201,6 +201,8 @@ volumes:
 services:
   $ethprovider_service
 
+  $pisa_service
+
   proxy:
     image: $proxy_image
     environment:
