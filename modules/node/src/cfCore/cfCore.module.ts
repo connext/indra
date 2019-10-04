@@ -3,6 +3,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { ConfigModule } from "../config/config.module";
 import { DatabaseModule } from "../database/database.module";
+import { LockModule } from "../lock/lock.module";
 import { MessagingModule } from "../messaging/messaging.module";
 
 import { CFCoreController } from "./cfCore.controller";
@@ -18,6 +19,7 @@ import { CFCoreService } from "./cfCore.service";
     DatabaseModule,
     MessagingModule,
     TypeOrmModule.forFeature([CFCoreRecordRepository]),
+    LockModule,
   ],
   providers: [cfCoreProviderFactory, CFCoreService],
 })
