@@ -18,11 +18,14 @@ ETH_NETWORK="${1:-kovan}"
 log_level=3
 
 if [[ "$ETH_NETWORK" == "rinkeby" ]]
-then eth_rpc_url="https://rinkeby.infura.io/metamask"
+then 
+  pisa_url="https://connext-rinkeby.pisa.watch/"
+  eth_rpc_url="https://rinkeby.infura.io/metamask"
 elif [[ "$ETH_NETWORK" == "kovan" ]]
 then eth_rpc_url="https://kovan.infura.io/metamask"
 elif [[ "$ETH_NETWORK" == "ganache" ]]
 then
+  pisa_url="http://pisa:5487"
   eth_rpc_url="http://ethprovider:8545"
   make deployed-contracts
 fi
@@ -89,7 +92,7 @@ then
   echo "Created ATTACHABLE network with id $id"
 fi
 
-number_of_services=9 # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services=10 # NOTE: Gotta update this manually when adding/removing services :(
 
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
@@ -117,6 +120,7 @@ services:
       MESSAGING_URL: http://relay:4223
       HASURA_URL: http://hasura:8080
       MODE: dev
+      PISA_URL: $pisa_url
     networks:
       - $project
     ports:

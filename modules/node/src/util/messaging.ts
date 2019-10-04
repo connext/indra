@@ -1,9 +1,8 @@
 import { IMessagingService } from "@connext/messaging";
 import { RpcException } from "@nestjs/microservices";
 
-import { isXpub } from "../validator";
-
 import { CLogger } from "./logger";
+import { isXpub } from "./validate";
 
 const logger = new CLogger("MessagingProvider");
 

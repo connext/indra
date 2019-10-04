@@ -43,14 +43,14 @@ program
   .option("-w, --withdraw <amount>", "Withdrawal amount in Ether units")
   .option("-x, --debug", "output extra debugging")
   .option("-y, --redeem <amount>", "Redeem a linked payment")
-  .option("-z, --restore <mnemonic>", "Restore state from mnemonic using node's records");
+  .option("-z, --restore <mnemonic>", "Restore state from mnemonic using node's records")
+  .option("--log-level <number>", "0: no logs, 3: some logs, 5: all logs,");
 
 program.parse(process.argv);
 
 export const config: any = {
   dbFile: process.env.DB_FILENAME!,
   ethProviderUrl: process.env.ETH_RPC_URL!,
-  logLevel: 2,
   mnemonic: process.env.MNEMONIC!,
   nodeUrl: process.env.NODE_URL!,
   pisaContractAddress: process.env.PISA_CONTRACT_ADDRESS!,

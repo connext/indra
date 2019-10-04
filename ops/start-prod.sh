@@ -113,6 +113,32 @@ then
       - $eth_volume/data
   "
   INDRA_ETH_PROVIDER="http://ethprovider:8545"
+
+  pisa_image="pisaresearch/pisa:v0.1.4-connext-beta.0"
+  pull_if_unavailable "$pisa_image"
+  number_of_services=$(( $number_of_services + 1 ))
+  pisa_service="
+  pisa:
+    image: $pisa_image
+      ports:
+        - "5487:3000"
+      entrypoint: >-
+        node ./build/src/startUp.js 
+        --json-rpc-url $INDRA_ETH_PROVIDER 
+        --host-name 0.0.0.0 
+        --host-port 3000 
+        --responder-key 0x388c684f0ba1ef5017716adb5d21a053ea8e90277d0868337519f97bede61418 
+        --receipt-key 0x388c684f0ba1ef5017716adb5d21a053ea8e90277d0868337519f97bede61418
+        --db-dir ./db
+        --loglevel info
+        --pisa-contract-address 0x0000000000000000000000000000000000000000 
+        --instance-name connext-test
+        --rate-limit-user-window-ms 1000
+        --rate-limit-user-max 100
+        --rate-limit-global-window-ms 1000
+        --rate-limit-global-max 100
+  "
+  INDRA_ETH_PROVIDER="http://ethprovider:8545"
 else echo "Eth network \"$chainId\" is not supported for $INDRA_MODE-mode deployments" && exit 1
 fi
 
@@ -184,6 +210,7 @@ services:
       MESSAGING_URL: http://relay:4223
       HASURA_URL: http://hasura:8080
       MODE: prod
+      PISA_URL: $INDRA_PISA_URL
     ports:
       - "80:80"
       - "443:443"

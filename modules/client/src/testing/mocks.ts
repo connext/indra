@@ -93,6 +93,14 @@ export class MockNodeClientApi implements INodeApiClient {
     this.signature = undefined;
   }
 
+  async acquireLock(
+    lockName: string,
+    callback: (...args: any[]) => any,
+    timeout: number,
+  ): Promise<any> {
+    this.log.info(`acquireLock`);
+  }
+
   // should have keys same as the message passed in to fake messaging client
   // TODO: how well will this work with dynamic paths?
   public static returnValues: any = {

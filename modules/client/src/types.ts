@@ -84,4 +84,5 @@ export interface NodeInitializationParameters {
   logLevel?: number;
   userPublicIdentifier?: string;
   nodePublicIdentifier?: string;
+  wallet?: Wallet;
 }
