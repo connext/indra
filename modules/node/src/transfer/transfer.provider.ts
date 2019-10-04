@@ -4,55 +4,109 @@ import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 import { bigNumberify } from "ethers/utils";
 
+import { AuthService } from "../auth/auth.service";
 import { MessagingProviderId, TransferProviderId } from "../constants";
 import { AbstractMessagingProvider, CLogger, replaceBN } from "../util";
 
+import { LinkedTransfer } from "./transfer.entity";
 import { TransferService } from "./transfer.service";
 
 const logger = new CLogger("TransferMessaging");
 
 export class TransferMessaging extends AbstractMessagingProvider {
-  constructor(messaging: IMessagingService, private readonly transferService: TransferService) {
+  constructor(
+    messaging: IMessagingService,
+    private readonly transferService: TransferService,
+    private readonly authService: AuthService,
+  ) {
     super(messaging);
   }
 
-  async resolveLinkedTransfer(
-    subject: string,
+  async fetchLinkedTransfer(
+    pubId: string,
     data: {
       paymentId: string;
-      preImage: string;
-      amount: string;
-      assetId: string;
     },
-  ): Promise<ResolveLinkedTransferResponse> {
-    logger.log(`Got resolve link request with data: ${JSON.stringify(data, replaceBN, 2)}`);
-    const userPubId = this.getPublicIdentifierFromSubject(subject);
-    const { paymentId, preImage, amount, assetId } = data;
-    if (!paymentId || !preImage || !amount || !assetId) {
+  ): Promise<any> {
+    if (!data.paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${data}`);
     }
-    return await this.transferService.resolveLinkedTransfer(
-      userPubId,
-      paymentId,
-      preImage,
-      bigNumberify(amount),
-      assetId,
-    );
+    logger.log(`Got fetch link request for: ${data.paymentId}`);
+    return await this.transferService.fetchLinkedTransfer(data.paymentId);
   }
 
-  setupSubscriptions(): void {
-    super.connectRequestReponse("transfer.resolve-linked.>", this.resolveLinkedTransfer.bind(this));
+  async resolveLinkedTransfer(
+    pubId: string,
+    data: { paymentId: string; preImage: string },
+  ): Promise<ResolveLinkedTransferResponse> {
+    logger.log(`Got resolve link request with data: ${JSON.stringify(data, replaceBN, 2)}`);
+    const { paymentId, preImage } = data;
+    if (!paymentId || !preImage) {
+      throw new RpcException(`Incorrect data received. Data: ${data}`);
+    }
+    return await this.transferService.resolveLinkedTransfer(pubId, paymentId, preImage);
+  }
+
+  // TODO: types
+  async setRecipientOnLinkedTransfer(
+    pubId: string,
+    data: {
+      recipientPublicIdentifier: string;
+      linkedHash: string;
+      encryptedPreImage: string;
+    },
+  ): Promise<{ linkedHash: string }> {
+    const { recipientPublicIdentifier, linkedHash, encryptedPreImage } = data;
+    if (!recipientPublicIdentifier) {
+      throw new RpcException(`Incorrect data received. Data: ${data}`);
+    }
+
+    const transfer = await this.transferService.setRecipientAndEncryptedPreImageOnLinkedTransfer(
+      pubId,
+      recipientPublicIdentifier,
+      encryptedPreImage,
+      linkedHash,
+    );
+    return { linkedHash: transfer.linkedHash };
+  }
+
+  async getPendingTransfers(pubId: string, data?: unknown): Promise<{ paymentId: string }[]> {
+    const transfers = await this.transferService.getPendingTransfers(pubId);
+    return transfers.map((transfer: LinkedTransfer) => {
+      const { assetId, amount, encryptedPreImage, linkedHash, paymentId } = transfer;
+      return { assetId, amount: amount.toString(), encryptedPreImage, linkedHash, paymentId };
+    });
+  }
+
+  async setupSubscriptions(): Promise<void> {
+    await super.connectRequestReponse(
+      "transfer.fetch-linked.>",
+      this.authService.useVerifiedPublicIdentifier(this.fetchLinkedTransfer.bind(this)),
+    );
+    await super.connectRequestReponse(
+      "transfer.resolve-linked.>",
+      this.authService.useVerifiedPublicIdentifier(this.resolveLinkedTransfer.bind(this)),
+    );
+    await super.connectRequestReponse(
+      "transfer.set-recipient.>",
+      this.authService.useVerifiedPublicIdentifier(this.setRecipientOnLinkedTransfer.bind(this)),
+    );
+    await super.connectRequestReponse(
+      "transfer.get-pending.>",
+      this.authService.useVerifiedPublicIdentifier(this.getPendingTransfers.bind(this)),
+    );
   }
 }
 
 export const transferProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [MessagingProviderId, TransferService],
+  inject: [MessagingProviderId, TransferService, AuthService],
   provide: TransferProviderId,
   useFactory: async (
     messaging: IMessagingService,
     transferService: TransferService,
+    authService: AuthService,
   ): Promise<void> => {
-    const transfer = new TransferMessaging(messaging, transferService);
+    const transfer = new TransferMessaging(messaging, transferService, authService);
     await transfer.setupSubscriptions();
   },
 };

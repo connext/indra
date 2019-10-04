@@ -1,6 +1,8 @@
 import { RegisteredAppDetails, SupportedApplications } from "@connext/types";
 import { AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
+import EthCrypto from "eth-crypto";
 import { bigNumberify } from "ethers/utils";
+import { fromMnemonic } from "ethers/utils/hdnode";
 import { EventEmitter } from "events";
 
 import { ConnextInternal } from "./connext";
@@ -65,7 +67,7 @@ export class ConnextListener extends EventEmitter {
       // FIXME: type of ProposeMessage should extend CFCore.NodeMessage, which
       // has a from field, but ProposeMessage does not
       if ((data as any).from === this.cfCore.publicIdentifier) {
-        this.log.info(
+        this.log.debug(
           `Received proposal from our own node, doing nothing: ${JSON.stringify(data)}`,
         );
         return;
@@ -164,6 +166,7 @@ export class ConnextListener extends EventEmitter {
 
   public register = async (): Promise<void> => {
     await this.registerAvailabilitySubscription();
+    await this.registerLinkedTransferSubscription();
     this.registerDefaultCfListeners();
     return;
   };
@@ -208,18 +211,19 @@ export class ConnextListener extends EventEmitter {
     });
 
     this.cfCore.on(CFCoreTypes.RpcMethodName.UNINSTALL, (data: any) => {
+      const result = data.result.result;
       this.log.debug(
-        `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(data.result.result)}`,
+        `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(result)}`,
       );
       this.connext.messaging.publish(
-        `indra.client.${this.cfCore.publicIdentifier}.uninstall.${data.result.result.appInstanceId}`,
+        `indra.client.${this.cfCore.publicIdentifier}.uninstall.${result.appInstanceId}`,
         JSON.stringify(data.result.result),
       );
     });
   };
 
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
-    this.log.info(`Emitted ${event} with data ${JSON.stringify(data)} at ${Date.now()}`);
+    this.log.debug(`Emitted ${event} with data ${JSON.stringify(data)} at ${Date.now()}`);
     this.emit(event, data);
   };
 
@@ -324,5 +328,14 @@ export class ConnextListener extends EventEmitter {
       });
     });
     this.log.info(`Connected message pattern "${subject}"`);
+  };
+
+  private registerLinkedTransferSubscription = async (): Promise<void> => {
+    const subject = `transfer.send-async.${this.connext.publicIdentifier}`;
+    await this.connext.messaging.subscribe(subject, async (data: any) => {
+      this.log.info(`Received message for subscription: ${JSON.stringify(data)}`);
+      const { encryptedPreImage, paymentId } = data;
+      await this.connext.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
+    });
   };
 }
