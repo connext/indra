@@ -258,8 +258,11 @@ export abstract class ConnextChannel {
     return await this.internal.conditionalTransfer(params);
   };
 
-  public restoreState = async (mnemonic: string): Promise<ConnextInternal> => {
-    return await this.internal.restoreState(mnemonic);
+  public restoreState = async (
+    mnemonic: string,
+    defaultToHub: boolean,
+  ): Promise<ConnextInternal> => {
+    return await this.internal.restoreState(mnemonic, defaultToHub);
   };
 
   ///////////////////////////////////
@@ -547,17 +550,20 @@ export class ConnextInternal extends ConnextChannel {
     return await this.conditionalTransferController.conditionalTransfer(params);
   };
 
-  public restoreStateFromBackup = async (xpub: string, wallet: Wallet): Promise<boolean> => {
+  public restoreStateFromBackup = async (xpub: string): Promise<void> => {
     const restoreStates = await this.opts.store.restore();
     const multisigAddress = await this.getMultisigAddressfromXpub(xpub);
     const relevantPair = restoreStates.find(
       (p: { path: string; value: any }) => p.path === `store/${xpub}/channel/${multisigAddress}`,
     );
-    if (!relevantPair) return false;
+    if (!relevantPair) {
+      throw new Error(
+        `No matching remote states found for "store/${xpub}/channel/${multisigAddress}."`,
+      );
+    }
 
     this.logger.info(`Found state to restore from backup: ${JSON.stringify(relevantPair)}`);
     await this.opts.store.set([relevantPair], undefined, false);
-    return true;
   };
 
   public restoreStateFromNode = async (xpub: string): Promise<void> => {
@@ -576,7 +582,10 @@ export class ConnextInternal extends ConnextChannel {
     await this.opts.store.set(actualStates, undefined, false);
   };
 
-  public restoreState = async (mnemonic: string): Promise<ConnextInternal> => {
+  public restoreState = async (
+    mnemonic: string,
+    defaultToHub: boolean = true,
+  ): Promise<ConnextInternal> => {
     const hdNode = fromMnemonic(mnemonic);
     const xpriv = hdNode.extendedKey;
     const xpub = hdNode.derivePath("m/44'/60'/0'/25446").neuter().extendedKey;
@@ -591,8 +600,15 @@ export class ConnextInternal extends ConnextChannel {
     );
 
     // try to recover the rest of the stateS
-    const restoredFromPisa = await this.restoreStateFromBackup(xpub, wallet);
-    if (!restoredFromPisa) await this.restoreStateFromNode(xpub);
+    try {
+      await this.restoreStateFromBackup(xpub);
+    } catch (e) {
+      // failed to restore from pisa, should we default to the hub?
+      if (defaultToHub) {
+        await this.restoreStateFromNode(xpub);
+        this.logger.error(e.message);
+      } else throw e;
+    }
 
     // recreate client with new mnemonic
     const client = await connect({ ...this.opts, mnemonic });
