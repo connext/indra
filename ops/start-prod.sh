@@ -14,8 +14,9 @@ INDRA_AWS_SECRET_ACCESS_KEY="${INDRA_AWS_SECRET_ACCESS_KEY:-}"
 INDRA_DOMAINNAME="${INDRA_DOMAINNAME:-localhost}"
 INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl certs expire
 INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER}"
-INDRA_MODE="${INDRA_MODE:-staging}" # set to "prod" to use versioned docker images
 INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
+INDRA_MODE="${INDRA_MODE:-staging}" # set to "prod" to use versioned docker images
+INDRA_PISA_URL="${INDRA_PISA_URL:-localhost}"
 
 ####################
 # Internal Config
@@ -105,14 +106,40 @@ then
   number_of_services=$(( $number_of_services + 1 ))
   ethprovider_service="
   ethprovider:
-    image: $ethprovider_image
     command: [\"--db=/data\", \"--mnemonic=$eth_mnemonic\", \"--networkId=$ganache_chain_id\"]
+    image: $ethprovider_image
     ports:
       - 8545:8545
     volumes:
       - $eth_volume/data
   "
   INDRA_ETH_PROVIDER="http://ethprovider:8545"
+
+  pisa_image="pisaresearch/pisa:v0.1.4-connext-beta.0"
+  pull_if_unavailable "$pisa_image"
+  number_of_services=$(( $number_of_services + 1 ))
+  pisa_service="
+  pisa:
+    image: $pisa_image
+    ports:
+      - 5487:3000
+    entrypoint: >-
+      node ./build/src/startUp.js 
+      --json-rpc-url $INDRA_ETH_PROVIDER 
+      --host-name 0.0.0.0 
+      --host-port 3000 
+      --responder-key 0x388c684f0ba1ef5017716adb5d21a053ea8e90277d0868337519f97bede61418 
+      --receipt-key 0x388c684f0ba1ef5017716adb5d21a053ea8e90277d0868337519f97bede61418
+      --db-dir ./db
+      --loglevel info
+      --pisa-contract-address 0x0000000000000000000000000000000000000000 
+      --instance-name connext-test
+      --rate-limit-user-window-ms 1000
+      --rate-limit-user-max 100
+      --rate-limit-global-window-ms 1000
+      --rate-limit-global-max 100
+  "
+  INDRA_PISA_URL="http://pisa:3000"
 else echo "Eth network \"$chainId\" is not supported for $INDRA_MODE-mode deployments" && exit 1
 fi
 
@@ -127,6 +154,9 @@ redis_url="redis://redis:6379"
 database_image="postgres:9-alpine"
 nats_image="nats:2.0.0-linux"
 redis_image="redis:5-alpine"
+pull_if_unavailable "$database_image"
+pull_if_unavailable "$nats_image"
+pull_if_unavailable "$redis_image"
 if [[ "$INDRA_DOMAINNAME" != "localhost" ]]
 then
   if [[ "$INDRA_MODE" == "prod" ]]
@@ -136,21 +166,21 @@ then
   else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" && exit 1
   fi
   database_image="$registry/${project}_database:$version"
+  hasura_image="$registry/${project}_hasura:$version"
   node_image="$registry/${project}_node:$version"
   proxy_image="$registry/${project}_proxy:$version"
   relay_image="$registry/${project}_relay:$version"
-  pull_if_unavailable $database_image
-  pull_if_unavailable $node_image
-  pull_if_unavailable $proxy_image
-  pull_if_unavailable $relay_image
+  pull_if_unavailable "$database_image"
+  pull_if_unavailable "$hasura_image"
+  pull_if_unavailable "$node_image"
+  pull_if_unavailable "$proxy_image"
+  pull_if_unavailable "$relay_image"
 else # local/testing mode, don't use images from registry
+  hasura_image="${project}_hasura:latest"
   node_image="${project}_node:latest"
   proxy_image="${project}_proxy:latest"
   relay_image="${project}_relay:latest"
 fi
-pull_if_unavailable $database_image
-pull_if_unavailable $nats_image
-pull_if_unavailable $redis_image
 
 ########################################
 ## Deploy according to configuration
@@ -175,25 +205,28 @@ volumes:
 services:
   $ethprovider_service
 
+  $pisa_service
+
   proxy:
     image: $proxy_image
     environment:
       DOMAINNAME: $INDRA_DOMAINNAME
       EMAIL: $INDRA_EMAIL
       ETH_RPC_URL: $INDRA_ETH_PROVIDER
-      MESSAGING_URL: http://relay:4223
       HASURA_URL: http://hasura:8080
+      MESSAGING_URL: http://relay:4223
       MODE: prod
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - certs:/etc/letsencrypt
+      PISA_URL: $INDRA_PISA_URL
     logging:
       driver: "json-file"
       options:
           max-file: 10
           max-size: 10m
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certs:/etc/letsencrypt
 
   relay:
     image: $relay_image
@@ -218,14 +251,14 @@ services:
       INDRA_PORT: $node_port
       INDRA_REDIS_URL: $redis_url
       NODE_ENV: production
-    secrets:
-      - $db_secret
-      - $eth_mnemonic_name
     logging:
       driver: "json-file"
       options:
           max-file: 10
           max-size: 10m
+    secrets:
+      - $db_secret
+      - $eth_mnemonic_name
 
   database:
     image: $database_image
@@ -245,15 +278,15 @@ services:
       - `pwd`/modules/database/snapshots:/root/snapshots
 
   nats:
-    command: -V
     image: $nats_image
-    ports:
-      - "4222:4222"
+    command: -V
     logging:
       driver: "json-file"
       options:
           max-file: 10
           max-size: 10m
+    ports:
+      - "4222:4222"
 
   redis:
     image: $redis_image
@@ -261,19 +294,25 @@ services:
       - "6379:6379"
 
   hasura:
-    image: hasura/graphql-engine
+    image: $hasura_image
     environment:
-      HASURA_GRAPHQL_DATABASE_URL: "postgres://$pg_user:$pg_user@$pg_host:$pg_port/$project"
+      PG_DATABASE: $pg_db
+      PG_HOST: $pg_host
+      PG_PASSWORD_FILE: $pg_password_file
+      PG_PORT: $pg_port
+      PG_USER: $pg_user
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
     ports:
       - "8083:8080"
+    secrets:
+      - $db_secret
 
   logdna:
     image: logdna/logspout:latest
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       LOGDNA_KEY: $INDRA_LOGDNA_KEY
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project

@@ -42,7 +42,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 default: dev
 all: dev prod
 dev: database node types client payment-bot proxy ws-tcp-relay
-prod: database node-prod proxy-prod ws-tcp-relay
+prod: database hasura node-prod proxy-prod ws-tcp-relay
 
 start: dev
 	bash ops/start-dev.sh ganache
@@ -80,10 +80,10 @@ reset: stop
 	rm -rf $(flags)/deployed-contracts
 
 push-latest: prod
-	bash ops/push-images.sh latest database node proxy relay
+	bash ops/push-images.sh latest database node proxy relay hasura
 
 push-prod: prod
-	bash ops/push-images.sh $(version) database node proxy relay
+	bash ops/push-images.sh $(version) database node proxy relay hasura
 
 deployed-contracts: contracts
 	bash ops/deploy-contracts.sh ganache
@@ -101,7 +101,7 @@ test: test-node
 watch: watch-node
 
 start-test: prod deployed-contracts
-	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test bash ops/start-prod.sh
+	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_PISA_URL=http://localhost:5487 INDRA_MODE=test bash ops/start-prod.sh
 
 test-ui: payment-bot
 	bash ops/test-ui.sh
@@ -150,6 +150,11 @@ daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))
 database: node-modules $(shell find $(database) $(find_options))
 	$(log_start)
 	docker build --file $(database)/db.dockerfile --tag $(project)_database:latest $(database)
+	$(log_finish) && touch $(flags)/$@
+
+hasura: ops/hasura.dockerfile ops/hasura.entry.sh
+	$(log_start)
+	docker build --file ops/hasura.dockerfile --tag $(project)_hasura:latest .
 	$(log_finish) && touch $(flags)/$@
 
 messaging: node-modules $(shell find $(messaging)/src $(find_options))

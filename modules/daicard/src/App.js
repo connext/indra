@@ -24,12 +24,14 @@ import { SettingsCard } from "./components/settingsCard";
 import { SetupCard } from "./components/setupCard";
 import { SupportCard } from "./components/supportCard";
 
-import { Currency, store, minBN, toBN, tokenToWei, weiToToken } from "./utils";
+import { Currency, storeFactory, minBN, toBN, tokenToWei, weiToToken } from "./utils";
+import { PisaClient } from "pisa-client";
 
 // Optional URL overrides for custom urls
 const overrides = {
   nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE,
   ethProviderUrl: process.env.REACT_APP_ETH_URL_OVERRIDE,
+  pisaUrl: process.env.PISA_URL_OVERRIDE,
 };
 
 // Constants for channel max/min - this is also enforced on the hub
@@ -138,6 +140,25 @@ class App extends React.Component {
     const cfPath = "m/44'/60'/0'/25446";
     const cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
     const network = await ethprovider.getNetwork();
+
+    const network = await ethprovider.getNetwork();
+    let pisaContractAddress = AddressZero;
+    if (network.chainId === 1) {
+      // TODO: GET MAINNET ADDRESS
+      pisaContractAddress = "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3";
+    } else if (network.chainId === 4) {
+      pisaContractAddress = "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3";      
+    }
+    console.info(`Using chainId ${network.chainId} and pisaContractAddress ${pisaContractAddress}`);
+    const pisaClient = new PisaClient(
+      overrides.pisaUrl || `${window.location.origin}/api/pisa`, // `http://127.17.0.1:5487`,
+      pisaContractAddress,
+    );
+    const store = storeFactory({
+      provider: new eth.providers.JsonRpcProvider(ethProviderUrl),
+      wallet: cfWallet,
+      pisaClient,
+    });
 
     const channel = await connext.connect({
       ethProviderUrl,

@@ -41,6 +41,8 @@ DB_FILENAME="${DB_FILENAME:-.payment-bot-db/$identifier.json}"
 ETH_RPC_URL="${ETH_RPC_URL:-http://172.17.0.1:8545}"
 NODE_URL="${NODE_URL:-nats://172.17.0.1:4222}"
 WEBDIS_URL="${REDIS_URL:-redis://172.17.0.1:6379}"
+PISA_URL="${PISA_URL:-http://172.17.0.1:5487}"
+PISA_CONTRACT_ADDRESS="${PISA_CONTRACT_ADDRESS:-0x0000000000000000000000000000000000000000}"
 
 # Damn I forget where I copy/pasted this witchcraft from, yikes.
 # It's supposed to find out whether we're calling this script from a shell & can print stuff
@@ -65,6 +67,8 @@ docker run \
   --env="MNEMONIC=$mnemonic" \
   --env="NODE_URL=$NODE_URL" \
   --env="WEBDIS_URL=$WEBDIS_URL" \
+  --env="PISA_URL=$PISA_URL" \
+  --env="PISA_CONTRACT_ADDRESS=$PISA_CONTRACT_ADDRESS" \
   $interactive \
   --name="${project}_payment_bot_$identifier" \
   --rm \
