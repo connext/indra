@@ -275,6 +275,7 @@ services:
       POSTGRES_PASSWORD_FILE: $pg_password_file
       POSTGRES_USER: $project
       HASURA_USER: hasura
+      HASURA_PASSWORD_FILE: $hasura_password_file
     secrets:
       - $db_secret
     volumes:

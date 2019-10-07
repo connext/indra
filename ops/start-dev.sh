@@ -39,6 +39,8 @@ pg_password_file="/run/secrets/${project}_database_dev"
 pg_host="database"
 pg_port="5432"
 pg_user="$project"
+hasura_password_file="/run/secrets/${hasura_secret}_dev"
+hasura_user="hasura"
 
 # docker images
 builder_image="${project}_builder"
@@ -216,6 +218,8 @@ services:
       POSTGRES_PASSWORD_FILE: $pg_password_file
       POSTGRES_USER: $project
       HASURA_USER: hasura
+      HASURA_PASSWORD_FILE: $hasura_password_file
+
     networks:
       - $project
     ports:
