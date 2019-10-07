@@ -215,6 +215,7 @@ services:
       POSTGRES_DB: $project
       POSTGRES_PASSWORD_FILE: $pg_password_file
       POSTGRES_USER: $project
+      HASURA_USER: hasura
     networks:
       - $project
     ports:

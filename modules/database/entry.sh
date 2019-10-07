@@ -69,7 +69,7 @@ then
   log "Good morning, Postgres!"
 
   log "Creating special hasura user"
-  psql -c "CREATE USER hasura WITH PASSWORD 'hasuraPW';"
+  psql -c "CREATE USER hasura WITH PASSWORD '';"
   psql -c "GRANT SELECT ON ALL TABLES IN SCHEMA public TO hasura;"
 
   log "Restoring db snapshot from file $backup_file"

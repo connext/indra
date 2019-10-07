@@ -62,7 +62,8 @@ if [[ "$INDRA_MODE" == "test" ]]
 then
   db_volume="database_test_`date +%y%m%d_%H%M%S`"
   db_secret="${project}_database_test"
-  new_secret "$db_secret" "$project"
+  new_secret "$db_secret"
+  hasura_secret =  "$db_secret"
 else
   db_volume="database"
   db_secret="${project}_database"
@@ -75,6 +76,8 @@ pg_host="database"
 pg_password_file="/run/secrets/$db_secret"
 pg_port="5432"
 pg_user="$project"
+hasura_password_file="/run/secrets/$hasura_secret"
+hasura_user="hasura"
 
 ########################################
 ## Ethereum Config
@@ -271,6 +274,7 @@ services:
       POSTGRES_DB: $project
       POSTGRES_PASSWORD_FILE: $pg_password_file
       POSTGRES_USER: $project
+      HASURA_USER: hasura
     secrets:
       - $db_secret
     volumes:
@@ -298,9 +302,9 @@ services:
     environment:
       PG_DATABASE: $pg_db
       PG_HOST: $pg_host
-      PG_PASSWORD_FILE: $pg_password_file
+      PG_PASSWORD_FILE: $hasura_password_file
       PG_PORT: $pg_port
-      PG_USER: $pg_user
+      PG_USER: $hasura_user
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
     ports:
       - "8083:8080"
