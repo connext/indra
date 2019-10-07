@@ -83,8 +83,10 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
   const [link, setLink] = useState(undefined);
   const [paymentState, paymentAction] = useMachine(PaymentStateMachine);
   const [recipient, setRecipient] = useState({ display: "", error: null, value: null });
-  const [scan, setScan] = useState(false);
+  const [scan, setScan] = useState(false)
 
+  // need to extract token balance so it can be used as a dependency for the hook properly
+  const tokenBalance = balance.channel.token.wad
   const updateAmountHandler = useCallback((rawValue) => {
     let value = null;
     let error = null;
@@ -93,7 +95,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
     } catch (e) {
       error = `Please enter a valid amount`;
     }
-    if (value && value.wad.gt(balance.channel.token.wad)) {
+    if (value && value.wad.gt(tokenBalance)) {
       error = `Invalid amount: must be less than your balance`;
     }
     if (value && value.wad.lte(Zero)) {
@@ -104,7 +106,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
       error,
       value: error ? null : value,
     });
-  }, [balance])
+  }, [tokenBalance])
 
   const updateRecipientHandler = (rawValue) => {
     const xpubLen = 111;
