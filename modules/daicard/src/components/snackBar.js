@@ -48,7 +48,7 @@ export const MySnackbar = style(props => {
   let networkPrefix = "";
   if (network && network.chainId === 4) {
     networkPrefix = "rinkeby."
-  } else if (network && networkPrefix === 42) {
+  } else if (network && network.chainId === 42) {
     networkPrefix = "kovan."
   }
 
