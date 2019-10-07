@@ -2,8 +2,7 @@ import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColum
 
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { LinkedTransfer, PeerToPeerTransfer } from "../transfer/transfer.entity";
-import { IsEthAddress } from "../validator/isEthAddress";
-import { IsXpub } from "../validator/isXpub";
+import { IsEthAddress, IsXpub } from "../util";
 
 @Entity()
 export class Channel {

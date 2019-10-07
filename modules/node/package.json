@@ -1,6 +1,6 @@
 {
   "name": "indra-node",
-	"version": "2.0.38",
+	"version": "2.1.0",
   "description": "",
   "author": "",
   "license": "MIT",
@@ -20,9 +20,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
-    "@connext/messaging": "0.1.14",
-    "@connext/redis-lock": "0.1.14",
-    "@connext/types": "0.1.14",
+    "@connext/messaging": "0.2.0",
+    "@connext/types": "0.2.0",
     "@counterfactual/node": "0.2.82",
     "@counterfactual/types": "0.0.43",
     "@nestjs/common": "6.5.3",
