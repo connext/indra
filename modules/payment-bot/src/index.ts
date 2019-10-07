@@ -14,7 +14,7 @@ import { formatEther, hexlify, parseEther, randomBytes } from "ethers/utils";
 
 import { registerClientListeners } from "./bot";
 import { config } from "./config";
-import { store } from "./store";
+import { Store } from "./store";
 import { logEthFreeBalance } from "./utils";
 
 const replaceBN = (key: string, value: any): any =>
@@ -253,7 +253,7 @@ async function run(): Promise<void> {
 
   if (config.restore) {
     console.log(`Restoring states from the node with mnemonic: ${config.restore}`);
-    client = await client.restoreStateFromNode(config.restore);
+    client = await client.restoreState(config.restore);
   }
 
   exitOrLeaveOpen(config);
@@ -261,6 +261,8 @@ async function run(): Promise<void> {
 }
 
 async function getOrCreateChannel(assetId?: string): Promise<void> {
+  const store = new Store();
+
   const connextOpts: connext.ClientOptions = {
     ethProviderUrl: config.ethProviderUrl,
     logLevel: config.logLevel,

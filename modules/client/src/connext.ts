@@ -108,7 +108,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // Note: added this to the client since this is required for the cf module to work
   // generate extended private key from mnemonic
   const extendedXpriv = fromMnemonic(mnemonic).extendedKey;
-  await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }]);
+  await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }], undefined, false);
 
   // create a new node api instance
   // TODO: use local storage for default key value setting!!
@@ -260,8 +260,11 @@ export abstract class ConnextChannel {
     return await this.internal.conditionalTransfer(params);
   };
 
-  public restoreStateFromNode = async (mnemonic: string): Promise<void> => {
-    return await this.internal.restoreStateFromNode(mnemonic);
+  public restoreState = async (
+    mnemonic: string,
+    defaultToHub: boolean,
+  ): Promise<ConnextInternal> => {
+    return await this.internal.restoreState(mnemonic, defaultToHub);
   };
 
   ///////////////////////////////////
@@ -549,10 +552,23 @@ export class ConnextInternal extends ConnextChannel {
     return await this.conditionalTransferController.conditionalTransfer(params);
   };
 
-  public restoreStateFromNode = async (mnemonic: string): Promise<any> => {
-    const hdNode = fromMnemonic(mnemonic);
-    const xpriv = hdNode.extendedKey;
-    const xpub = hdNode.derivePath("m/44'/60'/0'/25446").neuter().extendedKey;
+  public restoreStateFromBackup = async (xpub: string): Promise<void> => {
+    const restoreStates = await this.opts.store.restore();
+    const multisigAddress = await this.getMultisigAddressfromXpub(xpub);
+    const relevantPair = restoreStates.find(
+      (p: { path: string; value: any }) => p.path === `store/${xpub}/channel/${multisigAddress}`,
+    );
+    if (!relevantPair) {
+      throw new Error(
+        `No matching remote states found for "store/${xpub}/channel/${multisigAddress}."`,
+      );
+    }
+
+    this.logger.info(`Found state to restore from backup: ${JSON.stringify(relevantPair)}`);
+    await this.opts.store.set([relevantPair], undefined, false);
+  };
+
+  public restoreStateFromNode = async (xpub: string): Promise<void> => {
     const states = await this.node.restoreStates(xpub);
     this.logger.info(`Found states to restore: ${JSON.stringify(states)}`);
 
@@ -565,8 +581,37 @@ export class ConnextInternal extends ConnextChannel {
         value: state.value[state.path],
       };
     });
-    this.opts.store.reset();
-    await this.opts.store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }, ...actualStates]);
+    await this.opts.store.set(actualStates, undefined, false);
+  };
+
+  public restoreState = async (
+    mnemonic: string,
+    defaultToHub: boolean = true,
+  ): Promise<ConnextInternal> => {
+    const hdNode = fromMnemonic(mnemonic);
+    const xpriv = hdNode.extendedKey;
+    const xpub = hdNode.derivePath("m/44'/60'/0'/25446").neuter().extendedKey;
+    const wallet = new Wallet(hdNode.derivePath("m/44'/60'/0'/25446"));
+
+    // always set the mnemonic in the store
+    this.opts.store.reset(wallet);
+    await this.opts.store.set(
+      [{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }],
+      undefined,
+      false,
+    );
+
+    // try to recover the rest of the stateS
+    try {
+      await this.restoreStateFromBackup(xpub);
+    } catch (e) {
+      // failed to restore from pisa, should we default to the hub?
+      if (defaultToHub) {
+        await this.restoreStateFromNode(xpub);
+        this.logger.error(e.message);
+      } else throw e;
+    }
+
     // recreate client with new mnemonic
     const client = await connect({ ...this.opts, mnemonic });
     return client;
