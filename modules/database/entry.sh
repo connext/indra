@@ -68,6 +68,10 @@ then
   done
   log "Good morning, Postgres!"
 
+  log "Creating special hasura user"
+  psql -c "CREATE USER hasura WITH PASSWORD 'hasuraPW';"
+  psql -c "GRANT SELECT ON ALL TABLES IN SCHEMA public TO hasura;"
+
   log "Restoring db snapshot from file $backup_file"
   psql --username=$POSTGRES_USER $POSTGRES_DB < $backup_file
   log "Done restoring db snapshot"

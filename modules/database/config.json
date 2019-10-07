@@ -1,12 +1,14 @@
 {
   "dev": {
     "driver": "pg",
+    "hasura_user": {"ENV": "HASURA_USER"},
     "database": {"ENV": "POSTGRES_DB"},
     "user": {"ENV": "POSTGRES_USER"},
     "password": {"ENV": "POSTGRES_PASSWORD"}
   },
   "prod": {
     "driver": "pg",
+    "hasura_user": {"ENV": "HASURA_USER"},
     "database": {"ENV": "POSTGRES_DB"},
     "user": {"ENV": "POSTGRES_USER"},
     "password": {"ENV": "POSTGRES_PASSWORD"}
