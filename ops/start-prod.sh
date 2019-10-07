@@ -270,7 +270,7 @@ services:
       PG_HOST: $pg_host
       PG_PASSWORD_FILE: $pg_password_file
       PG_PORT: $pg_port
-      PG_USERNAME: $pg_user
+      PG_USER: $pg_user
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
     ports:
       - "8083:8080"
