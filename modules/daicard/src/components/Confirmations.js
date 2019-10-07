@@ -11,11 +11,10 @@ const style = withStyles(theme => ({
 
 // TODO: close confirmations based on emitted events
 export const Confirmations = style(props => {
-  const { pending, closeConfirmations } = props;
-  const { type, complete, closed } = pending;
+  const { pending, closeConfirmations, network } = props;
+  const { type, complete, closed, txHash } = pending;
   return (
     <div>
-
       <MySnackbar
         variant="warning"
         openWhen={type === "deposit" && !complete && !closed}
@@ -52,7 +51,9 @@ export const Confirmations = style(props => {
         variant="success"
         openWhen={type === "withdrawal" && complete && !closed}
         onClose={() => closeConfirmations()}
-        message="Pending withdraw confirmed!"
+        message={`Pending withdraw submitted to chain.`}
+        network={network}
+        txHash={txHash}
         duration={60 * 1000}
       />
 
