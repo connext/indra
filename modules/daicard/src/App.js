@@ -140,8 +140,6 @@ class App extends React.Component {
     const cfPath = "m/44'/60'/0'/25446";
     const cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
     const network = await ethprovider.getNetwork();
-
-    const network = await ethprovider.getNetwork();
     let pisaContractAddress = AddressZero;
     if (network.chainId === 1) {
       // TODO: GET MAINNET ADDRESS
