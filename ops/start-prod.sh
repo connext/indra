@@ -63,10 +63,11 @@ then
   db_volume="database_test_`date +%y%m%d_%H%M%S`"
   db_secret="${project}_database_test"
   new_secret "$db_secret"
-  hasura_secret =  "$db_secret"
+  hasura_secret= "${project}_database_test"
 else
   db_volume="database"
   db_secret="${project}_database"
+  hasura_secret= "${project}_database"
   new_secret $db_secret
 fi
 
