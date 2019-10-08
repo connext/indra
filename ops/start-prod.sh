@@ -27,6 +27,7 @@ nats_port="4222"
 node_port="8080"
 number_of_services="8" # NOTE: Gotta update this manually when adding/removing services :(
 project="indra"
+hasura="hasura"
 
 ####################
 # Helper Functions
@@ -63,11 +64,11 @@ then
   db_volume="database_test_`date +%y%m%d_%H%M%S`"
   db_secret="${project}_database_test"
   new_secret "$db_secret"
-  hasura_secret= "${project}_database_test"
+  hasura_secret= "${hasura}_database_test"
 else
   db_volume="database"
   db_secret="${project}_database"
-  hasura_secret= "${project}_database"
+  hasura_secret= "${hasura}_database"
   new_secret $db_secret
 fi
 
