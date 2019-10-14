@@ -2,7 +2,12 @@ import { EntityRepository, Repository } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
 
-import { LinkedTransfer, LinkedTransferStatus, PeerToPeerTransfer } from "./transfer.entity";
+import {
+  LinkedTransfer,
+  LinkedTransferStatus,
+  PeerToPeerTransfer,
+  Transfer,
+} from "./transfer.entity";
 
 @EntityRepository(PeerToPeerTransfer)
 export class PeerToPeerTransferRepository extends Repository<PeerToPeerTransfer> {}
@@ -55,5 +60,21 @@ export class LinkedTransferRepository extends Repository<LinkedTransfer> {
     transfer.recipientPublicIdentifier = recipientPublicIdentifier;
     transfer.encryptedPreImage = encryptedPreImage;
     return await this.save(transfer);
+  }
+}
+
+@EntityRepository(Transfer)
+export class TransferRepository extends Repository<Transfer> {
+  async findByPublicIdentifier(publicIdentifier: string): Promise<Transfer[]> {
+    return await this.find({
+      where: [
+        {
+          senderPublicIdentifier: publicIdentifier,
+        },
+        {
+          receiverPublicIdentifier: publicIdentifier,
+        },
+      ],
+    });
   }
 }

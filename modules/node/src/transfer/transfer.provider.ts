@@ -1,8 +1,7 @@
 import { IMessagingService } from "@connext/messaging";
-import { ResolveLinkedTransferResponse } from "@connext/types";
+import { ResolveLinkedTransferResponse, Transfer } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
-import { bigNumberify } from "ethers/utils";
 
 import { AuthService } from "../auth/auth.service";
 import { MessagingProviderId, TransferProviderId } from "../constants";
@@ -22,12 +21,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
     super(messaging);
   }
 
-  async fetchLinkedTransfer(
-    pubId: string,
-    data: {
-      paymentId: string;
-    },
-  ): Promise<any> {
+  async fetchLinkedTransfer(data: { paymentId: string }): Promise<any> {
     if (!data.paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${data}`);
     }
@@ -78,6 +72,10 @@ export class TransferMessaging extends AbstractMessagingProvider {
     });
   }
 
+  async getTransferHistory(pubId: string): Promise<Transfer[]> {
+    return await this.transferService.getTransfersByPublicIdentifier(pubId);
+  }
+
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "transfer.fetch-linked.>",
@@ -94,6 +92,10 @@ export class TransferMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "transfer.get-pending.>",
       this.authService.useVerifiedPublicIdentifier(this.getPendingTransfers.bind(this)),
+    );
+    await super.connectRequestReponse(
+      "transfer.get-history.>",
+      this.authService.useUnverifiedPublicIdentifier(this.getTransferHistory.bind(this)),
     );
   }
 }

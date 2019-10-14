@@ -10,7 +10,11 @@ import { ConfigModule } from "../config/config.module";
 import { MessagingModule } from "../messaging/messaging.module";
 
 import { transferProviderFactory } from "./transfer.provider";
-import { LinkedTransferRepository, PeerToPeerTransferRepository } from "./transfer.repository";
+import {
+  LinkedTransferRepository,
+  PeerToPeerTransferRepository,
+  TransferRepository,
+} from "./transfer.repository";
 import { TransferService } from "./transfer.service";
 
 @Module({
@@ -24,6 +28,7 @@ import { TransferService } from "./transfer.service";
       AppRegistryRepository,
       LinkedTransferRepository,
       PeerToPeerTransferRepository,
+      TransferRepository,
     ]),
     MessagingModule,
     ChannelModule,
