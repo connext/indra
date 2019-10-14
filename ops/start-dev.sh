@@ -52,7 +52,7 @@ proxy_image="${project}_proxy:dev"
 redis_image=redis:5-alpine
 redis_url="redis://redis:6379"
 relay_image="${project}_relay"
-pisa_image="pisaresearch/pisa:v0.1.5"
+pisa_image="pisaresearch/pisa:v0.1.4-connext-beta.0"
 
 node_port=8080
 nats_port=4222

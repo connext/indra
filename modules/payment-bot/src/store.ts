@@ -153,7 +153,7 @@ export class Store implements CFCoreTypes.IStoreService {
 
       const currentBlockNumber = await provider.getBlockNumber();
 
-      await pisaClient.backup(
+      await pisaClient.backUp(
         (digest: string) => wallet.signMessage(arrayify(digest)),
         wallet.address,
         hex,
