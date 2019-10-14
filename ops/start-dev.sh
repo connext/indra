@@ -38,27 +38,28 @@ eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble swe
 
 # database connection settings
 pg_db="$project"
-pg_password_file="/run/secrets/${project}_database_dev"
+pg_password="${project}_database_dev"
+pg_password_file="/run/secrets/$pg_password"
 pg_host="database"
 pg_port="5432"
 pg_user="$project"
-hasura="hasura"
-hasura_password_file="/run/secrets/${hasura}_database_dev"
-hasura_user="hasura"
+readonly_password="${project}_database_readonly"
+readonly_password_file="/run/secrets/$readonly_password"
+readonly_user="readonly"
 
 # docker images
 builder_image="${project}_builder"
 daicard_devserver_image="$builder_image"
-database_image="postgres:9-alpine"
+database_image="${project}_database"
 ethprovider_image="trufflesuite/ganache-cli:v6.4.5"
-hasura_image="hasura/graphql-engine:latest"
+hasura_image="${project}_hasura"
 nats_image="nats:2.0.0-linux"
 node_image="$builder_image"
+pisa_image="pisaresearch/pisa:v0.1.4-connext-beta.0"
 proxy_image="${project}_proxy:dev"
 redis_image=redis:5-alpine
 redis_url="redis://redis:6379"
 relay_image="${project}_relay"
-pisa_image="pisaresearch/pisa:v0.1.4-connext-beta.0"
 
 ####################
 # Deploy according to above configuration
@@ -69,9 +70,7 @@ function pull_if_unavailable {
   then docker pull $1
   fi
 }
-pull_if_unavailable "$database_image"
 pull_if_unavailable "$ethprovider_image"
-pull_if_unavailable "$hasura_image"
 pull_if_unavailable "$nats_image"
 
 # Initialize random new secrets
@@ -86,7 +85,8 @@ function new_secret {
     echo "Created secret called $1 with id $id"
   fi
 }
-new_secret "${project}_database_dev" "$project"
+new_secret "$pg_password" "$project"
+new_secret "$readonly_password" "${project}_readonly"
 
 # Deploy with an attachable network so tests & the daicard can connect to individual components
 if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
@@ -106,7 +106,9 @@ networks:
     external: true
 
 secrets:
-  ${project}_database_dev:
+  $pg_password:
+    external: true
+  $readonly_password:
     external: true
 
 volumes:
@@ -196,7 +198,7 @@ services:
     ports:
       - "$node_port:$node_port"
     secrets:
-      - ${project}_database_dev
+      - $pg_password
     volumes:
       - `pwd`:/root
 
@@ -218,15 +220,15 @@ services:
       POSTGRES_DB: $project
       POSTGRES_PASSWORD_FILE: $pg_password_file
       POSTGRES_USER: $project
-      HASURA_USER: hasura
-      HASURA_PASSWORD_FILE: $hasura_password_file
-
+      READONLY_USER: readonly
+      READONLY_PASSWORD_FILE: $readonly_password_file
     networks:
       - $project
     ports:
       - "$pg_port:$pg_port"
     secrets:
-      - ${project}_database_dev
+      - $pg_password
+      - $readonly_password
     volumes:
       - database_dev:/var/lib/postgresql/data
 
@@ -241,12 +243,18 @@ services:
   hasura:
     image: $hasura_image
     environment:
-      HASURA_GRAPHQL_DATABASE_URL: "postgres://$pg_user:$pg_user@$pg_host:$pg_port/$project"
+      PG_DATABASE: $pg_db
+      PG_HOST: $pg_host
+      PG_PASSWORD_FILE: $readonly_password_file
+      PG_PORT: $pg_port
+      PG_USER: $readonly_user
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
     networks:
       - $project
     ports:
       - "8083:8080"
+    secrets:
+      - $readonly_password
 
   redis:
     image: $redis_image

@@ -41,7 +41,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev prod
-dev: database node types client payment-bot proxy ws-tcp-relay
+dev: database hasura node types client payment-bot proxy ws-tcp-relay
 prod: database hasura node-prod proxy-prod ws-tcp-relay
 
 start: dev

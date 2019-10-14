@@ -157,10 +157,8 @@ eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
 
 redis_url="redis://redis:6379"
 
-database_image="postgres:9-alpine"
 nats_image="nats:2.0.0-linux"
 redis_image="redis:5-alpine"
-pull_if_unavailable "$database_image"
 pull_if_unavailable "$nats_image"
 pull_if_unavailable "$redis_image"
 if [[ "$INDRA_DOMAINNAME" != "localhost" ]]
@@ -182,6 +180,7 @@ then
   pull_if_unavailable "$proxy_image"
   pull_if_unavailable "$relay_image"
 else # local/testing mode, don't use images from registry
+  database_image="${project}_database:latest"
   hasura_image="${project}_hasura:latest"
   node_image="${project}_node:latest"
   proxy_image="${project}_proxy:latest"
