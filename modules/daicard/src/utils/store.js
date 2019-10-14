@@ -23,7 +23,7 @@ const backupToPisa = async (pisaClient, provider, wallet, path, data, version) =
     const bytes = toUtf8Bytes(stringed);
     const hex = hexlify(bytes);
     const currentBlockNumber = await provider.getBlockNumber();
-    await pisaClient.backUp(
+    await pisaClient.backup(
       digest => wallet.signMessage(arrayify(digest)),
       wallet.address,
       hex,
