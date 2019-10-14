@@ -605,11 +605,7 @@ export class ConnextInternal extends ConnextChannel {
     try {
       await this.restoreStateFromBackup(xpub);
     } catch (e) {
-      // failed to restore from pisa, should we default to the hub?
-      if (defaultToHub) {
-        await this.restoreStateFromNode(xpub);
-        this.logger.error(e.message);
-      } else throw e;
+      await this.restoreStateFromNode(xpub);
     }
 
     // recreate client with new mnemonic
