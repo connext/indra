@@ -25,7 +25,7 @@ ganache_chain_id="4447"
 log_level="3" # set to 5 for all logs or to 0 for none
 nats_port="4222"
 node_port="8080"
-number_of_services="8" # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services="7" # NOTE: Gotta update this manually when adding/removing services :(
 pisa_port=5487
 project="indra"
 
@@ -167,17 +167,14 @@ then
   else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" && exit 1
   fi
   database_image="$registry/${project}_database:$version"
-  hasura_image="$registry/${project}_hasura:$version"
   node_image="$registry/${project}_node:$version"
   proxy_image="$registry/${project}_proxy:$version"
   relay_image="$registry/${project}_relay:$version"
   pull_if_unavailable "$database_image"
-  pull_if_unavailable "$hasura_image"
   pull_if_unavailable "$node_image"
   pull_if_unavailable "$proxy_image"
   pull_if_unavailable "$relay_image"
 else # local/testing mode, don't use images from registry
-  hasura_image="${project}_hasura:latest"
   node_image="${project}_node:latest"
   proxy_image="${project}_proxy:latest"
   relay_image="${project}_relay:latest"
@@ -214,7 +211,6 @@ services:
       DOMAINNAME: $INDRA_DOMAINNAME
       EMAIL: $INDRA_EMAIL
       ETH_RPC_URL: $INDRA_ETH_PROVIDER
-      HASURA_URL: http://hasura:8080
       MESSAGING_URL: http://relay:4223
       MODE: prod
       PISA_URL: $INDRA_PISA_URL
@@ -293,20 +289,6 @@ services:
     image: $redis_image
     ports:
       - "6379:6379"
-
-  hasura:
-    image: $hasura_image
-    environment:
-      PG_DATABASE: $pg_db
-      PG_HOST: $pg_host
-      PG_PASSWORD_FILE: $pg_password_file
-      PG_PORT: $pg_port
-      PG_USER: $pg_user
-      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
-    ports:
-      - "8083:8080"
-    secrets:
-      - $db_secret
 
   logdna:
     image: logdna/logspout:latest
