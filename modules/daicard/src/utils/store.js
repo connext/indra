@@ -1,9 +1,10 @@
 import { ConnextClientStorePrefix } from "@connext/types";
 import { arrayify, hexlify, keccak256, toUtf8Bytes, toUtf8String } from "ethers/utils";
 
-export const storeFactory = pisaOptions => {
+export const storeFactory = (pisaOptions) => {
   const { pisaClient, wallet } = pisaOptions || { pisaClient: null, wallet: null };
   return {
+
     get: path => {
       const raw = localStorage.getItem(`${ConnextClientStorePrefix}:${path}`);
       if (raw) {
@@ -34,7 +35,8 @@ export const storeFactory = pisaOptions => {
       }
       return raw;
     },
-    set: async (pairs, allowDelete, updatePisa = true) => {
+
+    set: async (pairs, shouldBackup) => {
       for (const pair of pairs) {
         localStorage.setItem(
           `${ConnextClientStorePrefix}:${pair.path}`,
@@ -43,7 +45,7 @@ export const storeFactory = pisaOptions => {
 
         if (
           pisaClient &&
-          updatePisa &&
+          shouldBackup &&
           pair.path.match(/.*\/xpub.*\/channel\/0x[0-9a-fA-F]{40}/) &&
           pair.value.freeBalanceAppInstance
         ) {
@@ -94,13 +96,15 @@ export const storeFactory = pisaOptions => {
         }
       }
     },
-    clear: () => {
+
+    reset: () => {
       for (const k of Object.keys(localStorage)) {
         if (k.startsWith(ConnextClientStorePrefix)) {
           localStorage.removeItem(k);
         }
       }
     },
+
     restore: async () => {
       if (pisaClient) {
 
