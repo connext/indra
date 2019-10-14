@@ -4,6 +4,7 @@ import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { formatEther, parseEther } from "ethers/utils";
 import interval from "interval-promise";
+import { PisaClient } from "pisa-client";
 import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import tokenArtifacts from "openzeppelin-solidity/build/contracts/ERC20Mintable.json";
@@ -25,7 +26,6 @@ import { SetupCard } from "./components/setupCard";
 import { SupportCard } from "./components/supportCard";
 
 import { Currency, storeFactory, minBN, toBN, tokenToWei, weiToToken } from "./utils";
-import { PisaClient } from "pisa-client";
 
 // Optional URL overrides for custom urls
 const overrides = {
@@ -140,23 +140,23 @@ class App extends React.Component {
     const cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
 
     const network = await ethprovider.getNetwork();
-    let pisaContractAddress = AddressZero;
-    if (network.chainId === 1) {
-      // TODO: GET MAINNET ADDRESS
-      pisaContractAddress = "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3";
-    } else if (network.chainId === 4) {
-      pisaContractAddress = "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3";      
+
+    // Use pisa for remote state backups on rinkeby
+    // TODO: Also use pisa for state backups on mainnet
+    let store = storeFactory();
+    if (network.chainId === 4) {
+      const pisaContractAddress = "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3";      
+      const pisaClient = new PisaClient(
+        overrides.pisaUrl || "https://connext-rinkeby.pisa.watch/",
+        pisaContractAddress,
+      );
+      console.info(`Using chainId ${network.chainId} and pisaContract at ${pisaContractAddress}`);
+      store = storeFactory({
+        provider: new eth.providers.JsonRpcProvider(ethProviderUrl),
+        wallet: cfWallet,
+        pisaClient,
+      });
     }
-    console.info(`Using chainId ${network.chainId} and pisaContractAddress ${pisaContractAddress}`);
-    const pisaClient = new PisaClient(
-      overrides.pisaUrl || `${window.location.origin}/api/pisa`, // `http://127.17.0.1:5487`,
-      pisaContractAddress,
-    );
-    const store = storeFactory({
-      provider: new eth.providers.JsonRpcProvider(ethProviderUrl),
-      wallet: cfWallet,
-      pisaClient,
-    });
 
     const channel = await connext.connect({
       ethProviderUrl,

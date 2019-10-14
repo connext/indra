@@ -6,10 +6,8 @@ email="${EMAIL:-noreply@gmail.com}"
 daicard_url="${DAICARD_URL:-http://daicard:3000}"
 eth_rpc_url="${ETH_RPC_URL:-http://ethprovider:8545}"
 messaging_url="${MESSAGING_URL:-http://relay:4223}"
-hasura_url="${HASURA_URL:-http://hasura:8083}"
-pisa_url="${PISA_URL:-http://pisa:8083}"
 mode="${MODE:-dev}"
-echo "domain=$domain email=$email eth=$eth_rpc_url messaging=$messaging_url daicard=$daicard_url hasura=$hasura_url mode=$mode"
+echo "domain=$domain email=$email eth=$eth_rpc_url messaging=$messaging_url daicard=$daicard_url mode=$mode"
 
 # Provide a message indicating that we're still waiting for everything to wake up
 function loading_msg {
@@ -33,12 +31,6 @@ done
 echo "waiting for ${messaging_url#*://}..."
 bash wait_for.sh -t 60 ${messaging_url#*://} 2> /dev/null
 while ! curl -s $messaging_url > /dev/null
-do sleep 2
-done
-
-echo "waiting for ${pisa_url#*://}..."
-bash wait_for.sh -t 60 ${pisa_url#*://} 2> /dev/null
-while ! curl -s $pisa_url > /dev/null
 do sleep 2
 done
 
@@ -86,8 +78,6 @@ sed -i 's/$hostname/'"$domain"'/' /etc/nginx/nginx.conf
 sed -i 's|$DAICARD_URL|'"$daicard_url"'|' /etc/nginx/nginx.conf
 sed -i 's|$ETH_RPC_URL|'"$eth_rpc_url"'|' /etc/nginx/nginx.conf
 sed -i 's|$MESSAGING_URL|'"$messaging_url"'|' /etc/nginx/nginx.conf
-sed -i 's|$HASURA_URL|'"$hasura_url"'|' /etc/nginx/nginx.conf
-sed -i 's|$PISA_URL|'"$pisa_url"'|' /etc/nginx/nginx.conf
 
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {
