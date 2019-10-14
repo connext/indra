@@ -36,6 +36,12 @@ while ! curl -s $messaging_url > /dev/null
 do sleep 2
 done
 
+echo "waiting for ${pisa_url#*://}..."
+bash wait_for.sh -t 60 ${pisa_url#*://} 2> /dev/null
+while ! curl -s $pisa_url > /dev/null
+do sleep 2
+done
+
 if [[ "$MODE" == "dev" ]]
 then
   echo "waiting for ${daicard_url#*://}..."
