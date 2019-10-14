@@ -26,6 +26,7 @@ log_level="3" # set to 5 for all logs or to 0 for none
 nats_port="4222"
 node_port="8080"
 number_of_services="8" # NOTE: Gotta update this manually when adding/removing services :(
+pisa_port=5487
 project="indra"
 hasura="hasura"
 
@@ -127,12 +128,12 @@ then
   pisa:
     image: $pisa_image
     ports:
-      - 5487:3000
+      - $pisa_port:$pisa_port
     entrypoint: >-
       node ./build/src/startUp.js 
       --json-rpc-url $INDRA_ETH_PROVIDER 
       --host-name 0.0.0.0 
-      --host-port 3000 
+      --host-port $pisa_port
       --responder-key 0x388c684f0ba1ef5017716adb5d21a053ea8e90277d0868337519f97bede61418 
       --receipt-key 0x388c684f0ba1ef5017716adb5d21a053ea8e90277d0868337519f97bede61418
       --db-dir ./db
@@ -144,7 +145,7 @@ then
       --rate-limit-global-window-ms 1000
       --rate-limit-global-max 100
   "
-  INDRA_PISA_URL="http://pisa:3000"
+  INDRA_PISA_URL="http://pisa:$pisa_port"
 else echo "Eth network \"$chainId\" is not supported for $INDRA_MODE-mode deployments" && exit 1
 fi
 

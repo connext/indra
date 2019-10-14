@@ -15,11 +15,11 @@
     "commander": "3.0.2",
     "dotenv": "8.1.0",
     "ethers": "4.0.37",
-    "pisa-client": "0.1.4-connext-beta.1",
+		"pisa-client": "0.1.4-connext-beta.1",
     "uuid": "3.3.3"
   },
   "devDependencies": {
-    "@counterfactual/types": "0.0.43",
+    "@counterfactual/types": "0.0.44",
     "@connext/types": "0.2.0",
     "@types/node-fetch": "2.5.2",
     "env-cmd": "10.0.1",

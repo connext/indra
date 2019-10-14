@@ -16,6 +16,9 @@ ETH_NETWORK="${1:-kovan}"
 # config & hard-coded stuff you might want to change
 
 log_level=3
+nats_port=4222
+node_port=8080
+pisa_port=5487
 
 if [[ "$ETH_NETWORK" == "rinkeby" ]]
 then 
@@ -25,7 +28,7 @@ elif [[ "$ETH_NETWORK" == "kovan" ]]
 then eth_rpc_url="https://kovan.infura.io/metamask"
 elif [[ "$ETH_NETWORK" == "ganache" ]]
 then
-  pisa_url="http://pisa:5487"
+  pisa_url="http://pisa:$pisa_port"
   eth_rpc_url="http://ethprovider:8545"
   make deployed-contracts
 fi
@@ -56,9 +59,6 @@ redis_image=redis:5-alpine
 redis_url="redis://redis:6379"
 relay_image="${project}_relay"
 pisa_image="pisaresearch/pisa:v0.1.4-connext-beta.0"
-
-node_port=8080
-nats_port=4222
 
 ####################
 # Deploy according to above configuration
@@ -133,13 +133,11 @@ services:
   
   pisa:
     image: $pisa_image
-    ports:
-      - "5487:3000"
     entrypoint: >-
       node ./build/src/startUp.js 
       --json-rpc-url $eth_rpc_url 
       --host-name 0.0.0.0 
-      --host-port 3000 
+      --host-port $pisa_port
       --responder-key 0x388c684f0ba1ef5017716adb5d21a053ea8e90277d0868337519f97bede61418 
       --receipt-key 0x388c684f0ba1ef5017716adb5d21a053ea8e90277d0868337519f97bede61418
       --db-dir ./db
@@ -152,6 +150,8 @@ services:
       --rate-limit-global-max 100
     networks:
       - $project
+    ports:
+      - "$pisa_port:$pisa_port"
 
   daicard:
     image: $daicard_devserver_image
