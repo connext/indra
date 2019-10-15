@@ -21,7 +21,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
     super(messaging);
   }
 
-  async fetchLinkedTransfer(data: { paymentId: string }): Promise<any> {
+  async fetchLinkedTransfer(pubId: string, data: { paymentId: string }): Promise<any> {
     if (!data.paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${data}`);
     }
