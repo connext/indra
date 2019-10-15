@@ -1,3 +1,4 @@
+import * as Connext from "connext";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import * as connext from "@connext/client";
 import { Contract, ethers as eth } from "ethers";
