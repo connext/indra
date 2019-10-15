@@ -105,6 +105,7 @@ class App extends React.Component {
       },
       ethprovider: null,
       freeBalanceAddress: null,
+      legacyMigration: false,
       loadingConnext: true,
       maxDeposit: null,
       minDeposit: null,
@@ -159,7 +160,11 @@ class App extends React.Component {
       store = storeFactory();
     }
 
-    await migrate(urls.legacyUrl(network.chainId), cfWallet, ethProviderUrl);
+    const setMigrating = (state) => {
+      this.setState({ legacyMigration: state, loadingConnext: !state });
+    }
+
+    await migrate(urls.legacyUrl(network.chainId), cfWallet, ethProviderUrl, setMigrating.bind(this));
 
     const channel = await connext.connect({
       ethProviderUrl,
@@ -493,6 +498,13 @@ class App extends React.Component {
           <Paper elevation={1} className={classes.paper}>
             <MySnackbar
               variant="warning"
+              openWhen={this.state.legacyMigration}
+              onClose={() => this.setState({ legacyMigration: false })}
+              message="Migrating legacy channel to 2.0..."
+              duration={30 * 60 * 1000}
+            />
+            <MySnackbar
+              variant="warning"
               openWhen={this.state.loadingConnext}
               onClose={() => this.setState({ loadingConnext: false })}
               message="Starting Channel Controllers.."
@@ -509,14 +521,14 @@ class App extends React.Component {
               variant="success"
               openWhen={this.state.receivingTransferCompleted}
               onClose={() => this.setState({ receivingTransferCompleted: false })}
-              message="Receiving Transfer..."
+              message="Transfer Receieved!"
               duration={30 * 60 * 1000}
             />
             <MySnackbar
               variant="error"
               openWhen={this.state.receivingTransferFailed}
               onClose={() => this.setState({ receivingTransferFailed: false })}
-              message="Receiving Transfer..."
+              message="Transfer Failed"
               duration={30 * 60 * 1000}
             />
             <AppBarComponent address={address} />
