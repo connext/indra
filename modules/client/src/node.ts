@@ -13,7 +13,7 @@ import {
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { TransactionResponse } from "ethers/providers";
-import { arrayify } from "ethers/utils";
+import { arrayify, Transaction } from "ethers/utils";
 import { Wallet } from "ethers/wallet";
 import uuid = require("uuid");
 
@@ -239,6 +239,10 @@ export class NodeApiClient implements INodeApiClient {
   // TODO: need to add auth for this!
   public async restoreStates(publicIdentifier: string): Promise<{ path: string; value: object }[]> {
     return this.send(`channel.restore-states.${publicIdentifier}`);
+  }
+
+  public async getLatestWithdrawal(): Promise<Transaction> {
+    return await this.send(`channel.latestWithdrawal.${this.userPublicIdentifier}`);
   }
 
   ////////////////////////////////////////

@@ -16,6 +16,7 @@ import { AuthService } from "../auth/auth.service";
 import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { ConfigService } from "../config/config.service";
 import { CFCoreProviderId, ChannelMessagingProviderId, MessagingProviderId } from "../constants";
+import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { AbstractMessagingProvider } from "../util";
 import { CFCore } from "../util/cfCore";
 
@@ -133,6 +134,14 @@ class ChannelMessaging extends AbstractMessagingProvider {
     });
   }
 
+  async getLatestWithdrawal(subject: string, data: {}): Promise<OnchainTransaction | undefined> {
+    const pubId = this.getPublicIdentifierFromSubject(subject);
+
+    const onchainTx = await this.channelService.getLatestWithdrawal(pubId);
+    // TODO: conversions needed?
+    return onchainTx;
+  }
+
   async getStatesForRestore(pubId: string): Promise<{ path: string; value: object }[]> {
     const states = await this.channelService.getChannelStates(pubId);
     return states.map((state: CFCoreRecord) => {
@@ -172,6 +181,10 @@ class ChannelMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "channel.restore-states.>",
       this.authService.useVerifiedPublicIdentifier(this.getStatesForRestore.bind(this)),
+    );
+    await super.connectRequestReponse(
+      "channel.latestWithdrawal.>",
+      this.getLatestWithdrawal.bind(this),
     );
   }
 }

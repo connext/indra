@@ -39,11 +39,13 @@ import { Contract, providers, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import {
   BigNumber,
+  bigNumberify,
   getAddress,
   Interface,
   keccak256,
   Network,
   solidityKeccak256,
+  Transaction,
 } from "ethers/utils";
 import { fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
@@ -62,6 +64,7 @@ import {
   freeBalanceAddressFromXpub,
   publicIdentifierToAddress,
   replaceBN,
+  withdrawalKey,
   xkeysToSortedKthAddresses,
 } from "./lib/utils";
 import { ConnextListener } from "./listener";
@@ -69,6 +72,8 @@ import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
+
+const MAX_WITHDRAWAL_RETRIES = 3;
 
 /**
  * Creates a new client-node connection with node at specified url
@@ -193,7 +198,38 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   });
 
   await client.registerSubscriptions();
+
   await client.reclaimPendingAsyncTransfers();
+
+  // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
+  const withdrawal = await client.store.get(withdrawalKey(client.publicIdentifier));
+
+  if (withdrawal && withdrawal.retry < MAX_WITHDRAWAL_RETRIES) {
+    // get the latest submitted withdrawal from the hub
+    // and check the tx to see if the data matches what we
+    // expect from our store.
+    const tx = await client.node.getLatestWithdrawal();
+    if (client.matchTx(tx, withdrawal.tx)) {
+      // if so, clear tx
+      await client.store.set([
+        {
+          path: withdrawalKey(client.publicIdentifier),
+          value: undefined,
+        },
+      ]);
+      return client;
+    }
+    // if not, and there are retries remaining, retry
+    logger.debug(
+      `Found active withdrawal with ${withdrawal.retry} retries, waiting for withdrawal to be caught`,
+    );
+    await client.retryNodeSubmittedWithdrawal();
+  } else if (withdrawal && withdrawal.retry >= MAX_WITHDRAWAL_RETRIES) {
+    // otherwise, do not start client.
+    const msg = `Cannot connect client, hub failed to submit latest withdrawal ${MAX_WITHDRAWAL_RETRIES} times.`;
+    logger.error(msg);
+    throw new Error(msg);
+  }
 
   return client;
 }
@@ -477,6 +513,7 @@ export class ConnextInternal extends ConnextChannel {
 
   public logger: Logger;
   public network: Network;
+  public store: CFCoreTypes.IStoreService;
 
   ////////////////////////////////////////
   // Setup channel controllers
@@ -502,6 +539,8 @@ export class ConnextInternal extends ConnextChannel {
     this.multisigAddress = this.opts.multisigAddress;
     this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
     this.logger = new Logger("ConnextInternal", opts.logLevel);
+    this.network = opts.network;
+    this.store = opts.store;
 
     // establish listeners
     this.listener = new ConnextListener(opts.cfCore, this);
@@ -555,6 +594,60 @@ export class ConnextInternal extends ConnextChannel {
     params: ConditionalTransferParameters,
   ): Promise<ConditionalTransferResponse> => {
     return await this.conditionalTransferController.conditionalTransfer(params);
+  };
+
+  public getLatestNodeSubmittedWithdrawal = async (): Promise<
+    { retry: number; tx: CFCoreTypes.MinimalTransaction } | undefined
+  > => {
+    const value = await this.store.get(withdrawalKey(this.cfCore.publicIdentifier));
+
+    if (!value) {
+      return undefined;
+    }
+
+    const noRetry = value.retry === undefined || value.retry === null;
+    if (!value.tx || noRetry) {
+      const msg = `Can not find tx or retry in store under key ${withdrawalKey(
+        this.cfCore.publicIdentifier,
+      )}`;
+      this.logger.error(msg);
+      throw new Error(msg);
+    }
+    return value;
+  };
+
+  public watchForUserWithdrawal = async (): Promise<void> => {
+    // poll for withdrawal tx submitted to multisig matching tx data
+    const maxBlocks = 15;
+    const startingBlock = await this.ethProvider.getBlockNumber();
+
+    // TODO: poller should not be completely blocking, but safe to leave for now
+    // because the channel should be blocked
+    try {
+      await new Promise((resolve, reject) => {
+        this.ethProvider.on("block", async (blockNumber: number) => {
+          const found = await this.checkForUserWithdrawal(blockNumber);
+          if (found) {
+            await this.store.set([
+              { path: withdrawalKey(this.publicIdentifier), value: undefined },
+            ]);
+            this.ethProvider.removeAllListeners("block");
+            resolve();
+          }
+          if (blockNumber - startingBlock >= maxBlocks) {
+            this.ethProvider.removeAllListeners("block");
+            reject(
+              `More than ${maxBlocks} have passed, blocks elapsed: ${blockNumber - startingBlock}`,
+            );
+          }
+        });
+      });
+    } catch (e) {
+      if (e.includes(`More than ${maxBlocks} have passed`)) {
+        this.logger.debug(`Retrying node submission`);
+        await this.retryNodeSubmittedWithdrawal();
+      }
+    }
   };
 
   public restoreStateFromBackup = async (xpub: string): Promise<void> => {
@@ -1129,6 +1222,43 @@ export class ConnextInternal extends ConnextChannel {
     return appInfo[0];
   };
 
+  public matchTx = (
+    givenTransaction: Transaction,
+    expected: CFCoreTypes.MinimalTransaction,
+  ): boolean => {
+    return (
+      givenTransaction.to === expected.to &&
+      bigNumberify(givenTransaction.value).eq(expected.value) &&
+      givenTransaction.data === expected.data
+    );
+  };
+
+  public retryNodeSubmittedWithdrawal = async (): Promise<void> => {
+    const val = await this.getLatestNodeSubmittedWithdrawal();
+    if (!val) {
+      this.logger.error(`No transaction found to retry`);
+      return;
+    }
+    let { retry, tx } = val;
+    retry += 1;
+    await this.store.set([
+      {
+        path: withdrawalKey(this.publicIdentifier),
+        value: { tx, retry },
+      },
+    ]);
+    if (retry >= MAX_WITHDRAWAL_RETRIES) {
+      const msg = `Tried to have node submit withdrawal ${MAX_WITHDRAWAL_RETRIES} times and it did not work, try submitting from wallet.`;
+      this.logger.error(msg);
+      // TODO: make this submit from wallet :)
+      // but this is weird, could take a while and may have gas issues.
+      // may not be the best way to do this
+      throw new Error(msg);
+    }
+    await this.node.withdraw(tx);
+    await this.watchForUserWithdrawal();
+  };
+
   private appNotInstalled = async (appInstanceId: string): Promise<string | undefined> => {
     const apps = await this.getAppInstances();
     const app = apps.filter((app: AppInstanceInfo) => app.identityHash === appInstanceId);
@@ -1157,5 +1287,35 @@ export class ConnextInternal extends ConnextChannel {
       );
     }
     return undefined;
+  };
+
+  private checkForUserWithdrawal = async (inBlock: number): Promise<boolean> => {
+    const val = await this.getLatestNodeSubmittedWithdrawal();
+    if (!val) {
+      this.logger.error(`No transaction found in store.`);
+      return false;
+    }
+
+    const { tx } = val;
+    // get the transaction hash that we should be looking for from
+    // the contract method
+    const txsTo = await this.ethProvider.getTransactionCount(tx.to, inBlock);
+    if (txsTo === 0) {
+      return false;
+    }
+
+    const block = await this.ethProvider.getBlock(inBlock);
+    const { transactions } = block;
+    if (transactions.length === 0) {
+      return false;
+    }
+
+    for (const transactionHash of transactions) {
+      const transaction = await this.ethProvider.getTransaction(transactionHash);
+      if (this.matchTx(transaction, tx)) {
+        return true;
+      }
+    }
+    return false;
   };
 }
