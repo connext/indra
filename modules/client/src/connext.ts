@@ -28,6 +28,7 @@ import {
   SwapParameters,
   TransferParameters,
   WithdrawParameters,
+  Transfer,
 } from "@connext/types";
 import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
 import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
@@ -313,6 +314,10 @@ export abstract class ConnextChannel {
 
   public getPaymentProfile = async (assetId?: string): Promise<PaymentProfile | undefined> => {
     return await this.internal.node.getPaymentProfile(assetId);
+  };
+
+  public getTransferHistory = async (): Promise<Transfer[]> => {
+    return await this.internal.node.getTransferHistory();
   };
 
   public setRecipientAndEncryptedPreImageForLinkedTransfer = async (

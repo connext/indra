@@ -9,6 +9,7 @@ import {
   PaymentProfile,
   SupportedApplication,
   SupportedNetwork,
+  Transfer,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { TransactionResponse } from "ethers/providers";
@@ -37,6 +38,7 @@ export interface INodeApiClient {
   getChannel(): Promise<GetChannelResponse>;
   getLatestSwapRate(from: string, to: string): Promise<string>;
   getPaymentProfile(assetId?: string): Promise<PaymentProfile>;
+  getTransferHistory(publicIdentifier: string): Promise<Transfer[]>;
   requestCollateral(assetId: string): Promise<void>;
   withdraw(tx: CFCoreTypes.MinimalTransaction): Promise<TransactionResponse>;
   fetchLinkedTransfer(paymentId: string): Promise<any>;
@@ -131,6 +133,10 @@ export class NodeApiClient implements INodeApiClient {
   // TODO: do we want this? thought this would be a blocking operation...
   public async getLatestSwapRate(from: string, to: string): Promise<string> {
     return await this.send(`swap-rate.${from}.${to}`);
+  }
+
+  public async getTransferHistory(): Promise<Transfer[]> {
+    return (await this.send(`transfer.get-history.${this.userPublicIdentifier}`)) || [];
   }
 
   // TODO: right now node doesnt return until the deposit has completed
