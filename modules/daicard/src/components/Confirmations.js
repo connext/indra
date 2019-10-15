@@ -19,7 +19,7 @@ export const Confirmations = style(props => {
         variant="warning"
         openWhen={type === "deposit" && !complete && !closed}
         onClose={() => closeConfirmations("deposit")}
-        message="Processing deposit, we'll let you know when it's done."
+        message="Processing deposit, we'll let you know when it's done"
         duration={30 * 60 * 1000}
       />
 
@@ -27,7 +27,7 @@ export const Confirmations = style(props => {
         variant="warning"
         openWhen={type === "withdrawal" && !complete && !closed}
         onClose={() => closeConfirmations("withdraw")}
-        message="Processing withdrawal, we'll let you know when it's done."
+        message="Processing withdrawal, we'll let you know when it's done"
         duration={30 * 60 * 1000}
       />
 
@@ -35,7 +35,7 @@ export const Confirmations = style(props => {
         variant="warning"
         openWhen={type === "swap" && !complete && !closed}
         onClose={() => closeConfirmations("withdraw")}
-        message="Processing swap, we'll let you know when it's done."
+        message="Processing swap, we'll let you know when it's done"
         duration={30 * 60 * 1000}
       />
 
@@ -51,7 +51,7 @@ export const Confirmations = style(props => {
         variant="success"
         openWhen={type === "withdrawal" && complete && !closed}
         onClose={() => closeConfirmations()}
-        message={`Pending withdraw submitted to chain.`}
+        message={`Withdraw request submitted to chain`}
         network={network}
         txHash={txHash}
         duration={60 * 1000}
