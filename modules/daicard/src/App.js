@@ -159,7 +159,7 @@ class App extends React.Component {
       store = storeFactory();
     }
 
-    const legacyChannel = await migrate(urls.legacyUrl(network.chainId), mnemonic, ethProviderUrl);
+    await migrate(urls.legacyUrl(network.chainId), cfWallet, ethProviderUrl);
 
     const channel = await connext.connect({
       ethProviderUrl,
