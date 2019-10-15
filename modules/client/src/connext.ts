@@ -634,7 +634,7 @@ export class ConnextInternal extends ConnextChannel {
       });
     } catch (e) {
       if (e.includes(`More than ${maxBlocks} have passed`)) {
-        this.logger.debug(`retrying node submission`);
+        this.logger.debug(`Retrying node submission`);
         await this.retryNodeSubmittedWithdrawal();
       }
     }
@@ -1197,6 +1197,12 @@ export class ConnextInternal extends ConnextChannel {
     }
     let { retry, tx } = val;
     retry += 1;
+    await this.store.set([
+      {
+        path: withdrawalKey(this.publicIdentifier),
+        value: { tx, retry },
+      },
+    ]);
     if (retry >= MAX_WITHDRAWAL_RETRIES) {
       const msg = `Tried to have node submit withdrawal ${MAX_WITHDRAWAL_RETRIES} times and it did not work, try submitting from wallet.`;
       this.logger.error(msg);
