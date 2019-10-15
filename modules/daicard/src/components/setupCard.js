@@ -11,17 +11,17 @@ import {
 } from "@material-ui/core";
 import React, { useState } from "react";
 
-const style = withStyles((theme) => ({
+const style = withStyles(theme => ({
   icon: {
     width: "40px",
-    height: "40px"
-  }
+    height: "40px",
+  },
 }));
 
 const screens = (classes, minEth, minDai, maxEth, maxDai) => [
   {
     title: "Welcome to Your Dai Card!",
-    message: "Here are some helpful tips to get you started with the next generation of payments."
+    message: "Here are some helpful tips to get you started with the next generation of payments.",
   },
   {
     title: "Your Mnemonic",
@@ -31,14 +31,13 @@ const screens = (classes, minEth, minDai, maxEth, maxDai) => [
       You can access your mnemonic anytime via the settings page.
       BEWARE: If you're using an incognito or temporary in-app browser,
       your mnemonic will be burned when you close this page.
-    `
+    `,
   },
   {
     title: "Deposit Boundaries",
-    message:
-      `The card needs a minimum deposit of ${minEth} (${minDai}) to cover the gas costs
+    message: `The card needs a minimum deposit of ${minEth} (${minDai}) to cover the gas costs
       of getting setup. No more than ${maxEth} (${maxDai}) will be added to your channel at a time,
-      any excess funds you send will be kept on-chain & not deposited into your channel.`
+      any excess funds you send will be kept on-chain & not deposited into your channel.`,
   },
 ];
 
@@ -50,10 +49,10 @@ export const SetupCard = style(({ classes, minDeposit, maxDeposit }) => {
     setOpen(false);
   };
 
-  const minEth = minDeposit ? minDeposit.toETH().format() : '$?.??';
-  const minDai = minDeposit ? minDeposit.toDAI().format() : '$?.??';
-  const maxEth = maxDeposit ? maxDeposit.toETH().format() : '$?.??';
-  const maxDai = maxDeposit ? maxDeposit.toDAI().format() : '$?.??';
+  const minEth = minDeposit ? minDeposit.toETH().format() : "$?.??";
+  const minDai = minDeposit ? minDeposit.toDAI().format() : "$?.??";
+  const maxEth = maxDeposit ? maxDeposit.toETH().format() : "$?.??";
+  const maxDai = maxDeposit ? maxDeposit.toDAI().format() : "$?.??";
 
   const display = screens(classes, minEth, minDai, maxEth, maxDai);
   const isFinal = index === display.length - 1;
@@ -69,13 +68,13 @@ export const SetupCard = style(({ classes, minDeposit, maxDeposit }) => {
         paddingRight: "10%",
         paddingTop: "10%",
         paddingBottom: "10%",
-        textAlign: "center"
+        textAlign: "center",
       }}
       item={true}
       zeroMinWidth={true}
     >
       {display.length !== 0 && (
-        <Dialog open={open} fullWidth>
+        <Dialog open={open} fullWidth onBackdropClick={handleClose}>
           <Grid container justify="center">
             <Grid item xs={12} style={{ padding: "2% 2% 2% 2%" }}>
               <LinearProgress variant="determinate" value={progress} />
@@ -106,18 +105,7 @@ export const SetupCard = style(({ classes, minDeposit, maxDeposit }) => {
                       Back
                     </Button>
                   )}
-                  {isFinal ? (
-                    <Button
-                      disableTouchRipple
-                      onClick={handleClose}
-                      className={classes.button}
-                      variant="outlined"
-                      color="primary"
-                      size="small"
-                    >
-                      Got it!
-                    </Button>
-                  ) : (
+                  {!isFinal ? (
                     <Button
                       disableTouchRipple
                       onClick={() => setIndex(index + 1)}
@@ -127,6 +115,18 @@ export const SetupCard = style(({ classes, minDeposit, maxDeposit }) => {
                       size="small"
                     >
                       Next
+                    </Button>
+                  ) : (
+                    <Button
+                      disableTouchRipple
+                      onClick={handleClose}
+                      className={classes.button}
+                      variant="outlined"
+                      color="primary"
+                      size="small"
+                      alignContent="left"
+                    >
+                      Got it!
                     </Button>
                   )}
                 </DialogActions>

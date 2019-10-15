@@ -93,8 +93,9 @@ export const CashoutCard = style(({
       recipient: value,
     });
     console.log(`Cashout result: ${JSON.stringify(result)}`)
+    const txHash = result.transaction.hash
     setWithdrawing(false);
-    setPending({ type: "withdrawal", complete: true, closed: false })
+    setPending({ type: "withdrawal", complete: true, closed: false, txHash })
     history.push("/")
   }
 
@@ -129,8 +130,9 @@ export const CashoutCard = style(({
       recipient: value,
     });
     console.log(`Cashout result: ${JSON.stringify(result)}`)
+    const txHash = result.transaction.hash
     setWithdrawing(false);
-    setPending({ type: "withdrawal", complete: true, closed: false })
+    setPending({ type: "withdrawal", complete: true, closed: false, txHash })
     history.push("/")
   }
 

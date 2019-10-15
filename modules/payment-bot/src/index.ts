@@ -2,10 +2,10 @@ import * as connext from "@connext/client";
 import {
   DepositParameters,
   LinkedTransferParameters,
+  LinkedTransferToRecipientParameters,
   makeChecksum,
   ResolveLinkedTransferParameters,
   WithdrawParameters,
-  LinkedTransferToRecipientParameters,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { AddressZero } from "ethers/constants";
@@ -14,7 +14,7 @@ import { formatEther, hexlify, parseEther, randomBytes } from "ethers/utils";
 
 import { registerClientListeners } from "./bot";
 import { config } from "./config";
-import { store } from "./store";
+import { Store } from "./store";
 import { logEthFreeBalance } from "./utils";
 
 const replaceBN = (key: string, value: any): any =>
@@ -253,7 +253,7 @@ async function run(): Promise<void> {
 
   if (config.restore) {
     console.log(`Restoring states from the node with mnemonic: ${config.restore}`);
-    client = await client.restoreStateFromNode(config.restore);
+    client = await client.restoreState(config.restore);
   }
 
   exitOrLeaveOpen(config);
@@ -261,6 +261,8 @@ async function run(): Promise<void> {
 }
 
 async function getOrCreateChannel(assetId?: string): Promise<void> {
+  const store = new Store();
+
   const connextOpts: connext.ClientOptions = {
     ethProviderUrl: config.ethProviderUrl,
     logLevel: config.logLevel,
@@ -288,16 +290,11 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
     console.info(`Waiting ${interval} more seconds for channel to be available`);
     await new Promise((res: any): any => setTimeout(() => res(), interval * 1000));
   }
-  console.info(`Channel is available!`);
-
-  console.info(`Channel is available!`);
-
   await client.addPaymentProfile({
     amountToCollateralize: parseEther("0.1").toString(),
     assetId: AddressZero,
     minimumMaintainedCollateral: parseEther("0.01").toString(),
   });
-
   if (assetId) {
     await client.addPaymentProfile({
       amountToCollateralize: parseEther("10").toString(),
@@ -305,6 +302,7 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
       minimumMaintainedCollateral: parseEther("5").toString(),
     });
   }
+  console.info(`Channel is available!`);
   registerClientListeners();
 }
 

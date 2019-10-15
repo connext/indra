@@ -4,6 +4,7 @@ import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { formatEther, parseEther } from "ethers/utils";
 import interval from "interval-promise";
+import { PisaClient } from "pisa-client";
 import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import tokenArtifacts from "openzeppelin-solidity/build/contracts/ERC20Mintable.json";
@@ -24,12 +25,13 @@ import { SettingsCard } from "./components/settingsCard";
 import { SetupCard } from "./components/setupCard";
 import { SupportCard } from "./components/supportCard";
 
-import { Currency, store, minBN, toBN, tokenToWei, weiToToken } from "./utils";
+import { Currency, storeFactory, minBN, toBN, tokenToWei, weiToToken } from "./utils";
 
 // Optional URL overrides for custom urls
 const overrides = {
   nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE,
   ethProviderUrl: process.env.REACT_APP_ETH_URL_OVERRIDE,
+  pisaUrl: process.env.PISA_URL_OVERRIDE,
 };
 
 // Constants for channel max/min - this is also enforced on the hub
@@ -100,6 +102,7 @@ class App extends React.Component {
       loadingConnext: true,
       maxDeposit: null,
       minDeposit: null,
+      network: {},
       pending: { type: "null", complete: true, closed: true },
       receivingTransferCompleted: false,
       receivingTransferFailed: false,
@@ -136,6 +139,24 @@ class App extends React.Component {
     const ethprovider = new eth.providers.JsonRpcProvider(ethProviderUrl);
     const cfPath = "m/44'/60'/0'/25446";
     const cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
+    const network = await ethprovider.getNetwork();
+
+    // Use pisa for remote state backups on rinkeby
+    // TODO: Also use pisa for state backups on mainnet
+    let store = storeFactory();
+    if (network.chainId === 4) {
+      const pisaContractAddress = "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3";      
+      const pisaClient = new PisaClient(
+        overrides.pisaUrl || "https://connext-rinkeby.pisa.watch/",
+        pisaContractAddress,
+      );
+      console.info(`Using chainId ${network.chainId} and pisaContract at ${pisaContractAddress}`);
+      store = storeFactory({
+        provider: new eth.providers.JsonRpcProvider(ethProviderUrl),
+        wallet: cfWallet,
+        pisaClient,
+      });
+    }
 
     const channel = await connext.connect({
       ethProviderUrl,
@@ -193,6 +214,7 @@ class App extends React.Component {
       ethprovider,
       freeBalanceAddress,
       loadingConnext: false,
+      network,
       swapRate,
       token,
       wallet: cfWallet,
@@ -455,6 +477,7 @@ class App extends React.Component {
       swapRate,
       maxDeposit,
       minDeposit,
+      network,
       pending,
       sendScanArgs,
       token,
@@ -578,6 +601,7 @@ class App extends React.Component {
               )}
             />
             <Confirmations
+              network={network}
               pending={pending}
               closeConfirmations={this.closeConfirmations.bind(this)}
             />

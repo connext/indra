@@ -7,13 +7,14 @@ import { AddCollateralizationInFlight1567601573372 } from "../../migrations/1567
 import { AddReclaimedLinks1568746114079 } from "../../migrations/1568746114079-add-reclaimed-links";
 import { AddOnchainTransactions1569489199954 } from "../../migrations/1569489199954-add-onchain-transaction";
 import { AddRecipientToLinks1569862328684 } from "../../migrations/1569862328684-add-recipient-to-links";
+import { AddTransferView1571072372000 } from "../../migrations/1571072372000-add-transfer-view";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { Channel } from "../channel/channel.entity";
 import { ConfigService } from "../config/config.service";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
-import { LinkedTransfer, PeerToPeerTransfer } from "../transfer/transfer.entity";
+import { LinkedTransfer, PeerToPeerTransfer, Transfer } from "../transfer/transfer.entity";
 
 const entities = [
   AppRegistry,
@@ -23,6 +24,7 @@ const entities = [
   LinkedTransfer,
   PeerToPeerTransfer,
   OnchainTransaction,
+  Transfer,
 ];
 
 const migrations = [
@@ -32,6 +34,7 @@ const migrations = [
   AddReclaimedLinks1568746114079,
   AddOnchainTransactions1569489199954,
   AddRecipientToLinks1569862328684,
+  AddTransferView1571072372000,
 ];
 
 @Injectable()

@@ -14,8 +14,8 @@ INDRA_AWS_SECRET_ACCESS_KEY="${INDRA_AWS_SECRET_ACCESS_KEY:-}"
 INDRA_DOMAINNAME="${INDRA_DOMAINNAME:-localhost}"
 INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl certs expire
 INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER}"
-INDRA_MODE="${INDRA_MODE:-staging}" # set to "prod" to use versioned docker images
 INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
+INDRA_MODE="${INDRA_MODE:-staging}" # set to "prod" to use versioned docker images
 
 ####################
 # Internal Config
@@ -24,7 +24,7 @@ ganache_chain_id="4447"
 log_level="3" # set to 5 for all logs or to 0 for none
 nats_port="4222"
 node_port="8080"
-number_of_services="8" # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services="7" # NOTE: Gotta update this manually when adding/removing services :(
 project="indra"
 
 ####################
@@ -105,8 +105,8 @@ then
   number_of_services=$(( $number_of_services + 1 ))
   ethprovider_service="
   ethprovider:
-    image: $ethprovider_image
     command: [\"--db=/data\", \"--mnemonic=$eth_mnemonic\", \"--networkId=$ganache_chain_id\"]
+    image: $ethprovider_image
     ports:
       - 8545:8545
     volumes:
@@ -127,6 +127,9 @@ redis_url="redis://redis:6379"
 database_image="postgres:9-alpine"
 nats_image="nats:2.0.0-linux"
 redis_image="redis:5-alpine"
+pull_if_unavailable "$database_image"
+pull_if_unavailable "$nats_image"
+pull_if_unavailable "$redis_image"
 if [[ "$INDRA_DOMAINNAME" != "localhost" ]]
 then
   if [[ "$INDRA_MODE" == "prod" ]]
@@ -139,18 +142,15 @@ then
   node_image="$registry/${project}_node:$version"
   proxy_image="$registry/${project}_proxy:$version"
   relay_image="$registry/${project}_relay:$version"
-  pull_if_unavailable $database_image
-  pull_if_unavailable $node_image
-  pull_if_unavailable $proxy_image
-  pull_if_unavailable $relay_image
+  pull_if_unavailable "$database_image"
+  pull_if_unavailable "$node_image"
+  pull_if_unavailable "$proxy_image"
+  pull_if_unavailable "$relay_image"
 else # local/testing mode, don't use images from registry
   node_image="${project}_node:latest"
   proxy_image="${project}_proxy:latest"
   relay_image="${project}_relay:latest"
 fi
-pull_if_unavailable $database_image
-pull_if_unavailable $nats_image
-pull_if_unavailable $redis_image
 
 ########################################
 ## Deploy according to configuration
@@ -182,18 +182,17 @@ services:
       EMAIL: $INDRA_EMAIL
       ETH_RPC_URL: $INDRA_ETH_PROVIDER
       MESSAGING_URL: http://relay:4223
-      HASURA_URL: http://hasura:8080
       MODE: prod
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - certs:/etc/letsencrypt
     logging:
       driver: "json-file"
       options:
           max-file: 10
           max-size: 10m
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certs:/etc/letsencrypt
 
   relay:
     image: $relay_image
@@ -218,14 +217,14 @@ services:
       INDRA_PORT: $node_port
       INDRA_REDIS_URL: $redis_url
       NODE_ENV: production
-    secrets:
-      - $db_secret
-      - $eth_mnemonic_name
     logging:
       driver: "json-file"
       options:
           max-file: 10
           max-size: 10m
+    secrets:
+      - $db_secret
+      - $eth_mnemonic_name
 
   database:
     image: $database_image
@@ -245,35 +244,27 @@ services:
       - `pwd`/modules/database/snapshots:/root/snapshots
 
   nats:
-    command: -V
     image: $nats_image
-    ports:
-      - "4222:4222"
+    command: -V
     logging:
       driver: "json-file"
       options:
           max-file: 10
           max-size: 10m
+    ports:
+      - "4222:4222"
 
   redis:
     image: $redis_image
     ports:
       - "6379:6379"
 
-  hasura:
-    image: hasura/graphql-engine
-    environment:
-      HASURA_GRAPHQL_DATABASE_URL: "postgres://$pg_user:$pg_user@$pg_host:$pg_port/$project"
-      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
-    ports:
-      - "8083:8080"
-
   logdna:
     image: logdna/logspout:latest
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       LOGDNA_KEY: $INDRA_LOGDNA_KEY
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 EOF
 
 docker stack deploy -c /tmp/$project/docker-compose.yml $project

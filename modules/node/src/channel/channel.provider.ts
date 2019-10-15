@@ -12,6 +12,7 @@ import { FactoryProvider } from "@nestjs/common/interfaces";
 import { TransactionResponse } from "ethers/providers";
 import { bigNumberify, getAddress } from "ethers/utils";
 
+import { AuthService } from "../auth/auth.service";
 import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { ConfigService } from "../config/config.service";
 import { CFCoreProviderId, ChannelMessagingProviderId, MessagingProviderId } from "../constants";
@@ -51,55 +52,49 @@ class ChannelMessaging extends AbstractMessagingProvider {
     messaging: IMessagingService,
     private readonly channelRepository: ChannelRepository,
     private readonly channelService: ChannelService,
+    private readonly authService: AuthService,
   ) {
     super(messaging);
   }
 
-  async getChannel(subject: string): Promise<GetChannelResponse> {
-    const pubId = this.getPublicIdentifierFromSubject(subject);
+  async getChannel(pubId: string, data?: unknown): Promise<GetChannelResponse> {
     return (await this.channelRepository.findByUserPublicIdentifier(pubId)) as GetChannelResponse;
   }
 
-  async createChannel(subject: string): Promise<CFCoreTypes.CreateChannelResult> {
-    const pubId = this.getPublicIdentifierFromSubject(subject);
+  async createChannel(pubId: string): Promise<CFCoreTypes.CreateChannelResult> {
     return await this.channelService.create(pubId);
   }
 
   async verifyAppSequenceNumber(
-    subject: string,
+    pubId: string,
     data: { userAppSequenceNumber: number },
   ): Promise<ChannelAppSequences> {
-    const userPubId = this.getPublicIdentifierFromSubject(subject);
-    return await this.channelService.verifyAppSequenceNumber(userPubId, data.userAppSequenceNumber);
+    return await this.channelService.verifyAppSequenceNumber(pubId, data.userAppSequenceNumber);
   }
 
   async requestCollateral(
-    subject: string,
+    pubId: string,
     data: { assetId?: string },
   ): Promise<RequestCollateralResponse> {
-    const pubId = this.getPublicIdentifierFromSubject(subject);
-    // do not allow clients to specify an amount to
-    // collateralize with
+    // do not allow clients to specify an amount to collateralize with
     return this.channelService.requestCollateral(pubId, getAddress(data.assetId));
   }
 
   async withdraw(
-    subject: string,
+    pubId: string,
     data: { tx: CFCoreTypes.MinimalTransaction },
   ): Promise<TransactionResponse> {
-    const pubId = this.getPublicIdentifierFromSubject(subject);
     return this.channelService.withdrawForClient(pubId, data.tx);
   }
 
   async addPaymentProfile(
-    subject: string,
+    pubId: string,
     data: {
       assetId: string;
       minimumMaintainedCollateral: string;
       amountToCollateralize: string;
     },
   ): Promise<PaymentProfileRes> {
-    const pubId = this.getPublicIdentifierFromSubject(subject);
     const {
       amountToCollateralize,
       minimumMaintainedCollateral,
@@ -119,11 +114,9 @@ class ChannelMessaging extends AbstractMessagingProvider {
   }
 
   async getPaymentProfile(
-    subject: string,
+    pubId: string,
     data: { assetId?: string },
   ): Promise<PaymentProfileRes | undefined> {
-    const pubId = this.getPublicIdentifierFromSubject(subject);
-
     const prof = await this.channelRepository.getPaymentProfileForChannelAndToken(
       pubId,
       data.assetId,
@@ -149,9 +142,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     return onchainTx;
   }
 
-  async getStatesForRestore(subject: string): Promise<{ path: string; value: object }[]> {
-    const pubId = this.getPublicIdentifierFromSubject(subject);
-
+  async getStatesForRestore(pubId: string): Promise<{ path: string; value: object }[]> {
     const states = await this.channelService.getChannelStates(pubId);
     return states.map((state: CFCoreRecord) => {
       return { path: state.path, value: state.value };
@@ -159,22 +150,37 @@ class ChannelMessaging extends AbstractMessagingProvider {
   }
 
   async setupSubscriptions(): Promise<void> {
-    await super.connectRequestReponse("channel.get.>", this.getChannel.bind(this));
-    await super.connectRequestReponse("channel.create.>", this.createChannel.bind(this));
+    await super.connectRequestReponse(
+      "channel.get.>",
+      this.authService.useVerifiedPublicIdentifier(this.getChannel.bind(this)),
+    );
+    await super.connectRequestReponse(
+      "channel.create.>",
+      this.authService.useVerifiedPublicIdentifier(this.createChannel.bind(this)),
+    );
+    await super.connectRequestReponse(
+      "channel.withdraw.>",
+      this.authService.useVerifiedPublicIdentifier(this.withdraw.bind(this)),
+    );
     await super.connectRequestReponse(
       "channel.request-collateral.>",
-      this.requestCollateral.bind(this),
+      this.authService.useVerifiedPublicIdentifier(this.requestCollateral.bind(this)),
     );
-    await super.connectRequestReponse("channel.withdraw.>", this.withdraw.bind(this));
-    await super.connectRequestReponse("channel.add-profile.>", this.addPaymentProfile.bind(this));
-    await super.connectRequestReponse("channel.get-profile.>", this.getPaymentProfile.bind(this));
+    await super.connectRequestReponse(
+      "channel.add-profile.>",
+      this.authService.useVerifiedPublicIdentifier(this.addPaymentProfile.bind(this)),
+    );
+    await super.connectRequestReponse(
+      "channel.get-profile.>",
+      this.authService.useVerifiedPublicIdentifier(this.getPaymentProfile.bind(this)),
+    );
     await super.connectRequestReponse(
       "channel.verify-app-sequence.>",
-      this.verifyAppSequenceNumber.bind(this),
+      this.authService.useVerifiedPublicIdentifier(this.verifyAppSequenceNumber.bind(this)),
     );
     await super.connectRequestReponse(
       "channel.restore-states.>",
-      this.getStatesForRestore.bind(this),
+      this.authService.useVerifiedPublicIdentifier(this.getStatesForRestore.bind(this)),
     );
     await super.connectRequestReponse(
       "channel.latestWithdrawal.>",
@@ -184,7 +190,14 @@ class ChannelMessaging extends AbstractMessagingProvider {
 }
 
 export const channelProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [MessagingProviderId, ChannelRepository, ConfigService, CFCoreProviderId, ChannelService],
+  inject: [
+    MessagingProviderId,
+    ChannelRepository,
+    ConfigService,
+    CFCoreProviderId,
+    ChannelService,
+    AuthService,
+  ],
   provide: ChannelMessagingProviderId,
   useFactory: async (
     messaging: IMessagingService,
@@ -192,8 +205,9 @@ export const channelProviderFactory: FactoryProvider<Promise<void>> = {
     configService: ConfigService,
     cfCore: CFCore,
     channelService: ChannelService,
+    authService: AuthService,
   ): Promise<void> => {
-    const channel = new ChannelMessaging(messaging, channelRepo, channelService);
+    const channel = new ChannelMessaging(messaging, channelRepo, channelService, authService);
     await channel.setupSubscriptions();
     const config = new ConfigMessaging(messaging, cfCore, configService);
     await config.setupSubscriptions();

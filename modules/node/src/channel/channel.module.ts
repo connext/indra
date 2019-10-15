@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
+import { AuthModule } from "../auth/auth.module";
 import { CFCoreModule } from "../cfCore/cfCore.module";
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { ConfigModule } from "../config/config.module";
@@ -25,6 +26,7 @@ import { ChannelService } from "./channel.service";
       OnchainTransactionRepository,
     ]),
     ConfigModule,
+    AuthModule,
   ],
   providers: [ChannelService, channelProviderFactory],
 })
