@@ -42,7 +42,6 @@ const style = withStyles(theme => ({
 
 export const MySnackbar = style(props => {
   const { classes, className, network, variant, openWhen, onClose, message, duration, txHash } = props;
-  console.log('network: ', network);
   const Icon = variantIcon[variant];
 
   let networkPrefix = "";
