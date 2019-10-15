@@ -102,6 +102,7 @@ class App extends React.Component {
       loadingConnext: true,
       maxDeposit: null,
       minDeposit: null,
+      network: {},
       pending: { type: "null", complete: true, closed: true },
       receivingTransferCompleted: false,
       receivingTransferFailed: false,
@@ -138,7 +139,6 @@ class App extends React.Component {
     const ethprovider = new eth.providers.JsonRpcProvider(ethProviderUrl);
     const cfPath = "m/44'/60'/0'/25446";
     const cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
-
     const network = await ethprovider.getNetwork();
 
     // Use pisa for remote state backups on rinkeby
@@ -214,6 +214,7 @@ class App extends React.Component {
       ethprovider,
       freeBalanceAddress,
       loadingConnext: false,
+      network,
       swapRate,
       token,
       wallet: cfWallet,
@@ -476,6 +477,7 @@ class App extends React.Component {
       swapRate,
       maxDeposit,
       minDeposit,
+      network,
       pending,
       sendScanArgs,
       token,
@@ -599,6 +601,7 @@ class App extends React.Component {
               )}
             />
             <Confirmations
+              network={network}
               pending={pending}
               closeConfirmations={this.closeConfirmations.bind(this)}
             />

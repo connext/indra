@@ -230,7 +230,7 @@ export class ChannelService {
     } else {
       logger.debug(`Multisig already deployed, proceeding with withdrawal`);
     }
-
+    logger.debug(`Sending withdrawal transaction: ${tx}`);
     return await wallet.sendTransaction(tx);
   }
 
