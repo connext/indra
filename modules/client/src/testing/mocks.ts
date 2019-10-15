@@ -8,6 +8,7 @@ import {
   PaymentProfile,
   SupportedApplication,
   SupportedNetwork,
+  Transfer,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { providers } from "ethers";
@@ -135,6 +136,10 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public async getLatestSwapRate(from: string, to: string): Promise<string> {
     return "100";
+  }
+
+  public async getTransferHistory(): Promise<Transfer[]> {
+    return [];
   }
 
   public async createChannel(): Promise<CreateChannelResponse> {

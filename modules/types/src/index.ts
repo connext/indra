@@ -227,6 +227,15 @@ export interface NodeConfig {
   nodeUrl: string;
 }
 
+export type Transfer<T = string> = {
+  id: number;
+  amount: T;
+  assetId: string;
+  senderPublicIdentifier: string;
+  receiverPublicIdentifier: string;
+};
+export type TransferBigNumber = Transfer<BigNumber>;
+
 // nats stuff
 type successResponse = {
   status: "success";

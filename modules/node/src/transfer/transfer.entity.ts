@@ -1,5 +1,5 @@
 import { BigNumber } from "ethers/utils";
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, ViewEntity, ViewColumn } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
 
@@ -93,4 +93,48 @@ export class LinkedTransfer {
     nullable: true,
   })
   receiverChannel!: Channel;
+}
+
+@ViewEntity({
+  expression: `
+    SELECT
+      "peer_to_peer_transfer"."id" as "id",
+      "peer_to_peer_transfer"."amount" as "amount",
+      "peer_to_peer_transfer"."assetId" as "assetId",
+      "sender_channel"."userPublicIdentifier" as "senderPublicIdentifier",
+      "receiver_channel"."userPublicIdentifier" as "receiverPublicIdentifier"
+    FROM "peer_to_peer_transfer"
+    LEFT JOIN "channel" as "receiver_channel"
+      ON "receiver_channel"."id" = "peer_to_peer_transfer"."receiverChannelId"
+    LEFT JOIN "channel" as "sender_channel"
+      ON "sender_channel"."id" = "peer_to_peer_transfer"."senderChannelId"
+    UNION ALL
+    SELECT
+      "linked_transfer"."id" as "id",
+      "linked_transfer"."amount" as "amount",
+      "linked_transfer"."assetId" as "assetId",
+      "sender_channel"."userPublicIdentifier" as "senderPublicIdentifier", 
+      "receiver_channel"."userPublicIdentifier" as "receiverPublicIdentifier"
+    FROM "linked_transfer"
+    LEFT JOIN "channel" as "receiver_channel"
+      ON "receiver_channel"."id" = "linked_transfer"."receiverChannelId"
+    LEFT JOIN "channel" as "sender_channel"
+      ON "sender_channel"."id" = "linked_transfer"."senderChannelId"
+  `,
+})
+export class Transfer {
+  @ViewColumn()
+  id!: number;
+
+  @ViewColumn()
+  amount!: string;
+
+  @ViewColumn()
+  assetId!: string;
+
+  @ViewColumn()
+  senderPublicIdentifier!: string;
+
+  @ViewColumn()
+  receiverPublicIdentifier!: string;
 }

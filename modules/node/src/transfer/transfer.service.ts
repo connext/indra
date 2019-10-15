@@ -31,8 +31,9 @@ import {
   LinkedTransferStatus,
   PeerToPeerTransfer,
   PeerToPeerTransferStatus,
+  Transfer,
 } from "./transfer.entity";
-import { LinkedTransferRepository, PeerToPeerTransferRepository } from "./transfer.repository";
+import { LinkedTransferRepository, PeerToPeerTransferRepository, TransferRepository } from "./transfer.repository";
 
 const logger = new CLogger("TransferService");
 
@@ -47,6 +48,7 @@ export class TransferService {
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly p2pTransferRepository: PeerToPeerTransferRepository,
     private readonly linkedTransferRepository: LinkedTransferRepository,
+    private readonly transferRepositiory: TransferRepository,
   ) {}
 
   async savePeerToPeerTransfer(
@@ -284,6 +286,10 @@ export class TransferService {
 
   async getPendingTransfers(userPublicIdentifier: string): Promise<LinkedTransfer[]> {
     return await this.linkedTransferRepository.findPendingByRecipient(userPublicIdentifier);
+  }
+
+  async getTransfersByPublicIdentifier(userPublicIdentifier: string): Promise<Transfer[]> {
+    return await this.transferRepositiory.findByPublicIdentifier(userPublicIdentifier);
   }
 
   private async takeActionAndUninstallLink(appId: string, preImage: string): Promise<void> {
