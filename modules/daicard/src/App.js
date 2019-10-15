@@ -27,11 +27,17 @@ import { SupportCard } from "./components/supportCard";
 
 import { Currency, storeFactory, minBN, toBN, tokenToWei, weiToToken } from "./utils";
 
-// Optional URL overrides for custom urls
-const overrides = {
-  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE,
-  ethProviderUrl: process.env.REACT_APP_ETH_URL_OVERRIDE,
-  pisaUrl: process.env.PISA_URL_OVERRIDE,
+const urls = {
+  ethProviderUrl: process.env.REACT_APP_ETH_URL_OVERRIDE || `${window.location.origin}/api/ethprovider`,
+  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
+  legacyUrl: (chainId) =>
+    chainId === "1" ? "https://hub.connext.network" :
+    chainId === "4" ? "https://rinkeby.hub.connext.network" :
+    undefined,
+  pisaUrl: (chainId) =>
+    chainId === "1" ? "https://connext.pisa.watch" :
+    chainId === "4" ? "https://connext-rinkeby.pisa.watch" :
+    undefined
 };
 
 // Constants for channel max/min - this is also enforced on the hub
@@ -133,29 +139,24 @@ class App extends React.Component {
       localStorage.setItem("mnemonic", mnemonic);
     }
 
-    const nodeUrl =
-      overrides.nodeUrl || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`;
-    const ethProviderUrl = overrides.ethProviderUrl || `${window.location.origin}/api/ethprovider`;
+    const nodeUrl = urls.nodeUrl;
+    const ethProviderUrl = urls.ethProviderUrl;
     const ethprovider = new eth.providers.JsonRpcProvider(ethProviderUrl);
     const cfPath = "m/44'/60'/0'/25446";
     const cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
     const network = await ethprovider.getNetwork();
 
-    // Use pisa for remote state backups on rinkeby
-    // TODO: Also use pisa for state backups on mainnet
-    let store = storeFactory();
-    if (network.chainId === 4) {
-      const pisaContractAddress = "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3";      
-      const pisaClient = new PisaClient(
-        overrides.pisaUrl || "https://connext-rinkeby.pisa.watch/",
-        pisaContractAddress,
-      );
-      console.info(`Using chainId ${network.chainId} and pisaContract at ${pisaContractAddress}`);
+    let store;
+    if (urls.pisaUrl(network.chainId)) {
       store = storeFactory({
-        provider: new eth.providers.JsonRpcProvider(ethProviderUrl),
         wallet: cfWallet,
-        pisaClient,
+        pisaClient: new PisaClient(
+          urls.pisaUrl(network.chainId),
+          "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3", // TODO: Don't hardcode
+        ),
       });
+    } else {
+      store = storeFactory();
     }
 
     const channel = await connext.connect({
