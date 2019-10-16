@@ -150,8 +150,8 @@ class App extends React.Component {
   // ************************************************* //
   //                     Hooks                         //
   // ************************************************* //
-
-  async componentDidMount() {
+  // INIT CODE HAPPENS AFTER PROVIDER IS SET
+  setProvider = async channelProviderType => {
     // If no mnemonic, create one and save to local storage
     let mnemonic = localStorage.getItem("mnemonic");
     if (!mnemonic) {
@@ -167,14 +167,18 @@ class App extends React.Component {
     let cfWallet;
     let channel;
 
-    // Choose whether to use walletConnect or mnemonic in modal
-    while (!this.state.channelProviderType) {
-      await new Promise(res => setTimeout(() => res(), 200));
+    switch (channelProviderType) {
+      case "walletconnect":
+      case "counterfactual":
+        this.setState({ channelProviderType });
+        break;
+      default:
+        throw new Error(`Invalid provider type ${channelProviderType}`)
     }
 
     const network = await ethprovider.getNetwork();
     // if choose mnemonic
-    if (this.state.channelProviderType === "counterfactual") {
+    if (channelProviderType === "counterfactual") {
       // If no mnemonic, create one and save to local storage
       let mnemonic = localStorage.getItem("mnemonic");
       if (!mnemonic) {
@@ -200,7 +204,7 @@ class App extends React.Component {
       }
 
       channel = await instantiateClient(ethProviderUrl, mnemonic, nodeUrl, store);
-    } else if (this.state.channelProviderType === "walletconnect") {
+    } else if (channelProviderType === "walletconnect") {
       let channelProvider;
       channelProvider = new WalletConnectChannelProvider({
         rpc: {
@@ -217,7 +221,7 @@ class App extends React.Component {
       console.log(channelProvider.connection.chainId)
       console.log(channelProvider.connection.rpc)
       console.log(channelProvider.connection.networkId)
-      await channelProvider.connection.create();
+      channelProvider.connection.create();
       channel = await new Promise((res, rej) => {
         channelProvider.once("connect", async () => {
           const connectedChannel = await connext.connect({
@@ -299,7 +303,7 @@ class App extends React.Component {
 
     await this.addDefaultPaymentProfile();
     await this.startPoller();
-  }
+  };
 
   // ************************************************* //
   //                    Pollers                        //
@@ -310,19 +314,20 @@ class App extends React.Component {
   //  - channel messages to see if there anything to sign
   //  - channel eth to see if I need to swap?
   startPoller = async () => {
+    const { channelProviderType } = this.state
     await this.refreshBalances();
     await this.setDepositLimits();
     await this.addDefaultPaymentProfile();
-    if (this.channelProviderType === "mnemonic") {
+    if (channelProviderType === "counterfactual") {
       await this.autoDeposit();
     } else {
-      console.log("Turning off autodeposit, provider: ", this.channelProviderType);
+      console.log("Turning off autodeposit, provider: ", channelProviderType);
     }
     await this.autoSwap();
     interval(async (iteration, stop) => {
       await this.refreshBalances();
       await this.setDepositLimits();
-      if (this.channelProviderType === "mnemonic") {
+      if (channelProviderType === "counterfactual") {
         await this.autoDeposit();
       }
       await this.autoSwap();
@@ -582,22 +587,7 @@ class App extends React.Component {
   };
 
   closeModal = async () => {
-    await this.setState({ loadingConnext: false });
-  };
-
-  setProvider = providerType => {
-    switch (providerType) {
-      case "walletconnect":
-      case "counterfactual":
-        this.setState({ channelProviderType: providerType });
-        break;
-      default:
-        console.error(
-          "Invalid provider type, this would be better with typescript fwiw",
-          providerType,
-        );
-        return;
-    }
+    this.setState({ loadingConnext: false });
   };
 
   render() {
