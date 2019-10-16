@@ -23,7 +23,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import queryString from "query-string";
 import { Machine } from 'xstate';
 
-import { Currency, toBN, delay } from "../utils";
+import { Currency, toBN } from "../utils";
 
 import { Copyable } from "./copyable";
 import { QRScan } from "./qrCode";
@@ -149,6 +149,13 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
 
   const paymentHandler = async () => {
     if (amount.error || recipient.error) return;
+    if (!recipient.value) {
+      setRecipient({
+        ...recipient,
+        error: 'Recipent must be specified for p2p transfer',
+      });
+      return;
+    }
     console.log(`Sending ${amount.value} to ${recipient.value}`);
     paymentAction('NEW_P2P');
     // there is a chance the payment will fail when it is first sent
@@ -168,7 +175,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
         });
         break;
       } catch (e) {
-        await delay(5000);
+        await new Promise(res => setTimeout(res, 5000));
       }
     }
     if (!transferRes) {
@@ -179,7 +186,10 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
   }
 
   const linkHandler = async () => {
-    if (amount.error || recipient.error) return;
+    if (amount.error) return;
+    if (recipient.error && !recipient.value) {
+      setRecipient({ ...recipient, error: null });
+    }
     if (toBN(amount.value.toDEI()).gt(LINK_LIMIT.wad)) {
       setAmount({ ...amount, error: `Linked payments are capped at ${LINK_LIMIT.format()}.` });
       return;
@@ -315,7 +325,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
             <Button
               disableTouchRipple
               className={classes.button}
-              disabled={!!amount.error || !!recipient.error}
+              disabled={!!amount.error}
               fullWidth
               onClick={() => {
                 linkHandler();

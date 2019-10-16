@@ -25,13 +25,19 @@ import { SettingsCard } from "./components/settingsCard";
 import { SetupCard } from "./components/setupCard";
 import { SupportCard } from "./components/supportCard";
 
-import { Currency, storeFactory, minBN, toBN, tokenToWei, weiToToken } from "./utils";
+import { Currency, storeFactory, migrate, minBN, toBN, tokenToWei, weiToToken } from "./utils";
 
-// Optional URL overrides for custom urls
-const overrides = {
-  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE,
-  ethProviderUrl: process.env.REACT_APP_ETH_URL_OVERRIDE,
-  pisaUrl: process.env.PISA_URL_OVERRIDE,
+const urls = {
+  ethProviderUrl: process.env.REACT_APP_ETH_URL_OVERRIDE || `${window.location.origin}/api/ethprovider`,
+  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
+  legacyUrl: (chainId) =>
+    chainId === "1" ? "https://hub.connext.network/api/hub" :
+    chainId === "4" ? "https://rinkeby.hub.connext.network/api/hub" :
+    undefined,
+  pisaUrl: (chainId) =>
+    chainId === "1" ? "https://connext.pisa.watch" :
+    chainId === "4" ? "https://connext-rinkeby.pisa.watch" :
+    undefined
 };
 
 // Constants for channel max/min - this is also enforced on the hub
@@ -99,6 +105,7 @@ class App extends React.Component {
       },
       ethprovider: null,
       freeBalanceAddress: null,
+      legacyMigration: false,
       loadingConnext: true,
       maxDeposit: null,
       minDeposit: null,
@@ -133,30 +140,31 @@ class App extends React.Component {
       localStorage.setItem("mnemonic", mnemonic);
     }
 
-    const nodeUrl =
-      overrides.nodeUrl || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`;
-    const ethProviderUrl = overrides.ethProviderUrl || `${window.location.origin}/api/ethprovider`;
+    const nodeUrl = urls.nodeUrl;
+    const ethProviderUrl = urls.ethProviderUrl;
     const ethprovider = new eth.providers.JsonRpcProvider(ethProviderUrl);
     const cfPath = "m/44'/60'/0'/25446";
     const cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
     const network = await ethprovider.getNetwork();
 
-    // Use pisa for remote state backups on rinkeby
-    // TODO: Also use pisa for state backups on mainnet
-    let store = storeFactory();
-    if (network.chainId === 4) {
-      const pisaContractAddress = "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3";      
-      const pisaClient = new PisaClient(
-        overrides.pisaUrl || "https://connext-rinkeby.pisa.watch/",
-        pisaContractAddress,
-      );
-      console.info(`Using chainId ${network.chainId} and pisaContract at ${pisaContractAddress}`);
+    let store;
+    if (urls.pisaUrl(network.chainId)) {
       store = storeFactory({
-        provider: new eth.providers.JsonRpcProvider(ethProviderUrl),
         wallet: cfWallet,
-        pisaClient,
+        pisaClient: new PisaClient(
+          urls.pisaUrl(network.chainId),
+          "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3", // TODO: Don't hardcode
+        ),
       });
+    } else {
+      store = storeFactory();
     }
+
+    const setMigrating = (state) => {
+      this.setState({ legacyMigration: state, loadingConnext: !state });
+    }
+
+    await migrate(urls.legacyUrl(network.chainId), cfWallet, ethProviderUrl, setMigrating.bind(this));
 
     const channel = await connext.connect({
       ethProviderUrl,
@@ -490,6 +498,13 @@ class App extends React.Component {
           <Paper elevation={1} className={classes.paper}>
             <MySnackbar
               variant="warning"
+              openWhen={this.state.legacyMigration}
+              onClose={() => this.setState({ legacyMigration: false })}
+              message="Migrating legacy channel to 2.0..."
+              duration={30 * 60 * 1000}
+            />
+            <MySnackbar
+              variant="warning"
               openWhen={this.state.loadingConnext}
               onClose={() => this.setState({ loadingConnext: false })}
               message="Starting Channel Controllers.."
@@ -506,14 +521,14 @@ class App extends React.Component {
               variant="success"
               openWhen={this.state.receivingTransferCompleted}
               onClose={() => this.setState({ receivingTransferCompleted: false })}
-              message="Receiving Transfer..."
+              message="Transfer Receieved!"
               duration={30 * 60 * 1000}
             />
             <MySnackbar
               variant="error"
               openWhen={this.state.receivingTransferFailed}
               onClose={() => this.setState({ receivingTransferFailed: false })}
-              message="Receiving Transfer..."
+              message="Transfer Failed"
               duration={30 * 60 * 1000}
             />
             <AppBarComponent address={address} />

@@ -19,7 +19,7 @@ const styles = theme => ({
 export const ChannelCard = withStyles(styles)(props => {
   const { balance, classes } = props;
   const split = (balance) => {
-    const bal = balance.format({ decimals: 2, symbol: false });
+    const bal = balance.format({ decimals: 2, symbol: false, round: false });
     const whole = bal.substring(0, bal.indexOf('.'));
     const part = bal.substring(bal.indexOf('.'));
     return { whole, part: part.substring(0,4) };
