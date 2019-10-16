@@ -4,7 +4,7 @@ import { formatEther } from "ethers/utils";
 
 import { toBN } from './bn';
 
-export const migrate = async (hubUrl, wallet, ethUrl, setMigrating) => {
+export const migrate = async (hubUrl, wallet, ethUrl, stateService) => {
   console.log(`____________________Migration Started | hubUrl: ${hubUrl}`)
   if (!hubUrl) { return; }
   const legacy = await Connext.createClient({ ethUrl, hubUrl, mnemonic: wallet.mnemonic });
@@ -20,7 +20,7 @@ export const migrate = async (hubUrl, wallet, ethUrl, setMigrating) => {
   const amountWei = etherBalance.add(state.persistent.custodialBalance.balanceWei);
 
   if (amountToken.gt(Zero) || amountWei.gt(Zero)) {
-    await setMigrating(true);
+    stateService.send('MIGRATE');
 
     const withdrawalParams = {
       exchangeRate: state.runtime.exchangeRate.rates.DAI,
@@ -43,7 +43,6 @@ export const migrate = async (hubUrl, wallet, ethUrl, setMigrating) => {
     } catch (e) {
       console.error(e);
     }
-    setMigrating(false);
   }
   await legacy.stop();
   console.log(`____________________Migration Finished`)

@@ -8,6 +8,7 @@ import { PisaClient } from "pisa-client";
 import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import tokenArtifacts from "openzeppelin-solidity/build/contracts/ERC20Mintable.json";
+import { interpret } from 'xstate';
 
 import "./App.css";
 
@@ -24,6 +25,7 @@ import { SendCard } from "./components/sendCard";
 import { SettingsCard } from "./components/settingsCard";
 import { SetupCard } from "./components/setupCard";
 import { SupportCard } from "./components/supportCard";
+import { rootMachine } from "./state";
 
 import { Currency, storeFactory, migrate, minBN, toBN, tokenToWei, weiToToken } from "./utils";
 
@@ -56,6 +58,8 @@ const MAX_CHANNEL_VALUE = Currency.DAI("30");
 // needed for autoswap
 const DEFAULT_COLLATERAL_MINIMUM = Currency.DAI("5");
 const DEFAULT_AMOUNT_TO_COLLATERALIZE = Currency.DAI("10");
+
+const stateService = interpret(rootMachine);
 
 const style = withStyles((theme) => ({
   paper: {
@@ -103,15 +107,15 @@ class App extends React.Component {
         },
       },
       ethprovider: null,
-      legacyMigration: false,
-      loadingConnext: true,
+      legacyMigration: false, // rm
+      loadingConnext: true, // rm
       maxDeposit: null,
       minDeposit: null,
       network: {},
-      pending: { type: "null", complete: true, closed: true },
-      receivingTransferCompleted: false,
-      receivingTransferFailed: false,
-      receivingTransferStarted: false,
+      pending: { type: "null", complete: true, closed: true }, // rm
+      receivingTransferCompleted: false, // rm
+      receivingTransferFailed: false, // rm
+      receivingTransferStarted: false, // rm
       sendScanArgs: { amount: null, recipient: null },
       redeemScanArgs: { amount: null, recipient: null },
       swapRate,
@@ -138,6 +142,10 @@ class App extends React.Component {
       localStorage.setItem("mnemonic", mnemonic);
     }
 
+    stateService.onTransition(state => console.log(`transitioning to ${state.value} state`));
+    stateService.start();
+    stateService.send('GOOD_MORNING');
+
     const nodeUrl = urls.nodeUrl;
     const ethProviderUrl = urls.ethProviderUrl;
     const ethprovider = new eth.providers.JsonRpcProvider(ethProviderUrl);
@@ -158,11 +166,13 @@ class App extends React.Component {
       store = storeFactory();
     }
 
-    const setMigrating = (state) => {
-      this.setState({ legacyMigration: state, loadingConnext: !state });
+    const setMigrating = (willMigrate) => {
+      stateService.send(willMigrate ? 'DO_MIGRATE' : 'SKIP_MIGRATE');
+      this.setState({ legacyMigration: willMigrate, loadingConnext: !willMigrate });
     }
 
-    await migrate(urls.legacyUrl(network.chainId), wallet, ethProviderUrl, setMigrating.bind(this));
+    await migrate(urls.legacyUrl(network.chainId), wallet, ethProviderUrl, stateService);
+    stateService.send('START');
 
     const channel = await connext.connect({
       ethProviderUrl,
@@ -219,6 +229,7 @@ class App extends React.Component {
       assetId: token.address,
     });
     console.log(`Set a default token profile: ${JSON.stringify(tokenProfile)}`)
+    stateService.send('READY');
 
     this.setState({
       channel,
@@ -475,36 +486,36 @@ class App extends React.Component {
           <Paper elevation={1} className={classes.paper}>
             <MySnackbar
               variant="warning"
-              openWhen={this.state.legacyMigration}
-              onClose={() => this.setState({ legacyMigration: false })}
+              openWhen={stateService.state.matches('migrating.pending')}
+              onClose={() => stateService.send('DISMISS')}
               message="Migrating legacy channel to 2.0..."
               duration={30 * 60 * 1000}
             />
             <MySnackbar
               variant="warning"
-              openWhen={this.state.loadingConnext}
-              onClose={() => this.setState({ loadingConnext: false })}
+              openWhen={stateService.state.matches('starting.pending')}
+              onClose={() => stateService.send('DISMISS')}
               message="Starting Channel Controllers.."
               duration={30 * 60 * 1000}
             />
             <MySnackbar
               variant="info"
-              openWhen={this.state.receivingTransferStarted}
-              onClose={() => this.setState({ receivingTransferStarted: false })}
+              openWhen={stateService.state.matches('receiving.pending')}
+              onClose={() => stateService.send('DISMISS')}
               message="Receiving Transfer..."
               duration={30 * 60 * 1000}
             />
             <MySnackbar
               variant="success"
-              openWhen={this.state.receivingTransferCompleted}
-              onClose={() => this.setState({ receivingTransferCompleted: false })}
+              openWhen={stateService.state.matches('receiving.success')}
+              onClose={() => stateService.send('DISMISS')}
               message="Transfer Receieved!"
               duration={30 * 60 * 1000}
             />
             <MySnackbar
               variant="error"
-              openWhen={this.state.receivingTransferFailed}
-              onClose={() => this.setState({ receivingTransferFailed: false })}
+              openWhen={stateService.state.matches('receiving.error')}
+              onClose={() => stateService.send('DISMISS')}
               message="Transfer Failed"
               duration={30 * 60 * 1000}
             />
