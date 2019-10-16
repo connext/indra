@@ -165,14 +165,7 @@ class App extends React.Component {
       this.setState({ legacyMigration: state, loadingConnext: !state });
     }
 
-    // if there is an rpc-prod local var, you should migrate
-    // otherwise, continue with startup (assuming any v1 channels are)
-    // either f'd from local storage clearance or nonexistent
-    const rpc = localStorage.getItem("rpc-prod")
-    if (rpc) {
-      console.log(`Found v1 channel, preparing to migrate`)
-      await migrate(urls.legacyUrl(network.chainId), cfWallet, ethProviderUrl, setMigrating.bind(this));
-    }
+    await migrate(urls.legacyUrl(network.chainId), cfWallet, ethProviderUrl, setMigrating.bind(this));
 
     const channel = await connext.connect({
       ethProviderUrl,
