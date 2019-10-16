@@ -199,7 +199,7 @@ class App extends React.Component {
         });
       }
 
-      channel = instantiateClient();
+      channel = instantiateClient(ethUrl, mnemonic, nodeUrl, store);
     } else if (this.state.channelProviderType === "walletconnect") {
       let channelProvider;
       channelProvider = new WalletConnectChannelProvider({

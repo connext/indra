@@ -1,9 +1,8 @@
 import * as connext from "@connext/client";
-import { store } from ".";
 
 export let channel = null;
 
-export async function instantiateClient(ethUrl, mnemonic, nodeUrl) {
+export async function instantiateClient(ethUrl, mnemonic, nodeUrl, store) {
   if (channel) {
     return channel;
   }
