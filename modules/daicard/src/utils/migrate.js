@@ -24,6 +24,7 @@ export const migrate = async (hubUrl, wallet, ethUrl, setMigrating) => {
 
     const withdrawalParams = {
       exchangeRate: state.runtime.exchangeRate.rates.DAI,
+      recipient: wallet.address,
       tokensToSell: amountToken.toString(),
       withdrawalWeiUser: amountWei.toString(),
       weiToSell: "0",
