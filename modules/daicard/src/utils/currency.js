@@ -24,11 +24,11 @@ export class Currency {
   }
 
   defaultOptions = {
-    'DAI': { commas: false, decimals: 2, symbol: true },
-    'DEI': { commas: false, decimals: 0, symbol: false },
-    'ETH': { commas: false, decimals: 3, symbol: true },
-    'FIN': { commas: false, decimals: 3, symbol: false },
-    'WEI': { commas: false, decimals: 0, symbol: false },
+    'DAI': { commas: false, decimals: 2, symbol: true, round: true },
+    'DEI': { commas: false, decimals: 0, symbol: false, round: true },
+    'ETH': { commas: false, decimals: 3, symbol: true, round: true },
+    'FIN': { commas: false, decimals: 3, symbol: false, round: true },
+    'WEI': { commas: false, decimals: 0, symbol: false, round: true },
   }
 
   ////////////////////////////////////////
@@ -100,15 +100,18 @@ export class Currency {
   }
 
   format(_options) {
+    const amt = this.amount;
     const options = {
       ...this.defaultOptions[this.type],
       ..._options || {},
-    }
-    const symbol = options.symbol ? `${this.symbol}` : ``
-    const amount = options.commas
-      ? commify(this.round(options.decimals))
-      : this.round(options.decimals)
-    return `${symbol}${amount}`
+    };
+    const symbol = options.symbol ? `${this.symbol}` : ``;
+    const nDecimals = amt.length - amt.indexOf('.') - 1;
+    const amount = options.round ? this.round(options.decimals)
+      : (options.decimals > nDecimals) ? amt + '0'.repeat(options.decimals - nDecimals)
+      : (options.decimals < nDecimals) ? amt.substring(0, amt.indexOf('.') + options.decimals + 1)
+      : amt;
+    return `${symbol}${options.commas ? commify(amount) : amount}`
   }
 
   round(decimals) {
