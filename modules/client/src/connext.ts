@@ -185,6 +185,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
     channelRouter = new ChannelRouter(RpcType.CounterfactualNode, cfCore, {
       freeBalanceAddress: cfCore.freeBalanceAddress,
+      // TODO: multisigAddress is always null here...
       multisigAddress,
       publicIdentifier: cfCore.publicIdentifier,
     });
@@ -210,8 +211,12 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
       },
     );
     multisigAddress = creationEventData.multisigAddress;
-    logger.info(`multisigAddress: ${multisigAddress}`);
+  } else {
+    multisigAddress = myChannel.multisigAddress;
   }
+  logger.info(`multisigAddress: ${multisigAddress}`);
+
+  channelRouter.multisigAddress = multisigAddress;
 
   // create the new client
   const client = new ConnextInternal({
