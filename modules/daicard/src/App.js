@@ -134,6 +134,7 @@ class App extends React.Component {
 
   async componentDidMount() {
     // If no mnemonic, create one and save to local storage
+    console.log(`dont worry, you're on the right branch :)`)
     let mnemonic = localStorage.getItem("mnemonic");
     if (!mnemonic) {
       mnemonic = eth.Wallet.createRandom().mnemonic;
