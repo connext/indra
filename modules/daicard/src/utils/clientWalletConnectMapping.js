@@ -5,19 +5,19 @@ import { Node as NodeTypes } from "@counterfactual/types";
 export let walletConnector = null;
 
 export async function initWalletConnect(uri) {
-    walletConnector = new WalletConnectBrowser({uri})
-    console.log("INITING")
+  walletConnector = new WalletConnectBrowser({ uri });
+  console.log("INITING");
 
-    walletConnector.on("session_request", (error, payload) => {
-        console.log("Received session request")
-        if (error) {
-            throw error;
-        }
-        displaySessionApproval(payload);
+  walletConnector.on("session_request", (error, payload) => {
+    console.log("Received session request");
+    if (error) {
+      throw error;
+    }
+    displaySessionApproval(payload);
 
-        // Handle Session Request
-        
-        /* payload:
+    // Handle Session Request
+
+    /* payload:
         {
             id: 1,
             jsonrpc: '2.0'.
@@ -34,23 +34,23 @@ export async function initWalletConnect(uri) {
             }]
         }
         */
-    });
-    
-    // Subscribe to call requests
-    walletConnector.on("call_request", async (error, payload) => {
-        console.log("Received call request")
-        if (error) {
-            throw error;
-        }
-        
-        if (payload.method.startsWith("chan_")){
-            await mapPayloadToClient(payload)
-        } else {
-            walletConnector.rejectRequest({id: payload.id})
-        }
-        // Handle Call Request
-        
-        /* payload:
+  });
+
+  // Subscribe to call requests
+  walletConnector.on("call_request", async (error, payload) => {
+    console.log("Received call request");
+    if (error) {
+      throw error;
+    }
+
+    if (payload.method.startsWith("chan_")) {
+      await mapPayloadToClient(payload);
+    } else {
+      walletConnector.rejectRequest({ id: payload.id });
+    }
+    // Handle Call Request
+
+    /* payload:
         {
             id: 1,
             jsonrpc: '2.0'.
@@ -61,89 +61,89 @@ export async function initWalletConnect(uri) {
             ]
         }
         */
-    });
-    
-    walletConnector.on("disconnect", (error, payload) => {
-        if (error) {
-            throw error;
-        }
-    
+  });
+
+  walletConnector.on("disconnect", (error, payload) => {
+    if (error) {
+      throw error;
+    }
+
     // Delete walletConnector
-    });
+  });
 }
 
 export function displaySessionApproval(payload) {
-    walletConnector.approveSession({accounts: [], chainId: 4447})
-    //TODO: proc modal that approves the walletconnection from the wallet
+  walletConnector.approveSession({ accounts: [], chainId: 4447 });
+  //TODO: proc modal that approves the walletconnection from the wallet
 }
 
 async function mapPayloadToClient(payload) {
-    let result;
-    try {
-        switch(payload.method) {
-            case NodeTypes.RpcMethodName.DEPOSIT:
-                result = await channel.providerDeposit(payload.params);
-            break;
-            case NodeTypes.RpcMethodName.GET_STATE:
-                result = await channel.getState(payload.params);
-            break;
-            case NodeTypes.RpcMethodName.GET_APP_INSTANCES:
-            result = await channel.getAppInstances(payload.params);
-            break;
-            case NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE:
-                result = await channel.getFreeBalance(payload.params);
-            break;
-            case NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES:
-                result = await channel.getProposedAppInstances(payload.params);
-            break;
-            case NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES:
-                result = await channel.getProposedAppInstance(payload.params);
-            break;
-            case NodeTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS:
-                result = await channel.getAppInstanceDetails(payload.params);
-            break;
-            case NodeTypes.RpcMethodName.GET_STATE:
-                result = await channel.getState(payload.params);
-            break;
-            case NodeTypes.RpcMethodName.TAKE_ACTION:
-                result = await channel.takeAction(payload.params);
-            break;
-            case NodeTypes.RpcMethodName.UPDATE_STATE:
-                result = await channel.updateState(payload.params);
-            break;
-            case NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL:
-                result = await channel.proposeInstallVirtualApp(payload.params);
-            break;
-            case NodeTypes.RpcMethodName.PROPOSE_INSTALL:
-                result = await channel.proposeInstallApp(payload.params);
-            break;
-            case NodeTypes.RpcMethodName.INSTALL_VIRTUAL:
-                result = await channel.installVirtualApp(payload.params);
-            break;
-            case NodeTypes.RpcMethodName.INSTALL:
-                result = await channel.installApp(payload.params);
-            break;
-            case NodeTypes.RpcMethodName.UNINSTALL:
-                result = await channel.uninstallApp(payload.params);
-            break;
-            case NodeTypes.RpcMethodName.UNINSTALL_VIRTUAL:
-                result = await channel.uninstallVirtualApp(payload.params);
-            break;
-            case NodeTypes.RpcMethodName.REJECT_INSTALL:
-                result = await channel.rejectInstallApp(payload.params);
-            break;
-            case NodeTypes.RpcMethodName.WITHDRAW:
-                result = await channel.providerWithdraw(payload.params);
-            break;
-            case NodeTypes.RpcMethodName.WITHDRAW_COMMITMENT:
-                result = await channel.withdrawCommitment(payload.params);
-            break;
-            default:
-                console.log(`WALLET CONNECT MAPPING ERROR: unknown method: ${payload.method}`)
-            break;
-        }
-    } catch (e) {
-        console.log("AHIOFEJOIFEJIOFEAJ: ", e);
+  let result;
+  try {
+    switch (payload.method) {
+      case NodeTypes.RpcMethodName.DEPOSIT:
+        result = await channel.providerDeposit(payload.params);
+        break;
+      case NodeTypes.RpcMethodName.GET_STATE:
+        result = await channel.getState(payload.params);
+        break;
+      case NodeTypes.RpcMethodName.GET_APP_INSTANCES:
+        result = await channel.getAppInstances(payload.params);
+        break;
+      case NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE:
+        result = await channel.getFreeBalance(payload.params);
+        break;
+      case NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES:
+        result = await channel.getProposedAppInstances(payload.params);
+        break;
+      case NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES:
+        result = await channel.getProposedAppInstance(payload.params);
+        break;
+      case NodeTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS:
+        result = await channel.getAppInstanceDetails(payload.params);
+        break;
+      case NodeTypes.RpcMethodName.GET_STATE:
+        result = await channel.getState(payload.params);
+        break;
+      case NodeTypes.RpcMethodName.TAKE_ACTION:
+        result = await channel.takeAction(payload.params);
+        break;
+      case NodeTypes.RpcMethodName.UPDATE_STATE:
+        result = await channel.updateState(payload.params);
+        break;
+      case NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL:
+        result = await channel.proposeInstallVirtualApp(payload.params);
+        break;
+      case NodeTypes.RpcMethodName.PROPOSE_INSTALL:
+        result = await channel.proposeInstallApp(payload.params);
+        break;
+      case NodeTypes.RpcMethodName.INSTALL_VIRTUAL:
+        result = await channel.installVirtualApp(payload.params);
+        break;
+      case NodeTypes.RpcMethodName.INSTALL:
+        result = await channel.installApp(payload.params);
+        break;
+      case NodeTypes.RpcMethodName.UNINSTALL:
+        result = await channel.uninstallApp(payload.params);
+        break;
+      case NodeTypes.RpcMethodName.UNINSTALL_VIRTUAL:
+        result = await channel.uninstallVirtualApp(payload.params);
+        break;
+      case NodeTypes.RpcMethodName.REJECT_INSTALL:
+        result = await channel.rejectInstallApp(payload.params);
+        break;
+      case NodeTypes.RpcMethodName.WITHDRAW:
+        result = await channel.providerWithdraw(payload.params);
+        break;
+      case NodeTypes.RpcMethodName.WITHDRAW_COMMITMENT:
+        result = await channel.withdrawCommitment(payload.params);
+        break;
+      default:
+        console.log(`WALLET CONNECT MAPPING ERROR: unknown method: ${payload.method}`);
+        break;
     }
-    walletConnector.approveRequest({id: payload.id, result})
+  } catch (e) {
+    console.log("AHIOFEJOIFEJIOFEAJ: ", e);
+  }
+  walletConnector.approveRequest({ id: payload.id, result });
 }
