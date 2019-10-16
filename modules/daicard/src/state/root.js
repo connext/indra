@@ -1,91 +1,85 @@
 import { Machine } from 'xstate';
 
-export const notifyStates = Machine(
-  {
-    initial: 'pending',
-    states: {
-      'pending': {
-        on: {
-          'DISMISS': 'hide',
-          'SUCCESS': 'success',
-          'ERROR': 'error',
-        },
+const notifyStates = (prefix) => ({
+  initial: 'idle',
+  states: {
+    'idle': {
+      on: {
+        [`START_${prefix.toUpperCase()}`]: 'pending',
+      }
+    },
+    'pending': {
+      on: {
+        [`DISMISS_${prefix.toUpperCase()}`]: 'hide',
+        [`ERROR_${prefix.toUpperCase()}`]: 'error',
+        [`SUCCESS_${prefix.toUpperCase()}`]: 'success',
       },
-      'success': {
-        on: {
-          'DISMISS': 'hide',
-        },
+    },
+    'success': {
+      on: {
+        [`DISMISS_${prefix.toUpperCase()}`]: 'hide',
+        [`RESET_${prefix.toUpperCase()}`]: 'idle',
       },
-      'error': {
-        on: {
-          'DISMISS': 'hide',
-        },
+    },
+    'error': {
+      on: {
+        [`DISMISS_${prefix.toUpperCase()}`]: 'hide',
+        [`RESET_${prefix.toUpperCase()}`]: 'idle',
       },
-      'hide': {}
+    },
+    'hide': {
+      on: {
+        [`ERROR_${prefix.toUpperCase()}`]: 'error',
+        [`RESET_${prefix.toUpperCase()}`]: 'idle',
+        [`SUCCESS_${prefix.toUpperCase()}`]: 'success',
+      },
     }
   }
-);
+});
 
 export const rootMachine = Machine(
   {
     id: 'root',
+    strict: true,
     initial: 'idle',
     states: {
-      'idle': { on: {
-        'GOOD_MORNING': 'checkingMigrations'
-      }},
-      'checkingMigrations': { on: {
-        'MIGRATE': 'migrating',
-        'START': 'starting',
-      }},
-      'migrating': { on: {
-        'DONE': 'starting',
-        'ERROR': 'error',
-        ...notifyStates,
-      }},
-      'starting': { on: {
-        'READY': 'ready',
-        'ERROR': 'error',
-        ...notifyStates,
-      }},
-      'ready': { on: {
-        'DEPOSIT': 'depositing',
-        'SWAP': 'swapping',
-        'RECEIVE': 'receiving',
-        'SEND': 'sending',
-        'WITHDRAW': 'withdrawing',
-        'ERROR': 'error',
-      }},
-      'depositing': { on: {
-        'DONE': 'ready',
-        'ERROR': 'error',
-        ...notifyStates,
-      }},
-      'swapping': { on: {
-        'DONE': 'ready',
-        'ERROR': 'error',
-        ...notifyStates,
-      }},
-      'receiving': { on: {
-        'DONE': 'ready',
-        'ERROR': 'error',
-        ...notifyStates,
-      }},
-      'sending': { on: {
-        'DONE': 'ready',
-        'ERROR': 'error',
-        ...notifyStates,
-      }},
-      'withdrawing': { on: {
-        'DONE': 'ready',
-        'ERROR': 'error',
-        ...notifyStates,
-      }},
+      'idle': {
+        on: {
+          'MIGRATE': 'migrating',
+          'START': 'starting',
+        },
+      },
+      'migrating': {
+        on: {
+          'START': 'starting',
+        },
+        ...notifyStates('migrate'),
+      },
+      'starting': {
+        on: {
+          'READY': 'ready',
+          'ERROR': 'error',
+        },
+        ...notifyStates('start'),
+      },
+      'ready': {
+        id: 'operations',
+        type: 'parallel',
+        states: {
+          'deposit': notifyStates('deposit'),
+          'swap': notifyStates('swap'),
+          'receive': notifyStates('receive'),
+          'redeem': notifyStates('redeem'),
+          'send': notifyStates('send'),
+          'withdraw': notifyStates('withdraw'),
+        },
+      },
       'error': {},
     },
   },
   {
-    actions: {},
+    actions: {
+    },
   }
 );
 

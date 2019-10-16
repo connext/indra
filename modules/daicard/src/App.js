@@ -59,8 +59,6 @@ const MAX_CHANNEL_VALUE = Currency.DAI("30");
 const DEFAULT_COLLATERAL_MINIMUM = Currency.DAI("5");
 const DEFAULT_AMOUNT_TO_COLLATERALIZE = Currency.DAI("10");
 
-const stateService = interpret(rootMachine);
-
 const style = withStyles((theme) => ({
   paper: {
     width: "100%",
@@ -106,9 +104,8 @@ class App extends React.Component {
           total: Currency.ETH("0", swapRate),
         },
       },
-      ethprovider: null,
-      legacyMigration: false, // rm
-      loadingConnext: true, // rm
+      ethprovider: new eth.providers.JsonRpcProvider(urls.ethProviderUrl),
+      machine: interpret(rootMachine),
       maxDeposit: null,
       minDeposit: null,
       network: {},
@@ -118,6 +115,7 @@ class App extends React.Component {
       receivingTransferStarted: false, // rm
       sendScanArgs: { amount: null, recipient: null },
       redeemScanArgs: { amount: null, recipient: null },
+      state: {},
       swapRate,
       token: null,
       tokenProfile: null,
@@ -135,6 +133,13 @@ class App extends React.Component {
   // ************************************************* //
 
   async componentDidMount() {
+    const { ethprovider, machine } = this.state;
+    machine.start();
+    machine.onTransition(state => {
+      this.setState({ state });
+      console.log(`=== Transitioning to ${JSON.stringify(state.value)} state`)
+    });
+
     // If no mnemonic, create one and save to local storage
     let mnemonic = localStorage.getItem("mnemonic");
     if (!mnemonic) {
@@ -142,15 +147,7 @@ class App extends React.Component {
       localStorage.setItem("mnemonic", mnemonic);
     }
 
-    stateService.onTransition(state => console.log(`transitioning to ${state.value} state`));
-    stateService.start();
-    stateService.send('GOOD_MORNING');
-
-    const nodeUrl = urls.nodeUrl;
-    const ethProviderUrl = urls.ethProviderUrl;
-    const ethprovider = new eth.providers.JsonRpcProvider(ethProviderUrl);
-    const cfPath = "m/44'/60'/0'/25446";
-    const wallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
+    const wallet = eth.Wallet.fromMnemonic(mnemonic, "m/44'/60'/0'/25446").connect(ethprovider);
     const network = await ethprovider.getNetwork();
 
     let store;
@@ -166,19 +163,19 @@ class App extends React.Component {
       store = storeFactory();
     }
 
-    const setMigrating = (willMigrate) => {
-      stateService.send(willMigrate ? 'DO_MIGRATE' : 'SKIP_MIGRATE');
-      this.setState({ legacyMigration: willMigrate, loadingConnext: !willMigrate });
+    if (localStorage.getItem("rpc-prod")) {
+      machine.send(['MIGRATE', 'START_MIGRATE']);
+      await migrate(urls.legacyUrl(network.chainId), wallet, urls.ethProviderUrl, machine);
+      localStorage.removeItem("rpc-prod");
     }
-
-    await migrate(urls.legacyUrl(network.chainId), wallet, ethProviderUrl, stateService);
-    stateService.send('START');
+    machine.send('START');
+    machine.send(['START', 'START_START']);
 
     const channel = await connext.connect({
-      ethProviderUrl,
+      ethProviderUrl: urls.ethProviderUrl,
       logLevel: 5,
       mnemonic,
-      nodeUrl,
+      nodeUrl: urls.nodeUrl,
       store,
     });
 
@@ -229,12 +226,11 @@ class App extends React.Component {
       assetId: token.address,
     });
     console.log(`Set a default token profile: ${JSON.stringify(tokenProfile)}`)
-    stateService.send('READY');
+    machine.send('READY');
 
     this.setState({
       channel,
       ethprovider,
-      loadingConnext: false,
       network,
       swapRate,
       token,
@@ -471,6 +467,7 @@ class App extends React.Component {
       balance,
       channel,
       swapRate,
+      machine,
       maxDeposit,
       minDeposit,
       network,
@@ -486,36 +483,36 @@ class App extends React.Component {
           <Paper elevation={1} className={classes.paper}>
             <MySnackbar
               variant="warning"
-              openWhen={stateService.state.matches('migrating.pending')}
-              onClose={() => stateService.send('DISMISS')}
+              openWhen={machine.state.matches('migrating.pending')}
+              onClose={() => machine.send('DISMISS_MIGRATE')}
               message="Migrating legacy channel to 2.0..."
               duration={30 * 60 * 1000}
             />
             <MySnackbar
               variant="warning"
-              openWhen={stateService.state.matches('starting.pending')}
-              onClose={() => stateService.send('DISMISS')}
+              openWhen={machine.state.matches('starting.pending')}
+              onClose={() => machine.send('DISMISS_START')}
               message="Starting Channel Controllers.."
               duration={30 * 60 * 1000}
             />
             <MySnackbar
               variant="info"
-              openWhen={stateService.state.matches('receiving.pending')}
-              onClose={() => stateService.send('DISMISS')}
+              openWhen={machine.state.matches('ready.receiving.pending')}
+              onClose={() => machine.send('DISMISS_RECEIVE')}
               message="Receiving Transfer..."
               duration={30 * 60 * 1000}
             />
             <MySnackbar
               variant="success"
-              openWhen={stateService.state.matches('receiving.success')}
-              onClose={() => stateService.send('DISMISS')}
+              openWhen={machine.state.matches('ready.receiving.success')}
+              onClose={() => machine.send('DISMISS_RECEIVE')}
               message="Transfer Receieved!"
               duration={30 * 60 * 1000}
             />
             <MySnackbar
               variant="error"
-              openWhen={stateService.state.matches('receiving.error')}
-              onClose={() => stateService.send('DISMISS')}
+              openWhen={machine.state.matches('ready.receiving.error')}
+              onClose={() => machine.send('DISMISS_RECEIVE')}
               message="Transfer Failed"
               duration={30 * 60 * 1000}
             />
