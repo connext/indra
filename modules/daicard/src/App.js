@@ -31,12 +31,12 @@ const urls = {
   ethProviderUrl: process.env.REACT_APP_ETH_URL_OVERRIDE || `${window.location.origin}/api/ethprovider`,
   nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
   legacyUrl: (chainId) =>
-    chainId === "1" ? "https://hub.connext.network/api/hub" :
-    chainId === "4" ? "https://rinkeby.hub.connext.network/api/hub" :
+    chainId.toString() === "1" ? "https://hub.connext.network/api/hub" :
+    chainId.toString() === "4" ? "https://rinkeby.hub.connext.network/api/hub" :
     undefined,
   pisaUrl: (chainId) =>
-    chainId === "1" ? "https://connext.pisa.watch" :
-    chainId === "4" ? "https://connext-rinkeby.pisa.watch" :
+    chainId.toString() === "1" ? "https://connext.pisa.watch" :
+    chainId.toString() === "4" ? "https://connext-rinkeby.pisa.watch" :
     undefined
 };
 
@@ -134,6 +134,7 @@ class App extends React.Component {
 
   async componentDidMount() {
     // If no mnemonic, create one and save to local storage
+    console.log(`dont worry, you're on the right branch :)`)
     let mnemonic = localStorage.getItem("mnemonic");
     if (!mnemonic) {
       mnemonic = eth.Wallet.createRandom().mnemonic;
@@ -336,7 +337,6 @@ class App extends React.Component {
       console.log(`Depositing ${depositParams.amount} tokens into channel: ${channel.opts.multisigAddress}`);
       const result = await channel.deposit(depositParams);
       await this.refreshBalances();
-      await this.refreshBalances();
       console.log(`Successfully deposited tokens! Result: ${JSON.stringify(result, null, 2)}`);
       this.setPending({ type: "deposit", complete: true, closed: false });
     } else {
@@ -498,13 +498,6 @@ class App extends React.Component {
           <Paper elevation={1} className={classes.paper}>
             <MySnackbar
               variant="warning"
-              openWhen={this.state.legacyMigration}
-              onClose={() => this.setState({ legacyMigration: false })}
-              message="Migrating legacy channel to 2.0..."
-              duration={30 * 60 * 1000}
-            />
-            <MySnackbar
-              variant="warning"
               openWhen={this.state.loadingConnext}
               onClose={() => this.setState({ loadingConnext: false })}
               message="Starting Channel Controllers.."
@@ -531,6 +524,13 @@ class App extends React.Component {
               message="Transfer Failed"
               duration={30 * 60 * 1000}
             />
+            <MySnackbar
+              variant="warning"
+              openWhen={this.state.legacyMigration}
+              onClose={() => this.setState({ legacyMigration: false })}
+              message="Migrating legacy channel to 2.0..."
+              duration={30 * 60 * 1000}
+            />
             <AppBarComponent address={address} />
             <Route
               exact
@@ -540,6 +540,7 @@ class App extends React.Component {
                   <Home
                     {...props}
                     balance={balance}
+                    swapRate={swapRate}
                     scanQRCode={this.scanQRCode}
                   />
                   <SetupCard

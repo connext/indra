@@ -59,7 +59,7 @@ export const MySnackbar = style(props => {
           color="secondary"
           size="small"
           key="view"
-          href={`https://etherscan.io/tx/${networkPrefix}${txHash}`}
+          href={`https://${networkPrefix}etherscan.io/tx/${txHash}`}
           target="_blank"
         >
           View Tx
