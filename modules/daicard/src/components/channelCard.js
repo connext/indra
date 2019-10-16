@@ -17,7 +17,7 @@ const styles = theme => ({
 });
 
 export const ChannelCard = withStyles(styles)(props => {
-  const { balance, classes } = props;
+  const { balance, classes, swapRate } = props;
   const split = (balance) => {
     const bal = balance.format({ decimals: 2, symbol: false, round: false });
     const whole = bal.substring(0, bal.indexOf('.'));
@@ -49,10 +49,10 @@ export const ChannelCard = withStyles(styles)(props => {
               {"$ "}
             </Typography>
             <Typography style={{display: 'inline-block'}} variant="h1" className={classes.row}>
-              <span>{split(balance.channel.total.toDAI()).whole}</span>
+              <span>{split(balance.channel.total.toDAI(swapRate)).whole}</span>
             </Typography>
             <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
-              <span>{split(balance.channel.total.toDAI()).part}</span>
+              <span>{split(balance.channel.total.toDAI(swapRate)).part}</span>
             </Typography>
           </span>
           {/* <span style={{fontSize: 64}}>&nbsp;&nbsp;&nbsp;</span> */}
