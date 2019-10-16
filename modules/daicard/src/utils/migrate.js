@@ -5,7 +5,7 @@ import { formatEther } from "ethers/utils";
 import { toBN } from './bn';
 
 export const migrate = async (hubUrl, wallet, ethUrl, setMigrating) => {
-  console.log(`____________________Migration Started | hubUrl: ${hubUrl}, ethUrl: ${ethUrl}, setMigrating: ${setMigrating}`)
+  console.log(`____________________Migration Started | hubUrl: ${hubUrl}, ethUrl: ${ethUrl}`)
   if (!hubUrl) { return; }
   const legacy = await Connext.createClient({ ethUrl, hubUrl, mnemonic: wallet.mnemonic });
   await legacy.start();
@@ -37,10 +37,7 @@ export const migrate = async (hubUrl, wallet, ethUrl, setMigrating) => {
     )}`);
 
     try {
-      // To debug: simulate a withdrawal by just waiting for a bit
-      console.log(`Currently simulating withdrawal with params ${JSON.stringify(withdrawalParams, null, 2)}`)
-      await new Promise((res, rej) => setTimeout(res, 5000));
-      // await legacy.withdraw(withdrawalParams);
+      await legacy.withdraw(withdrawalParams);
     } catch (e) {
       console.error(e);
     }
