@@ -19,7 +19,7 @@ export const Home = style(props => {
   const { balance } = props
 
   const scanQRCode = async (data) => {
-    const path = await props.scanQRCode(data);
+    // const path = await props.scanQRCode(data);
     setScanModal(false);
     if(data.startsWith("wc:")){
       console.log("DATA: " + data)

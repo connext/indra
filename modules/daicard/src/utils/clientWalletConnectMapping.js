@@ -96,9 +96,6 @@ async function mapPayloadToClient(payload) {
       case NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES:
         result = await channel.getProposedAppInstances(payload.params);
         break;
-      case NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES:
-        result = await channel.getProposedAppInstance(payload.params);
-        break;
       case NodeTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS:
         result = await channel.getAppInstanceDetails(payload.params);
         break;
