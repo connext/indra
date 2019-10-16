@@ -633,7 +633,7 @@ export class ConnextInternal extends ConnextChannel {
   public getLatestNodeSubmittedWithdrawal = async (): Promise<
     { retry: number; tx: CFCoreTypes.MinimalTransaction } | undefined
   > => {
-    const value = await this.store.get(withdrawalKey(this.cfCore.publicIdentifier));
+    const value = await this.store.get(withdrawalKey(this.channelRouter.publicIdentifier));
 
     if (!value) {
       return undefined;
@@ -642,7 +642,7 @@ export class ConnextInternal extends ConnextChannel {
     const noRetry = value.retry === undefined || value.retry === null;
     if (!value.tx || noRetry) {
       const msg = `Can not find tx or retry in store under key ${withdrawalKey(
-        this.cfCore.publicIdentifier,
+        this.channelRouter.publicIdentifier,
       )}`;
       this.logger.error(msg);
       throw new Error(msg);
