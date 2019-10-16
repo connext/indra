@@ -3,6 +3,7 @@ import { Zero } from "ethers/constants";
 import { formatEther } from "ethers/utils";
 
 import { toBN } from './bn';
+import interval from "interval-promise";
 
 export const migrate = async (hubUrl, wallet, ethUrl, setMigrating) => {
   console.log(`____________________Migration Started | hubUrl: ${hubUrl}, ethUrl: ${ethUrl}`)
@@ -39,6 +40,13 @@ export const migrate = async (hubUrl, wallet, ethUrl, setMigrating) => {
 
     try {
       await legacy.withdraw(withdrawalParams);
+      // wait for a confirm pending to come through
+      await interval(async (iteration, stop) => {
+        const state = await legacy.getState()
+        if (state.runtime.withdrawal.detected && state.runtime.withdrawal.submitted) {
+          stop()
+        }
+      }, 500)
     } catch (e) {
       console.error(e);
     }
