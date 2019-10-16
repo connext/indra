@@ -1,7 +1,7 @@
 import { Machine } from 'xstate';
 
-const notifyStates = (prefix) => ({
-  initial: 'idle',
+const notifyStates = (prefix, initial = 'idle') => ({
+  initial,
   states: {
     'idle': {
       on: {
@@ -10,30 +10,31 @@ const notifyStates = (prefix) => ({
     },
     'pending': {
       on: {
-        [`DISMISS_${prefix.toUpperCase()}`]: 'hide',
         [`ERROR_${prefix.toUpperCase()}`]: 'error',
         [`SUCCESS_${prefix.toUpperCase()}`]: 'success',
       },
+      initial: 'show',
+      states: {
+        'show': {
+          on: {
+            [`DISMISS_${prefix.toUpperCase()}`]: 'hide',
+          }
+        },
+        'hide': {
+          type: 'final',
+        },
+      }
     },
     'success': {
       on: {
-        [`DISMISS_${prefix.toUpperCase()}`]: 'hide',
         [`RESET_${prefix.toUpperCase()}`]: 'idle',
       },
     },
     'error': {
       on: {
-        [`DISMISS_${prefix.toUpperCase()}`]: 'hide',
         [`RESET_${prefix.toUpperCase()}`]: 'idle',
       },
     },
-    'hide': {
-      on: {
-        [`ERROR_${prefix.toUpperCase()}`]: 'error',
-        [`RESET_${prefix.toUpperCase()}`]: 'idle',
-        [`SUCCESS_${prefix.toUpperCase()}`]: 'success',
-      },
-    }
   }
 });
 
@@ -45,20 +46,19 @@ export const rootMachine = Machine(
     states: {
       'idle': {
         on: {
-          'MIGRATE': 'migrating',
-          'START': 'starting',
+          'MIGRATE': 'migrate',
+          'START': 'start',
         },
       },
-      'migrating': {
+      'migrate': {
         on: {
-          'START': 'starting',
+          'START': 'start',
         },
         ...notifyStates('migrate'),
       },
-      'starting': {
+      'start': {
         on: {
           'READY': 'ready',
-          'ERROR': 'error',
         },
         ...notifyStates('start'),
       },
@@ -74,7 +74,6 @@ export const rootMachine = Machine(
           'withdraw': notifyStates('withdraw'),
         },
       },
-      'error': {},
     },
   },
   {

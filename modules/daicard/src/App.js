@@ -1,7 +1,7 @@
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import * as connext from "@connext/client";
 import { Contract, ethers as eth } from "ethers";
-import { AddressZero, Zero } from "ethers/constants";
+import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { formatEther, parseEther } from "ethers/utils";
 import interval from "interval-promise";
 import { PisaClient } from "pisa-client";
@@ -124,7 +124,6 @@ class App extends React.Component {
     this.autoDeposit.bind(this);
     this.autoSwap.bind(this);
     this.setPending.bind(this);
-    this.closeConfirmations.bind(this);
     this.scanQRCode.bind(this);
   }
 
@@ -287,7 +286,7 @@ class App extends React.Component {
   // Core Function
   // Merge deposit limits
   autoDeposit = async () => {
-    const { balance, channel, minDeposit, maxDeposit, pending, swapRate, token } = this.state;
+    const { balance, channel, machine, maxDeposit, minDeposit, state, swapRate, token } = this.state;
     if (!channel) {
       console.warn(`Channel not available yet.`);
       return;
@@ -296,8 +295,8 @@ class App extends React.Component {
       console.debug(`No on-chain eth to deposit`)
       return;
     }
-    if (!pending.complete) {
-      console.log(`An operation of type ${pending.type} is pending, waiting to deposit`)
+    if (state.matches('ready.deposit.pending')) {
+      console.debug(`A deposit is already pending`)
       return;
     }
 
@@ -309,6 +308,8 @@ class App extends React.Component {
     }
 
     if (balance.onChain.token.wad.gt(Zero)) {
+      machine.send(['START_DEPOSIT']);
+
       this.setPending({ type: "deposit", complete: false, closed: false });
       const amount = minBN([
         Currency.WEI(nowMaxDeposit, swapRate).toDAI().wad,
@@ -353,7 +354,7 @@ class App extends React.Component {
   }
 
   autoSwap = async () => {
-    const { balance, channel, maxDeposit, pending, swapRate, token } = this.state;
+    const { balance, channel, maxDeposit, state, swapRate, token } = this.state;
     if (!channel) {
       console.warn(`Channel not available yet.`);
       return;
@@ -365,8 +366,8 @@ class App extends React.Component {
     if (balance.channel.token.wad.gte(maxDeposit.toDAI(swapRate).wad)) {
       return; // swap ceiling has been reached, no need to swap more
     }
-    if (!pending.complete) {
-      console.log(`An operation of type ${pending.type} is pending, waiting to swap`)
+    if (state.matches('ready.swap.pending')) {
+      console.log(`An swap operation is already pending`);
       return;
     }
 
@@ -406,11 +407,6 @@ class App extends React.Component {
 
   setPending = (pending) => {
     this.setState({ pending });
-  }
-
-  closeConfirmations = () => {
-    const { pending } = this.state;
-    this.setState({ pending: { ...pending, closed: true } });
   }
 
   // ************************************************* //
@@ -463,6 +459,7 @@ class App extends React.Component {
   }
 
   render() {
+    const txHash = HashZero; // TODO
     const {
       balance,
       channel,
@@ -471,7 +468,6 @@ class App extends React.Component {
       maxDeposit,
       minDeposit,
       network,
-      pending,
       sendScanArgs,
       token,
       wallet,
@@ -483,37 +479,16 @@ class App extends React.Component {
           <Paper elevation={1} className={classes.paper}>
             <MySnackbar
               variant="warning"
-              openWhen={machine.state.matches('migrating.pending')}
+              openWhen={machine.state.matches('migrate.pending.show')}
               onClose={() => machine.send('DISMISS_MIGRATE')}
               message="Migrating legacy channel to 2.0..."
               duration={30 * 60 * 1000}
             />
             <MySnackbar
               variant="warning"
-              openWhen={machine.state.matches('starting.pending')}
+              openWhen={machine.state.matches('start.pending.show')}
               onClose={() => machine.send('DISMISS_START')}
               message="Starting Channel Controllers.."
-              duration={30 * 60 * 1000}
-            />
-            <MySnackbar
-              variant="info"
-              openWhen={machine.state.matches('ready.receiving.pending')}
-              onClose={() => machine.send('DISMISS_RECEIVE')}
-              message="Receiving Transfer..."
-              duration={30 * 60 * 1000}
-            />
-            <MySnackbar
-              variant="success"
-              openWhen={machine.state.matches('ready.receiving.success')}
-              onClose={() => machine.send('DISMISS_RECEIVE')}
-              message="Transfer Receieved!"
-              duration={30 * 60 * 1000}
-            />
-            <MySnackbar
-              variant="error"
-              openWhen={machine.state.matches('ready.receiving.error')}
-              onClose={() => machine.send('DISMISS_RECEIVE')}
-              message="Transfer Failed"
               duration={30 * 60 * 1000}
             />
             <AppBarComponent address={wallet ? wallet.address : AddressZero} />
@@ -601,9 +576,9 @@ class App extends React.Component {
               )}
             />
             <Confirmations
+              machine={machine}
+              txHash={txHash}
               network={network}
-              pending={pending}
-              closeConfirmations={this.closeConfirmations.bind(this)}
             />
           </Paper>
         </Grid>
