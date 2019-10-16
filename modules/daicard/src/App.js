@@ -90,7 +90,6 @@ class App extends React.Component {
     super(props);
     const swapRate = "100.00";
     this.state = {
-      address: "",
       balance: {
         channel: {
           ether: Currency.ETH("0", swapRate),
@@ -104,7 +103,6 @@ class App extends React.Component {
         },
       },
       ethprovider: null,
-      freeBalanceAddress: null,
       legacyMigration: false,
       loadingConnext: true,
       maxDeposit: null,
@@ -115,9 +113,9 @@ class App extends React.Component {
       receivingTransferFailed: false,
       receivingTransferStarted: false,
       sendScanArgs: { amount: null, recipient: null },
+      redeemScanArgs: { amount: null, recipient: null },
       swapRate,
       token: null,
-      xpub: "",
       tokenProfile: null,
     };
     this.refreshBalances.bind(this);
@@ -144,13 +142,13 @@ class App extends React.Component {
     const ethProviderUrl = urls.ethProviderUrl;
     const ethprovider = new eth.providers.JsonRpcProvider(ethProviderUrl);
     const cfPath = "m/44'/60'/0'/25446";
-    const cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
+    const wallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
     const network = await ethprovider.getNetwork();
 
     let store;
     if (urls.pisaUrl(network.chainId)) {
       store = storeFactory({
-        wallet: cfWallet,
+        wallet,
         pisaClient: new PisaClient(
           urls.pisaUrl(network.chainId),
           "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3", // TODO: Don't hardcode
@@ -164,7 +162,7 @@ class App extends React.Component {
       this.setState({ legacyMigration: state, loadingConnext: !state });
     }
 
-    await migrate(urls.legacyUrl(network.chainId), cfWallet, ethProviderUrl, setMigrating.bind(this));
+    await migrate(urls.legacyUrl(network.chainId), wallet, ethProviderUrl, setMigrating.bind(this));
 
     const channel = await connext.connect({
       ethProviderUrl,
@@ -183,15 +181,14 @@ class App extends React.Component {
       await new Promise(res => setTimeout(() => res(), 1000));
     }
 
-    const freeBalanceAddress = channel.freeBalanceAddress || channel.myFreeBalanceAddress;
-    const token = new Contract(channel.config.contractAddresses.Token, tokenArtifacts.abi, cfWallet);
+    const token = new Contract(channel.config.contractAddresses.Token, tokenArtifacts.abi, wallet);
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
     console.log(`Client created successfully!`);
     console.log(` - Public Identifier: ${channel.publicIdentifier}`);
     console.log(` - Account multisig address: ${channel.opts.multisigAddress}`);
-    console.log(` - CF Account address: ${cfWallet.address}`);
-    console.log(` - Free balance address: ${freeBalanceAddress}`);
+    console.log(` - CF Account address: ${wallet.address}`);
+    console.log(` - Free balance address: ${channel.freeBalanceAddress}`);
     console.log(` - Token address: ${token.address}`);
     console.log(` - Swap rate: ${swapRate}`)
 
@@ -216,20 +213,25 @@ class App extends React.Component {
       this.setState({ receivingTransferFailed: true })
     })
 
+    const tokenProfile = await channel.addPaymentProfile({
+      amountToCollateralize: DEFAULT_AMOUNT_TO_COLLATERALIZE.wad.toString(),
+      minimumMaintainedCollateral: DEFAULT_COLLATERAL_MINIMUM.wad.toString(),
+      assetId: token.address,
+    });
+    console.log(`Set a default token profile: ${JSON.stringify(tokenProfile)}`)
+
     this.setState({
-      address: cfWallet.address,
       channel,
       ethprovider,
-      freeBalanceAddress,
       loadingConnext: false,
       network,
       swapRate,
       token,
-      wallet: cfWallet,
-      xpub: channel.publicIdentifier,
+      tokenProfile,
+      wallet,
     });
 
-    await this.addDefaultPaymentProfile();
+
     await this.startPoller();
   }
 
@@ -252,33 +254,9 @@ class App extends React.Component {
     }, 3000);
   }
 
-  addDefaultPaymentProfile = async () => {
-    // add the payment profile for tokens only
-    // then request collateral of this type
-    const { token, channel } = this.state;
-
-    // TODO: set default eth profile
-    // await channel.addPaymentProfile({
-    //   amountToCollateralize: ,
-    //   assetId: AddressZero,
-    // });
-    if (!token) {
-      console.log("No token found, not setting default token payment profile")
-      return;
-    }
-    const tokenProfile = await channel.addPaymentProfile({
-      amountToCollateralize: DEFAULT_AMOUNT_TO_COLLATERALIZE.wad.toString(),
-      minimumMaintainedCollateral: DEFAULT_COLLATERAL_MINIMUM.wad.toString(),
-      assetId: token.address,
-    });
-    this.setState({ tokenProfile })
-    console.log(`Got a default token profile: ${JSON.stringify(this.state.tokenProfile)}`)
-    return tokenProfile;
-  }
-
   refreshBalances = async () => {
     const {
-      address, balance, channel, ethprovider, freeBalanceAddress, swapRate, token,
+      balance, channel, ethprovider, swapRate, token, wallet
     } = this.state;
     let gasPrice = await ethprovider.getGasPrice();
     let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
@@ -286,15 +264,15 @@ class App extends React.Component {
     const minDeposit = Currency.WEI(totalDepositGasWei.add(totalWithdrawalGasWei), swapRate).toETH();
     const maxDeposit = MAX_CHANNEL_VALUE.toETH(swapRate); // Or get based on payment profile?
     this.setState({ maxDeposit, minDeposit });
-    if (!channel || !swapRate) { return; }
+    if (!channel || !swapRate || !wallet) { return; }
     const getTotal = (ether, token) => Currency.WEI(ether.wad.add(token.toETH().wad), swapRate);
     const freeEtherBalance = await channel.getFreeBalance();
     const freeTokenBalance = await channel.getFreeBalance(token.address);
-    balance.onChain.ether = Currency.WEI(await ethprovider.getBalance(address), swapRate).toETH();
-    balance.onChain.token = Currency.DEI(await token.balanceOf(address), swapRate).toDAI();
+    balance.onChain.ether = Currency.WEI(await ethprovider.getBalance(wallet.address), swapRate).toETH();
+    balance.onChain.token = Currency.DEI(await token.balanceOf(wallet.address), swapRate).toDAI();
     balance.onChain.total = getTotal(balance.onChain.ether, balance.onChain.token).toETH();
-    balance.channel.ether = Currency.WEI(freeEtherBalance[freeBalanceAddress], swapRate).toETH();
-    balance.channel.token = Currency.DEI(freeTokenBalance[freeBalanceAddress], swapRate).toDAI();
+    balance.channel.ether = Currency.WEI(freeEtherBalance[channel.freeBalanceAddress], swapRate).toETH();
+    balance.channel.token = Currency.DEI(freeTokenBalance[channel.freeBalanceAddress], swapRate).toDAI();
     balance.channel.total = getTotal(balance.channel.ether, balance.channel.token).toETH();
     this.setState({ balance });
   }
@@ -479,7 +457,6 @@ class App extends React.Component {
 
   render() {
     const {
-      address,
       balance,
       channel,
       swapRate,
@@ -489,7 +466,7 @@ class App extends React.Component {
       pending,
       sendScanArgs,
       token,
-      xpub,
+      wallet,
     } = this.state;
     const { classes } = this.props;
     return (
@@ -531,7 +508,7 @@ class App extends React.Component {
               message="Transfer Failed"
               duration={30 * 60 * 1000}
             />
-            <AppBarComponent address={address} />
+            <AppBarComponent address={wallet ? wallet.address : AddressZero} />
             <Route
               exact
               path="/"
@@ -555,7 +532,7 @@ class App extends React.Component {
               render={props => (
                 <DepositCard
                   {...props}
-                  address={address}
+                  address={wallet ? wallet.address : AddressZero}
                   maxDeposit={maxDeposit}
                   minDeposit={minDeposit}
                 />
@@ -566,7 +543,7 @@ class App extends React.Component {
               path="/request"
               render={props => <RequestCard
                 {...props}
-                xpub={xpub}
+                xpub={channel.publicIdentifier}
                 maxDeposit={maxDeposit}
               />}
             />
