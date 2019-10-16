@@ -8,6 +8,7 @@ import {
   PaymentProfile,
   SupportedApplication,
   SupportedNetwork,
+  Transfer,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { providers } from "ethers";
@@ -93,6 +94,14 @@ export class MockNodeClientApi implements INodeApiClient {
     this.signature = undefined;
   }
 
+  async acquireLock(
+    lockName: string,
+    callback: (...args: any[]) => any,
+    timeout: number,
+  ): Promise<any> {
+    this.log.info(`acquireLock`);
+  }
+
   // should have keys same as the message passed in to fake messaging client
   // TODO: how well will this work with dynamic paths?
   public static returnValues: any = {
@@ -127,6 +136,10 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public async getLatestSwapRate(from: string, to: string): Promise<string> {
     return "100";
+  }
+
+  public async getTransferHistory(): Promise<Transfer[]> {
+    return [];
   }
 
   public async createChannel(): Promise<CreateChannelResponse> {

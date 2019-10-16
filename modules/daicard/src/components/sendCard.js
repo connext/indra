@@ -83,20 +83,27 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
   const [link, setLink] = useState(undefined);
   const [paymentState, paymentAction] = useMachine(PaymentStateMachine);
   const [recipient, setRecipient] = useState({ display: "", error: null, value: null });
-  const [scan, setScan] = useState(false);
+  const [scan, setScan] = useState(false)
 
+  // need to extract token balance so it can be used as a dependency for the hook properly
+  const tokenBalance = balance.channel.token.wad
   const updateAmountHandler = useCallback((rawValue) => {
     let value = null;
     let error = null;
-    try {
-      value = Currency.DAI(rawValue);
-    } catch (e) {
-      error = `Please enter a valid amount`;
+    if (!rawValue) {
+      error = `Invalid amount: must be greater than 0`;
     }
-    if (value && value.wad.gt(balance.channel.token.wad)) {
+    if (!error) {
+      try {
+        value = Currency.DAI(rawValue);
+      } catch (e) {
+        error = `Please enter a valid amount`;
+      }
+    }
+    if (!error && value && value.wad.gt(tokenBalance)) {
       error = `Invalid amount: must be less than your balance`;
     }
-    if (value && value.wad.lte(Zero)) {
+    if (!error && value && value.wad.lte(Zero)) {
       error = "Invalid amount: must be greater than 0";
     }
     setAmount({
@@ -104,14 +111,14 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
       error,
       value: error ? null : value,
     });
-  }, [balance])
+  }, [tokenBalance])
 
   const updateRecipientHandler = (rawValue) => {
     const xpubLen = 111;
     let value = null;
     let error = null;
     value = rawValue;
-    if (!value.startsWith("xpub")) {
+    if (!value || !value.startsWith("xpub")) {
       error = "Invalid recipient: should start with xpub";
     }
     if (!error && value.length !== xpubLen) {
@@ -274,7 +281,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
         <TextField
           fullWidth
           id="outlined"
-          label="Recipient Address"
+          label="Recipient Public Identifier"
           type="string"
           value={recipient.display}
           onChange={evt => updateRecipientHandler(evt.target.value)}
@@ -435,13 +442,6 @@ const SendCardModal = ({
             </Typography>
           </DialogTitle>
           <DialogContent>
-            <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
-              Recipient's Card is being set up. This should take 20-30 seconds.
-            </DialogContentText>
-            <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
-              If you stay on this page, your payment will be retried automatically. If you navigate
-              away or refresh the page, you will have to attempt the payment again yourself.
-            </DialogContentText>
             <CircularProgress style={{ marginTop: "1em" }} />
           </DialogContent>
         </Grid>
@@ -473,7 +473,7 @@ const SendCardModal = ({
               Amount: ${amount}
             </DialogContentText>
             <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
-              To: {recipient.substr(0, 5)}...
+              To: {recipient.substr(0, 8)}...
             </DialogContentText>
           </DialogContent>
         </Grid>

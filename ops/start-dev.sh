@@ -16,6 +16,8 @@ ETH_NETWORK="${1:-kovan}"
 # config & hard-coded stuff you might want to change
 
 log_level=3
+nats_port=4222
+node_port=8080
 
 if [[ "$ETH_NETWORK" == "rinkeby" ]]
 then eth_rpc_url="https://rinkeby.infura.io/metamask"
@@ -42,16 +44,12 @@ builder_image="${project}_builder"
 daicard_devserver_image="$builder_image"
 database_image="postgres:9-alpine"
 ethprovider_image="trufflesuite/ganache-cli:v6.4.5"
-hasura_image="hasura/graphql-engine:latest"
 nats_image="nats:2.0.0-linux"
 node_image="$builder_image"
 proxy_image="${project}_proxy:dev"
 redis_image=redis:5-alpine
 redis_url="redis://redis:6379"
 relay_image="${project}_relay"
-
-node_port=8080
-nats_port=4222
 
 ####################
 # Deploy according to above configuration
@@ -64,7 +62,6 @@ function pull_if_unavailable {
 }
 pull_if_unavailable "$database_image"
 pull_if_unavailable "$ethprovider_image"
-pull_if_unavailable "$hasura_image"
 pull_if_unavailable "$nats_image"
 
 # Initialize random new secrets
@@ -88,7 +85,7 @@ then
   echo "Created ATTACHABLE network with id $id"
 fi
 
-number_of_services=9 # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services=8 # NOTE: Gotta update this manually when adding/removing services :(
 
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
@@ -114,7 +111,6 @@ services:
       DAICARD_URL: http://daicard:3000
       ETH_RPC_URL: $eth_rpc_url
       MESSAGING_URL: http://relay:4223
-      HASURA_URL: http://hasura:8080
       MODE: dev
     networks:
       - $project
@@ -204,16 +200,6 @@ services:
       - $project
     ports:
       - "$nats_port:$nats_port"
-
-  hasura:
-    image: $hasura_image
-    environment:
-      HASURA_GRAPHQL_DATABASE_URL: "postgres://$pg_user:$pg_user@$pg_host:$pg_port/$project"
-      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
-    networks:
-      - $project
-    ports:
-      - "8083:8080"
 
   redis:
     image: $redis_image

@@ -1,8 +1,7 @@
 import { Module } from "@nestjs/common";
 
-import { AppController } from "./app.controller";
-import { AppService } from "./app.service";
 import { AppRegistryModule } from "./appRegistry/appRegistry.module";
+import { AuthModule } from "./auth/auth.module";
 import { CFCoreController } from "./cfCore/cfCore.controller";
 import { CFCoreModule } from "./cfCore/cfCore.module";
 import { ChannelModule } from "./channel/channel.module";
@@ -16,21 +15,22 @@ import { SwapRateModule } from "./swapRate/swapRate.module";
 import { TransferModule } from "./transfer/transfer.module";
 
 @Module({
-  controllers: [AppController, CFCoreController],
+  controllers: [CFCoreController],
   exports: [ConfigModule],
   imports: [
-    DatabaseModule,
-    ConfigModule,
+    AppRegistryModule,
+    AuthModule,
     CFCoreModule,
     ChannelModule,
-    MessagingModule,
-    SwapRateModule,
-    AppRegistryModule,
-    TransferModule,
+    ConfigModule,
+    DatabaseModule,
     ListenerModule,
-    RedisModule,
     LockModule,
+    MessagingModule,
+    RedisModule,
+    SwapRateModule,
+    TransferModule,
   ],
-  providers: [AppService],
+  providers: [],
 })
 export class AppModule {}

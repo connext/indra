@@ -11,6 +11,7 @@ import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { formatEther, parseEther } from "ethers/utils";
 import interval from "interval-promise";
+import { PisaClient } from "pisa-client";
 import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import tokenArtifacts from "openzeppelin-solidity/build/contracts/ERC20Mintable.json";
@@ -32,12 +33,13 @@ import { SendCard } from "./components/sendCard";
 import { SettingsCard } from "./components/settingsCard";
 import { SetupCard } from "./components/setupCard";
 import { SupportCard } from "./components/supportCard";
-import { Currency, instantiateClient, minBN, toBN, tokenToWei, weiToToken } from "./utils";
+import { Currency, instantiateClient, minBN, storeFactory, toBN, tokenToWei, weiToToken } from "./utils";
 
 // Optional URL overrides for custom urls
 const overrides = {
   nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE,
   ethProviderUrl: process.env.REACT_APP_ETH_URL_OVERRIDE,
+  pisaUrl: process.env.PISA_URL_OVERRIDE,
 };
 
 // Constants for channel max/min - this is also enforced on the hub
@@ -125,6 +127,7 @@ class App extends React.Component {
       loadingConnext: true,
       maxDeposit: null,
       minDeposit: null,
+      network: {},
       pending: { type: "null", complete: true, closed: true },
       channelProviderType: null,
       receivingTransferCompleted: false,
@@ -178,6 +181,23 @@ class App extends React.Component {
         localStorage.setItem("mnemonic", mnemonic);
       }
       cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
+      
+      let store = storeFactory();
+
+      const network = await ethprovider.getNetwork();
+      if (network.chainId === 4) {
+        const pisaContractAddress = "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3";      
+        const pisaClient = new PisaClient(
+          overrides.pisaUrl || "https://connext-rinkeby.pisa.watch/",
+          pisaContractAddress,
+        );
+        console.info(`Using chainId ${network.chainId} and pisaContract at ${pisaContractAddress}`);
+        store = storeFactory({
+          provider: new eth.providers.JsonRpcProvider(ethProviderUrl),
+          wallet: cfWallet,
+          pisaClient,
+        });
+      }
 
       channel = instantiateClient();
     } else if (this.state.channelProviderType === "walletconnect") {
@@ -271,6 +291,7 @@ class App extends React.Component {
       ethprovider,
       freeBalanceAddress,
       loadingConnext: false,
+      network,
       swapRate,
       token,
       xpub: channel.publicIdentifier,
@@ -588,6 +609,7 @@ class App extends React.Component {
       swapRate,
       maxDeposit,
       minDeposit,
+      network,
       pending,
       sendScanArgs,
       token,
@@ -696,6 +718,7 @@ class App extends React.Component {
             />
             <Route path="/support" render={props => <SupportCard {...props} channel={channel} />} />
             <Confirmations
+              network={network}
               pending={pending}
               closeConfirmations={this.closeConfirmations.bind(this)}
             />

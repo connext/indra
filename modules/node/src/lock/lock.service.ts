@@ -10,6 +10,60 @@ const logger = new CLogger("LockService");
 export class LockService {
   constructor(@Inject(RedlockProviderId) private readonly redlockClient: Redlock) {}
 
+  async lockedOperation(
+    lockName: string,
+    callback: (...args: any[]) => any,
+    timeout: number,
+  ): Promise<any> {
+    const hardcodedTTL = 90_000;
+    logger.debug(`Using lock ttl of ${hardcodedTTL / 1000} seconds`);
+    logger.debug(`Acquiring lock for ${lockName} ${Date.now()}`);
+    return new Promise((resolve: any, reject: any): any => {
+      this.redlockClient
+        .lock(lockName, hardcodedTTL)
+        .then(async (lock: Redlock.Lock) => {
+          const acquiredAt = Date.now();
+          logger.debug(`Acquired lock at ${acquiredAt} for ${lockName}:`);
+          let retVal: any;
+          try {
+            // run callback
+            retVal = await callback();
+            // return
+          } catch (e) {
+            // TODO: check exception... if the lock failed
+            logger.error("Failed to execute callback while lock is held");
+            logger.error(e);
+          } finally {
+            // unlock
+            logger.debug(`Releasing lock for ${lock.resource} with secret ${lock.value}`);
+            lock
+              .unlock()
+              .then(() => {
+                logger.debug(`Lock released at: ${Date.now()}`);
+                resolve(retVal);
+              })
+              .catch((e: any) => {
+                const acquisitionDelta = Date.now() - acquiredAt;
+                if (acquisitionDelta < hardcodedTTL) {
+                  logger.error(
+                    `Failed to release lock: ${e}; delta since lock acquisition: ${acquisitionDelta}`,
+                  );
+                  reject(e);
+                } else {
+                  logger.debug(`Failed to release the lock due to expired ttl: ${e}; `);
+                  if (retVal) resolve(retVal);
+                }
+              });
+          }
+        })
+        .catch((e: any) => {
+          logger.error("Failed to acquire the lock");
+          logger.error(e);
+          reject(e);
+        });
+    });
+  }
+
   async acquireLock(lockName: string, lockTTL: number = 90_000): Promise<string> {
     const hardcodedTTL = 90_000;
     logger.debug(`Using lock ttl of ${hardcodedTTL / 1000} seconds`);

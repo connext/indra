@@ -67,7 +67,7 @@ export class ConnextListener extends EventEmitter {
       // FIXME: type of ProposeMessage should extend CFCore.NodeMessage, which
       // has a from field, but ProposeMessage does not
       if ((data as any).from === this.channelRouter.publicIdentifier) {
-        this.log.info(
+        this.log.debug(
           `Received proposal from our own node, doing nothing: ${JSON.stringify(data)}`,
         );
         return;
@@ -225,7 +225,7 @@ export class ConnextListener extends EventEmitter {
   };
 
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
-    this.log.info(`Emitted ${event} with data ${JSON.stringify(data)} at ${Date.now()}`);
+    this.log.debug(`Emitted ${event} with data ${JSON.stringify(data)} at ${Date.now()}`);
     this.emit(event, data);
   };
 
