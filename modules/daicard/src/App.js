@@ -172,6 +172,7 @@ class App extends React.Component {
       await new Promise(res => setTimeout(() => res(), 200));
     }
 
+    const network = await ethprovider.getNetwork();
     // if choose mnemonic
     if (this.state.channelProviderType === "counterfactual") {
       // If no mnemonic, create one and save to local storage
@@ -184,7 +185,6 @@ class App extends React.Component {
       
       let store = storeFactory();
 
-      const network = await ethprovider.getNetwork();
       if (network.chainId === 4) {
         const pisaContractAddress = "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3";      
         const pisaClient = new PisaClient(
@@ -199,12 +199,12 @@ class App extends React.Component {
         });
       }
 
-      channel = instantiateClient(ethUrl, mnemonic, nodeUrl, store);
+      channel = await instantiateClient(ethProviderUrl, mnemonic, nodeUrl, store);
     } else if (this.state.channelProviderType === "walletconnect") {
       let channelProvider;
       channelProvider = new WalletConnectChannelProvider({
         rpc: {
-          "4447": ethUrl
+          "4447": ethProviderUrl
         },
         chainId: 4447
       });
@@ -313,7 +313,7 @@ class App extends React.Component {
     await this.refreshBalances();
     await this.setDepositLimits();
     await this.addDefaultPaymentProfile();
-    if (this.channelProviderType == "mnemonic") {
+    if (this.channelProviderType === "mnemonic") {
       await this.autoDeposit();
     } else {
       console.log("Turning off autodeposit, provider: ", this.channelProviderType);
@@ -322,7 +322,7 @@ class App extends React.Component {
     interval(async (iteration, stop) => {
       await this.refreshBalances();
       await this.setDepositLimits();
-      if (this.channelProviderType == "mnemonic") {
+      if (this.channelProviderType === "mnemonic") {
         await this.autoDeposit();
       }
       await this.autoSwap();
