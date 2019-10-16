@@ -1,4 +1,3 @@
-import * as Connext from "connext";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import * as connext from "@connext/client";
 import { Contract, ethers as eth } from "ethers";
@@ -26,14 +25,14 @@ import { SettingsCard } from "./components/settingsCard";
 import { SetupCard } from "./components/setupCard";
 import { SupportCard } from "./components/supportCard";
 
-import { Currency, storeFactory, minBN, toBN, tokenToWei, weiToToken } from "./utils";
+import { Currency, storeFactory, migrate, minBN, toBN, tokenToWei, weiToToken } from "./utils";
 
 const urls = {
   ethProviderUrl: process.env.REACT_APP_ETH_URL_OVERRIDE || `${window.location.origin}/api/ethprovider`,
   nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
   legacyUrl: (chainId) =>
-    chainId === "1" ? "https://hub.connext.network" :
-    chainId === "4" ? "https://rinkeby.hub.connext.network" :
+    chainId === "1" ? "https://hub.connext.network/api/hub" :
+    chainId === "4" ? "https://rinkeby.hub.connext.network/api/hub" :
     undefined,
   pisaUrl: (chainId) =>
     chainId === "1" ? "https://connext.pisa.watch" :
@@ -159,6 +158,8 @@ class App extends React.Component {
     } else {
       store = storeFactory();
     }
+
+    const legacyChannel = await migrate(urls.legacyUrl(network.chainId), mnemonic, ethProviderUrl);
 
     const channel = await connext.connect({
       ethProviderUrl,

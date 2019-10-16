@@ -23,7 +23,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import queryString from "query-string";
 import { Machine } from 'xstate';
 
-import { Currency, toBN, delay } from "../utils";
+import { Currency, toBN } from "../utils";
 
 import { Copyable } from "./copyable";
 import { QRScan } from "./qrCode";
@@ -168,7 +168,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
         });
         break;
       } catch (e) {
-        await delay(5000);
+        await new Promise(res => setTimeout(res, 5000));
       }
     }
     if (!transferRes) {
