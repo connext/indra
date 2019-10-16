@@ -5,7 +5,8 @@ import { formatEther } from "ethers/utils";
 import { toBN } from './bn';
 
 export const migrate = async (hubUrl, wallet, ethUrl, setMigrating) => {
-  console.log(`____________________Migration Started`)
+  console.log(`____________________Migration Started | hubUrl: ${hubUrl}`)
+  if (!hubUrl) { return; }
   const legacy = await Connext.createClient({ ethUrl, hubUrl, mnemonic: wallet.mnemonic });
   await legacy.start();
   const state = (await legacy.getState());

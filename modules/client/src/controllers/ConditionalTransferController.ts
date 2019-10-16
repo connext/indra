@@ -56,6 +56,9 @@ export class ConditionalTransferController extends AbstractController {
       "bignumber",
       params,
     );
+    if (!recipient) {
+      throw new Error(`A recipient must be specified for transfer of type ${params.conditionType}`);
+    }
     const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
 
     // wait for linked transfer
