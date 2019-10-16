@@ -31,12 +31,12 @@ const urls = {
   ethProviderUrl: process.env.REACT_APP_ETH_URL_OVERRIDE || `${window.location.origin}/api/ethprovider`,
   nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
   legacyUrl: (chainId) =>
-    chainId === "1" ? "https://hub.connext.network/api/hub" :
-    chainId === "4" ? "https://rinkeby.hub.connext.network/api/hub" :
+    chainId.toString() === "1" ? "https://hub.connext.network/api/hub" :
+    chainId.toString() === "4" ? "https://rinkeby.hub.connext.network/api/hub" :
     undefined,
   pisaUrl: (chainId) =>
-    chainId === "1" ? "https://connext.pisa.watch" :
-    chainId === "4" ? "https://connext-rinkeby.pisa.watch" :
+    chainId.toString() === "1" ? "https://connext.pisa.watch" :
+    chainId.toString() === "4" ? "https://connext-rinkeby.pisa.watch" :
     undefined
 };
 
