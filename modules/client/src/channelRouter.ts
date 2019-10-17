@@ -40,6 +40,18 @@ export class ChannelRouter extends EventEmitter {
   }
 
   ///////////////////////////////////////////////
+  ///// LISTENER METHODS
+  public on = (event: string, listener: (...args: any[]) => void): RpcConnection => {
+    this.connection.on(event, listener);
+    return this.connection;
+  };
+
+  public once = (event: string, listener: (...args: any[]) => void): RpcConnection => {
+    this.connection.once(event, listener);
+    return this.connection;
+  };
+
+  ///////////////////////////////////////////////
   ///// PROVIDER METHODS
 
   public deposit = async (
