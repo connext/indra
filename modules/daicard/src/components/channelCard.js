@@ -49,10 +49,10 @@ export const ChannelCard = withStyles(styles)(props => {
               {"$ "}
             </Typography>
             <Typography style={{display: 'inline-block'}} variant="h1" className={classes.row}>
-              <span>{split(balance.channel.total.toDAI(swapRate)).whole}</span>
+              <span>{split(balance.channel.token.toDAI(swapRate)).whole}</span>
             </Typography>
             <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
-              <span>{split(balance.channel.total.toDAI(swapRate)).part}</span>
+              <span>{split(balance.channel.token.toDAI(swapRate)).part}</span>
             </Typography>
           </span>
           {/* <span style={{fontSize: 64}}>&nbsp;&nbsp;&nbsp;</span> */}

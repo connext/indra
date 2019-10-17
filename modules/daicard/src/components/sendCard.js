@@ -260,7 +260,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
       <Grid item xs={12}>
         <Grid container direction="row" justify="center" alignItems="center">
           <Typography variant="h2">
-            <span>{balance.channel.total.toDAI().format({ decimals: 2, symbol: false, round: false })}</span>
+            <span>{balance.channel.token.toDAI().format({ decimals: 2, symbol: false, round: false })}</span>
           </Typography>
         </Grid>
       </Grid>
