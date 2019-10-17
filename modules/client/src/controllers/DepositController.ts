@@ -34,7 +34,7 @@ export class DepositController extends AbstractController {
 
     try {
       this.log.info(`Calling ${CFCoreTypes.RpcMethodName.DEPOSIT}`);
-      const depositResponse = await this.connext.cfDeposit(amount, assetId);
+      const depositResponse = await this.connext.providerDeposit(amount, assetId);
       this.log.info(`Deposit Response: ${JSON.stringify(depositResponse, replaceBN, 2)}`);
 
       const postDepositBalances = await this.connext.getFreeBalance(assetId);
@@ -51,7 +51,7 @@ export class DepositController extends AbstractController {
     } catch (e) {
       this.log.error(`Failed to deposit...`);
       this.removeListeners();
-      throw new Error(e);
+      throw e;
     }
 
     // TODO: fix types!

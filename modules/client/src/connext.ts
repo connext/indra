@@ -10,7 +10,6 @@ import {
   ConditionalTransferParameters,
   ConditionalTransferResponse,
   ConnextEvent,
-  ConnextEvents,
   ConnextNodeStorePrefix,
   CreateChannelResponse,
   DepositParameters,
@@ -27,9 +26,9 @@ import {
   SupportedApplication,
   SupportedNetwork,
   SwapParameters,
+  Transfer,
   TransferParameters,
   WithdrawParameters,
-  Transfer,
 } from "@connext/types";
 import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
 import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
@@ -424,12 +423,12 @@ export abstract class ConnextChannel {
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
 
-  public cfDeposit = async (
+  public providerDeposit = async (
     amount: BigNumber,
     assetId: string,
     notifyCounterparty: boolean = false,
   ): Promise<CFCoreTypes.DepositResult> => {
-    return await this.internal.cfDeposit(amount, assetId, notifyCounterparty);
+    return await this.internal.providerDeposit(amount, assetId, notifyCounterparty);
   };
 
   public getFreeBalance = async (
