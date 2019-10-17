@@ -4,6 +4,7 @@ import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { formatEther, parseEther } from "ethers/utils";
 import interval from "interval-promise";
+import { PisaClient } from "pisa-client";
 import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import tokenArtifacts from "openzeppelin-solidity/build/contracts/ERC20Mintable.json";
@@ -11,25 +12,32 @@ import tokenArtifacts from "openzeppelin-solidity/build/contracts/ERC20Mintable.
 import "./App.css";
 
 // Pages
-import AppBarComponent from "./components/AppBar";
-import CashOutCard from "./components/cashOutCard";
-import Confirmations from "./components/Confirmations";
-import DepositCard from "./components/depositCard";
-import Home from "./components/Home";
-import MySnackbar from "./components/snackBar";
-import RequestCard from "./components/requestCard";
-import RedeemCard from "./components/redeemCard";
-import SendCard from "./components/sendCard";
-import SettingsCard from "./components/settingsCard";
-import SetupCard from "./components/setupCard";
-import SupportCard from "./components/supportCard";
+import { AppBarComponent } from "./components/AppBar";
+import { CashoutCard } from "./components/cashOutCard";
+import { Confirmations } from "./components/Confirmations";
+import { DepositCard } from "./components/depositCard";
+import { Home } from "./components/Home";
+import { MySnackbar } from "./components/snackBar";
+import { RequestCard } from "./components/requestCard";
+import { RedeemCard } from "./components/redeemCard";
+import { SendCard } from "./components/sendCard";
+import { SettingsCard } from "./components/settingsCard";
+import { SetupCard } from "./components/setupCard";
+import { SupportCard } from "./components/supportCard";
 
-import { Currency, inverse, store, minBN, toBN, tokenToWei, weiToToken } from "./utils";
+import { Currency, storeFactory, migrate, minBN, toBN, tokenToWei, weiToToken } from "./utils";
 
-// Optional URL overrides for custom urls
-const overrides = {
-  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE,
-  ethUrl: process.env.REACT_APP_ETH_URL_OVERRIDE,
+const urls = {
+  ethProviderUrl: process.env.REACT_APP_ETH_URL_OVERRIDE || `${window.location.origin}/api/ethprovider`,
+  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
+  legacyUrl: (chainId) =>
+    chainId.toString() === "1" ? "https://hub.connext.network/api/hub" :
+    chainId.toString() === "4" ? "https://rinkeby.hub.connext.network/api/hub" :
+    undefined,
+  pisaUrl: (chainId) =>
+    chainId.toString() === "1" ? "https://connext.pisa.watch" :
+    chainId.toString() === "4" ? "https://connext-rinkeby.pisa.watch" :
+    undefined
 };
 
 // Constants for channel max/min - this is also enforced on the hub
@@ -49,7 +57,7 @@ const MAX_CHANNEL_VALUE = Currency.DAI("30");
 const DEFAULT_COLLATERAL_MINIMUM = Currency.DAI("5");
 const DEFAULT_AMOUNT_TO_COLLATERALIZE = Currency.DAI("10");
 
-const styles = theme => ({
+const style = withStyles((theme) => ({
   paper: {
     width: "100%",
     padding: `0px ${theme.spacing(1)}px 0 ${theme.spacing(1)}px`,
@@ -75,12 +83,12 @@ const styles = theme => ({
   },
   zIndex: 1000,
   grid: {},
-});
+}));
 
 class App extends React.Component {
   constructor(props) {
     super(props);
-    const swapRate = "314.08";
+    const swapRate = "100.00";
     this.state = {
       address: "",
       balance: {
@@ -97,10 +105,15 @@ class App extends React.Component {
       },
       ethprovider: null,
       freeBalanceAddress: null,
+      legacyMigration: false,
       loadingConnext: true,
       maxDeposit: null,
       minDeposit: null,
+      network: {},
       pending: { type: "null", complete: true, closed: true },
+      receivingTransferCompleted: false,
+      receivingTransferFailed: false,
+      receivingTransferStarted: false,
       sendScanArgs: { amount: null, recipient: null },
       swapRate,
       token: null,
@@ -108,7 +121,6 @@ class App extends React.Component {
       tokenProfile: null,
     };
     this.refreshBalances.bind(this);
-    this.setDepositLimits.bind(this);
     this.autoDeposit.bind(this);
     this.autoSwap.bind(this);
     this.setPending.bind(this);
@@ -128,15 +140,34 @@ class App extends React.Component {
       localStorage.setItem("mnemonic", mnemonic);
     }
 
-    const nodeUrl =
-      overrides.nodeUrl || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`;
-    const ethUrl = overrides.ethUrl || `${window.location.origin}/api/ethprovider`;
-    const ethprovider = new eth.providers.JsonRpcProvider(ethUrl);
+    const nodeUrl = urls.nodeUrl;
+    const ethProviderUrl = urls.ethProviderUrl;
+    const ethprovider = new eth.providers.JsonRpcProvider(ethProviderUrl);
     const cfPath = "m/44'/60'/0'/25446";
     const cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
+    const network = await ethprovider.getNetwork();
+
+    let store;
+    if (urls.pisaUrl(network.chainId)) {
+      store = storeFactory({
+        wallet: cfWallet,
+        pisaClient: new PisaClient(
+          urls.pisaUrl(network.chainId),
+          "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3", // TODO: Don't hardcode
+        ),
+      });
+    } else {
+      store = storeFactory();
+    }
+
+    const setMigrating = (state) => {
+      this.setState({ legacyMigration: state, loadingConnext: !state });
+    }
+
+    await migrate(urls.legacyUrl(network.chainId), cfWallet, ethProviderUrl, setMigrating.bind(this));
 
     const channel = await connext.connect({
-      ethProviderUrl: ethUrl,
+      ethProviderUrl,
       logLevel: 5,
       mnemonic,
       nodeUrl,
@@ -153,10 +184,8 @@ class App extends React.Component {
     }
 
     const freeBalanceAddress = channel.freeBalanceAddress || channel.myFreeBalanceAddress;
-    const connextConfig = await channel.config();
-    const token = new Contract(connextConfig.contractAddresses.Token, tokenArtifacts.abi, cfWallet);
+    const token = new Contract(channel.config.contractAddresses.Token, tokenArtifacts.abi, cfWallet);
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
-    const invSwapRate = inverse(swapRate)
 
     console.log(`Client created successfully!`);
     console.log(` - Public Identifier: ${channel.publicIdentifier}`);
@@ -164,12 +193,27 @@ class App extends React.Component {
     console.log(` - CF Account address: ${cfWallet.address}`);
     console.log(` - Free balance address: ${freeBalanceAddress}`);
     console.log(` - Token address: ${token.address}`);
-    console.log(` - Swap rate: ${swapRate} or ${invSwapRate}`)
+    console.log(` - Swap rate: ${swapRate}`)
 
     channel.subscribeToSwapRates(AddressZero, token.address, (res) => {
       if (!res || !res.swapRate) return;
       console.log(`Got swap rate upate: ${this.state.swapRate} -> ${res.swapRate}`);
       this.setState({ swapRate: res.swapRate });
+    })
+
+    channel.on("RECIEVE_TRANSFER_STARTED", data => {
+      console.log('Received RECIEVE_TRANSFER_STARTED event: ', data);
+      this.setState({ receivingTransferStarted: true })
+    })
+
+    channel.on("RECIEVE_TRANSFER_FINISHED", data => {
+      console.log('Received RECIEVE_TRANSFER_FINISHED event: ', data);
+      this.setState({ receivingTransferCompleted: true })
+    })
+
+    channel.on("RECIEVE_TRANSFER_FAILED", data => {
+      console.log('Received RECIEVE_TRANSFER_FAILED event: ', data);
+      this.setState({ receivingTransferFailed: true })
     })
 
     this.setState({
@@ -178,12 +222,14 @@ class App extends React.Component {
       ethprovider,
       freeBalanceAddress,
       loadingConnext: false,
+      network,
       swapRate,
       token,
       wallet: cfWallet,
       xpub: channel.publicIdentifier,
     });
 
+    await this.addDefaultPaymentProfile();
     await this.startPoller();
   }
 
@@ -191,15 +237,16 @@ class App extends React.Component {
   //                    Pollers                        //
   // ************************************************* //
 
+  // What's the minimum I need to be polling for here?
+  //  - on-chain balance to see if we need to deposit
+  //  - channel messages to see if there anything to sign
+  //  - channel eth to see if I need to swap?
   startPoller = async () => {
     await this.refreshBalances();
-    await this.setDepositLimits();
-    await this.addDefaultPaymentProfile();
     await this.autoDeposit();
     await this.autoSwap();
     interval(async (iteration, stop) => {
       await this.refreshBalances();
-      await this.setDepositLimits();
       await this.autoDeposit();
       await this.autoSwap();
     }, 3000);
@@ -225,13 +272,21 @@ class App extends React.Component {
       assetId: token.address,
     });
     this.setState({ tokenProfile })
-    return;
+    console.log(`Got a default token profile: ${JSON.stringify(this.state.tokenProfile)}`)
+    return tokenProfile;
   }
 
   refreshBalances = async () => {
-    const { freeBalanceAddress, swapRate, token } = this.state;
-    const { address, balance, channel, ethprovider } = this.state;
-    if (!channel) { return; }
+    const {
+      address, balance, channel, ethprovider, freeBalanceAddress, swapRate, token,
+    } = this.state;
+    let gasPrice = await ethprovider.getGasPrice();
+    let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
+    let totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
+    const minDeposit = Currency.WEI(totalDepositGasWei.add(totalWithdrawalGasWei), swapRate).toETH();
+    const maxDeposit = MAX_CHANNEL_VALUE.toETH(swapRate); // Or get based on payment profile?
+    this.setState({ maxDeposit, minDeposit });
+    if (!channel || !swapRate) { return; }
     const getTotal = (ether, token) => Currency.WEI(ether.wad.add(token.toETH().wad), swapRate);
     const freeEtherBalance = await channel.getFreeBalance();
     const freeTokenBalance = await channel.getFreeBalance(token.address);
@@ -244,16 +299,8 @@ class App extends React.Component {
     this.setState({ balance });
   }
 
-  setDepositLimits = async () => {
-    const { swapRate, ethprovider } = this.state;
-    let gasPrice = await ethprovider.getGasPrice();
-    let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
-    let totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
-    const minDeposit = Currency.WEI(totalDepositGasWei.add(totalWithdrawalGasWei), swapRate).toETH();
-    const maxDeposit = MAX_CHANNEL_VALUE.toETH(swapRate); // Or get based on payment profile?
-    this.setState({ maxDeposit, minDeposit });
-  }
-
+  // Core Function
+  // Merge deposit limits
   autoDeposit = async () => {
     const { balance, channel, minDeposit, maxDeposit, pending, swapRate, token } = this.state;
     if (!channel) {
@@ -288,7 +335,6 @@ class App extends React.Component {
       };
       console.log(`Depositing ${depositParams.amount} tokens into channel: ${channel.opts.multisigAddress}`);
       const result = await channel.deposit(depositParams);
-      await this.refreshBalances();
       await this.refreshBalances();
       console.log(`Successfully deposited tokens! Result: ${JSON.stringify(result, null, 2)}`);
       this.setPending({ type: "deposit", complete: true, closed: false });
@@ -356,6 +402,7 @@ class App extends React.Component {
         minimumMaintainedCollateral: collateralNeeded,
         assetId: token.address,
       });
+      console.log(`Got a new token profile: ${JSON.stringify(tokenProfile)}`)
       this.setState({ tokenProfile })
       await channel.requestCollateral(token.address);
       collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress])
@@ -429,10 +476,6 @@ class App extends React.Component {
     return path;
   }
 
-  closeModal = async () => {
-    await this.setState({ loadingConnext: false });
-  }
-
   render() {
     const {
       address,
@@ -441,10 +484,10 @@ class App extends React.Component {
       swapRate,
       maxDeposit,
       minDeposit,
+      network,
       pending,
       sendScanArgs,
       token,
-      tokenProfile,
       xpub,
     } = this.state;
     const { classes } = this.props;
@@ -455,9 +498,37 @@ class App extends React.Component {
             <MySnackbar
               variant="warning"
               openWhen={this.state.loadingConnext}
-              onClose={() => this.closeModal()}
+              onClose={() => this.setState({ loadingConnext: false })}
               message="Starting Channel Controllers.."
-              duration={30000}
+              duration={30 * 60 * 1000}
+            />
+            <MySnackbar
+              variant="info"
+              openWhen={this.state.receivingTransferStarted}
+              onClose={() => this.setState({ receivingTransferStarted: false })}
+              message="Receiving Transfer..."
+              duration={30 * 60 * 1000}
+            />
+            <MySnackbar
+              variant="success"
+              openWhen={this.state.receivingTransferCompleted}
+              onClose={() => this.setState({ receivingTransferCompleted: false })}
+              message="Transfer Receieved!"
+              duration={30 * 60 * 1000}
+            />
+            <MySnackbar
+              variant="error"
+              openWhen={this.state.receivingTransferFailed}
+              onClose={() => this.setState({ receivingTransferFailed: false })}
+              message="Transfer Failed"
+              duration={30 * 60 * 1000}
+            />
+            <MySnackbar
+              variant="warning"
+              openWhen={this.state.legacyMigration}
+              onClose={() => this.setState({ legacyMigration: false })}
+              message="Migrating legacy channel to 2.0..."
+              duration={30 * 60 * 1000}
             />
             <AppBarComponent address={address} />
             <Route
@@ -468,6 +539,7 @@ class App extends React.Component {
                   <Home
                     {...props}
                     balance={balance}
+                    swapRate={swapRate}
                     scanQRCode={this.scanQRCode}
                   />
                   <SetupCard
@@ -489,7 +561,7 @@ class App extends React.Component {
                 />
               )}
             />
-            <Route path="/settings" render={props => <SettingsCard {...props} />} />
+            <Route path="/settings" render={props => <SettingsCard {...props} channel={channel} />} />
             <Route
               path="/request"
               render={props => <RequestCard
@@ -515,19 +587,15 @@ class App extends React.Component {
               render={props => (
                 <RedeemCard
                   {...props}
-                  balance={balance}
                   channel={channel}
-                  pending={pending}
-                  swapRate={swapRate}
-                  token={token}
-                  tokenProfile={tokenProfile}
+                  tokenProfile={this.state.tokenProfile}
                 />
               )}
             />
             <Route
               path="/cashout"
               render={props => (
-                <CashOutCard
+                <CashoutCard
                   {...props}
                   balance={balance}
                   channel={channel}
@@ -548,6 +616,7 @@ class App extends React.Component {
               )}
             />
             <Confirmations
+              network={network}
               pending={pending}
               closeConfirmations={this.closeConfirmations.bind(this)}
             />
@@ -558,4 +627,4 @@ class App extends React.Component {
   }
 }
 
-export default withStyles(styles)(App);
+export default style(App);

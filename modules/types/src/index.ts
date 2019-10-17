@@ -12,7 +12,16 @@ export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
 export type SolidityValueType = any; // FIXME: use cf type
 
-export const ConnextEvents = CFCoreTypes.EventName;
+export const ConnextEvents = {
+  RECIEVE_TRANSFER_FAILED: "receiveTransferFailedEvent",
+  RECIEVE_TRANSFER_FINISHED: "receiveTransferFinishedEvent",
+  RECIEVE_TRANSFER_STARTED: "receiveTransferStartedEvent",
+};
+export type ConnextEvent = keyof typeof ConnextEvents;
+
+export const ConnextNodeStorePrefix = "INDRA_NODE_CF_CORE";
+
+export const ConnextClientStorePrefix = "INDRA_CLIENT_CF_CORE";
 
 ////////////////////////////////////
 ////// APP REGISTRY
@@ -218,6 +227,15 @@ export interface NodeConfig {
   nodeUrl: string;
 }
 
+export type Transfer<T = string> = {
+  id: number;
+  amount: T;
+  assetId: string;
+  senderPublicIdentifier: string;
+  receiverPublicIdentifier: string;
+};
+export type TransferBigNumber = Transfer<BigNumber>;
+
 // nats stuff
 type successResponse = {
   status: "success";
@@ -320,13 +338,14 @@ export type ResolveConditionResponse<T = string> = ResolveLinkedTransferResponse
 // TODO: maybe not an enum?
 export const TransferConditions = {
   LINKED_TRANSFER: "LINKED_TRANSFER",
+  LINKED_TRANSFER_TO_RECIPIENT: "LINKED_TRANSFER_TO_RECIPIENT",
 };
 export type TransferCondition = keyof typeof TransferConditions;
 
 // linked transfer types
 export type LinkedTransferParameters<T = string> = {
-  conditionType: "LINKED_TRANSFER";
-  amount: T;
+  conditionType: TransferCondition;
+  amount?: T;
   assetId?: Address;
   paymentId: string;
   preImage: string;
@@ -339,12 +358,24 @@ export type LinkedTransferResponse = {
   freeBalance: CFCoreTypes.GetFreeBalanceStateResult;
 };
 
-// FIXME: should be union type of all supported conditions
-export type ConditionalTransferParameters<T = string> = LinkedTransferParameters<T>;
+export type LinkedTransferToRecipientParameters<T = string> = LinkedTransferParameters<T> & {
+  recipient?: string;
+};
+export type LinkedTransferToRecipientParametersBigNumber = LinkedTransferToRecipientParameters<
+  BigNumber
+>;
+export type LinkedTransferToRecipientResponse = LinkedTransferResponse & {
+  recipient?: string;
+};
+
+export type ConditionalTransferParameters<T = string> =
+  | LinkedTransferParameters<T>
+  | LinkedTransferToRecipientParameters<T>;
 export type ConditionalTransferParametersBigNumber = ConditionalTransferParameters<BigNumber>;
 
-// FIXME: should be union type of all supported conditions
-export type ConditionalTransferResponse = LinkedTransferResponse;
+export type ConditionalTransferResponse =
+  | LinkedTransferResponse
+  | LinkedTransferToRecipientResponse;
 
 // condition initial states
 // FIXME: should be union type of all supported conditions
@@ -531,6 +562,13 @@ export function convertLinkedTransferParametersToAsset<To extends NumericTypeNam
   return convertAssetAmountWithId(to, obj);
 }
 
+export function convertLinkedTransferToRecipientParametersToAsset<To extends NumericTypeName>(
+  to: To,
+  obj: LinkedTransferToRecipientParameters<any>,
+): LinkedTransferToRecipientParameters<NumericTypes[To]> {
+  return convertAssetAmountWithId(to, obj);
+}
+
 export function convertWithdrawParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: WithdrawParameters<any>,
@@ -544,7 +582,8 @@ export function convertAppState<To extends NumericTypeName>(
 ): AppState<NumericTypes[To]> {
   return {
     ...obj,
-    // transfers: [convertAmountField(to, obj.transfers[0]), convertAmountField(to, obj.transfers[1])],
+    // transfers: [convertAmountField(to, obj.transfers[0]),
+    //   convertAmountField(to, obj.transfers[1])],
   };
 }
 
@@ -554,6 +593,7 @@ export const convert = {
   Asset: convertAssetAmount,
   Deposit: convertDepositParametersToAsset,
   LinkedTransfer: convertLinkedTransferParametersToAsset,
+  LinkedTransferToRecipient: convertLinkedTransferToRecipientParametersToAsset,
   Multisig: convertMultisig,
   PaymentProfile: convertPaymentProfile,
   ResolveLinkedTransfer: convertAssetAmountWithId,

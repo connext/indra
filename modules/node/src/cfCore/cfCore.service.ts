@@ -76,6 +76,28 @@ export class CFCoreService {
     return createRes.result.result as CFCoreTypes.CreateChannelResult;
   }
 
+  async deployMultisig(
+    multisigAddress: string,
+  ): Promise<CFCoreTypes.DeployStateDepositHolderResult> {
+    const params = {
+      id: Date.now(),
+      methodName: CFCoreTypes.RpcMethodName.DEPLOY_STATE_DEPOSIT_HOLDER,
+      parameters: {
+        multisigAddress,
+      } as CFCoreTypes.DeployStateDepositHolderParams,
+    };
+    logger.log(
+      `Calling chan_deployStateDepositHolder with params: ${JSON.stringify(params, replaceBN, 2)}`,
+    );
+    const deployRes = await this.cfCore.rpcRouter.dispatch(params);
+    logger.log(
+      `chan_deployStateDepositHolder called with result: ${JSON.stringify(
+        deployRes.result.result,
+      )}`,
+    );
+    return deployRes.result.result as CFCoreTypes.DeployStateDepositHolderResult;
+  }
+
   async deposit(
     multisigAddress: string,
     amount: BigNumber,
@@ -212,7 +234,7 @@ export class CFCoreService {
   }
 
   async getAppInstanceDetails(appInstanceId: string): Promise<AppInstanceJson> {
-    let appInstance;
+    let appInstance: any;
     try {
       const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
         id: Date.now(),
