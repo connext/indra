@@ -9,10 +9,9 @@ import {
 } from "@connext/types";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { BigNumber } from "ethers/utils";
-import { EventEmitter } from "events";
 import { RpcParameters } from "rpc-server";
 
-export class ChannelRouter extends EventEmitter {
+export class ChannelRouter {
   private type: RpcType;
   private connection: RpcConnection;
 
@@ -27,7 +26,6 @@ export class ChannelRouter extends EventEmitter {
   public multisigAddress: string;
 
   constructor(type: RpcType, connection: RpcConnection, config: ChannelProviderConfig) {
-    super();
     this.type = type;
     this.connection = connection;
 
@@ -63,6 +61,7 @@ export class ChannelRouter extends EventEmitter {
     return await this._send(NodeTypes.RpcMethodName.DEPOSIT, {
       amount,
       multisigAddress,
+      notifyCounterparty,
       tokenAddress: makeChecksum(assetId),
     } as NodeTypes.DepositParams);
   };
