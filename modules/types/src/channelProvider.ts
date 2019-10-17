@@ -3,7 +3,6 @@ import { Node } from "@counterfactual/node";
 /////////////////////////////////////////////
 ///////// CHANNEL PROVIDER TYPES
 
-// TODO: define properly!!
 export type ChannelProvider = any;
 
 export type ChannelProviderConfig = {
