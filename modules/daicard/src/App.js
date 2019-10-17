@@ -57,13 +57,6 @@ const urls = {
     undefined
 }
 
-// Optional URL overrides for custom urls
-const overrides = {
-  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE,
-  ethProviderUrl: process.env.REACT_APP_ETH_URL_OVERRIDE,
-  pisaUrl: process.env.PISA_URL_OVERRIDE,
-};
-
 // Constants for channel max/min - this is also enforced on the hub
 const WITHDRAW_ESTIMATED_GAS = toBN("300000");
 const DEPOSIT_ESTIMATED_GAS = toBN("25000");
