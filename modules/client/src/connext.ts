@@ -138,6 +138,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   const config = await node.config();
   logger.info(`node is connected to eth network: ${JSON.stringify(config.ethNetwork)}`);
+  logger.info(`node config: ${JSON.stringify(config)}`);
   node.setNodePublicIdentifier(config.nodePublicIdentifier);
 
   const appRegistry = await node.appRegistry();
@@ -957,7 +958,7 @@ export class ConnextInternal extends ConnextChannel {
     if (alreadyInstalled) {
       throw new Error(alreadyInstalled);
     }
-    return await this.channelRouter.installVirtualApp(appInstanceId, [this.nodePublicIdentifier]);
+    return await this.channelRouter.installVirtualApp(appInstanceId, this.nodePublicIdentifier);
   };
 
   public installApp = async (appInstanceId: string): Promise<CFCoreTypes.InstallResult> => {

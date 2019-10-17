@@ -50,10 +50,9 @@ export class ChannelRouter extends EventEmitter {
   ): Promise<NodeTypes.DepositResult> => {
     return await this._send(NodeTypes.RpcMethodName.DEPOSIT, {
       amount,
-      assetId: makeChecksum(assetId),
       multisigAddress,
-      notifyCounterparty,
-    });
+      tokenAddress: makeChecksum(assetId),
+    } as NodeTypes.DepositParams);
   };
 
   public getStateChannel = async (): Promise<{ data: any }> => {
@@ -62,14 +61,17 @@ export class ChannelRouter extends EventEmitter {
     });
   };
 
-  public getState = async (multisigAddress: string): Promise<NodeTypes.GetStateResult> => {
+  public getState = async (appInstanceId: string): Promise<NodeTypes.GetStateResult> => {
     return await this._send(NodeTypes.RpcMethodName.GET_STATE, {
-      multisigAddress,
-    });
+      appInstanceId,
+    } as NodeTypes.GetStateParams);
   };
 
   public getAppInstances = async (): Promise<NodeTypes.GetAppInstancesResult> => {
-    return await this._send(NodeTypes.RpcMethodName.GET_APP_INSTANCES, {});
+    return await this._send(
+      NodeTypes.RpcMethodName.GET_APP_INSTANCES,
+      {} as NodeTypes.GetAppInstancesParams,
+    );
   };
 
   public getFreeBalance = async (
@@ -77,15 +79,18 @@ export class ChannelRouter extends EventEmitter {
     multisigAddress: string,
   ): Promise<NodeTypes.GetFreeBalanceStateResult> => {
     return await this._send(NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE, {
-      assetId: makeChecksum(assetId),
       multisigAddress,
-    });
+      tokenAddress: makeChecksum(assetId),
+    } as NodeTypes.GetFreeBalanceStateParams);
   };
 
   public getProposedAppInstances = async (): Promise<
     NodeTypes.GetProposedAppInstancesResult | undefined
   > => {
-    return await this._send(NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES, {});
+    return await this._send(
+      NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
+      {} as NodeTypes.GetProposedAppInstancesParams,
+    );
   };
 
   public getProposedAppInstance = async (
@@ -93,7 +98,7 @@ export class ChannelRouter extends EventEmitter {
   ): Promise<NodeTypes.GetProposedAppInstanceResult | undefined> => {
     return await this._send(NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES, {
       appInstanceId,
-    });
+    } as NodeTypes.GetProposedAppInstanceParams);
   };
 
   public getAppInstanceDetails = async (
@@ -101,13 +106,15 @@ export class ChannelRouter extends EventEmitter {
   ): Promise<NodeTypes.GetAppInstanceDetailsResult | undefined> => {
     return await this._send(NodeTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS, {
       appInstanceId,
-    });
+    } as NodeTypes.GetAppInstanceDetailsParams);
   };
 
   public getAppState = async (
     appInstanceId: string,
   ): Promise<NodeTypes.GetStateResult | undefined> => {
-    return await this._send(NodeTypes.RpcMethodName.GET_STATE, { appInstanceId });
+    return await this._send(NodeTypes.RpcMethodName.GET_STATE, {
+      appInstanceId,
+    } as NodeTypes.GetStateParams);
   };
 
   public takeAction = async (
@@ -117,7 +124,7 @@ export class ChannelRouter extends EventEmitter {
     return await this._send(NodeTypes.RpcMethodName.TAKE_ACTION, {
       action,
       appInstanceId,
-    });
+    } as NodeTypes.TakeActionParams);
   };
 
   public updateState = async (
@@ -129,37 +136,47 @@ export class ChannelRouter extends EventEmitter {
     return await this._send(NodeTypes.RpcMethodName.UPDATE_STATE, {
       appInstanceId,
       newState,
-    });
+    } as NodeTypes.UpdateStateParams);
   };
 
   public proposeInstallVirtualApp = async (
     params: NodeTypes.ProposeInstallVirtualParams, // TODO THIS HAS TO CHANGE
   ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
-    return await this._send(NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL, { params });
+    return await this._send(
+      NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
+      params as NodeTypes.ProposeInstallVirtualParams,
+    );
   };
 
   public proposeInstallApp = async (
     params: NodeTypes.ProposeInstallParams, // TODO THIS HAS TO CHANGE
   ): Promise<NodeTypes.ProposeInstallResult> => {
-    return await this._send(NodeTypes.RpcMethodName.PROPOSE_INSTALL, { params });
+    return await this._send(
+      NodeTypes.RpcMethodName.PROPOSE_INSTALL,
+      params as NodeTypes.ProposeInstallParams,
+    );
   };
 
   public installVirtualApp = async (
     appInstanceId: string,
-    intermediaries: string[],
+    intermediaryIdentifier: string,
   ): Promise<NodeTypes.InstallVirtualResult> => {
     return await this._send(NodeTypes.RpcMethodName.INSTALL_VIRTUAL, {
       appInstanceId,
-      intermediaries,
-    });
+      intermediaryIdentifier,
+    } as NodeTypes.InstallVirtualParams);
   };
 
   public installApp = async (appInstanceId: string): Promise<NodeTypes.InstallResult> => {
-    return await this._send(NodeTypes.RpcMethodName.INSTALL, { appInstanceId });
+    return await this._send(NodeTypes.RpcMethodName.INSTALL, {
+      appInstanceId,
+    } as NodeTypes.InstallParams);
   };
 
   public uninstallApp = async (appInstanceId: string): Promise<NodeTypes.UninstallResult> => {
-    return await this._send(NodeTypes.RpcMethodName.UNINSTALL, { appInstanceId });
+    return await this._send(NodeTypes.RpcMethodName.UNINSTALL, {
+      appInstanceId,
+    } as NodeTypes.UninstallParams);
   };
 
   public uninstallVirtualApp = async (
@@ -169,7 +186,7 @@ export class ChannelRouter extends EventEmitter {
     return await this._send(NodeTypes.RpcMethodName.UNINSTALL_VIRTUAL, {
       appInstanceId,
       intermediaryIdentifier: intermediary,
-    });
+    } as NodeTypes.UninstallVirtualParams);
   };
 
   public rejectInstallApp = async (appInstanceId: string): Promise<NodeTypes.UninstallResult> => {
@@ -184,10 +201,10 @@ export class ChannelRouter extends EventEmitter {
   ): Promise<NodeTypes.WithdrawResult> => {
     return await this._send(NodeTypes.RpcMethodName.WITHDRAW, {
       amount,
-      assetId: makeChecksum(assetId),
       multisigAddress,
       recipient,
-    });
+      tokenAddress: makeChecksum(assetId),
+    } as NodeTypes.WithdrawParams);
   };
 
   public withdrawCommitment = async (
@@ -197,9 +214,9 @@ export class ChannelRouter extends EventEmitter {
   ): Promise<NodeTypes.WithdrawCommitmentResult> => {
     return await this._send(NodeTypes.RpcMethodName.WITHDRAW_COMMITMENT, {
       amount,
-      assetId: makeChecksumOrEthAddress(assetId),
       recipient,
-    });
+      tokenAddress: makeChecksumOrEthAddress(assetId),
+    } as NodeTypes.WithdrawCommitmentParams);
   };
 
   ///////////////////////////////////////////////

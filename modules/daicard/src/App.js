@@ -175,13 +175,9 @@ class App extends React.Component {
     let cfWallet;
     let channel;
 
-    switch (channelProviderType) {
-      case "walletconnect":
-      case "counterfactual":
-        this.setState({ channelProviderType });
-        break;
-      default:
-        throw new Error(`Invalid provider type ${channelProviderType}`);
+    const supportedChannelProviders = ["walletconnect", "counterfactual"]
+    if (!supportedChannelProviders.includes(channelProviderType)) {
+      throw new Error(`Invalid provider type ${channelProviderType}`);
     }
 
     const network = await ethprovider.getNetwork();
@@ -301,6 +297,7 @@ class App extends React.Component {
     this.setState({
       address: cfWallet.address,
       channel,
+      channelProviderType,
       ethprovider,
       freeBalanceAddress,
       loadingConnext: false,
