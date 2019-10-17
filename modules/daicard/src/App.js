@@ -41,7 +41,21 @@ import {
   toBN,
   tokenToWei,
   weiToToken,
+  migrate,
 } from "./utils";
+
+const urls = {
+  ethProviderUrl: process.env.REACT_APP_ETH_URL_OVERRIDE || `${window.location.origin}/api/ethprovider`,
+  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
+  legacyUrl: (chainId) =>
+    chainId.toString() === "1" ? "https://hub.connext.network/api/hub" :
+    chainId.toString() === "4" ? "https://rinkeby.hub.connext.network/api/hub" :
+    undefined,
+  pisaUrl: (chainId) =>
+    chainId.toString() === "1" ? "https://connext.pisa.watch" :
+    chainId.toString() === "4" ? "https://connext-rinkeby.pisa.watch" :
+    undefined
+}
 
 // Optional URL overrides for custom urls
 const overrides = {
@@ -132,6 +146,7 @@ class App extends React.Component {
       },
       ethprovider: null,
       freeBalanceAddress: null,
+      legacyMigration: false,
       loadingConnext: true,
       maxDeposit: null,
       minDeposit: null,
@@ -167,9 +182,8 @@ class App extends React.Component {
       localStorage.setItem("mnemonic", mnemonic);
     }
 
-    const nodeUrl =
-      overrides.nodeUrl || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`;
-    const ethProviderUrl = overrides.ethProviderUrl || `${window.location.origin}/api/ethprovider`;
+    const nodeUrl = urls.nodeUrl;
+    const ethProviderUrl = urls.ethProviderUrl;
     const ethprovider = new eth.providers.JsonRpcProvider(ethProviderUrl);
     const cfPath = "m/44'/60'/0'/25446";
     let cfWallet;
@@ -181,6 +195,14 @@ class App extends React.Component {
     }
 
     const network = await ethprovider.getNetwork();
+
+    // migrate if needed
+    const setMigrating = (state) => {
+      this.setState({ legacyMigration: state, loadingConnext: !state });
+    }
+
+    await migrate(urls.legacyUrl(network.chainId), cfWallet, ethProviderUrl, setMigrating.bind(this));
+
     // if choose mnemonic
     if (channelProviderType === "counterfactual") {
       // If no mnemonic, create one and save to local storage
@@ -192,20 +214,17 @@ class App extends React.Component {
       cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
       this.setState({address:cfWallet.address})
 
-      let store = storeFactory();
-
-      if (network.chainId === 4) {
-        const pisaContractAddress = "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3";
-        const pisaClient = new PisaClient(
-          overrides.pisaUrl || "https://connext-rinkeby.pisa.watch/",
-          pisaContractAddress,
-        );
-        console.info(`Using chainId ${network.chainId} and pisaContract at ${pisaContractAddress}`);
+      let store;
+      if (urls.pisaUrl(network.chainId)) {
         store = storeFactory({
-          provider: new eth.providers.JsonRpcProvider(ethProviderUrl),
           wallet: cfWallet,
-          pisaClient,
+          pisaClient: new PisaClient(
+            urls.pisaUrl(network.chainId),
+            "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3", // TODO: Don't hardcode
+          ),
         });
+      } else {
+        store = storeFactory();
       }
 
       channel = await instantiateClient(ethProviderUrl, mnemonic, nodeUrl, store);
@@ -450,7 +469,6 @@ class App extends React.Component {
       );
       const result = await channel.deposit(depositParams);
       await this.refreshBalances();
-      await this.refreshBalances();
       console.log(`Successfully deposited tokens! Result: ${JSON.stringify(result, null, 2)}`);
       this.setPending({ type: "deposit", complete: true, closed: false });
     } else {
@@ -636,14 +654,21 @@ class App extends React.Component {
               variant="success"
               openWhen={this.state.receivingTransferCompleted}
               onClose={() => this.setState({ receivingTransferCompleted: false })}
-              message="Receiving Transfer..."
+              message="Transfer Receieved!"
               duration={30 * 60 * 1000}
             />
             <MySnackbar
               variant="error"
               openWhen={this.state.receivingTransferFailed}
               onClose={() => this.setState({ receivingTransferFailed: false })}
-              message="Receiving Transfer..."
+              message="Transfer Failed"
+              duration={30 * 60 * 1000}
+            />
+            <MySnackbar
+              variant="warning"
+              openWhen={this.state.legacyMigration}
+              onClose={() => this.setState({ legacyMigration: false })}
+              message="Migrating legacy channel to 2.0..."
               duration={30 * 60 * 1000}
             />
             <AppBarComponent address={address} />
@@ -658,8 +683,17 @@ class App extends React.Component {
               path="/"
               render={props => (
                 <Grid>
-                  <Home {...props} balance={balance} scanQRCode={this.scanQRCode} />
-                  <SetupCard {...props} minDeposit={minDeposit} maxDeposit={maxDeposit} />
+                  <Home
+                    {...props}
+                    balance={balance}
+                    swapRate={swapRate}
+                    scanQRCode={this.scanQRCode}
+                  />
+                  <SetupCard
+                    {...props}
+                    minDeposit={minDeposit}
+                    maxDeposit={maxDeposit}
+                  />
                 </Grid>
               )}
             />

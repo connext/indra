@@ -1,8 +1,8 @@
 import { ConnextClientStorePrefix } from "@connext/types";
 import { arrayify, hexlify, keccak256, toUtf8Bytes, toUtf8String } from "ethers/utils";
 
-export const storeFactory = (pisaOptions) => {
-  const { pisaClient, wallet } = pisaOptions || { pisaClient: null, wallet: null };
+export const storeFactory = (options) => {
+  const { pisaClient, wallet } = options || { pisaClient: null, wallet: null };
   return {
 
     get: path => {
@@ -44,55 +44,30 @@ export const storeFactory = (pisaOptions) => {
         );
 
         if (
-          pisaClient &&
           shouldBackup &&
-          pair.path.match(/.*\/xpub.*\/channel\/0x[0-9a-fA-F]{40}/) &&
+          pisaClient &&
+          pair.path.match(/\/xpub.*\/channel\/0x[0-9a-fA-F]{40}/) &&
           pair.value.freeBalanceAppInstance
         ) {
-          // although the call to pisa is async we dont await it here to avoid the ui waiting on network
-          // requests, besides there is little benefit the UI can add here
-          const version = pair.value.freeBalanceAppInstance.latestVersionNumber;
-
-
-          const backupToPisa = async (pisaClient, wallet, path, data, version) => {
-            let stringed;
-            try {
-              // stringify the data
-              stringed = JSON.stringify(data);
-              const bytes = toUtf8Bytes(stringed);
-              const hex = hexlify(bytes);
-              const currentBlockNumber = await wallet.provider.getBlockNumber();
-              await pisaClient.backUp(
-                digest => wallet.signMessage(arrayify(digest)),
-                wallet.address,
-                hex,
-                currentBlockNumber,
-                keccak256(toUtf8Bytes(path)),
-                version,
-              );
-            } catch (doh) {
-              // if the error message matches the "nonce too low" regex we'll swallow
-              // as this is potentially expected behaviour
-              // see: https://github.com/counterfactual/monorepo/issues/2497
-              if (doh.message) {
-                const matches = doh.message.match(/Appointment already exists and nonce too low./);
-                if (matches && Number.parseInt(matches[1], 10) === version) {
-                  console.error(doh);
-                  console.error(stringed);
-                  return;
-                }
-              }
-              throw doh;
+          try {
+            console.log(`Backing up store value at path ${pair.path}`);
+            await pisaClient.backUp(
+              digest => wallet.signMessage(arrayify(digest)),
+              wallet.address,
+              hexlify(toUtf8Bytes(JSON.stringify(pair))),
+              await wallet.provider.getBlockNumber(),
+              keccak256(toUtf8Bytes(pair.path)),
+              pair.value.freeBalanceAppInstance.latestVersionNumber,
+            );
+          } catch (e) {
+            // If we get a "nonce too low" error, we'll log & ignore bc sometimes expected. See:
+            // see: https://github.com/counterfactual/monorepo/issues/2497
+            if (e.message && e.message.match(/Appointment already exists and nonce too low./)) {
+              console.warn(e);
+            } else {
+              console.error(e);
             }
-          };
-
-          await backupToPisa(
-            pisaClient,
-            wallet,
-            pair.path,
-            pair,
-            version,
-          );
+          }
         }
       }
     },
@@ -106,25 +81,13 @@ export const storeFactory = (pisaOptions) => {
     },
 
     restore: async () => {
-      if (pisaClient) {
-
-        const restoreFromPisa = async (pisaClient, wallet) => {
-          const currentBlockNumber = await wallet.provider.getBlockNumber();
-          const restoreStates = await pisaClient.restore(
+      return pisaClient
+        ? (await pisaClient.restore(
             digest => wallet.signMessage(arrayify(digest)),
             wallet.address,
-            currentBlockNumber,
-          );
-          const parsedRestoreStates = restoreStates.map(b => JSON.parse(toUtf8String(arrayify(b.data))));
-          return parsedRestoreStates;
-        };
-
-        return await restoreFromPisa(
-          pisaClient,
-          wallet,
-        );
-      }
-      return [];
+            await wallet.provider.getBlockNumber(),
+          )).map(b => JSON.parse(toUtf8String(arrayify(b.data))))
+        : [];
     },
   };
 };

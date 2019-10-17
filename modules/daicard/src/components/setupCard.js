@@ -124,7 +124,6 @@ export const SetupCard = style(({ classes, minDeposit, maxDeposit }) => {
                       variant="outlined"
                       color="primary"
                       size="small"
-                      alignContent="left"
                     >
                       Got it!
                     </Button>

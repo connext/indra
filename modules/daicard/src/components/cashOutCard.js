@@ -165,7 +165,7 @@ export const CashoutCard = style(({
         <Grid container direction="row" justify="center" alignItems="center">
           <Typography variant="h2">
             <span>
-              {balance.channel.total.toDAI(swapRate).format()}
+              {balance.channel.token.toDAI(swapRate).format({ decimals: 2, symbol: false, round: false })}
             </span>
           </Typography>
         </Grid>
