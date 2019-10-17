@@ -176,7 +176,6 @@ export class ConnextListener extends EventEmitter {
   public registerCfListener = (event: CFCoreTypes.EventName, cb: Function): void => {
     // replace with new fn
     this.log.info(`Registering listener for ${event}`);
-    // TODO: type res by obj with event as keys?
     this.channelRouter.on(event, async (res: any) => {
       await cb(res);
       this.emit(event, res);
