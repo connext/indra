@@ -194,6 +194,7 @@ class App extends React.Component {
         localStorage.setItem("mnemonic", mnemonic);
       }
       cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
+      this.setState({address:cfWallet.address})
 
       let store = storeFactory();
 
