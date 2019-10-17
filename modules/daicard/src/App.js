@@ -33,7 +33,15 @@ import { SendCard } from "./components/sendCard";
 import { SettingsCard } from "./components/settingsCard";
 import { SetupCard } from "./components/setupCard";
 import { SupportCard } from "./components/supportCard";
-import { Currency, instantiateClient, minBN, storeFactory, toBN, tokenToWei, weiToToken } from "./utils";
+import {
+  Currency,
+  instantiateClient,
+  minBN,
+  storeFactory,
+  toBN,
+  tokenToWei,
+  weiToToken,
+} from "./utils";
 
 // Optional URL overrides for custom urls
 const overrides = {
@@ -173,7 +181,7 @@ class App extends React.Component {
         this.setState({ channelProviderType });
         break;
       default:
-        throw new Error(`Invalid provider type ${channelProviderType}`)
+        throw new Error(`Invalid provider type ${channelProviderType}`);
     }
 
     const network = await ethprovider.getNetwork();
@@ -186,11 +194,11 @@ class App extends React.Component {
         localStorage.setItem("mnemonic", mnemonic);
       }
       cfWallet = eth.Wallet.fromMnemonic(mnemonic, cfPath).connect(ethprovider);
-      
+
       let store = storeFactory();
 
       if (network.chainId === 4) {
-        const pisaContractAddress = "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3";      
+        const pisaContractAddress = "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3";
         const pisaClient = new PisaClient(
           overrides.pisaUrl || "https://connext-rinkeby.pisa.watch/",
           pisaContractAddress,
@@ -208,19 +216,19 @@ class App extends React.Component {
       let channelProvider;
       channelProvider = new WalletConnectChannelProvider({
         rpc: {
-          "4447": ethProviderUrl
+          "4447": ethProviderUrl,
         },
-        chainId: 4447
+        chainId: 4447,
       });
       console.log("GOT CHANNEL PROVIDER");
       // do we have to access the connection property here,
       // or can this be referenced at a higher level?
       // also, do we have to include this call?
       // await channelProvider.create();
-      console.log("CREATING CONNECTION")
-      console.log(channelProvider.connection.chainId)
-      console.log(channelProvider.connection.rpc)
-      console.log(channelProvider.connection.networkId)
+      console.log("CREATING CONNECTION");
+      console.log(channelProvider.connection.chainId);
+      console.log(channelProvider.connection.rpc);
+      console.log(channelProvider.connection.networkId);
       channelProvider.connection.create();
       channel = await new Promise((res, rej) => {
         channelProvider.once("connect", async () => {
@@ -263,7 +271,7 @@ class App extends React.Component {
     console.log(`Client created successfully!`);
     console.log(` - Public Identifier: ${channel.publicIdentifier}`);
     console.log(` - Account multisig address: ${channel.opts.multisigAddress}`);
-    console.log(` - CF Account address: ${cfWallet.address}`);
+    console.log(` - CF Wallet address/Deposit address: ${cfWallet.address}`);
     console.log(` - Free balance address: ${freeBalanceAddress}`);
     console.log(` - Token address: ${token.address}`);
     console.log(` - Swap rate: ${swapRate}`);
@@ -290,7 +298,7 @@ class App extends React.Component {
     });
 
     this.setState({
-      address: freeBalanceAddress,
+      address: cfWallet.address,
       channel,
       ethprovider,
       freeBalanceAddress,
@@ -314,7 +322,7 @@ class App extends React.Component {
   //  - channel messages to see if there anything to sign
   //  - channel eth to see if I need to swap?
   startPoller = async () => {
-    const { channelProviderType } = this.state
+    const { channelProviderType } = this.state;
     await this.refreshBalances();
     await this.setDepositLimits();
     await this.addDefaultPaymentProfile();
@@ -478,6 +486,8 @@ class App extends React.Component {
 
   autoSwap = async () => {
     const { balance, channel, maxDeposit, pending, swapRate, token } = this.state;
+    console.log('token: ', token);
+    console.log('balance: ', balance);
     if (!channel) {
       console.warn(`Channel not available yet.`);
       return;
