@@ -480,7 +480,7 @@ const SendCardModal = ({
           </DialogTitle>
           <DialogContent>
             <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
-              Amount: ${amount}
+              Amount: ${amount.split(".")[0] + "." + amount.split(".")[1].padEnd(2, "0")}
             </DialogContentText>
             <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
               To: {recipient.substr(0, 8)}...
