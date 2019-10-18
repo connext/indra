@@ -253,6 +253,8 @@ services:
   relay:
     image: $relay_image
     command: ["nats:$nats_port"]
+    ports:
+      - "4223:4223"
 
   redis:
     image: $redis_image
