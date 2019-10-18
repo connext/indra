@@ -168,6 +168,7 @@ class App extends React.Component {
   // ************************************************* //
   // INIT CODE HAPPENS AFTER PROVIDER IS SET
   setProvider = async channelProviderType => {
+    this.setState({ channelProviderType })
     // If no mnemonic, create one and save to local storage
     let mnemonic = localStorage.getItem("mnemonic");
     if (!mnemonic) {
@@ -229,17 +230,27 @@ class App extends React.Component {
         },
         chainId: 4447,
       });
-      console.log("GOT CHANNEL PROVIDER");
+      console.log("GOT CHANNEL PROVIDER:", JSON.stringify(channelProvider, null, 2));
       // do we have to access the connection property here,
       // or can this be referenced at a higher level?
       // also, do we have to include this call?
       // await channelProvider.create();
-      console.log("CREATING CONNECTION");
-      console.log(channelProvider.connection.chainId);
-      console.log(channelProvider.connection.rpc);
-      console.log(channelProvider.connection.networkId);
-      channelProvider.connection.create();
-      channel = await new Promise((res, rej) => {
+      console.log("creating connection..")
+      await channelProvider.checkConnection()
+      // dont move forward until connection is connected
+      await new Promise((resolve, reject) => {
+        channelProvider.once("connect", () => {
+          if (channelProvider.connected) {
+            resolve()
+          } else {
+            reject(`"connect" event fired but channel provider not connected`)
+          }
+        })
+      })
+      console.log(`created, now trying to connect to channel...`)
+      await channelProvider.enable();
+      console.log(`enabled!`)
+      await new Promise((res, rej) => {
         channelProvider.once("connect", async () => {
           const connectedChannel = await connext.connect({
             ethProviderUrl,
@@ -407,6 +418,16 @@ class App extends React.Component {
     balance.channel.ether = Currency.WEI(freeEtherBalance[freeBalanceAddress], swapRate).toETH();
     balance.channel.token = Currency.DEI(freeTokenBalance[freeBalanceAddress], swapRate).toDAI();
     balance.channel.total = getTotal(balance.channel.ether, balance.channel.token).toETH();
+    const logIfNotZero = (wad, prefix) => {
+      if (wad.isZero()) {
+        return;
+      }
+      console.log(`${prefix}: ${wad.toString()}`)
+    }
+    logIfNotZero(balance.onChain.token.wad, `chain token balance`);
+    logIfNotZero(balance.onChain.ether.wad, `chain ether balance`);
+    logIfNotZero(balance.channel.token.wad, `channel token balance`);
+    logIfNotZero(balance.channel.ether.wad, `channel ether balance`);
     this.setState({ balance });
   };
 
@@ -495,8 +516,6 @@ class App extends React.Component {
 
   autoSwap = async () => {
     const { balance, channel, maxDeposit, pending, swapRate, token } = this.state;
-    console.log('token: ', token);
-    console.log('balance: ', balance);
     if (!channel) {
       console.warn(`Channel not available yet.`);
       return;
