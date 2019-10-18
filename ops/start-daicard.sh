@@ -39,7 +39,7 @@ services:
 
   relay:
     image: $relay_image
-    command: ["$indra_url:4222"]
+    command: ["${indra_url#*://}:4222"]
 
 EOF
 
