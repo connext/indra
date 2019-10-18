@@ -41,8 +41,8 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev prod
-dev: database node types client payment-bot proxy ws-tcp-relay
-prod: database node-prod proxy-prod ws-tcp-relay
+dev: database node types client payment-bot indra-proxy ws-tcp-relay
+prod: database node-prod indra-proxy-prod ws-tcp-relay
 
 start: dev
 	bash ops/start-dev.sh ganache
@@ -80,10 +80,10 @@ reset: stop
 	rm -rf $(flags)/deployed-contracts
 
 push-latest: prod
-	bash ops/push-images.sh latest database node proxy relay
+	bash ops/push-images.sh latest database node indra-proxy relay
 
 push-prod: prod
-	bash ops/push-images.sh $(version) database node proxy relay
+	bash ops/push-images.sh $(version) database node indra-proxy relay
 
 deployed-contracts: contracts
 	bash ops/deploy-contracts.sh ganache
@@ -177,14 +177,14 @@ payment-bot: node-modules client types $(shell find $(bot)/src $(find_options))
 	$(docker_run) "cd modules/payment-bot && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-proxy: $(shell find $(proxy) $(find_options))
+indra-proxy: $(shell find $(proxy) $(find_options))
 	$(log_start)
-	docker build --file $(proxy)/dev.dockerfile --tag $(project)_proxy:dev .
+	docker build --file $(proxy)/indra.connext.network/dev.dockerfile --tag $(project)_proxy:dev .
 	$(log_finish) && touch $(flags)/$@
 
-proxy-prod: daicard-prod $(shell find $(proxy) $(find_options))
+indra-proxy-prod: daicard-prod $(shell find $(proxy) $(find_options))
 	$(log_start)
-	docker build --file $(proxy)/prod.dockerfile --tag $(project)_proxy:latest .
+	docker build --file $(proxy)/indra.connext.network/prod.dockerfile --tag $(project)_proxy:latest .
 	$(log_finish) && touch $(flags)/$@
 
 types: node-modules messaging $(shell find $(types)/src $(find_options))

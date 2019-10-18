@@ -95,8 +95,7 @@ function renewcerts {
 }
 
 if [[ "$domain" != "localhost" ]]
-then
-  renewcerts &
+then renewcerts &
 fi
 
 sleep 3 # give renewcerts a sec to do it's first check
