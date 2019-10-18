@@ -164,7 +164,15 @@ class App extends React.Component {
       this.setState({ legacyMigration: state, loadingConnext: !state });
     }
 
-    await migrate(urls.legacyUrl(network.chainId), cfWallet, ethProviderUrl, setMigrating.bind(this));
+
+    if (localStorage.getItem("rpc-prod")) {
+      this.setState({ legacyMigration: true, loadingConnext: false });
+      await migrate(urls.legacyUrl(network.chainId), cfWallet, ethProviderUrl);
+      this.setState({ legacyMigration: false, loadingConnext: true });
+      localStorage.removeItem("rpc-prod");
+    }
+
+    
 
     const channel = await connext.connect({
       ethProviderUrl,
