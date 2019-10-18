@@ -147,7 +147,7 @@ daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))
 	$(docker_run) "cd modules/daicard && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-daicard-proxy: $(shell find $(proxy) $(find_options))
+daicard-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/daicard.io/prod.dockerfile --tag daicard_proxy:latest .
 	$(log_finish) && touch $(flags)/$@
@@ -182,12 +182,12 @@ payment-bot: node-modules client types $(shell find $(bot)/src $(find_options))
 	$(docker_run) "cd modules/payment-bot && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-indra-proxy: $(shell find $(proxy) $(find_options))
+indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/indra.connext.network/dev.dockerfile --tag $(project)_proxy:dev .
 	$(log_finish) && touch $(flags)/$@
 
-indra-proxy-prod: daicard-prod $(shell find $(proxy) $(find_options))
+indra-proxy-prod: daicard-prod ws-tcp-relay $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/indra.connext.network/prod.dockerfile --tag $(project)_proxy:latest .
 	$(log_finish) && touch $(flags)/$@

@@ -37,7 +37,8 @@ echo "Requests will be forwarded to: $indra"
 echo;echo "Building & pushing latest version of the daicard proxy"
 make daicard-proxy
 docker tag daicard_proxy $registry/daicard_proxy
-docker push $registry/daicard_proxy
+docker tag indra_relay $registry/indra_relay
+docker push $registry/daicard_proxy && docker push $registry/indra_relay
 if [[ "$?" != "0" ]]
 then echo "Make sure you're logged into docker & have push permissions: docker login" && exit
 fi
