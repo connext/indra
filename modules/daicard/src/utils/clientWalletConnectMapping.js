@@ -73,8 +73,10 @@ export async function initWalletConnect(uri) {
 }
 
 export function displaySessionApproval(payload) {
+  console.log(`displaySessionApproval()`)
   walletConnector.approveSession({ accounts: [], chainId: 4447 });
   //TODO: proc modal that approves the walletconnection from the wallet
+  console.log(`called walletConnector.approveSession()`)
 }
 
 async function mapPayloadToClient(payload) {
