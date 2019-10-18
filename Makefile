@@ -42,7 +42,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 default: dev
 all: dev prod
 dev: database node types client payment-bot indra-proxy ws-tcp-relay
-prod: database node-prod indra-proxy-prod ws-tcp-relay
+prod: database node-prod indra-proxy-prod ws-tcp-relay daicard-proxy
 
 start: dev
 	bash ops/start-dev.sh ganache
@@ -145,6 +145,11 @@ contracts: node-modules $(shell find $(contracts)/contracts $(find_options))
 daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/daicard && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
+daicard-proxy: $(shell find $(proxy) $(find_options))
+	$(log_start)
+	docker build --file $(proxy)/daicard.io/prod.dockerfile --tag daicard_proxy:latest .
 	$(log_finish) && touch $(flags)/$@
 
 database: node-modules $(shell find $(database) $(find_options))
