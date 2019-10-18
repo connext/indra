@@ -227,7 +227,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
 
   useEffect(() => {
     const query = queryString.parse(location.search);
-    if (!amount.value && !amount.error && query.amount) {
+    if (!amount.value && query.amount) {
       updateAmountHandler(query.amount);
     }
     if (!recipient.value && !recipient.error && query.recipient) {
