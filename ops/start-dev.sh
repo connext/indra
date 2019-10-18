@@ -245,10 +245,11 @@ services:
     environment:
       PG_DATABASE: $pg_db
       PG_HOST: $pg_host
-      PG_PASSWORD_FILE: $readonly_password_file
+      PG_PASSWORD_FILE: $pg_password_file
       PG_PORT: $pg_port
-      PG_USER: $readonly_user
+      PG_USER: $project
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_UNAUTHORIZED_ROLE: $hasura_user
     networks:
       - $project
     ports:

@@ -305,10 +305,11 @@ services:
     environment:
       PG_DATABASE: $pg_db
       PG_HOST: $pg_host
-      PG_PASSWORD_FILE: $hasura_password_file
+      PG_PASSWORD_FILE: $pg_password_file
       PG_PORT: $pg_port
-      PG_USER: $hasura_user
+      PG_USER: $project
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_UNAUTHORIZED_ROLE: $hasura_user
     ports:
       - "8083:8080"
     secrets:
