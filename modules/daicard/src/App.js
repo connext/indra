@@ -296,8 +296,20 @@ class App extends React.Component {
     this.setState({ maxDeposit, minDeposit });
     if (!channel || !swapRate) { return; }
     const getTotal = (ether, token) => Currency.WEI(ether.wad.add(token.toETH().wad), swapRate);
-    const freeEtherBalance = await channel.getFreeBalance();
-    const freeTokenBalance = await channel.getFreeBalance(token.address);
+    let freeEtherBalance, freeTokenBalance
+    try {
+      freeEtherBalance = await channel.getFreeBalance();
+      freeTokenBalance = await channel.getFreeBalance(token.address);
+    } catch (e) {
+      if (e.message.includes(`This probably means that the StateChannel does not exist yet`)) {
+        // channel.connext was already called, meaning there should be
+        // an existing channel
+        await channel.restoreState(localStorage.getItem("mnemonic"))
+        return
+      }
+      console.error(e)
+      return;
+    }
     balance.onChain.ether = Currency.WEI(await ethprovider.getBalance(address), swapRate).toETH();
     balance.onChain.token = Currency.DEI(await token.balanceOf(address), swapRate).toDAI();
     balance.onChain.total = getTotal(balance.onChain.ether, balance.onChain.token).toETH();
