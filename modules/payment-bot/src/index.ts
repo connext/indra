@@ -2,6 +2,7 @@ import * as connext from "@connext/client";
 import {
   DepositParameters,
   LinkedTransferParameters,
+  LinkedTransferToRecipientParameters,
   makeChecksum,
   ResolveLinkedTransferParameters,
   WithdrawParameters,
@@ -13,7 +14,7 @@ import { formatEther, hexlify, parseEther, randomBytes } from "ethers/utils";
 
 import { registerClientListeners } from "./bot";
 import { config } from "./config";
-import { store } from "./store";
+import { Store } from "./store";
 import { logEthFreeBalance } from "./utils";
 
 const replaceBN = (key: string, value: any): any =>
@@ -81,11 +82,15 @@ async function run(): Promise<void> {
   setAssetId(assetId);
   await getOrCreateChannel(assetId);
 
-  if (config.getFreeBalance) {
+  const logEthAndAssetFreeBalance = async (): Promise<void> => {
     logEthFreeBalance(AddressZero, await client.getFreeBalance(assetId));
     if (assetId !== AddressZero) {
       logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
     }
+  };
+
+  if (config.getFreeBalance) {
+    await logEthAndAssetFreeBalance();
   }
 
   if (config.deposit) {
@@ -98,12 +103,14 @@ async function run(): Promise<void> {
     console.log(`Depositing ${config.deposit} of asset ${assetId}`);
     await client.deposit(depositParams);
     console.log(`Successfully deposited!`);
+    await logEthAndAssetFreeBalance();
   }
 
   if (config.requestCollateral) {
     console.log(`Requesting collateral...`);
     await client.requestCollateral(assetId);
     console.log(`Successfully received collateral!`);
+    await logEthAndAssetFreeBalance();
   }
 
   if (config.transfer) {
@@ -114,10 +121,11 @@ async function run(): Promise<void> {
       recipient: config.counterparty,
     });
     console.log(`Successfully transferred!`);
+    await logEthAndAssetFreeBalance();
   }
 
   if (config.swap) {
-    const tokenAddress = (await client.config()).contractAddresses.Token;
+    const tokenAddress = client.config.contractAddresses.Token;
     const swapRate = await client.getLatestSwapRate(AddressZero, tokenAddress);
     console.log(`Swapping ${config.swap} eth for ${assetId} at rate ${swapRate.toString()}`);
     await client.swap({
@@ -127,6 +135,7 @@ async function run(): Promise<void> {
       toAssetId: assetId,
     });
     console.log(`Successfully swapped!`);
+    await logEthAndAssetFreeBalance();
   }
 
   if (config.linked) {
@@ -147,14 +156,47 @@ async function run(): Promise<void> {
     console.log(`Creating link payment for ${config.linked} of asset ${assetId}`);
     const res = await client.conditionalTransfer(linkedParams);
     console.log(`Successfully created! Linked response: ${JSON.stringify(res, replaceBN, 2)}`);
+    await logEthAndAssetFreeBalance();
+  }
+
+  if (config.linkedTo) {
+    let { preImage, paymentId } = config;
+    if (!preImage) {
+      preImage = hexlify(randomBytes(32));
+    }
+    if (!paymentId) {
+      paymentId = hexlify(randomBytes(32));
+    }
+    const linkedParams: LinkedTransferToRecipientParameters = {
+      amount: parseEther(config.linkedTo).toString(),
+      assetId,
+      conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
+      paymentId,
+      preImage,
+      recipient: config.counterparty,
+    };
+    console.log(`Creating link payment for ${config.linkedTo} of asset ${assetId}`);
+    const res = await client.conditionalTransfer(linkedParams);
+    console.log(`Successfully created! Linked response: ${JSON.stringify(res, replaceBN, 2)}`);
   }
 
   if (config.redeem) {
     checkForLinkedFields(config);
     const resolveParams: ResolveLinkedTransferParameters = {
-      amount: parseEther(config.redeem).toString(),
-      assetId,
       conditionType: "LINKED_TRANSFER",
+      paymentId: config.paymentId,
+      preImage: config.preImage,
+    };
+    console.log(`Redeeming link with parameters: ${JSON.stringify(resolveParams, replaceBN, 2)}`);
+    const res = await client.resolveCondition(resolveParams);
+    console.log(`Successfully redeemed! Resolve response: ${JSON.stringify(res, replaceBN, 2)}`);
+    await logEthAndAssetFreeBalance();
+  }
+
+  if (config.redeemLinkedTo) {
+    checkForLinkedFields(config);
+    const resolveParams: ResolveLinkedTransferParameters = {
+      conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
       paymentId: config.paymentId,
       preImage: config.preImage,
     };
@@ -192,6 +234,7 @@ async function run(): Promise<void> {
     );
     await client.withdraw(withdrawParams);
     console.log(`Successfully withdrawn!`);
+    await logEthAndAssetFreeBalance();
   }
 
   if (config.uninstall) {
@@ -210,7 +253,7 @@ async function run(): Promise<void> {
 
   if (config.restore) {
     console.log(`Restoring states from the node with mnemonic: ${config.restore}`);
-    client = await client.restoreStateFromNode(config.restore);
+    client = await client.restoreState(config.restore);
   }
 
   exitOrLeaveOpen(config);
@@ -218,6 +261,8 @@ async function run(): Promise<void> {
 }
 
 async function getOrCreateChannel(assetId?: string): Promise<void> {
+  const store = new Store();
+
   const connextOpts: connext.ClientOptions = {
     ethProviderUrl: config.ethProviderUrl,
     logLevel: config.logLevel,
@@ -240,18 +285,16 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
     const channel = await client.getChannel();
     return channel && channel.available;
   };
-  const interval = 1;
+  const interval = 0.1;
   while (!(await channelAvailable())) {
     console.info(`Waiting ${interval} more seconds for channel to be available`);
     await new Promise((res: any): any => setTimeout(() => res(), interval * 1000));
   }
-
   await client.addPaymentProfile({
     amountToCollateralize: parseEther("0.1").toString(),
     assetId: AddressZero,
     minimumMaintainedCollateral: parseEther("0.01").toString(),
   });
-
   if (assetId) {
     await client.addPaymentProfile({
       amountToCollateralize: parseEther("10").toString(),
@@ -259,6 +302,7 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
       minimumMaintainedCollateral: parseEther("5").toString(),
     });
   }
+  console.info(`Channel is available!`);
   registerClientListeners();
 }
 

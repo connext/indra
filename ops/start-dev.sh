@@ -16,6 +16,8 @@ ETH_NETWORK="${1:-kovan}"
 # config & hard-coded stuff you might want to change
 
 log_level=3
+nats_port=4222
+node_port=8080
 
 if [[ "$ETH_NETWORK" == "rinkeby" ]]
 then eth_rpc_url="https://rinkeby.infura.io/metamask"
@@ -31,26 +33,23 @@ eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 
 # database connection settings
-postgres_db="$project"
-postgres_password_file="/run/secrets/${project}_database_dev"
-postgres_host="database"
-postgres_port="5432"
-postgres_user="$project"
+pg_db="$project"
+pg_password_file="/run/secrets/${project}_database_dev"
+pg_host="database"
+pg_port="5432"
+pg_user="$project"
 
 # docker images
 builder_image="${project}_builder"
+daicard_devserver_image="$builder_image"
 database_image="postgres:9-alpine"
 ethprovider_image="trufflesuite/ganache-cli:v6.4.5"
-node_image="$builder_image"
 nats_image="nats:2.0.0-linux"
+node_image="$builder_image"
 proxy_image="${project}_proxy:dev"
-daicard_devserver_image="$builder_image"
-relay_image="${project}_relay"
 redis_image=redis:5-alpine
 redis_url="redis://redis:6379"
-
-node_port=8080
-nats_port=4222
+relay_image="${project}_relay"
 
 ####################
 # Deploy according to above configuration
@@ -62,8 +61,8 @@ function pull_if_unavailable {
   fi
 }
 pull_if_unavailable "$database_image"
-pull_if_unavailable "$nats_image"
 pull_if_unavailable "$ethprovider_image"
+pull_if_unavailable "$nats_image"
 
 # Initialize random new secrets
 function new_secret {
@@ -131,14 +130,6 @@ services:
       - `pwd`:/root
     working_dir: /root/modules/daicard
 
-  relay:
-    image: $relay_image
-    command: ["nats:$nats_port"]
-    networks:
-      - $project
-    ports:
-      - "4223:4223"
-
   node:
     image: $node_image
     entrypoint: bash modules/node/ops/entry.sh
@@ -150,11 +141,11 @@ services:
       INDRA_NATS_CLUSTER_ID:
       INDRA_NATS_SERVERS: nats://nats:$nats_port
       INDRA_NATS_TOKEN:
-      INDRA_PG_DATABASE: $postgres_db
-      INDRA_PG_HOST: $postgres_host
-      INDRA_PG_PASSWORD_FILE: $postgres_password_file
-      INDRA_PG_PORT: $postgres_port
-      INDRA_PG_USERNAME: $postgres_user
+      INDRA_PG_DATABASE: $pg_db
+      INDRA_PG_HOST: $pg_host
+      INDRA_PG_PASSWORD_FILE: $pg_password_file
+      INDRA_PG_PORT: $pg_port
+      INDRA_PG_USERNAME: $pg_user
       INDRA_PORT: $node_port
       INDRA_REDIS_URL: $redis_url
       NODE_ENV: development
@@ -183,12 +174,12 @@ services:
       mode: global
     environment:
       POSTGRES_DB: $project
-      POSTGRES_PASSWORD_FILE: $postgres_password_file
+      POSTGRES_PASSWORD_FILE: $pg_password_file
       POSTGRES_USER: $project
     networks:
       - $project
     ports:
-      - "5432:5432"
+      - "$pg_port:$pg_port"
     secrets:
       - ${project}_database_dev
     volumes:
@@ -201,6 +192,14 @@ services:
       - $project
     ports:
       - "$nats_port:$nats_port"
+
+  relay:
+    image: $relay_image
+    command: ["nats:$nats_port"]
+    networks:
+      - $project
+    ports:
+      - "4223:4223"
 
   redis:
     image: $redis_image

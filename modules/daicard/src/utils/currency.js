@@ -24,11 +24,11 @@ export class Currency {
   }
 
   defaultOptions = {
-    'DAI': { commas: false, decimals: 2, symbol: true },
-    'DEI': { commas: false, decimals: 0, symbol: false },
-    'ETH': { commas: false, decimals: 3, symbol: true },
-    'FIN': { commas: false, decimals: 3, symbol: false },
-    'WEI': { commas: false, decimals: 0, symbol: false },
+    'DAI': { commas: false, decimals: 2, symbol: true, round: true },
+    'DEI': { commas: false, decimals: 0, symbol: false, round: true },
+    'ETH': { commas: false, decimals: 3, symbol: true, round: true },
+    'FIN': { commas: false, decimals: 3, symbol: false, round: true },
+    'WEI': { commas: false, decimals: 0, symbol: false, round: true },
   }
 
   ////////////////////////////////////////
@@ -50,10 +50,10 @@ export class Currency {
     this.daiRate = typeof daiRate !== 'undefined' ? daiRate : '1'
     this.daiRateGiven = !!daiRate
     try {
-      this.wad = this.toWad(amount)
-      this.ray = this.toRay(amount)
+      this.wad = this.toWad(amount._hex ? toBN(amount._hex) : amount)
+      this.ray = this.toRay(amount._hex ? toBN(amount._hex) : amount)
     } catch (e) {
-      throw new Error(`Invalid currency amount: ${amount}`)
+      throw new Error(`Invalid currency amount (${amount}): ${e}`)
     }
   }
 
@@ -76,8 +76,16 @@ export class Currency {
     return this.typeToSymbol[this.type]
   }
 
+  get floor() {
+    return this._floor(this.amount)
+  }
+
   ////////////////////////////////////////
   // Public Methods
+
+  toString() {
+    return this.amount.slice(0, this.amount.indexOf('.'))
+  }
 
   isEthType(type) {
     return ['ETH', 'FIN', 'WEI'].includes(type || this.type)
@@ -92,15 +100,18 @@ export class Currency {
   }
 
   format(_options) {
+    const amt = this.amount;
     const options = {
       ...this.defaultOptions[this.type],
       ..._options || {},
-    }
-    const symbol = options.symbol ? `${this.symbol}` : ``
-    const amount = options.commas
-      ? commify(this.round(options.decimals))
-      : this.round(options.decimals)
-    return `${symbol}${amount}`
+    };
+    const symbol = options.symbol ? `${this.symbol}` : ``;
+    const nDecimals = amt.length - amt.indexOf('.') - 1;
+    const amount = options.round ? this.round(options.decimals)
+      : (options.decimals > nDecimals) ? amt + '0'.repeat(options.decimals - nDecimals)
+      : (options.decimals < nDecimals) ? amt.substring(0, amt.indexOf('.') + options.decimals + 1)
+      : amt;
+    return `${symbol}${options.commas ? commify(amount) : amount}`
   }
 
   round(decimals) {
@@ -122,10 +133,6 @@ export class Currency {
     return this.amount
   }
 
-  toString() {
-    return this.amount.slice(0, this.amount.indexOf('.'))
-  }
-
   // In units of ray aka append an extra 36 units of precision
   // eg ETH:WEI rate is 1e18 ray aka 1e54
   getRate = (currency) => {
@@ -143,8 +150,8 @@ export class Currency {
       return exchangeRates[currency]
     }
     if (!this.daiRateGiven) {
-      console.warn(`Provide DAI:ETH rate for accurate conversions between currency types`)
-      console.warn(`Using default eth price of $${this.daiRate}`)
+      console.warn(`Provide DAI:ETH rate for accurate ${this.type} -> ${currency} conversions`)
+      console.warn(`Using default eth price of $${this.daiRate} (amount: ${this.amount})`)
     }
     return exchangeRates[currency]
   }
