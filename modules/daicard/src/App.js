@@ -1,7 +1,7 @@
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import * as connext from "@connext/client";
 import { Contract, ethers as eth } from "ethers";
-import { AddressZero, HashZero, Zero } from "ethers/constants";
+import { AddressZero, Zero } from "ethers/constants";
 import { formatEther, parseEther } from "ethers/utils";
 import interval from "interval-promise";
 import { PisaClient } from "pisa-client";
@@ -455,7 +455,6 @@ class App extends React.Component {
   }
 
   render() {
-    const txHash = HashZero; // TODO
     const {
       balance,
       channel,
@@ -574,7 +573,6 @@ class App extends React.Component {
             />
             <Confirmations
               machine={machine}
-              txHash={txHash}
               network={network}
             />
           </Paper>

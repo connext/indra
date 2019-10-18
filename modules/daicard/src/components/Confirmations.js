@@ -11,7 +11,7 @@ const style = withStyles(theme => ({
 
 // TODO: close confirmations based on emitted events
 export const Confirmations = style(props => {
-  const { machine, network, txHash } = props;
+  const { machine, network } = props;
   return (
     <div>
 
@@ -69,7 +69,7 @@ export const Confirmations = style(props => {
         onClose={() => machine.send('DISMISS_WITHDRAW')}
         message="Withdraw succeeded!"
         network={network}
-        txHash={txHash}
+        txHash={machine.state.txHash}
         duration={60 * 1000}
       />
 

@@ -1,4 +1,5 @@
-import { Machine } from 'xstate';
+import { HashZero } from 'ethers/constants';
+import { Machine, assign } from 'xstate';
 
 const notifyStates = (prefix, initial = 'idle') => ({
   initial,
@@ -11,7 +12,10 @@ const notifyStates = (prefix, initial = 'idle') => ({
     'pending': {
       on: {
         [`ERROR_${prefix.toUpperCase()}`]: 'error',
-        [`SUCCESS_${prefix.toUpperCase()}`]: 'success',
+        [`SUCCESS_${prefix.toUpperCase()}`]: {
+          target: 'success',
+          actions: ['setTxHash'],
+        },
       },
       initial: 'show',
       states: {
@@ -44,6 +48,9 @@ export const rootMachine = Machine(
     id: 'root',
     strict: true,
     initial: 'idle',
+    context: {
+      txHash: HashZero,
+    },
     states: {
       'idle': {
         on: {
@@ -72,13 +79,18 @@ export const rootMachine = Machine(
           'receive': notifyStates('receive'),
           'redeem': notifyStates('redeem'),
           'send': notifyStates('send'),
-          'withdraw': notifyStates('withdraw', 'success'),
+          'withdraw': notifyStates('withdraw'),
         },
       },
     },
   },
   {
     actions: {
+      setTxHash: (context, event) => {
+        if (event.txHash){
+          assign({ txHash: event.txHash });
+        }
+      }
     },
   }
 );
