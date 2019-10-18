@@ -72,7 +72,7 @@ export const rootMachine = Machine(
           'receive': notifyStates('receive'),
           'redeem': notifyStates('redeem'),
           'send': notifyStates('send'),
-          'withdraw': notifyStates('withdraw'),
+          'withdraw': notifyStates('withdraw', 'success'),
         },
       },
     },
