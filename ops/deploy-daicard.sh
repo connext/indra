@@ -37,8 +37,7 @@ echo "Requests will be forwarded to: $indra"
 echo;echo "Building & pushing latest version of the daicard proxy"
 make daicard-proxy
 docker tag daicard_proxy $registry/daicard_proxy
-docker tag indra_relay $registry/indra_relay
-docker push $registry/daicard_proxy && docker push $registry/indra_relay
+docker push $registry/daicard_proxy
 if [[ "$?" != "0" ]]
 then echo "Make sure you're logged into docker & have push permissions: docker login" && exit
 fi
@@ -48,6 +47,7 @@ scp -i $ssh_key ops/start-daicard.sh $user@$daicard:/home/$user/start-daicard.sh
 
 echo;echo "Running start script: bash start-daicard.sh $daicard $indra"
 ssh -i $ssh_key $user@$daicard "bash -c '
+  docker service rm daicard_proxy
   bash start-daicard.sh $daicard $indra
 '"
 

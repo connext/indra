@@ -147,7 +147,7 @@ daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))
 	$(docker_run) "cd modules/daicard && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-daicard-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
+daicard-proxy: $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/daicard.io/prod.dockerfile --tag daicard_proxy:latest .
 	$(log_finish) && touch $(flags)/$@

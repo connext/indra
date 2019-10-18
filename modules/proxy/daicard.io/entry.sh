@@ -4,8 +4,7 @@
 domain="${DOMAINNAME:-localhost}"
 email="${EMAIL:-noreply@gmail.com}"
 indra_url="$INDRA_URL"
-relay_url="$RELAY_URL"
-echo "domain=$domain email=$email indra=$indra_url relay=$relay_url"
+echo "domain=$domain email=$email indra=$indra_url"
 
 # Provide a message indicating that we're still waiting for everything to wake up
 function loading_msg {
@@ -23,12 +22,6 @@ loading_pid="$!"
 echo "waiting for ${indra_url#*://}..."
 bash wait_for.sh -t 60 ${indra_url#*://} 2> /dev/null
 while ! curl -s $indra_url > /dev/null
-do sleep 2
-done
-
-echo "waiting for ${relay_url#*://}..."
-bash wait_for.sh -t 60 ${relay_url#*://} 2> /dev/null
-while ! curl -s $relay_url > /dev/null
 do sleep 2
 done
 
@@ -63,8 +56,8 @@ ln -sf $letsencrypt/$domain/fullchain.pem /etc/certs/fullchain.pem
 
 # Hack way to implement variables in the nginx.conf file
 sed -i 's/$hostname/'"$domain"'/' /etc/nginx/nginx.conf
-sed -i 's|$RELAY_URL|'"$relay_url"'|' /etc/nginx/nginx.conf
 sed -i 's|$INDRA_URL|'"$indra_url"'|' /etc/nginx/nginx.conf
+sed -i 's|$RELAY_URL|'"http://${indra_url#*://}:4223"'|' /etc/nginx/nginx.conf
 
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {
