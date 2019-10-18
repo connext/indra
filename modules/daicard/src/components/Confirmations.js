@@ -19,7 +19,7 @@ export const Confirmations = style(props => {
         variant="info"
         openWhen={machine.state.matches('ready.receiving.pending.show')}
         onClose={() => machine.send('DISMISS_RECEIVE')}
-        message="Receiving Transfer..."
+        message="Receiving Transfer."
         duration={30 * 60 * 1000}
       />
 
@@ -35,15 +35,15 @@ export const Confirmations = style(props => {
         variant="error"
         openWhen={machine.state.matches('ready.receiving.error')}
         onClose={() => machine.send('DISMISS_RECEIVE')}
-        message="Transfer Failed"
+        message="Transfer Failed."
         duration={30 * 60 * 1000}
       />
 
       <MySnackbar
-        variant="warning"
+        variant="info"
         openWhen={machine.state.matches('ready.deposit.pending.show')}
         onClose={() => machine.send('DISMISS_DEPOSIT')}
-        message="Processing deposit.."
+        message="Processing deposit..."
         duration={30 * 60 * 1000}
       />
 
@@ -59,7 +59,7 @@ export const Confirmations = style(props => {
         variant="info"
         openWhen={machine.state.matches('ready.withdraw.pending.show')}
         onClose={() => machine.send('DISMISS_WITHDRAW')}
-        message="Processing withdrawal.."
+        message="Processing withdrawal..."
         duration={30 * 60 * 1000}
       />
 
@@ -67,7 +67,7 @@ export const Confirmations = style(props => {
         variant="success"
         openWhen={machine.state.matches('ready.withdrawal.pending.show')}
         onClose={() => machine.send('DISMISS_WITHDRAW')}
-        message={`Withdraw request submitted to chain`}
+        message="Withdraw request submitted to chain."
         network={network}
         txHash={txHash}
         duration={60 * 1000}
@@ -77,7 +77,7 @@ export const Confirmations = style(props => {
         variant="info"
         openWhen={machine.state.matches('ready.swap.pending.show')}
         onClose={() => machine.send('DISMISS_SWAP')}
-        message="Processing swap, we'll let you know when it's done"
+        message="Processing swap..."
         duration={30 * 60 * 1000}
       />
 

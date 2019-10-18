@@ -326,10 +326,12 @@ class App extends React.Component {
       if (nowMaxDeposit.lte(Zero)) {
         console.debug(`Channel balance (${balance.channel.total.toDAI().format()}) is at or above ` +
           `cap of ${maxDeposit.toDAI(swapRate).format()}`)
+        machine.send(['SUCCESS_DEPOSIT']);
         return;
       }
       if (balance.onChain.ether.wad.lt(minDeposit.wad)) {
         console.debug(`Not enough on-chain eth to deposit: ${balance.onChain.ether.toETH().format()}`)
+        machine.send(['SUCCESS_DEPOSIT']);
         return;
       }
 
@@ -476,10 +478,10 @@ class App extends React.Component {
               duration={30 * 60 * 1000}
             />
             <MySnackbar
-              variant="warning"
+              variant="info"
               openWhen={machine.state.matches('start.pending.show')}
               onClose={() => machine.send('DISMISS_START')}
-              message="Starting Channel Controllers.."
+              message="Starting Channel Controllers..."
               duration={30 * 60 * 1000}
             />
             <Route
