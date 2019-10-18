@@ -43,7 +43,7 @@ export const Confirmations = style(props => {
         variant="warning"
         openWhen={machine.state.matches('ready.deposit.pending.show')}
         onClose={() => machine.send('DISMISS_DEPOSIT')}
-        message="Processing deposit, we'll let you know when it's done"
+        message="Processing deposit.."
         duration={30 * 60 * 1000}
       />
 
@@ -59,7 +59,7 @@ export const Confirmations = style(props => {
         variant="info"
         openWhen={machine.state.matches('ready.withdraw.pending.show')}
         onClose={() => machine.send('DISMISS_WITHDRAW')}
-        message="Processing withdrawal, we'll let you know when it's done"
+        message="Processing withdrawal.."
         duration={30 * 60 * 1000}
       />
 

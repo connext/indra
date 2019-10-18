@@ -3,9 +3,10 @@ import { Zero } from "ethers/constants";
 import { formatEther } from "ethers/utils";
 
 import { toBN } from './bn';
+import interval from "interval-promise";
 
 export const migrate = async (hubUrl, wallet, ethUrl, stateService) => {
-  console.log(`____________________Migration Started | hubUrl: ${hubUrl}`)
+  console.log(`____________________Migration Started | hubUrl: ${hubUrl}, ethUrl: ${ethUrl}`)
   if (!hubUrl) { return; }
   const legacy = await Connext.createClient({ ethUrl, hubUrl, mnemonic: wallet.mnemonic });
   await legacy.start();
@@ -24,6 +25,7 @@ export const migrate = async (hubUrl, wallet, ethUrl, stateService) => {
 
     const withdrawalParams = {
       exchangeRate: state.runtime.exchangeRate.rates.DAI,
+      recipient: wallet.address,
       tokensToSell: amountToken.toString(),
       withdrawalWeiUser: amountWei.toString(),
       weiToSell: "0",
@@ -37,9 +39,14 @@ export const migrate = async (hubUrl, wallet, ethUrl, stateService) => {
     )}`);
 
     try {
-      // To debug: simulate a withdrawal by just waiting for a bit
-      await new Promise((res, rej) => setTimeout(res, 5000));
-      // await legacy.withdraw(withdrawalParams);
+      await legacy.withdraw(withdrawalParams);
+      // wait for a confirm pending to come through
+      await interval(async (iteration, stop) => {
+        const state = await legacy.getState()
+        if (state.runtime.withdrawal.detected && state.runtime.withdrawal.submitted) {
+          stop()
+        }
+      }, 500)
     } catch (e) {
       console.error(e);
     }

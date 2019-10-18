@@ -385,7 +385,7 @@ const RedeemCardModal = ({
       ) : state.matches('modal.redeeming') ? (
         <Grid>
             <DialogTitle disableTypography>
-              <Typography variant="h5" style={{ color: "#F22424" }}>
+              <Typography variant="h5" color="primary">
                 Redeeming Payment...
               </Typography>
             </DialogTitle>

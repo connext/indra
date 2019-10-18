@@ -33,12 +33,12 @@ const urls = {
   ethProviderUrl: process.env.REACT_APP_ETH_URL_OVERRIDE || `${window.location.origin}/api/ethprovider`,
   nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
   legacyUrl: (chainId) =>
-    chainId === "1" ? "https://hub.connext.network/api/hub" :
-    chainId === "4" ? "https://rinkeby.hub.connext.network/api/hub" :
+    chainId.toString() === "1" ? "https://hub.connext.network/api/hub" :
+    chainId.toString() === "4" ? "https://rinkeby.hub.connext.network/api/hub" :
     undefined,
   pisaUrl: (chainId) =>
-    chainId === "1" ? "https://connext.pisa.watch" :
-    chainId === "4" ? "https://connext-rinkeby.pisa.watch" :
+    chainId.toString() === "1" ? "https://connext.pisa.watch" :
+    chainId.toString() === "4" ? "https://connext-rinkeby.pisa.watch" :
     undefined
 };
 
@@ -322,7 +322,6 @@ class App extends React.Component {
       console.log(`Depositing ${depositParams.amount} tokens into channel: ${channel.opts.multisigAddress}`);
       const result = await channel.deposit(depositParams);
       await this.refreshBalances();
-      await this.refreshBalances();
       console.log(`Successfully deposited tokens! Result: ${JSON.stringify(result, null, 2)}`);
       this.setPending({ type: "deposit", complete: true, closed: false });
     } else {
@@ -477,6 +476,7 @@ class App extends React.Component {
       <Router>
         <Grid className={classes.app}>
           <Paper elevation={1} className={classes.paper}>
+            <AppBarComponent address={wallet ? wallet.address : AddressZero} />
             <MySnackbar
               variant="warning"
               openWhen={machine.state.matches('migrate.pending.show')}
@@ -491,7 +491,6 @@ class App extends React.Component {
               message="Starting Channel Controllers.."
               duration={30 * 60 * 1000}
             />
-            <AppBarComponent address={wallet ? wallet.address : AddressZero} />
             <Route
               exact
               path="/"
@@ -500,6 +499,7 @@ class App extends React.Component {
                   <Home
                     {...props}
                     balance={balance}
+                    swapRate={swapRate}
                     scanQRCode={this.scanQRCode}
                   />
                   <SetupCard

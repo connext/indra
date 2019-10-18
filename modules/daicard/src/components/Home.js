@@ -14,7 +14,7 @@ const style = withStyles({});
 export const Home = style(props => {
   const [scanModal, setScanModal] = useState(false);
 
-  const { balance } = props
+  const { balance, swapRate } = props
 
   const scanQRCode = async (data) => {
     const path = await props.scanQRCode(data);
@@ -26,7 +26,7 @@ export const Home = style(props => {
     <>
       <Grid container direction="row" style={{ marginBottom: "-7.5%" }}>
         <Grid item xs={12} style={{ flexGrow: 1 }} >
-          <ChannelCard balance={balance} />
+          <ChannelCard balance={balance} swapRate={swapRate} />
         </Grid>
       </Grid>
       <Grid container direction="column">
@@ -73,7 +73,7 @@ export const Home = style(props => {
         <Grid item xs={12} style={{ paddingTop: "10%" }}>
           <Grid
             container
-            spacing={8}
+            spacing={2}
             direction="row"
             alignItems="center"
             justify="center"
@@ -114,26 +114,19 @@ export const Home = style(props => {
             </Grid>
           </Grid>
         </Grid>
-
-        <Grid item xs={12} style={{ paddingTop: "10%" }}>
+        <Grid item xs={12}>
           <Button
             disableTouchRipple
-            style={{
-              color: "#FFF",
-              backgroundColor: "#FCA311",
-            }}
+            style={{ marginBottom: "20%" }}
             fullWidth
             color="primary"
-            variant="contained"
+            variant="outlined"
             size="large"
             component={Link}
             to="/cashout"
           >
             Cash Out
           </Button>
-        </Grid>
-
-        <Grid item xs={12}>
         </Grid>
       </Grid>
     </>
