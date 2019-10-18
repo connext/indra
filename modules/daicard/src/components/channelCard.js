@@ -5,7 +5,7 @@ import React from "react";
 
 const styles = theme => ({
   row: {
-    color: "white"
+    color: "#002868"
   },
   pending: {
     marginBottom: "3%",
@@ -25,33 +25,16 @@ export const ChannelCard = withStyles(styles)(props => {
     return { whole, part: part.substring(0,4) };
   }
   return (
-      <Grid>
-        <Grid 
-          container
-          spacing={2}
-          direction="column"
-          style={{
-            paddingLeft: "5%",
-            paddingRight: "5%",
-            paddingTop: "10%",
-            paddingBottom: "20%",
-            backgroundColor: "#282b2e",
-            textAlign: "center"
-          }}
-          alignItems="center"
-          justify="center"
-        >
-
         <Grid item xs={12}>
           {/* <Typography style={{ color: 'white' }}> Channel </Typography> */}
           <span id="balance-channel-token">
-            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
+            <Typography style={{display: 'inline-block'}} variant="h4" className={classes.row}>
               {"$ "}
             </Typography>
-            <Typography style={{display: 'inline-block'}} variant="h1" className={classes.row}>
+            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
               <span>{split(balance.channel.token.toDAI(swapRate)).whole}</span>
             </Typography>
-            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
+            <Typography style={{display: 'inline-block'}} variant="h4" className={classes.row}>
               <span>{split(balance.channel.token.toDAI(swapRate)).part}</span>
             </Typography>
           </span>
@@ -68,37 +51,5 @@ export const ChannelCard = withStyles(styles)(props => {
             </Typography>
           </span> */}
         </Grid>
-
-        <br/>
-
-        <Grid item xs={12}>
-          {/* <Typography style={{ color: 'white' }}> On-Chain </Typography>
-          <span id="balance-onchain-token">
-            <Typography style={{display: 'inline-block'}} variant="h5" className={classes.row}>
-              {"$ "}
-            </Typography>
-            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
-              <span>{split(balance.onChain.token.toDAI()).whole}</span>
-            </Typography>
-            <Typography style={{display: 'inline-block'}} variant="h5" className={classes.row}>
-              <span>{split(balance.onChain.token.toDAI()).part}</span>
-            </Typography>
-          </span>
-          <span style={{fontSize: 64}}>&nbsp;&nbsp;&nbsp;</span>
-          <span id="balance-onchain-ether">
-            <Typography style={{display: 'inline-block'}} variant="h5" className={classes.row}>
-              {`${eth.constants.EtherSymbol} `}
-            </Typography>
-            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
-              <span>{split(balance.onChain.ether.toETH()).whole}</span>
-            </Typography>
-            <Typography style={{display: 'inline-block'}} variant="h5" className={classes.row}>
-              <span>{split(balance.onChain.ether.toETH()).part}</span>
-            </Typography>
-          </span> */}
-        </Grid>
-
-      </Grid>
-    </Grid>
   );
 });

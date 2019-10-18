@@ -19,7 +19,7 @@ const generateQrUrl = (amount, xpub) =>
   `${window.location.origin}/send?amount=${amount || zero}&recipient=${xpub}`;
 
 export const RequestCard = style((props) => {
-  const { maxDeposit, xpub } = props;
+  const { maxDeposit, xpub, match } = props;
 
   const [amount, setAmount] = useState({ value: Currency.DAI(zero), display: "0" });
   const [qrUrl, setQrUrl] = useState(generateQrUrl(zero, xpub));
@@ -88,7 +88,7 @@ export const RequestCard = style((props) => {
           fullWidth
           id="outlined-number"
           label="Amount"
-          value={amount.display}
+          value={amount.display? amount.display:match.params.amount}
           type="number"
           variant="outlined"
           onChange={evt => updateAmountHandler(evt.target.value)}

@@ -1,70 +1,48 @@
-import {
-  AppBar,
-  Toolbar,
-  IconButton,
-  Typography,
-  Grid,
-  Button
-} from "@material-ui/core";
-import { Settings as SettingIcon } from "@material-ui/icons";
+import { AppBar, Toolbar, IconButton, Typography, Grid, Button } from "@material-ui/core";
+import { Settings as SettingIcon, Person as ProfileIcon } from "@material-ui/icons";
 import blockies from "ethereum-blockies-png";
 import React from "react";
 import { Link } from "react-router-dom";
+import { ChannelCard } from "./channelCard";
 
 const noAddrBlocky = require("../assets/noAddress.png");
 
-export const AppBarComponent = (props) => (
-  <Grid>
-    <Grid container spacing={2}>
-      <AppBar position="sticky" color="secondary" elevation={0} style={{ paddingTop: "2%"}}>
+export const AppBarComponent = props => (
+      <AppBar position="sticky" color="white" elevation={0} style={{ paddingTop: "4%" }}>
         <Toolbar>
           <Grid
             container
             spacing={8}
             direction="row"
-            justify="space-between"
+            justifyContent="space-between"
             alignItems="center"
             style={{ textAlign: "center" }}
           >
             <Grid item xs={3}>
-              <IconButton
-                disableTouchRipple
-                color="inherit"
-                variant="contained"
-                component={Link}
-                to="/deposit"
-              >
-                <img
-                  src={
-                    props.address
-                      ? blockies.createDataURL({ seed: props.address })
-                      : noAddrBlocky
-                  }
-                  alt=""
-                  style={{ width: "40px", height: "40px", borderRadius: "4px" }}
-                />
-                <Typography
-                  variant="body2"
-                  noWrap
-                  style={{
-                    width: "75px",
-                    color: "#c1c6ce",
-                    marginLeft: "0.5em"
-                  }}
+                <IconButton
+                  disableTouchRipple
+                  color="inherit"
+                  variant="contained"
+                  component={Link}
+                  to="/deposit"
                 >
-                  <span>{props.address}</span>
-                </Typography>
-              </IconButton>
+                  <ProfileIcon fontSize="large" style={{ color: "#002868" }} />
+                </IconButton>
             </Grid>
-            <Grid item xs={5}>
+            <Grid item xs={6}>
+              <ChannelCard balance={props.balance} swapRate={props.swapRate} />
+            </Grid>
+            <Grid item xs={3}>
               <Button
                 disableTouchRipple
                 size="small"
                 variant="outlined"
+                justify="center"
+                alignItems="center"
                 style={{
-                  color: "#c1c6ce",
-                  borderColor: "#c1c6ce",
-                  fontSize: "small"
+                  color: "#002868",
+                  borderColor: "#002868",
+                  fontSize: "small",
                 }}
                 component={Link}
                 to="/settings"
@@ -76,6 +54,4 @@ export const AppBarComponent = (props) => (
           </Grid>
         </Toolbar>
       </AppBar>
-    </Grid>
-  </Grid>
 );
