@@ -227,10 +227,10 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
 
   useEffect(() => {
     const query = queryString.parse(location.search);
-    if (query.amount) {
+    if (!amount.value && !amount.error && query.amount) {
       updateAmountHandler(query.amount);
     }
-    if (query.recipient) {
+    if (!recipient.value && !recipient.error && query.recipient) {
       updateRecipientHandler(query.recipient);
     }
   }, [location, updateAmountHandler])
