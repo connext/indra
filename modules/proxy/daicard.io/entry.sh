@@ -3,8 +3,7 @@
 # Set default email & domain name
 domain="${DOMAINNAME:-localhost}"
 email="${EMAIL:-noreply@gmail.com}"
-indra_url="$ETH_RPC_URL"
-mode="${MODE:-dev}"
+indra_url="$INDRA_URL"
 echo "domain=$domain email=$email indra=$indra_url"
 
 # Provide a message indicating that we're still waiting for everything to wake up
