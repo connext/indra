@@ -25,14 +25,15 @@ const notifyStates = (prefix, initial = 'idle') => ({
         },
       }
     },
+    // TODO: withdrawal success event has a txHash payload, gotta add this to metadata/context/idk
     'success': {
       on: {
-        [`RESET_${prefix.toUpperCase()}`]: 'idle',
+        [`DISMISS_${prefix.toUpperCase()}`]: 'idle',
       },
     },
     'error': {
       on: {
-        [`RESET_${prefix.toUpperCase()}`]: 'idle',
+        [`DISMISS_${prefix.toUpperCase()}`]: 'idle',
       },
     },
   }

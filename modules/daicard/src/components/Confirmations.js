@@ -50,7 +50,7 @@ export const Confirmations = style(props => {
       <MySnackbar
         variant="success"
         openWhen={machine.state.matches('ready.deposit.success')}
-        onClose={() => machine.send('RESET_DEPOSIT')}
+        onClose={() => machine.send('DISMISS_DEPOSIT')}
         message="Pending deposit confirmed!"
         duration={60 * 1000}
       />
@@ -84,7 +84,7 @@ export const Confirmations = style(props => {
       <MySnackbar
         variant="success"
         openWhen={machine.state.matches('ready.swap.success')}
-        onClose={() => machine.send('RESET_SWAP')}
+        onClose={() => machine.send('DISMISS_SWAP')}
         message="Swap was successful!"
         duration={60 * 1000}
       />
