@@ -96,7 +96,6 @@ export const CashoutCard = style(({
     const txHash = result.transaction.hash
     setWithdrawing(false);
     machine.send('SUCCESS_WITHDRAW', { txHash });
-    history.push("/")
   }
 
   const cashoutEther = async () => {
@@ -133,7 +132,6 @@ export const CashoutCard = style(({
     const txHash = result.transaction.hash
     setWithdrawing(false);
     machine.send('SUCCESS_WITHDRAW', { txHash });
-    history.push("/")
   }
 
   return (

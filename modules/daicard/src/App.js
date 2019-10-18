@@ -366,6 +366,10 @@ class App extends React.Component {
       console.log(`An swap operation is already pending`);
       return;
     }
+    if (state.matches('ready.withdraw.pending')) {
+      console.log(`An withdraw operation is already pending`);
+      return;
+    }
 
     const maxSwap = tokenToWei(maxDeposit.toDAI().wad.sub(balance.channel.token.wad), swapRate)
     const weiToSwap = minBN([balance.channel.ether.wad, maxSwap])

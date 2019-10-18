@@ -65,7 +65,7 @@ export const Confirmations = style(props => {
 
       <MySnackbar
         variant="success"
-        openWhen={machine.state.matches('ready.withdrawal.pending.show')}
+        openWhen={machine.state.matches('ready.withdraw.success')}
         onClose={() => machine.send('DISMISS_WITHDRAW')}
         message="Withdraw request submitted to chain."
         network={network}
