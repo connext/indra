@@ -194,10 +194,6 @@ services:
     volumes:
       - certs:/etc/letsencrypt
 
-  relay:
-    image: $relay_image
-    command: ["nats:$nats_port"]
-
   node:
     image: $node_image
     entrypoint: bash ops/entry.sh
@@ -253,6 +249,12 @@ services:
           max-size: 10m
     ports:
       - "4222:4222"
+
+  relay:
+    image: $relay_image
+    command: ["nats:$nats_port"]
+    ports:
+      - "4223:4223"
 
   redis:
     image: $redis_image
