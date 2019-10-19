@@ -24,6 +24,7 @@ import { SendCard } from "./components/sendCard";
 import { SettingsCard } from "./components/settingsCard";
 import { SetupCard } from "./components/setupCard";
 import { SupportCard } from "./components/supportCard";
+import { TransactionHistory } from "./components/transactionHistory";
 
 import { Currency, storeFactory, migrate, minBN, toBN, tokenToWei, weiToToken } from "./utils";
 
@@ -570,6 +571,7 @@ class App extends React.Component {
               )}
             />
             <Route path="/settings" render={props => <SettingsCard {...props} channel={channel} />} />
+            <Route path="/transactions" render={props => <TransactionHistory {...props} channel={channel} />} />
             <Route
               path="/request"
               render={props => <RequestCard

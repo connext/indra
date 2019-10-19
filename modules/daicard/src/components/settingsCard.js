@@ -139,6 +139,19 @@ export const SettingsCard = style((props) => {
         )}
       </Grid>
       <Grid item xs={12} className={classes.button}>
+        <Button
+          disableTouchRipple
+          fullWidth
+          className={classes.button}
+          variant="outlined"
+          color="primary"
+          size="large"
+          onClick={() => setShowRecovery(true)}
+        >
+          Show Transaction history
+        </Button>
+      </Grid>
+      <Grid item xs={12} className={classes.button}>
         {!inputRecovery ? (
           <Button
             disableTouchRipple
