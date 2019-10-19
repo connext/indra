@@ -235,28 +235,18 @@ class App extends React.Component {
       // or can this be referenced at a higher level?
       // also, do we have to include this call?
       // await channelProvider.create();
-      console.log("creating connection..")
-      await channelProvider.checkConnection()
-      // dont move forward until connection is connected
-      await new Promise((resolve, reject) => {
-        channelProvider.once("connect", () => {
-          if (channelProvider.connected) {
-            resolve()
-          } else {
-            reject(`"connect" event fired but channel provider not connected`)
-          }
-        })
+      console.log(`awaiting connect event`)
+      channelProvider.connection.once("connect", () => {
+        console.log(`caught channelProvider.connection connect event`)
       })
-      console.log(`created, now trying to connect to channel...`)
-      await channelProvider.enable();
-      console.log(`enabled!`)
       await new Promise((res, rej) => {
         channelProvider.once("connect", async () => {
+          console.log("provider connected, trying to connext.connect...");
           const connectedChannel = await connext.connect({
             ethProviderUrl,
             channelProvider,
           });
-          console.log("CONNECTED!");
+          console.log("connected!");
           console.log(connectedChannel);
           res(connectedChannel);
         });
