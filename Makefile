@@ -66,6 +66,8 @@ clean: stop
 	rm -rf $(flags)/*
 	rm -rf node_modules/@counterfactual/*
 	rm -rf modules/**/node_modules/@counterfactual/*
+	rm -rf node_modules/@walletconnect/*
+	rm -rf modules/**/node_modules/@walletconnect/*
 	rm -rf modules/**/build
 	rm -rf modules/**/dist
 	rm -rf modules/**/node_modules/**/.git
