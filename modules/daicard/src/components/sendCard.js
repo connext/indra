@@ -54,7 +54,7 @@ const style = withStyles((theme) => ({
   },
 }));
 
-export const SendCard = style(({ balance, channel, classes, history, location, token  }) => {
+export const SendCard = style(({ match, balance, channel, classes, history, location, token  }) => {
   const [amount, setAmount] = useState({ display: "", error: null, value: null });
   const [link, setLink] = useState(undefined);
   const [paymentState, paymentAction] = useMachine(sendMachine);
@@ -258,7 +258,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
           onChange={evt => updateAmountHandler(evt.target.value)}
           style={{ width: "100%" }}
           type="number"
-          value={amount.display}
+          value={amount.display ? amount.display : match.params.amount}
           variant="outlined"
         />
       </Grid>
@@ -269,7 +269,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
           id="outlined"
           label="Recipient Public Identifier"
           type="string"
-          value={recipient.display}
+          value={recipient.display ? recipient.display : match.params.recipient}
           onChange={evt => updateRecipientHandler(evt.target.value)}
           margin="normal"
           variant="outlined"
