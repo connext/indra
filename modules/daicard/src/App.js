@@ -182,6 +182,21 @@ class App extends React.Component {
       await new Promise(res => setTimeout(() => res(), 1000));
     }
 
+    let freeEtherBalance, freeTokenBalance
+    try {
+      freeEtherBalance = await channel.getFreeBalance();
+      freeTokenBalance = await channel.getFreeBalance(token.address);
+    } catch (e) {
+      if (e.message.includes(`This probably means that the StateChannel does not exist yet`)) {
+        // channel.connext was already called, meaning there should be
+        // an existing channel
+        await channel.restoreState(localStorage.getItem("mnemonic"))
+        return
+      }
+      console.error(e)
+      return;
+    }
+
     const token = new Contract(channel.config.contractAddresses.Token, tokenArtifacts.abi, wallet);
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 

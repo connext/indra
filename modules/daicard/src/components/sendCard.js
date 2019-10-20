@@ -30,6 +30,11 @@ import { QRScan } from "./qrCode";
 
 const LINK_LIMIT = Currency.DAI("10"); // $10 capped linked payments
 
+const formatAmountString = (amount) => {
+  const [whole, part] = amount.split(".")
+  return `${whole || "0"}.${part ? part.padEnd(2, "0") : "00"}`
+}
+
 const style = withStyles((theme) => ({
   modalContent: {
     margin: "0% 4% 4% 4%",
@@ -198,10 +203,10 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
 
   useEffect(() => {
     const query = queryString.parse(location.search);
-    if (query.amount) {
+    if (!amount.value && query.amount) {
       updateAmountHandler(query.amount);
     }
-    if (query.recipient) {
+    if (!recipient.value && !recipient.error && query.recipient) {
       updateRecipientHandler(query.recipient);
     }
   }, [location, updateAmountHandler])
@@ -451,7 +456,7 @@ const SendCardModal = ({
           </DialogTitle>
           <DialogContent>
             <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
-              Amount: ${amount.split(".")[0] + "." + amount.split(".")[1].padEnd(2, "0")}
+              Amount: ${formatAmountString(amount)}
             </DialogContentText>
             <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
               To: {recipient.substr(0, 8)}...
