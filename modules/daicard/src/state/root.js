@@ -29,7 +29,6 @@ const notifyStates = (prefix, initial = 'idle') => ({
         },
       }
     },
-    // TODO: withdrawal success event has a txHash payload, gotta add this to metadata/context/idk
     'success': {
       on: {
         [`DISMISS_${prefix.toUpperCase()}`]: 'idle',
@@ -86,11 +85,7 @@ export const rootMachine = Machine(
   },
   {
     actions: {
-      setTxHash: (context, event) => {
-        if (event.txHash){
-          assign({ txHash: event.txHash });
-        }
-      }
+      setTxHash: assign({ txHash: (context, event) => event.txHash || HashZero }),
     },
   }
 );

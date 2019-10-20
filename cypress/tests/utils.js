@@ -77,7 +77,8 @@ my.cashoutEther = () => {
   cy.get('input[type="text"]').clear().type(wallet.address)
   cy.contains('button', /cash out eth/i).click()
   cy.contains('span', /processing withdrawal/i).should('exist')
-  cy.contains('span', /withdraw request submitted to chain/i).should('exist')
+  cy.contains('span', /withdraw succeeded/i).should('exist')
+  my.goBack()
   cy.resolve(my.getChannelTokenBalance).should('contain', '0.00')
 }
 
@@ -87,7 +88,8 @@ my.cashoutToken = () => {
   cy.get('input[type="text"]').clear().type(wallet.address)
   cy.contains('button', /cash out dai/i).click()
   cy.contains('span', /processing withdrawal/i).should('exist')
-  cy.contains('span', /withdraw request submitted to chain/i).should('exist')
+  cy.contains('span', /withdraw succeeded/i).should('exist')
+  my.goBack()
   cy.resolve(my.getChannelTokenBalance).should('contain', '0.00')
 }
 

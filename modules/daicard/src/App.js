@@ -131,7 +131,7 @@ class App extends React.Component {
     machine.start();
     machine.onTransition(state => {
       this.setState({ state });
-      console.log(`=== Transitioning to ${JSON.stringify(state.value)} state`)
+      console.log(`=== Transitioning to ${JSON.stringify(state.value)} (context: ${JSON.stringify(state.context)})`)
     });
 
     // If no mnemonic, create one and save to local storage

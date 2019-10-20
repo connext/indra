@@ -69,7 +69,7 @@ export const Confirmations = style(props => {
         onClose={() => machine.send('DISMISS_WITHDRAW')}
         message="Withdraw succeeded!"
         network={network}
-        txHash={machine.state.txHash}
+        txHash={machine.state.context.txHash}
         duration={60 * 1000}
       />
 
