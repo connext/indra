@@ -104,23 +104,6 @@ const style = withStyles(theme => ({
   grid: {},
 }));
 
-const ProviderModal = props => {
-  const { setProvider, open } = props;
-  return (
-    <div>
-      <Dialog open={open}>
-        <DialogTitle>{"Are you using WalletConnext?"}</DialogTitle>
-        <DialogActions>
-          <Button onClick={() => setProvider("walletconnect")}>{"Yes, I'm enlightened"}</Button>
-          <Button onClick={() => setProvider("counterfactual")}>
-            {"No, pls store my mnemonic insecurely :)"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </div>
-  );
-};
-
 class App extends React.Component {
   constructor(props) {
     super(props);
@@ -640,12 +623,15 @@ class App extends React.Component {
               duration={30 * 60 * 1000}
             />
 
-            <ProviderModal
-              open={
-                channelProviderType !== "walletconnect" && channelProviderType !== "counterfactual"
-              }
-              setProvider={this.setProvider}
-            />
+            <Dialog open={!["walletconnect", "counterfactual"].includes(channelProviderType)}>
+              <DialogTitle>{"Are you using WalletConnext?"}</DialogTitle>
+              <DialogActions>
+                <Button onClick={() => this.setProvider("walletconnect")}>{"Yes, I'm enlightened"}</Button>
+                <Button onClick={() => this.setProvider("counterfactual")}>
+                  {"No, pls store my mnemonic insecurely :)"}
+                </Button>
+              </DialogActions>
+            </Dialog>
 
             <Route
               exact
