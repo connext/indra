@@ -130,14 +130,6 @@ services:
       - `pwd`:/root
     working_dir: /root/modules/daicard
 
-  relay:
-    image: $relay_image
-    command: ["nats:$nats_port"]
-    networks:
-      - $project
-    ports:
-      - "4223:4223"
-
   node:
     image: $node_image
     entrypoint: bash modules/node/ops/entry.sh
@@ -200,6 +192,14 @@ services:
       - $project
     ports:
       - "$nats_port:$nats_port"
+
+  relay:
+    image: $relay_image
+    command: ["nats:$nats_port"]
+    networks:
+      - $project
+    ports:
+      - "4223:4223"
 
   redis:
     image: $redis_image

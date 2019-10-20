@@ -31,7 +31,6 @@ export const Copyable = style((props) => {
           <CopyIcon style={{ marginRight: "5px" }} />
           <Typography noWrap variant="body1">
             <Tooltip
-              disableFocusListener
               disableTouchListener
               title={tooltip || text}
             >

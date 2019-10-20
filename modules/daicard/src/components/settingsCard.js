@@ -66,7 +66,6 @@ export const SettingsCard = style((props) => {
   };
 
   const recoverAddressFromMnemonic = async () => {
-    await channel.restoreState(mnemonic);
     localStorage.setItem("mnemonic", mnemonic);
     window.location.reload();
   }

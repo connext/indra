@@ -48,8 +48,8 @@ export const CashoutCard = style(({
   channel,
   classes,
   history,
+  machine,
   refreshBalances,
-  setPending,
   swapRate,
   token,
 }) => {
@@ -84,7 +84,7 @@ export const CashoutCard = style(({
     const total = balance.channel.total
     if (total.wad.lte(Zero)) return
     // Put lock on actions, no more autoswaps until we're done withdrawing
-    setPending({ type: "withdrawal", complete: false, closed: false })
+    machine.send('START_WITHDRAW');
     setWithdrawing(true);
     console.log(`Withdrawing ${total.toETH().format()} to: ${value}`);
     const result = await channel.withdraw({
@@ -95,8 +95,7 @@ export const CashoutCard = style(({
     console.log(`Cashout result: ${JSON.stringify(result)}`)
     const txHash = result.transaction.hash
     setWithdrawing(false);
-    setPending({ type: "withdrawal", complete: true, closed: false, txHash })
-    history.push("/")
+    machine.send('SUCCESS_WITHDRAW', { txHash });
   }
 
   const cashoutEther = async () => {
@@ -105,7 +104,7 @@ export const CashoutCard = style(({
     const total = balance.channel.total
     if (total.wad.lte(Zero)) return
     // Put lock on actions, no more autoswaps until we're done withdrawing
-    setPending({ type: "withdrawal", complete: false, closed: false })
+    machine.send('START_WITHDRAW');
     setWithdrawing(true);
     console.log(`Withdrawing ${total.toETH().format()} to: ${value}`);
     // swap all in-channel tokens for eth
@@ -132,8 +131,7 @@ export const CashoutCard = style(({
     console.log(`Cashout result: ${JSON.stringify(result)}`)
     const txHash = result.transaction.hash
     setWithdrawing(false);
-    setPending({ type: "withdrawal", complete: true, closed: false, txHash })
-    history.push("/")
+    machine.send('SUCCESS_WITHDRAW', { txHash });
   }
 
   return (

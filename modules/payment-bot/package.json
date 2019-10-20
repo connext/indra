@@ -13,7 +13,7 @@
   "dependencies": {
     "@connext/client": "0.2.1",
     "commander": "3.0.2",
-    "dotenv": "8.1.0",
+    "dotenv": "8.2.0",
     "ethers": "4.0.37",
 		"pisa-client": "0.1.4-connext-beta.1",
     "uuid": "3.3.3"
@@ -23,7 +23,6 @@
     "@connext/types": "0.2.1",
     "@types/node-fetch": "2.5.2",
     "env-cmd": "10.0.1",
-    "nodemon": "1.19.3",
     "ts-node": "8.4.1",
     "typescript": "3.5.3"
   }
