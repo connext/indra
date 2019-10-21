@@ -210,20 +210,15 @@ class App extends React.Component {
         chainId: 4447,
       });
       console.log("GOT CHANNEL PROVIDER:", JSON.stringify(channelProvider, null, 2));
-      // do we have to access the connection property here,
-      // or can this be referenced at a higher level?
-      // also, do we have to include this call?
-      // await channelProvider.create();
+      console.log(`calling connext.connect`)
+      const connectedChannel = await connext.connect({
+        ethProviderUrl: urls.ethProviderUrl,
+        logLevel: 5,
+        channelProvider,
+      })
 
-      // console.log(`calling connext.connect`)
-      let connectedChannel;
-      // const connectedChannel = await connext.connect({
-      //   ethProviderUrl: urls.ethProviderUrl,
-      //   logLevel: 5,
-      //   nodeUrl: urls.nodeUrl,
-      //   channelProvider,
-      // })
-      await channelProvider.enable()
+      // let connectedChannel
+      // await channelProvider.enable()
 
       console.log(`awaiting connect event...`)
       await new Promise((res, rej) => {
