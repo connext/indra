@@ -7,8 +7,12 @@ export type ChannelProvider = any;
 
 export type ChannelProviderConfig = {
   freeBalanceAddress: string;
-  publicIdentifier: string;
-  multisigAddress: string;
+  multisigAddress?: string; // may not be deployed yet
+  natsClusterId?: string;
+  natsToken?: string;
+  nodeUrl: string;
+  type: RpcType;
+  userPublicIdentifier: string;
 };
 
 export enum RpcType {
@@ -16,5 +20,4 @@ export enum RpcType {
   CounterfactualNode = "CounterfactualNode", // rename?
 }
 
-// TODO: properly `ChannelProvider` define type
 export type RpcConnection = Node | ChannelProvider;
