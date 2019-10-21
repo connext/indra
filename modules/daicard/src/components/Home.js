@@ -13,19 +13,16 @@ import {initWalletConnect} from "../utils/clientWalletConnectMapping";
 
 const style = withStyles({});
 
-export const Home = style(props => {
+export const Home = style(({ balance, swapRate, channel, history }) => {
   const [scanModal, setScanModal] = useState(false);
 
-  const { balance, swapRate } = props
-
   const scanQRCode = async (data) => {
-    // const path = await props.scanQRCode(data);
     setScanModal(false);
     if(data.startsWith("wc:")){
       console.log("DATA: " + data)
-      await initWalletConnect(data);
+      await initWalletConnect(data, channel);
     } else {
-      props.history.push(data);
+      history.push(data);
     }
   };
 
