@@ -110,6 +110,35 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     };
   }
 
+  // set provider config
+  let providerConfig: ChannelProviderConfig;
+  if (channelProvider) {
+    // enable the channel provider, which sets the config property
+    await channelProvider.enable();
+    providerConfig = {
+      ...channelProvider.config,
+      type: RpcType.ChannelProvider,
+    };
+  } else if (mnemonic) {
+    // generate extended private key from mnemonic
+    const hdNode = fromMnemonic(mnemonic);
+    const xpriv = hdNode.extendedKey;
+    const xpub = hdNode.derivePath(CF_PATH).neuter().extendedKey;
+    await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }]);
+    providerConfig = {
+      freeBalanceAddress: freeBalanceAddressFromXpub(xpub),
+      natsClusterId,
+      natsToken,
+      nodeUrl,
+      type: RpcType.CounterfactualNode,
+      userPublicIdentifier: xpub,
+    } as any;
+  } else {
+    throw new Error(`Must provide a channel provider or mnemonic on startup.`);
+  }
+
+  logger.info(`using provider config: ${JSON.stringify(providerConfig, null, 2)}`);
+
   logger.info(`Creating messaging service client (logLevel: ${logLevel})`);
   const messagingFactory = new MessagingServiceFactory({
     clusterId: natsClusterId,
@@ -134,7 +163,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const config = await node.config();
   logger.info(`node is connected to eth network: ${JSON.stringify(config.ethNetwork)}`);
   logger.info(`node config: ${JSON.stringify(config)}`);
-  node.setNodePublicIdentifier(config.nodePublicIdentifier);
 
   const appRegistry = await node.appRegistry();
 
@@ -145,50 +173,39 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   };
 
   let channelRouter: ChannelRouter;
-  let multisigAddress: string;
-  if (channelProvider) {
-    // enable the channel provider, which sets the config property
-    await channelProvider.enable();
-    channelRouter = new ChannelRouter(
-      RpcType.ChannelProvider,
-      channelProvider!,
-      channelProvider.config,
-    );
-    node.setUserPublicIdentifier(channelProvider.config.publicIdentifier);
-    multisigAddress = channelProvider.config.multisigAddress;
-  } else if (mnemonic) {
-    // generate extended private key from mnemonic
-    const extendedXpriv = fromMnemonic(mnemonic).extendedKey;
-    await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }]);
-    // create new cfCore to inject into internal instance
-    logger.info("creating new cf module");
-    const cfCore = await CFCore.create(
-      messaging as any, // TODO: FIX
-      store,
-      {
-        STORE_KEY_PREFIX: "store",
-      }, // TODO: proper config
-      ethProvider,
-      config.contractAddresses,
-      lockService,
-    );
-    node.setUserPublicIdentifier(cfCore.publicIdentifier);
-    logger.info("created cf module successfully");
+  switch (providerConfig.type) {
+    case RpcType.ChannelProvider:
+      channelRouter = new ChannelRouter(channelProvider!, providerConfig);
+      break;
 
-    const signer = await cfCore.signerAddress();
-    logger.info(`cf module signer address: ${signer}`);
+    case RpcType.CounterfactualNode:
+      logger.info("creating new cf module");
+      const cfCore = await CFCore.create(
+        messaging as any, // TODO: FIX
+        store,
+        {
+          STORE_KEY_PREFIX: "store",
+        }, // TODO: proper config
+        ethProvider,
+        config.contractAddresses,
+        lockService,
+      );
+      const signer = await cfCore.signerAddress();
+      logger.info("created cf module successfully");
+      logger.info(`cf module signer address: ${signer}`);
+      channelRouter = new ChannelRouter(cfCore, providerConfig);
+      break;
 
-    channelRouter = new ChannelRouter(RpcType.CounterfactualNode, cfCore, {
-      freeBalanceAddress: cfCore.freeBalanceAddress,
-      // TODO: multisigAddress is always null here...
-      multisigAddress,
-      publicIdentifier: cfCore.publicIdentifier,
-    });
-  } else {
-    throw new Error("Must provide either a channelProvider or mnemonic upon instantiation");
+    default:
+      throw new Error(`Unrecognized provider type: ${providerConfig.type}`);
   }
 
+  // set pubids
+  node.setNodePublicIdentifier(config.nodePublicIdentifier);
+  node.setUserPublicIdentifier(providerConfig.userPublicIdentifier);
+
   const myChannel = await node.getChannel();
+  let multisigAddress: string;
   if (!myChannel) {
     logger.info("no channel detected, creating channel..");
     const creationEventData: CFCoreTypes.CreateChannelResult = await new Promise(
@@ -332,11 +349,7 @@ export abstract class ConnextChannel {
   };
 
   public channelProviderConfig = async (): Promise<ChannelProviderConfig> => {
-    return {
-      freeBalanceAddress: this.internal.freeBalanceAddress,
-      multisigAddress: this.internal.multisigAddress,
-      publicIdentifier: this.internal.publicIdentifier,
-    };
+    return this.internal.channelRouter.config;
   };
 
   ///////////////////////////////////
@@ -570,11 +583,10 @@ export class ConnextInternal extends ConnextChannel {
     this.appRegistry = opts.appRegistry;
 
     this.channelRouter = opts.channelRouter;
-    this.freeBalanceAddress = this.channelRouter.freeBalanceAddress;
+    this.freeBalanceAddress = this.channelRouter.config.freeBalanceAddress;
     this.network = opts.network;
     this.node = opts.node;
-    this.freeBalanceAddress = this.channelRouter.freeBalanceAddress;
-    this.publicIdentifier = this.channelRouter.publicIdentifier;
+    this.publicIdentifier = this.channelRouter.config.userPublicIdentifier;
     this.multisigAddress = this.opts.multisigAddress;
     this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
     this.logger = new Logger("ConnextInternal", opts.logLevel);
@@ -638,7 +650,7 @@ export class ConnextInternal extends ConnextChannel {
   public getLatestNodeSubmittedWithdrawal = async (): Promise<
     { retry: number; tx: CFCoreTypes.MinimalTransaction } | undefined
   > => {
-    const value = await this.store.get(withdrawalKey(this.channelRouter.publicIdentifier));
+    const value = await this.store.get(withdrawalKey(this.publicIdentifier));
 
     if (!value) {
       return undefined;
@@ -647,7 +659,7 @@ export class ConnextInternal extends ConnextChannel {
     const noRetry = value.retry === undefined || value.retry === null;
     if (!value.tx || noRetry) {
       const msg = `Can not find tx or retry in store under key ${withdrawalKey(
-        this.channelRouter.publicIdentifier,
+        this.publicIdentifier,
       )}`;
       this.logger.error(msg);
       throw new Error(msg);
@@ -802,7 +814,7 @@ export class ConnextInternal extends ConnextChannel {
     assetId: string,
     notifyCounterparty: boolean = false,
   ): Promise<CFCoreTypes.DepositResult> => {
-    const depositAddr = publicIdentifierToAddress(this.channelRouter.publicIdentifier);
+    const depositAddr = publicIdentifierToAddress(this.publicIdentifier);
     let bal: BigNumber;
 
     if (assetId === AddressZero) {
