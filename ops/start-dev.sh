@@ -38,13 +38,13 @@ eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble swe
 
 # database connection settings
 pg_db="$project"
-pg_password="${project}_database_dev"
+pg_password="${project}_database"
+readonly_password="${project}_database_readonly"
 pg_password_file="/run/secrets/$pg_password"
+readonly_password_file="/run/secrets/$readonly_password"
 pg_host="database"
 pg_port="5432"
 pg_user="$project"
-readonly_password="${project}_database_readonly"
-readonly_password_file="/run/secrets/$readonly_password"
 readonly_user="readonly"
 
 # docker images
@@ -243,13 +243,9 @@ services:
   hasura:
     image: $hasura_image
     environment:
-      PG_DATABASE: $pg_db
-      PG_HOST: $pg_host
-      PG_PASSWORD_FILE: $pg_password_file
-      PG_PORT: $pg_port
-      PG_USER: $project
+      HASURA_GRAPHQL_DATABASE_URL="postgres://$readonly_user:`cat $readonly_password_file`@$pg_host:$pg_port/$pg_db"
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
-      HASURA_GRAPHQL_UNAUTHORIZED_ROLE: $hasura_user
+      HASURA_GRAPHQL_ENABLE_ALLOWLIST: "true"
     networks:
       - $project
     ports:
