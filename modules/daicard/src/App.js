@@ -182,6 +182,9 @@ class App extends React.Component {
       await new Promise(res => setTimeout(() => res(), 1000));
     }
 
+    const token = new Contract(channel.config.contractAddresses.Token, tokenArtifacts.abi, wallet);
+    const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
+
     let freeEtherBalance, freeTokenBalance
     try {
       freeEtherBalance = await channel.getFreeBalance();
@@ -196,9 +199,6 @@ class App extends React.Component {
       console.error(e)
       return;
     }
-
-    const token = new Contract(channel.config.contractAddresses.Token, tokenArtifacts.abi, wallet);
-    const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
     console.log(`Client created successfully!`);
     console.log(` - Public Identifier: ${channel.publicIdentifier}`);
