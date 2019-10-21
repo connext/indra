@@ -69,7 +69,7 @@ export const AppBarComponent = (props) => (
                 component={Link}
                 to="/settings"
               >
-                {localStorage.getItem("rpc-prod")}
+                Settings
                 <SettingIcon style={{ marginLeft: "3px" }} />
               </Button>
             </Grid>

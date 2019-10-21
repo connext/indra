@@ -8,7 +8,7 @@ Connext's new & improved state channel network!
 
 ## TL;DR
 
-Make sure the following tools are installed: `make`, `jq`, and `docker` and then run `make start`. This will build everything & launch a pre-configured payment hub + a simple UI.
+Make sure the following tools are installed: `make`, `jq`, and `docker` and then run `make start`. This will build everything & launch a pre-configured payment hub + a simple UI, play with it from your browser at 127.0.0.1:3000.
 
 Run `bash ops/logs.sh node` to see the node server's logs or replace "node" with one of the other service names, list services with: `make dls` (short for **D**ocker **L**i**s**t).
 

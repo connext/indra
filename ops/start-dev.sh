@@ -18,6 +18,7 @@ ETH_NETWORK="${1:-kovan}"
 log_level=3
 nats_port=4222
 node_port=8080
+port=3000
 
 if [[ "$ETH_NETWORK" == "rinkeby" ]]
 then eth_rpc_url="https://rinkeby.infura.io/metamask"
@@ -115,7 +116,7 @@ services:
     networks:
       - $project
     ports:
-      - "80:80"
+      - "$port:80"
     volumes:
       - certs:/etc/letsencrypt
 

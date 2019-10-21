@@ -1,4 +1,4 @@
-import { Button, IconButton, Snackbar, SnackbarContent, withStyles } from "@material-ui/core";
+import { Button, IconButton, Snackbar, SnackbarContent, Tooltip, withStyles } from "@material-ui/core";
 import { amber, green, red } from "@material-ui/core/colors";
 import {
   Close as CloseIcon,
@@ -57,12 +57,17 @@ export const MySnackbar = style(props => {
       actions.push(
         <Button
           color="secondary"
-          size="small"
-          key="view"
           href={`https://${networkPrefix}etherscan.io/tx/${txHash}`}
+          key="view"
+          size="small"
           target="_blank"
         >
-          View Tx
+          <Tooltip
+            disableTouchListener
+            title={`https://${networkPrefix}etherscan.io/tx/${txHash}`}
+          >
+            <span style={{ textDecoration: 'underline' }}>View Tx</span>
+          </Tooltip>
         </Button>,
       );
     }
