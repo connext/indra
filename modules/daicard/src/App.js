@@ -338,7 +338,7 @@ class App extends React.Component {
     const { useWalletConnext } = this.state;
     await this.refreshBalances();
     await this.setDepositLimits();
-    if (useWalletConnext) {
+    if (!useWalletConnext) {
       await this.autoDeposit();
     } else {
       console.log("Using wallet connext, turning off autodeposit");
