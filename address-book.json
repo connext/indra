@@ -36,7 +36,7 @@
       "txHash": "0x156fb068dd41d768bda1425522992cb46aa26792be6b30f427ec842a4d934c80"
     },
     "ProxyFactory": {
-      "address": "0x6CF0c4Ab3F1e66913c0983DC0bb1202d958ABb8f"
+      "address": "0xF9015aA98BeBaE3e43945c48dc3fB6c0a5281986"
     },
     "SingleAssetTwoPartyCoinTransferInterpreter": {
       "address": "0x42f1E0990beb10FfeE2E884C82a37D425268eD1e",

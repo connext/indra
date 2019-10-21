@@ -5,8 +5,8 @@ import { formatEther } from "ethers/utils";
 import { toBN } from './bn';
 import interval from "interval-promise";
 
-export const migrate = async (hubUrl, wallet, ethUrl, setMigrating) => {
-  console.log(`____________________Migration Started | hubUrl: ${hubUrl}, ethUrl: ${ethUrl}`)
+export const migrate = async (hubUrl, wallet, ethUrl) => {
+  console.log(`==== Migration Started | hubUrl: ${hubUrl}, ethUrl: ${ethUrl}`)
   if (!hubUrl) { return; }
   const legacy = await Connext.createClient({ ethUrl, hubUrl, mnemonic: wallet.mnemonic });
   await legacy.start();
@@ -21,8 +21,6 @@ export const migrate = async (hubUrl, wallet, ethUrl, setMigrating) => {
   const amountWei = etherBalance.add(state.persistent.custodialBalance.balanceWei);
 
   if (amountToken.gt(Zero) || amountWei.gt(Zero)) {
-    await setMigrating(true);
-
     const withdrawalParams = {
       exchangeRate: state.runtime.exchangeRate.rates.DAI,
       recipient: wallet.address,
@@ -50,9 +48,8 @@ export const migrate = async (hubUrl, wallet, ethUrl, setMigrating) => {
     } catch (e) {
       console.error(e);
     }
-    setMigrating(false);
   }
   await legacy.stop();
-  console.log(`____________________Migration Finished`)
+  console.log(`==== Migration Finished`)
   return;
 };
