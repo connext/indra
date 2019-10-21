@@ -214,26 +214,27 @@ class App extends React.Component {
       // or can this be referenced at a higher level?
       // also, do we have to include this call?
       // await channelProvider.create();
-      console.log(`awaiting connect event`)
-      channelProvider.connection.once("connect", () => {
-        console.log(`caught channelProvider.connection connect event`)
-      })
+
+      // console.log(`calling connext.connect`)
+      let connectedChannel;
+      // const connectedChannel = await connext.connect({
+      //   ethProviderUrl: urls.ethProviderUrl,
+      //   logLevel: 5,
+      //   nodeUrl: urls.nodeUrl,
+      //   channelProvider,
+      // })
+      await channelProvider.enable()
+
+      console.log(`awaiting connect event...`)
       await new Promise((res, rej) => {
         channelProvider.once("connect", async () => {
-          console.log("provider connected, trying to connext.connect...");
-          const connectedChannel = await connext.connect({
-            ethProviderUrl: urls.ethProviderUrl,
-            channelProvider,
-          });
-          console.log("connected!");
-          console.log(connectedChannel);
-          res(connectedChannel);
+          res();
         });
-        channelProvider.on("error", () => {
+        channelProvider.once("error", () => {
           rej("WalletConnect Error");
         });
       });
-      console.log("SUCCESSFULLY GOT CHANNEL");
+      console.log(`successfully connected channel: ${JSON.stringify(connectedChannel, null, 2)}`);
     } else {
       console.error("Could not create channel.");
       return;
@@ -619,6 +620,7 @@ class App extends React.Component {
                     balance={balance}
                     swapRate={swapRate}
                     scanQRCode={this.scanQRCode}
+                    channel={channel}
                   />
                   <SetupCard
                     {...props}
