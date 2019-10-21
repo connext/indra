@@ -15,26 +15,29 @@ export class ChannelRouter {
   private type: RpcType;
   private connection: RpcConnection;
 
-  // these properties should be easEXTENDEDthe channel
-  // provider config, which should EXTENDEDal channel
-  // providers by calling `.enable`EXTENDED
-  public freeBalanceAddress: string;
-  public publicIdentifier: string;
-  // TODO: include here? not included by default in cf instance
-  // since there is no default assumption a multisig has been
-  // deployed
-  public multisigAddress: string;
+  private _config: ChannelProviderConfig;
 
-  constructor(type: RpcType, connection: RpcConnection, config: ChannelProviderConfig) {
-    this.type = type;
+  private _multisigAddress: string | undefined = undefined;
+
+  constructor(connection: RpcConnection, config: ChannelProviderConfig) {
+    this.type = config.type;
     this.connection = connection;
+    this._config = config;
+    this._multisigAddress = config.multisigAddress;
+  }
 
-    // TODO: seems like these should be consistent, i.e. either
-    // both are accessed directly as props on the connection
-    // or via the `.config` prop on the connection
-    this.freeBalanceAddress = config.freeBalanceAddress;
-    this.publicIdentifier = config.publicIdentifier;
-    this.multisigAddress = config.multisigAddress;
+  ///////////////////////////////////////////////
+  ///// GETTERS / SETTERS
+  get config(): ChannelProviderConfig {
+    return this._config;
+  }
+
+  get multisigAddress(): string | undefined {
+    return this._multisigAddress;
+  }
+
+  set multisigAddress(multisigAddress: string) {
+    this._multisigAddress = multisigAddress;
   }
 
   ///////////////////////////////////////////////
@@ -253,10 +256,6 @@ export class ChannelRouter {
         break;
 
       case RpcType.ChannelProvider:
-        // NOTE: channel provider in wallet connect is expecting an
-        // array type for parameters, it is easy to write a function
-        // that casts object to an array, but seems obnoxious. should
-        // circle up with pedro on that front for final call
         result = await this.connection._send(methodName, parameters);
         break;
 
