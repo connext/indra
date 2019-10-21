@@ -4,7 +4,7 @@ import { Node as NodeTypes } from "@counterfactual/types";
 
 export let walletConnector = null;
 
-export async function initWalletConnect(uri) {
+export async function initWalletConnect(uri, client) {
   walletConnector = new WalletConnectBrowser({ uri });
   console.log("INITING");
 
@@ -44,7 +44,7 @@ export async function initWalletConnect(uri) {
     }
 
     if (payload.method.startsWith("chan_")) {
-      await mapPayloadToClient(payload);
+      await mapPayloadToClient(payload, client);
     } else {
       walletConnector.rejectRequest({ id: payload.id });
     }
@@ -79,7 +79,7 @@ export function displaySessionApproval(payload) {
   console.log(`called walletConnector.approveSession()`)
 }
 
-async function mapPayloadToClient(payload) {
+async function mapPayloadToClient(payload, channel) {
   let result;
   try {
     switch (payload.method) {
