@@ -189,11 +189,7 @@ class App extends React.Component {
       await new Promise(res => setTimeout(() => res(), 1000));
     }
 
-    const token = new Contract(
-      channel.config.contractAddresses.Token,
-      tokenArtifacts.abi,
-      wallet,
-    );
+    const token = new Contract(channel.config.contractAddresses.Token, tokenArtifacts.abi, wallet);
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
     let freeEtherBalance, freeTokenBalance
