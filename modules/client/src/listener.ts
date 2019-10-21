@@ -66,7 +66,7 @@ export class ConnextListener extends EventEmitter {
       // check if message is from us, return if so
       // FIXME: type of ProposeMessage should extend CFCore.NodeMessage, which
       // has a from field, but ProposeMessage does not
-      if ((data as any).from === this.channelRouter.publicIdentifier) {
+      if ((data as any).from === this.connext.publicIdentifier) {
         this.log.debug(
           `Received proposal from our own node, doing nothing: ${JSON.stringify(data)}`,
         );
@@ -97,7 +97,7 @@ export class ConnextListener extends EventEmitter {
       // if the from is us, ignore
       // FIXME: type of ProposeVirtualMessage should extend Node.NodeMessage,
       // which has a from field, but ProposeVirtualMessage does not
-      if ((data as any).from === this.channelRouter.publicIdentifier) {
+      if ((data as any).from === this.connext.publicIdentifier) {
         return;
       }
       // check based on supported applications
@@ -206,7 +206,7 @@ export class ConnextListener extends EventEmitter {
         `Emitting CFCoreTypes.RpcMethodName.INSTALL event: ${JSON.stringify(appInstance)}`,
       );
       this.connext.messaging.publish(
-        `indra.client.${this.channelRouter.publicIdentifier}.install.${appInstance.identityHash}`,
+        `indra.client.${this.connext.publicIdentifier}.install.${appInstance.identityHash}`,
         JSON.stringify(appInstance),
       );
     });
@@ -217,7 +217,7 @@ export class ConnextListener extends EventEmitter {
         `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(result)}`,
       );
       this.connext.messaging.publish(
-        `indra.client.${this.channelRouter.publicIdentifier}.uninstall.${result.appInstanceId}`,
+        `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
         JSON.stringify(result),
       );
     });
