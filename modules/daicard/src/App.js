@@ -2,10 +2,6 @@ import {
   Paper,
   withStyles,
   Grid,
-  Dialog,
-  DialogActions,
-  Button,
-  DialogTitle,
 } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -37,7 +33,6 @@ import { SupportCard } from "./components/supportCard";
 import { rootMachine } from "./state";
 import {
   Currency,
-  instantiateClient,
   migrate,
   minBN,
   storeFactory,
@@ -172,6 +167,7 @@ class App extends React.Component {
     let channel;
 
     const useWalletConnext = localStorage.getItem('useWalletConnext') || false;
+    console.log('useWalletConnext: ', useWalletConnext);
 
     // migrate if needed
     if (localStorage.getItem("rpc-prod")) {
@@ -266,10 +262,9 @@ class App extends React.Component {
     const token = new Contract(channel.config.contractAddresses.Token, tokenArtifacts.abi, wallet);
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
-    let freeEtherBalance, freeTokenBalance
     try {
-      freeEtherBalance = await channel.getFreeBalance();
-      freeTokenBalance = await channel.getFreeBalance(token.address);
+      await channel.getFreeBalance();
+      await channel.getFreeBalance(token.address);
     } catch (e) {
       if (e.message.includes(`This probably means that the StateChannel does not exist yet`)) {
         // channel.connext was already called, meaning there should be
