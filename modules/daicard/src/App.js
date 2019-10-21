@@ -217,9 +217,6 @@ class App extends React.Component {
         channelProvider,
       })
 
-      // let connectedChannel
-      // await channelProvider.enable()
-
       console.log(`awaiting connect event...`)
       await new Promise((res, rej) => {
         channelProvider.once("connect", async () => {
