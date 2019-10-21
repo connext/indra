@@ -21,9 +21,9 @@ import { hexlify, randomBytes } from "ethers/utils";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { useCallback, useEffect, useState } from "react";
 import queryString from "query-string";
-import { Machine } from 'xstate';
 
 import { Currency, toBN } from "../utils";
+import { sendMachine } from "../state";
 
 import { Copyable } from "./copyable";
 import { QRScan } from "./qrCode";
@@ -54,39 +54,10 @@ const style = withStyles((theme) => ({
   },
 }));
 
-const PaymentStateMachine = Machine({
-  id: 'payment',
-  initial: 'idle',
-  states: {
-    'idle': { on: {
-      'NEW_P2P': 'processingP2p',
-      'NEW_LINK': 'processingLink',
-      'ERROR': 'error',
-    }},
-    'processingP2p': { on: {
-      'DONE': 'successP2p',
-      'ERROR': 'error',
-    }},
-    'processingLink': { on: {
-      'DONE': 'successLink',
-      'ERROR': 'error',
-    }},
-    'successP2p': { on: {
-      'DISMISS': 'idle'
-    }},
-    'successLink': { on: {
-      'DISMISS': 'idle'
-    }},
-    'error': { on: {
-      'DISMISS': 'idle'
-    }},
-  }
-});
-
 export const SendCard = style(({ balance, channel, classes, history, location, token  }) => {
   const [amount, setAmount] = useState({ display: "", error: null, value: null });
   const [link, setLink] = useState(undefined);
-  const [paymentState, paymentAction] = useMachine(PaymentStateMachine);
+  const [paymentState, paymentAction] = useMachine(sendMachine);
   const [recipient, setRecipient] = useState({ display: "", error: null, value: null });
   const [scan, setScan] = useState(false)
 
