@@ -37,9 +37,9 @@ eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 
 # database connection settings
-pg_db="$project"
-pg_password="${project}_database"
-readonly_password="${project}_database_readonly"
+pg_db="${project}_dev"
+pg_password="${project}_database_dev"
+readonly_password="${project}_readonly"
 pg_password_file="/run/secrets/$pg_password"
 readonly_password_file="/run/secrets/$readonly_password"
 pg_host="database"
@@ -60,6 +60,7 @@ proxy_image="${project}_proxy:dev"
 redis_image=redis:5-alpine
 redis_url="redis://redis:6379"
 relay_image="${project}_relay"
+
 
 ####################
 # Deploy according to above configuration
@@ -85,8 +86,8 @@ function new_secret {
     echo "Created secret called $1 with id $id"
   fi
 }
-new_secret "$pg_password" "$project"
-new_secret "$readonly_password" "${project}_readonly"
+new_secret "${project}_database_dev" "$pg_password" 
+new_secret "${project}_readonly" "$readonly_password" 
 
 # Deploy with an attachable network so tests & the daicard can connect to individual components
 if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
@@ -243,7 +244,13 @@ services:
   hasura:
     image: $hasura_image
     environment:
-      HASURA_GRAPHQL_DATABASE_URL="postgres://$readonly_user:`cat $readonly_password_file`@$pg_host:$pg_port/$pg_db"
+      PG_HOST: $pg_host
+      PG_PORT: $pg_port
+      READONLY_USER: readonly
+      PG_DB: $project
+      PG_PASSWORD_FILE: $pg_password_file
+      PG_USER: $project
+      READONLY_PASSWORD_FILE: $readonly_password_file
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
       HASURA_GRAPHQL_ENABLE_ALLOWLIST: "true"
     networks:
@@ -251,7 +258,8 @@ services:
     ports:
       - "8083:8080"
     secrets:
-      - $readonly_password
+      - "indra_readonly"
+      - "indra_database_dev"
 
   redis:
     image: $redis_image
