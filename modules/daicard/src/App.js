@@ -126,7 +126,7 @@ class App extends React.Component {
       maxDeposit: null,
       minDeposit: null,
       network: {},
-      channelProviderType: null,
+      useWalletConnext: false,
       sendScanArgs: { amount: null, recipient: null },
       redeemScanArgs: { amount: null, recipient: null },
       state: {},
@@ -138,16 +138,21 @@ class App extends React.Component {
     this.autoDeposit.bind(this);
     this.autoSwap.bind(this);
     this.scanQRCode.bind(this);
+    this.setWalletConnext.bind(this);
   }
 
   // ************************************************* //
   //                     Hooks                         //
   // ************************************************* //
 
-  // Channel doesn't get set up until after provider is set
-  setProvider = async channelProviderType => {
-    this.setState({ channelProviderType })
+  setWalletConnext = async (useWalletConnext) => {
+    localStorage.setItem('useWalletConnext', useWalletConnext);
+    this.setState({ useWalletConnext });
+    window.location.reload();
+  }
 
+  // Channel doesn't get set up until after provider is set
+  async componentDidMount() {
     const { ethprovider, machine } = this.state;
     machine.start();
     machine.onTransition(state => {
@@ -166,10 +171,7 @@ class App extends React.Component {
     const network = await ethprovider.getNetwork();
     let channel;
 
-    const supportedChannelProviders = ["walletconnect", "counterfactual"]
-    if (!supportedChannelProviders.includes(channelProviderType)) {
-      throw new Error(`Invalid provider type ${channelProviderType}`);
-    }
+    const useWalletConnext = localStorage.getItem('useWalletConnext') || false;
 
     // migrate if needed
     if (localStorage.getItem("rpc-prod")) {
@@ -182,7 +184,7 @@ class App extends React.Component {
     machine.send(['START', 'START_START']);
 
     // if choose mnemonic
-    if (channelProviderType === "counterfactual") {
+    if (!useWalletConnext) {
       // If no mnemonic, use the one we created pre-migration
       let store;
       if (urls.pisaUrl(network.chainId)) {
@@ -203,7 +205,7 @@ class App extends React.Component {
         nodeUrl: urls.nodeUrl,
         store,
       });
-    } else if (channelProviderType === "walletconnect") {
+    } else if (useWalletConnext) {
       let channelProvider;
       channelProvider = new WalletConnectChannelProvider({
         rpc: {
@@ -317,7 +319,7 @@ class App extends React.Component {
 
     this.setState({
       channel,
-      channelProviderType,
+      useWalletConnext,
       ethprovider,
       network,
       swapRate,
@@ -338,19 +340,19 @@ class App extends React.Component {
   //  - channel messages to see if there anything to sign
   //  - channel eth to see if I need to swap?
   startPoller = async () => {
-    const { channelProviderType } = this.state;
+    const { useWalletConnext } = this.state;
     await this.refreshBalances();
     await this.setDepositLimits();
-    if (channelProviderType === "counterfactual") {
+    if (useWalletConnext) {
       await this.autoDeposit();
     } else {
-      console.log("Turning off autodeposit, provider: ", channelProviderType);
+      console.log("Using wallet connext, turning off autodeposit");
     }
     await this.autoSwap();
     interval(async (iteration, stop) => {
       await this.refreshBalances();
       await this.setDepositLimits();
-      if (channelProviderType === "counterfactual") {
+      if (useWalletConnext) {
         await this.autoDeposit();
       }
       await this.autoSwap();
@@ -590,7 +592,6 @@ class App extends React.Component {
     const {
       balance,
       channel,
-      channelProviderType,
       swapRate,
       machine,
       maxDeposit,
@@ -622,16 +623,6 @@ class App extends React.Component {
               message="Starting Channel Controllers..."
               duration={30 * 60 * 1000}
             />
-
-            <Dialog open={!["walletconnect", "counterfactual"].includes(channelProviderType)}>
-              <DialogTitle>{"Are you using WalletConnext?"}</DialogTitle>
-              <DialogActions>
-                <Button onClick={() => this.setProvider("walletconnect")}>{"Yes, I'm enlightened"}</Button>
-                <Button onClick={() => this.setProvider("counterfactual")}>
-                  {"No, pls store my mnemonic insecurely :)"}
-                </Button>
-              </DialogActions>
-            </Dialog>
 
             <Route
               exact
@@ -665,7 +656,13 @@ class App extends React.Component {
             />
             <Route
               path="/settings"
-              render={props => <SettingsCard {...props} channel={channel} />}
+              render={props => (
+                <SettingsCard
+                  {...props}
+                  channel={channel}
+                  setWalletConnext={this.setWalletConnext}
+                />
+              )}
             />
             <Route
               path="/request"
