@@ -6,6 +6,7 @@ import {
   AppStateBigNumber,
   CFCoreChannel,
   ChannelAppSequences,
+  ChannelProviderConfig,
   ChannelState,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
@@ -120,12 +121,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   await messaging.connect();
   logger.info("Messaging service is connected");
 
-  // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
-  // Note: added this to the client since this is required for the cf module to work
-  // generate extended private key from mnemonic
-  const extendedXpriv = fromMnemonic(mnemonic).extendedKey;
-  await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }], false);
-
   // create a new node api instance
   const nodeApiConfig = {
     logLevel,
@@ -193,10 +188,8 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     throw new Error("Must provide either a channelProvider or mnemonic upon instantiation");
   }
 
-  // TODO: make these types
   const myChannel = await node.getChannel();
   if (!myChannel) {
-    // TODO: update when deployment is moved to withdraw
     logger.info("no channel detected, creating channel..");
     const creationEventData: CFCoreTypes.CreateChannelResult = await new Promise(
       async (res: any, rej: any): Promise<any> => {
@@ -303,7 +296,6 @@ export abstract class ConnextChannel {
   ///////////////////////////////////
   // CORE CHANNEL METHODS
 
-  // TODO: do we want the inputs to be an object?
   public deposit = async (params: DepositParameters): Promise<ChannelState> => {
     return await this.internal.deposit(params);
   };
@@ -337,6 +329,14 @@ export abstract class ConnextChannel {
     defaultToHub: boolean,
   ): Promise<ConnextInternal> => {
     return await this.internal.restoreState(mnemonic, defaultToHub);
+  };
+
+  public channelProviderConfig = async (): Promise<ChannelProviderConfig> => {
+    return {
+      freeBalanceAddress: this.internal.freeBalanceAddress,
+      multisigAddress: this.internal.multisigAddress,
+      publicIdentifier: this.internal.publicIdentifier,
+    };
   };
 
   ///////////////////////////////////
