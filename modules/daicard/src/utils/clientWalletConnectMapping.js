@@ -83,6 +83,9 @@ async function mapPayloadToClient(payload) {
   let result;
   try {
     switch (payload.method) {
+      case "chan_config":
+        result = await channel.channelProviderConfig(payload.params)
+        break;
       case NodeTypes.RpcMethodName.DEPOSIT:
         result = await channel.providerDeposit(payload.params);
         break;
