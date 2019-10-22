@@ -26,9 +26,9 @@ import {
   SupportedApplication,
   SupportedNetwork,
   SwapParameters,
+  Transfer,
   TransferParameters,
   WithdrawParameters,
-  Transfer,
 } from "@connext/types";
 import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
 import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
@@ -47,7 +47,7 @@ import {
   solidityKeccak256,
   Transaction,
 } from "ethers/utils";
-import { fromMnemonic } from "ethers/utils/hdnode";
+import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
@@ -113,8 +113,11 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
   // Note: added this to the client since this is required for the cf module to work
   // generate extended private key from mnemonic
-  const extendedXpriv = fromMnemonic(mnemonic).extendedKey;
-  await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }], false);
+  const privateExtendedKey = fromMnemonic(mnemonic).extendedKey;
+  const hdNode = fromExtendedKey(privateExtendedKey).derivePath(CF_PATH);
+  const publicExtendedKey = hdNode.neuter().extendedKey;
+  logger.info(`Derived xpub from mnemonic: ${publicExtendedKey}`);
+  // await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }], false);
 
   // create a new node api instance
   // TODO: use local storage for default key value setting!!
@@ -144,12 +147,16 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const cfCore = await CFCore.create(
     messaging as any, // TODO: FIX
     store,
+    config.contractAddresses,
     {
       STORE_KEY_PREFIX: "store",
     }, // TODO: proper config
     ethProvider,
-    config.contractAddresses,
     lockService,
+    publicExtendedKey,
+    (uniqueID: string): Promise<string> => {
+      return Promise.resolve(hdNode.derivePath(uniqueID).privateKey);
+    },
   );
   node.setUserPublicIdentifier(cfCore.publicIdentifier);
   logger.info("created cf module successfully");
