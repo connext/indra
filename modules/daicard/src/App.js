@@ -218,13 +218,12 @@ class App extends React.Component {
         console.error(`Channel provider error: ${JSON.stringify(data, null, 2)}`);
       });
       console.log(`calling connext.connect`)
-      const connectedChannel = await connext.connect({
+      channel = await connext.connect({
         ethProviderUrl: urls.ethProviderUrl,
         logLevel: 5,
         channelProvider,
       })
-
-      console.log(`successfully connected channel: ${JSON.stringify(connectedChannel, null, 2)}`);
+      console.log(`successfully connected channel`);
     } else {
       console.error("Could not create channel.");
       return;
