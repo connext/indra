@@ -11,6 +11,7 @@ export type ChannelProviderConfig = {
   natsClusterId?: string;
   natsToken?: string;
   nodeUrl: string;
+  signerAddress: string;
   type: RpcType;
   userPublicIdentifier: string;
 };
