@@ -456,7 +456,13 @@ export function makeChecksum(address: string): string {
   try {
     return getAddress(address);
   } catch (e) {
-    console.log("Caught error converting address, returning original input value.");
+    console.log(
+      `Caught error converting address, returning original input value (${JSON.stringify(
+        address,
+        null,
+        2,
+      )})`,
+    );
     return address;
   }
 }
