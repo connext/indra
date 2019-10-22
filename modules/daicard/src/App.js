@@ -210,6 +210,13 @@ class App extends React.Component {
         chainId: 4447,
       });
       console.log("GOT CHANNEL PROVIDER:", JSON.stringify(channelProvider, null, 2));
+      // register channel provider listener for logging
+      channelProvider.once("connect", async () => {
+        console.log(`caught channelProvider.connect`);
+      });
+      channelProvider.on("error", (data) => {
+        console.error(`Channel provider error: ${JSON.stringify(data, null, 2)}`);
+      });
       console.log(`calling connext.connect`)
       const connectedChannel = await connext.connect({
         ethProviderUrl: urls.ethProviderUrl,
@@ -217,15 +224,6 @@ class App extends React.Component {
         channelProvider,
       })
 
-      console.log(`awaiting connect event...`)
-      await new Promise((res, rej) => {
-        channelProvider.once("connect", async () => {
-          res();
-        });
-        channelProvider.once("error", () => {
-          rej("WalletConnect Error");
-        });
-      });
       console.log(`successfully connected channel: ${JSON.stringify(connectedChannel, null, 2)}`);
     } else {
       console.error("Could not create channel.");
