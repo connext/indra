@@ -37,7 +37,7 @@ export async function initWalletConnect(uri, client) {
 
   // Subscribe to call requests
   walletConnector.on("call_request", async (error, payload) => {
-    console.log("Received call request");
+    console.log(`Received call request: ${JSON.stringify({ error, payload }, null, 2)}`);
     if (error) {
       throw error;
     }
@@ -78,6 +78,21 @@ export function displaySessionApproval(payload) {
   console.log(`called walletConnector.approveSession()`)
 }
 
+function verifyFields(params, keys) {
+  if (keys.length <= 0 || (keys.filter(k => typeof k !== "string")).length !== 0) {
+    throw new Error(`[verifyFields] Must provide an array of fields to check`)
+  }
+  if (typeof params !== "object") {
+    throw new Error(`[verifyFields] Must provide a params object`)
+  }
+
+  const naStr = keys.filter(k => !!!params[k]);
+  if (naStr.length !== 0) {
+    throw new Error(`[verifyFields] Params missing needed keys. Params: ${JSON.stringify(params, null, 2)}, keys: ${JSON.stringify(keys, null, 2)}`)
+  }
+  return;
+}
+
 async function mapPayloadToClient(payload, channel) {
   let result;
   try {
@@ -85,6 +100,7 @@ async function mapPayloadToClient(payload, channel) {
       case "chan_config":
         result = await channel.channelProviderConfig(payload.params)
         break;
+
       case NodeTypes.RpcMethodName.DEPOSIT:
         result = await channel.providerDeposit(payload.params);
         break;
@@ -95,8 +111,11 @@ async function mapPayloadToClient(payload, channel) {
         result = await channel.getAppInstances(payload.params);
         break;
       case NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE:
-        result = await channel.getFreeBalance(payload.params);
+        verifyFields(payload.params, ["tokenAddress", "multisigAddress"])
+        const { tokenAddress } = payload.params;
+        result = await channel.getFreeBalance(tokenAddress);
         break;
+
       case NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES:
         result = await channel.getProposedAppInstances(payload.params);
         break;
