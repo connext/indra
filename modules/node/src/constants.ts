@@ -35,3 +35,6 @@ export const defaultPaymentProfileEth: PaymentProfile = {
   id: 0,
   minimumMaintainedCollateral: parseEther("0.05"),
 };
+
+// CF
+export const CF_PATH = "m/44'/60'/0'/25446";
