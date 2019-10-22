@@ -13,13 +13,13 @@ import { interpret } from 'xstate';
 import "./App.css";
 
 // Pages
-import { AppBarComponent } from "./components/AppBar";
+import AppBarComponent from "./components/AppBar";
 import { CashoutCard } from "./components/cashOutCard";
 import { Confirmations } from "./components/Confirmations";
-import { DepositCard } from "./components/depositCard";
-import { Home } from "./components/Home";
+import DepositCard from "./components/depositCard";
+import Home  from "./components/Home";
 import { MySnackbar } from "./components/snackBar";
-import { RequestCard } from "./components/requestCard";
+import RequestCard from "./components/requestCard";
 import { RedeemCard } from "./components/redeemCard";
 import { SendCard } from "./components/sendCard";
 import { SettingsCard } from "./components/settingsCard";
@@ -558,7 +558,7 @@ class App extends React.Component {
               render={props => (
                 <RequestCard
                   {...props}
-                  xpub={channel.publicIdentifier}
+                  //xpub={channel.publicIdentifier}
                   maxDeposit={maxDeposit}
                   />
               )}

@@ -10,6 +10,7 @@ import {
   Typography,
   Tooltip,
 } from "@material-ui/core";
+import PropTypes from 'prop-types';
 import { SaveAlt as ReceiveIcon, Send as SendIcon } from "@material-ui/icons";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { useCallback, useState } from "react";
@@ -22,7 +23,7 @@ import "../App.css";
 import { ChannelCard } from "./channelCard";
 import { QRScan } from "./qrCode";
 
-const style = withStyles(theme => ({
+const styles = {
   top: {
     display: "flex",
     flexDirection: "column",
@@ -39,14 +40,20 @@ const style = withStyles(theme => ({
     left: "0",
     right: "0",
   },
-}));
+  button: {
+    color: "#FFF",
+  },
+  buttonSpacer:{
+    height:"10px"
+  }
+};
 
-export const Home = style(props => {
+ function Home(props){
   const [scanModal, setScanModal] = useState(false);
   const [amount, setAmount] = useState({ display: "", error: null, value: null });
   const [recipient, setRecipient] = useState({ display: "", error: null, value: null });
 
-  const { balance, swapRate } = props;
+  const { classes, balance, swapRate } = props;
 
   const scanQRCode = async data => {
     const path = await props.scanQRCode(data);
@@ -104,7 +111,7 @@ export const Home = style(props => {
   };
 
   return (
-    <Grid container className={style.top}>
+    <Grid container className={classes.top}>
       <Grid
         container
         direction="row"
@@ -156,21 +163,18 @@ export const Home = style(props => {
             id="qrscan"
             open={scanModal}
             onClose={() => setScanModal(false)}
-            className={style.modal}
+            className={classes.modal}
           >
             <QRScan handleResult={scanQRCode} />
           </Modal>
         </Grid>
       </Grid>
-      <Grid container spacing={4} direction="column" style={{ textAlign: "center" }}>
-          <Grid item sm={12} xs={12}>
+      <Grid container spacing={0} direction="column" style={{ textAlign: "center" }}>
             <Button
+              className={classes.button}
               disableTouchRipple
+              color="primary"
               fullWidth
-              style={{
-                color: "#FFF",
-                backgroundColor: "#FCA311",
-              }}
               variant="contained"
               size="large"
               component={Link}
@@ -179,15 +183,12 @@ export const Home = style(props => {
               Request
               <ReceiveIcon style={{ marginLeft: "5px" }} />
             </Button>
-          </Grid>
-          <Grid item xs={12}>
+            <Grid className={classes.buttonSpacer}/>
             <Button
+              className={classes.button}
               disableTouchRipple
+              color="primary"
               fullWidth
-              style={{
-                color: "#FFF",
-                backgroundColor: "#FCA311",
-              }}
               size="large"
               variant="contained"
               component={Link}
@@ -196,11 +197,11 @@ export const Home = style(props => {
               Send
               <SendIcon style={{ marginLeft: "5px" }} />
             </Button>
-          </Grid>
-          <Grid item xs={12}>
+            <Grid className={classes.buttonSpacer}/>
+
             <Button
+              className={classes.button}
               disableTouchRipple
-              style={{}}
               fullWidth
               color="primary"
               variant="outlined"
@@ -210,8 +211,14 @@ export const Home = style(props => {
             >
               Cash Out
             </Button>
-        </Grid>
       </Grid>
     </Grid>
   );
-});
+};
+
+Home.propTypes = {
+  classes: PropTypes.object.isRequired,
+};
+
+export default withStyles(styles)(Home);
+

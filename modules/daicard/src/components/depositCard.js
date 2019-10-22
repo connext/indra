@@ -1,17 +1,34 @@
 import { Button, Grid, Tooltip, Typography, withStyles } from "@material-ui/core";
 import React from "react";
+import PropTypes from 'prop-types';
 
 import { Copyable } from "./copyable";
 import { QRGenerate } from "./qrCode";
 
-const style = withStyles((theme) => ({
+const styles ={
+  top:{
+    paddingLeft: "10%",
+    paddingRight: "10%",
+    paddingTop: "10%",
+    paddingBottom: "10%",
+    textAlign: "center",
+    justifyContent: "center"
+  },
   icon: {
     width: "40px",
     height: "40px"
+  },
+  button:{
+    background: "#FFF",
+    border: "1px solid #F22424",
+    color: "#F22424",
+    width: "15%"
   }
-}));
+};
 
-export const DepositCard = style(({ address, history, maxDeposit, minDeposit }) => {
+function DepositCard(props){
+
+  const { classes, address, history, maxDeposit, minDeposit } = props;
 
   const minEth = minDeposit ? minDeposit.toETH().format() : '?.??'
   const maxEth = maxDeposit ? maxDeposit.toETH().format() : '?.??'
@@ -22,14 +39,7 @@ export const DepositCard = style(({ address, history, maxDeposit, minDeposit }) 
       container
       spacing={2}
       direction="column"
-      style={{
-        paddingLeft: "10%",
-        paddingRight: "10%",
-        paddingTop: "10%",
-        paddingBottom: "10%",
-        textAlign: "center",
-        justifyContent: "center"
-      }}
+      className={classes.top}
     >
       <Grid item xs={12} margin="1em">
         <QRGenerate value={address} />
@@ -57,12 +67,7 @@ export const DepositCard = style(({ address, history, maxDeposit, minDeposit }) 
         <Button
           disableTouchRipple
           variant="outlined"
-          style={{
-            background: "#FFF",
-            border: "1px solid #F22424",
-            color: "#F22424",
-            width: "15%"
-          }}
+          className={classes.button}
           size="medium"
           onClick={() => history.push("/")}
         >
@@ -71,4 +76,10 @@ export const DepositCard = style(({ address, history, maxDeposit, minDeposit }) 
       </Grid>
     </Grid>
   );
-})
+}
+
+DepositCard.propTypes = {
+  classes: PropTypes.object.isRequired,
+};
+
+export default withStyles(styles)(DepositCard);

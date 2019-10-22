@@ -1,25 +1,37 @@
 import { Button, Grid, TextField, Typography, withStyles } from "@material-ui/core";
 import { Zero } from "ethers/constants";
 import React, { useEffect, useState } from "react";
+import PropTypes from 'prop-types';
 
 import { Currency } from "../utils";
 
 import { Copyable } from "./copyable";
 import { QRGenerate } from "./qrCode";
 
-const style = withStyles(theme => ({
+const styles = {
+  top:{
+    paddingLeft: "10%",
+    paddingRight: "10%",
+    paddingTop: "10%",
+    paddingBottom: "10%",
+    textAlign: "center",
+    justifyContent: "center"
+  },
   icon: {
     width: "40px",
     height: "40px"
+  },
+  bodyContainer:{
+    marginTop:"12px"
   }
-}));
+};
 
 const zero = "0.0"
 const generateQrUrl = (amount, xpub) =>
   `${window.location.origin}/send?amount=${amount || zero}&recipient=${xpub}`;
 
-export const RequestCard = style((props) => {
-  const { maxDeposit, xpub, match } = props;
+const RequestCard = props => {
+  const { classes, maxDeposit, xpub, match } = props;
 
   const [amount, setAmount] = useState({ value: Currency.DAI(zero), display: "0" });
   const [qrUrl, setQrUrl] = useState(generateQrUrl(zero, xpub));
@@ -51,26 +63,18 @@ export const RequestCard = style((props) => {
       container
       spacing={2}
       direction="column"
-      style={{
-        paddingLeft: "10%",
-        paddingRight: "10%",
-        paddingTop: "10%",
-        paddingBottom: "10%",
-        textAlign: "center",
-        justifyContent: "center"
-      }}
+      className={classes.top}
     >
-
       <Grid container>
         <Grid item xs={4}>
-          <Typography style={{ marginTop: "6px" }}>Channel ID:</Typography>
+          <Typography>Channel ID:</Typography>
         </Grid>
         <Grid item xs={8}>
           <Copyable text={xpub}/>
         </Grid>
       </Grid>
 
-      <Grid container style={{ marginTop: "12px" }}>
+      <Grid container className={classes.bodyContainer}>
         <Grid item xs={4}>
           <Typography style={{ marginTop: "6px" }}>Request Link:</Typography>
         </Grid>
@@ -79,11 +83,11 @@ export const RequestCard = style((props) => {
         </Grid>
       </Grid>
 
-      <Grid item xs={12} style={{ margin: "12px" }}>
+      <Grid item xs={12} className={classes.bodyContainer}>
         <QRGenerate value={qrUrl} size={225} />
       </Grid>
 
-      <Grid item xs={12} style={{ width: "100%", padding: "0px" }}>
+      <Grid item xs={12} className={classes.bodyContainer}>
         <TextField
           fullWidth
           id="outlined-number"
@@ -97,7 +101,7 @@ export const RequestCard = style((props) => {
         />
       </Grid>
 
-      <Grid item xs={12} style={{ marginTop: "12px" }}>
+      <Grid item xs={12} className={classes.bodyContainer}>
         <Button
           disableTouchRipple
           variant="outlined"
@@ -115,4 +119,11 @@ export const RequestCard = style((props) => {
       </Grid>
     </Grid>
   );
-});
+};
+
+RequestCard.propTypes = {
+  classes: PropTypes.object.isRequired,
+};
+
+export default withStyles(styles)(RequestCard);
+
