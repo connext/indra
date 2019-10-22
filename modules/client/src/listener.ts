@@ -63,15 +63,7 @@ export class ConnextListener extends EventEmitter {
       // validate and automatically install for the known and supported
       // applications
       this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL, data.data);
-      // check if message is from us, return if so
-      // FIXME: type of ProposeMessage should extend CFCore.NodeMessage, which
-      // has a from field, but ProposeMessage does not
-      if ((data as any).from === this.cfCore.publicIdentifier) {
-        this.log.debug(
-          `Received proposal from our own node, doing nothing: ${JSON.stringify(data)}`,
-        );
-        return;
-      }
+
       // check based on supported applications
       // matched app, take appropriate default actions
       const matchedResult = await this.matchAppInstance(data);
@@ -79,39 +71,17 @@ export class ConnextListener extends EventEmitter {
         this.log.warn(`No matched app, doing nothing, ${JSON.stringify(data)}`);
         return;
       }
-      if (matchedResult.matchedApp.name === "SimpleTransferApp") {
-        this.log.debug(
-          `Caught propose install for what should always be a virtual app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
+      // matched app, take appropriate default actions
+      const { appInfo, matchedApp } = matchedResult;
+
+      // return if its from us
+      // TODO: initatorXpub isnt in types
+      if ((appInfo as any).initatorXpub === this.cfCore.publicIdentifier) {
+        this.log.info(
+          `Received proposal from our own node, doing nothing: ${JSON.stringify(data)}`,
         );
         return;
       }
-      // matched app, take appropriate default actions
-      const { appInfo, matchedApp } = matchedResult;
-      await this.verifyAndInstallKnownApp(appInfo, matchedApp, false);
-      return;
-    },
-    PROPOSE_INSTALL_VIRTUAL: async (data: ProposeMessage): Promise<void> => {
-      // validate and automatically install for the known and supported
-      // applications
-      this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data.data);
-      // if the from is us, ignore
-      if (data.from === this.cfCore.publicIdentifier) {
-        return;
-      }
-      // check based on supported applications
-      // matched app, take appropriate default actions
-      const matchedResult = await this.matchAppInstance(data);
-      if (!matchedResult) {
-        return;
-      }
-      if (matchedResult.matchedApp.name !== "SimpleTransferApp") {
-        this.log.debug(
-          `Caught propose install virtual for what should always be a regular app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
-        );
-        return;
-      }
-      // matched app, take appropriate default actions
-      const { appInfo, matchedApp } = matchedResult;
       await this.verifyAndInstallKnownApp(appInfo, matchedApp);
       return;
     },
@@ -223,7 +193,7 @@ export class ConnextListener extends EventEmitter {
   };
 
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
-    this.log.debug(`Emitted ${event} with data ${JSON.stringify(data)} at ${Date.now()}`);
+    this.log.info(`Emitted ${event} with data ${JSON.stringify(data)} at ${Date.now()}`);
     this.emit(event, data);
   };
 
@@ -272,8 +242,11 @@ export class ConnextListener extends EventEmitter {
   private verifyAndInstallKnownApp = async (
     appInstance: AppInstanceInfo,
     matchedApp: RegisteredAppDetails,
-    isVirtual: boolean = true,
   ): Promise<void> => {
+    // virtual is now determined by presence of intermediary identifier
+    const isVirtual = !!appInstance.intermediaryIdentifier;
+    console.log('appInstance: ', appInstance);
+    console.log('matchedApp: ', matchedApp);
     const invalidProposal = await appProposalValidation[matchedApp.name](
       appInstance,
       matchedApp,
