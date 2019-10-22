@@ -7,6 +7,9 @@ export class MessagingServiceFactory {
 
   constructor(private config: MessagingConfig) {
     const { messagingUrl } = config as any;
+    if (!messagingUrl) {
+      throw new Error(`No messaging url provided. Config: ${JSON.stringify(config)}`);
+    }
     if (typeof messagingUrl === "string") {
       this.serviceType = messagingUrl.startsWith("nats://") ? "nats" : "ws";
     } else if (messagingUrl[0] && messagingUrl[0].startsWith("nats://")) {
