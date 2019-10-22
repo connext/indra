@@ -12,7 +12,7 @@ import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
 import { RejectInstallVirtualMessage } from "../lib/cfCore";
-import { freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
+import { delayAndThrow, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
 import { invalidAddress, invalidXpub } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
@@ -170,23 +170,22 @@ export class TransferController extends AbstractController {
       timeout: Zero, // TODO: fix, add to app info?
     };
 
-    const res = await this.connext.proposeInstallVirtualApp(params);
+    const proposeRes = await this.connext.proposeInstallVirtualApp(params);
     // set app instance id
-    this.appId = res.appInstanceId;
+    this.appId = proposeRes.appInstanceId;
 
     try {
-      await new Promise((res: any, rej: any): any => {
-        boundReject = this.rejectInstallTransfer.bind(null, rej);
-        boundResolve = this.resolveInstallTransfer.bind(null, res);
-        this.listener.on(CFCoreTypes.EventName.INSTALL_VIRTUAL, boundResolve);
-        this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
-        // this.timeout = setTimeout(() => {
-        //   this.cleanupInstallListeners(boundResolve, boundReject);
-        //   boundReject({ data: { appInstanceId: this.appId } });
-        // }, 5000);
-      });
-      this.log.info(`App was installed successfully!: ${JSON.stringify(res)}`);
-      return res.appInstanceId;
+      const raceRes = await Promise.race([
+        new Promise((res: any, rej: any): any => {
+          boundReject = this.rejectInstallTransfer.bind(null, rej);
+          boundResolve = this.resolveInstallTransfer.bind(null, res);
+          this.listener.on(CFCoreTypes.EventName.INSTALL_VIRTUAL, boundResolve);
+          this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
+        }),
+        delayAndThrow(15_000, "App install took longer than 15 seconds"),
+      ]);
+      this.log.info(`App was installed successfully!: ${JSON.stringify(raceRes)}`);
+      return proposeRes.appInstanceId;
     } catch (e) {
       this.log.error(`Error installing app: ${e.toString()}`);
       return undefined;
