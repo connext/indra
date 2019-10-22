@@ -161,7 +161,7 @@ services:
 
   ethprovider:
     image: $ethprovider_image
-    command: ["--db=/data", "--mnemonic=$eth_mnemonic", "--networkId=4447", "--blockTime=15"]
+    command: ["--db=/data", "--mnemonic=$eth_mnemonic", "--networkId=4447"]
     networks:
       - $project
     ports:
