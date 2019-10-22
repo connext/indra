@@ -87,7 +87,13 @@ export function makeChecksum(address: string): string {
   try {
     return getAddress(address);
   } catch (e) {
-    console.log("Caught error converting address, returning original input value.");
+    console.log(
+      `Caught error converting address, returning original input value (${address}). Error: ${JSON.stringify(
+        e,
+        null,
+        2,
+      )}`,
+    );
     return address;
   }
 }
