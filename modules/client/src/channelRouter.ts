@@ -19,11 +19,14 @@ export class ChannelRouter {
 
   private _multisigAddress: string | undefined = undefined;
 
+  private _signerAddress: string | undefined = undefined;
+
   constructor(connection: RpcConnection, config: ChannelProviderConfig) {
     this.type = config.type;
     this.connection = connection;
     this._config = config;
     this._multisigAddress = config.multisigAddress;
+    this._signerAddress = config.signerAddress;
   }
 
   ///////////////////////////////////////////////
@@ -38,6 +41,14 @@ export class ChannelRouter {
 
   set multisigAddress(multisigAddress: string) {
     this._multisigAddress = multisigAddress;
+  }
+
+  get signerAddress(): string | undefined {
+    return this._signerAddress;
+  }
+
+  set signerAddress(signerAddress: string) {
+    this._signerAddress = signerAddress;
   }
 
   ///////////////////////////////////////////////
