@@ -297,16 +297,16 @@ class App extends React.Component {
   // Merge deposit limits
   autoDeposit = async () => {
     const { balance, channel, machine, maxDeposit, minDeposit, state, swapRate, token } = this.state;
-    if (!channel) {
+    if (!state.matches('ready')) {
       console.warn(`Channel not available yet.`);
+      return;
+    }
+    if (state.matches('ready.deposit.pending') || state.matches('ready.swap.pending') || state.matches('ready.withdraw.pending')) {
+      console.warn(`Another operation is pending, waiting to autoswap`);
       return;
     }
     if (balance.onChain.ether.wad.eq(Zero)) {
       console.debug(`No on-chain eth to deposit`)
-      return;
-    }
-    if (state.matches('ready.deposit.pending')) {
-      console.debug(`A deposit is already pending`)
       return;
     }
 
@@ -366,8 +366,12 @@ class App extends React.Component {
 
   autoSwap = async () => {
     const { balance, channel, machine, maxDeposit, state, swapRate, token } = this.state;
-    if (!channel) {
+    if (!state.matches('ready')) {
       console.warn(`Channel not available yet.`);
+      return;
+    }
+    if (state.matches('ready.deposit.pending') || state.matches('ready.swap.pending') || state.matches('ready.withdraw.pending')) {
+      console.warn(`Another operation is pending, waiting to autoswap`);
       return;
     }
     if (balance.channel.ether.wad.eq(Zero)) {
@@ -376,14 +380,6 @@ class App extends React.Component {
     }
     if (balance.channel.token.wad.gte(maxDeposit.toDAI(swapRate).wad)) {
       return; // swap ceiling has been reached, no need to swap more
-    }
-    if (state.matches('ready.swap.pending')) {
-      console.log(`An swap operation is already pending`);
-      return;
-    }
-    if (state.matches('ready.withdraw.pending')) {
-      console.log(`An withdraw operation is already pending`);
-      return;
     }
 
     const maxSwap = tokenToWei(maxDeposit.toDAI().wad.sub(balance.channel.token.wad), swapRate)
