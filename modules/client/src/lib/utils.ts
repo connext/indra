@@ -53,6 +53,9 @@ export const mkHash = (prefix: string = "0x"): string => prefix.padEnd(66, "0");
 export const delay = (ms: number): Promise<void> =>
   new Promise((res: any): any => setTimeout(res, ms));
 
+export const delayAndThrow = (ms: number, msg: string = ""): Promise<void> =>
+  new Promise((res: any, rej: any): any => setTimeout(() => rej(msg), ms));
+
 // TODO: why doesnt deriving a path work as expected? sync w/rahul about
 // differences in hub. (eg. only freeBalanceAddressFromXpub derives correct
 // fb address but only below works for deposit bal checking)
