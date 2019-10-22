@@ -25,7 +25,8 @@ for (const contract of appContracts) {
 }
 
 const { EtherSymbol, Zero } = eth.constants
-const { formatEther, parseEther } = eth.utils
+const { formatEther, parseEther, HDNode } = eth.utils
+const { fromExtendedKey, fromMnemonic } = HDNode
 
 ////////////////////////////////////////
 // Environment Setup
@@ -211,11 +212,19 @@ const sendGift = async (address, token) => {
   // On testnet, give relevant accounts a healthy starting balance
 
   if (chainId === ganacheId) {
+    let privateExtendedKey = fromMnemonic(mnemonic).extendedKey;
+    let hdNode = fromExtendedKey(privateExtendedKey).derivePath(cfPath);
     await sendGift(eth.Wallet.fromMnemonic(mnemonic).address, token)
-    await sendGift(eth.Wallet.fromMnemonic(mnemonic, cfPath).address, token)
+    await sendGift(hdNode.address, token)
+    // TODO: this is the real signer address, reconcile these other ones
+    await sendGift(hdNode.derivePath("0").address, token)
     for (const botMnemonic of botMnemonics) {
+      privateExtendedKey = fromMnemonic(botMnemonic).extendedKey;
+      hdNode = fromExtendedKey(privateExtendedKey).derivePath(cfPath);
       await sendGift(eth.Wallet.fromMnemonic(botMnemonic).address, token)
-      await sendGift(eth.Wallet.fromMnemonic(botMnemonic, cfPath).address, token)
+      await sendGift(hdNode.address, token)
+      // TODO: this is the real signer address, reconcile these other ones
+      await sendGift(hdNode.derivePath("0").address, token)
     }
   }
 
