@@ -41,6 +41,7 @@ import {
   BigNumber,
   bigNumberify,
   getAddress,
+  HDNode,
   Interface,
   keccak256,
   Network,
@@ -123,10 +124,10 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
   // Note: added this to the client since this is required for the cf module to work
   // generate extended private key from mnemonic
-  let hdNode;
-  let publicExtendedKey;
-  let authKey;
-  let innerKeyGen;
+  let hdNode: HDNode.HDNode;
+  let publicExtendedKey: string;
+  let authKey: string;
+  let innerKeyGen: (index: string) => Promise<string>;
   if (mnemonic) {
     hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
     publicExtendedKey = hdNode.neuter().extendedKey;
