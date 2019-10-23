@@ -24,13 +24,13 @@ my.xpubRegex = /^xpub[a-zA-Z0-9]{107}/i
 my.isStarting = () => cy.contains('span', /starting/i).should('exist')
 my.doneStarting = () => cy.contains('span', /starting/i).should('not.exist')
 
-my.goToDeposit = () => cy.get(`a[href="/deposit"]`).click() && my.doneStarting()
-my.goToSettings = () => cy.get(`a[href="/settings"]`).click() && my.doneStarting()
-my.goToRequest = () => cy.get(`a[href="/request"]`).click() && my.doneStarting()
-my.goToSend = () => cy.get(`a[href="/send"]`).click() && my.doneStarting()
-my.goToCashout = () => cy.get(`a[href="/cashout"]`).click() && my.doneStarting()
-my.goHome = () => cy.contains('button', /^home$/i).click() && my.doneStarting()
-my.goBack = () => cy.contains('button', /^back$/i).click() && my.doneStarting()
+my.goToDeposit = () => cy.get(`a[href="/deposit"]`).click()
+my.goToSettings = () => cy.get(`a[href="/settings"]`).click()
+my.goToRequest = () => cy.get(`a[href="/request"]`).click()
+my.goToSend = () => cy.get(`a[href="/send"]`).click()
+my.goToCashout = () => cy.get(`a[href="/cashout"]`).click()
+my.goHome = () => cy.contains('button', /^home$/i).click()
+my.goBack = () => cy.contains('button', /^back$/i).click()
 my.goNextIntro = () => cy.contains('button', /^next$/i).click()
 my.goCloseIntro = () => cy.contains('button', /^got it!$/i).click()
 
@@ -77,7 +77,8 @@ my.cashoutEther = () => {
   cy.get('input[type="text"]').clear().type(wallet.address)
   cy.contains('button', /cash out eth/i).click()
   cy.contains('span', /processing withdrawal/i).should('exist')
-  cy.contains('span', /withdraw request submitted to chain/i).should('exist')
+  cy.contains('span', /withdraw succeeded/i).should('exist')
+  my.goBack()
   cy.resolve(my.getChannelTokenBalance).should('contain', '0.00')
 }
 
@@ -87,7 +88,8 @@ my.cashoutToken = () => {
   cy.get('input[type="text"]').clear().type(wallet.address)
   cy.contains('button', /cash out dai/i).click()
   cy.contains('span', /processing withdrawal/i).should('exist')
-  cy.contains('span', /withdraw request submitted to chain/i).should('exist')
+  cy.contains('span', /withdraw succeeded/i).should('exist')
+  my.goBack()
   cy.resolve(my.getChannelTokenBalance).should('contain', '0.00')
 }
 

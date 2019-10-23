@@ -6,7 +6,7 @@ import { toBN } from './bn';
 import interval from "interval-promise";
 
 export const migrate = async (hubUrl, wallet, ethUrl) => {
-  console.log(`____________________Migration Started | hubUrl: ${hubUrl}, ethUrl: ${ethUrl}`)
+  console.log(`==== Migration Started | hubUrl: ${hubUrl}, ethUrl: ${ethUrl}`)
   if (!hubUrl) { return; }
   const legacy = await Connext.createClient({ ethUrl, hubUrl, mnemonic: wallet.mnemonic });
   await legacy.start();
@@ -50,6 +50,6 @@ export const migrate = async (hubUrl, wallet, ethUrl) => {
     }
   }
   await legacy.stop();
-  console.log(`____________________Migration Finished`)
+  console.log(`==== Migration Finished`)
   return;
 };

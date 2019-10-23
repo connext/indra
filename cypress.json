@@ -1,9 +1,9 @@
 {
-  "defaultCommandTimeout": 120000,
+  "defaultCommandTimeout": 60000,
   "env": {
     "mnemonic": "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat",
     "provider": "/api/ethprovider",
-    "publicUrl": "http://localhost"
+    "publicUrl": "http://localhost:3000"
   },
   "ignoreTestFiles": "**/examples/**",
   "integrationFolder": "cypress/tests",
