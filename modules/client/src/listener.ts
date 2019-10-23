@@ -308,8 +308,26 @@ export class ConnextListener extends EventEmitter {
     const subject = `transfer.send-async.${this.connext.publicIdentifier}`;
     await this.connext.messaging.subscribe(subject, async (data: any) => {
       this.log.info(`Received message for subscription: ${JSON.stringify(data)}`);
-      const { encryptedPreImage, paymentId } = data;
+      let paymentId: string;
+      let encryptedPreImage: string;
+      if (data.paymentId) {
+        console.log(`Not nested data`);
+        paymentId = data.paymentId;
+        encryptedPreImage = data.encryptedPreImage;
+      } else if (data.data) {
+        console.log(`Nested data`);
+        const parsedData = JSON.parse(data.data);
+        paymentId = parsedData.paymentId;
+        encryptedPreImage = parsedData.encryptedPreImage;
+      } else {
+        throw new Error(`Could not parse data from message: ${JSON.stringify(data)}`);
+      }
+
+      if (!paymentId || !encryptedPreImage) {
+        throw new Error(`Unable to parse transfer details from message ${JSON.stringify(data)}`);
+      }
       await this.connext.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
+      this.log.info(`Successfully reclaimed transfer with paymentId: ${paymentId}`)
     });
   };
 }
