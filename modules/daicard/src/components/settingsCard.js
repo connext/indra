@@ -90,9 +90,9 @@ export const SettingsCard = style((props) => {
         onClose={() => closeModal()}
         message="Copied!"
       />
-      <Grid item xs={12} style={{ justifyContent: "center" }}>
+      {/* <Grid item xs={12} style={{ justifyContent: "center" }}>
         <SettingsIcon className={classes.icon} />
-      </Grid>
+      </Grid> */}
       <Grid item xs={12} className={classes.button}>
         <Button
           disableTouchRipple

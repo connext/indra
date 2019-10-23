@@ -8,7 +8,7 @@ import { PisaClient } from "pisa-client";
 import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import tokenArtifacts from "openzeppelin-solidity/build/contracts/ERC20Mintable.json";
-import { interpret } from 'xstate';
+import { interpret } from "xstate";
 
 import "./App.css";
 
@@ -17,13 +17,13 @@ import AppBarComponent from "./components/AppBar";
 import { CashoutCard } from "./components/cashOutCard";
 import { Confirmations } from "./components/Confirmations";
 import DepositCard from "./components/depositCard";
-import Home  from "./components/Home";
+import Home from "./components/Home";
 import { MySnackbar } from "./components/snackBar";
 import RequestCard from "./components/requestCard";
 import { RedeemCard } from "./components/redeemCard";
-import { SendCard } from "./components/sendCard";
+import SendCard from "./components/sendCard";
 import { SettingsCard } from "./components/settingsCard";
-import { SetupCard } from "./components/setupCard";
+import {SetupCard} from "./components/setupCard";
 import { SupportCard } from "./components/supportCard";
 import { rootMachine } from "./state";
 
@@ -66,7 +66,7 @@ const MAX_CHANNEL_VALUE = Currency.DAI("30");
 const DEFAULT_COLLATERAL_MINIMUM = Currency.DAI("5");
 const DEFAULT_AMOUNT_TO_COLLATERALIZE = Currency.DAI("10");
 
-const style = withStyles(theme => ({
+const style = theme => ({
   paper: {
     width: "100%",
     padding: `0px ${theme.spacing(1)}px 0 ${theme.spacing(1)}px`,
@@ -90,13 +90,22 @@ const style = withStyles(theme => ({
     width: "100%",
     margin: "0px",
   },
+  homeGrid:{
+    display:"flex",
+    flexDirection:"column",
+    justifyContent:"center",
+    width:"100%"
+  },
+  home:{
+    width:"100%"
+  },
   zIndex: 1000,
-  grid: {},
-}));
+});
 
 class App extends React.Component {
   constructor(props) {
     super(props);
+    const { classes } = this.props;
     const swapRate = "100.00";
     this.state = {
       balance: {
@@ -138,7 +147,11 @@ class App extends React.Component {
     machine.start();
     machine.onTransition(state => {
       this.setState({ state });
-      console.log(`=== Transitioning to ${JSON.stringify(state.value)} (context: ${JSON.stringify(state.context)})`)
+      console.log(
+        `=== Transitioning to ${JSON.stringify(state.value)} (context: ${JSON.stringify(
+          state.context,
+        )})`,
+      );
     });
 
     // If no mnemonic, create one and save to local storage
@@ -165,12 +178,12 @@ class App extends React.Component {
     }
 
     if (localStorage.getItem("rpc-prod")) {
-      machine.send(['MIGRATE', 'START_MIGRATE']);
+      machine.send(["MIGRATE", "START_MIGRATE"]);
       await migrate(urls.legacyUrl(network.chainId), wallet, urls.ethProviderUrl, machine);
       localStorage.removeItem("rpc-prod");
     }
-    machine.send('START');
-    machine.send(['START', 'START_START']);
+    machine.send("START");
+    machine.send(["START", "START_START"]);
 
     const channel = await connext.connect({
       ethProviderUrl: urls.ethProviderUrl,
@@ -192,7 +205,7 @@ class App extends React.Component {
     const token = new Contract(channel.config.contractAddresses.Token, tokenArtifacts.abi, wallet);
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
-    let freeEtherBalance, freeTokenBalance
+    let freeEtherBalance, freeTokenBalance;
     try {
       freeEtherBalance = await channel.getFreeBalance();
       freeTokenBalance = await channel.getFreeBalance(token.address);
@@ -200,10 +213,10 @@ class App extends React.Component {
       if (e.message.includes(`This probably means that the StateChannel does not exist yet`)) {
         // channel.connext was already called, meaning there should be
         // an existing channel
-        await channel.restoreState(localStorage.getItem("mnemonic"))
-        return
+        await channel.restoreState(localStorage.getItem("mnemonic"));
+        return;
       }
-      console.error(e)
+      console.error(e);
       return;
     }
 
@@ -224,25 +237,25 @@ class App extends React.Component {
     channel.on("RECIEVE_TRANSFER_STARTED", data => {
       console.log("Received RECIEVE_TRANSFER_STARTED event: ", data);
       machine.send("START_RECEIVE");
-    })
+    });
 
     channel.on("RECIEVE_TRANSFER_FINISHED", data => {
       console.log("Received RECIEVE_TRANSFER_FINISHED event: ", data);
       machine.send("SUCCESS_RECEIVE");
-    })
+    });
 
     channel.on("RECIEVE_TRANSFER_FAILED", data => {
       console.log("Received RECIEVE_TRANSFER_FAILED event: ", data);
       machine.send("ERROR_RECEIVE");
-    })
+    });
 
     const tokenProfile = await channel.addPaymentProfile({
       amountToCollateralize: DEFAULT_AMOUNT_TO_COLLATERALIZE.wad.toString(),
       minimumMaintainedCollateral: DEFAULT_COLLATERAL_MINIMUM.wad.toString(),
       assetId: token.address,
     });
-    console.log(`Set a default token profile: ${JSON.stringify(tokenProfile)}`)
-    machine.send('READY');
+    console.log(`Set a default token profile: ${JSON.stringify(tokenProfile)}`);
+    machine.send("READY");
 
     this.setState({
       channel,
@@ -253,7 +266,6 @@ class App extends React.Component {
       tokenProfile,
       wallet,
     });
-
 
     await this.startPoller();
   }
@@ -294,11 +306,20 @@ class App extends React.Component {
     const getTotal = (ether, token) => Currency.WEI(ether.wad.add(token.toETH().wad), swapRate);
     const freeEtherBalance = await channel.getFreeBalance();
     const freeTokenBalance = await channel.getFreeBalance(token.address);
-    balance.onChain.ether = Currency.WEI(await ethprovider.getBalance(wallet.address), swapRate).toETH();
+    balance.onChain.ether = Currency.WEI(
+      await ethprovider.getBalance(wallet.address),
+      swapRate,
+    ).toETH();
     balance.onChain.token = Currency.DEI(await token.balanceOf(wallet.address), swapRate).toDAI();
     balance.onChain.total = getTotal(balance.onChain.ether, balance.onChain.token).toETH();
-    balance.channel.ether = Currency.WEI(freeEtherBalance[channel.freeBalanceAddress], swapRate).toETH();
-    balance.channel.token = Currency.DEI(freeTokenBalance[channel.freeBalanceAddress], swapRate).toDAI();
+    balance.channel.ether = Currency.WEI(
+      freeEtherBalance[channel.freeBalanceAddress],
+      swapRate,
+    ).toETH();
+    balance.channel.token = Currency.DEI(
+      freeTokenBalance[channel.freeBalanceAddress],
+      swapRate,
+    ).toDAI();
     balance.channel.total = getTotal(balance.channel.ether, balance.channel.token).toETH();
     this.setState({ balance });
   };
@@ -306,8 +327,17 @@ class App extends React.Component {
   // Core Function
   // Merge deposit limits
   autoDeposit = async () => {
-    const { balance, channel, machine, maxDeposit, minDeposit, state, swapRate, token } = this.state;
-    if (!state.matches('ready')) {
+    const {
+      balance,
+      channel,
+      machine,
+      maxDeposit,
+      minDeposit,
+      state,
+      swapRate,
+      token,
+    } = this.state;
+    if (!state.matches("ready")) {
       console.warn(`Channel not available yet.`);
       return;
     }
@@ -315,7 +345,7 @@ class App extends React.Component {
       console.debug(`No on-chain eth to deposit`);
       return;
     }
-    if (state.matches('ready.deposit.pending')) {
+    if (state.matches("ready.deposit.pending")) {
       console.debug(`A deposit is already pending`);
       return;
     }
@@ -330,18 +360,20 @@ class App extends React.Component {
     }
 
     if (balance.onChain.token.wad.gt(Zero) || balance.onChain.ether.wad.gt(minDeposit.wad)) {
-      machine.send(['START_DEPOSIT']);
+      machine.send(["START_DEPOSIT"]);
 
       if (balance.onChain.token.wad.gt(Zero)) {
         const amount = minBN([
           Currency.WEI(nowMaxDeposit, swapRate).toDAI().wad,
-          balance.onChain.token.wad
+          balance.onChain.token.wad,
         ]);
         const depositParams = {
           amount: amount.toString(),
           assetId: token.address.toLowerCase(),
         };
-        console.log(`Depositing ${depositParams.amount} tokens into channel: ${channel.opts.multisigAddress}`);
+        console.log(
+          `Depositing ${depositParams.amount} tokens into channel: ${channel.opts.multisigAddress}`,
+        );
         const result = await channel.deposit(depositParams);
         await this.refreshBalances();
         console.log(`Successfully deposited tokens! Result: ${JSON.stringify(result, null, 2)}`);
@@ -351,34 +383,35 @@ class App extends React.Component {
 
       nowMaxDeposit = maxDeposit.wad.sub(this.state.balance.channel.total.wad);
       if (nowMaxDeposit.lte(Zero)) {
-        console.debug(`Channel balance (${balance.channel.total.toDAI().format()}) is at or above ` +
-          `cap of ${maxDeposit.toDAI(swapRate).format()}`)
-        machine.send(['SUCCESS_DEPOSIT']);
+        console.debug(
+          `Channel balance (${balance.channel.total.toDAI().format()}) is at or above ` +
+            `cap of ${maxDeposit.toDAI(swapRate).format()}`,
+        );
+        machine.send(["SUCCESS_DEPOSIT"]);
         return;
       }
       if (balance.onChain.ether.wad.lt(minDeposit.wad)) {
-        console.debug(`Not enough on-chain eth to deposit: ${balance.onChain.ether.toETH().format()}`)
-        machine.send(['SUCCESS_DEPOSIT']);
+        console.debug(
+          `Not enough on-chain eth to deposit: ${balance.onChain.ether.toETH().format()}`,
+        );
+        machine.send(["SUCCESS_DEPOSIT"]);
         return;
       }
 
-      const amount = minBN([
-        balance.onChain.ether.wad.sub(minDeposit.wad),
-        nowMaxDeposit,
-      ]);
+      const amount = minBN([balance.onChain.ether.wad.sub(minDeposit.wad), nowMaxDeposit]);
       console.log(`Depositing ${amount} wei into channel: ${channel.opts.multisigAddress}`);
       const result = await channel.deposit({ amount: amount.toString() });
       await this.refreshBalances();
       console.log(`Successfully deposited ether! Result: ${JSON.stringify(result, null, 2)}`);
 
-      machine.send(['SUCCESS_DEPOSIT']);
+      machine.send(["SUCCESS_DEPOSIT"]);
       this.autoSwap();
     }
-  }
+  };
 
   autoSwap = async () => {
     const { balance, channel, machine, maxDeposit, state, swapRate, token } = this.state;
-    if (!state.matches('ready')) {
+    if (!state.matches("ready")) {
       console.warn(`Channel not available yet.`);
       return;
     }
@@ -389,11 +422,11 @@ class App extends React.Component {
     if (balance.channel.token.wad.gte(maxDeposit.toDAI(swapRate).wad)) {
       return; // swap ceiling has been reached, no need to swap more
     }
-    if (state.matches('ready.swap.pending')) {
+    if (state.matches("ready.swap.pending")) {
       console.log(`An swap operation is already pending`);
       return;
     }
-    if (state.matches('ready.withdraw.pending')) {
+    if (state.matches("ready.withdraw.pending")) {
       console.log(`An withdraw operation is already pending`);
       return;
     }
@@ -402,7 +435,7 @@ class App extends React.Component {
     const weiToSwap = minBN([balance.channel.ether.wad, maxSwap]);
 
     console.log(`Attempting to swap ${formatEther(weiToSwap)} eth for dai at rate: ${swapRate}`);
-    machine.send(['START_SWAP']);
+    machine.send(["START_SWAP"]);
 
     const hubFBAddress = connext.utils.freeBalanceAddressFromXpub(channel.nodePublicIdentifier);
     const collateralNeeded = balance.channel.token.wad.add(weiToToken(weiToSwap, swapRate));
@@ -429,8 +462,8 @@ class App extends React.Component {
       toAssetId: token.address,
     });
     await this.refreshBalances();
-    machine.send(['SUCCESS_SWAP']);
-  }
+    machine.send(["SUCCESS_SWAP"]);
+  };
 
   // ************************************************* //
   //                    Handlers                       //
@@ -501,15 +534,15 @@ class App extends React.Component {
           <Paper elevation={1} className={classes.paper}>
             <MySnackbar
               variant="warning"
-              openWhen={machine.state.matches('migrate.pending.show')}
-              onClose={() => machine.send('DISMISS_MIGRATE')}
+              openWhen={machine.state.matches("migrate.pending.show")}
+              onClose={() => machine.send("DISMISS_MIGRATE")}
               message="Migrating legacy channel to 2.0..."
               duration={30 * 60 * 1000}
             />
             <MySnackbar
               variant="info"
-              openWhen={machine.state.matches('start.pending.show')}
-              onClose={() => machine.send('DISMISS_START')}
+              openWhen={machine.state.matches("start.pending.show")}
+              onClose={() => machine.send("DISMISS_START")}
               message="Starting Channel Controllers..."
               duration={30 * 60 * 1000}
             />
@@ -518,35 +551,35 @@ class App extends React.Component {
               address={wallet ? wallet.address : AddressZero}
               balance={balance}
               swapRate={swapRate}
+              network={network}
             />
+            <SetupCard minDeposit={minDeposit} maxDeposit={maxDeposit} />
 
             <Route
               exact
               path="/"
               render={props => (
-                <Grid >
+                <Grid {...props} className={classes.homeGrid}>
                   <Home
                     {...props}
+                    className={classes.home}
                     balance={balance}
                     swapRate={swapRate}
                     scanQRCode={this.scanQRCode}
                     token={token}
                   />
-                  <SetupCard {...props} minDeposit={minDeposit} maxDeposit={maxDeposit} />
                 </Grid>
               )}
             />
             <Route
               path="/deposit"
               render={props => (
-                <Grid>
                 <DepositCard
                   {...props}
                   address={wallet ? wallet.address : AddressZero}
                   maxDeposit={maxDeposit}
                   minDeposit={minDeposit}
                 />
-                </Grid>
               )}
             />
             <Route
@@ -560,7 +593,7 @@ class App extends React.Component {
                   {...props}
                   //xpub={channel.publicIdentifier}
                   maxDeposit={maxDeposit}
-                  />
+                />
               )}
             />
             <Route
@@ -596,10 +629,7 @@ class App extends React.Component {
               )}
             />
             <Route path="/support" render={props => <SupportCard {...props} channel={channel} />} />
-            <Confirmations
-              machine={machine}
-              network={network}
-            />
+            <Confirmations machine={machine} network={network} />
           </Paper>
         </Grid>
       </Router>
@@ -607,4 +637,4 @@ class App extends React.Component {
   }
 }
 
-export default style(App);
+export default withStyles(style)(App);

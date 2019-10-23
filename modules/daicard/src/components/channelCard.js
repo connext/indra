@@ -1,12 +1,21 @@
 import { Grid, Typography, withStyles } from "@material-ui/core";
 import React from "react";
 import PropTypes from 'prop-types';
+import { CheckCircle } from "@material-ui/icons"
 
 // import { ethers as eth } from "ethers";
 
 const styles = {
+
   row: {
-    color: "#002868"
+    color: "#002868",
+    fontWeight:"500",
+    fontSize:32
+  },
+  rowLarge: {
+    color: "#002868",
+    fontWeight:"500",
+    fontSize:36
   },
   pending: {
     marginBottom: "3%",
@@ -14,11 +23,27 @@ const styles = {
   },
   clipboard: {
     cursor: "pointer"
-  }
+  },
+  networkWrapper:{
+    display:"flex",
+    flexDirection:"row",
+    alignItems:"center",
+    justifyContent:"center"
+  },
+  networkText:{
+    marginTop:"-8px",
+    fontSize:8,
+    color:"#fca311"
+  },
+  icon:{
+    marginTop:"-10px",
+    color:"#fca311",
+    fontSize: 8
+  },
 };
 
 const ChannelCard = props => {
-  const {  classes, balance, swapRate } = props;
+  const {  classes, balance, swapRate, network } = props;
   const split = (balance) => {
     const bal = balance.format({ decimals: 2, symbol: false, round: false });
     const whole = bal.substring(0, bal.indexOf('.'));
@@ -27,17 +52,22 @@ const ChannelCard = props => {
   }
   return (
         <Grid item xs={12}>
-          <span id="balance-channel-token">
-            <Typography style={{display: 'inline-block'}} variant="h4" className={classes.row}>
-              {"$ "}
-            </Typography>
-            <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
-              <span>{split(balance.channel.token.toDAI(swapRate)).whole}</span>
-            </Typography>
-            <Typography style={{display: 'inline-block'}} variant="h4" className={classes.row}>
-              <span>{split(balance.channel.token.toDAI(swapRate)).part}</span>
-            </Typography>
-          </span>
+           <Typography style={{display: 'inline-block'}}  className={classes.row}>
+                {"$ "}
+          </Typography>
+            <span id="balance-channel-token">
+              <Typography style={{display: 'inline-block'}} className={classes.rowLarge}>
+                <span>{split(balance.channel.token.toDAI(swapRate)).whole}</span>
+              </Typography>
+              <Typography style={{display: 'inline-block'}} className={classes.row}>
+                <span>{split(balance.channel.token.toDAI(swapRate)).part}</span>
+              </Typography>
+            </span>
+            <Grid className={classes.networkWrapper}>
+            <CheckCircle className={classes.icon}/>
+            <Typography className={classes.networkText}>{"undefined".toUpperCase()}</Typography>
+            </Grid>
+            
         </Grid>
   );
 };

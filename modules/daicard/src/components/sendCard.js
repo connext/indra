@@ -14,6 +14,7 @@ import {
   Typography,
   withStyles,
 } from "@material-ui/core";
+import PropTypes from "prop-types";
 import { Send as SendIcon, Link as LinkIcon } from "@material-ui/icons";
 import { useMachine } from '@xstate/react';
 import { Zero } from "ethers/constants";
@@ -35,7 +36,7 @@ const formatAmountString = (amount) => {
   return `${whole || "0"}.${part ? part.padEnd(2, "0") : "00"}`
 }
 
-const style = withStyles((theme) => ({
+const styles = {
   modalContent: {
     margin: "0% 4% 4% 4%",
     padding: "0px",
@@ -52,9 +53,18 @@ const style = withStyles((theme) => ({
     backgroundColor: "#FCA311",
     color: "#FFF",
   },
-}));
+  top:{
+  display: "flex",
+  paddingLeft: 12,
+  paddingRight: 12,
+  paddingTop: "10%",
+  paddingBottom: "10%",
+  textAlign: "center",
+  justify: "center",
+  }
+};
 
-export const SendCard = style(({ match, balance, channel, classes, history, location, token  }) => {
+const SendCard = ( match, balance, channel, classes, history, location, token  ) => {
   const [amount, setAmount] = useState({ display: "", error: null, value: null });
   const [link, setLink] = useState(undefined);
   const [paymentState, paymentAction] = useMachine(sendMachine);
@@ -213,18 +223,10 @@ export const SendCard = style(({ match, balance, channel, classes, history, loca
 
   return (
     <Grid
+      className={classes.top}
       container
       spacing={2}
       direction="column"
-      style={{
-        display: "flex",
-        paddingLeft: 12,
-        paddingRight: 12,
-        paddingTop: "10%",
-        paddingBottom: "10%",
-        textAlign: "center",
-        justify: "center",
-      }}
     >
 
       <Grid container wrap="nowrap" direction="row" justify="center" alignItems="center">
@@ -233,13 +235,13 @@ export const SendCard = style(({ match, balance, channel, classes, history, loca
         </Grid>
       </Grid>
 
-      <Grid item xs={12}>
+      {/* <Grid item xs={12}>
         <Grid container direction="row" justify="center" alignItems="center">
           <Typography variant="h2">
             <span>{balance.channel.token.toDAI().format({ decimals: 2, symbol: false, round: false })}</span>
           </Typography>
         </Grid>
-      </Grid>
+      </Grid> */}
 
       <Grid item xs={12}>
         <Typography variant="body2">
@@ -385,7 +387,7 @@ export const SendCard = style(({ match, balance, channel, classes, history, loca
       />
     </Grid>
   );
-})
+}
 
 const SendCardModal = ({
   amount,
@@ -537,3 +539,10 @@ const SendCardModal = ({
     </Grid>
   </Dialog>
 );
+
+SendCard.propTypes = {
+  classes: PropTypes.object.isRequired,
+};
+
+export default withStyles(styles)(SendCard);
+

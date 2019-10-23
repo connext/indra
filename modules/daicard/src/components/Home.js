@@ -4,19 +4,21 @@ import {
   Grid,
   Modal,
   InputBase,
+  IconButton,
   InputAdornment,
   TextField,
   withStyles,
   Typography,
   Tooltip,
 } from "@material-ui/core";
-import PropTypes from 'prop-types';
+import PropTypes from "prop-types";
 import { SaveAlt as ReceiveIcon, Send as SendIcon } from "@material-ui/icons";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { Currency } from "../utils";
 import { Zero } from "ethers/constants";
+import DirectionProvider, { DIRECTIONS } from "react-with-direction/dist/DirectionProvider";
 
 import "../App.css";
 
@@ -26,7 +28,10 @@ import { QRScan } from "./qrCode";
 const styles = {
   top: {
     display: "flex",
+    width: "100%",
+    flexGrow: 1,
     flexDirection: "column",
+    alignSelf: "center",
   },
   modal: {
     justifyContent: "center",
@@ -43,14 +48,40 @@ const styles = {
   button: {
     color: "#FFF",
   },
-  buttonSpacer:{
-    height:"10px"
-  }
+  buttonOutlined: {
+    color: "#FCA311",
+  },
+  buttonSpacer: {
+    height: "10px",
+  },
+  QRbutton: {
+    color: "#002868",
+  },
+  icon: {
+    color: "#002868",
+  },
+  buttonIcon: {
+    marginLeft: "5px",
+  },
+  valueInput: {
+    width: "100%",
+    color: "#FCA311",
+    fontSize: "60px",
+    textAlign: "right",
+    cursor: "none",
+  },
+  valueInputWrapper: {
+    display: "flex",
+    marginTop: "15%",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingLeft: "30%",
+  },
 };
 
- function Home(props){
+function Home(props) {
   const [scanModal, setScanModal] = useState(false);
-  const [amount, setAmount] = useState({ display: "", error: null, value: null });
+  const [amount, setAmount] = useState({ display: "", error: null, value: "" });
   const [recipient, setRecipient] = useState({ display: "", error: null, value: null });
 
   const { classes, balance, swapRate } = props;
@@ -65,6 +96,7 @@ const styles = {
 
   const updateAmountHandler = useCallback(
     rawValue => {
+      let valueFormatted;
       let value = null;
       let error = null;
       if (!rawValue) {
@@ -83,6 +115,7 @@ const styles = {
       if (!error && value && value.wad.lte(Zero)) {
         error = "Invalid amount: must be greater than 0";
       }
+
       setAmount({
         display: rawValue,
         error,
@@ -103,6 +136,7 @@ const styles = {
     if (!error && value.length !== xpubLen) {
       error = `Invalid recipient: expected ${xpubLen} characters, got ${value.length}`;
     }
+
     setRecipient({
       display: rawValue,
       error,
@@ -112,34 +146,23 @@ const styles = {
 
   return (
     <Grid container className={classes.top}>
-      <Grid
-        container
-        direction="row"
-        alignItems="center"
-        justify="center"
-        style={{ marginTop: "20%" }}
-      >
-        <Grid item xs={4} style={{ marginLeft: "8%" }}>
-          <InputBase
-            required
-            fullWidth
-            // startAdornment={<Typography style={{fontSize:"45px"}}>$</Typography>}
-            error={amount.error !== null}
-            helperText={amount.error}
-            onChange={evt => updateAmountHandler(evt.target.value)}
-            style={{ width: "100%", color: "#FCA311", fontSize: "60px", textAlign: "center" }}
-            type="number"
-            value={amount.display}
-            placeholder={"0.00"}
-          />
-        </Grid>
+      <Grid container direction="row" className={classes.valueInputWrapper}>
+        <InputBase
+          required
+          fullWidth
+          className={classes.valueInput}
+          error={amount.error !== null}
+          onChange={evt => updateAmountHandler(evt.target.value)}
+          type="numeric"
+          value={amount.display}
+          placeholder={"0.00"}
+        />
       </Grid>
-      <Grid container direction="row" spacing={10} style={{ marginTop: "2%" }}>
+      <Grid container direction="row" style={{ marginTop: "2%" }}>
         <Grid item xs={12} style={{ marginLeft: "5%", marginRight: "5%" }}>
           <InputBase
             fullWidth
             error={amount.error !== null}
-            helperText={amount.error}
             onChange={evt => updateRecipientHandler(evt.target.value)}
             style={{ width: "100%", color: "#FCA311", fontSize: "45px" }}
             error={recipient.error !== null}
@@ -148,14 +171,14 @@ const styles = {
             placeholder={"xPub"}
             endAdornment={
               <Tooltip disableFocusListener disableTouchListener title="Scan with QR code">
-                <Button
+                <IconButton
+                  className={classes.QRButton}
                   disableTouchRipple
                   variant="contained"
-                  style={{ backgroundColor: "#002868", color: "#FFF" }}
                   onClick={() => setScanModal(true)}
                 >
-                  <QRIcon />
-                </Button>
+                  <QRIcon className={classes.icon} />
+                </IconButton>
               </Tooltip>
             }
           />
@@ -169,56 +192,56 @@ const styles = {
           </Modal>
         </Grid>
       </Grid>
-      <Grid container spacing={0} direction="column" style={{ textAlign: "center" }}>
-            <Button
-              className={classes.button}
-              disableTouchRipple
-              color="primary"
-              fullWidth
-              variant="contained"
-              size="large"
-              component={Link}
-              to={`/request/${amount.display}`}
-            >
-              Request
-              <ReceiveIcon style={{ marginLeft: "5px" }} />
-            </Button>
-            <Grid className={classes.buttonSpacer}/>
-            <Button
-              className={classes.button}
-              disableTouchRipple
-              color="primary"
-              fullWidth
-              size="large"
-              variant="contained"
-              component={Link}
-              to={`/send/${amount.display}/${recipient.display}`}
-            >
-              Send
-              <SendIcon style={{ marginLeft: "5px" }} />
-            </Button>
-            <Grid className={classes.buttonSpacer}/>
+      <Grid container spacing={0} direction="column">
+        <Grid className={classes.buttonSpacer} />
+        <Button
+          className={classes.button}
+          disableTouchRipple
+          color="primary"
+          fullWidth
+          variant="contained"
+          size="large"
+          component={Link}
+          to={`/request/${amount.display}`}
+        >
+          Request
+          <ReceiveIcon className={classes.buttonIcon} />
+        </Button>
+        <Grid className={classes.buttonSpacer} />
+        <Button
+          className={classes.button}
+          disableTouchRipple
+          color="primary"
+          fullWidth
+          size="large"
+          variant="contained"
+          component={Link}
+          to={`/send/${amount.display}/${recipient.display}`}
+        >
+          Send
+          <SendIcon className={classes.buttonIcon} />
+        </Button>
+        <Grid className={classes.buttonSpacer} />
 
-            <Button
-              className={classes.button}
-              disableTouchRipple
-              fullWidth
-              color="primary"
-              variant="outlined"
-              size="large"
-              component={Link}
-              to="/cashout"
-            >
-              Cash Out
-            </Button>
+        <Button
+          className={classes.buttonOutlined}
+          disableTouchRipple
+          fullWidth
+          color="primary"
+          variant="outlined"
+          size="large"
+          component={Link}
+          to="/cashout"
+        >
+          Cash Out
+        </Button>
       </Grid>
     </Grid>
   );
-};
+}
 
 Home.propTypes = {
   classes: PropTypes.object.isRequired,
 };
 
 export default withStyles(styles)(Home);
-
