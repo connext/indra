@@ -2,6 +2,7 @@ import { Paper, withStyles, Grid } from "@material-ui/core";
 import * as connext from "@connext/client";
 import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
+import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import { formatEther, parseEther } from "ethers/utils";
 import interval from "interval-promise";
 import { PisaClient } from "pisa-client";
@@ -46,6 +47,7 @@ const urls = {
 const WITHDRAW_ESTIMATED_GAS = toBN("300000");
 const DEPOSIT_ESTIMATED_GAS = toBN("25000");
 const MAX_CHANNEL_VALUE = Currency.DAI("30");
+const CF_PATH = "m/44'/60'/0'/25446";
 
 // it is important to add a default payment
 // profile on initial load in the case the
@@ -141,7 +143,7 @@ class App extends React.Component {
       localStorage.setItem("mnemonic", mnemonic);
     }
 
-    const wallet = eth.Wallet.fromMnemonic(mnemonic, "m/44'/60'/0'/25446").connect(ethprovider);
+    const wallet = eth.Wallet.fromMnemonic(mnemonic, CF_PATH).connect(ethprovider);
     const network = await ethprovider.getNetwork();
 
     let store;
@@ -165,12 +167,16 @@ class App extends React.Component {
     machine.send('START');
     machine.send(['START', 'START_START']);
 
+    const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
+    const publicExtendedKey = hdNode.neuter().extendedKey;
+
     const channel = await connext.connect({
       ethProviderUrl: urls.ethProviderUrl,
+      keyGen: (index) => Promise.resolve(hdNode.derivePath(index).privateKey),
       logLevel: 5,
-      mnemonic,
       nodeUrl: urls.nodeUrl,
       store,
+      xpub: publicExtendedKey,
     });
 
     // Wait for channel to be available
