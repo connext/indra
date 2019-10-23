@@ -32,7 +32,14 @@ export async function initWalletConnect(uri, client) {
     }
 
     // Delete walletConnector
+    cleanWalletConnect();
   });
+}
+
+export function cleanWalletConnect() {
+  // Delete walletConnector
+  localStorage.removeItem("walletconnect")
+  walletConnector = null;
 }
 
 export function displaySessionApproval(payload) {
@@ -50,7 +57,7 @@ function verifyFields(params, keys) {
 
   const naStr = keys.filter(k => !!!params[k]);
   if (naStr.length !== 0) {
-    throw new Error(`[verifyFields] Params missing needed keys. Params: ${prettyPrint(params)}, keys: ${prettyPring(keys)}`)
+    throw new Error(`[verifyFields] Params missing needed keys. Params: ${prettyPrint(params)}, keys: ${prettyPrint(keys)}`)
   }
   return;
 }
