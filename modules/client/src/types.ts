@@ -4,7 +4,6 @@ import {
   AppState,
   ChannelProvider,
   ChannelState,
-  ContractAddresses,
   GetConfigResponse,
   MultisigState,
 } from "@connext/types";
@@ -12,13 +11,12 @@ import { Node as CFCoreTypes } from "@counterfactual/types";
 import { providers, utils, Wallet } from "ethers";
 
 import { ChannelRouter } from "./channelRouter";
-import { CFCore } from "./lib/cfCore";
 import { NodeApiClient } from "./node";
 
 export type BigNumber = utils.BigNumber;
 export const BigNumber = utils.BigNumber;
 
-interface Store extends CFCoreTypes.IStoreService {
+export interface Store extends CFCoreTypes.IStoreService {
   set(
     pairs: {
       path: string;
