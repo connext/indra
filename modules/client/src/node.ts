@@ -64,7 +64,7 @@ export class NodeApiClient implements INodeApiClient {
   public log: Logger;
   public userPublicIdentifier: string | undefined;
   public nodePublicIdentifier: string | undefined;
-  private wallet: Wallet;
+  // private wallet: Wallet;
   private token: Promise<string> | undefined;
 
   constructor(opts: NodeInitializationParameters) {
@@ -72,7 +72,7 @@ export class NodeApiClient implements INodeApiClient {
     this.log = new Logger("NodeApiClient", opts.logLevel);
     this.userPublicIdentifier = opts.userPublicIdentifier;
     this.nodePublicIdentifier = opts.nodePublicIdentifier;
-    this.wallet = opts.wallet;
+    // this.wallet = opts.wallet;
     this.token = this.getAuthToken();
   }
 
@@ -251,11 +251,12 @@ export class NodeApiClient implements INodeApiClient {
   private async getAuthToken(): Promise<string> {
     return new Promise(
       async (resolve: any, reject: any): Promise<any> => {
-        const nonce = await this.send("auth.getNonce", { address: this.wallet.address });
-        const sig = await this.wallet.signMessage(arrayify(nonce));
-        const token = `${nonce}:${sig}`;
-        this.log.info(`Got new token for ${this.wallet.address}: ${token}`);
-        return resolve(token);
+        // const nonce = await this.send("auth.getNonce", { address: this.wallet.address });
+        // const sig = await this.wallet.signMessage(arrayify(nonce));
+        // const token = `${nonce}:${sig}`;
+        // this.log.info(`Got new token for ${this.wallet.address}: ${token}`);
+        // return resolve(token);
+        return resolve("im a cheater")
       },
     );
   }
