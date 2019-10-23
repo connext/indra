@@ -1,8 +1,7 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { arrayify, HDNode, hexlify, randomBytes, verifyMessage } from "ethers/utils";
 
 import { ChannelRepository } from "../channel/channel.repository";
-import { RedisProviderId } from "../constants";
 import { CLogger, isValidHex, isXpub } from "../util";
 
 const logger = new CLogger("AuthService");
@@ -54,7 +53,7 @@ export class AuthService {
       }
       const { userPublicIdentifier } = channel;
       const xpubAddress = HDNode.fromExtendedKey(userPublicIdentifier).address;
-      logger.debug(`Got addres ${xpubAddress} from xpub ${userPublicIdentifier}`);
+      logger.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
       const authRes = this.verifySig(xpubAddress, data);
       if (authRes) {
         logger.error(`Auth failed (${authRes.err}) but we're just gonna ignore that for now..`);
@@ -92,39 +91,39 @@ export class AuthService {
   }
 
   verifySig(xpubAddress: string, data: { token: string }): { err: string } | undefined {
-    // // Get & validate the nonce + signature from provided token
-    // if (!data || !data.token || data.token.indexOf(":") === -1) {
-    //   return badToken(`Missing or malformed token in data: ${data || data.token}`);
-    // }
-    // const token = data.token;
-    // const nonce = token.split(":")[0];
-    // const sig = token.split(":")[1];
-    // if (!isValidHex(nonce, nonceLen) || !isValidHex(sig, 65)) {
-    //   return badToken(`Improperly formatted nonce or sig in token: ${token}`);
-    // }
+    // Get & validate the nonce + signature from provided token
+    if (!data || !data.token || data.token.indexOf(":") === -1) {
+      return badToken(`Missing or malformed token in data: ${data || data.token}`);
+    }
+    const token = data.token;
+    const nonce = token.split(":")[0];
+    const sig = token.split(":")[1];
+    if (!isValidHex(nonce, nonceLen) || !isValidHex(sig, 65)) {
+      return badToken(`Improperly formatted nonce or sig in token: ${token}`);
+    }
 
-    // // Get & validate expected address/expiry from local nonce storage
-    // if (!this.nonces[nonce] || !this.nonces[nonce].address || !this.nonces[nonce].expiry) {
-    //   return badToken(`Unknown nonce provided by ${xpubAddress}: ${nonce}`);
-    // }
-    // const { address, expiry } = this.nonces[nonce];
-    // if (xpubAddress !== address) {
-    //   return badToken(`Nonce ${nonce} for address ${address}, but xpub maps to ${xpubAddress}`);
-    // }
-    // if (Date.now() >= expiry) {
-    //   delete this.nonces[nonce];
-    //   return badToken(`Nonce ${nonce} for ${address} expired at ${expiry}`);
-    // }
+    // Get & validate expected address/expiry from local nonce storage
+    if (!this.nonces[nonce] || !this.nonces[nonce].address || !this.nonces[nonce].expiry) {
+      return badToken(`Unknown nonce provided by ${xpubAddress}: ${nonce}`);
+    }
+    const { address, expiry } = this.nonces[nonce];
+    if (xpubAddress !== address) {
+      return badToken(`Nonce ${nonce} for address ${address}, but xpub maps to ${xpubAddress}`);
+    }
+    if (Date.now() >= expiry) {
+      delete this.nonces[nonce];
+      return badToken(`Nonce ${nonce} for ${address} expired at ${expiry}`);
+    }
 
-    // // Cache sig recovery calculation
-    // if (!this.signerCache[token]) {
-    //   this.signerCache[token] = verifyMessage(arrayify(nonce), sig);
-    //   logger.debug(`Recovered signer ${this.signerCache[token]} from token ${token}`);
-    // }
-    // const signer = this.signerCache[token];
-    // if (signer !== address) {
-    //   return badToken(`Invalid sig for nonce ${nonce}: Got ${signer}, expected ${address}`);
-    // }
+    // Cache sig recovery calculation
+    if (!this.signerCache[token]) {
+      this.signerCache[token] = verifyMessage(arrayify(nonce), sig);
+      logger.debug(`Recovered signer ${this.signerCache[token]} from token ${token}`);
+    }
+    const signer = this.signerCache[token];
+    if (signer !== address) {
+      return badToken(`Invalid sig for nonce ${nonce}: Got ${signer}, expected ${address}`);
+    }
     return undefined;
   }
 }
