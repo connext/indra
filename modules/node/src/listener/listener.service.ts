@@ -1,6 +1,8 @@
+import { SimpleLinkedTransferAppStateBigNumber } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
+import { bigNumberify } from "ethers/utils";
 
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -8,6 +10,7 @@ import { ChannelService } from "../channel/channel.service";
 import { MessagingClientProviderId } from "../constants";
 import { LinkedTransferStatus } from "../transfer/transfer.entity";
 import { LinkedTransferRepository } from "../transfer/transfer.repository";
+import { TransferService } from "../transfer/transfer.service";
 import { CLogger } from "../util";
 import {
   CreateChannelMessage,
@@ -45,6 +48,7 @@ export default class ListenerService implements OnModuleInit {
     private readonly cfCoreService: CFCoreService,
     private readonly appRegistryService: AppRegistryService,
     private readonly channelService: ChannelService,
+    private readonly transferService: TransferService,
     @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
     private readonly linkedTransferRepository: LinkedTransferRepository,
   ) {}
@@ -80,13 +84,31 @@ export default class ListenerService implements OnModuleInit {
       INSTALL_VIRTUAL: async (data: InstallVirtualMessage): Promise<void> => {
         logEvent(CFCoreTypes.EventName.INSTALL_VIRTUAL, data);
       },
-      PROPOSE_INSTALL: (data: ProposeMessage): void => {
+      PROPOSE_INSTALL: async (data: ProposeMessage): Promise<void> => {
         logEvent(CFCoreTypes.EventName.PROPOSE_INSTALL, data);
-        this.appRegistryService.allowOrReject(data);
+        const allowedOrRejected = await this.appRegistryService.allowOrReject(data);
+        if (!allowedOrRejected || !(allowedOrRejected as CFCoreTypes.InstallResult).appInstance) {
+          logger.log(`No data from appRegistryService.allowOrReject, assuming it got rejected.`);
+          return;
+        }
+        logger.debug(`Saving linked transfer`);
+        const proposedAppParams = data.data;
+        const initiatorXpub = (proposedAppParams.params as any).initiatorXpub;
+        const initialState = proposedAppParams.params
+          .initialState as SimpleLinkedTransferAppStateBigNumber;
+
+        await this.transferService.saveLinkedTransfer(
+          initiatorXpub,
+          proposedAppParams.params.initiatorDepositTokenAddress,
+          bigNumberify(proposedAppParams.params.initiatorDeposit),
+          proposedAppParams.appInstanceId,
+          initialState.linkedHash,
+          initialState.paymentId,
+        );
+        logger.debug(`Linked transfer saved!`);
       },
       PROPOSE_INSTALL_VIRTUAL: (data: ProposeMessage): void => {
-        logEvent(CFCoreTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data);
-        this.appRegistryService.allowOrRejectVirtual(data);
+        throw new Error(`This event should not be thrown! ${JSON.stringify(data)}`);
       },
       PROPOSE_STATE: (data: any): void => {
         // TODO: need to validate all apps here as well?
