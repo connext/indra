@@ -71,7 +71,7 @@ import {
 } from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
-import { ClientOptions, InternalClientOptions } from "./types";
+import { ClientOptions, InternalClientOptions, Store } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 
@@ -194,7 +194,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
       const signer = await cfCore.signerAddress();
       logger.info("created cf module successfully");
       logger.info(`cf module signer address: ${signer}`);
-      channelRouter = new ChannelRouter(cfCore, providerConfig);
+      channelRouter = new ChannelRouter(cfCore, providerConfig, store);
       break;
 
     default:
@@ -315,11 +315,8 @@ export abstract class ConnextChannel {
     return await this.internal.conditionalTransfer(params);
   };
 
-  public restoreState = async (
-    mnemonic: string,
-    defaultToHub: boolean,
-  ): Promise<ConnextInternal> => {
-    return await this.internal.restoreState(mnemonic, defaultToHub);
+  public restoreState = async (mnemonic: string): Promise<ConnextInternal> => {
+    return await this.internal.restoreState(mnemonic);
   };
 
   public channelProviderConfig = async (): Promise<ChannelProviderConfig> => {
@@ -523,6 +520,7 @@ export abstract class ConnextChannel {
 export class ConnextInternal extends ConnextChannel {
   public opts: InternalClientOptions;
   public channelRouter: ChannelRouter;
+  public routerType: RpcType;
   public publicIdentifier: string;
   public ethProvider: providers.JsonRpcProvider;
   public node: NodeApiClient;
@@ -536,7 +534,7 @@ export class ConnextInternal extends ConnextChannel {
 
   public logger: Logger;
   public network: Network;
-  public store: CFCoreTypes.IStoreService;
+  public store: Store;
 
   ////////////////////////////////////////
   // Setup channel controllers
@@ -560,6 +558,7 @@ export class ConnextInternal extends ConnextChannel {
     this.channelRouter = opts.channelRouter;
     this.freeBalanceAddress = this.channelRouter.config.freeBalanceAddress;
     this.signerAddress = this.channelRouter.config.signerAddress;
+    this.routerType = this.channelRouter.config.type;
     this.network = opts.network;
     this.node = opts.node;
     this.publicIdentifier = this.channelRouter.config.userPublicIdentifier;
@@ -626,7 +625,7 @@ export class ConnextInternal extends ConnextChannel {
   public getLatestNodeSubmittedWithdrawal = async (): Promise<
     { retry: number; tx: CFCoreTypes.MinimalTransaction } | undefined
   > => {
-    const value = await this.store.get(withdrawalKey(this.publicIdentifier));
+    const value = await this.channelRouter.get(withdrawalKey(this.publicIdentifier));
 
     if (!value) {
       return undefined;
@@ -655,7 +654,7 @@ export class ConnextInternal extends ConnextChannel {
         this.ethProvider.on("block", async (blockNumber: number) => {
           const found = await this.checkForUserWithdrawal(blockNumber);
           if (found) {
-            await this.store.set([
+            await this.channelRouter.set([
               { path: withdrawalKey(this.publicIdentifier), value: undefined },
             ]);
             this.ethProvider.removeAllListeners("block");
@@ -678,7 +677,10 @@ export class ConnextInternal extends ConnextChannel {
   };
 
   public restoreStateFromBackup = async (xpub: string): Promise<void> => {
-    const restoreStates = await this.opts.store.restore();
+    if (this.routerType === RpcType.ChannelProvider) {
+      throw new Error(`Cannot restore state with channel provider`);
+    }
+    const restoreStates = await this.channelRouter.restore();
     const multisigAddress = await this.getMultisigAddressfromXpub(xpub);
     const relevantPair = restoreStates.find(
       (p: { path: string; value: any }) => p.path === `store/${xpub}/channel/${multisigAddress}`,
@@ -690,7 +692,7 @@ export class ConnextInternal extends ConnextChannel {
     }
 
     this.logger.info(`Found state to restore from backup: ${JSON.stringify(relevantPair)}`);
-    await this.opts.store.set([relevantPair], false);
+    await this.channelRouter.set([relevantPair], false);
   };
 
   public restoreStateFromNode = async (xpub: string): Promise<void> => {
@@ -706,21 +708,20 @@ export class ConnextInternal extends ConnextChannel {
         value: state.value[state.path],
       };
     });
-    await this.opts.store.set(actualStates, false);
+    await this.channelRouter.set(actualStates, false);
   };
 
-  public restoreState = async (
-    mnemonic: string,
-    defaultToHub: boolean = true,
-  ): Promise<ConnextInternal> => {
+  public restoreState = async (mnemonic: string): Promise<ConnextInternal> => {
+    if (this.routerType === RpcType.ChannelProvider) {
+      throw new Error(`Cannot restore state with channel provider`);
+    }
     const hdNode = fromMnemonic(mnemonic);
     const xpriv = hdNode.extendedKey;
     const xpub = hdNode.derivePath("m/44'/60'/0'/25446").neuter().extendedKey;
-    const wallet = new Wallet(hdNode.derivePath("m/44'/60'/0'/25446"));
 
     // always set the mnemonic in the store
-    this.opts.store.reset();
-    await this.opts.store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }], false);
+    this.channelRouter.reset();
+    await this.channelRouter.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }], false);
 
     // try to recover the rest of the stateS
     try {
@@ -1108,7 +1109,7 @@ export class ConnextInternal extends ConnextChannel {
   };
 
   public resubmitActiveWithdrawal = async (): Promise<void> => {
-    const withdrawal = await this.store.get(withdrawalKey(this.publicIdentifier));
+    const withdrawal = await this.channelRouter.get(withdrawalKey(this.publicIdentifier));
 
     if (!withdrawal) {
       // no active withdrawal, nothing to do
@@ -1132,7 +1133,7 @@ export class ConnextInternal extends ConnextChannel {
     if (this.matchTx(tx, withdrawal.tx)) {
       // the withdrawal in our store matches latest submitted tx,
       // clear value in store and return
-      await this.store.set([
+      await this.channelRouter.set([
         {
           path: withdrawalKey(this.publicIdentifier),
           value: undefined,
@@ -1156,7 +1157,7 @@ export class ConnextInternal extends ConnextChannel {
     }
     let { retry, tx } = val;
     retry += 1;
-    await this.store.set([
+    await this.channelRouter.set([
       {
         path: withdrawalKey(this.publicIdentifier),
         value: { tx, retry },
