@@ -11,6 +11,7 @@ import { Node as NodeTypes } from "@counterfactual/types";
 import { BigNumber } from "ethers/utils";
 import { RpcParameters } from "rpc-server";
 
+import { withdrawalKey } from "./lib/utils";
 import { Store } from "./types";
 
 export class ChannelRouter {
@@ -25,6 +26,8 @@ export class ChannelRouter {
 
   private store: Store | undefined;
 
+  private approvedStorePaths: string[];
+
   constructor(connection: RpcConnection, config: ChannelProviderConfig, store?: Store) {
     this.type = config.type;
     this.store = store;
@@ -32,6 +35,10 @@ export class ChannelRouter {
     this._config = config;
     this._multisigAddress = config.multisigAddress;
     this._signerAddress = config.signerAddress;
+    this.approvedStorePaths = [
+      // allow the withdrawal setting to happen
+      withdrawalKey(this.config.userPublicIdentifier),
+    ];
   }
 
   ///////////////////////////////////////////////
@@ -252,7 +259,8 @@ export class ChannelRouter {
   ///////////////////////////////////////////////
   ///// STORE METHODS
 
-  public get = async (key: string): Promise<any> => {
+  public get = async (path: string): Promise<any> => {
+    this.isApprovedGetSetPath(path);
     switch (this.type) {
       case RpcType.CounterfactualNode:
         if (!this.store) {
@@ -260,12 +268,12 @@ export class ChannelRouter {
             `Should have a defined store ref when provider type is a counterfactual node.`,
           );
         }
-        return await this.store.get(key);
+        return await this.store.get(path);
 
       case RpcType.ChannelProvider:
         // route the store get call through the connection
         return await this.connection._send("chan_store_get", {
-          key,
+          path,
         });
 
       default:
@@ -280,6 +288,10 @@ export class ChannelRouter {
     }[],
     allowDelete?: Boolean,
   ): Promise<void> => {
+    // verify it is in the approved paths for editing
+    pairs.forEach(({ path, value }) => {
+      this.isApprovedGetSetPath(path);
+    });
     switch (this.type) {
       case RpcType.CounterfactualNode:
         if (!this.store) {
@@ -344,6 +356,13 @@ export class ChannelRouter {
 
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
+
+  private isApprovedGetSetPath(path: string): void {
+    // verify it is in the approved paths for editing
+    if (this.approvedStorePaths.indexOf(path) === -1) {
+      throw new Error(`Not an approved store path to get/set: ${path}`);
+    }
+  }
 
   // tslint:disable-next-line: function-name
   private async _send(
