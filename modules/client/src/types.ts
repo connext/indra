@@ -34,13 +34,13 @@ export interface ClientOptions {
   // node information
   nodeUrl: string; // ws:// or nats:// urls are supported
   // signing options, include at least one of the following
-  mnemonic: string;
+  mnemonic?: string;
+  xpub?: string;
+  keyGen?: (index: string) => Promise<string>;
   // channel provider
   channelProvider?: ChannelProvider;
   // function passed in by wallets to generate ephemeral keys
   // used when signing applications
-  keyGen?: () => Promise<string>; // TODO: what will the type look like?
-  safeSignHook?: (state: ChannelState | AppState) => Promise<string>;
   store: Store;
   // TODO: state: string?
   logLevel?: number; // see logger.ts for meaning, optional
@@ -71,9 +71,9 @@ export interface ConnextStore {}
 
 // General typings
 export interface NodeInitializationParameters {
-  messaging: IMessagingService;
+  authKey: string;
   logLevel?: number;
-  userPublicIdentifier?: string;
+  messaging: IMessagingService;
   nodePublicIdentifier?: string;
-  wallet?: Wallet;
+  userPublicIdentifier?: string;
 }

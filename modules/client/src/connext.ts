@@ -83,7 +83,17 @@ const MAX_WITHDRAWAL_RETRIES = 3;
  */
 
 export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
-  const { logLevel, ethProviderUrl, mnemonic, natsClusterId, nodeUrl, natsToken, store } = opts;
+  const {
+    ethProviderUrl,
+    keyGen,
+    logLevel,
+    mnemonic,
+    natsClusterId,
+    natsToken,
+    nodeUrl,
+    store,
+    xpub,
+  } = opts;
   const logger = new Logger("ConnextConnect", logLevel);
 
   // setup network information
@@ -113,9 +123,21 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
   // Note: added this to the client since this is required for the cf module to work
   // generate extended private key from mnemonic
-  const privateExtendedKey = fromMnemonic(mnemonic).extendedKey;
-  const hdNode = fromExtendedKey(privateExtendedKey).derivePath(CF_PATH);
-  const publicExtendedKey = hdNode.neuter().extendedKey;
+  let hdNode;
+  let publicExtendedKey;
+  let authKey;
+  let innerKeyGen;
+  if (mnemonic) {
+    hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
+    publicExtendedKey = hdNode.neuter().extendedKey;
+    authKey = hdNode.derivePath(CF_PATH).privateKey;
+    innerKeyGen = (uniqueID: string): Promise<string> => {
+      return Promise.resolve(hdNode.derivePath(uniqueID).privateKey);
+    };
+  } else if (xpub && keyGen) {
+    publicExtendedKey = xpub;
+    authKey = keyGen(CF_PATH);
+  }
   logger.info(`Derived xpub from mnemonic: ${publicExtendedKey}`);
   // await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }], false);
 
@@ -123,9 +145,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // TODO: use local storage for default key value setting!?
   // ^ Bo says: no, localStorage stuff is app-layer, not lib-layer
   const nodeApiConfig = {
+    authKey,
     logLevel,
     messaging,
-    wallet: Wallet.fromMnemonic(mnemonic, CF_PATH),
   };
   logger.info("creating node api client");
   const node: NodeApiClient = new NodeApiClient(nodeApiConfig);
@@ -155,9 +177,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     ethProvider,
     lockService,
     publicExtendedKey,
-    (uniqueID: string): Promise<string> => {
-      return Promise.resolve(hdNode.derivePath(uniqueID).privateKey);
-    },
+    innerKeyGen,
   );
   node.setUserPublicIdentifier(cfCore.publicIdentifier);
   logger.info("created cf module successfully");
@@ -306,10 +326,10 @@ export abstract class ConnextChannel {
   };
 
   public restoreState = async (
-    mnemonic: string,
     defaultToHub: boolean,
+    signer: { mnemonic?: string; xpub?: string; keyGen?: any },
   ): Promise<ConnextInternal> => {
-    return await this.internal.restoreState(mnemonic, defaultToHub);
+    return await this.internal.restoreState(defaultToHub, signer);
   };
 
   ///////////////////////////////////
@@ -691,17 +711,21 @@ export class ConnextInternal extends ConnextChannel {
   };
 
   public restoreState = async (
-    mnemonic: string,
     defaultToHub: boolean = true,
+    signer: { mnemonic?: string; xpub?: string; keyGen?: any },
   ): Promise<ConnextInternal> => {
-    const hdNode = fromMnemonic(mnemonic);
-    const xpriv = hdNode.extendedKey;
-    const xpub = hdNode.derivePath("m/44'/60'/0'/25446").neuter().extendedKey;
-    const wallet = new Wallet(hdNode.derivePath("m/44'/60'/0'/25446"));
+    const { mnemonic, keyGen } = signer;
+    let { xpub } = signer;
 
-    // always set the mnemonic in the store
+    if (mnemonic) {
+      xpub = fromMnemonic(mnemonic)
+        .derivePath("m/44'/60'/0'/25446")
+        .neuter().extendedKey;
+    } else if (!xpub || !keyGen) {
+      throw new Error("Signer arg object must contain either a mnemonic or an xpub+keyGen");
+    }
+
     this.opts.store.reset();
-    await this.opts.store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }], false);
 
     // try to recover the rest of the stateS
     try {
@@ -711,7 +735,7 @@ export class ConnextInternal extends ConnextChannel {
     }
 
     // recreate client with new mnemonic
-    const client = await connect({ ...this.opts, mnemonic });
+    const client = await connect({ ...this.opts, mnemonic, xpub, keyGen });
     return client;
   };
 

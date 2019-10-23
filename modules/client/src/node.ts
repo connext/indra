@@ -72,7 +72,7 @@ export class NodeApiClient implements INodeApiClient {
     this.log = new Logger("NodeApiClient", opts.logLevel);
     this.userPublicIdentifier = opts.userPublicIdentifier;
     this.nodePublicIdentifier = opts.nodePublicIdentifier;
-    this.wallet = opts.wallet;
+    this.wallet = new Wallet(opts.authKey);
     this.token = this.getAuthToken();
   }
 
