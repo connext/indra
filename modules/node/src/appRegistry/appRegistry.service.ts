@@ -52,7 +52,7 @@ export class AppRegistryService {
     data: ProposeMessage,
   ): Promise<CFCoreTypes.InstallResult | CFCoreTypes.RejectInstallResult> {
     try {
-      await this.verifyAppProposal(data.data, data.from);
+      await this.verifyAppProposal(data.data);
       return await this.cfCoreService.installApp(data.data.appInstanceId);
     } catch (e) {
       logger.error(`Caught error during proposed app validation, rejecting install`);
@@ -348,27 +348,20 @@ export class AppRegistryService {
 
   // TODO: there is a lot of duplicate logic here + client. ideally, much
   // of this would be moved to a shared library.
-  private async verifyAppProposal(
-    proposedAppParams: {
-      params: CFCoreTypes.ProposeInstallParams;
-      appInstanceId: string;
-    },
-    initiatorIdentifier: string,
-  ): Promise<void> {
-    const myIdentifier = await this.cfCoreService.cfCore.publicIdentifier;
+  private async verifyAppProposal(proposedAppParams: {
+    params: CFCoreTypes.ProposeInstallParams;
+    appInstanceId: string;
+  }): Promise<void> {
+    const myIdentifier = this.cfCoreService.cfCore.publicIdentifier;
+    const initiatorIdentifier = (proposedAppParams.params as any).initiatorXpub;
+    console.log("proposedAppParams: ", proposedAppParams);
+    console.log("initiatorIdentifier: ", initiatorIdentifier);
     if (initiatorIdentifier === myIdentifier) {
       logger.log(`Received proposal from our own node.`);
       return;
     }
 
     const registryAppInfo = await this.appProposalMatchesRegistry(proposedAppParams.params);
-
-    if (registryAppInfo.name === "SimpleTransferApp") {
-      logger.debug(
-        `Caught propose install for what should always be a virtual app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
-      );
-      return;
-    }
 
     if (!registryAppInfo.allowNodeInstall) {
       throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
@@ -385,19 +378,6 @@ export class AppRegistryService {
       // TODO: add validation of simple transfer validateSimpleTransfer
       case SupportedApplications.SimpleLinkedTransferApp:
         await this.validateSimpleLinkedTransfer(proposedAppParams.params);
-        logger.debug(`Saving linked transfer`);
-        // TODO: maybe move this?
-        await this.transferService.saveLinkedTransfer(
-          initiatorIdentifier,
-          proposedAppParams.params.initiatorDepositTokenAddress,
-          bigNumberify(proposedAppParams.params.initiatorDeposit),
-          proposedAppParams.appInstanceId,
-          (proposedAppParams.params.initialState as SimpleLinkedTransferAppStateBigNumber)
-            .linkedHash,
-          (proposedAppParams.params.initialState as SimpleLinkedTransferAppStateBigNumber)
-            .paymentId,
-        );
-        logger.log(`Linked transfer saved!`);
         break;
       default:
         break;
@@ -405,6 +385,7 @@ export class AppRegistryService {
     logger.log(`Validation completed for app ${registryAppInfo.name}`);
   }
 
+  // TODO: will need to remove this
   private async verifyVirtualAppProposal(
     proposedAppParams: {
       params: CFCoreTypes.ProposeInstallParams;
