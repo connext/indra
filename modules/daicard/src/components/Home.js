@@ -9,7 +9,7 @@ import "../App.css";
 import { ChannelCard } from "./channelCard";
 import { QRScan } from "./qrCode";
 
-import {initWalletConnect} from "../utils/clientWalletConnectMapping";
+import { initWalletConnect } from "../utils";
 
 const style = withStyles({});
 
