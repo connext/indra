@@ -13,10 +13,10 @@ import {
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { TransactionResponse } from "ethers/providers";
-import { arrayify, Transaction } from "ethers/utils";
-import { Wallet } from "ethers/wallet";
+import { Transaction } from "ethers/utils";
 import uuid = require("uuid");
 
+import { ChannelRouter } from "./channelRouter";
 import { Logger } from "./lib/logger";
 import { replaceBN } from "./lib/utils";
 import { NodeInitializationParameters } from "./types";
@@ -62,18 +62,47 @@ export class NodeApiClient implements INodeApiClient {
   public messaging: IMessagingService;
   public latestSwapRates: { [key: string]: string } = {};
   public log: Logger;
-  public userPublicIdentifier: string | undefined;
-  public nodePublicIdentifier: string | undefined;
-  // private wallet: Wallet;
+
+  private _userPublicIdentifier: string | undefined;
+  private _nodePublicIdentifier: string | undefined;
+  private _channelRouter: ChannelRouter | undefined;
   private token: Promise<string> | undefined;
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
     this.log = new Logger("NodeApiClient", opts.logLevel);
-    this.userPublicIdentifier = opts.userPublicIdentifier;
-    this.nodePublicIdentifier = opts.nodePublicIdentifier;
-    // this.wallet = opts.wallet;
-    this.token = this.getAuthToken();
+    this._userPublicIdentifier = opts.userPublicIdentifier;
+    this._nodePublicIdentifier = opts.nodePublicIdentifier;
+    this._channelRouter = opts.channelRouter;
+    if (this.channelRouter) {
+      this.token = this.getAuthToken();
+    }
+  }
+
+  ////////////////////////////////////////
+  // GETTERS/SETTERS
+  get channelRouter(): ChannelRouter | undefined {
+    return this._channelRouter;
+  }
+
+  set channelRouter(channelRouter: ChannelRouter) {
+    this._channelRouter = channelRouter;
+  }
+
+  get userPublicIdentifier(): string | undefined {
+    return this._userPublicIdentifier;
+  }
+
+  set userPublicIdentifier(userXpub: string) {
+    this._userPublicIdentifier = userXpub;
+  }
+
+  get nodePublicIdentifier(): string | undefined {
+    return this._nodePublicIdentifier;
+  }
+
+  set nodePublicIdentifier(nodeXpub: string) {
+    this._nodePublicIdentifier = nodeXpub;
   }
 
   ////////////////////////////////////////
@@ -251,14 +280,26 @@ export class NodeApiClient implements INodeApiClient {
   private async getAuthToken(): Promise<string> {
     return new Promise(
       async (resolve: any, reject: any): Promise<any> => {
-        // const nonce = await this.send("auth.getNonce", { address: this.wallet.address });
-        // const sig = await this.wallet.signMessage(arrayify(nonce));
-        // const token = `${nonce}:${sig}`;
-        // this.log.info(`Got new token for ${this.wallet.address}: ${token}`);
-        // return resolve(token);
-        return resolve("im a cheater")
+        const nonce = await this.send("auth.getNonce", {
+          address: this.channelRouter.signerAddress,
+        });
+        const sig = await this.channelRouter.signMessage(nonce);
+        const token = `${nonce}:${sig}`;
+        this.log.info(`Got new token for ${this.channelRouter.signerAddress}: ${token}`);
+        return resolve(token);
       },
     );
+  }
+
+  private assertAuthToken(): void {
+    if (!this.channelRouter) {
+      throw new Error(
+        `Must have instantiated a channel router (ie a signing thing) before setting auth token`,
+      );
+    }
+    if (!this.token) {
+      this.token = this.getAuthToken();
+    }
   }
 
   private async send(subject: string, data?: any): Promise<any | undefined> {
@@ -272,10 +313,7 @@ export class NodeApiClient implements INodeApiClient {
       id: uuid.v4(),
     };
     if (guardedSubjects.includes(subject.split(".")[0])) {
-      if (!this.token) {
-        this.log.warn(`Didn't get an auth token before sending, getting a new one.`);
-        this.token = this.getAuthToken();
-      }
+      this.assertAuthToken();
       payload.token = await this.token;
     }
     let msg = await this.messaging.request(subject, API_TIMEOUT, payload);
