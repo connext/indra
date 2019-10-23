@@ -156,7 +156,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const nodeApiConfig = {
     logLevel,
     messaging,
-    // wallet: Wallet.fromMnemonic(mnemonic, "m/44'/60'/0'/25446"),
   };
   const node: NodeApiClient = new NodeApiClient(nodeApiConfig);
   logger.info("created node api client successfully");
@@ -192,18 +191,20 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
         lockService,
       );
       const signer = await cfCore.signerAddress();
+      const wallet = Wallet.fromMnemonic(opts.mnemonic!, CF_PATH);
       logger.info("created cf module successfully");
       logger.info(`cf module signer address: ${signer}`);
-      channelRouter = new ChannelRouter(cfCore, providerConfig, store);
+      channelRouter = new ChannelRouter(cfCore, providerConfig, store, wallet);
       break;
 
     default:
       throw new Error(`Unrecognized provider type: ${providerConfig.type}`);
   }
 
-  // set pubids
-  node.setNodePublicIdentifier(config.nodePublicIdentifier);
-  node.setUserPublicIdentifier(providerConfig.userPublicIdentifier);
+  // set pubids + channel router
+  node.channelRouter = channelRouter;
+  node.userPublicIdentifier = providerConfig.userPublicIdentifier;
+  node.nodePublicIdentifier = config.nodePublicIdentifier;
 
   const myChannel = await node.getChannel();
   let multisigAddress: string;
