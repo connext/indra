@@ -24,8 +24,7 @@ export const cfCoreProviderFactory: Provider = {
     store: CFCoreRecordRepository,
     lockService: LockService,
   ): Promise<CFCore> => {
-    const privateExtendedKey = fromMnemonic(config.getMnemonic()).extendedKey;
-    const hdNode = fromExtendedKey(privateExtendedKey).derivePath(CF_PATH);
+    const hdNode = fromMnemonic(config.getMnemonic()).derivePath(CF_PATH);
     const publicExtendedKey = hdNode.neuter().extendedKey;
     logger.log(`Derived xpub from mnemonic: ${publicExtendedKey}`);
     // test that provider works
