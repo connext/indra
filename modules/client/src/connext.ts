@@ -247,35 +247,8 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   await client.reclaimPendingAsyncTransfers();
 
-  // // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
-  // const withdrawal = await client.store.get(withdrawalKey(client.publicIdentifier));
-
-  // if (withdrawal && withdrawal.retry < MAX_WITHDRAWAL_RETRIES) {
-  //   // get the latest submitted withdrawal from the hub
-  //   // and check the tx to see if the data matches what we
-  //   // expect from our store.
-  //   const tx = await client.node.getLatestWithdrawal();
-  //   if (client.matchTx(tx, withdrawal.tx)) {
-  //     // if so, clear tx
-  //     await client.store.set([
-  //       {
-  //         path: withdrawalKey(client.publicIdentifier),
-  //         value: undefined,
-  //       },
-  //     ]);
-  //     return client;
-  //   }
-  //   // if not, and there are retries remaining, retry
-  //   logger.debug(
-  //     `Found active withdrawal with ${withdrawal.retry} retries, waiting for withdrawal to be caught`,
-  //   );
-  //   await client.retryNodeSubmittedWithdrawal();
-  // } else if (withdrawal && withdrawal.retry >= MAX_WITHDRAWAL_RETRIES) {
-  //   // otherwise, do not start client.
-  //   const msg = `Cannot connect client, hub failed to submit latest withdrawal ${MAX_WITHDRAWAL_RETRIES} times.`;
-  //   logger.error(msg);
-  //   throw new Error(msg);
-  // }
+  // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
+  await client.resubmitActiveWithdrawal();
 
   return client;
 }
@@ -1132,6 +1105,47 @@ export class ConnextInternal extends ConnextChannel {
       bigNumberify(givenTransaction.value).eq(expected.value) &&
       givenTransaction.data === expected.data
     );
+  };
+
+  public resubmitActiveWithdrawal = async (): Promise<void> => {
+    const withdrawal = await this.store.get(withdrawalKey(this.publicIdentifier));
+
+    if (!withdrawal) {
+      // no active withdrawal, nothing to do
+      return;
+    }
+
+    if (withdrawal.retry >= MAX_WITHDRAWAL_RETRIES) {
+      // throw an error here, node has failed to submit withdrawal.
+      // this indicates the node is compromised or acting maliciously.
+      // no further actions should be taken by the client. (since this fn is
+      // called on `connext.connect`, throwing an error will prevent client
+      // starting properly)
+      const msg = `Cannot connect client, hub failed to submit latest withdrawal ${MAX_WITHDRAWAL_RETRIES} times.`;
+      this.logger.error(msg);
+      throw new Error(msg);
+    }
+
+    // get latest submitted withdrawal from hub and check to see if the
+    // data matches what we expect from our store
+    const tx = await this.node.getLatestWithdrawal();
+    if (this.matchTx(tx, withdrawal.tx)) {
+      // the withdrawal in our store matches latest submitted tx,
+      // clear value in store and return
+      await this.store.set([
+        {
+          path: withdrawalKey(this.publicIdentifier),
+          value: undefined,
+        },
+      ]);
+      return;
+    }
+
+    // otherwise, there are retries remaining, and you should resubmit
+    this.logger.debug(
+      `Found active withdrawal with ${withdrawal.retry} retries, waiting for withdrawal to be caught`,
+    );
+    await this.retryNodeSubmittedWithdrawal();
   };
 
   public retryNodeSubmittedWithdrawal = async (): Promise<void> => {
