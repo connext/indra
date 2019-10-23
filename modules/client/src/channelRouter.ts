@@ -8,7 +8,8 @@ import {
   RpcType,
 } from "@connext/types";
 import { Node as NodeTypes } from "@counterfactual/types";
-import { BigNumber } from "ethers/utils";
+import { Wallet } from "ethers";
+import { arrayify, BigNumber } from "ethers/utils";
 import { RpcParameters } from "rpc-server";
 
 import { withdrawalKey } from "./lib/utils";
@@ -17,6 +18,10 @@ import { Store } from "./types";
 export class ChannelRouter {
   private type: RpcType;
   private connection: RpcConnection;
+
+  // TODO: replace this when signing keys are added!
+  // shouldnt really ever be used
+  private wallet: Wallet | undefined;
 
   private _config: ChannelProviderConfig;
 
@@ -28,9 +33,15 @@ export class ChannelRouter {
 
   private approvedStorePaths: string[];
 
-  constructor(connection: RpcConnection, config: ChannelProviderConfig, store?: Store) {
+  constructor(
+    connection: RpcConnection,
+    config: ChannelProviderConfig,
+    store?: Store,
+    wallet?: Wallet,
+  ) {
     this.type = config.type;
     this.store = store;
+    this.wallet = wallet;
     this.connection = connection;
     this._config = config;
     this._multisigAddress = config.multisigAddress;
@@ -76,7 +87,26 @@ export class ChannelRouter {
   };
 
   ///////////////////////////////////////////////
-  ///// PROVIDER METHODS
+  ///// SIGNING METHODS
+  public signMessage = async (message: string): Promise<string> => {
+    switch (this.type) {
+      case RpcType.CounterfactualNode:
+        if (!this.wallet) {
+          throw new Error(`Cannot sign without a wallet when using smart client`);
+        }
+        // will have a mnemonic, sign with wallet
+        return await this.wallet.signMessage(arrayify(message));
+
+      case RpcType.ChannelProvider:
+        return await this._send("chan_node_auth" as any, { message });
+
+      default:
+        throw new Error(`Unrecognized RpcType: ${this.type}. (How'd you even get this far tho...)`);
+    }
+  };
+
+  ///////////////////////////////////////////////
+  ///// CHANNEL METHODS
 
   public deposit = async (
     amount: BigNumber,
