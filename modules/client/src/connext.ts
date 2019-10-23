@@ -130,13 +130,14 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   if (mnemonic) {
     hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
     publicExtendedKey = hdNode.neuter().extendedKey;
-    authKey = hdNode.derivePath(CF_PATH).privateKey;
+    authKey = hdNode.derivePath("0").privateKey;
     innerKeyGen = (uniqueID: string): Promise<string> => {
       return Promise.resolve(hdNode.derivePath(uniqueID).privateKey);
     };
   } else if (xpub && keyGen) {
     publicExtendedKey = xpub;
-    authKey = keyGen(CF_PATH);
+    authKey = await keyGen("0");
+    innerKeyGen = keyGen;
   }
   logger.info(`Derived xpub from mnemonic: ${publicExtendedKey}`);
   // await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }], false);
