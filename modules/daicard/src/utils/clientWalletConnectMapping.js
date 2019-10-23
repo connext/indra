@@ -97,6 +97,18 @@ async function mapPayloadToClient(payload, channel) {
   let result;
   try {
     switch (payload.method) {
+      case "chan_store_set":
+        verifyFields(payload.params, ["pairs"])
+        const { pairs } = payload.params
+        result = await channel.channelRouter.set(pairs)
+        break;
+
+      case "chan_store_get":
+        verifyFields(payload.params, ["path"])
+        const { path } = payload.params
+        result = await channel.channelRouter.get(path)
+        break;
+
       case "chan_config":
         result = await channel.channelProviderConfig(payload.params)
         break;
