@@ -11,11 +11,14 @@ import { Node as CFCoreTypes } from "@counterfactual/types";
 import { AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { formatEther, hexlify, parseEther, randomBytes } from "ethers/utils";
+import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 
 import { registerClientListeners } from "./bot";
 import { config } from "./config";
 import { Store } from "./store";
 import { logEthFreeBalance } from "./utils";
+
+const CF_PATH = "m/44'/60'/0'/25446";
 
 const replaceBN = (key: string, value: any): any =>
   value && value._hex ? value.toString() : value;
@@ -253,7 +256,7 @@ async function run(): Promise<void> {
 
   if (config.restore) {
     console.log(`Restoring states from the node with mnemonic: ${config.restore}`);
-    client = await client.restoreState(false, config.restore);
+    client = await client.restoreState(false, { mnemonic: config.restore });
   }
 
   exitOrLeaveOpen(config);
@@ -263,12 +266,17 @@ async function run(): Promise<void> {
 async function getOrCreateChannel(assetId?: string): Promise<void> {
   const store = new Store();
 
+  const hdNode = fromExtendedKey(fromMnemonic(config.mnemonic).extendedKey).derivePath(CF_PATH);
+  const publicExtendedKey = hdNode.neuter().extendedKey;
+
   const connextOpts: connext.ClientOptions = {
     ethProviderUrl: config.ethProviderUrl,
+    keyGen: (index: string): Promise<string> =>
+      Promise.resolve(hdNode.derivePath(index).privateKey),
     logLevel: config.logLevel,
-    mnemonic: config.mnemonic,
     nodeUrl: config.nodeUrl,
     store,
+    xpub: publicExtendedKey,
   };
   client = await connext.connect(connextOpts);
   const nodeFBAddress = connext.utils.freeBalanceAddressFromXpub(client.nodePublicIdentifier);
