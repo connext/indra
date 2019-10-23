@@ -14,6 +14,7 @@ import tokenArtifacts from "openzeppelin-solidity/build/contracts/ERC20Mintable.
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import * as connext from "@connext/client";
 import { interpret } from 'xstate';
+import { ConnextClientStorePrefix } from "@connext/types"
 
 import "./App.css";
 
@@ -142,6 +143,9 @@ class App extends React.Component {
 
   setWalletConnext = async (useWalletConnext) => {
     localStorage.setItem('useWalletConnext', useWalletConnext);
+    // remove mnemonic/privkey from local storage
+    localStorage.removeItem("mnemonic");
+    localStorage.removeItem(`${ConnextClientStorePrefix}:EXTENDED_PRIVATE_KEY`)
     this.setState({ useWalletConnext });
     window.location.reload();
   }
@@ -157,18 +161,20 @@ class App extends React.Component {
 
     // If no mnemonic, create one and save to local storage
     let mnemonic = localStorage.getItem("mnemonic");
-    if (!mnemonic) {
+    const useWalletConnext = localStorage.getItem("useWalletConnext") || false;
+    console.debug('useWalletConnext: ', useWalletConnext);
+    if (!mnemonic && !useWalletConnext) {
       mnemonic = eth.Wallet.createRandom().mnemonic;
       localStorage.setItem("mnemonic", mnemonic);
     }
 
-    const wallet = eth.Wallet.fromMnemonic(mnemonic, "m/44'/60'/0'/25446").connect(ethprovider);
+    let wallet;
+    if (!useWalletConnext) {
+      wallet = eth.Wallet.fromMnemonic(mnemonic, "m/44'/60'/0'/25446").connect(ethprovider);
+    };
+
     const network = await ethprovider.getNetwork();
     let channel;
-
-    const useWalletConnext = localStorage.getItem('useWalletConnext') || false;
-    console.log('useWalletConnext: ', useWalletConnext);
-
     // migrate if needed
     if (localStorage.getItem("rpc-prod")) {
       machine.send(['MIGRATE', 'START_MIGRATE']);
@@ -239,7 +245,7 @@ class App extends React.Component {
       await new Promise(res => setTimeout(() => res(), 1000));
     }
 
-    const token = new Contract(channel.config.contractAddresses.Token, tokenArtifacts.abi, wallet);
+    const token = new Contract(channel.config.contractAddresses.Token, tokenArtifacts.abi, wallet || ethprovider);
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
     try {
@@ -259,7 +265,7 @@ class App extends React.Component {
     console.log(`Client created successfully!`);
     console.log(` - Public Identifier: ${channel.publicIdentifier}`);
     console.log(` - Account multisig address: ${channel.opts.multisigAddress}`);
-    console.log(` - CF Account address: ${wallet.address}`);
+    console.log(` - CF Account address: ${channel.signerAddress}`);
     console.log(` - Free balance address: ${channel.freeBalanceAddress}`);
     console.log(` - Token address: ${token.address}`);
     console.log(` - Swap rate: ${swapRate}`);
@@ -327,7 +333,7 @@ class App extends React.Component {
     interval(async (iteration, stop) => {
       await this.refreshBalances();
       await this.setDepositLimits();
-      if (useWalletConnext) {
+      if (!useWalletConnext) {
         await this.autoDeposit();
       }
       await this.autoSwap();
@@ -335,7 +341,7 @@ class App extends React.Component {
   };
 
   refreshBalances = async () => {
-    const { balance, channel, ethprovider, swapRate, token, wallet } = this.state;
+    const { balance, channel, ethprovider, swapRate, token } = this.state;
     let gasPrice = await ethprovider.getGasPrice();
     let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
     let totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
@@ -345,14 +351,14 @@ class App extends React.Component {
     ).toETH();
     const maxDeposit = MAX_CHANNEL_VALUE.toETH(swapRate); // Or get based on payment profile?
     this.setState({ maxDeposit, minDeposit });
-    if (!channel || !swapRate || !wallet) {
+    if (!channel || !swapRate) {
       return;
     }
     const getTotal = (ether, token) => Currency.WEI(ether.wad.add(token.toETH().wad), swapRate);
     const freeEtherBalance = await channel.getFreeBalance();
     const freeTokenBalance = await channel.getFreeBalance(token.address);
-    balance.onChain.ether = Currency.WEI(await ethprovider.getBalance(wallet.address), swapRate).toETH();
-    balance.onChain.token = Currency.DEI(await token.balanceOf(wallet.address), swapRate).toDAI();
+    balance.onChain.ether = Currency.WEI(await ethprovider.getBalance(channel.signerAddress), swapRate).toETH();
+    balance.onChain.token = Currency.DEI(await token.balanceOf(channel.signerAddress), swapRate).toDAI();
     balance.onChain.total = getTotal(balance.onChain.ether, balance.onChain.token).toETH();
     balance.channel.ether = Currency.WEI(freeEtherBalance[channel.freeBalanceAddress], swapRate).toETH();
     balance.channel.token = Currency.DEI(freeTokenBalance[channel.freeBalanceAddress], swapRate).toDAI();
@@ -574,7 +580,6 @@ class App extends React.Component {
       network,
       sendScanArgs,
       token,
-      wallet,
     } = this.state;
     const { classes } = this.props;
     return (
@@ -582,7 +587,7 @@ class App extends React.Component {
         <Grid className={classes.app}>
           <Paper elevation={1} className={classes.paper}>
 
-            <AppBarComponent address={wallet ? wallet.address : AddressZero} />
+            <AppBarComponent address={channel ? channel.signerAddress : AddressZero} />
 
             <MySnackbar
               variant="warning"
@@ -624,7 +629,7 @@ class App extends React.Component {
               render={props => (
                 <DepositCard
                   {...props}
-                  address={wallet ? wallet.address : AddressZero}
+                  address={channel ? channel.signerAddress : AddressZero}
                   maxDeposit={maxDeposit}
                   minDeposit={minDeposit}
                 />
