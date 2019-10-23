@@ -65,7 +65,7 @@ export class ConditionalTransferController extends AbstractController {
     const ret = await this.handleLinkedTransfers(params);
 
     // set recipient and encrypted pre-image on linked transfer
-    const recipientPublicKey = fromExtendedKey(recipient).publicKey;
+    const recipientPublicKey = fromExtendedKey(recipient).derivePath("0").publicKey;
     const encryptedPreImageCipher = await EthCrypto.encryptWithPublicKey(
       recipientPublicKey.slice(2), // remove 0x
       preImage,
