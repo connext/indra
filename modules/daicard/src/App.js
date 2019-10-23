@@ -14,7 +14,6 @@ import tokenArtifacts from "openzeppelin-solidity/build/contracts/ERC20Mintable.
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import * as connext from "@connext/client";
 import { interpret } from 'xstate';
-import { ConnextClientStorePrefix } from "@connext/types"
 
 import "./App.css";
 
@@ -33,6 +32,7 @@ import { SetupCard } from "./components/setupCard";
 import { SupportCard } from "./components/supportCard";
 import { rootMachine } from "./state";
 import {
+  cleanWalletConnect,
   Currency,
   migrate,
   minBN,
@@ -143,15 +143,14 @@ class App extends React.Component {
 
   setWalletConnext = async (useWalletConnext) => {
     localStorage.setItem('useWalletConnext', useWalletConnext);
-    // remove mnemonic/privkey from local storage
-    localStorage.removeItem("mnemonic");
-    localStorage.removeItem(`${ConnextClientStorePrefix}:EXTENDED_PRIVATE_KEY`)
     this.setState({ useWalletConnext });
     window.location.reload();
   }
 
   // Channel doesn't get set up until after provider is set
   async componentDidMount() {
+    // make sure starting from sq 1 with wallet connect
+    cleanWalletConnect();
     const { ethprovider, machine } = this.state;
     machine.start();
     machine.onTransition(state => {
@@ -209,21 +208,23 @@ class App extends React.Component {
       });
     } else if (useWalletConnext) {
       let channelProvider;
+      let rpc = {};
+      rpc[network.chainId] = urls.ethProviderUrl;
       channelProvider = new WalletConnectChannelProvider({
-        rpc: {
-          "4447": urls.ethProviderUrl,
-        },
-        chainId: 4447,
+        rpc,
+        chainId: network.chainId,
       });
       console.log("GOT CHANNEL PROVIDER:", JSON.stringify(channelProvider, null, 2));
       // register channel provider listener for logging
-      channelProvider.once("connect", async () => {
-        console.log(`caught channelProvider.connect`);
-      });
       channelProvider.on("error", (data) => {
         console.error(`Channel provider error: ${JSON.stringify(data, null, 2)}`);
       });
-      console.log(`calling connext.connect`)
+      channelProvider.on("disconnect", (error, payload) => {
+        if (error) {
+          throw error;
+        }
+        cleanWalletConnect();
+      });
       channel = await connext.connect({
         ethProviderUrl: urls.ethProviderUrl,
         logLevel: 5,
