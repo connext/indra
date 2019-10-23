@@ -129,7 +129,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   let authKey: string;
   let innerKeyGen: (index: string) => Promise<string>;
   if (mnemonic) {
-    hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
+    hdNode = fromMnemonic(mnemonic).derivePath(CF_PATH);
     publicExtendedKey = hdNode.neuter().extendedKey;
     authKey = hdNode.derivePath("0").privateKey;
     innerKeyGen = (uniqueID: string): Promise<string> => {
@@ -1213,7 +1213,7 @@ export class ConnextInternal extends ConnextChannel {
   public reclaimPendingAsyncTransfers = async (): Promise<void> => {
     const pendingTransfers = await this.node.getPendingAsyncTransfers();
     for (const transfer of pendingTransfers) {
-      const { amount, assetId, encryptedPreImage, paymentId } = transfer;
+      const { encryptedPreImage, paymentId } = transfer;
       await this.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
     }
   };
@@ -1224,7 +1224,17 @@ export class ConnextInternal extends ConnextChannel {
   ): Promise<ResolveLinkedTransferResponse> => {
     this.logger.info(`Reclaiming transfer ${JSON.stringify({ paymentId, encryptedPreImage })}`);
     // decrypt secret and resolve
-    const privateKey = fromMnemonic(this.opts.mnemonic).derivePath(CF_PATH).privateKey;
+    let privateKey: string;
+    if (this.opts.mnemonic) {
+      privateKey = fromMnemonic(this.opts.mnemonic)
+        .derivePath(CF_PATH)
+        .derivePath("0").privateKey;
+    } else if (this.opts.keyGen) {
+      // TODO: make this use app key?
+      privateKey = await this.opts.keyGen("0");
+    } else {
+      throw new Error(`No way to decode transfer, this should never happen!`);
+    }
     const cipher = EthCrypto.cipher.parse(encryptedPreImage);
 
     const preImage = await EthCrypto.decryptWithPrivateKey(privateKey, cipher);
