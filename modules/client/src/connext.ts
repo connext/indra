@@ -130,6 +130,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
       natsClusterId,
       natsToken,
       nodeUrl,
+      signerAddress: hdNode.derivePath(CF_PATH).address,
       type: RpcType.CounterfactualNode,
       userPublicIdentifier: xpub,
     } as any;
@@ -141,22 +142,22 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   logger.info(`Creating messaging service client (logLevel: ${logLevel})`);
   const messagingFactory = new MessagingServiceFactory({
-    clusterId: natsClusterId,
+    clusterId: providerConfig.natsClusterId,
     logLevel,
-    messagingUrl: nodeUrl,
-    token: natsToken,
+    messagingUrl: providerConfig.nodeUrl,
+    token: providerConfig.natsToken,
   });
   const messaging = messagingFactory.createService("messaging");
   await messaging.connect();
   logger.info("Messaging service is connected");
 
   // create a new node api instance
+  logger.info("creating node api client");
   const nodeApiConfig = {
     logLevel,
     messaging,
-    wallet: Wallet.fromMnemonic(mnemonic, "m/44'/60'/0'/25446"),
+    // wallet: Wallet.fromMnemonic(mnemonic, "m/44'/60'/0'/25446"),
   };
-  logger.info("creating node api client");
   const node: NodeApiClient = new NodeApiClient(nodeApiConfig);
   logger.info("created node api client successfully");
 
@@ -246,35 +247,35 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   await client.reclaimPendingAsyncTransfers();
 
-  // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
-  const withdrawal = await client.store.get(withdrawalKey(client.publicIdentifier));
+  // // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
+  // const withdrawal = await client.store.get(withdrawalKey(client.publicIdentifier));
 
-  if (withdrawal && withdrawal.retry < MAX_WITHDRAWAL_RETRIES) {
-    // get the latest submitted withdrawal from the hub
-    // and check the tx to see if the data matches what we
-    // expect from our store.
-    const tx = await client.node.getLatestWithdrawal();
-    if (client.matchTx(tx, withdrawal.tx)) {
-      // if so, clear tx
-      await client.store.set([
-        {
-          path: withdrawalKey(client.publicIdentifier),
-          value: undefined,
-        },
-      ]);
-      return client;
-    }
-    // if not, and there are retries remaining, retry
-    logger.debug(
-      `Found active withdrawal with ${withdrawal.retry} retries, waiting for withdrawal to be caught`,
-    );
-    await client.retryNodeSubmittedWithdrawal();
-  } else if (withdrawal && withdrawal.retry >= MAX_WITHDRAWAL_RETRIES) {
-    // otherwise, do not start client.
-    const msg = `Cannot connect client, hub failed to submit latest withdrawal ${MAX_WITHDRAWAL_RETRIES} times.`;
-    logger.error(msg);
-    throw new Error(msg);
-  }
+  // if (withdrawal && withdrawal.retry < MAX_WITHDRAWAL_RETRIES) {
+  //   // get the latest submitted withdrawal from the hub
+  //   // and check the tx to see if the data matches what we
+  //   // expect from our store.
+  //   const tx = await client.node.getLatestWithdrawal();
+  //   if (client.matchTx(tx, withdrawal.tx)) {
+  //     // if so, clear tx
+  //     await client.store.set([
+  //       {
+  //         path: withdrawalKey(client.publicIdentifier),
+  //         value: undefined,
+  //       },
+  //     ]);
+  //     return client;
+  //   }
+  //   // if not, and there are retries remaining, retry
+  //   logger.debug(
+  //     `Found active withdrawal with ${withdrawal.retry} retries, waiting for withdrawal to be caught`,
+  //   );
+  //   await client.retryNodeSubmittedWithdrawal();
+  // } else if (withdrawal && withdrawal.retry >= MAX_WITHDRAWAL_RETRIES) {
+  //   // otherwise, do not start client.
+  //   const msg = `Cannot connect client, hub failed to submit latest withdrawal ${MAX_WITHDRAWAL_RETRIES} times.`;
+  //   logger.error(msg);
+  //   throw new Error(msg);
+  // }
 
   return client;
 }
@@ -558,6 +559,7 @@ export class ConnextInternal extends ConnextChannel {
   public nodePublicIdentifier: string;
   public freeBalanceAddress: string;
   public appRegistry: AppRegistry;
+  public signerAddress: Address;
 
   public logger: Logger;
   public network: Network;
@@ -584,6 +586,7 @@ export class ConnextInternal extends ConnextChannel {
 
     this.channelRouter = opts.channelRouter;
     this.freeBalanceAddress = this.channelRouter.config.freeBalanceAddress;
+    this.signerAddress = this.channelRouter.config.signerAddress;
     this.network = opts.network;
     this.node = opts.node;
     this.publicIdentifier = this.channelRouter.config.userPublicIdentifier;
@@ -854,6 +857,9 @@ export class ConnextInternal extends ConnextChannel {
   public getFreeBalance = async (
     assetId: string = AddressZero,
   ): Promise<CFCoreTypes.GetFreeBalanceStateResult> => {
+    if (typeof assetId !== "string") {
+      throw new Error(`Asset id must be a string: ${JSON.stringify(assetId, null, 2)}`);
+    }
     const normalizedAssetId = makeChecksum(assetId);
     try {
       return await this.channelRouter.getFreeBalance(assetId, this.multisigAddress);
