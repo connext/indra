@@ -109,6 +109,12 @@ async function mapPayloadToClient(payload, channel) {
         result = await channel.channelRouter.get(path)
         break;
 
+      case "chan_node_auth":
+        verifyFields(payload.params, ["message"])
+        const { message } = payload.params
+        result = await channel.channelRouter.signMessage(message)
+        break;
+
       case "chan_config":
         result = await channel.channelProviderConfig(payload.params)
         break;
