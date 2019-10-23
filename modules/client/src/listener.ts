@@ -85,6 +85,9 @@ export class ConnextListener extends EventEmitter {
       await this.verifyAndInstallKnownApp(appInfo, matchedApp);
       return;
     },
+    PROPOSE_INSTALL_VIRTUAL: (): void => {
+      /* noop */
+    },
     PROPOSE_STATE: (data: any): void => {
       // TODO: validate the proposed state
       // TODO: are we using this flow in any of the known/supported
@@ -245,8 +248,6 @@ export class ConnextListener extends EventEmitter {
   ): Promise<void> => {
     // virtual is now determined by presence of intermediary identifier
     const isVirtual = !!appInstance.intermediaryIdentifier;
-    console.log('appInstance: ', appInstance);
-    console.log('matchedApp: ', matchedApp);
     const invalidProposal = await appProposalValidation[matchedApp.name](
       appInstance,
       matchedApp,

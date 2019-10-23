@@ -120,7 +120,8 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }], false);
 
   // create a new node api instance
-  // TODO: use local storage for default key value setting!!
+  // TODO: use local storage for default key value setting!?
+  // ^ Bo says: no, localStorage stuff is app-layer, not lib-layer
   const nodeApiConfig = {
     logLevel,
     messaging,
@@ -631,7 +632,7 @@ export class ConnextInternal extends ConnextChannel {
     // TODO: poller should not be completely blocking, but safe to leave for now
     // because the channel should be blocked
     try {
-      await new Promise((resolve, reject) => {
+      await new Promise((resolve: any, reject: any): any => {
         this.ethProvider.on("block", async (blockNumber: number) => {
           const found = await this.checkForUserWithdrawal(blockNumber);
           if (found) {
@@ -1246,7 +1247,8 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.error(`No transaction found to retry`);
       return;
     }
-    let { retry, tx } = val;
+    let { retry } = val;
+    const { tx } = val;
     retry += 1;
     await this.store.set([
       {

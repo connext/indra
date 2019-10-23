@@ -40,7 +40,11 @@ export class ResolveConditionController extends AbstractController {
     this.log.info(`Resolving link: ${JSON.stringify(params)}`);
 
     // convert and validate
-    const { assetId, amount } = await this.node.fetchLinkedTransfer(params.paymentId);
+    const linkInfo = await this.node.fetchLinkedTransfer(params.paymentId);
+    if (!linkInfo) {
+      throw new Error(`Payment ${params.paymentId} does not exist`);
+    }
+    const { assetId, amount } = linkInfo;
     const amountBN = bigNumberify(amount);
     this.log.info(`Found link payment for ${amountBN.toString()} ${assetId}`);
 
