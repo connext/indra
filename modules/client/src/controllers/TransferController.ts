@@ -12,7 +12,7 @@ import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
 import { RejectInstallVirtualMessage } from "../lib/cfCore";
-import { delayAndThrow, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
+import { delayAndThrow, replaceBN, xpubToAddress } from "../lib/utils";
 import { invalidAddress, invalidXpub } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
@@ -141,11 +141,11 @@ export class TransferController extends AbstractController {
       coinTransfers: [
         {
           amount,
-          to: freeBalanceAddressFromXpub(this.connext.publicIdentifier),
+          to: xpubToAddress(this.connext.publicIdentifier),
         },
         {
           amount: Zero,
-          to: freeBalanceAddressFromXpub(recipient),
+          to: xpubToAddress(recipient),
         },
       ],
     };

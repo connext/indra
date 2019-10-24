@@ -143,7 +143,7 @@ class App extends React.Component {
       localStorage.setItem("mnemonic", mnemonic);
     }
 
-    const wallet = eth.Wallet.fromMnemonic(mnemonic, CF_PATH).connect(ethprovider);
+    const wallet = eth.Wallet.fromMnemonic(mnemonic, CF_PATH + '/0').connect(ethprovider);
     const network = await ethprovider.getNetwork();
 
     let store;
@@ -168,15 +168,20 @@ class App extends React.Component {
     machine.send(['START', 'START_START']);
 
     const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
-    const publicExtendedKey = hdNode.neuter().extendedKey;
+    const xpub = hdNode.neuter().extendedKey;
+    const keyGen = (index) => Promise.resolve(hdNode.derivePath(index).privateKey);
+
+    console.log(`mnemonic address: ${wallet.address} (path: ${wallet.path})`);
+    console.log(`xpub address: ${eth.utils.computeAddress(fromExtendedKey(xpub).publicKey)}`);
+    console.log(`keygen address: ${(new eth.Wallet(await keyGen("1"))).address} (path ${(new eth.Wallet(await keyGen("1"))).path})`);
 
     const channel = await connext.connect({
       ethProviderUrl: urls.ethProviderUrl,
-      keyGen: (index) => Promise.resolve(hdNode.derivePath(index).privateKey),
+      keyGen,
       logLevel: 5,
       nodeUrl: urls.nodeUrl,
       store,
-      xpub: publicExtendedKey,
+      xpub,
     });
 
     // Wait for channel to be available
@@ -393,7 +398,7 @@ class App extends React.Component {
     console.log(`Attempting to swap ${formatEther(weiToSwap)} eth for dai at rate: ${swapRate}`);
     machine.send(['START_SWAP']);
 
-    const hubFBAddress = connext.utils.freeBalanceAddressFromXpub(channel.nodePublicIdentifier)
+    const hubFBAddress = connext.utils.xpubToAddress(channel.nodePublicIdentifier)
     const collateralNeeded = balance.channel.token.wad.add(weiToToken(weiToSwap, swapRate));
     let collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress])
 

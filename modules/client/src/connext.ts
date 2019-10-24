@@ -61,13 +61,7 @@ import { WithdrawalController } from "./controllers/WithdrawalController";
 import { CFCore, CreateChannelMessage, EXTENDED_PRIVATE_KEY_PATH } from "./lib/cfCore";
 import { CF_PATH } from "./lib/constants";
 import { Logger } from "./lib/logger";
-import {
-  freeBalanceAddressFromXpub,
-  publicIdentifierToAddress,
-  replaceBN,
-  withdrawalKey,
-  xkeysToSortedKthAddresses,
-} from "./lib/utils";
+import { replaceBN, withdrawalKey, xkeysToSortedKthAddresses, xpubToAddress } from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
@@ -84,18 +78,21 @@ const MAX_WITHDRAWAL_RETRIES = 3;
  */
 
 export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
-  const {
-    ethProviderUrl,
-    keyGen,
-    logLevel,
-    mnemonic,
-    natsClusterId,
-    natsToken,
-    nodeUrl,
-    store,
-    xpub,
-  } = opts;
+  const { ethProviderUrl, logLevel, mnemonic, natsClusterId, natsToken, nodeUrl, store } = opts;
   const logger = new Logger("ConnextConnect", logLevel);
+
+  // Convert mnemonic into xpub + keyGen if provided
+  let xpub: string;
+  let keyGen;
+  if (mnemonic) {
+    const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
+    xpub = hdNode.neuter().extendedKey;
+    keyGen = (index: string): Promise<string> =>
+      Promise.resolve(hdNode.derivePath(index).privateKey);
+  } else {
+    xpub = opts.xpub;
+    keyGen = opts.keyGen;
+  }
 
   // setup network information
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
@@ -121,39 +118,11 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   await messaging.connect();
   logger.info("Messaging service is connected");
 
-  // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
-  // Note: added this to the client since this is required for the cf module to work
-  // generate extended private key from mnemonic
-  let hdNode: HDNode.HDNode;
-  let publicExtendedKey: string;
-  let authKey: string;
-  let innerKeyGen: (index: string) => Promise<string>;
-  if (mnemonic) {
-    hdNode = fromMnemonic(mnemonic).derivePath(CF_PATH);
-    publicExtendedKey = hdNode.neuter().extendedKey;
-    authKey = hdNode.derivePath("0").privateKey;
-    innerKeyGen = (uniqueID: string): Promise<string> => {
-      return Promise.resolve(hdNode.derivePath(uniqueID).privateKey);
-    };
-  } else if (xpub && keyGen) {
-    publicExtendedKey = xpub;
-    authKey = await keyGen("0");
-    innerKeyGen = keyGen;
-  }
-  logger.info(`Derived xpub from mnemonic: ${publicExtendedKey}`);
-  // await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }], false);
-
-  // create a new node api instance
-  // TODO: use local storage for default key value setting!?
-  // ^ Bo says: no, localStorage stuff is app-layer, not lib-layer
-  const nodeApiConfig = {
-    authKey,
+  const node: NodeApiClient = new NodeApiClient({
+    authKey: await keyGen("0"),
     logLevel,
     messaging,
-  };
-  logger.info("creating node api client");
-  const node: NodeApiClient = new NodeApiClient(nodeApiConfig);
-  logger.info("created node api client successfully");
+  });
 
   const config = await node.config();
   logger.info(`node is connected to eth network: ${JSON.stringify(config.ethNetwork)}`);
@@ -178,14 +147,11 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     }, // TODO: proper config
     ethProvider,
     lockService,
-    publicExtendedKey,
-    innerKeyGen,
+    xpub,
+    keyGen,
   );
   node.setUserPublicIdentifier(cfCore.publicIdentifier);
-  logger.info("created cf module successfully");
-
-  const signer = await cfCore.signerAddress();
-  logger.info(`cf module signer address: ${signer}`);
+  logger.info(`Created cfCore w signer address: ${await cfCore.signerAddress()}`);
 
   // TODO: make these types
   const myChannel = await node.getChannel();
@@ -806,7 +772,7 @@ export class ConnextInternal extends ConnextChannel {
     assetId: string,
     notifyCounterparty: boolean = false,
   ): Promise<CFCoreTypes.DepositResult> => {
-    const depositAddr = publicIdentifierToAddress(this.cfCore.publicIdentifier);
+    const depositAddr = xpubToAddress(this.cfCore.publicIdentifier);
     let bal: BigNumber;
 
     if (assetId === AddressZero) {
@@ -875,7 +841,7 @@ export class ConnextInternal extends ConnextChannel {
         // but need the nodes free balance
         // address in the multisig
         const obj = {};
-        obj[freeBalanceAddressFromXpub(this.nodePublicIdentifier)] = new BigNumber(0);
+        obj[xpubToAddress(this.nodePublicIdentifier)] = new BigNumber(0);
         obj[this.freeBalanceAddress] = new BigNumber(0);
         return obj;
       }

@@ -4,7 +4,7 @@ import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
 
-import { publicIdentifierToAddress, replaceBN } from "../lib/utils";
+import { xpubToAddress, replaceBN } from "../lib/utils";
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
@@ -71,7 +71,7 @@ export class DepositController extends AbstractController {
   ): Promise<string | undefined> => {
     // check asset balance of address
     // TODO: fix for non-eth balances
-    const depositAddr = publicIdentifierToAddress(this.cfCore.publicIdentifier);
+    const depositAddr = xpubToAddress(this.cfCore.publicIdentifier);
     let bal: BigNumber;
     if (assetId === AddressZero) {
       bal = await this.ethProvider.getBalance(depositAddr);

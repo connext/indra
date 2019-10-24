@@ -4,7 +4,7 @@ import { bigNumberify, getAddress } from "ethers/utils";
 
 import { ConnextInternal } from "../connext";
 import { Logger } from "../lib/logger";
-import { freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
+import { replaceBN, xpubToAddress } from "../lib/utils";
 
 type ProposalValidator = {
   [index in SupportedApplication]: (
@@ -169,8 +169,7 @@ const baseAppValidation = async (
   const responderFreeBalance = await connext.getFreeBalance(
     getAddress(app.responderDepositTokenAddress),
   );
-  const userFreeBalance =
-    responderFreeBalance[freeBalanceAddressFromXpub(connext.publicIdentifier)];
+  const userFreeBalance = responderFreeBalance[xpubToAddress(connext.publicIdentifier)];
   if (userFreeBalance.lt(app.responderDeposit)) {
     return `Insufficient free balance for requested asset,
       freeBalance: ${userFreeBalance.toString()}
@@ -182,8 +181,7 @@ const baseAppValidation = async (
   const initiatorFreeBalance = await connext.getFreeBalance(
     getAddress(app.initiatorDepositTokenAddress),
   );
-  const nodeFreeBalance =
-    initiatorFreeBalance[freeBalanceAddressFromXpub(connext.nodePublicIdentifier)];
+  const nodeFreeBalance = initiatorFreeBalance[xpubToAddress(connext.nodePublicIdentifier)];
   if (isVirtual && nodeFreeBalance.lt(app.initiatorDeposit)) {
     const reqRes = await connext.requestCollateral(app.initiatorDepositTokenAddress);
     connext.logger.info(`Collateral Request result: ${JSON.stringify(reqRes, replaceBN, 2)}`);

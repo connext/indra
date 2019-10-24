@@ -19,7 +19,7 @@ import { HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { RejectInstallVirtualMessage } from "../lib/cfCore";
-import { createLinkedHash, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
+import { createLinkedHash, replaceBN, xpubToAddress } from "../lib/utils";
 import { falsy, invalid32ByteHexString, invalidAddress, notLessThanOrEqualTo } from "../validation";
 
 import { AbstractController } from "./AbstractController";
@@ -118,11 +118,11 @@ export class ConditionalTransferController extends AbstractController {
       coinTransfers: [
         {
           amount,
-          to: freeBalanceAddressFromXpub(this.connext.publicIdentifier),
+          to: xpubToAddress(this.connext.publicIdentifier),
         },
         {
           amount: Zero,
-          to: freeBalanceAddressFromXpub(this.connext.nodePublicIdentifier),
+          to: xpubToAddress(this.connext.nodePublicIdentifier),
         },
       ],
       linkedHash,

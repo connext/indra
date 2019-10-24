@@ -279,7 +279,7 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
     xpub: publicExtendedKey,
   };
   client = await connext.connect(connextOpts);
-  const nodeFBAddress = connext.utils.freeBalanceAddressFromXpub(client.nodePublicIdentifier);
+  const nodeFBAddress = connext.utils.xpubToAddress(client.nodePublicIdentifier);
   console.log("Payment bot launched:");
   console.log(` - mnemonic: ${connextOpts.mnemonic}`);
   console.log(` - ethProviderUrl: ${connextOpts.ethProviderUrl}`);
