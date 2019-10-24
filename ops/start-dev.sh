@@ -86,8 +86,8 @@ function new_secret {
     echo "Created secret called $1 with id $id"
   fi
 }
-new_secret "${project}_database_dev" "$pg_password" 
-new_secret "${project}_readonly" "$readonly_password" 
+new_secret "${project}_database_dev" "$pg_password"
+new_secret "${project}_readonly" "$readonly_password"
 
 # Deploy with an attachable network so tests & the daicard can connect to individual components
 if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
@@ -244,22 +244,22 @@ services:
   hasura:
     image: $hasura_image
     environment:
-      PG_HOST: $pg_host
-      PG_PORT: $pg_port
-      READONLY_USER: readonly
+      HASURA_GRAPHQL_ENABLE_ALLOWLIST: "true"
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
       PG_DB: $project
+      PG_HOST: $pg_host
       PG_PASSWORD_FILE: $pg_password_file
+      PG_PORT: $pg_port
       PG_USER: $project
       READONLY_PASSWORD_FILE: $readonly_password_file
-      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
-      HASURA_GRAPHQL_ENABLE_ALLOWLIST: "true"
+      READONLY_USER: readonly
     networks:
       - $project
     ports:
       - "8083:8080"
     secrets:
-      - "indra_readonly"
-      - "indra_database_dev"
+      - $pg_password
+      - $readonly_password
 
   redis:
     image: $redis_image
