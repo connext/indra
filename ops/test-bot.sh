@@ -97,5 +97,8 @@ sleep 7
 echo -e "$divider";echo "Redeeming async payment"
 bash ops/payment-bot.sh -i 1 -a $tokenAddress
 
+echo -e "$divider";echo "Withdrawing"
+bash ops/payment-bot.sh -i 1 -a $tokenAddress -w 0.05
+
 echo -e "$divider";echo "Tests finished successfully"
 cleanup
