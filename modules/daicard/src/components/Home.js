@@ -3,6 +3,8 @@ import {
   Fab,
   Grid,
   Modal,
+  FormControl,
+  FormHelperText,
   InputBase,
   IconButton,
   InputAdornment,
@@ -39,14 +41,18 @@ const styles = {
     textAlign: "center",
     position: "absolute",
     top: "10%",
-    width: "375px",
+    width: "320px",
     marginLeft: "auto",
     marginRight: "auto",
     left: "0",
     right: "0",
   },
+  requestSendWrapper: {
+    justifyContent: "space-between",
+  },
   button: {
     color: "#FFF",
+    width: "48%",
   },
   buttonOutlined: {
     color: "#FCA311",
@@ -64,18 +70,31 @@ const styles = {
     marginLeft: "5px",
   },
   valueInput: {
-    width: "100%",
     color: "#FCA311",
     fontSize: "60px",
-    textAlign: "right",
     cursor: "none",
+    overflow: "hidden",
+    paddingLeft: "35%",
   },
   valueInputWrapper: {
-    display: "flex",
     marginTop: "15%",
     justifyContent: "center",
     alignItems: "center",
-    paddingLeft: "30%",
+    overflow: "hidden",
+    // paddingLeft: "30%",
+  },
+  helperText: {
+    color: "red",
+    marginTop: "-5px",
+  },
+  xpubWrapper: {
+    marginLeft: "5%",
+    marginRight: "5%",
+  },
+  xpubInput: {
+    width: "100%",
+    color: "#FCA311",
+    fontSize: "45px",
   },
 };
 
@@ -146,10 +165,18 @@ function Home(props) {
 
   return (
     <Grid container className={classes.top}>
-      <Grid container direction="row" className={classes.valueInputWrapper}>
+      <Modal
+        id="qrscan"
+        open={scanModal}
+        onClose={() => setScanModal(false)}
+        className={classes.modal}
+      >
+        <QRScan handleResult={scanQRCode} />
+      </Modal>
+      <FormControl className={classes.valueInputWrapper}>
         <InputBase
           required
-          fullWidth
+          fullWidth={true}
           className={classes.valueInput}
           error={amount.error !== null}
           onChange={evt => updateAmountHandler(evt.target.value)}
@@ -157,72 +184,78 @@ function Home(props) {
           value={amount.display}
           placeholder={"0.00"}
         />
-      </Grid>
-      <Grid container direction="row" style={{ marginTop: "2%" }}>
-        <Grid item xs={12} style={{ marginLeft: "5%", marginRight: "5%" }}>
-          <InputBase
-            fullWidth
-            error={amount.error !== null}
-            onChange={evt => updateRecipientHandler(evt.target.value)}
-            style={{ width: "100%", color: "#FCA311", fontSize: "45px" }}
-            error={recipient.error !== null}
-            type="text"
-            value={recipient.display}
-            placeholder={"xPub"}
-            endAdornment={
-              <Tooltip disableFocusListener disableTouchListener title="Scan with QR code">
-                <IconButton
-                  className={classes.QRButton}
-                  disableTouchRipple
-                  variant="contained"
-                  onClick={() => setScanModal(true)}
-                >
-                  <QRIcon className={classes.icon} />
-                </IconButton>
-              </Tooltip>
-            }
-          />
-          <Modal
-            id="qrscan"
-            open={scanModal}
-            onClose={() => setScanModal(false)}
-            className={classes.modal}
-          >
-            <QRScan handleResult={scanQRCode} />
-          </Modal>
-        </Grid>
+        {amount.error && (
+          <FormHelperText className={classes.helperText}>{amount.error}</FormHelperText>
+        )}
+      </FormControl>
+      <Grid item xs={12} className={classes.xpubWrapper}>
+        <InputBase
+          fullWidth
+          className={classes.xpubInput}
+          error={amount.error !== null}
+          onChange={evt => updateRecipientHandler(evt.target.value)}
+          error={recipient.error !== null}
+          type="text"
+          value={recipient.display}
+          placeholder={"Recipient xPub"}
+          endAdornment={
+            <Tooltip disableFocusListener disableTouchListener title="Scan with QR code">
+              <IconButton
+                className={classes.QRButton}
+                disableTouchRipple
+                variant="contained"
+                onClick={() => setScanModal(true)}
+              >
+                <QRIcon className={classes.icon} />
+              </IconButton>
+            </Tooltip>
+          }
+        />
       </Grid>
       <Grid container spacing={0} direction="column">
         <Grid className={classes.buttonSpacer} />
-        <Button
-          className={classes.button}
-          disableTouchRipple
-          color="primary"
-          fullWidth
-          variant="contained"
-          size="large"
-          component={Link}
-          to={`/request/${amount.display}`}
-        >
-          Request
-          <ReceiveIcon className={classes.buttonIcon} />
-        </Button>
+        <Grid className={classes.buttonSpacer} />
+        <Grid container directiom="row" className={classes.requestSendWrapper}>
+          <Button
+            className={classes.button}
+            disableTouchRipple
+            color="primary"
+            variant="contained"
+            size="large"
+            component={Link}
+            to={`/request/${amount.display}`}
+          >
+            Request
+            <ReceiveIcon className={classes.buttonIcon} />
+          </Button>
+          <Grid className={classes.buttonSpacer} />
+          <Button
+            className={classes.button}
+            disableTouchRipple
+            color="primary"
+            size="large"
+            variant="contained"
+            component={Link}
+            to={`/send/${amount.display}/${recipient.display}`}
+          >
+            Send
+            <SendIcon className={classes.buttonIcon} />
+          </Button>
+        </Grid>
         <Grid className={classes.buttonSpacer} />
         <Button
-          className={classes.button}
+          className={classes.buttonOutlined}
           disableTouchRipple
-          color="primary"
           fullWidth
+          color="primary"
+          variant="outlined"
           size="large"
-          variant="contained"
           component={Link}
-          to={`/send/${amount.display}/${recipient.display}`}
+          to="/deposit"
         >
-          Send
-          <SendIcon className={classes.buttonIcon} />
+          Deposit
         </Button>
         <Grid className={classes.buttonSpacer} />
-
         <Button
           className={classes.buttonOutlined}
           disableTouchRipple

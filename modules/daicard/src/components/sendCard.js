@@ -6,7 +6,11 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  FormControl,
+  FormHelperText,
+  InputBase,
   Grid,
+  IconButton,
   InputAdornment,
   Modal,
   TextField,
@@ -16,7 +20,7 @@ import {
 } from "@material-ui/core";
 import PropTypes from "prop-types";
 import { Send as SendIcon, Link as LinkIcon } from "@material-ui/icons";
-import { useMachine } from '@xstate/react';
+import { useMachine } from "@xstate/react";
 import { Zero } from "ethers/constants";
 import { hexlify, randomBytes } from "ethers/utils";
 import QRIcon from "mdi-material-ui/QrcodeScan";
@@ -26,21 +30,33 @@ import queryString from "query-string";
 import { Currency, toBN } from "../utils";
 import { sendMachine } from "../state";
 
-import { Copyable } from "./copyable";
+import Copyable from "./copyable";
 import { QRScan } from "./qrCode";
 
 const LINK_LIMIT = Currency.DAI("10"); // $10 capped linked payments
 
-const formatAmountString = (amount) => {
-  const [whole, part] = amount.split(".")
-  return `${whole || "0"}.${part ? part.padEnd(2, "0") : "00"}`
-}
+const formatAmountString = amount => {
+  const [whole, part] = amount.split(".");
+  return `${whole || "0"}.${part ? part.padEnd(2, "0") : "00"}`;
+};
 
 const styles = {
   modalContent: {
     margin: "0% 4% 4% 4%",
     padding: "0px",
     width: "92%",
+  },
+  modal: {
+    justifyContent: "center",
+    alignItems: "center",
+    textAlign: "center",
+    position: "absolute",
+    top: "10%",
+    width: "320px",
+    marginLeft: "auto",
+    marginRight: "auto",
+    left: "0",
+    right: "0",
   },
   icon: {
     width: "40px",
@@ -49,57 +65,124 @@ const styles = {
   input: {
     width: "100%",
   },
-  button: {
-    backgroundColor: "#FCA311",
-    color: "#FFF",
+
+  top: {
+    display: "flex",
+    paddingLeft: 12,
+    paddingRight: 12,
+    paddingTop: "10%",
+    paddingBottom: "10%",
+    textAlign: "center",
+    justify: "center",
   },
-  top:{
-  display: "flex",
-  paddingLeft: 12,
-  paddingRight: 12,
-  paddingTop: "10%",
-  paddingBottom: "10%",
-  textAlign: "center",
-  justify: "center",
-  }
+  valueInput: {
+    color: "#FCA311",
+    fontSize: "60px",
+    cursor: "none",
+    overflow: "hidden",
+    paddingLeft: "31%",
+  },
+  helperText: {
+    color: "red",
+    marginTop: "-5px",
+  },
+  helperTextGray: {
+    color: "#1E96CC",
+    marginTop: "-5px",
+  },
+  xpubWrapper: {
+    marginLeft: "5%",
+    marginRight: "5%",
+  },
+  xpubInput: {
+    width: "100%",
+    color: "#FCA311",
+    fontSize: "45px",
+  },
+  QRbutton: {
+    color: "#002868", 
+  },
+  linkSendWrapper: {
+    justifyContent: "space-between",
+  },
+  buttonSpacer: {
+    height: "10px",
+    width: "100%",
+  },
+  button: {
+    color: "#FFF",
+    width: "48%",
+  },
+  buttonIcon: {
+    marginLeft: "5px",
+  },
+  icon: {
+    color: "#002868",
+  },
+  linkButtonInner:{
+    width:"100%",
+    alignItems:"center",
+    justifyContent:"center",
+    marginTop:"5px"
+  },
+  linkSub: {
+    fontSize: 10,
+    fontWeight:"600",
+    marginTop:"-5px",
+    width: "100%",
+  },
 };
 
-const SendCard = ( match, balance, channel, classes, history, location, token  ) => {
-  const [amount, setAmount] = useState({ display: "", error: null, value: null });
+const SendCard = props => {
+  const { match, balance, channel, classes, history, location, token } = props;
+  const [amount, setAmount] = useState({
+    display: match.params.amount ? match.params.amount : "0.00",
+    error: null,
+    value: null,
+  });
   const [link, setLink] = useState(undefined);
   const [paymentState, paymentAction] = useMachine(sendMachine);
-  const [recipient, setRecipient] = useState({ display: "", error: null, value: null });
-  const [scan, setScan] = useState(false)
+  const [recipient, setRecipient] = useState({
+    display: match.params.recipient ? match.params.recipient : "",
+    error: null,
+    value: null,
+  });
+  const [scan, setScan] = useState(false);
 
   // need to extract token balance so it can be used as a dependency for the hook properly
-  const tokenBalance = balance.channel.token.wad
-  const updateAmountHandler = useCallback((rawValue) => {
-    let value = null;
-    let error = null;
-    if (!rawValue) {
-      error = `Invalid amount: must be greater than 0`;
-    }
-    if (!error) {
-      try {
-        value = Currency.DAI(rawValue);
-      } catch (e) {
-        error = `Please enter a valid amount`;
-      }
-    }
-    if (!error && value && value.wad.gt(tokenBalance)) {
-      error = `Invalid amount: must be less than your balance`;
-    }
-    if (!error && value && value.wad.lte(Zero)) {
-      error = "Invalid amount: must be greater than 0";
-    }
-    setAmount({
-      display: rawValue,
-      error,
-      value: error ? null : value,
-    });
-  }, [tokenBalance])
 
-  const updateRecipientHandler = (rawValue) => {
+  const tokenBalance = balance.channel.token.wad;
+
+  const updateAmountHandler = useCallback(
+    rawValue => {
+      let value = null;
+      let error = null;
+      if (!rawValue) {
+        error = `Invalid amount: must be greater than 0`;
+      }
+      if (!error) {
+        try {
+          value = Currency.DAI(rawValue);
+        } catch (e) {
+          error = `Please enter a valid amount`;
+        }
+      }
+      if (!error && value && tokenBalance && value.wad.gt(tokenBalance)) {
+        error = `Invalid amount: must be less than your balance`;
+      }
+      if (!error && value && value.wad.lte(Zero)) {
+        error = "Invalid amount: must be greater than 0";
+      }
+      setAmount({
+        display: rawValue,
+        error,
+        value: error ? null : value,
+      });
+    },
+    [tokenBalance],
+  );
+
+  const updateRecipientHandler = rawValue => {
     const xpubLen = 111;
     let value = null;
     let error = null;
@@ -115,9 +198,9 @@ const SendCard = ( match, balance, channel, classes, history, location, token  )
       error,
       value: error ? null : value,
     });
-  }
+  };
 
-  const handleQRData = (scanResult) => {
+  const handleQRData = scanResult => {
     let data = scanResult.split("/send?");
     if (data[0] === window.location.origin) {
       const query = queryString.parse(data[1]);
@@ -138,12 +221,12 @@ const SendCard = ( match, balance, channel, classes, history, location, token  )
     if (!recipient.value) {
       setRecipient({
         ...recipient,
-        error: 'Recipent must be specified for p2p transfer',
+        error: "Recipent must be specified for p2p transfer",
       });
       return;
     }
     console.log(`Sending ${amount.value} to ${recipient.value}`);
-    paymentAction('NEW_P2P');
+    paymentAction("NEW_P2P");
     // there is a chance the payment will fail when it is first sent
     // due to lack of collateral. collateral will be auto-triggered on the
     // hub side. retry for 1min, then fail
@@ -165,11 +248,11 @@ const SendCard = ( match, balance, channel, classes, history, location, token  )
       }
     }
     if (!transferRes) {
-      paymentAction('ERROR');
+      paymentAction("ERROR");
       return;
     }
-    paymentAction('DONE');
-  }
+    paymentAction("DONE");
+  };
 
   const linkHandler = async () => {
     if (amount.error) return;
@@ -180,7 +263,7 @@ const SendCard = ( match, balance, channel, classes, history, location, token  )
       setAmount({ ...amount, error: `Linked payments are capped at ${LINK_LIMIT.format()}.` });
       return;
     }
-    paymentAction('NEW_LINK');
+    paymentAction("NEW_LINK");
     try {
       console.log(`Creating ${amount.value.format()} link payment`);
       const link = await channel.conditionalTransfer({
@@ -195,7 +278,7 @@ const SendCard = ( match, balance, channel, classes, history, location, token  )
         `link params: secret=${link.preImage}&paymentId=${link.paymentId}&` +
           `assetId=${token.address}&amount=${amount.value.amount}`,
       );
-      paymentAction('DONE');
+      paymentAction("DONE");
       setLink({
         baseUrl: `${window.location.origin}/redeem`,
         paymentId: link.paymentId,
@@ -203,12 +286,12 @@ const SendCard = ( match, balance, channel, classes, history, location, token  )
       });
     } catch (e) {
       console.warn("Unexpected error creating link payment:", e);
-      paymentAction('ERROR');
+      paymentAction("ERROR");
     }
-  }
+  };
 
   const closeModal = () => {
-    paymentAction('DISMISS');
+    paymentAction("DISMISS");
   };
 
   useEffect(() => {
@@ -219,127 +302,93 @@ const SendCard = ( match, balance, channel, classes, history, location, token  )
     if (!recipient.value && !recipient.error && query.recipient) {
       updateRecipientHandler(query.recipient);
     }
-  }, [location, updateAmountHandler])
+  }, [location, updateAmountHandler]);
 
   return (
-    <Grid
-      className={classes.top}
-      container
-      spacing={2}
-      direction="column"
-    >
+    <Grid className={classes.top} container spacing={2} direction="column">
+      <FormControl xs={12} className={classes.bodyForm}>
+        <InputBase
+          required
+          className={classes.valueInput}
+          onChange={evt => updateAmountHandler(evt.target.value)}
+          type="numeric"
+          value={amount.display}
+          placeholder={"0.00"}
+        />
+        {amount.error && (
+          <FormHelperText className={classes.helperText}>{amount.error}</FormHelperText>
+        )}
+      </FormControl>
 
-      <Grid container wrap="nowrap" direction="row" justify="center" alignItems="center">
-        <Grid item xs={12}>
-          <SendIcon className={classes.icon} />
-        </Grid>
+      <FormControl item xs={12} className={classes.xpubWrapper}>
+        <InputBase
+          fullWidth
+          className={classes.xpubInput}
+          onChange={evt => updateRecipientHandler(evt.target.value)}
+          type="text"
+          value={recipient.display}
+          placeholder={"Recipient xPub"}
+          endAdornment={
+            <Tooltip disableFocusListener disableTouchListener title="Scan with QR code">
+              <IconButton
+                className={classes.QRButton}
+                disableTouchRipple
+                variant="contained"
+                onClick={() => setScan(true)}
+              >
+                <QRIcon className={classes.icon} />
+              </IconButton>
+            </Tooltip>
+          }
+        />
+        <FormHelperText className={recipient.error ? classes.helperText : classes.helperTextGray}>
+          {recipient.error ? recipient.error : "Recipient ignored for link payments"}
+        </FormHelperText>
+      </FormControl>
+      <Grid className={classes.buttonSpacer} />
+      <Grid className={classes.buttonSpacer} />
+      <Grid container direction="row" className={classes.linkSendWrapper}>
+        <Button
+          className={classes.button}
+          disableTouchRipple
+          disabled={!!amount.error}
+          color="primary"
+          variant="contained"
+          size="large"
+          onClick={() => {
+            linkHandler();
+          }}
+        >
+        <Grid container direction="row" className={classes.linkButtonInner}>
+          <Typography>Link</Typography>
+            <LinkIcon className={classes.buttonIcon} />
+          <Typography className={classes.linkSub}>
+            <span>{`${LINK_LIMIT.format()} Max`}</span>
+          </Typography>
+          </Grid>
+        </Button>
+        <Button
+          className={classes.button}
+          disableTouchRipple
+          color="primary"
+          size="large"
+          variant="contained"
+          disabled={
+            !!amount.error ||
+            !!recipient.error ||
+            paymentState === "processingP2p" ||
+            paymentState === "processingLink"
+          }
+          onClick={() => {
+            paymentHandler();
+          }}
+        >
+          Send
+          <SendIcon className={classes.buttonIcon} />
+        </Button>
       </Grid>
 
       {/* <Grid item xs={12}>
-        <Grid container direction="row" justify="center" alignItems="center">
-          <Typography variant="h2">
-            <span>{balance.channel.token.toDAI().format({ decimals: 2, symbol: false, round: false })}</span>
-          </Typography>
-        </Grid>
-      </Grid> */}
-
-      <Grid item xs={12}>
-        <Typography variant="body2">
-          <span>{`Linked payments are capped at ${LINK_LIMIT.format()}.`}</span>
-        </Typography>
-      </Grid>
-
-      <Grid item xs={12} style={{ width: "100%" }}>
-        <TextField
-          fullWidth
-          error={amount.error !== null}
-          helperText={amount.error}
-          id="outlined-number"
-          label="Amount"
-          margin="normal"
-          onChange={evt => updateAmountHandler(evt.target.value)}
-          style={{ width: "100%" }}
-          type="number"
-          value={amount.display ? amount.display : match.params.amount}
-          variant="outlined"
-        />
-      </Grid>
-
-      <Grid item xs={12} style={{ width: "100%" }}>
-        <TextField
-          fullWidth
-          id="outlined"
-          label="Recipient Public Identifier"
-          type="string"
-          value={recipient.display ? recipient.display : match.params.recipient}
-          onChange={evt => updateRecipientHandler(evt.target.value)}
-          margin="normal"
-          variant="outlined"
-          helperText={recipient.error ? recipient.error : "Ignored for linked payments"}
-          error={recipient.error !== null}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <Tooltip disableFocusListener disableTouchListener title="Scan with QR code">
-                  <Button
-                    disableTouchRipple
-                    variant="contained"
-                    color="primary"
-                    style={{ color: "#FFF" }}
-                    onClick={() => setScan(true)}
-                  >
-                    <QRIcon />
-                  </Button>
-                </Tooltip>
-              </InputAdornment>
-            ),
-          }}
-        />
-      </Grid>
-
-      <Grid item xs={12}>
-        <Grid container direction="row" alignItems="center" justify="center" spacing={8}>
-          <Grid item xs={6}>
-            <Button
-              disableTouchRipple
-              className={classes.button}
-              disabled={!!amount.error}
-              fullWidth
-              onClick={() => {
-                linkHandler();
-              }}
-              size="large"
-              variant="contained"
-            >
-              Link
-              <LinkIcon style={{ marginLeft: "5px" }} />
-            </Button>
-          </Grid>
-          <Grid item xs={6}>
-            <Button
-              disableTouchRipple
-              className={classes.button}
-              disabled={
-                !!amount.error ||
-                !!recipient.error ||
-                paymentState === 'processingP2p' ||
-                paymentState === 'processingLink'
-              }
-              fullWidth
-              onClick={() => {
-                paymentHandler();
-              }}
-              size="large"
-              variant="contained"
-            >
-              Send
-              <SendIcon style={{ marginLeft: "5px" }} />
-            </Button>
-          </Grid>
-        </Grid>
-      </Grid>
-
-      <Grid item xs={12}>
         <Button
           disableTouchRipple
           variant="outlined"
@@ -354,25 +403,9 @@ const SendCard = ( match, balance, channel, classes, history, location, token  )
         >
           Back
         </Button>
-      </Grid>
+      </Grid> */}
 
-      <Modal
-        id="qrscan"
-        open={scan}
-        onClose={() => setScan(false)}
-        style={{
-          justifyContent: "center",
-          alignItems: "center",
-          textAlign: "center",
-          position: "absolute",
-          top: "10%",
-          width: "375px",
-          marginLeft: "auto",
-          marginRight: "auto",
-          left: "0",
-          right: "0",
-        }}
-      >
+      <Modal id="qrscan" open={scan} onClose={() => setScan(false)} className={classes.modal}>
         <QRScan handleResult={handleQRData} history={history} />
       </Modal>
 
@@ -387,21 +420,13 @@ const SendCard = ( match, balance, channel, classes, history, location, token  )
       />
     </Grid>
   );
-}
+};
 
-const SendCardModal = ({
-  amount,
-  classes,
-  closeModal,
-  history,
-  link,
-  paymentState,
-  recipient,
-}) => (
+const SendCardModal = ({ amount, classes, closeModal, history, link, paymentState, recipient }) => (
   <Dialog
-    open={!paymentState.matches('idle')}
+    open={!paymentState.matches("idle")}
     onBackdropClick={
-      (paymentState === 'processingP2p' || paymentState === 'processingLink')
+      paymentState === "processingP2p" || paymentState === "processingLink"
         ? null
         : () => closeModal()
     }
@@ -421,8 +446,7 @@ const SendCardModal = ({
       }}
       justify="center"
     >
-
-      {paymentState.matches('processingP2p') ? (
+      {paymentState.matches("processingP2p") ? (
         <Grid>
           <DialogTitle disableTypography>
             <Typography variant="h5" color="primary">
@@ -433,8 +457,7 @@ const SendCardModal = ({
             <CircularProgress style={{ marginTop: "1em" }} />
           </DialogContent>
         </Grid>
-
-      ) : paymentState.matches('processingLink') ? (
+      ) : paymentState.matches("processingLink") ? (
         <Grid>
           <DialogTitle disableTypography>
             <Typography variant="h5" color="primary">
@@ -448,8 +471,7 @@ const SendCardModal = ({
             <CircularProgress style={{ marginTop: "1em" }} />
           </DialogContent>
         </Grid>
-
-      ) : paymentState.matches('successP2p') ? (
+      ) : paymentState.matches("successP2p") ? (
         <Grid>
           <DialogTitle disableTypography>
             <Typography variant="h5" style={{ color: "#009247" }}>
@@ -465,8 +487,7 @@ const SendCardModal = ({
             </DialogContentText>
           </DialogContent>
         </Grid>
-
-      ) : paymentState.matches('successLink') ? (
+      ) : paymentState.matches("successLink") ? (
         <div style={{ width: "100%" }}>
           <DialogTitle disableTypography>
             <Typography variant="h5" style={{ color: "#009247" }}>
@@ -475,17 +496,17 @@ const SendCardModal = ({
           </DialogTitle>
           <DialogContent className={classes.modalContent}>
             <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
-              Anyone with this link can redeem the payment. Save a copy of it somewhere safe and only share it with the person you want to pay.
+              Anyone with this link can redeem the payment. Save a copy of it somewhere safe and
+              only share it with the person you want to pay.
             </DialogContentText>
             <Copyable
-              text={link
-                ? `${link.baseUrl}?paymentId=${link.paymentId}&secret=${link.secret}`
-                : '???'}
+              text={
+                link ? `${link.baseUrl}?paymentId=${link.paymentId}&secret=${link.secret}` : "???"
+              }
             />
           </DialogContent>
         </div>
-
-        ) : paymentState.matches('error') ? (
+      ) : paymentState.matches("error") ? (
         <Grid>
           <DialogTitle disableTypography>
             <Typography variant="h5" style={{ color: "#F22424" }}>
@@ -502,13 +523,12 @@ const SendCardModal = ({
             </DialogContentText>
           </DialogContent>
         </Grid>
-
       ) : (
-        <div/>
+        <div />
       )}
 
-      {(paymentState === 'processingP2p' || paymentState === 'processingLink') ? (
-        <div/>
+      {paymentState === "processingP2p" || paymentState === "processingLink" ? (
+        <div />
       ) : (
         <DialogActions>
           <Button
@@ -545,4 +565,3 @@ SendCard.propTypes = {
 };
 
 export default withStyles(styles)(SendCard);
-

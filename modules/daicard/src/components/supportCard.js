@@ -1,14 +1,17 @@
 import { Button, Grid, Typography, withStyles } from "@material-ui/core";
+import PropTypes from "prop-types";
+
 import React, { useEffect, useState } from "react";
 
-const style = withStyles(theme => ({
+const styles = {
   icon: {
     width: "40px",
     height: "40px"
   }
-}));
+};
 
-export const SupportCard = style(({ channel }) => {
+const SupportCard = props => {
+  const{ channel } = props;
   const [channelState, setChannelState] = useState(undefined);
 
   useEffect(() => {
@@ -99,4 +102,11 @@ export const SupportCard = style(({ channel }) => {
       </Grid>
     </Grid>
   );
-})
+}
+
+SupportCard.propTypes = {
+  classes: PropTypes.object.isRequired,
+};
+
+export default withStyles(styles)(SupportCard);
+

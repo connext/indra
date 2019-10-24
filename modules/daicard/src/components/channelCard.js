@@ -33,13 +33,23 @@ const styles = {
   networkText:{
     marginTop:"-8px",
     fontSize:8,
+    color:"green"
+  },
+  networkTextMissing:{
+    marginTop:"-8px",
+    fontSize:8,
     color:"#fca311"
   },
   icon:{
     marginTop:"-10px",
-    color:"#fca311",
+    color:"green",
     fontSize: 8
   },
+  iconNetworkMissing:{
+    marginTop:"-10px",
+    color:"#fca311",
+    fontSize: 8
+  }
 };
 
 const ChannelCard = props => {
@@ -50,6 +60,7 @@ const ChannelCard = props => {
     const part = bal.substring(bal.indexOf('.'));
     return { whole, part: part.substring(0,4) };
   }
+
   return (
         <Grid item xs={12}>
            <Typography style={{display: 'inline-block'}}  className={classes.row}>
@@ -64,8 +75,8 @@ const ChannelCard = props => {
               </Typography>
             </span>
             <Grid className={classes.networkWrapper}>
-            <CheckCircle className={classes.icon}/>
-            <Typography className={classes.networkText}>{"undefined".toUpperCase()}</Typography>
+            <CheckCircle className={network.name? classes.icon: classes.iconNetworkMissing}/>
+            <Typography className={network.name? classes.networkText : classes.networkTextMissing}>{network.name? network.name.toUpperCase(): "NO NETWORK"}</Typography>
             </Grid>
             
         </Grid>

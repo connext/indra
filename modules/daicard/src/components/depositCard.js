@@ -2,7 +2,7 @@ import { Button, Grid, Tooltip, Typography, withStyles } from "@material-ui/core
 import React from "react";
 import PropTypes from 'prop-types';
 
-import { Copyable } from "./copyable";
+import Copyable from "./copyable";
 import { QRGenerate } from "./qrCode";
 
 const styles ={
@@ -63,7 +63,7 @@ function DepositCard(props){
                     or ${maxDai || "?.??"} Dai will be deposited into the state channel, any leftovers will be kept on-chain`}</span>
         </Typography>
       </Grid>
-      <Grid item xs={12}>
+      {/* <Grid item xs={12}>
         <Button
           disableTouchRipple
           variant="outlined"
@@ -73,7 +73,7 @@ function DepositCard(props){
         >
           Back
         </Button>
-      </Grid>
+      </Grid> */}
     </Grid>
   );
 }

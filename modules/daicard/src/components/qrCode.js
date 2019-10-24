@@ -5,7 +5,7 @@ import QrReader from "react-qr-reader";
 
 export const QRGenerate = ({ size, value }) => {
   return (
-    <QrCode value={value} size={size || 256} />
+    <QrCode value={value} size={size || 256} fgColor={"#002868"} />
   )
 }
 

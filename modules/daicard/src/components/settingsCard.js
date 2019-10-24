@@ -12,16 +12,26 @@ import {
   Typography,
   withStyles,
 } from "@material-ui/core";
+import PropTypes from "prop-types";
+
 import {
   ArrowRight as SubmitIcon,
   Settings as SettingsIcon,
 } from "@material-ui/icons";
 import React, { useState } from "react";
 
-import { Copyable } from "./copyable";
+import Copyable from "./copyable";
 import { MySnackbar } from "./snackBar";
 
-const style = withStyles(theme => ({
+const styles = {
+  top:{
+    paddingLeft: 12,
+    paddingRight: 12,
+    paddingTop: "10%",
+    paddingBottom: "10%",
+    textAlign: "center",
+    justifyContent: "center"
+  },
   card: {
     display: "flex",
     flexWrap: "wrap",
@@ -39,12 +49,28 @@ const style = withStyles(theme => ({
   input: {
     width: "100%"
   },
-  button: {
-    marginBottom: "0px"
+  supportButton:{
+    background: "#FFF",
+    border: "1px solid #7289da",
+    color: "#7289da"
+  },
+  burnCardButton:{
+    background: "#FFF",
+    border: "1px solid #F22424",
+    color: "#F22424"
+  },
+  burnCardButtonMargin:{
+    background: "#FFF",
+    border: "1px solid #F22424",
+    color: "#F22424",
+    marginLeft:"5%"
+  },
+  button:{
+    marginBottom:0
   }
-}));
+};
 
-export const SettingsCard = style((props) => {
+const SettingsCard = (props) => {
   const [copied, setCopied] = useState(false);
   const [inputRecovery, setInputRecovery] = useState(false);
   const [isBurning, setIsBurning] = useState(false);
@@ -75,14 +101,7 @@ export const SettingsCard = style((props) => {
       container
       spacing={2}
       direction="column"
-      style={{
-        paddingLeft: 12,
-        paddingRight: 12,
-        paddingTop: "10%",
-        paddingBottom: "10%",
-        textAlign: "center",
-        justifyContent: "center"
-      }}
+      className={classes.top}
     >
       <MySnackbar
         variant="success"
@@ -90,18 +109,12 @@ export const SettingsCard = style((props) => {
         onClose={() => closeModal()}
         message="Copied!"
       />
-      {/* <Grid item xs={12} style={{ justifyContent: "center" }}>
-        <SettingsIcon className={classes.icon} />
-      </Grid> */}
+
       <Grid item xs={12} className={classes.button}>
         <Button
           disableTouchRipple
           fullWidth
-          style={{
-            background: "#FFF",
-            border: "1px solid #7289da",
-            color: "#7289da"
-          }}
+          className={classes.supportButton}
           onClick={() => {
             window.open("https://discord.gg/q2cakRc", "_blank");
             window.close();
@@ -127,7 +140,7 @@ export const SettingsCard = style((props) => {
           </Button>
         ) : (
           <Copyable
-            color="primary"
+            color="#002868"
             size="large"
             text={localStorage.getItem("mnemonic")}
           />
@@ -148,11 +161,11 @@ export const SettingsCard = style((props) => {
           </Button>
         ) : (
           <TextField
-            style={{ height: "40px", width: "80%" }}
+            style={{ height: "40px", width: "100%" }}
             color="primary"
             variant="outlined"
             size="large"
-            placeholder="Enter backup phrase and submit"
+            placeholder="Enter backup phrase"
             value={mnemonic}
             onChange={event => setMnemonic(event.target.value)}
             InputProps={{
@@ -178,11 +191,7 @@ export const SettingsCard = style((props) => {
         <Button
           disableTouchRipple
           fullWidth
-          style={{
-            background: "#FFF",
-            border: "1px solid #F22424",
-            color: "#F22424"
-          }}
+          className={classes.burnCardButton}
           size="large"
           onClick={() => setShowWarning(true)}
         >
@@ -232,11 +241,7 @@ export const SettingsCard = style((props) => {
                 <DialogActions>
                   <Button
                     disableTouchRipple
-                    style={{
-                      background: "#F22424",
-                      border: "1px solid #F22424",
-                      color: "#FFF"
-                    }}
+                    className={classes.burnCardButton}
                     variant="contained"
                     size="small"
                     onClick={() => generateNewAddress()}
@@ -245,13 +250,8 @@ export const SettingsCard = style((props) => {
                   </Button>
                   <Button
                     disableTouchRipple
-                    style={{
-                      background: "#FFF",
-                      border: "1px solid #F22424",
-                      color: "#F22424",
-                      marginLeft: "5%"
-                    }}
-                    variant="outlined"
+                    className={classes.burnCardButtonMargin}
+                    variant="contained"
                     size="small"
                     onClick={() => setShowWarning(false)}
                   >
@@ -266,7 +266,7 @@ export const SettingsCard = style((props) => {
           </Grid>
         </Dialog>
       </Grid>
-      <Grid item xs={12}>
+      {/* <Grid item xs={12}>
         <Button
           disableTouchRipple
           variant="outlined"
@@ -281,7 +281,14 @@ export const SettingsCard = style((props) => {
         >
           Back
         </Button>
-      </Grid>
+      </Grid> */}
     </Grid>
   );
-});
+}
+
+SettingsCard.propTypes = {
+  classes: PropTypes.object.isRequired,
+};
+
+export default withStyles(styles)(SettingsCard);
+

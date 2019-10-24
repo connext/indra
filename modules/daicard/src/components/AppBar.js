@@ -18,7 +18,6 @@ import React from "react";
 import { Link } from "react-router-dom";
 import ChannelCard from "./channelCard";
 import PropTypes from "prop-types";
-import { withRouter } from "react-router";
 
 const noAddrBlocky = require("../assets/noAddress.png");
 
@@ -51,8 +50,8 @@ const styles = {
 };
 
 const AppBarComponent = props => {
-  const { classes, location } = props;
-  const currentRoute = location.pathname;
+  const { classes } = props;
+  const currentRoute = window.location.pathname;
   return (
     <AppBar position="sticky" color="inherit" elevation={0} className={classes.top}>
       <Grid container className={classes.containerTop}>
@@ -97,7 +96,7 @@ const AppBarComponent = props => {
             </IconButton>
           ) : (
             <IconButton
-              className={currentRoute === "/settings"? classes.buttonHidden: classes.button}
+              className={currentRoute === "/"? classes.button : classes.buttonHidden }
               disableTouchRipple
               color="inherit"
               variant="contained"
@@ -117,4 +116,4 @@ AppBarComponent.propTypes = {
   classes: PropTypes.object.isRequired,
 };
 
-export default withRouter(withStyles(styles)(AppBarComponent));
+export default withStyles(styles)(AppBarComponent);

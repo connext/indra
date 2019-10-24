@@ -14,17 +14,17 @@ import "./App.css";
 
 // Pages
 import AppBarComponent from "./components/AppBar";
-import { CashoutCard } from "./components/cashOutCard";
+import CashoutCard from "./components/cashOutCard";
 import { Confirmations } from "./components/Confirmations";
 import DepositCard from "./components/depositCard";
 import Home from "./components/Home";
 import { MySnackbar } from "./components/snackBar";
 import RequestCard from "./components/requestCard";
-import { RedeemCard } from "./components/redeemCard";
+import RedeemCard from "./components/redeemCard";
 import SendCard from "./components/sendCard";
-import { SettingsCard } from "./components/settingsCard";
-import {SetupCard} from "./components/setupCard";
-import { SupportCard } from "./components/supportCard";
+import SettingsCard from "./components/settingsCard";
+import { SetupCard } from "./components/setupCard";
+import SupportCard from "./components/supportCard";
 import { rootMachine } from "./state";
 
 import { Currency, storeFactory, migrate, minBN, toBN, tokenToWei, weiToToken } from "./utils";
@@ -90,14 +90,14 @@ const style = theme => ({
     width: "100%",
     margin: "0px",
   },
-  homeGrid:{
-    display:"flex",
-    flexDirection:"column",
-    justifyContent:"center",
-    width:"100%"
+  homeGrid: {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    width: "100%",
   },
-  home:{
-    width:"100%"
+  home: {
+    width: "100%",
   },
   zIndex: 1000,
 });
@@ -527,6 +527,10 @@ class App extends React.Component {
       token,
       wallet,
     } = this.state;
+    let xpub;
+    if (channel) {
+      xpub = channel.publicIdentifier;
+    }
     const { classes } = this.props;
     return (
       <Router>
@@ -546,13 +550,6 @@ class App extends React.Component {
               message="Starting Channel Controllers..."
               duration={30 * 60 * 1000}
             />
-
-            <AppBarComponent
-              address={wallet ? wallet.address : AddressZero}
-              balance={balance}
-              swapRate={swapRate}
-              network={network}
-            />
             <SetupCard minDeposit={minDeposit} maxDeposit={maxDeposit} />
 
             <Route
@@ -560,6 +557,13 @@ class App extends React.Component {
               path="/"
               render={props => (
                 <Grid {...props} className={classes.homeGrid}>
+                  <AppBarComponent
+                    {...props}
+                    address={wallet ? wallet.address : AddressZero}
+                    balance={balance}
+                    swapRate={swapRate}
+                    network={network}
+                  />
                   <Home
                     {...props}
                     className={classes.home}
@@ -574,61 +578,127 @@ class App extends React.Component {
             <Route
               path="/deposit"
               render={props => (
-                <DepositCard
-                  {...props}
-                  address={wallet ? wallet.address : AddressZero}
-                  maxDeposit={maxDeposit}
-                  minDeposit={minDeposit}
-                />
+                <Grid {...props} className={classes.homeGrid}>
+                  <AppBarComponent
+                    {...props}
+                    address={wallet ? wallet.address : AddressZero}
+                    balance={balance}
+                    swapRate={swapRate}
+                    network={network}
+                  />
+                  <DepositCard
+                    {...props}
+                    address={wallet ? wallet.address : AddressZero}
+                    maxDeposit={maxDeposit}
+                    minDeposit={minDeposit}
+                  />
+                </Grid>
               )}
             />
             <Route
               path="/settings"
-              render={props => <SettingsCard {...props} channel={channel} />}
+              render={props => (
+                <Grid {...props} className={classes.homeGrid}>
+                  <AppBarComponent
+                    {...props}
+                    address={wallet ? wallet.address : AddressZero}
+                    balance={balance}
+                    swapRate={swapRate}
+                    network={network}
+                  />
+                  <SettingsCard {...props} channel={channel} />
+                </Grid>
+              )}
             />
             <Route
               path="/request/:amount?"
               render={props => (
-                <RequestCard
-                  {...props}
-                  //xpub={channel.publicIdentifier}
-                  maxDeposit={maxDeposit}
-                />
+                <Grid {...props} className={classes.homeGrid}>
+                  <AppBarComponent
+                    {...props}
+                    address={wallet ? wallet.address : AddressZero}
+                    balance={balance}
+                    swapRate={swapRate}
+                    network={network}
+                  />
+                  <RequestCard {...props} xpub={xpub} maxDeposit={maxDeposit} />
+                </Grid>
               )}
             />
             <Route
               path="/send/:amount?/:recipient?"
               render={props => (
-                <SendCard
-                  {...props}
-                  balance={balance}
-                  channel={channel}
-                  scanArgs={sendScanArgs}
-                  token={token}
-                />
+                <Grid {...props} className={classes.homeGrid}>
+                  <AppBarComponent
+                    {...props}
+                    address={wallet ? wallet.address : AddressZero}
+                    balance={balance}
+                    swapRate={swapRate}
+                    network={network}
+                  />
+                  <SendCard
+                    {...props}
+                    balance={balance}
+                    channel={channel}
+                    scanArgs={sendScanArgs}
+                    token={token}
+                  />
+                </Grid>
               )}
             />
             <Route
               path="/redeem"
               render={props => (
-                <RedeemCard {...props} channel={channel} tokenProfile={this.state.tokenProfile} />
+                <Grid {...props} className={classes.homeGrid}>
+                  <AppBarComponent
+                    {...props}
+                    address={wallet ? wallet.address : AddressZero}
+                    balance={balance}
+                    swapRate={swapRate}
+                    network={network}
+                  />
+                  <RedeemCard {...props} channel={channel} tokenProfile={this.state.tokenProfile} />
+                </Grid>
               )}
             />
             <Route
               path="/cashout"
               render={props => (
-                <CashoutCard
-                  {...props}
-                  balance={balance}
-                  channel={channel}
-                  swapRate={swapRate}
-                  machine={machine}
-                  refreshBalances={this.refreshBalances.bind(this)}
-                  token={token}
-                />
+                <Grid {...props} className={classes.homeGrid}>
+                  <AppBarComponent
+                    {...props}
+                    address={wallet ? wallet.address : AddressZero}
+                    balance={balance}
+                    swapRate={swapRate}
+                    network={network}
+                  />
+                  <CashoutCard
+                    {...props}
+                    balance={balance}
+                    channel={channel}
+                    swapRate={swapRate}
+                    machine={machine}
+                    refreshBalances={this.refreshBalances.bind(this)}
+                    token={token}
+                  />
+                </Grid>
               )}
             />
-            <Route path="/support" render={props => <SupportCard {...props} channel={channel} />} />
+            <Route
+              path="/support"
+              render={props => (
+                <Grid {...props} className={classes.homeGrid}>
+                  <AppBarComponent
+                    {...props}
+                    address={wallet ? wallet.address : AddressZero}
+                    balance={balance}
+                    swapRate={swapRate}
+                    network={network}
+                  />
+                  <SupportCard {...props} channel={channel} />
+                </Grid>
+              )}
+            />
             <Confirmations machine={machine} network={network} />
           </Paper>
         </Grid>

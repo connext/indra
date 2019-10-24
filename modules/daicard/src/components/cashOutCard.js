@@ -2,6 +2,10 @@ import {
   Button,
   CircularProgress,
   Grid,
+  FormControl,
+  FormHelperText,
+  IconButton,
+  InputBase,
   InputAdornment,
   Modal,
   TextField,
@@ -9,6 +13,8 @@ import {
   Typography,
   withStyles,
 } from "@material-ui/core";
+import PropTypes from "prop-types";
+
 import { Unarchive as UnarchiveIcon } from "@material-ui/icons";
 import { AddressZero, Zero } from "ethers/constants";
 import { arrayify, isHexString } from "ethers/utils";
@@ -21,10 +27,18 @@ import { inverse } from "../utils";
 
 import { QRScan } from "./qrCode";
 
-const style = withStyles((theme) => ({
+const styles = {
+  top:{
+    paddingLeft: 12,
+    paddingRight: 12,
+    paddingTop: "10%",
+    paddingBottom: "10%",
+    textAlign: "center",
+    justifyContent: "center",
+  },
   icon: {
     width: "40px",
-    height: "40px"
+    height: "40px",
   },
   button: {
     backgroundColor: "#FCA311",
@@ -32,43 +46,78 @@ const style = withStyles((theme) => ({
     fontSize: "smaller",
   },
   modal: {
+    justifyContent: "center",
+    alignItems: "center",
+    textAlign: "center",
     position: "absolute",
-    top: "-400px",
-    left: "150px",
-    width: theme.spacing(50),
-    backgroundColor: theme.palette.background.paper,
-    boxShadow: theme.shadows[5],
-    padding: theme.spacing(4),
-    outline: "none"
-  }
-}));
+    top: "10%",
+    width: "320px",
+    marginLeft: "auto",
+    marginRight: "auto",
+    left: "0",
+    right: "0",
+  },
+  valueInput: {
+    color: "#FCA311",
+    fontSize: "60px",
+    cursor: "none",
+    overflow: "hidden",
+    paddingLeft: "31%",
+  },
+  helperText: {
+    color: "red",
+    marginTop: "-5px",
+  },
+  helperTextGray: {
+    color: "#1E96CC",
+    marginTop: "-5px",
+  },
+  xpubWrapper: {
+    marginLeft: "5%",
+    marginRight: "5%",
+  },
+  xpubInput: {
+    width: "100%",
+    color: "#FCA311",
+    fontSize: "45px",
+  },
+  QRbutton: {
+    color: "#002868", 
+  },
+  icon: {
+    color: "#002868",
+  },
+  button: {
+    color: "#FFF",
+    width: "48%",
+  },
+  buttonSpacer: {
+    height: "10px",
+    width: "100%",
+  },
+  cashoutWrapper: {
+    justifyContent: "space-between",
+  },
+};
 
-export const CashoutCard = style(({
-  balance,
-  channel,
-  classes,
-  history,
-  machine,
-  refreshBalances,
-  swapRate,
-  token,
-}) => {
+const CashoutCard = props => {
+  const { balance, channel, classes, history, machine, refreshBalances, swapRate, token } = props;
   const [recipient, setRecipient] = useState({ display: "", value: undefined, error: undefined });
   const [scan, setScan] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
 
-  const updateRecipientHandler = async (value) => {
-    let newVal = value
-    let error
+  const updateRecipientHandler = async value => {
+    let newVal = value;
+    let error;
     if (value.includes("ethereum:")) {
-      newVal = value.split(":")[1]
+      newVal = value.split(":")[1];
     }
     if (newVal === "") {
-      error = "Please provide an address"
+      error = "Please provide an address";
     } else if (!isHexString(newVal)) {
-      error = `Invalid hex string: ${newVal}`
+      error = `Invalid hex string: ${newVal}`;
     } else if (arrayify(newVal).length !== 20) {
-      error = `Invalid length: ${newVal}`
+      error = `Invalid length: ${newVal}`;
     }
     setRecipient({
       display: value,
@@ -76,15 +125,15 @@ export const CashoutCard = style(({
       error,
     });
     setScan(false);
-  }
+  };
 
   const cashoutTokens = async () => {
-    const value = recipient.value
-    if (!value) return
-    const total = balance.channel.total
-    if (total.wad.lte(Zero)) return
+    const value = recipient.value;
+    if (!value) return;
+    const total = balance.channel.total;
+    if (total.wad.lte(Zero)) return;
     // Put lock on actions, no more autoswaps until we're done withdrawing
-    machine.send('START_WITHDRAW');
+    machine.send("START_WITHDRAW");
     setWithdrawing(true);
     console.log(`Withdrawing ${total.toETH().format()} to: ${value}`);
     const result = await channel.withdraw({
@@ -92,19 +141,19 @@ export const CashoutCard = style(({
       assetId: token.address,
       recipient: value,
     });
-    console.log(`Cashout result: ${JSON.stringify(result)}`)
-    const txHash = result.transaction.hash
+    console.log(`Cashout result: ${JSON.stringify(result)}`);
+    const txHash = result.transaction.hash;
     setWithdrawing(false);
-    machine.send('SUCCESS_WITHDRAW', { txHash });
-  }
+    machine.send("SUCCESS_WITHDRAW", { txHash });
+  };
 
   const cashoutEther = async () => {
-    const value = recipient.value
-    if (!value) return
-    const total = balance.channel.total
-    if (total.wad.lte(Zero)) return
+    const value = recipient.value;
+    if (!value) return;
+    const total = balance.channel.total;
+    if (total.wad.lte(Zero)) return;
     // Put lock on actions, no more autoswaps until we're done withdrawing
-    machine.send('START_WITHDRAW');
+    machine.send("START_WITHDRAW");
     setWithdrawing(true);
     console.log(`Withdrawing ${total.toETH().format()} to: ${value}`);
     // swap all in-channel tokens for eth
@@ -121,40 +170,27 @@ export const CashoutCard = style(({
         swapRate: inverse(swapRate),
         toAssetId: AddressZero,
       });
-      await refreshBalances()
+      await refreshBalances();
     }
     const result = await channel.withdraw({
       amount: balance.channel.ether.wad.toString(),
       assetId: AddressZero,
       recipient: value,
     });
-    console.log(`Cashout result: ${JSON.stringify(result)}`)
-    const txHash = result.transaction.hash
+    console.log(`Cashout result: ${JSON.stringify(result)}`);
+    const txHash = result.transaction.hash;
     setWithdrawing(false);
-    machine.send('SUCCESS_WITHDRAW', { txHash });
-  }
+    machine.send("SUCCESS_WITHDRAW", { txHash });
+  };
 
   return (
     <Grid
       container
       spacing={2}
       direction="column"
-      style={{
-        paddingLeft: 12,
-        paddingRight: 12,
-        paddingTop: "10%",
-        paddingBottom: "10%",
-        textAlign: "center",
-        justifyContent: "center"
-      }}
+      className={classes.top}
     >
-      <Grid
-        container
-        wrap="nowrap"
-        direction="row"
-        justify="center"
-        alignItems="center"
-      >
+      {/* <Grid container wrap="nowrap" direction="row" justify="center" alignItems="center">
         <Grid item xs={12}>
           <UnarchiveIcon className={classes.icon} />
         </Grid>
@@ -163,136 +199,115 @@ export const CashoutCard = style(({
         <Grid container direction="row" justify="center" alignItems="center">
           <Typography variant="h2">
             <span>
-              {balance.channel.token.toDAI(swapRate).format({ decimals: 2, symbol: false, round: false })}
+              {balance.channel.token
+                .toDAI(swapRate)
+                .format({ decimals: 2, symbol: false, round: false })}
             </span>
           </Typography>
         </Grid>
-      </Grid>
+      </Grid> */}
       <Grid item xs={12}>
         <Typography variant="caption">
-          <span>{"ETH price: $" + swapRate}</span>
+          <span>{"Current ETH price: $" + swapRate}</span>
         </Typography>
       </Grid>
-      <Grid item xs={12}>
-        <TextField
-          style={{ width: "100%" }}
-          id="outlined-with-placeholder"
-          label="Address"
-          placeholder="0x0..."
-          value={recipient.display || ""}
+      <FormControl item xs={12} className={classes.xpubWrapper}>
+        <InputBase
+          fullWidth
+          className={classes.xpubInput}
           onChange={evt => updateRecipientHandler(evt.target.value)}
-          margin="normal"
-          variant="outlined"
-          required
-          helperText={recipient.error}
-          error={!!recipient.error}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <Tooltip
-                  disableFocusListener
-                  disableTouchListener
-                  title="Scan with QR code"
-                >
-                  <Button
-                    disableTouchRipple
-                    variant="contained"
-                    color="primary"
-                    style={{ color: "primary" }}
-                    onClick={() => setScan(true)}
-                  >
-                    <QRIcon />
-                  </Button>
-                </Tooltip>
-              </InputAdornment>
-            )
-          }}
+          type="text"
+          value={recipient.display}
+          placeholder={"Address"}
+          endAdornment={
+            <Tooltip disableFocusListener disableTouchListener title="Scan with QR code">
+              <IconButton
+                className={classes.QRButton}
+                disableTouchRipple
+                variant="contained"
+                onClick={() => setScan(true)}
+              >
+                <QRIcon className={classes.icon} />
+              </IconButton>
+            </Tooltip>
+          }
         />
-      </Grid>
+        {recipient.error && (
+          <FormHelperText className={classes.helperText}>{recipient.error}</FormHelperText>
+        )}
+      </FormControl>
       <Modal
         id="qrscan"
         open={scan}
         onClose={() => setScan(false)}
-        style={{
-          justifyContent: "center",
-          alignItems: "center",
-          textAlign: "center",
-          position: "absolute",
-          top: "10%",
-          width: "375px",
-          marginLeft: "auto",
-          marginRight: "auto",
-          left: "0",
-          right: "0"
-        }}
+        className={classes.modal}
       >
-        <QRScan
-          handleResult={updateRecipientHandler}
-          history={history}
-        />
+        <QRScan handleResult={updateRecipientHandler} history={history} />
       </Modal>
-      <Grid item xs={12}>
-        <Grid
-          container
-          spacing={8}
-          direction="row"
-          alignItems="center"
-          justify="center"
+      <Grid className={classes.buttonSpacer} />
+      <Grid className={classes.buttonSpacer} />
+      <Grid container direction="row" className={classes.cashoutWrapper}>
+        <Button
+          className={classes.button}
+          disableTouchRipple
+          variant="contained"
+          size="large"
+          color="primary"
+          disabled={!recipient.value}
+                        onClick={cashoutEther}
+
+
         >
-          <Grid item xs={6}>
-            <Button
-              disableTouchRipple
-              className={classes.button}
-              fullWidth
-              onClick={cashoutEther}
-              disabled={!recipient.value}
-            >
-              Cash Out Eth
+         Cash Out Eth
               <img
                 src={EthIcon}
                 style={{ width: "15px", height: "15px", marginLeft: "5px" }}
                 alt=""
               />
-            </Button>
-          </Grid>
-          <Grid item xs={6}>
-            <Button
-              disableTouchRipple
-              className={classes.button}
-              variant="contained"
-              fullWidth
-              onClick={cashoutTokens}
-              disabled={!recipient.value}
-            >
-              Cash Out Dai
+        </Button>
+        <Button
+          className={classes.button}
+          disableTouchRipple
+          size="large"
+          variant="contained"
+          disabled={true}
+          color="primary"
+          onClick={cashoutTokens}
+
+        >
+          Cash Out Dai
               <img
                 src={DaiIcon}
                 style={{ width: "15px", height: "15px", marginLeft: "5px" }}
                 alt=""
               />
-            </Button>
-          </Grid>
-        </Grid>
+        </Button>
       </Grid>
       <Grid item xs={12}>
-        <Button
+        {/* <Button
           disableTouchRipple
           variant="outlined"
           style={{
             background: "#FFF",
             border: "1px solid #F22424",
             color: "#F22424",
-            width: "15%"
+            width: "15%",
           }}
           size="medium"
           onClick={() => history.push("/")}
         >
           Back
-        </Button>
-        <Grid item xs={12} style={{paddingTop:"10%"}}>
+        </Button> */}
+        <Grid item xs={12} style={{ paddingTop: "10%" }}>
           {withdrawing && <CircularProgress color="primary" />}
         </Grid>
       </Grid>
     </Grid>
   );
-})
+};
+
+CashoutCard.propTypes = {
+  classes: PropTypes.object.isRequired,
+};
+
+export default withStyles(styles)(CashoutCard);
