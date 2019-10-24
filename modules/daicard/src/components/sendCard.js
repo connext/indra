@@ -209,7 +209,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
     if (!recipient.value && !recipient.error && query.recipient) {
       updateRecipientHandler(query.recipient);
     }
-  }, [location, updateAmountHandler])
+  }, [location, updateAmountHandler, amount.value, recipient.value, recipient.error])
 
   return (
     <Grid
