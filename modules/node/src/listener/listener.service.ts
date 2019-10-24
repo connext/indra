@@ -1,4 +1,4 @@
-import { SimpleLinkedTransferAppStateBigNumber } from "@connext/types";
+import { SimpleLinkedTransferAppStateBigNumber, SupportedApplications } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -86,26 +86,37 @@ export default class ListenerService implements OnModuleInit {
       },
       PROPOSE_INSTALL: async (data: ProposeMessage): Promise<void> => {
         logEvent(CFCoreTypes.EventName.PROPOSE_INSTALL, data);
+
+        // TODO: better architecture
+        // install if possible
         const allowedOrRejected = await this.appRegistryService.allowOrReject(data);
-        if (!allowedOrRejected || !(allowedOrRejected as CFCoreTypes.InstallResult).appInstance) {
-          logger.log(`No data from appRegistryService.allowOrReject, assuming it got rejected.`);
+        if (!allowedOrRejected) {
+          logger.log(`No data from appRegistryService.allowOrReject, nothing was installed.`);
           return;
         }
-        logger.debug(`Saving linked transfer`);
-        const proposedAppParams = data.data;
-        const initiatorXpub = (proposedAppParams.params as any).initiatorXpub;
-        const initialState = proposedAppParams.params
-          .initialState as SimpleLinkedTransferAppStateBigNumber;
 
-        await this.transferService.saveLinkedTransfer(
-          initiatorXpub,
-          proposedAppParams.params.initiatorDepositTokenAddress,
-          bigNumberify(proposedAppParams.params.initiatorDeposit),
-          proposedAppParams.appInstanceId,
-          initialState.linkedHash,
-          initialState.paymentId,
-        );
-        logger.debug(`Linked transfer saved!`);
+        // post-install tasks
+        switch (allowedOrRejected.name) {
+          case SupportedApplications.SimpleLinkedTransferApp:
+            logger.debug(`Saving linked transfer`);
+            const proposedAppParams = data.data;
+            const initiatorXpub = (proposedAppParams.params as any).initiatorXpub;
+            const initialState = proposedAppParams.params
+              .initialState as SimpleLinkedTransferAppStateBigNumber;
+            await this.transferService.saveLinkedTransfer(
+              initiatorXpub,
+              proposedAppParams.params.initiatorDepositTokenAddress,
+              bigNumberify(proposedAppParams.params.initiatorDeposit),
+              proposedAppParams.appInstanceId,
+              initialState.linkedHash,
+              initialState.paymentId,
+            );
+            logger.debug(`Linked transfer saved!`);
+            break;
+          // TODO: add something for swap app? maybe for history preserving reasons.
+          default:
+            logger.debug(`No post-install actions configured.`);
+        }
       },
       PROPOSE_INSTALL_VIRTUAL: (data: ProposeMessage): void => {
         throw new Error(`This event should not be thrown! ${JSON.stringify(data)}`);
