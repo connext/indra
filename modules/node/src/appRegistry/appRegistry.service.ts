@@ -48,16 +48,16 @@ export class AppRegistryService {
    * accept or reject the install.
    * @param data Data from CF event PROPOSE_INSTALL
    */
-  async allowOrReject(
-    data: ProposeMessage,
-  ): Promise<CFCoreTypes.InstallResult | CFCoreTypes.RejectInstallResult> {
+  async allowOrReject(data: ProposeMessage): Promise<AppRegistry | void> {
     try {
-      await this.verifyAppProposal(data.data);
-      return await this.cfCoreService.installApp(data.data.appInstanceId);
+      const registryAppInfo = await this.verifyAppProposal(data.data);
+      await this.cfCoreService.installApp(data.data.appInstanceId);
+      return registryAppInfo;
     } catch (e) {
       logger.error(`Caught error during proposed app validation, rejecting install`);
       console.error(e);
-      return await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
+      await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
+      return;
     }
   }
 
@@ -78,7 +78,7 @@ export class AppRegistryService {
     }
   }
 
-  private async appProposalMatchesRegistry(
+  async appProposalMatchesRegistry(
     proposal: CFCoreTypes.ProposeInstallParams,
   ): Promise<AppRegistry> {
     const registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
@@ -351,11 +351,9 @@ export class AppRegistryService {
   private async verifyAppProposal(proposedAppParams: {
     params: CFCoreTypes.ProposeInstallParams;
     appInstanceId: string;
-  }): Promise<void> {
+  }): Promise<AppRegistry | void> {
     const myIdentifier = this.cfCoreService.cfCore.publicIdentifier;
     const initiatorIdentifier = (proposedAppParams.params as any).initiatorXpub;
-    console.log("proposedAppParams: ", proposedAppParams);
-    console.log("initiatorIdentifier: ", initiatorIdentifier);
     if (initiatorIdentifier === myIdentifier) {
       logger.log(`Received proposal from our own node.`);
       return;
@@ -383,6 +381,7 @@ export class AppRegistryService {
         break;
     }
     logger.log(`Validation completed for app ${registryAppInfo.name}`);
+    return registryAppInfo;
   }
 
   // TODO: will need to remove this
@@ -442,6 +441,7 @@ export class AppRegistryService {
     switch (registryAppInfo.name) {
       case SupportedApplications.SimpleTransferApp:
         // TODO: move this to install
+        // TODO: this doesn't work with the new paradigm, we won't know this info
         await this.transferService.savePeerToPeerTransfer(
           initiatorIdentifier,
           proposedAppParams.params.proposedToIdentifier,
