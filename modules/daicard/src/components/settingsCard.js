@@ -115,7 +115,7 @@ export const SettingsCard = style((props) => {
           size="large"
           onClick={() => setWalletConnext(true)}
         >
-          Activate WalletConnext
+         {`Activate WalletConnext (beta)`}
         </Button>
       </Grid>
 
