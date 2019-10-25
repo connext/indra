@@ -1,5 +1,4 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { ProxyLockService } from "@connext/proxy-lock";
 import {
   AppActionBigNumber,
   AppRegistry,
@@ -9,6 +8,9 @@ import {
   ChannelState,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
+  ConnextEvent,
+  ConnextEvents,
+  ConnextNodeStorePrefix,
   CreateChannelResponse,
   DepositParameters,
   GetChannelResponse,
@@ -19,18 +21,33 @@ import {
   RegisteredAppDetails,
   ResolveConditionParameters,
   ResolveConditionResponse,
+  ResolveLinkedTransferResponse,
   SolidityValueType,
   SupportedApplication,
   SupportedNetwork,
   SwapParameters,
   TransferParameters,
   WithdrawParameters,
+  Transfer,
 } from "@connext/types";
+import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
+import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
 import { Address, AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
 import "core-js/stable";
-import { Contract, providers } from "ethers";
+import EthCrypto from "eth-crypto";
+import { Contract, providers, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { BigNumber, HDNode, Network } from "ethers/utils";
+import {
+  BigNumber,
+  bigNumberify,
+  getAddress,
+  Interface,
+  keccak256,
+  Network,
+  solidityKeccak256,
+  Transaction,
+} from "ethers/utils";
+import { fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
@@ -41,13 +58,22 @@ import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { CFCore, CreateChannelMessage, EXTENDED_PRIVATE_KEY_PATH } from "./lib/cfCore";
+import { CF_PATH } from "./lib/constants";
 import { Logger } from "./lib/logger";
-import { freeBalanceAddressFromXpub, publicIdentifierToAddress, replaceBN } from "./lib/utils";
+import {
+  freeBalanceAddressFromXpub,
+  publicIdentifierToAddress,
+  replaceBN,
+  withdrawalKey,
+  xkeysToSortedKthAddresses,
+} from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import { ClientOptions, InternalClientOptions } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
+
+const MAX_WITHDRAWAL_RETRIES = 3;
 
 /**
  * Creates a new client-node connection with node at specified url
@@ -87,14 +113,15 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
   // Note: added this to the client since this is required for the cf module to work
   // generate extended private key from mnemonic
-  const extendedXpriv = HDNode.fromMnemonic(mnemonic).extendedKey;
-  await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }]);
+  const extendedXpriv = fromMnemonic(mnemonic).extendedKey;
+  await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }], false);
 
   // create a new node api instance
   // TODO: use local storage for default key value setting!!
   const nodeApiConfig = {
     logLevel,
     messaging,
+    wallet: Wallet.fromMnemonic(mnemonic, "m/44'/60'/0'/25446"),
   };
   logger.info("creating node api client");
   const node: NodeApiClient = new NodeApiClient(nodeApiConfig);
@@ -108,7 +135,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
 
   // create the lock service for cfCore
   logger.info("using node's proxy lock service");
-  let lockService: ProxyLockService = new ProxyLockService(messaging);
+  const lockService: CFCoreTypes.ILockService = {
+    acquireLock: node.acquireLock.bind(node),
+  };
 
   // create new cfCore to inject into internal instance
   logger.info("creating new cf module");
@@ -144,7 +173,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
         });
 
         const creationData = await node.createChannel();
-        logger.info(`created channel, transaction: ${creationData}`);
+        logger.info(`created channel, transaction: ${JSON.stringify(creationData)}`);
       },
     );
     logger.info(`create channel event data: ${JSON.stringify(creationEventData, replaceBN, 2)}`);
@@ -158,15 +187,50 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   const client = new ConnextInternal({
     appRegistry,
     cfCore,
+    config,
     ethProvider,
     messaging,
     multisigAddress,
     network,
     node,
-    nodePublicIdentifier: config.nodePublicIdentifier,
+    store,
     ...opts, // use any provided opts by default
   });
+
   await client.registerSubscriptions();
+
+  await client.reclaimPendingAsyncTransfers();
+
+  // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
+  const withdrawal = await client.store.get(withdrawalKey(client.publicIdentifier));
+
+  if (withdrawal && withdrawal.retry < MAX_WITHDRAWAL_RETRIES) {
+    // get the latest submitted withdrawal from the hub
+    // and check the tx to see if the data matches what we
+    // expect from our store.
+    const tx = await client.node.getLatestWithdrawal();
+    if (client.matchTx(tx, withdrawal.tx)) {
+      // if so, clear tx
+      await client.store.set([
+        {
+          path: withdrawalKey(client.publicIdentifier),
+          value: undefined,
+        },
+      ]);
+      return client;
+    }
+    // if not, and there are retries remaining, retry
+    logger.debug(
+      `Found active withdrawal with ${withdrawal.retry} retries, waiting for withdrawal to be caught`,
+    );
+    await client.retryNodeSubmittedWithdrawal();
+  } else if (withdrawal && withdrawal.retry >= MAX_WITHDRAWAL_RETRIES) {
+    // otherwise, do not start client.
+    const msg = `Cannot connect client, hub failed to submit latest withdrawal ${MAX_WITHDRAWAL_RETRIES} times.`;
+    logger.error(msg);
+    throw new Error(msg);
+  }
+
   return client;
 }
 
@@ -179,23 +243,25 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
  */
 export abstract class ConnextChannel {
   public opts: InternalClientOptions;
+  public config: GetConfigResponse;
   private internal: ConnextInternal;
 
   public constructor(opts: InternalClientOptions) {
     this.opts = opts;
+    this.config = opts.config;
     this.internal = this as any;
   }
 
   ///////////////////////////////////
   // LISTENER METHODS
   public on = (
-    event: CFCoreTypes.EventName,
+    event: ConnextEvent | CFCoreTypes.EventName,
     callback: (...args: any[]) => void,
   ): ConnextListener => {
     return this.internal.on(event, callback);
   };
 
-  public emit = (event: CFCoreTypes.EventName, data: any): boolean => {
+  public emit = (event: ConnextEvent | CFCoreTypes.EventName, data: any): boolean => {
     return this.internal.emit(event, data);
   };
 
@@ -231,14 +297,22 @@ export abstract class ConnextChannel {
     return await this.internal.conditionalTransfer(params);
   };
 
+  public restoreState = async (
+    mnemonic: string,
+    defaultToHub: boolean,
+  ): Promise<ConnextInternal> => {
+    return await this.internal.restoreState(mnemonic, defaultToHub);
+  };
+
   ///////////////////////////////////
   // NODE EASY ACCESS METHODS
-  public config = async (): Promise<GetConfigResponse> => {
-    return await this.internal.node.config();
-  };
 
   public getChannel = async (): Promise<GetChannelResponse> => {
     return await this.internal.node.getChannel();
+  };
+
+  public getLinkedTransfer = async (paymentId: string): Promise<any> => {
+    return await this.internal.node.fetchLinkedTransfer(paymentId);
   };
 
   // TODO: do we need to expose here?
@@ -276,6 +350,33 @@ export abstract class ConnextChannel {
 
   public getPaymentProfile = async (assetId?: string): Promise<PaymentProfile | undefined> => {
     return await this.internal.node.getPaymentProfile(assetId);
+  };
+
+  public getTransferHistory = async (): Promise<Transfer[]> => {
+    return await this.internal.node.getTransferHistory();
+  };
+
+  public setRecipientAndEncryptedPreImageForLinkedTransfer = async (
+    recipient: string,
+    encryptedPreImage: string,
+    linkedHash: string,
+  ): Promise<any> => {
+    return await this.internal.node.setRecipientAndEncryptedPreImageForLinkedTransfer(
+      recipient,
+      encryptedPreImage,
+      linkedHash,
+    );
+  };
+
+  public reclaimPendingAsyncTransfers = async (): Promise<void> => {
+    return await this.internal.reclaimPendingAsyncTransfers();
+  };
+
+  public reclaimPendingAsyncTransfer = async (
+    paymentId: string,
+    encryptedPreImage: string,
+  ): Promise<ResolveLinkedTransferResponse> => {
+    return await this.internal.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
   };
 
   // does not directly call node function because needs to send
@@ -412,6 +513,7 @@ export class ConnextInternal extends ConnextChannel {
 
   public logger: Logger;
   public network: Network;
+  public store: CFCoreTypes.IStoreService;
 
   ////////////////////////////////////////
   // Setup channel controllers
@@ -424,23 +526,21 @@ export class ConnextInternal extends ConnextChannel {
 
   constructor(opts: InternalClientOptions) {
     super(opts);
-
     this.opts = opts;
-
-    this.ethProvider = opts.ethProvider;
-    this.node = opts.node;
-    this.messaging = opts.messaging;
-
     this.appRegistry = opts.appRegistry;
-
+    this.config = opts.config;
+    this.ethProvider = opts.ethProvider;
+    this.messaging = opts.messaging;
+    this.network = opts.network;
+    this.node = opts.node;
     this.cfCore = opts.cfCore;
     this.freeBalanceAddress = this.cfCore.freeBalanceAddress;
     this.publicIdentifier = this.cfCore.publicIdentifier;
     this.multisigAddress = this.opts.multisigAddress;
-    this.nodePublicIdentifier = this.opts.nodePublicIdentifier;
-
+    this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
     this.logger = new Logger("ConnextInternal", opts.logLevel);
     this.network = opts.network;
+    this.store = opts.store;
 
     // establish listeners
     this.listener = new ConnextListener(opts.cfCore, this);
@@ -496,17 +596,163 @@ export class ConnextInternal extends ConnextChannel {
     return await this.conditionalTransferController.conditionalTransfer(params);
   };
 
+  public getLatestNodeSubmittedWithdrawal = async (): Promise<
+    { retry: number; tx: CFCoreTypes.MinimalTransaction } | undefined
+  > => {
+    const value = await this.store.get(withdrawalKey(this.cfCore.publicIdentifier));
+
+    if (!value) {
+      return undefined;
+    }
+
+    const noRetry = value.retry === undefined || value.retry === null;
+    if (!value.tx || noRetry) {
+      const msg = `Can not find tx or retry in store under key ${withdrawalKey(
+        this.cfCore.publicIdentifier,
+      )}`;
+      this.logger.error(msg);
+      throw new Error(msg);
+    }
+    return value;
+  };
+
+  public watchForUserWithdrawal = async (): Promise<void> => {
+    // poll for withdrawal tx submitted to multisig matching tx data
+    const maxBlocks = 15;
+    const startingBlock = await this.ethProvider.getBlockNumber();
+
+    // TODO: poller should not be completely blocking, but safe to leave for now
+    // because the channel should be blocked
+    try {
+      await new Promise((resolve, reject) => {
+        this.ethProvider.on("block", async (blockNumber: number) => {
+          const found = await this.checkForUserWithdrawal(blockNumber);
+          if (found) {
+            await this.store.set([
+              { path: withdrawalKey(this.publicIdentifier), value: undefined },
+            ]);
+            this.ethProvider.removeAllListeners("block");
+            resolve();
+          }
+          if (blockNumber - startingBlock >= maxBlocks) {
+            this.ethProvider.removeAllListeners("block");
+            reject(
+              `More than ${maxBlocks} have passed, blocks elapsed: ${blockNumber - startingBlock}`,
+            );
+          }
+        });
+      });
+    } catch (e) {
+      if (e.includes(`More than ${maxBlocks} have passed`)) {
+        this.logger.debug(`Retrying node submission`);
+        await this.retryNodeSubmittedWithdrawal();
+      }
+    }
+  };
+
+  public restoreStateFromBackup = async (xpub: string): Promise<void> => {
+    const restoreStates = await this.opts.store.restore();
+    const multisigAddress = await this.getMultisigAddressfromXpub(xpub);
+    const relevantPair = restoreStates.find(
+      (p: { path: string; value: any }) => p.path === `store/${xpub}/channel/${multisigAddress}`,
+    );
+    if (!relevantPair) {
+      throw new Error(
+        `No matching remote states found for "store/${xpub}/channel/${multisigAddress}."`,
+      );
+    }
+
+    this.logger.info(
+      `Found state to restore from backup: ${JSON.stringify(relevantPair, null, 2)}`,
+    );
+    await this.store.set([relevantPair], false);
+  };
+
+  public restoreStateFromNode = async (xpub: string): Promise<void> => {
+    const states = await this.node.restoreStates(xpub);
+    this.logger.info(`Found states to restore: ${JSON.stringify(states)}`);
+
+    // TODO: this should prob not be hardcoded like this
+    const actualStates = states.map((state: { path: string; value: object }) => {
+      return {
+        path: state.path
+          .replace(this.nodePublicIdentifier, xpub)
+          .replace(ConnextNodeStorePrefix, "store"),
+        value: state.value[state.path],
+      };
+    });
+    await this.opts.store.set(actualStates, false);
+  };
+
+  public restoreState = async (
+    mnemonic: string,
+    defaultToHub: boolean = true,
+  ): Promise<ConnextInternal> => {
+    const hdNode = fromMnemonic(mnemonic);
+    const xpriv = hdNode.extendedKey;
+    const xpub = hdNode.derivePath("m/44'/60'/0'/25446").neuter().extendedKey;
+    const wallet = new Wallet(hdNode.derivePath("m/44'/60'/0'/25446"));
+
+    // always set the mnemonic in the store
+    this.opts.store.reset();
+    await this.opts.store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }], false);
+
+    // try to recover the rest of the stateS
+    try {
+      await this.restoreStateFromBackup(xpub);
+      this.logger.debug(`restored state from backup!`);
+    } catch (e) {
+      await this.restoreStateFromNode(xpub);
+      this.logger.debug(`restored state from node!`);
+    }
+
+    // recreate client with new mnemonic
+    const client = await connect({ ...this.opts, mnemonic });
+    return client;
+  };
+
+  public getMultisigAddressfromXpub = async (xpub: string): Promise<string> => {
+    const owners: string[] = [xpub, this.nodePublicIdentifier];
+    const proxyFactoryAddress: string = this.opts.config.contractAddresses.ProxyFactory;
+    const minimumViableMultisigAddress: string = this.opts.config.contractAddresses
+      .MinimumViableMultisig;
+    return getAddress(
+      solidityKeccak256(
+        ["bytes1", "address", "uint256", "bytes32"],
+        [
+          "0xff",
+          proxyFactoryAddress,
+          solidityKeccak256(
+            ["bytes32", "uint256"],
+            [
+              keccak256(
+                new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+                  xkeysToSortedKthAddresses(owners, 0),
+                ]),
+              ),
+              0,
+            ],
+          ),
+          solidityKeccak256(
+            ["bytes", "uint256"],
+            [`0x${Proxy.evm.bytecode.object}`, minimumViableMultisigAddress],
+          ),
+        ],
+      ).slice(-40),
+    );
+  };
+
   ///////////////////////////////////
   // EVENT METHODS
 
   public on = (
-    event: CFCoreTypes.EventName,
+    event: ConnextEvent | CFCoreTypes.EventName,
     callback: (...args: any[]) => void,
   ): ConnextListener => {
     return this.listener.on(event, callback);
   };
 
-  public emit = (event: CFCoreTypes.EventName, data: any): boolean => {
+  public emit = (event: ConnextEvent | CFCoreTypes.EventName, data: any): boolean => {
     return this.listener.emit(event, data);
   };
 
@@ -921,7 +1167,7 @@ export class ConnextInternal extends ConnextChannel {
 
   public verifyAppSequenceNumber = async (): Promise<any> => {
     const { data: sc } = await this.getStateChannel();
-    let appSequenceNumber;
+    let appSequenceNumber: number;
     try {
       appSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
     } catch (e) {
@@ -932,6 +1178,34 @@ export class ConnextInternal extends ConnextChannel {
       }
     }
     return await this.node.verifyAppSequenceNumber(appSequenceNumber);
+  };
+
+  public reclaimPendingAsyncTransfers = async (): Promise<void> => {
+    const pendingTransfers = await this.node.getPendingAsyncTransfers();
+    for (const transfer of pendingTransfers) {
+      const { amount, assetId, encryptedPreImage, paymentId } = transfer;
+      await this.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
+    }
+  };
+
+  public reclaimPendingAsyncTransfer = async (
+    paymentId: string,
+    encryptedPreImage: string,
+  ): Promise<ResolveLinkedTransferResponse> => {
+    this.logger.info(`Reclaiming transfer ${JSON.stringify({ paymentId, encryptedPreImage })}`);
+    // decrypt secret and resolve
+    const privateKey = fromMnemonic(this.opts.mnemonic).derivePath(CF_PATH).privateKey;
+    const cipher = EthCrypto.cipher.parse(encryptedPreImage);
+
+    const preImage = await EthCrypto.decryptWithPrivateKey(privateKey, cipher);
+    this.logger.debug(`Decrypted message and recovered preImage: ${preImage}`);
+    const response = await this.resolveCondition({
+      conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
+      paymentId,
+      preImage,
+    });
+    this.logger.info(`Reclaimed transfer ${JSON.stringify(response)}`);
+    return response;
   };
 
   ///////////////////////////////////
@@ -950,6 +1224,43 @@ export class ConnextInternal extends ConnextChannel {
       throw new Error(`Found multiple ${appName} app details on ${this.network.name} network`);
     }
     return appInfo[0];
+  };
+
+  public matchTx = (
+    givenTransaction: Transaction,
+    expected: CFCoreTypes.MinimalTransaction,
+  ): boolean => {
+    return (
+      givenTransaction.to === expected.to &&
+      bigNumberify(givenTransaction.value).eq(expected.value) &&
+      givenTransaction.data === expected.data
+    );
+  };
+
+  public retryNodeSubmittedWithdrawal = async (): Promise<void> => {
+    const val = await this.getLatestNodeSubmittedWithdrawal();
+    if (!val) {
+      this.logger.error(`No transaction found to retry`);
+      return;
+    }
+    let { retry, tx } = val;
+    retry += 1;
+    await this.store.set([
+      {
+        path: withdrawalKey(this.publicIdentifier),
+        value: { tx, retry },
+      },
+    ]);
+    if (retry >= MAX_WITHDRAWAL_RETRIES) {
+      const msg = `Tried to have node submit withdrawal ${MAX_WITHDRAWAL_RETRIES} times and it did not work, try submitting from wallet.`;
+      this.logger.error(msg);
+      // TODO: make this submit from wallet :)
+      // but this is weird, could take a while and may have gas issues.
+      // may not be the best way to do this
+      throw new Error(msg);
+    }
+    await this.node.withdraw(tx);
+    await this.watchForUserWithdrawal();
   };
 
   private appNotInstalled = async (appInstanceId: string): Promise<string | undefined> => {
@@ -980,5 +1291,35 @@ export class ConnextInternal extends ConnextChannel {
       );
     }
     return undefined;
+  };
+
+  private checkForUserWithdrawal = async (inBlock: number): Promise<boolean> => {
+    const val = await this.getLatestNodeSubmittedWithdrawal();
+    if (!val) {
+      this.logger.error(`No transaction found in store.`);
+      return false;
+    }
+
+    const { tx } = val;
+    // get the transaction hash that we should be looking for from
+    // the contract method
+    const txsTo = await this.ethProvider.getTransactionCount(tx.to, inBlock);
+    if (txsTo === 0) {
+      return false;
+    }
+
+    const block = await this.ethProvider.getBlock(inBlock);
+    const { transactions } = block;
+    if (transactions.length === 0) {
+      return false;
+    }
+
+    for (const transactionHash of transactions) {
+      const transaction = await this.ethProvider.getTransaction(transactionHash);
+      if (this.matchTx(transaction, tx)) {
+        return true;
+      }
+    }
+    return false;
   };
 }

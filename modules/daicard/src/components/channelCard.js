@@ -1,6 +1,7 @@
 import { Grid, Typography, withStyles } from "@material-ui/core";
-import { ethers as eth } from "ethers";
 import React from "react";
+
+// import { ethers as eth } from "ethers";
 
 const styles = theme => ({
   row: {
@@ -16,9 +17,9 @@ const styles = theme => ({
 });
 
 export const ChannelCard = withStyles(styles)(props => {
-  const { balance, classes } = props;
+  const { balance, classes, swapRate } = props;
   const split = (balance) => {
-    const bal = balance.format({ decimals: 3, symbol: false });
+    const bal = balance.format({ decimals: 2, symbol: false, round: false });
     const whole = bal.substring(0, bal.indexOf('.'));
     const part = bal.substring(bal.indexOf('.'));
     return { whole, part: part.substring(0,4) };
@@ -48,10 +49,10 @@ export const ChannelCard = withStyles(styles)(props => {
               {"$ "}
             </Typography>
             <Typography style={{display: 'inline-block'}} variant="h1" className={classes.row}>
-              <span>{split(balance.channel.token.toDAI()).whole}</span>
+              <span>{split(balance.channel.token.toDAI(swapRate)).whole}</span>
             </Typography>
             <Typography style={{display: 'inline-block'}} variant="h3" className={classes.row}>
-              <span>{split(balance.channel.token.toDAI()).part}</span>
+              <span>{split(balance.channel.token.toDAI(swapRate)).part}</span>
             </Typography>
           </span>
           {/* <span style={{fontSize: 64}}>&nbsp;&nbsp;&nbsp;</span> */}

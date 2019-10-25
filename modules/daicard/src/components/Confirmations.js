@@ -1,74 +1,94 @@
 import { withStyles } from "@material-ui/core";
-import PropTypes from "prop-types";
-import React, { Component } from "react";
+import React from "react";
 
-import MySnackbar from './snackBar';
+import { MySnackbar } from './snackBar';
 
-const styles = theme => ({
+const style = withStyles(theme => ({
   margin: {
     margin: theme.spacing(1)
   }
-});
+}));
 
 // TODO: close confirmations based on emitted events
-class Confirmations extends Component {
-  render() {
-    const { type, complete, closed } = this.props.pending;
-    return (
-      <div>
+export const Confirmations = style(props => {
+  const { machine, network } = props;
+  return (
+    <div>
 
-        <MySnackbar
-          variant="warning"
-          openWhen={type === "deposit" && !complete && !closed}
-          onClose={() => this.props.closeConfirmations("deposit")}
-          message="Processing deposit, we'll let you know when it's done."
-          duration={30000}
-        />
+      <MySnackbar
+        variant="info"
+        openWhen={machine.state.matches('ready.receiving.pending.show')}
+        onClose={() => machine.send('DISMISS_RECEIVE')}
+        message="Receiving Transfer."
+        duration={30 * 60 * 1000}
+      />
 
-        <MySnackbar
-          variant="warning"
-          openWhen={type === "withdrawal" && !complete && !closed}
-          onClose={() => this.props.closeConfirmations("withdraw")}
-          message="Processing withdrawal, we'll let you know when it's done."
-          duration={30000}
-        />
+      <MySnackbar
+        variant="success"
+        openWhen={machine.state.matches('ready.receiving.success')}
+        onClose={() => machine.send('DISMISS_RECEIVE')}
+        message="Transfer Receieved!"
+        duration={30 * 60 * 1000}
+      />
 
-        <MySnackbar
-          variant="warning"
-          openWhen={type === "swap" && !complete && !closed}
-          onClose={() => this.props.closeConfirmations("withdraw")}
-          message="Processing swap, we'll let you know when it's done."
-          duration={30000}
-        />
+      <MySnackbar
+        variant="error"
+        openWhen={machine.state.matches('ready.receiving.error')}
+        onClose={() => machine.send('DISMISS_RECEIVE')}
+        message="Transfer Failed."
+        duration={30 * 60 * 1000}
+      />
 
-        <MySnackbar
-          variant="success"
-          openWhen={type === "deposit" && complete && !closed}
-          onClose={() => this.props.closeConfirmations()}
-          message="Pending deposit confirmed!"
-        />
+      <MySnackbar
+        variant="info"
+        openWhen={machine.state.matches('ready.deposit.pending.show')}
+        onClose={() => machine.send('DISMISS_DEPOSIT')}
+        message="Processing deposit..."
+        duration={30 * 60 * 1000}
+      />
 
-        <MySnackbar
-          variant="success"
-          openWhen={type === "withdrawal" && complete && !closed}
-          onClose={() => this.props.closeConfirmations()}
-          message="Pending withdraw confirmed!"
-        />
+      <MySnackbar
+        variant="success"
+        openWhen={machine.state.matches('ready.deposit.success')}
+        onClose={() => machine.send('DISMISS_DEPOSIT')}
+        message="Pending deposit confirmed!"
+        duration={60 * 1000}
+      />
 
-        <MySnackbar
-          variant="success"
-          openWhen={type === "swap" && complete && !closed}
-          onClose={() => this.props.closeConfirmations()}
-          message="Swap was successful!"
-        />
+      <MySnackbar
+        variant="info"
+        openWhen={machine.state.matches('ready.withdraw.pending.show')}
+        onClose={() => machine.send('DISMISS_WITHDRAW')}
+        message="Processing withdrawal..."
+        duration={30 * 60 * 1000}
+      />
 
-      </div>
-    );
-  }
-}
+      <MySnackbar
+        variant="success"
+        openWhen={machine.state.matches('ready.withdraw.success')}
+        onClose={() => machine.send('DISMISS_WITHDRAW')}
+        message="Withdraw succeeded!"
+        network={network}
+        txHash={machine.state.context.txHash}
+        duration={60 * 1000}
+      />
 
-Confirmations.propTypes = {
-  classes: PropTypes.object.isRequired
-};
+      <MySnackbar
+        variant="info"
+        openWhen={machine.state.matches('ready.swap.pending.show')}
+        onClose={() => machine.send('DISMISS_SWAP')}
+        message="Processing swap..."
+        duration={30 * 60 * 1000}
+      />
 
-export default withStyles(styles)(Confirmations);
+      <MySnackbar
+        variant="success"
+        openWhen={machine.state.matches('ready.swap.success')}
+        onClose={() => machine.send('DISMISS_SWAP')}
+        message="Swap was successful!"
+        duration={60 * 1000}
+      />
+
+    </div>
+  );
+})

@@ -1,5 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { RedisLockService } from "@connext/redis-lock";
+import { ConnextNodeStorePrefix } from "@connext/types";
 import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { Wallet } from "ethers";
@@ -7,6 +7,7 @@ import { HDNode } from "ethers/utils";
 
 import { ConfigService } from "../config/config.service";
 import { CFCoreProviderId, MessagingProviderId } from "../constants";
+import { LockService } from "../lock/lock.service";
 import { CLogger, freeBalanceAddressFromXpub } from "../util";
 import { CFCore, EXTENDED_PRIVATE_KEY_PATH } from "../util/cfCore";
 
@@ -15,17 +16,14 @@ import { CFCoreRecordRepository } from "./cfCore.repository";
 const logger = new CLogger("CFCoreProvider");
 
 export const cfCoreProviderFactory: Provider = {
-  inject: [ConfigService, MessagingProviderId, CFCoreRecordRepository],
+  inject: [ConfigService, MessagingProviderId, CFCoreRecordRepository, LockService],
   provide: CFCoreProviderId,
   useFactory: async (
     config: ConfigService,
     messaging: IMessagingService,
     store: CFCoreRecordRepository,
+    lockService: LockService,
   ): Promise<CFCore> => {
-    // create redis lock servuce
-    logger.log(`instantiating hub locking service with redis: ${config.getRedisUrl()}`);
-    const lockService = new RedisLockService(config.getRedisUrl());
-
     await store.set([
       {
         path: EXTENDED_PRIVATE_KEY_PATH,
@@ -43,10 +41,10 @@ export const cfCoreProviderFactory: Provider = {
     const cfCore = await CFCore.create(
       messaging as any, // TODO: FIX
       store,
-      { STORE_KEY_PREFIX: "ConnextHub" },
+      { STORE_KEY_PREFIX: ConnextNodeStorePrefix },
       provider,
       await config.getContractAddresses(),
-      lockService,
+      { acquireLock: lockService.lockedOperation.bind(lockService) },
     );
     logger.log("CFCore created");
     logger.log(`Public Identifier ${JSON.stringify(cfCore.publicIdentifier)}`);
