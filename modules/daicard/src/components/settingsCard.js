@@ -21,6 +21,8 @@ import React, { useState } from "react";
 import { Copyable } from "./copyable";
 import { MySnackbar } from "./snackBar";
 
+import { ConnextClientStorePrefix } from "@connext/types"
+
 const style = withStyles(theme => ({
   card: {
     display: "flex",
@@ -67,6 +69,7 @@ export const SettingsCard = style((props) => {
 
   const recoverAddressFromMnemonic = async () => {
     localStorage.setItem("mnemonic", mnemonic);
+    localStorage.removeItem(`${ConnextClientStorePrefix}:EXTENDED_PRIVATE_KEY`);
     window.location.reload();
   }
 

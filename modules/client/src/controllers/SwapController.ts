@@ -5,14 +5,14 @@ import {
   SimpleSwapAppStateBigNumber,
   SwapParameters,
 } from "@connext/types";
-import { AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
+import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import { delay, replaceBN, xpubToAddress } from "../lib/utils";
+import { replaceBN, xpubToAddress } from "../lib/utils";
 import { invalidAddress } from "../validation/addresses";
-import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
+import { falsy, notGreaterThan, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
 
@@ -91,6 +91,7 @@ export class SwapController extends AbstractController {
       invalidAddress(fromAssetId),
       invalidAddress(toAssetId),
       notLessThanOrEqualTo(amount, userBal),
+      notGreaterThan(amount, Zero),
       notLessThanOrEqualTo(swappedAmount, nodeBal),
       notPositive(parseEther(swapRate)),
     ];
@@ -109,9 +110,21 @@ export class SwapController extends AbstractController {
     return data;
   };
 
-  // TODO: fix types of data
-  private rejectInstallSwap = (rej: any, msg: any): any => {
+  // TODO: fix types of data, they seem to have different strucs
+  // depending on when theyre emitted :thinking:
+  private rejectInstallSwap = (rej: any, msg: { data: { appInstanceId: string } }): any => {
     // check app id
+    if (!msg.data) {
+      this.log.warn(
+        `This should not have this structure when emitted, strange. msg: ${JSON.stringify(
+          msg,
+          null,
+          2,
+        )}`,
+      );
+      return;
+    }
+
     if (this.appId !== msg.data.appInstanceId) {
       return;
     }

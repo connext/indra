@@ -658,8 +658,10 @@ export class ConnextInternal extends ConnextChannel {
       );
     }
 
-    this.logger.info(`Found state to restore from backup: ${JSON.stringify(relevantPair)}`);
-    await this.opts.store.set([relevantPair], false);
+    this.logger.info(
+      `Found state to restore from backup: ${JSON.stringify(relevantPair, null, 2)}`,
+    );
+    await this.store.set([relevantPair], false);
   };
 
   public restoreStateFromNode = async (xpub: string): Promise<void> => {
@@ -698,8 +700,10 @@ export class ConnextInternal extends ConnextChannel {
     // try to recover the rest of the stateS
     try {
       await this.restoreStateFromBackup(xpub);
+      this.logger.debug(`restored state from backup!`);
     } catch (e) {
       await this.restoreStateFromNode(xpub);
+      this.logger.debug(`restored state from node!`);
     }
 
     // recreate client with new mnemonic
