@@ -204,7 +204,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
   const withdrawal = await client.store.get(withdrawalKey(client.publicIdentifier));
 
-  if (withdrawal && withdrawal.retry < MAX_WITHDRAWAL_RETRIES) {
+  const hasWithdrawal = withdrawal && withdrawal !== "undefined";
+
+  if (hasWithdrawal && withdrawal.retry < MAX_WITHDRAWAL_RETRIES) {
     // get the latest submitted withdrawal from the hub
     // and check the tx to see if the data matches what we
     // expect from our store.
@@ -224,7 +226,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
       `Found active withdrawal with ${withdrawal.retry} retries, waiting for withdrawal to be caught`,
     );
     await client.retryNodeSubmittedWithdrawal();
-  } else if (withdrawal && withdrawal.retry >= MAX_WITHDRAWAL_RETRIES) {
+  } else if (hasWithdrawal && withdrawal.retry >= MAX_WITHDRAWAL_RETRIES) {
     // otherwise, do not start client.
     const msg = `Cannot connect client, hub failed to submit latest withdrawal ${MAX_WITHDRAWAL_RETRIES} times.`;
     logger.error(msg);
@@ -601,7 +603,7 @@ export class ConnextInternal extends ConnextChannel {
   > => {
     const value = await this.store.get(withdrawalKey(this.cfCore.publicIdentifier));
 
-    if (!value) {
+    if (!value || value === "undefined") {
       return undefined;
     }
 
