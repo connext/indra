@@ -628,7 +628,7 @@ export class ConnextInternal extends ConnextChannel {
   > => {
     const value = await this.channelRouter.get(withdrawalKey(this.publicIdentifier));
 
-    if (!value) {
+    if (!value || value === "undefined") {
       return undefined;
     }
 
@@ -1115,7 +1115,7 @@ export class ConnextInternal extends ConnextChannel {
   public resubmitActiveWithdrawal = async (): Promise<void> => {
     const withdrawal = await this.channelRouter.get(withdrawalKey(this.publicIdentifier));
 
-    if (!withdrawal) {
+    if (!withdrawal || withdrawal === "undefined") {
       // no active withdrawal, nothing to do
       return;
     }
