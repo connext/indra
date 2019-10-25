@@ -1014,8 +1014,7 @@ export class ConnextInternal extends ConnextChannel {
     return await this.channelRouter.withdraw(amount, this.multisigAddress, assetId, recipient);
   };
 
-  // TODO Add to ChannelRouter
-  public cfWithdrawCommitment = async (
+  public withdrawCommitment = async (
     amount: BigNumber,
     assetId?: string,
     recipient?: string,
