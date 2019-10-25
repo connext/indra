@@ -61,6 +61,7 @@ modules/**/.circleci
 counterfactual
 walletconnect
 walletconnect-monorepo
+walletconnect
 
 # Regenerated files from tests
 bots.json

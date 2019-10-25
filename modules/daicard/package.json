@@ -11,7 +11,7 @@
 		"logs": "bash ops/logs.sh"
 	},
 	"dependencies": {
-		"@connext/client": "0.2.2",
+		"@connext/client": "0.2.3",
 		"@material-ui/core": "4.5.1",
 		"@material-ui/icons": "4.5.1",
 		"@walletconnect/browser": "1.0.0-beta.37",
@@ -38,7 +38,7 @@
 		"xstate": "4.6.7"
 	},
 	"devDependencies": {
-		"@connext/types": "0.2.2",
+		"@connext/types": "0.2.3",
 		"bn.js": "5.0.0",
 		"chai-bn": "0.2.0"
 	},
