@@ -281,6 +281,7 @@ export class ChannelRouter {
   ): Promise<NodeTypes.WithdrawCommitmentResult> => {
     return await this._send(NodeTypes.RpcMethodName.WITHDRAW_COMMITMENT, {
       amount,
+      multisigAddress: this.multisigAddress,
       recipient,
       tokenAddress: makeChecksumOrEthAddress(assetId),
     } as NodeTypes.WithdrawCommitmentParams);
