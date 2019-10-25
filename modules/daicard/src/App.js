@@ -476,14 +476,21 @@ class App extends React.Component {
       return;
     }
     if (balance.channel.token.wad.gte(maxDeposit.toDAI(swapRate).wad)) {
-      return; // swap ceiling has been reached, no need to swap more
+      console.debug(`Swap ceiling has been reached, no need to swap more`)
+      return;
     }
 
     const maxSwap = tokenToWei(maxDeposit.toDAI().wad.sub(balance.channel.token.wad), swapRate);
     const weiToSwap = minBN([balance.channel.ether.wad, maxSwap]);
 
-    console.log(`Attempting to swap ${formatEther(weiToSwap)} eth for dai at rate: ${swapRate}`);
-    machine.send(['START_SWAP']);
+    if (weiToSwap.isZero()) {
+      // can happen if the balance.channel.ether.wad is 1 due to rounding
+      console.debug(`Will not exchange 0 wei. This is still weird, so here are some logs:`)
+      console.debug(`   - maxSwap: ${maxSwap.toString()}`);
+      console.debug(`   - swapRate: ${swapRate.toString()}`);
+      console.debug(`   - balance.channel.ether.wad: ${balance.channel.ether.wad.toString()}`);
+      return;
+    }
 
     const hubFBAddress = connext.utils.freeBalanceAddressFromXpub(channel.nodePublicIdentifier);
     const collateralNeeded = balance.channel.token.wad.add(weiToToken(weiToSwap, swapRate));
@@ -502,7 +509,11 @@ class App extends React.Component {
       await channel.requestCollateral(token.address);
       collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress]);
       console.log(`Collateral: ${collateral} tokens, need: ${formatEther(collateralNeeded)}`);
+      return;
     }
+    console.log(`Attempting to swap ${formatEther(weiToSwap)} eth for dai at rate: ${swapRate}`);
+    machine.send(['START_SWAP']);
+
     await channel.swap({
       amount: weiToSwap.toString(),
       fromAssetId: AddressZero,
