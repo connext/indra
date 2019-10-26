@@ -671,11 +671,16 @@ export class ConnextInternal extends ConnextChannel {
     this.logger.info(`Found state to restore: ${JSON.stringify(state)}`);
 
     // TODO: this should prob not be hardcoded like this
+    // TODO: we probably want to put in commitments and withdrawals eventually
     await this.opts.store.set(
       [
         {
           path: `store/${this.publicIdentifier}`,
-          value: { stateChannelsMap: { [this.multisigAddress]: state.data } },
+          value: {
+            commitments: {},
+            stateChannelsMap: { [this.multisigAddress]: state.data },
+            withdrawals: {},
+          },
         },
       ],
       false,
