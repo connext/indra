@@ -60,6 +60,7 @@ modules/**/.circleci
 # Local packages
 counterfactual
 walletconnect-monorepo
+walletconnect
 
 # Regenerated files from tests
 bots.json
