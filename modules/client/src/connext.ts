@@ -665,25 +665,25 @@ export class ConnextInternal extends ConnextChannel {
   };
 
   public restoreStateFromNode = async (xpub: string): Promise<void> => {
-    const states = await this.node.restoreStates(xpub);
-    this.logger.info(`Found states to restore: ${JSON.stringify(states)}`);
+    const state = await this.node.getStateForRestore(xpub);
+    this.logger.info(`Found state to restore: ${JSON.stringify(state)}`);
 
     // TODO: this should prob not be hardcoded like this
-    const actualStates = states.map((state: { path: string; value: object }) => {
-      return {
-        path: state.path
-          .replace(this.nodePublicIdentifier, xpub)
-          .replace(ConnextNodeStorePrefix, "store"),
-        value: state.value[state.path],
-      };
-    });
-    await this.opts.store.set(actualStates, false);
+    await this.opts.store.set(
+      [
+        {
+          path: `store/${this.publicIdentifier}`,
+          value: { stateChannelsMap: { [this.multisigAddress]: state.data } },
+        },
+      ],
+      false,
+    );
   };
 
   public restoreState = async (
     defaultToHub: boolean = true,
     signer: { mnemonic?: string; xpub?: string; keyGen?: any },
-  ): Promise<ConnextInternal> => {
+  ): Promise<any> => {
     const { mnemonic, keyGen } = signer;
     let { xpub } = signer;
 
@@ -697,14 +697,18 @@ export class ConnextInternal extends ConnextChannel {
 
     this.opts.store.reset();
 
+    await this.restoreStateFromNode(xpub);
+
     // try to recover the rest of the stateS
-    try {
-      await this.restoreStateFromBackup(xpub);
-      this.logger.debug(`restored state from backup!`);
-    } catch (e) {
-      await this.restoreStateFromNode(xpub);
-      this.logger.debug(`restored state from node!`);
-    }
+    // TODO: fix pisa implementation
+    // try {
+    //   await this.restoreStateFromBackup(xpub);
+    //   this.logger.debug(`restored state from backup!`);
+    // } catch (e) {
+    //   this.logger.debug(`Could not restore from backup: ${e}`)
+    //   await this.restoreStateFromNode(xpub);
+    //   this.logger.debug(`restored state from node!`);
+    // }
 
     // recreate client with new mnemonic
     const client = await connect({ ...this.opts, mnemonic, xpub, keyGen });
