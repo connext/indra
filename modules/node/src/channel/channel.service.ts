@@ -250,12 +250,15 @@ export class ChannelService {
     );
   }
 
-  async getChannelStates(userPublicIdentifier: string): Promise<CFCoreRecord[]> {
+  // TODO: types
+  async getChannelState(userPublicIdentifier: string): Promise<any> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     if (!channel) {
       throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
     }
 
-    return await this.cfCoreRepository.findRecordsForRestore(channel.multisigAddress);
+    const channelData = await this.cfCoreService.getStateChannel(channel.multisigAddress);
+
+    return channelData;
   }
 }
