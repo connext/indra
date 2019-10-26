@@ -143,10 +143,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
   }
 
   async getStatesForRestore(pubId: string): Promise<{ path: string; value: object }[]> {
-    const states = await this.channelService.getChannelStates(pubId);
-    return states.map((state: CFCoreRecord) => {
-      return { path: state.path, value: state.value };
-    });
+    return await this.channelService.getChannelState(pubId);
   }
 
   async setupSubscriptions(): Promise<void> {
