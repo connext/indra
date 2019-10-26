@@ -2,8 +2,7 @@ import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import { ConnextNodeStorePrefix } from "@connext/types";
 import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { Wallet } from "ethers";
-import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
+import { fromMnemonic } from "ethers/utils/hdnode";
 
 import { ConfigService } from "../config/config.service";
 import { CF_PATH, CFCoreProviderId, MessagingProviderId } from "../constants";
