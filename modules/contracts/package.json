@@ -11,10 +11,10 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@counterfactual/cf-adjudicator-contracts": "0.0.9",
-    "@counterfactual/cf-funding-protocol-contracts": "0.0.12",
-    "@counterfactual/types": "0.0.44",
-    "@types/chai": "4.2.3",
+    "@counterfactual/cf-adjudicator-contracts": "0.0.10",
+    "@counterfactual/cf-funding-protocol-contracts": "0.0.13",
+    "@counterfactual/types": "0.0.45",
+    "@types/chai": "4.2.4",
     "chai": "4.2.0",
     "dotenv": "8.2.0",
     "eth-gas-reporter": "0.2.12",
@@ -22,7 +22,7 @@
     "ethers": "4.0.37",
     "openzeppelin-solidity": "2.3.0",
     "solc": "0.5.12",
-    "truffle": "5.0.41",
+    "truffle": "5.0.42",
     "truffle-hdwallet-provider": "1.0.17",
     "ts-mocha": "6.0.0",
     "ts-node": "8.4.1"
