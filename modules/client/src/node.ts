@@ -236,8 +236,7 @@ export class NodeApiClient implements INodeApiClient {
     await this.messaging.unsubscribe(`swap-rate.${from}.${to}`);
   }
 
-  // TODO: need to add auth for this!
-  public async restoreStates(publicIdentifier: string): Promise<{ path: string; value: object }[]> {
+  public async getStateForRestore(publicIdentifier: string): Promise<{ data: any }> {
     return this.send(`channel.restore-states.${publicIdentifier}`);
   }
 
