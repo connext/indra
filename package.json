@@ -13,7 +13,7 @@
 	},
 	"homepage": "https://github.com/ConnextProject/indra#readme",
 	"devDependencies": {
-		"@counterfactual/cf-adjudicator-contracts": "0.0.9",
+		"@counterfactual/cf-adjudicator-contracts": "0.0.10",
 		"@counterfactual/cf-funding-protocol-contracts": "0.0.12",
 		"@counterfactual/types": "0.0.45",
 		"chai-bn": "0.2.0",
