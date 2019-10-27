@@ -15,7 +15,7 @@
 	"devDependencies": {
 		"@counterfactual/cf-adjudicator-contracts": "0.0.9",
 		"@counterfactual/cf-funding-protocol-contracts": "0.0.12",
-		"@counterfactual/types": "0.0.44",
+		"@counterfactual/types": "0.0.45",
 		"chai-bn": "0.2.0",
 		"cypress": "3.4.1",
 		"ethers": "4.0.37",
