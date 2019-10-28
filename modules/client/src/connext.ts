@@ -651,7 +651,7 @@ export class ConnextInternal extends ConnextChannel {
     // TODO: poller should not be completely blocking, but safe to leave for now
     // because the channel should be blocked
     try {
-      await new Promise((resolve, reject) => {
+      await new Promise((resolve: any, reject: any): any => {
         this.ethProvider.on("block", async (blockNumber: number) => {
           const found = await this.checkForUserWithdrawal(blockNumber);
           if (found) {
@@ -711,7 +711,9 @@ export class ConnextInternal extends ConnextChannel {
         value: state.value[state.path],
       };
     });
-    await this.channelRouter.set(actualStates, false);
+    if (this.store) {
+      await this.store.set(actualStates, false);
+    }
   };
 
   public restoreState = async (mnemonic: string): Promise<ConnextInternal> => {
@@ -724,7 +726,9 @@ export class ConnextInternal extends ConnextChannel {
 
     // always set the mnemonic in the store
     this.channelRouter.reset();
-    await this.channelRouter.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }], false);
+    if (this.store) {
+      await this.store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }], false);
+    }
 
     // try to recover the rest of the stateS
     try {
@@ -1159,7 +1163,8 @@ export class ConnextInternal extends ConnextChannel {
       this.logger.error(`No transaction found to retry`);
       return;
     }
-    let { retry, tx } = val;
+    let { retry } = val;
+    const { tx } = val;
     retry += 1;
     await this.channelRouter.set([
       {
