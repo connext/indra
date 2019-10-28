@@ -6,7 +6,7 @@
 		"start": "react-scripts start",
 		"test": "make test",
 		"start-test": "make start-test",
-		"build": "react-scripts build",
+		"build": "node --max_old_space_size=4096 node_modules/.bin/react-scripts build",
 		"eject": "react-scripts eject",
 		"logs": "bash ops/logs.sh"
 	},
