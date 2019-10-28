@@ -232,7 +232,7 @@ services:
       - $readonly_password
     volumes:
       - database_dev:/var/lib/postgresql/data
-
+ 
   nats:
     command: -V
     image: $nats_image
@@ -244,8 +244,11 @@ services:
   hasura:
     image: $hasura_image
     environment:
+      HASURA_GRAPHQL_ADMIN_SECRET: "password"
       HASURA_GRAPHQL_ENABLE_ALLOWLIST: "true"
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_ENABLED_APIS: "graphql,metadata"
+      HASURA_GRAPHQL_UNAUTHORIZED_ROLE: readonly
       PG_DB: $project
       PG_HOST: $pg_host
       PG_PASSWORD_FILE: $pg_password_file

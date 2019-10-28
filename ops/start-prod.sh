@@ -17,6 +17,7 @@ INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER}"
 INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
 INDRA_MODE="${INDRA_MODE:-staging}" # set to "prod" to use versioned docker images
 INDRA_PISA_URL="${INDRA_PISA_URL:-localhost}"
+HASURA_ADMIN_SECRET="${HASURA_ADMIN_SECRET}"
 
 ####################
 # Internal Config
@@ -80,7 +81,7 @@ pg_password_file="/run/secrets/$db_secret"
 pg_port="5432"
 pg_user="$project"
 # readonly_password="${project}_database_readonly"
-readonly_password_file="/run/secrets/$db_secret"
+readonly_password_file="/run/secrets/$hasura_secret"
 readonly_user="readonly"
 
 ########################################
@@ -304,13 +305,25 @@ services:
   hasura:
     image: $hasura_image
     environment:
-      HASURA_GRAPHQL_DATABASE_URL="postgres://$readonly_user:`cat $readonly_password_file`@$pg_host:$pg_port/$pg_db"
-      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_ADMIN_SECRET: $HASURA_ADMIN_SECRET
       HASURA_GRAPHQL_ENABLE_ALLOWLIST: "true"
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
+      HASURA_GRAPHQL_ENABLED_APIS: "graphql,metadata"
+      HASURA_GRAPHQL_UNAUTHORIZED_ROLE: readonly
+      PG_DB: $project
+      PG_HOST: $pg_host
+      PG_PASSWORD_FILE: $pg_password_file
+      PG_PORT: $pg_port
+      PG_USER: $project
+      READONLY_PASSWORD_FILE: $readonly_password_file
+      READONLY_USER: readonly
+    networks:
+      - $project
     ports:
       - "8083:8080"
     secrets:
-      - $db_secret
+      - $pg_password
+      - $readonly_password
 
   logdna:
     image: logdna/logspout:latest
