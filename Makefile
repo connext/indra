@@ -146,7 +146,7 @@ contracts: node-modules $(shell find $(contracts)/contracts $(find_options))
 
 daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/daicard && npm run build"
+	$(docker_run) "cd modules/daicard && node --max_old_space_size=8192 npm run build"
 	$(log_finish) && touch $(flags)/$@
 
 daicard-proxy: $(shell find $(proxy) $(find_options))
