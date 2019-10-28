@@ -65,8 +65,8 @@ if [[ "$INDRA_MODE" == "test" ]]
 then
   db_volume="database_test_`date +%y%m%d_%H%M%S`"
   db_secret="${project}_database_test"
-  new_secret "$db_secret"
   hasura_secret= "${hasura}_database_test"
+  new_secret "$db_secret"
 else
   db_volume="database"
   db_secret="${project}_database"
