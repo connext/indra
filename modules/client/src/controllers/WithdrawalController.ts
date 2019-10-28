@@ -32,11 +32,7 @@ export class WithdrawalController extends AbstractController {
     try {
       if (!userSubmitted) {
         this.log.info(`Calling ${CFCoreTypes.RpcMethodName.WITHDRAW_COMMITMENT}`);
-        const withdrawResponse = await this.connext.cfWithdrawCommitment(
-          amount,
-          assetId,
-          recipient,
-        );
+        const withdrawResponse = await this.connext.withdrawCommitment(amount, assetId, recipient);
         this.log.info(`Withdraw Response: ${JSON.stringify(withdrawResponse, replaceBN, 2)}`);
         const minTx: CFCoreTypes.MinimalTransaction = withdrawResponse.transaction;
         // set the withdrawal tx in the store

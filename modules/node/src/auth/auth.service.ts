@@ -1,8 +1,7 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { arrayify, HDNode, hexlify, randomBytes, verifyMessage } from "ethers/utils";
 
 import { ChannelRepository } from "../channel/channel.repository";
-import { RedisProviderId } from "../constants";
 import { CLogger, isValidHex, isXpub } from "../util";
 
 const logger = new CLogger("AuthService");
@@ -54,7 +53,7 @@ export class AuthService {
       }
       const { userPublicIdentifier } = channel;
       const xpubAddress = HDNode.fromExtendedKey(userPublicIdentifier).address;
-      logger.debug(`Got addres ${xpubAddress} from xpub ${userPublicIdentifier}`);
+      logger.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
       const authRes = this.verifySig(xpubAddress, data);
       if (authRes) {
         logger.error(`Auth failed (${authRes.err}) but we're just gonna ignore that for now..`);

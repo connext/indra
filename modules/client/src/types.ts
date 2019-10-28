@@ -4,20 +4,19 @@ import {
   AppState,
   ChannelProvider,
   ChannelState,
-  ContractAddresses,
   GetConfigResponse,
   MultisigState,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { providers, utils, Wallet } from "ethers";
 
-import { CFCore } from "./lib/cfCore";
+import { ChannelRouter } from "./channelRouter";
 import { NodeApiClient } from "./node";
 
 export type BigNumber = utils.BigNumber;
 export const BigNumber = utils.BigNumber;
 
-interface Store extends CFCoreTypes.IStoreService {
+export interface Store extends CFCoreTypes.IStoreService {
   set(
     pairs: {
       path: string;
@@ -33,9 +32,11 @@ export interface ClientOptions {
   ethProviderUrl: string;
   // node information
   nodeUrl: string; // ws:// or nats:// urls are supported
-  // signing options, include at least one of the following
-  mnemonic: string;
-  // channel provider
+
+  // signing options, include either a mnemonic directly
+  mnemonic?: string;
+
+  // or a channel provider
   channelProvider?: ChannelProvider;
   // function passed in by wallets to generate ephemeral keys
   // used when signing applications
@@ -52,7 +53,7 @@ export interface ClientOptions {
 
 export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
-  cfCore: CFCore;
+  channelRouter: ChannelRouter;
   config: GetConfigResponse;
   contract?: MultisigState;
   ethProvider: providers.JsonRpcProvider;
@@ -75,5 +76,5 @@ export interface NodeInitializationParameters {
   logLevel?: number;
   userPublicIdentifier?: string;
   nodePublicIdentifier?: string;
-  wallet?: Wallet;
+  channelRouter?: ChannelRouter;
 }

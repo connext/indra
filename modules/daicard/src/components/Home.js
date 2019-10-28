@@ -9,17 +9,20 @@ import "../App.css";
 import { ChannelCard } from "./channelCard";
 import { QRScan } from "./qrCode";
 
+import { initWalletConnect } from "../utils";
+
 const style = withStyles({});
 
-export const Home = style(props => {
+export const Home = style(({ balance, swapRate, channel, history }) => {
   const [scanModal, setScanModal] = useState(false);
 
-  const { balance, swapRate } = props
-
   const scanQRCode = async (data) => {
-    const path = await props.scanQRCode(data);
     setScanModal(false);
-    props.history.push(path)
+    if(data.startsWith("wc:")){
+      await initWalletConnect(data, channel);
+    } else {
+      history.push(data);
+    }
   };
 
   return (

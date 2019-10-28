@@ -21,6 +21,7 @@
     "ethers": "4.0.37",
     "human-standard-token-abi": "2.0.0",
     "regenerator-runtime": "0.13.3",
+    "rpc-server": "0.0.1",
     "uuid": "3.3.3"
   },
   "devDependencies": {
