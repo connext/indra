@@ -31,23 +31,12 @@ import {
   TransferParameters,
   WithdrawParameters,
 } from "@connext/types";
-import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
-import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
 import { Address, AppInstanceJson, Node as CFCoreTypes } from "@counterfactual/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
 import { Contract, providers, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
-import {
-  BigNumber,
-  bigNumberify,
-  getAddress,
-  Interface,
-  keccak256,
-  Network,
-  solidityKeccak256,
-  Transaction,
-} from "ethers/utils";
+import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
 import { fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
@@ -64,10 +53,10 @@ import { CF_PATH } from "./lib/constants";
 import { Logger } from "./lib/logger";
 import {
   freeBalanceAddressFromXpub,
+  getMultisigAddressfromXpubs,
   publicIdentifierToAddress,
   replaceBN,
   withdrawalKey,
-  xkeysToSortedKthAddresses,
 } from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
@@ -745,30 +734,7 @@ export class ConnextInternal extends ConnextChannel {
     const proxyFactoryAddress: string = this.opts.config.contractAddresses.ProxyFactory;
     const minimumViableMultisigAddress: string = this.opts.config.contractAddresses
       .MinimumViableMultisig;
-    return getAddress(
-      solidityKeccak256(
-        ["bytes1", "address", "uint256", "bytes32"],
-        [
-          "0xff",
-          proxyFactoryAddress,
-          solidityKeccak256(
-            ["bytes32", "uint256"],
-            [
-              keccak256(
-                new Interface(MinimumViableMultisig.abi).functions.setup.encode([
-                  xkeysToSortedKthAddresses(owners, 0),
-                ]),
-              ),
-              0,
-            ],
-          ),
-          solidityKeccak256(
-            ["bytes", "uint256"],
-            [`0x${Proxy.evm.bytecode.object}`, minimumViableMultisigAddress],
-          ),
-        ],
-      ).slice(-40),
-    );
+    return getMultisigAddressfromXpubs(owners, proxyFactoryAddress, minimumViableMultisigAddress);
   };
 
   ///////////////////////////////////
