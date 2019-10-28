@@ -389,6 +389,11 @@ export class ChannelRouter {
   ///// PRIVATE METHODS
 
   private isApprovedGetSetPath(path: string): void {
+    // if it is a smart client, all paths are approved
+    if (this.type === RpcType.CounterfactualNode) {
+      return;
+    }
+
     // verify it is in the approved paths for editing
     if (this.approvedStorePaths.indexOf(path) === -1) {
       throw new Error(`Not an approved store path to get/set: ${path}`);
