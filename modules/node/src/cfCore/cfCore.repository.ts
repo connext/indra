@@ -62,4 +62,8 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
       await this.save(record);
     }
   }
+
+  async getLegacyCFCoreRecord(multisigAddress: string): Promise<CFCoreRecord> {
+    return await this.findOneOrFail({ path: Like(`%${multisigAddress}`) });
+  }
 }
