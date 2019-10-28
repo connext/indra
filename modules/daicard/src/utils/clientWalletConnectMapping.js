@@ -10,7 +10,7 @@ export async function initWalletConnect(uri, client) {
     if (error) {
       throw error;
     }
-    displaySessionApproval(payload);
+    displaySessionApproval(payload.params[0]);
   });
 
   // Subscribe to call requests
@@ -43,7 +43,8 @@ export function cleanWalletConnect() {
 }
 
 export function displaySessionApproval(payload) {
-  walletConnector.approveSession({ accounts: [], chainId: 4447 });
+  verifyFields(payload, ["chainId"])
+  walletConnector.approveSession({ accounts: [], chainId: payload.chainId });
   //TODO: proc modal that approves the walletconnection from the wallet
 }
 
