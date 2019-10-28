@@ -66,12 +66,14 @@ then
   db_volume="database_test_`date +%y%m%d_%H%M%S`"
   db_secret="${project}_database_test"
   hasura_secret="${hasura}_database_test"
-  new_secret "$db_secret" "$hasura_secret"
+  new_secret "$db_secret"
+  new_secret "$hasura_secret"
 else
   db_volume="database"
   db_secret="${project}_database"
   hasura_secret="${hasura}_database"
-  new_secret $db_secret $hasura_secret
+  new_secret $db_secret
+  new_secret $hasura_secret
 fi
 
 # database connection settings
