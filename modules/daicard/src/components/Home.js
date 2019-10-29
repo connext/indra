@@ -106,9 +106,12 @@ function Home(props) {
   const { classes, balance, swapRate } = props;
 
   const scanQRCode = async data => {
-    const path = await props.scanQRCode(data);
     setScanModal(false);
-    props.history.push(path);
+    if (data.startsWith("wc:")) {
+      await initWalletConnect(data, channel);
+    } else {
+      history.push(data);
+    }
   };
 
   const tokenBalance = balance.channel.token.wad;

@@ -302,7 +302,7 @@ const SendCard = props => {
     if (!recipient.value && !recipient.error && query.recipient) {
       updateRecipientHandler(query.recipient);
     }
-  }, [location, updateAmountHandler]);
+  }, [location, updateAmountHandler, amount.value, recipient.value, recipient.error]);
 
   return (
     <Grid className={classes.top} container spacing={2} direction="column">

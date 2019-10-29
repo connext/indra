@@ -13,12 +13,12 @@ import {
   withStyles,
 } from "@material-ui/core";
 import PropTypes from "prop-types";
-
 import { ArrowRight as SubmitIcon, Settings as SettingsIcon } from "@material-ui/icons";
 import React, { useState } from "react";
 
-import Copyable from "./copyable";
-import { MySnackbar } from "./snackBar";
+import { Copyable } from "./copyable";
+
+import { ConnextClientStorePrefix } from "@connext/types";
 
 const styles = {
   top: {
@@ -75,11 +75,8 @@ const SettingsCard = props => {
   const [showRecovery, setShowRecovery] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
-  const { classes, channel } = props;
-
-  const closeModal = () => {
-    setCopied(false);
-  };
+  const useWalletConnext = localStorage.getItem("useWalletConnext");
+  const { classes, setWalletConnext } = props;
 
   const generateNewAddress = () => {
     // TODO: withdraw channel balance first? Decollateralize?
@@ -90,6 +87,7 @@ const SettingsCard = props => {
 
   const recoverAddressFromMnemonic = async () => {
     localStorage.setItem("mnemonic", mnemonic);
+    localStorage.removeItem(`${ConnextClientStorePrefix}:EXTENDED_PRIVATE_KEY`);
     window.location.reload();
   };
 
@@ -117,6 +115,21 @@ const SettingsCard = props => {
           Support
         </Button>
       </Grid>
+
+      <Grid item xs={12} className={classes.button}>
+        <Button
+          disableTouchRipple
+          fullWidth
+          className={classes.button}
+          variant="outlined"
+          color="secondary"
+          size="large"
+          onClick={() => setWalletConnext(!useWalletConnext)}
+        >
+          {useWalletConnext ? `Deactivate WalletConnext (beta)` : `Activate WalletConnext (beta)`}
+        </Button>
+      </Grid>
+
       <Grid item xs={12} className={classes.button}>
         {!showRecovery ? (
           <Button
@@ -134,6 +147,7 @@ const SettingsCard = props => {
           <Copyable color="#002868" size="large" text={localStorage.getItem("mnemonic")} />
         )}
       </Grid>
+
       <Grid item xs={12} className={classes.button}>
         {!inputRecovery ? (
           <Button
@@ -175,6 +189,7 @@ const SettingsCard = props => {
           />
         )}
       </Grid>
+
       <Grid item xs={12} className={classes.button}>
         <Button
           disableTouchRipple
@@ -260,7 +275,7 @@ const SettingsCard = props => {
             background: "#FFF",
             border: "1px solid #F22424",
             color: "#F22424",
-            width: "15%"
+            width: "15%",
           }}
           size="medium"
           onClick={() => props.history.push("/")}

@@ -97,8 +97,6 @@ const RequestCard = props => {
     setAmount({ value: value ? value.amount : zero, display: input, error });
   };
 
-  console.log(match.params.amount);
-  console.log(amount.display);
 
   return (
     <Grid container spacing={2} direction="column" className={classes.top}>
@@ -148,12 +146,3 @@ RequestCard.propTypes = {
 };
 
 export default withStyles(styles)(RequestCard);
-
-//<Grid container>
-//<Grid item xs={4}>
-//  <Typography>Channel ID:</Typography>
-//</Grid>
-//<Grid item xs={8}>
-//  <Copyable text={xpub} />
-//</Grid>
-//</Grid>

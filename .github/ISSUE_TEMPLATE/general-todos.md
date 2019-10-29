@@ -2,7 +2,7 @@
 name: General Todos
 about: Issues
 title: ''
-labels: ''
+labels: Needs Triage
 assignees: ''
 
 ---

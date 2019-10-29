@@ -162,6 +162,7 @@ const CashoutCard = props => {
         amountToCollateralize: total.toETH().wad.toString(),
         minimumMaintainedCollateral: total.toETH().wad.toString(),
         assetId: AddressZero,
+        recipient: value,
       });
       await channel.requestCollateral(AddressZero);
       await channel.swap({
@@ -272,8 +273,6 @@ const CashoutCard = props => {
             color: "#F22424",
             width: "15%",
           }}
-          size="medium"
-          onClick={() => history.push("/")}
         >
           Back
         </Button> */}
