@@ -52,6 +52,7 @@ export const SettingsCard = style((props) => {
   const [showRecovery, setShowRecovery] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
+  const useWalletConnext = localStorage.getItem("useWalletConnext")
   const { classes, setWalletConnext } = props;
 
   const generateNewAddress = () => {
@@ -113,9 +114,9 @@ export const SettingsCard = style((props) => {
           variant="outlined"
           color="secondary"
           size="large"
-          onClick={() => setWalletConnext(true)}
+          onClick={() => setWalletConnext(!useWalletConnext)}
         >
-         {`Activate WalletConnext (beta)`}
+         {useWalletConnext ? `Deactivate WalletConnext (beta)` : `Activate WalletConnext (beta)`}
         </Button>
       </Grid>
 
