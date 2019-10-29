@@ -288,7 +288,7 @@ services:
     ports:
       - "8083:8080"
     secrets:
-      - $pg_password
+      - `pwd`/modules/database/snapshots:/root/snapshots
 
   logdna:
     image: logdna/logspout:latest
