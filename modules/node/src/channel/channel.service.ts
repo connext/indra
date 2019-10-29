@@ -9,6 +9,8 @@ import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
+import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
+import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { CLogger, freeBalanceAddressFromXpub } from "../util";
 import { CreateChannelMessage } from "../util/cfCore";
@@ -25,6 +27,7 @@ export class ChannelService {
     private readonly configService: ConfigService,
     private readonly channelRepository: ChannelRepository,
     private readonly cfCoreRepository: CFCoreRecordRepository,
+    private readonly onchainRepository: OnchainTransactionRepository,
   ) {}
 
   /**
@@ -231,7 +234,20 @@ export class ChannelService {
       logger.debug(`Multisig already deployed, proceeding with withdrawal`);
     }
 
-    return await wallet.sendTransaction(tx);
+    const txRes = await wallet.sendTransaction(tx);
+    await this.onchainRepository.addUserWithdrawal(txRes, channel);
+    return txRes;
+  }
+
+  async getLatestWithdrawal(userPublicIdentifier: string): Promise<OnchainTransaction | undefined> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
+    }
+
+    return await this.onchainRepository.findLatestWithdrawalByUserPublicIdentifier(
+      userPublicIdentifier,
+    );
   }
 
   async getChannelStates(userPublicIdentifier: string): Promise<CFCoreRecord[]> {

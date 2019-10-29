@@ -1,13 +1,13 @@
 import { RegisteredAppDetails, SupportedApplications } from "@connext/types";
 import { AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
 import EthCrypto from "eth-crypto";
-import { bigNumberify } from "ethers/utils";
+import { bigNumberify, formatParamType } from "ethers/utils";
 import { fromMnemonic } from "ethers/utils/hdnode";
 import { EventEmitter } from "events";
 
+import { ChannelRouter } from "./channelRouter";
 import { ConnextInternal } from "./connext";
 import {
-  CFCore,
   CreateChannelMessage,
   DepositConfirmationMessage,
   InstallMessage,
@@ -30,7 +30,7 @@ type CallbackStruct = {
 
 export class ConnextListener extends EventEmitter {
   private log: Logger;
-  private cfCore: CFCore;
+  private channelRouter: ChannelRouter;
   private connext: ConnextInternal;
 
   // TODO: add custom parsing functions here to convert event data
@@ -66,7 +66,7 @@ export class ConnextListener extends EventEmitter {
       // check if message is from us, return if so
       // FIXME: type of ProposeMessage should extend CFCore.NodeMessage, which
       // has a from field, but ProposeMessage does not
-      if ((data as any).from === this.cfCore.publicIdentifier) {
+      if ((data as any).from === this.connext.publicIdentifier) {
         this.log.debug(
           `Received proposal from our own node, doing nothing: ${JSON.stringify(data)}`,
         );
@@ -95,7 +95,9 @@ export class ConnextListener extends EventEmitter {
       // applications
       this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data.data);
       // if the from is us, ignore
-      if (data.from === this.cfCore.publicIdentifier) {
+      // FIXME: type of ProposeVirtualMessage should extend Node.NodeMessage,
+      // which has a from field, but ProposeVirtualMessage does not
+      if ((data as any).from === this.connext.publicIdentifier) {
         return;
       }
       // check based on supported applications
@@ -157,25 +159,24 @@ export class ConnextListener extends EventEmitter {
     },
   };
 
-  constructor(cfCore: CFCore, connext: ConnextInternal) {
+  constructor(channelRouter: ChannelRouter, connext: ConnextInternal) {
     super();
-    this.cfCore = cfCore;
+    this.channelRouter = channelRouter;
     this.connext = connext;
     this.log = new Logger("ConnextListener", connext.opts.logLevel);
   }
 
   public register = async (): Promise<void> => {
     await this.registerAvailabilitySubscription();
+    this.registerDefaultListeners();
     await this.registerLinkedTransferSubscription();
-    this.registerDefaultCfListeners();
     return;
   };
 
   public registerCfListener = (event: CFCoreTypes.EventName, cb: Function): void => {
     // replace with new fn
     this.log.info(`Registering listener for ${event}`);
-    // TODO: type res by obj with event as keys?
-    this.cfCore.on(event, async (res: any) => {
+    this.channelRouter.on(event, async (res: any) => {
       await cb(res);
       this.emit(event, res);
     });
@@ -194,30 +195,30 @@ export class ConnextListener extends EventEmitter {
     }
   };
 
-  public registerDefaultCfListeners = (): void => {
-    Object.entries(this.defaultCallbacks).forEach(([event, callback]: any): any => {
-      this.cfCore.on(CFCoreTypes.EventName[event], callback);
+  public registerDefaultListeners = (): void => {
+    Object.entries(this.defaultCallbacks).forEach(([event, callback]) => {
+      this.channelRouter.on(CFCoreTypes.EventName[event], callback);
     });
 
-    this.cfCore.on(CFCoreTypes.RpcMethodName.INSTALL, (data: any) => {
+    this.channelRouter.on(CFCoreTypes.RpcMethodName.INSTALL, (data: any) => {
       const appInstance = data.result.result.appInstance;
       this.log.debug(
         `Emitting CFCoreTypes.RpcMethodName.INSTALL event: ${JSON.stringify(appInstance)}`,
       );
       this.connext.messaging.publish(
-        `indra.client.${this.cfCore.publicIdentifier}.install.${appInstance.identityHash}`,
+        `indra.client.${this.connext.publicIdentifier}.install.${appInstance.identityHash}`,
         JSON.stringify(appInstance),
       );
     });
 
-    this.cfCore.on(CFCoreTypes.RpcMethodName.UNINSTALL, (data: any) => {
+    this.channelRouter.on(CFCoreTypes.RpcMethodName.UNINSTALL, (data: any) => {
       const result = data.result.result;
       this.log.debug(
         `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(result)}`,
       );
       this.connext.messaging.publish(
-        `indra.client.${this.cfCore.publicIdentifier}.uninstall.${result.appInstanceId}`,
-        JSON.stringify(data.result.result),
+        `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
+        JSON.stringify(result),
       );
     });
   };

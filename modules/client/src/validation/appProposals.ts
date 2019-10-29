@@ -1,5 +1,5 @@
 import { RegisteredAppDetails, SupportedApplication } from "@connext/types";
-import { AppInstanceInfo } from "@counterfactual/types";
+import { AppInstanceInfo, AppInstanceJson } from "@counterfactual/types";
 import { bigNumberify, getAddress } from "ethers/utils";
 
 import { ConnextInternal } from "../connext";
@@ -136,7 +136,7 @@ const baseAppValidation = async (
   const apps = await connext.getAppInstances();
   if (apps) {
     const sharedIds = (await connext.getAppInstances()).filter(
-      (a: AppInstanceInfo) => a.identityHash === app.identityHash,
+      (a: AppInstanceJson) => a.identityHash === app.identityHash,
     );
     if (sharedIds.length !== 0) {
       return `Duplicate app id detected. Proposed app: ${prettyLog(app)}`;

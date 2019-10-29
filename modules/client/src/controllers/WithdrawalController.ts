@@ -3,7 +3,7 @@ import { Node as CFCoreTypes } from "@counterfactual/types";
 import { TransactionResponse } from "ethers/providers";
 import { getAddress } from "ethers/utils";
 
-import { replaceBN } from "../lib/utils";
+import { replaceBN, withdrawalKey } from "../lib/utils";
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
@@ -32,15 +32,21 @@ export class WithdrawalController extends AbstractController {
     try {
       if (!userSubmitted) {
         this.log.info(`Calling ${CFCoreTypes.RpcMethodName.WITHDRAW_COMMITMENT}`);
-        const withdrawResponse = await this.connext.cfWithdrawCommitment(
-          amount,
-          assetId,
-          recipient,
-        );
+        const withdrawResponse = await this.connext.withdrawCommitment(amount, assetId, recipient);
         this.log.info(`Withdraw Response: ${JSON.stringify(withdrawResponse, replaceBN, 2)}`);
-        const minTx = withdrawResponse.transaction;
+        const minTx: CFCoreTypes.MinimalTransaction = withdrawResponse.transaction;
+        // set the withdrawal tx in the store
+        await this.connext.store.set([
+          {
+            path: withdrawalKey(this.connext.publicIdentifier),
+            value: { tx: minTx, retry: 0 },
+          },
+        ]);
 
         transaction = await this.node.withdraw(minTx);
+
+        await this.connext.watchForUserWithdrawal();
+
         this.log.info(`Node Withdraw Response: ${JSON.stringify(transaction, replaceBN, 2)}`);
       } else {
         this.log.info(`Calling ${CFCoreTypes.RpcMethodName.WITHDRAW}`);

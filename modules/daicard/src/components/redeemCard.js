@@ -20,8 +20,8 @@ import { AddressZero } from "ethers/constants";
 import { formatEther } from "ethers/utils";
 import React, { useCallback, useEffect, useState } from "react";
 import queryString from "query-string";
-import { Machine } from 'xstate';
 
+import { redeemMachine } from "../state";
 import { Currency } from "../utils";
 
 const style = withStyles(theme => ({
@@ -42,56 +42,6 @@ const style = withStyles(theme => ({
   },
 }));
 
-const RedeemStateMachine = Machine({
-  id: 'redeem',
-  initial: 'idle',
-  states: {
-    'idle': { on: {
-      'CHECK': 'checking',
-    }},
-    'checking': { on: {
-      'ERROR': 'error',
-      'INVALIDATE': 'invalid',
-      'VALIDATE': 'ready',
-    }},
-    'invalid': { on: {
-      'CLEAR': 'idle',
-      'CHECK': 'checking',
-    }},
-    'ready': { on: {
-      'CONFIRM': 'modal.confirm',
-    }},
-    'error': { on: {
-      'CHECK': 'checking',
-      'CLEAR': 'idle',
-    }},
-    modal: {
-      id: 'modal',
-      initial: 'confirm',
-      on: {
-        'GO_BACK': 'ready',
-        'DISMISS': 'idle',
-      },
-      states: {
-        'confirm': { on: {
-          'COLLATERALIZE': 'collateralizing',
-          'REDEEM': 'redeeming',
-        }},
-        'collateralizing': { on: {
-          'ERROR': 'error',
-          'REDEEM': 'redeeming',
-        }},
-        'redeeming': { on: {
-          'ERROR': 'error',
-          'SUCCESS': 'success',
-        }},
-        'error': {},
-        'success': {},
-      },
-    },
-  },
-});
-
 export const RedeemCard = style(({ channel, classes, history, location, tokenProfile }) => {
   const [paymentId, setPaymentId] = useState('')
   const [secret, setSecret] = useState('')
@@ -101,7 +51,7 @@ export const RedeemCard = style(({ channel, classes, history, location, tokenPro
     status: 'UNKNOWN',
   });
   const [message, setMessage] = useState('');
-  const [state, takeAction] = useMachine(RedeemStateMachine);
+  const [state, takeAction] = useMachine(redeemMachine);
 
   const validateLink = useCallback(async () => {
     takeAction(`CHECK`)
@@ -435,7 +385,7 @@ const RedeemCardModal = ({
       ) : state.matches('modal.redeeming') ? (
         <Grid>
             <DialogTitle disableTypography>
-              <Typography variant="h5" style={{ color: "#F22424" }}>
+              <Typography variant="h5" color="primary">
                 Redeeming Payment...
               </Typography>
             </DialogTitle>

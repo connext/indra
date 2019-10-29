@@ -1,8 +1,7 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { arrayify, HDNode, hexlify, randomBytes, verifyMessage } from "ethers/utils";
 
 import { ChannelRepository } from "../channel/channel.repository";
-import { RedisProviderId } from "../constants";
 import { CLogger, isValidHex, isXpub } from "../util";
 
 const logger = new CLogger("AuthService");
@@ -25,7 +24,7 @@ export class AuthService {
   private signerCache: { [key: string]: string } = {};
   constructor(private readonly channelRepo: ChannelRepository) {}
 
-  getNonce = async (address: string): Promise<string> => {
+  async getNonce(address: string): Promise<string> {
     if (!isValidHex(address, 20)) {
       return JSON.stringify({ err: "Invalid address" });
     }
@@ -34,9 +33,9 @@ export class AuthService {
     this.nonces[nonce] = { address, expiry };
     logger.debug(`getNonce: Gave address ${address} a nonce that expires at ${expiry}: ${nonce}`);
     return nonce;
-  };
+  }
 
-  useVerifiedMultisig = (callback: any): any => {
+  useVerifiedMultisig(callback: any): any {
     return async (subject: string, data: { token: string }): Promise<string> => {
       const multisig = subject.split(".").pop(); // last item of subject is lock name
       if (!isValidHex(multisig, 20)) {
@@ -54,16 +53,16 @@ export class AuthService {
       }
       const { userPublicIdentifier } = channel;
       const xpubAddress = HDNode.fromExtendedKey(userPublicIdentifier).address;
-      logger.debug(`Got addres ${xpubAddress} from xpub ${userPublicIdentifier}`);
+      logger.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
       const authRes = this.verifySig(xpubAddress, data);
       if (authRes) {
         logger.error(`Auth failed (${authRes.err}) but we're just gonna ignore that for now..`);
       }
       return callback(multisig, data);
     };
-  };
+  }
 
-  useVerifiedPublicIdentifier = (callback: any): any => {
+  useVerifiedPublicIdentifier(callback: any): any {
     return async (subject: string, data: { token: string }): Promise<string> => {
       // Get & validate xpub from subject
       const xpub = subject.split(".").pop(); // last item of subscription is xpub
@@ -78,9 +77,20 @@ export class AuthService {
       }
       return authRes || callback(xpub, data);
     };
-  };
+  }
 
-  verifySig = (xpubAddress: string, data: { token: string }): { err: string } | undefined => {
+  useUnverifiedPublicIdentifier(callback: any): any {
+    return async (subject: string, data: { token: string }): Promise<string> => {
+      // Get & validate xpub from subject
+      const xpub = subject.split(".").pop(); // last item of subscription is xpub
+      if (!xpub || !isXpub(xpub)) {
+        return badSubject(`Subject's last item isn't a valid xpub: ${subject}`);
+      }
+      return callback(xpub, data);
+    };
+  }
+
+  verifySig(xpubAddress: string, data: { token: string }): { err: string } | undefined {
     // Get & validate the nonce + signature from provided token
     if (!data || !data.token || data.token.indexOf(":") === -1) {
       return badToken(`Missing or malformed token in data: ${data || data.token}`);
@@ -115,5 +125,5 @@ export class AuthService {
       return badToken(`Invalid sig for nonce ${nonce}: Got ${signer}, expected ${address}`);
     }
     return undefined;
-  };
+  }
 }

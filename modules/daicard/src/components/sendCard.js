@@ -21,14 +21,19 @@ import { hexlify, randomBytes } from "ethers/utils";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { useCallback, useEffect, useState } from "react";
 import queryString from "query-string";
-import { Machine } from 'xstate';
 
-import { Currency, toBN, delay } from "../utils";
+import { Currency, toBN } from "../utils";
+import { sendMachine } from "../state";
 
 import { Copyable } from "./copyable";
 import { QRScan } from "./qrCode";
 
 const LINK_LIMIT = Currency.DAI("10"); // $10 capped linked payments
+
+const formatAmountString = (amount) => {
+  const [whole, part] = amount.split(".")
+  return `${whole || "0"}.${part ? part.padEnd(2, "0") : "00"}`
+}
 
 const style = withStyles((theme) => ({
   modalContent: {
@@ -49,39 +54,10 @@ const style = withStyles((theme) => ({
   },
 }));
 
-const PaymentStateMachine = Machine({
-  id: 'payment',
-  initial: 'idle',
-  states: {
-    'idle': { on: {
-      'NEW_P2P': 'processingP2p',
-      'NEW_LINK': 'processingLink',
-      'ERROR': 'error',
-    }},
-    'processingP2p': { on: {
-      'DONE': 'successP2p',
-      'ERROR': 'error',
-    }},
-    'processingLink': { on: {
-      'DONE': 'successLink',
-      'ERROR': 'error',
-    }},
-    'successP2p': { on: {
-      'DISMISS': 'idle'
-    }},
-    'successLink': { on: {
-      'DISMISS': 'idle'
-    }},
-    'error': { on: {
-      'DISMISS': 'idle'
-    }},
-  }
-});
-
 export const SendCard = style(({ balance, channel, classes, history, location, token  }) => {
   const [amount, setAmount] = useState({ display: "", error: null, value: null });
   const [link, setLink] = useState(undefined);
-  const [paymentState, paymentAction] = useMachine(PaymentStateMachine);
+  const [paymentState, paymentAction] = useMachine(sendMachine);
   const [recipient, setRecipient] = useState({ display: "", error: null, value: null });
   const [scan, setScan] = useState(false)
 
@@ -149,6 +125,13 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
 
   const paymentHandler = async () => {
     if (amount.error || recipient.error) return;
+    if (!recipient.value) {
+      setRecipient({
+        ...recipient,
+        error: 'Recipent must be specified for p2p transfer',
+      });
+      return;
+    }
     console.log(`Sending ${amount.value} to ${recipient.value}`);
     paymentAction('NEW_P2P');
     // there is a chance the payment will fail when it is first sent
@@ -168,7 +151,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
         });
         break;
       } catch (e) {
-        await delay(5000);
+        await new Promise(res => setTimeout(res, 5000));
       }
     }
     if (!transferRes) {
@@ -179,7 +162,10 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
   }
 
   const linkHandler = async () => {
-    if (amount.error || recipient.error) return;
+    if (amount.error) return;
+    if (recipient.error && !recipient.value) {
+      setRecipient({ ...recipient, error: null });
+    }
     if (toBN(amount.value.toDEI()).gt(LINK_LIMIT.wad)) {
       setAmount({ ...amount, error: `Linked payments are capped at ${LINK_LIMIT.format()}.` });
       return;
@@ -217,13 +203,13 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
 
   useEffect(() => {
     const query = queryString.parse(location.search);
-    if (query.amount) {
+    if (!amount.value && query.amount) {
       updateAmountHandler(query.amount);
     }
-    if (query.recipient) {
+    if (!recipient.value && !recipient.error && query.recipient) {
       updateRecipientHandler(query.recipient);
     }
-  }, [location, updateAmountHandler])
+  }, [location, updateAmountHandler, amount.value, recipient.value, recipient.error])
 
   return (
     <Grid
@@ -250,7 +236,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
       <Grid item xs={12}>
         <Grid container direction="row" justify="center" alignItems="center">
           <Typography variant="h2">
-            <span>{balance.channel.token.toDAI().format()}</span>
+            <span>{balance.channel.token.toDAI().format({ decimals: 2, symbol: false, round: false })}</span>
           </Typography>
         </Grid>
       </Grid>
@@ -315,7 +301,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
             <Button
               disableTouchRipple
               className={classes.button}
-              disabled={!!amount.error || !!recipient.error}
+              disabled={!!amount.error}
               fullWidth
               onClick={() => {
                 linkHandler();
@@ -470,7 +456,7 @@ const SendCardModal = ({
           </DialogTitle>
           <DialogContent>
             <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
-              Amount: ${amount}
+              Amount: ${formatAmountString(amount)}
             </DialogContentText>
             <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
               To: {recipient.substr(0, 8)}...

@@ -19,7 +19,8 @@ import {
 import React, { useState } from "react";
 
 import { Copyable } from "./copyable";
-import { MySnackbar } from "./snackBar";
+
+import { ConnextClientStorePrefix } from "@connext/types"
 
 const style = withStyles(theme => ({
   card: {
@@ -45,18 +46,13 @@ const style = withStyles(theme => ({
 }));
 
 export const SettingsCard = style((props) => {
-  const [copied, setCopied] = useState(false);
   const [inputRecovery, setInputRecovery] = useState(false);
   const [isBurning, setIsBurning] = useState(false);
   const [mnemonic, setMnemonic] = useState("");
   const [showRecovery, setShowRecovery] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
-  const { classes, channel } = props;
-
-  const closeModal = () => {
-    setCopied(false);
-  };
+  const { classes, setWalletConnext } = props;
 
   const generateNewAddress = () => {
     // TODO: withdraw channel balance first? Decollateralize?
@@ -66,8 +62,8 @@ export const SettingsCard = style((props) => {
   };
 
   const recoverAddressFromMnemonic = async () => {
-    await channel.restoreState(mnemonic);
     localStorage.setItem("mnemonic", mnemonic);
+    localStorage.removeItem(`${ConnextClientStorePrefix}:EXTENDED_PRIVATE_KEY`);
     window.location.reload();
   }
 
@@ -85,15 +81,10 @@ export const SettingsCard = style((props) => {
         justifyContent: "center"
       }}
     >
-      <MySnackbar
-        variant="success"
-        openWhen={copied}
-        onClose={() => closeModal()}
-        message="Copied!"
-      />
       <Grid item xs={12} style={{ justifyContent: "center" }}>
         <SettingsIcon className={classes.icon} />
       </Grid>
+
       <Grid item xs={12} className={classes.button}>
         <Button
           disableTouchRipple
@@ -113,6 +104,21 @@ export const SettingsCard = style((props) => {
           Support
         </Button>
       </Grid>
+
+      <Grid item xs={12} className={classes.button}>
+        <Button
+          disableTouchRipple
+          fullWidth
+          className={classes.button}
+          variant="outlined"
+          color="secondary"
+          size="large"
+          onClick={() => setWalletConnext(true)}
+        >
+         {`Activate WalletConnext (beta)`}
+        </Button>
+      </Grid>
+
       <Grid item xs={12} className={classes.button}>
         {!showRecovery ? (
           <Button
@@ -134,6 +140,7 @@ export const SettingsCard = style((props) => {
           />
         )}
       </Grid>
+
       <Grid item xs={12} className={classes.button}>
         {!inputRecovery ? (
           <Button
@@ -175,6 +182,7 @@ export const SettingsCard = style((props) => {
           />
         )}
       </Grid>
+
       <Grid item xs={12} className={classes.button}>
         <Button
           disableTouchRipple
@@ -267,6 +275,7 @@ export const SettingsCard = style((props) => {
           </Grid>
         </Dialog>
       </Grid>
+
       <Grid item xs={12}>
         <Button
           disableTouchRipple

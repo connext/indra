@@ -3,13 +3,8 @@
 # Set default email & domain name
 domain="${DOMAINNAME:-localhost}"
 email="${EMAIL:-noreply@gmail.com}"
-daicard_url="${DAICARD_URL:-http://daicard:3000}"
-eth_rpc_url="${ETH_RPC_URL:-http://ethprovider:8545}"
-messaging_url="${MESSAGING_URL:-http://relay:4223}"
-hasura_url="${HASURA_URL:-http://hasura:8083}"
-pisa_url="${PISA_URL:-http://pisa:8083}"
-mode="${MODE:-dev}"
-echo "domain=$domain email=$email eth=$eth_rpc_url messaging=$messaging_url daicard=$daicard_url hasura=$hasura_url mode=$mode"
+indra_url="$INDRA_URL"
+echo "domain=$domain email=$email indra=$indra_url"
 
 # Provide a message indicating that we're still waiting for everything to wake up
 function loading_msg {
@@ -24,33 +19,11 @@ loading_pid="$!"
 # Wait for downstream services to wake up
 # Define service hostnames & ports we depend on
 
-echo "waiting for ${eth_rpc_url#*://}..."
-bash wait_for.sh -t 60 ${eth_rpc_url#*://} 2> /dev/null
-while ! curl -s $eth_rpc_url > /dev/null
+echo "waiting for ${indra_url#*://}..."
+bash wait_for.sh -t 60 ${indra_url#*://} 2> /dev/null
+while ! curl -s $indra_url > /dev/null
 do sleep 2
 done
-
-echo "waiting for ${messaging_url#*://}..."
-bash wait_for.sh -t 60 ${messaging_url#*://} 2> /dev/null
-while ! curl -s $messaging_url > /dev/null
-do sleep 2
-done
-
-echo "waiting for ${pisa_url#*://}..."
-bash wait_for.sh -t 60 ${pisa_url#*://} 2> /dev/null
-while ! curl -s $pisa_url > /dev/null
-do sleep 2
-done
-
-if [[ "$MODE" == "dev" ]]
-then
-  echo "waiting for ${daicard_url#*://}..."
-  bash wait_for.sh -t 60 ${daicard_url#*://} 2> /dev/null
-  # Do a more thorough check to ensure the dashboard is online
-  while ! curl -s $daicard_url > /dev/null
-  do sleep 2
-  done
-fi
 
 # Kill the loading message server
 kill "$loading_pid" && pkill nc
@@ -83,11 +56,8 @@ ln -sf $letsencrypt/$domain/fullchain.pem /etc/certs/fullchain.pem
 
 # Hack way to implement variables in the nginx.conf file
 sed -i 's/$hostname/'"$domain"'/' /etc/nginx/nginx.conf
-sed -i 's|$DAICARD_URL|'"$daicard_url"'|' /etc/nginx/nginx.conf
-sed -i 's|$ETH_RPC_URL|'"$eth_rpc_url"'|' /etc/nginx/nginx.conf
-sed -i 's|$MESSAGING_URL|'"$messaging_url"'|' /etc/nginx/nginx.conf
-sed -i 's|$HASURA_URL|'"$hasura_url"'|' /etc/nginx/nginx.conf
-sed -i 's|$PISA_URL|'"$pisa_url"'|' /etc/nginx/nginx.conf
+sed -i 's|$INDRA_URL|'"$indra_url"'|' /etc/nginx/nginx.conf
+sed -i 's|$RELAY_URL|'"http://${indra_url#*://}:4223"'|' /etc/nginx/nginx.conf
 
 # periodically fork off & see if our certs need to be renewed
 function renewcerts {
@@ -105,8 +75,7 @@ function renewcerts {
 }
 
 if [[ "$domain" != "localhost" ]]
-then
-  renewcerts &
+then renewcerts &
 fi
 
 sleep 3 # give renewcerts a sec to do it's first check

@@ -65,7 +65,7 @@ fi
 
 if [[ "$1" == "watch" ]]
 then
-  $cypress open $env
+  nice $cypress open $env
   exit 0
 fi
 
@@ -74,7 +74,7 @@ fi
 ## Then, compare the bot's current free balance w what we expect it to be
 
 export ELECTRON_ENABLE_LOGGING=true
-$cypress run $env --spec cypress/tests/index.js
+nice $cypress run $env --spec cypress/tests/index.js
 
 docker container stop ${project}_payment_bot_1 2> /dev/null || true
 

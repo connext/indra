@@ -1,54 +1,10 @@
 import { ConnextClientStorePrefix } from "@connext/types";
 import { arrayify, hexlify, keccak256, toUtf8Bytes, toUtf8String } from "ethers/utils";
-const pisaPathRegex = /.*\/xpub.*\/channel\/0x[0-9a-fA-F]{40}/;
-const pisaNonceTooLowRegex = /Appointment already exists and nonce too low. Should be greater than (\d+)\./;
 
-const restoreFromPisa = async (pisaClient, provider, wallet) => {
-  const currentBlockNumber = await provider.getBlockNumber();
-  const restoreStates = await pisaClient.restore(
-    digest => wallet.signMessage(arrayify(digest)),
-    wallet.address,
-    currentBlockNumber,
-  );
-
-  const parsedRestoreStates = restoreStates.map(b => JSON.parse(toUtf8String(arrayify(b.data))));
-  return parsedRestoreStates;
-};
-
-const backupToPisa = async (pisaClient, provider, wallet, path, data, version) => {
-  let stringed;
-  try {
-    // stringify the data
-    stringed = JSON.stringify(data);
-    const bytes = toUtf8Bytes(stringed);
-    const hex = hexlify(bytes);
-    const currentBlockNumber = await provider.getBlockNumber();
-    await pisaClient.backUp(
-      digest => wallet.signMessage(arrayify(digest)),
-      wallet.address,
-      hex,
-      currentBlockNumber,
-      keccak256(toUtf8Bytes(path)),
-      version,
-    );
-  } catch (doh) {
-    // if the error message matches the "nonce too low" regex we'll swallow
-    // as this is potentially expected behaviour
-    // see: https://github.com/counterfactual/monorepo/issues/2497
-    if (doh.message) {
-      const matches = doh.message.match(pisaNonceTooLowRegex);
-      if (matches && Number.parseInt(matches[1], 10) === version) {
-        console.error(doh);
-        console.error(stringed);
-        return;
-      }
-    }
-    throw doh;
-  }
-};
-
-export const storeFactory = pisaOptions => {
+export const storeFactory = (options) => {
+  const { pisaClient, wallet } = options || { pisaClient: null, wallet: null };
   return {
+
     get: path => {
       const raw = localStorage.getItem(`${ConnextClientStorePrefix}:${path}`);
       if (raw) {
@@ -79,7 +35,8 @@ export const storeFactory = pisaOptions => {
       }
       return raw;
     },
-    set: async (pairs, allowDelete, updatePisa = true) => {
+
+    set: async (pairs, shouldBackup) => {
       for (const pair of pairs) {
         localStorage.setItem(
           `${ConnextClientStorePrefix}:${pair.path}`,
@@ -87,43 +44,50 @@ export const storeFactory = pisaOptions => {
         );
 
         if (
-          pisaOptions &&
-          updatePisa &&
-          pisaPathRegex.exec(pair.path) &&
+          shouldBackup &&
+          pisaClient &&
+          pair.path.match(/\/xpub.*\/channel\/0x[0-9a-fA-F]{40}/) &&
           pair.value.freeBalanceAppInstance
         ) {
-          // although the call to pisa is async we dont await it here to avoid the ui waiting on network
-          // requests, besides there is little benefit the UI can add here
-          const version = pair.value.freeBalanceAppInstance.latestVersionNumber;
-          await backupToPisa(
-            pisaOptions.pisaClient,
-            pisaOptions.provider,
-            pisaOptions.wallet,
-            pair.path,
-            pair,
-            version,
-          );
+          try {
+            console.log(`Backing up store value at path ${pair.path}`);
+            await pisaClient.backUp(
+              digest => wallet.signMessage(arrayify(digest)),
+              wallet.address,
+              hexlify(toUtf8Bytes(JSON.stringify(pair))),
+              await wallet.provider.getBlockNumber(),
+              keccak256(toUtf8Bytes(pair.path)),
+              pair.value.freeBalanceAppInstance.latestVersionNumber,
+            );
+          } catch (e) {
+            // If we get a "nonce too low" error, we'll log & ignore bc sometimes expected. See:
+            // see: https://github.com/counterfactual/monorepo/issues/2497
+            if (e.message && e.message.match(/Appointment already exists and nonce too low./)) {
+              console.warn(e);
+            } else {
+              console.error(e);
+            }
+          }
         }
       }
     },
-    reset: wallet => {
+
+    reset: () => {
       for (const k of Object.keys(localStorage)) {
         if (k.startsWith(ConnextClientStorePrefix)) {
           localStorage.removeItem(k);
         }
       }
-
-      if (pisaOptions && wallet) pisaOptions.wallet = wallet;
     },
+
     restore: async () => {
-      if (pisaOptions) {
-        return await restoreFromPisa(
-          pisaOptions.pisaClient,
-          pisaOptions.provider,
-          pisaOptions.wallet,
-        );
-      }
-      return [];
+      return pisaClient
+        ? (await pisaClient.restore(
+            digest => wallet.signMessage(arrayify(digest)),
+            wallet.address,
+            await wallet.provider.getBlockNumber(),
+          )).map(b => JSON.parse(toUtf8String(arrayify(b.data))))
+        : [];
     },
   };
 };

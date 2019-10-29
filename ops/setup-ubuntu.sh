@@ -121,7 +121,9 @@ privateip=\`ifconfig eth1 | grep 'inet ' | awk '{print \$2;exit}' | sed 's/addr:
 docker swarm init "--advertise-addr=\$privateip" 2> /dev/null || true
 
 # Setup docker secret
-if [[ -n "\`docker secret ls | grep "$key_name"\`" ]]
+if [[ -z "$key" ]]
+then echo "No mnemonic provided, skipping secret creation"
+elif [[ -n "\`docker secret ls | grep "$key_name"\`" ]]
 then echo "A secret called $key_name already exists, aborting key load"
 else
   id="\`echo $key | tr -d '\n\r' | docker secret create $key_name -\`"
