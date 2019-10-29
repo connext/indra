@@ -1,3 +1,5 @@
+// TODO: REMOVE THIS FILE ONCE CF STARTS EXPORTING IT
+
 import { Node } from "@counterfactual/types";
 import { bigNumberify, BigNumberish } from "ethers/utils";
 

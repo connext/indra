@@ -4,15 +4,26 @@ import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { fromMnemonic } from "ethers/utils/hdnode";
 
+import { migrateToPatch1 } from "../cfCoreMigrations/patch1";
 import { ConfigService } from "../config/config.service";
 import { CF_PATH, CFCoreProviderId, MessagingProviderId } from "../constants";
 import { LockService } from "../lock/lock.service";
 import { CLogger, freeBalanceAddressFromXpub } from "../util";
-import { CFCore, EXTENDED_PRIVATE_KEY_PATH } from "../util/cfCore";
+import { CFCore } from "../util/cfCore";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
 
 const logger = new CLogger("CFCoreProvider");
+
+// TODO: where should this live?
+const LATEST_CF_STORE_VERSION = 1;
+
+function isLatestCfStoreVersion(storeRecord: any): boolean {
+  if (!storeRecord || storeRecord.version !== LATEST_CF_STORE_VERSION) {
+    return false;
+  }
+  return true;
+}
 
 export const cfCoreProviderFactory: Provider = {
   inject: [ConfigService, MessagingProviderId, CFCoreRecordRepository, LockService],
@@ -51,6 +62,16 @@ export const cfCoreProviderFactory: Provider = {
     logger.log(
       `Free balance address ${JSON.stringify(freeBalanceAddressFromXpub(cfCore.publicIdentifier))}`,
     );
+
+    const storeRecord = await store.get("channel");
+    if (!isLatestCfStoreVersion(storeRecord)) {
+      logger.log(`Upgrading store to latest version ${LATEST_CF_STORE_VERSION}...`);
+      await migrateToPatch1(store, "");
+      logger.log(`Upgraded to latest store version!`);
+    } else {
+      logger.log(`Detected latest store version ${LATEST_CF_STORE_VERSION}`)
+    }
+
     return cfCore;
   },
 };
