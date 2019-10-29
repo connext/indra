@@ -727,7 +727,7 @@ class App extends React.Component {
                     swapRate={swapRate}
                     network={network}
                   />
-                  <SettingsCard {...props} channel={channel} />
+                  <SettingsCard {...props} channel={channel} setWalletConnext={this.setWalletConnext} />
                 </Grid>
               )}
             />
