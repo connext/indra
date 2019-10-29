@@ -13,10 +13,11 @@ import {
   withStyles,
 } from "@material-ui/core";
 import PropTypes from "prop-types";
-import { ArrowRight as SubmitIcon, Settings as SettingsIcon } from "@material-ui/icons";
+import { ArrowRight as SubmitIcon } from "@material-ui/icons";
 import React, { useState } from "react";
 
-import { Copyable } from "./copyable";
+import Copyable from "./copyable";
+import { MySnackbar } from "./snackBar";
 
 import { ConnextClientStorePrefix } from "@connext/types";
 
@@ -89,6 +90,10 @@ const SettingsCard = props => {
     localStorage.setItem("mnemonic", mnemonic);
     localStorage.removeItem(`${ConnextClientStorePrefix}:EXTENDED_PRIVATE_KEY`);
     window.location.reload();
+  };
+
+  const closeModal = () => {
+    setCopied(false);
   };
 
   return (

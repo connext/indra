@@ -1,10 +1,7 @@
 import {
   AppBar,
-  Toolbar,
   IconButton,
-  Typography,
   Grid,
-  Button,
   withStyles,
 } from "@material-ui/core";
 import {
@@ -13,13 +10,10 @@ import {
   ArrowForward,
   ArrowBack,
 } from "@material-ui/icons";
-import blockies from "ethereum-blockies-png";
 import React from "react";
 import { Link } from "react-router-dom";
 import ChannelCard from "./channelCard";
 import PropTypes from "prop-types";
-
-const noAddrBlocky = require("../assets/noAddress.png");
 
 const styles = {
   top: {

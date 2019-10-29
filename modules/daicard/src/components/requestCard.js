@@ -1,11 +1,8 @@
 import {
-  Button,
   FormControl,
   FormHelperText,
   Grid,
   InputBase,
-  TextField,
-  Typography,
   withStyles,
 } from "@material-ui/core";
 import { Zero } from "ethers/constants";

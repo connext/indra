@@ -11,9 +11,7 @@ import {
   InputBase,
   Grid,
   IconButton,
-  InputAdornment,
   Modal,
-  TextField,
   Tooltip,
   Typography,
   withStyles,
@@ -59,6 +57,7 @@ const styles = {
     right: "0",
   },
   icon: {
+    color: "#002868",
     width: "40px",
     height: "40px",
   },
@@ -115,9 +114,6 @@ const styles = {
   },
   buttonIcon: {
     marginLeft: "5px",
-  },
-  icon: {
-    color: "#002868",
   },
   linkButtonInner: {
     width: "100%",

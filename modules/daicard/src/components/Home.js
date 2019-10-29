@@ -1,16 +1,12 @@
 import {
   Button,
-  Fab,
   Grid,
   Modal,
   FormControl,
   FormHelperText,
   InputBase,
   IconButton,
-  InputAdornment,
-  TextField,
   withStyles,
-  Typography,
   Tooltip,
 } from "@material-ui/core";
 import PropTypes from "prop-types";
@@ -18,13 +14,11 @@ import { SaveAlt as ReceiveIcon, Send as SendIcon } from "@material-ui/icons";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
-import { Currency } from "../utils";
+import { Currency, initWalletConnect } from "../utils";
 import { Zero } from "ethers/constants";
-import DirectionProvider, { DIRECTIONS } from "react-with-direction/dist/DirectionProvider";
 
 import "../App.css";
 
-import { ChannelCard } from "./channelCard";
 import { QRScan } from "./qrCode";
 
 const styles = {
@@ -103,7 +97,7 @@ function Home(props) {
   const [amount, setAmount] = useState({ display: "", error: null, value: "" });
   const [recipient, setRecipient] = useState({ display: "", error: null, value: null });
 
-  const { classes, balance, swapRate } = props;
+  const { classes, balance, channel, history } = props;
 
   const scanQRCode = async data => {
     setScanModal(false);
@@ -118,7 +112,6 @@ function Home(props) {
 
   const updateAmountHandler = useCallback(
     rawValue => {
-      let valueFormatted;
       let value = null;
       let error = null;
       if (!rawValue) {
@@ -195,9 +188,8 @@ function Home(props) {
         <InputBase
           fullWidth
           className={classes.xpubInput}
-          error={amount.error !== null}
+          error={amount.error !== null && recipient.error !== null}
           onChange={evt => updateRecipientHandler(evt.target.value)}
-          error={recipient.error !== null}
           type="text"
           value={recipient.display}
           placeholder={"Recipient xPub"}

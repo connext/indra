@@ -114,7 +114,6 @@ const style = theme => ({
 class App extends React.Component {
   constructor(props) {
     super(props);
-    const { classes } = this.props;
     const swapRate = "100.00";
     this.state = {
       balance: {
@@ -649,6 +648,11 @@ class App extends React.Component {
       xpub = channel.publicIdentifier;
     }
     const { classes } = this.props;
+
+    const channelSignerOrZero = () => {
+      return channel ? channel.signerAddress : AddressZero
+    }
+
     return (
       <Router>
         <Grid className={classes.app}>
@@ -676,7 +680,7 @@ class App extends React.Component {
                 <Grid {...props} className={classes.homeGrid}>
                   <AppBarComponent
                     {...props}
-                    address={wallet ? wallet.address : AddressZero}
+                    address={channelSignerOrZero()}
                     balance={balance}
                     swapRate={swapRate}
                     network={network}
@@ -698,14 +702,14 @@ class App extends React.Component {
                 <Grid {...props} className={classes.homeGrid}>
                   <AppBarComponent
                     {...props}
-                    address={wallet ? wallet.address : AddressZero}
+                    address={channelSignerOrZero()}
                     balance={balance}
                     swapRate={swapRate}
                     network={network}
                   />
                   <DepositCard
                     {...props}
-                    address={wallet ? wallet.address : AddressZero}
+                    address={channelSignerOrZero()}
                     maxDeposit={maxDeposit}
                     minDeposit={minDeposit}
                   />
@@ -718,7 +722,7 @@ class App extends React.Component {
                 <Grid {...props} className={classes.homeGrid}>
                   <AppBarComponent
                     {...props}
-                    address={wallet ? wallet.address : AddressZero}
+                    address={channelSignerOrZero()}
                     balance={balance}
                     swapRate={swapRate}
                     network={network}
@@ -733,7 +737,7 @@ class App extends React.Component {
                 <Grid {...props} className={classes.homeGrid}>
                   <AppBarComponent
                     {...props}
-                    address={wallet ? wallet.address : AddressZero}
+                    address={channelSignerOrZero()}
                     balance={balance}
                     swapRate={swapRate}
                     network={network}
@@ -748,7 +752,7 @@ class App extends React.Component {
                 <Grid {...props} className={classes.homeGrid}>
                   <AppBarComponent
                     {...props}
-                    address={wallet ? wallet.address : AddressZero}
+                    address={channelSignerOrZero()}
                     balance={balance}
                     swapRate={swapRate}
                     network={network}
@@ -769,7 +773,7 @@ class App extends React.Component {
                 <Grid {...props} className={classes.homeGrid}>
                   <AppBarComponent
                     {...props}
-                    address={wallet ? wallet.address : AddressZero}
+                    address={channelSignerOrZero()}
                     balance={balance}
                     swapRate={swapRate}
                     network={network}
@@ -784,7 +788,7 @@ class App extends React.Component {
                 <Grid {...props} className={classes.homeGrid}>
                   <AppBarComponent
                     {...props}
-                    address={wallet ? wallet.address : AddressZero}
+                    address={channelSignerOrZero()}
                     balance={balance}
                     swapRate={swapRate}
                     network={network}
@@ -807,7 +811,7 @@ class App extends React.Component {
                 <Grid {...props} className={classes.homeGrid}>
                   <AppBarComponent
                     {...props}
-                    address={wallet ? wallet.address : AddressZero}
+                    address={channelSignerOrZero()}
                     balance={balance}
                     swapRate={swapRate}
                     network={network}

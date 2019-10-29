@@ -18,7 +18,7 @@ const style = {
 
 const Copyable = props => {
   const [copied, setCopied] = useState(false);
-  const { classes, color, size, tooltip, text, wrap } = props;
+  const { classes, color, size, tooltip, text } = props;
   return (
     <Grid item xs={12} className={classes.top}>
       <CopyToClipboard onCopy={() => setCopied(true)} text={text}>

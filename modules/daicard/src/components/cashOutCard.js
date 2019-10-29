@@ -6,16 +6,13 @@ import {
   FormHelperText,
   IconButton,
   InputBase,
-  InputAdornment,
   Modal,
-  TextField,
   Tooltip,
   Typography,
   withStyles,
 } from "@material-ui/core";
 import PropTypes from "prop-types";
 
-import { Unarchive as UnarchiveIcon } from "@material-ui/icons";
 import { AddressZero, Zero } from "ethers/constants";
 import { arrayify, isHexString } from "ethers/utils";
 import QRIcon from "mdi-material-ui/QrcodeScan";
@@ -39,11 +36,13 @@ const styles = {
   icon: {
     width: "40px",
     height: "40px",
+    color: "#002868",
   },
   button: {
     backgroundColor: "#FCA311",
     color: "#FFF",
     fontSize: "smaller",
+    width: "48%",
   },
   modal: {
     justifyContent: "center",
@@ -83,13 +82,6 @@ const styles = {
   },
   QRbutton: {
     color: "#002868",
-  },
-  icon: {
-    color: "#002868",
-  },
-  button: {
-    color: "#FFF",
-    width: "48%",
   },
   buttonSpacer: {
     height: "10px",

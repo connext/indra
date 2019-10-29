@@ -1,4 +1,4 @@
-import { Button, Grid, Tooltip, Typography, withStyles } from "@material-ui/core";
+import { Grid, Tooltip, Typography, withStyles } from "@material-ui/core";
 import React from "react";
 import PropTypes from "prop-types";
 
@@ -27,7 +27,7 @@ const styles = {
 };
 
 function DepositCard(props) {
-  const { classes, address, history, maxDeposit, minDeposit } = props;
+  const { classes, address, maxDeposit, minDeposit } = props;
 
   const minEth = minDeposit ? minDeposit.toETH().format() : "?.??";
   const maxEth = maxDeposit ? maxDeposit.toETH().format() : "?.??";
