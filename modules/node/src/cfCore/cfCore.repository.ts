@@ -1,8 +1,12 @@
 import { EntityRepository, Like, Repository } from "typeorm";
 
+import { CLogger } from "../util";
+
 import { CFCoreRecord } from "./cfCore.entity";
 
 type StringKeyValue = { [path: string]: StringKeyValue };
+
+const logger = new CLogger("CFCoreRecordRepository");
 
 @EntityRepository(CFCoreRecord)
 export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
@@ -11,7 +15,7 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
   }
 
   async get(path: string): Promise<StringKeyValue | string | undefined> {
-    // logger.log(`Getting path from store: ${path}`);
+    // logger.debug(`Getting path from store: ${path}`);
     let res: any;
     // FIXME: this queries for all channels or proposed app instances, which
     // are nested under the respective keywords, hence the 'like' keyword
