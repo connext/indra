@@ -32,7 +32,6 @@ const styles = {
   icon: {
     color: "#002868",
   },
-
   button: {
     color: "#002868",
     borderColor: "#002868",
@@ -47,7 +46,7 @@ const AppBarComponent = props => {
   const { classes } = props;
   const currentRoute = window.location.pathname;
   return (
-    <AppBar position="sticky" color="inherit" elevation={0} className={classes.top}>
+    <AppBar position="sticky" color="inherit" elevation={0} className={classes.top} style={{ "z-index": "auto" }}>
       <Grid container className={classes.containerTop}>
         <Grid item xs={3}>
           {currentRoute === "/" ? (
