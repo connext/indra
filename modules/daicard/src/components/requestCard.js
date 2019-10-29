@@ -1,4 +1,13 @@
-import { Button,FormControl, FormHelperText, Grid, InputBase, TextField, Typography, withStyles } from "@material-ui/core";
+import {
+  Button,
+  FormControl,
+  FormHelperText,
+  Grid,
+  InputBase,
+  TextField,
+  Typography,
+  withStyles,
+} from "@material-ui/core";
 import { Zero } from "ethers/constants";
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
@@ -23,32 +32,32 @@ const styles = {
   },
   bodyContainer: {
     marginTop: "5px",
-    marginBottom:"5px"
+    marginBottom: "5px",
   },
-  bodyForm:{
-    width:"100%",
-    alignItems:"center",
-    justifyContent:"center"
+  bodyForm: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  bodyLink:{
-    width:"100%",
-    alignItems:"center",
-    justifyContent:"center"
+  bodyLink: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  copyable:{
-    width:"225px"
+  copyable: {
+    width: "225px",
   },
   valueInput: {
     color: "#FCA311",
     fontSize: "60px",
     cursor: "none",
-    overflow:"hidden",
-    paddingLeft:"31%"
+    overflow: "hidden",
+    paddingLeft: "31%",
   },
-  helperText:{
-    color:"red",
-    marginTop:"-5px"
-  }
+  helperText: {
+    color: "red",
+    marginTop: "-5px",
+  },
 };
 
 const zero = "0.0";
@@ -58,10 +67,12 @@ const generateQrUrl = (amount, xpub) =>
 const RequestCard = props => {
   const { classes, maxDeposit, xpub, match } = props;
 
-  console.log(xpub)
+  console.log(xpub);
 
-
-  const [amount, setAmount] = useState({ value: match.params.amount? match.params.amount:Currency.DAI(zero), display: match.params.amount? match.params.amount:"0.00"});
+  const [amount, setAmount] = useState({
+    value: match.params.amount ? match.params.amount : Currency.DAI(zero),
+    display: match.params.amount ? match.params.amount : "0.00",
+  });
   const [qrUrl, setQrUrl] = useState(generateQrUrl(zero, xpub));
 
   useEffect(() => setQrUrl(generateQrUrl(amount.value, xpub)), [amount.value, xpub]);
@@ -86,29 +97,30 @@ const RequestCard = props => {
     setAmount({ value: value ? value.amount : zero, display: input, error });
   };
 
-  console.log(match.params.amount)
-  console.log(amount.display)
-
+  console.log(match.params.amount);
+  console.log(amount.display);
 
   return (
     <Grid container spacing={2} direction="column" className={classes.top}>
       <FormControl xs={12} className={classes.bodyForm}>
         <InputBase
-            required
-            className={classes.valueInput}
-            onChange={evt => updateAmountHandler(evt.target.value)}
-            type="numeric"
-            value={amount.display}
-            placeholder={"0.00"}
-          />
-          {amount.error && <FormHelperText className={classes.helperText}>{amount.error}</FormHelperText>}
+          required
+          className={classes.valueInput}
+          onChange={evt => updateAmountHandler(evt.target.value)}
+          type="numeric"
+          value={amount.display}
+          placeholder={"0.00"}
+        />
+        {amount.error && (
+          <FormHelperText className={classes.helperText}>{amount.error}</FormHelperText>
+        )}
       </FormControl>
 
       <Grid item xs={12} className={classes.bodyContainer}>
-        <QRGenerate value={qrUrl} size={225}/>
+        <QRGenerate value={qrUrl} size={225} />
       </Grid>
       <Grid container className={classes.bodyLink}>
-          <Copyable className={classes.copyable} text={amount.error ? "error" : qrUrl} wrap={true} />
+        <Copyable className={classes.copyable} text={amount.error ? "error" : qrUrl} wrap={true} />
       </Grid>
 
       {/* <Grid item xs={12} className={classes.bodyContainer}>
@@ -136,7 +148,6 @@ RequestCard.propTypes = {
 };
 
 export default withStyles(styles)(RequestCard);
-
 
 //<Grid container>
 //<Grid item xs={4}>

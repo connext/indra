@@ -9,29 +9,29 @@ import * as serviceWorker from "./serviceWorker";
 const theme = createMuiTheme({
   palette: {
     primary: {
-      main: "#FCA311"
+      main: "#FCA311",
     },
-    accent:{
-      main:"#002868"
+    accent: {
+      main: "#002868",
     },
     secondary: {
       main: "#282b2e",
-      light: "#1E96CC"
+      light: "#1E96CC",
     },
     white: {
-      main:"#FFFFFF"
-    }
+      main: "#FFFFFF",
+    },
   },
   typography: {
     useNextVariants: true,
-  }
+  },
 });
 
 ReactDOM.render(
   <MuiThemeProvider theme={theme}>
     <App />
   </MuiThemeProvider>,
-  document.getElementById("root")
+  document.getElementById("root"),
 );
 
 // If you want your app to work offline and load faster, you can change

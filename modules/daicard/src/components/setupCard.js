@@ -64,7 +64,7 @@ export const SetupCard = style(({ classes, minDeposit, maxDeposit }) => {
       spacing={8}
       direction="column"
       style={{
-        width:"100%",
+        width: "100%",
         paddingLeft: "10%",
         paddingRight: "10%",
         paddingTop: "10%",

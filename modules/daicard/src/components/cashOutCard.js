@@ -28,7 +28,7 @@ import { inverse } from "../utils";
 import { QRScan } from "./qrCode";
 
 const styles = {
-  top:{
+  top: {
     paddingLeft: 12,
     paddingRight: 12,
     paddingTop: "10%",
@@ -82,7 +82,7 @@ const styles = {
     fontSize: "45px",
   },
   QRbutton: {
-    color: "#002868", 
+    color: "#002868",
   },
   icon: {
     color: "#002868",
@@ -184,12 +184,7 @@ const CashoutCard = props => {
   };
 
   return (
-    <Grid
-      container
-      spacing={2}
-      direction="column"
-      className={classes.top}
-    >
+    <Grid container spacing={2} direction="column" className={classes.top}>
       {/* <Grid container wrap="nowrap" direction="row" justify="center" alignItems="center">
         <Grid item xs={12}>
           <UnarchiveIcon className={classes.icon} />
@@ -236,12 +231,7 @@ const CashoutCard = props => {
           <FormHelperText className={classes.helperText}>{recipient.error}</FormHelperText>
         )}
       </FormControl>
-      <Modal
-        id="qrscan"
-        open={scan}
-        onClose={() => setScan(false)}
-        className={classes.modal}
-      >
+      <Modal id="qrscan" open={scan} onClose={() => setScan(false)} className={classes.modal}>
         <QRScan handleResult={updateRecipientHandler} history={history} />
       </Modal>
       <Grid className={classes.buttonSpacer} />
@@ -254,16 +244,10 @@ const CashoutCard = props => {
           size="large"
           color="primary"
           disabled={!recipient.value}
-                        onClick={cashoutEther}
-
-
+          onClick={cashoutEther}
         >
-         Cash Out Eth
-              <img
-                src={EthIcon}
-                style={{ width: "15px", height: "15px", marginLeft: "5px" }}
-                alt=""
-              />
+          Cash Out Eth
+          <img src={EthIcon} style={{ width: "15px", height: "15px", marginLeft: "5px" }} alt="" />
         </Button>
         <Button
           className={classes.button}
@@ -273,14 +257,9 @@ const CashoutCard = props => {
           disabled={true}
           color="primary"
           onClick={cashoutTokens}
-
         >
           Cash Out Dai
-              <img
-                src={DaiIcon}
-                style={{ width: "15px", height: "15px", marginLeft: "5px" }}
-                alt=""
-              />
+          <img src={DaiIcon} style={{ width: "15px", height: "15px", marginLeft: "5px" }} alt="" />
         </Button>
       </Grid>
       <Grid item xs={12}>

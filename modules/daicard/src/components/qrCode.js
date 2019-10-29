@@ -4,10 +4,8 @@ import React from "react";
 import QrReader from "react-qr-reader";
 
 export const QRGenerate = ({ size, value }) => {
-  return (
-    <QrCode value={value} size={size || 256} fgColor={"#002868"} />
-  )
-}
+  return <QrCode value={value} size={size || 256} fgColor={"#002868"} />;
+};
 
 export const QRScan = React.forwardRef(({ handleResult }, ref) => {
   return (
@@ -15,12 +13,12 @@ export const QRScan = React.forwardRef(({ handleResult }, ref) => {
       <QrReader
         delay={300}
         onError={console.error}
-        onScan={(data) => data ? handleResult(data) : undefined}
+        onScan={data => (data ? handleResult(data) : undefined)}
         style={{ width: "100%" }}
       />
-        <Typography style={{padding: "2%", backgroundColor: "#FFF"}}>
-          Not currently supported on Brave and iOS 11 browsers other than Safari.
-        </Typography>
+      <Typography style={{ padding: "2%", backgroundColor: "#FFF" }}>
+        Not currently supported on Brave and iOS 11 browsers other than Safari.
+      </Typography>
     </div>
   );
-})
+});

@@ -6,18 +6,18 @@ import React, { useEffect, useState } from "react";
 const styles = {
   icon: {
     width: "40px",
-    height: "40px"
-  }
+    height: "40px",
+  },
 };
 
 const SupportCard = props => {
-  const{ channel } = props;
+  const { channel } = props;
   const [channelState, setChannelState] = useState(undefined);
 
   useEffect(() => {
     (async () => {
       setChannelState(await channel.getChannel());
-    })()
+    })();
   }, [channel]);
 
   const openDiscord = () => {
@@ -33,13 +33,17 @@ const SupportCard = props => {
     channelState.sigUser !== "0x0" &&
     channelState.sigHub !== "0x0";
 
-  const channelRender = (channelState) => {
-    return Object.entries(channelState).map(([key, value], i) => { return(
-      <div>
-        <span>{key}: {value}{" "}</span>
-      </div>
-    )});
-  }
+  const channelRender = channelState => {
+    return Object.entries(channelState).map(([key, value], i) => {
+      return (
+        <div>
+          <span>
+            {key}: {value}{" "}
+          </span>
+        </div>
+      );
+    });
+  };
 
   return (
     <Grid
@@ -52,7 +56,7 @@ const SupportCard = props => {
         paddingTop: "10%",
         paddingBottom: "10%",
         textAlign: "center",
-        justifyContent: "center"
+        justifyContent: "center",
       }}
     >
       <Grid item xs={12}>
@@ -69,9 +73,7 @@ const SupportCard = props => {
         <Grid item xs={12}>
           {exitableState && (
             <Typography paragraph variant="subtitle2">
-              <span>{`If you need your funds now, use this state to call 'startExitWithUpdate' onchain at ${
-                channelState.contractAddress
-              }.`}</span>
+              <span>{`If you need your funds now, use this state to call 'startExitWithUpdate' onchain at ${channelState.contractAddress}.`}</span>
             </Typography>
           )}
         </Grid>
@@ -92,7 +94,7 @@ const SupportCard = props => {
             background: "#FFF",
             border: "1px solid #F22424",
             color: "#F22424",
-            width: "15%"
+            width: "15%",
           }}
           size="medium"
           onClick={() => openDiscord()}
@@ -102,11 +104,10 @@ const SupportCard = props => {
       </Grid>
     </Grid>
   );
-}
+};
 
 SupportCard.propTypes = {
   classes: PropTypes.object.isRequired,
 };
 
 export default withStyles(styles)(SupportCard);
-

@@ -72,18 +72,21 @@ const styles = {
     color: "#F22424",
     marginBottom: "1.5em",
   },
-  typographyFullWidth:{
-    width: "100%"
+  typographyFullWidth: {
+    width: "100%",
   },
-  amountContainer:{
-    marginBottom: "3%", marginTop: "3%" 
+  amountContainer: {
+    marginBottom: "3%",
+    marginTop: "3%",
   },
-  dialogContent:{
-    color: "#0F1012", paddingTop: "5%" 
+  dialogContent: {
+    color: "#0F1012",
+    paddingTop: "5%",
   },
-  dialogActionWrapper:{
-    textAlign: "center", justifyContent: "center"
-  }
+  dialogActionWrapper: {
+    textAlign: "center",
+    justifyContent: "center",
+  },
 };
 
 const RedeemCard = props => {

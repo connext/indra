@@ -14,23 +14,20 @@ import {
 } from "@material-ui/core";
 import PropTypes from "prop-types";
 
-import {
-  ArrowRight as SubmitIcon,
-  Settings as SettingsIcon,
-} from "@material-ui/icons";
+import { ArrowRight as SubmitIcon, Settings as SettingsIcon } from "@material-ui/icons";
 import React, { useState } from "react";
 
 import Copyable from "./copyable";
 import { MySnackbar } from "./snackBar";
 
 const styles = {
-  top:{
+  top: {
     paddingLeft: 12,
     paddingRight: 12,
     paddingTop: "10%",
     paddingBottom: "10%",
     textAlign: "center",
-    justifyContent: "center"
+    justifyContent: "center",
   },
   card: {
     display: "flex",
@@ -40,37 +37,37 @@ const styles = {
     height: "70%",
     justifyContent: "center",
     backgroundColor: "#FFFFFF",
-    padding: "4% 4% 4% 4%"
+    padding: "4% 4% 4% 4%",
   },
   icon: {
     width: "40px",
-    height: "40px"
+    height: "40px",
   },
   input: {
-    width: "100%"
+    width: "100%",
   },
-  supportButton:{
+  supportButton: {
     background: "#FFF",
     border: "1px solid #7289da",
-    color: "#7289da"
+    color: "#7289da",
   },
-  burnCardButton:{
-    background: "#FFF",
-    border: "1px solid #F22424",
-    color: "#F22424"
-  },
-  burnCardButtonMargin:{
+  burnCardButton: {
     background: "#FFF",
     border: "1px solid #F22424",
     color: "#F22424",
-    marginLeft:"5%"
   },
-  button:{
-    marginBottom:0
-  }
+  burnCardButtonMargin: {
+    background: "#FFF",
+    border: "1px solid #F22424",
+    color: "#F22424",
+    marginLeft: "5%",
+  },
+  button: {
+    marginBottom: 0,
+  },
 };
 
-const SettingsCard = (props) => {
+const SettingsCard = props => {
   const [copied, setCopied] = useState(false);
   const [inputRecovery, setInputRecovery] = useState(false);
   const [isBurning, setIsBurning] = useState(false);
@@ -94,15 +91,10 @@ const SettingsCard = (props) => {
   const recoverAddressFromMnemonic = async () => {
     localStorage.setItem("mnemonic", mnemonic);
     window.location.reload();
-  }
+  };
 
   return (
-    <Grid
-      container
-      spacing={2}
-      direction="column"
-      className={classes.top}
-    >
+    <Grid container spacing={2} direction="column" className={classes.top}>
       <MySnackbar
         variant="success"
         openWhen={copied}
@@ -139,11 +131,7 @@ const SettingsCard = (props) => {
             Show Backup Phrase
           </Button>
         ) : (
-          <Copyable
-            color="#002868"
-            size="large"
-            text={localStorage.getItem("mnemonic")}
-          />
+          <Copyable color="#002868" size="large" text={localStorage.getItem("mnemonic")} />
         )}
       </Grid>
       <Grid item xs={12} className={classes.button}>
@@ -182,7 +170,7 @@ const SettingsCard = (props) => {
                     <SubmitIcon />
                   </Button>
                 </InputAdornment>
-              )
+              ),
             }}
           />
         )}
@@ -212,57 +200,55 @@ const SettingsCard = (props) => {
             style={{
               backgroundColor: "#FFF",
               padding: "3% 3% 3% 3%",
-              flexDirection: "column"
+              flexDirection: "column",
             }}
           >
             <DialogTitle disableTypography>
               <Typography variant="h5" style={{ color: "#F22424" }}>
-              Are you sure you want to burn your Card?
+                Are you sure you want to burn your Card?
               </Typography>
             </DialogTitle>
             <DialogContent>
-            {isBurning ? (
-              <Grid item xs={12}>
-                <DialogContentText variant="body1">
-                  Burning. Please do not refresh or navigate away. This page
-                  will refresh automatically when it's done.
-                </DialogContentText>
-                <CircularProgress style={{ marginTop: "1em" }} />
-                </Grid>
-            ) : (
-              <Grid container alignItems="center" justify="center" direction="column">
-              <Grid item xs={12}>
-                  <DialogContentText variant="body1" style={{ color: "#F22424" }}>
-                    You will lose access to your funds unless you save your
-                    backup phrase!
+              {isBurning ? (
+                <Grid item xs={12}>
+                  <DialogContentText variant="body1">
+                    Burning. Please do not refresh or navigate away. This page will refresh
+                    automatically when it's done.
                   </DialogContentText>
+                  <CircularProgress style={{ marginTop: "1em" }} />
+                </Grid>
+              ) : (
+                <Grid container alignItems="center" justify="center" direction="column">
+                  <Grid item xs={12}>
+                    <DialogContentText variant="body1" style={{ color: "#F22424" }}>
+                      You will lose access to your funds unless you save your backup phrase!
+                    </DialogContentText>
                   </Grid>
                   <Grid item xs={12}>
-                <DialogActions>
-                  <Button
-                    disableTouchRipple
-                    className={classes.burnCardButton}
-                    variant="contained"
-                    size="small"
-                    onClick={() => generateNewAddress()}
-                  >
-                    Burn
-                  </Button>
-                  <Button
-                    disableTouchRipple
-                    className={classes.burnCardButtonMargin}
-                    variant="contained"
-                    size="small"
-                    onClick={() => setShowWarning(false)}
-                  >
-                    Cancel
-                  </Button>
-                </DialogActions>
+                    <DialogActions>
+                      <Button
+                        disableTouchRipple
+                        className={classes.burnCardButton}
+                        variant="contained"
+                        size="small"
+                        onClick={() => generateNewAddress()}
+                      >
+                        Burn
+                      </Button>
+                      <Button
+                        disableTouchRipple
+                        className={classes.burnCardButtonMargin}
+                        variant="contained"
+                        size="small"
+                        onClick={() => setShowWarning(false)}
+                      >
+                        Cancel
+                      </Button>
+                    </DialogActions>
+                  </Grid>
                 </Grid>
-                </Grid>
-            )}
+              )}
             </DialogContent>
-
           </Grid>
         </Dialog>
       </Grid>
@@ -284,11 +270,10 @@ const SettingsCard = (props) => {
       </Grid> */}
     </Grid>
   );
-}
+};
 
 SettingsCard.propTypes = {
   classes: PropTypes.object.isRequired,
 };
 
 export default withStyles(styles)(SettingsCard);
-

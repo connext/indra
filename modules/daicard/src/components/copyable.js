@@ -6,40 +6,34 @@ import { CopyToClipboard } from "react-copy-to-clipboard";
 import { MySnackbar } from "./snackBar";
 
 const style = {
-  top:{
-    display:"flex",
-    justifyContent:"center",
-    alignItems:"center"
+  top: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  button:{
-    justifyContent:"center"
-  }
-}
+  button: {
+    justifyContent: "center",
+  },
+};
 
 const Copyable = props => {
   const [copied, setCopied] = useState(false);
-  const { classes, color, size, tooltip, text, wrap } = props
+  const { classes, color, size, tooltip, text, wrap } = props;
   return (
     <Grid item xs={12} className={classes.top}>
-      <CopyToClipboard
-        onCopy={() => setCopied(true)}
-        text={text}
-      >
+      <CopyToClipboard onCopy={() => setCopied(true)} text={text}>
         <Button
           disableTouchRipple
           className={classes.button}
-          color={color||"inherit"}
+          color={color || "inherit"}
           fullWidth
           size={size || "medium"}
           variant="outlined"
         >
-          <CopyIcon style={{ marginRight: "5px", color:"#002868" }} />
+          <CopyIcon style={{ marginRight: "5px", color: "#002868" }} />
           <Typography noWrap variant="body1">
-            <Tooltip
-              disableTouchListener
-              title={tooltip || text}
-            >
-              <span style={{color:"#002868"}}>{text}</span>
+            <Tooltip disableTouchListener title={tooltip || text}>
+              <span style={{ color: "#002868" }}>{text}</span>
             </Tooltip>
           </Typography>
         </Button>
@@ -52,5 +46,5 @@ const Copyable = props => {
       />
     </Grid>
   );
-}
+};
 export default withStyles(style)(Copyable);

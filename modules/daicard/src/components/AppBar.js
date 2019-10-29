@@ -25,8 +25,8 @@ const styles = {
   top: {
     paddingTop: "4%",
     width: "100%",
-    display:"flex",
-    alignItems:"flex-start"
+    display: "flex",
+    alignItems: "flex-start",
   },
   containerTop: {
     textAlign: "center",
@@ -45,8 +45,8 @@ const styles = {
     fontSize: "small",
   },
   buttonHidden: {
-    display:"none"
-  }
+    display: "none",
+  },
 };
 
 const AppBarComponent = props => {
@@ -58,25 +58,25 @@ const AppBarComponent = props => {
         <Grid item xs={3}>
           {currentRoute === "/" ? (
             <IconButton
-            disableTouchRipple
-            color="inherit"
-            variant="contained"
-            component={Link}
-            to="/deposit"
-          >
-            <ProfileIcon fontSize="large" className={classes.icon} />
-          </IconButton>
+              disableTouchRipple
+              color="inherit"
+              variant="contained"
+              component={Link}
+              to="/deposit"
+            >
+              <ProfileIcon fontSize="large" className={classes.icon} />
+            </IconButton>
           ) : (
             <IconButton
-            className={currentRoute === "/deposit"? classes.buttonHidden: classes.button}
-            disableTouchRipple
-            color="inherit"
-            variant="contained"
-            component={Link}
-            to="/"
-          >
-            <ArrowBack className={classes.icon} />
-          </IconButton>
+              className={currentRoute === "/deposit" ? classes.buttonHidden : classes.button}
+              disableTouchRipple
+              color="inherit"
+              variant="contained"
+              component={Link}
+              to="/"
+            >
+              <ArrowBack className={classes.icon} />
+            </IconButton>
           )}
         </Grid>
         <Grid item xs={6}>
@@ -96,7 +96,7 @@ const AppBarComponent = props => {
             </IconButton>
           ) : (
             <IconButton
-              className={currentRoute === "/"? classes.button : classes.buttonHidden }
+              className={currentRoute === "/" ? classes.button : classes.buttonHidden}
               disableTouchRipple
               color="inherit"
               variant="contained"

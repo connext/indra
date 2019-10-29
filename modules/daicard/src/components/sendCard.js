@@ -100,7 +100,7 @@ const styles = {
     fontSize: "45px",
   },
   QRbutton: {
-    color: "#002868", 
+    color: "#002868",
   },
   linkSendWrapper: {
     justifyContent: "space-between",
@@ -119,16 +119,16 @@ const styles = {
   icon: {
     color: "#002868",
   },
-  linkButtonInner:{
-    width:"100%",
-    alignItems:"center",
-    justifyContent:"center",
-    marginTop:"5px"
+  linkButtonInner: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: "5px",
   },
   linkSub: {
     fontSize: 10,
-    fontWeight:"600",
-    marginTop:"-5px",
+    fontWeight: "600",
+    marginTop: "-5px",
     width: "100%",
   },
 };
@@ -359,12 +359,12 @@ const SendCard = props => {
             linkHandler();
           }}
         >
-        <Grid container direction="row" className={classes.linkButtonInner}>
-          <Typography>Link</Typography>
+          <Grid container direction="row" className={classes.linkButtonInner}>
+            <Typography>Link</Typography>
             <LinkIcon className={classes.buttonIcon} />
-          <Typography className={classes.linkSub}>
-            <span>{`${LINK_LIMIT.format()} Max`}</span>
-          </Typography>
+            <Typography className={classes.linkSub}>
+              <span>{`${LINK_LIMIT.format()} Max`}</span>
+            </Typography>
           </Grid>
         </Button>
         <Button
