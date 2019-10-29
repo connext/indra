@@ -1,6 +1,16 @@
-import { utils } from "ethers";
-import { BigNumber, computeAddress, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
-import { fromExtendedKey, HDNode } from "ethers/utils/hdnode";
+import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
+import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
+import {
+  BigNumber,
+  computeAddress,
+  getAddress,
+  HDNode,
+  hexlify,
+  Interface,
+  keccak256,
+  randomBytes,
+  solidityKeccak256,
+} from "ethers/utils";
 import { isNullOrUndefined } from "util";
 
 export const replaceBN = (key: string, value: any): any =>
@@ -57,11 +67,11 @@ export const delay = (ms: number): Promise<void> =>
 // differences in hub. (eg. only freeBalanceAddressFromXpub derives correct
 // fb address but only below works for deposit bal checking)
 export const publicIdentifierToAddress = (publicIdentifier: string): string => {
-  return utils.HDNode.fromExtendedKey(publicIdentifier).address;
+  return HDNode.fromExtendedKey(publicIdentifier).address;
 };
 
 export const freeBalanceAddressFromXpub = (xpub: string): string => {
-  return utils.HDNode.fromExtendedKey(xpub).derivePath("0").address;
+  return HDNode.fromExtendedKey(xpub).derivePath("0").address;
 };
 
 export const createLinkedHash = (
@@ -99,6 +109,38 @@ export function xkeysToSortedKthAddresses(xkeys: string[], k: number): string[] 
   return sortAddresses(xkeys.map(xkey => xkeyKthAddress(xkey, k)));
 }
 
-export function xkeyKthHDNode(xkey: string, k: number): HDNode {
-  return fromExtendedKey(xkey).derivePath(`${k}`);
+export function xkeyKthHDNode(xkey: string, k: number): HDNode.HDNode {
+  return HDNode.fromExtendedKey(xkey).derivePath(`${k}`);
+}
+
+// TODO: this should be imported from the counterfactual utils
+export function getMultisigAddressfromXpubs(
+  owners: string[],
+  proxyFactoryAddress: string,
+  minimumViableMultisigAddress: string,
+): string {
+  return getAddress(
+    solidityKeccak256(
+      ["bytes1", "address", "uint256", "bytes32"],
+      [
+        "0xff",
+        proxyFactoryAddress,
+        solidityKeccak256(
+          ["bytes32", "uint256"],
+          [
+            keccak256(
+              new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+                xkeysToSortedKthAddresses(owners, 0),
+              ]),
+            ),
+            0,
+          ],
+        ),
+        solidityKeccak256(
+          ["bytes", "uint256"],
+          [`0x${Proxy.evm.bytecode.object}`, minimumViableMultisigAddress],
+        ),
+      ],
+    ).slice(-40),
+  );
 }
