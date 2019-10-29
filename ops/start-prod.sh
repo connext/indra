@@ -242,8 +242,6 @@ services:
       POSTGRES_DB: $project
       POSTGRES_PASSWORD_FILE: $pg_password_file
       POSTGRES_USER: $project
-      HASURA_USER: hasura
-      HASURA_PASSWORD_FILE: $hasura_password_file
     secrets:
       - $db_secret
     volumes:
@@ -284,6 +282,7 @@ services:
       PG_PASSWORD_FILE: $pg_password_file
       PG_PORT: $pg_port
       PG_USER: $project
+
     networks:
       - $project
     ports:
