@@ -63,6 +63,7 @@ fi
 docker run \
   --entrypoint="bash" \
   --env="DB_FILENAME=$DB_FILENAME" \
+  --env="ECCRYPTO_NO_FALLBACK=true" \
   --env="ETH_RPC_URL=$ETH_RPC_URL" \
   --env="MNEMONIC=$mnemonic" \
   --env="NODE_URL=$NODE_URL" \
@@ -81,5 +82,5 @@ docker run \
     cd modules/payment-bot
     mkdir -p ${DB_FILENAME%/*}
     touch $DB_FILENAME
-    ./node_modules/.bin/ts-node src/index.ts '"$args"'
+    node dist/index.js '"$args"'
   '
