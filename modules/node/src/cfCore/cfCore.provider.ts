@@ -66,7 +66,7 @@ export const cfCoreProviderFactory: Provider = {
     const storeRecord = await store.get("channel");
     if (!isLatestCfStoreVersion(storeRecord)) {
       logger.log(`Upgrading store to latest version ${LATEST_CF_STORE_VERSION}...`);
-      await migrateToPatch1(store, "");
+      await migrateToPatch1(store, `${ConnextNodeStorePrefix}/${cfCore.publicIdentifier}`);
       logger.log(`Upgraded to latest store version!`);
     } else {
       logger.log(`Detected latest store version ${LATEST_CF_STORE_VERSION}`)
