@@ -36,6 +36,19 @@ export const cfCoreProviderFactory: Provider = {
   ): Promise<CFCore> => {
     const hdNode = fromMnemonic(config.getMnemonic()).derivePath(CF_PATH);
     const publicExtendedKey = hdNode.neuter().extendedKey;
+
+    // MIGRATE STORE IF NEEDED
+    const storeRecord = await store.get(`${ConnextNodeStorePrefix}/${publicExtendedKey}`);
+
+    if (!isLatestCfStoreVersion(storeRecord)) {
+      logger.log(`Upgrading store to latest version ${LATEST_CF_STORE_VERSION}...`);
+      await migrateToPatch1(store, `${ConnextNodeStorePrefix}/${publicExtendedKey}`);
+      logger.log(`Upgraded to latest store version!`);
+    } else {
+      logger.log(`Detected latest store version ${LATEST_CF_STORE_VERSION}, will not migrate`);
+    }
+    // END MIGRATION
+
     logger.log(`Derived xpub from mnemonic: ${publicExtendedKey}`);
     // test that provider works
     const { chainId, name: networkName } = await config.getEthNetwork();
@@ -62,15 +75,6 @@ export const cfCoreProviderFactory: Provider = {
     logger.log(
       `Free balance address ${JSON.stringify(freeBalanceAddressFromXpub(cfCore.publicIdentifier))}`,
     );
-
-    const storeRecord = await store.get("channel");
-    if (!isLatestCfStoreVersion(storeRecord)) {
-      logger.log(`Upgrading store to latest version ${LATEST_CF_STORE_VERSION}...`);
-      await migrateToPatch1(store, `${ConnextNodeStorePrefix}/${cfCore.publicIdentifier}`);
-      logger.log(`Upgraded to latest store version!`);
-    } else {
-      logger.log(`Detected latest store version ${LATEST_CF_STORE_VERSION}`)
-    }
 
     return cfCore;
   },
