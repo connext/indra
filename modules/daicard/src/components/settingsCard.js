@@ -12,15 +12,12 @@ import {
   Typography,
   withStyles,
 } from "@material-ui/core";
-import {
-  ArrowRight as SubmitIcon,
-  Settings as SettingsIcon,
-} from "@material-ui/icons";
+import { ArrowRight as SubmitIcon, Settings as SettingsIcon } from "@material-ui/icons";
 import React, { useState } from "react";
 
 import { Copyable } from "./copyable";
 
-import { ConnextClientStorePrefix } from "@connext/types"
+import { ConnextClientStorePrefix } from "@connext/types";
 
 const style = withStyles(theme => ({
   card: {
@@ -31,27 +28,28 @@ const style = withStyles(theme => ({
     height: "70%",
     justifyContent: "center",
     backgroundColor: "#FFFFFF",
-    padding: "4% 4% 4% 4%"
+    padding: "4% 4% 4% 4%",
   },
   icon: {
     width: "40px",
-    height: "40px"
+    height: "40px",
   },
   input: {
-    width: "100%"
+    width: "100%",
   },
   button: {
-    marginBottom: "0px"
-  }
+    marginBottom: "0px",
+  },
 }));
 
-export const SettingsCard = style((props) => {
+export const SettingsCard = style(props => {
   const [inputRecovery, setInputRecovery] = useState(false);
   const [isBurning, setIsBurning] = useState(false);
   const [mnemonic, setMnemonic] = useState("");
   const [showRecovery, setShowRecovery] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
+  const useWalletConnext = localStorage.getItem("useWalletConnext");
   const { classes, setWalletConnext } = props;
 
   const generateNewAddress = () => {
@@ -65,7 +63,7 @@ export const SettingsCard = style((props) => {
     localStorage.setItem("mnemonic", mnemonic);
     localStorage.removeItem(`${ConnextClientStorePrefix}:EXTENDED_PRIVATE_KEY`);
     window.location.reload();
-  }
+  };
 
   return (
     <Grid
@@ -78,7 +76,7 @@ export const SettingsCard = style((props) => {
         paddingTop: "10%",
         paddingBottom: "10%",
         textAlign: "center",
-        justifyContent: "center"
+        justifyContent: "center",
       }}
     >
       <Grid item xs={12} style={{ justifyContent: "center" }}>
@@ -92,7 +90,7 @@ export const SettingsCard = style((props) => {
           style={{
             background: "#FFF",
             border: "1px solid #7289da",
-            color: "#7289da"
+            color: "#7289da",
           }}
           onClick={() => {
             window.open("https://discord.gg/q2cakRc", "_blank");
@@ -113,9 +111,9 @@ export const SettingsCard = style((props) => {
           variant="outlined"
           color="secondary"
           size="large"
-          onClick={() => setWalletConnext(true)}
+          onClick={() => setWalletConnext(!useWalletConnext)}
         >
-         {`Activate WalletConnext (beta)`}
+          {useWalletConnext ? `Deactivate WalletConnext (beta)` : `Activate WalletConnext (beta)`}
         </Button>
       </Grid>
 
@@ -133,11 +131,7 @@ export const SettingsCard = style((props) => {
             Show Backup Phrase
           </Button>
         ) : (
-          <Copyable
-            color="primary"
-            size="large"
-            text={localStorage.getItem("mnemonic")}
-          />
+          <Copyable color="primary" size="large" text={localStorage.getItem("mnemonic")} />
         )}
       </Grid>
 
@@ -177,7 +171,7 @@ export const SettingsCard = style((props) => {
                     <SubmitIcon />
                   </Button>
                 </InputAdornment>
-              )
+              ),
             }}
           />
         )}
@@ -190,7 +184,7 @@ export const SettingsCard = style((props) => {
           style={{
             background: "#FFF",
             border: "1px solid #F22424",
-            color: "#F22424"
+            color: "#F22424",
           }}
           size="large"
           onClick={() => setShowWarning(true)}
@@ -212,66 +206,64 @@ export const SettingsCard = style((props) => {
             style={{
               backgroundColor: "#FFF",
               padding: "3% 3% 3% 3%",
-              flexDirection: "column"
+              flexDirection: "column",
             }}
           >
             <DialogTitle disableTypography>
               <Typography variant="h5" style={{ color: "#F22424" }}>
-              Are you sure you want to burn your Card?
+                Are you sure you want to burn your Card?
               </Typography>
             </DialogTitle>
             <DialogContent>
-            {isBurning ? (
-              <Grid item xs={12}>
-                <DialogContentText variant="body1">
-                  Burning. Please do not refresh or navigate away. This page
-                  will refresh automatically when it's done.
-                </DialogContentText>
-                <CircularProgress style={{ marginTop: "1em" }} />
-                </Grid>
-            ) : (
-              <Grid container alignItems="center" justify="center" direction="column">
-              <Grid item xs={12}>
-                  <DialogContentText variant="body1" style={{ color: "#F22424" }}>
-                    You will lose access to your funds unless you save your
-                    backup phrase!
+              {isBurning ? (
+                <Grid item xs={12}>
+                  <DialogContentText variant="body1">
+                    Burning. Please do not refresh or navigate away. This page will refresh
+                    automatically when it's done.
                   </DialogContentText>
+                  <CircularProgress style={{ marginTop: "1em" }} />
+                </Grid>
+              ) : (
+                <Grid container alignItems="center" justify="center" direction="column">
+                  <Grid item xs={12}>
+                    <DialogContentText variant="body1" style={{ color: "#F22424" }}>
+                      You will lose access to your funds unless you save your backup phrase!
+                    </DialogContentText>
                   </Grid>
                   <Grid item xs={12}>
-                <DialogActions>
-                  <Button
-                    disableTouchRipple
-                    style={{
-                      background: "#F22424",
-                      border: "1px solid #F22424",
-                      color: "#FFF"
-                    }}
-                    variant="contained"
-                    size="small"
-                    onClick={() => generateNewAddress()}
-                  >
-                    Burn
-                  </Button>
-                  <Button
-                    disableTouchRipple
-                    style={{
-                      background: "#FFF",
-                      border: "1px solid #F22424",
-                      color: "#F22424",
-                      marginLeft: "5%"
-                    }}
-                    variant="outlined"
-                    size="small"
-                    onClick={() => setShowWarning(false)}
-                  >
-                    Cancel
-                  </Button>
-                </DialogActions>
+                    <DialogActions>
+                      <Button
+                        disableTouchRipple
+                        style={{
+                          background: "#F22424",
+                          border: "1px solid #F22424",
+                          color: "#FFF",
+                        }}
+                        variant="contained"
+                        size="small"
+                        onClick={() => generateNewAddress()}
+                      >
+                        Burn
+                      </Button>
+                      <Button
+                        disableTouchRipple
+                        style={{
+                          background: "#FFF",
+                          border: "1px solid #F22424",
+                          color: "#F22424",
+                          marginLeft: "5%",
+                        }}
+                        variant="outlined"
+                        size="small"
+                        onClick={() => setShowWarning(false)}
+                      >
+                        Cancel
+                      </Button>
+                    </DialogActions>
+                  </Grid>
                 </Grid>
-                </Grid>
-            )}
+              )}
             </DialogContent>
-
           </Grid>
         </Dialog>
       </Grid>
@@ -284,7 +276,7 @@ export const SettingsCard = style((props) => {
             background: "#FFF",
             border: "1px solid #F22424",
             color: "#F22424",
-            width: "15%"
+            width: "15%",
           }}
           size="medium"
           onClick={() => props.history.push("/")}

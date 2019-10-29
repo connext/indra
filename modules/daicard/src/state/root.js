@@ -1,84 +1,84 @@
-import { HashZero } from 'ethers/constants';
-import { Machine, assign } from 'xstate';
+import { HashZero } from "ethers/constants";
+import { Machine, assign } from "xstate";
 
-const notifyStates = (prefix, initial = 'idle') => ({
+const notifyStates = (prefix, initial = "idle") => ({
   initial,
   states: {
-    'idle': {
+    idle: {
       on: {
-        [`START_${prefix.toUpperCase()}`]: 'pending',
-      }
+        [`START_${prefix.toUpperCase()}`]: "pending",
+      },
     },
-    'pending': {
+    pending: {
       on: {
-        [`ERROR_${prefix.toUpperCase()}`]: 'error',
+        [`ERROR_${prefix.toUpperCase()}`]: "error",
         [`SUCCESS_${prefix.toUpperCase()}`]: {
-          target: 'success',
-          actions: ['setTxHash'],
+          target: "success",
+          actions: ["setTxHash"],
         },
       },
-      initial: 'show',
+      initial: "show",
       states: {
-        'show': {
+        show: {
           on: {
-            [`DISMISS_${prefix.toUpperCase()}`]: 'hide',
-          }
+            [`DISMISS_${prefix.toUpperCase()}`]: "hide",
+          },
         },
-        'hide': {
-          type: 'final',
+        hide: {
+          type: "final",
         },
-      }
-    },
-    'success': {
-      on: {
-        [`DISMISS_${prefix.toUpperCase()}`]: 'idle',
       },
     },
-    'error': {
+    success: {
       on: {
-        [`DISMISS_${prefix.toUpperCase()}`]: 'idle',
+        [`DISMISS_${prefix.toUpperCase()}`]: "idle",
       },
     },
-  }
+    error: {
+      on: {
+        [`DISMISS_${prefix.toUpperCase()}`]: "idle",
+      },
+    },
+  },
 });
 
 export const rootMachine = Machine(
   {
-    id: 'root',
+    id: "root",
     strict: true,
-    initial: 'idle',
+    initial: "idle",
     context: {
       txHash: HashZero,
     },
     states: {
-      'idle': {
+      idle: {
         on: {
-          'MIGRATE': 'migrate',
-          'START': 'start',
+          MIGRATE: "migrate",
+          START: "start",
         },
       },
-      'migrate': {
+      migrate: {
         on: {
-          'START': 'start',
+          START: "start",
         },
-        ...notifyStates('migrate'),
+        ...notifyStates("migrate"),
       },
-      'start': {
+      start: {
         on: {
-          'READY': 'ready',
+          READY: "ready",
         },
-        ...notifyStates('start'),
+        ...notifyStates("start"),
       },
-      'ready': {
-        id: 'operations',
-        type: 'parallel',
+      ready: {
+        id: "operations",
+        type: "parallel",
         states: {
-          'deposit': notifyStates('deposit'),
-          'swap': notifyStates('swap'),
-          'receive': notifyStates('receive'),
-          'redeem': notifyStates('redeem'),
-          'send': notifyStates('send'),
-          'withdraw': notifyStates('withdraw'),
+          deposit: notifyStates("deposit"),
+          swap: notifyStates("swap"),
+          receive: notifyStates("receive"),
+          redeem: notifyStates("redeem"),
+          send: notifyStates("send"),
+          withdraw: notifyStates("withdraw"),
         },
       },
     },
@@ -87,6 +87,5 @@ export const rootMachine = Machine(
     actions: {
       setTxHash: assign({ txHash: (context, event) => event.txHash || HashZero }),
     },
-  }
+  },
 );
-
