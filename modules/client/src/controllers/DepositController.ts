@@ -51,7 +51,7 @@ export class DepositController extends AbstractController {
     } catch (e) {
       this.log.error(`Failed to deposit...`);
       this.removeListeners();
-      throw new Error(e);
+      throw e;
     }
 
     // TODO: fix types!
