@@ -5,21 +5,18 @@ import { CopyToClipboard } from "react-copy-to-clipboard";
 
 import { MySnackbar } from "./snackBar";
 
-const style = withStyles((theme) => ({
+const style = withStyles(theme => ({
   label: {
-    textTransform: 'none',
-  }
+    textTransform: "none",
+  },
 }));
 
-export const Copyable = style((props) => {
+export const Copyable = style(props => {
   const [copied, setCopied] = useState(false);
-  const { classes, color, size, tooltip, text } = props
+  const { classes, color, size, tooltip, text } = props;
   return (
     <Grid item xs={12}>
-      <CopyToClipboard
-        onCopy={() => setCopied(true)}
-        text={text}
-      >
+      <CopyToClipboard onCopy={() => setCopied(true)} text={text}>
         <Button
           disableTouchRipple
           classes={classes}
@@ -30,10 +27,7 @@ export const Copyable = style((props) => {
         >
           <CopyIcon style={{ marginRight: "5px" }} />
           <Typography noWrap variant="body1">
-            <Tooltip
-              disableTouchListener
-              title={tooltip || text}
-            >
+            <Tooltip disableTouchListener title={tooltip || text}>
               <span>{text}</span>
             </Tooltip>
           </Typography>
@@ -47,4 +41,4 @@ export const Copyable = style((props) => {
       />
     </Grid>
   );
-})
+});

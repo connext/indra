@@ -15,7 +15,7 @@ import {
   withStyles,
 } from "@material-ui/core";
 import { Send as SendIcon, Link as LinkIcon } from "@material-ui/icons";
-import { useMachine } from '@xstate/react';
+import { useMachine } from "@xstate/react";
 import { Zero } from "ethers/constants";
 import { hexlify, randomBytes } from "ethers/utils";
 import QRIcon from "mdi-material-ui/QrcodeScan";
@@ -30,12 +30,12 @@ import { QRScan } from "./qrCode";
 
 const LINK_LIMIT = Currency.DAI("10"); // $10 capped linked payments
 
-const formatAmountString = (amount) => {
-  const [whole, part] = amount.split(".")
-  return `${whole || "0"}.${part ? part.padEnd(2, "0") : "00"}`
-}
+const formatAmountString = amount => {
+  const [whole, part] = amount.split(".");
+  return `${whole || "0"}.${part ? part.padEnd(2, "0") : "00"}`;
+};
 
-const style = withStyles((theme) => ({
+const style = withStyles(theme => ({
   modalContent: {
     margin: "0% 4% 4% 4%",
     padding: "0px",
@@ -54,42 +54,45 @@ const style = withStyles((theme) => ({
   },
 }));
 
-export const SendCard = style(({ balance, channel, classes, history, location, token  }) => {
+export const SendCard = style(({ balance, channel, classes, history, location, token }) => {
   const [amount, setAmount] = useState({ display: "", error: null, value: null });
   const [link, setLink] = useState(undefined);
   const [paymentState, paymentAction] = useMachine(sendMachine);
   const [recipient, setRecipient] = useState({ display: "", error: null, value: null });
-  const [scan, setScan] = useState(false)
+  const [scan, setScan] = useState(false);
 
   // need to extract token balance so it can be used as a dependency for the hook properly
-  const tokenBalance = balance.channel.token.wad
-  const updateAmountHandler = useCallback((rawValue) => {
-    let value = null;
-    let error = null;
-    if (!rawValue) {
-      error = `Invalid amount: must be greater than 0`;
-    }
-    if (!error) {
-      try {
-        value = Currency.DAI(rawValue);
-      } catch (e) {
-        error = `Please enter a valid amount`;
+  const tokenBalance = balance.channel.token.wad;
+  const updateAmountHandler = useCallback(
+    rawValue => {
+      let value = null;
+      let error = null;
+      if (!rawValue) {
+        error = `Invalid amount: must be greater than 0`;
       }
-    }
-    if (!error && value && value.wad.gt(tokenBalance)) {
-      error = `Invalid amount: must be less than your balance`;
-    }
-    if (!error && value && value.wad.lte(Zero)) {
-      error = "Invalid amount: must be greater than 0";
-    }
-    setAmount({
-      display: rawValue,
-      error,
-      value: error ? null : value,
-    });
-  }, [tokenBalance])
+      if (!error) {
+        try {
+          value = Currency.DAI(rawValue);
+        } catch (e) {
+          error = `Please enter a valid amount`;
+        }
+      }
+      if (!error && value && value.wad.gt(tokenBalance)) {
+        error = `Invalid amount: must be less than your balance`;
+      }
+      if (!error && value && value.wad.lte(Zero)) {
+        error = "Invalid amount: must be greater than 0";
+      }
+      setAmount({
+        display: rawValue,
+        error,
+        value: error ? null : value,
+      });
+    },
+    [tokenBalance],
+  );
 
-  const updateRecipientHandler = (rawValue) => {
+  const updateRecipientHandler = rawValue => {
     const xpubLen = 111;
     let value = null;
     let error = null;
@@ -105,9 +108,9 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
       error,
       value: error ? null : value,
     });
-  }
+  };
 
-  const handleQRData = (scanResult) => {
+  const handleQRData = scanResult => {
     let data = scanResult.split("/send?");
     if (data[0] === window.location.origin) {
       const query = queryString.parse(data[1]);
@@ -128,12 +131,12 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
     if (!recipient.value) {
       setRecipient({
         ...recipient,
-        error: 'Recipent must be specified for p2p transfer',
+        error: "Recipent must be specified for p2p transfer",
       });
       return;
     }
     console.log(`Sending ${amount.value} to ${recipient.value}`);
-    paymentAction('NEW_P2P');
+    paymentAction("NEW_P2P");
     // there is a chance the payment will fail when it is first sent
     // due to lack of collateral. collateral will be auto-triggered on the
     // hub side. retry for 1min, then fail
@@ -155,11 +158,11 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
       }
     }
     if (!transferRes) {
-      paymentAction('ERROR');
+      paymentAction("ERROR");
       return;
     }
-    paymentAction('DONE');
-  }
+    paymentAction("DONE");
+  };
 
   const linkHandler = async () => {
     if (amount.error) return;
@@ -170,7 +173,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
       setAmount({ ...amount, error: `Linked payments are capped at ${LINK_LIMIT.format()}.` });
       return;
     }
-    paymentAction('NEW_LINK');
+    paymentAction("NEW_LINK");
     try {
       console.log(`Creating ${amount.value.format()} link payment`);
       const link = await channel.conditionalTransfer({
@@ -185,7 +188,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
         `link params: secret=${link.preImage}&paymentId=${link.paymentId}&` +
           `assetId=${token.address}&amount=${amount.value.amount}`,
       );
-      paymentAction('DONE');
+      paymentAction("DONE");
       setLink({
         baseUrl: `${window.location.origin}/redeem`,
         paymentId: link.paymentId,
@@ -193,12 +196,12 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
       });
     } catch (e) {
       console.warn("Unexpected error creating link payment:", e);
-      paymentAction('ERROR');
+      paymentAction("ERROR");
     }
-  }
+  };
 
   const closeModal = () => {
-    paymentAction('DISMISS');
+    paymentAction("DISMISS");
   };
 
   useEffect(() => {
@@ -209,7 +212,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
     if (!recipient.value && !recipient.error && query.recipient) {
       updateRecipientHandler(query.recipient);
     }
-  }, [location, updateAmountHandler, amount.value, recipient.value, recipient.error])
+  }, [location, updateAmountHandler, amount.value, recipient.value, recipient.error]);
 
   return (
     <Grid
@@ -226,7 +229,6 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
         justify: "center",
       }}
     >
-
       <Grid container wrap="nowrap" direction="row" justify="center" alignItems="center">
         <Grid item xs={12}>
           <SendIcon className={classes.icon} />
@@ -236,7 +238,9 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
       <Grid item xs={12}>
         <Grid container direction="row" justify="center" alignItems="center">
           <Typography variant="h2">
-            <span>{balance.channel.token.toDAI().format({ decimals: 2, symbol: false, round: false })}</span>
+            <span>
+              {balance.channel.token.toDAI().format({ decimals: 2, symbol: false, round: false })}
+            </span>
           </Typography>
         </Grid>
       </Grid>
@@ -320,8 +324,8 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
               disabled={
                 !!amount.error ||
                 !!recipient.error ||
-                paymentState === 'processingP2p' ||
-                paymentState === 'processingLink'
+                paymentState === "processingP2p" ||
+                paymentState === "processingLink"
               }
               fullWidth
               onClick={() => {
@@ -385,21 +389,13 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
       />
     </Grid>
   );
-})
+});
 
-const SendCardModal = ({
-  amount,
-  classes,
-  closeModal,
-  history,
-  link,
-  paymentState,
-  recipient,
-}) => (
+const SendCardModal = ({ amount, classes, closeModal, history, link, paymentState, recipient }) => (
   <Dialog
-    open={!paymentState.matches('idle')}
+    open={!paymentState.matches("idle")}
     onBackdropClick={
-      (paymentState === 'processingP2p' || paymentState === 'processingLink')
+      paymentState === "processingP2p" || paymentState === "processingLink"
         ? null
         : () => closeModal()
     }
@@ -419,8 +415,7 @@ const SendCardModal = ({
       }}
       justify="center"
     >
-
-      {paymentState.matches('processingP2p') ? (
+      {paymentState.matches("processingP2p") ? (
         <Grid>
           <DialogTitle disableTypography>
             <Typography variant="h5" color="primary">
@@ -431,8 +426,7 @@ const SendCardModal = ({
             <CircularProgress style={{ marginTop: "1em" }} />
           </DialogContent>
         </Grid>
-
-      ) : paymentState.matches('processingLink') ? (
+      ) : paymentState.matches("processingLink") ? (
         <Grid>
           <DialogTitle disableTypography>
             <Typography variant="h5" color="primary">
@@ -446,8 +440,7 @@ const SendCardModal = ({
             <CircularProgress style={{ marginTop: "1em" }} />
           </DialogContent>
         </Grid>
-
-      ) : paymentState.matches('successP2p') ? (
+      ) : paymentState.matches("successP2p") ? (
         <Grid>
           <DialogTitle disableTypography>
             <Typography variant="h5" style={{ color: "#009247" }}>
@@ -463,8 +456,7 @@ const SendCardModal = ({
             </DialogContentText>
           </DialogContent>
         </Grid>
-
-      ) : paymentState.matches('successLink') ? (
+      ) : paymentState.matches("successLink") ? (
         <div style={{ width: "100%" }}>
           <DialogTitle disableTypography>
             <Typography variant="h5" style={{ color: "#009247" }}>
@@ -473,17 +465,17 @@ const SendCardModal = ({
           </DialogTitle>
           <DialogContent className={classes.modalContent}>
             <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
-              Anyone with this link can redeem the payment. Save a copy of it somewhere safe and only share it with the person you want to pay.
+              Anyone with this link can redeem the payment. Save a copy of it somewhere safe and
+              only share it with the person you want to pay.
             </DialogContentText>
             <Copyable
-              text={link
-                ? `${link.baseUrl}?paymentId=${link.paymentId}&secret=${link.secret}`
-                : '???'}
+              text={
+                link ? `${link.baseUrl}?paymentId=${link.paymentId}&secret=${link.secret}` : "???"
+              }
             />
           </DialogContent>
         </div>
-
-        ) : paymentState.matches('error') ? (
+      ) : paymentState.matches("error") ? (
         <Grid>
           <DialogTitle disableTypography>
             <Typography variant="h5" style={{ color: "#F22424" }}>
@@ -500,13 +492,12 @@ const SendCardModal = ({
             </DialogContentText>
           </DialogContent>
         </Grid>
-
       ) : (
-        <div/>
+        <div />
       )}
 
-      {(paymentState === 'processingP2p' || paymentState === 'processingLink') ? (
-        <div/>
+      {paymentState === "processingP2p" || paymentState === "processingLink" ? (
+        <div />
       ) : (
         <DialogActions>
           <Button
