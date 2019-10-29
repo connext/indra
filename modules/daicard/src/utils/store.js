@@ -1,10 +1,9 @@
 import { ConnextClientStorePrefix } from "@connext/types";
 import { arrayify, hexlify, keccak256, toUtf8Bytes, toUtf8String } from "ethers/utils";
 
-export const storeFactory = (options) => {
+export const storeFactory = options => {
   const { pisaClient, wallet } = options || { pisaClient: null, wallet: null };
   return {
-
     get: path => {
       const raw = localStorage.getItem(`${ConnextClientStorePrefix}:${path}`);
       if (raw) {
