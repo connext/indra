@@ -1,5 +1,3 @@
-// TODO: REMOVE THIS FILE ONCE CF STARTS EXPORTING IT
-
 import { Node } from "@counterfactual/types";
 import { bigNumberify, BigNumberish } from "ethers/utils";
 
@@ -22,7 +20,7 @@ export const migrateToPatch1 = async (storeService: Node.IStoreService, storeKey
 
     const proposals = stateChannelsMap[multisigAddress].proposedAppInstances;
 
-    for (let i = 0; i < proposals.length; i++) {
+    for (let i = 0; i < proposals.length; i += 1) {
       const proposal = proposals[i][1];
       stateChannelsMap[multisigAddress].proposedAppInstances[i][1] = {
         ...proposal,
@@ -39,7 +37,7 @@ export const migrateToPatch1 = async (storeService: Node.IStoreService, storeKey
 
     const apps = stateChannelsMap[multisigAddress].appInstances;
 
-    for (let i = 0; i < apps.length; i++) {
+    for (let i = 0; i < apps.length; i += 1) {
       const app = apps[i][1];
 
       if (app.twoPartyOutcomeInterpreterParams) {
@@ -82,7 +80,7 @@ export const migrateToPatch1 = async (storeService: Node.IStoreService, storeKey
 
     const agreements = stateChannelsMap[multisigAddress].singleAssetTwoPartyIntermediaryAgreements;
 
-    for (let i = 0; i < agreements.length; i++) {
+    for (let i = 0; i < agreements.length; i += 1) {
       const agreement = agreements[i][1];
       stateChannelsMap[multisigAddress].singleAssetTwoPartyIntermediaryAgreements[i][1] = {
         ...agreements[i][1],
@@ -91,9 +89,11 @@ export const migrateToPatch1 = async (storeService: Node.IStoreService, storeKey
     }
   }
 
-  const withdrawals = await storeService.get(`${storeKeyPrefix}/${DB_NAMESPACE_WITHDRAWALS}`);
+  const withdrawals =
+    (await storeService.get(`${storeKeyPrefix}/${DB_NAMESPACE_WITHDRAWALS}`)) || {};
 
-  const commitments = await storeService.get(`${storeKeyPrefix}/${DB_NAMESPACE_ALL_COMMITMENTS}`);
+  const commitments =
+    (await storeService.get(`${storeKeyPrefix}/${DB_NAMESPACE_ALL_COMMITMENTS}`)) || {};
 
   const sharedData = {
     commitments,
