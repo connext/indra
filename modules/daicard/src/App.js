@@ -141,8 +141,12 @@ class App extends React.Component {
   //                     Hooks                         //
   // ************************************************* //
 
-  setWalletConnext = async (useWalletConnext) => {
-    localStorage.setItem('useWalletConnext', useWalletConnext);
+  setWalletConnext = (useWalletConnext) => {
+    if (useWalletConnext) {
+      localStorage.setItem('useWalletConnext', true);
+    } else {
+      localStorage.removeItem('useWalletConnext')
+    }
     this.setState({ useWalletConnext });
     window.location.reload();
   }
