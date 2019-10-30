@@ -233,13 +233,17 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     ...opts, // use any provided opts by default
   });
 
+  logger.debug("Registering subscriptions");
   await client.registerSubscriptions();
 
+  logger.debug("Reclaiming pending async transfers");
   await client.reclaimPendingAsyncTransfers();
 
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
+  logger.debug("Resubmitting active withdrawals");
   await client.resubmitActiveWithdrawal();
 
+  logger.debug("Done creating channel client");
   return client;
 }
 
@@ -694,9 +698,9 @@ export class ConnextInternal extends ConnextChannel {
     // TODO: this should prob not be hardcoded like this
     const actualStates = states.map((state: { path: string; value: object }) => {
       return {
-        path: state.path
+        path: `store${state.path
           .replace(this.nodePublicIdentifier, xpub)
-          .replace(ConnextNodeStorePrefix, "store"),
+          .substring(state.path.indexOf("/"))}`,
         value: state.value[state.path],
       };
     });
@@ -1086,7 +1090,7 @@ export class ConnextInternal extends ConnextChannel {
     const withdrawal = await this.channelRouter.get(withdrawalKey(this.publicIdentifier));
 
     if (!withdrawal || withdrawal === "undefined") {
-      // no active withdrawal, nothing to do
+      // No active withdrawal, nothing to do
       return;
     }
 
