@@ -1,6 +1,6 @@
 {
 	"name": "@connext/indra",
-	"version": "2.1.7",
+	"version": "2.1.8",
 	"description": "",
 	"repository": {
 		"type": "git",
@@ -15,12 +15,12 @@
 	"devDependencies": {
 		"@counterfactual/cf-adjudicator-contracts": "0.0.9",
 		"@counterfactual/cf-funding-protocol-contracts": "0.0.12",
-		"@counterfactual/types": "0.0.44",
+		"@counterfactual/types": "0.0.45",
 		"chai-bn": "0.2.0",
-		"cypress": "3.4.1",
+		"cypress": "3.5.0",
 		"ethers": "4.0.37",
 		"ganache-cli": "6.7.0",
-		"lerna": "3.18.1",
+		"lerna": "3.18.3",
 		"openzeppelin-solidity": "2.3.0",
 		"solc": "0.5.12",
 		"tslint": "5.20.0",

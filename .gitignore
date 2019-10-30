@@ -59,6 +59,7 @@ modules/**/.circleci
 
 # Local packages
 counterfactual
+walletconnect
 walletconnect-monorepo
 walletconnect
 

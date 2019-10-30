@@ -257,7 +257,7 @@ async function run(): Promise<void> {
   }
 
   exitOrLeaveOpen(config);
-  console.log(`Waiting to receive transfers at ${client.opts.cfCore.publicIdentifier}`);
+  console.log(`Waiting to receive transfers at ${client.publicIdentifier}`);
 }
 
 async function getOrCreateChannel(assetId?: string): Promise<void> {
