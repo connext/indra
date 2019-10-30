@@ -24,13 +24,13 @@ my.xpubRegex = /^xpub[a-zA-Z0-9]{107}/i
 my.isStarting = () => cy.contains('span', /starting/i).should('exist')
 my.doneStarting = () => cy.contains('span', /starting/i).should('not.exist')
 
-my.goToDeposit = () => cy.get(`a[href="/deposit"]`).click()
-my.goToSettings = () => cy.get(`a[href="/settings"]`).click()
-my.goToRequest = () => cy.get(`a[href="/request"]`).click()
-my.goToSend = () => cy.get(`a[href="/send"]`).click()
-my.goToCashout = () => cy.get(`a[href="/cashout"]`).click()
-my.goHome = () => cy.contains('button', /^home$/i).click()
-my.goBack = () => cy.contains('button', /^back$/i).click()
+my.goToDeposit = () => cy.get(`a#goToDepositButton`).click()
+my.goToSettings = () => cy.get(`a#goToSettingsButton`).click()
+my.goToRequest = () => cy.get(`a#goToRequestButton`).click()
+my.goToSend = () => cy.get(`a#goToSendButton`).click()
+my.goToCashout = () => cy.get(`a#goToCashoutButton`).click()
+my.goHome = () => cy.get('a#goToHomeButton').click()
+
 my.goNextIntro = () => cy.contains('button', /^next$/i).click()
 my.goCloseIntro = () => cy.contains('button', /^got it!$/i).click()
 
@@ -49,6 +49,7 @@ my.burnCard = () => {
   cy.contains('button', /burn card/i).click()
   cy.contains('button', /burn$/i).click()
   cy.reload()
+  my.goHome()
   my.isStarting()
   my.doneStarting()
 }
@@ -58,15 +59,15 @@ my.restoreMnemonic = (mnemonic) => {
   cy.contains('button', /import/i).click()
   cy.get('input[type="text"]').clear().type(mnemonic)
   cy.get('button').find('svg').click()
-  my.goBack()
+  my.goHome()
   my.isStarting()
   my.doneStarting()
 }
 
 my.pay = (to, value) => {
+  cy.get('input[type="text"]').clear().type(to)
+  cy.get('input[type="numeric"]').clear().type(value)
   my.goToSend()
-  cy.get('input[type="string"]').clear().type(to)
-  cy.get('input[type="number"]').clear().type(value)
   cy.contains('button', /send/i).click()
   cy.contains('h5', /payment success/i).should('exist')
 }
@@ -78,7 +79,7 @@ my.cashoutEther = () => {
   cy.contains('button', /cash out eth/i).click()
   cy.contains('span', /processing withdrawal/i).should('exist')
   cy.contains('span', /withdraw succeeded/i).should('exist')
-  my.goBack()
+  my.goHome()
   cy.resolve(my.getChannelTokenBalance).should('contain', '0.00')
 }
 
@@ -89,7 +90,7 @@ my.cashoutToken = () => {
   cy.contains('button', /cash out dai/i).click()
   cy.contains('span', /processing withdrawal/i).should('exist')
   cy.contains('span', /withdraw succeeded/i).should('exist')
-  my.goBack()
+  my.goHome()
   cy.resolve(my.getChannelTokenBalance).should('contain', '0.00')
 }
 
@@ -109,7 +110,7 @@ my.getAddress = () => {
     my.goToDeposit()
     cy.contains('button', my.addressRegex).invoke('text').then(address => {
       cy.log(`Got address: ${address}`)
-      my.goBack()
+      my.goHome()
       resolve(address)
     })
   }))
@@ -123,22 +124,24 @@ my.getMnemonic = () => {
     cy.contains('button', my.mnemonicRegex).should('exist')
     cy.contains('button', my.mnemonicRegex).invoke('text').then(mnemonic => {
       cy.log(`Got mnemonic: ${mnemonic}`)
-      my.goBack()
+      my.goHome()
       resolve(mnemonic)
     })
   }))
 }
 
+/* Can't do this currently
 my.getXpub = () => {
   return cy.wrap(new Cypress.Promise((resolve, reject) => {
     my.goToRequest()
     cy.contains('button', my.xpubRegex).invoke('text').then(xpub => {
       cy.log(`Got xpub: ${xpub}`)
-      my.goBack()
+      my.goHome()
       resolve(xpub)
     })
   }))
 }
+*/
 
 my.getAccount = () => {
   return cy.wrap(new Cypress.Promise((resolve, reject) => {
@@ -168,20 +171,11 @@ my.getOnchainTokenBalance = () => {
   }))
 }
 
-my.getChannelEtherBalance = () => {
-  return cy.wrap(new Cypress.Promise((resolve, reject) => {
-    cy.get('span#balance-channel-ether').invoke('text').then(balance => {
-      cy.log(`Got ether balance: ${balance}`)
-      resolve(balance.substring(1))
-    })
-  }))
-}
-
 my.getChannelTokenBalance = () => {
   return cy.wrap(new Cypress.Promise((resolve, reject) => {
     cy.get('span#balance-channel-token').invoke('text').then(balance => {
       cy.log(`Got token balance: ${balance}`)
-      resolve(balance.substring(1))
+      resolve(balance)
     })
   }))
 }
@@ -236,8 +230,8 @@ my.depositToken = (value) => {
 
 my.linkPay = (value) => {
   return cy.wrap(new Cypress.Promise((resolve, reject) => {
+    cy.get('input[type="numeric"]').clear().type(value)
     my.goToSend()
-    cy.get('input[type="number"]').clear().type(value)
     cy.contains('button', /link/i).click()
     cy.contains('button', origin).invoke('text').then(redeemLink => {
       cy.contains('button', /home/i).click()

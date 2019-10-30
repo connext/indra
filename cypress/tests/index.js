@@ -44,15 +44,19 @@ describe('Daicard', () => {
 
     it(`Should display feedback if input is invalid`, () => {
       my.deposit(depositEth).then(tokensDeposited => {
-        my.goToSend()
         // No zero payments
-        cy.get('input[type="number"]').clear().type('0')
+        cy.get('input[type="numeric"]').clear().type('0')
+        my.goToSend()
         cy.contains('p', /greater than 0/i).should('exist')
+        my.goHome()
         // No payments greater than the card's balance
-        cy.get('input[type="number"]').clear().type('1' + tokensDeposited)
+        cy.get('input[type="numeric"]').clear().type('1' + tokensDeposited)
+        my.goToSend()
         cy.contains('p', /less than your balance/i).should('exist')
+        my.goHome()
         // No invalid xpub addresses
-        cy.get('input[type="string"]').clear().type('0xabc123')
+        cy.get('input[type="text"]').clear().type('0xabc123')
+        my.goToSend()
         cy.contains('p', /invalid recipient/i).should('exist')
       })
     })
@@ -67,16 +71,13 @@ describe('Daicard', () => {
 
   describe('Request', () => {
     it(`Should properly populate the send page when opening a request link`, () => {
-      my.getXpub().then(xpub => {
-        my.goToRequest()
-        cy.get('input[type="number"]').clear().type(payTokens)
-        cy.contains('button', `recipient=${xpub}`).should('exist')
-        cy.contains('button', `amount=${payTokens}`).invoke('text').then(requestLink => {
-          my.burnCard()
-          cy.visit(requestLink)
-          cy.get(`input[value="${payTokens}"]`).should('exist')
-          cy.get(`input[value="${xpub}"]`).should('exist')
-        })
+      // TODO: check xpub too (need to have xpub availabe somewhere to do this)
+      my.goToRequest()
+      cy.get('input[type="numeric"]').clear().type(payTokens)
+      cy.contains('button', `amount=${payTokens}`).invoke('text').then(requestLink => {
+        my.burnCard()
+        cy.visit(requestLink)
+        cy.get(`input[value="${payTokens}"]`).should('exist')
       })
     })
   })
