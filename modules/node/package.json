@@ -20,8 +20,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
-    "@connext/messaging": "0.2.4",
-    "@connext/types": "0.2.4",
+    "@connext/messaging": "0.3.0",
+    "@connext/types": "0.3.0",
     "@counterfactual/node": "0.2.82",
     "@counterfactual/types": "0.0.45",
     "@nestjs/common": "6.5.3",
