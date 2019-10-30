@@ -6,13 +6,14 @@ import { CopyToClipboard } from "react-copy-to-clipboard";
 import { MySnackbar } from "./snackBar";
 
 const style = {
+  button: {
+    justifyContent: "center",
+    textTransform: "none",
+  },
   top: {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-  },
-  button: {
-    justifyContent: "center",
   },
 };
 

@@ -8,7 +8,7 @@ import {
   Settings as SettingIcon,
   Person as ProfileIcon,
   ArrowForward,
-  ArrowBack,
+  Home,
 } from "@material-ui/icons";
 import React from "react";
 import { Link } from "react-router-dom";
@@ -50,56 +50,32 @@ const AppBarComponent = props => {
     <AppBar position="sticky" color="inherit" elevation={0} className={classes.top}>
       <Grid container className={classes.containerTop}>
         <Grid item xs={3}>
-          {currentRoute === "/" ? (
-            <IconButton
-              disableTouchRipple
-              color="inherit"
-              variant="contained"
-              component={Link}
-              to="/deposit"
-            >
-              <ProfileIcon fontSize="large" className={classes.icon} />
-            </IconButton>
-          ) : (
-            <IconButton
-              className={currentRoute === "/deposit" ? classes.buttonHidden : classes.button}
-              disableTouchRipple
-              color="inherit"
-              variant="contained"
-              component={Link}
-              to="/"
-            >
-              <ArrowBack className={classes.icon} />
-            </IconButton>
-          )}
+          <IconButton
+            id="HomeButton"
+            className={classes.button}
+            disableTouchRipple
+            color="inherit"
+            variant="contained"
+            component={Link}
+            to="/"
+          >
+            <Home className={classes.icon} />
+          </IconButton>
         </Grid>
         <Grid item xs={6}>
           <ChannelCard network={props.network} balance={props.balance} swapRate={props.swapRate} />
         </Grid>
         <Grid item xs={3}>
-          {currentRoute === "/deposit" ? (
-            <IconButton
-              className={classes.button}
-              disableTouchRipple
-              variant="contained"
-              color="inherit"
-              component={Link}
-              to="/"
-            >
-              <ArrowForward className={classes.icon} />
-            </IconButton>
-          ) : (
-            <IconButton
-              className={currentRoute === "/" ? classes.button : classes.buttonHidden}
-              disableTouchRipple
-              color="inherit"
-              variant="contained"
-              component={Link}
-              to="/settings"
-            >
-              <SettingIcon className={classes.icon} />
-            </IconButton>
-          )}
+          <IconButton
+            className={classes.button}
+            disableTouchRipple
+            color="inherit"
+            variant="contained"
+            component={Link}
+            to="/settings"
+          >
+            <SettingIcon className={classes.icon} />
+          </IconButton>
         </Grid>
       </Grid>
     </AppBar>
