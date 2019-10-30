@@ -212,26 +212,36 @@ function Home(props) {
         <Grid className={classes.buttonSpacer} />
         <Grid container directiom="row" className={classes.requestSendWrapper}>
           <Button
+            id="goToRequestButton"
             className={classes.button}
             disableTouchRipple
             color="primary"
             variant="contained"
             size="large"
             component={Link}
-            to={`/request/${amount.display}`}
+            to={`/request${amount.display ? `?amount=${amount.display}` : ''}`}
           >
             Request
             <ReceiveIcon className={classes.buttonIcon} />
           </Button>
           <Grid className={classes.buttonSpacer} />
           <Button
+            id="goToSendButton"
             className={classes.button}
             disableTouchRipple
             color="primary"
             size="large"
             variant="contained"
             component={Link}
-            to={`/send/${amount.display}/${recipient.display}`}
+            to={`/send${
+              amount.display || recipient.display ? '?' : ''
+            }${
+              amount.display ? `amount=${amount.display}` : ''
+            }${
+              amount.display && recipient.display ? '&' : ''
+            }${
+              recipient.display ? `recipient=${recipient.display}` : ''
+            }`}
           >
             Send
             <SendIcon className={classes.buttonIcon} />
@@ -239,6 +249,7 @@ function Home(props) {
         </Grid>
         <Grid className={classes.buttonSpacer} />
         <Button
+          id="goToDepositButton"
           className={classes.buttonOutlined}
           disableTouchRipple
           fullWidth
@@ -252,6 +263,7 @@ function Home(props) {
         </Button>
         <Grid className={classes.buttonSpacer} />
         <Button
+          id="goToCashoutButton"
           className={classes.buttonOutlined}
           disableTouchRipple
           fullWidth

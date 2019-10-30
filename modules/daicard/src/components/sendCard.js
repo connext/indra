@@ -145,6 +145,11 @@ const SendCard = props => {
   });
   const [scan, setScan] = useState(false);
 
+  useEffect(() => {
+    amount.display && updateAmountHandler(amount.display);
+    recipient.display && updateRecipientHandler(recipient.display);
+  }, [])
+
   // need to extract token balance so it can be used as a dependency for the hook properly
 
   const tokenBalance = balance.channel.token.wad;

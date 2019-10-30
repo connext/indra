@@ -51,7 +51,7 @@ const AppBarComponent = props => {
       <Grid container className={classes.containerTop}>
         <Grid item xs={3}>
           <IconButton
-            id="HomeButton"
+            id="goToHomeButton"
             className={classes.button}
             disableTouchRipple
             color="inherit"
@@ -67,6 +67,7 @@ const AppBarComponent = props => {
         </Grid>
         <Grid item xs={3}>
           <IconButton
+            id="goToSettingsButton"
             className={classes.button}
             disableTouchRipple
             color="inherit"

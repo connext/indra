@@ -247,7 +247,7 @@ const CashoutCard = props => {
           disableTouchRipple
           size="large"
           variant="contained"
-          disabled={true}
+          disabled={!recipient.value}
           color="primary"
           onClick={cashoutTokens}
         >
