@@ -200,7 +200,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   if (!myChannel) {
     logger.info("no channel detected, creating channel..");
     const creationEventData: CFCoreTypes.CreateChannelResult = await new Promise(
-      (res: any, rej: any): Promise<any> => {
+      async (res: any, rej: any): Promise<any> => {
         const timer = setTimeout(() => rej("Create channel event not fired within 30s"), 30000);
         channelRouter.once(CFCoreTypes.EventName.CREATE_CHANNEL, (data: CreateChannelMessage) => {
           clearTimeout(timer);
