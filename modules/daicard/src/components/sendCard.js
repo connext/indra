@@ -316,7 +316,7 @@ const SendCard = props => {
         )}
       </FormControl>
 
-      <FormControl item xs={12} className={classes.xpubWrapper}>
+      <FormControl xs={12} className={classes.xpubWrapper}>
         <InputBase
           fullWidth
           className={classes.xpubInput}

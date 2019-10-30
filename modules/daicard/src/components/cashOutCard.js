@@ -199,7 +199,7 @@ const CashoutCard = props => {
           <span>{"Current ETH price: $" + swapRate}</span>
         </Typography>
       </Grid>
-      <FormControl item xs={12} className={classes.xpubWrapper}>
+      <FormControl xs={12} className={classes.xpubWrapper}>
         <InputBase
           fullWidth
           className={classes.xpubInput}

@@ -673,11 +673,12 @@ class App extends React.Component {
             />
             <SetupCard minDeposit={minDeposit} maxDeposit={maxDeposit} />
 
+            {/* Route render props: ["history", "location", "match", "staticContext"] */}
             <Route
               exact
               path="/"
               render={props => (
-                <Grid {...props} className={classes.homeGrid}>
+                <Grid  className={classes.homeGrid}>
                   <AppBarComponent
                     {...props}
                     address={channelSignerOrZero()}
@@ -699,7 +700,7 @@ class App extends React.Component {
             <Route
               path="/deposit"
               render={props => (
-                <Grid {...props} className={classes.homeGrid}>
+                <Grid className={classes.homeGrid}>
                   <AppBarComponent
                     {...props}
                     address={channelSignerOrZero()}
@@ -719,7 +720,7 @@ class App extends React.Component {
             <Route
               path="/settings"
               render={props => (
-                <Grid {...props} className={classes.homeGrid}>
+                <Grid className={classes.homeGrid}>
                   <AppBarComponent
                     {...props}
                     address={channelSignerOrZero()}
@@ -734,7 +735,7 @@ class App extends React.Component {
             <Route
               path="/request/:amount?"
               render={props => (
-                <Grid {...props} className={classes.homeGrid}>
+                <Grid className={classes.homeGrid}>
                   <AppBarComponent
                     {...props}
                     address={channelSignerOrZero()}
@@ -749,7 +750,7 @@ class App extends React.Component {
             <Route
               path="/send/:amount?/:recipient?"
               render={props => (
-                <Grid {...props} className={classes.homeGrid}>
+                <Grid className={classes.homeGrid}>
                   <AppBarComponent
                     {...props}
                     address={channelSignerOrZero()}
@@ -770,7 +771,7 @@ class App extends React.Component {
             <Route
               path="/redeem"
               render={props => (
-                <Grid {...props} className={classes.homeGrid}>
+                <Grid className={classes.homeGrid}>
                   <AppBarComponent
                     {...props}
                     address={channelSignerOrZero()}
@@ -785,7 +786,7 @@ class App extends React.Component {
             <Route
               path="/cashout"
               render={props => (
-                <Grid {...props} className={classes.homeGrid}>
+                <Grid className={classes.homeGrid}>
                   <AppBarComponent
                     {...props}
                     address={channelSignerOrZero()}
@@ -808,7 +809,7 @@ class App extends React.Component {
             <Route
               path="/support"
               render={props => (
-                <Grid {...props} className={classes.homeGrid}>
+                <Grid className={classes.homeGrid}>
                   <AppBarComponent
                     {...props}
                     address={channelSignerOrZero()}
