@@ -148,7 +148,7 @@ class App extends React.Component {
     if (useWalletConnext) {
       localStorage.setItem("useWalletConnext", true);
     } else {
-      localStorage.removeItem("useWalletConnext");
+      localStorage.setItem("useWalletConnext", false);
     }
     this.setState({ useWalletConnext });
     window.location.reload();
@@ -199,11 +199,13 @@ class App extends React.Component {
     if (!useWalletConnext) {
       // If no mnemonic, use the one we created pre-migration
       let store;
-      if (urls.pisaUrl(network.chainId)) {
+      const pisaUrl = urls.pisaUrl(network.chainId);
+      if (pisaUrl) {
+        console.log(`Using external state backup service: ${pisaUrl}`);
         store = storeFactory({
           wallet,
           pisaClient: new PisaClient(
-            urls.pisaUrl(network.chainId),
+            pisaUrl,
             "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3", // TODO: Don't hardcode
           ),
         });
@@ -225,7 +227,7 @@ class App extends React.Component {
         rpc,
         chainId: network.chainId,
       });
-      console.log("GOT CHANNEL PROVIDER:", JSON.stringify(channelProvider, null, 2));
+      console.log(`Using WalletConnect with provider: ${JSON.stringify(channelProvider, null, 2)}`);
       // register channel provider listener for logging
       channelProvider.on("error", data => {
         console.error(`Channel provider error: ${JSON.stringify(data, null, 2)}`);
