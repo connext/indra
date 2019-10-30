@@ -148,6 +148,9 @@ const SendCard = props => {
   useEffect(() => {
     amount.display && updateAmountHandler(amount.display);
     recipient.display && updateRecipientHandler(recipient.display);
+  // Only need to run this on first render to deal w query string values
+  // onChange handlers take care of this afterwards so we don't need this function to
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // need to extract token balance so it can be used as a dependency for the hook properly

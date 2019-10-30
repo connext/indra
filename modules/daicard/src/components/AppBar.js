@@ -6,8 +6,6 @@ import {
 } from "@material-ui/core";
 import {
   Settings as SettingIcon,
-  Person as ProfileIcon,
-  ArrowForward,
   Home,
 } from "@material-ui/icons";
 import React from "react";
@@ -45,7 +43,6 @@ const styles = {
 
 const AppBarComponent = props => {
   const { classes } = props;
-  const currentRoute = window.location.pathname;
   return (
     <AppBar position="sticky" color="inherit" elevation={0} className={classes.top}>
       <Grid container className={classes.containerTop}>

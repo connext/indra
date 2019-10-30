@@ -149,7 +149,7 @@ const SettingsCard = props => {
             Show Backup Phrase
           </Button>
         ) : (
-          <Copyable color="#002868" size="large" text={localStorage.getItem("mnemonic")} />
+          <Copyable color="inherit" size="large" text={localStorage.getItem("mnemonic")} />
         )}
       </Grid>
 
