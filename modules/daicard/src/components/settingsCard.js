@@ -49,8 +49,8 @@ export const SettingsCard = style(props => {
   const [showRecovery, setShowRecovery] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
-  const useWalletConnext = localStorage.getItem("useWalletConnext");
-  const { classes, setWalletConnext } = props;
+  const { classes, setWalletConnext, getWalletConnext } = props;
+  const useWalletConnext = getWalletConnext()
 
   const generateNewAddress = () => {
     // TODO: withdraw channel balance first? Decollateralize?
