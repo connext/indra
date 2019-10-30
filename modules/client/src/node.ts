@@ -317,7 +317,6 @@ export class NodeApiClient implements INodeApiClient {
       payload.token = await this.token;
     }
     let msg = await this.messaging.request(subject, API_TIMEOUT, payload);
-    // console.log(`Got msg: ${JSON.stringify(msg, replaceBN, 2)}`);
     let error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     if (error && error.startsWith("Invalid token")) {
       this.log.warn(`Auth error, token might have expired. Let's get a fresh token & try again.`);

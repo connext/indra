@@ -243,11 +243,11 @@ class App extends React.Component {
         logLevel: 5,
         channelProvider,
       });
-      console.log(`successfully connected channel`);
     } else {
       console.error("Could not create channel.");
       return;
     }
+    console.log(`Successfully connected channel`);
 
     // Wait for channel to be available
     const channelIsAvailable = async channel => {
@@ -270,14 +270,12 @@ class App extends React.Component {
       await channel.getFreeBalance();
       await channel.getFreeBalance(token.address);
     } catch (e) {
+      console.warn(e);
       if (e.message.includes(`This probably means that the StateChannel does not exist yet`)) {
-        // channel.connext was already called, meaning there should be
-        // an existing channel
+        // channel.connect() was already called, meaning there should be an existing channel
         await channel.restoreState(localStorage.getItem("mnemonic"));
-        return;
       }
-      console.error(e);
-      return;
+      throw e;
     }
 
     console.log(`Client created successfully!`);
