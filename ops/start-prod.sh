@@ -16,7 +16,7 @@ INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl cer
 INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER}"
 INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
 INDRA_MODE="${INDRA_MODE:-staging}" # set to "prod" to use versioned docker images
-HASURA_ADMIN_SECRET="${HASURA_ADMIN_SECRET}"
+HASURA_ADMIN_SECRET="${HASURA_ADMIN_SECRET:-supersecret}"
 
 ####################
 # Internal Config
@@ -190,6 +190,7 @@ services:
       DOMAINNAME: $INDRA_DOMAINNAME
       EMAIL: $INDRA_EMAIL
       ETH_RPC_URL: $INDRA_ETH_PROVIDER
+      HASURA_URL: http://hasura:8080
       MESSAGING_URL: http://relay:4223
       MODE: prod
     logging:
@@ -239,9 +240,9 @@ services:
       AWS_ACCESS_KEY_ID: $INDRA_AWS_ACCESS_KEY_ID
       AWS_SECRET_ACCESS_KEY: $INDRA_AWS_SECRET_ACCESS_KEY
       ETH_NETWORK: $eth_network_name
-      POSTGRES_DB: $project
+      POSTGRES_DB: $pg_db
       POSTGRES_PASSWORD_FILE: $pg_password_file
-      POSTGRES_USER: $project
+      POSTGRES_USER: $pg_user
     secrets:
       - $db_secret
     volumes:
@@ -277,18 +278,13 @@ services:
       HASURA_GRAPHQL_ENABLE_ALLOWLIST: "true"
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
       HASURA_GRAPHQL_ENABLED_APIS: "graphql,metadata"
-      PG_DB: $project
+      PG_DB: $pg_db
       PG_HOST: $pg_host
       PG_PASSWORD_FILE: $pg_password_file
       PG_PORT: $pg_port
-      PG_USER: $project
-
-    networks:
-      - $project
-    ports:
-      - "8083:8080"
+      PG_USER: $pg_user
     secrets:
-      - `pwd`/modules/database/snapshots:/root/snapshots
+      - $db_secret
 
   logdna:
     image: logdna/logspout:latest
