@@ -138,6 +138,7 @@ class App extends React.Component {
     this.autoSwap.bind(this);
     this.scanQRCode.bind(this);
     this.setWalletConnext.bind(this);
+    this.getWalletConnext.bind(this);
   }
 
   // ************************************************* //
@@ -153,6 +154,12 @@ class App extends React.Component {
     this.setState({ useWalletConnext });
     window.location.reload();
   };
+
+  // converts string value in localStorage to boolean
+  getWalletConnext = () => {
+    const wc = localStorage.getItem("useWalletConnext");
+    return wc === "true";
+  }
 
   // Channel doesn't get set up until after provider is set
   async componentDidMount() {
@@ -171,7 +178,7 @@ class App extends React.Component {
 
     // If no mnemonic, create one and save to local storage
     let mnemonic = localStorage.getItem("mnemonic");
-    const useWalletConnext = localStorage.getItem("useWalletConnext") || false;
+    const useWalletConnext = this.getWalletConnext() || false;
     console.debug("useWalletConnext: ", useWalletConnext);
     if (!mnemonic && !useWalletConnext) {
       mnemonic = eth.Wallet.createRandom().mnemonic;
@@ -692,6 +699,7 @@ class App extends React.Component {
                   {...props}
                   channel={channel}
                   setWalletConnext={this.setWalletConnext}
+                  getWalletConnext={this.getWalletConnext}
                 />
               )}
             />
