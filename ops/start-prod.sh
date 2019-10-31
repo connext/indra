@@ -16,7 +16,7 @@ INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl cer
 INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER}"
 INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
 INDRA_MODE="${INDRA_MODE:-staging}" # set to "prod" to use versioned docker images
-INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-cxt1234$}" # pass this in through CI
+INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-cxt1234}" # pass this in through CI
 
 ####################
 # Internal Config
