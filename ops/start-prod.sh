@@ -16,6 +16,7 @@ INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl cer
 INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER}"
 INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
 INDRA_MODE="${INDRA_MODE:-staging}" # set to "prod" to use versioned docker images
+INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-foo}"
 
 ####################
 # Internal Config
@@ -213,6 +214,7 @@ services:
       INDRA_PORT: $node_port
       INDRA_REDIS_URL: $redis_url
       NODE_ENV: production
+      INDRA_ADMIN_TOKEN: $INDRA_ADMIN_TOKEN
     logging:
       driver: "json-file"
       options:
