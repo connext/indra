@@ -30,7 +30,7 @@ class AdminMessaging extends AbstractMessagingProvider {
    * This method will return the userXpub and the multisig address for all
    * channels that fit this description.
    */
-  async getNoFreeBalance(): Promise<{ multisigAddress: string; userXpub: string }[]> {
+  async getNoFreeBalance(): Promise<{ multisigAddress: string; userXpub: string; error: any }[]> {
     return await this.adminService.getNoFreeBalance();
   }
 

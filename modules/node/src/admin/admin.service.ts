@@ -27,34 +27,23 @@ export class AdminService {
    * This method will return the userXpub and the multisig address for all
    * channels that fit this description.
    */
-  async getNoFreeBalance(): Promise<{ multisigAddress: string; userXpub: string }[]> {
+  async getNoFreeBalance(): Promise<{ multisigAddress: string; userXpub: string; error: any }[]> {
     // get all available channels, meaning theyre deployed
     const channels = await this.channelService.findAll(true);
     const corrupted = [];
     for (const channel of channels) {
       // try to get the free balance of eth
-      // note: this is brittle, could check the state channel obj
-      // key itself
       try {
         await this.cfCoreService.getFreeBalance(
           channel.userPublicIdentifier,
           channel.multisigAddress,
         );
-      } catch (e) {
-        const errorMsg = `There is no free balance app instance installed in this state channel`;
-        if (e.message.includes(errorMsg)) {
-          corrupted.push({
-            multisigAddress: channel.multisigAddress,
-            userXpub: channel.userPublicIdentifier,
-          });
-        } else {
-          logger.warn(
-            `Caught unexpected error trying to get free balance of channel: ${stringify(
-              channel,
-              2,
-            )}. Error: ${stringify(e, 2)}`,
-          );
-        }
+      } catch (error) {
+        corrupted.push({
+          error,
+          multisigAddress: channel.multisigAddress,
+          userXpub: channel.userPublicIdentifier,
+        });
       }
     }
     return corrupted;
