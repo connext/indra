@@ -43,6 +43,9 @@ export const cfCoreProviderFactory: Provider = {
     if (!isLatestCfStoreVersion(storeRecord)) {
       logger.log(`Upgrading store to latest version ${LATEST_CF_STORE_VERSION}...`);
       await migrateToPatch1(store, `${ConnextNodeStorePrefix}/${publicExtendedKey}`);
+
+      // delete old records
+      await store.deleteLegacyCFCoreRecords();
       logger.log(`Upgraded to latest store version!`);
     } else {
       logger.log(`Detected latest store version ${LATEST_CF_STORE_VERSION}, will not migrate`);

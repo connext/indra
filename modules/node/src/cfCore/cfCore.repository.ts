@@ -70,4 +70,11 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
   async getLegacyCFCoreRecord(multisigAddress: string): Promise<CFCoreRecord> {
     return await this.findOneOrFail({ path: Like(`%${multisigAddress}`) });
   }
+
+  async deleteLegacyCFCoreRecords(): Promise<CFCoreRecord[] | void> {
+    const legacyRecords = await this.find({ path: Like(`%channel%`) });
+    console.log("would have deleted these: ", legacyRecords);
+    return;
+    // return await this.remove(legacyRecords);
+  }
 }
