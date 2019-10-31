@@ -1,6 +1,6 @@
 {
 	"name": "@connext/indra",
-	"version": "2.1.9",
+	"version": "2.1.11",
 	"description": "",
 	"repository": {
 		"type": "git",
@@ -15,7 +15,7 @@
 	"devDependencies": {
 		"@counterfactual/cf-adjudicator-contracts": "0.0.9",
 		"@counterfactual/cf-funding-protocol-contracts": "0.0.12",
-		"@counterfactual/types": "0.0.45",
+		"@counterfactual/types": "0.0.44",
 		"chai-bn": "0.2.0",
 		"cypress": "3.5.0",
 		"ethers": "4.0.37",
