@@ -31,6 +31,14 @@ export class ChannelService {
   ) {}
 
   /**
+   * Returns all channel records.
+   * @param available available value of channel
+   */
+  async findAll(available?: boolean): Promise<Channel[]> {
+    return await this.channelRepository.findAll(available);
+  }
+
+  /**
    * Starts create channel process within CF core
    * @param counterpartyPublicIdentifier
    */
