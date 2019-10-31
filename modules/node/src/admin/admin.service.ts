@@ -33,16 +33,15 @@ export class AdminService {
     const corrupted = [];
     for (const channel of channels) {
       // try to get the free balance of eth
+      const { id, multisigAddress, userPublicIdentifier: userXpub } = channel;
       try {
-        await this.cfCoreService.getFreeBalance(
-          channel.userPublicIdentifier,
-          channel.multisigAddress,
-        );
+        await this.cfCoreService.getFreeBalance(userXpub, multisigAddress);
       } catch (error) {
         corrupted.push({
           error: error.message,
-          multisigAddress: channel.multisigAddress,
-          userXpub: channel.userPublicIdentifier,
+          id,
+          multisigAddress,
+          userXpub,
         });
       }
     }
