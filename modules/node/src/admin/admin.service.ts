@@ -40,7 +40,7 @@ export class AdminService {
         );
       } catch (error) {
         corrupted.push({
-          error,
+          error: error.message,
           multisigAddress: channel.multisigAddress,
           userXpub: channel.userPublicIdentifier,
         });
