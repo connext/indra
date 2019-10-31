@@ -79,6 +79,18 @@ export class AuthService {
     };
   }
 
+  useAdminToken(callback: any): any {
+    // get token from subject
+    return async (subject: string, data: { token: string }): Promise<string> => {
+      // verify token is admin token
+      const { token } = data;
+      if (token !== process.env.INDRA_ADMIN_TOKEN) {
+        return badToken(`Unrecognized admin token: ${token}.`);
+      }
+      return callback(data);
+    };
+  }
+
   useUnverifiedPublicIdentifier(callback: any): any {
     return async (subject: string, data: { token: string }): Promise<string> => {
       // Get & validate xpub from subject
