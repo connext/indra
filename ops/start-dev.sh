@@ -10,6 +10,7 @@ docker swarm init 2> /dev/null || true
 # External Env Vars
 
 ETH_NETWORK="${1:-kovan}"
+INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-foo}"
 
 ####################
 # Internal Config
@@ -135,6 +136,7 @@ services:
     image: $node_image
     entrypoint: bash modules/node/ops/entry.sh
     environment:
+      INDRA_ADMIN_TOKEN: $INDRA_ADMIN_TOKEN
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC: $eth_mnemonic
       INDRA_ETH_RPC_URL: $eth_rpc_url
