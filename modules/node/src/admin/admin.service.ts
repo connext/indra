@@ -41,7 +41,8 @@ export class AdminService {
           channel.multisigAddress,
         );
       } catch (e) {
-        if (e.includes(`There is no free balance app instance installed in this state channel`)) {
+        const errorMsg = `There is no free balance app instance installed in this state channel`;
+        if (e.message.includes(errorMsg)) {
           corrupted.push({
             multisigAddress: channel.multisigAddress,
             userXpub: channel.userPublicIdentifier,
