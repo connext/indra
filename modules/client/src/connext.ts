@@ -99,12 +99,12 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     };
   }
 
-  // set provider config
-  let providerConfig: ChannelProviderConfig;
+  // set channel provider config
+  let channelProviderConfig: ChannelProviderConfig;
   if (channelProvider) {
     // enable the channel provider, which sets the config property
     await channelProvider.enable();
-    providerConfig = {
+    channelProviderConfig = {
       ...channelProvider.config,
       type: RpcType.ChannelProvider,
     };
@@ -114,7 +114,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     const xpriv = hdNode.extendedKey;
     const xpub = hdNode.derivePath(CF_PATH).neuter().extendedKey;
     await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }]);
-    providerConfig = {
+    channelProviderConfig = {
       freeBalanceAddress: freeBalanceAddressFromXpub(xpub),
       natsClusterId,
       natsToken,
@@ -127,14 +127,14 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     throw new Error(`Must provide a channel provider or mnemonic on startup.`);
   }
 
-  logger.info(`using provider config: ${JSON.stringify(providerConfig, null, 2)}`);
+  logger.info(`Using channel provider config: ${JSON.stringify(channelProviderConfig, null, 2)}`);
 
   logger.info(`Creating messaging service client (logLevel: ${logLevel})`);
   const messagingFactory = new MessagingServiceFactory({
-    clusterId: providerConfig.natsClusterId,
+    clusterId: channelProviderConfig.natsClusterId,
     logLevel,
-    messagingUrl: providerConfig.nodeUrl,
-    token: providerConfig.natsToken,
+    messagingUrl: channelProviderConfig.nodeUrl,
+    token: channelProviderConfig.natsToken,
   });
   const messaging = messagingFactory.createService("messaging");
   await messaging.connect();
@@ -162,9 +162,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   };
 
   let channelRouter: ChannelRouter;
-  switch (providerConfig.type) {
+  switch (channelProviderConfig.type) {
     case RpcType.ChannelProvider:
-      channelRouter = new ChannelRouter(channelProvider!, providerConfig);
+      channelRouter = new ChannelRouter(channelProvider!, channelProviderConfig);
       break;
 
     case RpcType.CounterfactualNode:
@@ -183,16 +183,16 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
       const wallet = Wallet.fromMnemonic(opts.mnemonic!, CF_PATH);
       logger.info("created cf module successfully");
       logger.info(`cf module signer address: ${signer}`);
-      channelRouter = new ChannelRouter(cfCore, providerConfig, store, wallet);
+      channelRouter = new ChannelRouter(cfCore, channelProviderConfig, store, wallet);
       break;
 
     default:
-      throw new Error(`Unrecognized provider type: ${providerConfig.type}`);
+      throw new Error(`Unrecognized channel provider type: ${channelProviderConfig.type}`);
   }
 
   // set pubids + channel router
   node.channelRouter = channelRouter;
-  node.userPublicIdentifier = providerConfig.userPublicIdentifier;
+  node.userPublicIdentifier = channelProviderConfig.userPublicIdentifier;
   node.nodePublicIdentifier = config.nodePublicIdentifier;
 
   const myChannel = await node.getChannel();
