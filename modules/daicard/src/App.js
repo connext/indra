@@ -88,6 +88,8 @@ const style = theme => ({
     },
     [theme.breakpoints.down(600)]: {
       "box-shadow": "0px 0px",
+      height:"100vh",
+      borderRadius:"0px"
     },
   },
   app: {
@@ -96,7 +98,7 @@ const style = theme => ({
     alignItems: "center",
     flexGrow: 1,
     fontFamily: ["proxima-nova", "sans-serif"],
-    backgroundColor: "#FFF",
+    backgroundColor: "#fff",
     width: "100%",
     margin: "0px",
   },

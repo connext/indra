@@ -36,7 +36,7 @@ const styles = {
   icon: {
     width: "40px",
     height: "40px",
-    color: "#002868",
+    color: "#fca311",
   },
   button: {
     backgroundColor: "#FCA311",
@@ -81,7 +81,7 @@ const styles = {
     fontSize: "45px",
   },
   QRbutton: {
-    color: "#002868",
+    color: "#fca311",
   },
   buttonSpacer: {
     height: "10px",
@@ -90,6 +90,9 @@ const styles = {
   cashoutWrapper: {
     justifyContent: "space-between",
   },
+  ethPrice:{
+    color:"#FCA311"
+  }
 };
 
 const CashoutCard = props => {
@@ -195,7 +198,7 @@ const CashoutCard = props => {
         </Grid>
       </Grid> */}
       <Grid item xs={12}>
-        <Typography variant="caption">
+        <Typography className={classes.ethPrice} variant="caption">
           <span>{"Current ETH price: $" + swapRate}</span>
         </Typography>
       </Grid>

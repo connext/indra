@@ -108,9 +108,9 @@ const RequestCard = props => {
           required
           className={classes.valueInput}
           classes={{input: classes.valueInputInner}}
-          onChange={evt => updateAmountHandler(evt.target.value)}
+          onChange={evt => updateAmountHandler(evt.target.value.replace("$",""))}
           type="numeric"
-          value={amount.display}
+          value={amount.display === "" ? null : "$"+amount.display}
           placeholder={"0.00"}
         />
         {amount.error && (
