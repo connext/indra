@@ -55,6 +55,7 @@ export const SettingsCard = style(props => {
   const generateNewAddress = async () => {
     setIsBurning(true);
     store && await store.reset(); // remove anything in the store related to the old channel
+    localStorage.removeItem("mnemonic", mnemonic);
     window.location.reload();
   };
 
