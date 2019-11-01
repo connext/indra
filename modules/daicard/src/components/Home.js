@@ -111,7 +111,7 @@ const styles = {
 
 function Home(props) {
   const [scanModal, setScanModal] = useState(false);
-  const [amount, setAmount] = useState({ display: "0.00", error: null, value: "" });
+  const [amount, setAmount] = useState({ display: "", error: null, value: "" });
   const [recipient, setRecipient] = useState({ display: "", error: null, value: null });
 
   const { classes, balance, channel, history } = props;
@@ -195,7 +195,7 @@ function Home(props) {
           error={amount.error !== null}
           onChange={evt => updateAmountHandler(evt.target.value.replace("$",""))}
           type="numeric"
-          value={"$"+amount.display}
+          value={amount.display === "" ? null : "$"+amount.display}
           placeholder={"$0.00"}
           // startAdornment={<Typography className={classes.startAdornment}>$</Typography>}
         />
