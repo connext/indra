@@ -580,6 +580,8 @@ export class ConnextInternal extends ConnextChannel {
       this,
     );
 
+    // TODO: channel shouldn't be available until freebalance app is installed
+    // How do we wait for that?
     this.isAvailable = new Promise(
       async (resolve: any, reject: any): Promise<any> => {
         // Wait for channel to be available
