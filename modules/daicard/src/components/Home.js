@@ -76,7 +76,6 @@ const styles = {
   valueInputInner: {
     textAlign: "center",
     margin: "auto",
-    marginLeft:"-10%"
   },
   valueInputWrapper: {
     marginTop: "15%",
@@ -112,7 +111,7 @@ const styles = {
 
 function Home(props) {
   const [scanModal, setScanModal] = useState(false);
-  const [amount, setAmount] = useState({ display: "", error: null, value: "" });
+  const [amount, setAmount] = useState({ display: "0.00", error: null, value: "" });
   const [recipient, setRecipient] = useState({ display: "", error: null, value: null });
 
   const { classes, balance, channel, history } = props;
@@ -194,11 +193,11 @@ function Home(props) {
           className={classes.valueInput}
           classes={{ input: classes.valueInputInner }}
           error={amount.error !== null}
-          onChange={evt => updateAmountHandler(evt.target.value)}
+          onChange={evt => updateAmountHandler(evt.target.value.replace("$",""))}
           type="numeric"
-          value={amount.display}
-          placeholder={"0.00"}
-          startAdornment={<Typography className={classes.startAdornment}>$</Typography>}
+          value={"$"+amount.display}
+          placeholder={"$0.00"}
+          // startAdornment={<Typography className={classes.startAdornment}>$</Typography>}
         />
 
         {amount.error && (
