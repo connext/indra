@@ -18,7 +18,7 @@ export const Home = style(({ balance, swapRate, channel, history }) => {
 
   const scanQRCode = async data => {
     setScanModal(false);
-    if (data.startsWith("wc:")) {
+    if (channel && data.startsWith("wc:")) {
       await initWalletConnect(data, channel);
     } else {
       history.push(data);
