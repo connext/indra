@@ -233,6 +233,17 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     ...opts, // use any provided opts by default
   });
 
+  // Try to restore missing channel state before dealing w async transfers, etc
+  try {
+    await client.getFreeBalance();
+  } catch (e) {
+    logger.warn(e);
+    if (mnemonic && e.message.includes(`StateChannel does not exist yet`)) {
+      await client.restoreState(mnemonic);
+    }
+    throw e;
+  }
+
   logger.debug("Registering subscriptions");
   await client.registerSubscriptions();
 
