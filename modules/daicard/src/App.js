@@ -186,16 +186,17 @@ class App extends React.Component {
     }
 
     let wallet;
+    const network = await ethprovider.getNetwork();
     if (!useWalletConnext) {
       wallet = eth.Wallet.fromMnemonic(mnemonic, "m/44'/60'/0'/25446").connect(ethprovider);
+      this.setState({ network, wallet });
     }
 
-    const network = await ethprovider.getNetwork();
     let channel;
     // migrate if needed
-    if (localStorage.getItem("rpc-prod")) {
+    if (wallet && localStorage.getItem("rpc-prod")) {
       machine.send(["MIGRATE", "START_MIGRATE"]);
-      await migrate(urls.legacyUrl(network.chainId), wallet, urls.ethProviderUrl, machine);
+      await migrate(urls.legacyUrl(network.chainId), wallet, urls.ethProviderUrl);
       localStorage.removeItem("rpc-prod");
     }
 
@@ -204,6 +205,7 @@ class App extends React.Component {
 
     // if choose mnemonic
     if (!useWalletConnext) {
+
       // If no mnemonic, use the one we created pre-migration
       let store;
       const pisaUrl = urls.pisaUrl(network.chainId);
@@ -265,18 +267,6 @@ class App extends React.Component {
     );
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
-    try {
-      await channel.getFreeBalance();
-      await channel.getFreeBalance(token.address);
-    } catch (e) {
-      console.warn(e);
-      if (e.message.includes(`This probably means that the StateChannel does not exist yet`)) {
-        // channel.connect() was already called, meaning there should be an existing channel
-        await channel.restoreState(localStorage.getItem("mnemonic"));
-      }
-      throw e;
-    }
-
     console.log(`Client created successfully!`);
     console.log(` - Public Identifier: ${channel.publicIdentifier}`);
     console.log(` - Account multisig address: ${channel.opts.multisigAddress}`);
@@ -311,19 +301,16 @@ class App extends React.Component {
       assetId: token.address,
     });
     console.log(`Set a default token profile: ${JSON.stringify(tokenProfile)}`);
-    machine.send("READY");
 
     this.setState({
       channel,
       useWalletConnext,
-      ethprovider,
-      network,
       swapRate,
       token,
       tokenProfile,
-      wallet,
     });
 
+    machine.send("READY");
     await this.startPoller();
   }
 
@@ -634,13 +621,15 @@ class App extends React.Component {
       network,
       sendScanArgs,
       token,
+      wallet,
     } = this.state;
+    const address = wallet ? wallet.address : channel ? channel.signerAddress : AddressZero;
     const { classes } = this.props;
     return (
       <Router>
         <Grid className={classes.app}>
           <Paper elevation={1} className={classes.paper}>
-            <AppBarComponent address={channel ? channel.signerAddress : AddressZero} />
+            <AppBarComponent address={address} />
 
             <MySnackbar
               variant="warning"
@@ -678,7 +667,7 @@ class App extends React.Component {
               render={props => (
                 <DepositCard
                   {...props}
-                  address={channel ? channel.signerAddress : AddressZero}
+                  address={address}
                   maxDeposit={maxDeposit}
                   minDeposit={minDeposit}
                 />
