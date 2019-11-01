@@ -99,12 +99,12 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     };
   }
 
-  // set provider config
-  let providerConfig: ChannelProviderConfig;
+  // set channel provider config
+  let channelProviderConfig: ChannelProviderConfig;
   if (channelProvider) {
     // enable the channel provider, which sets the config property
     await channelProvider.enable();
-    providerConfig = {
+    channelProviderConfig = {
       ...channelProvider.config,
       type: RpcType.ChannelProvider,
     };
@@ -114,7 +114,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     const xpriv = hdNode.extendedKey;
     const xpub = hdNode.derivePath(CF_PATH).neuter().extendedKey;
     await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }]);
-    providerConfig = {
+    channelProviderConfig = {
       freeBalanceAddress: freeBalanceAddressFromXpub(xpub),
       natsClusterId,
       natsToken,
@@ -127,14 +127,14 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     throw new Error(`Must provide a channel provider or mnemonic on startup.`);
   }
 
-  logger.info(`using provider config: ${JSON.stringify(providerConfig, null, 2)}`);
+  logger.info(`Using channel provider config: ${JSON.stringify(channelProviderConfig, null, 2)}`);
 
   logger.info(`Creating messaging service client (logLevel: ${logLevel})`);
   const messagingFactory = new MessagingServiceFactory({
-    clusterId: providerConfig.natsClusterId,
+    clusterId: channelProviderConfig.natsClusterId,
     logLevel,
-    messagingUrl: providerConfig.nodeUrl,
-    token: providerConfig.natsToken,
+    messagingUrl: channelProviderConfig.nodeUrl,
+    token: channelProviderConfig.natsToken,
   });
   const messaging = messagingFactory.createService("messaging");
   await messaging.connect();
@@ -162,9 +162,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   };
 
   let channelRouter: ChannelRouter;
-  switch (providerConfig.type) {
+  switch (channelProviderConfig.type) {
     case RpcType.ChannelProvider:
-      channelRouter = new ChannelRouter(channelProvider!, providerConfig);
+      channelRouter = new ChannelRouter(channelProvider!, channelProviderConfig);
       break;
 
     case RpcType.CounterfactualNode:
@@ -183,16 +183,16 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
       const wallet = Wallet.fromMnemonic(opts.mnemonic!, CF_PATH);
       logger.info("created cf module successfully");
       logger.info(`cf module signer address: ${signer}`);
-      channelRouter = new ChannelRouter(cfCore, providerConfig, store, wallet);
+      channelRouter = new ChannelRouter(cfCore, channelProviderConfig, store, wallet);
       break;
 
     default:
-      throw new Error(`Unrecognized provider type: ${providerConfig.type}`);
+      throw new Error(`Unrecognized channel provider type: ${channelProviderConfig.type}`);
   }
 
   // set pubids + channel router
   node.channelRouter = channelRouter;
-  node.userPublicIdentifier = providerConfig.userPublicIdentifier;
+  node.userPublicIdentifier = channelProviderConfig.userPublicIdentifier;
   node.nodePublicIdentifier = config.nodePublicIdentifier;
 
   const myChannel = await node.getChannel();
@@ -512,18 +512,19 @@ export abstract class ConnextChannel {
  * True implementation of the connext client
  */
 export class ConnextInternal extends ConnextChannel {
-  public opts: InternalClientOptions;
+  public appRegistry: AppRegistry;
   public channelRouter: ChannelRouter;
-  public routerType: RpcType;
-  public publicIdentifier: string;
   public ethProvider: providers.JsonRpcProvider;
-  public node: NodeApiClient;
+  public freeBalanceAddress: string;
+  public isAvailable: Promise<boolean>;
+  public listener: ConnextListener;
   public messaging: IMessagingService;
   public multisigAddress: Address;
-  public listener: ConnextListener;
+  public node: NodeApiClient;
   public nodePublicIdentifier: string;
-  public freeBalanceAddress: string;
-  public appRegistry: AppRegistry;
+  public opts: InternalClientOptions;
+  public publicIdentifier: string;
+  public routerType: RpcType;
   public signerAddress: Address;
 
   public logger: Logger;
@@ -577,6 +578,22 @@ export class ConnextInternal extends ConnextChannel {
     this.conditionalTransferController = new ConditionalTransferController(
       "ConditionalTransferController",
       this,
+    );
+
+    // TODO: channel shouldn't be available until freebalance app is installed
+    // How do we wait for that?
+    this.isAvailable = new Promise(
+      async (resolve: any, reject: any): Promise<any> => {
+        // Wait for channel to be available
+        const channelIsAvailable = async (): Promise<boolean> => {
+          const chan = await this.node.getChannel();
+          return chan && chan.available;
+        };
+        while (!(await channelIsAvailable())) {
+          await new Promise((res: any): any => setTimeout(() => res(), 100));
+        }
+        resolve(true);
+      },
     );
   }
 

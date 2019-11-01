@@ -127,7 +127,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
   };
 
   const paymentHandler = async () => {
-    if (amount.error || recipient.error) return;
+    if (!channel || !token || amount.error || recipient.error) return;
     if (!recipient.value) {
       setRecipient({
         ...recipient,
@@ -165,7 +165,7 @@ export const SendCard = style(({ balance, channel, classes, history, location, t
   };
 
   const linkHandler = async () => {
-    if (amount.error) return;
+    if (!channel || !token || amount.error) return;
     if (recipient.error && !recipient.value) {
       setRecipient({ ...recipient, error: null });
     }
