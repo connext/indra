@@ -93,7 +93,7 @@ export class AdminService {
       );
 
       // if it matches, return
-      if (expectedMultisigAddress === expectedMultisigAddress) {
+      if (expectedMultisigAddress === oldMultisigAddress) {
         continue;
       }
 
