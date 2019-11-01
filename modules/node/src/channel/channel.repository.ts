@@ -12,7 +12,7 @@ const logger = new CLogger("ChannelRepository");
 
 @EntityRepository(Channel)
 export class ChannelRepository extends Repository<Channel> {
-  async findAll(available?: boolean): Promise<Channel[]> {
+  async findAll(available: boolean = true): Promise<Channel[]> {
     return await this.find({ where: { available } });
   }
 
