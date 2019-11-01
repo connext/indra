@@ -108,6 +108,14 @@ const styles = {
   helperText: {
     color: "red",
     marginTop: "-5px",
+    alignSelf: "center",
+    textAlign: "center",
+  },
+  helperTextGray: {
+    color: "#1E96CC",
+    marginTop: "-5px",
+    alignSelf: "center",
+    textAlign: "center",
   },
   xpubWrapper: {
     marginLeft: "5%",
@@ -340,6 +348,8 @@ function Home(props) {
         )}
       </FormControl>
       <Grid item xs={12} className={classes.xpubWrapper}>
+      <FormControl xs={12} className={classes.xpubWrapper}>
+
         <InputBase
           fullWidth
           className={classes.xpubInput}
@@ -362,6 +372,11 @@ function Home(props) {
             </Tooltip>
           }
         />
+         <FormHelperText className={recipient.error ? classes.helperText : classes.helperTextGray}>
+          {recipient.error ? recipient.error : null}
+          {sending && !recipient.error && "Recipient ignored for link payments"}
+        </FormHelperText>
+        </FormControl>
       </Grid>
       <Grid container spacing={0} direction="column">
         <Grid className={classes.buttonSpacer} />
