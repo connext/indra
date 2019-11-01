@@ -77,6 +77,8 @@ export const SettingsCard = style(props => {
     localStorage.setItem("mnemonic", mnemonic);
     // remove anything in the store related to that channel
     removeChannelStore();
+    // restore the mnemonic state from the hub
+    await channel.restoreState(mnemonic);
     window.location.reload();
   };
 
