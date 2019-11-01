@@ -49,11 +49,11 @@ export const SettingsCard = style(props => {
   const [showRecovery, setShowRecovery] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
-  const { classes, setWalletConnext, getWalletConnext, channel } = props;
+  const { classes, setWalletConnext, getWalletConnext, xpub } = props;
   const useWalletConnext = getWalletConnext()
 
   const removeChannelStore = () => {
-    const channelPrefix = `${ConnextClientStorePrefix}:store/${channel.publicIdentifier}`
+    const channelPrefix = `${ConnextClientStorePrefix}:store/${xpub}`
     // get all keys in local storage that match prefix
     Object.entries(localStorage).forEach(([key, value]) => {
       if (key.includes(channelPrefix)) {
@@ -77,8 +77,6 @@ export const SettingsCard = style(props => {
     localStorage.setItem("mnemonic", mnemonic);
     // remove anything in the store related to that channel
     removeChannelStore();
-    // restore the mnemonic state from the hub
-    await channel.restoreState(mnemonic);
     window.location.reload();
   };
 

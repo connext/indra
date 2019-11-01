@@ -680,6 +680,7 @@ class App extends React.Component {
                   {...props}
                   setWalletConnext={this.setWalletConnext}
                   getWalletConnext={this.getWalletConnext}
+                  xpub={channel ? channel.publicIdentifier : 'Unknown'}
                 />
               )}
             />
