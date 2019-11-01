@@ -8,6 +8,7 @@ import {
   IconButton,
   withStyles,
   Tooltip,
+  Typography
 } from "@material-ui/core";
 import PropTypes from "prop-types";
 import { SaveAlt as ReceiveIcon, Send as SendIcon } from "@material-ui/icons";
@@ -16,6 +17,7 @@ import React, { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { Currency, initWalletConnect } from "../utils";
 import { Zero } from "ethers/constants";
+import MaskedInput from 'react-text-mask';
 
 
 import "../App.css";
@@ -69,11 +71,12 @@ const styles = {
     fontSize: "60px",
     cursor: "none",
     overflow: "hidden",
-    width:"50%",
+    width: "50%",
   },
   valueInputInner: {
-    textAlign:"center",
-    margin: "auto"
+    textAlign: "center",
+    margin: "auto",
+    marginLeft:"-10%"
   },
   valueInputWrapper: {
     marginTop: "15%",
@@ -81,6 +84,10 @@ const styles = {
     alignItems: "center",
     overflow: "hidden",
     // paddingLeft: "30%",
+  },
+  startAdornment:{
+    marginLeft:"10%",
+    fontSize:"40px"
   },
   helperText: {
     color: "red",
@@ -96,10 +103,12 @@ const styles = {
     fontSize: "45px",
   },
   xpubInputInner: {
-    textAlign:"center",
-    margin:"auto"
+    textAlign: "center",
+    margin: "auto",
   },
 };
+
+
 
 function Home(props) {
   const [scanModal, setScanModal] = useState(false);
@@ -183,13 +192,15 @@ function Home(props) {
           required
           fullWidth={true}
           className={classes.valueInput}
-          classes={{input: classes.valueInputInner}}
+          classes={{ input: classes.valueInputInner }}
           error={amount.error !== null}
           onChange={evt => updateAmountHandler(evt.target.value)}
           type="numeric"
           value={amount.display}
           placeholder={"0.00"}
+          startAdornment={<Typography className={classes.startAdornment}>$</Typography>}
         />
+
         {amount.error && (
           <FormHelperText className={classes.helperText}>{amount.error}</FormHelperText>
         )}
@@ -198,7 +209,7 @@ function Home(props) {
         <InputBase
           fullWidth
           className={classes.xpubInput}
-          classes={{input:classes.xpubInputInner}}
+          classes={{ input: classes.xpubInputInner }}
           error={amount.error !== null && recipient.error !== null}
           onChange={evt => updateRecipientHandler(evt.target.value)}
           type="text"
@@ -230,7 +241,7 @@ function Home(props) {
             variant="contained"
             size="large"
             component={Link}
-            to={`/request${amount.display ? `?amount=${amount.display}` : ''}`}
+            to={`/request${amount.display ? `?amount=${amount.display}` : ""}`}
           >
             Request
             <ReceiveIcon className={classes.buttonIcon} />
@@ -244,14 +255,10 @@ function Home(props) {
             size="large"
             variant="contained"
             component={Link}
-            to={`/send${
-              amount.display || recipient.display ? '?' : ''
-            }${
-              amount.display ? `amount=${amount.display}` : ''
-            }${
-              amount.display && recipient.display ? '&' : ''
-            }${
-              recipient.display ? `recipient=${recipient.display}` : ''
+            to={`/send${amount.display || recipient.display ? "?" : ""}${
+              amount.display ? `amount=${amount.display}` : ""
+            }${amount.display && recipient.display ? "&" : ""}${
+              recipient.display ? `recipient=${recipient.display}` : ""
             }`}
           >
             Send
