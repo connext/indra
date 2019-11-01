@@ -49,36 +49,18 @@ export const SettingsCard = style(props => {
   const [showRecovery, setShowRecovery] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
-  const { classes, setWalletConnext, getWalletConnext, xpub } = props;
+  const { classes, setWalletConnext, getWalletConnext, store, xpub } = props;
   const useWalletConnext = getWalletConnext()
 
-  const removeChannelStore = () => {
-    const channelPrefix = `${ConnextClientStorePrefix}:store/${xpub}`
-    // get all keys in local storage that match prefix
-    Object.entries(localStorage).forEach(([key, value]) => {
-      if (key.includes(channelPrefix)) {
-        console.log(`removing item: ${key}`)
-        localStorage.removeItem(key)
-      }
-    })
-    // also remove the private key by default
-    localStorage.removeItem(`${ConnextClientStorePrefix}:EXTENDED_PRIVATE_KEY`);
-  }
-
-  const generateNewAddress = () => {
-    // TODO: withdraw channel balance first? Decollateralize?
+  const generateNewAddress = async () => {
     setIsBurning(true);
-    removeChannelStore();
-    localStorage.removeItem("mnemonic");
+    store && await store.reset(); // remove anything in the store related to the old channel
     window.location.reload();
   };
 
   const recoverAddressFromMnemonic = async () => {
+    store && await store.reset(); // remove anything in the store related to the old channel
     localStorage.setItem("mnemonic", mnemonic);
-    // remove anything in the store related to that channel
-    removeChannelStore();
-    // restore the mnemonic state from the hub
-    await channel.restoreState(mnemonic);
     window.location.reload();
   };
 

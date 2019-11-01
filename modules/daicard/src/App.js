@@ -381,7 +381,7 @@ class App extends React.Component {
       if (wad.isZero()) {
         return;
       }
-      console.log(`${prefix}: ${wad.toString()}`);
+      console.debug(`${prefix}: ${wad.toString()}`);
     };
     logIfNotZero(balance.onChain.token.wad, `chain token balance`);
     logIfNotZero(balance.onChain.ether.wad, `chain ether balance`);
@@ -680,6 +680,7 @@ class App extends React.Component {
                   {...props}
                   setWalletConnext={this.setWalletConnext}
                   getWalletConnext={this.getWalletConnext}
+                  store={channel ? channel.store : undefined}
                   xpub={channel ? channel.publicIdentifier : 'Unknown'}
                 />
               )}
