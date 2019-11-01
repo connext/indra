@@ -24,6 +24,9 @@ const styles = {
     color: "#F22424",
     width: "15%",
   },
+  text:{
+    color:"#FFF"
+  }
 };
 
 function DepositCard(props) {
@@ -40,15 +43,15 @@ function DepositCard(props) {
       </Grid>
       <Copyable text={address} />
       <Grid item xs={12}>
-        <Typography variant="body2">
+        <Typography className={classes.text} variant="body2">
           <span> Send funds to this address to deposit. </span>
         </Typography>
-        <Typography variant="body2">
+        <Typography className={classes.text} variant="body2">
           <Tooltip disableFocusListener disableTouchListener title="Because gas">
             <span>{`Deposit minimum of: ${minEth || "?.??"}.`}</span>
           </Tooltip>
         </Typography>
-        <Typography variant="body2">
+        <Typography className={classes.text} variant="body2">
           <span>{`Up to ${maxEth || "?.??"} Eth 
                     or ${maxDai ||
                       "?.??"} Dai will be deposited into the state channel, any leftovers will be kept on-chain`}</span>

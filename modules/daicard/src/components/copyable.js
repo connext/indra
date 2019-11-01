@@ -9,6 +9,7 @@ const style = {
   button: {
     justifyContent: "center",
     textTransform: "none",
+    border:"1px solid #fca311"
   },
   top: {
     display: "flex",
@@ -29,12 +30,11 @@ const Copyable = props => {
           color={color || "inherit"}
           fullWidth
           size={size || "medium"}
-          variant="outlined"
         >
-          <CopyIcon style={{ marginRight: "5px", color: "#002868" }} />
+          <CopyIcon style={{ marginRight: "5px", color: "#fca311" }} />
           <Typography noWrap variant="body1">
             <Tooltip disableTouchListener title={tooltip || text}>
-              <span style={{ color: "#002868" }}>{text}</span>
+              <span style={{ color: "#fca311" }}>{text}</span>
             </Tooltip>
           </Typography>
         </Button>

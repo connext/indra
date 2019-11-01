@@ -57,7 +57,7 @@ const styles = {
     right: "0",
   },
   icon: {
-    color: "#002868",
+    color: "#fca311",
     width: "40px",
     height: "40px",
   },
@@ -79,15 +79,23 @@ const styles = {
     fontSize: "60px",
     cursor: "none",
     overflow: "hidden",
-    paddingLeft: "31%",
+    width: "100%",
+  },
+  valueInputInner: {
+    textAlign: "center",
+    margin: "auto",
   },
   helperText: {
     color: "red",
     marginTop: "-5px",
+    alignSelf: "center",
+    textAlign: "center",
   },
   helperTextGray: {
     color: "#1E96CC",
     marginTop: "-5px",
+    alignSelf: "center",
+    textAlign: "center",
   },
   xpubWrapper: {
     marginLeft: "5%",
@@ -98,8 +106,12 @@ const styles = {
     color: "#FCA311",
     fontSize: "45px",
   },
+  xpubInputInner: {
+    textAlign: "center",
+    margin: "auto",
+  },
   QRbutton: {
-    color: "#002868",
+    color: "#fca311",
   },
   linkSendWrapper: {
     justifyContent: "space-between",
@@ -127,6 +139,18 @@ const styles = {
     marginTop: "-5px",
     width: "100%",
   },
+  sendCardModalWrap: {
+    justifyContent: "center",
+    alignItems: "center",
+    textAlign: "center",
+  },
+  sendCardModalGrid: { backgroundColor: "#FFF", paddingTop: "10%", paddingBottom: "10%" },
+  dialogText:{
+    color: "#FCA311", margin: "1em"
+  },
+  dialogTextRed:{
+    color: "#F22424", margin: "1em"
+  }
 };
 
 const SendCard = props => {
@@ -148,10 +172,10 @@ const SendCard = props => {
   useEffect(() => {
     amount.display && updateAmountHandler(amount.display);
     recipient.display && updateRecipientHandler(recipient.display);
-  // Only need to run this on first render to deal w query string values
-  // onChange handlers take care of this afterwards so we don't need this function to
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    // Only need to run this on first render to deal w query string values
+    // onChange handlers take care of this afterwards so we don't need this function to
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // need to extract token balance so it can be used as a dependency for the hook properly
 
@@ -314,6 +338,7 @@ const SendCard = props => {
         <InputBase
           required
           className={classes.valueInput}
+          classes={{ input: classes.valueInputInner }}
           onChange={evt => updateAmountHandler(evt.target.value)}
           type="numeric"
           value={amount.display}
@@ -328,10 +353,11 @@ const SendCard = props => {
         <InputBase
           fullWidth
           className={classes.xpubInput}
+          classes={{ input: classes.xpubInputInner }}
           onChange={evt => updateRecipientHandler(evt.target.value)}
           type="text"
           value={recipient.display}
-          placeholder={"Recipient xPub"}
+          placeholder={"Recipient"}
           endAdornment={
             <Tooltip disableFocusListener disableTouchListener title="Scan with QR code">
               <IconButton
@@ -435,21 +461,9 @@ const SendCardModal = ({ amount, classes, closeModal, history, link, paymentStat
         : () => closeModal()
     }
     fullWidth
-    style={{
-      justifyContent: "center",
-      alignItems: "center",
-      textAlign: "center",
-    }}
+    className={classes.sendCardModalWrap}
   >
-    <Grid
-      container
-      style={{
-        backgroundColor: "#FFF",
-        paddingTop: "10%",
-        paddingBottom: "10%",
-      }}
-      justify="center"
-    >
+    <Grid className={classes.sendCardModalGrid} container justify="center">
       {paymentState.matches("processingP2p") ? (
         <Grid>
           <DialogTitle disableTypography>
@@ -469,7 +483,7 @@ const SendCardModal = ({ amount, classes, closeModal, history, link, paymentStat
             </Typography>
           </DialogTitle>
           <DialogContent>
-            <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
+            <DialogContentText variant="body1" className={classes.dialogText}>
               Link payment is being generated. This should take just a couple seconds.
             </DialogContentText>
             <CircularProgress style={{ marginTop: "1em" }} />
@@ -483,10 +497,10 @@ const SendCardModal = ({ amount, classes, closeModal, history, link, paymentStat
             </Typography>
           </DialogTitle>
           <DialogContent>
-            <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
+            <DialogContentText variant="body1" className={classes.dialogText}>
               Amount: ${formatAmountString(amount)}
             </DialogContentText>
-            <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
+            <DialogContentText variant="body1" className={classes.dialogText}>
               To: {recipient.substr(0, 8)}...
             </DialogContentText>
           </DialogContent>
@@ -499,7 +513,7 @@ const SendCardModal = ({ amount, classes, closeModal, history, link, paymentStat
             </Typography>
           </DialogTitle>
           <DialogContent className={classes.modalContent}>
-            <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
+            <DialogContentText className={classes.dialogText} variant="body1" style={{ }}>
               Anyone with this link can redeem the payment. Save a copy of it somewhere safe and
               only share it with the person you want to pay.
             </DialogContentText>
@@ -518,10 +532,10 @@ const SendCardModal = ({ amount, classes, closeModal, history, link, paymentStat
             </Typography>
           </DialogTitle>
           <DialogContent>
-            <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
+            <DialogContentText variant="body1" className={classes.dialogTextRed}>
               An unknown error occured when making your payment.
             </DialogContentText>
-            <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
+            <DialogContentText variant="body1" className={classes.dialogTextRed}>
               Please try again in 30s and contact support if you continue to experience issues.
               (Settings --> Support)
             </DialogContentText>

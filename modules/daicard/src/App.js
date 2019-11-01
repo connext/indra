@@ -78,6 +78,7 @@ const DEFAULT_AMOUNT_TO_COLLATERALIZE = Currency.DAI("10");
 const style = theme => ({
   paper: {
     width: "100%",
+    backgroundColor:"#282b2e",
     padding: `0px ${theme.spacing(1)}px 0 ${theme.spacing(1)}px`,
     [theme.breakpoints.up("sm")]: {
       width: "450px",
@@ -104,6 +105,7 @@ const style = theme => ({
     flexDirection: "column",
     justifyContent: "center",
     width: "100%",
+    backgroundColor:"#282b2e"
   },
   home: {
     width: "100%",

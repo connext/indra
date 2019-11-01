@@ -17,6 +17,7 @@ import { Link } from "react-router-dom";
 import { Currency, initWalletConnect } from "../utils";
 import { Zero } from "ethers/constants";
 
+
 import "../App.css";
 
 import { QRScan } from "./qrCode";
@@ -55,10 +56,10 @@ const styles = {
     height: "10px",
   },
   QRbutton: {
-    color: "#002868",
+    color: "#fca311",
   },
   icon: {
-    color: "#002868",
+    color: "#fca311",
   },
   buttonIcon: {
     marginLeft: "5px",
@@ -68,7 +69,11 @@ const styles = {
     fontSize: "60px",
     cursor: "none",
     overflow: "hidden",
-    paddingLeft: "35%",
+    width:"50%",
+  },
+  valueInputInner: {
+    textAlign:"center",
+    margin: "auto"
   },
   valueInputWrapper: {
     marginTop: "15%",
@@ -89,6 +94,10 @@ const styles = {
     width: "100%",
     color: "#FCA311",
     fontSize: "45px",
+  },
+  xpubInputInner: {
+    textAlign:"center",
+    margin:"auto"
   },
 };
 
@@ -174,6 +183,7 @@ function Home(props) {
           required
           fullWidth={true}
           className={classes.valueInput}
+          classes={{input: classes.valueInputInner}}
           error={amount.error !== null}
           onChange={evt => updateAmountHandler(evt.target.value)}
           type="numeric"
@@ -188,11 +198,12 @@ function Home(props) {
         <InputBase
           fullWidth
           className={classes.xpubInput}
+          classes={{input:classes.xpubInputInner}}
           error={amount.error !== null && recipient.error !== null}
           onChange={evt => updateRecipientHandler(evt.target.value)}
           type="text"
           value={recipient.display}
-          placeholder={"Recipient xPub"}
+          placeholder={"Recipient"}
           endAdornment={
             <Tooltip disableFocusListener disableTouchListener title="Scan with QR code">
               <IconButton

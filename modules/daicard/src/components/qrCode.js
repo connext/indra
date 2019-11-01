@@ -4,7 +4,7 @@ import React from "react";
 import QrReader from "react-qr-reader";
 
 export const QRGenerate = ({ size, value }) => {
-  return <QrCode value={value} size={size || 256} fgColor={"#002868"} />;
+  return <QrCode value={value} size={size || 256} fgColor={"#fca311"} bgColor={"#282b2e"} />;
 };
 
 export const QRScan = React.forwardRef(({ handleResult }, ref) => {

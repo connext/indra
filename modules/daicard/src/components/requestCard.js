@@ -49,7 +49,13 @@ const styles = {
     fontSize: "60px",
     cursor: "none",
     overflow: "hidden",
-    paddingLeft: "31%",
+    width:"100%",
+    alignItems:"center",
+    justifyContent:"center"
+  },
+  valueInputInner:{
+    textAlign:"center",
+    margin:"auto"
   },
   helperText: {
     color: "red",
@@ -101,6 +107,7 @@ const RequestCard = props => {
         <InputBase
           required
           className={classes.valueInput}
+          classes={{input: classes.valueInputInner}}
           onChange={evt => updateAmountHandler(evt.target.value)}
           type="numeric"
           value={amount.display}

@@ -48,23 +48,49 @@ const styles = {
     width: "100%",
   },
   supportButton: {
-    background: "#FFF",
     border: "1px solid #7289da",
     color: "#7289da",
   },
   burnCardButton: {
-    background: "#FFF",
     border: "1px solid #F22424",
+    backgroundColor: "#282b2e",
     color: "#F22424",
   },
   burnCardButtonMargin: {
-    background: "#FFF",
+    backgroundColor: "#282b2e",
     border: "1px solid #F22424",
     color: "#F22424",
     marginLeft: "5%",
   },
   button: {
     marginBottom: 0,
+  },
+  walletConnextButton: {
+    color: "#FFF",
+    border: "1px solid #FFFFFF",
+  },
+  importInput: {
+    height: "40px",
+    width: "100%",
+  },
+  recoverAdornment: {
+    color: "#FFF",
+    marginRight: "-10%",
+  },
+  dialogWrapper: {
+    justifyContent: "center",
+    alignItems: "center",
+    textAlign: "center",
+    backgroundColor:"#282B2E"
+  },
+  dialogGrid: {
+    backgroundColor: "#FFF",
+    padding: "3% 3% 3% 3%",
+    flexDirection: "column",
+    backgroundColor:"#282B2E"
+  },
+  dialogTextRed: {
+    color: "#F22424",
   },
 };
 
@@ -125,11 +151,11 @@ const SettingsCard = props => {
         <Button
           disableTouchRipple
           fullWidth
-          className={classes.button}
-          variant="outlined"
-          color="secondary"
+          className={classes.walletConnextButton}
           size="large"
-          onClick={() => setWalletConnext(!useWalletConnext)}
+          onClick={() => {
+            setWalletConnext(!useWalletConnext);
+          }}
         >
           {useWalletConnext ? `Deactivate WalletConnext (beta)` : `Activate WalletConnext (beta)`}
         </Button>
@@ -144,7 +170,9 @@ const SettingsCard = props => {
             variant="outlined"
             color="primary"
             size="large"
-            onClick={() => setShowRecovery(true)}
+            onClick={() => {
+              setShowRecovery(true);
+            }}
           >
             Show Backup Phrase
           </Button>
@@ -168,7 +196,7 @@ const SettingsCard = props => {
           </Button>
         ) : (
           <TextField
-            style={{ height: "40px", width: "100%" }}
+            className={classes.importInput}
             color="primary"
             variant="outlined"
             size="large"
@@ -179,11 +207,12 @@ const SettingsCard = props => {
               endAdornment: (
                 <InputAdornment position="end">
                   <Button
+                    className={classes.recoverAdornment}
                     disableTouchRipple
                     fullWidth
                     variant="contained"
                     color="primary"
-                    style={{ color: "#FFF", marginRight: "-10%" }}
+                    style={{}}
                     onClick={() => recoverAddressFromMnemonic()}
                   >
                     <SubmitIcon />
@@ -209,29 +238,18 @@ const SettingsCard = props => {
           open={showWarning}
           onBackdropClick={() => setShowWarning(false)}
           fullWidth
-          style={{
-            justifyContent: "center",
-            alignItems: "center",
-            textAlign: "center",
-          }}
+          className={classes.dialogWrapper}
         >
-          <Grid
-            container
-            style={{
-              backgroundColor: "#FFF",
-              padding: "3% 3% 3% 3%",
-              flexDirection: "column",
-            }}
-          >
+          <Grid className={classes.dialogGrid} container style={{}}>
             <DialogTitle disableTypography>
-              <Typography variant="h5" style={{ color: "#F22424" }}>
+              <Typography variant="h5" className={classes.dialogTextRed}>
                 Are you sure you want to burn your Card?
               </Typography>
             </DialogTitle>
             <DialogContent>
               {isBurning ? (
                 <Grid item xs={12}>
-                  <DialogContentText variant="body1">
+                  <DialogContentText className={classes.dialogTextRed} variant="body1">
                     Burning. Please do not refresh or navigate away. This page will refresh
                     automatically when it's done.
                   </DialogContentText>
@@ -240,7 +258,7 @@ const SettingsCard = props => {
               ) : (
                 <Grid container alignItems="center" justify="center" direction="column">
                   <Grid item xs={12}>
-                    <DialogContentText variant="body1" style={{ color: "#F22424" }}>
+                    <DialogContentText className={classes.dialogTextRed} variant="body1" style={{}}>
                       You will lose access to your funds unless you save your backup phrase!
                     </DialogContentText>
                   </Grid>
@@ -249,7 +267,6 @@ const SettingsCard = props => {
                       <Button
                         disableTouchRipple
                         className={classes.burnCardButton}
-                        variant="contained"
                         size="small"
                         onClick={() => generateNewAddress()}
                       >
@@ -258,7 +275,6 @@ const SettingsCard = props => {
                       <Button
                         disableTouchRipple
                         className={classes.burnCardButtonMargin}
-                        variant="contained"
                         size="small"
                         onClick={() => setShowWarning(false)}
                       >
@@ -272,22 +288,6 @@ const SettingsCard = props => {
           </Grid>
         </Dialog>
       </Grid>
-      {/* <Grid item xs={12}>
-        <Button
-          disableTouchRipple
-          variant="outlined"
-          style={{
-            background: "#FFF",
-            border: "1px solid #F22424",
-            color: "#F22424",
-            width: "15%",
-          }}
-          size="medium"
-          onClick={() => props.history.push("/")}
-        >
-          Back
-        </Button>
-      </Grid> */}
     </Grid>
   );
 };

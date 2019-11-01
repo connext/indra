@@ -7,12 +7,12 @@ import { CheckCircle } from "@material-ui/icons";
 
 const styles = {
   row: {
-    color: "#002868",
+    color: "#fca311",
     fontWeight: "500",
     fontSize: 32,
   },
   rowLarge: {
-    color: "#002868",
+    color: "#fca311",
     fontWeight: "500",
     fontSize: 36,
   },

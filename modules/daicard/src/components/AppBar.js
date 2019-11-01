@@ -19,7 +19,8 @@ const styles = {
     width: "100%",
     display: "flex",
     alignItems: "flex-start",
-    "z-index": "auto"
+    "z-index": "auto",
+    backgroundColor:"#282b2e"
   },
   containerTop: {
     textAlign: "center",
@@ -29,11 +30,11 @@ const styles = {
     alignItems: "center",
   },
   icon: {
-    color: "#002868",
+    color: "#FCA311",
   },
   button: {
-    color: "#002868",
-    borderColor: "#002868",
+    color: "#fca311",
+    borderColor: "#fca311",
     fontSize: "small",
   },
   buttonHidden: {
@@ -44,7 +45,7 @@ const styles = {
 const AppBarComponent = props => {
   const { classes } = props;
   return (
-    <AppBar position="sticky" color="inherit" elevation={0} className={classes.top}>
+    <AppBar position="sticky"  elevation={0} className={classes.top}>
       <Grid container className={classes.containerTop}>
         <Grid item xs={3}>
           <IconButton
