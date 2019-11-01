@@ -34,10 +34,26 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getNoFreeBalance();
   }
 
+  async getIncorrectMultisigAddresses(): Promise<
+    {
+      oldMultisigAddress: string;
+      expectedMultisigAddress: string;
+      userXpub: string;
+      channelId: number;
+    }[]
+  > {
+    return await this.adminService.getIncorrectMultisigAddresses();
+  }
+
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "admin.get-no-free-balance",
       this.authService.useAdminToken(this.getNoFreeBalance.bind(this)),
+    );
+
+    await super.connectRequestReponse(
+      "admin.get-incorrect-multisig",
+      this.authService.useAdminToken(this.getIncorrectMultisigAddresses.bind(this)),
     );
   }
 }

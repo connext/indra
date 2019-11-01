@@ -34,7 +34,7 @@ export class ChannelService {
    * Returns all channel records.
    * @param available available value of channel
    */
-  async findAll(available?: boolean): Promise<Channel[]> {
+  async findAll(available: boolean = true): Promise<Channel[]> {
     return await this.channelRepository.findAll(available);
   }
 

@@ -186,16 +186,17 @@ class App extends React.Component {
     }
 
     let wallet;
+    const network = await ethprovider.getNetwork();
     if (!useWalletConnext) {
       wallet = eth.Wallet.fromMnemonic(mnemonic, "m/44'/60'/0'/25446").connect(ethprovider);
+      this.setState({ network, wallet });
     }
 
-    const network = await ethprovider.getNetwork();
     let channel;
     // migrate if needed
-    if (localStorage.getItem("rpc-prod")) {
+    if (wallet && localStorage.getItem("rpc-prod")) {
       machine.send(["MIGRATE", "START_MIGRATE"]);
-      await migrate(urls.legacyUrl(network.chainId), wallet, urls.ethProviderUrl, machine);
+      await migrate(urls.legacyUrl(network.chainId), wallet, urls.ethProviderUrl);
       localStorage.removeItem("rpc-prod");
     }
 
@@ -204,6 +205,7 @@ class App extends React.Component {
 
     // if choose mnemonic
     if (!useWalletConnext) {
+
       // If no mnemonic, use the one we created pre-migration
       let store;
       const pisaUrl = urls.pisaUrl(network.chainId);
@@ -256,15 +258,7 @@ class App extends React.Component {
     }
     console.log(`Successfully connected channel`);
 
-    // Wait for channel to be available
-    const channelIsAvailable = async channel => {
-      const chan = await channel.getChannel();
-      return chan && chan.available;
-    };
-
-    while (!(await channelIsAvailable(channel))) {
-      await new Promise(res => setTimeout(() => res(), 1000));
-    }
+    await channel.isAvailable;
 
     const token = new Contract(
       channel.config.contractAddresses.Token,
@@ -272,18 +266,6 @@ class App extends React.Component {
       wallet || ethprovider,
     );
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
-
-    try {
-      await channel.getFreeBalance();
-      await channel.getFreeBalance(token.address);
-    } catch (e) {
-      console.warn(e);
-      if (e.message.includes(`This probably means that the StateChannel does not exist yet`)) {
-        // channel.connect() was already called, meaning there should be an existing channel
-        await channel.restoreState(localStorage.getItem("mnemonic"));
-      }
-      throw e;
-    }
 
     console.log(`Client created successfully!`);
     console.log(` - Public Identifier: ${channel.publicIdentifier}`);
@@ -319,19 +301,16 @@ class App extends React.Component {
       assetId: token.address,
     });
     console.log(`Set a default token profile: ${JSON.stringify(tokenProfile)}`);
-    machine.send("READY");
 
     this.setState({
       channel,
       useWalletConnext,
-      ethprovider,
-      network,
       swapRate,
       token,
       tokenProfile,
-      wallet,
     });
 
+    machine.send("READY");
     await this.startPoller();
   }
 
@@ -642,13 +621,15 @@ class App extends React.Component {
       network,
       sendScanArgs,
       token,
+      wallet,
     } = this.state;
+    const address = wallet ? wallet.address : channel ? channel.signerAddress : AddressZero;
     const { classes } = this.props;
     return (
       <Router>
         <Grid className={classes.app}>
           <Paper elevation={1} className={classes.paper}>
-            <AppBarComponent address={channel ? channel.signerAddress : AddressZero} />
+            <AppBarComponent address={address} />
 
             <MySnackbar
               variant="warning"
@@ -686,7 +667,7 @@ class App extends React.Component {
               render={props => (
                 <DepositCard
                   {...props}
-                  address={channel ? channel.signerAddress : AddressZero}
+                  address={address}
                   maxDeposit={maxDeposit}
                   minDeposit={minDeposit}
                 />
@@ -697,7 +678,6 @@ class App extends React.Component {
               render={props => (
                 <SettingsCard
                   {...props}
-                  channel={channel}
                   setWalletConnext={this.setWalletConnext}
                   getWalletConnext={this.getWalletConnext}
                 />
@@ -706,7 +686,11 @@ class App extends React.Component {
             <Route
               path="/request"
               render={props => (
-                <RequestCard {...props} xpub={channel.publicIdentifier} maxDeposit={maxDeposit} />
+                <RequestCard
+                  {...props}
+                  xpub={channel ? channel.publicIdentifier : 'Unknown'}
+                  maxDeposit={maxDeposit}
+                />
               )}
             />
             <Route
@@ -724,7 +708,11 @@ class App extends React.Component {
             <Route
               path="/redeem"
               render={props => (
-                <RedeemCard {...props} channel={channel} tokenProfile={this.state.tokenProfile} />
+                <RedeemCard
+                  {...props}
+                  channel={channel}
+                  tokenProfile={this.state.tokenProfile}
+                />
               )}
             />
             <Route

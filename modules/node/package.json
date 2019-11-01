@@ -1,6 +1,6 @@
 {
   "name": "indra-node",
-	"version": "2.1.13",
+	"version": "2.1.14",
   "description": "",
   "author": "",
   "license": "MIT",
@@ -22,6 +22,7 @@
   "dependencies": {
     "@connext/messaging": "0.3.1",
     "@connext/types": "0.3.1",
+    "@counterfactual/cf-funding-protocol-contracts": "0.0.12",
     "@counterfactual/node": "0.2.82",
     "@counterfactual/types": "0.0.44",
     "@nestjs/common": "6.5.3",
