@@ -72,7 +72,7 @@ export const CashoutCard = style(
 
     const cashoutTokens = async () => {
       const value = recipient.value;
-      if (!value) return;
+      if (!channel || !value) return;
       const total = balance.channel.total;
       if (total.wad.lte(Zero)) return;
       // Put lock on actions, no more autoswaps until we're done withdrawing
@@ -92,7 +92,7 @@ export const CashoutCard = style(
 
     const cashoutEther = async () => {
       const value = recipient.value;
-      if (!value) return;
+      if (!channel || !value) return;
       const total = balance.channel.total;
       if (total.wad.lte(Zero)) return;
       // Put lock on actions, no more autoswaps until we're done withdrawing

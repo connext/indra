@@ -678,7 +678,6 @@ class App extends React.Component {
               render={props => (
                 <SettingsCard
                   {...props}
-                  channel={channel}
                   setWalletConnext={this.setWalletConnext}
                   getWalletConnext={this.getWalletConnext}
                 />
@@ -687,7 +686,11 @@ class App extends React.Component {
             <Route
               path="/request"
               render={props => (
-                <RequestCard {...props} xpub={channel.publicIdentifier} maxDeposit={maxDeposit} />
+                <RequestCard
+                  {...props}
+                  xpub={channel ? channel.publicIdentifier : 'Unknown'}
+                  maxDeposit={maxDeposit}
+                />
               )}
             />
             <Route
@@ -705,7 +708,11 @@ class App extends React.Component {
             <Route
               path="/redeem"
               render={props => (
-                <RedeemCard {...props} channel={channel} tokenProfile={this.state.tokenProfile} />
+                <RedeemCard
+                  {...props}
+                  channel={channel}
+                  tokenProfile={this.state.tokenProfile}
+                />
               )}
             />
             <Route

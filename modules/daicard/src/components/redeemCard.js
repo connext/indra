@@ -106,7 +106,7 @@ export const RedeemCard = style(({ channel, classes, history, location, tokenPro
   }, [location, validateLink]);
 
   const redeemPayment = async () => {
-    if (!state.matches("modal.confirm")) {
+    if (!channel || !state.matches("modal.confirm")) {
       return;
     }
     console.log(`Attempting to redeem payment.`);
