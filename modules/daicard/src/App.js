@@ -256,15 +256,7 @@ class App extends React.Component {
     }
     console.log(`Successfully connected channel`);
 
-    // Wait for channel to be available
-    const channelIsAvailable = async channel => {
-      const chan = await channel.getChannel();
-      return chan && chan.available;
-    };
-
-    while (!(await channelIsAvailable(channel))) {
-      await new Promise(res => setTimeout(() => res(), 1000));
-    }
+    await channel.isAvailable;
 
     const token = new Contract(
       channel.config.contractAddresses.Token,

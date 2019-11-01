@@ -512,18 +512,19 @@ export abstract class ConnextChannel {
  * True implementation of the connext client
  */
 export class ConnextInternal extends ConnextChannel {
-  public opts: InternalClientOptions;
+  public appRegistry: AppRegistry;
   public channelRouter: ChannelRouter;
-  public routerType: RpcType;
-  public publicIdentifier: string;
   public ethProvider: providers.JsonRpcProvider;
-  public node: NodeApiClient;
+  public freeBalanceAddress: string;
+  public isAvailable: Promise<boolean>;
+  public listener: ConnextListener;
   public messaging: IMessagingService;
   public multisigAddress: Address;
-  public listener: ConnextListener;
+  public node: NodeApiClient;
   public nodePublicIdentifier: string;
-  public freeBalanceAddress: string;
-  public appRegistry: AppRegistry;
+  public opts: InternalClientOptions;
+  public publicIdentifier: string;
+  public routerType: RpcType;
   public signerAddress: Address;
 
   public logger: Logger;
@@ -577,6 +578,20 @@ export class ConnextInternal extends ConnextChannel {
     this.conditionalTransferController = new ConditionalTransferController(
       "ConditionalTransferController",
       this,
+    );
+
+    this.isAvailable = new Promise(
+      async (resolve: any, reject: any): Promise<any> => {
+        // Wait for channel to be available
+        const channelIsAvailable = async (): Promise<boolean> => {
+          const chan = await this.node.getChannel();
+          return chan && chan.available;
+        };
+        while (!(await channelIsAvailable())) {
+          await new Promise((res: any): any => setTimeout(() => res(), 100));
+        }
+        resolve(true);
+      },
     );
   }
 
