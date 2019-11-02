@@ -12,7 +12,7 @@
   "license": "MIT",
   "dependencies": {
     "@connext/client": "0.3.2",
-    "commander": "3.0.2",
+    "commander": "4.0.0",
     "dotenv": "8.2.0",
     "ethers": "4.0.37",
     "pisa-client": "0.1.4-connext-beta.1",
