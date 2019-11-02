@@ -27,7 +27,7 @@
   "devDependencies": {
     "@babel/polyfill": "7.6.0",
     "@types/jest": "24.0.20",
-    "@types/uuid": "3.4.5",
+    "@types/uuid": "3.4.6",
     "jest": "24.9.0",
     "ts-jest": "24.1.0",
     "typescript": "3.5.3"
