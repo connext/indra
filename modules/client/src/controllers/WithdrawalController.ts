@@ -50,9 +50,11 @@ export class WithdrawalController extends AbstractController {
         this.log.info(`Node Withdraw Response: ${JSON.stringify(transaction, replaceBN, 2)}`);
       } else {
         this.log.info(`Calling ${CFCoreTypes.RpcMethodName.WITHDRAW}`);
-        const withdrawResponse = await this.connext.cfWithdraw(amount, assetId, recipient);
+        // Bo note: the following function used to point to something that doesn't exist
+        // so this code path probably never gets executed.. idk what this was supposed to do
+        const withdrawResponse = await this.node.withdraw(transaction as any);
         this.log.info(`Withdraw Response: ${JSON.stringify(withdrawResponse, replaceBN, 2)}`);
-        transaction = await this.ethProvider.getTransaction(withdrawResponse.txHash);
+        transaction = await this.ethProvider.getTransaction(withdrawResponse.hash);
       }
       const postWithdrawBalances = await this.connext.getFreeBalance(assetId);
 

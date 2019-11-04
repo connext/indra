@@ -201,11 +201,17 @@ export async function connect(opts: ClientOptions): Promise<ConnextClient> {
     logger.info("no channel detected, creating channel..");
     const creationEventData: CFCoreTypes.CreateChannelResult = await new Promise(
       async (res: any, rej: any): Promise<any> => {
-        const timer = setTimeout(() => rej("Create channel event not fired within 30s"), 30000);
-        channelRouter.once(CFCoreTypes.EventName.CREATE_CHANNEL, (data: CreateChannelMessage) => {
-          clearTimeout(timer);
-          res(data.data);
-        });
+        const timer = setTimeout(
+          (): void => rej("Create channel event not fired within 30s"),
+          30000,
+        );
+        channelRouter.once(
+          CFCoreTypes.EventName.CREATE_CHANNEL,
+          (data: CreateChannelMessage): void => {
+            clearTimeout(timer);
+            res(data.data);
+          },
+        );
 
         const creationData = await node.createChannel();
         logger.info(`created channel, transaction: ${JSON.stringify(creationData)}`);
@@ -248,272 +254,142 @@ export async function connect(opts: ClientOptions): Promise<ConnextClient> {
 }
 
 /**
- * This abstract class contains all methods associated with managing
- * or establishing the user's channel.
- *
- * The true implementation of this class exists in the `ConnextClient`
- * class
-*/
-export abstract class ConnextChannel {
-  public opts: InternalClientOptions;
-  public config: GetConfigResponse;
-  private internal: ConnextClient;
-
-  public constructor(opts: InternalClientOptions) {
-    this.opts = opts;
-    this.config = opts.config;
-    this.internal = this as any;
-  }
+ * This interface contains all methods associated with managing
+ * or establishing a user's channel.
+ */
+interface ConnextClientI {
+  opts: InternalClientOptions;
+  config: GetConfigResponse;
 
   ///////////////////////////////////
   // LISTENER METHODS
-  public on = (
+  on(
     event: ConnextEvent | CFCoreTypes.EventName,
     callback: (...args: any[]) => void,
-  ): ConnextListener => {
-    return this.internal.on(event, callback);
-  };
+  ): ConnextListener;
 
-  public emit = (event: ConnextEvent | CFCoreTypes.EventName, data: any): boolean => {
-    return this.internal.emit(event, data);
-  };
+  emit(event: ConnextEvent | CFCoreTypes.EventName, data: any): boolean;
 
   ///////////////////////////////////
   // CORE CHANNEL METHODS
 
-  public deposit = async (params: DepositParameters): Promise<ChannelState> => {
-    return await this.internal.deposit(params);
-  };
+  deposit(params: DepositParameters): Promise<ChannelState>;
 
-  public swap = async (params: SwapParameters): Promise<CFCoreChannel> => {
-    return await this.internal.swap(params);
-  };
+  swap(params: SwapParameters): Promise<CFCoreChannel>;
 
-  public transfer = async (params: TransferParameters): Promise<CFCoreChannel> => {
-    return await this.internal.transfer(params);
-  };
+  transfer(params: TransferParameters): Promise<CFCoreChannel>;
 
-  public withdraw = async (params: WithdrawParameters): Promise<ChannelState> => {
-    return await this.internal.withdraw(params);
-  };
+  withdraw(params: WithdrawParameters): Promise<ChannelState>;
 
-  public resolveCondition = async (
-    params: ResolveConditionParameters,
-  ): Promise<ResolveConditionResponse> => {
-    return await this.internal.resolveCondition(params);
-  };
+  resolveCondition(params: ResolveConditionParameters): Promise<ResolveConditionResponse>;
 
-  public conditionalTransfer = async (
-    params: ConditionalTransferParameters,
-  ): Promise<ConditionalTransferResponse> => {
-    return await this.internal.conditionalTransfer(params);
-  };
+  conditionalTransfer(params: ConditionalTransferParameters): Promise<ConditionalTransferResponse>;
 
-  public restoreState = async (mnemonic: string): Promise<ConnextClient> => {
-    return await this.internal.restoreState(mnemonic);
-  };
+  restoreState(mnemonic: string): Promise<ConnextClient>;
 
-  public channelProviderConfig = async (): Promise<ChannelProviderConfig> => {
-    return this.internal.channelRouter.config;
-  };
+  channelProviderConfig(): Promise<ChannelProviderConfig>;
 
   ///////////////////////////////////
   // NODE EASY ACCESS METHODS
 
-  public getChannel = async (): Promise<GetChannelResponse> => {
-    return await this.internal.node.getChannel();
-  };
+  getChannel(): Promise<GetChannelResponse>;
 
-  public getLinkedTransfer = async (paymentId: string): Promise<any> => {
-    return await this.internal.node.fetchLinkedTransfer(paymentId);
-  };
+  getLinkedTransfer(paymentId: string): Promise<any>;
 
   // TODO: do we need to expose here?
-  public getAppRegistry = async (appDetails?: {
+  getAppRegistry(appDetails?: {
     name: SupportedApplication;
     network: SupportedNetwork;
-  }): Promise<AppRegistry> => {
-    return await this.internal.node.appRegistry(appDetails);
-  };
+  }): Promise<AppRegistry>;
 
   // TODO: do we need to expose here?
-  public createChannel = async (): Promise<CreateChannelResponse> => {
-    return await this.internal.node.createChannel();
-  };
+  createChannel(): Promise<CreateChannelResponse>;
 
-  public subscribeToSwapRates = async (from: string, to: string, callback: any): Promise<any> => {
-    return await this.internal.node.subscribeToSwapRates(from, to, callback);
-  };
+  subscribeToSwapRates(from: string, to: string, callback: any): Promise<any>;
 
-  public getLatestSwapRate = async (from: string, to: string): Promise<string> => {
-    return await this.internal.node.getLatestSwapRate(from, to);
-  };
+  getLatestSwapRate(from: string, to: string): Promise<string>;
 
-  public unsubscribeToSwapRates = async (from: string, to: string): Promise<void> => {
-    return await this.internal.node.unsubscribeFromSwapRates(from, to);
-  };
+  unsubscribeToSwapRates(from: string, to: string): Promise<void>;
 
-  public requestCollateral = async (tokenAddress: string): Promise<void> => {
-    return await this.internal.node.requestCollateral(tokenAddress);
-  };
+  requestCollateral(tokenAddress: string): Promise<void>;
 
-  public addPaymentProfile = async (profile: PaymentProfile): Promise<PaymentProfile> => {
-    return await this.internal.node.addPaymentProfile(profile);
-  };
+  addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile>;
 
-  public getPaymentProfile = async (assetId?: string): Promise<PaymentProfile | undefined> => {
-    return await this.internal.node.getPaymentProfile(assetId);
-  };
+  getPaymentProfile(assetId?: string): Promise<PaymentProfile | undefined>;
 
-  public getTransferHistory = async (): Promise<Transfer[]> => {
-    return await this.internal.node.getTransferHistory();
-  };
+  getTransferHistory(): Promise<Transfer[]>;
 
-  public setRecipientAndEncryptedPreImageForLinkedTransfer = async (
-    recipient: string,
-    encryptedPreImage: string,
-    linkedHash: string,
-  ): Promise<any> => {
-    return await this.internal.node.setRecipientAndEncryptedPreImageForLinkedTransfer(
-      recipient,
-      encryptedPreImage,
-      linkedHash,
-    );
-  };
+  reclaimPendingAsyncTransfers(): Promise<void>;
 
-  public reclaimPendingAsyncTransfers = async (): Promise<void> => {
-    return await this.internal.reclaimPendingAsyncTransfers();
-  };
-
-  public reclaimPendingAsyncTransfer = async (
+  reclaimPendingAsyncTransfer(
     paymentId: string,
     encryptedPreImage: string,
-  ): Promise<ResolveLinkedTransferResponse> => {
-    return await this.internal.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
-  };
+  ): Promise<ResolveLinkedTransferResponse>;
 
   // does not directly call node function because needs to send
   // some additional information along with the request, as implemented in
   // ConnextClient
-  public verifyAppSequenceNumber = async (): Promise<ChannelAppSequences> => {
-    return await this.internal.verifyAppSequenceNumber();
-  };
+  verifyAppSequenceNumber(): Promise<ChannelAppSequences>;
 
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
 
-  public providerDeposit = async (
+  providerDeposit(
     amount: BigNumber,
     assetId: string,
-    notifyCounterparty: boolean = false,
-  ): Promise<CFCoreTypes.DepositResult> => {
-    return await this.internal.providerDeposit(amount, assetId, notifyCounterparty);
-  };
+    notifyCounterparty: boolean,
+  ): Promise<CFCoreTypes.DepositResult>;
 
-  public getFreeBalance = async (
-    assetId: string = AddressZero,
-  ): Promise<CFCoreTypes.GetFreeBalanceStateResult> => {
-    return await this.internal.getFreeBalance(assetId);
-  };
+  getFreeBalance(assetId: string): Promise<CFCoreTypes.GetFreeBalanceStateResult>;
 
-  public getAppInstances = async (): Promise<AppInstanceJson[]> => {
-    return await this.internal.getAppInstances();
-  };
+  getAppInstances(): Promise<AppInstanceJson[]>;
 
-  public getAppInstanceDetails = async (
+  getAppInstanceDetails(appInstanceId: string): Promise<CFCoreTypes.GetAppInstanceDetailsResult>;
+
+  getAppState(appInstanceId: string): Promise<CFCoreTypes.GetStateResult>;
+
+  getProposedAppInstances(): Promise<CFCoreTypes.GetProposedAppInstancesResult | undefined>;
+
+  getProposedAppInstance(
     appInstanceId: string,
-  ): Promise<CFCoreTypes.GetAppInstanceDetailsResult> => {
-    return await this.internal.getAppInstanceDetails(appInstanceId);
-  };
+  ): Promise<CFCoreTypes.GetProposedAppInstanceResult | undefined>;
 
-  public getAppState = async (appInstanceId: string): Promise<CFCoreTypes.GetStateResult> => {
-    return await this.internal.getAppState(appInstanceId);
-  };
-
-  public getProposedAppInstances = async (): Promise<
-    CFCoreTypes.GetProposedAppInstancesResult | undefined
-  > => {
-    return await this.internal.getProposedAppInstances();
-  };
-
-  public getProposedAppInstance = async (
-    appInstanceId: string,
-  ): Promise<CFCoreTypes.GetProposedAppInstanceResult | undefined> => {
-    return await this.internal.getProposedAppInstance(appInstanceId);
-  };
-
-  public proposeInstallApp = async (
+  proposeInstallApp(
     params: CFCoreTypes.ProposeInstallParams,
-  ): Promise<CFCoreTypes.ProposeInstallResult> => {
-    return await this.internal.proposeInstallApp(params);
-  };
+  ): Promise<CFCoreTypes.ProposeInstallResult>;
 
-  public proposeInstallVirtualApp = async (
+  proposeInstallVirtualApp(
     params: CFCoreTypes.ProposeInstallVirtualParams,
-  ): Promise<CFCoreTypes.ProposeInstallVirtualResult> => {
-    return await this.internal.proposeInstallVirtualApp(params);
-  };
+  ): Promise<CFCoreTypes.ProposeInstallVirtualResult>;
 
-  public installVirtualApp = async (
-    appInstanceId: string,
-  ): Promise<CFCoreTypes.InstallVirtualResult> => {
-    return await this.internal.installVirtualApp(appInstanceId);
-  };
+  installVirtualApp(appInstanceId: string): Promise<CFCoreTypes.InstallVirtualResult>;
 
-  public installApp = async (appInstanceId: string): Promise<CFCoreTypes.InstallResult> => {
-    return await this.internal.installApp(appInstanceId);
-  };
+  installApp(appInstanceId: string): Promise<CFCoreTypes.InstallResult>;
 
-  public rejectInstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
-    return await this.internal.rejectInstallApp(appInstanceId);
-  };
+  rejectInstallApp(appInstanceId: string): Promise<CFCoreTypes.UninstallResult>;
 
-  public rejectInstallVirtualApp = async (
-    appInstanceId: string,
-  ): Promise<CFCoreTypes.UninstallVirtualResult> => {
-    return await this.internal.rejectInstallVirtualApp(appInstanceId);
-  };
-
-  public takeAction = async (
+  takeAction(
     appInstanceId: string,
     action: AppActionBigNumber,
-  ): Promise<CFCoreTypes.TakeActionResult> => {
-    return await this.internal.takeAction(appInstanceId, action);
-  };
+  ): Promise<CFCoreTypes.TakeActionResult>;
 
-  public updateState = async (
+  updateState(
     appInstanceId: string,
-    newState: AppState | any, // cast to any bc no supported apps use
-    // the update state method
-  ): Promise<CFCoreTypes.UpdateStateResult> => {
-    return await this.internal.updateState(appInstanceId, newState);
-  };
+    newState: AppState | any,
+  ): Promise<CFCoreTypes.UpdateStateResult>;
 
-  public uninstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
-    return await this.internal.uninstallApp(appInstanceId);
-  };
+  uninstallApp(appInstanceId: string): Promise<CFCoreTypes.UninstallResult>;
 
-  public uninstallVirtualApp = async (
-    appInstanceId: string,
-  ): Promise<CFCoreTypes.UninstallVirtualResult> => {
-    return await this.internal.uninstallVirtualApp(appInstanceId);
-  };
-
-  public cfWithdraw = async (
-    amount: BigNumber,
-    assetId?: string,
-    recipient?: string,
-  ): Promise<CFCoreTypes.WithdrawResult> => {
-    return await this.internal.cfWithdraw(amount, assetId, recipient);
-  };
+  uninstallVirtualApp(appInstanceId: string): Promise<CFCoreTypes.UninstallVirtualResult>;
 }
 
 /**
  * True implementation of the connext client
  */
-export class ConnextClient extends ConnextChannel {
+export class ConnextClient implements ConnextClientI {
   public appRegistry: AppRegistry;
   public channelRouter: ChannelRouter;
+  public config: GetConfigResponse;
   public ethProvider: providers.JsonRpcProvider;
   public freeBalanceAddress: string;
   public isAvailable: Promise<boolean>;
@@ -541,7 +417,6 @@ export class ConnextClient extends ConnextChannel {
   private resolveConditionController: ResolveConditionController;
 
   constructor(opts: InternalClientOptions) {
-    super(opts);
     this.opts = opts;
     this.appRegistry = opts.appRegistry;
     this.config = opts.config;
@@ -590,7 +465,7 @@ export class ConnextClient extends ConnextChannel {
           return chan && chan.available;
         };
         while (!(await channelIsAvailable())) {
-          await new Promise((res: any): any => setTimeout(() => res(), 100));
+          await new Promise((res: any): any => setTimeout((): void => res(), 100));
         }
         resolve(true);
       },
@@ -600,6 +475,72 @@ export class ConnextClient extends ConnextChannel {
   // register subscriptions
   public registerSubscriptions = async (): Promise<void> => {
     await this.listener.register();
+  };
+
+  ///////////////////////////////////
+  // Unsorted methods pulled from the old abstract wrapper class
+
+  public getChannel = async (): Promise<GetChannelResponse> => {
+    return await this.node.getChannel();
+  };
+
+  public requestCollateral = async (tokenAddress: string): Promise<void> => {
+    return await this.node.requestCollateral(tokenAddress);
+  };
+
+  public setRecipientAndEncryptedPreImageForLinkedTransfer = async (
+    recipient: string,
+    encryptedPreImage: string,
+    linkedHash: string,
+  ): Promise<any> => {
+    return await this.node.setRecipientAndEncryptedPreImageForLinkedTransfer(
+      recipient,
+      encryptedPreImage,
+      linkedHash,
+    );
+  };
+
+  public channelProviderConfig = async (): Promise<ChannelProviderConfig> => {
+    return this.channelRouter.config;
+  };
+
+  public getLinkedTransfer = async (paymentId: string): Promise<any> => {
+    return await this.node.fetchLinkedTransfer(paymentId);
+  };
+
+  public getAppRegistry = async (appDetails?: {
+    name: SupportedApplication;
+    network: SupportedNetwork;
+  }): Promise<AppRegistry> => {
+    return await this.node.appRegistry(appDetails);
+  };
+
+  public createChannel = async (): Promise<CreateChannelResponse> => {
+    return await this.node.createChannel();
+  };
+
+  public subscribeToSwapRates = async (from: string, to: string, callback: any): Promise<any> => {
+    return await this.node.subscribeToSwapRates(from, to, callback);
+  };
+
+  public getLatestSwapRate = async (from: string, to: string): Promise<string> => {
+    return await this.node.getLatestSwapRate(from, to);
+  };
+
+  public unsubscribeToSwapRates = async (from: string, to: string): Promise<void> => {
+    return await this.node.unsubscribeFromSwapRates(from, to);
+  };
+
+  public addPaymentProfile = async (profile: PaymentProfile): Promise<PaymentProfile> => {
+    return await this.node.addPaymentProfile(profile);
+  };
+
+  public getPaymentProfile = async (assetId?: string): Promise<PaymentProfile | undefined> => {
+    return await this.node.getPaymentProfile(assetId);
+  };
+
+  public getTransferHistory = async (): Promise<Transfer[]> => {
+    return await this.node.getTransferHistory();
   };
 
   ///////////////////////////////////
@@ -662,22 +603,23 @@ export class ConnextClient extends ConnextChannel {
     // because the channel should be blocked
     try {
       await new Promise((resolve: any, reject: any): any => {
-        this.ethProvider.on("block", async (blockNumber: number) => {
-          const found = await this.checkForUserWithdrawal(blockNumber);
-          if (found) {
-            await this.channelRouter.set([
-              { path: withdrawalKey(this.publicIdentifier), value: undefined },
-            ]);
-            this.ethProvider.removeAllListeners("block");
-            resolve();
-          }
-          if (blockNumber - startingBlock >= maxBlocks) {
-            this.ethProvider.removeAllListeners("block");
-            reject(
-              `More than ${maxBlocks} have passed, blocks elapsed: ${blockNumber - startingBlock}`,
-            );
-          }
-        });
+        this.ethProvider.on(
+          "block",
+          async (blockNumber: number): Promise<void> => {
+            const found = await this.checkForUserWithdrawal(blockNumber);
+            if (found) {
+              await this.channelRouter.set([
+                { path: withdrawalKey(this.publicIdentifier), value: undefined },
+              ]);
+              this.ethProvider.removeAllListeners("block");
+              resolve();
+            }
+            if (blockNumber - startingBlock >= maxBlocks) {
+              this.ethProvider.removeAllListeners("block");
+              reject(`More than ${maxBlocks} have passed: ${blockNumber - startingBlock}`);
+            }
+          },
+        );
       });
     } catch (e) {
       if (e.includes(`More than ${maxBlocks} have passed`)) {
@@ -694,7 +636,8 @@ export class ConnextClient extends ConnextChannel {
     const restoreStates = await this.channelRouter.restore();
     const multisigAddress = await this.getMultisigAddressfromXpub(xpub);
     const relevantPair = restoreStates.find(
-      (p: { path: string; value: any }) => p.path === `store/${xpub}/channel/${multisigAddress}`,
+      (p: { path: string; value: any }): boolean =>
+        p.path === `store/${xpub}/channel/${multisigAddress}`,
     );
     if (!relevantPair) {
       throw new Error(
@@ -713,7 +656,7 @@ export class ConnextClient extends ConnextChannel {
     this.logger.info(`Found states to restore: ${JSON.stringify(states)}`);
 
     // TODO: this should prob not be hardcoded like this
-    const actualStates = states.map((state: { path: string; value: object }) => {
+    const actualStates = states.map((state: { path: string; value: object }): any => {
       return {
         path: `store${state.path
           .replace(this.nodePublicIdentifier, xpub)
@@ -1078,7 +1021,7 @@ export class ConnextClient extends ConnextChannel {
   // LOW LEVEL METHODS
 
   public getRegisteredAppDetails = (appName: SupportedApplication): RegisteredAppDetails => {
-    const appInfo = this.appRegistry.filter((app: RegisteredAppDetails) => {
+    const appInfo = this.appRegistry.filter((app: RegisteredAppDetails): boolean => {
       return app.name === appName && app.network === this.network.name;
     });
 
@@ -1173,7 +1116,7 @@ export class ConnextClient extends ConnextChannel {
 
   private appNotInstalled = async (appInstanceId: string): Promise<string | undefined> => {
     const apps = await this.getAppInstances();
-    const app = apps.filter((app: AppInstanceJson) => app.identityHash === appInstanceId);
+    const app = apps.filter((app: AppInstanceJson): boolean => app.identityHash === appInstanceId);
     if (!app || app.length === 0) {
       return (
         `Could not find installed app with id: ${appInstanceId}. ` +
@@ -1191,7 +1134,7 @@ export class ConnextClient extends ConnextChannel {
 
   private appInstalled = async (appInstanceId: string): Promise<string | undefined> => {
     const apps = await this.getAppInstances();
-    const app = apps.filter((app: AppInstanceJson) => app.identityHash === appInstanceId);
+    const app = apps.filter((app: AppInstanceJson): boolean => app.identityHash === appInstanceId);
     if (app.length > 0) {
       return (
         `App with id ${appInstanceId} is already installed. ` +
