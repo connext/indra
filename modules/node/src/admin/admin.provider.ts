@@ -45,6 +45,10 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getIncorrectMultisigAddresses();
   }
 
+  async getChannelsForMerging(): Promise<any[]> {
+    return await this.adminService.getChannelsForMerging();
+  }
+
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "admin.get-no-free-balance",
@@ -54,6 +58,11 @@ class AdminMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "admin.get-incorrect-multisig",
       this.authService.useAdminToken(this.getIncorrectMultisigAddresses.bind(this)),
+    );
+
+    await super.connectRequestReponse(
+      "admin.get-channels-for-merging",
+      this.authService.useAdminToken(this.getChannelsForMerging.bind(this)),
     );
   }
 }
