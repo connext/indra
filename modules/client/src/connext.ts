@@ -73,7 +73,7 @@ const MAX_WITHDRAWAL_RETRIES = 3;
  * At a minimum, must contain the nodeUrl and a client signing key or mnemonic
  */
 
-export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
+export async function connect(opts: ClientOptions): Promise<ConnextClient> {
   const {
     logLevel,
     ethProviderUrl,
@@ -220,7 +220,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
   channelRouter.multisigAddress = multisigAddress;
 
   // create the new client
-  const client = new ConnextInternal({
+  const client = new ConnextClient({
     appRegistry,
     channelRouter,
     config,
@@ -251,13 +251,13 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
  * This abstract class contains all methods associated with managing
  * or establishing the user's channel.
  *
- * The true implementation of this class exists in the `ConnextInternal`
+ * The true implementation of this class exists in the `ConnextClient`
  * class
- */
+*/
 export abstract class ConnextChannel {
   public opts: InternalClientOptions;
   public config: GetConfigResponse;
-  private internal: ConnextInternal;
+  private internal: ConnextClient;
 
   public constructor(opts: InternalClientOptions) {
     this.opts = opts;
@@ -309,7 +309,7 @@ export abstract class ConnextChannel {
     return await this.internal.conditionalTransfer(params);
   };
 
-  public restoreState = async (mnemonic: string): Promise<ConnextInternal> => {
+  public restoreState = async (mnemonic: string): Promise<ConnextClient> => {
     return await this.internal.restoreState(mnemonic);
   };
 
@@ -394,7 +394,7 @@ export abstract class ConnextChannel {
 
   // does not directly call node function because needs to send
   // some additional information along with the request, as implemented in
-  // ConnextInternal
+  // ConnextClient
   public verifyAppSequenceNumber = async (): Promise<ChannelAppSequences> => {
     return await this.internal.verifyAppSequenceNumber();
   };
@@ -511,7 +511,7 @@ export abstract class ConnextChannel {
 /**
  * True implementation of the connext client
  */
-export class ConnextInternal extends ConnextChannel {
+export class ConnextClient extends ConnextChannel {
   public appRegistry: AppRegistry;
   public channelRouter: ChannelRouter;
   public ethProvider: providers.JsonRpcProvider;
@@ -559,7 +559,7 @@ export class ConnextInternal extends ConnextChannel {
     this.publicIdentifier = this.channelRouter.config.userPublicIdentifier;
     this.multisigAddress = this.opts.multisigAddress;
     this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
-    this.logger = new Logger("ConnextInternal", opts.logLevel);
+    this.logger = new Logger("ConnextClient", opts.logLevel);
     this.network = opts.network;
     this.store = opts.store;
 
@@ -726,7 +726,7 @@ export class ConnextInternal extends ConnextChannel {
     }
   };
 
-  public restoreState = async (mnemonic: string): Promise<ConnextInternal> => {
+  public restoreState = async (mnemonic: string): Promise<ConnextClient> => {
     if (this.routerType === RpcType.ChannelProvider) {
       throw new Error(`Cannot restore state with channel provider`);
     }

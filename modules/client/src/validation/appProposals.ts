@@ -2,7 +2,7 @@ import { RegisteredAppDetails, SupportedApplication } from "@connext/types";
 import { AppInstanceInfo, AppInstanceJson } from "@counterfactual/types";
 import { bigNumberify, getAddress } from "ethers/utils";
 
-import { ConnextInternal } from "../connext";
+import { ConnextClient } from "../connext";
 import { Logger } from "../lib/logger";
 import { freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
 
@@ -11,7 +11,7 @@ type ProposalValidator = {
     app: AppInstanceInfo,
     registeredInfo: RegisteredAppDetails,
     isVirtual: boolean,
-    connext: ConnextInternal,
+    connext: ConnextClient,
   ) => Promise<string | undefined>;
 };
 
@@ -19,7 +19,7 @@ export const validateSwapApp = async (
   app: AppInstanceInfo,
   registeredInfo: RegisteredAppDetails,
   isVirtual: boolean,
-  connext: ConnextInternal,
+  connext: ConnextClient,
 ): Promise<string | undefined> => {
   const baseValidation = await baseAppValidation(app, registeredInfo, isVirtual, connext);
   if (baseValidation) {
@@ -38,7 +38,7 @@ export const validateTransferApp = async (
   app: AppInstanceInfo,
   registeredInfo: RegisteredAppDetails,
   isVirtual: boolean,
-  connext: ConnextInternal,
+  connext: ConnextClient,
   // TODO: ideally this wouldnt get passed in, but you need it
   // to check things like your public identifier, open apps,
   // free balance, etc.
@@ -69,7 +69,7 @@ export const validateSimpleTransferApp = async (
   app: AppInstanceInfo,
   registeredInfo: RegisteredAppDetails,
   isVirtual: boolean,
-  connext: ConnextInternal,
+  connext: ConnextClient,
   // TODO: ideally this wouldnt get passed in, but you need it
   // to check things like your public identifier, open apps,
   // free balance, etc.
@@ -101,7 +101,7 @@ export const validateLinkedTransferApp = async (
   app: AppInstanceInfo,
   registeredInfo: RegisteredAppDetails,
   isVirtual: boolean,
-  connext: ConnextInternal,
+  connext: ConnextClient,
 ): Promise<string | undefined> => {
   return undefined;
 };
@@ -125,7 +125,7 @@ const baseAppValidation = async (
   app: AppInstanceInfo,
   registeredInfo: RegisteredAppDetails,
   isVirtual: boolean,
-  connext: ConnextInternal,
+  connext: ConnextClient,
 ): Promise<string | undefined> => {
   const log = new Logger("baseAppValidation", connext.opts.logLevel);
   // check the initial state is consistent
@@ -136,7 +136,7 @@ const baseAppValidation = async (
   const apps = await connext.getAppInstances();
   if (apps) {
     const sharedIds = (await connext.getAppInstances()).filter(
-      (a: AppInstanceJson) => a.identityHash === app.identityHash,
+      (a: AppInstanceJson): boolean => a.identityHash === app.identityHash,
     );
     if (sharedIds.length !== 0) {
       return `Duplicate app id detected. Proposed app: ${prettyLog(app)}`;

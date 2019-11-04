@@ -30,7 +30,7 @@ process.on("unhandledRejection", (e: any): any => {
   process.exit(1);
 });
 
-let client: connext.ConnextInternal;
+let client: connext.ConnextClient;
 let assetId: string;
 
 export function getAssetId(): string {
@@ -49,7 +49,7 @@ export function getFreeBalanceAddress(): string {
   return client.freeBalanceAddress;
 }
 
-export function getConnextClient(): connext.ConnextInternal {
+export function getConnextClient(): connext.ConnextClient {
   return client;
 }
 
@@ -218,16 +218,22 @@ async function run(): Promise<void> {
     const provider = new JsonRpcProvider(config.ethProviderUrl);
     const preWithdrawBal = await provider.getBalance(config.recipient || client.freeBalanceAddress);
     console.log(`Found prewithdrawal balance of ${formatEther(preWithdrawBal)}`);
-    client.on(CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED, async (data: any) => {
-      console.log(`Caught withdraw confirmed event, data: ${JSON.stringify(data, replaceBN, 2)}`);
-      const postWithdrawBal = await provider.getBalance(
-        config.recipient || client.freeBalanceAddress,
-      );
-      console.log(`Found postwithdrawal balance of ${formatEther(postWithdrawBal)}`);
-    });
-    client.on(CFCoreTypes.EventName.WITHDRAWAL_FAILED, async (data: any) => {
-      console.log(`Withdrawal failed with data: ${JSON.stringify(data, replaceBN, 2)}`);
-    });
+    client.on(
+      CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED,
+      async (data: any): Promise<void> => {
+        console.log(`Caught withdraw confirmed event, data: ${JSON.stringify(data, replaceBN, 2)}`);
+        const postWithdrawBal = await provider.getBalance(
+          config.recipient || client.freeBalanceAddress,
+        );
+        console.log(`Found postwithdrawal balance of ${formatEther(postWithdrawBal)}`);
+      },
+    );
+    client.on(
+      CFCoreTypes.EventName.WITHDRAWAL_FAILED,
+      async (data: any): Promise<void> => {
+        console.log(`Withdrawal failed with data: ${JSON.stringify(data, replaceBN, 2)}`);
+      },
+    );
     console.log(
       `Attempting to withdraw ${withdrawParams.amount} with assetId ` +
         `${withdrawParams.assetId} to address ${withdrawParams.recipient}...`,
@@ -288,7 +294,7 @@ async function getOrCreateChannel(assetId?: string): Promise<void> {
   const interval = 0.1;
   while (!(await channelAvailable())) {
     console.info(`Waiting ${interval} more seconds for channel to be available`);
-    await new Promise((res: any): any => setTimeout(() => res(), interval * 1000));
+    await new Promise((res: any): any => setTimeout((): void => res(), interval * 1000));
   }
   await client.addPaymentProfile({
     amountToCollateralize: parseEther("0.1").toString(),

@@ -6,7 +6,7 @@ import { fromMnemonic } from "ethers/utils/hdnode";
 import { EventEmitter } from "events";
 
 import { ChannelRouter } from "./channelRouter";
-import { ConnextInternal } from "./connext";
+import { ConnextClient } from "./connext";
 import {
   CreateChannelMessage,
   DepositConfirmationMessage,
@@ -31,7 +31,7 @@ type CallbackStruct = {
 export class ConnextListener extends EventEmitter {
   private log: Logger;
   private channelRouter: ChannelRouter;
-  private connext: ConnextInternal;
+  private connext: ConnextClient;
 
   // TODO: add custom parsing functions here to convert event data
   // to something more usable?
@@ -159,7 +159,7 @@ export class ConnextListener extends EventEmitter {
     },
   };
 
-  constructor(channelRouter: ChannelRouter, connext: ConnextInternal) {
+  constructor(channelRouter: ChannelRouter, connext: ConnextClient) {
     super();
     this.channelRouter = channelRouter;
     this.connext = connext;
@@ -176,10 +176,13 @@ export class ConnextListener extends EventEmitter {
   public registerCfListener = (event: CFCoreTypes.EventName, cb: Function): void => {
     // replace with new fn
     this.log.info(`Registering listener for ${event}`);
-    this.channelRouter.on(event, async (res: any) => {
-      await cb(res);
-      this.emit(event, res);
-    });
+    this.channelRouter.on(
+      event,
+      async (res: any): Promise<void> => {
+        await cb(res);
+        this.emit(event, res);
+      },
+    );
   };
 
   public removeCfListener = (event: CFCoreTypes.EventName, cb: Function): boolean => {
@@ -196,11 +199,11 @@ export class ConnextListener extends EventEmitter {
   };
 
   public registerDefaultListeners = (): void => {
-    Object.entries(this.defaultCallbacks).forEach(([event, callback]) => {
+    Object.entries(this.defaultCallbacks).forEach(([event, callback]: any): any => {
       this.channelRouter.on(CFCoreTypes.EventName[event], callback);
     });
 
-    this.channelRouter.on(CFCoreTypes.RpcMethodName.INSTALL, (data: any) => {
+    this.channelRouter.on(CFCoreTypes.RpcMethodName.INSTALL, (data: any): any => {
       const appInstance = data.result.result.appInstance;
       this.log.debug(
         `Emitting CFCoreTypes.RpcMethodName.INSTALL event: ${JSON.stringify(appInstance)}`,
@@ -211,7 +214,7 @@ export class ConnextListener extends EventEmitter {
       );
     });
 
-    this.channelRouter.on(CFCoreTypes.RpcMethodName.UNINSTALL, (data: any) => {
+    this.channelRouter.on(CFCoreTypes.RpcMethodName.UNINSTALL, (data: any): any => {
       const result = data.result.result;
       this.log.debug(
         `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(result)}`,
@@ -231,7 +234,7 @@ export class ConnextListener extends EventEmitter {
   private matchAppInstance = async (
     data: ProposeMessage,
   ): Promise<{ matchedApp: RegisteredAppDetails; appInfo: AppInstanceInfo } | undefined> => {
-    const filteredApps = this.connext.appRegistry.filter((app: RegisteredAppDetails) => {
+    const filteredApps = this.connext.appRegistry.filter((app: RegisteredAppDetails): boolean => {
       return app.appDefinitionAddress === data.data.params.appDefinition;
     });
 
@@ -316,27 +319,33 @@ export class ConnextListener extends EventEmitter {
 
   private registerAvailabilitySubscription = async (): Promise<void> => {
     const subject = `online.${this.connext.publicIdentifier}`;
-    await this.connext.messaging.subscribe(subject, async (msg: any) => {
-      if (!msg.reply) {
-        this.log.info(`No reply found for msg: ${msg}`);
-        return;
-      }
+    await this.connext.messaging.subscribe(
+      subject,
+      async (msg: any): Promise<any> => {
+        if (!msg.reply) {
+          this.log.info(`No reply found for msg: ${msg}`);
+          return;
+        }
 
-      const response = true;
-      this.connext.messaging.publish(msg.reply, {
-        err: null,
-        response,
-      });
-    });
+        const response = true;
+        this.connext.messaging.publish(msg.reply, {
+          err: null,
+          response,
+        });
+      },
+    );
     this.log.info(`Connected message pattern "${subject}"`);
   };
 
   private registerLinkedTransferSubscription = async (): Promise<void> => {
     const subject = `transfer.send-async.${this.connext.publicIdentifier}`;
-    await this.connext.messaging.subscribe(subject, async (data: any) => {
-      this.log.info(`Received message for subscription: ${JSON.stringify(data)}`);
-      const { encryptedPreImage, paymentId } = data;
-      await this.connext.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
-    });
+    await this.connext.messaging.subscribe(
+      subject,
+      async (data: any): Promise<any> => {
+        this.log.info(`Received message for subscription: ${JSON.stringify(data)}`);
+        const { encryptedPreImage, paymentId } = data;
+        await this.connext.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
+      },
+    );
   };
 }
