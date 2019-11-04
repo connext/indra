@@ -1,6 +1,6 @@
 {
   "name": "@connext/messaging",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
   "types": "dist/index.d.ts",
@@ -18,7 +18,7 @@
   },
   "devDependencies": {
     "@counterfactual/types": "0.0.44",
-    "rollup": "1.26.0",
+    "rollup": "1.26.3",
     "rollup-plugin-typescript2": "0.24.3",
     "typescript": "3.5.3"
   }

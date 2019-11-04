@@ -11,8 +11,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@connext/client": "0.3.1",
-    "commander": "3.0.2",
+    "@connext/client": "0.3.2",
+    "commander": "4.0.0",
     "dotenv": "8.2.0",
     "ethers": "4.0.37",
     "pisa-client": "0.1.4-connext-beta.1",
@@ -20,8 +20,8 @@
   },
   "devDependencies": {
     "@counterfactual/types": "0.0.44",
-    "@connext/types": "0.3.1",
-    "@types/node-fetch": "2.5.2",
+    "@connext/types": "0.3.2",
+    "@types/node-fetch": "2.5.3",
     "env-cmd": "10.0.1",
     "ts-node": "8.4.1",
     "typescript": "3.5.3"

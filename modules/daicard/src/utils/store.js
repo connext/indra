@@ -72,11 +72,16 @@ export const storeFactory = options => {
     },
 
     reset: () => {
-      for (const k of Object.keys(localStorage)) {
-        if (k.startsWith(ConnextClientStorePrefix)) {
-          localStorage.removeItem(k);
+      // TODO: Should we also scrub legacy channel prefixes?
+      const channelPrefix = `${ConnextClientStorePrefix}:store/`
+      // get all keys in local storage that match prefix
+      Object.entries(localStorage).forEach(([key, value]) => {
+        if (key.includes(channelPrefix)) {
+          console.log(`removing item: ${key}`)
+          localStorage.removeItem(key)
         }
-      }
+      })
+      localStorage.removeItem(`${ConnextClientStorePrefix}:EXTENDED_PRIVATE_KEY`);
     },
 
     restore: async () => {
