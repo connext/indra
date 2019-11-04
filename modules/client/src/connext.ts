@@ -142,7 +142,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextClient> {
   // create a new node api instance
   const node: NodeApiClient = new NodeApiClient({ logLevel, messaging });
   const config = await node.config();
-  logger.info(`Node provided config: ${JSON.stringify(config, null, 2)}`);
+  logger.debug(`Node provided config: ${JSON.stringify(config, null, 2)}`);
 
   let channelRouter: ChannelRouter;
   switch (channelProviderConfig.type) {

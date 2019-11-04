@@ -19,6 +19,7 @@ export const getOrCreateChannel = async (assetId?: string): Promise<connext.Conn
     store,
   };
   const client = await connext.connect(connextOpts);
+  await client.isAvailable;
   const nodeFBAddress = connext.utils.freeBalanceAddressFromXpub(client.nodePublicIdentifier);
   console.log("Payment bot launched:");
   console.log(` - mnemonic: ${connextOpts.mnemonic}`);
@@ -29,20 +30,12 @@ export const getOrCreateChannel = async (assetId?: string): Promise<connext.Conn
   console.log(` - User freeBalanceAddress: ${client.freeBalanceAddress}`);
   console.log(` - Node freeBalance address: ${nodeFBAddress}`);
 
-  const channelAvailable = async (): Promise<boolean> => {
-    const channel = await client.getChannel();
-    return channel && channel.available;
-  };
-  const interval = 0.1;
-  while (!(await channelAvailable())) {
-    console.info(`Waiting ${interval} more seconds for channel to be available`);
-    await new Promise((res: any): any => setTimeout((): void => res(), interval * 1000));
-  }
   await client.addPaymentProfile({
     amountToCollateralize: parseEther("0.1").toString(),
     assetId: AddressZero,
     minimumMaintainedCollateral: parseEther("0.01").toString(),
   });
+
   if (assetId) {
     await client.addPaymentProfile({
       amountToCollateralize: parseEther("10").toString(),
@@ -50,7 +43,6 @@ export const getOrCreateChannel = async (assetId?: string): Promise<connext.Conn
       minimumMaintainedCollateral: parseEther("5").toString(),
     });
   }
-  console.info(`Channel is available!`);
 
   client.on(
     CFCoreTypes.EventName.UNINSTALL_VIRTUAL,
@@ -66,6 +58,7 @@ export const getOrCreateChannel = async (assetId?: string): Promise<connext.Conn
   client.on(
     CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED,
     async (data: any): Promise<void> => {
+      console.log(`Bot event caught: ${CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED}`);
       logEthFreeBalance(AddressZero, await client.getFreeBalance());
       if (assetId) {
         logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
