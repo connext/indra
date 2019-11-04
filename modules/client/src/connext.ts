@@ -127,9 +127,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextClient> {
     throw new Error(`Must provide a channel provider or mnemonic on startup.`);
   }
 
-  logger.info(`Using channel provider config: ${JSON.stringify(channelProviderConfig, null, 2)}`);
+  logger.debug(`Using channel provider config: ${JSON.stringify(channelProviderConfig, null, 2)}`);
 
-  logger.info(`Creating messaging service client (logLevel: ${logLevel})`);
+  logger.debug(`Creating messaging service client (logLevel: ${logLevel})`);
   const messagingFactory = new MessagingServiceFactory({
     clusterId: channelProviderConfig.natsClusterId,
     logLevel,
@@ -138,28 +138,11 @@ export async function connect(opts: ClientOptions): Promise<ConnextClient> {
   });
   const messaging = messagingFactory.createService("messaging");
   await messaging.connect();
-  logger.info("Messaging service is connected");
 
   // create a new node api instance
-  logger.info("creating node api client");
-  const nodeApiConfig = {
-    logLevel,
-    messaging,
-  };
-  const node: NodeApiClient = new NodeApiClient(nodeApiConfig);
-  logger.info("created node api client successfully");
-
+  const node: NodeApiClient = new NodeApiClient({ logLevel, messaging });
   const config = await node.config();
-  logger.info(`node is connected to eth network: ${JSON.stringify(config.ethNetwork)}`);
-  logger.info(`node config: ${JSON.stringify(config)}`);
-
-  const appRegistry = await node.appRegistry();
-
-  // create the lock service for cfCore
-  logger.info("using node's proxy lock service");
-  const lockService: CFCoreTypes.ILockService = {
-    acquireLock: node.acquireLock.bind(node),
-  };
+  logger.info(`Node provided config: ${JSON.stringify(config, null, 2)}`);
 
   let channelRouter: ChannelRouter;
   switch (channelProviderConfig.type) {
@@ -168,21 +151,15 @@ export async function connect(opts: ClientOptions): Promise<ConnextClient> {
       break;
 
     case RpcType.CounterfactualNode:
-      logger.info("creating new cf module");
       const cfCore = await CFCore.create(
         messaging as any, // TODO: FIX
         store,
-        {
-          STORE_KEY_PREFIX: "store",
-        }, // TODO: proper config
+        { STORE_KEY_PREFIX: "store" },
         ethProvider,
         config.contractAddresses,
-        lockService,
+        { acquireLock: node.acquireLock.bind(node) },
       );
-      const signer = await cfCore.signerAddress();
       const wallet = Wallet.fromMnemonic(opts.mnemonic!, CF_PATH);
-      logger.info("created cf module successfully");
-      logger.info(`cf module signer address: ${signer}`);
       channelRouter = new ChannelRouter(cfCore, channelProviderConfig, store, wallet);
       break;
 
@@ -198,7 +175,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextClient> {
   const myChannel = await node.getChannel();
   let multisigAddress: string;
   if (!myChannel) {
-    logger.info("no channel detected, creating channel..");
+    logger.debug("no channel detected, creating channel..");
     const creationEventData: CFCoreTypes.CreateChannelResult = await new Promise(
       async (res: any, rej: any): Promise<any> => {
         const timer = setTimeout(
@@ -214,20 +191,20 @@ export async function connect(opts: ClientOptions): Promise<ConnextClient> {
         );
 
         const creationData = await node.createChannel();
-        logger.info(`created channel, transaction: ${JSON.stringify(creationData)}`);
+        logger.debug(`created channel, transaction: ${JSON.stringify(creationData)}`);
       },
     );
     multisigAddress = creationEventData.multisigAddress;
   } else {
     multisigAddress = myChannel.multisigAddress;
   }
-  logger.info(`multisigAddress: ${multisigAddress}`);
+  logger.debug(`multisigAddress: ${multisigAddress}`);
 
   channelRouter.multisigAddress = multisigAddress;
 
   // create the new client
   const client = new ConnextClient({
-    appRegistry,
+    appRegistry: await node.appRegistry(),
     channelRouter,
     config,
     ethProvider,

@@ -114,7 +114,7 @@ export class NodeApiClient implements INodeApiClient {
     timeout: number,
   ): Promise<any> {
     const lockValue = await this.send(`lock.acquire.${lockName}`, { lockTTL: timeout });
-    this.log.info(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
+    this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
     let retVal: any;
     try {
       retVal = await callback();
@@ -123,7 +123,7 @@ export class NodeApiClient implements INodeApiClient {
       this.log.error(e);
     } finally {
       await this.send(`lock.release.${lockName}`, { lockValue });
-      this.log.info(`Released lock at ${Date.now()} for ${lockName}`);
+      this.log.debug(`Released lock at ${Date.now()} for ${lockName}`);
     }
     return retVal;
   }
@@ -178,7 +178,7 @@ export class NodeApiClient implements INodeApiClient {
     } catch (e) {
       // TODO: node should return once deposit starts
       if (e.message.startsWith("Request timed out")) {
-        this.log.info(`request collateral message timed out`);
+        this.log.warn(`request collateral message timed out`);
         return;
       }
       throw e;
@@ -285,7 +285,6 @@ export class NodeApiClient implements INodeApiClient {
         });
         const sig = await this.channelRouter.signMessage(nonce);
         const token = `${nonce}:${sig}`;
-        this.log.info(`Got new token for ${this.channelRouter.signerAddress}: ${token}`);
         return resolve(token);
       },
     );

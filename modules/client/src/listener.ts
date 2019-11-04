@@ -175,7 +175,7 @@ export class ConnextListener extends EventEmitter {
 
   public registerCfListener = (event: CFCoreTypes.EventName, cb: Function): void => {
     // replace with new fn
-    this.log.info(`Registering listener for ${event}`);
+    this.log.debug(`Registering listener for ${event}`);
     this.channelRouter.on(
       event,
       async (res: any): Promise<void> => {
@@ -186,7 +186,7 @@ export class ConnextListener extends EventEmitter {
   };
 
   public removeCfListener = (event: CFCoreTypes.EventName, cb: Function): boolean => {
-    this.log.info(`Removing listener for ${event}`);
+    this.log.debug(`Removing listener for ${event}`);
     try {
       this.removeListener(event, cb as any);
       return true;
@@ -306,14 +306,14 @@ export class ConnextListener extends EventEmitter {
       // request collateral in token of the app
       await this.connext.requestCollateral(appInstance.initiatorDepositTokenAddress);
     }
-    this.log.info(`Proposal for app install successful, attempting install now...`);
+    this.log.debug(`Proposal for app install successful, attempting install now...`);
     let res: CFCoreTypes.InstallResult;
     if (isVirtual) {
       res = await this.connext.installVirtualApp(appInstance.identityHash);
     } else {
       res = await this.connext.installApp(appInstance.identityHash);
     }
-    this.log.info(`App installed, res: ${JSON.stringify(res, replaceBN, 2)}`);
+    this.log.debug(`App installed, res: ${JSON.stringify(res, replaceBN, 2)}`);
     return;
   };
 
@@ -323,7 +323,7 @@ export class ConnextListener extends EventEmitter {
       subject,
       async (msg: any): Promise<any> => {
         if (!msg.reply) {
-          this.log.info(`No reply found for msg: ${msg}`);
+          this.log.warn(`No reply found for msg: ${msg}`);
           return;
         }
 
@@ -334,7 +334,7 @@ export class ConnextListener extends EventEmitter {
         });
       },
     );
-    this.log.info(`Connected message pattern "${subject}"`);
+    this.log.debug(`Connected message pattern "${subject}"`);
   };
 
   private registerLinkedTransferSubscription = async (): Promise<void> => {
