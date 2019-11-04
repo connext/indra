@@ -171,7 +171,6 @@ export class TransferController extends AbstractController {
     };
 
     const res = await this.connext.proposeInstallVirtualApp(params);
-    // set app instance id
     this.appId = res.appInstanceId;
 
     try {
@@ -180,10 +179,10 @@ export class TransferController extends AbstractController {
         boundResolve = this.resolveInstallTransfer.bind(null, res);
         this.listener.on(CFCoreTypes.EventName.INSTALL_VIRTUAL, boundResolve);
         this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
-        // this.timeout = setTimeout(() => {
-        //   this.cleanupInstallListeners(boundResolve, boundReject);
-        //   boundReject({ data: { appInstanceId: this.appId } });
-        // }, 5000);
+        this.timeout = setTimeout((): void => {
+          this.cleanupInstallListeners(boundResolve, boundReject);
+          boundReject({ data: { appInstanceId: this.appId } });
+        }, 5000);
       });
       this.log.info(`App was installed successfully!: ${JSON.stringify(res)}`);
       return res.appInstanceId;
