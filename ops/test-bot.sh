@@ -63,13 +63,20 @@ echo -e "$divider";echo "Depositing tokens into sender bot"
 bash ops/payment-bot.sh -i 2 -d 0.1 -a $tokenAddress -m "$mnemonic2"
 
 echo -e "$divider";echo "Sending eth to recipient bot"
-bash ops/payment-bot.sh -i 2 -t 0.05 -c $id -m "$mnemonic2"
+bash ops/payment-bot.sh -i 2 -t 0.025 -c $id -m "$mnemonic2"
 
-echo -e "$divider";echo "Sending tokens to recipient bot"
-bash ops/payment-bot.sh -i 2 -t 0.05 -c $id -a $tokenAddress -m "$mnemonic2"
+# Dump a little data for debugging
+rm -f .state-before.json
+cat modules/payment-bot/.payment-bot-db/2.json | jq . > .state-before.json
 
 echo -e "$divider";echo "Restoring remote state"
 bash ops/payment-bot.sh -i 2 -z \"$mnemonic2\"
+
+echo -e "$divider";echo "Sending eth to recipient bot"
+bash ops/payment-bot.sh -i 2 -t 0.025 -c $id -m "$mnemonic2"
+
+echo -e "$divider";echo "Sending tokens to recipient bot"
+bash ops/payment-bot.sh -i 2 -t 0.05 -c $id -a $tokenAddress -m "$mnemonic2"
 
 echo -e "$divider";echo "Stopping recipient listener so it can redeem a link payment"
 cleanup
