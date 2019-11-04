@@ -1,9 +1,7 @@
-import * as connext from "@connext/client";
 import {
   DepositParameters,
   LinkedTransferParameters,
   LinkedTransferToRecipientParameters,
-  makeChecksum,
   ResolveLinkedTransferParameters,
   WithdrawParameters,
 } from "@connext/types";
@@ -12,13 +10,9 @@ import { AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { formatEther, hexlify, parseEther, randomBytes } from "ethers/utils";
 
-import { registerClientListeners } from "./bot";
+import { getOrCreateChannel } from "./channel";
 import { config } from "./config";
-import { Store } from "./store";
-import { logEthFreeBalance } from "./utils";
-
-const replaceBN = (key: string, value: any): any =>
-  value && value._hex ? value.toString() : value;
+import { checkForLinkedFields, logEthFreeBalance, replaceBN } from "./utils";
 
 process.on("warning", (e: any): any => {
   console.warn(e);
@@ -30,57 +24,12 @@ process.on("unhandledRejection", (e: any): any => {
   process.exit(1);
 });
 
-let client: connext.ConnextClient;
-let assetId: string;
+////////////////////////////////////////
+// Begin executing w/in an async wrapper function
 
-export function getAssetId(): string {
-  return assetId;
-}
-
-export function setAssetId(aid: string): void {
-  assetId = aid;
-}
-
-export function getMultisigAddress(): string {
-  return client.opts.multisigAddress;
-}
-
-export function getFreeBalanceAddress(): string {
-  return client.freeBalanceAddress;
-}
-
-export function getConnextClient(): connext.ConnextClient {
-  return client;
-}
-
-export function exitOrLeaveOpen(config: any): void {
-  if (!config.open) {
-    process.exit(0);
-  }
-  console.log("leaving process open");
-}
-
-export function checkForLinkedFields(config: any): void {
-  if (!config.preImage) {
-    throw new Error(
-      `Cannot ${
-        config.linked ? "create" : "redeem"
-      } a linked payment without an associated preImage.`,
-    );
-  }
-  if (!config.paymentId) {
-    throw new Error(
-      `Cannot ${
-        config.linked ? "create" : "redeem"
-      } a linked payment without an associated paymmentId.`,
-    );
-  }
-}
-
-async function run(): Promise<void> {
+(async (): Promise<void> => {
   const assetId = config.assetId ? config.assetId : AddressZero;
-  setAssetId(assetId);
-  await getOrCreateChannel(assetId);
+  let client = await getOrCreateChannel(assetId);
 
   const logEthAndAssetFreeBalance = async (): Promise<void> => {
     logEthFreeBalance(AddressZero, await client.getFreeBalance(assetId));
@@ -262,54 +211,9 @@ async function run(): Promise<void> {
     client = await client.restoreState(config.restore);
   }
 
-  exitOrLeaveOpen(config);
+  if (!config.open) {
+    process.exit(0);
+  }
+
   console.log(`Waiting to receive transfers at ${client.publicIdentifier}`);
-}
-
-async function getOrCreateChannel(assetId?: string): Promise<void> {
-  const store = new Store();
-
-  const connextOpts: connext.ClientOptions = {
-    ethProviderUrl: config.ethProviderUrl,
-    logLevel: config.logLevel,
-    mnemonic: config.mnemonic,
-    nodeUrl: config.nodeUrl,
-    store,
-  };
-  client = await connext.connect(connextOpts);
-  const nodeFBAddress = connext.utils.freeBalanceAddressFromXpub(client.nodePublicIdentifier);
-  console.log("Payment bot launched:");
-  console.log(` - mnemonic: ${connextOpts.mnemonic}`);
-  console.log(` - ethProviderUrl: ${connextOpts.ethProviderUrl}`);
-  console.log(` - nodeUrl: ${connextOpts.nodeUrl}`);
-  console.log(` - publicIdentifier: ${client.publicIdentifier}`);
-  console.log(` - multisigAddress: ${client.opts.multisigAddress}`);
-  console.log(` - User freeBalanceAddress: ${client.freeBalanceAddress}`);
-  console.log(` - Node freeBalance address: ${nodeFBAddress}`);
-
-  const channelAvailable = async (): Promise<boolean> => {
-    const channel = await client.getChannel();
-    return channel && channel.available;
-  };
-  const interval = 0.1;
-  while (!(await channelAvailable())) {
-    console.info(`Waiting ${interval} more seconds for channel to be available`);
-    await new Promise((res: any): any => setTimeout((): void => res(), interval * 1000));
-  }
-  await client.addPaymentProfile({
-    amountToCollateralize: parseEther("0.1").toString(),
-    assetId: AddressZero,
-    minimumMaintainedCollateral: parseEther("0.01").toString(),
-  });
-  if (assetId) {
-    await client.addPaymentProfile({
-      amountToCollateralize: parseEther("10").toString(),
-      assetId: makeChecksum(assetId),
-      minimumMaintainedCollateral: parseEther("5").toString(),
-    });
-  }
-  console.info(`Channel is available!`);
-  registerClientListeners();
-}
-
-run();
+})();
