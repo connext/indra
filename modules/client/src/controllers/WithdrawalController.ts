@@ -51,9 +51,9 @@ export class WithdrawalController extends AbstractController {
       } else {
         this.log.info(`Calling ${CFCoreTypes.RpcMethodName.WITHDRAW}`);
         // user submitting the withdrawal
-        const withdrawResponse = await this.channelRouter.withdraw(
-          new BigNumber(amount),
+        const withdrawResponse = await this.connext.providerWithdraw(
           assetId,
+          new BigNumber(amount),
           recipient,
         );
         this.log.info(`Withdraw Response: ${stringify(withdrawResponse)}`);
