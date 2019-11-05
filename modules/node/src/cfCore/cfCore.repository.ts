@@ -1,6 +1,6 @@
 import { EntityRepository, Like, Repository } from "typeorm";
 
-import { CLogger } from "../util";
+import { CLogger, stringify } from "../util";
 
 import { CFCoreRecord } from "./cfCore.entity";
 
@@ -73,7 +73,7 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
 
   async deleteLegacyCFCoreRecords(): Promise<CFCoreRecord[] | void> {
     const legacyRecords = await this.find({ path: Like(`%channel%`) });
-    console.log("would have deleted these: ", legacyRecords);
+    console.log("would have deleted these: ", stringify(legacyRecords, 2));
     return;
     // return await this.remove(legacyRecords);
   }
