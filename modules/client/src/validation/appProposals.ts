@@ -176,7 +176,7 @@ const baseAppValidation = async (
     initiatorFreeBalance[freeBalanceAddressFromXpub(connext.nodePublicIdentifier)];
   if (isVirtual && nodeFreeBalance.lt(app.initiatorDeposit)) {
     const reqRes = await connext.requestCollateral(app.initiatorDepositTokenAddress);
-    connext.log.debug(`Collateral Request result: ${reqRes}`);
+    connext.log.debug(`Collateral request response: ${stringify(reqRes)}`);
     return `Insufficient collateral for requested asset,
     freeBalance of node: ${nodeFreeBalance.toString()}
     required: ${app.initiatorDeposit}. Proposed app: ${stringify(app)}`;
