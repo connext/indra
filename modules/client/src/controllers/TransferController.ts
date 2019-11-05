@@ -113,11 +113,11 @@ export class TransferController extends AbstractController {
 
   // TODO: fix types of data
   private rejectInstallTransfer = (
-    rej: (reason?: any) => void,
-    msg: RejectInstallVirtualMessage, // fix typing, not nested in `.data` obj
-  ): any => {
+    rej: (reason?: string) => void,
+    msg: RejectInstallVirtualMessage,
+  ): void => {
     // check app id
-    if (this.appId !== (msg as any).appInstanceId) {
+    if (this.appId !== msg.data.appInstanceId) {
       return;
     }
 
@@ -133,7 +133,7 @@ export class TransferController extends AbstractController {
     appInfo: RegisteredAppDetails,
   ): Promise<string | undefined> => {
     let boundResolve: (value?: any) => void;
-    let boundReject: (reason?: any) => void;
+    let boundReject: (msg: RejectInstallVirtualMessage) => void;
 
     const initialState: SimpleTransferAppStateBigNumber = {
       coinTransfers: [
