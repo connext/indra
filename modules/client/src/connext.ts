@@ -197,6 +197,19 @@ export const connect = async (opts: ClientOptions): Promise<ConnextClientI> => {
     ...opts, // use any provided opts by default
   });
 
+  try {
+    await client.getFreeBalance();
+  } catch (e) {
+    log.warn(e);
+    if (e.message.includes(`StateChannel does not exist yet`)) {
+      console.log("Restoring client state");
+      await client.restoreState();
+      console.log("Newly restored client is ready to go!");
+    } else {
+      throw e;
+    }
+  }
+
   log.debug("Registering subscriptions");
   await client.registerSubscriptions();
 
@@ -217,7 +230,6 @@ export class ConnextClient implements ConnextClientI {
   public config: GetConfigResponse;
   public ethProvider: providers.JsonRpcProvider;
   public freeBalanceAddress: string;
-  public isAvailable: Promise<void>;
   public listener: ConnextListener;
   public log: Logger;
   public messaging: IMessagingService;
@@ -275,8 +287,10 @@ export class ConnextClient implements ConnextClientI {
       "ConditionalTransferController",
       this,
     );
+  }
 
-    this.isAvailable = new Promise(
+  public isAvailable = async (): Promise<void> => {
+    return new Promise(
       async (resolve: any, reject: any): Promise<any> => {
         // Wait for channel to be available
         const channelIsAvailable = async (): Promise<boolean> => {
@@ -289,7 +303,7 @@ export class ConnextClient implements ConnextClientI {
         resolve();
       },
     );
-  }
+  };
 
   // register subscriptions
   public registerSubscriptions = async (): Promise<void> => {
@@ -324,6 +338,7 @@ export class ConnextClient implements ConnextClientI {
     }
     this.node.channelRouter = channelRouter;
     this.channelRouter = channelRouter;
+    await this.isAvailable();
   };
 
   public getChannel = async (): Promise<GetChannelResponse> => {
@@ -478,11 +493,11 @@ export class ConnextClient implements ConnextClientI {
   ////////////////////////////////////////
   // Restore State
 
-  public restoreState = async (mnemonic: string): Promise<void> => {
+  public restoreState = async (): Promise<void> => {
     if (!this.store || this.routerType === RpcType.ChannelProvider) {
       throw new Error(`Cannot restore state with channel provider`);
     }
-    const hdNode = fromMnemonic(mnemonic);
+    const hdNode = fromMnemonic(this.opts.mnemonic!);
     const xpriv = hdNode.extendedKey;
     const xpub = hdNode.derivePath("m/44'/60'/0'/25446").neuter().extendedKey;
     this.channelRouter.reset();

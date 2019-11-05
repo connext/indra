@@ -267,22 +267,6 @@ class App extends React.Component {
     );
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
-    try {
-      await channel.getFreeBalance();
-      await channel.getFreeBalance(token.address);
-    } catch (e) {
-      console.warn(e);
-      if (e.message.includes(`This probably means that the StateChannel does not exist yet`)) {
-        // channel.connect() was already called, meaning there should be an existing channel
-        console.log("Restoring channel state");
-        channel = await channel.restoreState(localStorage.getItem("mnemonic"));
-        await channel.isAvailable;
-        console.log("Newly restored channel is ready to go!");
-      } else {
-        throw e;
-      }
-    }
-
     console.log(`Client created successfully!`);
     console.log(` - Public Identifier: ${channel.publicIdentifier}`);
     console.log(` - Account multisig address: ${channel.opts.multisigAddress}`);

@@ -53,7 +53,6 @@ export interface ConnextClientI {
 
   config: GetConfigResponse;
   freeBalanceAddress: string;
-  isAvailable: Promise<void>;
   multisigAddress: string;
   nodePublicIdentifier: string;
   publicIdentifier: string;
@@ -61,6 +60,7 @@ export interface ConnextClientI {
   ////////////////////////////////////////
   // Methods
 
+  isAvailable: () => Promise<void>;
   restart(): Promise<void>;
 
   ///////////////////////////////////
