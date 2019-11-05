@@ -257,13 +257,12 @@ export class ChannelRouter {
 
   public withdraw = async (
     amount: BigNumber,
-    multisigAddress: string,
     assetId: string, // optional in cf
     recipient: string, // optional in cf
   ): Promise<NodeTypes.WithdrawResult> => {
     return await this._send(NodeTypes.RpcMethodName.WITHDRAW, {
       amount,
-      multisigAddress,
+      multisigAddress: this.config.multisigAddress,
       recipient,
       tokenAddress: makeChecksum(assetId),
     } as NodeTypes.WithdrawParams);
