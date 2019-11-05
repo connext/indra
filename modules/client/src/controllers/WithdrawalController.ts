@@ -50,9 +50,12 @@ export class WithdrawalController extends AbstractController {
         this.log.info(`Node Withdraw Response: ${stringify(transaction)}`);
       } else {
         this.log.info(`Calling ${CFCoreTypes.RpcMethodName.WITHDRAW}`);
-        // Bo note: the following function used to point to something that doesn't exist
-        // so this code path probably never gets executed.. idk what this was supposed to do
-        const withdrawResponse = await this.node.withdraw(transaction as any);
+        // user submitting the withdrawal
+        const withdrawResponse = await this.channelRouter.withdraw(
+          new BigNumber(amount),
+          assetId,
+          recipient,
+        );
         this.log.info(`Withdraw Response: ${stringify(withdrawResponse)}`);
         transaction = await this.ethProvider.getTransaction(withdrawResponse.hash);
       }
