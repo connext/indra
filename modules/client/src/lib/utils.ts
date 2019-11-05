@@ -2,6 +2,7 @@ import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts
 import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
 import {
   BigNumber,
+  bigNumberify,
   computeAddress,
   getAddress,
   HDNode,
@@ -14,7 +15,7 @@ import {
 import { isNullOrUndefined } from "util";
 
 export const replaceBN = (key: string, value: any): any =>
-  value && value._hex ? value.toString() : value;
+  value && value._hex ? bigNumberify(value).toString() : value;
 
 // Capitalizes first char of a string
 export const capitalize = (str: string): string =>
@@ -102,11 +103,11 @@ export function xkeyKthAddress(xkey: string, k: number): string {
 }
 
 export function sortAddresses(addrs: string[]): string[] {
-  return addrs.sort((a, b) => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
+  return addrs.sort((a: string, b: string): number => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
 }
 
 export function xkeysToSortedKthAddresses(xkeys: string[], k: number): string[] {
-  return sortAddresses(xkeys.map(xkey => xkeyKthAddress(xkey, k)));
+  return sortAddresses(xkeys.map((xkey: string): string => xkeyKthAddress(xkey, k)));
 }
 
 export function xkeyKthHDNode(xkey: string, k: number): HDNode.HDNode {
