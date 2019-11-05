@@ -20,7 +20,7 @@ import {
   WithdrawMessage,
 } from "./lib/cfCore";
 import { Logger } from "./lib/logger";
-import { replaceBN } from "./lib/utils";
+import { stringify } from "./lib/utils";
 import { appProposalValidation } from "./validation/appProposals";
 
 // TODO: index of connext events only?
@@ -67,16 +67,14 @@ export class ConnextListener extends EventEmitter {
       // FIXME: type of ProposeMessage should extend CFCore.NodeMessage, which
       // has a from field, but ProposeMessage does not
       if ((data as any).from === this.connext.publicIdentifier) {
-        this.log.debug(
-          `Received proposal from our own node, doing nothing: ${JSON.stringify(data)}`,
-        );
+        this.log.debug(`Received proposal from our own node, doing nothing: ${stringify(data)}`);
         return;
       }
       // check based on supported applications
       // matched app, take appropriate default actions
       const matchedResult = await this.matchAppInstance(data);
       if (!matchedResult) {
-        this.log.warn(`No matched app, doing nothing, ${JSON.stringify(data)}`);
+        this.log.warn(`No matched app, doing nothing, ${stringify(data)}`);
         return;
       }
       if (matchedResult.matchedApp.name === "SimpleTransferApp") {
@@ -205,29 +203,25 @@ export class ConnextListener extends EventEmitter {
 
     this.channelRouter.on(CFCoreTypes.RpcMethodName.INSTALL, (data: any): any => {
       const appInstance = data.result.result.appInstance;
-      this.log.debug(
-        `Emitting CFCoreTypes.RpcMethodName.INSTALL event: ${JSON.stringify(appInstance)}`,
-      );
+      this.log.debug(`Emitting CFCoreTypes.RpcMethodName.INSTALL event: ${stringify(appInstance)}`);
       this.connext.messaging.publish(
         `indra.client.${this.connext.publicIdentifier}.install.${appInstance.identityHash}`,
-        JSON.stringify(appInstance),
+        stringify(appInstance),
       );
     });
 
     this.channelRouter.on(CFCoreTypes.RpcMethodName.UNINSTALL, (data: any): any => {
       const result = data.result.result;
-      this.log.debug(
-        `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(result)}`,
-      );
+      this.log.debug(`Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${stringify(result)}`);
       this.connext.messaging.publish(
         `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
-        JSON.stringify(result),
+        stringify(result),
       );
     });
   };
 
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
-    this.log.debug(`Emitted ${event} with data ${JSON.stringify(data)} at ${Date.now()}`);
+    this.log.debug(`Emitted ${event} with data ${stringify(data)} at ${Date.now()}`);
     this.emit(event, data);
   };
 
@@ -239,9 +233,7 @@ export class ConnextListener extends EventEmitter {
     });
 
     if (!filteredApps || filteredApps.length === 0) {
-      this.log.info(
-        `Proposed app not in registered applications. App: ${JSON.stringify(data, replaceBN, 2)}`,
-      );
+      this.log.info(`Proposed app not in registered applications. App: ${stringify(data)}`);
       return undefined;
     }
 
@@ -250,11 +242,7 @@ export class ConnextListener extends EventEmitter {
       this.log.error(
         `Proposed app matched ${
           filteredApps.length
-        } registered applications by definition address. App: ${JSON.stringify(
-          data,
-          replaceBN,
-          2,
-        )}`,
+        } registered applications by definition address. App: ${stringify(data)}`,
       );
       return undefined;
     }
@@ -313,7 +301,7 @@ export class ConnextListener extends EventEmitter {
     } else {
       res = await this.connext.installApp(appInstance.identityHash);
     }
-    this.log.debug(`App installed, res: ${JSON.stringify(res, replaceBN, 2)}`);
+    this.log.debug(`App installed, res: ${stringify(res)}`);
     return;
   };
 
@@ -342,7 +330,7 @@ export class ConnextListener extends EventEmitter {
     await this.connext.messaging.subscribe(
       subject,
       async (data: any): Promise<any> => {
-        this.log.info(`Received message for subscription: ${JSON.stringify(data)}`);
+        this.log.info(`Received message for subscription: ${stringify(data)}`);
         const { encryptedPreImage, paymentId } = data;
         await this.connext.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
       },

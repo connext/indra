@@ -4,7 +4,7 @@ import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
 
-import { publicIdentifierToAddress, replaceBN } from "../lib/utils";
+import { publicIdentifierToAddress, stringify } from "../lib/utils";
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
@@ -35,7 +35,7 @@ export class DepositController extends AbstractController {
     try {
       this.log.info(`Calling ${CFCoreTypes.RpcMethodName.DEPOSIT}`);
       const depositResponse = await this.connext.providerDeposit(amount, assetId);
-      this.log.info(`Deposit Response: ${JSON.stringify(depositResponse, replaceBN, 2)}`);
+      this.log.info(`Deposit Response: ${stringify(depositResponse)}`);
 
       const postDepositBalances = await this.connext.getFreeBalance(assetId);
 

@@ -18,7 +18,7 @@ import uuid = require("uuid");
 
 import { ChannelRouter } from "./channelRouter";
 import { Logger } from "./lib/logger";
-import { replaceBN } from "./lib/utils";
+import { stringify } from "./lib/utils";
 import { NodeInitializationParameters } from "./types";
 
 // Include our access token when interacting with these subjects
@@ -303,9 +303,7 @@ export class NodeApiClient implements INodeApiClient {
 
   private async send(subject: string, data?: any): Promise<any | undefined> {
     this.log.debug(
-      `Sending request to ${subject} ${
-        data ? `with data: ${JSON.stringify(data, replaceBN, 2)}` : `without data`
-      }`,
+      `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : `without data`}`,
     );
     const payload = {
       ...data,
@@ -325,12 +323,12 @@ export class NodeApiClient implements INodeApiClient {
       error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     }
     if (!msg.data) {
-      this.log.info(`Maybe this message is malformed: ${JSON.stringify(msg, replaceBN, 2)}`);
+      this.log.info(`Maybe this message is malformed: ${stringify(msg)}`);
       return undefined;
     }
     const { err, response, ...rest } = msg.data;
     if (err || error) {
-      throw new Error(`Error sending request. Message: ${JSON.stringify(msg, replaceBN, 2)}`);
+      throw new Error(`Error sending request. Message: ${stringify(msg)}`);
     }
     const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
     return !response || isEmptyObj ? undefined : response;

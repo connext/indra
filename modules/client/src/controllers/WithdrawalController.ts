@@ -3,7 +3,7 @@ import { Node as CFCoreTypes } from "@counterfactual/types";
 import { TransactionResponse } from "ethers/providers";
 import { getAddress } from "ethers/utils";
 
-import { replaceBN, withdrawalKey } from "../lib/utils";
+import { stringify, withdrawalKey } from "../lib/utils";
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
@@ -33,7 +33,7 @@ export class WithdrawalController extends AbstractController {
       if (!userSubmitted) {
         this.log.info(`Calling ${CFCoreTypes.RpcMethodName.WITHDRAW_COMMITMENT}`);
         const withdrawResponse = await this.connext.withdrawCommitment(amount, assetId, recipient);
-        this.log.info(`Withdraw Response: ${JSON.stringify(withdrawResponse, replaceBN, 2)}`);
+        this.log.info(`Withdraw Response: ${stringify(withdrawResponse)}`);
         const minTx: CFCoreTypes.MinimalTransaction = withdrawResponse.transaction;
         // set the withdrawal tx in the store
         await this.connext.store.set([
@@ -47,13 +47,13 @@ export class WithdrawalController extends AbstractController {
 
         await this.connext.watchForUserWithdrawal();
 
-        this.log.info(`Node Withdraw Response: ${JSON.stringify(transaction, replaceBN, 2)}`);
+        this.log.info(`Node Withdraw Response: ${stringify(transaction)}`);
       } else {
         this.log.info(`Calling ${CFCoreTypes.RpcMethodName.WITHDRAW}`);
         // Bo note: the following function used to point to something that doesn't exist
         // so this code path probably never gets executed.. idk what this was supposed to do
         const withdrawResponse = await this.node.withdraw(transaction as any);
-        this.log.info(`Withdraw Response: ${JSON.stringify(withdrawResponse, replaceBN, 2)}`);
+        this.log.info(`Withdraw Response: ${stringify(withdrawResponse)}`);
         transaction = await this.ethProvider.getTransaction(withdrawResponse.hash);
       }
       const postWithdrawBalances = await this.connext.getFreeBalance(assetId);
@@ -67,7 +67,7 @@ export class WithdrawalController extends AbstractController {
 
       this.log.info("Withdrawn!");
     } catch (e) {
-      this.log.error(`Failed to withdraw... ${JSON.stringify(e, replaceBN, 2)}`);
+      this.log.error(`Failed to withdraw... ${stringify(e)}`);
       this.removeListeners();
       throw new Error(e);
     }
@@ -110,7 +110,7 @@ export class WithdrawalController extends AbstractController {
   };
 
   private withdrawFailedCallback = (data: any): void => {
-    this.log.warn(`Withdrawal failed with data: ${JSON.stringify(data, replaceBN, 2)}`);
+    this.log.warn(`Withdrawal failed with data: ${stringify(data)}`);
     this.removeListeners();
   };
 

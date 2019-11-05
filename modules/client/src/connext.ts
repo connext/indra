@@ -58,7 +58,7 @@ import {
   freeBalanceAddressFromXpub,
   getMultisigAddressfromXpubs,
   publicIdentifierToAddress,
-  replaceBN,
+  stringify,
   withdrawalKey,
 } from "./lib/utils";
 import { ConnextListener } from "./listener";
@@ -112,7 +112,7 @@ export const connect = async (opts: ClientOptions): Promise<ConnextClientI> => {
     throw new Error(`Must provide a channel provider or mnemonic on startup.`);
   }
 
-  log.debug(`Using channel provider config: ${JSON.stringify(channelProviderConfig, null, 2)}`);
+  log.debug(`Using channel provider config: ${stringify(channelProviderConfig)}`);
 
   log.debug(`Creating messaging service client (logLevel: ${logLevel})`);
   const messagingFactory = new MessagingServiceFactory({
@@ -125,7 +125,7 @@ export const connect = async (opts: ClientOptions): Promise<ConnextClientI> => {
   // create a new node api instance
   const node: NodeApiClient = new NodeApiClient({ logLevel, messaging });
   const config = await node.config();
-  log.debug(`Node provided config: ${JSON.stringify(config, null, 2)}`);
+  log.debug(`Node provided config: ${stringify(config)}`);
 
   let channelRouter: ChannelRouter;
   switch (channelProviderConfig.type) {
@@ -172,7 +172,7 @@ export const connect = async (opts: ClientOptions): Promise<ConnextClientI> => {
         );
 
         const creationData = await node.createChannel();
-        log.debug(`created channel, transaction: ${JSON.stringify(creationData)}`);
+        log.debug(`created channel, transaction: ${stringify(creationData)}`);
       },
     );
     multisigAddress = creationEventData.multisigAddress;
@@ -515,9 +515,7 @@ export class ConnextClient implements ConnextClientI {
           `Couldn't restore states for "store/${xpub}/channel/${this.multisigAddress}."`,
         );
       }
-      this.log.info(
-        `Found state to restore from backup: ${JSON.stringify(stateToRestore, null, 2)}`,
-      );
+      this.log.info(`Found state to restore from backup: ${stringify(stateToRestore)}`);
       await this.channelRouter.set([stateToRestore], false);
     } catch (e) {
       const stateToRestore = await this.node.restoreStates(xpub);
@@ -526,7 +524,7 @@ export class ConnextClient implements ConnextClientI {
           `No matching states found by node for "store/${xpub}/channel/${this.multisigAddress}."`,
         );
       }
-      this.log.info(`Found state to restore from node: ${JSON.stringify(stateToRestore)}`);
+      this.log.info(`Found state to restore from node: ${stringify(stateToRestore)}`);
       // TODO: this should prob not be hardcoded like this
       const actualStates = stateToRestore.map((state: { path: string; value: object }): any => {
         return {
@@ -608,7 +606,7 @@ export class ConnextClient implements ConnextClientI {
     assetId: string = AddressZero,
   ): Promise<CFCoreTypes.GetFreeBalanceStateResult> => {
     if (typeof assetId !== "string") {
-      throw new Error(`Asset id must be a string: ${JSON.stringify(assetId, null, 2)}`);
+      throw new Error(`Asset id must be a string: ${stringify(assetId)}`);
     }
     const normalizedAssetId = makeChecksum(assetId);
     try {
@@ -838,7 +836,7 @@ export class ConnextClient implements ConnextClientI {
     paymentId: string,
     encryptedPreImage: string,
   ): Promise<ResolveLinkedTransferResponse> => {
-    this.log.info(`Reclaiming transfer ${JSON.stringify({ paymentId, encryptedPreImage })}`);
+    this.log.info(`Reclaiming transfer ${paymentId}`);
     // decrypt secret and resolve
     const privateKey = fromMnemonic(this.opts.mnemonic).derivePath(CF_PATH).privateKey;
     const cipher = EthCrypto.cipher.parse(encryptedPreImage);
@@ -850,7 +848,7 @@ export class ConnextClient implements ConnextClientI {
       paymentId,
       preImage,
     });
-    this.log.info(`Reclaimed transfer ${JSON.stringify(response)}`);
+    this.log.info(`Reclaimed transfer ${stringify(response)}`);
     return response;
   };
 
@@ -957,13 +955,13 @@ export class ConnextClient implements ConnextClientI {
     if (!app || app.length === 0) {
       return (
         `Could not find installed app with id: ${appInstanceId}. ` +
-        `Installed apps: ${JSON.stringify(apps, replaceBN, 2)}.`
+        `Installed apps: ${stringify(apps)}.`
       );
     }
     if (app.length > 1) {
       return (
         `CRITICAL ERROR: found multiple apps with the same id. ` +
-        `Installed apps: ${JSON.stringify(apps, replaceBN, 2)}.`
+        `Installed apps: ${stringify(apps)}.`
       );
     }
     return undefined;
@@ -975,7 +973,7 @@ export class ConnextClient implements ConnextClientI {
     if (app.length > 0) {
       return (
         `App with id ${appInstanceId} is already installed. ` +
-        `Installed apps: ${JSON.stringify(apps, replaceBN, 2)}.`
+        `Installed apps: ${stringify(apps)}.`
       );
     }
     return undefined;
