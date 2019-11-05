@@ -180,7 +180,7 @@ process.on("unhandledRejection", (e: any): any => {
     client.on(
       CFCoreTypes.EventName.WITHDRAWAL_FAILED,
       async (data: any): Promise<void> => {
-        console.log(`Withdrawal failed with data: ${JSON.stringify(data, replaceBN, 2)}`);
+        throw new Error(`Withdrawal failed with data: ${JSON.stringify(data, replaceBN, 2)}`);
       },
     );
     console.log(
