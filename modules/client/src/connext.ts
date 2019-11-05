@@ -475,77 +475,56 @@ export class ConnextClient implements ConnextClientI {
     }
   };
 
-  public restoreStateFromBackup = async (xpub: string): Promise<void> => {
-    if (this.routerType === RpcType.ChannelProvider) {
-      throw new Error(`Cannot restore state with channel provider`);
-    }
-    const restoreStates = await this.channelRouter.restore();
-    const multisigAddress = await this.getMultisigAddressfromXpub(xpub);
-    const relevantPair = restoreStates.find(
-      (p: { path: string; value: any }): boolean =>
-        p.path === `store/${xpub}/channel/${multisigAddress}`,
-    );
-    if (!relevantPair) {
-      throw new Error(
-        `No matching remote states found for "store/${xpub}/channel/${multisigAddress}."`,
-      );
-    }
-
-    this.log.info(`Found state to restore from backup: ${JSON.stringify(relevantPair, null, 2)}`);
-    await this.channelRouter.set([relevantPair], false);
-  };
-
-  public restoreStateFromNode = async (xpub: string): Promise<void> => {
-    const states = await this.node.restoreStates(xpub);
-    this.log.info(`Found states to restore: ${JSON.stringify(states)}`);
-
-    // TODO: this should prob not be hardcoded like this
-    const actualStates = states.map((state: { path: string; value: object }): any => {
-      return {
-        path: `store${state.path
-          .replace(this.nodePublicIdentifier, xpub)
-          .substring(state.path.indexOf("/"))}`,
-        value: state.value[state.path],
-      };
-    });
-    if (this.store) {
-      await this.store.set(actualStates, false);
-    }
-  };
+  ////////////////////////////////////////
+  // Restore State
 
   public restoreState = async (mnemonic: string): Promise<void> => {
-    if (this.routerType === RpcType.ChannelProvider) {
+    if (!this.store || this.routerType === RpcType.ChannelProvider) {
       throw new Error(`Cannot restore state with channel provider`);
     }
     const hdNode = fromMnemonic(mnemonic);
     const xpriv = hdNode.extendedKey;
     const xpub = hdNode.derivePath("m/44'/60'/0'/25446").neuter().extendedKey;
-
-    // always set the mnemonic in the store
     this.channelRouter.reset();
-    if (this.store) {
-      await this.store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }], false);
-    }
-
-    // try to recover the rest of the stateS
+    // always set the mnemonic in the store
+    await this.channelRouter.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }], false);
     try {
-      await this.restoreStateFromBackup(xpub);
-      this.log.debug(`restored state from backup!`);
+      // try to recover states from our given store's restore method
+      const restoreStates = await this.channelRouter.restore();
+      const stateToRestore = restoreStates.find(
+        (p: { path: string; value: any }): boolean =>
+          p.path === `store/${xpub}/channel/${this.multisigAddress}`,
+      );
+      if (!stateToRestore) {
+        throw new Error(
+          `Couldn't restore states for "store/${xpub}/channel/${this.multisigAddress}."`,
+        );
+      }
+      this.log.info(
+        `Found state to restore from backup: ${JSON.stringify(stateToRestore, null, 2)}`,
+      );
+      await this.channelRouter.set([stateToRestore], false);
     } catch (e) {
-      await this.restoreStateFromNode(xpub);
+      const stateToRestore = await this.node.restoreStates(xpub);
+      if (!stateToRestore) {
+        throw new Error(
+          `No matching states found by node for "store/${xpub}/channel/${this.multisigAddress}."`,
+        );
+      }
+      this.log.info(`Found state to restore from node: ${JSON.stringify(stateToRestore)}`);
+      // TODO: this should prob not be hardcoded like this
+      const actualStates = stateToRestore.map((state: { path: string; value: object }): any => {
+        return {
+          path: `store${state.path
+            .replace(this.nodePublicIdentifier, xpub)
+            .substring(state.path.indexOf("/"))}`,
+          value: state.value[state.path],
+        };
+      });
+      await this.store.set(actualStates, false);
       this.log.debug(`restored state from node!`);
     }
-
-    // recreate client with new mnemonic
-    const client = await connect({ ...this.opts, mnemonic });
-  };
-
-  public getMultisigAddressfromXpub = async (xpub: string): Promise<string> => {
-    const owners: string[] = [xpub, this.nodePublicIdentifier];
-    const proxyFactoryAddress: string = this.opts.config.contractAddresses.ProxyFactory;
-    const minimumViableMultisigAddress: string = this.opts.config.contractAddresses
-      .MinimumViableMultisig;
-    return getMultisigAddressfromXpubs(owners, proxyFactoryAddress, minimumViableMultisigAddress);
+    await this.restart();
   };
 
   ///////////////////////////////////
