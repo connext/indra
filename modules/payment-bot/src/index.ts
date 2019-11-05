@@ -175,6 +175,12 @@ process.on("unhandledRejection", (e: any): any => {
           config.recipient || client.freeBalanceAddress,
         );
         console.log(`Found postwithdrawal balance of ${formatEther(postWithdrawBal)}`);
+        const diff = postWithdrawBal.sub(preWithdrawBal);
+        if (!diff.eq(withdrawParams.amount)) {
+          throw new Error(
+            `Amount withdrawn !== postWithdrawBal (${postWithdrawBal.toString()}) - preWithdrawBal (${preWithdrawBal.toString()})`,
+          );
+        }
       },
     );
     client.on(
