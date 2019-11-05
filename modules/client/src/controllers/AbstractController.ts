@@ -22,7 +22,7 @@ export abstract class AbstractController {
     this.node = connext.node;
     this.channelRouter = connext.channelRouter;
     this.listener = connext.listener;
-    this.log = new Logger(name, connext.opts.logLevel);
+    this.log = new Logger(name, connext.log.logLevel);
     this.ethProvider = connext.ethProvider;
   }
 }

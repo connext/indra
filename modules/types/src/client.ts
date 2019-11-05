@@ -35,36 +35,33 @@ export interface Store extends CFCoreTypes.IStoreService {
   restore(): Promise<{ path: string; value: any }[]>;
 }
 
+// channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
 export interface ClientOptions {
-  // provider, passed through to CF node
   ethProviderUrl: string;
-  // node information
   nodeUrl: string; // ws:// or nats:// urls are supported
-  // signing options, include either a mnemonic directly
-  mnemonic?: string;
-  // or a channel provider
   channelProvider?: ChannelProvider;
-  // function passed in by wallets to generate ephemeral keys
-  // used when signing applications
-  keyGen?: () => Promise<string>; // TODO: what will the type look like?
-  safeSignHook?: (state: ChannelState | AppState) => Promise<string>;
+  keyGen?: () => Promise<string>;
+  mnemonic?: string;
+  xpub?: string;
   store: Store;
-  // TODO: state: string?
-  logLevel?: number; // see logger.ts for meaning, optional
-  // TODO: should be used in internal options? --> only if hardcoded
-  // nats communication config, client must provide
-  natsClusterId?: string;
-  natsToken?: string;
+  logLevel?: number;
 }
 
-/**
- * This interface contains all methods associated with managing
- * or establishing a user's channel.
- */
 export interface ConnextClientI {
-  ///////////////////////////////////
-  // MISC
+  ////////////////////////////////////////
+  // Properties
+
   config: GetConfigResponse;
+  freeBalanceAddress: string;
+  isAvailable: Promise<void>;
+  multisigAddress: string;
+  nodePublicIdentifier: string;
+  publicIdentifier: string;
+
+  ////////////////////////////////////////
+  // Methods
+
+  restart(): Promise<void>;
 
   ///////////////////////////////////
   // LISTENER METHODS
@@ -84,14 +81,13 @@ export interface ConnextClientI {
 
   ///////////////////////////////////
   // NODE EASY ACCESS METHODS
+  // TODO: do we really need to expose all of these?
   getChannel(): Promise<GetChannelResponse>;
   getLinkedTransfer(paymentId: string): Promise<any>;
-  // TODO: do we really need to expose this?
   getAppRegistry(appDetails?: {
     name: SupportedApplication;
     network: SupportedNetwork;
   }): Promise<AppRegistry>;
-  // TODO: do we really need to expose this?
   createChannel(): Promise<CreateChannelResponse>;
   subscribeToSwapRates(from: string, to: string, callback: any): Promise<any>;
   getLatestSwapRate(from: string, to: string): Promise<string>;
@@ -114,7 +110,7 @@ export interface ConnextClientI {
     assetId: string,
     notifyCounterparty: boolean,
   ): Promise<CFCoreTypes.DepositResult>;
-  getFreeBalance(assetId: string): Promise<CFCoreTypes.GetFreeBalanceStateResult>;
+  getFreeBalance(assetId?: string): Promise<CFCoreTypes.GetFreeBalanceStateResult>;
   getAppInstances(): Promise<AppInstanceJson[]>;
   getAppInstanceDetails(appInstanceId: string): Promise<CFCoreTypes.GetAppInstanceDetailsResult>;
   getAppState(appInstanceId: string): Promise<CFCoreTypes.GetStateResult>;

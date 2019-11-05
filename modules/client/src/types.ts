@@ -2,6 +2,7 @@ import { IMessagingService } from "@connext/messaging";
 import {
   AppRegistry,
   AppState,
+  BigNumber as connextBN,
   ChannelProvider,
   ChannelState,
   ClientOptions,
@@ -10,34 +11,29 @@ import {
   Store,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
-import { providers, utils, Wallet } from "ethers";
+import { providers, Wallet } from "ethers";
+import { Network } from "ethers/utils";
 
 import { ChannelRouter } from "./channelRouter";
 import { NodeApiClient } from "./node";
 
-export type BigNumber = utils.BigNumber;
-export const BigNumber = utils.BigNumber;
-
-// TODO: define properly!!
-export interface ConnextStore {}
+export type BigNumber = connextBN;
+export const BigNumber = connextBN;
 
 export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
   channelRouter: ChannelRouter;
+  channelProvider?: ChannelProvider;
   config: GetConfigResponse;
   contract?: MultisigState;
   ethProvider: providers.JsonRpcProvider;
   messaging: IMessagingService;
   multisigAddress: string;
-  network: utils.Network;
+  network: Network;
   node: NodeApiClient;
   store: Store;
 };
 
-////////////////////////////////////////
-// NODE TYPES
-
-// General typings
 export interface NodeInitializationParameters {
   messaging: IMessagingService;
   logLevel?: number;

@@ -127,7 +127,7 @@ const baseAppValidation = async (
   isVirtual: boolean,
   connext: ConnextClient,
 ): Promise<string | undefined> => {
-  const log = new Logger("baseAppValidation", connext.opts.logLevel);
+  const log = new Logger("baseAppValidation", connext.log.logLevel);
   // check the initial state is consistent
   // FIXME: why isnt this in the cf types?
   log.info(`Validating app: ${prettyLog(app)}`);
@@ -186,7 +186,7 @@ const baseAppValidation = async (
     initiatorFreeBalance[freeBalanceAddressFromXpub(connext.nodePublicIdentifier)];
   if (isVirtual && nodeFreeBalance.lt(app.initiatorDeposit)) {
     const reqRes = await connext.requestCollateral(app.initiatorDepositTokenAddress);
-    connext.logger.info(`Collateral Request result: ${JSON.stringify(reqRes, replaceBN, 2)}`);
+    connext.log.debug(`Collateral Request result: ${JSON.stringify(reqRes, replaceBN, 2)}`);
     return `Insufficient collateral for requested asset,
     freeBalance of node: ${nodeFreeBalance.toString()}
     required: ${app.initiatorDeposit}. Proposed app: ${prettyLog(app)}`;

@@ -69,25 +69,9 @@ import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 
 const MAX_WITHDRAWAL_RETRIES = 3;
 
-/**
- * Creates a new client-node connection with node at specified url
- *
- * @param opts The options to instantiate the client with.
- * At a minimum, must contain the nodeUrl and a client signing key or mnemonic
- */
-
-export async function connect(opts: ClientOptions): Promise<ConnextClient> {
-  const {
-    logLevel,
-    ethProviderUrl,
-    mnemonic,
-    natsClusterId,
-    nodeUrl,
-    natsToken,
-    store,
-    channelProvider,
-  } = opts;
-  const logger = new Logger("ConnextConnect", logLevel);
+export const connect = async (opts: ClientOptions): Promise<ConnextClientI> => {
+  const { logLevel, ethProviderUrl, mnemonic, nodeUrl, store, channelProvider } = opts;
+  const log = new Logger("ConnextConnect", logLevel);
 
   // setup network information
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
@@ -119,8 +103,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextClient> {
     await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }]);
     channelProviderConfig = {
       freeBalanceAddress: freeBalanceAddressFromXpub(xpub),
-      natsClusterId,
-      natsToken,
       nodeUrl,
       signerAddress: hdNode.derivePath(CF_PATH).address,
       type: RpcType.CounterfactualNode,
@@ -130,14 +112,12 @@ export async function connect(opts: ClientOptions): Promise<ConnextClient> {
     throw new Error(`Must provide a channel provider or mnemonic on startup.`);
   }
 
-  logger.debug(`Using channel provider config: ${JSON.stringify(channelProviderConfig, null, 2)}`);
+  log.debug(`Using channel provider config: ${JSON.stringify(channelProviderConfig, null, 2)}`);
 
-  logger.debug(`Creating messaging service client (logLevel: ${logLevel})`);
+  log.debug(`Creating messaging service client (logLevel: ${logLevel})`);
   const messagingFactory = new MessagingServiceFactory({
-    clusterId: channelProviderConfig.natsClusterId,
     logLevel,
     messagingUrl: channelProviderConfig.nodeUrl,
-    token: channelProviderConfig.natsToken,
   });
   const messaging = messagingFactory.createService("messaging");
   await messaging.connect();
@@ -145,14 +125,13 @@ export async function connect(opts: ClientOptions): Promise<ConnextClient> {
   // create a new node api instance
   const node: NodeApiClient = new NodeApiClient({ logLevel, messaging });
   const config = await node.config();
-  logger.debug(`Node provided config: ${JSON.stringify(config, null, 2)}`);
+  log.debug(`Node provided config: ${JSON.stringify(config, null, 2)}`);
 
   let channelRouter: ChannelRouter;
   switch (channelProviderConfig.type) {
     case RpcType.ChannelProvider:
       channelRouter = new ChannelRouter(channelProvider!, channelProviderConfig);
       break;
-
     case RpcType.CounterfactualNode:
       const cfCore = await CFCore.create(
         messaging as any, // TODO: FIX
@@ -165,7 +144,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextClient> {
       const wallet = Wallet.fromMnemonic(opts.mnemonic!, CF_PATH);
       channelRouter = new ChannelRouter(cfCore, channelProviderConfig, store, wallet);
       break;
-
     default:
       throw new Error(`Unrecognized channel provider type: ${channelProviderConfig.type}`);
   }
@@ -178,7 +156,7 @@ export async function connect(opts: ClientOptions): Promise<ConnextClient> {
   const myChannel = await node.getChannel();
   let multisigAddress: string;
   if (!myChannel) {
-    logger.debug("no channel detected, creating channel..");
+    log.debug("no channel detected, creating channel..");
     const creationEventData: CFCoreTypes.CreateChannelResult = await new Promise(
       async (res: any, rej: any): Promise<any> => {
         const timer = setTimeout(
@@ -194,14 +172,14 @@ export async function connect(opts: ClientOptions): Promise<ConnextClient> {
         );
 
         const creationData = await node.createChannel();
-        logger.debug(`created channel, transaction: ${JSON.stringify(creationData)}`);
+        log.debug(`created channel, transaction: ${JSON.stringify(creationData)}`);
       },
     );
     multisigAddress = creationEventData.multisigAddress;
   } else {
     multisigAddress = myChannel.multisigAddress;
   }
-  logger.debug(`multisigAddress: ${multisigAddress}`);
+  log.debug(`multisigAddress: ${multisigAddress}`);
 
   channelRouter.multisigAddress = multisigAddress;
 
@@ -219,46 +197,41 @@ export async function connect(opts: ClientOptions): Promise<ConnextClient> {
     ...opts, // use any provided opts by default
   });
 
-  logger.debug("Registering subscriptions");
+  log.debug("Registering subscriptions");
   await client.registerSubscriptions();
 
-  logger.debug("Reclaiming pending async transfers");
+  log.debug("Reclaiming pending async transfers");
   await client.reclaimPendingAsyncTransfers();
 
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
-  logger.debug("Resubmitting active withdrawals");
+  log.debug("Resubmitting active withdrawals");
   await client.resubmitActiveWithdrawal();
 
-  logger.debug("Done creating channel client");
+  log.debug("Done creating channel client");
   return client;
-}
+};
 
-/**
- * True implementation of the connext client
- */
 export class ConnextClient implements ConnextClientI {
   public appRegistry: AppRegistry;
   public channelRouter: ChannelRouter;
   public config: GetConfigResponse;
   public ethProvider: providers.JsonRpcProvider;
   public freeBalanceAddress: string;
-  public isAvailable: Promise<boolean>;
+  public isAvailable: Promise<void>;
   public listener: ConnextListener;
+  public log: Logger;
   public messaging: IMessagingService;
   public multisigAddress: Address;
+  public network: Network;
   public node: NodeApiClient;
   public nodePublicIdentifier: string;
-  public opts: InternalClientOptions;
   public publicIdentifier: string;
   public routerType: RpcType;
   public signerAddress: Address;
-
-  public logger: Logger;
-  public network: Network;
   public store: Store;
 
-  ////////////////////////////////////////
-  // Setup channel controllers
+  private opts: InternalClientOptions;
+
   private depositController: DepositController;
   private transferController: TransferController;
   private swapController: SwapController;
@@ -269,29 +242,27 @@ export class ConnextClient implements ConnextClientI {
   constructor(opts: InternalClientOptions) {
     this.opts = opts;
     this.appRegistry = opts.appRegistry;
+    this.channelRouter = opts.channelRouter;
     this.config = opts.config;
     this.ethProvider = opts.ethProvider;
     this.messaging = opts.messaging;
+    this.network = opts.network;
+    this.network = opts.network;
+    this.node = opts.node;
+    this.store = opts.store;
 
-    this.appRegistry = opts.appRegistry;
-
-    this.channelRouter = opts.channelRouter;
     this.freeBalanceAddress = this.channelRouter.config.freeBalanceAddress;
     this.signerAddress = this.channelRouter.config.signerAddress;
     this.routerType = this.channelRouter.config.type;
-    this.network = opts.network;
-    this.node = opts.node;
     this.publicIdentifier = this.channelRouter.config.userPublicIdentifier;
     this.multisigAddress = this.opts.multisigAddress;
     this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
-    this.logger = new Logger("ConnextClient", opts.logLevel);
-    this.network = opts.network;
-    this.store = opts.store;
+    this.log = new Logger("ConnextClient", opts.logLevel);
 
     // establish listeners
     this.listener = new ConnextListener(opts.channelRouter, this);
 
-    // instantiate controllers with logger and cf
+    // instantiate controllers with log and cf
     this.depositController = new DepositController("DepositController", this);
     this.transferController = new TransferController("TransferController", this);
     this.swapController = new SwapController("SwapController", this);
@@ -305,8 +276,6 @@ export class ConnextClient implements ConnextClientI {
       this,
     );
 
-    // TODO: channel shouldn't be available until freebalance app is installed
-    // How do we wait for that?
     this.isAvailable = new Promise(
       async (resolve: any, reject: any): Promise<any> => {
         // Wait for channel to be available
@@ -317,7 +286,7 @@ export class ConnextClient implements ConnextClientI {
         while (!(await channelIsAvailable())) {
           await new Promise((res: any): any => setTimeout((): void => res(), 100));
         }
-        resolve(true);
+        resolve();
       },
     );
   }
@@ -329,6 +298,33 @@ export class ConnextClient implements ConnextClientI {
 
   ///////////////////////////////////
   // Unsorted methods pulled from the old abstract wrapper class
+
+  public restart = async (): Promise<void> => {
+    // Create a fresh channelRouter & start using that.
+    // End goal is to use this to restart the cfNode after restoring state
+    let channelRouter: ChannelRouter;
+    switch (this.routerType) {
+      case RpcType.ChannelProvider:
+        channelRouter = new ChannelRouter(this.opts.channelProvider!, this.channelRouter.config);
+        break;
+      case RpcType.CounterfactualNode:
+        const cfCore = await CFCore.create(
+          this.messaging as any, // TODO: FIX
+          this.store,
+          { STORE_KEY_PREFIX: "store" },
+          this.ethProvider,
+          this.config.contractAddresses,
+          { acquireLock: this.node.acquireLock.bind(this.node) },
+        );
+        const wallet = Wallet.fromMnemonic(this.opts.mnemonic!, CF_PATH);
+        channelRouter = new ChannelRouter(cfCore, this.channelRouter.config, this.store, wallet);
+        break;
+      default:
+        throw new Error(`Unrecognized channel provider type: ${this.routerType}`);
+    }
+    this.node.channelRouter = channelRouter;
+    this.channelRouter = channelRouter;
+  };
 
   public getChannel = async (): Promise<GetChannelResponse> => {
     return await this.node.getChannel();
@@ -438,7 +434,7 @@ export class ConnextClient implements ConnextClientI {
       const msg = `Can not find tx or retry in store under key ${withdrawalKey(
         this.publicIdentifier,
       )}`;
-      this.logger.error(msg);
+      this.log.error(msg);
       throw new Error(msg);
     }
     return value;
@@ -473,7 +469,7 @@ export class ConnextClient implements ConnextClientI {
       });
     } catch (e) {
       if (e.includes(`More than ${maxBlocks} have passed`)) {
-        this.logger.debug(`Retrying node submission`);
+        this.log.debug(`Retrying node submission`);
         await this.retryNodeSubmittedWithdrawal();
       }
     }
@@ -495,15 +491,13 @@ export class ConnextClient implements ConnextClientI {
       );
     }
 
-    this.logger.info(
-      `Found state to restore from backup: ${JSON.stringify(relevantPair, null, 2)}`,
-    );
+    this.log.info(`Found state to restore from backup: ${JSON.stringify(relevantPair, null, 2)}`);
     await this.channelRouter.set([relevantPair], false);
   };
 
   public restoreStateFromNode = async (xpub: string): Promise<void> => {
     const states = await this.node.restoreStates(xpub);
-    this.logger.info(`Found states to restore: ${JSON.stringify(states)}`);
+    this.log.info(`Found states to restore: ${JSON.stringify(states)}`);
 
     // TODO: this should prob not be hardcoded like this
     const actualStates = states.map((state: { path: string; value: object }): any => {
@@ -519,7 +513,7 @@ export class ConnextClient implements ConnextClientI {
     }
   };
 
-  public restoreState = async (mnemonic: string): Promise<ConnextClient> => {
+  public restoreState = async (mnemonic: string): Promise<void> => {
     if (this.routerType === RpcType.ChannelProvider) {
       throw new Error(`Cannot restore state with channel provider`);
     }
@@ -536,15 +530,14 @@ export class ConnextClient implements ConnextClientI {
     // try to recover the rest of the stateS
     try {
       await this.restoreStateFromBackup(xpub);
-      this.logger.debug(`restored state from backup!`);
+      this.log.debug(`restored state from backup!`);
     } catch (e) {
       await this.restoreStateFromNode(xpub);
-      this.logger.debug(`restored state from node!`);
+      this.log.debug(`restored state from node!`);
     }
 
     // recreate client with new mnemonic
     const client = await connect({ ...this.opts, mnemonic });
-    return client;
   };
 
   public getMultisigAddressfromXpub = async (xpub: string): Promise<string> => {
@@ -598,7 +591,7 @@ export class ConnextClient implements ConnextClientI {
       notLessThanOrEqualTo(amount, bal), // cant deposit more than default addr owns
     ].filter(falsy)[0];
     if (err) {
-      this.logger.error(err);
+      this.log.error(err);
       throw new Error(err);
     }
 
@@ -659,7 +652,7 @@ export class ConnextClient implements ConnextClientI {
   ): Promise<CFCoreTypes.GetAppInstanceDetailsResult | undefined> => {
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
-      this.logger.warn(err);
+      this.log.warn(err);
       return undefined;
     }
     return await this.channelRouter.getAppInstanceDetails(appInstanceId);
@@ -671,7 +664,7 @@ export class ConnextClient implements ConnextClientI {
     // check the app is actually installed, or returned undefined
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
-      this.logger.warn(err);
+      this.log.warn(err);
       return undefined;
     }
     return await this.channelRouter.getAppState(appInstanceId);
@@ -684,7 +677,7 @@ export class ConnextClient implements ConnextClientI {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
-      this.logger.error(err);
+      this.log.error(err);
       throw new Error(err);
     }
     // check state is not finalized
@@ -704,7 +697,7 @@ export class ConnextClient implements ConnextClientI {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
-      this.logger.error(err);
+      this.log.error(err);
       throw new Error(err);
     }
     // check state is not finalized
@@ -755,7 +748,7 @@ export class ConnextClient implements ConnextClientI {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
-      this.logger.error(err);
+      this.log.error(err);
       throw new Error(err);
     }
     return await this.channelRouter.uninstallApp(appInstanceId);
@@ -767,7 +760,7 @@ export class ConnextClient implements ConnextClientI {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
-      this.logger.error(err);
+      this.log.error(err);
       throw new Error(err);
     }
 
@@ -791,7 +784,7 @@ export class ConnextClient implements ConnextClientI {
       recipient ? invalidAddress(recipient) : null,
     ].filter(falsy)[0];
     if (err) {
-      this.logger.error(err);
+      this.log.error(err);
       throw new Error(err);
     }
 
@@ -811,7 +804,7 @@ export class ConnextClient implements ConnextClientI {
       recipient ? invalidAddress(recipient) : null,
     ].filter(falsy)[0];
     if (err) {
-      this.logger.error(err);
+      this.log.error(err);
       throw new Error(err);
     }
     return await this.channelRouter.withdrawCommitment(
@@ -851,19 +844,19 @@ export class ConnextClient implements ConnextClientI {
     paymentId: string,
     encryptedPreImage: string,
   ): Promise<ResolveLinkedTransferResponse> => {
-    this.logger.info(`Reclaiming transfer ${JSON.stringify({ paymentId, encryptedPreImage })}`);
+    this.log.info(`Reclaiming transfer ${JSON.stringify({ paymentId, encryptedPreImage })}`);
     // decrypt secret and resolve
     const privateKey = fromMnemonic(this.opts.mnemonic).derivePath(CF_PATH).privateKey;
     const cipher = EthCrypto.cipher.parse(encryptedPreImage);
 
     const preImage = await EthCrypto.decryptWithPrivateKey(privateKey, cipher);
-    this.logger.debug(`Decrypted message and recovered preImage: ${preImage}`);
+    this.log.debug(`Decrypted message and recovered preImage: ${preImage}`);
     const response = await this.resolveCondition({
       conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
       paymentId,
       preImage,
     });
-    this.logger.info(`Reclaimed transfer ${JSON.stringify(response)}`);
+    this.log.info(`Reclaimed transfer ${JSON.stringify(response)}`);
     return response;
   };
 
@@ -911,7 +904,7 @@ export class ConnextClient implements ConnextClientI {
       // called on `connext.connect`, throwing an error will prevent client
       // starting properly)
       const msg = `Cannot connect client, hub failed to submit latest withdrawal ${MAX_WITHDRAWAL_RETRIES} times.`;
-      this.logger.error(msg);
+      this.log.error(msg);
       throw new Error(msg);
     }
 
@@ -931,7 +924,7 @@ export class ConnextClient implements ConnextClientI {
     }
 
     // otherwise, there are retries remaining, and you should resubmit
-    this.logger.debug(
+    this.log.debug(
       `Found active withdrawal with ${withdrawal.retry} retries, waiting for withdrawal to be caught`,
     );
     await this.retryNodeSubmittedWithdrawal();
@@ -940,7 +933,7 @@ export class ConnextClient implements ConnextClientI {
   public retryNodeSubmittedWithdrawal = async (): Promise<void> => {
     const val = await this.getLatestNodeSubmittedWithdrawal();
     if (!val) {
-      this.logger.error(`No transaction found to retry`);
+      this.log.error(`No transaction found to retry`);
       return;
     }
     let { retry } = val;
@@ -954,7 +947,7 @@ export class ConnextClient implements ConnextClientI {
     ]);
     if (retry >= MAX_WITHDRAWAL_RETRIES) {
       const msg = `Tried to have node submit withdrawal ${MAX_WITHDRAWAL_RETRIES} times and it did not work, try submitting from wallet.`;
-      this.logger.error(msg);
+      this.log.error(msg);
       // TODO: make this submit from wallet :)
       // but this is weird, could take a while and may have gas issues.
       // may not be the best way to do this
@@ -997,7 +990,7 @@ export class ConnextClient implements ConnextClientI {
   private checkForUserWithdrawal = async (inBlock: number): Promise<boolean> => {
     const val = await this.getLatestNodeSubmittedWithdrawal();
     if (!val) {
-      this.logger.error(`No transaction found in store.`);
+      this.log.error(`No transaction found in store.`);
       return false;
     }
 

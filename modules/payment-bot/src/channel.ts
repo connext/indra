@@ -1,5 +1,5 @@
 import * as connext from "@connext/client";
-import { ClientOptions, makeChecksum } from "@connext/types";
+import { ClientOptions, ConnextClientI, makeChecksum } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { AddressZero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
@@ -8,7 +8,7 @@ import { config } from "./config";
 import { Store } from "./store";
 import { logEthFreeBalance } from "./utils";
 
-export const getOrCreateChannel = async (assetId?: string): Promise<connext.ConnextClient> => {
+export const getOrCreateChannel = async (assetId?: string): Promise<ConnextClientI> => {
   const store = new Store();
 
   const connextOpts: ClientOptions = {
@@ -26,7 +26,7 @@ export const getOrCreateChannel = async (assetId?: string): Promise<connext.Conn
   console.log(` - ethProviderUrl: ${connextOpts.ethProviderUrl}`);
   console.log(` - nodeUrl: ${connextOpts.nodeUrl}`);
   console.log(` - publicIdentifier: ${client.publicIdentifier}`);
-  console.log(` - multisigAddress: ${client.opts.multisigAddress}`);
+  console.log(` - multisigAddress: ${client.multisigAddress}`);
   console.log(` - User freeBalanceAddress: ${client.freeBalanceAddress}`);
   console.log(` - Node freeBalance address: ${nodeFBAddress}`);
 
@@ -65,13 +65,6 @@ export const getOrCreateChannel = async (assetId?: string): Promise<connext.Conn
       }
     },
   );
-
-  if (
-    client.listener.listenerCount(CFCoreTypes.EventName.UNINSTALL_VIRTUAL) === 0 ||
-    client.listener.listenerCount(CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED) === 0
-  ) {
-    throw Error("Listeners failed to register.");
-  }
 
   return client;
 };

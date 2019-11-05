@@ -24,7 +24,7 @@ export class DepositController extends AbstractController {
     const preDepositBalances = await this.connext.getFreeBalance(assetId);
 
     this.log.info(
-      `\nDepositing ${amount} of ${assetId} into ${this.connext.opts.multisigAddress}\n`,
+      `\nDepositing ${amount} of ${assetId} into ${this.connext.multisigAddress}\n`,
     );
 
     // register listeners

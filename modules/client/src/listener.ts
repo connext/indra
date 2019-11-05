@@ -163,7 +163,7 @@ export class ConnextListener extends EventEmitter {
     super();
     this.channelRouter = channelRouter;
     this.connext = connext;
-    this.log = new Logger("ConnextListener", connext.opts.logLevel);
+    this.log = new Logger("ConnextListener", connext.log.logLevel);
   }
 
   public register = async (): Promise<void> => {

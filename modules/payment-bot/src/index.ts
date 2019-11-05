@@ -29,7 +29,7 @@ process.on("unhandledRejection", (e: any): any => {
 
 (async (): Promise<void> => {
   const assetId = config.assetId ? config.assetId : AddressZero;
-  let client = await getOrCreateChannel(assetId);
+  const client = await getOrCreateChannel(assetId);
 
   const logEthAndAssetFreeBalance = async (): Promise<void> => {
     logEthFreeBalance(AddressZero, await client.getFreeBalance(assetId));
@@ -208,7 +208,7 @@ process.on("unhandledRejection", (e: any): any => {
 
   if (config.restore) {
     console.log(`Restoring states from the node with mnemonic: ${config.restore}`);
-    client = await client.restoreState(config.restore);
+    await client.restoreState(config.restore);
   }
 
   if (!config.open) {
