@@ -1,8 +1,8 @@
 import { Address, Node as NodeTypes } from "@counterfactual/types";
 import { BigNumber } from "ethers/utils";
 
-import { UnidirectionalLinkedTransferAppState } from "./app";
-import { AssetAmount } from "./node";
+import { SimpleLinkedTransferAppState } from "./app";
+import { AssetAmount } from "./channel";
 
 /////////////////////////////////
 ///////// SWAP
@@ -72,17 +72,19 @@ export type ResolveConditionResponse<T = string> = ResolveLinkedTransferResponse
 
 ///// Conditional transfer types
 
-// TODO: maybe not an enum?
 export const TransferConditions = {
   LINKED_TRANSFER: "LINKED_TRANSFER",
+  LINKED_TRANSFER_TO_RECIPIENT: "LINKED_TRANSFER_TO_RECIPIENT",
 };
 export type TransferCondition = keyof typeof TransferConditions;
 
 // linked transfer types
 export type LinkedTransferParameters<T = string> = {
-  conditionType: "LINKED_TRANSFER";
-  amount: T;
-  assetId: Address; // make optional?
+  conditionType: TransferCondition;
+  amount?: T;
+  assetId?: Address;
+  paymentId: string;
+  preImage: string;
 };
 export type LinkedTransferParametersBigNumber = LinkedTransferParameters<BigNumber>;
 
@@ -92,15 +94,27 @@ export type LinkedTransferResponse = {
   freeBalance: NodeTypes.GetFreeBalanceStateResult;
 };
 
-// FIXME: should be union type of all supported conditions
-export type ConditionalTransferParameters<T = string> = LinkedTransferParameters<T>;
+export type LinkedTransferToRecipientParameters<T = string> = LinkedTransferParameters<T> & {
+  recipient?: string;
+};
+export type LinkedTransferToRecipientParametersBigNumber = LinkedTransferToRecipientParameters<
+  BigNumber
+>;
+export type LinkedTransferToRecipientResponse = LinkedTransferResponse & {
+  recipient?: string;
+};
+
+export type ConditionalTransferParameters<T = string> =
+  | LinkedTransferParameters<T>
+  | LinkedTransferToRecipientParameters<T>;
 export type ConditionalTransferParametersBigNumber = ConditionalTransferParameters<BigNumber>;
 
-// FIXME: should be union type of all supported conditions
-export type ConditionalTransferResponse = LinkedTransferResponse;
+export type ConditionalTransferResponse =
+  | LinkedTransferResponse
+  | LinkedTransferToRecipientResponse;
 
 // condition initial states
 // FIXME: should be union type of all supported conditions
-export type ConditionalTransferInitialState<T = string> = UnidirectionalLinkedTransferAppState<T>;
+export type ConditionalTransferInitialState<T = string> = SimpleLinkedTransferAppState<T>;
 // FIXME: should be union type of all supported conditions
 export type ConditionalTransferInitialStateBigNumber = ConditionalTransferInitialState<BigNumber>;
