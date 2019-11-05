@@ -2,10 +2,8 @@ import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import {
   AppActionBigNumber,
   AppRegistry,
-  AppState,
   AppStateBigNumber,
   CFCoreChannel,
-  ChannelAppSequences,
   ChannelProviderConfig,
   ChannelState,
   ClientOptions,
@@ -13,7 +11,6 @@ import {
   ConditionalTransferResponse,
   ConnextClientI,
   ConnextEvent,
-  ConnextNodeStorePrefix,
   CreateChannelResponse,
   DepositParameters,
   GetChannelResponse,
@@ -22,6 +19,7 @@ import {
   makeChecksumOrEthAddress,
   PaymentProfile,
   RegisteredAppDetails,
+  RequestCollateralResponse,
   ResolveConditionParameters,
   ResolveConditionResponse,
   ResolveLinkedTransferResponse,
@@ -345,7 +343,7 @@ export class ConnextClient implements ConnextClientI {
     return await this.node.getChannel();
   };
 
-  public requestCollateral = async (tokenAddress: string): Promise<void> => {
+  public requestCollateral = async (tokenAddress: string): Promise<RequestCollateralResponse> => {
     return await this.node.requestCollateral(tokenAddress);
   };
 
@@ -780,7 +778,7 @@ export class ConnextClient implements ConnextClientI {
       throw new Error(err);
     }
 
-    return await this.channelRouter.withdraw(amount, this.multisigAddress, assetId, recipient);
+    return await this.channelRouter.withdraw(amount, assetId, recipient);
   };
 
   public withdrawCommitment = async (

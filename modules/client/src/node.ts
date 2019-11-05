@@ -7,6 +7,7 @@ import {
   GetConfigResponse,
   makeChecksumOrEthAddress,
   PaymentProfile,
+  RequestCollateralResponse,
   SupportedApplication,
   SupportedNetwork,
   Transfer,
@@ -170,7 +171,7 @@ export class NodeApiClient implements INodeApiClient {
 
   // TODO: right now node doesnt return until the deposit has completed
   // which exceeds the timeout.....
-  public async requestCollateral(assetId: string): Promise<void> {
+  public async requestCollateral(assetId: string): Promise<RequestCollateralResponse> {
     try {
       return await this.send(`channel.request-collateral.${this.userPublicIdentifier}`, {
         assetId,
