@@ -6,6 +6,7 @@ import {
   makeChecksumOrEthAddress,
   RpcConnection,
   RpcType,
+  Store,
 } from "@connext/types";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Wallet } from "ethers";
@@ -13,7 +14,6 @@ import { arrayify, BigNumber } from "ethers/utils";
 import { RpcParameters } from "rpc-server";
 
 import { withdrawalKey } from "./lib/utils";
-import { Store } from "./types";
 
 export class ChannelRouter {
   private type: RpcType;
@@ -22,15 +22,10 @@ export class ChannelRouter {
   // TODO: replace this when signing keys are added!
   // shouldnt really ever be used
   private wallet: Wallet | undefined;
-
   private _config: ChannelProviderConfig;
-
   private _multisigAddress: string | undefined = undefined;
-
   private _signerAddress: string | undefined = undefined;
-
   private store: Store | undefined;
-
   private approvedStorePaths: string[];
 
   constructor(

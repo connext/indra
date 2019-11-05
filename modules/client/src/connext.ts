@@ -8,8 +8,10 @@ import {
   ChannelAppSequences,
   ChannelProviderConfig,
   ChannelState,
+  ClientOptions,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
+  ConnextClientI,
   ConnextEvent,
   ConnextNodeStorePrefix,
   CreateChannelResponse,
@@ -24,6 +26,7 @@ import {
   ResolveConditionResponse,
   ResolveLinkedTransferResponse,
   RpcType,
+  Store,
   SupportedApplication,
   SupportedNetwork,
   SwapParameters,
@@ -60,7 +63,7 @@ import {
 } from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
-import { ClientOptions, InternalClientOptions, Store } from "./types";
+import { InternalClientOptions } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 
@@ -228,136 +231,6 @@ export async function connect(opts: ClientOptions): Promise<ConnextClient> {
 
   logger.debug("Done creating channel client");
   return client;
-}
-
-/**
- * This interface contains all methods associated with managing
- * or establishing a user's channel.
- */
-interface ConnextClientI {
-  opts: InternalClientOptions;
-  config: GetConfigResponse;
-
-  ///////////////////////////////////
-  // LISTENER METHODS
-  on(
-    event: ConnextEvent | CFCoreTypes.EventName,
-    callback: (...args: any[]) => void,
-  ): ConnextListener;
-
-  emit(event: ConnextEvent | CFCoreTypes.EventName, data: any): boolean;
-
-  ///////////////////////////////////
-  // CORE CHANNEL METHODS
-
-  deposit(params: DepositParameters): Promise<ChannelState>;
-
-  swap(params: SwapParameters): Promise<CFCoreChannel>;
-
-  transfer(params: TransferParameters): Promise<CFCoreChannel>;
-
-  withdraw(params: WithdrawParameters): Promise<ChannelState>;
-
-  resolveCondition(params: ResolveConditionParameters): Promise<ResolveConditionResponse>;
-
-  conditionalTransfer(params: ConditionalTransferParameters): Promise<ConditionalTransferResponse>;
-
-  restoreState(mnemonic: string): Promise<ConnextClient>;
-
-  channelProviderConfig(): Promise<ChannelProviderConfig>;
-
-  ///////////////////////////////////
-  // NODE EASY ACCESS METHODS
-
-  getChannel(): Promise<GetChannelResponse>;
-
-  getLinkedTransfer(paymentId: string): Promise<any>;
-
-  // TODO: do we need to expose here?
-  getAppRegistry(appDetails?: {
-    name: SupportedApplication;
-    network: SupportedNetwork;
-  }): Promise<AppRegistry>;
-
-  // TODO: do we need to expose here?
-  createChannel(): Promise<CreateChannelResponse>;
-
-  subscribeToSwapRates(from: string, to: string, callback: any): Promise<any>;
-
-  getLatestSwapRate(from: string, to: string): Promise<string>;
-
-  unsubscribeToSwapRates(from: string, to: string): Promise<void>;
-
-  requestCollateral(tokenAddress: string): Promise<void>;
-
-  addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile>;
-
-  getPaymentProfile(assetId?: string): Promise<PaymentProfile | undefined>;
-
-  getTransferHistory(): Promise<Transfer[]>;
-
-  reclaimPendingAsyncTransfers(): Promise<void>;
-
-  reclaimPendingAsyncTransfer(
-    paymentId: string,
-    encryptedPreImage: string,
-  ): Promise<ResolveLinkedTransferResponse>;
-
-  // does not directly call node function because needs to send
-  // some additional information along with the request, as implemented in
-  // ConnextClient
-  verifyAppSequenceNumber(): Promise<ChannelAppSequences>;
-
-  ///////////////////////////////////
-  // CF MODULE EASY ACCESS METHODS
-
-  providerDeposit(
-    amount: BigNumber,
-    assetId: string,
-    notifyCounterparty: boolean,
-  ): Promise<CFCoreTypes.DepositResult>;
-
-  getFreeBalance(assetId: string): Promise<CFCoreTypes.GetFreeBalanceStateResult>;
-
-  getAppInstances(): Promise<AppInstanceJson[]>;
-
-  getAppInstanceDetails(appInstanceId: string): Promise<CFCoreTypes.GetAppInstanceDetailsResult>;
-
-  getAppState(appInstanceId: string): Promise<CFCoreTypes.GetStateResult>;
-
-  getProposedAppInstances(): Promise<CFCoreTypes.GetProposedAppInstancesResult | undefined>;
-
-  getProposedAppInstance(
-    appInstanceId: string,
-  ): Promise<CFCoreTypes.GetProposedAppInstanceResult | undefined>;
-
-  proposeInstallApp(
-    params: CFCoreTypes.ProposeInstallParams,
-  ): Promise<CFCoreTypes.ProposeInstallResult>;
-
-  proposeInstallVirtualApp(
-    params: CFCoreTypes.ProposeInstallVirtualParams,
-  ): Promise<CFCoreTypes.ProposeInstallVirtualResult>;
-
-  installVirtualApp(appInstanceId: string): Promise<CFCoreTypes.InstallVirtualResult>;
-
-  installApp(appInstanceId: string): Promise<CFCoreTypes.InstallResult>;
-
-  rejectInstallApp(appInstanceId: string): Promise<CFCoreTypes.UninstallResult>;
-
-  takeAction(
-    appInstanceId: string,
-    action: AppActionBigNumber,
-  ): Promise<CFCoreTypes.TakeActionResult>;
-
-  updateState(
-    appInstanceId: string,
-    newState: AppState | any,
-  ): Promise<CFCoreTypes.UpdateStateResult>;
-
-  uninstallApp(appInstanceId: string): Promise<CFCoreTypes.UninstallResult>;
-
-  uninstallVirtualApp(appInstanceId: string): Promise<CFCoreTypes.UninstallVirtualResult>;
 }
 
 /**
