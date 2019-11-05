@@ -62,13 +62,13 @@ bash ops/payment-bot.sh -i 2 -d 0.1 -m "$mnemonic2"
 echo -e "$divider";echo "Sending eth to recipient bot"
 bash ops/payment-bot.sh -i 2 -t 0.025 -c $id -m "$mnemonic2"
 
-# uncomment below to test state restore
+echo -e "$divider";echo "Removing sender's state to trigger a restore"
+rm -f .state-before.json # Save pre-restore state for easier debugging
+cat modules/payment-bot/.payment-bot-db/2.json | jq . > .state-before.json
+rm modules/payment-bot/.payment-bot-db/2.json
 
-# Dump a little data for debugging
-#rm -f .state-before.json
-#cat modules/payment-bot/.payment-bot-db/2.json | jq . > .state-before.json
-#echo -e "$divider";echo "Restoring remote state"
-#bash ops/payment-bot.sh -i 2 -z \"$mnemonic2\"
+echo -e "$divider";echo "Depositing eth into sender bot"
+bash ops/payment-bot.sh -i 2 -d 0.1 -m "$mnemonic2"
 
 echo -e "$divider";echo "Sending eth to recipient bot"
 bash ops/payment-bot.sh -i 2 -t 0.025 -c $id -m "$mnemonic2"
