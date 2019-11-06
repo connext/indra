@@ -40,7 +40,7 @@ export interface INodeApiClient {
   getLatestSwapRate(from: string, to: string): Promise<string>;
   getPaymentProfile(assetId?: string): Promise<PaymentProfile>;
   getTransferHistory(publicIdentifier: string): Promise<Transfer[]>;
-  requestCollateral(assetId: string): Promise<void>;
+  requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
   withdraw(tx: CFCoreTypes.MinimalTransaction): Promise<TransactionResponse>;
   fetchLinkedTransfer(paymentId: string): Promise<any>;
   resolveLinkedTransfer(
@@ -171,7 +171,7 @@ export class NodeApiClient implements INodeApiClient {
 
   // TODO: right now node doesnt return until the deposit has completed
   // which exceeds the timeout.....
-  public async requestCollateral(assetId: string): Promise<RequestCollateralResponse> {
+  public async requestCollateral(assetId: string): Promise<RequestCollateralResponse | void> {
     try {
       return await this.send(`channel.request-collateral.${this.userPublicIdentifier}`, {
         assetId,

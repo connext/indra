@@ -9,12 +9,12 @@ import {
   ClientOptions,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
-  IConnextClient,
   ConnextEvent,
   CreateChannelResponse,
   DepositParameters,
   GetChannelResponse,
   GetConfigResponse,
+  IConnextClient,
   makeChecksum,
   makeChecksumOrEthAddress,
   PaymentProfile,
@@ -30,8 +30,8 @@ import {
   SwapParameters,
   Transfer,
   TransferParameters,
-  WithdrawParameters,
   WithdrawalResponse,
+  WithdrawParameters,
 } from "@connext/types";
 import { Address, AppInstanceJson, Node as CFCoreTypes } from "@counterfactual/types";
 import "core-js/stable";
@@ -343,7 +343,9 @@ export class ConnextClient implements IConnextClient {
     return await this.node.getChannel();
   };
 
-  public requestCollateral = async (tokenAddress: string): Promise<RequestCollateralResponse> => {
+  public requestCollateral = async (
+    tokenAddress: string,
+  ): Promise<RequestCollateralResponse | void> => {
     return await this.node.requestCollateral(tokenAddress);
   };
 

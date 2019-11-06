@@ -22,7 +22,13 @@ import {
   TransferParameters,
   WithdrawParameters,
 } from "./inputs";
-import { CreateChannelResponse, GetChannelResponse, GetConfigResponse, Transfer } from "./node";
+import {
+  CreateChannelResponse,
+  GetChannelResponse,
+  GetConfigResponse,
+  RequestCollateralResponse,
+  Transfer,
+} from "./node";
 
 export interface Store extends CFCoreTypes.IStoreService {
   set(
@@ -92,7 +98,7 @@ export interface IConnextClient {
   subscribeToSwapRates(from: string, to: string, callback: any): Promise<any>;
   getLatestSwapRate(from: string, to: string): Promise<string>;
   unsubscribeToSwapRates(from: string, to: string): Promise<void>;
-  requestCollateral(tokenAddress: string): Promise<void>;
+  requestCollateral(tokenAddress: string): Promise<RequestCollateralResponse | void>;
   addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile>;
   getPaymentProfile(assetId?: string): Promise<PaymentProfile | undefined>;
   getTransferHistory(): Promise<Transfer[]>;
