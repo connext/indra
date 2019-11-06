@@ -60,7 +60,10 @@ export class ConditionalTransferController extends AbstractController {
     const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
 
     // wait for linked transfer
-    const ret = await this.handleLinkedTransfers(params);
+    const ret = await this.handleLinkedTransfers({
+      ...params,
+      conditionType: "LINKED_TRANSFER",
+    });
 
     // set recipient and encrypted pre-image on linked transfer
     const recipientPublicKey = fromExtendedKey(recipient).publicKey;
