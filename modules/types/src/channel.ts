@@ -1,7 +1,7 @@
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { BigNumber } from "ethers/utils";
 
-import { App, AppState } from "./app";
+import { AppState } from "./app";
 import { Address } from "./basic";
 
 ////////////////////////////////////
@@ -9,8 +9,8 @@ import { Address } from "./basic";
 
 // used to verify channel is in sequence
 export type ChannelAppSequences = {
-  userAppSequenceNumber: number;
-  nodeAppSequenceNumber: number;
+  userSequenceNumber: number;
+  nodeSequenceNumber: number;
 };
 
 // payment setups
@@ -28,12 +28,6 @@ export interface AssetAmount<T = string> {
 }
 export type AssetAmountBigNumber = AssetAmount<BigNumber>;
 
-export type User = {
-  id: number;
-  xpub: string;
-  channels: CFCoreChannel[];
-};
-
 export type CFCoreChannel = {
   id: number;
   nodePublicIdentifier: string;
@@ -41,26 +35,6 @@ export type CFCoreChannel = {
   multisigAddress: string;
   available: boolean;
 };
-export type Channel<T = string> = {
-  id: number;
-  user: User;
-  counterpartyXpub: string;
-  multisigAddress: string;
-  apps: App<T>[];
-  updates: ChannelUpdate<T>[];
-};
-export type ChannelBigNumber = Channel<BigNumber>;
-
-export type ChannelUpdate<T = string> = {
-  id: number;
-  channel: Channel<T>;
-  freeBalancePartyA: T;
-  freeBalancePartyB: T;
-  nonce: number;
-  sigPartyA: string;
-  sigPartyB: string;
-};
-export type ChannelUpdateBigNumber = ChannelUpdate<BigNumber>;
 
 export type ChannelState<T = string> = {
   apps: AppState<T>[];
@@ -75,13 +49,3 @@ export type TransferAction = {
   transferAmount: BigNumber;
 };
 
-export type MultisigState<T = string> = {
-  id: number;
-  xpubA: string;
-  xpubB: string;
-  multisigAddress: string;
-  freeBalanceA: T;
-  freeBalanceB: T;
-  appIds: number[];
-};
-export type MultisigStateBigNumber = MultisigState<BigNumber>;

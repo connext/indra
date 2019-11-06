@@ -7,7 +7,6 @@ import {
   ChannelState,
   ClientOptions,
   GetConfigResponse,
-  MultisigState,
   Store,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
@@ -25,7 +24,6 @@ export type InternalClientOptions = ClientOptions & {
   channelRouter: ChannelRouter;
   channelProvider?: ChannelProvider;
   config: GetConfigResponse;
-  contract?: MultisigState;
   ethProvider: providers.JsonRpcProvider;
   messaging: IMessagingService;
   multisigAddress: string;

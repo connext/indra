@@ -2,7 +2,7 @@ import { AddressZero } from "ethers/constants";
 import { BigNumber, getAddress } from "ethers/utils";
 
 import { AppState, CoinTransfer } from "./app";
-import { AssetAmount, MultisigState, PaymentProfile } from "./channel";
+import { AssetAmount, PaymentProfile } from "./channel";
 import {
   DepositParameters,
   LinkedTransferParameters,
@@ -143,14 +143,6 @@ export function convertAssetAmountWithId<To extends NumericTypeName>(
     assetId: makeChecksumOrEthAddress(obj.assetId),
   };
   return convertAssetAmount(to, asset);
-}
-
-export function convertMultisig<To extends NumericTypeName>(
-  to: To,
-  obj: MultisigState<any>,
-): MultisigState<NumericTypes[To]> {
-  const fromType = getType(obj.freeBalanceA);
-  return convertFields(fromType, to, ["freeBalanceA", "freeBalanceB"], obj);
 }
 
 export function convertPaymentProfile<To extends NumericTypeName>(
