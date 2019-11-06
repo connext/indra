@@ -57,7 +57,7 @@ export class WithdrawalController extends AbstractController {
           recipient,
         );
         this.log.info(`Withdraw Response: ${stringify(withdrawResponse)}`);
-        transaction = await this.ethProvider.getTransaction(withdrawResponse.hash);
+        transaction = await this.ethProvider.getTransaction(withdrawResponse.txHash);
       }
       const postWithdrawBalances = await this.connext.getFreeBalance(assetId);
 
