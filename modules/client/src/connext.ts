@@ -66,21 +66,40 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   const { channelProvider, ethProviderUrl, logLevel, mnemonic, nodeUrl, store } = opts;
   const log = new Logger("ConnextConnect", logLevel);
 
-  // Convert mnemonic into xpub + keyGen if provided
+  // set channel provider config
+  let channelProviderConfig: ChannelProviderConfig;
   let xpub: string;
   let keyGen;
   if (mnemonic) {
+    // Convert mnemonic into xpub + keyGen if provided
     const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
     xpub = hdNode.neuter().extendedKey;
     keyGen = (index: string): Promise<string> =>
       Promise.resolve(hdNode.derivePath(index).privateKey);
-  } else {
-    if (!opts.xpub || !opts.keyGen) {
-      throw new Error(`Client must be instantiated with xpub and keygen if not using mnemonic`);
-    }
+  } else if (channelProvider) {
+    // enable the channel provider, which sets the config property
+    await channelProvider.enable();
+    channelProviderConfig = {
+      ...channelProvider.config,
+      type: RpcType.ChannelProvider,
+    };
+  } else if (opts.xpub && opts.keyGen) {
     xpub = opts.xpub;
     keyGen = opts.keyGen;
+    channelProviderConfig = {
+      freeBalanceAddress: xpubToAddress(xpub),
+      nodeUrl,
+      signerAddress: xpubToAddress(xpub),
+      type: RpcType.CounterfactualNode,
+      userPublicIdentifier: xpub,
+    };
+  } else {
+    throw new Error(
+      `Client must be instantiated with xpub and keygen, or a channel provider if not using mnemonic`,
+    );
   }
+
+  log.debug(`Using channel provider config: ${stringify(channelProviderConfig)}`);
 
   // setup network information
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
@@ -94,29 +113,6 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
       throw { code: "UNSUPPORTED_OPERATION" };
     };
   }
-
-  // set channel provider config
-  let channelProviderConfig: ChannelProviderConfig;
-  if (channelProvider) {
-    // enable the channel provider, which sets the config property
-    await channelProvider.enable();
-    channelProviderConfig = {
-      ...channelProvider.config,
-      type: RpcType.ChannelProvider,
-    };
-  } else if (keyGen && xpub) {
-    channelProviderConfig = {
-      freeBalanceAddress: xpubToAddress(xpub),
-      nodeUrl,
-      signerAddress: xpubToAddress(xpub),
-      type: RpcType.CounterfactualNode,
-      userPublicIdentifier: xpub,
-    } as any;
-  } else {
-    throw new Error(`Must provide a channel provider or mnemonic on startup.`);
-  }
-
-  log.debug(`Using channel provider config: ${stringify(channelProviderConfig)}`);
 
   log.debug(`Creating messaging service client (logLevel: ${logLevel})`);
   const messagingFactory = new MessagingServiceFactory({
@@ -207,9 +203,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   } catch (e) {
     log.warn(e);
     if (e.message.includes(`StateChannel does not exist yet`)) {
-      console.log("Restoring client state");
+      log.info("Restoring client state");
       await client.restoreState();
-      console.log("Newly restored client is ready to go!");
+      log.debug("Newly restored client is ready to go!");
     } else {
       throw e;
     }
@@ -339,7 +335,12 @@ export class ConnextClient implements IConnextClient {
           this.publicIdentifier,
           this.keyGen,
         );
-        channelRouter = new ChannelRouter(cfCore, this.channelRouter.config, this.store, await this.keyGen("0"));
+        channelRouter = new ChannelRouter(
+          cfCore,
+          this.channelRouter.config,
+          this.store,
+          await this.keyGen("0"),
+        );
         break;
       default:
         throw new Error(`Unrecognized channel provider type: ${this.routerType}`);
