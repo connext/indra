@@ -1,4 +1,4 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { arrayify, hexlify, randomBytes, verifyMessage } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
@@ -81,6 +81,18 @@ export class AuthService {
         return callback(xpub, data);
       }
       return authRes || callback(xpub, data);
+    };
+  }
+
+  useAdminToken(callback: any): any {
+    // get token from subject
+    return async (subject: string, data: { token: string }): Promise<string> => {
+      // verify token is admin token
+      const { token } = data;
+      if (token !== process.env.INDRA_ADMIN_TOKEN) {
+        return badToken(`Unrecognized admin token: ${token}.`);
+      }
+      return callback(data);
     };
   }
 

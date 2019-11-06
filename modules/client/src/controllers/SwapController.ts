@@ -10,7 +10,7 @@ import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import { replaceBN, xpubToAddress } from "../lib/utils";
+import { stringify, xpubToAddress } from "../lib/utils";
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notGreaterThan, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
@@ -116,11 +116,7 @@ export class SwapController extends AbstractController {
     // check app id
     if (!msg.data) {
       this.log.warn(
-        `This should not have this structure when emitted, strange. msg: ${JSON.stringify(
-          msg,
-          null,
-          2,
-        )}`,
+        `This should not have this structure when emitted, strange. msg: ${stringify(msg)}`,
       );
       return;
     }
@@ -129,7 +125,7 @@ export class SwapController extends AbstractController {
       return;
     }
 
-    rej(`Install rejected. Event data: ${JSON.stringify(msg.data, replaceBN, 2)}`);
+    rej(`Install rejected. Event data: ${stringify(msg.data)}`);
     return msg.data;
   };
 

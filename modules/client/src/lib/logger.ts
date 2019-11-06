@@ -5,8 +5,9 @@ export class Logger {
     info: 3,
     warn: 2,
   };
-  private logLevel: number = 3;
   private name: string = "Logger";
+
+  public logLevel: number = 3;
 
   public constructor(name?: string, logLevel?: number) {
     this.name = typeof name !== "undefined" ? name : this.name;

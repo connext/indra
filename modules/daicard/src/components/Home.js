@@ -9,33 +9,36 @@ import "../App.css";
 import { ChannelCard } from "./channelCard";
 import { QRScan } from "./qrCode";
 
+import { initWalletConnect } from "../utils";
+
 const style = withStyles({});
 
-export const Home = style(props => {
+export const Home = style(({ balance, swapRate, channel, history }) => {
   const [scanModal, setScanModal] = useState(false);
 
-  const { balance, swapRate } = props
-
-  const scanQRCode = async (data) => {
-    const path = await props.scanQRCode(data);
+  const scanQRCode = async data => {
     setScanModal(false);
-    props.history.push(path)
+    if (channel && data.startsWith("wc:")) {
+      await initWalletConnect(data, channel);
+    } else {
+      history.push(data);
+    }
   };
 
   return (
     <>
       <Grid container direction="row" style={{ marginBottom: "-7.5%" }}>
-        <Grid item xs={12} style={{ flexGrow: 1 }} >
+        <Grid item xs={12} style={{ flexGrow: 1 }}>
           <ChannelCard balance={balance} swapRate={swapRate} />
         </Grid>
       </Grid>
       <Grid container direction="column">
-        <Grid item xs={12} style={{ marginRight: "5%", marginLeft: "80%" }} >
+        <Grid item xs={12} style={{ marginRight: "5%", marginLeft: "80%" }}>
           <Fab
             style={{
               color: "#FFF",
               backgroundColor: "#fca311",
-              size: "large"
+              size: "large",
             }}
             onClick={() => setScanModal(true)}
           >
@@ -55,12 +58,10 @@ export const Home = style(props => {
               marginLeft: "auto",
               marginRight: "auto",
               left: "0",
-              right: "0"
+              right: "0",
             }}
           >
-            <QRScan
-              handleResult={scanQRCode}
-            />
+            <QRScan handleResult={scanQRCode} />
           </Modal>
         </Grid>
       </Grid>
@@ -71,20 +72,14 @@ export const Home = style(props => {
         style={{ paddingLeft: "2%", paddingRight: "2%", textAlign: "center" }}
       >
         <Grid item xs={12} style={{ paddingTop: "10%" }}>
-          <Grid
-            container
-            spacing={2}
-            direction="row"
-            alignItems="center"
-            justify="center"
-          >
+          <Grid container spacing={2} direction="row" alignItems="center" justify="center">
             <Grid item xs={12} sm={6}>
               <Button
                 disableTouchRipple
                 fullWidth
                 style={{
                   color: "#FFF",
-                  backgroundColor: "#FCA311"
+                  backgroundColor: "#FCA311",
                 }}
                 variant="contained"
                 size="large"
@@ -101,7 +96,7 @@ export const Home = style(props => {
                 fullWidth
                 style={{
                   color: "#FFF",
-                  backgroundColor: "#FCA311"
+                  backgroundColor: "#FCA311",
                 }}
                 size="large"
                 variant="contained"
@@ -131,4 +126,4 @@ export const Home = style(props => {
       </Grid>
     </>
   );
-})
+});

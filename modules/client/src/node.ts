@@ -7,18 +7,19 @@ import {
   GetConfigResponse,
   makeChecksumOrEthAddress,
   PaymentProfile,
+  RequestCollateralResponse,
   SupportedApplication,
   SupportedNetwork,
   Transfer,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { TransactionResponse } from "ethers/providers";
-import { arrayify, Transaction } from "ethers/utils";
-import { Wallet } from "ethers/wallet";
+import { Transaction } from "ethers/utils";
 import uuid = require("uuid");
 
+import { ChannelRouter } from "./channelRouter";
 import { Logger } from "./lib/logger";
-import { replaceBN } from "./lib/utils";
+import { stringify } from "./lib/utils";
 import { NodeInitializationParameters } from "./types";
 
 // Include our access token when interacting with these subjects
@@ -38,8 +39,9 @@ export interface INodeApiClient {
   getChannel(): Promise<GetChannelResponse>;
   getLatestSwapRate(from: string, to: string): Promise<string>;
   getPaymentProfile(assetId?: string): Promise<PaymentProfile>;
+  getStateForRestore(publicIdentifier: string): Promise<{ data: any }>;
   getTransferHistory(publicIdentifier: string): Promise<Transfer[]>;
-  requestCollateral(assetId: string): Promise<void>;
+  requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
   withdraw(tx: CFCoreTypes.MinimalTransaction): Promise<TransactionResponse>;
   fetchLinkedTransfer(paymentId: string): Promise<any>;
   resolveLinkedTransfer(
@@ -62,18 +64,47 @@ export class NodeApiClient implements INodeApiClient {
   public messaging: IMessagingService;
   public latestSwapRates: { [key: string]: string } = {};
   public log: Logger;
-  public userPublicIdentifier: string | undefined;
-  public nodePublicIdentifier: string | undefined;
-  private wallet: Wallet;
+
+  private _userPublicIdentifier: string | undefined;
+  private _nodePublicIdentifier: string | undefined;
+  private _channelRouter: ChannelRouter | undefined;
   private token: Promise<string> | undefined;
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
     this.log = new Logger("NodeApiClient", opts.logLevel);
-    this.userPublicIdentifier = opts.userPublicIdentifier;
-    this.nodePublicIdentifier = opts.nodePublicIdentifier;
-    this.wallet = new Wallet(opts.authKey);
-    this.token = this.getAuthToken();
+    this._userPublicIdentifier = opts.userPublicIdentifier;
+    this._nodePublicIdentifier = opts.nodePublicIdentifier;
+    this._channelRouter = opts.channelRouter;
+    if (this.channelRouter) {
+      this.token = this.getAuthToken();
+    }
+  }
+
+  ////////////////////////////////////////
+  // GETTERS/SETTERS
+  get channelRouter(): ChannelRouter | undefined {
+    return this._channelRouter;
+  }
+
+  set channelRouter(channelRouter: ChannelRouter) {
+    this._channelRouter = channelRouter;
+  }
+
+  get userPublicIdentifier(): string | undefined {
+    return this._userPublicIdentifier;
+  }
+
+  set userPublicIdentifier(userXpub: string) {
+    this._userPublicIdentifier = userXpub;
+  }
+
+  get nodePublicIdentifier(): string | undefined {
+    return this._nodePublicIdentifier;
+  }
+
+  set nodePublicIdentifier(nodeXpub: string) {
+    this._nodePublicIdentifier = nodeXpub;
   }
 
   ////////////////////////////////////////
@@ -85,7 +116,7 @@ export class NodeApiClient implements INodeApiClient {
     timeout: number,
   ): Promise<any> {
     const lockValue = await this.send(`lock.acquire.${lockName}`, { lockTTL: timeout });
-    this.log.info(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
+    this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
     let retVal: any;
     try {
       retVal = await callback();
@@ -94,7 +125,7 @@ export class NodeApiClient implements INodeApiClient {
       this.log.error(e);
     } finally {
       await this.send(`lock.release.${lockName}`, { lockValue });
-      this.log.info(`Released lock at ${Date.now()} for ${lockName}`);
+      this.log.debug(`Released lock at ${Date.now()} for ${lockName}`);
     }
     return retVal;
   }
@@ -141,7 +172,7 @@ export class NodeApiClient implements INodeApiClient {
 
   // TODO: right now node doesnt return until the deposit has completed
   // which exceeds the timeout.....
-  public async requestCollateral(assetId: string): Promise<void> {
+  public async requestCollateral(assetId: string): Promise<RequestCollateralResponse | void> {
     try {
       return await this.send(`channel.request-collateral.${this.userPublicIdentifier}`, {
         assetId,
@@ -149,7 +180,7 @@ export class NodeApiClient implements INodeApiClient {
     } catch (e) {
       // TODO: node should return once deposit starts
       if (e.message.startsWith("Request timed out")) {
-        this.log.info(`request collateral message timed out`);
+        this.log.warn(`request collateral message timed out`);
         return;
       }
       throw e;
@@ -250,34 +281,40 @@ export class NodeApiClient implements INodeApiClient {
   private async getAuthToken(): Promise<string> {
     return new Promise(
       async (resolve: any, reject: any): Promise<any> => {
-        const nonce = await this.send("auth.getNonce", { address: this.wallet.address });
-        const sig = await this.wallet.signMessage(arrayify(nonce));
+        const nonce = await this.send("auth.getNonce", {
+          address: this.channelRouter.signerAddress,
+        });
+        const sig = await this.channelRouter.signMessage(nonce);
         const token = `${nonce}:${sig}`;
-        this.log.info(`Got new token for ${this.wallet.address}: ${token}`);
         return resolve(token);
       },
     );
   }
 
+  private assertAuthToken(): void {
+    if (!this.channelRouter) {
+      throw new Error(
+        `Must have instantiated a channel router (ie a signing thing) before setting auth token`,
+      );
+    }
+    if (!this.token) {
+      this.token = this.getAuthToken();
+    }
+  }
+
   private async send(subject: string, data?: any): Promise<any | undefined> {
     this.log.debug(
-      `Sending request to ${subject} ${
-        data ? `with data: ${JSON.stringify(data, replaceBN, 2)}` : `without data`
-      }`,
+      `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : `without data`}`,
     );
     const payload = {
       ...data,
       id: uuid.v4(),
     };
     if (guardedSubjects.includes(subject.split(".")[0])) {
-      if (!this.token) {
-        this.log.warn(`Didn't get an auth token before sending, getting a new one.`);
-        this.token = this.getAuthToken();
-      }
+      this.assertAuthToken();
       payload.token = await this.token;
     }
     let msg = await this.messaging.request(subject, API_TIMEOUT, payload);
-    // console.log(`Got msg: ${JSON.stringify(msg, replaceBN, 2)}`);
     let error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     if (error && error.startsWith("Invalid token")) {
       this.log.warn(`Auth error, token might have expired. Let's get a fresh token & try again.`);
@@ -287,12 +324,12 @@ export class NodeApiClient implements INodeApiClient {
       error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     }
     if (!msg.data) {
-      this.log.info(`Maybe this message is malformed: ${JSON.stringify(msg, replaceBN, 2)}`);
+      this.log.info(`Maybe this message is malformed: ${stringify(msg)}`);
       return undefined;
     }
     const { err, response, ...rest } = msg.data;
     if (err || error) {
-      throw new Error(`Error sending request. Message: ${JSON.stringify(msg, replaceBN, 2)}`);
+      throw new Error(`Error sending request. Message: ${stringify(msg)}`);
     }
     const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
     return !response || isEmptyObj ? undefined : response;

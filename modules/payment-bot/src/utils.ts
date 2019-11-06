@@ -1,6 +1,26 @@
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { formatEther } from "ethers/utils";
 
+export const replaceBN = (key: string, value: any): any =>
+  value && value._hex ? value.toString() : value;
+
+export const checkForLinkedFields = (config: any): void => {
+  if (!config.preImage) {
+    throw new Error(
+      `Cannot ${
+        config.linked ? "create" : "redeem"
+      } a linked payment without an associated preImage.`,
+    );
+  }
+  if (!config.paymentId) {
+    throw new Error(
+      `Cannot ${
+        config.linked ? "create" : "redeem"
+      } a linked payment without an associated paymmentId.`,
+    );
+  }
+};
+
 // TODO: use the client fn?
 export const objMap = <T, F extends keyof T, R>(
   obj: T,

@@ -6,6 +6,7 @@ import {
   GetChannelResponse,
   GetConfigResponse,
   PaymentProfile,
+  RequestCollateralResponse,
   SupportedApplication,
   SupportedNetwork,
   Transfer,
@@ -78,7 +79,7 @@ export class MockMessagingService implements IMessagingService {
   }
 }
 
-export class MockNodeClientApi implements INodeApiClient {
+export class MockNodeClientApi {
   // public receivedUpdateRequests: UpdateRequest[] = []
   public log: Logger;
 
@@ -158,7 +159,7 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public async unsubscribeFromSwapRates(from: string, to: string): Promise<void> {}
 
-  public async requestCollateral(): Promise<void> {}
+  public async requestCollateral(): Promise<RequestCollateralResponse | void> {}
 
   public async withdraw(): Promise<TransactionResponse> {
     return MockNodeClientApi.returnValues.withdraw;

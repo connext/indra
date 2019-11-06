@@ -19,7 +19,7 @@ import { HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { RejectInstallVirtualMessage } from "../lib/cfCore";
-import { createLinkedHash, replaceBN, xpubToAddress } from "../lib/utils";
+import { createLinkedHash, stringify, xpubToAddress } from "../lib/utils";
 import { falsy, invalid32ByteHexString, invalidAddress, notLessThanOrEqualTo } from "../validation";
 
 import { AbstractController } from "./AbstractController";
@@ -38,9 +38,7 @@ export class ConditionalTransferController extends AbstractController {
   public conditionalTransfer = async (
     params: ConditionalTransferParameters,
   ): Promise<ConditionalTransferResponse> => {
-    this.log.info(
-      `Conditional transfer called with parameters: ${JSON.stringify(params, replaceBN, 2)}`,
-    );
+    this.log.info(`Conditional transfer called with parameters: ${stringify(params)}`);
 
     const res = await this.conditionalExecutors[params.conditionType](params);
     return res;
@@ -62,7 +60,10 @@ export class ConditionalTransferController extends AbstractController {
     const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
 
     // wait for linked transfer
-    const ret = await this.handleLinkedTransfers(params);
+    const ret = await this.handleLinkedTransfers({
+      ...params,
+      conditionType: "LINKED_TRANSFER",
+    });
 
     // set recipient and encrypted pre-image on linked transfer
     const recipientPublicKey = fromExtendedKey(recipient).derivePath("0").publicKey;
@@ -81,7 +82,7 @@ export class ConditionalTransferController extends AbstractController {
     // TODO: should we move this to its own file?
     this.connext.messaging.publish(
       `transfer.send-async.${recipient}`,
-      JSON.stringify({
+      stringify({
         amount: amount.toString(),
         assetId,
         encryptedPreImage,
@@ -214,7 +215,7 @@ export class ConditionalTransferController extends AbstractController {
         );
         this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
       });
-      this.log.info(`App was installed successfully!: ${JSON.stringify(proposeRes)}`);
+      this.log.info(`App was installed successfully!: ${stringify(proposeRes)}`);
       return proposeRes.appInstanceId;
     } catch (e) {
       this.log.error(`Error installing app: ${e.toString()}`);
@@ -232,7 +233,7 @@ export class ConditionalTransferController extends AbstractController {
     if (appInstance.identityHash !== this.appId) {
       // not our app
       this.log.info(
-        `Caught INSTALL event for different app ${JSON.stringify(message)}, expected ${this.appId}`,
+        `Caught INSTALL event for different app ${stringify(message)}, expected ${this.appId}`,
       );
       return;
     }
@@ -250,7 +251,7 @@ export class ConditionalTransferController extends AbstractController {
       return;
     }
 
-    return rej(`Install failed. Event data: ${JSON.stringify(msg, replaceBN, 2)}`);
+    return rej(`Install failed. Event data: ${stringify(msg)}`);
   };
 
   private cleanupInstallListeners = (boundReject: any, appId: string): void => {

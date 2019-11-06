@@ -4,7 +4,7 @@ import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
 
-import { xpubToAddress, replaceBN } from "../lib/utils";
+import { stringify, xpubToAddress } from "../lib/utils";
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
@@ -24,7 +24,7 @@ export class DepositController extends AbstractController {
     const preDepositBalances = await this.connext.getFreeBalance(assetId);
 
     this.log.info(
-      `\nDepositing ${amount} of ${assetId} into ${this.connext.opts.multisigAddress}\n`,
+      `\nDepositing ${amount} of ${assetId} into ${this.connext.multisigAddress}\n`,
     );
 
     // register listeners
@@ -34,8 +34,8 @@ export class DepositController extends AbstractController {
 
     try {
       this.log.info(`Calling ${CFCoreTypes.RpcMethodName.DEPOSIT}`);
-      const depositResponse = await this.connext.cfDeposit(amount, assetId);
-      this.log.info(`Deposit Response: ${JSON.stringify(depositResponse, replaceBN, 2)}`);
+      const depositResponse = await this.connext.providerDeposit(amount, assetId);
+      this.log.info(`Deposit Response: ${stringify(depositResponse)}`);
 
       const postDepositBalances = await this.connext.getFreeBalance(assetId);
 
@@ -71,7 +71,7 @@ export class DepositController extends AbstractController {
   ): Promise<string | undefined> => {
     // check asset balance of address
     // TODO: fix for non-eth balances
-    const depositAddr = xpubToAddress(this.cfCore.publicIdentifier);
+    const depositAddr = xpubToAddress(this.connext.publicIdentifier);
     let bal: BigNumber;
     if (assetId === AddressZero) {
       bal = await this.ethProvider.getBalance(depositAddr);

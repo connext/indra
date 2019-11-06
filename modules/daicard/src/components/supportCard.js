@@ -4,8 +4,8 @@ import React, { useEffect, useState } from "react";
 const style = withStyles(theme => ({
   icon: {
     width: "40px",
-    height: "40px"
-  }
+    height: "40px",
+  },
 }));
 
 export const SupportCard = style(({ channel }) => {
@@ -14,7 +14,7 @@ export const SupportCard = style(({ channel }) => {
   useEffect(() => {
     (async () => {
       setChannelState(await channel.getChannel());
-    })()
+    })();
   }, [channel]);
 
   const openDiscord = () => {
@@ -30,13 +30,17 @@ export const SupportCard = style(({ channel }) => {
     channelState.sigUser !== "0x0" &&
     channelState.sigHub !== "0x0";
 
-  const channelRender = (channelState) => {
-    return Object.entries(channelState).map(([key, value], i) => { return(
-      <div>
-        <span>{key}: {value}{" "}</span>
-      </div>
-    )});
-  }
+  const channelRender = channelState => {
+    return Object.entries(channelState).map(([key, value], i) => {
+      return (
+        <div>
+          <span>
+            {key}: {value}{" "}
+          </span>
+        </div>
+      );
+    });
+  };
 
   return (
     <Grid
@@ -49,7 +53,7 @@ export const SupportCard = style(({ channel }) => {
         paddingTop: "10%",
         paddingBottom: "10%",
         textAlign: "center",
-        justifyContent: "center"
+        justifyContent: "center",
       }}
     >
       <Grid item xs={12}>
@@ -66,9 +70,7 @@ export const SupportCard = style(({ channel }) => {
         <Grid item xs={12}>
           {exitableState && (
             <Typography paragraph variant="subtitle2">
-              <span>{`If you need your funds now, use this state to call 'startExitWithUpdate' onchain at ${
-                channelState.contractAddress
-              }.`}</span>
+              <span>{`If you need your funds now, use this state to call 'startExitWithUpdate' onchain at ${channelState.contractAddress}.`}</span>
             </Typography>
           )}
         </Grid>
@@ -89,7 +91,7 @@ export const SupportCard = style(({ channel }) => {
             background: "#FFF",
             border: "1px solid #F22424",
             color: "#F22424",
-            width: "15%"
+            width: "15%",
           }}
           size="medium"
           onClick={() => openDiscord()}
@@ -99,4 +101,4 @@ export const SupportCard = style(({ channel }) => {
       </Grid>
     </Grid>
   );
-})
+});
