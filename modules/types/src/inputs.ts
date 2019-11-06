@@ -58,17 +58,29 @@ export type ResolveLinkedTransferParameters<T = string> = LinkedTransferParamete
   paymentId: string;
   preImage: string;
 };
+export type ResolveLinkedTransferParametersBigNumber = ResolveLinkedTransferParameters<BigNumber>;
+
+export type ResolveLinkedTransferToRecipientParameters<T = string> = Omit<
+  LinkedTransferToRecipientParameters<T>,
+  "recipient" | "amount" | "assetId"
+>;
+// tslint:disable-next-line: max-line-length
+export type ResolveLinkedTransferToRecipientParametersBigNumber = ResolveLinkedTransferToRecipientParameters<
+  BigNumber
+>;
+
 export type ResolveLinkedTransferResponse = {
   freeBalance: NodeTypes.GetFreeBalanceStateResult;
   paymentId: string;
 };
 
 // resolver union types
-// FIXME: should be union type of all supported conditions
-export type ResolveConditionParameters<T = string> = ResolveLinkedTransferParameters;
+export type ResolveConditionParameters<T = string> =
+  | ResolveLinkedTransferParameters<T>
+  | ResolveLinkedTransferToRecipientParameters<T>;
 
 // FIXME: should be union type of all supported conditions
-export type ResolveConditionResponse<T = string> = ResolveLinkedTransferResponse;
+export type ResolveConditionResponse = ResolveLinkedTransferResponse;
 
 ///// Conditional transfer types
 
