@@ -1,4 +1,5 @@
 import { Node as CFCoreTypes } from "@counterfactual/types";
+import { TransactionResponse } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 
 import { AppState } from "./app";
@@ -49,3 +50,4 @@ export type TransferAction = {
   transferAmount: BigNumber;
 };
 
+export type WithdrawalResponse = ChannelState & { transaction: TransactionResponse }

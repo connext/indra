@@ -1,4 +1,4 @@
-import { BigNumber, ChannelState, convert, WithdrawParameters } from "@connext/types";
+import { BigNumber, convert, WithdrawParameters, WithdrawalResponse } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { TransactionResponse } from "ethers/providers";
 import { getAddress } from "ethers/utils";
@@ -10,7 +10,7 @@ import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 import { AbstractController } from "./AbstractController";
 
 export class WithdrawalController extends AbstractController {
-  public async withdraw(params: WithdrawParameters): Promise<ChannelState> {
+  public async withdraw(params: WithdrawParameters): Promise<WithdrawalResponse> {
     params.assetId = params.assetId ? getAddress(params.assetId) : undefined;
     const myFreeBalanceAddress = this.connext.freeBalanceAddress;
 
@@ -75,12 +75,11 @@ export class WithdrawalController extends AbstractController {
       throw new Error(e);
     }
 
-    // TODO: fix types!
     return {
       apps: await this.connext.getAppInstances(),
       freeBalance: await this.connext.getFreeBalance(),
       transaction,
-    } as any;
+    };
   }
 
   /////////////////////////////////

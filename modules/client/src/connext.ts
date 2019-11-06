@@ -31,6 +31,7 @@ import {
   Transfer,
   TransferParameters,
   WithdrawParameters,
+  WithdrawalResponse,
 } from "@connext/types";
 import { Address, AppInstanceJson, Node as CFCoreTypes } from "@counterfactual/types";
 import "core-js/stable";
@@ -417,7 +418,7 @@ export class ConnextClient implements ConnextClientI {
     return await this.transferController.transfer(params);
   };
 
-  public withdraw = async (params: WithdrawParameters): Promise<ChannelState> => {
+  public withdraw = async (params: WithdrawParameters): Promise<WithdrawalResponse> => {
     return await this.withdrawalController.withdraw(params);
   };
 
