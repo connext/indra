@@ -62,8 +62,10 @@ export type ResolveLinkedTransferParametersBigNumber = ResolveLinkedTransferPara
 
 export type ResolveLinkedTransferToRecipientParameters<T = string> = Omit<
   ResolveLinkedTransferParameters<T>,
-  "recipient"
->;
+  "recipient" | "conditionType"
+> & {
+  conditionType: "LINKED_TRANSFER_TO_RECIPIENT";
+};
 // tslint:disable-next-line: max-line-length
 export type ResolveLinkedTransferToRecipientParametersBigNumber = ResolveLinkedTransferToRecipientParameters<
   BigNumber
