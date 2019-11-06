@@ -38,10 +38,12 @@ export const cfCoreProviderFactory: Provider = {
     const publicExtendedKey = hdNode.neuter().extendedKey;
 
     // MIGRATE STORE IF NEEDED
-    const storeRecord = await store.get(`${ConnextNodeStorePrefix}/${publicExtendedKey}`);
+    const storeRecord = await store.getV0(`${ConnextNodeStorePrefix}/${publicExtendedKey}`);
 
     if (!isLatestCfStoreVersion(storeRecord)) {
-      logger.log(`Upgrading store to latest version ${LATEST_CF_STORE_VERSION}...`);
+      logger.log(
+        `V0 records still exist, upgrading store to latest version ${LATEST_CF_STORE_VERSION}...`,
+      );
       await migrateToPatch1(store, `${ConnextNodeStorePrefix}/${publicExtendedKey}`);
 
       // delete old records
