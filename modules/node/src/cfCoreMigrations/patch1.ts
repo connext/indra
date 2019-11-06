@@ -5,18 +5,27 @@ const DB_NAMESPACE_CHANNEL = "channel";
 const DB_NAMESPACE_WITHDRAWALS = "multisigAddressToWithdrawalCommitment";
 const DB_NAMESPACE_ALL_COMMITMENTS = "allCommitments";
 
-const bigNumberIshToString = (x: BigNumberish) => bigNumberify(x).toHexString();
+const bigNumberIshToString = (x: BigNumberish): string => bigNumberify(x).toHexString();
 
-export const migrateToPatch1 = async (storeService: Node.IStoreService, storeKeyPrefix: string) => {
+export const migrateToPatch1 = async (
+  storeService: Node.IStoreService,
+  storeKeyPrefix: string,
+): Promise<void> => {
   const stateChannelsMap: {
     [multisigAddress: string]: any;
   } = await (storeService as any).getV0(`${storeKeyPrefix}/${DB_NAMESPACE_CHANNEL}`);
 
-  if (!stateChannelsMap) {
-    return;
-  }
-
   for (const multisigAddress in stateChannelsMap) {
+    if (!stateChannelsMap[multisigAddress].multisigAddress) {
+      console.warn(
+        `Found a malformed entry in the state channels map ${JSON.stringify(
+          stateChannelsMap,
+          null,
+          2,
+        )}`,
+      );
+      continue;
+    }
     /**
      * Update proposal:
      * https://github.com/counterfactual/monorepo/pull/2542/files
@@ -94,16 +103,16 @@ export const migrateToPatch1 = async (storeService: Node.IStoreService, storeKey
   }
 
   const withdrawals =
-    (await storeService.get(`${storeKeyPrefix}/${DB_NAMESPACE_WITHDRAWALS}`)) || {};
+    (await (storeService as any).getV0(`${storeKeyPrefix}/${DB_NAMESPACE_WITHDRAWALS}`)) || {};
 
   const commitments =
-    (await storeService.get(`${storeKeyPrefix}/${DB_NAMESPACE_ALL_COMMITMENTS}`)) || {};
+    (await (storeService as any).getV0(`${storeKeyPrefix}/${DB_NAMESPACE_ALL_COMMITMENTS}`)) || {};
 
   const sharedData = {
     commitments,
-    withdrawals,
     stateChannelsMap,
     version: 1,
+    withdrawals,
   };
 
   await storeService.set([{ path: storeKeyPrefix, value: sharedData }]);

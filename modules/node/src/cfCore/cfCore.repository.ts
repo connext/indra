@@ -43,12 +43,14 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
     );
 
     // this corresponds to version 1 of the store spec
-    return {
+    const getValue = {
       commitments: commitments ? commitments.value : {},
       stateChannelsMap: stateChannelsMap || {},
       version: LATEST_CF_STORE_VERSION,
       withdrawals: withdrawals ? withdrawals.value : {},
     } as any;
+    logger.debug(`Returning value ${JSON.stringify(getValue)} for path ${path}`);
+    return getValue;
   }
 
   async set(pairs: { path: string; value: any }[]): Promise<void> {
@@ -57,9 +59,7 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
       // Wrapping the value into an object is necessary for Postgres bc the JSON column breaks
       // if you use anything other than JSON (i.e. a raw string).
       // In some cases, the cf core code is inserting strings as values instead of objects :(
-      const { stateChannelsMap } = pair.value;
-
-      Object.entries(stateChannelsMap);
+      const { stateChannelsMap, withdrawals, commitments } = pair.value;
 
       const savePromises = Object.entries(stateChannelsMap).map(
         async ([multisigAddress, channelData]: [string, StringKeyValue]): Promise<CFCoreRecord> => {
@@ -75,34 +75,34 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
       );
 
       const commitmentPath = `${pair.path}/${COMMITMENT_PATH}/version/${LATEST_CF_STORE_VERSION}`;
-      let commitments = await this.findOne({
+      let saveCommitments = await this.findOne({
         where: { path: commitmentPath },
       });
-      if (commitments) {
-        commitments.value = pair.value.commitments;
+      if (saveCommitments) {
+        saveCommitments.value = commitments;
       } else {
-        commitments = {
+        saveCommitments = {
           path: commitmentPath,
-          value: pair.value.commitments || {},
+          value: commitments || {},
         } as CFCoreRecord;
       }
-      const saveCommitments = this.save(commitments);
+      const saveCommitmentsPromise = this.save(saveCommitments);
 
       const withdrawalsPath = `${pair.path}/${WITHDRAWAL_PATH}/version/${LATEST_CF_STORE_VERSION}`;
-      let withdrawals = await this.findOne({
+      let saveWithdrawals = await this.findOne({
         where: { path: withdrawalsPath },
       });
-      if (withdrawals) {
-        withdrawals.value = pair.value.withdrawals;
+      if (saveWithdrawals) {
+        saveWithdrawals.value = withdrawals;
       } else {
-        withdrawals = {
+        saveWithdrawals = {
           path: withdrawalsPath,
-          value: pair.value.withdrawals || {},
+          value: withdrawals || {},
         } as CFCoreRecord;
       }
-      const saveWithdrawals = this.save(withdrawals);
+      const saveWithdrawalsPromise = this.save(saveWithdrawals);
 
-      savePromises.concat([saveCommitments, saveWithdrawals]);
+      savePromises.concat([saveCommitmentsPromise, saveWithdrawalsPromise]);
 
       await Promise.all(savePromises);
     }
@@ -155,7 +155,9 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
   }
 
   async deleteLegacyCFCoreRecords(): Promise<CFCoreRecord[] | void> {
-    const legacyRecords = await this.find({ path: Like(`%channel%`) });
+    const legacyRecords = await this.find({
+      path: Like(`%channel/__________________________________________`),
+    });
     console.log("would have deleted these: ", stringify(legacyRecords, 2));
     return;
     // return await this.remove(legacyRecords);
