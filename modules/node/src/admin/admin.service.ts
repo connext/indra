@@ -97,6 +97,7 @@ export class AdminService {
         continue;
       }
 
+      // otherwise, has incorrect channel addr. from proxy redeployment
       ans.push({
         channelId,
         expectedMultisigAddress,
@@ -105,5 +106,61 @@ export class AdminService {
       });
     }
     return ans;
+  }
+
+  /**
+   * November 4, 2019
+   *
+   * Figure out how many channels that have the ProxyFactory/prefix bug have
+   * been updated and need manual channel state merging.
+   *
+   * There are three cases to merge together:
+   *
+   * 1. Incorrect prefix, incorrect multisig address
+   * 2. Correct prefix, incorrect multisig address
+   * 3. Correct prefix, correct multisig address
+   *
+   * (3) would be the latest `/channel/` entry for the state channel object.
+   *
+   * There is no reason there would be an incorrect prefix and a correct
+   * multisig address since the prefix was changed before the proxy factory
+   * was redeployed.
+   */
+  async getChannelsForMerging(): Promise<any[]> {
+    const channels = await this.channelService.findAll();
+    // for each of the channels, search for the entries to merge based on
+    // outlined possibilities
+    const toMerge = [];
+    for (const chan of channels) {
+      // if the channel has the expected multisig address, assume it
+      // will have the correct prefix and will not need to be merged
+      // because it was created after latest ProxyFactory deployment
+      const expectedMultisig = await this.cfCoreService.getExpectedMultisigAddressFromUserXpub(
+        chan.userPublicIdentifier,
+      );
+      if (expectedMultisig === chan.multisigAddress) {
+        continue;
+      }
+      // otherwise, check to see if there is a channel record with
+      // the old prefix
+      const oldPrefix = await this.cfCoreService.getChannelRecord(
+        chan.multisigAddress,
+        "ConnextHub",
+      );
+
+      const currPrefix = await this.cfCoreService.getChannelRecord(chan.multisigAddress);
+
+      const latestEntry = await this.cfCoreService.getChannelRecord(expectedMultisig);
+
+      const mergeInfo = {
+        channelId: chan.id,
+        records: { oldPrefix, currPrefix, latestEntry },
+        userXpub: chan.userPublicIdentifier,
+      };
+
+      toMerge.push(mergeInfo);
+    }
+
+    return toMerge;
   }
 }

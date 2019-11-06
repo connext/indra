@@ -1,4 +1,4 @@
-import { AppActionBigNumber } from "@connext/types";
+import { AppActionBigNumber, ConnextNodeStorePrefix } from "@connext/types";
 import { AppInstanceJson, AppInstanceProposal, Node as CFCoreTypes } from "@counterfactual/types";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
@@ -9,6 +9,8 @@ import { CFCoreProviderId } from "../constants";
 import { CLogger, freeBalanceAddressFromXpub, replaceBN } from "../util";
 import { CFCore, getMultisigAddressfromXpubs } from "../util/cfCore";
 
+import { CFCoreRecordRepository } from "./cfCore.repository";
+
 const logger = new CLogger("CFCoreService");
 
 Injectable();
@@ -16,6 +18,7 @@ export class CFCoreService {
   constructor(
     @Inject(CFCoreProviderId) public readonly cfCore: CFCore,
     private readonly configService: ConfigService,
+    private readonly cfCoreRepository: CFCoreRecordRepository,
   ) {
     this.cfCore = cfCore;
   }
@@ -282,6 +285,15 @@ export class CFCoreService {
     const proxyFactory = addresses.ProxyFactory;
     const mVMultisig = addresses.MinimumViableMultisig;
     return getMultisigAddressfromXpubs(owners, proxyFactory, mVMultisig);
+  }
+
+  /**
+   * Returns value from `node_records` table stored at:
+   * `{prefix}/{nodeXpub}/channel/{multisig}`
+   */
+  async getChannelRecord(multisig: string, prefix: string = ConnextNodeStorePrefix): Promise<any> {
+    const path = `${prefix}/${this.cfCore.publicIdentifier}/channel/${multisig}`;
+    return await this.cfCoreRepository.get(path);
   }
 
   private async appNotInstalled(appInstanceId: string): Promise<string | undefined> {
