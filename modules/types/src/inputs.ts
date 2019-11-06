@@ -80,8 +80,8 @@ export type TransferCondition = keyof typeof TransferConditions;
 
 // linked transfer types
 export type LinkedTransferParameters<T = string> = {
-  conditionType: TransferCondition;
-  amount?: T;
+  conditionType: "LINKED_TRANSFER";
+  amount: T;
   assetId?: Address;
   paymentId: string;
   preImage: string;
@@ -94,14 +94,18 @@ export type LinkedTransferResponse = {
   freeBalance: NodeTypes.GetFreeBalanceStateResult;
 };
 
-export type LinkedTransferToRecipientParameters<T = string> = LinkedTransferParameters<T> & {
-  recipient?: string;
+export type LinkedTransferToRecipientParameters<T = string> = Omit<
+  LinkedTransferParameters<T>,
+  "conditionType"
+> & {
+  conditionType: "LINKED_TRANSFER_TO_RECIPIENT";
+  recipient: string;
 };
 export type LinkedTransferToRecipientParametersBigNumber = LinkedTransferToRecipientParameters<
   BigNumber
 >;
 export type LinkedTransferToRecipientResponse = LinkedTransferResponse & {
-  recipient?: string;
+  recipient: string;
 };
 
 export type ConditionalTransferParameters<T = string> =
