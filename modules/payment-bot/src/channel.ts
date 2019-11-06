@@ -1,5 +1,5 @@
 import * as connext from "@connext/client";
-import { ClientOptions, ConnextClientI, makeChecksum } from "@connext/types";
+import { ClientOptions, IConnextClient, makeChecksum } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { AddressZero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
@@ -8,7 +8,7 @@ import { config } from "./config";
 import { Store } from "./store";
 import { logEthFreeBalance } from "./utils";
 
-export const getOrCreateChannel = async (assetId?: string): Promise<ConnextClientI> => {
+export const getOrCreateChannel = async (assetId?: string): Promise<IConnextClient> => {
   const store = new Store();
 
   const connextOpts: ClientOptions = {

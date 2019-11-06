@@ -47,7 +47,7 @@ export interface ClientOptions {
   logLevel?: number;
 }
 
-export interface ConnextClientI {
+export interface IConnextClient {
   ////////////////////////////////////////
   // Properties
 

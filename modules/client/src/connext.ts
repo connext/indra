@@ -9,7 +9,7 @@ import {
   ClientOptions,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
-  ConnextClientI,
+  IConnextClient,
   ConnextEvent,
   CreateChannelResponse,
   DepositParameters,
@@ -55,7 +55,6 @@ import { CF_PATH } from "./lib/constants";
 import { Logger } from "./lib/logger";
 import {
   freeBalanceAddressFromXpub,
-  getMultisigAddressfromXpubs,
   publicIdentifierToAddress,
   stringify,
   withdrawalKey,
@@ -68,7 +67,7 @@ import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 
 const MAX_WITHDRAWAL_RETRIES = 3;
 
-export const connect = async (opts: ClientOptions): Promise<ConnextClientI> => {
+export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   const { logLevel, ethProviderUrl, mnemonic, nodeUrl, store, channelProvider } = opts;
   const log = new Logger("ConnextConnect", logLevel);
 
@@ -223,7 +222,7 @@ export const connect = async (opts: ClientOptions): Promise<ConnextClientI> => {
   return client;
 };
 
-export class ConnextClient implements ConnextClientI {
+export class ConnextClient implements IConnextClient {
   public appRegistry: AppRegistry;
   public channelRouter: ChannelRouter;
   public config: GetConfigResponse;
