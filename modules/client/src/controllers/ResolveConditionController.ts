@@ -10,7 +10,7 @@ import {
 } from "@connext/types";
 import { bigNumberify } from "ethers/utils";
 
-import { replaceBN } from "../lib/utils";
+import { stringify } from "../lib/utils";
 
 import { AbstractController } from "./AbstractController";
 
@@ -24,9 +24,7 @@ export class ResolveConditionController extends AbstractController {
   public resolve = async (
     params: ResolveConditionParameters,
   ): Promise<ResolveConditionResponse> => {
-    this.log.info(
-      `Resolve condition called with parameters: ${JSON.stringify(params, replaceBN, 2)}`,
-    );
+    this.log.info(`Resolve condition called with parameters: ${stringify(params)}`);
 
     const res = await this.conditionResolvers[params.conditionType](params);
     return res;
@@ -37,7 +35,7 @@ export class ResolveConditionController extends AbstractController {
   private resolveLinkedTransfer = async (
     params: ResolveLinkedTransferParameters,
   ): Promise<ResolveLinkedTransferResponse> => {
-    this.log.info(`Resolving link: ${JSON.stringify(params)}`);
+    this.log.info(`Resolving link: ${stringify(params)}`);
 
     // convert and validate
     const { assetId, amount } = await this.node.fetchLinkedTransfer(params.paymentId);

@@ -6,6 +6,7 @@ import {
   makeChecksumOrEthAddress,
   RpcConnection,
   RpcType,
+  Store,
 } from "@connext/types";
 import { Node as NodeTypes } from "@counterfactual/types";
 import { Wallet } from "ethers";
@@ -13,7 +14,6 @@ import { arrayify, BigNumber } from "ethers/utils";
 import { RpcParameters } from "rpc-server";
 
 import { withdrawalKey } from "./lib/utils";
-import { Store } from "./types";
 
 export class ChannelRouter {
   private type: RpcType;
@@ -22,15 +22,10 @@ export class ChannelRouter {
   // TODO: replace this when signing keys are added!
   // shouldnt really ever be used
   private wallet: Wallet | undefined;
-
   private _config: ChannelProviderConfig;
-
   private _multisigAddress: string | undefined = undefined;
-
   private _signerAddress: string | undefined = undefined;
-
   private store: Store | undefined;
-
   private approvedStorePaths: string[];
 
   constructor(
@@ -262,13 +257,12 @@ export class ChannelRouter {
 
   public withdraw = async (
     amount: BigNumber,
-    multisigAddress: string,
     assetId: string, // optional in cf
     recipient: string, // optional in cf
   ): Promise<NodeTypes.WithdrawResult> => {
     return await this._send(NodeTypes.RpcMethodName.WITHDRAW, {
       amount,
-      multisigAddress,
+      multisigAddress: this.config.multisigAddress,
       recipient,
       tokenAddress: makeChecksum(assetId),
     } as NodeTypes.WithdrawParams);

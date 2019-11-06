@@ -2,16 +2,16 @@ import { RegisteredAppDetails, SupportedApplication } from "@connext/types";
 import { AppInstanceInfo, AppInstanceJson } from "@counterfactual/types";
 import { bigNumberify, getAddress } from "ethers/utils";
 
-import { ConnextInternal } from "../connext";
+import { ConnextClient } from "../connext";
 import { Logger } from "../lib/logger";
-import { freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
+import { freeBalanceAddressFromXpub, stringify } from "../lib/utils";
 
 type ProposalValidator = {
   [index in SupportedApplication]: (
     app: AppInstanceInfo,
     registeredInfo: RegisteredAppDetails,
     isVirtual: boolean,
-    connext: ConnextInternal,
+    connext: ConnextClient,
   ) => Promise<string | undefined>;
 };
 
@@ -19,7 +19,7 @@ export const validateSwapApp = async (
   app: AppInstanceInfo,
   registeredInfo: RegisteredAppDetails,
   isVirtual: boolean,
-  connext: ConnextInternal,
+  connext: ConnextClient,
 ): Promise<string | undefined> => {
   const baseValidation = await baseAppValidation(app, registeredInfo, isVirtual, connext);
   if (baseValidation) {
@@ -38,7 +38,7 @@ export const validateTransferApp = async (
   app: AppInstanceInfo,
   registeredInfo: RegisteredAppDetails,
   isVirtual: boolean,
-  connext: ConnextInternal,
+  connext: ConnextClient,
   // TODO: ideally this wouldnt get passed in, but you need it
   // to check things like your public identifier, open apps,
   // free balance, etc.
@@ -51,13 +51,13 @@ export const validateTransferApp = async (
   // check that the receivers deposit is 0
   // assume the recipient is always the responder
   if (!app.responderDeposit.isZero()) {
-    return `Responder (payee) must have a zero balance in proposed app. Proposed app: ${prettyLog(
+    return `Responder (payee) must have a zero balance in proposed app. Proposed app: ${stringify(
       app,
     )}`;
   }
 
   if (app.initiatorDeposit.isZero()) {
-    return `Initiator (payor) must have nonzero balance in proposed app. Proposed app: ${prettyLog(
+    return `Initiator (payor) must have nonzero balance in proposed app. Proposed app: ${stringify(
       app,
     )}`;
   }
@@ -69,7 +69,7 @@ export const validateSimpleTransferApp = async (
   app: AppInstanceInfo,
   registeredInfo: RegisteredAppDetails,
   isVirtual: boolean,
-  connext: ConnextInternal,
+  connext: ConnextClient,
   // TODO: ideally this wouldnt get passed in, but you need it
   // to check things like your public identifier, open apps,
   // free balance, etc.
@@ -82,13 +82,13 @@ export const validateSimpleTransferApp = async (
   // check that the receivers deposit is 0
   // assume the recipient is always the responder
   if (!app.responderDeposit.isZero()) {
-    return `Responder (payee) must have a zero balance in proposed app. Proposed app: ${prettyLog(
+    return `Responder (payee) must have a zero balance in proposed app. Proposed app: ${stringify(
       app,
     )}`;
   }
 
   if (app.initiatorDeposit.isZero()) {
-    return `Initiator (payor) must have nonzero balance in proposed app. Proposed app: ${prettyLog(
+    return `Initiator (payor) must have nonzero balance in proposed app. Proposed app: ${stringify(
       app,
     )}`;
   }
@@ -101,7 +101,7 @@ export const validateLinkedTransferApp = async (
   app: AppInstanceInfo,
   registeredInfo: RegisteredAppDetails,
   isVirtual: boolean,
-  connext: ConnextInternal,
+  connext: ConnextClient,
 ): Promise<string | undefined> => {
   return undefined;
 };
@@ -112,56 +112,46 @@ export const appProposalValidation: ProposalValidator = {
   SimpleTwoPartySwapApp: validateSwapApp,
 };
 
-const prettyLog = (app: AppInstanceInfo): string => {
-  // convert any field thats a BN to a string
-  const asStr = {};
-  Object.entries(app).forEach(([name, value]: any): any => {
-    asStr[name] = value.toString();
-  });
-  return JSON.stringify(asStr, replaceBN, 2);
-};
-
 const baseAppValidation = async (
   app: AppInstanceInfo,
   registeredInfo: RegisteredAppDetails,
   isVirtual: boolean,
-  connext: ConnextInternal,
+  connext: ConnextClient,
 ): Promise<string | undefined> => {
-  const log = new Logger("baseAppValidation", connext.opts.logLevel);
+  const log = new Logger("baseAppValidation", connext.log.logLevel);
   // check the initial state is consistent
   // FIXME: why isnt this in the cf types?
-  log.info(`Validating app: ${prettyLog(app)}`);
-  log.info(`App has initial state? ${prettyLog((app as any).initialState)}`);
+  log.info(`Validating app: ${stringify(app)}`);
   // check that identity hash isnt used by another app
   const apps = await connext.getAppInstances();
   if (apps) {
     const sharedIds = (await connext.getAppInstances()).filter(
-      (a: AppInstanceJson) => a.identityHash === app.identityHash,
+      (a: AppInstanceJson): boolean => a.identityHash === app.identityHash,
     );
     if (sharedIds.length !== 0) {
-      return `Duplicate app id detected. Proposed app: ${prettyLog(app)}`;
+      return `Duplicate app id detected. Proposed app: ${stringify(app)}`;
     }
   }
 
   // check that the app definition is the same
   if (app.appDefinition !== registeredInfo.appDefinitionAddress) {
-    return `Incorrect app definition detected. Proposed app: ${prettyLog(app)}`;
+    return `Incorrect app definition detected. Proposed app: ${stringify(app)}`;
   }
 
   // check that the encoding is the same
-  log.info(`app.abiEncodings.actionEncoding: ${JSON.stringify(app.abiEncodings.actionEncoding)}`);
-  log.info(`registeredInfo.actionEncoding: ${JSON.stringify(registeredInfo.actionEncoding)}`);
+  log.info(`app.abiEncodings.actionEncoding: ${app.abiEncodings.actionEncoding}`);
+  log.info(`registeredInfo.actionEncoding: ${registeredInfo.actionEncoding}`);
   if (app.abiEncodings.actionEncoding !== registeredInfo.actionEncoding) {
-    return `Incorrect action encoding detected. Proposed app: ${prettyLog(app)}`;
+    return `Incorrect action encoding detected. Proposed app: ${stringify(app)}`;
   }
 
   if (app.abiEncodings.stateEncoding !== registeredInfo.stateEncoding) {
-    return `Incorrect state encoding detected. Proposed app: ${prettyLog(app)}`;
+    return `Incorrect state encoding detected. Proposed app: ${stringify(app)}`;
   }
 
   // check that the outcome type is the same
   if (bigNumberify(app.initiatorDeposit).isZero() && bigNumberify(app.responderDeposit).isZero()) {
-    return `Refusing to install app with two zero value deposits. Proposed app: ${prettyLog(app)}`;
+    return `Refusing to install app with two zero value deposits. Proposed app: ${stringify(app)}`;
   }
 
   // check that there is enough in the free balance of desired currency
@@ -174,7 +164,7 @@ const baseAppValidation = async (
   if (userFreeBalance.lt(app.responderDeposit)) {
     return `Insufficient free balance for requested asset,
       freeBalance: ${userFreeBalance.toString()}
-      required: ${app.responderDeposit}. Proposed app: ${prettyLog(app)}`;
+      required: ${app.responderDeposit}. Proposed app: ${stringify(app)}`;
   }
 
   // if it is a virtual app, check that the intermediary has sufficient
@@ -186,26 +176,30 @@ const baseAppValidation = async (
     initiatorFreeBalance[freeBalanceAddressFromXpub(connext.nodePublicIdentifier)];
   if (isVirtual && nodeFreeBalance.lt(app.initiatorDeposit)) {
     const reqRes = await connext.requestCollateral(app.initiatorDepositTokenAddress);
-    connext.logger.info(`Collateral Request result: ${JSON.stringify(reqRes, replaceBN, 2)}`);
+    connext.log.debug(
+      `Collateral request response: ${stringify(
+        reqRes || { msg: `Returned void, likely that request timed out` },
+      )}`,
+    );
     return `Insufficient collateral for requested asset,
     freeBalance of node: ${nodeFreeBalance.toString()}
-    required: ${app.initiatorDeposit}. Proposed app: ${prettyLog(app)}`;
+    required: ${app.initiatorDeposit}. Proposed app: ${stringify(app)}`;
   }
 
   // check that the intermediary includes your node if it is not an app with your node
   const hasIntermediaries = app.intermediaryIdentifier;
   if (hasIntermediaries && !isVirtual) {
-    return `Apps with connected node should have no intermediaries. Proposed app: ${prettyLog(
+    return `Apps with connected node should have no intermediaries. Proposed app: ${stringify(
       app,
     )}`;
   }
 
   if (isVirtual && !hasIntermediaries) {
-    return `Virtual apps should have intermediaries. Proposed app: ${prettyLog(app)}`;
+    return `Virtual apps should have intermediaries. Proposed app: ${stringify(app)}`;
   }
 
   if (isVirtual && app.intermediaryIdentifier !== connext.nodePublicIdentifier) {
-    return `Connected node is not in proposed intermediaries. Proposed app: ${prettyLog(app)}`;
+    return `Connected node is not in proposed intermediaries. Proposed app: ${stringify(app)}`;
   }
 
   return undefined;
