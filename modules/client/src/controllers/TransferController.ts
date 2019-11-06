@@ -179,7 +179,7 @@ export class TransferController extends AbstractController {
         this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
         this.timeout = setTimeout((): void => {
           this.cleanupInstallListeners(boundResolve, boundReject);
-          boundReject({ data: { appInstanceId: this.appId } });
+          boundReject({ data: { appInstanceId: this.appId } } as RejectInstallVirtualMessage);
         }, 5000);
       });
       this.log.info(`App was installed successfully!: ${stringify(res)}`);
