@@ -16,7 +16,7 @@ import { CFCoreRecordRepository } from "./cfCore.repository";
 const logger = new CLogger("CFCoreProvider");
 
 // TODO: where should this live?
-const LATEST_CF_STORE_VERSION = 1;
+export const LATEST_CF_STORE_VERSION = 1;
 
 function isLatestCfStoreVersion(storeRecord: any): boolean {
   if (!storeRecord || storeRecord.version !== LATEST_CF_STORE_VERSION) {
