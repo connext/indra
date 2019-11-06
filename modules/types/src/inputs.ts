@@ -1,8 +1,8 @@
 import { Address, Node as NodeTypes } from "@counterfactual/types";
 import { BigNumber } from "ethers/utils";
 
-import { UnidirectionalLinkedTransferAppState } from "./app";
-import { AssetAmount } from "./node";
+import { SimpleLinkedTransferAppState } from "./app";
+import { AssetAmount } from "./channel";
 
 /////////////////////////////////
 ///////// SWAP
@@ -54,27 +54,41 @@ export type WithdrawParametersBigNumber = WithdrawParameters<BigNumber>;
 ///// Resolve condition types
 
 // linked transfer
-export type ResolveLinkedTransferParameters<T = string> = LinkedTransferParameters<T> & {
-  paymentId: string;
-  preImage: string;
+export type ResolveLinkedTransferParameters<T = string> = Omit<
+  LinkedTransferParameters<T>,
+  "amount" | "assetId"
+>;
+export type ResolveLinkedTransferParametersBigNumber = ResolveLinkedTransferParameters<BigNumber>;
+
+export type ResolveLinkedTransferToRecipientParameters<T = string> = Omit<
+  ResolveLinkedTransferParameters<T>,
+  "recipient" | "conditionType"
+> & {
+  conditionType: "LINKED_TRANSFER_TO_RECIPIENT";
 };
+// tslint:disable-next-line: max-line-length
+export type ResolveLinkedTransferToRecipientParametersBigNumber = ResolveLinkedTransferToRecipientParameters<
+  BigNumber
+>;
+
+// resolver union types
+export type ResolveConditionParameters<T = string> =
+  | ResolveLinkedTransferParameters<T>
+  | ResolveLinkedTransferToRecipientParameters<T>;
+
 export type ResolveLinkedTransferResponse = {
   freeBalance: NodeTypes.GetFreeBalanceStateResult;
   paymentId: string;
 };
 
-// resolver union types
 // FIXME: should be union type of all supported conditions
-export type ResolveConditionParameters<T = string> = ResolveLinkedTransferParameters;
-
-// FIXME: should be union type of all supported conditions
-export type ResolveConditionResponse<T = string> = ResolveLinkedTransferResponse;
+export type ResolveConditionResponse = ResolveLinkedTransferResponse;
 
 ///// Conditional transfer types
 
-// TODO: maybe not an enum?
 export const TransferConditions = {
   LINKED_TRANSFER: "LINKED_TRANSFER",
+  LINKED_TRANSFER_TO_RECIPIENT: "LINKED_TRANSFER_TO_RECIPIENT",
 };
 export type TransferCondition = keyof typeof TransferConditions;
 
@@ -82,7 +96,9 @@ export type TransferCondition = keyof typeof TransferConditions;
 export type LinkedTransferParameters<T = string> = {
   conditionType: "LINKED_TRANSFER";
   amount: T;
-  assetId: Address; // make optional?
+  assetId?: Address;
+  paymentId: string;
+  preImage: string;
 };
 export type LinkedTransferParametersBigNumber = LinkedTransferParameters<BigNumber>;
 
@@ -92,15 +108,31 @@ export type LinkedTransferResponse = {
   freeBalance: NodeTypes.GetFreeBalanceStateResult;
 };
 
-// FIXME: should be union type of all supported conditions
-export type ConditionalTransferParameters<T = string> = LinkedTransferParameters<T>;
+export type LinkedTransferToRecipientParameters<T = string> = Omit<
+  LinkedTransferParameters<T>,
+  "conditionType"
+> & {
+  conditionType: "LINKED_TRANSFER_TO_RECIPIENT";
+  recipient: string;
+};
+export type LinkedTransferToRecipientParametersBigNumber = LinkedTransferToRecipientParameters<
+  BigNumber
+>;
+export type LinkedTransferToRecipientResponse = LinkedTransferResponse & {
+  recipient: string;
+};
+
+export type ConditionalTransferParameters<T = string> =
+  | LinkedTransferParameters<T>
+  | LinkedTransferToRecipientParameters<T>;
 export type ConditionalTransferParametersBigNumber = ConditionalTransferParameters<BigNumber>;
 
-// FIXME: should be union type of all supported conditions
-export type ConditionalTransferResponse = LinkedTransferResponse;
+export type ConditionalTransferResponse =
+  | LinkedTransferResponse
+  | LinkedTransferToRecipientResponse;
 
 // condition initial states
 // FIXME: should be union type of all supported conditions
-export type ConditionalTransferInitialState<T = string> = UnidirectionalLinkedTransferAppState<T>;
+export type ConditionalTransferInitialState<T = string> = SimpleLinkedTransferAppState<T>;
 // FIXME: should be union type of all supported conditions
 export type ConditionalTransferInitialStateBigNumber = ConditionalTransferInitialState<BigNumber>;

@@ -189,33 +189,33 @@ export class ChannelService {
    * Returns the app sequence number of the node and the user
    *
    * @param userPublicIdentifier users xpub
-   * @param userAppSequenceNumber sequence number provided by user
+   * @param userSequenceNumber sequence number provided by user
    */
   async verifyAppSequenceNumber(
     userPublicIdentifier: string,
-    userAppSequenceNumber: number,
+    userSequenceNumber: number,
   ): Promise<ChannelAppSequences> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     const sc = (await this.cfCoreService.getStateChannel(channel.multisigAddress)).data;
-    let nodeAppSequenceNumber;
+    let nodeSequenceNumber;
     try {
-      nodeAppSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
+      nodeSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
     } catch (e) {
       if (e.message.indexOf("There are no installed AppInstances in this StateChannel") !== -1) {
-        nodeAppSequenceNumber = 0;
+        nodeSequenceNumber = 0;
       } else {
         throw e;
       }
     }
-    if (nodeAppSequenceNumber !== userAppSequenceNumber) {
+    if (nodeSequenceNumber !== userSequenceNumber) {
       logger.warn(
-        `Node app sequence number (${nodeAppSequenceNumber}) ` +
-          `!== user app sequence number (${userAppSequenceNumber})`,
+        `Node app sequence number (${nodeSequenceNumber}) ` +
+          `!== user app sequence number (${userSequenceNumber})`,
       );
     }
     return {
-      nodeAppSequenceNumber,
-      userAppSequenceNumber,
+      nodeSequenceNumber,
+      userSequenceNumber,
     };
   }
 

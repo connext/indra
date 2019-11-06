@@ -7,6 +7,7 @@ import {
   GetConfigResponse,
   makeChecksumOrEthAddress,
   PaymentProfile,
+  RequestCollateralResponse,
   SupportedApplication,
   SupportedNetwork,
   Transfer,
@@ -18,7 +19,7 @@ import uuid = require("uuid");
 
 import { ChannelRouter } from "./channelRouter";
 import { Logger } from "./lib/logger";
-import { replaceBN } from "./lib/utils";
+import { stringify } from "./lib/utils";
 import { NodeInitializationParameters } from "./types";
 
 // Include our access token when interacting with these subjects
@@ -39,7 +40,7 @@ export interface INodeApiClient {
   getLatestSwapRate(from: string, to: string): Promise<string>;
   getPaymentProfile(assetId?: string): Promise<PaymentProfile>;
   getTransferHistory(publicIdentifier: string): Promise<Transfer[]>;
-  requestCollateral(assetId: string): Promise<void>;
+  requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
   withdraw(tx: CFCoreTypes.MinimalTransaction): Promise<TransactionResponse>;
   fetchLinkedTransfer(paymentId: string): Promise<any>;
   resolveLinkedTransfer(
@@ -114,7 +115,7 @@ export class NodeApiClient implements INodeApiClient {
     timeout: number,
   ): Promise<any> {
     const lockValue = await this.send(`lock.acquire.${lockName}`, { lockTTL: timeout });
-    this.log.info(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
+    this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
     let retVal: any;
     try {
       retVal = await callback();
@@ -123,7 +124,7 @@ export class NodeApiClient implements INodeApiClient {
       this.log.error(e);
     } finally {
       await this.send(`lock.release.${lockName}`, { lockValue });
-      this.log.info(`Released lock at ${Date.now()} for ${lockName}`);
+      this.log.debug(`Released lock at ${Date.now()} for ${lockName}`);
     }
     return retVal;
   }
@@ -170,7 +171,7 @@ export class NodeApiClient implements INodeApiClient {
 
   // TODO: right now node doesnt return until the deposit has completed
   // which exceeds the timeout.....
-  public async requestCollateral(assetId: string): Promise<void> {
+  public async requestCollateral(assetId: string): Promise<RequestCollateralResponse | void> {
     try {
       return await this.send(`channel.request-collateral.${this.userPublicIdentifier}`, {
         assetId,
@@ -178,7 +179,7 @@ export class NodeApiClient implements INodeApiClient {
     } catch (e) {
       // TODO: node should return once deposit starts
       if (e.message.startsWith("Request timed out")) {
-        this.log.info(`request collateral message timed out`);
+        this.log.warn(`request collateral message timed out`);
         return;
       }
       throw e;
@@ -285,7 +286,6 @@ export class NodeApiClient implements INodeApiClient {
         });
         const sig = await this.channelRouter.signMessage(nonce);
         const token = `${nonce}:${sig}`;
-        this.log.info(`Got new token for ${this.channelRouter.signerAddress}: ${token}`);
         return resolve(token);
       },
     );
@@ -304,9 +304,7 @@ export class NodeApiClient implements INodeApiClient {
 
   private async send(subject: string, data?: any): Promise<any | undefined> {
     this.log.debug(
-      `Sending request to ${subject} ${
-        data ? `with data: ${JSON.stringify(data, replaceBN, 2)}` : `without data`
-      }`,
+      `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : `without data`}`,
     );
     const payload = {
       ...data,
@@ -326,12 +324,12 @@ export class NodeApiClient implements INodeApiClient {
       error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     }
     if (!msg.data) {
-      this.log.info(`Maybe this message is malformed: ${JSON.stringify(msg, replaceBN, 2)}`);
+      this.log.info(`Maybe this message is malformed: ${stringify(msg)}`);
       return undefined;
     }
     const { err, response, ...rest } = msg.data;
     if (err || error) {
-      throw new Error(`Error sending request. Message: ${JSON.stringify(msg, replaceBN, 2)}`);
+      throw new Error(`Error sending request. Message: ${stringify(msg)}`);
     }
     const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
     return !response || isEmptyObj ? undefined : response;

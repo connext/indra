@@ -2,6 +2,7 @@ import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts
 import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
 import {
   BigNumber,
+  bigNumberify,
   computeAddress,
   getAddress,
   HDNode,
@@ -13,8 +14,20 @@ import {
 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
 
-export const replaceBN = (key: string, value: any): any =>
-  value && value._hex ? value.toString() : value;
+// Give abrv = true to abbreviate hex strings and xpubs to look like "xpub6FEC..kuQk"
+export const stringify = (obj: object, abrv: boolean = false): string =>
+  JSON.stringify(
+    obj,
+    (key: string, value: any): any =>
+      value && value._hex
+        ? bigNumberify(value).toString()
+        : abrv && value && typeof value === "string" && value.startsWith("xpub")
+        ? `${value.substring(0, 8)}..${value.substring(value.length - 4)}`
+        : abrv && value && typeof value === "string" && value.startsWith("0x")
+        ? `${value.substring(0, 6)}..${value.substring(value.length - 4)}`
+        : value,
+    2,
+  );
 
 // Capitalizes first char of a string
 export const capitalize = (str: string): string =>
@@ -102,11 +115,11 @@ export function xkeyKthAddress(xkey: string, k: number): string {
 }
 
 export function sortAddresses(addrs: string[]): string[] {
-  return addrs.sort((a, b) => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
+  return addrs.sort((a: string, b: string): number => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
 }
 
 export function xkeysToSortedKthAddresses(xkeys: string[], k: number): string[] {
-  return sortAddresses(xkeys.map(xkey => xkeyKthAddress(xkey, k)));
+  return sortAddresses(xkeys.map((xkey: string): string => xkeyKthAddress(xkey, k)));
 }
 
 export function xkeyKthHDNode(xkey: string, k: number): HDNode.HDNode {
