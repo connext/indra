@@ -237,10 +237,9 @@ class App extends React.Component {
       console.log(`xpub address: ${eth.utils.computeAddress(fromExtendedKey(xpub).publicKey)}`);
       console.log(`keygen address: ${(new eth.Wallet(await keyGen("1"))).address} (path ${(new eth.Wallet(await keyGen("1"))).path})`);
     } else if (useWalletConnext) {
-      let channelProvider;
       let rpc = {};
       rpc[network.chainId] = urls.ethProviderUrl;
-      channelProvider = new WalletConnectChannelProvider({
+      const channelProvider = new WalletConnectChannelProvider({
         rpc,
         chainId: network.chainId,
       });
