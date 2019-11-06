@@ -239,40 +239,6 @@ export class ChannelService {
     return txRes;
   }
 
-  async migrateLegacyChannel(userPublicIdentifier: string): Promise<void> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
-    if (!channel) {
-      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
-    }
-
-    const legacyRecord = await this.cfCoreRepository.getLegacyCFCoreRecord(channel.multisigAddress);
-
-    // get new CF core data
-    // path is INDRA_NODE_CF_CORE/xpub6E3tjd9js7QMrBtYo7f157...
-    const newPath = `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}`;
-    const stateChannelsRecord = await this.cfCoreRepository.get(newPath);
-
-    let value: {
-      commitments: object;
-      stateChannelsMap: object;
-      withdrawals: object;
-    };
-    if (!stateChannelsRecord) {
-      // create new record
-      value = {
-        commitments: {},
-        stateChannelsMap: { [channel.multisigAddress]: legacyRecord },
-        withdrawals: {},
-      };
-    } else {
-      // add to existing
-      (stateChannelsRecord as any).stateChannelsMap[channel.multisigAddress] = legacyRecord;
-      value = stateChannelsRecord as any;
-    }
-
-    await this.cfCoreRepository.set([{ path: newPath, value }]);
-  }
-
   async getLatestWithdrawal(userPublicIdentifier: string): Promise<OnchainTransaction | undefined> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     if (!channel) {

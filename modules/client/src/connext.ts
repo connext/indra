@@ -9,8 +9,6 @@ import {
   ConditionalTransferParameters,
   ConditionalTransferResponse,
   ConnextEvent,
-  ConnextEvents,
-  ConnextNodeStorePrefix,
   CreateChannelResponse,
   DepositParameters,
   GetChannelResponse,
@@ -24,7 +22,6 @@ import {
   ResolveLinkedTransferResponse,
   SolidityValueType,
   SupportedApplication,
-  SupportedNetwork,
   SwapParameters,
   Transfer,
   TransferParameters,
@@ -35,13 +32,12 @@ import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-
 import { Address, AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
-import { Contract, providers, Wallet } from "ethers";
+import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import {
   BigNumber,
   bigNumberify,
   getAddress,
-  HDNode,
   Interface,
   keccak256,
   Network,
@@ -58,13 +54,13 @@ import { ResolveConditionController } from "./controllers/ResolveConditionContro
 import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
-import { CFCore, CreateChannelMessage, EXTENDED_PRIVATE_KEY_PATH } from "./lib/cfCore";
+import { CFCore, CreateChannelMessage } from "./lib/cfCore";
 import { CF_PATH } from "./lib/constants";
 import { Logger } from "./lib/logger";
 import { replaceBN, withdrawalKey, xkeysToSortedKthAddresses, xpubToAddress } from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
-import { ClientOptions, InternalClientOptions } from "./types";
+import { AppRegistryDetails, ClientOptions, InternalClientOptions, RestoreSigner } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 
@@ -90,6 +86,9 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     keyGen = (index: string): Promise<string> =>
       Promise.resolve(hdNode.derivePath(index).privateKey);
   } else {
+    if (!opts.xpub || !opts.keyGen) {
+      throw new Error(`Client must be instantiated with xpub and keygen if not using mnemonic`);
+    }
     xpub = opts.xpub;
     keyGen = opts.keyGen;
   }
@@ -297,7 +296,7 @@ export abstract class ConnextChannel {
 
   public restoreState = async (
     defaultToHub: boolean,
-    signer: { mnemonic?: string; xpub?: string; keyGen?: any },
+    signer: RestoreSigner,
   ): Promise<ConnextInternal> => {
     return await this.internal.restoreState(defaultToHub, signer);
   };
@@ -314,10 +313,7 @@ export abstract class ConnextChannel {
   };
 
   // TODO: do we need to expose here?
-  public getAppRegistry = async (appDetails?: {
-    name: SupportedApplication;
-    network: SupportedNetwork;
-  }): Promise<AppRegistry> => {
+  public getAppRegistry = async (appDetails?: AppRegistryDetails): Promise<AppRegistry> => {
     return await this.internal.node.appRegistry(appDetails);
   };
 
@@ -622,7 +618,7 @@ export class ConnextInternal extends ConnextChannel {
     // TODO: poller should not be completely blocking, but safe to leave for now
     // because the channel should be blocked
     try {
-      await new Promise((resolve: any, reject: any): any => {
+      await new Promise((resolve: any, reject: any): void => {
         this.ethProvider.on("block", async (blockNumber: number) => {
           const found = await this.checkForUserWithdrawal(blockNumber);
           if (found) {
@@ -689,7 +685,7 @@ export class ConnextInternal extends ConnextChannel {
 
   public restoreState = async (
     defaultToHub: boolean = true,
-    signer: { mnemonic?: string; xpub?: string; keyGen?: any },
+    signer: RestoreSigner,
   ): Promise<any> => {
     const { mnemonic, keyGen } = signer;
     let { xpub } = signer;

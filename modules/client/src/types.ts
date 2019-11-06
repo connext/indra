@@ -7,6 +7,8 @@ import {
   ContractAddresses,
   GetConfigResponse,
   MultisigState,
+  SupportedApplication,
+  SupportedNetwork,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { providers, utils, Wallet } from "ethers";
@@ -76,4 +78,15 @@ export interface NodeInitializationParameters {
   messaging: IMessagingService;
   nodePublicIdentifier?: string;
   userPublicIdentifier?: string;
+}
+
+export type RestoreSigner = {
+  mnemonic?: string;
+  xpub?: string;
+  keyGen?: any;
+};
+
+export type AppRegistryDetails = {
+  name: SupportedApplication;
+  network: SupportedNetwork;
 }
