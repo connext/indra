@@ -19,7 +19,7 @@
     "dotenv": "8.2.0",
     "eth-gas-reporter": "0.2.12",
     "ethereum-waffle": "2.1.0",
-    "ethers": "4.0.37",
+    "ethers": "4.0.38",
     "openzeppelin-solidity": "2.3.0",
     "solc": "0.5.12",
     "truffle": "5.0.43",
