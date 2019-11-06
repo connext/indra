@@ -32,11 +32,11 @@ export class ChannelRouter {
     connection: RpcConnection,
     config: ChannelProviderConfig,
     store?: Store,
-    keyGen?: any,
+    authKey?: any,
   ) {
     this.type = config.type;
     this.store = store;
-    this.wallet = keyGen ? new Wallet(keyGen("0")) : null;
+    this.wallet = authKey ? new Wallet(authKey) : null;
     this.connection = connection;
     this._config = config;
     this._multisigAddress = config.multisigAddress;

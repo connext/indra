@@ -146,7 +146,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
         xpub,
         keyGen,
       );
-      channelRouter = new ChannelRouter(cfCore, channelProviderConfig, store, keyGen);
+      channelRouter = new ChannelRouter(cfCore, channelProviderConfig, store, await keyGen("0"));
       break;
     default:
       throw new Error(`Unrecognized channel provider type: ${channelProviderConfig.type}`);
@@ -339,7 +339,7 @@ export class ConnextClient implements IConnextClient {
           this.publicIdentifier,
           this.keyGen,
         );
-        channelRouter = new ChannelRouter(cfCore, this.channelRouter.config, this.store, this.keyGen);
+        channelRouter = new ChannelRouter(cfCore, this.channelRouter.config, this.store, await this.keyGen("0"));
         break;
       default:
         throw new Error(`Unrecognized channel provider type: ${this.routerType}`);
@@ -836,9 +836,9 @@ export class ConnextClient implements IConnextClient {
       privateKey = fromMnemonic(this.opts.mnemonic)
         .derivePath(CF_PATH)
         .derivePath("0").privateKey;
-    } else if (this.opts.keyGen) {
+    } else if (this.keyGen) {
       // TODO: make this use app key?
-      privateKey = await this.opts.keyGen("0");
+      privateKey = await this.keyGen("0");
     } else {
       throw new Error(`No way to decode transfer, this should never happen!`);
     }
