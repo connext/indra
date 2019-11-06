@@ -509,12 +509,8 @@ export class ConnextClient implements IConnextClient {
     }
     this.channelRouter.reset();
     let state;
-    try {
-      state = await this.channelRouter.restore();
-      if (!state) {
-        throw new Error();
-      }
-    } catch (e) {
+    state = await this.channelRouter.restore();
+    if (!state || state.length === 0) {
       state = (await this.node.getStateForRestore(this.publicIdentifier)).data;
     }
     await this.channelRouter.set(
