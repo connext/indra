@@ -10,7 +10,11 @@ const bigNumberIshToString = (x: BigNumberish) => bigNumberify(x).toHexString();
 export const migrateToPatch1 = async (storeService: Node.IStoreService, storeKeyPrefix: string) => {
   const stateChannelsMap: {
     [multisigAddress: string]: any;
-  } = await storeService.get(`${storeKeyPrefix}/${DB_NAMESPACE_CHANNEL}`);
+  } = await (storeService as any).getV0(`${storeKeyPrefix}/${DB_NAMESPACE_CHANNEL}`);
+
+  if (!stateChannelsMap) {
+    return;
+  }
 
   for (const multisigAddress in stateChannelsMap) {
     /**
