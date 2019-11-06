@@ -23,20 +23,20 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
     logger.debug(`Getting path from store: ${path}`);
 
     // get all the channel records
-    const res = await this.find({ path: Like(`%channel%/version/${LATEST_CF_STORE_VERSION}`) });
+    const res = await this.find({
+      path: Like(`${path}/channel/%/version/${LATEST_CF_STORE_VERSION}`),
+    });
 
     // put them together into a big blob
-    const stateChannelsMap = res.reduce((stateChannels, channelRecord) => {
-      const multisigAddress = channelRecord.path.split("/").pop();
-      stateChannels[multisigAddress] = channelRecord.value;
-      return stateChannels;
-    }, {});
+    const stateChannelsMap = {};
+    for (const channelRecord of res) {
+      // INDRA_NODE_CF_CORE/<XPUB>/channel/<MULTISIG>/version/<NUM>
+      const multisigAddress = channelRecord.path.split("/")[3];
+      stateChannelsMap[multisigAddress] = channelRecord.value;
+    }
 
     const commitments = await this.findOne(
       `${path}/${COMMITMENT_PATH}/version/${LATEST_CF_STORE_VERSION}`,
-    );
-    const version = await this.findOne(
-      `${path}/${VERSION_PATH}/version/${LATEST_CF_STORE_VERSION}`,
     );
     const withdrawals = await this.findOne(
       `${path}/${WITHDRAWAL_PATH}/version/${LATEST_CF_STORE_VERSION}`,
@@ -44,10 +44,10 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
 
     // this corresponds to version 1 of the store spec
     return {
-      commitments: commitments || {},
+      commitments: commitments ? commitments.value : {},
       stateChannelsMap: stateChannelsMap || {},
       version: LATEST_CF_STORE_VERSION,
-      withdrawals: withdrawals || {},
+      withdrawals: withdrawals ? withdrawals.value : {},
     } as any;
   }
 
