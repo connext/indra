@@ -227,7 +227,6 @@ export const convert = {
   Deposit: convertDepositParametersToAsset,
   LinkedTransfer: convertLinkedTransferParametersToAsset,
   LinkedTransferToRecipient: convertLinkedTransferToRecipientParametersToAsset,
-  Multisig: convertMultisig,
   PaymentProfile: convertPaymentProfile,
   ResolveLinkedTransfer: convertAssetAmountWithId,
   SwapParameters: convertSwapParameters,
