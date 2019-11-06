@@ -1,8 +1,7 @@
-import { Node as CFCoreTypes } from "@counterfactual/types";
+import { AppInstanceJson, Node as CFCoreTypes } from "@counterfactual/types";
 import { TransactionResponse } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 
-import { AppState } from "./app";
 import { Address } from "./basic";
 
 ////////////////////////////////////
@@ -38,7 +37,7 @@ export type CFCoreChannel = {
 };
 
 export type ChannelState<T = string> = {
-  apps: AppState<T>[];
+  apps: AppInstanceJson[]; // result of getApps()
   // TODO: CF types should all be generic, this will be
   // a BigNumber
   freeBalance: CFCoreTypes.GetFreeBalanceStateResult;
@@ -50,4 +49,4 @@ export type TransferAction = {
   transferAmount: BigNumber;
 };
 
-export type WithdrawalResponse = ChannelState & { transaction: TransactionResponse }
+export type WithdrawalResponse = ChannelState & { transaction: TransactionResponse };
