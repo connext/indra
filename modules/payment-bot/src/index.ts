@@ -3,6 +3,7 @@ import {
   LinkedTransferParameters,
   LinkedTransferToRecipientParameters,
   ResolveLinkedTransferParameters,
+  ResolveLinkedTransferToRecipientParameters,
   WithdrawParameters,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
@@ -144,7 +145,7 @@ process.on("unhandledRejection", (e: any): any => {
 
   if (config.redeemLinkedTo) {
     checkForLinkedFields(config);
-    const resolveParams: ResolveLinkedTransferParameters = {
+    const resolveParams: ResolveLinkedTransferToRecipientParameters = {
       conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
       paymentId: config.paymentId,
       preImage: config.preImage,
