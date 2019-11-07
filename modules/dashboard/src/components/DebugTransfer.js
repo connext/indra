@@ -39,10 +39,13 @@ const DebugTransfer = props => {
   const [testEndpoint, setTestEndpoint] = useState(null);
 
   useEffect(() => {
+    if (!messaging) {
+      return;
+    }
     (async () => {
       const getNoFreeBalance = async () => {
         var res = await messaging.request("admin.get-no-free-balance", 5000, {
-          token: "foo",
+          token: "UfLGEm1pyj",
         });
         setTestEndpoint(JSON.stringify(res));
       };
