@@ -15,6 +15,8 @@ export const migrateToPatch1 = async (
     [multisigAddress: string]: any;
   } = await (storeService as any).getV0(`${storeKeyPrefix}/${DB_NAMESPACE_CHANNEL}`);
 
+  const existingMap = await storeService.get(storeKeyPrefix);
+
   for (const multisigAddress in stateChannelsMap) {
     if (!stateChannelsMap[multisigAddress].multisigAddress) {
       console.warn(
@@ -108,12 +110,42 @@ export const migrateToPatch1 = async (
   const commitments =
     (await (storeService as any).getV0(`${storeKeyPrefix}/${DB_NAMESPACE_ALL_COMMITMENTS}`)) || {};
 
-  const sharedData = {
-    commitments,
-    stateChannelsMap,
-    version: 1,
-    withdrawals,
-  };
+  // merge records with existingMap
+  for (const multisigAddress in stateChannelsMap) {
+    if (existingMap.stateChannelsMap[multisigAddress]) {
+      console.warn(
+        `Uh oh, record exists for ${multisigAddress}, refusing to overwrite: ${JSON.stringify(
+          existingMap.stateChannelsMap[multisigAddress],
+        )}`,
+      );
+      continue;
+    }
+    existingMap.stateChannelsMap[multisigAddress] = stateChannelsMap[multisigAddress];
+  }
 
-  await storeService.set([{ path: storeKeyPrefix, value: sharedData }]);
+  for (const hash in commitments) {
+    if (existingMap.commitments[hash]) {
+      console.warn(
+        `Uh oh, record exists for ${hash}, refusing to overwrite: ${JSON.stringify(
+          existingMap.commitments[hash],
+        )}`,
+      );
+      continue;
+    }
+    existingMap.commitments[hash] = stateChannelsMap[hash];
+  }
+
+  for (const address in withdrawals) {
+    if (existingMap.withdrawals[address]) {
+      console.warn(
+        `Uh oh, record exists for ${address}, refusing to overwrite: ${JSON.stringify(
+          existingMap.withdrawals[address],
+        )}`,
+      );
+      continue;
+    }
+    existingMap.withdrawals[address] = stateChannelsMap[address];
+  }
+
+  await storeService.set([{ path: storeKeyPrefix, value: existingMap }]);
 };
