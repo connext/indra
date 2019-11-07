@@ -480,6 +480,7 @@ export class ConnextClient implements IConnextClient {
           async (blockNumber: number): Promise<void> => {
             const found = await this.checkForUserWithdrawal(blockNumber);
             if (found) {
+              this.log.debug(`Found withdrawal, setting to undefined.`);
               await this.channelRouter.set([
                 { path: withdrawalKey(this.publicIdentifier), value: undefined },
               ]);
@@ -493,6 +494,7 @@ export class ConnextClient implements IConnextClient {
           },
         );
       });
+      this.log.debug(`Node successfully submitted withdrawal on behalf of user.`);
     } catch (e) {
       if (e.includes(`More than ${maxBlocks} have passed`)) {
         this.log.debug(`Retrying node submission`);
@@ -991,21 +993,25 @@ export class ConnextClient implements IConnextClient {
     // the contract method
     const txsTo = await this.ethProvider.getTransactionCount(tx.to, inBlock);
     if (txsTo === 0) {
+      this.log.debug(`Found no transactions to multisig.`);
       return false;
     }
 
     const block = await this.ethProvider.getBlock(inBlock);
     const { transactions } = block;
     if (transactions.length === 0) {
+      this.log.debug(`Found no transactions in block.`);
       return false;
     }
 
     for (const transactionHash of transactions) {
       const transaction = await this.ethProvider.getTransaction(transactionHash);
       if (this.matchTx(transaction, tx)) {
+        this.log.debug(`Found matching withrawal transaction`);
         return true;
       }
     }
+    this.log.debug(`Could not find matching transaction in block ${inBlock}`);
     return false;
   };
 }
