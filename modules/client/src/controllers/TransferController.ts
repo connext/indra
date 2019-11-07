@@ -181,7 +181,7 @@ export class TransferController extends AbstractController {
         }),
         delayAndThrow(15_000, "App install took longer than 15 seconds"),
       ]);
-      this.log.info(`App was installed successfully!: ${JSON.stringify(raceRes)}`);
+      this.log.info(`App was installed successfully!: ${stringify(raceRes)}`);
       return res.appInstanceId;
     } catch (e) {
       this.log.error(`Error installing app: ${e.toString()}`);
