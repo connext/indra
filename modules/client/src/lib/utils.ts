@@ -15,19 +15,24 @@ import {
 import { isNullOrUndefined } from "util";
 
 // Give abrv = true to abbreviate hex strings and xpubs to look like "xpub6FEC..kuQk"
-export const stringify = (obj: object, abrv: boolean = false): string =>
-  JSON.stringify(
-    obj,
-    (key: string, value: any): any =>
-      value && value._hex
-        ? bigNumberify(value).toString()
-        : abrv && value && typeof value === "string" && value.startsWith("xpub")
-        ? `${value.substring(0, 8)}..${value.substring(value.length - 4)}`
-        : abrv && value && typeof value === "string" && value.startsWith("0x")
-        ? `${value.substring(0, 6)}..${value.substring(value.length - 4)}`
-        : value,
-    2,
-  );
+export const stringify = (obj: object | unknown, abrv: boolean = false): string => {
+  try {
+    return JSON.stringify(
+      obj,
+      (key: string, value: any): any =>
+        value && value._hex
+          ? bigNumberify(value).toString()
+          : abrv && value && typeof value === "string" && value.startsWith("xpub")
+          ? `${value.substring(0, 8)}..${value.substring(value.length - 4)}`
+          : abrv && value && typeof value === "string" && value.startsWith("0x")
+          ? `${value.substring(0, 6)}..${value.substring(value.length - 4)}`
+          : value,
+      2,
+    );
+  } catch (e) {
+    return obj as string;
+  }
+};
 
 // Capitalizes first char of a string
 export const capitalize = (str: string): string =>

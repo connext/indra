@@ -4,6 +4,7 @@ import { CLogger, stringify } from "../util";
 
 import { CFCoreRecord } from "./cfCore.entity";
 import { LATEST_CF_STORE_VERSION } from "./cfCore.provider";
+import { Logger } from "@nestjs/common";
 
 type StringKeyValue = { [path: string]: StringKeyValue };
 
@@ -109,7 +110,7 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
   }
 
   async getV0(path: string): Promise<StringKeyValue | string | undefined> {
-    // logger.debug(`Getting path from store: ${path}`);
+    logger.debug(`Getting V0 path from store: ${path}`);
     let res: any;
     // FIXME: this queries for all channels or proposed app instances, which
     // are nested under the respective keywords, hence the 'like' keyword
@@ -119,14 +120,20 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
       res = await this.createQueryBuilder("node_records")
         .where("node_records.path like :path", { path: `%${path}%` })
         .getMany();
-      const nestedRecords = res.map((record: CFCoreRecord) => {
-        const existingKey = Object.keys(record.value)[0];
-        const leafKey = existingKey.split("/").pop()!;
-        const nestedValue = record.value[existingKey];
-        delete record.value[existingKey];
-        record.value[leafKey] = nestedValue;
-        return record.value;
-      });
+      const nestedRecords = res
+        .map((record: CFCoreRecord) => {
+          if (record.path.split("/")[4] === "version") {
+            Logger.warn(`Found v1 record, skipping`);
+            return undefined;
+          }
+          const existingKey = Object.keys(record.value)[0];
+          const leafKey = existingKey.split("/").pop()!;
+          const nestedValue = record.value[existingKey];
+          delete record.value[existingKey];
+          record.value[leafKey] = nestedValue;
+          return record.value;
+        })
+        .filter(record => record!!);
       const records = {};
       nestedRecords.forEach((record: any): void => {
         const key = Object.keys(record)[0];
@@ -154,10 +161,14 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
     return await this.findOneOrFail({ path: Like(`%${multisigAddress}`) });
   }
 
-  async deleteLegacyCFCoreRecords(): Promise<CFCoreRecord[] | void> {
-    const legacyRecords = await this.find({
+  async getLegacyCFCoreChannelRecords(): Promise<CFCoreRecord[]> {
+    return await this.find({
       path: Like(`%channel/__________________________________________`),
     });
+  }
+
+  async deleteLegacyCFCoreRecords(): Promise<CFCoreRecord[] | void> {
+    const legacyRecords = await this.getLegacyCFCoreChannelRecords();
     console.log("would have deleted these: ", stringify(legacyRecords, 2));
     return;
     // return await this.remove(legacyRecords);
