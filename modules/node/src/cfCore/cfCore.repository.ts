@@ -4,6 +4,7 @@ import { CLogger, stringify } from "../util";
 
 import { CFCoreRecord } from "./cfCore.entity";
 import { LATEST_CF_STORE_VERSION } from "./cfCore.provider";
+import { Logger } from "@nestjs/common";
 
 type StringKeyValue = { [path: string]: StringKeyValue };
 
@@ -119,14 +120,20 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
       res = await this.createQueryBuilder("node_records")
         .where("node_records.path like :path", { path: `%${path}%` })
         .getMany();
-      const nestedRecords = res.map((record: CFCoreRecord) => {
-        const existingKey = Object.keys(record.value)[0];
-        const leafKey = existingKey.split("/").pop()!;
-        const nestedValue = record.value[existingKey];
-        delete record.value[existingKey];
-        record.value[leafKey] = nestedValue;
-        return record.value;
-      });
+      const nestedRecords = res
+        .map((record: CFCoreRecord) => {
+          if (record.path.split("/")[4] === "version") {
+            Logger.warn(`Found v1 record, skipping`);
+            return undefined;
+          }
+          const existingKey = Object.keys(record.value)[0];
+          const leafKey = existingKey.split("/").pop()!;
+          const nestedValue = record.value[existingKey];
+          delete record.value[existingKey];
+          record.value[leafKey] = nestedValue;
+          return record.value;
+        })
+        .filter(record => record!!);
       const records = {};
       nestedRecords.forEach((record: any): void => {
         const key = Object.keys(record)[0];
