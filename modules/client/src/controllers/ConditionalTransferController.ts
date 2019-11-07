@@ -245,12 +245,10 @@ export class ConditionalTransferController extends AbstractController {
   };
 
   // TODO: fix types of data
-  private rejectInstallTransfer = (
-    rej: (reason?: any) => void,
-    msg: RejectInstallVirtualMessage,
-  ): any => {
+  private rejectInstallTransfer = (rej: (reason?: any) => void, msg: any): any => {
     // check app id
-    if (this.appId !== msg.data.appInstanceId) {
+    const appInstance = msg.data.data ? msg.data.data : msg.data;
+    if (this.appId !== appInstance.appInstanceId) {
       return;
     }
 
