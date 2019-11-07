@@ -6,7 +6,7 @@ import { fromMnemonic } from "ethers/utils/hdnode";
 
 import { migrateToPatch1 } from "../cfCoreMigrations/patch1";
 import { ConfigService } from "../config/config.service";
-import { CF_PATH, CFCoreProviderId, MessagingProviderId } from "../constants";
+import { CFCoreProviderId, CF_PATH, MessagingProviderId } from "../constants";
 import { LockService } from "../lock/lock.service";
 import { CLogger, freeBalanceAddressFromXpub } from "../util";
 import { CFCore } from "../util/cfCore";
@@ -38,9 +38,9 @@ export const cfCoreProviderFactory: Provider = {
     const publicExtendedKey = hdNode.neuter().extendedKey;
 
     // MIGRATE STORE IF NEEDED
-    const storeRecord = await store.getV0(`${ConnextNodeStorePrefix}/${publicExtendedKey}`);
+    const storeRecords = await store.getLegacyCFCoreChannelRecords();
 
-    if (!isLatestCfStoreVersion(storeRecord)) {
+    if (storeRecords.length > 0) {
       logger.log(
         `V0 records still exist, upgrading store to latest version ${LATEST_CF_STORE_VERSION}...`,
       );
