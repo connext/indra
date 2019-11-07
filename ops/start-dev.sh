@@ -44,6 +44,7 @@ pg_user="$project"
 # docker images
 builder_image="${project}_builder"
 daicard_devserver_image="$builder_image"
+dashboard_image="indra_dashboard"
 database_image="postgres:9-alpine"
 ethprovider_image="trufflesuite/ganache-cli:v6.4.5"
 nats_image="nats:2.0.0-linux"
@@ -111,6 +112,7 @@ services:
     image: $proxy_image
     environment:
       DAICARD_URL: http://daicard:3000
+      DASHBOARD_URL: http://dashboard:9999
       ETH_RPC_URL: $eth_rpc_url
       MESSAGING_URL: http://relay:4223
       MODE: dev
@@ -131,6 +133,17 @@ services:
     volumes:
       - `pwd`:/root
     working_dir: /root/modules/daicard
+  
+  dashboard:
+    image: $dashboard_image
+    entrypoint: npm start
+    environment:
+      NODE_ENV: development
+    networks:
+      - $project
+    volumes:
+      - `pwd`:/root
+    working_dir: /root/modules/dashboard
 
   node:
     image: $node_image
