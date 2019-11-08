@@ -215,7 +215,7 @@ process.on("unhandledRejection", (e: any): any => {
 
   if (config.restore) {
     console.log(`Restoring states from the node with mnemonic: ${config.restore}`);
-    await client.restoreState(config.restore);
+    await client.restoreState();
   }
 
   if (!config.open) {
