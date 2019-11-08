@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@connext/messaging": "0.4.1",
-    "@counterfactual/types": "0.0.44",
+    "@counterfactual/types": "0.0.45",
     "ethers": "4.0.37"
   },
   "devDependencies": {

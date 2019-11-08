@@ -24,7 +24,7 @@
     "@connext/types": "0.4.1",
     "@counterfactual/cf-funding-protocol-contracts": "0.0.12",
     "@counterfactual/node": "0.2.82",
-    "@counterfactual/types": "0.0.44",
+    "@counterfactual/types": "0.0.45",
     "@nestjs/common": "6.5.3",
     "@nestjs/core": "6.5.3",
     "@nestjs/microservices": "6.5.3",
