@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { Grid, Typography, withStyles } from "@material-ui/core";
+
+import React from "react";
+import {  Grid, Typography, withStyles } from "@material-ui/core";
 import PropTypes from "prop-types";
 
 const styles = {
@@ -8,57 +9,39 @@ const styles = {
     flexWrap: "wrap",
     flexDirection: "row",
     width: "100%",
-    height: "100%",
+    height:"100%",
     justifyContent: "center",
     alignItems: "center",
   },
   card: {
-    marginTop: "15%",
-    display: "flex",
-    height: "320px",
-    width: "320px",
-    alignItems: "center",
-    justifyContent: "center",
-    margin: "0% 2% 0% 2%",
-    border: "3px solid #002868",
-    textDecoration: "none",
-    "&:hover": { backgroundColor: "rgba(0,40,104,0.2)" },
+    marginTop:"15%",
+      display:"flex",
+      height:"320px",
+      width:"320px",
+      alignItems:"center",
+      justifyContent:"center",
+      margin:"0% 2% 0% 2%",
+      border: "3px solid #002868",
+      textDecoration:"none",
+      '&:hover': {backgroundColor:"rgba(0,40,104,0.2)"}
   },
-  cardText: {
-    textAlign: "center",
-    fontSize: "24px",
-    color: "#002868",
-    textDecoration: "none",
-  },
+  cardText:{
+      textAlign:"center",
+      fontSize:"24px",
+      color:"#002868",
+      textDecoration:"none"
+  }
 };
 
-const DebugTransfer = props => {
-  const { classes } = props;
-
-  const [messaging, setMessaging] = useState(props.messaging);
-  const [testEndpoint, setTestEndpoint] = useState(null);
-
-  useEffect(() => {
-    if (!messaging) {
-      return;
-    }
-    (async () => {
-      const getNoFreeBalance = async () => {
-        var res = await messaging.request("admin.get-no-free-balance", 5000, {
-          token: "UfLGEm1pyj",
-        });
-        setTestEndpoint(JSON.stringify(res));
-      };
-      await getNoFreeBalance();
-    })();
-  });
-
+function DebugTransfer(props) {
+    const {classes} = props; 
   return (
     <Grid className={classes.top} container>
-      <Typography className={classes.cardText}>{testEndpoint}</Typography>
+        <Typography className={classes.cardText}>Hello</Typography>
+        <Typography className={classes.cardText}>World</Typography>
     </Grid>
   );
-};
+}
 
 DebugTransfer.propTypes = {
   classes: PropTypes.object.isRequired,

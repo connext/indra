@@ -16,7 +16,7 @@ const App = props => {
   useEffect(() => {
     (async () => {
       const messagingFactory = new MessagingServiceFactory({
-        messagingUrl: "wss://daicard.io/api/messaging", // nodeUrl
+        messagingUrl: "ws://localhost:3000/api/messaging", // nodeUrl
       });
       const messaging = messagingFactory.createService("messaging");
       await messaging.connect();
