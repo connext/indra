@@ -51,7 +51,7 @@ const styles = {
 };
 
 const DebugChannel = props => {
-  const { classes, messaging } = props;
+  const { classes, messaging, token } = props;
 
   // const [messaging, setMessaging] = useState(props.messaging);
   const [xPubSearch, setXPubSearch] = useState("");
@@ -76,7 +76,7 @@ const DebugChannel = props => {
         //   },
         // );
         var res = await messaging.request("admin.get-no-free-balance", 5000, {
-          token: "foo",
+          token: token,
         });
         setNoFreeBalance(JSON.stringify(res));
       };
@@ -86,7 +86,7 @@ const DebugChannel = props => {
 
   const getChannelState = async () => {
     var res = await messaging.request("admin.get-channel-states", 5000, {
-      token: "foo",
+      token: token,
       id:xPubSearch
     });
 

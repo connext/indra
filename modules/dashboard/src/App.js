@@ -16,6 +16,14 @@ const urls = {
     `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
 }
 
+const envConfig = process.env;
+
+const get = (key)=> {
+  return envConfig[key];
+}
+
+const token = get("INDRA_NATS_TOKEN")
+
 const App = props => {
   const [messaging, setMessaging] = useState(null);
 
@@ -35,8 +43,8 @@ const App = props => {
   return (
     <Router>
       <Route exact path="/" render={props => <Home {...props} />} />
-      <Route path="/debug" render={props => <Debug {...props} messaging={messaging} />} />
-      <Route path="/stats" render={props => <Stats {...props} messaging={messaging} />} />
+      <Route path="/debug" render={props => <Debug {...props} messaging={messaging} token={token}/>} />
+      <Route path="/stats" render={props => <Stats {...props} messaging={messaging} token={token}/>} />
     </Router>
   );
 };
