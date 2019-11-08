@@ -1,6 +1,6 @@
 {
   "name": "@connext/messaging",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
   "types": "dist/index.d.ts",

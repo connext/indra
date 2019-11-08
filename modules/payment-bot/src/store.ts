@@ -24,26 +24,6 @@ export class Store implements CFCoreTypes.IStoreService {
         return raw;
       }
     }
-    // Handle partial matches so the following line works -.-
-    // https://github.com/counterfactual/monorepo/blob/master/packages/node/src/store.ts#L54
-    if (path.endsWith("channel") || path.endsWith("appInstanceIdToProposedAppInstance")) {
-      const partialMatches = {};
-      for (const k of Object.keys(this.storeObj)) {
-        if (k.includes(`${path}/`)) {
-          try {
-            partialMatches[
-              k.replace(`${ConnextClientStorePrefix}:`, "").replace(`${path}/`, "")
-            ] = JSON.parse(this.storeObj[k]);
-          } catch {
-            partialMatches[
-              k.replace(`${ConnextClientStorePrefix}:`, "").replace(`${path}/`, "")
-            ] = this.storeObj[k];
-          }
-        }
-      }
-      return partialMatches;
-    }
-    return raw;
   }
 
   public async set(

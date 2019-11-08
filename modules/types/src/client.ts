@@ -82,7 +82,7 @@ export interface IConnextClient {
   withdraw(params: WithdrawParameters): Promise<ChannelState>;
   resolveCondition(params: ResolveConditionParameters): Promise<ResolveConditionResponse>;
   conditionalTransfer(params: ConditionalTransferParameters): Promise<ConditionalTransferResponse>;
-  restoreState(mnemonic: string): Promise<any>;
+  restoreState(): Promise<void>;
   channelProviderConfig(): Promise<ChannelProviderConfig>;
 
   ///////////////////////////////////
