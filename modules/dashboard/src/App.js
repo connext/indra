@@ -10,13 +10,19 @@ import { MessagingServiceFactory } from "@connext/messaging";
 
 // const nc = await connect({ servers: ["wss://daicard.io/api/messaging"] });
 
+const urls = {
+  nodeUrl:
+    process.env.REACT_APP_NODE_URL_OVERRIDE ||
+    `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
+}
+
 const App = props => {
   const [messaging, setMessaging] = useState(null);
 
   useEffect(() => {
     (async () => {
       const messagingFactory = new MessagingServiceFactory({
-        messagingUrl: "ws://localhost:3000/api/messaging", // nodeUrl
+        messagingUrl: urls.nodeUrl, // nodeUrl
       });
       const messaging = messagingFactory.createService("messaging");
       await messaging.connect();
