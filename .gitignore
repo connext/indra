@@ -26,6 +26,7 @@ yarn-debug.log*
 yarn-error.log*
 ops/*.log
 .deploy-indra.patch
+.state-before.json
 
 # OS
 .bash_history
@@ -59,7 +60,9 @@ modules/**/.circleci
 
 # Local packages
 counterfactual
+walletconnect
 walletconnect-monorepo
+walletconnect
 
 # Regenerated files from tests
 bots.json

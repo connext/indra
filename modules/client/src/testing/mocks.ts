@@ -6,6 +6,7 @@ import {
   GetChannelResponse,
   GetConfigResponse,
   PaymentProfile,
+  RequestCollateralResponse,
   SupportedApplication,
   SupportedNetwork,
   Transfer,
@@ -158,7 +159,7 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public async unsubscribeFromSwapRates(from: string, to: string): Promise<void> {}
 
-  public async requestCollateral(): Promise<void> {}
+  public async requestCollateral(): Promise<RequestCollateralResponse | void> {}
 
   public async withdraw(): Promise<TransactionResponse> {
     return MockNodeClientApi.returnValues.withdraw;

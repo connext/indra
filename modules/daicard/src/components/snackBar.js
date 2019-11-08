@@ -1,4 +1,11 @@
-import { Button, IconButton, Snackbar, SnackbarContent, Tooltip, withStyles } from "@material-ui/core";
+import {
+  Button,
+  IconButton,
+  Snackbar,
+  SnackbarContent,
+  Tooltip,
+  withStyles,
+} from "@material-ui/core";
 import { amber, green, red } from "@material-ui/core/colors";
 import {
   Close as CloseIcon,
@@ -41,14 +48,24 @@ const style = withStyles(theme => ({
 }));
 
 export const MySnackbar = style(props => {
-  const { classes, className, network, variant, openWhen, onClose, message, duration, txHash } = props;
+  const {
+    classes,
+    className,
+    network,
+    variant,
+    openWhen,
+    onClose,
+    message,
+    duration,
+    txHash,
+  } = props;
   const Icon = variantIcon[variant];
 
   let networkPrefix = "";
   if (network && network.chainId === 4) {
-    networkPrefix = "rinkeby."
+    networkPrefix = "rinkeby.";
   } else if (network && network.chainId === 42) {
-    networkPrefix = "kovan."
+    networkPrefix = "kovan.";
   }
 
   const getActions = () => {
@@ -62,11 +79,8 @@ export const MySnackbar = style(props => {
           size="small"
           target="_blank"
         >
-          <Tooltip
-            disableTouchListener
-            title={`https://${networkPrefix}etherscan.io/tx/${txHash}`}
-          >
-            <span style={{ textDecoration: 'underline' }}>View Tx</span>
+          <Tooltip disableTouchListener title={`https://${networkPrefix}etherscan.io/tx/${txHash}`}>
+            <span style={{ textDecoration: "underline" }}>View Tx</span>
           </Tooltip>
         </Button>,
       );

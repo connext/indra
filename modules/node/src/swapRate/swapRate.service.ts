@@ -69,9 +69,8 @@ export class SwapRateService implements OnModuleInit {
         newRate = formatEther(bnRate);
       } catch (e) {
         logger.warn(`Failed to fetch swap rate from medianizer`);
-        logger.warn(e);
         if (process.env.NODE_ENV === "development" && !oldRate) {
-          newRate = "100";
+          newRate = oldRate || "100.0";
           logger.log(`Dev-mode: using hard coded swap rate: ${newRate.toString()}`);
         }
       }
@@ -80,9 +79,8 @@ export class SwapRateService implements OnModuleInit {
         newRate = (1 / parseFloat(formatEther((await this.medianizer.peek())[0]))).toString();
       } catch (e) {
         logger.warn(`Failed to fetch swap rate from medianizer`);
-        logger.warn(e);
         if (process.env.NODE_ENV === "development" && !oldRate) {
-          newRate = ".005";
+          newRate = oldRate || "0.005";
           logger.log(`Dev-mode: using hard coded swap rate: ${newRate.toString()}`);
         }
       }

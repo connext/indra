@@ -1,8 +1,6 @@
 {
   "baseBranches": ["staging"],
-  "extends": [
-    "config:base"
-  ],
+  "extends": ["config:base"],
   "ignoreDeps": ["ethers", "typescript"],
   "schedule": ["every weekend"]
 }

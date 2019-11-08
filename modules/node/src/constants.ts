@@ -13,6 +13,7 @@ export enum Network {
 }
 
 // PROVIDERS
+export const AdminMessagingProviderId = "ADMIN_MESSAGING";
 export const AppRegistryProviderId = "APP_REGISTRY";
 export const AuthProviderId = "AUTH";
 export const CFCoreProviderId = "CF_CORE";
