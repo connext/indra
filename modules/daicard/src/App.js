@@ -273,7 +273,7 @@ class App extends React.Component {
     }
     console.log(`Successfully connected channel`);
 
-    await channel.isAvailable;
+    await channel.isAvailable();
 
     const token = new Contract(
       channel.config.contractAddresses.Token,
