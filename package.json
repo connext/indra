@@ -20,7 +20,7 @@
 		"cypress": "3.6.0",
 		"ethers": "4.0.37",
 		"ganache-cli": "6.7.0",
-		"lerna": "3.18.3",
+		"lerna": "3.18.4",
 		"openzeppelin-solidity": "2.3.0",
 		"solc": "0.5.12",
 		"tslint": "6.0.0-beta0",
