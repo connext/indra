@@ -28,7 +28,7 @@
 		"openzeppelin-solidity": "2.3.0",
 		"pisa-client": "0.1.4-connext-beta.1",
 		"prop-types": "15.7.2",
-		"qrcode.react": "0.9.3",
+		"qrcode.react": "1.0.0",
 		"query-string": "6.8.3",
 		"react": "16.11.0",
 		"react-copy-to-clipboard": "5.0.1",
