@@ -2,7 +2,7 @@ import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server
 import { Node as NodeTypes } from "@counterfactual/types";
 
 import { Node } from "../../src";
-import { NODE_EVENTS, ProposeVirtualMessage } from "../../src/types";
+import { NODE_EVENTS, ProposeMessage } from "../../src/types";
 
 import {
   SetupContext,
@@ -15,6 +15,8 @@ import {
   getProposedAppInstances,
   makeVirtualProposeCall
 } from "./utils";
+
+const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
 describe("Node method follows spec - rejectInstallVirtual", () => {
   let nodeA: Node;
@@ -49,7 +51,7 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
 
         nodeC.on(
           NODE_EVENTS.PROPOSE_INSTALL_VIRTUAL,
-          async (msg: ProposeVirtualMessage) => {
+          async (msg: ProposeMessage) => {
             const { appInstanceId } = msg.data;
 
             const [proposedAppInstanceA] = await getProposedAppInstances(nodeA);
@@ -84,7 +86,7 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
           nodeA,
           nodeC,
           nodeB,
-          (global["networkContext"] as NetworkContextForTestSuite).TicTacToeApp
+          TicTacToeApp
         );
 
         proposalParams = result.params;
