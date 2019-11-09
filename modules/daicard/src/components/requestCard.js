@@ -1,167 +1,117 @@
-import {
-  Button,
-  Grid,
-  TextField,
-  Tooltip,
-  Typography,
-  withStyles,
-} from "@material-ui/core";
+import { Button, Grid, TextField, Typography, withStyles } from "@material-ui/core";
 import { Zero } from "ethers/constants";
-import React, { Component } from "react";
-import { CopyToClipboard } from "react-copy-to-clipboard";
+import React, { useEffect, useState } from "react";
 
 import { Currency } from "../utils";
 
+import { Copyable } from "./copyable";
 import { QRGenerate } from "./qrCode";
-import MySnackbar from "./snackBar";
 
-const styles = theme => ({
+const style = withStyles(theme => ({
   icon: {
     width: "40px",
-    height: "40px"
-  }
-});
+    height: "40px",
+  },
+}));
 
-class RequestCard extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      displayValue: "",
-      error: null,
-      qrUrl: this.generateQrUrl("0"),
-      copied: false
-    };
-  }
+const zero = "0.0";
+const generateQrUrl = (amount, xpub) =>
+  `${window.location.origin}/send?amount=${amount || zero}&recipient=${xpub}`;
 
-  closeModal() {
-    this.setState({ copied: false });
-  };
+export const RequestCard = style(props => {
+  const { maxDeposit, xpub } = props;
 
-  generateQrUrl(value) {
-    return `${window.location.origin}/send?` +
-      `amountToken=${value || "0"}&` +
-      `recipient=${this.props.xpub}`;
-  }
+  const [amount, setAmount] = useState({ value: Currency.DAI(zero), display: "0" });
+  const [qrUrl, setQrUrl] = useState(generateQrUrl(zero, xpub));
 
-  handleCopy() {
-    this.setState({ copied: this.state.error ? false : true })
-  }
+  useEffect(() => setQrUrl(generateQrUrl(amount.value, xpub)), [amount.value, xpub]);
 
-  updatePaymentHandler(rawValue) {
-    let value, error
-    const { maxDeposit } = this.props
+  const updateAmountHandler = input => {
+    let value, error;
     try {
-      value = Currency.DAI(rawValue)
+      value = Currency.DAI(input);
     } catch (e) {
-      error = e.message
+      error = `Invalid Currency amount`;
     }
-    if (value && value.wad.gt(maxDeposit.toDAI().wad)) {
-      error = `Channel balances are capped at ${maxDeposit.toDAI().format()}`
+    if (!maxDeposit) {
+      error = `Channels are still starting up, please wait.`;
     }
-    if (value && value.wad.lte(Zero)) {
-      error = "Please enter a payment amount above 0"
+    if (value && maxDeposit && value.wad.gt(maxDeposit.toDAI().wad)) {
+      error = `Channel balances are capped at ${maxDeposit.toDAI().format()}`;
     }
-    this.setState({
-      qrUrl: this.generateQrUrl(error ? "0" : value.amount),
-      displayValue: rawValue,
-      error,
-    });
+    if (value && value.wad.lt(Zero)) {
+      error = "Please enter a payment amount above 0";
+    }
+    setQrUrl(generateQrUrl(error ? zero : value.amount, xpub));
+    setAmount({ value: value ? value.amount : zero, display: input, error });
   };
 
-  render() {
-    const { xpub } = this.props;
-    const { qrUrl, error, displayValue, copied } = this.state;
-    return (
-      <Grid
-        container
-        spacing={2}
-        direction="column"
-        style={{
-          paddingLeft: "10%",
-          paddingRight: "10%",
-          paddingTop: "10%",
-          paddingBottom: "10%",
-          textAlign: "center",
-          justifyContent: "center"
-        }}
-      >
-        <MySnackbar
-          variant="success"
-          openWhen={copied}
-          onClose={this.closeModal.bind(this)}
-          message="Copied!"
-        />
-        <Grid item xs={12}>
-          <QRGenerate value={qrUrl} />
+  return (
+    <Grid
+      container
+      spacing={2}
+      direction="column"
+      style={{
+        paddingLeft: "10%",
+        paddingRight: "10%",
+        paddingTop: "10%",
+        paddingBottom: "10%",
+        textAlign: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Grid container>
+        <Grid item xs={4}>
+          <Typography style={{ marginTop: "6px" }}>Channel ID:</Typography>
         </Grid>
-        <Grid item xs={12}>
-          <CopyToClipboard
-            onCopy={this.handleCopy.bind(this)}
-            text={xpub}
-          >
-            <Button variant="outlined" fullWidth>
-              <Typography noWrap variant="body1">
-                <Tooltip
-                  disableFocusListener
-                  disableTouchListener
-                  title={"Click to Copy"}
-                >
-                  <span>{xpub}</span>
-                </Tooltip>
-              </Typography>
-            </Button>
-          </CopyToClipboard>
-        </Grid>
-        <Grid item xs={12}>
-          <CopyToClipboard
-            onCopy={this.handleCopy.bind(this)}
-            text={error ? '' : qrUrl}
-          >
-            <Button variant="outlined" fullWidth>
-              <Typography noWrap variant="body1">
-                <Tooltip
-                  disableFocusListener
-                  disableTouchListener
-                  title={this.state.error ? "Fix amount first" : "Click to Copy"}
-                >
-                  <span>{qrUrl}</span>
-                </Tooltip>
-              </Typography>
-            </Button>
-          </CopyToClipboard>
-        </Grid>
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
-            id="outlined-number"
-            label="Amount"
-            value={displayValue}
-            type="number"
-            margin="dense"
-            variant="outlined"
-            onChange={evt => this.updatePaymentHandler(evt.target.value)}
-            error={!!error}
-            helperText={error}
-          />
-        </Grid>
-        <Grid item xs={12}>
-          <Button
-            variant="outlined"
-            style={{
-              background: "#FFF",
-              border: "1px solid #F22424",
-              color: "#F22424",
-              width: "15%"
-            }}
-            size="medium"
-            onClick={() => this.props.history.push("/")}
-          >
-            Back
-          </Button>
+        <Grid item xs={8}>
+          <Copyable text={xpub} />
         </Grid>
       </Grid>
-    );
-  }
-}
 
-export default withStyles(styles)(RequestCard);
+      <Grid container style={{ marginTop: "12px" }}>
+        <Grid item xs={4}>
+          <Typography style={{ marginTop: "6px" }}>Request Link:</Typography>
+        </Grid>
+        <Grid item xs={8}>
+          <Copyable text={amount.error ? "error" : qrUrl} />
+        </Grid>
+      </Grid>
+
+      <Grid item xs={12} style={{ margin: "12px" }}>
+        <QRGenerate value={qrUrl} size={225} />
+      </Grid>
+
+      <Grid item xs={12} style={{ width: "100%", padding: "0px" }}>
+        <TextField
+          fullWidth
+          id="outlined-number"
+          label="Amount"
+          value={amount.display}
+          type="number"
+          variant="outlined"
+          onChange={evt => updateAmountHandler(evt.target.value)}
+          error={!!amount.error}
+          helperText={amount.error}
+        />
+      </Grid>
+
+      <Grid item xs={12} style={{ marginTop: "12px" }}>
+        <Button
+          disableTouchRipple
+          variant="outlined"
+          style={{
+            background: "#FFF",
+            border: "1px solid #F22424",
+            color: "#F22424",
+            width: "15%",
+          }}
+          size="medium"
+          onClick={() => props.history.push("/")}
+        >
+          Back
+        </Button>
+      </Grid>
+    </Grid>
+  );
+});

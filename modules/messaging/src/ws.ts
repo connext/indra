@@ -44,7 +44,7 @@ export class WsMessagingService implements IMessagingService {
   async send(to: string, msg: Node.NodeMessage): Promise<void> {
     this.assertConnected();
     this.log.debug(`Sending message to ${to}: ${JSON.stringify(msg)}`);
-    this.connection.publish(this.prependKey(`${to}.${msg.from}`), JSON.stringify(msg));
+    await this.connection.publish(this.prependKey(`${to}.${msg.from}`), JSON.stringify(msg));
   }
 
   ////////////////////////////////////////
@@ -53,7 +53,7 @@ export class WsMessagingService implements IMessagingService {
   async publish(subject: string, data: any): Promise<void> {
     this.assertConnected();
     this.log.debug(`Publishing ${subject}: ${JSON.stringify(data)}`);
-    this.connection!.publish(subject, data);
+    await this.connection!.publish(subject, data);
   }
 
   async request(subject: string, timeout: number, data: object = {}): Promise<any> {
@@ -89,6 +89,11 @@ export class WsMessagingService implements IMessagingService {
     } else {
       this.log.warn(`Not subscribed to ${subject}, doing nothing`);
     }
+  }
+
+  async flush(): Promise<void> {
+    this.assertConnected();
+    await this.connection!.flush();
   }
 
   ////////////////////////////////////////

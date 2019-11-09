@@ -5,14 +5,14 @@ import {
   SimpleSwapAppStateBigNumber,
   SwapParameters,
 } from "@connext/types";
-import { AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
+import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import { delay, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
+import { freeBalanceAddressFromXpub, stringify } from "../lib/utils";
 import { invalidAddress } from "../validation/addresses";
-import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
+import { falsy, notGreaterThan, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
 
@@ -43,31 +43,14 @@ export class SwapController extends AbstractController {
     // get app definition from constants
     const appInfo = this.connext.getRegisteredAppDetails("SimpleTwoPartySwapApp");
 
-    // FIXME: when you dont have the looping, you try to uninstall before the
-    // app is returned from `getAppInstances` (even though it is already
-    // installed?) so thats not that tight
-    const preInstallApps = (await this.connext.getAppInstances()).length;
-
     // install the swap app
     await this.swapAppInstall(amount, toAssetId, fromAssetId, swapRate, appInfo);
 
     this.log.info(`Swap app installed! Uninstalling without updating state.`);
 
-    // FIXME: remove!
-    while ((await this.connext.getAppInstances()).length <= preInstallApps) {
-      this.log.info(
-        `still could not pick up any newly installed apps after ` +
-          `installing swap. waiting 1s and trying again...`,
-      );
-      await delay(1000);
-    }
-
-    // TODO: should we check if its the right app?
-    this.log.info(`Found installed app in app instances, attempting to uninstall..`);
-
     // if app installed, that means swap was accepted
     // now uninstall
-    await this.swapAppUninstall(this.appId);
+    await this.connext.uninstallApp(this.appId);
 
     // Sanity check to ensure swap was executed correctly
     const postSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
@@ -108,6 +91,7 @@ export class SwapController extends AbstractController {
       invalidAddress(fromAssetId),
       invalidAddress(toAssetId),
       notLessThanOrEqualTo(amount, userBal),
+      notGreaterThan(amount, Zero),
       notLessThanOrEqualTo(swappedAmount, nodeBal),
       notPositive(parseEther(swapRate)),
     ];
@@ -126,14 +110,22 @@ export class SwapController extends AbstractController {
     return data;
   };
 
-  // TODO: fix types of data
-  private rejectInstallSwap = (rej: any, msg: any): any => {
+  // TODO: fix types of data, they seem to have different strucs
+  // depending on when theyre emitted :thinking:
+  private rejectInstallSwap = (rej: any, msg: { data: { appInstanceId: string } }): any => {
     // check app id
+    if (!msg.data) {
+      this.log.warn(
+        `This should not have this structure when emitted, strange. msg: ${stringify(msg)}`,
+      );
+      return;
+    }
+
     if (this.appId !== msg.data.appInstanceId) {
       return;
     }
 
-    rej(`Install rejected. Event data: ${JSON.stringify(msg.data, replaceBN, 2)}`);
+    rej(`Install rejected. Event data: ${stringify(msg.data)}`);
     return msg.data;
   };
 
@@ -154,9 +146,6 @@ export class SwapController extends AbstractController {
       `Installing swap app. Swapping ${amount.toString()} of ${fromAssetId}` +
         ` for ${swappedAmount.toString()} of ${toAssetId}`,
     );
-
-    // TODO: is this the right state and typing?? In contract tests, uses
-    // something completely different
 
     // NOTE: always put the initiators swap information FIRST
     // followed by responders. If this is not included, the swap will
@@ -222,33 +211,5 @@ export class SwapController extends AbstractController {
   private cleanupInstallListeners = (boundResolve: any, boundReject: any): void => {
     this.listener.removeListener(CFCoreTypes.EventName.INSTALL, boundResolve);
     this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
-  };
-
-  private swapAppUninstall = async (appId: string): Promise<void> => {
-    await this.connext.uninstallApp(appId);
-    // TODO: cf does not emit uninstall event on the node
-    // that has called this function but ALSO does not immediately
-    // uninstall the apps. This will be a problem when trying to
-    // display balances...
-
-    // adding a promise for now that polls app instances, but its not
-    // great and should be removed
-    await new Promise(
-      async (res: any, rej: any): Promise<any> => {
-        const getAppIds = async (): Promise<string[]> => {
-          return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
-        };
-        let retries = 0;
-        while ((await getAppIds()).indexOf(this.appId) !== -1 && retries <= 5) {
-          this.log.info("found app id in the open apps... retrying...");
-          await delay(500);
-          retries = retries + 1;
-        }
-
-        if (retries > 5) rej();
-
-        res();
-      },
-    );
   };
 }

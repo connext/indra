@@ -32,8 +32,10 @@ describe('Daicard', () => {
           my.linkPay(payTokens).then(redeemLink => {
             my.restoreMnemonic(recipientMnemonic)
             cy.visit(redeemLink)
-            cy.contains('span', /payment.* redeemed/i).should('exist')
-            my.goBack()
+            cy.contains('button', /redeem/i).click()
+            cy.contains('button', /confirm/i).click()
+            cy.contains('h5', /redeemed successfully/i).should('exist')
+            cy.contains('button', /home/i).click()
             cy.resolve(my.getChannelTokenBalance).should('contain', payTokens)
           })
         })
@@ -69,7 +71,7 @@ describe('Daicard', () => {
         my.goToRequest()
         cy.get('input[type="number"]').clear().type(payTokens)
         cy.contains('button', `recipient=${xpub}`).should('exist')
-        cy.contains('button', `amountToken=${payTokens}`).invoke('text').then(requestLink => {
+        cy.contains('button', `amount=${payTokens}`).invoke('text').then(requestLink => {
           my.burnCard()
           cy.visit(requestLink)
           cy.get(`input[value="${payTokens}"]`).should('exist')

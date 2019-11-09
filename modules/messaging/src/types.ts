@@ -10,6 +10,7 @@ export interface MessagingConfig {
 export interface IMessagingService extends Node.IMessagingService {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
+  flush(): Promise<void>;
   onReceive(subject: string, callback: (msg: Node.NodeMessage) => void): Promise<void>;
   publish(subject: string, data: any): Promise<void>;
   request(

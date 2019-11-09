@@ -1,9 +1,9 @@
 import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
+import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { LinkedTransfer, PeerToPeerTransfer } from "../transfer/transfer.entity";
-import { IsEthAddress } from "../validator/isEthAddress";
-import { IsXpub } from "../validator/isXpub";
+import { IsEthAddress, IsXpub } from "../util";
 
 @Entity()
 export class Channel {
@@ -47,4 +47,7 @@ export class Channel {
     (transfer: PeerToPeerTransfer) => transfer.receiverChannel,
   )
   receiverPeerToPeerTransfers!: PeerToPeerTransfer[];
+
+  @OneToMany((type: any) => OnchainTransaction, (tx: OnchainTransaction) => tx.channel)
+  transactions!: OnchainTransaction[];
 }

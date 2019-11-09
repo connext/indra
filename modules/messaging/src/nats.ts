@@ -92,11 +92,16 @@ export class NatsMessagingService implements IMessagingService {
   async unsubscribe(subject: string): Promise<void> {
     this.assertConnected();
     if (this.subscriptions[subject]) {
-      await this.subscriptions[subject].unsubscribe();
+      this.subscriptions[subject].unsubscribe();
       this.log.debug(`Unsubscribed from ${subject}`);
     } else {
       this.log.warn(`Not subscribed to ${subject}, doing nothing`);
     }
+  }
+
+  async flush(): Promise<void> {
+    this.assertConnected();
+    await this.connection!.flush();
   }
 
   ////////////////////////////////////////

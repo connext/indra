@@ -6,8 +6,10 @@ import {
   GetChannelResponse,
   GetConfigResponse,
   PaymentProfile,
+  RequestCollateralResponse,
   SupportedApplication,
   SupportedNetwork,
+  Transfer,
 } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { providers } from "ethers";
@@ -68,6 +70,10 @@ export class MockMessagingService implements IMessagingService {
     this.log.info(`Unsubscribing from ${subject}`);
   }
 
+  async flush(): Promise<void> {
+    this.log.info(`Flushing messaging connection`);
+  }
+
   public patch(subject: string, returnValue: any): any {
     (this.returnVals as any)[subject] = returnValue;
   }
@@ -87,6 +93,14 @@ export class MockNodeClientApi implements INodeApiClient {
     this.messaging = (opts.messaging as any) || new MockMessagingService(opts);
     this.nonce = undefined;
     this.signature = undefined;
+  }
+
+  async acquireLock(
+    lockName: string,
+    callback: (...args: any[]) => any,
+    timeout: number,
+  ): Promise<any> {
+    this.log.info(`acquireLock`);
   }
 
   // should have keys same as the message passed in to fake messaging client
@@ -125,6 +139,10 @@ export class MockNodeClientApi implements INodeApiClient {
     return "100";
   }
 
+  public async getTransferHistory(): Promise<Transfer[]> {
+    return [];
+  }
+
   public async createChannel(): Promise<CreateChannelResponse> {
     return MockNodeClientApi.returnValues.createChannel;
   }
@@ -141,11 +159,13 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public async unsubscribeFromSwapRates(from: string, to: string): Promise<void> {}
 
-  public async requestCollateral(): Promise<void> {}
+  public async requestCollateral(): Promise<RequestCollateralResponse | void> {}
 
   public async withdraw(): Promise<TransactionResponse> {
     return MockNodeClientApi.returnValues.withdraw;
   }
+
+  public async fetchLinkedTransfer(paymentId: string): Promise<any> {}
 
   public async resolveLinkedTransfer(): Promise<void> {}
 

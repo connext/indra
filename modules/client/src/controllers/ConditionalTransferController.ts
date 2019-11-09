@@ -5,22 +5,24 @@ import {
   convert,
   LinkedTransferParameters,
   LinkedTransferResponse,
+  LinkedTransferToRecipientParameters,
+  LinkedTransferToRecipientResponse,
   RegisteredAppDetails,
   SimpleLinkedTransferAppStateBigNumber,
   SupportedApplication,
   SupportedApplications,
   TransferCondition,
 } from "@connext/types";
-import { AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
-import { Zero } from "ethers/constants";
+import { Node as CFCoreTypes } from "@counterfactual/types";
+import EthCrypto from "eth-crypto";
+import { HashZero, Zero } from "ethers/constants";
+import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { RejectInstallVirtualMessage } from "../lib/cfCore";
-import { createLinkedHash, delay, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
+import { createLinkedHash, freeBalanceAddressFromXpub, stringify } from "../lib/utils";
 import { falsy, invalid32ByteHexString, invalidAddress, notLessThanOrEqualTo } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-
-const MAX_RETRIES = 20;
 
 type ConditionalExecutors = {
   [index in TransferCondition]: (
@@ -36,9 +38,7 @@ export class ConditionalTransferController extends AbstractController {
   public conditionalTransfer = async (
     params: ConditionalTransferParameters,
   ): Promise<ConditionalTransferResponse> => {
-    this.log.info(
-      `Conditional transfer called with parameters: ${JSON.stringify(params, replaceBN, 2)}`,
-    );
+    this.log.info(`Conditional transfer called with parameters: ${stringify(params)}`);
 
     const res = await this.conditionalExecutors[params.conditionType](params);
     return res;
@@ -46,6 +46,56 @@ export class ConditionalTransferController extends AbstractController {
 
   /////////////////////////////////
   ////// PRIVATE METHODS
+  // TODO: types
+  private handleLinkedTransferToRecipient = async (
+    params: LinkedTransferToRecipientParameters,
+  ): Promise<LinkedTransferToRecipientResponse> => {
+    const { amount, assetId, paymentId, preImage, recipient } = convert.LinkedTransferToRecipient(
+      "bignumber",
+      params,
+    );
+    if (!recipient) {
+      throw new Error(`A recipient must be specified for transfer of type ${params.conditionType}`);
+    }
+    const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
+
+    // wait for linked transfer
+    const ret = await this.handleLinkedTransfers({
+      ...params,
+      conditionType: "LINKED_TRANSFER",
+    });
+
+    // set recipient and encrypted pre-image on linked transfer
+    const recipientPublicKey = fromExtendedKey(recipient).publicKey;
+    const encryptedPreImageCipher = await EthCrypto.encryptWithPublicKey(
+      recipientPublicKey.slice(2), // remove 0x
+      preImage,
+    );
+    const encryptedPreImage = EthCrypto.cipher.stringify(encryptedPreImageCipher);
+    await this.connext.setRecipientAndEncryptedPreImageForLinkedTransfer(
+      recipient,
+      encryptedPreImage,
+      linkedHash,
+    );
+
+    // publish encrypted secret
+    // TODO: should we move this to its own file?
+    this.connext.messaging.publish(
+      `transfer.send-async.${recipient}`,
+      stringify({
+        amount: amount.toString(),
+        assetId,
+        encryptedPreImage,
+        paymentId,
+      }),
+    );
+
+    // need to flush here so that the client can exit knowing that messages are in the NATS server
+    await this.connext.messaging.flush();
+
+    return { ...ret, recipient };
+  };
+
   private handleLinkedTransfers = async (
     params: LinkedTransferParameters,
   ): Promise<LinkedTransferResponse> => {
@@ -61,10 +111,11 @@ export class ConditionalTransferController extends AbstractController {
     );
 
     // install the transfer application
-    const linkedHash = createLinkedHash({ amount, assetId, paymentId, preImage });
+    const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
 
     const initialState: SimpleLinkedTransferAppStateBigNumber = {
       amount,
+      assetId,
       coinTransfers: [
         {
           amount,
@@ -77,7 +128,7 @@ export class ConditionalTransferController extends AbstractController {
       ],
       linkedHash,
       paymentId,
-      preImage,
+      preImage: HashZero,
     };
 
     const appId = await this.conditionalTransferAppInstalled(
@@ -86,11 +137,10 @@ export class ConditionalTransferController extends AbstractController {
       initialState,
       appInfo,
     );
+
     if (!appId) {
       throw new Error(`App was not installed`);
     }
-
-    await this.waitForAppInstall();
 
     return {
       freeBalance: await this.connext.getFreeBalance(assetId),
@@ -151,40 +201,44 @@ export class ConditionalTransferController extends AbstractController {
       timeout: Zero,
     };
 
-    const res = await this.connext.proposeInstallApp(params);
+    const proposeRes = await this.connext.proposeInstallApp(params);
     // set app instance id
-    this.appId = res.appInstanceId;
+    this.appId = proposeRes.appInstanceId;
 
     try {
       await new Promise((res: () => any, rej: () => any): void => {
-        boundReject = this.rejectInstallTransfer.bind(null, rej);
         boundResolve = this.resolveInstallTransfer.bind(null, res);
-        this.listener.on(CFCoreTypes.EventName.INSTALL, boundResolve);
+        boundReject = this.rejectInstallTransfer.bind(null, rej);
+        this.connext.messaging.subscribe(
+          `indra.node.${this.connext.nodePublicIdentifier}.install.${proposeRes.appInstanceId}`,
+          boundResolve,
+        );
         this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
       });
-      this.log.info(`App was installed successfully!: ${JSON.stringify(res)}`);
-      return res.appInstanceId;
+      this.log.info(`App was installed successfully!: ${stringify(proposeRes)}`);
+      return proposeRes.appInstanceId;
     } catch (e) {
       this.log.error(`Error installing app: ${e.toString()}`);
       return undefined;
     } finally {
-      this.cleanupInstallListeners(boundResolve, boundReject);
+      this.cleanupInstallListeners(boundReject, proposeRes.appInstanceId);
     }
   };
 
   // TODO: fix type of data
-  private resolveInstallTransfer = (res: (value?: unknown) => void, data: any): any => {
-    if (this.appId !== data.params.appInstanceId) {
+  private resolveInstallTransfer = (res: (value?: unknown) => void, message: any): any => {
+    // TODO: why is it sometimes data vs data.data?
+    const appInstance = message.data.data ? message.data.data : message.data;
+
+    if (appInstance.identityHash !== this.appId) {
+      // not our app
       this.log.info(
-        `Caught INSTALL event for different app ${JSON.stringify(data)}, expected ${this.appId}`,
+        `Caught INSTALL event for different app ${stringify(message)}, expected ${this.appId}`,
       );
       return;
     }
-    if (this.timeout) {
-      clearTimeout(this.timeout);
-    }
-    res(data);
-    return data;
+    res(message);
+    return message;
   };
 
   // TODO: fix types of data
@@ -197,36 +251,19 @@ export class ConditionalTransferController extends AbstractController {
       return;
     }
 
-    return rej(`Install failed. Event data: ${JSON.stringify(msg, replaceBN, 2)}`);
+    return rej(`Install failed. Event data: ${stringify(msg)}`);
   };
 
-  private cleanupInstallListeners = (boundResolve: any, boundReject: any): void => {
-    this.listener.removeListener(CFCoreTypes.EventName.INSTALL, boundResolve);
+  private cleanupInstallListeners = (boundReject: any, appId: string): void => {
+    this.connext.messaging.unsubscribe(
+      `indra.node.${this.connext.nodePublicIdentifier}.install.${appId}`,
+    );
     this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
   };
 
   // add all executors/handlers here
   private conditionalExecutors: ConditionalExecutors = {
     LINKED_TRANSFER: this.handleLinkedTransfers,
+    LINKED_TRANSFER_TO_RECIPIENT: this.handleLinkedTransferToRecipient,
   };
-
-  private async waitForAppInstall(): Promise<void> {
-    return new Promise(
-      async (res: any, rej: any): Promise<any> => {
-        const getAppIds = async (): Promise<string[]> => {
-          return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
-        };
-        let retries = 0;
-        while (!(await getAppIds()).includes(this.appId) && retries <= MAX_RETRIES) {
-          this.log.info(`found app id in the open apps... retry number ${retries}`);
-          await delay(100);
-          retries = retries + 1;
-        }
-
-        if (retries > MAX_RETRIES) rej();
-        this.log.info(`app installed after ${retries} retries`);
-        res();
-      },
-    );
-  }
 }

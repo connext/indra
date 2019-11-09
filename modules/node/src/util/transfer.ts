@@ -1,11 +1,13 @@
-import { UnidirectionalLinkedTransferAppActionBigNumber } from "@connext/types";
-import { solidityKeccak256 } from "ethers/utils";
+import { BigNumber, solidityKeccak256 } from "ethers/utils";
 
 export const createLinkedHash = (
-  action: UnidirectionalLinkedTransferAppActionBigNumber,
+  amount: BigNumber,
+  assetId: string,
+  paymentId: string,
+  preImage: string,
 ): string => {
   return solidityKeccak256(
     ["uint256", "address", "bytes32", "bytes32"],
-    [action.amount, action.assetId, action.paymentId, action.preImage],
+    [amount, assetId, paymentId, preImage],
   );
 };

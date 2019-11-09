@@ -1,38 +1,49 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { ProxyLockService, RedisLockService } from "@connext/redis-lock";
 import {
   AppActionBigNumber,
   AppRegistry,
-  AppState,
+  AppStateBigNumber,
   CFCoreChannel,
-  ChannelAppSequences,
+  ChannelProviderConfig,
   ChannelState,
+  ClientOptions,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
+  ConnextEvent,
   CreateChannelResponse,
   DepositParameters,
   GetChannelResponse,
   GetConfigResponse,
+  IConnextClient,
   makeChecksum,
   makeChecksumOrEthAddress,
   PaymentProfile,
   RegisteredAppDetails,
+  RequestCollateralResponse,
   ResolveConditionParameters,
   ResolveConditionResponse,
+  ResolveLinkedTransferResponse,
+  RpcType,
+  Store,
   SupportedApplication,
   SupportedNetwork,
   SwapParameters,
+  Transfer,
   TransferParameters,
+  WithdrawalResponse,
   WithdrawParameters,
 } from "@connext/types";
-import { Address, AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
+import { Address, AppInstanceJson, Node as CFCoreTypes } from "@counterfactual/types";
 import "core-js/stable";
-import { Contract, providers } from "ethers";
+import EthCrypto from "eth-crypto";
+import { Contract, providers, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { BigNumber, HDNode, Network } from "ethers/utils";
+import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
+import { fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
+import { ChannelRouter } from "./channelRouter";
 import { ConditionalTransferController } from "./controllers/ConditionalTransferController";
 import { DepositController } from "./controllers/DepositController";
 import { ResolveConditionController } from "./controllers/ResolveConditionController";
@@ -40,34 +51,25 @@ import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { CFCore, CreateChannelMessage, EXTENDED_PRIVATE_KEY_PATH } from "./lib/cfCore";
+import { CF_PATH } from "./lib/constants";
 import { Logger } from "./lib/logger";
-import { freeBalanceAddressFromXpub, publicIdentifierToAddress, replaceBN } from "./lib/utils";
+import {
+  freeBalanceAddressFromXpub,
+  publicIdentifierToAddress,
+  stringify,
+  withdrawalKey,
+} from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
-import { ClientOptions, InternalClientOptions } from "./types";
+import { InternalClientOptions } from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 
-/**
- * Creates a new client-node connection with node at specified url
- *
- * @param opts The options to instantiate the client with.
- * At a minimum, must contain the nodeUrl and a client signing key or mnemonic
- */
+const MAX_WITHDRAWAL_RETRIES = 3;
 
-export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
-  const {
-    logLevel,
-    ethProviderUrl,
-    mnemonic,
-    natsClusterId,
-    nodeUrl,
-    natsToken,
-    useRedisLock,
-    redisUrl,
-    store,
-  } = opts;
-  const logger = new Logger("ConnextConnect", logLevel);
+export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
+  const { logLevel, ethProviderUrl, mnemonic, nodeUrl, store, channelProvider } = opts;
+  const log = new Logger("ConnextConnect", logLevel);
 
   // setup network information
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
@@ -82,357 +84,164 @@ export async function connect(opts: ClientOptions): Promise<ConnextInternal> {
     };
   }
 
-  logger.info(`Creating messaging service client (logLevel: ${logLevel})`);
+  // set channel provider config
+  let channelProviderConfig: ChannelProviderConfig;
+  if (channelProvider) {
+    // enable the channel provider, which sets the config property
+    await channelProvider.enable();
+    channelProviderConfig = {
+      ...channelProvider.config,
+      type: RpcType.ChannelProvider,
+    };
+  } else if (mnemonic) {
+    // generate extended private key from mnemonic
+    const hdNode = fromMnemonic(mnemonic);
+    const xpriv = hdNode.extendedKey;
+    const xpub = hdNode.derivePath(CF_PATH).neuter().extendedKey;
+    await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }]);
+    channelProviderConfig = {
+      freeBalanceAddress: freeBalanceAddressFromXpub(xpub),
+      nodeUrl,
+      signerAddress: hdNode.derivePath(CF_PATH).address,
+      type: RpcType.CounterfactualNode,
+      userPublicIdentifier: xpub,
+    } as any;
+  } else {
+    throw new Error(`Must provide a channel provider or mnemonic on startup.`);
+  }
+
+  log.debug(`Using channel provider config: ${stringify(channelProviderConfig)}`);
+
+  log.debug(`Creating messaging service client (logLevel: ${logLevel})`);
   const messagingFactory = new MessagingServiceFactory({
-    clusterId: natsClusterId,
     logLevel,
-    messagingUrl: nodeUrl,
-    token: natsToken,
+    messagingUrl: channelProviderConfig.nodeUrl,
   });
   const messaging = messagingFactory.createService("messaging");
   await messaging.connect();
-  logger.info("Messaging service is connected");
-
-  // TODO: we need to pass in the whole store to retain context. Figure out how to do this better
-  // Note: added this to the client since this is required for the cf module to work
-  // generate extended private key from mnemonic
-  const extendedXpriv = HDNode.fromMnemonic(mnemonic).extendedKey;
-  await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedXpriv }]);
 
   // create a new node api instance
-  // TODO: use local storage for default key value setting!!
-  const nodeApiConfig = {
-    logLevel,
-    messaging,
-  };
-  logger.info("creating node api client");
-  const node: NodeApiClient = new NodeApiClient(nodeApiConfig);
-  logger.info("created node api client successfully");
-
+  const node: NodeApiClient = new NodeApiClient({ logLevel, messaging });
   const config = await node.config();
-  logger.info(`node is connected to eth network: ${JSON.stringify(config.ethNetwork)}`);
-  node.setNodePublicIdentifier(config.nodePublicIdentifier);
+  log.debug(`Node provided config: ${stringify(config)}`);
 
-  const appRegistry = await node.appRegistry();
-
-  // create the lock service for cfCore
-  let lockService: RedisLockService|ProxyLockService;
-  if (useRedisLock) {
-    logger.info("using redis directly as lock service");
-    if (!redisUrl) {
-      throw new Error(`redisUrl must be provided with useRedisLock`);
-    }
-    lockService = new RedisLockService(redisUrl);
-  } else {
-    logger.info("using node's proxy lock service");
-    lockService = new ProxyLockService(messaging);
+  let channelRouter: ChannelRouter;
+  switch (channelProviderConfig.type) {
+    case RpcType.ChannelProvider:
+      channelRouter = new ChannelRouter(channelProvider!, channelProviderConfig);
+      break;
+    case RpcType.CounterfactualNode:
+      const cfCore = await CFCore.create(
+        messaging as any, // TODO: FIX
+        store,
+        { STORE_KEY_PREFIX: "store" },
+        ethProvider,
+        config.contractAddresses,
+        { acquireLock: node.acquireLock.bind(node) },
+      );
+      const wallet = Wallet.fromMnemonic(opts.mnemonic!, CF_PATH);
+      channelRouter = new ChannelRouter(cfCore, channelProviderConfig, store, wallet);
+      break;
+    default:
+      throw new Error(`Unrecognized channel provider type: ${channelProviderConfig.type}`);
   }
 
-  // create new cfCore to inject into internal instance
-  logger.info("creating new cf module");
-  const cfCore = await CFCore.create(
-    messaging,
-    store,
-    {
-      STORE_KEY_PREFIX: "store",
-    }, // TODO: proper config
-    ethProvider,
-    config.contractAddresses,
-    lockService,
-  );
-  node.setUserPublicIdentifier(cfCore.publicIdentifier);
-  logger.info("created cf module successfully");
+  // set pubids + channel router
+  node.channelRouter = channelRouter;
+  node.userPublicIdentifier = channelProviderConfig.userPublicIdentifier;
+  node.nodePublicIdentifier = config.nodePublicIdentifier;
 
-  const signer = await cfCore.signerAddress();
-  logger.info(`cf module signer address: ${signer}`);
-
-  // TODO: make these types
   const myChannel = await node.getChannel();
-
   let multisigAddress: string;
   if (!myChannel) {
-    // TODO: make these types
-    logger.info("no channel detected, creating channel..");
+    log.debug("no channel detected, creating channel..");
     const creationEventData: CFCoreTypes.CreateChannelResult = await new Promise(
       async (res: any, rej: any): Promise<any> => {
-        const timer = setTimeout(() => rej("Create channel event not fired within 30s"), 30000);
-        cfCore.once(CFCoreTypes.EventName.CREATE_CHANNEL, (data: CreateChannelMessage) => {
-          clearTimeout(timer);
-          res(data.data);
-        });
+        const timer = setTimeout(
+          (): void => rej("Create channel event not fired within 30s"),
+          30000,
+        );
+        channelRouter.once(
+          CFCoreTypes.EventName.CREATE_CHANNEL,
+          (data: CreateChannelMessage): void => {
+            clearTimeout(timer);
+            res(data.data);
+          },
+        );
 
         const creationData = await node.createChannel();
-        logger.info(`created channel, transaction: ${creationData}`);
+        log.debug(`created channel, transaction: ${stringify(creationData)}`);
       },
     );
-    logger.info(`create channel event data: ${JSON.stringify(creationEventData, replaceBN, 2)}`);
     multisigAddress = creationEventData.multisigAddress;
   } else {
     multisigAddress = myChannel.multisigAddress;
   }
+  log.debug(`multisigAddress: ${multisigAddress}`);
 
-  logger.info(`multisigAddress: ${multisigAddress}`);
+  channelRouter.multisigAddress = multisigAddress;
+
   // create the new client
-  const client = new ConnextInternal({
-    appRegistry,
-    cfCore,
+  const client = new ConnextClient({
+    appRegistry: await node.appRegistry(),
+    channelRouter,
+    config,
     ethProvider,
     messaging,
     multisigAddress,
     network,
     node,
-    nodePublicIdentifier: config.nodePublicIdentifier,
+    store,
     ...opts, // use any provided opts by default
   });
-  await client.registerSubscriptions();
-  return client;
-}
 
-/**
- * This abstract class contains all methods associated with managing
- * or establishing the user's channel.
- *
- * The true implementation of this class exists in the `ConnextInternal`
- * class
- */
-export abstract class ConnextChannel {
-  public opts: InternalClientOptions;
-  private internal: ConnextInternal;
-
-  public constructor(opts: InternalClientOptions) {
-    this.opts = opts;
-    this.internal = this as any;
+  try {
+    await client.getFreeBalance();
+  } catch (e) {
+    log.warn(e);
+    if (e.message.includes(`StateChannel does not exist yet`)) {
+      console.log("Restoring client state");
+      await client.restoreState();
+      console.log("Newly restored client is ready to go!");
+    } else {
+      throw e;
+    }
   }
 
-  ///////////////////////////////////
-  // LISTENER METHODS
-  public on = (
-    event: CFCoreTypes.EventName,
-    callback: (...args: any[]) => void,
-  ): ConnextListener => {
-    return this.internal.on(event, callback);
-  };
+  log.debug("Registering subscriptions");
+  await client.registerSubscriptions();
 
-  public emit = (event: CFCoreTypes.EventName, data: any): boolean => {
-    return this.internal.emit(event, data);
-  };
+  log.debug("Reclaiming pending async transfers");
+  await client.reclaimPendingAsyncTransfers();
 
-  ///////////////////////////////////
-  // CORE CHANNEL METHODS
+  // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
+  log.debug("Resubmitting active withdrawals");
+  await client.resubmitActiveWithdrawal();
 
-  // TODO: do we want the inputs to be an object?
-  public deposit = async (params: DepositParameters): Promise<ChannelState> => {
-    return await this.internal.deposit(params);
-  };
+  log.debug("Done creating channel client");
+  return client;
+};
 
-  public swap = async (params: SwapParameters): Promise<CFCoreChannel> => {
-    return await this.internal.swap(params);
-  };
-
-  public transfer = async (params: TransferParameters): Promise<CFCoreChannel> => {
-    return await this.internal.transfer(params);
-  };
-
-  public withdraw = async (params: WithdrawParameters): Promise<ChannelState> => {
-    return await this.internal.withdraw(params);
-  };
-
-  public resolveCondition = async (
-    params: ResolveConditionParameters,
-  ): Promise<ResolveConditionResponse> => {
-    return await this.internal.resolveCondition(params);
-  };
-
-  public conditionalTransfer = async (
-    params: ConditionalTransferParameters,
-  ): Promise<ConditionalTransferResponse> => {
-    return await this.internal.conditionalTransfer(params);
-  };
-
-  ///////////////////////////////////
-  // NODE EASY ACCESS METHODS
-  public config = async (): Promise<GetConfigResponse> => {
-    return await this.internal.node.config();
-  };
-
-  public getChannel = async (): Promise<GetChannelResponse> => {
-    return await this.internal.node.getChannel();
-  };
-
-  // TODO: do we need to expose here?
-  public getAppRegistry = async (appDetails?: {
-    name: SupportedApplication;
-    network: SupportedNetwork;
-  }): Promise<AppRegistry> => {
-    return await this.internal.node.appRegistry(appDetails);
-  };
-
-  // TODO: do we need to expose here?
-  public createChannel = async (): Promise<CreateChannelResponse> => {
-    return await this.internal.node.createChannel();
-  };
-
-  public subscribeToSwapRates = async (from: string, to: string, callback: any): Promise<any> => {
-    return await this.internal.node.subscribeToSwapRates(from, to, callback);
-  };
-
-  public getLatestSwapRate = async (from: string, to: string): Promise<string> => {
-    return await this.internal.node.getLatestSwapRate(from, to);
-  };
-
-  public unsubscribeToSwapRates = async (from: string, to: string): Promise<void> => {
-    return await this.internal.node.unsubscribeFromSwapRates(from, to);
-  };
-
-  public requestCollateral = async (tokenAddress: string): Promise<void> => {
-    return await this.internal.node.requestCollateral(tokenAddress);
-  };
-
-  public addPaymentProfile = async (profile: PaymentProfile): Promise<PaymentProfile> => {
-    return await this.internal.node.addPaymentProfile(profile);
-  };
-
-  public getPaymentProfile = async (assetId?: string): Promise<PaymentProfile | undefined> => {
-    return await this.internal.node.getPaymentProfile(assetId);
-  };
-
-  // does not directly call node function because needs to send
-  // some additional information along with the request, as implemented in
-  // ConnextInternal
-  public verifyAppSequenceNumber = async (): Promise<ChannelAppSequences> => {
-    return await this.internal.verifyAppSequenceNumber();
-  };
-
-  ///////////////////////////////////
-  // CF MODULE EASY ACCESS METHODS
-
-  public cfDeposit = async (
-    amount: BigNumber,
-    assetId: string,
-    notifyCounterparty: boolean = false,
-  ): Promise<CFCoreTypes.DepositResult> => {
-    return await this.internal.cfDeposit(amount, assetId, notifyCounterparty);
-  };
-
-  public getFreeBalance = async (
-    assetId: string = AddressZero,
-  ): Promise<CFCoreTypes.GetFreeBalanceStateResult> => {
-    return await this.internal.getFreeBalance(assetId);
-  };
-
-  public getAppInstances = async (): Promise<AppInstanceInfo[]> => {
-    return await this.internal.getAppInstances();
-  };
-
-  public getAppInstanceDetails = async (
-    appInstanceId: string,
-  ): Promise<CFCoreTypes.GetAppInstanceDetailsResult> => {
-    return await this.internal.getAppInstanceDetails(appInstanceId);
-  };
-
-  public getAppState = async (appInstanceId: string): Promise<CFCoreTypes.GetStateResult> => {
-    return await this.internal.getAppState(appInstanceId);
-  };
-
-  public getProposedAppInstances = async (): Promise<
-    CFCoreTypes.GetProposedAppInstancesResult | undefined
-  > => {
-    return await this.internal.getProposedAppInstances();
-  };
-
-  public getProposedAppInstance = async (
-    appInstanceId: string,
-  ): Promise<CFCoreTypes.GetProposedAppInstanceResult | undefined> => {
-    return await this.internal.getProposedAppInstance(appInstanceId);
-  };
-
-  public proposeInstallApp = async (
-    params: CFCoreTypes.ProposeInstallParams,
-  ): Promise<CFCoreTypes.ProposeInstallResult> => {
-    return await this.internal.proposeInstallApp(params);
-  };
-
-  public proposeInstallVirtualApp = async (
-    params: CFCoreTypes.ProposeInstallVirtualParams,
-  ): Promise<CFCoreTypes.ProposeInstallVirtualResult> => {
-    return await this.internal.proposeInstallVirtualApp(params);
-  };
-
-  public installVirtualApp = async (
-    appInstanceId: string,
-  ): Promise<CFCoreTypes.InstallVirtualResult> => {
-    return await this.internal.installVirtualApp(appInstanceId);
-  };
-
-  public installApp = async (appInstanceId: string): Promise<CFCoreTypes.InstallResult> => {
-    return await this.internal.installApp(appInstanceId);
-  };
-
-  public rejectInstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
-    return await this.internal.rejectInstallApp(appInstanceId);
-  };
-
-  public rejectInstallVirtualApp = async (
-    appInstanceId: string,
-  ): Promise<CFCoreTypes.UninstallVirtualResult> => {
-    return await this.internal.rejectInstallVirtualApp(appInstanceId);
-  };
-
-  public takeAction = async (
-    appInstanceId: string,
-    action: AppActionBigNumber,
-  ): Promise<CFCoreTypes.TakeActionResult> => {
-    return await this.internal.takeAction(appInstanceId, action);
-  };
-
-  public updateState = async (
-    appInstanceId: string,
-    newState: AppState | any, // cast to any bc no supported apps use
-    // the update state method
-  ): Promise<CFCoreTypes.UpdateStateResult> => {
-    return await this.updateState(appInstanceId, newState);
-  };
-
-  public uninstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
-    return await this.uninstallApp(appInstanceId);
-  };
-
-  public uninstallVirtualApp = async (
-    appInstanceId: string,
-  ): Promise<CFCoreTypes.UninstallVirtualResult> => {
-    return await this.internal.uninstallVirtualApp(appInstanceId);
-  };
-
-  public cfWithdraw = async (
-    amount: BigNumber,
-    assetId?: string,
-    recipient?: string,
-  ): Promise<CFCoreTypes.WithdrawResult> => {
-    return await this.internal.cfWithdraw(amount, assetId, recipient);
-  };
-}
-
-/**
- * True implementation of the connext client
- */
-export class ConnextInternal extends ConnextChannel {
-  public opts: InternalClientOptions;
-  public cfCore: CFCore;
-  public publicIdentifier: string;
+export class ConnextClient implements IConnextClient {
+  public appRegistry: AppRegistry;
+  public channelRouter: ChannelRouter;
+  public config: GetConfigResponse;
   public ethProvider: providers.JsonRpcProvider;
-  public node: NodeApiClient;
+  public freeBalanceAddress: string;
+  public listener: ConnextListener;
+  public log: Logger;
   public messaging: IMessagingService;
   public multisigAddress: Address;
-  public listener: ConnextListener;
-  public nodePublicIdentifier: string;
-  public freeBalanceAddress: string;
-  public appRegistry: AppRegistry;
-
-  public logger: Logger;
   public network: Network;
+  public node: NodeApiClient;
+  public nodePublicIdentifier: string;
+  public publicIdentifier: string;
+  public routerType: RpcType;
+  public signerAddress: Address;
+  public store: Store;
 
-  ////////////////////////////////////////
-  // Setup channel controllers
+  private opts: InternalClientOptions;
+
   private depositController: DepositController;
   private transferController: TransferController;
   private swapController: SwapController;
@@ -441,29 +250,29 @@ export class ConnextInternal extends ConnextChannel {
   private resolveConditionController: ResolveConditionController;
 
   constructor(opts: InternalClientOptions) {
-    super(opts);
-
     this.opts = opts;
-
-    this.ethProvider = opts.ethProvider;
-    this.node = opts.node;
-    this.messaging = opts.messaging;
-
     this.appRegistry = opts.appRegistry;
-
-    this.cfCore = opts.cfCore;
-    this.freeBalanceAddress = this.cfCore.freeBalanceAddress;
-    this.publicIdentifier = this.cfCore.publicIdentifier;
-    this.multisigAddress = this.opts.multisigAddress;
-    this.nodePublicIdentifier = this.opts.nodePublicIdentifier;
-
-    this.logger = new Logger("ConnextInternal", opts.logLevel);
+    this.channelRouter = opts.channelRouter;
+    this.config = opts.config;
+    this.ethProvider = opts.ethProvider;
+    this.messaging = opts.messaging;
     this.network = opts.network;
+    this.network = opts.network;
+    this.node = opts.node;
+    this.store = opts.store;
+
+    this.freeBalanceAddress = this.channelRouter.config.freeBalanceAddress;
+    this.signerAddress = this.channelRouter.config.signerAddress;
+    this.routerType = this.channelRouter.config.type;
+    this.publicIdentifier = this.channelRouter.config.userPublicIdentifier;
+    this.multisigAddress = this.opts.multisigAddress;
+    this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
+    this.log = new Logger("ConnextClient", opts.logLevel);
 
     // establish listeners
-    this.listener = new ConnextListener(opts.cfCore, this);
+    this.listener = new ConnextListener(opts.channelRouter, this);
 
-    // instantiate controllers with logger and cf
+    // instantiate controllers with log and cf
     this.depositController = new DepositController("DepositController", this);
     this.transferController = new TransferController("TransferController", this);
     this.swapController = new SwapController("SwapController", this);
@@ -478,9 +287,121 @@ export class ConnextInternal extends ConnextChannel {
     );
   }
 
+  public isAvailable = async (): Promise<void> => {
+    return new Promise(
+      async (resolve: any, reject: any): Promise<any> => {
+        // Wait for channel to be available
+        const channelIsAvailable = async (): Promise<boolean> => {
+          const chan = await this.node.getChannel();
+          return chan && chan.available;
+        };
+        while (!(await channelIsAvailable())) {
+          await new Promise((res: any): any => setTimeout((): void => res(), 100));
+        }
+        resolve();
+      },
+    );
+  };
+
   // register subscriptions
   public registerSubscriptions = async (): Promise<void> => {
     await this.listener.register();
+  };
+
+  ///////////////////////////////////
+  // Unsorted methods pulled from the old abstract wrapper class
+
+  public restart = async (): Promise<void> => {
+    // Create a fresh channelRouter & start using that.
+    // End goal is to use this to restart the cfNode after restoring state
+    let channelRouter: ChannelRouter;
+    switch (this.routerType) {
+      case RpcType.ChannelProvider:
+        channelRouter = new ChannelRouter(this.opts.channelProvider!, this.channelRouter.config);
+        break;
+      case RpcType.CounterfactualNode:
+        const cfCore = await CFCore.create(
+          this.messaging as any, // TODO: FIX
+          this.store,
+          { STORE_KEY_PREFIX: "store" },
+          this.ethProvider,
+          this.config.contractAddresses,
+          { acquireLock: this.node.acquireLock.bind(this.node) },
+        );
+        const wallet = Wallet.fromMnemonic(this.opts.mnemonic!, CF_PATH);
+        channelRouter = new ChannelRouter(cfCore, this.channelRouter.config, this.store, wallet);
+        break;
+      default:
+        throw new Error(`Unrecognized channel provider type: ${this.routerType}`);
+    }
+    this.node.channelRouter = channelRouter;
+    this.channelRouter = channelRouter;
+    await this.isAvailable();
+  };
+
+  public getChannel = async (): Promise<GetChannelResponse> => {
+    return await this.node.getChannel();
+  };
+
+  public requestCollateral = async (
+    tokenAddress: string,
+  ): Promise<RequestCollateralResponse | void> => {
+    return await this.node.requestCollateral(tokenAddress);
+  };
+
+  public setRecipientAndEncryptedPreImageForLinkedTransfer = async (
+    recipient: string,
+    encryptedPreImage: string,
+    linkedHash: string,
+  ): Promise<any> => {
+    return await this.node.setRecipientAndEncryptedPreImageForLinkedTransfer(
+      recipient,
+      encryptedPreImage,
+      linkedHash,
+    );
+  };
+
+  public channelProviderConfig = async (): Promise<ChannelProviderConfig> => {
+    return this.channelRouter.config;
+  };
+
+  public getLinkedTransfer = async (paymentId: string): Promise<any> => {
+    return await this.node.fetchLinkedTransfer(paymentId);
+  };
+
+  public getAppRegistry = async (appDetails?: {
+    name: SupportedApplication;
+    network: SupportedNetwork;
+  }): Promise<AppRegistry> => {
+    return await this.node.appRegistry(appDetails);
+  };
+
+  public createChannel = async (): Promise<CreateChannelResponse> => {
+    return await this.node.createChannel();
+  };
+
+  public subscribeToSwapRates = async (from: string, to: string, callback: any): Promise<any> => {
+    return await this.node.subscribeToSwapRates(from, to, callback);
+  };
+
+  public getLatestSwapRate = async (from: string, to: string): Promise<string> => {
+    return await this.node.getLatestSwapRate(from, to);
+  };
+
+  public unsubscribeToSwapRates = async (from: string, to: string): Promise<void> => {
+    return await this.node.unsubscribeFromSwapRates(from, to);
+  };
+
+  public addPaymentProfile = async (profile: PaymentProfile): Promise<PaymentProfile> => {
+    return await this.node.addPaymentProfile(profile);
+  };
+
+  public getPaymentProfile = async (assetId?: string): Promise<PaymentProfile | undefined> => {
+    return await this.node.getPaymentProfile(assetId);
+  };
+
+  public getTransferHistory = async (): Promise<Transfer[]> => {
+    return await this.node.getTransferHistory();
   };
 
   ///////////////////////////////////
@@ -498,7 +419,7 @@ export class ConnextInternal extends ConnextChannel {
     return await this.transferController.transfer(params);
   };
 
-  public withdraw = async (params: WithdrawParameters): Promise<ChannelState> => {
+  public withdraw = async (params: WithdrawParameters): Promise<WithdrawalResponse> => {
     return await this.withdrawalController.withdraw(params);
   };
 
@@ -514,41 +435,137 @@ export class ConnextInternal extends ConnextChannel {
     return await this.conditionalTransferController.conditionalTransfer(params);
   };
 
+  public getLatestNodeSubmittedWithdrawal = async (): Promise<
+    { retry: number; tx: CFCoreTypes.MinimalTransaction } | undefined
+  > => {
+    const value = await this.channelRouter.get(withdrawalKey(this.publicIdentifier));
+
+    if (!value || value === "undefined") {
+      return undefined;
+    }
+
+    const noRetry = value.retry === undefined || value.retry === null;
+    if (!value.tx || noRetry) {
+      const msg = `Can not find tx or retry in store under key ${withdrawalKey(
+        this.publicIdentifier,
+      )}`;
+      this.log.error(msg);
+      throw new Error(msg);
+    }
+    return value;
+  };
+
+  public watchForUserWithdrawal = async (): Promise<void> => {
+    // poll for withdrawal tx submitted to multisig matching tx data
+    const maxBlocks = 15;
+    const startingBlock = await this.ethProvider.getBlockNumber();
+
+    // TODO: poller should not be completely blocking, but safe to leave for now
+    // because the channel should be blocked
+    try {
+      await new Promise((resolve: any, reject: any): any => {
+        this.ethProvider.on(
+          "block",
+          async (blockNumber: number): Promise<void> => {
+            const found = await this.checkForUserWithdrawal(blockNumber);
+            if (found) {
+              await this.channelRouter.set([
+                { path: withdrawalKey(this.publicIdentifier), value: undefined },
+              ]);
+              this.ethProvider.removeAllListeners("block");
+              resolve();
+            }
+            if (blockNumber - startingBlock >= maxBlocks) {
+              this.ethProvider.removeAllListeners("block");
+              reject(`More than ${maxBlocks} have passed: ${blockNumber - startingBlock}`);
+            }
+          },
+        );
+      });
+    } catch (e) {
+      if (e.includes(`More than ${maxBlocks} have passed`)) {
+        this.log.debug(`Retrying node submission`);
+        await this.retryNodeSubmittedWithdrawal();
+      }
+    }
+  };
+
+  ////////////////////////////////////////
+  // Restore State
+
+  public restoreState = async (): Promise<void> => {
+    if (!this.store || this.routerType === RpcType.ChannelProvider) {
+      throw new Error(`Cannot restore state with channel provider`);
+    }
+    const hdNode = fromMnemonic(this.opts.mnemonic!);
+    const xpriv = hdNode.extendedKey;
+    const xpub = hdNode.derivePath("m/44'/60'/0'/25446").neuter().extendedKey;
+    this.channelRouter.reset();
+    // always set the mnemonic in the store
+    await this.channelRouter.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }], false);
+    try {
+      // try to recover states from our given store's restore method
+      const restoreStates = await this.channelRouter.restore();
+      const stateToRestore = restoreStates.find(
+        (p: { path: string; value: any }): boolean =>
+          p.path === `store/${xpub}/channel/${this.multisigAddress}`,
+      );
+      if (!stateToRestore) {
+        throw new Error(
+          `Couldn't restore states for "store/${xpub}/channel/${this.multisigAddress}."`,
+        );
+      }
+      this.log.info(`Found state to restore from backup: ${stringify(stateToRestore)}`);
+      await this.channelRouter.set([stateToRestore], false);
+    } catch (e) {
+      const stateToRestore = await this.node.restoreStates(xpub);
+      if (!stateToRestore) {
+        throw new Error(
+          `No matching states found by node for "store/${xpub}/channel/${this.multisigAddress}."`,
+        );
+      }
+      this.log.info(`Found state to restore from node: ${stringify(stateToRestore)}`);
+      // TODO: this should prob not be hardcoded like this
+      const actualStates = stateToRestore.map((state: { path: string; value: object }): any => {
+        return {
+          path: `store${state.path
+            .replace(this.nodePublicIdentifier, xpub)
+            .substring(state.path.indexOf("/"))}`,
+          value: state.value[state.path],
+        };
+      });
+      await this.store.set(actualStates, false);
+      this.log.debug(`restored state from node!`);
+    }
+    await this.restart();
+  };
+
   ///////////////////////////////////
   // EVENT METHODS
 
   public on = (
-    event: CFCoreTypes.EventName,
+    event: ConnextEvent | CFCoreTypes.EventName,
     callback: (...args: any[]) => void,
   ): ConnextListener => {
     return this.listener.on(event, callback);
   };
 
-  public emit = (event: CFCoreTypes.EventName, data: any): boolean => {
+  public emit = (event: ConnextEvent | CFCoreTypes.EventName, data: any): boolean => {
     return this.listener.emit(event, data);
   };
 
   ///////////////////////////////////
-  // CF MODULE METHODS
-
-  public getStateChannel = async (): Promise<{ data: any }> => {
-    const params = {
-      id: Date.now(),
-      methodName: "chan_getStateChannel", // FIXME: CFCoreTypes.RpcMethodName.GET_STATE_CHANNEL,
-      parameters: {
-        multisigAddress: this.multisigAddress,
-      },
-    };
-    const getStateChannelRes = await this.cfCore.rpcRouter.dispatch(params);
-    return getStateChannelRes.result.result;
+  // PROVIDER/ROUTER METHODS
+  public getState = async (): Promise<CFCoreTypes.GetStateResult> => {
+    return await this.channelRouter.getState(this.multisigAddress);
   };
 
-  public cfDeposit = async (
+  public providerDeposit = async (
     amount: BigNumber,
     assetId: string,
     notifyCounterparty: boolean = false,
   ): Promise<CFCoreTypes.DepositResult> => {
-    const depositAddr = publicIdentifierToAddress(this.cfCore.publicIdentifier);
+    const depositAddr = publicIdentifierToAddress(this.publicIdentifier);
     let bal: BigNumber;
 
     if (assetId === AddressZero) {
@@ -566,49 +583,34 @@ export class ConnextInternal extends ConnextChannel {
       notLessThanOrEqualTo(amount, bal), // cant deposit more than default addr owns
     ].filter(falsy)[0];
     if (err) {
-      this.logger.error(err);
+      this.log.error(err);
       throw new Error(err);
     }
 
-    const depositResponse = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.DEPOSIT,
-      parameters: {
-        amount,
-        multisigAddress: this.opts.multisigAddress,
-        notifyCounterparty,
-        tokenAddress: makeChecksum(assetId),
-      } as CFCoreTypes.DepositParams,
-    });
-    return depositResponse.result.result as CFCoreTypes.DepositResult;
+    return await this.channelRouter.deposit(
+      amount,
+      assetId,
+      this.multisigAddress,
+      notifyCounterparty,
+    );
   };
 
   // TODO: under what conditions will this fail?
-  public getAppInstances = async (): Promise<AppInstanceInfo[]> => {
-    const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.GET_APP_INSTANCES,
-      parameters: {} as CFCoreTypes.GetAppInstancesParams,
-    });
-
-    return appInstanceResponse.result.result.appInstances as AppInstanceInfo[];
+  public getAppInstances = async (): Promise<AppInstanceJson[]> => {
+    // TODO
+    return (await this.channelRouter.getAppInstances()).appInstances;
   };
 
   // TODO: under what conditions will this fail?
   public getFreeBalance = async (
     assetId: string = AddressZero,
   ): Promise<CFCoreTypes.GetFreeBalanceStateResult> => {
+    if (typeof assetId !== "string") {
+      throw new Error(`Asset id must be a string: ${stringify(assetId)}`);
+    }
     const normalizedAssetId = makeChecksum(assetId);
     try {
-      const freeBalance = await this.cfCore.rpcRouter.dispatch({
-        id: Date.now(),
-        methodName: CFCoreTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
-        parameters: {
-          multisigAddress: this.multisigAddress,
-          tokenAddress: normalizedAssetId,
-        },
-      });
-      return freeBalance.result.result as CFCoreTypes.GetFreeBalanceStateResult;
+      return await this.channelRouter.getFreeBalance(assetId, this.multisigAddress);
     } catch (e) {
       const error = `No free balance exists for the specified token: ${normalizedAssetId}`;
       if (e.message.includes(error)) {
@@ -621,7 +623,6 @@ export class ConnextInternal extends ConnextChannel {
         obj[this.freeBalanceAddress] = new BigNumber(0);
         return obj;
       }
-
       throw e;
     }
   };
@@ -629,25 +630,13 @@ export class ConnextInternal extends ConnextChannel {
   public getProposedAppInstances = async (): Promise<
     CFCoreTypes.GetProposedAppInstancesResult | undefined
   > => {
-    const proposedRes = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
-      parameters: {} as CFCoreTypes.GetProposedAppInstancesParams,
-    });
-    return proposedRes.result.result as CFCoreTypes.GetProposedAppInstancesResult;
+    return await this.channelRouter.getProposedAppInstances();
   };
 
   public getProposedAppInstance = async (
     appInstanceId: string,
   ): Promise<CFCoreTypes.GetProposedAppInstanceResult | undefined> => {
-    const proposedRes = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
-      parameters: {
-        appInstanceId,
-      } as CFCoreTypes.GetProposedAppInstancesParams,
-    });
-    return proposedRes.result.result as CFCoreTypes.GetProposedAppInstanceResult;
+    return await this.channelRouter.getProposedAppInstance(appInstanceId);
   };
 
   public getAppInstanceDetails = async (
@@ -655,18 +644,10 @@ export class ConnextInternal extends ConnextChannel {
   ): Promise<CFCoreTypes.GetAppInstanceDetailsResult | undefined> => {
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
-      this.logger.warn(err);
+      this.log.warn(err);
       return undefined;
     }
-    const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS,
-      parameters: {
-        appInstanceId,
-      } as CFCoreTypes.GetAppInstanceDetailsParams,
-    });
-
-    return appInstanceResponse.result.result as CFCoreTypes.GetAppInstanceDetailsResult;
+    return await this.channelRouter.getAppInstanceDetails(appInstanceId);
   };
 
   public getAppState = async (
@@ -675,18 +656,10 @@ export class ConnextInternal extends ConnextChannel {
     // check the app is actually installed, or returned undefined
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
-      this.logger.warn(err);
+      this.log.warn(err);
       return undefined;
     }
-    const stateResponse = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.GET_STATE,
-      parameters: {
-        appInstanceId,
-      } as CFCoreTypes.GetStateParams,
-    });
-
-    return stateResponse.result.result as CFCoreTypes.GetStateResult;
+    return await this.channelRouter.getAppState(appInstanceId);
   };
 
   public takeAction = async (
@@ -696,7 +669,7 @@ export class ConnextInternal extends ConnextChannel {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
-      this.logger.error(err);
+      this.log.error(err);
       throw new Error(err);
     }
     // check state is not finalized
@@ -705,27 +678,18 @@ export class ConnextInternal extends ConnextChannel {
     if ((state.state as any).finalized) {
       throw new Error("Cannot take action on an app with a finalized state.");
     }
-    const actionResponse = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.TAKE_ACTION,
-      parameters: {
-        action,
-        appInstanceId,
-      } as CFCoreTypes.TakeActionParams,
-    });
-
-    return actionResponse.result.result as CFCoreTypes.TakeActionResult;
+    return await this.channelRouter.takeAction(appInstanceId, action);
   };
 
   public updateState = async (
     appInstanceId: string,
-    newState: AppState | any, // cast to any bc no supported apps use
+    newState: AppStateBigNumber | any, // cast to any bc no supported apps use
     // the update state method
   ): Promise<CFCoreTypes.UpdateStateResult> => {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
-      this.logger.error(err);
+      this.log.error(err);
       throw new Error(err);
     }
     // check state is not finalized
@@ -734,47 +698,22 @@ export class ConnextInternal extends ConnextChannel {
     if ((state.state as any).finalized) {
       throw new Error("Cannot take action on an app with a finalized state.");
     }
-    const updateResponse = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.UPDATE_STATE,
-      parameters: {
-        appInstanceId,
-        newState,
-      } as CFCoreTypes.UpdateStateParams,
-    });
-    return updateResponse.result.result as CFCoreTypes.UpdateStateResult;
+    return await this.channelRouter.updateState(appInstanceId, newState);
   };
 
-  // TODO: add validation after arjuns refactor merged
   public proposeInstallVirtualApp = async (
     params: CFCoreTypes.ProposeInstallVirtualParams,
   ): Promise<CFCoreTypes.ProposeInstallVirtualResult> => {
-    this.logger.info(`Proposing install with params: ${JSON.stringify(params, replaceBN, 2)}`);
     if (params.intermediaryIdentifier !== this.nodePublicIdentifier) {
-      throw new Error(`Incorrect intermediaryIdentifier. Expected: ${this.nodePublicIdentifier},
-         got ${params.intermediaryIdentifier}`);
+      throw new Error(`Cannot install virtual app without node as intermediary`);
     }
-
-    const actionRes = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
-      parameters: params,
-    });
-
-    return actionRes.result.result as CFCoreTypes.ProposeInstallVirtualResult;
+    return await this.channelRouter.proposeInstallVirtualApp(params);
   };
 
-  // TODO: add validation after arjuns refactor merged
   public proposeInstallApp = async (
     params: CFCoreTypes.ProposeInstallParams,
   ): Promise<CFCoreTypes.ProposeInstallResult> => {
-    const actionRes = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.PROPOSE_INSTALL,
-      parameters: params,
-    });
-
-    return actionRes.result.result as CFCoreTypes.ProposeInstallResult;
+    return await this.channelRouter.proposeInstallApp(params);
   };
 
   public installVirtualApp = async (
@@ -785,16 +724,7 @@ export class ConnextInternal extends ConnextChannel {
     if (alreadyInstalled) {
       throw new Error(alreadyInstalled);
     }
-    const installVirtualResponse = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.INSTALL_VIRTUAL,
-      parameters: {
-        appInstanceId,
-        intermediaryIdentifier: this.nodePublicIdentifier,
-      } as CFCoreTypes.InstallVirtualParams,
-    });
-
-    return installVirtualResponse.result.result;
+    return await this.channelRouter.installVirtualApp(appInstanceId, this.nodePublicIdentifier);
   };
 
   public installApp = async (appInstanceId: string): Promise<CFCoreTypes.InstallResult> => {
@@ -803,33 +733,17 @@ export class ConnextInternal extends ConnextChannel {
     if (alreadyInstalled) {
       throw new Error(alreadyInstalled);
     }
-    const installResponse = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.INSTALL,
-      parameters: {
-        appInstanceId,
-      } as CFCoreTypes.InstallParams,
-    });
-
-    return installResponse.result.result;
+    return await this.channelRouter.installApp(appInstanceId);
   };
 
   public uninstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
-      this.logger.error(err);
+      this.log.error(err);
       throw new Error(err);
     }
-    const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.UNINSTALL,
-      parameters: {
-        appInstanceId,
-      },
-    });
-
-    return uninstallResponse.result.result as CFCoreTypes.UninstallResult;
+    return await this.channelRouter.uninstallApp(appInstanceId);
   };
 
   public uninstallVirtualApp = async (
@@ -838,50 +752,20 @@ export class ConnextInternal extends ConnextChannel {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
     if (err) {
-      this.logger.error(err);
+      this.log.error(err);
       throw new Error(err);
     }
-    const uninstallVirtualResponse = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.UNINSTALL_VIRTUAL,
-      parameters: {
-        appInstanceId,
-        intermediaryIdentifier: this.nodePublicIdentifier,
-      } as CFCoreTypes.UninstallVirtualParams,
-    });
 
-    return uninstallVirtualResponse.result.result as CFCoreTypes.UninstallVirtualResult;
+    return await this.channelRouter.uninstallVirtualApp(appInstanceId, this.nodePublicIdentifier);
   };
 
   public rejectInstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
-    const rejectResponse = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.REJECT_INSTALL,
-      parameters: {
-        appInstanceId,
-      } as CFCoreTypes.RejectInstallParams,
-    });
-
-    return rejectResponse.result.result as CFCoreTypes.RejectInstallResult;
+    return await this.channelRouter.rejectInstallApp(appInstanceId);
   };
 
-  public rejectInstallVirtualApp = async (
-    appInstanceId: string,
-  ): Promise<CFCoreTypes.UninstallVirtualResult> => {
-    const rejectResponse = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.REJECT_INSTALL,
-      parameters: {
-        appInstanceId,
-      } as CFCoreTypes.RejectInstallParams,
-    });
-
-    return rejectResponse.result.result as CFCoreTypes.RejectInstallResult;
-  };
-
-  public cfWithdraw = async (
+  public providerWithdraw = async (
+    assetId: string,
     amount: BigNumber,
-    assetId?: string,
     recipient?: string,
   ): Promise<CFCoreTypes.WithdrawResult> => {
     const freeBalance = await this.getFreeBalance(assetId);
@@ -892,24 +776,14 @@ export class ConnextInternal extends ConnextChannel {
       recipient ? invalidAddress(recipient) : null,
     ].filter(falsy)[0];
     if (err) {
-      this.logger.error(err);
+      this.log.error(err);
       throw new Error(err);
     }
-    const withdrawalResponse = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.WITHDRAW,
-      parameters: {
-        amount,
-        multisigAddress: this.multisigAddress,
-        recipient,
-        tokenAddress: makeChecksumOrEthAddress(assetId),
-      },
-    });
 
-    return withdrawalResponse.result.result;
+    return await this.channelRouter.withdraw(amount, assetId, recipient);
   };
 
-  public cfWithdrawCommitment = async (
+  public withdrawCommitment = async (
     amount: BigNumber,
     assetId?: string,
     recipient?: string,
@@ -922,29 +796,22 @@ export class ConnextInternal extends ConnextChannel {
       recipient ? invalidAddress(recipient) : null,
     ].filter(falsy)[0];
     if (err) {
-      this.logger.error(err);
+      this.log.error(err);
       throw new Error(err);
     }
-    const withdrawalResponse = await this.cfCore.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.WITHDRAW_COMMITMENT,
-      parameters: {
-        amount,
-        multisigAddress: this.multisigAddress,
-        recipient,
-        tokenAddress: makeChecksumOrEthAddress(assetId),
-      } as CFCoreTypes.WithdrawCommitmentParams,
-    });
-
-    return withdrawalResponse.result.result;
+    return await this.channelRouter.withdrawCommitment(
+      amount,
+      makeChecksumOrEthAddress(assetId),
+      recipient,
+    );
   };
 
   ///////////////////////////////////
   // NODE METHODS
 
   public verifyAppSequenceNumber = async (): Promise<any> => {
-    const { data: sc } = await this.getStateChannel();
-    let appSequenceNumber;
+    const { data: sc } = await this.channelRouter.getStateChannel();
+    let appSequenceNumber: number;
     try {
       appSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
     } catch (e) {
@@ -957,11 +824,39 @@ export class ConnextInternal extends ConnextChannel {
     return await this.node.verifyAppSequenceNumber(appSequenceNumber);
   };
 
+  public reclaimPendingAsyncTransfers = async (): Promise<void> => {
+    const pendingTransfers = await this.node.getPendingAsyncTransfers();
+    for (const transfer of pendingTransfers) {
+      const { amount, assetId, encryptedPreImage, paymentId } = transfer;
+      await this.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
+    }
+  };
+
+  public reclaimPendingAsyncTransfer = async (
+    paymentId: string,
+    encryptedPreImage: string,
+  ): Promise<ResolveLinkedTransferResponse> => {
+    this.log.info(`Reclaiming transfer ${paymentId}`);
+    // decrypt secret and resolve
+    const privateKey = fromMnemonic(this.opts.mnemonic).derivePath(CF_PATH).privateKey;
+    const cipher = EthCrypto.cipher.parse(encryptedPreImage);
+
+    const preImage = await EthCrypto.decryptWithPrivateKey(privateKey, cipher);
+    this.log.debug(`Decrypted message and recovered preImage: ${preImage}`);
+    const response = await this.resolveCondition({
+      conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
+      paymentId,
+      preImage,
+    });
+    this.log.info(`Reclaimed transfer ${stringify(response)}`);
+    return response;
+  };
+
   ///////////////////////////////////
   // LOW LEVEL METHODS
 
   public getRegisteredAppDetails = (appName: SupportedApplication): RegisteredAppDetails => {
-    const appInfo = this.appRegistry.filter((app: RegisteredAppDetails) => {
+    const appInfo = this.appRegistry.filter((app: RegisteredAppDetails): boolean => {
       return app.name === appName && app.network === this.network.name;
     });
 
@@ -975,19 +870,98 @@ export class ConnextInternal extends ConnextChannel {
     return appInfo[0];
   };
 
+  public matchTx = (
+    givenTransaction: Transaction,
+    expected: CFCoreTypes.MinimalTransaction,
+  ): boolean => {
+    return (
+      givenTransaction.to === expected.to &&
+      bigNumberify(givenTransaction.value).eq(expected.value) &&
+      givenTransaction.data === expected.data
+    );
+  };
+
+  public resubmitActiveWithdrawal = async (): Promise<void> => {
+    const withdrawal = await this.channelRouter.get(withdrawalKey(this.publicIdentifier));
+
+    if (!withdrawal || withdrawal === "undefined") {
+      // No active withdrawal, nothing to do
+      return;
+    }
+
+    if (withdrawal.retry >= MAX_WITHDRAWAL_RETRIES) {
+      // throw an error here, node has failed to submit withdrawal.
+      // this indicates the node is compromised or acting maliciously.
+      // no further actions should be taken by the client. (since this fn is
+      // called on `connext.connect`, throwing an error will prevent client
+      // starting properly)
+      const msg = `Cannot connect client, hub failed to submit latest withdrawal ${MAX_WITHDRAWAL_RETRIES} times.`;
+      this.log.error(msg);
+      throw new Error(msg);
+    }
+
+    // get latest submitted withdrawal from hub and check to see if the
+    // data matches what we expect from our store
+    const tx = await this.node.getLatestWithdrawal();
+    if (this.matchTx(tx, withdrawal.tx)) {
+      // the withdrawal in our store matches latest submitted tx,
+      // clear value in store and return
+      await this.channelRouter.set([
+        {
+          path: withdrawalKey(this.publicIdentifier),
+          value: undefined,
+        },
+      ]);
+      return;
+    }
+
+    // otherwise, there are retries remaining, and you should resubmit
+    this.log.debug(
+      `Found active withdrawal with ${withdrawal.retry} retries, waiting for withdrawal to be caught`,
+    );
+    await this.retryNodeSubmittedWithdrawal();
+  };
+
+  public retryNodeSubmittedWithdrawal = async (): Promise<void> => {
+    const val = await this.getLatestNodeSubmittedWithdrawal();
+    if (!val) {
+      this.log.error(`No transaction found to retry`);
+      return;
+    }
+    let { retry } = val;
+    const { tx } = val;
+    retry += 1;
+    await this.channelRouter.set([
+      {
+        path: withdrawalKey(this.publicIdentifier),
+        value: { tx, retry },
+      },
+    ]);
+    if (retry >= MAX_WITHDRAWAL_RETRIES) {
+      const msg = `Tried to have node submit withdrawal ${MAX_WITHDRAWAL_RETRIES} times and it did not work, try submitting from wallet.`;
+      this.log.error(msg);
+      // TODO: make this submit from wallet :)
+      // but this is weird, could take a while and may have gas issues.
+      // may not be the best way to do this
+      throw new Error(msg);
+    }
+    await this.node.withdraw(tx);
+    await this.watchForUserWithdrawal();
+  };
+
   private appNotInstalled = async (appInstanceId: string): Promise<string | undefined> => {
     const apps = await this.getAppInstances();
-    const app = apps.filter((app: AppInstanceInfo) => app.identityHash === appInstanceId);
+    const app = apps.filter((app: AppInstanceJson): boolean => app.identityHash === appInstanceId);
     if (!app || app.length === 0) {
       return (
         `Could not find installed app with id: ${appInstanceId}. ` +
-        `Installed apps: ${JSON.stringify(apps, replaceBN, 2)}.`
+        `Installed apps: ${stringify(apps)}.`
       );
     }
     if (app.length > 1) {
       return (
         `CRITICAL ERROR: found multiple apps with the same id. ` +
-        `Installed apps: ${JSON.stringify(apps, replaceBN, 2)}.`
+        `Installed apps: ${stringify(apps)}.`
       );
     }
     return undefined;
@@ -995,13 +969,43 @@ export class ConnextInternal extends ConnextChannel {
 
   private appInstalled = async (appInstanceId: string): Promise<string | undefined> => {
     const apps = await this.getAppInstances();
-    const app = apps.filter((app: AppInstanceInfo) => app.identityHash === appInstanceId);
+    const app = apps.filter((app: AppInstanceJson): boolean => app.identityHash === appInstanceId);
     if (app.length > 0) {
       return (
         `App with id ${appInstanceId} is already installed. ` +
-        `Installed apps: ${JSON.stringify(apps, replaceBN, 2)}.`
+        `Installed apps: ${stringify(apps)}.`
       );
     }
     return undefined;
+  };
+
+  private checkForUserWithdrawal = async (inBlock: number): Promise<boolean> => {
+    const val = await this.getLatestNodeSubmittedWithdrawal();
+    if (!val) {
+      this.log.error(`No transaction found in store.`);
+      return false;
+    }
+
+    const { tx } = val;
+    // get the transaction hash that we should be looking for from
+    // the contract method
+    const txsTo = await this.ethProvider.getTransactionCount(tx.to, inBlock);
+    if (txsTo === 0) {
+      return false;
+    }
+
+    const block = await this.ethProvider.getBlock(inBlock);
+    const { transactions } = block;
+    if (transactions.length === 0) {
+      return false;
+    }
+
+    for (const transactionHash of transactions) {
+      const transaction = await this.ethProvider.getTransaction(transactionHash);
+      if (this.matchTx(transaction, tx)) {
+        return true;
+      }
+    }
+    return false;
   };
 }

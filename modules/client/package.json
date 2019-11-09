@@ -1,6 +1,6 @@
 {
   "name": "@connext/client",
-  "version": "0.1.0",
+  "version": "0.4.1",
   "description": "Shared code between wallet and node",
   "main": "dist/index.js",
   "scripts": {
@@ -12,21 +12,23 @@
   },
   "dependencies": {
     "@connext/cf-core": "0.2.72",
-    "@connext/messaging": "0.1.0",
-    "@connext/redis-lock": "0.1.0",
-    "@connext/types": "0.1.0",
-    "@counterfactual/node": "0.2.76",
-    "core-js": "3.2.1",
-    "ethers": "4.0.36",
+    "@connext/messaging": "0.4.1",
+    "@connext/types": "0.4.1",
+    "@counterfactual/node": "0.2.82",
+    "@counterfactual/types": "0.0.44",
+    "@counterfactual/cf-funding-protocol-contracts": "0.0.12",
+    "core-js": "3.3.6",
+    "eth-crypto": "1.5.0",
+    "ethers": "4.0.37",
     "human-standard-token-abi": "2.0.0",
     "regenerator-runtime": "0.13.3",
+    "rpc-server": "0.0.1",
     "uuid": "3.3.3"
   },
   "devDependencies": {
     "@babel/polyfill": "7.6.0",
-    "@counterfactual/types": "0.0.39",
-    "@types/jest": "24.0.18",
-    "@types/uuid": "3.4.5",
+    "@types/jest": "24.0.21",
+    "@types/uuid": "3.4.6",
     "jest": "24.9.0",
     "ts-jest": "24.1.0",
     "typescript": "3.5.3"

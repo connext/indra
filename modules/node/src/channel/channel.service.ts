@@ -1,12 +1,16 @@
 import { ChannelAppSequences } from "@connext/types";
 import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
-import { AddressZero } from "ethers/constants";
+import { AddressZero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { BigNumber, getAddress } from "ethers/utils";
 
+import { CFCoreRecord } from "../cfCore/cfCore.entity";
+import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
+import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
+import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { CLogger, freeBalanceAddressFromXpub } from "../util";
 import { CreateChannelMessage } from "../util/cfCore";
@@ -22,7 +26,17 @@ export class ChannelService {
     private readonly cfCoreService: CFCoreService,
     private readonly configService: ConfigService,
     private readonly channelRepository: ChannelRepository,
+    private readonly cfCoreRepository: CFCoreRecordRepository,
+    private readonly onchainRepository: OnchainTransactionRepository,
   ) {}
+
+  /**
+   * Returns all channel records.
+   * @param available available value of channel
+   */
+  async findAll(available: boolean = true): Promise<Channel[]> {
+    return await this.channelRepository.findAll(available);
+  }
 
   /**
    * Starts create channel process within CF core
@@ -175,33 +189,33 @@ export class ChannelService {
    * Returns the app sequence number of the node and the user
    *
    * @param userPublicIdentifier users xpub
-   * @param userAppSequenceNumber sequence number provided by user
+   * @param userSequenceNumber sequence number provided by user
    */
   async verifyAppSequenceNumber(
     userPublicIdentifier: string,
-    userAppSequenceNumber: number,
+    userSequenceNumber: number,
   ): Promise<ChannelAppSequences> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     const sc = (await this.cfCoreService.getStateChannel(channel.multisigAddress)).data;
-    let nodeAppSequenceNumber;
+    let nodeSequenceNumber;
     try {
-      nodeAppSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
+      nodeSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
     } catch (e) {
       if (e.message.indexOf("There are no installed AppInstances in this StateChannel") !== -1) {
-        nodeAppSequenceNumber = 0;
+        nodeSequenceNumber = 0;
       } else {
         throw e;
       }
     }
-    if (nodeAppSequenceNumber !== userAppSequenceNumber) {
+    if (nodeSequenceNumber !== userSequenceNumber) {
       logger.warn(
-        `Node app sequence number (${nodeAppSequenceNumber}) ` +
-          `!== user app sequence number (${userAppSequenceNumber})`,
+        `Node app sequence number (${nodeSequenceNumber}) ` +
+          `!== user app sequence number (${userSequenceNumber})`,
       );
     }
     return {
-      nodeAppSequenceNumber,
-      userAppSequenceNumber,
+      nodeSequenceNumber,
+      userSequenceNumber,
     };
   }
 
@@ -214,7 +228,42 @@ export class ChannelService {
       throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
     }
 
+    const { transactionHash: deployTx } = await this.cfCoreService.deployMultisig(
+      channel.multisigAddress,
+    );
+    logger.debug(`Deploy multisig tx: ${deployTx}`);
+
     const wallet = this.configService.getEthWallet();
-    return await wallet.sendTransaction(tx);
+    if (deployTx !== HashZero) {
+      logger.debug(`Waiting for deployment transaction...`);
+      wallet.provider.waitForTransaction(deployTx);
+      logger.debug(`Deployment transaction complete!`);
+    } else {
+      logger.debug(`Multisig already deployed, proceeding with withdrawal`);
+    }
+
+    const txRes = await wallet.sendTransaction(tx);
+    await this.onchainRepository.addUserWithdrawal(txRes, channel);
+    return txRes;
+  }
+
+  async getLatestWithdrawal(userPublicIdentifier: string): Promise<OnchainTransaction | undefined> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
+    }
+
+    return await this.onchainRepository.findLatestWithdrawalByUserPublicIdentifier(
+      userPublicIdentifier,
+    );
+  }
+
+  async getChannelStates(userPublicIdentifier: string): Promise<CFCoreRecord[]> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
+    }
+
+    return await this.cfCoreRepository.findRecordsForRestore(channel.multisigAddress);
   }
 }

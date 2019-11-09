@@ -16,7 +16,7 @@ type PostgresConfig = {
   username: string;
 };
 
-type DefaultApp = {
+export type DefaultApp = {
   actionEncoding?: string;
   allowNodeInstall: boolean;
   appDefinitionAddress: string;
@@ -103,25 +103,6 @@ export class ConfigService implements OnModuleInit {
           )`,
       },
       {
-        actionEncoding: `
-          tuple(
-            uint8 actionType,
-            uint256 amount
-          )`,
-        allowNodeInstall: false,
-        appDefinitionAddress: addressBook[SupportedApplications.UnidirectionalTransferApp],
-        name: SupportedApplications.UnidirectionalTransferApp,
-        network: Network[ethNetwork.name.toUpperCase()],
-        outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-        stateEncoding: `
-          tuple(
-            uint8 stage,
-            ${singleAssetTwoPartyCoinTransferEncoding} transfers,
-            uint256 turnNum,
-            bool finalized
-          )`,
-      },
-      {
         allowNodeInstall: true,
         appDefinitionAddress: addressBook[SupportedApplications.SimpleTwoPartySwapApp],
         name: SupportedApplications.SimpleTwoPartySwapApp,
@@ -135,26 +116,9 @@ export class ConfigService implements OnModuleInit {
       {
         actionEncoding: `
           tuple(
-            uint256 amount,
-            address assetId,
-            bytes32 paymentId,
             bytes32 preImage
-          )`,
-        allowNodeInstall: true,
-        appDefinitionAddress: addressBook[SupportedApplications.UnidirectionalLinkedTransferApp],
-        name: SupportedApplications.UnidirectionalLinkedTransferApp,
-        network: Network[ethNetwork.name.toUpperCase()],
-        outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-        stateEncoding: `
-          tuple(
-            uint8 stage,
-            ${singleAssetTwoPartyCoinTransferEncoding} transfers,
-            bytes32 linkedHash,
-            uint256 turnNum,
-            bool finalized
-          )`,
-      },
-      {
+          )
+        `,
         allowNodeInstall: true,
         appDefinitionAddress: addressBook[SupportedApplications.SimpleLinkedTransferApp],
         name: SupportedApplications.SimpleLinkedTransferApp,
@@ -165,6 +129,7 @@ export class ConfigService implements OnModuleInit {
             ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
             bytes32 linkedHash,
             uint256 amount,
+            address assetId,
             bytes32 paymentId,
             bytes32 preImage
           )`,

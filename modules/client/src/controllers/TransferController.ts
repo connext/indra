@@ -7,18 +7,16 @@ import {
   SupportedApplications,
   TransferParameters,
 } from "@connext/types";
-import { AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
+import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
 import { RejectInstallVirtualMessage } from "../lib/cfCore";
-import { delay, freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
+import { freeBalanceAddressFromXpub, stringify } from "../lib/utils";
 import { invalidAddress, invalidXpub } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
 import { AbstractController } from "./AbstractController";
-
-const MAX_RETRIES = 20;
 
 export class TransferController extends AbstractController {
   private appId: string;
@@ -26,7 +24,7 @@ export class TransferController extends AbstractController {
   private timeout: NodeJS.Timeout;
 
   public transfer = async (params: TransferParameters): Promise<CFCoreChannel> => {
-    this.log.info(`Transfer called with parameters: ${JSON.stringify(params, replaceBN, 2)}`);
+    this.log.info(`Transfer called with parameters: ${stringify(params)}`);
 
     // convert params + validate
     const { recipient, amount, assetId } = convert.TransferParameters("bignumber", params);
@@ -55,12 +53,7 @@ export class TransferController extends AbstractController {
       throw new Error(`App was not installed`);
     }
 
-    await this.waitForAppInstall();
-
     await this.connext.uninstallVirtualApp(appId);
-
-    // TODO: this sucks
-    await this.waitForAppUninstall();
 
     // sanity check, free balance decreased by payment amount
     const postTransferBal = await this.connext.getFreeBalance(assetId);
@@ -105,9 +98,7 @@ export class TransferController extends AbstractController {
   private resolveInstallTransfer = (res: (value?: unknown) => void, data: any): any => {
     if (this.appId !== data.params.appInstanceId) {
       this.log.info(
-        `Caught INSTALL_VIRTUAL event for different app ${JSON.stringify(data)}, expected ${
-          this.appId
-        }`,
+        `Caught INSTALL_VIRTUAL event for different app ${stringify(data)}, expected ${this.appId}`,
       );
       // TODO: do we need to recreate the handler here?
       res();
@@ -122,15 +113,15 @@ export class TransferController extends AbstractController {
 
   // TODO: fix types of data
   private rejectInstallTransfer = (
-    rej: (reason?: any) => void,
-    msg: RejectInstallVirtualMessage, // fix typing, not nested in `.data` obj
-  ): any => {
+    rej: (reason?: string) => void,
+    msg: RejectInstallVirtualMessage,
+  ): void => {
     // check app id
-    if (this.appId !== (msg as any).appInstanceId) {
+    if (this.appId !== msg.data.appInstanceId) {
       return;
     }
 
-    return rej(`Install virtual failed. Event data: ${JSON.stringify(msg, replaceBN, 2)}`);
+    return rej(`Install virtual failed. Event data: ${stringify(msg)}`);
   };
 
   // creates a promise that is resolved once the app is installed
@@ -142,7 +133,7 @@ export class TransferController extends AbstractController {
     appInfo: RegisteredAppDetails,
   ): Promise<string | undefined> => {
     let boundResolve: (value?: any) => void;
-    let boundReject: (reason?: any) => void;
+    let boundReject: (msg: RejectInstallVirtualMessage) => void;
 
     const initialState: SimpleTransferAppStateBigNumber = {
       coinTransfers: [
@@ -178,7 +169,6 @@ export class TransferController extends AbstractController {
     };
 
     const res = await this.connext.proposeInstallVirtualApp(params);
-    // set app instance id
     this.appId = res.appInstanceId;
 
     try {
@@ -187,12 +177,12 @@ export class TransferController extends AbstractController {
         boundResolve = this.resolveInstallTransfer.bind(null, res);
         this.listener.on(CFCoreTypes.EventName.INSTALL_VIRTUAL, boundResolve);
         this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
-        // this.timeout = setTimeout(() => {
-        //   this.cleanupInstallListeners(boundResolve, boundReject);
-        //   boundReject({ data: { appInstanceId: this.appId } });
-        // }, 5000);
+        this.timeout = setTimeout((): void => {
+          this.cleanupInstallListeners(boundResolve, boundReject);
+          boundReject({ data: { appInstanceId: this.appId } } as RejectInstallVirtualMessage);
+        }, 5000);
       });
-      this.log.info(`App was installed successfully!: ${JSON.stringify(res)}`);
+      this.log.info(`App was installed successfully!: ${stringify(res)}`);
       return res.appInstanceId;
     } catch (e) {
       this.log.error(`Error installing app: ${e.toString()}`);
@@ -206,44 +196,4 @@ export class TransferController extends AbstractController {
     this.listener.removeListener(CFCoreTypes.EventName.INSTALL_VIRTUAL, boundResolve);
     this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
   };
-
-  private async waitForAppInstall(): Promise<void> {
-    return new Promise(
-      async (res: any, rej: any): Promise<any> => {
-        const getAppIds = async (): Promise<string[]> => {
-          return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
-        };
-        let retries = 0;
-        while (!(await getAppIds()).includes(this.appId) && retries <= MAX_RETRIES) {
-          this.log.info(`found app id in the open apps... retry number ${retries}`);
-          await delay(100);
-          retries = retries + 1;
-        }
-
-        if (retries > MAX_RETRIES) rej();
-        this.log.info(`app installed after ${retries} retries`);
-        res();
-      },
-    );
-  }
-
-  private async waitForAppUninstall(): Promise<void> {
-    return new Promise(
-      async (res: any, rej: any): Promise<any> => {
-        const getAppIds = async (): Promise<string[]> => {
-          return (await this.connext.getAppInstances()).map((a: AppInstanceInfo) => a.identityHash);
-        };
-        let retries = 0;
-        while ((await getAppIds()).includes(this.appId) && retries <= MAX_RETRIES) {
-          this.log.info(`found app id in the open apps... retry number ${retries}`);
-          await delay(100);
-          retries = retries + 1;
-        }
-
-        if (retries > MAX_RETRIES) rej();
-        this.log.info(`app uninstalled after ${retries} retries`);
-        res();
-      },
-    );
-  }
 }

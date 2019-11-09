@@ -1,12 +1,13 @@
 import { Node as CFCoreTypes } from "@counterfactual/types";
-import { Injectable, OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
+import { ClientProxy } from "@nestjs/microservices";
 
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelService } from "../channel/channel.service";
+import { MessagingClientProviderId } from "../constants";
 import { LinkedTransferStatus } from "../transfer/transfer.entity";
 import { LinkedTransferRepository } from "../transfer/transfer.repository";
-import { TransferService } from "../transfer/transfer.service";
 import { CLogger } from "../util";
 import {
   CreateChannelMessage,
@@ -14,7 +15,6 @@ import {
   InstallMessage,
   InstallVirtualMessage,
   ProposeMessage,
-  ProposeVirtualMessage,
   RejectInstallVirtualMessage,
   UninstallMessage,
   UninstallVirtualMessage,
@@ -45,9 +45,11 @@ export default class ListenerService implements OnModuleInit {
     private readonly cfCoreService: CFCoreService,
     private readonly appRegistryService: AppRegistryService,
     private readonly channelService: ChannelService,
+    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
     private readonly linkedTransferRepository: LinkedTransferRepository,
   ) {}
 
+  // TODO: move the business logic into the respective modules?
   getEventListeners(): CallbackStruct {
     return {
       COUNTER_DEPOSIT_CONFIRMED: (data: DepositConfirmationMessage): void => {
@@ -82,7 +84,7 @@ export default class ListenerService implements OnModuleInit {
         logEvent(CFCoreTypes.EventName.PROPOSE_INSTALL, data);
         this.appRegistryService.allowOrReject(data);
       },
-      PROPOSE_INSTALL_VIRTUAL: (data: ProposeVirtualMessage): void => {
+      PROPOSE_INSTALL_VIRTUAL: (data: ProposeMessage): void => {
         logEvent(CFCoreTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data);
         this.appRegistryService.allowOrRejectVirtual(data);
       },
@@ -145,6 +147,45 @@ export default class ListenerService implements OnModuleInit {
           logger.cxt,
         );
       },
+    );
+
+    this.cfCoreService.registerCfCoreListener(
+      CFCoreTypes.RpcMethodName.INSTALL as any,
+      (data: any) => {
+        const appInstance = data.result.result.appInstance;
+        logger.debug(
+          `Emitting CFCoreTypes.RpcMethodName.INSTALL event at subject indra.node.${
+            this.cfCoreService.cfCore.publicIdentifier
+          }.install.${appInstance.identityHash}: ${JSON.stringify(appInstance)}`,
+        );
+        this.messagingClient
+          .emit(
+            `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.install.${appInstance.identityHash}`,
+            appInstance,
+          )
+          .toPromise();
+      },
+      logger.cxt,
+    );
+
+    this.cfCoreService.registerCfCoreListener(
+      CFCoreTypes.RpcMethodName.UNINSTALL as any,
+      (data: any) => {
+        logger.debug(
+          `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(
+            data.result.result,
+          )} at subject indra.node.${this.cfCoreService.cfCore.publicIdentifier}.uninstall.${
+            data.result.result.appInstanceId
+          }`,
+        );
+        this.messagingClient
+          .emit(
+            `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.uninstall.${data.result.result.appInstanceId}`,
+            data.result.result,
+          )
+          .toPromise();
+      },
+      logger.cxt,
     );
   }
 }

@@ -34,7 +34,7 @@ export const redlockClientFactory: FactoryProvider = {
 
       // the max number of times Redlock will attempt
       // to lock a resource before erroring
-      retryCount: 100,
+      retryCount: 350,
 
       // the time in ms between attempts
       retryDelay: 100, // time in ms
