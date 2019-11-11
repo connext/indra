@@ -14,6 +14,7 @@ version=$(shell cat package.json | grep '"version":' | awk -F '"' '{print $$4}')
 cwd=$(shell pwd)
 bot=$(cwd)/modules/payment-bot
 cf-core=$(cwd)/modules/cf-core
+cf-types=$(cwd)/modules/cf-types
 client=$(cwd)/modules/client
 contracts=$(cwd)/modules/contracts
 daicard=$(cwd)/modules/daicard
@@ -106,7 +107,7 @@ watch: watch-node
 start-test: prod deployed-contracts
 	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test bash ops/start-prod.sh
 
-test-cf: cf-core
+test-cf: cf-core 
 	bash ops/test-cf.sh
 
 watch-cf: cf-core
@@ -141,9 +142,14 @@ builder: ops/builder.dockerfile
 	docker build --file ops/builder.dockerfile --tag $(project)_builder:latest .
 	$(log_finish) && touch $(flags)/$@
 
-cf-core: node-modules $(shell find $(cf-core)/src $(cf-core)/tsconfig.json $(find_options))
+cf-core: node-modules cf-types $(shell find $(cf-core)/src $(cf-core)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/cf-core && npm run build:ts"
+	$(log_finish) && touch $(flags)/$@
+
+cf-types: node-modules $(shell find $(cf-types)/src $(cf-types)/tsconfig.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/cf-types && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
 client: cf-core contracts types messaging $(shell find $(client)/src $(client)/tsconfig.json $(find_options))

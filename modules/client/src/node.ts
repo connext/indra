@@ -16,9 +16,8 @@ import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
 import uuid = require("uuid");
 
-import { CFCoreTypes } from "../lib/cfCore";
-
 import { ChannelRouter } from "./channelRouter";
+import { CFCoreTypes } from "./lib/cfCore";
 import { Logger } from "./lib/logger";
 import { stringify } from "./lib/utils";
 import { NodeInitializationParameters } from "./types";
