@@ -2,7 +2,7 @@ import { BigNumber, BigNumberish } from "ethers/utils";
 
 declare global {
   namespace jest {
-    interface Matchers<R> {
+    interface Matchers<R, T> {
       toBeEq(expected: BigNumberish): BigNumber;
       toBeLt(expected: BigNumberish): BigNumber;
     }
