@@ -1,12 +1,12 @@
 import { MessagingConfig } from "@connext/messaging";
 import { ContractAddresses, SupportedApplications } from "@connext/types";
-import { OutcomeType } from "@counterfactual/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 import { getAddress, Network as EthNetwork } from "ethers/utils";
 
 import { Network } from "../constants";
+import { OutcomeType } from "../util/cfCore";
 
 type PostgresConfig = {
   database: string;

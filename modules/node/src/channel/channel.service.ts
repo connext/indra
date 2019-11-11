@@ -1,5 +1,4 @@
 import { ChannelAppSequences } from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import { AddressZero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
@@ -13,7 +12,7 @@ import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.en
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { CLogger, freeBalanceAddressFromXpub } from "../util";
-import { CreateChannelMessage } from "../util/cfCore";
+import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";

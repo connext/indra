@@ -1,6 +1,9 @@
-import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
-import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
-import { ethers as eth } from "ethers";
+export {
+  AppInstanceJson,
+  AppInstanceProposal,
+  Node as CFCoreTypes,
+  OutcomeType,
+} from "@connext/cf-types";
 export {
   CreateChannelMessage,
   DepositConfirmationMessage,
@@ -17,11 +20,9 @@ export {
   UpdateStateMessage,
   WithdrawMessage,
 } from "@connext/cf-core";
-// } from "@counterfactual/node";
-
-// Uncomment the desired source:
-// - @connext/cf-core is better for local dev bc you can add logs galore w/out wrestling w lerna
-// - @counterfactual/node might be better for prod once it stabilizes
+import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
+import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
+import { ethers as eth } from "ethers";
 
 export function freeBalanceAddressFromXpub(xpub: string): string {
   return eth.utils.getAddress(eth.utils.HDNode.fromExtendedKey(xpub).derivePath("0").address);
@@ -43,7 +44,7 @@ export function xkeysToSortedKthAddresses(xkeys: string[], k: number): string[] 
   return sortAddresses(xkeys.map(xkey => xkeyKthAddress(xkey, k)));
 }
 
-// TODO: this should be imported from the counterfactual utils
+// TODO: this should be imported from cf utils
 export function getMultisigAddressfromXpubs(
   owners: string[],
   proxyFactoryAddress: string,

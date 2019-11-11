@@ -1,4 +1,3 @@
-import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 
@@ -10,6 +9,7 @@ import { LinkedTransferStatus } from "../transfer/transfer.entity";
 import { LinkedTransferRepository } from "../transfer/transfer.repository";
 import { CLogger } from "../util";
 import {
+  CFCoreTypes,
   CreateChannelMessage,
   DepositConfirmationMessage,
   InstallMessage,

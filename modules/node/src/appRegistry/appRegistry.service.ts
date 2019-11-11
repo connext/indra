@@ -5,7 +5,6 @@ import {
   SimpleTransferAppStateBigNumber,
   SupportedApplications,
 } from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther } from "ethers/utils";
@@ -23,7 +22,7 @@ import {
   normalizeEthAddresses,
   stringify,
 } from "../util";
-import { ProposeMessage } from "../util/cfCore";
+import { CFCoreTypes, ProposeMessage } from "../util/cfCore";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
