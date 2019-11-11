@@ -75,9 +75,7 @@ export class ConnextListener extends EventEmitter {
       // return if its from us
       // TODO: initatorXpub isnt in types
       if ((appInfo as any).initatorXpub === this.connext.publicIdentifier) {
-        this.log.info(
-          `Received proposal from our own node, doing nothing: ${stringify(data)}`,
-        );
+        this.log.info(`Received proposal from our own node, doing nothing: ${stringify(data)}`);
         return;
       }
       await this.verifyAndInstallKnownApp(appInfo, matchedApp);
