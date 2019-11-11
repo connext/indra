@@ -21,10 +21,10 @@
   },
   "dependencies": {
     "@connext/cf-core": "0.4.1",
+    "@connext/cf-types": "0.4.1",
     "@connext/messaging": "0.4.1",
     "@connext/types": "0.4.1",
     "@counterfactual/cf-funding-protocol-contracts": "0.0.12",
-    "@counterfactual/types": "0.0.44",
     "@nestjs/common": "6.5.3",
     "@nestjs/core": "6.5.3",
     "@nestjs/microservices": "6.5.3",
