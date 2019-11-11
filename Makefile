@@ -157,7 +157,7 @@ cf-apps: node-modules cf-adjudicator-contracts $(shell find $(cf-apps)/contracts
 
 cf-core: node-modules cf-apps cf-adjudicator-contracts cf-funding-protocol-contracts cf-types $(shell find $(cf-core)/src $(cf-core)/tsconfig.json $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/cf-core && npm run build:ts"
+	$(docker_run) "cd modules/cf-core && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
 cf-funding-protocol-contracts: node-modules $(shell find $(cf-funding-protocol-contracts)/contracts $(cf-funding-protocol-contracts)/waffle.json $(find_options))
