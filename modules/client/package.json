@@ -12,9 +12,9 @@
   },
   "dependencies": {
     "@connext/cf-core": "0.4.1",
+    "@connext/cf-types": "0.4.1",
     "@connext/messaging": "0.4.1",
     "@connext/types": "0.4.1",
-    "@counterfactual/types": "0.0.44",
     "@counterfactual/cf-funding-protocol-contracts": "0.0.12",
     "core-js": "3.4.0",
     "eth-crypto": "1.5.0",
