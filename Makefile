@@ -14,6 +14,7 @@ version=$(shell cat package.json | grep '"version":' | awk -F '"' '{print $$4}')
 cwd=$(shell pwd)
 bot=$(cwd)/modules/payment-bot
 cf-adjudicator-contracts=$(cwd)/modules/cf-adjudicator-contracts
+cf-apps=$(cwd)/modules/cf-apps
 cf-funding-protocol-contracts=$(cwd)/modules/cf-funding-protocol-contracts
 cf-core=$(cwd)/modules/cf-core
 cf-types=$(cwd)/modules/cf-types
@@ -149,7 +150,12 @@ cf-adjudicator-contracts: node-modules $(shell find $(cf-adjudicator-contracts)/
 	$(docker_run) "cd modules/cf-adjudicator-contracts && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-cf-core: node-modules cf-adjudicator-contracts cf-funding-protocol-contracts cf-types $(shell find $(cf-core)/src $(cf-core)/tsconfig.json $(find_options))
+cf-apps: node-modules cf-adjudicator-contracts $(shell find $(cf-apps)/contracts $(cf-apps)/waffle.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/cf-apps && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
+cf-core: node-modules cf-apps cf-adjudicator-contracts cf-funding-protocol-contracts cf-types $(shell find $(cf-core)/src $(cf-core)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/cf-core && npm run build:ts"
 	$(log_finish) && touch $(flags)/$@
