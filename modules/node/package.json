@@ -24,7 +24,7 @@
     "@connext/cf-types": "0.4.1",
     "@connext/messaging": "0.4.1",
     "@connext/types": "0.4.1",
-    "@counterfactual/cf-funding-protocol-contracts": "0.0.12",
+    "@connext/cf-funding-protocol-contracts": "0.4.1",
     "@nestjs/common": "6.5.3",
     "@nestjs/core": "6.5.3",
     "@nestjs/microservices": "6.5.3",

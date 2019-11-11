@@ -224,7 +224,7 @@ indra-proxy-prod: daicard-prod ws-tcp-relay $(shell find $(proxy) $(find_options
 	docker build --file $(proxy)/indra.connext.network/prod.dockerfile --tag $(project)_proxy:latest .
 	$(log_finish) && touch $(flags)/$@
 
-types: node-modules messaging $(shell find $(types)/src $(find_options))
+types: node-modules cf-types messaging $(shell find $(types)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/types && npm run build"
 	$(log_finish) && touch $(flags)/$@

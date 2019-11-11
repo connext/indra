@@ -1,4 +1,4 @@
-import { SolidityValueType } from "@counterfactual/types";
+import { SolidityValueType } from "@connext/cf-types";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";

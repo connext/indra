@@ -1,4 +1,4 @@
-import { Address, Node as CFCoreTypes, OutcomeType } from "@counterfactual/types";
+import { Address, Node as CFCoreTypes, OutcomeType } from "@connext/cf-types";
 import { BigNumber } from "ethers/utils";
 
 import { SolidityValueType } from "./basic";
@@ -79,14 +79,14 @@ export type CoinTransfer<T = string> = {
 };
 export type CoinTransferBigNumber = CoinTransfer<BigNumber>;
 
-// all the types of counterfactual app states
+// all the types of cf app states
 export type AppState<T = string> =
   | SimpleTransferAppState<T>
   | SimpleLinkedTransferAppState<T>
   | SimpleSwapAppState<T>;
 export type AppStateBigNumber = AppState<BigNumber>;
 
-// all the types of counterfactual app actions
+// all the types of cf app actions
 export type AppAction<T = string> = SimpleLinkedTransferAppAction | SolidityValueType;
 export type AppActionBigNumber = AppAction<BigNumber> | SolidityValueType;
 

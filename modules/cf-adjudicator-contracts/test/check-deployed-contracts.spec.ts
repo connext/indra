@@ -1,4 +1,4 @@
-import { DeployedContractNetworksFileEntry } from "@counterfactual/types";
+import { DeployedContractNetworksFileEntry } from "@connext/cf-types";
 import { readFileSync } from "fs";
 import path from "path";
 

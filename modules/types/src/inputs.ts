@@ -1,4 +1,4 @@
-import { Address, Node as NodeTypes } from "@counterfactual/types";
+import { Address, Node as CFCoreTypes } from "@connext/cf-types";
 import { BigNumber } from "ethers/utils";
 
 import { SimpleLinkedTransferAppState } from "./app";
@@ -77,7 +77,7 @@ export type ResolveConditionParameters<T = string> =
   | ResolveLinkedTransferToRecipientParameters<T>;
 
 export type ResolveLinkedTransferResponse = {
-  freeBalance: NodeTypes.GetFreeBalanceStateResult;
+  freeBalance: CFCoreTypes.GetFreeBalanceStateResult;
   paymentId: string;
 };
 
@@ -105,7 +105,7 @@ export type LinkedTransferParametersBigNumber = LinkedTransferParameters<BigNumb
 export type LinkedTransferResponse = {
   paymentId: string;
   preImage: string;
-  freeBalance: NodeTypes.GetFreeBalanceStateResult;
+  freeBalance: CFCoreTypes.GetFreeBalanceStateResult;
 };
 
 export type LinkedTransferToRecipientParameters<T = string> = Omit<

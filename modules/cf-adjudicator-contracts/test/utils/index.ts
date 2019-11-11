@@ -1,4 +1,4 @@
-import { AppIdentity } from "@counterfactual/types";
+import { AppIdentity } from "@connext/cf-types";
 import * as chai from "chai";
 import { solidity } from "ethereum-waffle";
 import {

@@ -1,5 +1,5 @@
 import { MessagingConfig } from "@connext/messaging";
-import { NetworkContext, Node as NodeTypes } from "@counterfactual/types";
+import { NetworkContext, Node as CFCoreTypes } from "@connext/cf-types";
 import { BigNumber, Network } from "ethers/utils";
 
 import { CFCoreChannel } from "./channel";
@@ -56,4 +56,4 @@ export type CreateChannelResponse = {
   transactionHash: string;
 };
 
-export type RequestCollateralResponse = NodeTypes.DepositResult | undefined;
+export type RequestCollateralResponse = CFCoreTypes.DepositResult | undefined;
