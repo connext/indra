@@ -54,7 +54,7 @@
     "@counterfactual/cf-adjudicator-contracts": "0.0.9",
     "@counterfactual/cf-funding-protocol-contracts": "0.0.12",
     "@connext/cf-types": "0.5.0",
-    "ethers": "4.0.37",
+    "ethers": "4.0.39",
     "eventemitter3": "^4.0.0",
     "loglevel": "^1.6.1",
     "p-queue": "^5.0.0",
