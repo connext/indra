@@ -117,7 +117,6 @@ workflows:
   version: 2
   test-and-deploy:
     jobs:
-      - test-cf
       - test-node
       - test-ui
       - test-bot
