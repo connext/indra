@@ -1,4 +1,4 @@
-import { AppInstanceJson, Node } from "@counterfactual/types";
+import { AppInstanceJson, Node } from "@connext/cf-types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { StateChannel } from "../../../models";

@@ -1,5 +1,5 @@
 import ERC20 from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/ERC20.json";
-import { Node } from "@counterfactual/types";
+import { Node } from "@connext/cf-types";
 import { Contract } from "ethers";
 import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";

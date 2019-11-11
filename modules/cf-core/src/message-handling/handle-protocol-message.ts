@@ -1,4 +1,4 @@
-import { NetworkContext, SolidityValueType } from "@counterfactual/types";
+import { NetworkContext, SolidityValueType } from "@connext/cf-types";
 
 import {
   InstallParams,

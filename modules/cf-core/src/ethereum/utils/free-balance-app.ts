@@ -1,4 +1,4 @@
-import { AppInterface } from "@counterfactual/types";
+import { AppInterface } from "@connext/cf-types";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 

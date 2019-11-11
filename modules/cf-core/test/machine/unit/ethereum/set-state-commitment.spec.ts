@@ -1,5 +1,5 @@
 import ChallengeRegistry from "@counterfactual/cf-adjudicator-contracts/expected-build-artifacts/ChallengeRegistry.json";
-import { Node } from "@counterfactual/types";
+import { Node } from "@connext/cf-types";
 import {
   bigNumberify,
   Interface,

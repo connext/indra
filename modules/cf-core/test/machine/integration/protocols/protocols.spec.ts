@@ -1,5 +1,5 @@
 import AppWithAction from "@counterfactual/cf-adjudicator-contracts/expected-build-artifacts/AppWithAction.json";
-import { OutcomeType } from "@counterfactual/types";
+import { OutcomeType } from "@connext/cf-types";
 import { Contract, ContractFactory, Wallet } from "ethers";
 import { BaseProvider } from "ethers/providers";
 import { bigNumberify } from "ethers/utils";

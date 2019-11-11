@@ -1,4 +1,4 @@
-import { AppInstanceProposal, Node } from "@counterfactual/types";
+import { AppInstanceProposal, Node } from "@connext/cf-types";
 import { bigNumberify } from "ethers/utils";
 
 import { Protocol, ProtocolRunner } from "../../../machine";

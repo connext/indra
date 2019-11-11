@@ -10,7 +10,7 @@ import {
   DeployedContractNetworksFileEntry,
   EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
   NetworkContext
-} from "@counterfactual/types";
+} from "@connext/cf-types";
 import log from "loglevel";
 
 import { INVALID_NETWORK_NAME } from "./methods/errors";

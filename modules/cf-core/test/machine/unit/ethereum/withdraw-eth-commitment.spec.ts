@@ -1,4 +1,4 @@
-import { Node } from "@counterfactual/types";
+import { Node } from "@connext/cf-types";
 import { bigNumberify, getAddress, hexlify, randomBytes } from "ethers/utils";
 
 import { WithdrawETHCommitment } from "../../../../src/ethereum";

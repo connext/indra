@@ -1,5 +1,5 @@
 import ChallengeRegistry from "@counterfactual/cf-adjudicator-contracts/expected-build-artifacts/ChallengeRegistry.json";
-import { NetworkContext } from "@counterfactual/types";
+import { NetworkContext } from "@connext/cf-types";
 import { Contract, Wallet } from "ethers";
 import { AddressZero, WeiPerEther } from "ethers/constants";
 

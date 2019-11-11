@@ -1,4 +1,4 @@
-import { NetworkContext } from "@counterfactual/types";
+import { NetworkContext } from "@connext/cf-types";
 import { BaseProvider } from "ethers/providers";
 import uuid from "uuid";
 

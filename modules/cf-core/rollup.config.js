@@ -27,7 +27,7 @@ const bundledDependencies = new Set([
   "@counterfactual/firebase-client",
   "@counterfactual/cf-funding-protocol-contracts",
   "@counterfactual/cf-adjudicator-contracts",
-  "@counterfactual/types",
+  "@connext/cf-types",
   "typescript-memoize",
   "p-queue",
   "rpc-server"

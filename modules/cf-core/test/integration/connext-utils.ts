@@ -1,5 +1,5 @@
 import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
-import { Address, AppInstanceJson } from "@counterfactual/types";
+import { Address, AppInstanceJson } from "@connext/cf-types";
 import { One, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
 

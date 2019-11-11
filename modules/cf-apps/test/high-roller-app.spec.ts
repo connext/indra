@@ -1,4 +1,4 @@
-import { SolidityValueType, TwoPartyFixedOutcome } from "@counterfactual/types";
+import { SolidityValueType, TwoPartyFixedOutcome } from "@connext/cf-types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";

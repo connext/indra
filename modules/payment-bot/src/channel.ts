@@ -1,6 +1,6 @@
 import * as connext from "@connext/client";
 import { ClientOptions, IConnextClient, makeChecksum } from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
+import { Node as CFCoreTypes } from "@connext/cf-types";
 import { AddressZero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 

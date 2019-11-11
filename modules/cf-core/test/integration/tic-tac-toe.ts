@@ -1,4 +1,4 @@
-import { AppABIEncodings } from "@counterfactual/types";
+import { AppABIEncodings } from "@connext/cf-types";
 
 export const tttAbiEncodings: AppABIEncodings = {
   stateEncoding: `

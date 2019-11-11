@@ -1,4 +1,4 @@
-import { Node } from "@counterfactual/types";
+import { Node } from "@connext/cf-types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { xkeyKthAddress } from "../../../machine";

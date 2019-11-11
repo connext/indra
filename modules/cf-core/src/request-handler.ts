@@ -1,4 +1,4 @@
-import { NetworkContext, Node } from "@counterfactual/types";
+import { NetworkContext, Node } from "@connext/cf-types";
 import { Signer } from "ethers";
 import { BaseProvider, JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";

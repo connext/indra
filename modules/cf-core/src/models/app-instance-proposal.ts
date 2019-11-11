@@ -2,7 +2,7 @@ import {
   AppABIEncodings,
   OutcomeType,
   SolidityValueType
-} from "@counterfactual/types";
+} from "@connext/cf-types";
 
 export interface AppInstanceProposal {
   identityHash: string;

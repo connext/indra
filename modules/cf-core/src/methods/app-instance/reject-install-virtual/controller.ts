@@ -1,4 +1,4 @@
-import { Node } from "@counterfactual/types";
+import { Node } from "@connext/cf-types";
 
 import { RequestHandler } from "../../../request-handler";
 import { NODE_EVENTS, RejectInstallVirtualMessage } from "../../../types";

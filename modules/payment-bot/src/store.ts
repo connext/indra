@@ -1,5 +1,5 @@
 import { ConnextClientStorePrefix } from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
+import { Node as CFCoreTypes } from "@connext/cf-types";
 import { Wallet } from "ethers";
 import { arrayify, hexlify, keccak256, toUtf8Bytes, toUtf8String } from "ethers/utils";
 import fs from "fs";

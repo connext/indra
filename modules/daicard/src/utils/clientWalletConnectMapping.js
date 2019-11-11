@@ -1,5 +1,5 @@
 import WalletConnectBrowser from "@walletconnect/browser";
-import { Node as NodeTypes } from "@counterfactual/types";
+import { Node as NodeTypes } from "@connext/cf-types";
 
 export let walletConnector = null;
 

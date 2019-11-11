@@ -1,6 +1,6 @@
 import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
 import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
-import { Node } from "@counterfactual/types";
+import { Node } from "@connext/cf-types";
 import {
   getAddress,
   Interface,

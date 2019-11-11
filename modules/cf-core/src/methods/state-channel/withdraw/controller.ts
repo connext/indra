@@ -1,4 +1,4 @@
-import { Node } from "@counterfactual/types";
+import { Node } from "@connext/cf-types";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 import { jsonRpcMethod } from "rpc-server";
 

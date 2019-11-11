@@ -1,7 +1,7 @@
 import {
   EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
   NetworkContext
-} from "@counterfactual/types";
+} from "@connext/cf-types";
 import { getAddress, hexlify, randomBytes } from "ethers/utils";
 
 /// todo(xuanji): make this random but deterministically generated from some seed

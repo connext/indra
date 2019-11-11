@@ -4,7 +4,7 @@ import {
   NetworkContext,
   Node,
   SignedStateHashUpdate
-} from "@counterfactual/types";
+} from "@connext/cf-types";
 import {
   Interface,
   joinSignature,

@@ -1,4 +1,4 @@
-import { AppInstanceJson, SolidityValueType } from "@counterfactual/types";
+import { AppInstanceJson, SolidityValueType } from "@connext/cf-types";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
 import {

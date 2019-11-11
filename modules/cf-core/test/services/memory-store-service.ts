@@ -1,4 +1,4 @@
-import { Node } from "@counterfactual/types";
+import { Node } from "@connext/cf-types";
 
 export class MemoryStoreService implements Node.IStoreService {
   private readonly store: Map<string, any> = new Map();

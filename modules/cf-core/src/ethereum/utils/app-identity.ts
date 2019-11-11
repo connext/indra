@@ -1,4 +1,4 @@
-import { AppIdentity } from "@counterfactual/types";
+import { AppIdentity } from "@connext/cf-types";
 import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
 export function appIdentityToHash(appIdentity: AppIdentity) {

@@ -1,4 +1,4 @@
-import { NetworkContext, Node, SolidityValueType } from "@counterfactual/types";
+import { NetworkContext, Node, SolidityValueType } from "@connext/cf-types";
 import { solidityKeccak256 } from "ethers/utils";
 
 import {

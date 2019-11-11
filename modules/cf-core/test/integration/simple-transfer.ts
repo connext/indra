@@ -1,4 +1,4 @@
-import { AppABIEncodings } from "@counterfactual/types";
+import { AppABIEncodings } from "@connext/cf-types";
 import { Zero } from "ethers/constants";
 import { bigNumberify, BigNumberish } from "ethers/utils";
 

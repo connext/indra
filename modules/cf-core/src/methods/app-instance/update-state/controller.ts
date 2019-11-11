@@ -1,4 +1,4 @@
-import { Node, SolidityValueType } from "@counterfactual/types";
+import { Node, SolidityValueType } from "@connext/cf-types";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { jsonRpcMethod } from "rpc-server";
 

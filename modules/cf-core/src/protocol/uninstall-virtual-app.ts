@@ -1,4 +1,4 @@
-import { NetworkContext } from "@counterfactual/types";
+import { NetworkContext } from "@connext/cf-types";
 import { BaseProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";

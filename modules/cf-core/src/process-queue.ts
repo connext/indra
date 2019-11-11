@@ -1,4 +1,4 @@
-import { Node } from "@counterfactual/types";
+import { Node } from "@connext/cf-types";
 import Queue, { Task } from "p-queue";
 
 import { addToManyQueues } from "./methods/queued-execution";

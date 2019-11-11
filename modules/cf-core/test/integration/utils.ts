@@ -8,7 +8,7 @@ import {
   Node as NodeTypes,
   OutcomeType,
   SolidityValueType
-} from "@counterfactual/types";
+} from "@connext/cf-types";
 import { Contract, Wallet } from "ethers";
 import { One, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";

@@ -1,4 +1,4 @@
-import { OutcomeType } from "@counterfactual/types";
+import { OutcomeType } from "@connext/cf-types";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
 

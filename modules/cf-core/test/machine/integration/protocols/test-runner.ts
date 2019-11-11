@@ -1,5 +1,5 @@
 import IdentityApp from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/IdentityApp.json";
-import { OutcomeType } from "@counterfactual/types";
+import { OutcomeType } from "@connext/cf-types";
 import { Contract, ContractFactory } from "ethers";
 import { One, Two, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";

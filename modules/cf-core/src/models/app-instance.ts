@@ -12,7 +12,7 @@ import {
   TwoPartyFixedOutcomeInterpreterParams,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
   virtualAppAgreementEncoding
-} from "@counterfactual/types";
+} from "@connext/cf-types";
 import { Contract } from "ethers";
 import { BaseProvider } from "ethers/providers";
 import { defaultAbiCoder, keccak256 } from "ethers/utils";

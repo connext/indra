@@ -6,7 +6,7 @@ import {
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams
-} from "@counterfactual/types";
+} from "@connext/cf-types";
 import { BaseProvider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
 

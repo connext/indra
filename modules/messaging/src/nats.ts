@@ -1,4 +1,4 @@
-import { Node } from "@counterfactual/types";
+import { Node } from "@connext/cf-types";
 import * as nats from "ts-nats";
 
 import { Logger } from "./logger";

@@ -3,7 +3,7 @@ import {
   NetworkContext,
   OutcomeType,
   SolidityValueType
-} from "@counterfactual/types";
+} from "@connext/cf-types";
 import { BaseProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 

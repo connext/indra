@@ -1,4 +1,4 @@
-import { Node } from "@counterfactual/types";
+import { Node } from "@connext/cf-types";
 import { TransactionReceipt } from "ethers/providers";
 
 import { ProtocolMessage } from "./machine";

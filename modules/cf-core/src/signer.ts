@@ -1,4 +1,4 @@
-import { Node } from "@counterfactual/types";
+import { Node } from "@connext/cf-types";
 import { fromExtendedKey, HDNode } from "ethers/utils/hdnode";
 
 import { CF_PATH } from "./constants";

@@ -3,7 +3,7 @@ import {
   NetworkContext,
   OutcomeType,
   singleAssetTwoPartyCoinTransferInterpreterParamsEncoding
-} from "@counterfactual/types";
+} from "@connext/cf-types";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
 

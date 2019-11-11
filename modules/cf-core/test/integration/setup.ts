@@ -1,6 +1,6 @@
 import { CF_PATH } from "@counterfactual/local-ganache-server";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
-import { Node as NodeTypes } from "@counterfactual/types";
+import { Node as NodeTypes } from "@connext/cf-types";
 import { Wallet } from "ethers";
 import {
   JsonRpcProvider,

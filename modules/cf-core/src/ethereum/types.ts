@@ -1,4 +1,4 @@
-import { Node } from "@counterfactual/types";
+import { Node } from "@connext/cf-types"
 import { Signature } from "ethers/utils";
 
 export abstract class EthereumCommitment {

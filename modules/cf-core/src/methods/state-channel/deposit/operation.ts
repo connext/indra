@@ -7,7 +7,7 @@ import {
   Node,
   OutcomeType,
   SolidityValueType
-} from "@counterfactual/types";
+} from "@connext/cf-types";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import {

@@ -12,7 +12,7 @@ import {
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,
   virtualAppAgreementEncoding
-} from "@counterfactual/types";
+} from "@connext/cf-types";
 import { MaxUint256 } from "ethers/constants";
 import { BaseProvider } from "ethers/providers";
 import { BigNumber, bigNumberify, defaultAbiCoder } from "ethers/utils";

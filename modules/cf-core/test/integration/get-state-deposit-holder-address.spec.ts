@@ -1,4 +1,4 @@
-import { Node as NodeTypes } from "@counterfactual/types";
+import { Node as NodeTypes } from "@connext/cf-types";
 
 import { jsonRpcDeserialize, Node } from "../../src";
 
