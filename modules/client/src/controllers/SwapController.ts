@@ -5,11 +5,11 @@ import {
   SimpleSwapAppStateBigNumber,
   SwapParameters,
 } from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
+import { CFCoreTypes } from "../lib/cfCore";
 import { freeBalanceAddressFromXpub, stringify } from "../lib/utils";
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notGreaterThan, notLessThanOrEqualTo, notPositive } from "../validation/bn";

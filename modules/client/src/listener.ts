@@ -1,5 +1,4 @@
 import { RegisteredAppDetails, SupportedApplications } from "@connext/types";
-import { AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
 import EthCrypto from "eth-crypto";
 import { bigNumberify, formatParamType } from "ethers/utils";
 import { fromMnemonic } from "ethers/utils/hdnode";
@@ -8,6 +7,8 @@ import { EventEmitter } from "events";
 import { ChannelRouter } from "./channelRouter";
 import { ConnextClient } from "./connext";
 import {
+  AppInstanceInfo,
+  CFCoreTypes,
   CreateChannelMessage,
   DepositConfirmationMessage,
   InstallMessage,

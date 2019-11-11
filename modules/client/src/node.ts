@@ -12,10 +12,11 @@ import {
   SupportedNetwork,
   Transfer,
 } from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
 import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
 import uuid = require("uuid");
+
+import { CFCoreTypes } from "../lib/cfCore";
 
 import { ChannelRouter } from "./channelRouter";
 import { Logger } from "./lib/logger";

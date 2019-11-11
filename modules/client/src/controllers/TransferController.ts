@@ -7,11 +7,10 @@ import {
   SupportedApplications,
   TransferParameters,
 } from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
-import { RejectInstallVirtualMessage } from "../lib/cfCore";
+import { CFCoreTypes, RejectInstallVirtualMessage } from "../lib/cfCore";
 import { freeBalanceAddressFromXpub, stringify } from "../lib/utils";
 import { invalidAddress, invalidXpub } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";

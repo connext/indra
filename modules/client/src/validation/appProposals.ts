@@ -1,8 +1,8 @@
 import { RegisteredAppDetails, SupportedApplication } from "@connext/types";
-import { AppInstanceInfo, AppInstanceJson } from "@counterfactual/types";
 import { bigNumberify, getAddress } from "ethers/utils";
 
 import { ConnextClient } from "../connext";
+import { AppInstanceInfo, AppInstanceJson } from "../lib/cfCore";
 import { Logger } from "../lib/logger";
 import { freeBalanceAddressFromXpub, stringify } from "../lib/utils";
 

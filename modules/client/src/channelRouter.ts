@@ -8,11 +8,11 @@ import {
   RpcType,
   Store,
 } from "@connext/types";
-import { Node as NodeTypes } from "@counterfactual/types";
 import { Wallet } from "ethers";
 import { arrayify, BigNumber } from "ethers/utils";
 import { RpcParameters } from "rpc-server";
 
+import { CFCoreTypes } from "./lib/cfCore";
 import { withdrawalKey } from "./lib/utils";
 
 export class ChannelRouter {
@@ -108,13 +108,13 @@ export class ChannelRouter {
     assetId: string,
     multisigAddress: string,
     notifyCounterparty: boolean = false,
-  ): Promise<NodeTypes.DepositResult> => {
-    return await this._send(NodeTypes.RpcMethodName.DEPOSIT, {
+  ): Promise<CFCoreTypes.DepositResult> => {
+    return await this._send(CFCoreTypes.RpcMethodName.DEPOSIT, {
       amount,
       multisigAddress,
       notifyCounterparty,
       tokenAddress: makeChecksum(assetId),
-    } as NodeTypes.DepositParams);
+    } as CFCoreTypes.DepositParams);
   };
 
   public getStateChannel = async (): Promise<{ data: any }> => {
@@ -123,70 +123,70 @@ export class ChannelRouter {
     });
   };
 
-  public getState = async (appInstanceId: string): Promise<NodeTypes.GetStateResult> => {
-    return await this._send(NodeTypes.RpcMethodName.GET_STATE, {
+  public getState = async (appInstanceId: string): Promise<CFCoreTypes.GetStateResult> => {
+    return await this._send(CFCoreTypes.RpcMethodName.GET_STATE, {
       appInstanceId,
-    } as NodeTypes.GetStateParams);
+    } as CFCoreTypes.GetStateParams);
   };
 
-  public getAppInstances = async (): Promise<NodeTypes.GetAppInstancesResult> => {
+  public getAppInstances = async (): Promise<CFCoreTypes.GetAppInstancesResult> => {
     return await this._send(
-      NodeTypes.RpcMethodName.GET_APP_INSTANCES,
-      {} as NodeTypes.GetAppInstancesParams,
+      CFCoreTypes.RpcMethodName.GET_APP_INSTANCES,
+      {} as CFCoreTypes.GetAppInstancesParams,
     );
   };
 
   public getFreeBalance = async (
     assetId: string,
     multisigAddress: string,
-  ): Promise<NodeTypes.GetFreeBalanceStateResult> => {
-    return await this._send(NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE, {
+  ): Promise<CFCoreTypes.GetFreeBalanceStateResult> => {
+    return await this._send(CFCoreTypes.RpcMethodName.GET_FREE_BALANCE_STATE, {
       multisigAddress,
       tokenAddress: makeChecksum(assetId),
-    } as NodeTypes.GetFreeBalanceStateParams);
+    } as CFCoreTypes.GetFreeBalanceStateParams);
   };
 
   public getProposedAppInstances = async (): Promise<
-    NodeTypes.GetProposedAppInstancesResult | undefined
+    CFCoreTypes.GetProposedAppInstancesResult | undefined
   > => {
     return await this._send(
-      NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
-      {} as NodeTypes.GetProposedAppInstancesParams,
+      CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
+      {} as CFCoreTypes.GetProposedAppInstancesParams,
     );
   };
 
   public getProposedAppInstance = async (
     appInstanceId: string,
-  ): Promise<NodeTypes.GetProposedAppInstanceResult | undefined> => {
-    return await this._send(NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES, {
+  ): Promise<CFCoreTypes.GetProposedAppInstanceResult | undefined> => {
+    return await this._send(CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES, {
       appInstanceId,
-    } as NodeTypes.GetProposedAppInstanceParams);
+    } as CFCoreTypes.GetProposedAppInstanceParams);
   };
 
   public getAppInstanceDetails = async (
     appInstanceId: string,
-  ): Promise<NodeTypes.GetAppInstanceDetailsResult | undefined> => {
-    return await this._send(NodeTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS, {
+  ): Promise<CFCoreTypes.GetAppInstanceDetailsResult | undefined> => {
+    return await this._send(CFCoreTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS, {
       appInstanceId,
-    } as NodeTypes.GetAppInstanceDetailsParams);
+    } as CFCoreTypes.GetAppInstanceDetailsParams);
   };
 
   public getAppState = async (
     appInstanceId: string,
-  ): Promise<NodeTypes.GetStateResult | undefined> => {
-    return await this._send(NodeTypes.RpcMethodName.GET_STATE, {
+  ): Promise<CFCoreTypes.GetStateResult | undefined> => {
+    return await this._send(CFCoreTypes.RpcMethodName.GET_STATE, {
       appInstanceId,
-    } as NodeTypes.GetStateParams);
+    } as CFCoreTypes.GetStateParams);
   };
 
   public takeAction = async (
     appInstanceId: string,
     action: AppActionBigNumber,
-  ): Promise<NodeTypes.TakeActionResult> => {
-    return await this._send(NodeTypes.RpcMethodName.TAKE_ACTION, {
+  ): Promise<CFCoreTypes.TakeActionResult> => {
+    return await this._send(CFCoreTypes.RpcMethodName.TAKE_ACTION, {
       action,
       appInstanceId,
-    } as NodeTypes.TakeActionParams);
+    } as CFCoreTypes.TakeActionParams);
   };
 
   public updateState = async (
@@ -194,91 +194,91 @@ export class ChannelRouter {
     newState: AppStateBigNumber | any,
     // cast to any bc no supported apps use
     // the update state method
-  ): Promise<NodeTypes.UpdateStateResult> => {
-    return await this._send(NodeTypes.RpcMethodName.UPDATE_STATE, {
+  ): Promise<CFCoreTypes.UpdateStateResult> => {
+    return await this._send(CFCoreTypes.RpcMethodName.UPDATE_STATE, {
       appInstanceId,
       newState,
-    } as NodeTypes.UpdateStateParams);
+    } as CFCoreTypes.UpdateStateParams);
   };
 
   public proposeInstallVirtualApp = async (
-    params: NodeTypes.ProposeInstallVirtualParams, // TODO THIS HAS TO CHANGE
-  ): Promise<NodeTypes.ProposeInstallVirtualResult> => {
+    params: CFCoreTypes.ProposeInstallVirtualParams, // TODO THIS HAS TO CHANGE
+  ): Promise<CFCoreTypes.ProposeInstallVirtualResult> => {
     return await this._send(
-      NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
-      params as NodeTypes.ProposeInstallVirtualParams,
+      CFCoreTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
+      params as CFCoreTypes.ProposeInstallVirtualParams,
     );
   };
 
   public proposeInstallApp = async (
-    params: NodeTypes.ProposeInstallParams, // TODO THIS HAS TO CHANGE
-  ): Promise<NodeTypes.ProposeInstallResult> => {
+    params: CFCoreTypes.ProposeInstallParams, // TODO THIS HAS TO CHANGE
+  ): Promise<CFCoreTypes.ProposeInstallResult> => {
     return await this._send(
-      NodeTypes.RpcMethodName.PROPOSE_INSTALL,
-      params as NodeTypes.ProposeInstallParams,
+      CFCoreTypes.RpcMethodName.PROPOSE_INSTALL,
+      params as CFCoreTypes.ProposeInstallParams,
     );
   };
 
   public installVirtualApp = async (
     appInstanceId: string,
     intermediaryIdentifier: string,
-  ): Promise<NodeTypes.InstallVirtualResult> => {
-    return await this._send(NodeTypes.RpcMethodName.INSTALL_VIRTUAL, {
+  ): Promise<CFCoreTypes.InstallVirtualResult> => {
+    return await this._send(CFCoreTypes.RpcMethodName.INSTALL_VIRTUAL, {
       appInstanceId,
       intermediaryIdentifier,
-    } as NodeTypes.InstallVirtualParams);
+    } as CFCoreTypes.InstallVirtualParams);
   };
 
-  public installApp = async (appInstanceId: string): Promise<NodeTypes.InstallResult> => {
-    return await this._send(NodeTypes.RpcMethodName.INSTALL, {
+  public installApp = async (appInstanceId: string): Promise<CFCoreTypes.InstallResult> => {
+    return await this._send(CFCoreTypes.RpcMethodName.INSTALL, {
       appInstanceId,
-    } as NodeTypes.InstallParams);
+    } as CFCoreTypes.InstallParams);
   };
 
-  public uninstallApp = async (appInstanceId: string): Promise<NodeTypes.UninstallResult> => {
-    return await this._send(NodeTypes.RpcMethodName.UNINSTALL, {
+  public uninstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
+    return await this._send(CFCoreTypes.RpcMethodName.UNINSTALL, {
       appInstanceId,
-    } as NodeTypes.UninstallParams);
+    } as CFCoreTypes.UninstallParams);
   };
 
   public uninstallVirtualApp = async (
     appInstanceId: string,
     intermediary: string, // should be string array
-  ): Promise<NodeTypes.UninstallVirtualResult> => {
-    return await this._send(NodeTypes.RpcMethodName.UNINSTALL_VIRTUAL, {
+  ): Promise<CFCoreTypes.UninstallVirtualResult> => {
+    return await this._send(CFCoreTypes.RpcMethodName.UNINSTALL_VIRTUAL, {
       appInstanceId,
       intermediaryIdentifier: intermediary,
-    } as NodeTypes.UninstallVirtualParams);
+    } as CFCoreTypes.UninstallVirtualParams);
   };
 
-  public rejectInstallApp = async (appInstanceId: string): Promise<NodeTypes.UninstallResult> => {
-    return await this._send(NodeTypes.RpcMethodName.REJECT_INSTALL, { appInstanceId });
+  public rejectInstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
+    return await this._send(CFCoreTypes.RpcMethodName.REJECT_INSTALL, { appInstanceId });
   };
 
   public withdraw = async (
     amount: BigNumber,
     assetId: string, // optional in cf
     recipient: string, // optional in cf
-  ): Promise<NodeTypes.WithdrawResult> => {
-    return await this._send(NodeTypes.RpcMethodName.WITHDRAW, {
+  ): Promise<CFCoreTypes.WithdrawResult> => {
+    return await this._send(CFCoreTypes.RpcMethodName.WITHDRAW, {
       amount,
       multisigAddress: this.config.multisigAddress,
       recipient,
       tokenAddress: makeChecksum(assetId),
-    } as NodeTypes.WithdrawParams);
+    } as CFCoreTypes.WithdrawParams);
   };
 
   public withdrawCommitment = async (
     amount: BigNumber,
     assetId?: string,
     recipient?: string,
-  ): Promise<NodeTypes.WithdrawCommitmentResult> => {
-    return await this._send(NodeTypes.RpcMethodName.WITHDRAW_COMMITMENT, {
+  ): Promise<CFCoreTypes.WithdrawCommitmentResult> => {
+    return await this._send(CFCoreTypes.RpcMethodName.WITHDRAW_COMMITMENT, {
       amount,
       multisigAddress: this.multisigAddress,
       recipient,
       tokenAddress: makeChecksumOrEthAddress(assetId),
-    } as NodeTypes.WithdrawCommitmentParams);
+    } as CFCoreTypes.WithdrawCommitmentParams);
   };
 
   ///////////////////////////////////////////////
@@ -396,7 +396,7 @@ export class ChannelRouter {
 
   // tslint:disable-next-line: function-name
   private async _send(
-    methodName: NodeTypes.RpcMethodName,
+    methodName: CFCoreTypes.RpcMethodName,
     parameters: RpcParameters,
   ): Promise<any> {
     let result: any;

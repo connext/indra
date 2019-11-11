@@ -1,9 +1,8 @@
 import { App, BigNumber } from "@connext/types";
-import { Address } from "@counterfactual/types";
 
 import { capitalize } from "../lib/utils";
 
-export const mkAddress = (prefix: string = "0x"): Address => prefix.padEnd(42, "0");
+export const mkAddress = (prefix: string = "0x"): string => prefix.padEnd(42, "0");
 export const mkHash = (prefix: string = "0x"): string => prefix.padEnd(66, "0");
 
 ////////////////////////////////////////

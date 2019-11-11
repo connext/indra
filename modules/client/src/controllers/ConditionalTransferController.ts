@@ -13,12 +13,11 @@ import {
   SupportedApplications,
   TransferCondition,
 } from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
 import EthCrypto from "eth-crypto";
 import { HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import { RejectInstallVirtualMessage } from "../lib/cfCore";
+import { CFCoreTypes, RejectInstallVirtualMessage } from "../lib/cfCore";
 import { createLinkedHash, freeBalanceAddressFromXpub, stringify } from "../lib/utils";
 import { falsy, invalid32ByteHexString, invalidAddress, notLessThanOrEqualTo } from "../validation";
 

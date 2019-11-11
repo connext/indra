@@ -1,5 +1,6 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import {
+  Address,
   AppActionBigNumber,
   AppRegistry,
   AppStateBigNumber,
@@ -33,7 +34,6 @@ import {
   WithdrawalResponse,
   WithdrawParameters,
 } from "@connext/types";
-import { Address, AppInstanceJson, Node as CFCoreTypes } from "@counterfactual/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
 import { Contract, providers, Wallet } from "ethers";
@@ -50,7 +50,13 @@ import { ResolveConditionController } from "./controllers/ResolveConditionContro
 import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
-import { CFCore, CreateChannelMessage, EXTENDED_PRIVATE_KEY_PATH } from "./lib/cfCore";
+import {
+  AppInstanceJson,
+  CFCore,
+  CFCoreTypes,
+  CreateChannelMessage,
+  EXTENDED_PRIVATE_KEY_PATH,
+} from "./lib/cfCore";
 import { CF_PATH } from "./lib/constants";
 import { Logger } from "./lib/logger";
 import {

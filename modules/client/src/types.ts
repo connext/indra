@@ -9,11 +9,11 @@ import {
   GetConfigResponse,
   Store,
 } from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
 import { providers, Wallet } from "ethers";
 import { Network } from "ethers/utils";
 
 import { ChannelRouter } from "./channelRouter";
+import { CFCoreTypes } from "./lib/cfCore";
 import { NodeApiClient } from "./node";
 
 export type BigNumber = connextBN;

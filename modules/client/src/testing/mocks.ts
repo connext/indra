@@ -11,9 +11,9 @@ import {
   SupportedNetwork,
   Transfer,
 } from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
 import { providers } from "ethers";
 
+import { CFCoreTypes } from "../lib/cfCore";
 import { Logger } from "../lib/logger";
 import { INodeApiClient } from "../node";
 import { NodeInitializationParameters } from "../types";

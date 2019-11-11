@@ -1,3 +1,5 @@
+export { AppInstanceInfo, AppInstanceJson, Node as CFCoreTypes } from "@connext/cf-types";
+
 export {
   CreateChannelMessage,
   DepositConfirmationMessage,
@@ -15,6 +17,6 @@ export {
 } from "@connext/cf-core";
 // } from "@counterfactual/node";
 
-// Uncomment the desired source:
+// Uncomment the desired source above:
 // - @connext/cf-core is better for local dev bc you can add logs galore w/out wrestling w lerna
 // - @counterfactual/node might be better for prod once it stabilizes
