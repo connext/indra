@@ -141,12 +141,12 @@ builder: ops/builder.dockerfile
 	docker build --file ops/builder.dockerfile --tag $(project)_builder:latest .
 	$(log_finish) && touch $(flags)/$@
 
-cf-core: node-modules 
+cf-core: node-modules $(shell find $(cf-core)/src $(cf-core)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/cf-core && npm run build:ts"
 	$(log_finish) && touch $(flags)/$@
 
-client: cf-core contracts types messaging $(shell find $(client)/src $(find_options))
+client: cf-core contracts types messaging $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && touch $(flags)/$@

@@ -3,6 +3,7 @@
   "compilerOptions": {
     "declaration": true,
     "declarationDir": "dist/",
+    "module": "commonjs",
     "outDir": "dist/",
     "resolveJsonModule": true,
     "skipLibCheck": true,
