@@ -9,7 +9,7 @@ import {
   setupWithMemoryMessagingAndPostgresStore
 } from "./setup";
 import {
-  confirmProposedVirtualAppInstance,
+  confirmProposedAppInstance,
   constructRejectInstallRpc,
   createChannel,
   getProposedAppInstances,
@@ -26,7 +26,6 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
   beforeAll(async () => {
     const context: SetupContext = await setupWithMemoryMessagingAndPostgresStore(
       global,
-      true,
       true
     );
     nodeA = context["A"].node;
@@ -57,15 +56,9 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
             const [proposedAppInstanceA] = await getProposedAppInstances(nodeA);
             const [proposedAppInstanceC] = await getProposedAppInstances(nodeC);
 
-            confirmProposedVirtualAppInstance(
-              proposalParams,
-              proposedAppInstanceA
-            );
+            confirmProposedAppInstance(proposalParams, proposedAppInstanceA);
 
-            confirmProposedVirtualAppInstance(
-              proposalParams,
-              proposedAppInstanceC
-            );
+            confirmProposedAppInstance(proposalParams, proposedAppInstanceC);
 
             expect(proposedAppInstanceC.proposedByIdentifier).toEqual(
               nodeA.publicIdentifier

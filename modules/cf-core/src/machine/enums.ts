@@ -21,7 +21,7 @@ enum Opcode {
 
   /**
    * Middleware hook to write the state channel to store. Used to lock channel
-   * betweeen protocols.
+   * between protocols.
    */
   PERSIST_STATE_CHANNEL
 }
@@ -30,6 +30,7 @@ enum Protocol {
   Install = "install",
   InstallVirtualApp = "install-virtual-app",
   Setup = "setup",
+  Propose = "propose",
   TakeAction = "takeAction",
   Uninstall = "uninstall",
   UninstallVirtualApp = "uninstall-virtual-app",

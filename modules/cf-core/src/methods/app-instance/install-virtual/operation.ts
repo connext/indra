@@ -1,4 +1,5 @@
 import { AppInstanceProposal, Node } from "@counterfactual/types";
+import { bigNumberify } from "ethers/utils";
 
 import { Protocol, ProtocolRunner } from "../../../machine";
 import { Store } from "../../../store";
@@ -10,9 +11,9 @@ import {
 export async function installVirtual(
   store: Store,
   protocolRunner: ProtocolRunner,
-  params: Node.InstallParams
+  params: Node.InstallVirtualParams
 ): Promise<AppInstanceProposal> {
-  const { appInstanceId } = params;
+  const { appInstanceId, intermediaryIdentifier } = params;
 
   if (!appInstanceId || !appInstanceId.trim()) {
     throw Error(NO_APP_INSTANCE_ID_TO_INSTALL);
@@ -26,7 +27,6 @@ export async function installVirtual(
     initialState,
     initiatorDeposit,
     initiatorDepositTokenAddress,
-    intermediaryIdentifier,
     outcomeType,
     proposedByIdentifier,
     proposedToIdentifier,
@@ -48,12 +48,12 @@ export async function installVirtual(
         outcomeType,
         initiatorXpub: proposedToIdentifier,
         responderXpub: proposedByIdentifier,
-        intermediaryXpub: intermediaryIdentifier!,
-        defaultTimeout: timeout.toNumber(),
+        intermediaryXpub: intermediaryIdentifier,
+        defaultTimeout: bigNumberify(timeout).toNumber(),
         appInterface: { addr: appDefinition, ...abiEncodings },
         appSeqNo: proposal.appSeqNo,
-        initiatorBalanceDecrement: initiatorDeposit,
-        responderBalanceDecrement: responderDeposit,
+        initiatorBalanceDecrement: bigNumberify(initiatorDeposit),
+        responderBalanceDecrement: bigNumberify(responderDeposit),
         tokenAddress: initiatorDepositTokenAddress
       }
     );

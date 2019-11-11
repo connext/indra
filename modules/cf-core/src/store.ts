@@ -3,7 +3,6 @@ import { solidityKeccak256 } from "ethers/utils";
 
 import {
   DB_NAMESPACE_ALL_COMMITMENTS,
-  DB_NAMESPACE_APP_INSTANCE_ID_TO_MULTISIG_ADDRESS,
   DB_NAMESPACE_CHANNEL,
   DB_NAMESPACE_WITHDRAWALS
 } from "./db-schema";
@@ -27,8 +26,7 @@ import { prettyPrintObject } from "./utils";
 export class Store {
   constructor(
     private readonly storeService: Node.IStoreService,
-    private readonly storeKeyPrefix: string,
-    private readonly networkContext: NetworkContext
+    private readonly storeKeyPrefix: string
   ) {}
 
   /**
@@ -43,7 +41,6 @@ export class Store {
     return new Map(
       Object.values(channelsJSON)
         .map(StateChannel.fromJson)
-        .sort((a, b) => b.createdAt || 0 - a.createdAt || 0)
         .map(sc => [sc.multisigAddress, sc])
     );
   }
@@ -104,16 +101,6 @@ export class Store {
       {
         path: `${this.storeKeyPrefix}/${DB_NAMESPACE_CHANNEL}/${stateChannel.multisigAddress}`,
         value: stateChannel.toJson()
-      }
-    ]);
-  }
-
-  public async saveFreeBalance(channel: StateChannel) {
-    const freeBalance = channel.freeBalance;
-    await this.storeService.set([
-      {
-        path: `${this.storeKeyPrefix}/${DB_NAMESPACE_APP_INSTANCE_ID_TO_MULTISIG_ADDRESS}/${freeBalance.identityHash}`,
-        value: channel.multisigAddress
       }
     ]);
   }

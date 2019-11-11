@@ -3,15 +3,18 @@
   "compilerOptions": {
     "declaration": true,
     "declarationDir": "dist/",
-    "module": "commonjs",
     "outDir": "dist/",
     "resolveJsonModule": true,
-    "skipLibCheck": true,
     "typeRoots": [
       "../../node_modules/@types",
       "../../node_modules/@counterfactual/typescript-typings/types"
     ],
     "types": ["jest"]
   },
+
+  "references": [
+    { "path": "../types" },
+    { "path": "../local-ganache-server"}
+  ],
   "include": ["src", "test"]
 }
