@@ -13,8 +13,7 @@
   },
 
   "references": [
-    { "path": "../types" },
-    { "path": "../local-ganache-server"}
+    { "path": "../cf-types" }
   ],
   "include": ["src", "test"]
 }
