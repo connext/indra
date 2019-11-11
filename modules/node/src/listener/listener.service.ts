@@ -11,7 +11,7 @@ import { MessagingClientProviderId } from "../constants";
 import { LinkedTransferStatus } from "../transfer/transfer.entity";
 import { LinkedTransferRepository } from "../transfer/transfer.repository";
 import { TransferService } from "../transfer/transfer.service";
-import { CLogger } from "../util";
+import { CLogger, stringify } from "../util";
 import {
   CreateChannelMessage,
   DepositConfirmationMessage,
@@ -119,7 +119,8 @@ export default class ListenerService implements OnModuleInit {
         }
       },
       PROPOSE_INSTALL_VIRTUAL: (data: ProposeMessage): void => {
-        throw new Error(`This event should not be thrown! ${JSON.stringify(data)}`);
+        logger.warn(`This event should not be thrown! ${stringify(data, 2)}`);
+        return;
       },
       PROPOSE_STATE: (data: any): void => {
         // TODO: need to validate all apps here as well?
