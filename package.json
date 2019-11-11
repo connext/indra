@@ -22,6 +22,7 @@
 		"ganache-cli": "6.7.0",
 		"lerna": "3.18.4",
 		"openzeppelin-solidity": "2.3.0",
+    "prettier": "1.19.1",
 		"solc": "0.5.12",
 		"tslint": "5.20.1",
 		"tslint-config-airbnb": "5.11.2",

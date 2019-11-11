@@ -20,6 +20,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
+    "@connext/cf-core": "0.4.1",
     "@connext/messaging": "0.4.1",
     "@connext/types": "0.4.1",
     "@counterfactual/cf-funding-protocol-contracts": "0.0.12",
