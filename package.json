@@ -13,9 +13,6 @@
 	},
 	"homepage": "https://github.com/ConnextProject/indra#readme",
 	"devDependencies": {
-		"@counterfactual/cf-adjudicator-contracts": "0.0.9",
-		"@counterfactual/cf-funding-protocol-contracts": "0.0.12",
-		"@counterfactual/types": "0.0.44",
 		"chai-bn": "0.2.0",
 		"cypress": "3.6.1",
 		"ethers": "4.0.39",
@@ -23,7 +20,7 @@
 		"lerna": "3.18.4",
 		"openzeppelin-solidity": "2.3.0",
     "prettier": "1.19.1",
-		"solc": "0.5.12",
+		"solc": "0.5.11",
 		"tslint": "5.20.1",
 		"tslint-config-airbnb": "5.11.2",
 		"tslint-config-prettier": "1.18.0",

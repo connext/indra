@@ -13,6 +13,8 @@ version=$(shell cat package.json | grep '"version":' | awk -F '"' '{print $$4}')
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
 bot=$(cwd)/modules/payment-bot
+cf-adjudicator-contracts=$(cwd)/modules/cf-adjudicator-contracts
+cf-funding-protocol-contracts=$(cwd)/modules/cf-funding-protocol-contracts
 cf-core=$(cwd)/modules/cf-core
 cf-types=$(cwd)/modules/cf-types
 client=$(cwd)/modules/client
@@ -107,7 +109,7 @@ watch: watch-node
 start-test: prod deployed-contracts
 	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test bash ops/start-prod.sh
 
-test-cf: cf-core 
+test-cf: cf-core
 	bash ops/test-cf.sh
 
 watch-cf: cf-core
@@ -142,9 +144,19 @@ builder: ops/builder.dockerfile
 	docker build --file ops/builder.dockerfile --tag $(project)_builder:latest .
 	$(log_finish) && touch $(flags)/$@
 
-cf-core: node-modules cf-types $(shell find $(cf-core)/src $(cf-core)/tsconfig.json $(find_options))
+cf-adjudicator-contracts: node-modules $(shell find $(cf-adjudicator-contracts)/contracts $(cf-adjudicator-contracts)/waffle.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/cf-adjudicator-contracts && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
+cf-core: node-modules cf-adjudicator-contracts cf-funding-protocol-contracts cf-types $(shell find $(cf-core)/src $(cf-core)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/cf-core && npm run build:ts"
+	$(log_finish) && touch $(flags)/$@
+
+cf-funding-protocol-contracts: node-modules $(shell find $(cf-funding-protocol-contracts)/contracts $(cf-funding-protocol-contracts)/waffle.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/cf-funding-protocol-contracts && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
 cf-types: node-modules $(shell find $(cf-types)/src $(cf-types)/tsconfig.json $(find_options))
@@ -157,7 +169,7 @@ client: cf-core contracts types messaging $(shell find $(client)/src $(client)/t
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-contracts: node-modules $(shell find $(contracts)/contracts $(find_options))
+contracts: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/contracts && npm run build"
 	$(log_finish) && touch $(flags)/$@
