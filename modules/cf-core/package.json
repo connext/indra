@@ -1,6 +1,6 @@
 {
   "name": "@connext/cf-core",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "main": "dist/src/index.js",
   "iife": "dist/src/index.iife.js",
   "types": "dist/src/index.d.ts",

@@ -1,6 +1,6 @@
 {
   "name": "@connext/client",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Shared code between wallet and node",
   "main": "dist/index.js",
   "files": ["dist", "src", "types"],
@@ -12,11 +12,11 @@
     "test": "./node_modules/.bin/jest"
   },
   "dependencies": {
-    "@connext/cf-core": "0.4.1",
+    "@connext/cf-core": "0.5.0",
     "@connext/cf-funding-protocol-contracts": "0.4.1",
-    "@connext/cf-types": "0.4.1",
-    "@connext/messaging": "0.4.1",
-    "@connext/types": "0.4.1",
+    "@connext/cf-types": "0.5.0",
+    "@connext/messaging": "0.5.0",
+    "@connext/types": "0.5.0",
     "core-js": "3.4.0",
     "eth-crypto": "1.5.0",
     "ethers": "4.0.39",
