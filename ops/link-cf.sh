@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-repos="cf-core cf-types cf-adjudicator-contracts cf-funding-protocol-contracts"
+repos="cf-apps cf-core cf-types cf-adjudicator-contracts cf-funding-protocol-contracts"
 
 for repo in $repos;
 do
@@ -11,13 +11,21 @@ do
   local_dot_git="modules/$repo/.git"
   if [[ "${repo:3}" == "core" ]]
   then cf_dot_git="counterfactual/packages/node/.git"
+  elif [[ "${repo:3}" == "apps" ]]
+  then cf_dot_git="counterfactual/packages/apps/.git"
   elif [[ "${repo:3}" == "types" ]]
   then cf_dot_git="counterfactual/packages/types/.git"
   else cf_dot_git="counterfactual/packages/$repo/.git"
   fi
 
-  rm -rf $tmp_dir
-  git clone $bridge_repo $tmp_dir
+  if [[ -d "$tmp_dir" ]]
+  then
+    cd $tmp_dir
+    git fetch --all --prune
+    cd -
+  else
+    git clone $bridge_repo $tmp_dir
+  fi
 
   mkdir -p $local_dot_git
   rm -rf $local_dot_git
