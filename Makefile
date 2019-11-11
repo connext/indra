@@ -184,9 +184,6 @@ node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrati
 node-modules: builder package.json $(shell ls modules/**/package.json)
 	$(log_start)
 	$(docker_run) "lerna bootstrap --hoist"
-	# TODO: remove next couple lines once an up-todate cf/apps package has been published
-	$(docker_run) "mv node_modules/@counterfactual/apps node_modules/@counterfactual/old-apps"
-	$(docker_run) "ln -s ../../counterfactual/packages/apps node_modules/@counterfactual/apps"
 	$(log_finish) && touch $(flags)/$@
 
 node-prod: node $(node)/ops/prod.dockerfile $(node)/ops/entry.sh
