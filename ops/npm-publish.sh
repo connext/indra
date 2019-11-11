@@ -2,7 +2,7 @@
 set -e
 
 # This is the order they'll be published in
-packages="messaging,types,client"
+packages="messaging,cf-types,cf-core,types,client"
 project="indra"
 
 ########################################
