@@ -208,6 +208,7 @@ node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrati
 node-modules: builder package.json $(shell ls modules/**/package.json)
 	$(log_start)
 	$(docker_run) "lerna bootstrap --hoist"
+	$(docker_run) "cd node_modules/eccrypto && npm run install"
 	$(log_finish) && touch $(flags)/$@
 
 node-prod: node $(node)/ops/prod.dockerfile $(node)/ops/entry.sh
