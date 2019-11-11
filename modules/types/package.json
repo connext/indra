@@ -13,6 +13,7 @@
     "test": "./node_modules/.bin/jest"
   },
   "dependencies": {
+    "@connext/cf-core": "0.4.1",
     "@connext/messaging": "0.4.1",
     "@counterfactual/types": "0.0.44",
     "ethers": "4.0.39"

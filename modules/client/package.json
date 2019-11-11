@@ -14,7 +14,6 @@
     "@connext/cf-core": "0.4.1",
     "@connext/messaging": "0.4.1",
     "@connext/types": "0.4.1",
-    "@counterfactual/node": "0.2.82",
     "@counterfactual/types": "0.0.44",
     "@counterfactual/cf-funding-protocol-contracts": "0.0.12",
     "core-js": "3.4.0",

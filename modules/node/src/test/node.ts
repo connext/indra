@@ -1,7 +1,6 @@
-import { JsonRpcResponse } from "@counterfactual/node";
 import { Node as NodeTypes } from "@counterfactual/types";
 
-import { CLogger } from "../util";
+import { CLogger, JsonRpcResponse } from "../util";
 
 import { mkAddress, mkXpub } from "./utils";
 
