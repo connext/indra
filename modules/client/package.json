@@ -3,6 +3,7 @@
   "version": "0.4.1",
   "description": "Shared code between wallet and node",
   "main": "dist/index.js",
+  "files": ["dist", "src", "types"],
   "scripts": {
     "build": "./node_modules/.bin/tsc -p tsconfig.json",
     "rebuild": "npm run clean && npm run build",

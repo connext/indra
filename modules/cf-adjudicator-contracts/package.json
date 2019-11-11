@@ -3,12 +3,7 @@
   "version": "0.4.1",
   "description": "Smart contracts for an State Channel AppInstance Adjudicator",
   "license": "MIT",
-  "files": [
-    "build",
-    "contracts",
-    "networks",
-    "expected-build-artifacts"
-  ],
+  "files": ["build", "contracts", "networks", "expected-build-artifacts"],
   "scripts": {
     "build": "waffle waffle.json && cp build/*.json expected-build-artifacts",
     "test": "ts-mocha test/*",

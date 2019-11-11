@@ -5,6 +5,7 @@
   "iife": "dist/src/index.iife.js",
   "types": "dist/src/index.d.ts",
   "license": "MIT",
+  "files": ["dist", "docs", "src"],
   "scripts": {
     "build": "tsc -b . && rollup -c",
     "build:ts": "tsc -b .",

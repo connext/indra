@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "",
   "main": "index.js",
+  "files": ["build", "contracts"],
   "scripts": {
     "build": "waffle waffle.json",
     "migrate": "truffle migrate",

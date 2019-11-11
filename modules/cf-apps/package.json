@@ -4,11 +4,7 @@
   "description": "Collection of various apps built on Counterfactual",
   "repository": "https://github.com/ConnextProject/indra.git",
   "license": "MIT",
-  "files": [
-    "build",
-    "expected-build-artifacts",
-    "networks"
-  ],
+  "files": ["build", "expected-build-artifacts", "networks"],
   "scripts": {
     "build": "waffle waffle.json && cp build/*.json expected-build-artifacts",
     "migrate": "truffle migrate",
