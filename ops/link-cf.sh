@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 set -e
 
-repos="core types"
+repos="cf-core cf-types cf-adjudicator-contracts cf-funding-protocol-contracts"
 
 for repo in $repos;
 do
 
-  bridge_repo="git@github.com:bohendo/cf-$repo.git"
-  tmp_dir=".cf-$repo-bridge"
-  local_dot_git="modules/cf-$repo/.git"
-  if [[ "$repo" == "core" ]]
+  bridge_repo="git@github.com:bohendo/$repo.git"
+  tmp_dir=".bridge-$repo"
+  local_dot_git="modules/$repo/.git"
+  if [[ "${repo:3}" == "core" ]]
   then cf_dot_git="counterfactual/packages/node/.git"
+  elif [[ "${repo:3}" == "types" ]]
+  then cf_dot_git="counterfactual/packages/types/.git"
   else cf_dot_git="counterfactual/packages/$repo/.git"
   fi
 
