@@ -46,7 +46,7 @@ export interface ClientOptions {
   ethProviderUrl: string;
   nodeUrl: string; // ws:// or nats:// urls are supported
   channelProvider?: ChannelProvider;
-  keyGen?: () => Promise<string>;
+  keyGen?: (index: string) => Promise<string>;
   mnemonic?: string;
   xpub?: string;
   store: Store;
