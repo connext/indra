@@ -76,6 +76,9 @@ export const mkHash = (prefix: string = "0x"): string => prefix.padEnd(66, "0");
 export const delay = (ms: number): Promise<void> =>
   new Promise((res: any): any => setTimeout(res, ms));
 
+export const delayAndThrow = (ms: number, msg: string = ""): Promise<void> =>
+  new Promise((res: any, rej: any): any => setTimeout((): void => rej(msg), ms));
+
 export const xpubToAddress = (xpub: string, path: string = "0"): string =>
   HDNode.fromExtendedKey(xpub).derivePath(path).address;
 

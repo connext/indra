@@ -2,7 +2,7 @@ import EthCrypto from "eth-crypto";
 import { HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import { createLinkedHash, stringify, xpubToAddress } from "../lib/utils";
+import { createLinkedHash, delayAndThrow, stringify, xpubToAddress } from "../lib/utils";
 import {
   BigNumber,
   CFCoreTypes,
@@ -206,15 +206,18 @@ export class ConditionalTransferController extends AbstractController {
     this.appId = proposeRes.appInstanceId;
 
     try {
-      await new Promise((res: () => any, rej: () => any): void => {
-        boundResolve = this.resolveInstallTransfer.bind(null, res);
-        boundReject = this.rejectInstallTransfer.bind(null, rej);
-        this.connext.messaging.subscribe(
-          `indra.node.${this.connext.nodePublicIdentifier}.install.${proposeRes.appInstanceId}`,
-          boundResolve,
-        );
-        this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
-      });
+      const raceRes = await Promise.race([
+        new Promise((res: () => any, rej: () => any): void => {
+          boundResolve = this.resolveInstallTransfer.bind(null, res);
+          boundReject = this.rejectInstallTransfer.bind(null, rej);
+          this.connext.messaging.subscribe(
+            `indra.node.${this.connext.nodePublicIdentifier}.install.${proposeRes.appInstanceId}`,
+            boundResolve,
+          );
+          this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
+        }),
+        delayAndThrow(15_000, "App install took longer than 15 seconds"),
+      ]);
       this.log.info(`App was installed successfully!: ${stringify(proposeRes)}`);
       return proposeRes.appInstanceId;
     } catch (e) {

@@ -1,7 +1,7 @@
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
-import { stringify, xpubToAddress } from "../lib/utils";
+import { delayAndThrow, stringify, xpubToAddress } from "../lib/utils";
 import {
   CFCoreChannel,
   CFCoreTypes,
@@ -172,16 +172,15 @@ export class TransferController extends AbstractController {
     this.appId = res.appInstanceId;
 
     try {
-      await new Promise((res: any, rej: any): any => {
-        boundReject = this.rejectInstallTransfer.bind(null, rej);
-        boundResolve = this.resolveInstallTransfer.bind(null, res);
-        this.listener.on(CFCoreTypes.EventName.INSTALL_VIRTUAL, boundResolve);
-        this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
-        this.timeout = setTimeout((): void => {
-          this.cleanupInstallListeners(boundResolve, boundReject);
-          boundReject({ data: { appInstanceId: this.appId } } as RejectInstallVirtualMessage);
-        }, 5000);
-      });
+      const raceRes = await Promise.race([
+        new Promise((res: any, rej: any): any => {
+          boundReject = this.rejectInstallTransfer.bind(null, rej);
+          boundResolve = this.resolveInstallTransfer.bind(null, res);
+          this.listener.on(CFCoreTypes.EventName.INSTALL_VIRTUAL, boundResolve);
+          this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
+        }),
+        delayAndThrow(15_000, "App install took longer than 15 seconds"),
+      ]);
       this.log.info(`App was installed successfully!: ${stringify(res)}`);
       return res.appInstanceId;
     } catch (e) {
