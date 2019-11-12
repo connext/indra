@@ -856,7 +856,18 @@ export class ConnextClient implements IConnextClient {
   ): Promise<ResolveLinkedTransferResponse> => {
     this.log.info(`Reclaiming transfer ${paymentId}`);
     // decrypt secret and resolve
-    const privateKey = fromMnemonic(this.opts.mnemonic).derivePath(CF_PATH).privateKey;
+    let privateKey: string;
+    if (this.opts.mnemonic) {
+      privateKey = fromMnemonic(this.opts.mnemonic)
+        .derivePath(CF_PATH)
+        .derivePath("0").privateKey;
+    } else if (this.keyGen) {
+      // TODO: make this use app key?
+      privateKey = await this.keyGen("0");
+    } else {
+      throw new Error(`No way to decode transfer, this should never happen!`);
+    }
+
     const cipher = EthCrypto.cipher.parse(encryptedPreImage);
 
     const preImage = await EthCrypto.decryptWithPrivateKey(privateKey, cipher);

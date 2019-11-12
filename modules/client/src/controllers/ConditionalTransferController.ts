@@ -66,7 +66,8 @@ export class ConditionalTransferController extends AbstractController {
     });
 
     // set recipient and encrypted pre-image on linked transfer
-    const recipientPublicKey = fromExtendedKey(recipient).publicKey;
+    // TODO: use app path instead?
+    const recipientPublicKey = fromExtendedKey(recipient).derivePath("0").publicKey;
     const encryptedPreImageCipher = await EthCrypto.encryptWithPublicKey(
       recipientPublicKey.slice(2), // remove 0x
       preImage,
@@ -218,7 +219,7 @@ export class ConditionalTransferController extends AbstractController {
         }),
         delayAndThrow(15_000, "App install took longer than 15 seconds"),
       ]);
-      this.log.info(`App was installed successfully!: ${stringify(proposeRes)}`);
+      this.log.info(`App was installed successfully!: ${stringify(raceRes as object)}`);
       return proposeRes.appInstanceId;
     } catch (e) {
       this.log.error(`Error installing app: ${e.toString()}`);
