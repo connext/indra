@@ -1,17 +1,14 @@
-import { AppInstanceProposal, Node } from "@connext/cf-types";
 import { bigNumberify } from "ethers/utils";
 
 import { Protocol, ProtocolRunner } from "../../../machine";
 import { Store } from "../../../store";
-import {
-  NO_APP_INSTANCE_ID_TO_INSTALL,
-  VIRTUAL_APP_INSTALLATION_FAIL
-} from "../../errors";
+import { AppInstanceProposal, Node } from "../../../types";
+import { NO_APP_INSTANCE_ID_TO_INSTALL, VIRTUAL_APP_INSTALLATION_FAIL } from "../../errors";
 
 export async function installVirtual(
   store: Store,
   protocolRunner: ProtocolRunner,
-  params: Node.InstallVirtualParams
+  params: Node.InstallVirtualParams,
 ): Promise<AppInstanceProposal> {
   const { appInstanceId, intermediaryIdentifier } = params;
 
@@ -32,7 +29,7 @@ export async function installVirtual(
     proposedToIdentifier,
     responderDeposit,
     responderDepositTokenAddress,
-    timeout
+    timeout,
   } = proposal;
 
   if (initiatorDepositTokenAddress !== responderDepositTokenAddress) {
@@ -44,30 +41,26 @@ export async function installVirtual(
       Protocol.InstallVirtualApp,
       await store.getStateChannelsMap(),
       {
-        initialState,
-        outcomeType,
-        initiatorXpub: proposedToIdentifier,
-        responderXpub: proposedByIdentifier,
-        intermediaryXpub: intermediaryIdentifier,
-        defaultTimeout: bigNumberify(timeout).toNumber(),
         appInterface: { addr: appDefinition, ...abiEncodings },
         appSeqNo: proposal.appSeqNo,
+        defaultTimeout: bigNumberify(timeout).toNumber(),
+        initialState,
         initiatorBalanceDecrement: bigNumberify(initiatorDeposit),
+        initiatorXpub: proposedToIdentifier,
+        intermediaryXpub: intermediaryIdentifier,
+        outcomeType,
         responderBalanceDecrement: bigNumberify(responderDeposit),
-        tokenAddress: initiatorDepositTokenAddress
-      }
+        responderXpub: proposedByIdentifier,
+        tokenAddress: initiatorDepositTokenAddress,
+      },
     );
   } catch (e) {
-    throw Error(
-      // TODO: We should generalize this error handling style everywhere
-      `Node Error: ${VIRTUAL_APP_INSTALLATION_FAIL}\nStack Trace: ${e.stack}`
-    );
+    // TODO: We should generalize this error handling style everywhere
+    throw Error(`Node Error: ${VIRTUAL_APP_INSTALLATION_FAIL}\nStack Trace: ${e.stack}`);
   }
 
   await store.saveStateChannel(
-    (await store.getChannelFromAppInstanceID(appInstanceId)).removeProposal(
-      appInstanceId
-    )
+    (await store.getChannelFromAppInstanceID(appInstanceId)).removeProposal(appInstanceId),
   );
 
   return proposal;

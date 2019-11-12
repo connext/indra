@@ -1,11 +1,9 @@
-import { Node } from "@connext/cf-types";
-
 import { RequestHandler } from "../../../request-handler";
-import { NODE_EVENTS, RejectInstallVirtualMessage } from "../../../types";
+import { Node, NODE_EVENTS, RejectInstallVirtualMessage } from "../../../types";
 
 export default async function rejectInstallVirtualController(
   requestHandler: RequestHandler,
-  params: Node.RejectInstallParams
+  params: Node.RejectInstallParams,
 ): Promise<Node.RejectInstallResult> {
   const { store, messagingService, publicIdentifier } = requestHandler;
 

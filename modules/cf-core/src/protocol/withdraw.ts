@@ -1,9 +1,3 @@
-import {
-  coinBalanceRefundStateEncoding,
-  NetworkContext,
-  OutcomeType,
-  singleAssetTwoPartyCoinTransferInterpreterParamsEncoding
-} from "@connext/cf-types";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
 
@@ -12,23 +6,23 @@ import {
   ConditionalTransaction,
   SetStateCommitment,
   WithdrawERC20Commitment,
-  WithdrawETHCommitment
+  WithdrawETHCommitment,
 } from "../ethereum";
 import { ProtocolExecutionFlow } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
 import { Context, ProtocolMessage, WithdrawParams } from "../machine/types";
 import { AppInstance, StateChannel } from "../models";
+import {
+  coinBalanceRefundStateEncoding,
+  NetworkContext,
+  OutcomeType,
+  singleAssetTwoPartyCoinTransferInterpreterParamsEncoding,
+} from "../types";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
 
-const {
-  IO_SEND,
-  IO_SEND_AND_WAIT,
-  OP_SIGN,
-  PERSIST_STATE_CHANNEL,
-  WRITE_COMMITMENT
-} = Opcode;
+const { IO_SEND, IO_SEND_AND_WAIT, OP_SIGN, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;
 const { Install, Update, Withdraw } = Protocol;
 /**
  * @description This exchange is described at the following URL:

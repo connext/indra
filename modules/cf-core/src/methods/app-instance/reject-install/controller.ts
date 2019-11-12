@@ -1,8 +1,7 @@
-import { Node } from "@connext/cf-types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { NODE_EVENTS, RejectProposalMessage } from "../../../types";
+import { Node, NODE_EVENTS, RejectProposalMessage } from "../../../types";
 import { NodeController } from "../../controller";
 import rejectInstallVirtualController from "../reject-install-virtual/controller";
 

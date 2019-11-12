@@ -1,13 +1,13 @@
-import { Node } from "@connext/cf-types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
+import { Node } from "../../../types";
 import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
   APP_ALREADY_UNINSTALLED,
   CANNOT_UNINSTALL_FREE_BALANCE,
-  NO_APP_INSTANCE_ID_TO_UNINSTALL
+  NO_APP_INSTANCE_ID_TO_UNINSTALL,
 } from "../../errors";
 
 import { uninstallAppInstanceFromChannel } from "./operation";

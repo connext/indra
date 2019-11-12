@@ -1,6 +1,5 @@
-import { Node } from "@connext/cf-types";
-
 import { RequestHandler } from "../../../request-handler";
+import { Node } from "../../../types";
 import { NodeController } from "../../controller";
 
 export default class GetProposedAppInstanceController extends NodeController {

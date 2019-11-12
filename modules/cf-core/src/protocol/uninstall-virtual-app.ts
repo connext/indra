@@ -1,4 +1,3 @@
-import { NetworkContext } from "@connext/cf-types";
 import { BaseProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
@@ -10,10 +9,11 @@ import {
   Context,
   ProtocolMessage,
   ProtocolParameters,
-  UninstallVirtualAppParams
+  UninstallVirtualAppParams,
 } from "../machine/types";
 import { xkeyKthAddress } from "../machine/xkeys";
 import { AppInstance, StateChannel } from "../models";
+import { NetworkContext } from "../types";
 import { getCreate2MultisigAddress } from "../utils";
 
 import { computeTokenIndexedFreeBalanceIncrements } from "./utils/get-outcome-increments";

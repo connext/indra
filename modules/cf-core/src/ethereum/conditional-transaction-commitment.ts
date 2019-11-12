@@ -1,7 +1,7 @@
-import { NetworkContext } from "@connext/cf-types";
 import { Interface } from "ethers/utils";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
+import { NetworkContext } from "../types";
 
 import { MultisigCommitment } from "./multisig-commitment";
 import { MultisigOperation } from "./types";

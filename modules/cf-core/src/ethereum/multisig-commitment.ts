@@ -1,13 +1,13 @@
-import { Node } from "@connext/cf-types";
 import {
   Interface,
   joinSignature,
   keccak256,
   Signature,
-  solidityPack
+  solidityPack,
 } from "ethers/utils";
 
 import { MinimumViableMultisig } from "../contracts";
+import { Node } from "../types";
 import { sortSignaturesBySignerAddress } from "../utils";
 
 import { EthereumCommitment, MultisigTransaction } from "./types";

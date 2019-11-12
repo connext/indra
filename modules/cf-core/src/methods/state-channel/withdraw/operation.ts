@@ -1,9 +1,8 @@
-import { Node } from "@connext/cf-types";
-
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { Protocol } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
+import { Node } from "../../../types";
 
 export async function runWithdrawProtocol(
   requestHandler: RequestHandler,

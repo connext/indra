@@ -1,4 +1,3 @@
-import { Node } from "@connext/cf-types";
 import { Wallet } from "ethers";
 import { BigNumber } from "ethers/utils";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
@@ -6,6 +5,7 @@ import log from "loglevel";
 import { Memoize } from "typescript-memoize";
 
 import { CF_PATH } from "./constants";
+import { Node } from "./types";
 
 export const EXTENDED_PRIVATE_KEY_PATH = "EXTENDED_PRIVATE_KEY";
 

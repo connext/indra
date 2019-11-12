@@ -1,10 +1,3 @@
-import {
-  MultiAssetMultiPartyCoinTransferInterpreterParams,
-  NetworkContext,
-  OutcomeType,
-  SingleAssetTwoPartyCoinTransferInterpreterParams,
-  TwoPartyFixedOutcomeInterpreterParams
-} from "@connext/cf-types";
 import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
@@ -16,6 +9,13 @@ import { Context, InstallParams, ProtocolMessage } from "../machine/types";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../methods/errors";
 import { AppInstance, StateChannel } from "../models";
 import { TokenIndexedCoinTransferMap } from "../models/free-balance";
+import {
+  MultiAssetMultiPartyCoinTransferInterpreterParams,
+  NetworkContext,
+  OutcomeType,
+  SingleAssetTwoPartyCoinTransferInterpreterParams,
+  TwoPartyFixedOutcomeInterpreterParams
+} from "../types";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";

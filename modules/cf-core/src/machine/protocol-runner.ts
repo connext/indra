@@ -1,9 +1,9 @@
-import { NetworkContext } from "@connext/cf-types";
 import { BaseProvider } from "ethers/providers";
 import uuid from "uuid";
 
 import { StateChannel } from "../models";
 import { getProtocolFromName } from "../protocol";
+import { NetworkContext } from "../types";
 
 import { Opcode, Protocol } from "./enums";
 import { MiddlewareContainer } from "./middleware";
@@ -19,7 +19,7 @@ import {
   UninstallParams,
   UninstallVirtualAppParams,
   UpdateParams,
-  WithdrawParams
+  WithdrawParams,
 } from "./types";
 
 /**

@@ -1,7 +1,7 @@
-import { Node } from "@connext/cf-types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
+import { Node } from "../../../types";
 import {
   getCreate2MultisigAddress,
   getFirstElementInListNotEqualTo

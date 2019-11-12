@@ -1,4 +1,3 @@
-import { NetworkContext, Node as NodeTypes } from "@connext/cf-types";
 import { BaseProvider } from "ethers/providers";
 import { SigningKey } from "ethers/utils";
 import EventEmitter from "eventemitter3";
@@ -13,16 +12,21 @@ import { StateChannel } from "./models";
 import { getFreeBalanceAddress } from "./models/free-balance";
 import {
   EthereumNetworkName,
-  getNetworkContextForNetworkName
+  getNetworkContextForNetworkName,
 } from "./network-configuration";
 import {
   getPrivateKeysGeneratorAndXPubOrThrow,
-  PrivateKeysGetter
+  PrivateKeysGetter,
 } from "./private-keys-generator";
 import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
-import { NODE_EVENTS, NodeMessageWrappedProtocolMessage } from "./types";
+import {
+  NetworkContext,
+  Node as NodeTypes,
+  NODE_EVENTS,
+  NodeMessageWrappedProtocolMessage,
+} from "./types";
 import { timeout } from "./utils";
 
 export interface NodeConfig {

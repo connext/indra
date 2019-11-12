@@ -1,5 +1,6 @@
-import { Node } from "@connext/cf-types"
 import { Signature } from "ethers/utils";
+
+import { Node } from "../types";
 
 export abstract class EthereumCommitment {
   // todo(xuanji): EthereumCommitment was designed under the assumption that
@@ -12,7 +13,7 @@ export abstract class EthereumCommitment {
   public abstract hashToSign(signerIsIntermediary?: boolean): string;
   public abstract getSignedTransaction(
     signatures: Signature[],
-    intermediarySignature?: Signature
+    intermediarySignature?: Signature,
   ): Node.MinimalTransaction;
 }
 
@@ -23,7 +24,7 @@ export enum MultisigOperation {
   // make use of it in our code. Still, I put this here to be
   // maximally explicit that we based the data structure on
   // Gnosis's implementation of a Multisig
-  Create = 2
+  Create = 2,
 }
 
 export type MultisigTransaction = Node.MinimalTransaction & {

@@ -1,5 +1,3 @@
-import { NetworkContext, SolidityValueType } from "@connext/cf-types";
-
 import {
   InstallParams,
   InstallVirtualAppParams,
@@ -9,7 +7,7 @@ import {
   UninstallParams,
   UninstallVirtualAppParams,
   UpdateParams,
-  WithdrawParams
+  WithdrawParams,
 } from "../machine";
 import { ProtocolParameters } from "../machine/types";
 import { NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../methods/errors";
@@ -17,7 +15,12 @@ import { StateChannel } from "../models";
 import { UNASSIGNED_SEQ_NO } from "../protocol/utils/signature-forwarder";
 import { RequestHandler } from "../request-handler";
 import RpcRouter from "../rpc-router";
-import { NODE_EVENTS, NodeMessageWrappedProtocolMessage } from "../types";
+import {
+  NetworkContext,
+  NODE_EVENTS,
+  NodeMessageWrappedProtocolMessage,
+  SolidityValueType,
+} from "../types";
 import { bigNumberifyJson, getCreate2MultisigAddress } from "../utils";
 
 /**

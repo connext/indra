@@ -1,4 +1,3 @@
-import { Node, SolidityValueType } from "@connext/cf-types";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -6,7 +5,7 @@ import { Protocol, ProtocolRunner } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { Store } from "../../../store";
-import { NODE_EVENTS, UpdateStateMessage } from "../../../types";
+import { Node, NODE_EVENTS, SolidityValueType, UpdateStateMessage } from "../../../types";
 import {
   getFirstElementInListNotEqualTo,
   prettyPrintObject

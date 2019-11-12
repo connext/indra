@@ -1,9 +1,9 @@
-import { AppInstanceProposal, Node } from "@connext/cf-types";
 import { bigNumberify } from "ethers/utils";
 
 import { Protocol, ProtocolRunner } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { Store } from "../../../store";
+import { AppInstanceProposal, Node } from "../../../types";
 import { NO_APP_INSTANCE_ID_TO_INSTALL } from "../../errors";
 
 export async function install(

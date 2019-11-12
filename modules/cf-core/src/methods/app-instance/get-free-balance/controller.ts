@@ -1,8 +1,8 @@
-import { Node } from "@connext/cf-types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { RequestHandler } from "../../../request-handler";
+import { Node } from "../../../types";
 import { NodeController } from "../../controller";
 
 export default class GetFreeBalanceController extends NodeController {
@@ -11,7 +11,7 @@ export default class GetFreeBalanceController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.GetFreeBalanceStateParams
+    params: Node.GetFreeBalanceStateParams,
   ): Promise<Node.GetFreeBalanceStateResult> {
     const { store } = requestHandler;
     const { multisigAddress, tokenAddress: tokenAddressParam } = params;
@@ -20,9 +20,7 @@ export default class GetFreeBalanceController extends NodeController {
     const tokenAddress = tokenAddressParam || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
 
     if (!multisigAddress) {
-      throw Error(
-        "getFreeBalanceState method was given undefined multisigAddress"
-      );
+      throw Error("getFreeBalanceState method was given undefined multisigAddress");
     }
 
     const stateChannel = await store.getStateChannel(multisigAddress);

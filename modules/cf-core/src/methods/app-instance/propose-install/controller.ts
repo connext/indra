@@ -1,4 +1,3 @@
-import { Node } from "@connext/cf-types";
 import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -6,11 +5,12 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { Protocol, xkeyKthAddress } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
+import { Node } from "../../../types";
 import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
   INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET,
-  NULL_INITIAL_STATE_FOR_PROPOSAL
+  NULL_INITIAL_STATE_FOR_PROPOSAL,
 } from "../../errors";
 
 /**

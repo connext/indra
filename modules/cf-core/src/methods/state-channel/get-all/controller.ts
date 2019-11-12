@@ -1,8 +1,8 @@
-import { Node } from "@connext/cf-types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
+import { Node } from "../../../types";
 import { NodeController } from "../../controller";
 
 export default class GetStateChannelController extends NodeController {

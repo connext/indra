@@ -1,11 +1,10 @@
-import { Node } from "@connext/cf-types";
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 import { jsonRpcMethod } from "rpc-server";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { xkeyKthAddress } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
-import { NODE_EVENTS } from "../../../types";
+import { Node, NODE_EVENTS } from "../../../types";
 import { prettyPrintObject } from "../../../utils";
 import { NodeController } from "../../controller";
 import {

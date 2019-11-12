@@ -1,12 +1,3 @@
-import {
-  CoinBalanceRefundState,
-  multiAssetMultiPartyCoinTransferEncoding,
-  MultiAssetMultiPartyCoinTransferInterpreterParams,
-  OutcomeType,
-  SingleAssetTwoPartyCoinTransferInterpreterParams,
-  TwoPartyFixedOutcome,
-  TwoPartyFixedOutcomeInterpreterParams
-} from "@connext/cf-types";
 import { BaseProvider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
 
@@ -14,8 +5,17 @@ import { AppInstance } from "../../models";
 import {
   CoinTransfer,
   convertCoinTransfersToCoinTransfersMap,
-  TokenIndexedCoinTransferMap
+  TokenIndexedCoinTransferMap,
 } from "../../models/free-balance";
+import {
+  CoinBalanceRefundState,
+  multiAssetMultiPartyCoinTransferEncoding,
+  MultiAssetMultiPartyCoinTransferInterpreterParams,
+  OutcomeType,
+  SingleAssetTwoPartyCoinTransferInterpreterParams,
+  TwoPartyFixedOutcome,
+  TwoPartyFixedOutcomeInterpreterParams,
+} from "../../types";
 import { wait } from "../../utils";
 
 /**

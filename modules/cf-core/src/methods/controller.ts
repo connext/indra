@@ -1,14 +1,14 @@
-import { Node } from "@connext/cf-types";
 import { Controller } from "rpc-server";
 
 import { RequestHandler } from "../request-handler";
+import { Node } from "../types";
 
 export abstract class NodeController extends Controller {
   public static readonly methodName: Node.MethodName;
 
   public async executeMethod(
     requestHandler: RequestHandler,
-    params: Node.MethodParams
+    params: Node.MethodParams,
   ): Promise<Node.MethodResult> {
     await this.beforeExecution(requestHandler, params);
 

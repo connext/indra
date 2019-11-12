@@ -1,13 +1,8 @@
-import {
-  AppInterface,
-  NetworkContext,
-  OutcomeType,
-  SolidityValueType
-} from "@connext/cf-types";
 import { BaseProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 
 import { StateChannel } from "../models";
+import { AppInterface, NetworkContext, OutcomeType, SolidityValueType } from "../types";
 
 import { Opcode, Protocol } from "./enums";
 

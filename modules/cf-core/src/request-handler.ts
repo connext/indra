@@ -1,4 +1,3 @@
-import { NetworkContext, Node } from "@connext/cf-types";
 import { Signer } from "ethers";
 import { BaseProvider, JsonRpcProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
@@ -9,7 +8,7 @@ import { ProtocolRunner } from "./machine";
 import ProcessQueue from "./process-queue";
 import RpcRouter from "./rpc-router";
 import { Store } from "./store";
-import { NODE_EVENTS, NodeEvents } from "./types";
+import { NetworkContext, Node, NODE_EVENTS, NodeEvents } from "./types";
 import { prettyPrintObject } from "./utils";
 
 /**

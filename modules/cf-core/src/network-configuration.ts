@@ -6,28 +6,28 @@ import MainnetContracts from "@counterfactual/cf-funding-protocol-contracts/netw
 import RopstenContracts from "@counterfactual/cf-funding-protocol-contracts/networks/3.json";
 import RinkebyContracts from "@counterfactual/cf-funding-protocol-contracts/networks/4.json";
 import KovanContracts from "@counterfactual/cf-funding-protocol-contracts/networks/42.json";
-import {
-  DeployedContractNetworksFileEntry,
-  EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
-  NetworkContext
-} from "@connext/cf-types";
 import log from "loglevel";
 
 import { INVALID_NETWORK_NAME } from "./methods/errors";
+import {
+  DeployedContractNetworksFileEntry,
+  EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
+  NetworkContext,
+} from "./types";
 import { prettyPrintObject } from "./utils";
 
 export enum EthereumNetworkName {
   Main = "mainnet",
   Ropsten = "ropsten",
   Rinkeby = "rinkeby",
-  Kovan = "kovan"
+  Kovan = "kovan",
 }
 
 export const SUPPORTED_NETWORKS = new Set([
   EthereumNetworkName.Main,
   EthereumNetworkName.Ropsten,
   EthereumNetworkName.Rinkeby,
-  EthereumNetworkName.Kovan
+  EthereumNetworkName.Kovan,
 ]);
 
 export function getNetworkEnum(network: string): EthereumNetworkName {

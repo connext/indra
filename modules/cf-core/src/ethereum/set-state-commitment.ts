@@ -1,10 +1,4 @@
 import {
-  AppIdentity,
-  NetworkContext,
-  Node,
-  SignedStateHashUpdate
-} from "@connext/cf-types";
-import {
   Interface,
   joinSignature,
   keccak256,
@@ -13,6 +7,12 @@ import {
 } from "ethers/utils";
 
 import { ChallengeRegistry } from "../contracts";
+import {
+  AppIdentity,
+  NetworkContext,
+  Node,
+  SignedStateHashUpdate
+} from "../types";
 import { sortSignaturesBySignerAddress } from "../utils";
 
 import { EthereumCommitment } from "./types";

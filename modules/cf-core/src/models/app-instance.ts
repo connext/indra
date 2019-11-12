@@ -1,3 +1,10 @@
+import { Contract } from "ethers";
+import { BaseProvider } from "ethers/providers";
+import { defaultAbiCoder, keccak256 } from "ethers/utils";
+import { Memoize } from "typescript-memoize";
+
+import { CounterfactualApp } from "../contracts";
+import { appIdentityToHash } from "../ethereum/utils/app-identity";
 import {
   AppIdentity,
   AppInstanceJson,
@@ -11,14 +18,7 @@ import {
   TwoPartyFixedOutcomeInterpreterParams,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
   virtualAppAgreementEncoding,
-} from "@connext/cf-types";
-import { Contract } from "ethers";
-import { BaseProvider } from "ethers/providers";
-import { defaultAbiCoder, keccak256 } from "ethers/utils";
-import { Memoize } from "typescript-memoize";
-
-import { CounterfactualApp } from "../contracts";
-import { appIdentityToHash } from "../ethereum/utils/app-identity";
+} from "../types";
 import { bigNumberifyJson, prettyPrintObject } from "../utils";
 
 /**

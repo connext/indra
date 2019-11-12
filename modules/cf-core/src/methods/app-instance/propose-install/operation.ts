@@ -1,9 +1,8 @@
-import { Node } from "@connext/cf-types";
-
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { appIdentityToHash } from "../../../machine";
 import { AppInstanceProposal } from "../../../models";
 import { Store } from "../../../store";
+import { NetworkContext, Node } from "../../../types";
 import { getCreate2MultisigAddress } from "../../../utils";
 
 /**
@@ -16,8 +15,8 @@ import { getCreate2MultisigAddress } from "../../../utils";
 export async function createProposedAppInstance(
   myIdentifier: string,
   store: Store,
-  networkContext,
-  params: Node.ProposeInstallParams
+  networkContext: NetworkContext,
+  params: Node.ProposeInstallParams,
 ): Promise<string> {
   const {
     abiEncodings,

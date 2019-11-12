@@ -1,28 +1,16 @@
-import { AppInterface } from "@connext/cf-types";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
-import {
-  CoinTransferMap,
-  TokenIndexedCoinTransferMap
-} from "../../models/free-balance";
+import { CoinTransferMap, TokenIndexedCoinTransferMap } from "../../models/free-balance";
+import { AppInterface } from "../../types";
 
-const freeBalanceAppStateEncoding = `
-  tuple(
-    address[] tokenAddresses,
-    tuple(
-      address to,
-      uint256 amount
-    )[][] balances,
-    bytes32[] activeApps
-  )
-`;
+const freeBalanceAppStateEncoding = `tuple(address[] tokenAddresses, tuple(address to, uint256 amount)[][] balances, bytes32[] activeApps)`;
 
 export function getFreeBalanceAppInterface(addr: string): AppInterface {
   return {
+    actionEncoding: undefined, // because no actions exist for FreeBalanceApp
     addr,
     stateEncoding: freeBalanceAppStateEncoding,
-    actionEncoding: undefined // because no actions exist for FreeBalanceApp
   };
 }
 

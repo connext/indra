@@ -1,12 +1,3 @@
-import {
-  AppInterface,
-  CoinBalanceRefundState,
-  coinBalanceRefundStateEncoding,
-  NetworkContext,
-  Node,
-  OutcomeType,
-  SolidityValueType
-} from "@connext/cf-types";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import {
@@ -21,7 +12,16 @@ import { ERC20 } from "../../../contracts";
 import { InstallParams, Protocol, xkeyKthAddress } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
-import { NODE_EVENTS } from "../../../types";
+import {
+  AppInterface,
+  CoinBalanceRefundState,
+  coinBalanceRefundStateEncoding,
+  NetworkContext,
+  Node,
+  NODE_EVENTS,
+  OutcomeType,
+  SolidityValueType,
+} from "../../../types";
 import { prettyPrintObject } from "../../../utils";
 import { DEPOSIT_FAILED } from "../../errors";
 

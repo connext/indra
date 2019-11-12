@@ -1,12 +1,9 @@
-import { AppInstanceJson, SolidityValueType } from "@connext/cf-types";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
-import {
-  flip,
-  flipTokenIndexedBalances
-} from "../ethereum/utils/free-balance-app";
+import { flip, flipTokenIndexedBalances } from "../ethereum/utils/free-balance-app";
 import { xkeyKthAddress } from "../machine/xkeys";
 import { Store } from "../store";
+import { AppInstanceJson, SolidityValueType } from "../types";
 import { prettyPrintObject } from "../utils";
 
 import { AppInstanceProposal } from ".";
@@ -15,12 +12,12 @@ import {
   CoinTransferMap,
   createFreeBalance,
   FreeBalanceClass,
-  TokenIndexedCoinTransferMap
+  TokenIndexedCoinTransferMap,
 } from "./free-balance";
 
 // TODO: Hmmm this code should probably be somewhere else?
 export const HARD_CODED_ASSUMPTIONS = {
-  freeBalanceDefaultTimeout: 172800
+  freeBalanceDefaultTimeout: 172800,
 };
 
 const ERRORS = {

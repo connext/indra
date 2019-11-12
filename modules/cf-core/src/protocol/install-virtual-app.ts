@@ -1,18 +1,3 @@
-/**
- * File notes:
- *
- * FIXME: This file over-uses the xkeyKthAddress function which
- *        is quite computationally expensive. Refactor to use it less.
- */
-
-import {
-  MultiAssetMultiPartyCoinTransferInterpreterParams,
-  NetworkContext,
-  OutcomeType,
-  SingleAssetTwoPartyCoinTransferInterpreterParams,
-  TwoPartyFixedOutcomeInterpreterParams,
-  virtualAppAgreementEncoding
-} from "@connext/cf-types";
 import { MaxUint256 } from "ethers/constants";
 import { BaseProvider } from "ethers/providers";
 import { BigNumber, bigNumberify, defaultAbiCoder } from "ethers/utils";
@@ -23,10 +8,18 @@ import {
   Context,
   InstallVirtualAppParams,
   ProtocolExecutionFlow,
-  ProtocolMessage
+  ProtocolMessage,
 } from "../machine/types";
 import { sortAddresses, xkeyKthAddress } from "../machine/xkeys";
 import { AppInstance, StateChannel } from "../models";
+import {
+  MultiAssetMultiPartyCoinTransferInterpreterParams,
+  NetworkContext,
+  OutcomeType,
+  SingleAssetTwoPartyCoinTransferInterpreterParams,
+  TwoPartyFixedOutcomeInterpreterParams,
+  virtualAppAgreementEncoding,
+} from "../types";
 import { getCreate2MultisigAddress } from "../utils";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
@@ -34,6 +27,13 @@ import { assertIsValidSignature } from "./utils/signature-validator";
 
 export const encodeSingleAssetTwoPartyIntermediaryAgreementParams = params =>
   defaultAbiCoder.encode([virtualAppAgreementEncoding], [params]);
+
+/**
+ * File notes:
+ *
+ * FIXME: This file over-uses the xkeyKthAddress function which
+ *        is quite computationally expensive. Refactor to use it less.
+ */
 
 const protocol = Protocol.InstallVirtualApp;
 

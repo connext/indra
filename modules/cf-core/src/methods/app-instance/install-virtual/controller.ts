@@ -1,8 +1,7 @@
-import { Node } from "@connext/cf-types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { InstallVirtualMessage, NODE_EVENTS } from "../../../types";
+import { InstallVirtualMessage, Node, NODE_EVENTS } from "../../../types";
 import { getCreate2MultisigAddress, prettyPrintObject } from "../../../utils";
 import { NodeController } from "../../controller";
 import { NO_MULTISIG_FOR_APP_INSTANCE_ID } from "../../errors";
@@ -15,7 +14,7 @@ export default class InstallVirtualController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.InstallVirtualParams
+    params: Node.InstallVirtualParams,
   ) {
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { appInstanceId, intermediaryIdentifier } = params;
@@ -23,7 +22,7 @@ export default class InstallVirtualController extends NodeController {
     const multisigAddressWithHub = getCreate2MultisigAddress(
       [publicIdentifier, intermediaryIdentifier],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
     );
 
     const proposal = await store.getAppInstanceProposal(appInstanceId);
@@ -33,61 +32,57 @@ export default class InstallVirtualController extends NodeController {
     const multisigAddressWithResponding = getCreate2MultisigAddress(
       [publicIdentifier, proposedByIdentifier],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
     );
 
     const multisigAddressBetweenHubAndResponding = getCreate2MultisigAddress(
       [intermediaryIdentifier, proposedByIdentifier],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
     );
 
     return [
       multisigAddressWithHub,
       multisigAddressWithResponding,
-      multisigAddressBetweenHubAndResponding
+      multisigAddressBetweenHubAndResponding,
     ];
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: Node.InstallVirtualParams
+    params: Node.InstallVirtualParams,
   ) {
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { intermediaryIdentifier } = params;
 
     if (!intermediaryIdentifier) {
-      throw Error(
-        "Cannot install virtual app: you did not provide an intermediary."
-      );
+      throw Error("Cannot install virtual app: you did not provide an intermediary.");
     }
 
     const multisigAddress = getCreate2MultisigAddress(
       [publicIdentifier, intermediaryIdentifier],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
     );
 
-    const stateChannelWithIntermediary = await store.getStateChannel(
-      multisigAddress
-    );
+    const stateChannelWithIntermediary = await store.getStateChannel(multisigAddress);
 
     if (!stateChannelWithIntermediary) {
       throw Error(
-        "Cannot install virtual app: you do not have a channel with the intermediary provided."
+        "Cannot install virtual app: you do not have a channel with the intermediary provided.",
       );
     }
 
     if (!stateChannelWithIntermediary.freeBalance) {
       throw Error(
-        "Cannot install virtual app: channel with intermediary has no free balance app instance installed."
+        "Cannot install virtual app: channel with intermediary has no free balance app instance installed.",
       );
     }
   }
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.InstallVirtualParams
+    params: Node.InstallVirtualParams,
   ): Promise<Node.InstallVirtualResult> {
     const { store, protocolRunner } = requestHandler;
 
@@ -98,7 +93,7 @@ export default class InstallVirtualController extends NodeController {
     await installVirtual(store, protocolRunner, params);
 
     return {
-      appInstance: (await store.getAppInstance(appInstanceId)).toJson()
+      appInstance: (await store.getAppInstance(appInstanceId)).toJson(),
     };
   }
 }

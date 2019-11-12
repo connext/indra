@@ -1,7 +1,7 @@
-import { Node } from "@connext/cf-types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
+import { Node } from "../../../types";
 import { NodeController } from "../../controller";
 import { NO_APP_INSTANCE_ID_FOR_GET_STATE } from "../../errors";
 
@@ -14,7 +14,7 @@ export default class GetStateController extends NodeController {
   @jsonRpcMethod(Node.RpcMethodName.GET_STATE)
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.GetStateParams
+    params: Node.GetStateParams,
   ): Promise<Node.GetStateResult> {
     const { store } = requestHandler;
     const { appInstanceId } = params;
@@ -25,8 +25,6 @@ export default class GetStateController extends NodeController {
 
     const appInstance = await store.getAppInstance(appInstanceId);
 
-    return {
-      state: appInstance.state
-    };
+    return { state: appInstance.state };
   }
 }

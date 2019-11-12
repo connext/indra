@@ -1,4 +1,3 @@
-import { Node, SolidityValueType } from "@connext/cf-types";
 import { INVALID_ARGUMENT } from "ethers/errors";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -6,15 +5,16 @@ import { Protocol, ProtocolRunner } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { Store } from "../../../store";
+import { Node, SolidityValueType } from "../../../types";
 import {
   getFirstElementInListNotEqualTo,
-  prettyPrintObject
+  prettyPrintObject,
 } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
   IMPROPERLY_FORMATTED_STRUCT,
   NO_APP_INSTANCE_FOR_TAKE_ACTION,
-  STATE_OBJECT_NOT_ENCODABLE
+  STATE_OBJECT_NOT_ENCODABLE,
 } from "../../errors";
 
 export default class UpdateStateController extends NodeController {

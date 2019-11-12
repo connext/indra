@@ -1,8 +1,8 @@
-import { Node } from "@connext/cf-types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
+import { Node } from "../../../types";
 import { NodeController } from "../../controller";
 
 import { install } from "./operation";
@@ -18,7 +18,7 @@ export default class InstallController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.InstallParams
+    params: Node.InstallParams,
   ): Promise<string[]> {
     const { store } = requestHandler;
     const { appInstanceId } = params;
@@ -30,16 +30,14 @@ export default class InstallController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.InstallParams
+    params: Node.InstallParams,
   ): Promise<Node.InstallResult> {
     const { store, protocolRunner } = requestHandler;
 
     const appInstanceProposal = await install(store, protocolRunner, params);
 
     return {
-      appInstance: (await store.getAppInstance(
-        appInstanceProposal.identityHash
-      )).toJson()
+      appInstance: (await store.getAppInstance(appInstanceProposal.identityHash)).toJson(),
     };
   }
 }

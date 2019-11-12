@@ -1,22 +1,22 @@
-import { NetworkContext, Node, SolidityValueType } from "@connext/cf-types";
 import { solidityKeccak256 } from "ethers/utils";
 
 import {
   DB_NAMESPACE_ALL_COMMITMENTS,
   DB_NAMESPACE_CHANNEL,
-  DB_NAMESPACE_WITHDRAWALS
+  DB_NAMESPACE_WITHDRAWALS,
 } from "./db-schema";
 import {
   NO_MULTISIG_FOR_APP_INSTANCE_ID,
   NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID,
-  NO_STATE_CHANNEL_FOR_MULTISIG_ADDR
+  NO_STATE_CHANNEL_FOR_MULTISIG_ADDR,
 } from "./methods/errors";
 import {
   AppInstance,
   AppInstanceProposal,
   StateChannel,
-  StateChannelJSON
+  StateChannelJSON,
 } from "./models";
+import { NetworkContext, Node, SolidityValueType } from "./types";
 import { prettyPrintObject } from "./utils";
 
 /**

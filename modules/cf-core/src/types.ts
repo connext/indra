@@ -1,7 +1,31 @@
 import { Node } from "@connext/cf-types";
 import { TransactionReceipt } from "ethers/providers";
 
-export { NetworkContext, Node, SolidityValueType } from "@connext/cf-types";
+export {
+  AppABIEncodings,
+  AppIdentity,
+  AppInstanceJson,
+  AppInstanceProposal,
+  AppInterface,
+  CoinBalanceRefundState,
+  coinBalanceRefundStateEncoding,
+  DeployedContractNetworksFileEntry,
+  EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
+  multiAssetMultiPartyCoinTransferEncoding,
+  MultiAssetMultiPartyCoinTransferInterpreterParams,
+  multiAssetMultiPartyCoinTransferInterpreterParamsEncoding,
+  NetworkContext,
+  Node,
+  OutcomeType,
+  SignedStateHashUpdate,
+  SingleAssetTwoPartyCoinTransferInterpreterParams,
+  singleAssetTwoPartyCoinTransferInterpreterParamsEncoding,
+  SolidityValueType,
+  TwoPartyFixedOutcome,
+  TwoPartyFixedOutcomeInterpreterParams,
+  twoPartyFixedOutcomeInterpreterParamsEncoding,
+  virtualAppAgreementEncoding,
+} from "@connext/cf-types";
 
 import { ProtocolMessage } from "./machine";
 

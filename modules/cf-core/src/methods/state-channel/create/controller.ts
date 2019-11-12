@@ -1,10 +1,9 @@
-import { Node } from "@connext/cf-types";
 import { HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { CreateChannelMessage, NODE_EVENTS } from "../../../types";
+import { CreateChannelMessage, Node, NODE_EVENTS } from "../../../types";
 import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
 

@@ -1,8 +1,4 @@
-import {
-  AppABIEncodings,
-  OutcomeType,
-  SolidityValueType
-} from "@connext/cf-types";
+import { AppABIEncodings, OutcomeType, SolidityValueType } from "../types";
 
 export interface AppInstanceProposal {
   identityHash: string;

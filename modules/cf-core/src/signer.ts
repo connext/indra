@@ -1,8 +1,8 @@
-import { Node } from "@connext/cf-types";
 import { fromExtendedKey, HDNode } from "ethers/utils/hdnode";
 
 import { CF_PATH } from "./constants";
 import { computeRandomExtendedPrvKey } from "./machine/xkeys";
+import { Node } from "./types";
 import { prettyPrintObject } from "./utils";
 
 export const EXTENDED_PRIVATE_KEY_PATH = "EXTENDED_PRIVATE_KEY";

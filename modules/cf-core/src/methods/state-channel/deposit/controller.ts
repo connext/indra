@@ -1,4 +1,3 @@
-import { Node } from "@connext/cf-types";
 import { Contract } from "ethers";
 import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
@@ -7,7 +6,7 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { ERC20 } from "../../../contracts";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
-import { DepositConfirmationMessage, NODE_EVENTS } from "../../../types";
+import { DepositConfirmationMessage, Node, NODE_EVENTS } from "../../../types";
 import { NodeController } from "../../controller";
 import {
   CANNOT_DEPOSIT,

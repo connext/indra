@@ -1,7 +1,7 @@
-import { Node } from "@connext/cf-types";
 import Queue, { Task } from "p-queue";
 
 import { addToManyQueues } from "./methods/queued-execution";
+import { Node } from "./types";
 
 class QueueWithLockingServiceConnection extends Queue {
   constructor(

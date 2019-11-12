@@ -1,13 +1,10 @@
-import { OutcomeType } from "@connext/cf-types";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, getAddress } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
-import {
-  getFreeBalanceAppInterface,
-  merge
-} from "../ethereum/utils/free-balance-app";
+import { getFreeBalanceAppInterface, merge } from "../ethereum/utils/free-balance-app";
 import { xkeyKthAddress, xkeysToSortedKthAddresses } from "../machine/xkeys";
+import { OutcomeType } from "../types";
 import { prettyPrintObject } from "../utils";
 
 import { AppInstance } from "./app-instance";
@@ -15,7 +12,7 @@ import { AppInstance } from "./app-instance";
 const HARD_CODED_ASSUMPTIONS = {
   freeBalanceInitialStateTimeout: 172800,
   // We assume the Free Balance is the first app ever installed
-  appSequenceNumberForFreeBalance: 0
+  appSequenceNumberForFreeBalance: 0,
 };
 
 /*

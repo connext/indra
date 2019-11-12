@@ -1,4 +1,3 @@
-import { NetworkContext, Node } from "@connext/cf-types";
 import { Contract, Signer } from "ethers";
 import { HashZero } from "ethers/constants";
 import {
@@ -14,6 +13,7 @@ import { MinimumViableMultisig, ProxyFactory } from "../../../contracts";
 import { xkeysToSortedKthAddresses } from "../../../machine";
 import { sortAddresses } from "../../../machine/xkeys";
 import { RequestHandler } from "../../../request-handler";
+import { NetworkContext, Node } from "../../../types";
 import {
   getCreate2MultisigAddress,
   prettyPrintObject,

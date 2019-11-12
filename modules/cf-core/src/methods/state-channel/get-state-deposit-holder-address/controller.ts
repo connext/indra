@@ -1,4 +1,3 @@
-import { Node } from "@connext/cf-types";
 import {
   getAddress,
   Interface,
@@ -11,6 +10,7 @@ import { jsonRpcMethod } from "rpc-server";
 import { MinimumViableMultisig, Proxy } from "../../../contracts";
 import { xkeysToSortedKthAddresses } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
+import { Node } from "../../../types";
 import { NodeController } from "../../controller";
 
 export default class GetStateDepositHolderAddressController extends NodeController {
