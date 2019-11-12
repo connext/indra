@@ -74,7 +74,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // set channel provider config
   let channelProviderConfig: ChannelProviderConfig;
   let xpub: string;
-  let keyGen;
+  let keyGen: (index: string) => Promise<string>;
   if (mnemonic) {
     // Convert mnemonic into xpub + keyGen if provided
     const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
@@ -272,6 +272,7 @@ export class ConnextClient implements IConnextClient {
     this.channelRouter = opts.channelRouter;
     this.config = opts.config;
     this.ethProvider = opts.ethProvider;
+    this.keyGen = opts.keyGen;
     this.messaging = opts.messaging;
     this.network = opts.network;
     this.network = opts.network;
@@ -341,7 +342,7 @@ export class ConnextClient implements IConnextClient {
           this.messaging as any,
           this.store,
           this.config.contractAddresses,
-          { STORE_KEY_PREFIX: "store" },
+          { STORE_KEY_PREFIX: ConnextClientStorePrefix },
           this.ethProvider,
           { acquireLock: this.node.acquireLock.bind(this.node) },
           this.publicIdentifier,
@@ -522,6 +523,7 @@ export class ConnextClient implements IConnextClient {
     }
     this.channelRouter.reset();
     try {
+      throw new Error(`Reimplement Pisa`);
       // try to recover states from our given store's restore method
       const restoreStates = await this.channelRouter.restore();
       const stateToRestore = restoreStates.find(
@@ -536,7 +538,8 @@ export class ConnextClient implements IConnextClient {
       this.log.info(`Found state to restore from backup: ${stringify(stateToRestore)}`);
       await this.channelRouter.set([stateToRestore], false);
     } catch (e) {
-      const stateToRestore = await this.node.restoreStates(this.publicIdentifier);
+      this.log.info(`Could not restore from store, attempting to restore from node: ${e}`);
+      const stateToRestore = await this.node.restoreState(this.publicIdentifier);
       if (!stateToRestore) {
         throw new Error(
           `No matching states found by node for "store/${this.publicIdentifier}/channel/${this.multisigAddress}."`,
@@ -544,14 +547,13 @@ export class ConnextClient implements IConnextClient {
       }
       this.log.info(`Found state to restore from node: ${stringify(stateToRestore)}`);
       // TODO: this should prob not be hardcoded like this
-      const actualStates = stateToRestore.map((state: { path: string; value: object }): any => {
-        return {
-          path: `store${state.path.substring(state.path.indexOf("/"))}`,
-          value: state.value[state.path],
-        };
-      });
-      await this.store.set(actualStates, false);
-      this.log.debug(`restored state from node!`);
+      await this.store.set([
+        {
+          path: `${ConnextClientStorePrefix}/${this.publicIdentifier}/channel/${this.multisigAddress}`,
+          value: stateToRestore,
+        },
+      ]);
+      this.log.info(`Succesfully restored state from node!`);
     }
     await this.restart();
   };

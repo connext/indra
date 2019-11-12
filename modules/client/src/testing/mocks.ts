@@ -169,6 +169,12 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public async resolveLinkedTransfer(): Promise<void> {}
 
+  public async restoreState(publicIdentifier: string): Promise<any> {
+    return {
+      multisigAddress: address,
+    };
+  }
+
   public async addPaymentProfile(): Promise<any> {
     return MockNodeClientApi.returnValues.addPaymentProfile;
   }

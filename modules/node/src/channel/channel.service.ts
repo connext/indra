@@ -257,12 +257,20 @@ export class ChannelService {
     );
   }
 
-  async getChannelStates(userPublicIdentifier: string): Promise<CFCoreRecord[]> {
+  // TODO: define type for state channel
+  async getChannelState(userPublicIdentifier: string): Promise<any> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     if (!channel) {
       throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
     }
+    const { data: state } = await this.cfCoreService.getStateChannel(channel.multisigAddress);
 
-    return await this.cfCoreRepository.findRecordsForRestore(channel.multisigAddress);
+    // FIXME: this has to be [] not {}, we should fix this better
+    state.singleAssetTwoPartyIntermediaryAgreements =
+      Object.values(state.singleAssetTwoPartyIntermediaryAgreements).length === 0
+        ? []
+        : state.singleAssetTwoPartyIntermediaryAgreements;
+
+    return state;
   }
 }

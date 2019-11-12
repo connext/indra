@@ -49,6 +49,7 @@ export interface INodeApiClient {
     recipientPublicIdentifier?: string,
   ): Promise<void>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
+  restoreState(publicIdentifier: string): Promise<any>;
   subscribeToSwapRates(from: string, to: string, callback: any): void;
   unsubscribeFromSwapRates(from: string, to: string): void;
   // TODO: fix types
@@ -266,8 +267,8 @@ export class NodeApiClient implements INodeApiClient {
     await this.messaging.unsubscribe(`swap-rate.${from}.${to}`);
   }
 
-  // TODO: need to add auth for this!
-  public async restoreStates(publicIdentifier: string): Promise<{ path: string; value: object }[]> {
+  // TODO: type
+  public async restoreState(publicIdentifier: string): Promise<any> {
     return this.send(`channel.restore-states.${publicIdentifier}`);
   }
 
