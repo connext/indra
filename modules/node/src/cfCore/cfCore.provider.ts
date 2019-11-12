@@ -2,15 +2,13 @@ import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import { ConnextNodeStorePrefix } from "@connext/types";
 import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { Wallet } from "ethers";
-import { HDNode } from "ethers/utils";
 import { fromMnemonic } from "ethers/utils/hdnode";
 
 import { ConfigService } from "../config/config.service";
 import { CFCoreProviderId, CF_PATH, MessagingProviderId } from "../constants";
 import { LockService } from "../lock/lock.service";
 import { CLogger, freeBalanceAddressFromXpub } from "../util";
-import { CFCore, EXTENDED_PRIVATE_KEY_PATH } from "../util/cfCore";
+import { CFCore } from "../util/cfCore";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
 
