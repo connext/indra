@@ -18,12 +18,7 @@ import { WithdrawalController } from "./controllers/WithdrawalController";
 import { CFCore } from "./lib/cfCore";
 import { CF_PATH } from "./lib/constants";
 import { Logger } from "./lib/logger";
-import {
-  freeBalanceAddressFromXpub,
-  publicIdentifierToAddress,
-  stringify,
-  withdrawalKey,
-} from "./lib/utils";
+import { stringify, withdrawalKey, xpubToAddress } from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import {
@@ -87,9 +82,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     keyGen = (index: string): Promise<string> =>
       Promise.resolve(hdNode.derivePath(index).privateKey);
     channelProviderConfig = {
-      freeBalanceAddress: freeBalanceAddressFromXpub(xpub),
+      freeBalanceAddress: xpubToAddress(xpub),
       nodeUrl,
-      signerAddress: freeBalanceAddressFromXpub(xpub),
+      signerAddress: xpubToAddress(xpub),
       type: RpcType.CounterfactualNode,
       userPublicIdentifier: xpub,
     };
@@ -104,9 +99,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     xpub = opts.xpub;
     keyGen = opts.keyGen;
     channelProviderConfig = {
-      freeBalanceAddress: freeBalanceAddressFromXpub(xpub),
+      freeBalanceAddress: xpubToAddress(xpub),
       nodeUrl,
-      signerAddress: freeBalanceAddressFromXpub(xpub),
+      signerAddress: xpubToAddress(xpub),
       type: RpcType.CounterfactualNode,
       userPublicIdentifier: xpub,
     };
@@ -593,7 +588,7 @@ export class ConnextClient implements IConnextClient {
     assetId: string,
     notifyCounterparty: boolean = false,
   ): Promise<CFCoreTypes.DepositResult> => {
-    const depositAddr = publicIdentifierToAddress(this.publicIdentifier);
+    const depositAddr = xpubToAddress(this.publicIdentifier);
     let bal: BigNumber;
 
     if (assetId === AddressZero) {
@@ -647,7 +642,7 @@ export class ConnextClient implements IConnextClient {
         // but need the nodes free balance
         // address in the multisig
         const obj = {};
-        obj[freeBalanceAddressFromXpub(this.nodePublicIdentifier)] = new BigNumber(0);
+        obj[xpubToAddress(this.nodePublicIdentifier)] = new BigNumber(0);
         obj[this.freeBalanceAddress] = new BigNumber(0);
         return obj;
       }

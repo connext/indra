@@ -76,13 +76,8 @@ export const mkHash = (prefix: string = "0x"): string => prefix.padEnd(66, "0");
 export const delay = (ms: number): Promise<void> =>
   new Promise((res: any): any => setTimeout(res, ms));
 
-export const publicIdentifierToAddress = (publicIdentifier: string): string => {
-  return HDNode.fromExtendedKey(publicIdentifier).address;
-};
-
-export const freeBalanceAddressFromXpub = (xpub: string): string => {
-  return xkeyKthAddress(xpub, 0);
-};
+export const xpubToAddress = (xpub: string, path: string = "0"): string =>
+  HDNode.fromExtendedKey(xpub).derivePath(path).address;
 
 export const createLinkedHash = (
   amount: BigNumber,

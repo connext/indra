@@ -2,7 +2,7 @@ import EthCrypto from "eth-crypto";
 import { HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import { createLinkedHash, freeBalanceAddressFromXpub, stringify } from "../lib/utils";
+import { createLinkedHash, stringify, xpubToAddress } from "../lib/utils";
 import {
   BigNumber,
   CFCoreTypes,
@@ -119,11 +119,11 @@ export class ConditionalTransferController extends AbstractController {
       coinTransfers: [
         {
           amount,
-          to: freeBalanceAddressFromXpub(this.connext.publicIdentifier),
+          to: xpubToAddress(this.connext.publicIdentifier),
         },
         {
           amount: Zero,
-          to: freeBalanceAddressFromXpub(this.connext.nodePublicIdentifier),
+          to: xpubToAddress(this.connext.nodePublicIdentifier),
         },
       ],
       linkedHash,

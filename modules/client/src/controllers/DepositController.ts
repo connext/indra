@@ -2,7 +2,7 @@ import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
 
-import { publicIdentifierToAddress, stringify } from "../lib/utils";
+import { stringify, xpubToAddress } from "../lib/utils";
 import { BigNumber, CFCoreTypes, ChannelState, convert, DepositParameters } from "../types";
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
@@ -67,7 +67,7 @@ export class DepositController extends AbstractController {
     amount: BigNumber,
   ): Promise<string | undefined> => {
     // check asset balance of address
-    const depositAddr = publicIdentifierToAddress(this.connext.publicIdentifier);
+    const depositAddr = xpubToAddress(this.connext.publicIdentifier);
     let bal: BigNumber;
     if (assetId === AddressZero) {
       bal = await this.ethProvider.getBalance(depositAddr);

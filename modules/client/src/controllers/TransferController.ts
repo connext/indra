@@ -1,7 +1,7 @@
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
-import { freeBalanceAddressFromXpub, stringify } from "../lib/utils";
+import { stringify, xpubToAddress } from "../lib/utils";
 import {
   CFCoreChannel,
   CFCoreTypes,
@@ -139,11 +139,11 @@ export class TransferController extends AbstractController {
       coinTransfers: [
         {
           amount,
-          to: freeBalanceAddressFromXpub(this.connext.publicIdentifier),
+          to: xpubToAddress(this.connext.publicIdentifier),
         },
         {
           amount: Zero,
-          to: freeBalanceAddressFromXpub(recipient),
+          to: xpubToAddress(recipient),
         },
       ],
     };

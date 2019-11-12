@@ -19,7 +19,7 @@ export const getOrCreateChannel = async (assetId?: string): Promise<IConnextClie
   };
   const client = await connext.connect(connextOpts);
   await client.isAvailable;
-  const nodeFBAddress = connext.utils.freeBalanceAddressFromXpub(client.nodePublicIdentifier);
+  const nodeFBAddress = connext.utils.xpubToAddress(client.nodePublicIdentifier);
   console.log("Payment bot launched:");
   console.log(` - mnemonic: ${connextOpts.mnemonic}`);
   console.log(` - ethProviderUrl: ${connextOpts.ethProviderUrl}`);
