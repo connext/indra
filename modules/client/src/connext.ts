@@ -202,6 +202,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     channelRouter,
     config,
     ethProvider,
+    keyGen,
     messaging,
     multisigAddress,
     network,
@@ -256,6 +257,7 @@ export class ConnextClient implements IConnextClient {
   public store: Store;
 
   private opts: InternalClientOptions;
+  private keyGen: (index: string) => Promise<string>;
 
   private depositController: DepositController;
   private transferController: TransferController;
@@ -336,15 +338,21 @@ export class ConnextClient implements IConnextClient {
         break;
       case RpcType.CounterfactualNode:
         const cfCore = await CFCore.create(
-          this.messaging as any, // TODO: FIX
+          this.messaging as any,
           this.store,
+          this.config.contractAddresses,
           { STORE_KEY_PREFIX: "store" },
           this.ethProvider,
-          this.config.contractAddresses,
           { acquireLock: this.node.acquireLock.bind(this.node) },
+          this.publicIdentifier,
+          this.keyGen,
         );
-        const wallet = Wallet.fromMnemonic(this.opts.mnemonic!, CF_PATH);
-        channelRouter = new ChannelRouter(cfCore, this.channelRouter.config, this.store, wallet);
+        channelRouter = new ChannelRouter(
+          cfCore,
+          this.channelRouter.config,
+          this.store,
+          await this.keyGen("0"),
+        );
         break;
       default:
         throw new Error(`Unrecognized channel provider type: ${this.routerType}`);
