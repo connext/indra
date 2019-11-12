@@ -3,9 +3,9 @@
   "version": "0.4.1",
   "description": "Smart contracts for an State Channel AppInstance Adjudicator",
   "license": "MIT",
-  "files": ["build", "contracts", "networks", "expected-build-artifacts"],
+  "files": ["build", "contracts"],
   "scripts": {
-    "build": "waffle waffle.json && cp build/*.json expected-build-artifacts",
+    "build": "waffle waffle.json",
     "test": "ts-mocha test/*",
     "lint:fix": "yarn lint:ts:fix && yarn lint:sol:fix",
     "lint": "yarn lint:ts && yarn lint:sol",

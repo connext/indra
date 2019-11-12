@@ -4,9 +4,9 @@
   "description": "Collection of various apps built on Counterfactual",
   "repository": "https://github.com/ConnextProject/indra.git",
   "license": "MIT",
-  "files": ["build", "expected-build-artifacts", "networks"],
+  "files": ["build", "contracts"],
   "scripts": {
-    "build": "waffle waffle.json && cp build/*.json expected-build-artifacts",
+    "build": "waffle waffle.json",
     "migrate": "truffle migrate",
     "test": "ts-mocha test/*",
     "lint:fix": "yarn lint:ts:fix && yarn lint:sol:fix",
@@ -17,6 +17,7 @@
     "lint:ts": "tslint -c tslint.json -p ."
   },
   "devDependencies": {
+    "@connext/cf-types": "0.5.0",
     "@connext/cf-adjudicator-contracts": "0.4.1",
     "@types/chai": "4.2.4",
     "@types/mocha": "5.2.7",
