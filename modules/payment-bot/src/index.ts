@@ -1,4 +1,5 @@
 import {
+  CFCoreTypes,
   DepositParameters,
   LinkedTransferParameters,
   LinkedTransferToRecipientParameters,
@@ -6,7 +7,6 @@ import {
   ResolveLinkedTransferToRecipientParameters,
   WithdrawParameters,
 } from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
 import { AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { formatEther, hexlify, parseEther, randomBytes } from "ethers/utils";
@@ -214,8 +214,8 @@ process.on("unhandledRejection", (e: any): any => {
   }
 
   if (config.restore) {
-    console.log(`Restoring states from the node with mnemonic: ${config.restore}`);
-    await client.restoreState(config.restore);
+    console.log(`Restoring states from the node: ${config.restore}`);
+    await client.restoreState();
   }
 
   if (!config.open) {

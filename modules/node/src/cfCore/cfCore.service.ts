@@ -1,5 +1,4 @@
 import { AppActionBigNumber, ConnextNodeStorePrefix } from "@connext/types";
-import { AppInstanceJson, AppInstanceProposal, Node as CFCoreTypes } from "@counterfactual/types";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -7,7 +6,13 @@ import { BigNumber } from "ethers/utils";
 import { ConfigService } from "../config/config.service";
 import { CFCoreProviderId } from "../constants";
 import { CLogger, freeBalanceAddressFromXpub, replaceBN } from "../util";
-import { CFCore, getMultisigAddressfromXpubs } from "../util/cfCore";
+import {
+  AppInstanceJson,
+  AppInstanceProposal,
+  CFCore,
+  CFCoreTypes,
+  getMultisigAddressfromXpubs,
+} from "../util/cfCore";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
 

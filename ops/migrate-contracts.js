@@ -1,8 +1,8 @@
+const { EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT: coreContracts } = require(`@connext/types`)
 const fs = require('fs')
 const eth = require('ethers')
 const linker = require('solc/linker')
 const tokenArtifacts = require('openzeppelin-solidity/build/contracts/ERC20Mintable.json')
-const { EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT: coreContracts } = require(`@counterfactual/types`)
 
 const appContracts = [
   "SimpleLinkedTransferApp",
@@ -10,13 +10,15 @@ const appContracts = [
   "SimpleTwoPartySwapApp"
 ]
 
+console.log(`Core contracts: ${JSON.stringify(coreContracts)}`);
+
 const artifacts = {}
 for (const contract of coreContracts) {
   try {
-    artifacts[contract] = require(`@counterfactual/cf-adjudicator-contracts/build/${contract}.json`)
+    artifacts[contract] = require(`@connext/cf-adjudicator-contracts/build/${contract}.json`)
     console.log(`Imported adjudicator contract: ${contract}`)
   } catch (e) {
-    artifacts[contract] = require(`@counterfactual/cf-funding-protocol-contracts/build/${contract}.json`)
+    artifacts[contract] = require(`@connext/cf-funding-protocol-contracts/build/${contract}.json`)
     console.log(`Imported funding contract: ${contract}`)
   }
 }
@@ -30,13 +32,12 @@ const { formatEther, parseEther } = eth.utils
 ////////////////////////////////////////
 // Environment Setup
 
-const shouldPullUpdatesFromCF = false
 const shouldUpdateProxyFactory = false
 const botMnemonics = [
   'humble sense shrug young vehicle assault destroy cook property average silent travel',
   'roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult',
 ]
-const cfPath = "m/44'/60'/0'/25446"
+const cfPath = "m/44'/60'/0'/25446/0"
 const ganacheId = 4447
 
 const project = 'indra'
@@ -218,32 +219,6 @@ const sendGift = async (address, token) => {
       await sendGift(eth.Wallet.fromMnemonic(botMnemonic, cfPath).address, token)
     }
   }
-
-  ////////////////////////////////////////
-  // Maybe update other network addresses
-
-  console.log(`\nUpdating addresses for other networks..`)
-  for (const otherChainId of ["1", "4"]) {
-    const fundingArtifacts = require(`@counterfactual/cf-funding-protocol-contracts/networks/${otherChainId}.json`)
-    const adjudicatorArtifacts = require(`@counterfactual/cf-adjudicator-contracts/networks/${otherChainId}.json`)
-    for (const contract of coreContracts) {
-      if ((contract === "ProxyFactory" && shouldUpdateProxyFactory)|| shouldPullUpdatesFromCF) {
-        const artifact = fundingArtifacts.find(c => c.contractName === contract)
-          || adjudicatorArtifacts.find(c => c.contractName === contract)
-        if (!artifact || !artifact.address) {
-          console.log(`Contract ${contract} not found in network ${otherChainId}`);
-          continue;
-        }
-        address = artifact.address;
-        if (!addressBook[otherChainId]) addressBook[otherChainId] = {}
-        if (!addressBook[otherChainId][contract]) addressBook[otherChainId][contract] = {}
-        if (addressBook[otherChainId][contract].address.toLowerCase() !== address.toLowerCase()) {
-          addressBook[otherChainId][contract] = { address }
-        }
-      }
-    }
-  }
-  saveAddressBook(addressBook)
 
   ////////////////////////////////////////
   // Print summary

@@ -1,0 +1,8 @@
+{
+  "npmPath": "../../node_modules",
+  "legacyOutput": true,
+  "compilerOptions": {
+    "evmVersion": "constantinople"
+  },
+  "solcVersion": "v0.5.11+commit.c082d0b4"
+}

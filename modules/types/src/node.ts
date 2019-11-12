@@ -1,8 +1,14 @@
-import { MessagingConfig } from "@connext/messaging";
-import { NetworkContext, Node as NodeTypes } from "@counterfactual/types";
 import { BigNumber, Network } from "ethers/utils";
 
+import { CFCoreTypes, NetworkContext } from "./cf";
 import { CFCoreChannel } from "./channel";
+
+export interface MessagingConfig {
+  clusterId?: string;
+  messagingUrl: string | string[];
+  token?: string;
+  logLevel: number;
+}
 
 ////////////////////////////////////
 ///////// NODE RESPONSE TYPES
@@ -56,4 +62,4 @@ export type CreateChannelResponse = {
   transactionHash: string;
 };
 
-export type RequestCollateralResponse = NodeTypes.DepositResult | undefined;
+export type RequestCollateralResponse = CFCoreTypes.DepositResult | undefined;

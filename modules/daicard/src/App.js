@@ -1,6 +1,7 @@
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
+import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import { formatEther, parseEther } from "ethers/utils";
 import interval from "interval-promise";
 import { PisaClient } from "pisa-client";
@@ -62,6 +63,7 @@ const urls = {
 const WITHDRAW_ESTIMATED_GAS = toBN("300000");
 const DEPOSIT_ESTIMATED_GAS = toBN("25000");
 const MAX_CHANNEL_VALUE = Currency.DAI("30");
+const CF_PATH = "m/44'/60'/0'/25446";
 
 // it is important to add a default payment
 // profile on initial load in the case the
@@ -159,7 +161,7 @@ class App extends React.Component {
   getWalletConnext = () => {
     const wc = localStorage.getItem("useWalletConnext");
     return wc === "true";
-  }
+  };
 
   // Channel doesn't get set up until after provider is set
   async componentDidMount() {
@@ -180,7 +182,7 @@ class App extends React.Component {
     let mnemonic = localStorage.getItem("mnemonic");
     const useWalletConnext = this.getWalletConnext() || false;
     console.debug("useWalletConnext: ", useWalletConnext);
-    if (!mnemonic && !useWalletConnext) {
+    if (!mnemonic) {
       mnemonic = eth.Wallet.createRandom().mnemonic;
       localStorage.setItem("mnemonic", mnemonic);
     }
@@ -188,11 +190,10 @@ class App extends React.Component {
     let wallet;
     const network = await ethprovider.getNetwork();
     if (!useWalletConnext) {
-      wallet = eth.Wallet.fromMnemonic(mnemonic, "m/44'/60'/0'/25446").connect(ethprovider);
+      wallet = eth.Wallet.fromMnemonic(mnemonic, CF_PATH + "/0").connect(ethprovider);
       this.setState({ network, wallet });
     }
 
-    let channel;
     // migrate if needed
     if (wallet && localStorage.getItem("rpc-prod")) {
       machine.send(["MIGRATE", "START_MIGRATE"]);
@@ -204,9 +205,8 @@ class App extends React.Component {
     machine.send(["START", "START_START"]);
 
     // if choose mnemonic
+    let channel;
     if (!useWalletConnext) {
-
-      // If no mnemonic, use the one we created pre-migration
       let store;
       const pisaUrl = urls.pisaUrl(network.chainId);
       if (pisaUrl) {
@@ -221,18 +221,33 @@ class App extends React.Component {
       } else {
         store = storeFactory();
       }
+
+      const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
+      const xpub = hdNode.neuter().extendedKey;
+      const keyGen = index => {
+        const res = hdNode.derivePath(index);
+        console.log(`***** expected signer: ${res.address} for idx ${index}`);
+        return Promise.resolve(res.privateKey)
+      };
       channel = await connext.connect({
         ethProviderUrl: urls.ethProviderUrl,
+        keyGen,
         logLevel: 5,
-        mnemonic,
         nodeUrl: urls.nodeUrl,
         store,
+        xpub,
       });
+      console.log(`mnemonic address: ${wallet.address} (path: ${wallet.path})`);
+      console.log(`xpub address: ${eth.utils.computeAddress(fromExtendedKey(xpub).publicKey)}`);
+      console.log(
+        `keygen address: ${new eth.Wallet(await keyGen("1")).address} (path ${
+          new eth.Wallet(await keyGen("1")).path
+        })`,
+      );
     } else if (useWalletConnext) {
-      let channelProvider;
       let rpc = {};
       rpc[network.chainId] = urls.ethProviderUrl;
-      channelProvider = new WalletConnectChannelProvider({
+      const channelProvider = new WalletConnectChannelProvider({
         rpc,
         chainId: network.chainId,
       });
@@ -258,7 +273,7 @@ class App extends React.Component {
     }
     console.log(`Successfully connected channel`);
 
-    await channel.isAvailable;
+    await channel.isAvailable();
 
     const token = new Contract(
       channel.config.contractAddresses.Token,
@@ -525,7 +540,7 @@ class App extends React.Component {
       return;
     }
 
-    const hubFBAddress = connext.utils.freeBalanceAddressFromXpub(channel.nodePublicIdentifier);
+    const hubFBAddress = connext.utils.xpubToAddress(channel.nodePublicIdentifier);
     const collateralNeeded = balance.channel.token.wad.add(weiToToken(weiToSwap, swapRate));
     let collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress]);
 
@@ -681,7 +696,7 @@ class App extends React.Component {
                   setWalletConnext={this.setWalletConnext}
                   getWalletConnext={this.getWalletConnext}
                   store={channel ? channel.store : undefined}
-                  xpub={channel ? channel.publicIdentifier : 'Unknown'}
+                  xpub={channel ? channel.publicIdentifier : "Unknown"}
                 />
               )}
             />
@@ -690,7 +705,7 @@ class App extends React.Component {
               render={props => (
                 <RequestCard
                   {...props}
-                  xpub={channel ? channel.publicIdentifier : 'Unknown'}
+                  xpub={channel ? channel.publicIdentifier : "Unknown"}
                   maxDeposit={maxDeposit}
                 />
               )}
@@ -710,11 +725,7 @@ class App extends React.Component {
             <Route
               path="/redeem"
               render={props => (
-                <RedeemCard
-                  {...props}
-                  channel={channel}
-                  tokenProfile={this.state.tokenProfile}
-                />
+                <RedeemCard {...props} channel={channel} tokenProfile={this.state.tokenProfile} />
               )}
             />
             <Route
