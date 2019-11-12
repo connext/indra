@@ -17,7 +17,7 @@
     "lint:ts": "tslint -c tslint.json -p ."
   },
   "devDependencies": {
-    "@connext/cf-types": "0.6.0",
+    "@connext/cf-types": "1.0.0",
     "@connext/cf-adjudicator-contracts": "0.4.1",
     "@types/chai": "4.2.4",
     "@types/mocha": "5.2.7",
