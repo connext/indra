@@ -163,8 +163,6 @@ class App extends React.Component {
 
   // Channel doesn't get set up until after provider is set
   async componentDidMount() {
-    // make sure starting from sq 1 with wallet connect
-    cleanWalletConnect();
     const { ethprovider, machine } = this.state;
     machine.start();
     machine.onTransition(state => {
