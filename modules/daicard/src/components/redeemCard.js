@@ -371,7 +371,7 @@ const RedeemCardModal = ({ amount, history, message, redeemPayment, state, takeA
       ) : state.matches("modal.collateralizing") ? (
         <Grid>
           <DialogTitle disableTypography>
-            <Typography variant="h5" style={{ color: "#F22424" }}>
+            <Typography variant="h5" color="primary">
               Requesting Collateral...
             </Typography>
           </DialogTitle>

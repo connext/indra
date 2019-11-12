@@ -1,4 +1,5 @@
 import {
+  CFCoreTypes,
   DepositParameters,
   LinkedTransferParameters,
   LinkedTransferToRecipientParameters,
@@ -6,7 +7,6 @@ import {
   ResolveLinkedTransferToRecipientParameters,
   WithdrawParameters,
 } from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
 import { AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { formatEther, hexlify, parseEther, randomBytes } from "ethers/utils";

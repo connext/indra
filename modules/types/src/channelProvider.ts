@@ -1,8 +1,3 @@
-import { Node } from "@counterfactual/node";
-
-/////////////////////////////////////////////
-///////// CHANNEL PROVIDER TYPES
-
 export type ChannelProvider = any;
 
 export type ChannelProviderConfig = {
@@ -21,4 +16,5 @@ export enum RpcType {
   CounterfactualNode = "CounterfactualNode", // rename?
 }
 
-export type RpcConnection = Node | ChannelProvider;
+// TODO: replace any w interface of cfCore (using implementation directly -> circular dependency)
+export type RpcConnection = ChannelProvider | any;

@@ -60,20 +60,14 @@ sleep 5 # give recipient a sec to get set up
 echo -e "$divider";echo "Depositing eth into sender bot"
 bash ops/payment-bot.sh -i 2 -d 0.1 -m "$mnemonic2"
 
-echo -e "$divider";echo "Sending eth to recipient bot"
-bash ops/payment-bot.sh -i 2 -t 0.025 -c $id -m "$mnemonic2"
+echo -e "$divider";echo "Depositing tokens into sender bot"
+bash ops/payment-bot.sh -i 2 -d 0.1 -a $tokenAddress -m "$mnemonic2"
 
 #echo -e "$divider";echo "Removing sender's state to trigger a restore"
 #rm modules/payment-bot/.payment-bot-db/2.json
 
-echo -e "$divider";echo "Depositing eth into sender bot"
-bash ops/payment-bot.sh -i 2 -d 0.1 -m "$mnemonic2"
-
 echo -e "$divider";echo "Sending eth to recipient bot"
 bash ops/payment-bot.sh -i 2 -t 0.025 -c $id -m "$mnemonic2"
-
-echo -e "$divider";echo "Depositing tokens into sender bot"
-bash ops/payment-bot.sh -i 2 -d 0.1 -a $tokenAddress -m "$mnemonic2"
 
 echo -e "$divider";echo "Sending tokens to recipient bot"
 bash ops/payment-bot.sh -i 2 -t 0.05 -c $id -a $tokenAddress -m "$mnemonic2"

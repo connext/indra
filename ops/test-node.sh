@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
 test_command='
@@ -41,7 +41,6 @@ postgres_host="${project}_database_$suffix"
 postgres_password="$project"
 postgres_port="5432"
 postgres_user="$project"
-database_url="postgresql://$postgres_user:$postgres_password@$postgres_host:$postgres_port/$postgres_db"
 
 nats_host="${project}_nats_$suffix"
 
