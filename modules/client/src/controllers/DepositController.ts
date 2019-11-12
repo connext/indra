@@ -23,9 +23,7 @@ export class DepositController extends AbstractController {
     // TODO: remove free balance stuff?
     const preDepositBalances = await this.connext.getFreeBalance(assetId);
 
-    this.log.info(
-      `\nDepositing ${amount} of ${assetId} into ${this.connext.multisigAddress}\n`,
-    );
+    this.log.info(`\nDepositing ${amount} of ${assetId} into ${this.connext.multisigAddress}\n`);
 
     // register listeners
     this.log.info("Registering listeners........");
@@ -70,7 +68,6 @@ export class DepositController extends AbstractController {
     amount: BigNumber,
   ): Promise<string | undefined> => {
     // check asset balance of address
-    // TODO: fix for non-eth balances
     const depositAddr = publicIdentifierToAddress(this.connext.publicIdentifier);
     let bal: BigNumber;
     if (assetId === AddressZero) {
