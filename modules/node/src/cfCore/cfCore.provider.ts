@@ -4,9 +4,10 @@ import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { Wallet } from "ethers";
 import { HDNode } from "ethers/utils";
+import { fromMnemonic } from "ethers/utils/hdnode";
 
 import { ConfigService } from "../config/config.service";
-import { CFCoreProviderId, MessagingProviderId } from "../constants";
+import { CFCoreProviderId, CF_PATH, MessagingProviderId } from "../constants";
 import { LockService } from "../lock/lock.service";
 import { CLogger, freeBalanceAddressFromXpub } from "../util";
 import { CFCore, EXTENDED_PRIVATE_KEY_PATH } from "../util/cfCore";
@@ -24,27 +25,30 @@ export const cfCoreProviderFactory: Provider = {
     store: CFCoreRecordRepository,
     lockService: LockService,
   ): Promise<CFCore> => {
-    await store.set([
-      {
-        path: EXTENDED_PRIVATE_KEY_PATH,
-        value: HDNode.fromMnemonic(config.getMnemonic()).extendedKey,
-      },
-    ]);
+    const hdNode = fromMnemonic(config.getMnemonic()).derivePath(CF_PATH);
+    const publicExtendedKey = hdNode.neuter().extendedKey;
+    logger.log(`Derived xpub from mnemonic: ${publicExtendedKey}`);
+
     // test that provider works
     const { chainId, name: networkName } = await config.getEthNetwork();
-    const addr = Wallet.fromMnemonic(config.getMnemonic(), "m/44'/60'/0'/25446").address;
+    const signerAddr = hdNode.neuter().address;
     const provider = config.getEthProvider();
-    const balance = (await provider.getBalance(addr)).toString();
+    const balance = (await provider.getBalance(signerAddr)).toString();
     logger.log(
-      `Balance of signer address ${addr} on ${networkName} (chainId ${chainId}): ${balance}`,
+      `Balance of signer address ${signerAddr} on ${networkName} (chainId ${chainId}): ${balance}`,
     );
     const cfCore = await CFCore.create(
       messaging as any, // TODO: FIX
       store,
+      await config.getContractAddresses(),
       { STORE_KEY_PREFIX: ConnextNodeStorePrefix },
       provider,
-      await config.getContractAddresses(),
       { acquireLock: lockService.lockedOperation.bind(lockService) },
+      publicExtendedKey,
+      // key gen fn
+      (uniqueId: string): Promise<string> => {
+        return Promise.resolve(hdNode.derivePath(uniqueId).privateKey);
+      },
     );
     logger.log("CFCore created");
     logger.log(`Public Identifier ${JSON.stringify(cfCore.publicIdentifier)}`);
