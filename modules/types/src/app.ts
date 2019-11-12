@@ -1,7 +1,6 @@
-import { Address, Node as CFCoreTypes, OutcomeType } from "@connext/cf-types";
 import { BigNumber } from "ethers/utils";
 
-import { SolidityValueType } from "./basic";
+import { Address, Node as CFCoreTypes, OutcomeType, SolidityValueType } from "./cf";
 import { CFCoreChannel } from "./channel";
 
 ////////////////////////////////////

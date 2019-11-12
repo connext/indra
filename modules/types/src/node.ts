@@ -1,8 +1,14 @@
-import { MessagingConfig } from "@connext/messaging";
-import { NetworkContext, Node as CFCoreTypes } from "@connext/cf-types";
 import { BigNumber, Network } from "ethers/utils";
 
+import { NetworkContext, Node as CFCoreTypes } from "./cf";
 import { CFCoreChannel } from "./channel";
+
+export interface MessagingConfig {
+  clusterId?: string;
+  messagingUrl: string | string[];
+  token?: string;
+  logLevel: number;
+}
 
 ////////////////////////////////////
 ///////// NODE RESPONSE TYPES

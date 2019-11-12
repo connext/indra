@@ -195,7 +195,7 @@ database: node-modules $(shell find $(database) $(find_options))
 	docker build --file $(database)/db.dockerfile --tag $(project)_database:latest $(database)
 	$(log_finish) && touch $(flags)/$@
 
-messaging: node-modules $(shell find $(messaging)/src $(find_options))
+messaging: node-modules types $(shell find $(messaging)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/messaging && npm run build"
 	$(log_finish) && touch $(flags)/$@
@@ -231,7 +231,7 @@ indra-proxy-prod: daicard-prod ws-tcp-relay $(shell find $(proxy) $(find_options
 	docker build --file $(proxy)/indra.connext.network/prod.dockerfile --tag $(project)_proxy:latest .
 	$(log_finish) && touch $(flags)/$@
 
-types: node-modules cf-types messaging $(shell find $(types)/src $(find_options))
+types: node-modules cf-types $(shell find $(types)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/types && npm run build"
 	$(log_finish) && touch $(flags)/$@

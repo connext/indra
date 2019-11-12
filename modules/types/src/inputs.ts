@@ -1,7 +1,7 @@
-import { Address, Node as CFCoreTypes } from "@connext/cf-types";
 import { BigNumber } from "ethers/utils";
 
 import { SimpleLinkedTransferAppState } from "./app";
+import { Address, Node as CFCoreTypes } from "./cf";
 import { AssetAmount } from "./channel";
 
 /////////////////////////////////

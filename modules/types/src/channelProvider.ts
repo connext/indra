@@ -1,8 +1,3 @@
-import { Node as CFCore } from "@connext/cf-core";
-
-/////////////////////////////////////////////
-///////// CHANNEL PROVIDER TYPES
-
 export type ChannelProvider = any;
 
 export type ChannelProviderConfig = {
@@ -21,5 +16,5 @@ export enum RpcType {
   CounterfactualNode = "CounterfactualNode", // rename?
 }
 
-// TODO: replace w interface of cfCore (using implementation directly -> circular dependency)
-export type RpcConnection = ChannelProvider | CFCore;
+// TODO: replace any w interface of cfCore (using implementation directly -> circular dependency)
+export type RpcConnection = ChannelProvider | any;

@@ -1,8 +1,7 @@
-import { AppInstanceJson, Node as CFCoreTypes } from "@connext/cf-types";
 import { TransactionResponse } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 
-import { Address } from "./basic";
+import { Address, AppInstanceJson, Node as CFCoreTypes } from "./cf";
 
 ////////////////////////////////////
 ////// CHANNEL TYPES
