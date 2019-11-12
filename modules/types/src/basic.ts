@@ -1,13 +1,9 @@
 import { BigNumber as ethersBig } from "ethers/utils";
 
-export type Address = string;
-
 export type BigNumber = ethersBig;
 export const BigNumber = ethersBig;
 
 export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
-
-export type SolidityValueType = any; // FIXME: use cf type
 
 export const ConnextEvents = {
   RECIEVE_TRANSFER_FAILED: "receiveTransferFailedEvent",

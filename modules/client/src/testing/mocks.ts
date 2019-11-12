@@ -1,22 +1,22 @@
 import { IMessagingService } from "@connext/messaging";
+import { providers } from "ethers";
+
+import { Logger } from "../lib/logger";
+import { INodeApiClient } from "../node";
 import {
   AppRegistry,
+  CFCoreTypes,
   ChannelAppSequences,
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
+  NodeInitializationParameters,
   PaymentProfile,
   RequestCollateralResponse,
   SupportedApplication,
   SupportedNetwork,
   Transfer,
-} from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
-import { providers } from "ethers";
-
-import { Logger } from "../lib/logger";
-import { INodeApiClient } from "../node";
-import { NodeInitializationParameters } from "../types";
+} from "../types";
 
 type TransactionRequest = providers.TransactionRequest;
 type TransactionResponse = providers.TransactionResponse;
@@ -168,6 +168,12 @@ export class MockNodeClientApi implements INodeApiClient {
   public async fetchLinkedTransfer(paymentId: string): Promise<any> {}
 
   public async resolveLinkedTransfer(): Promise<void> {}
+
+  public async restoreState(publicIdentifier: string): Promise<any> {
+    return {
+      multisigAddress: address,
+    };
+  }
 
   public async addPaymentProfile(): Promise<any> {
     return MockNodeClientApi.returnValues.addPaymentProfile;

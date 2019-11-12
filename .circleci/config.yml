@@ -26,6 +26,13 @@ jobs:
       - run: make start-test
       - run: make test-bot
 
+  test-cf:
+    machine:
+      image: ubuntu-1604:201903-01
+    steps:
+      - checkout
+      - run: make test-cf
+
   push-latest-images:
     machine:
       image: ubuntu-1604:201903-01

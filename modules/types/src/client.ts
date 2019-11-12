@@ -1,4 +1,3 @@
-import { AppInstanceJson, Node as CFCoreTypes } from "@counterfactual/types";
 import { BigNumber } from "ethers/utils";
 
 import {
@@ -9,6 +8,7 @@ import {
   SupportedNetwork,
 } from "./app";
 import { ConnextEvent } from "./basic";
+import { AppInstanceJson, CFCoreTypes } from "./cf";
 import { CFCoreChannel, ChannelAppSequences, ChannelState, PaymentProfile } from "./channel";
 import { ChannelProvider, ChannelProviderConfig } from "./channelProvider";
 import {
@@ -46,7 +46,7 @@ export interface ClientOptions {
   ethProviderUrl: string;
   nodeUrl: string; // ws:// or nats:// urls are supported
   channelProvider?: ChannelProvider;
-  keyGen?: () => Promise<string>;
+  keyGen?: (index: string) => Promise<string>;
   mnemonic?: string;
   xpub?: string;
   store: Store;

@@ -1,7 +1,5 @@
-import { Node as CFCoreTypes } from "@counterfactual/types";
-
 import { CLogger } from "../util";
-import { JsonRpcResponse } from "../util/cfCore";
+import { CFCoreTypes, JsonRpcResponse } from "../util/cfCore";
 
 import { mkAddress, mkXpub } from "./utils";
 

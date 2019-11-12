@@ -1,7 +1,5 @@
-import { JsonRpcResponse } from "@counterfactual/node";
-import { Node as NodeTypes } from "@counterfactual/types";
-
-import { CLogger } from "../util";
+import { CLogger, JsonRpcResponse } from "../util";
+import { CFCoreTypes } from "../util/cfCore";
 
 import { mkAddress, mkXpub } from "./utils";
 
@@ -26,14 +24,14 @@ export const mockNodeProvider = {
     dispatch: (param: any): JsonRpcResponse | undefined => {
       logger.log(`Called mocked router.dispatch with params: ${JSON.stringify(param)}`);
       switch (param.methodName) {
-        case NodeTypes.RpcMethodName.CREATE_CHANNEL:
+        case CFCoreTypes.RpcMethodName.CREATE_CHANNEL:
           return createMockJsonRpcResponse({
             multisigAddress: mockStateDepositHolderAddress,
-          } as NodeTypes.CreateChannelResult);
-        case NodeTypes.RpcMethodName.GET_STATE_DEPOSIT_HOLDER_ADDRESS:
+          } as CFCoreTypes.CreateChannelResult);
+        case CFCoreTypes.RpcMethodName.GET_STATE_DEPOSIT_HOLDER_ADDRESS:
           return createMockJsonRpcResponse({
             address: mockStateDepositHolderAddress,
-          } as NodeTypes.GetStateDepositHolderAddressResult);
+          } as CFCoreTypes.GetStateDepositHolderAddressResult);
         default:
           throw new Error(`methodName: ${param.methodName} has an undefined mock response`);
       }

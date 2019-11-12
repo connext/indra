@@ -1,3 +1,6 @@
+import { bigNumberify } from "ethers/utils";
+
+import { stringify } from "../lib/utils";
 import {
   ConnextEvents,
   convert,
@@ -7,10 +10,7 @@ import {
   ResolveLinkedTransferParameters,
   ResolveLinkedTransferResponse,
   TransferCondition,
-} from "@connext/types";
-import { bigNumberify } from "ethers/utils";
-
-import { stringify } from "../lib/utils";
+} from "../types";
 
 import { AbstractController } from "./AbstractController";
 

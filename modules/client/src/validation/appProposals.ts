@@ -1,10 +1,14 @@
-import { RegisteredAppDetails, SupportedApplication } from "@connext/types";
-import { AppInstanceInfo, AppInstanceJson } from "@counterfactual/types";
 import { bigNumberify, getAddress } from "ethers/utils";
 
 import { ConnextClient } from "../connext";
 import { Logger } from "../lib/logger";
-import { freeBalanceAddressFromXpub, stringify } from "../lib/utils";
+import { stringify, xpubToAddress } from "../lib/utils";
+import {
+  AppInstanceInfo,
+  AppInstanceJson,
+  RegisteredAppDetails,
+  SupportedApplication,
+} from "../types";
 
 type ProposalValidator = {
   [index in SupportedApplication]: (
@@ -159,8 +163,7 @@ const baseAppValidation = async (
   const responderFreeBalance = await connext.getFreeBalance(
     getAddress(app.responderDepositTokenAddress),
   );
-  const userFreeBalance =
-    responderFreeBalance[freeBalanceAddressFromXpub(connext.publicIdentifier)];
+  const userFreeBalance = responderFreeBalance[xpubToAddress(connext.publicIdentifier)];
   if (userFreeBalance.lt(app.responderDeposit)) {
     return `Insufficient free balance for requested asset,
       freeBalance: ${userFreeBalance.toString()}
@@ -172,8 +175,7 @@ const baseAppValidation = async (
   const initiatorFreeBalance = await connext.getFreeBalance(
     getAddress(app.initiatorDepositTokenAddress),
   );
-  const nodeFreeBalance =
-    initiatorFreeBalance[freeBalanceAddressFromXpub(connext.nodePublicIdentifier)];
+  const nodeFreeBalance = initiatorFreeBalance[xpubToAddress(connext.nodePublicIdentifier)];
   if (isVirtual && nodeFreeBalance.lt(app.initiatorDeposit)) {
     const reqRes = await connext.requestCollateral(app.initiatorDepositTokenAddress);
     connext.log.debug(

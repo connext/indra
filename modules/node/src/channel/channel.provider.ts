@@ -7,7 +7,6 @@ import {
   PaymentProfile as PaymentProfileRes,
   RequestCollateralResponse,
 } from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { TransactionResponse } from "ethers/providers";
 import { bigNumberify, getAddress } from "ethers/utils";
@@ -18,7 +17,7 @@ import { ConfigService } from "../config/config.service";
 import { CFCoreProviderId, ChannelMessagingProviderId, MessagingProviderId } from "../constants";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { AbstractMessagingProvider } from "../util";
-import { CFCore } from "../util/cfCore";
+import { CFCore, CFCoreTypes } from "../util/cfCore";
 
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
@@ -142,11 +141,9 @@ class ChannelMessaging extends AbstractMessagingProvider {
     return onchainTx;
   }
 
-  async getStatesForRestore(pubId: string): Promise<{ path: string; value: object }[]> {
-    const states = await this.channelService.getChannelStates(pubId);
-    return states.map((state: CFCoreRecord) => {
-      return { path: state.path, value: state.value };
-    });
+  // TODO: TYPE
+  async getStatesForRestore(pubId: string): Promise<any> {
+    return await this.channelService.getChannelState(pubId);
   }
 
   async setupSubscriptions(): Promise<void> {
