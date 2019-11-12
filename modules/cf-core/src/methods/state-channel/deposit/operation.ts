@@ -1,4 +1,3 @@
-import ERC20 from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/ERC20.json";
 import {
   AppInterface,
   CoinBalanceRefundState,
@@ -18,6 +17,7 @@ import {
 import { bigNumberify } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
+import { ERC20 } from "../../../contracts";
 import { InstallParams, Protocol, xkeyKthAddress } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";

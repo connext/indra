@@ -1,6 +1,7 @@
-import ConditionalTransactionDelegateTarget from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/ConditionalTransactionDelegateTarget.json";
 import { AppIdentity, NetworkContext } from "@connext/cf-types";
 import { Interface } from "ethers/utils";
+
+import { ConditionalTransactionDelegateTarget } from "../contracts";
 
 import { MultisigCommitment } from "./multisig-commitment";
 import { MultisigOperation, MultisigTransaction } from "./types";
@@ -13,21 +14,21 @@ export class SetupCommitment extends MultisigCommitment {
     public readonly networkContext: NetworkContext,
     public readonly multisigAddress: string,
     public readonly multisigOwners: string[],
-    public readonly freeBalanceAppIdentity: AppIdentity
+    public readonly freeBalanceAppIdentity: AppIdentity,
   ) {
     super(multisigAddress, multisigOwners);
   }
 
   public getTransactionDetails(): MultisigTransaction {
     return {
-      to: this.networkContext.ConditionalTransactionDelegateTarget,
-      value: 0,
       data: iface.functions.executeEffectOfFreeBalance.encode([
         this.networkContext.ChallengeRegistry,
         appIdentityToHash(this.freeBalanceAppIdentity),
-        this.networkContext.MultiAssetMultiPartyCoinTransferInterpreter
+        this.networkContext.MultiAssetMultiPartyCoinTransferInterpreter,
       ]),
-      operation: MultisigOperation.DelegateCall
+      operation: MultisigOperation.DelegateCall,
+      to: this.networkContext.ConditionalTransactionDelegateTarget,
+      value: 0,
     };
   }
 }

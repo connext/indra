@@ -1,4 +1,3 @@
-import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
 import { Node } from "@connext/cf-types";
 import {
   Interface,
@@ -8,6 +7,7 @@ import {
   solidityPack
 } from "ethers/utils";
 
+import { MinimumViableMultisig } from "../contracts";
 import { sortSignaturesBySignerAddress } from "../utils";
 
 import { EthereumCommitment, MultisigTransaction } from "./types";

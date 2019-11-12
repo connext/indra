@@ -1,5 +1,3 @@
-import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
-import ProxyFactory from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/ProxyFactory.json";
 import { NetworkContext, Node } from "@connext/cf-types";
 import { Contract, Signer } from "ethers";
 import { HashZero } from "ethers/constants";
@@ -12,6 +10,7 @@ import { bigNumberify, Interface } from "ethers/utils";
 import log from "loglevel";
 import { jsonRpcMethod } from "rpc-server";
 
+import { MinimumViableMultisig, ProxyFactory } from "../../../contracts";
 import { xkeysToSortedKthAddresses } from "../../../machine";
 import { sortAddresses } from "../../../machine/xkeys";
 import { RequestHandler } from "../../../request-handler";

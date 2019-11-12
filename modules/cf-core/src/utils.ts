@@ -1,5 +1,3 @@
-import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
-import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
 import {
   BigNumber,
   bigNumberify,
@@ -9,10 +7,11 @@ import {
   keccak256,
   recoverAddress,
   Signature,
-  solidityKeccak256
+  solidityKeccak256,
 } from "ethers/utils";
 
 import { JSON_STRINGIFY_SPACE } from "./constants";
+import { MinimumViableMultisig, Proxy } from "./contracts";
 import { xkeysToSortedKthAddresses } from "./machine/xkeys";
 
 export function getFirstElementInListNotEqualTo(test: string, list: string[]) {

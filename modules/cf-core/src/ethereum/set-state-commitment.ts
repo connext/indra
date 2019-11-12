@@ -1,4 +1,3 @@
-import ChallengeRegistry from "@counterfactual/cf-adjudicator-contracts/expected-build-artifacts/ChallengeRegistry.json";
 import {
   AppIdentity,
   NetworkContext,
@@ -13,6 +12,7 @@ import {
   solidityPack
 } from "ethers/utils";
 
+import { ChallengeRegistry } from "../contracts";
 import { sortSignaturesBySignerAddress } from "../utils";
 
 import { EthereumCommitment } from "./types";

@@ -1,6 +1,8 @@
 import { Node } from "@connext/cf-types";
 import { TransactionReceipt } from "ethers/providers";
 
+export { NetworkContext, Node, SolidityValueType } from "@connext/cf-types";
+
 import { ProtocolMessage } from "./machine";
 
 export type NodeEvents = Node.EventName;

@@ -1,6 +1,7 @@
-import ConditionalTransactionDelegateTarget from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/ConditionalTransactionDelegateTarget.json";
 import { NetworkContext } from "@connext/cf-types";
 import { Interface } from "ethers/utils";
+
+import { ConditionalTransactionDelegateTarget } from "../contracts";
 
 import { MultisigCommitment } from "./multisig-commitment";
 import { MultisigOperation } from "./types";

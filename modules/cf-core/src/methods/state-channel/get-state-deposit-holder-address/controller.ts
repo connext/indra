@@ -1,5 +1,3 @@
-import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
-import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
 import { Node } from "@connext/cf-types";
 import {
   getAddress,
@@ -10,6 +8,7 @@ import {
 } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
+import { MinimumViableMultisig, Proxy } from "../../../contracts";
 import { xkeysToSortedKthAddresses } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
 import { NodeController } from "../../controller";
