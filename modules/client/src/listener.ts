@@ -65,13 +65,6 @@ export class ConnextListener extends EventEmitter {
       // validate and automatically install for the known and supported
       // applications
       this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL, data.data);
-      // check if message is from us, return if so
-      // FIXME: type of ProposeMessage should extend CFCore.NodeMessage, which
-      // has a from field, but ProposeMessage does not
-      if ((data as any).from === this.connext.publicIdentifier) {
-        this.log.debug(`Received proposal from our own node, doing nothing: ${stringify(data)}`);
-        return;
-      }
       // check based on supported applications
       // matched app, take appropriate default actions
       const matchedResult = await this.matchAppInstance(data);
@@ -79,18 +72,21 @@ export class ConnextListener extends EventEmitter {
         this.log.warn(`No matched app, doing nothing, ${stringify(data)}`);
         return;
       }
-      if (matchedResult.matchedApp.name === "SimpleTransferApp") {
-        this.log.debug(
-          `Caught propose install for what should always be a virtual app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
+      // matched app, take appropriate default actions
+      const { appInfo, matchedApp } = matchedResult;
+      // return if its from us
+      // TODO: initatorXpub isnt in types
+      if ((appInfo as any).initatorXpub === this.connext.publicIdentifier) {
+        this.log.info(
+          `Received proposal from our own node, doing nothing: ${stringify(data)}`,
         );
         return;
       }
-      // matched app, take appropriate default actions
-      const { appInfo, matchedApp } = matchedResult;
-      await this.verifyAndInstallKnownApp(appInfo, matchedApp, false);
+      await this.verifyAndInstallKnownApp(appInfo, matchedApp);
       return;
     },
     PROPOSE_INSTALL_VIRTUAL: async (data: ProposeMessage): Promise<void> => {
+      this.log.warn(`Got PROPOSE_INSTALL_VIRTUAL message but it's depreciated.. :(`);
       // validate and automatically install for the known and supported
       // applications
       this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data.data);
@@ -106,14 +102,13 @@ export class ConnextListener extends EventEmitter {
       if (!matchedResult) {
         return;
       }
+      const { appInfo, matchedApp } = matchedResult;
       if (matchedResult.matchedApp.name !== "SimpleTransferApp") {
         this.log.debug(
           `Caught propose install virtual for what should always be a regular app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
         );
         return;
       }
-      // matched app, take appropriate default actions
-      const { appInfo, matchedApp } = matchedResult;
       await this.verifyAndInstallKnownApp(appInfo, matchedApp);
       return;
     },
@@ -266,8 +261,9 @@ export class ConnextListener extends EventEmitter {
   private verifyAndInstallKnownApp = async (
     appInstance: AppInstanceInfo,
     matchedApp: RegisteredAppDetails,
-    isVirtual: boolean = true,
   ): Promise<void> => {
+    // virtual is now determined by presence of intermediary identifier
+    const isVirtual = !!appInstance.intermediaryIdentifier;
     const invalidProposal = await appProposalValidation[matchedApp.name](
       appInstance,
       matchedApp,
@@ -329,13 +325,28 @@ export class ConnextListener extends EventEmitter {
 
   private registerLinkedTransferSubscription = async (): Promise<void> => {
     const subject = `transfer.send-async.${this.connext.publicIdentifier}`;
-    await this.connext.messaging.subscribe(
-      subject,
-      async (data: any): Promise<any> => {
-        this.log.info(`Received message for subscription: ${stringify(data)}`);
-        const { encryptedPreImage, paymentId } = data;
-        await this.connext.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
-      },
-    );
+    await this.connext.messaging.subscribe(subject, async (data: any) => {
+      this.log.info(`Received message for subscription: ${stringify(data)}`);
+      let paymentId: string;
+      let encryptedPreImage: string;
+      if (data.paymentId) {
+        console.log(`Not nested data`);
+        paymentId = data.paymentId;
+        encryptedPreImage = data.encryptedPreImage;
+      } else if (data.data) {
+        console.log(`Nested data`);
+        const parsedData = JSON.parse(data.data);
+        paymentId = parsedData.paymentId;
+        encryptedPreImage = parsedData.encryptedPreImage;
+      } else {
+        throw new Error(`Could not parse data from message: ${stringify(data)}`);
+      }
+
+      if (!paymentId || !encryptedPreImage) {
+        throw new Error(`Unable to parse transfer details from message ${stringify(data)}`);
+      }
+      await this.connext.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
+      this.log.info(`Successfully reclaimed transfer with paymentId: ${paymentId}`);
+    });
   };
 }
