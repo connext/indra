@@ -209,14 +209,7 @@ export class AppInstance {
           } = this.singleAssetTwoPartyCoinTransferInterpreterParams!;
           return defaultAbiCoder.encode(
             [
-              `
-                tuple(
-                  uint256 capitalProvided,
-                  address payable capitalProvider,
-                  address virtualAppUser,
-                  address tokenAddress,
-              )
-              `
+              `tuple(uint256 capitalProvided, address payable capitalProvider, address virtualAppUser, address tokenAddress)`,
             ],
             [
               {

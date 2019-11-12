@@ -26,13 +26,9 @@ export type DefaultApp = {
   stateEncoding: string;
 };
 
-const singleAssetTwoPartyCoinTransferEncoding = `
-  tuple(address to, uint256 amount)[2]
-`;
+const singleAssetTwoPartyCoinTransferEncoding = `tuple(address to, uint256 amount)[2]`;
 
-const multiAssetMultiPartyCoinTransferEncoding = `
-  tuple(address to, uint256 amount)[][]
-`;
+const multiAssetMultiPartyCoinTransferEncoding = `tuple(address to, uint256 amount)[][]`;
 
 @Injectable()
 export class ConfigService implements OnModuleInit {
@@ -97,10 +93,7 @@ export class ConfigService implements OnModuleInit {
         name: SupportedApplications.SimpleTransferApp,
         network: Network[ethNetwork.name.toUpperCase()],
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-        stateEncoding: `
-          tuple(
-            ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers
-          )`,
+        stateEncoding: `tuple(${singleAssetTwoPartyCoinTransferEncoding} coinTransfers)`,
       },
       {
         allowNodeInstall: true,
@@ -108,31 +101,16 @@ export class ConfigService implements OnModuleInit {
         name: SupportedApplications.SimpleTwoPartySwapApp,
         network: Network[ethNetwork.name.toUpperCase()],
         outcomeType: OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
-        stateEncoding: `
-          tuple(
-            ${multiAssetMultiPartyCoinTransferEncoding} coinTransfers
-          )`,
+        stateEncoding: `tuple(${multiAssetMultiPartyCoinTransferEncoding} coinTransfers)`,
       },
       {
-        actionEncoding: `
-          tuple(
-            bytes32 preImage
-          )
-        `,
+        actionEncoding: `tuple(bytes32 preImage)`,
         allowNodeInstall: true,
         appDefinitionAddress: addressBook[SupportedApplications.SimpleLinkedTransferApp],
         name: SupportedApplications.SimpleLinkedTransferApp,
         network: Network[ethNetwork.name.toUpperCase()],
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-        stateEncoding: `
-          tuple(
-            ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
-            bytes32 linkedHash,
-            uint256 amount,
-            address assetId,
-            bytes32 paymentId,
-            bytes32 preImage
-          )`,
+        stateEncoding: `tuple(${singleAssetTwoPartyCoinTransferEncoding} coinTransfers, bytes32 linkedHash, uint256 amount, address assetId, bytes32 paymentId, bytes32 preImage)`,
       },
     ];
   }

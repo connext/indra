@@ -1002,14 +1002,7 @@ function constructTimeLockedPassThroughAppInstance(
     sortAddresses([initiatorAddress, responderAddress, intermediaryAddress]),
     /* defaultTimeout */ HARD_CODED_CHALLENGE_TIMEOUT,
     /* appInterface */ {
-      stateEncoding: `
-        tuple(
-          address challengeRegistryAddress,
-          bytes32 targetAppIdentityHash,
-          uint256 switchesOutcomeAt,
-          bytes defaultOutcome
-        )
-      `,
+      stateEncoding: `tuple(address challengeRegistryAddress, bytes32 targetAppIdentityHash, uint256 switchesOutcomeAt, bytes defaultOutcome)`,
       actionEncoding: undefined,
       addr: network.TimeLockedPassThrough
     },
