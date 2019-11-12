@@ -1,17 +1,18 @@
+import { Zero } from "ethers/constants";
+import { BigNumber } from "ethers/utils";
+
+import { freeBalanceAddressFromXpub, stringify } from "../lib/utils";
 import {
   CFCoreChannel,
+  CFCoreTypes,
   convert,
   RegisteredAppDetails,
+  RejectInstallVirtualMessage,
   SimpleTransferAppStateBigNumber,
   SupportedApplication,
   SupportedApplications,
   TransferParameters,
-} from "@connext/types";
-import { Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
-
-import { CFCoreTypes, RejectInstallVirtualMessage } from "../lib/cfCore";
-import { freeBalanceAddressFromXpub, stringify } from "../lib/utils";
+} from "../types";
 import { invalidAddress, invalidXpub } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 

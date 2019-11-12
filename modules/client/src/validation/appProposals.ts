@@ -1,10 +1,14 @@
-import { RegisteredAppDetails, SupportedApplication } from "@connext/types";
 import { bigNumberify, getAddress } from "ethers/utils";
 
 import { ConnextClient } from "../connext";
-import { AppInstanceInfo, AppInstanceJson } from "../lib/cfCore";
 import { Logger } from "../lib/logger";
 import { freeBalanceAddressFromXpub, stringify } from "../lib/utils";
+import {
+  AppInstanceInfo,
+  AppInstanceJson,
+  RegisteredAppDetails,
+  SupportedApplication,
+} from "../types";
 
 type ProposalValidator = {
   [index in SupportedApplication]: (

@@ -1,19 +1,19 @@
+import { Wallet } from "ethers";
+import { arrayify, BigNumber } from "ethers/utils";
+import { RpcParameters } from "rpc-server";
+
+import { withdrawalKey } from "./lib/utils";
 import {
   AppActionBigNumber,
   AppStateBigNumber,
+  CFCoreTypes,
   ChannelProviderConfig,
   makeChecksum,
   makeChecksumOrEthAddress,
   RpcConnection,
   RpcType,
   Store,
-} from "@connext/types";
-import { Wallet } from "ethers";
-import { arrayify, BigNumber } from "ethers/utils";
-import { RpcParameters } from "rpc-server";
-
-import { CFCoreTypes } from "./lib/cfCore";
-import { withdrawalKey } from "./lib/utils";
+} from "./types";
 
 export class ChannelRouter {
   private type: RpcType;

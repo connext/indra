@@ -1,22 +1,22 @@
 import { IMessagingService } from "@connext/messaging";
+import { providers } from "ethers";
+
+import { Logger } from "../lib/logger";
+import { INodeApiClient } from "../node";
 import {
   AppRegistry,
+  CFCoreTypes,
   ChannelAppSequences,
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
+  NodeInitializationParameters,
   PaymentProfile,
   RequestCollateralResponse,
   SupportedApplication,
   SupportedNetwork,
   Transfer,
-} from "@connext/types";
-import { providers } from "ethers";
-
-import { CFCoreTypes } from "../lib/cfCore";
-import { Logger } from "../lib/logger";
-import { INodeApiClient } from "../node";
-import { NodeInitializationParameters } from "../types";
+} from "../types";
 
 type TransactionRequest = providers.TransactionRequest;
 type TransactionResponse = providers.TransactionResponse;

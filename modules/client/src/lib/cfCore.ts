@@ -1,5 +1,3 @@
-export { AppInstanceInfo, AppInstanceJson, Node as CFCoreTypes } from "@connext/cf-types";
-
 export {
   CreateChannelMessage,
   DepositConfirmationMessage,

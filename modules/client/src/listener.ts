@@ -1,4 +1,3 @@
-import { RegisteredAppDetails, SupportedApplications } from "@connext/types";
 import EthCrypto from "eth-crypto";
 import { bigNumberify, formatParamType } from "ethers/utils";
 import { fromMnemonic } from "ethers/utils/hdnode";
@@ -6,6 +5,8 @@ import { EventEmitter } from "events";
 
 import { ChannelRouter } from "./channelRouter";
 import { ConnextClient } from "./connext";
+import { Logger } from "./lib/logger";
+import { stringify } from "./lib/utils";
 import {
   AppInstanceInfo,
   CFCoreTypes,
@@ -14,14 +15,14 @@ import {
   InstallMessage,
   InstallVirtualMessage,
   ProposeMessage,
+  RegisteredAppDetails,
   RejectInstallVirtualMessage,
+  SupportedApplications,
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
   WithdrawMessage,
-} from "./lib/cfCore";
-import { Logger } from "./lib/logger";
-import { stringify } from "./lib/utils";
+} from "./types";
 import { appProposalValidation } from "./validation/appProposals";
 
 // TODO: index of connext events only?

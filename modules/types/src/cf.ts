@@ -2,6 +2,7 @@ export {
   Address,
   AppABIEncodings,
   AppIdentity,
+  AppInstanceInfo,
   AppInstanceJson,
   AppInstanceProposal,
   AppInterface,

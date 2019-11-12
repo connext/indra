@@ -1,26 +1,26 @@
 import { IMessagingService } from "@connext/messaging";
-import {
-  AppRegistry,
-  ChannelAppSequences,
-  CreateChannelResponse,
-  GetChannelResponse,
-  GetConfigResponse,
-  makeChecksumOrEthAddress,
-  PaymentProfile,
-  RequestCollateralResponse,
-  SupportedApplication,
-  SupportedNetwork,
-  Transfer,
-} from "@connext/types";
 import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
 import uuid = require("uuid");
 
 import { ChannelRouter } from "./channelRouter";
-import { CFCoreTypes } from "./lib/cfCore";
 import { Logger } from "./lib/logger";
 import { stringify } from "./lib/utils";
-import { NodeInitializationParameters } from "./types";
+import {
+  AppRegistry,
+  CFCoreTypes,
+  ChannelAppSequences,
+  CreateChannelResponse,
+  GetChannelResponse,
+  GetConfigResponse,
+  makeChecksumOrEthAddress,
+  NodeInitializationParameters,
+  PaymentProfile,
+  RequestCollateralResponse,
+  SupportedApplication,
+  SupportedNetwork,
+  Transfer,
+} from "./types";
 
 // Include our access token when interacting with these subjects
 const guardedSubjects = ["channel", "lock", "transfer"];

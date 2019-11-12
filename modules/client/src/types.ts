@@ -1,10 +1,8 @@
 import { IMessagingService } from "@connext/messaging";
 import {
   AppRegistry,
-  AppState,
   BigNumber as connextBN,
   ChannelProvider,
-  ChannelState,
   ClientOptions,
   GetConfigResponse,
   Store,
@@ -13,8 +11,75 @@ import { providers, Wallet } from "ethers";
 import { Network } from "ethers/utils";
 
 import { ChannelRouter } from "./channelRouter";
-import { CFCoreTypes } from "./lib/cfCore";
 import { NodeApiClient } from "./node";
+
+export {
+  CreateChannelMessage,
+  DepositConfirmationMessage,
+  EXTENDED_PRIVATE_KEY_PATH,
+  InstallMessage,
+  InstallVirtualMessage,
+  ProposeMessage,
+  RejectInstallVirtualMessage,
+  UninstallMessage,
+  UninstallVirtualMessage,
+  UpdateStateMessage,
+  WithdrawMessage,
+} from "@connext/cf-core";
+
+export {
+  Address,
+  App,
+  AppActionBigNumber,
+  AppInstanceInfo,
+  AppInstanceJson,
+  AppRegistry,
+  AppStateBigNumber,
+  CFCoreChannel,
+  ChannelAppSequences,
+  ChannelProviderConfig,
+  ChannelState,
+  ClientOptions,
+  ConditionalTransferParameters,
+  ConditionalTransferResponse,
+  ConnextEvent,
+  ConnextEvents,
+  convert,
+  CreateChannelResponse,
+  DepositParameters,
+  GetChannelResponse,
+  GetConfigResponse,
+  IConnextClient,
+  LinkedTransferParameters,
+  LinkedTransferResponse,
+  LinkedTransferToRecipientParameters,
+  LinkedTransferToRecipientResponse,
+  makeChecksum,
+  makeChecksumOrEthAddress,
+  Node as CFCoreTypes,
+  PaymentProfile,
+  RegisteredAppDetails,
+  RequestCollateralResponse,
+  ResolveConditionParameters,
+  ResolveConditionResponse,
+  ResolveLinkedTransferParameters,
+  ResolveLinkedTransferResponse,
+  RpcConnection,
+  RpcType,
+  SimpleLinkedTransferAppStateBigNumber,
+  SimpleSwapAppStateBigNumber,
+  SimpleTransferAppStateBigNumber,
+  Store,
+  SupportedApplication,
+  SupportedApplications,
+  SupportedNetwork,
+  SwapParameters,
+  Transfer,
+  TransferCondition,
+  TransferParameters,
+  WithdrawalResponse,
+  WithdrawParameters,
+} from "@connext/types";
 
 export type BigNumber = connextBN;
 export const BigNumber = connextBN;

@@ -1,4 +1,4 @@
-import { Node } from "@connext/cf-types";
+import { Node } from "@connext/types";
 import { TransactionReceipt } from "ethers/providers";
 
 export {
@@ -25,7 +25,7 @@ export {
   TwoPartyFixedOutcomeInterpreterParams,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
   virtualAppAgreementEncoding,
-} from "@connext/cf-types";
+} from "@connext/types";
 
 import { ProtocolMessage } from "./machine";
 

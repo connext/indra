@@ -5,11 +5,14 @@ export * from "./node";
 export * from "./private-keys-generator";
 export {
   CreateChannelMessage,
+  DepositConfirmationMessage,
   InstallMessage,
   InstallVirtualMessage,
   NODE_EVENTS,
   ProposeMessage,
+  RejectInstallVirtualMessage,
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
+  WithdrawMessage,
 } from "./types";

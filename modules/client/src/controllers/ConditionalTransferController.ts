@@ -1,5 +1,11 @@
+import EthCrypto from "eth-crypto";
+import { HashZero, Zero } from "ethers/constants";
+import { fromExtendedKey } from "ethers/utils/hdnode";
+
+import { createLinkedHash, freeBalanceAddressFromXpub, stringify } from "../lib/utils";
 import {
   BigNumber,
+  CFCoreTypes,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
   convert,
@@ -8,17 +14,12 @@ import {
   LinkedTransferToRecipientParameters,
   LinkedTransferToRecipientResponse,
   RegisteredAppDetails,
+  RejectInstallVirtualMessage,
   SimpleLinkedTransferAppStateBigNumber,
   SupportedApplication,
   SupportedApplications,
   TransferCondition,
-} from "@connext/types";
-import EthCrypto from "eth-crypto";
-import { HashZero, Zero } from "ethers/constants";
-import { fromExtendedKey } from "ethers/utils/hdnode";
-
-import { CFCoreTypes, RejectInstallVirtualMessage } from "../lib/cfCore";
-import { createLinkedHash, freeBalanceAddressFromXpub, stringify } from "../lib/utils";
+} from "../types";
 import { falsy, invalid32ByteHexString, invalidAddress, notLessThanOrEqualTo } from "../validation";
 
 import { AbstractController } from "./AbstractController";

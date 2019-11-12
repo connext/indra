@@ -1,10 +1,9 @@
-import { BigNumber, ChannelState, convert, DepositParameters } from "@connext/types";
 import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
 
-import { CFCoreTypes } from "../lib/cfCore";
 import { publicIdentifierToAddress, stringify } from "../lib/utils";
+import { BigNumber, CFCoreTypes, ChannelState, convert, DepositParameters } from "../types";
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 

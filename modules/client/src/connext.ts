@@ -1,21 +1,53 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
+import "core-js/stable";
+import EthCrypto from "eth-crypto";
+import { Contract, providers, Wallet } from "ethers";
+import { AddressZero } from "ethers/constants";
+import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
+import { fromMnemonic } from "ethers/utils/hdnode";
+import tokenAbi from "human-standard-token-abi";
+import "regenerator-runtime/runtime";
+
+import { ChannelRouter } from "./channelRouter";
+import { ConditionalTransferController } from "./controllers/ConditionalTransferController";
+import { DepositController } from "./controllers/DepositController";
+import { ResolveConditionController } from "./controllers/ResolveConditionController";
+import { SwapController } from "./controllers/SwapController";
+import { TransferController } from "./controllers/TransferController";
+import { WithdrawalController } from "./controllers/WithdrawalController";
+import { CFCore } from "./lib/cfCore";
+import { CF_PATH } from "./lib/constants";
+import { Logger } from "./lib/logger";
+import {
+  freeBalanceAddressFromXpub,
+  publicIdentifierToAddress,
+  stringify,
+  withdrawalKey,
+} from "./lib/utils";
+import { ConnextListener } from "./listener";
+import { NodeApiClient } from "./node";
 import {
   Address,
   AppActionBigNumber,
+  AppInstanceJson,
   AppRegistry,
   AppStateBigNumber,
   CFCoreChannel,
+  CFCoreTypes,
   ChannelProviderConfig,
   ChannelState,
   ClientOptions,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
   ConnextEvent,
+  CreateChannelMessage,
   CreateChannelResponse,
   DepositParameters,
+  EXTENDED_PRIVATE_KEY_PATH,
   GetChannelResponse,
   GetConfigResponse,
   IConnextClient,
+  InternalClientOptions,
   makeChecksum,
   makeChecksumOrEthAddress,
   PaymentProfile,
@@ -33,41 +65,7 @@ import {
   TransferParameters,
   WithdrawalResponse,
   WithdrawParameters,
-} from "@connext/types";
-import "core-js/stable";
-import EthCrypto from "eth-crypto";
-import { Contract, providers, Wallet } from "ethers";
-import { AddressZero } from "ethers/constants";
-import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
-import { fromMnemonic } from "ethers/utils/hdnode";
-import tokenAbi from "human-standard-token-abi";
-import "regenerator-runtime/runtime";
-
-import { ChannelRouter } from "./channelRouter";
-import { ConditionalTransferController } from "./controllers/ConditionalTransferController";
-import { DepositController } from "./controllers/DepositController";
-import { ResolveConditionController } from "./controllers/ResolveConditionController";
-import { SwapController } from "./controllers/SwapController";
-import { TransferController } from "./controllers/TransferController";
-import { WithdrawalController } from "./controllers/WithdrawalController";
-import {
-  AppInstanceJson,
-  CFCore,
-  CFCoreTypes,
-  CreateChannelMessage,
-  EXTENDED_PRIVATE_KEY_PATH,
-} from "./lib/cfCore";
-import { CF_PATH } from "./lib/constants";
-import { Logger } from "./lib/logger";
-import {
-  freeBalanceAddressFromXpub,
-  publicIdentifierToAddress,
-  stringify,
-  withdrawalKey,
-} from "./lib/utils";
-import { ConnextListener } from "./listener";
-import { NodeApiClient } from "./node";
-import { InternalClientOptions } from "./types";
+} from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 
