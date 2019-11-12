@@ -1,19 +1,16 @@
 import { IMessagingService } from "@connext/messaging";
 import {
   AppRegistry,
-  AppState,
   BigNumber as connextBN,
   ChannelProvider,
-  ChannelState,
   ClientOptions,
   GetConfigResponse,
   Store,
 } from "@connext/types";
-import { providers, Wallet } from "ethers";
+import { providers } from "ethers";
 import { Network } from "ethers/utils";
 
 import { ChannelRouter } from "./channelRouter";
-import { CFCoreTypes } from "./lib/cfCore";
 import { NodeApiClient } from "./node";
 
 export type BigNumber = connextBN;
