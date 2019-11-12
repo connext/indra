@@ -157,3 +157,7 @@ export function getMultisigAddressfromXpubs(
     ).slice(-40),
   );
 }
+
+export const xpubToAddress = (xpub: string, path: string = "0"): string => {
+  return HDNode.fromExtendedKey(xpub).derivePath(path).address;
+};
