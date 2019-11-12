@@ -65,7 +65,6 @@ import {
   publicIdentifierToAddress,
   stringify,
   withdrawalKey,
-  xpubToAddress,
 } from "./lib/utils";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
@@ -100,9 +99,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     xpub = opts.xpub;
     keyGen = opts.keyGen;
     channelProviderConfig = {
-      freeBalanceAddress: xpubToAddress(xpub),
+      freeBalanceAddress: freeBalanceAddressFromXpub(xpub),
       nodeUrl,
-      signerAddress: xpubToAddress(xpub),
+      signerAddress: freeBalanceAddressFromXpub(xpub),
       type: RpcType.CounterfactualNode,
       userPublicIdentifier: xpub,
     };
