@@ -14,6 +14,7 @@ export {
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   multiAssetMultiPartyCoinTransferInterpreterParamsEncoding,
   NetworkContext,
+  Node as CFCoreTypes,
   Node,
   OutcomeType,
   SignedStateHashUpdate,

@@ -1,5 +1,5 @@
 import WalletConnectBrowser from "@walletconnect/browser";
-import { Node as NodeTypes } from "@connext/cf-types";
+import { CFCoreTypes } from "@connext/types";
 
 export let walletConnector = null;
 
@@ -110,58 +110,58 @@ async function mapPayloadToClient(payload, channel) {
         result = await channel.channelProviderConfig(params);
         break;
 
-      case NodeTypes.RpcMethodName.DEPOSIT:
+      case CFCoreTypes.RpcMethodName.DEPOSIT:
         result = await channel.providerDeposit(params);
         break;
-      case NodeTypes.RpcMethodName.GET_STATE:
+      case CFCoreTypes.RpcMethodName.GET_STATE:
         result = await channel.getState(params);
         break;
-      case NodeTypes.RpcMethodName.GET_APP_INSTANCES:
+      case CFCoreTypes.RpcMethodName.GET_APP_INSTANCES:
         result = await channel.getAppInstances(params);
         break;
-      case NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE:
+      case CFCoreTypes.RpcMethodName.GET_FREE_BALANCE_STATE:
         verifyFields(params, ["tokenAddress", "multisigAddress"]);
         const { tokenAddress } = params;
         result = await channel.getFreeBalance(tokenAddress);
         break;
 
-      case NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES:
+      case CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES:
         result = await channel.getProposedAppInstances(params);
         break;
-      case NodeTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS:
+      case CFCoreTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS:
         result = await channel.getAppInstanceDetails(params);
         break;
-      case NodeTypes.RpcMethodName.TAKE_ACTION:
+      case CFCoreTypes.RpcMethodName.TAKE_ACTION:
         result = await channel.takeAction(params);
         break;
-      case NodeTypes.RpcMethodName.UPDATE_STATE:
+      case CFCoreTypes.RpcMethodName.UPDATE_STATE:
         result = await channel.updateState(params);
         break;
-      case NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL:
+      case CFCoreTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL:
         result = await channel.proposeInstallVirtualApp(params);
         break;
-      case NodeTypes.RpcMethodName.PROPOSE_INSTALL:
+      case CFCoreTypes.RpcMethodName.PROPOSE_INSTALL:
         result = await channel.proposeInstallApp(params);
         break;
-      case NodeTypes.RpcMethodName.INSTALL_VIRTUAL:
+      case CFCoreTypes.RpcMethodName.INSTALL_VIRTUAL:
         result = await channel.installVirtualApp(params);
         break;
-      case NodeTypes.RpcMethodName.INSTALL:
+      case CFCoreTypes.RpcMethodName.INSTALL:
         result = await channel.installApp(params);
         break;
-      case NodeTypes.RpcMethodName.UNINSTALL:
+      case CFCoreTypes.RpcMethodName.UNINSTALL:
         result = await channel.uninstallApp(params);
         break;
-      case NodeTypes.RpcMethodName.UNINSTALL_VIRTUAL:
+      case CFCoreTypes.RpcMethodName.UNINSTALL_VIRTUAL:
         result = await channel.uninstallVirtualApp(params);
         break;
-      case NodeTypes.RpcMethodName.REJECT_INSTALL:
+      case CFCoreTypes.RpcMethodName.REJECT_INSTALL:
         result = await channel.rejectInstallApp(params);
         break;
-      case NodeTypes.RpcMethodName.WITHDRAW:
+      case CFCoreTypes.RpcMethodName.WITHDRAW:
         result = await channel.providerWithdraw(params);
         break;
-      case NodeTypes.RpcMethodName.WITHDRAW_COMMITMENT:
+      case CFCoreTypes.RpcMethodName.WITHDRAW_COMMITMENT:
         result = await channel.withdrawCommitment(params);
         break;
       default:

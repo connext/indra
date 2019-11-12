@@ -19,7 +19,6 @@
     "uuid": "3.3.3"
   },
   "devDependencies": {
-    "@connext/cf-types": "0.5.0",
     "@connext/types": "0.5.0",
     "@types/node-fetch": "2.5.3",
     "env-cmd": "10.0.1",

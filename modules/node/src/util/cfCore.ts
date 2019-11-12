@@ -3,7 +3,7 @@ export {
   AppInstanceProposal,
   Node as CFCoreTypes,
   OutcomeType,
-} from "@connext/cf-types";
+} from "@connext/types";
 export {
   CreateChannelMessage,
   DepositConfirmationMessage,
@@ -20,8 +20,8 @@ export {
   UpdateStateMessage,
   WithdrawMessage,
 } from "@connext/cf-core";
-import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
-import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
+import MinimumViableMultisig from "@connext/cf-funding-protocol-contracts/build/MinimumViableMultisig.json";
+import Proxy from "@connext/cf-funding-protocol-contracts/build/Proxy.json";
 import { ethers as eth } from "ethers";
 
 export function freeBalanceAddressFromXpub(xpub: string): string {

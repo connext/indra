@@ -1,6 +1,6 @@
 import { BigNumber, Network } from "ethers/utils";
 
-import { NetworkContext, Node as CFCoreTypes } from "./cf";
+import { CFCoreTypes, NetworkContext } from "./cf";
 import { CFCoreChannel } from "./channel";
 
 export interface MessagingConfig {

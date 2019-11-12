@@ -8,7 +8,7 @@ import {
   SupportedNetwork,
 } from "./app";
 import { ConnextEvent } from "./basic";
-import { AppInstanceJson, Node as CFCoreTypes } from "./cf";
+import { AppInstanceJson, CFCoreTypes } from "./cf";
 import { CFCoreChannel, ChannelAppSequences, ChannelState, PaymentProfile } from "./channel";
 import { ChannelProvider, ChannelProviderConfig } from "./channelProvider";
 import {

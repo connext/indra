@@ -1,7 +1,7 @@
 import { BigNumber } from "ethers/utils";
 
 import { SimpleLinkedTransferAppState } from "./app";
-import { Address, Node as CFCoreTypes } from "./cf";
+import { Address, CFCoreTypes } from "./cf";
 import { AssetAmount } from "./channel";
 
 /////////////////////////////////

@@ -1,6 +1,6 @@
 import { BigNumber } from "ethers/utils";
 
-import { Address, Node as CFCoreTypes, OutcomeType, SolidityValueType } from "./cf";
+import { Address, CFCoreTypes, OutcomeType, SolidityValueType } from "./cf";
 import { CFCoreChannel } from "./channel";
 
 ////////////////////////////////////

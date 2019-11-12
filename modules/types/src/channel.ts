@@ -1,7 +1,7 @@
 import { TransactionResponse } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 
-import { Address, AppInstanceJson, Node as CFCoreTypes } from "./cf";
+import { Address, AppInstanceJson, CFCoreTypes } from "./cf";
 
 ////////////////////////////////////
 ////// CHANNEL TYPES

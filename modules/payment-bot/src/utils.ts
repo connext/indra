@@ -1,4 +1,4 @@
-import { Node as CFCoreTypes } from "@connext/cf-types";
+import { CFCoreTypes } from "@connext/types";
 import { formatEther } from "ethers/utils";
 
 export const replaceBN = (key: string, value: any): any =>
