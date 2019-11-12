@@ -88,6 +88,13 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     xpub = hdNode.neuter().extendedKey;
     keyGen = (index: string): Promise<string> =>
       Promise.resolve(hdNode.derivePath(index).privateKey);
+    channelProviderConfig = {
+      freeBalanceAddress: freeBalanceAddressFromXpub(xpub),
+      nodeUrl,
+      signerAddress: freeBalanceAddressFromXpub(xpub),
+      type: RpcType.CounterfactualNode,
+      userPublicIdentifier: xpub,
+    };
   } else if (channelProvider) {
     // enable the channel provider, which sets the config property
     await channelProvider.enable();
