@@ -15,13 +15,7 @@ import { ResolveConditionController } from "./controllers/ResolveConditionContro
 import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
-import {
-  AppInstanceJson,
-  CFCore,
-  CFCoreTypes,
-  CreateChannelMessage,
-  EXTENDED_PRIVATE_KEY_PATH,
-} from "./lib/cfCore";
+import { CFCore } from "./lib/cfCore";
 import { CF_PATH } from "./lib/constants";
 import { Logger } from "./lib/logger";
 import {

@@ -42,6 +42,7 @@ export {
   ClientOptions,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
+  ConnextClientStorePrefix,
   ConnextEvent,
   ConnextEvents,
   convert,
