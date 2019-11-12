@@ -4,10 +4,6 @@ import BN from 'bn.js'
 const depositEth = '0.05'
 const depositToken = '5'
 const payTokens = '3.14'
-const botTransferAmount = '0.618' // Keep this synced w what recipient expects in ops/test-ui
-
-// You can also hard-code this to the xpub for a daicard you have open in a separate browser
-const recipientBot = 'xpub6DXwZMmWUq4bRZ3LtaBYwu47XV4Td19pnngok2Y7DnRzcCJSKCmD1AcLJDbZZf5dzZpvHqYzmRaKf7Gd2MV9qDvWwwN7VpBPNXQCZCbfyoK'
 
 describe('Daicard', () => {
   beforeEach(() => {
@@ -27,9 +23,10 @@ describe('Daicard', () => {
   describe('Send', (done) => {
     it(`Should send a payment when a link payment is opened in another card`, () => {
       my.getMnemonic().then(recipientMnemonic => {
-        my.burnCard() // also decollateralizes the channel
+        my.burnCard()
         my.deposit(depositEth).then(tokensDeposited => {
           my.linkPay(payTokens).then(redeemLink => {
+            // TODO: has sender balance subtracted link amount?
             my.restoreMnemonic(recipientMnemonic)
             cy.visit(redeemLink)
             cy.contains('button', /redeem/i).click()
@@ -57,9 +54,14 @@ describe('Daicard', () => {
       })
     })
 
-    it(`Should transfer tokens to a collateralized payment bot`, () => {
-      my.deposit(depositEth).then(tokensDeposited => {
-        my.pay(recipientBot, botTransferAmount)
+    it(`Should transfer tokens to an unopen daicard`, () => {
+      my.getAccount().then(recipient => {
+        my.burnCard()
+        my.deposit(depositEth).then(tokensDeposited => {
+          my.pay(recipient.xpub, payTokens)
+          my.restoreMnemonic(recipient.mnemonic)
+          cy.resolve(my.getChannelTokenBalance).should('contain', payTokens)
+        })
       })
     })
 

@@ -520,40 +520,33 @@ export class ConnextClient implements IConnextClient {
     if (!this.store || this.routerType === RpcType.ChannelProvider) {
       throw new Error(`Cannot restore state with channel provider`);
     }
-    const hdNode = fromMnemonic(this.opts.mnemonic!);
-    const xpriv = hdNode.extendedKey;
-    const xpub = hdNode.derivePath("m/44'/60'/0'/25446").neuter().extendedKey;
     this.channelRouter.reset();
-    // always set the mnemonic in the store
-    await this.channelRouter.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }], false);
     try {
       // try to recover states from our given store's restore method
       const restoreStates = await this.channelRouter.restore();
       const stateToRestore = restoreStates.find(
         (p: { path: string; value: any }): boolean =>
-          p.path === `store/${xpub}/channel/${this.multisigAddress}`,
+          p.path === `store/${this.publicIdentifier}/channel/${this.multisigAddress}`,
       );
       if (!stateToRestore) {
         throw new Error(
-          `Couldn't restore states for "store/${xpub}/channel/${this.multisigAddress}."`,
+          `Couldn't restore states for "store/${this.publicIdentifier}/channel/${this.multisigAddress}."`,
         );
       }
       this.log.info(`Found state to restore from backup: ${stringify(stateToRestore)}`);
       await this.channelRouter.set([stateToRestore], false);
     } catch (e) {
-      const stateToRestore = await this.node.restoreStates(xpub);
+      const stateToRestore = await this.node.restoreStates(this.publicIdentifier);
       if (!stateToRestore) {
         throw new Error(
-          `No matching states found by node for "store/${xpub}/channel/${this.multisigAddress}."`,
+          `No matching states found by node for "store/${this.publicIdentifier}/channel/${this.multisigAddress}."`,
         );
       }
       this.log.info(`Found state to restore from node: ${stringify(stateToRestore)}`);
       // TODO: this should prob not be hardcoded like this
       const actualStates = stateToRestore.map((state: { path: string; value: object }): any => {
         return {
-          path: `store${state.path
-            .replace(this.nodePublicIdentifier, xpub)
-            .substring(state.path.indexOf("/"))}`,
+          path: `store${state.path.substring(state.path.indexOf("/"))}`,
           value: state.value[state.path],
         };
       });
