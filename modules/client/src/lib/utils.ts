@@ -76,15 +76,8 @@ export const mkHash = (prefix: string = "0x"): string => prefix.padEnd(66, "0");
 export const delay = (ms: number): Promise<void> =>
   new Promise((res: any): any => setTimeout(res, ms));
 
-// TODO: why doesnt deriving a path work as expected? sync w/rahul about
-// differences in hub. (eg. only freeBalanceAddressFromXpub derives correct
-// fb address but only below works for deposit bal checking)
-export const publicIdentifierToAddress = (publicIdentifier: string): string => {
-  return HDNode.fromExtendedKey(publicIdentifier).address;
-};
-
 export const freeBalanceAddressFromXpub = (xpub: string): string => {
-  return HDNode.fromExtendedKey(xpub).derivePath("0").address;
+  return xkeyKthAddress(xpub, 0);
 };
 
 export const createLinkedHash = (
@@ -157,7 +150,3 @@ export function getMultisigAddressfromXpubs(
     ).slice(-40),
   );
 }
-
-export const xpubToAddress = (xpub: string, path: string = "0"): string => {
-  return HDNode.fromExtendedKey(xpub).derivePath(path).address;
-};
