@@ -213,8 +213,7 @@ export class Store {
   }
 
   public async getMultisigAddressWithCounterparty(
-    myIdentifier: string,
-    theirIdentifier: string,
+    owners: string[],
     proxyFactoryAddress: string,
     minimumViableMultisigAddress: string,
     acceptGeneratedMultisig: boolean // = false,
@@ -223,7 +222,7 @@ export class Store {
     for (const stateChannel of stateChannelsMap.values()) {
       if (
         stateChannel.userNeuteredExtendedKeys.sort().toString() ===
-        [myIdentifier, theirIdentifier].sort().toString()
+        owners.sort().toString()
       ) {
         return stateChannel.multisigAddress;
       }
@@ -231,13 +230,13 @@ export class Store {
 
     if (acceptGeneratedMultisig) {
       return getCreate2MultisigAddress(
-        [myIdentifier, theirIdentifier],
+        owners,
         proxyFactoryAddress,
         minimumViableMultisigAddress,
       );
     }
 
-    throw new Error(NO_MULTISIG_FOR_COUNTERPARTIES([myIdentifier, theirIdentifier]));
+    throw new Error(NO_MULTISIG_FOR_COUNTERPARTIES(owners));
   }
 
   public async getOrCreateStateChannelBetweenVirtualAppParticipants(
