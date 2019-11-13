@@ -1,3 +1,4 @@
+import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -144,7 +145,7 @@ function assertSufficientFundsWithinFreeBalance(
 
   const freeBalanceForToken = channel
     .getFreeBalanceClass()
-    .getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0));
+    .getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0)) || Zero;
 
   if (freeBalanceForToken.lt(depositAmount)) {
     throw Error(
