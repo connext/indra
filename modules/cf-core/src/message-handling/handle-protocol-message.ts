@@ -9,7 +9,7 @@ import {
   UpdateParams,
   WithdrawParams,
 } from "../machine";
-import { ProtocolParameters } from "../machine/types";
+import { ProposeInstallParams, ProtocolParameters } from "../machine/types";
 import { NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../methods/errors";
 import { StateChannel } from "../models";
 import { UNASSIGNED_SEQ_NO } from "../protocol/utils/signature-forwarder";
@@ -117,13 +117,7 @@ function getOutgoingEventDataFromProtocol(
         data: {
           params,
           appInstanceId: stateChannelsMap
-            .get(
-              getCreate2MultisigAddress(
-                [params.initiatorXpub, params.responderXpub],
-                networkContext.ProxyFactory,
-                networkContext.MinimumViableMultisig
-              )
-            )!
+            .get((params as ProposeInstallParams).multisigAddress)!
             .mostRecentlyProposedAppInstance().identityHash
         }
       };
@@ -136,13 +130,7 @@ function getOutgoingEventDataFromProtocol(
           // remove it, but after telling all consumers about this change
           params: {
             appInstanceId: stateChannelsMap
-              .get(
-                getCreate2MultisigAddress(
-                  [params.responderXpub, params.initiatorXpub],
-                  networkContext.ProxyFactory,
-                  networkContext.MinimumViableMultisig
-                )
-              )!
+              .get((params as InstallParams).multisigAddress)!
               .mostRecentlyInstalledAppInstance().identityHash
           }
         }
