@@ -216,7 +216,7 @@ export class Store {
     owners: string[],
     proxyFactoryAddress: string,
     minimumViableMultisigAddress: string,
-    acceptGeneratedMultisig: boolean // = false,
+    acceptGeneratedMultisig: boolean = false,
   ) {
     const stateChannelsMap = await this.getStateChannelsMap();
     return Store.getMultisigAddressWithCounterpartyFromMap(stateChannelsMap, owners, proxyFactoryAddress, minimumViableMultisigAddress, acceptGeneratedMultisig)
@@ -228,7 +228,7 @@ export class Store {
     owners: string[],
     proxyFactoryAddress: string,
     minimumViableMultisigAddress: string,
-    acceptGeneratedMultisig: boolean // = false,
+    acceptGeneratedMultisig: boolean = false,
   ) {
     for (const stateChannel of stateChannelsMap.values()) {
       if (
