@@ -124,11 +124,12 @@ export default class ProposeInstallController extends NodeController {
       Protocol.Propose,
       await store.getStateChannelsMap(),
       {
-      ...params,
-      multisigAddress,
-      initiatorXpub: publicIdentifier,
-      responderXpub: proposedToIdentifier
-    });
+        ...params,
+        multisigAddress,
+        initiatorXpub: publicIdentifier,
+        responderXpub: proposedToIdentifier
+      }
+    );
 
     return {
       appInstanceId: (await store.getStateChannel(
