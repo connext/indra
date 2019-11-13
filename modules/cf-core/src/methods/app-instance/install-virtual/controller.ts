@@ -2,7 +2,6 @@ import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
 import { Node } from "../../../types";
-import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
 
 import { installVirtual } from "./operation";
@@ -18,26 +17,34 @@ export default class InstallVirtualController extends NodeController {
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { appInstanceId, intermediaryIdentifier } = params;
 
-    const multisigAddressWithHub = getCreate2MultisigAddress(
-      [publicIdentifier, intermediaryIdentifier],
+    const multisigAddressWithHub = await store.getMultisigAddressWithCounterparty(
+      publicIdentifier,
+      intermediaryIdentifier,
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
+      false,
     );
 
     const proposal = await store.getAppInstanceProposal(appInstanceId);
 
     const { proposedByIdentifier } = proposal;
 
-    const multisigAddressWithResponding = getCreate2MultisigAddress(
-      [publicIdentifier, proposedByIdentifier],
+    // assume that there may not be existing sc between
+    // virtual channel participants
+    const multisigAddressWithResponding = await store.getMultisigAddressWithCounterparty(
+      publicIdentifier,
+      proposedByIdentifier,
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
+      true,
     );
 
-    const multisigAddressBetweenHubAndResponding = getCreate2MultisigAddress(
-      [intermediaryIdentifier, proposedByIdentifier],
+    const multisigAddressBetweenHubAndResponding = await store.getMultisigAddressWithCounterparty(
+      intermediaryIdentifier,
+      proposedByIdentifier,
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
+      false,
     );
 
     return [
@@ -58,10 +65,12 @@ export default class InstallVirtualController extends NodeController {
       throw Error("Cannot install virtual app: you did not provide an intermediary.");
     }
 
-    const multisigAddress = getCreate2MultisigAddress(
-      [publicIdentifier, intermediaryIdentifier],
+    const multisigAddress = await store.getMultisigAddressWithCounterparty(
+      publicIdentifier,
+      intermediaryIdentifier,
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
+      false,
     );
 
     const stateChannelWithIntermediary = await store.getStateChannel(multisigAddress);
