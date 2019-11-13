@@ -1,6 +1,7 @@
 import { BigNumber } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
+import { prettyPrintObject } from "../utils";
 
 export const APP_ALREADY_UNINSTALLED = (id: string) =>
   `Cannot uninstall app ${id}, it has already been uninstalled`;
@@ -120,3 +121,6 @@ export const VIRTUAL_APP_INSTALLATION_FAIL =
 
 export const WITHDRAWAL_FAILED =
   "Failed to withdraw funds out of the multisig contract";
+
+export const NO_MULTISIG_FOR_COUNTERPARTIES = (owners: string[]): string =>
+  `Could not find multisig address between counterparties ${prettyPrintObject(owners)}`;
