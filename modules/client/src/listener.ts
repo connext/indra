@@ -330,11 +330,11 @@ export class ConnextListener extends EventEmitter {
       let paymentId: string;
       let encryptedPreImage: string;
       if (data.paymentId) {
-        console.log(`Not nested data`);
+        this.log.debug(`Not nested data`);
         paymentId = data.paymentId;
         encryptedPreImage = data.encryptedPreImage;
       } else if (data.data) {
-        console.log(`Nested data`);
+        this.log.debug(`Nested data`);
         const parsedData = JSON.parse(data.data);
         paymentId = parsedData.paymentId;
         encryptedPreImage = parsedData.encryptedPreImage;

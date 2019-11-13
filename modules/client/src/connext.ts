@@ -216,9 +216,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   } catch (e) {
     log.warn(e);
     if (e.message.includes(`StateChannel does not exist yet`)) {
-      console.log("Restoring client state");
+      log.debug("Restoring client state");
       await client.restoreState();
-      console.log("Newly restored client is ready to go!");
+      log.debug("Newly restored client is ready to go!");
     } else {
       throw e;
     }

@@ -77,7 +77,6 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(
       appInstanceProposal
     );
-    console.log('postProtocolStateChannel: ', postProtocolStateChannel);
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
