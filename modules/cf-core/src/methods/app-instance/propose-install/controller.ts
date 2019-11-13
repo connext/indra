@@ -11,7 +11,7 @@ import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
   INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET,
-  NULL_INITIAL_STATE_FOR_PROPOSAL,
+  NULL_INITIAL_STATE_FOR_PROPOSAL
 } from "../../errors";
 
 /**
@@ -120,7 +120,10 @@ export default class ProposeInstallController extends NodeController {
       networkContext.MinimumViableMultisig
     );
 
-    await protocolRunner.initiateProtocol(Protocol.Propose, {
+    await protocolRunner.initiateProtocol(
+      Protocol.Propose,
+      await store.getStateChannelsMap(),
+      {
       ...params,
       multisigAddress,
       initiatorXpub: publicIdentifier,
