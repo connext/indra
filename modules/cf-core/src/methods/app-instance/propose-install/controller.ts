@@ -23,11 +23,14 @@ import {
 export default class ProposeInstallController extends NodeController {
   @jsonRpcMethod(Node.RpcMethodName.PROPOSE_INSTALL)
   @jsonRpcMethod(Node.RpcMethodName.PROPOSE_INSTALL_VIRTUAL)
-  public executeMethod = super.executeMethod;
+  public executeMethod: (
+    requestHandler: RequestHandler,
+    params: Node.MethodParams,
+  ) => Promise<Node.MethodResult> = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.ProposeInstallParams
+    params: Node.ProposeInstallParams,
   ): Promise<string[]> {
     const { publicIdentifier, networkContext } = requestHandler;
     const { proposedToIdentifier } = params;
@@ -35,7 +38,7 @@ export default class ProposeInstallController extends NodeController {
     const multisigAddress = getCreate2MultisigAddress(
       [publicIdentifier, proposedToIdentifier],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
     );
 
     return [multisigAddress];
@@ -43,8 +46,8 @@ export default class ProposeInstallController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: Node.ProposeInstallParams
-  ) {
+    params: Node.ProposeInstallParams,
+  ): Promise<void> {
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { initialState } = params;
 
@@ -57,7 +60,7 @@ export default class ProposeInstallController extends NodeController {
       initiatorDeposit,
       responderDeposit,
       initiatorDepositTokenAddress: initiatorDepositTokenAddressParam,
-      responderDepositTokenAddress: responderDepositTokenAddressParam
+      responderDepositTokenAddress: responderDepositTokenAddressParam,
     } = params;
 
     const myIdentifier = publicIdentifier;
@@ -65,7 +68,7 @@ export default class ProposeInstallController extends NodeController {
     const multisigAddress = getCreate2MultisigAddress(
       [myIdentifier, proposedToIdentifier],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
     );
 
     const initiatorDepositTokenAddress =
@@ -77,21 +80,21 @@ export default class ProposeInstallController extends NodeController {
     const stateChannel = await store.getOrCreateStateChannelBetweenVirtualAppParticipants(
       multisigAddress,
       myIdentifier,
-      proposedToIdentifier
+      proposedToIdentifier,
     );
 
     assertSufficientFundsWithinFreeBalance(
       stateChannel,
       myIdentifier,
       initiatorDepositTokenAddress,
-      initiatorDeposit
+      initiatorDeposit,
     );
 
     assertSufficientFundsWithinFreeBalance(
       stateChannel,
       proposedToIdentifier,
       responderDepositTokenAddress,
-      responderDeposit
+      responderDeposit,
     );
 
     params.initiatorDepositTokenAddress = initiatorDepositTokenAddress;
@@ -100,37 +103,28 @@ export default class ProposeInstallController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.ProposeInstallParams
+    params: Node.ProposeInstallParams,
   ): Promise<Node.ProposeInstallResult> {
-    const {
-      store,
-      publicIdentifier,
-      networkContext,
-      protocolRunner
-    } = requestHandler;
+    const { store, publicIdentifier, networkContext, protocolRunner } = requestHandler;
 
     const { proposedToIdentifier } = params;
 
     const multisigAddress = getCreate2MultisigAddress(
       [publicIdentifier, proposedToIdentifier],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
     );
 
-    await protocolRunner.initiateProtocol(
-      Protocol.Propose,
-      await store.getStateChannelsMap(),
-      {
-        ...params,
-        initiatorXpub: publicIdentifier,
-        responderXpub: proposedToIdentifier
-      }
-    );
+    await protocolRunner.initiateProtocol(Protocol.Propose, await store.getStateChannelsMap(), {
+      ...params,
+      initiatorXpub: publicIdentifier,
+      responderXpub: proposedToIdentifier,
+    });
 
     return {
-      appInstanceId: (await store.getStateChannel(
-        multisigAddress
-      )).mostRecentlyProposedAppInstance().identityHash
+      appInstanceId: (
+        await store.getStateChannel(multisigAddress)
+      ).mostRecentlyProposedAppInstance().identityHash,
     };
   }
 }
@@ -139,13 +133,13 @@ function assertSufficientFundsWithinFreeBalance(
   channel: StateChannel,
   publicIdentifier: string,
   tokenAddress: string,
-  depositAmount: BigNumber
-) {
+  depositAmount: BigNumber,
+): void {
   if (!channel.hasFreeBalance) return;
 
-  const freeBalanceForToken = channel
-    .getFreeBalanceClass()
-    .getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0)) || Zero;
+  const freeBalanceForToken =
+    channel.getFreeBalanceClass().getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0)) ||
+    Zero;
 
   if (freeBalanceForToken.lt(depositAmount)) {
     throw Error(
@@ -154,8 +148,8 @@ function assertSufficientFundsWithinFreeBalance(
         channel.multisigAddress,
         tokenAddress,
         freeBalanceForToken,
-        depositAmount
-      )
+        depositAmount,
+      ),
     );
   }
 }
