@@ -21,7 +21,8 @@ import {
   NodeMessageWrappedProtocolMessage,
   SolidityValueType,
 } from "../types";
-import { bigNumberifyJson, getCreate2MultisigAddress } from "../utils";
+import { bigNumberifyJson } from "../utils";
+import { Store } from "../store";
 
 /**
  * Forwards all received NodeMessages that are for the machine's internal
@@ -53,12 +54,13 @@ export async function handleReceivedProtocolMessage(
     preProtocolStateChannelsMap
   );
 
-  const outgoingEventData = getOutgoingEventDataFromProtocol(
+  const outgoingEventData = await getOutgoingEventDataFromProtocol(
     protocol,
     params!,
     publicIdentifier,
     postProtocolStateChannelsMap,
-    networkContext
+    networkContext,
+    store,
   );
 
   if (
@@ -102,12 +104,13 @@ function emitOutgoingNodeMessage(router: RpcRouter, msg: object) {
   return router.emit(msg["type"], msg, "outgoing");
 }
 
-function getOutgoingEventDataFromProtocol(
+async function getOutgoingEventDataFromProtocol(
   protocol: string,
   params: ProtocolParameters,
   publicIdentifier: string,
   stateChannelsMap: Map<string, StateChannel>,
-  networkContext: NetworkContext
+  networkContext: NetworkContext,
+  store: Store,
 ) {
   const baseEvent = { from: publicIdentifier };
 
@@ -174,10 +177,12 @@ function getOutgoingEventDataFromProtocol(
         )
       };
     case Protocol.InstallVirtualApp:
-      const virtualChannel = getCreate2MultisigAddress(
-        [params.responderXpub, params.initiatorXpub],
+      const virtualChannel = await store.getMultisigAddressWithCounterparty(
+        params.responderXpub,
+        params.initiatorXpub,
         networkContext.ProxyFactory,
-        networkContext.MinimumViableMultisig
+        networkContext.MinimumViableMultisig,
+        true,
       );
       if (stateChannelsMap.has(virtualChannel)) {
         return {
@@ -257,13 +262,16 @@ async function getQueueNamesListByProtocolName(
   params: ProtocolParameters,
   requestHandler: RequestHandler
 ): Promise<string[]> {
-  const { publicIdentifier, networkContext } = requestHandler;
+  const { publicIdentifier, networkContext, store } = requestHandler;
 
-  function multisigAddressFor(xpubs: string[]) {
-    return getCreate2MultisigAddress(
-      xpubs,
+  async function multisigAddressFor(xpubs: string[]) {
+    const allowGenerated = protocol === Protocol.Setup || protocol === Protocol.InstallVirtualApp;
+    return await store.getMultisigAddressWithCounterparty(
+      xpubs[0],
+      xpubs[1],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
+      allowGenerated,
     );
   }
 
@@ -311,15 +319,15 @@ async function getQueueNamesListByProtocolName(
 
       if (publicIdentifier === intermediaryXpub) {
         return [
-          multisigAddressFor([initiatorXpub, intermediaryXpub]),
-          multisigAddressFor([responderXpub, intermediaryXpub])
+          await multisigAddressFor([initiatorXpub, intermediaryXpub]),
+          await multisigAddressFor([responderXpub, intermediaryXpub])
         ];
       }
 
       if (publicIdentifier === responderXpub) {
         return [
-          multisigAddressFor([responderXpub, intermediaryXpub]),
-          multisigAddressFor([responderXpub, initiatorXpub])
+          await multisigAddressFor([responderXpub, intermediaryXpub]),
+          await multisigAddressFor([responderXpub, initiatorXpub])
         ];
       }
 
@@ -337,16 +345,16 @@ async function getQueueNamesListByProtocolName(
 
       if (publicIdentifier === intermediary) {
         return [
-          multisigAddressFor([initiator, intermediary]),
-          multisigAddressFor([responder, intermediary]),
+          await multisigAddressFor([initiator, intermediary]),
+          await multisigAddressFor([responder, intermediary]),
           targetAppIdentityHash
         ];
       }
 
       if (publicIdentifier === responder) {
         return [
-          multisigAddressFor([responder, intermediary]),
-          multisigAddressFor([responder, initiator]),
+          await multisigAddressFor([responder, intermediary]),
+          await multisigAddressFor([responder, initiator]),
           targetAppIdentityHash
         ];
       }
