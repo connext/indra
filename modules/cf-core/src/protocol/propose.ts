@@ -42,13 +42,16 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       outcomeType
     } = params as ProposeInstallParams;
 
-    const preProtocolStateChannel = stateChannelsMap[multisigAddress]
-      ? StateChannel.fromJson(stateChannelsMap[multisigAddress])
-      : StateChannel.createEmptyChannel(multisigAddress, [
-          initiatorXpub,
-          responderXpub
-        ]);
-
+    const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)
+      ? stateChannelsMap.get(multisigAddress)!
+      : StateChannel.createEmptyChannel(
+          multisigAddress, 
+          [
+            initiatorXpub,
+            responderXpub
+          ]
+        );
+    
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
       abiEncodings,
