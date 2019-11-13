@@ -37,7 +37,7 @@
     "@counterfactual/postgresql-node-connector": "0.0.8",
     "@types/chai": "4.2.4",
     "@types/dotenv-safe": "5.0.4",
-    "@types/jest": "24.0.22",
+    "@types/jest": "24.0.23",
     "@types/loglevel": "1.6.3",
     "@types/node": "12.12.7",
     "@types/pg": "7.11.2",
