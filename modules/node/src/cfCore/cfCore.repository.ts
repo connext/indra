@@ -2,6 +2,10 @@ import { EntityRepository, Like, Repository } from "typeorm";
 
 import { CFCoreRecord } from "./cfCore.entity";
 
+import { CLogger } from "../util";
+
+const logger = new CLogger("CFCoreRecordRepository")
+
 type StringKeyValue = { [path: string]: StringKeyValue };
 
 @EntityRepository(CFCoreRecord)
@@ -48,7 +52,7 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
     if (!res) {
       return undefined;
     }
-    // logger.log(`Got value: ${JSON.stringify(res.value[path])}`);
+    logger.debug(`Got value: ${JSON.stringify(res.value[path], null, 2)}`);
     return res.value[path];
   }
 
@@ -58,7 +62,7 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
       // if you use anything other than JSON (i.e. a raw string).
       // In some cases, the cf core code is inserting strings as values instead of objects :(
       const record = { path: pair.path, value: { [pair.path]: pair.value } };
-      // logger.log(`Saving record: ${JSON.stringify(record)}`);
+      logger.debug(`Saving record: ${JSON.stringify(record, null, 2)}`);
       await this.save(record);
     }
   }
