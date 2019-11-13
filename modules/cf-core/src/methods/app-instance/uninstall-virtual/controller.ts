@@ -28,7 +28,6 @@ export default class UninstallVirtualController extends NodeController {
       [publicIdentifier, intermediaryIdentifier],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
-      false
     );
 
     const stateChannelWithResponding = await store.getChannelFromAppInstanceID(
@@ -44,7 +43,6 @@ export default class UninstallVirtualController extends NodeController {
       ],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
-      false
     );
 
     return [

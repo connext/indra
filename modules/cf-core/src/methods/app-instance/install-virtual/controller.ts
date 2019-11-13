@@ -21,7 +21,6 @@ export default class InstallVirtualController extends NodeController {
       [publicIdentifier, intermediaryIdentifier],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
-      false,
     );
 
     const proposal = await store.getAppInstanceProposal(appInstanceId);
@@ -41,7 +40,6 @@ export default class InstallVirtualController extends NodeController {
       [intermediaryIdentifier, proposedByIdentifier],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
-      false,
     );
 
     return [
@@ -66,7 +64,6 @@ export default class InstallVirtualController extends NodeController {
       [publicIdentifier, intermediaryIdentifier],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
-      false,
     );
 
     const stateChannelWithIntermediary = await store.getStateChannel(multisigAddress);

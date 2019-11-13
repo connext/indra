@@ -1113,7 +1113,6 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForInitiating(
     [initiatorXpub, intermediaryXpub],
     network.ProxyFactory,
     network.MinimumViableMultisig,
-    false
   );
 
   const stateChannelWithIntermediary = stateChannelsMap.get(
@@ -1192,7 +1191,6 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForIntermediary(
     [initiatorXpub, intermediaryXpub],
     network.ProxyFactory,
     network.MinimumViableMultisig,
-    false
   );
 
   const channelWithInitiating = stateChannelsMap.get(
@@ -1210,7 +1208,6 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForIntermediary(
     [responderXpub, intermediaryXpub],
     network.ProxyFactory,
     network.MinimumViableMultisig,
-    false
   );
 
   const channelWithResponding = stateChannelsMap.get(
@@ -1320,7 +1317,6 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForResponding(
     [responderXpub, intermediaryXpub],
     network.ProxyFactory,
     network.MinimumViableMultisig,
-    false
   )
   const stateChannelWithIntermediary = stateChannelsMap.get(
     multisigAddressWithIntermediary

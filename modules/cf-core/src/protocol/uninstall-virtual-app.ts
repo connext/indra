@@ -560,7 +560,6 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForInitiating(
       stateChannelsMap,
       [initiatorXpub, intermediaryXpub],
       network,
-      false,
     ),
 
     getStateChannelFromMapWithOwners(
@@ -671,7 +670,6 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForResponding(
       stateChannelsMap,
       [responderXpub, intermediaryXpub],
       network,
-      false
     ),
 
     getStateChannelFromMapWithOwners(
@@ -792,14 +790,12 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
       stateChannelsMap,
       [initiatorXpub, intermediaryXpub],
       network,
-      false,
     ),
 
     getStateChannelFromMapWithOwners(
       stateChannelsMap,
       [intermediaryXpub, responderXpub],
       network,
-      false
     )
   ];
 
