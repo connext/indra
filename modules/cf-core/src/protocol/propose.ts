@@ -44,13 +44,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)
       ? stateChannelsMap.get(multisigAddress)!
-      : StateChannel.createEmptyChannel(
-          multisigAddress, 
-          [
-            initiatorXpub,
-            responderXpub
-          ]
-        );
+      : StateChannel.createEmptyChannel(multisigAddress, [
+          initiatorXpub,
+          responderXpub
+        ]);
     
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
@@ -80,6 +77,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(
       appInstanceProposal
     );
+    console.log('postProtocolStateChannel: ', postProtocolStateChannel);
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
@@ -160,8 +158,8 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: initiatorSignatureOnInitialState }
     } = message;
 
-    const preProtocolStateChannel = stateChannelsMap[multisigAddress]
-      ? StateChannel.fromJson(stateChannelsMap[multisigAddress])
+    const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)
+      ? stateChannelsMap.get(multisigAddress)!
       : StateChannel.createEmptyChannel(multisigAddress, [
           initiatorXpub,
           responderXpub
