@@ -25,6 +25,7 @@ export const cfCoreProviderFactory: Provider = {
   ): Promise<CFCore> => {
     const hdNode = fromMnemonic(config.getMnemonic()).derivePath(CF_PATH);
     const publicExtendedKey = hdNode.neuter().extendedKey;
+    const provider = config.getEthProvider();
     logger.log(`Derived xpub from mnemonic: ${publicExtendedKey}`);
 
     // test that provider works
@@ -43,7 +44,6 @@ export const cfCoreProviderFactory: Provider = {
       },
     );
     const signerAddr = xpubToAddress(cfCore.publicIdentifier);
-    const provider = config.getEthProvider();
     const balance = (await provider.getBalance(signerAddr)).toString();
     logger.log(
       `Balance of signer address ${signerAddr} on ${networkName} (chainId ${chainId}): ${balance}`,
