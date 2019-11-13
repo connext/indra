@@ -1,10 +1,9 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { InstallVirtualMessage, Node, NODE_EVENTS } from "../../../types";
-import { getCreate2MultisigAddress, prettyPrintObject } from "../../../utils";
+import { Node } from "../../../types";
+import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
-import { NO_MULTISIG_FOR_APP_INSTANCE_ID } from "../../errors";
 
 import { installVirtual } from "./operation";
 
