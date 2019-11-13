@@ -18,7 +18,7 @@ import {
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
-describe.skip("Node method follows spec - rejectInstallVirtual", () => {
+describe("Node method follows spec - rejectInstallVirtual", () => {
   let nodeA: Node;
   let nodeB: Node;
   let nodeC: Node;
