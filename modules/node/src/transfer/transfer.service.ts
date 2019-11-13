@@ -236,8 +236,8 @@ export class TransferService {
         }
       });
     } else {
-      // request collateral normally
-      await this.channelService.requestCollateral(userPubId, assetId, amountBN);
+      // request collateral normally without awaiting
+      this.channelService.requestCollateral(userPubId, assetId, amountBN);
     }
 
     const preTransferBal =
