@@ -9,6 +9,7 @@ import {
   NO_MULTISIG_FOR_APP_INSTANCE_ID,
   NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID,
   NO_STATE_CHANNEL_FOR_MULTISIG_ADDR,
+  NO_MULTISIG_FOR_COUNTERPARTIES,
 } from "./methods/errors";
 import {
   AppInstance,
@@ -215,7 +216,8 @@ export class Store {
     myIdentifier: string,
     theirIdentifier: string,
     proxyFactoryAddress: string,
-    minimumViableMultisigAddress: string
+    minimumViableMultisigAddress: string,
+    acceptGeneratedMultisig: boolean // = false,
   ) {
     const stateChannelsMap = await this.getStateChannelsMap();
     for (const stateChannel of stateChannelsMap.values()) {
@@ -227,11 +229,15 @@ export class Store {
       }
     }
 
-    return getCreate2MultisigAddress(
-      [myIdentifier, theirIdentifier],
-      proxyFactoryAddress,
-      minimumViableMultisigAddress
-    );
+    if (acceptGeneratedMultisig) {
+      return getCreate2MultisigAddress(
+        [myIdentifier, theirIdentifier],
+        proxyFactoryAddress,
+        minimumViableMultisigAddress,
+      );
+    }
+
+    throw new Error(NO_MULTISIG_FOR_COUNTERPARTIES([myIdentifier, theirIdentifier]));
   }
 
   public async getOrCreateStateChannelBetweenVirtualAppParticipants(
