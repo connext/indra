@@ -178,8 +178,7 @@ async function getOutgoingEventDataFromProtocol(
       };
     case Protocol.InstallVirtualApp:
       const virtualChannel = await store.getMultisigAddressWithCounterparty(
-        params.responderXpub,
-        params.initiatorXpub,
+        [params.responderXpub, params.initiatorXpub],
         networkContext.ProxyFactory,
         networkContext.MinimumViableMultisig,
         true,
@@ -267,8 +266,7 @@ async function getQueueNamesListByProtocolName(
   async function multisigAddressFor(xpubs: string[]) {
     const allowGenerated = protocol === Protocol.Setup || protocol === Protocol.InstallVirtualApp;
     return await store.getMultisigAddressWithCounterparty(
-      xpubs[0],
-      xpubs[1],
+      xpubs,
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
       allowGenerated,

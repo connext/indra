@@ -31,8 +31,7 @@ export default class CreateChannelController extends NodeController {
     const { networkContext, store } = requestHandler;
 
     const multisigAddress = await store.getMultisigAddressWithCounterparty(
-      owners[0],
-      owners[1],
+      owners,
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
       true,

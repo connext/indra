@@ -18,8 +18,7 @@ export default class InstallVirtualController extends NodeController {
     const { appInstanceId, intermediaryIdentifier } = params;
 
     const multisigAddressWithHub = await store.getMultisigAddressWithCounterparty(
-      publicIdentifier,
-      intermediaryIdentifier,
+      [publicIdentifier, intermediaryIdentifier],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
       false,
@@ -32,16 +31,14 @@ export default class InstallVirtualController extends NodeController {
     // assume that there may not be existing sc between
     // virtual channel participants
     const multisigAddressWithResponding = await store.getMultisigAddressWithCounterparty(
-      publicIdentifier,
-      proposedByIdentifier,
+      [publicIdentifier, proposedByIdentifier],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
       true,
     );
 
     const multisigAddressBetweenHubAndResponding = await store.getMultisigAddressWithCounterparty(
-      intermediaryIdentifier,
-      proposedByIdentifier,
+      [intermediaryIdentifier, proposedByIdentifier],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
       false,
@@ -66,8 +63,7 @@ export default class InstallVirtualController extends NodeController {
     }
 
     const multisigAddress = await store.getMultisigAddressWithCounterparty(
-      publicIdentifier,
-      intermediaryIdentifier,
+      [publicIdentifier, intermediaryIdentifier],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
       false,

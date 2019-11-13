@@ -36,8 +36,7 @@ export default class ProposeInstallController extends NodeController {
     // to pulling from the store, assume it is okay to use a generated
     // multisig
     const multisigAddress = await store.getMultisigAddressWithCounterparty(
-      publicIdentifier,
-      proposedToIdentifier,
+      [publicIdentifier, proposedToIdentifier],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
       true,
@@ -67,11 +66,15 @@ export default class ProposeInstallController extends NodeController {
 
     const myIdentifier = publicIdentifier;
 
+    // TODO: no way to determine if this is a virtual or regular app being
+    // proposed. because it may be a virtual app, and the function defaults
+    // to pulling from the store, assume it is okay to use a generated
+    // multisig
     const multisigAddress = await store.getMultisigAddressWithCounterparty(
-      publicIdentifier,
-      proposedToIdentifier,
+      [publicIdentifier, proposedToIdentifier],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
+      true
     );
 
     const initiatorDepositTokenAddress =
@@ -117,11 +120,15 @@ export default class ProposeInstallController extends NodeController {
 
     const { proposedToIdentifier } = params;
 
+    // TODO: no way to determine if this is a virtual or regular app being
+    // proposed. because it may be a virtual app, and the function defaults
+    // to pulling from the store, assume it is okay to use a generated
+    // multisig
     const multisigAddress = await store.getMultisigAddressWithCounterparty(
-      publicIdentifier,
-      proposedToIdentifier,
+      [publicIdentifier, proposedToIdentifier],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
+      true
     );
 
     await protocolRunner.initiateProtocol(

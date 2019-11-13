@@ -35,8 +35,7 @@ export async function createProposedAppInstance(
   // to pulling from the store, assume it is okay to use a generated
   // multisig
   const multisigAddress = await store.getMultisigAddressWithCounterparty(
-    myIdentifier,
-    proposedToIdentifier,
+    [myIdentifier, proposedToIdentifier],
     networkContext.ProxyFactory,
     networkContext.MinimumViableMultisig,
     true

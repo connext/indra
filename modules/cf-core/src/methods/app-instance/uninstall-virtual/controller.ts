@@ -25,8 +25,7 @@ export default class UninstallVirtualController extends NodeController {
     const { appInstanceId, intermediaryIdentifier } = params;
 
     const multisigAddressForStateChannelWithIntermediary = await store.getMultisigAddressWithCounterparty(
-      publicIdentifier,
-      intermediaryIdentifier,
+      [publicIdentifier, intermediaryIdentifier],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
       false
@@ -37,10 +36,12 @@ export default class UninstallVirtualController extends NodeController {
     );
 
     const multisigAddressBetweenHubAndResponding = await store.getMultisigAddressWithCounterparty(
-      stateChannelWithResponding.userNeuteredExtendedKeys.filter(
-        x => x !== publicIdentifier
-      )[0],
-      intermediaryIdentifier,
+      [
+        stateChannelWithResponding.userNeuteredExtendedKeys.filter(
+          x => x !== publicIdentifier
+        )[0], 
+        intermediaryIdentifier
+      ],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
       false
