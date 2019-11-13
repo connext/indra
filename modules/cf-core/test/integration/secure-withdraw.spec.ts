@@ -17,7 +17,8 @@ import {
   createChannel,
   deployStateDepositHolder,
   deposit,
-  transferERC20Tokens
+  transferERC20Tokens,
+  getFreeBalanceState
 } from "./utils";
 
 expect.extend({ toBeEq, toBeLt });
@@ -140,6 +141,16 @@ describe("Node method follows spec - withdraw", () => {
       multisigAddress
     );
 
+    const getFreeBalance = async (node: Node) => {
+      return getFreeBalanceState(
+        node,
+        multisigAddress,
+        CONVENTION_FOR_ETH_TOKEN_ADDRESS
+      );
+    };
+
+     expect(await getFreeBalance(nodeA)).toEqual(await getFreeBalance(nodeB));
+
     expect(postDepositMultisigBalance).toBeEq(startingMultisigBalance.add(One));
 
     const recipient = getAddress(hexlify(randomBytes(20)));
@@ -170,6 +181,8 @@ describe("Node method follows spec - withdraw", () => {
       externalFundedAccount.address
     );
     const nodeAPreTxBalance = await provider.getBalance(nodeA.signerAddress());
+
+    expect(await getFreeBalance(nodeA)).toEqual(await getFreeBalance(nodeB));
 
     await externalFundedAccount.sendTransaction(transaction);
 
