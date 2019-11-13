@@ -21,7 +21,7 @@
     "eth-gas-reporter": "0.2.12",
     "ethereum-waffle": "2.1.0",
     "ethers": "4.0.39",
-    "openzeppelin-solidity": "2.3.0",
+    "openzeppelin-solidity": "2.4.0",
     "solc": "0.5.11",
     "truffle": "5.0.44",
     "truffle-hdwallet-provider": "1.0.17",

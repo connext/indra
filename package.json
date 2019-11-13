@@ -21,7 +21,7 @@
 		"ethers": "4.0.39",
 		"ganache-cli": "6.7.0",
 		"lerna": "3.18.4",
-		"openzeppelin-solidity": "2.3.0",
+		"openzeppelin-solidity": "2.4.0",
     "prettier": "1.19.1",
 		"solc": "0.5.11",
 		"tslint": "5.20.1",
