@@ -219,6 +219,9 @@ export class TransferService {
             if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
               return;
             }
+            if (msg.data.multisigAddress !== channel.multisigAddress) {
+              return;
+            }
             resolve();
           },
         );
