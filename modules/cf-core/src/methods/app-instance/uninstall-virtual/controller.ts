@@ -34,6 +34,9 @@ export default class UninstallVirtualController extends NodeController {
       appInstanceId
     );
 
+    // because this is the initiators store, it may not have
+    // access to this multisig address between the proposedBy
+    // and the intermediary
     const multisigAddressBetweenHubAndResponding = await store.getMultisigAddressWithCounterparty(
       [
         stateChannelWithResponding.userNeuteredExtendedKeys.filter(
@@ -43,6 +46,7 @@ export default class UninstallVirtualController extends NodeController {
       ],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
+      true
     );
 
     return [

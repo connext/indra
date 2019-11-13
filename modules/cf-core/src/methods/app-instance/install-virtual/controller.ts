@@ -36,10 +36,14 @@ export default class InstallVirtualController extends NodeController {
       true,
     );
 
+    // because this is the initiators store, it may not have
+    // access to this multisig address between the proposedBy
+    // and the intermediary
     const multisigAddressBetweenHubAndResponding = await store.getMultisigAddressWithCounterparty(
       [intermediaryIdentifier, proposedByIdentifier],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
+      true
     );
 
     return [
