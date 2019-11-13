@@ -219,6 +219,17 @@ export class Store {
     acceptGeneratedMultisig: boolean // = false,
   ) {
     const stateChannelsMap = await this.getStateChannelsMap();
+    return Store.getMultisigAddressWithCounterpartyFromMap(stateChannelsMap, owners, proxyFactoryAddress, minimumViableMultisigAddress, acceptGeneratedMultisig)
+  }
+
+  // TODO: remove if store is added to Context type
+  public static getMultisigAddressWithCounterpartyFromMap(
+    stateChannelsMap: Map<string, StateChannel>,
+    owners: string[],
+    proxyFactoryAddress: string,
+    minimumViableMultisigAddress: string,
+    acceptGeneratedMultisig: boolean // = false,
+  ) {
     for (const stateChannel of stateChannelsMap.values()) {
       if (
         stateChannel.userNeuteredExtendedKeys.sort().toString() ===
