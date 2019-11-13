@@ -1,6 +1,9 @@
-import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
-import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
-import { ethers as eth } from "ethers";
+export {
+  AppInstanceJson,
+  AppInstanceProposal,
+  Node as CFCoreTypes,
+  OutcomeType,
+} from "@connext/types";
 export {
   CreateChannelMessage,
   DepositConfirmationMessage,
@@ -16,10 +19,10 @@ export {
   UninstallVirtualMessage,
   UpdateStateMessage,
   WithdrawMessage,
-} from "@counterfactual/node";
-
-// cf-core imports are segregated so that later,
-// importing from a local module is an easy option
+} from "@connext/cf-core";
+import MinimumViableMultisig from "@connext/cf-funding-protocol-contracts/build/MinimumViableMultisig.json";
+import Proxy from "@connext/cf-funding-protocol-contracts/build/Proxy.json";
+import { ethers as eth } from "ethers";
 
 export function freeBalanceAddressFromXpub(xpub: string): string {
   return eth.utils.getAddress(eth.utils.HDNode.fromExtendedKey(xpub).derivePath("0").address);
@@ -41,7 +44,7 @@ export function xkeysToSortedKthAddresses(xkeys: string[], k: number): string[] 
   return sortAddresses(xkeys.map(xkey => xkeyKthAddress(xkey, k)));
 }
 
-// TODO: this should be imported from the counterfactual utils
+// TODO: this should be imported from cf utils
 export function getMultisigAddressfromXpubs(
   owners: string[],
   proxyFactoryAddress: string,

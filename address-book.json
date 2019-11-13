@@ -207,18 +207,18 @@
     },
     "SimpleLinkedTransferApp": {
       "address": "0x75c35C980C0d37ef46DF04d31A140b65503c0eEd",
-      "bytecode": "0xa1fad313b92a55eb39095bd2291d4bf7d783d0fd72833f531b7e4328be45c573",
-      "txHash": "0xab6448f5d6db6776ef6d801c5cb95714093ed037ba47559f4127f17a8afe29f6"
+      "bytecode": "0x8e59843b70379da809a2f7f8a46e5bd37cf7cb5f6cfe3eb73be38c51ef52521f",
+      "txHash": "0xaf760e9ad9db1f8fc5c517dfb5fe806877859525225eecbabd6580adfdd227c4"
     },
     "SimpleTransferApp": {
       "address": "0x82D50AD3C1091866E258Fd0f1a7cC9674609D254",
-      "bytecode": "0xc96ffb41de0ee78717456ba69cf4231eaeff193b9340d80d364fc9e1c06c6f4a",
-      "txHash": "0xa3df9f7818f7e7db996f574b09f8e8248d177b004b2f2dc0945ae9815038f962"
+      "bytecode": "0x9f79a3f64bf74aa947ed1b67412e57405f5e44647ada35c2f60c9f3c95da0705",
+      "txHash": "0x12f46a5a21872e9149ff193ecac68fd0624bbef797d130a25321ad7521c3c4c0"
     },
     "SimpleTwoPartySwapApp": {
       "address": "0xdDA6327139485221633A1FcD65f4aC932E60A2e1",
-      "bytecode": "0xb331424c63cd41941ad72a7d25f2dae0e5c443c587b506d30dfd0b2db871b539",
-      "txHash": "0x2075365b35bd57eb64af1d899ee8d0a404045a65602b36b22ec4e0bdc8c2b76a"
+      "bytecode": "0x0c3811f80c2b4876b707a4e52c89b6bfde4491dfc741bb1857242b1b6e84d574",
+      "txHash": "0xf9beec9589002cee8498ad403e5dba1423242aab5aa9864b8f6b38d33e84f413"
     },
     "Token": {
       "address": "0xeec918d74c746167564401103096D45BbD494B74",

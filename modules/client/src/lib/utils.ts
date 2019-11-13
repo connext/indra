@@ -1,5 +1,5 @@
-import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
-import Proxy from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/Proxy.json";
+import MinimumViableMultisig from "@connext/cf-funding-protocol-contracts/build/MinimumViableMultisig.json";
+import Proxy from "@connext/cf-funding-protocol-contracts/build/Proxy.json";
 import {
   BigNumber,
   bigNumberify,
@@ -76,16 +76,11 @@ export const mkHash = (prefix: string = "0x"): string => prefix.padEnd(66, "0");
 export const delay = (ms: number): Promise<void> =>
   new Promise((res: any): any => setTimeout(res, ms));
 
-// TODO: why doesnt deriving a path work as expected? sync w/rahul about
-// differences in hub. (eg. only freeBalanceAddressFromXpub derives correct
-// fb address but only below works for deposit bal checking)
-export const publicIdentifierToAddress = (publicIdentifier: string): string => {
-  return HDNode.fromExtendedKey(publicIdentifier).address;
-};
+export const delayAndThrow = (ms: number, msg: string = ""): Promise<void> =>
+  new Promise((res: any, rej: any): any => setTimeout((): void => rej(msg), ms));
 
-export const freeBalanceAddressFromXpub = (xpub: string): string => {
-  return HDNode.fromExtendedKey(xpub).derivePath("0").address;
-};
+export const xpubToAddress = (xpub: string, path: string = "0"): string =>
+  HDNode.fromExtendedKey(xpub).derivePath(path).address;
 
 export const createLinkedHash = (
   amount: BigNumber,

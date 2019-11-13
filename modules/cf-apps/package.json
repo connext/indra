@@ -1,0 +1,39 @@
+{
+  "name": "@connext/cf-apps",
+  "version": "0.4.1",
+  "description": "Collection of various apps built on Counterfactual",
+  "repository": "https://github.com/ConnextProject/indra.git",
+  "license": "MIT",
+  "files": ["build", "contracts"],
+  "scripts": {
+    "build": "waffle waffle.json",
+    "migrate": "truffle migrate",
+    "test": "ts-mocha test/*",
+    "lint:fix": "yarn lint:ts:fix && yarn lint:sol:fix",
+    "lint": "yarn lint:ts && yarn lint:sol",
+    "lint:sol:fix": "solium -d contracts/ --fix",
+    "lint:sol": "solium -d .",
+    "lint:ts:fix": "tslint -c tslint.json -p . --fix",
+    "lint:ts": "tslint -c tslint.json -p ."
+  },
+  "devDependencies": {
+    "@connext/cf-types": "1.0.1",
+    "@connext/cf-adjudicator-contracts": "0.4.1",
+    "@types/chai": "4.2.4",
+    "@types/mocha": "5.2.7",
+    "chai": "4.2.0",
+    "ethereum-waffle": "2.1.0",
+    "ethers": "4.0.39",
+    "ethlint": "1.2.5",
+    "mocha": "6.2.0",
+    "solc": "0.5.11",
+    "truffle": "5.0.44",
+    "truffle-deploy-registry": "0.5.1",
+    "truffle-hdwallet-provider": "1.0.17",
+    "ts-mocha": "6.0.0",
+    "tslint": "5.20.1"
+  },
+  "resolutions": {
+    "ethereum-waffle/solc": "0.5.11"
+  }
+}

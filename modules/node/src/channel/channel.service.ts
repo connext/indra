@@ -1,5 +1,4 @@
 import { ChannelAppSequences } from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import { AddressZero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
@@ -13,7 +12,7 @@ import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.en
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { CLogger, freeBalanceAddressFromXpub } from "../util";
-import { CreateChannelMessage } from "../util/cfCore";
+import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
@@ -258,12 +257,20 @@ export class ChannelService {
     );
   }
 
-  async getChannelStates(userPublicIdentifier: string): Promise<CFCoreRecord[]> {
+  // TODO: define type for state channel
+  async getChannelState(userPublicIdentifier: string): Promise<any> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     if (!channel) {
       throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
     }
+    const { data: state } = await this.cfCoreService.getStateChannel(channel.multisigAddress);
 
-    return await this.cfCoreRepository.findRecordsForRestore(channel.multisigAddress);
+    // FIXME: this has to be [] not {}, we should fix this better
+    state.singleAssetTwoPartyIntermediaryAgreements =
+      Object.values(state.singleAssetTwoPartyIntermediaryAgreements).length === 0
+        ? []
+        : state.singleAssetTwoPartyIntermediaryAgreements;
+
+    return state;
   }
 }

@@ -4,7 +4,6 @@ import {
   SimpleLinkedTransferAppStateBigNumber,
   SupportedApplications,
 } from "@connext/types";
-import { AppInstanceJson, Node as CFCoreTypes } from "@counterfactual/types";
 import { Inject, Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
@@ -25,6 +24,7 @@ import {
   RejectProposalMessage,
   replaceBN,
 } from "../util";
+import { AppInstanceJson, CFCoreTypes } from "../util/cfCore";
 
 import {
   LinkedTransfer,
@@ -33,7 +33,11 @@ import {
   PeerToPeerTransferStatus,
   Transfer,
 } from "./transfer.entity";
-import { LinkedTransferRepository, PeerToPeerTransferRepository, TransferRepository } from "./transfer.repository";
+import {
+  LinkedTransferRepository,
+  PeerToPeerTransferRepository,
+  TransferRepository,
+} from "./transfer.repository";
 
 const logger = new CLogger("TransferService");
 

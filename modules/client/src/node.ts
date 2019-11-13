@@ -1,18 +1,4 @@
 import { IMessagingService } from "@connext/messaging";
-import {
-  AppRegistry,
-  ChannelAppSequences,
-  CreateChannelResponse,
-  GetChannelResponse,
-  GetConfigResponse,
-  makeChecksumOrEthAddress,
-  PaymentProfile,
-  RequestCollateralResponse,
-  SupportedApplication,
-  SupportedNetwork,
-  Transfer,
-} from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
 import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
 import uuid = require("uuid");
@@ -20,7 +6,21 @@ import uuid = require("uuid");
 import { ChannelRouter } from "./channelRouter";
 import { Logger } from "./lib/logger";
 import { stringify } from "./lib/utils";
-import { NodeInitializationParameters } from "./types";
+import {
+  AppRegistry,
+  CFCoreTypes,
+  ChannelAppSequences,
+  CreateChannelResponse,
+  GetChannelResponse,
+  GetConfigResponse,
+  makeChecksumOrEthAddress,
+  NodeInitializationParameters,
+  PaymentProfile,
+  RequestCollateralResponse,
+  SupportedApplication,
+  SupportedNetwork,
+  Transfer,
+} from "./types";
 
 // Include our access token when interacting with these subjects
 const guardedSubjects = ["channel", "lock", "transfer"];
@@ -49,6 +49,7 @@ export interface INodeApiClient {
     recipientPublicIdentifier?: string,
   ): Promise<void>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
+  restoreState(publicIdentifier: string): Promise<any>;
   subscribeToSwapRates(from: string, to: string, callback: any): void;
   unsubscribeFromSwapRates(from: string, to: string): void;
   // TODO: fix types
@@ -266,8 +267,8 @@ export class NodeApiClient implements INodeApiClient {
     await this.messaging.unsubscribe(`swap-rate.${from}.${to}`);
   }
 
-  // TODO: need to add auth for this!
-  public async restoreStates(publicIdentifier: string): Promise<{ path: string; value: object }[]> {
+  // TODO: type
+  public async restoreState(publicIdentifier: string): Promise<any> {
     return this.send(`channel.restore-states.${publicIdentifier}`);
   }
 
@@ -317,7 +318,7 @@ export class NodeApiClient implements INodeApiClient {
     let msg = await this.messaging.request(subject, API_TIMEOUT, payload);
     let error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     if (error && error.startsWith("Invalid token")) {
-      this.log.warn(`Auth error, token might have expired. Let's get a fresh token & try again.`);
+      this.log.info(`Auth error, token might have expired. Let's get a fresh token & try again.`);
       this.token = this.getAuthToken();
       payload.token = await this.token;
       msg = await this.messaging.request(subject, API_TIMEOUT, payload);

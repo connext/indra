@@ -1,7 +1,7 @@
-import { OutcomeType } from "@counterfactual/types";
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 import { Network } from "../constants";
+import { OutcomeType } from "../util/cfCore";
 
 @Entity()
 export class AppRegistry {
