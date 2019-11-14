@@ -900,10 +900,11 @@ export class ConnextClient implements IConnextClient {
   };
 
   public matchTx = (
-    givenTransaction: Transaction,
+    givenTransaction: Transaction | undefined,
     expected: CFCoreTypes.MinimalTransaction,
   ): boolean => {
     return (
+      givenTransaction &&
       givenTransaction.to === expected.to &&
       bigNumberify(givenTransaction.value).eq(expected.value) &&
       givenTransaction.data === expected.data
