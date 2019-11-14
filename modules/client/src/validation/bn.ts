@@ -15,14 +15,14 @@ export const falsy = (x: string | undefined): boolean => !!x;
 export function notBigNumber(value: any): string | undefined {
   return utils.BigNumber.isBigNumber(value)
     ? undefined
-    : `Value is not a bignumber. Value: ${stringify(value)}`;
+    : `Value "${stringify(value)}" is not a bignumber`;
 }
 
 export function notBigNumberish(value: any): string | undefined {
   try {
     utils.bigNumberify(value);
   } catch (e) {
-    return `Value is not bignumberish. Value: ${stringify(value)}`;
+    return `Value ${stringify(value)} is not bignumberish}`;
   }
   return undefined;
 }
