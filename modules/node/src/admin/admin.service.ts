@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
+import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelService } from "../channel/channel.service";
-import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { CLogger } from "../util";
 
 const logger = new CLogger("AdminService");
@@ -51,9 +51,9 @@ export class AdminService {
 
   /** 11/8 Get Channels */
 
-  async getChannelStates(userPublicIdentifier: any):  Promise<CFCoreRecord[]> {
+  async getChannelStates(userPublicIdentifier: any): Promise<CFCoreRecord[]> {
     // get channel by xpub
-    return await this.channelService.getChannelStates(userPublicIdentifier.id);
+    return await this.channelService.getChannelState(userPublicIdentifier.id);
   }
 
   /**
@@ -96,9 +96,8 @@ export class AdminService {
         id: channelId,
       } = channel;
       // calculate the expected multsig address
-      const expectedMultisigAddress = await this.cfCoreService.getExpectedMultisigAddressFromUserXpub(
-        userXpub,
-      );
+      const getMultisig = this.cfCoreService.getExpectedMultisigAddressFromUserXpub;
+      const expectedMultisigAddress = await getMultisig(userXpub);
 
       // if it matches, return
       if (expectedMultisigAddress === oldMultisigAddress) {
