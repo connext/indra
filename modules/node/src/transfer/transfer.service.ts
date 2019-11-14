@@ -1,3 +1,4 @@
+import { DepositConfirmationMessage, NODE_EVENTS } from "@connext/cf-core";
 import { NatsMessagingService } from "@connext/messaging";
 import {
   ResolveLinkedTransferResponse,
@@ -201,15 +202,46 @@ export class TransferService {
       throw new Error(`App with provided hash has not been installed: ${linkedHash}`);
     }
 
+    const freeBalanceAddr = this.cfCoreService.cfCore.freeBalanceAddress;
+
     const freeBal = await this.cfCoreService.getFreeBalance(
       userPubId,
       channel.multisigAddress,
       assetId,
     );
+    if (freeBal[freeBalanceAddr].lt(amountBN)) {
+      // request collateral and wait for deposit to come through
+      // TODO: expose remove listener
+      await new Promise(async (resolve, reject) => {
+        this.cfCoreService.cfCore.on(
+          NODE_EVENTS.DEPOSIT_CONFIRMED,
+          (msg: DepositConfirmationMessage) => {
+            if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
+              return;
+            }
+            if (msg.data.multisigAddress !== channel.multisigAddress) {
+              return;
+            }
+            resolve();
+          },
+        );
+        try {
+          const result = await this.channelService.requestCollateral(userPubId, assetId, amountBN);
+          if (!result) {
+            // no collateral request sent
+            resolve();
+          }
+        } catch (e) {
+          reject(e);
+        }
+      });
+    } else {
+      // request collateral normally without awaiting
+      this.channelService.requestCollateral(userPubId, assetId, amountBN);
+    }
+
     const preTransferBal =
       freeBal[freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)];
-
-    await this.channelService.requestCollateral(userPubId, assetId, amountBN);
 
     const network = await this.configService.getEthNetwork();
     const appInfo = await this.appRegistryRepository.findByNameAndNetwork(
@@ -223,7 +255,7 @@ export class TransferService {
       coinTransfers: [
         {
           amount: amountBN,
-          to: freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier),
+          to: freeBalanceAddr,
         },
         {
           amount: Zero,
