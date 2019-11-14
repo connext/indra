@@ -62,6 +62,7 @@ export type ProposeInstallParams = {
   timeout: BigNumber;
   initialState: SolidityValueType;
   outcomeType: OutcomeType;
+  meta?: Object;
 };
 
 export type UpdateParams = {
