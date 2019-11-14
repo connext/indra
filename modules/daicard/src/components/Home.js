@@ -13,15 +13,17 @@ import { initWalletConnect } from "../utils";
 
 const style = withStyles({});
 
-export const Home = style(({ balance, swapRate, channel, history }) => {
+export const Home = style(({ balance, swapRate, channel, history, parseQRCode }) => {
   const [scanModal, setScanModal] = useState(false);
 
-  const scanQRCode = async data => {
+  const scanQRCode = data => {
     setScanModal(false);
     if (channel && data.startsWith("wc:")) {
-      await initWalletConnect(data, channel);
+      localStorage.setItem(`wcUri`, data)
+      initWalletConnect(data, channel);
     } else {
-      history.push(data);
+      const url = parseQRCode(data)
+      history.push(url)
     }
   };
 

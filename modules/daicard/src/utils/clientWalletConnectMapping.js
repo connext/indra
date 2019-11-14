@@ -3,9 +3,13 @@ import { Node as NodeTypes } from "@counterfactual/types";
 
 export let walletConnector = null;
 
-export async function initWalletConnect(uri, client) {
+export function initWalletConnect(uri, client) {
   walletConnector = new WalletConnectBrowser({ uri });
 
+  registerWalletConnectListeners(client)
+}
+
+export function registerWalletConnectListeners(client) {
   walletConnector.on("session_request", (error, payload) => {
     if (error) {
       throw error;
@@ -38,8 +42,9 @@ export async function initWalletConnect(uri, client) {
 
 export function cleanWalletConnect() {
   // Delete walletConnector
-  localStorage.removeItem("walletconnect");
   walletConnector = null;
+  // delete url
+  localStorage.removeItem(`wcUri`)
 }
 
 export function displaySessionApproval(payload) {
