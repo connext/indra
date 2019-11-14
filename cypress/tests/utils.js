@@ -24,6 +24,12 @@ my.xpubRegex = /^xpub[a-zA-Z0-9]{107}/i
 my.isStarting = () => cy.contains('span', /starting/i).should('exist')
 my.doneStarting = () => cy.contains('span', /starting/i).should('not.exist')
 
+//Dashboard 
+my.goToDashboard = () => cy.get(`a[href="/dashboard"]`).click()
+my.goToDebug = () => cy.get(`a[href="/dashboard/debug"]`).click()
+my.goToDebugChannel = () => cy.get(`a[href="/dashboard/debug/channel"]`).click()
+
+//DaiCard
 my.goToDeposit = () => cy.get(`a[href="/deposit"]`).click()
 my.goToSettings = () => cy.get(`a[href="/settings"]`).click()
 my.goToRequest = () => cy.get(`a[href="/request"]`).click()
