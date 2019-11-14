@@ -10,19 +10,14 @@ import { MessagingServiceFactory } from "@connext/messaging";
 
 // const nc = await connect({ servers: ["wss://daicard.io/api/messaging"] });
 
-const urls = {
-  nodeUrl:
-    process.env.REACT_APP_NODE_URL_OVERRIDE ||
-    `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
+const env = {
+  authToken: process.env.REACT_APP_INDRA_NATS_TOKEN
+    || 'foobar',
+  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE
+    || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
+  urlPrefix: process.env.REACT_APP_URL_PREFIX
+    || '',
 }
-
-const envConfig = process.env;
-
-const get = (key)=> {
-  return envConfig[key];
-}
-
-const token = get("INDRA_NATS_TOKEN")
 
 const App = props => {
   const [messaging, setMessaging] = useState(null);
@@ -30,7 +25,8 @@ const App = props => {
   useEffect(() => {
     (async () => {
       const messagingFactory = new MessagingServiceFactory({
-        messagingUrl: urls.nodeUrl, // nodeUrl
+        logLevel: 5,
+        messagingUrl: env.nodeUrl, // nodeUrl
       });
       const messaging = messagingFactory.createService("messaging");
       await messaging.connect();
@@ -39,12 +35,11 @@ const App = props => {
     })();
   }, []);
 
-
   return (
     <Router>
-      <Route exact path="/" render={props => <Home {...props} />} />
-      <Route path="/debug" render={props => <Debug {...props} messaging={messaging} token={token}/>} />
-      <Route path="/stats" render={props => <Stats {...props} messaging={messaging} token={token}/>} />
+      <Route exact path={`${env.urlPrefix}/`} render={props => <Home {...props} />} />
+      <Route path={`${env.urlPrefix}/debug`} render={props => <Debug {...props} messaging={messaging} token={env.authToken}/>} />
+      <Route path={`${env.urlPrefix}/stats`} render={props => <Stats {...props} messaging={messaging} token={env.authToken}/>} />
     </Router>
   );
 };
