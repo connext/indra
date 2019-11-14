@@ -13,7 +13,7 @@ import {
   SupportedApplications,
   TransferParameters,
 } from "../types";
-import { falsy, invalidAddress, invalidXpub, notLessThanOrEqualTo } from "../validation";
+import { invalidAddress, invalidXpub, notLessThanOrEqualTo, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
@@ -29,11 +29,11 @@ export class TransferController extends AbstractController {
     const { recipient, amount, assetId } = convert.TransferParameters("bignumber", params);
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
-    const errs = [
+    validate(
       invalidXpub(recipient),
       invalidAddress(assetId),
       notLessThanOrEqualTo(amount, preTransferBal),
-    ];
+    );
 
     // make sure recipient is online
     // const res = await this.node.recipientOnline(recipient);
