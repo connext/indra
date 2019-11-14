@@ -15,7 +15,7 @@ import { CLogger, freeBalanceAddressFromXpub } from "../util";
 import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
-import { ChannelRepository } from "./channel.repository";
+import { ChannelRepository } from "./channel.repository"; 
 
 const logger = new CLogger("ChannelService");
 
@@ -264,7 +264,7 @@ export class ChannelService {
   async getChannelState(userPublicIdentifier: string): Promise<any> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     if (!channel) {
-      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
+      throw new Error(`No channel exists for userPublicIdentifier ${JSON.stringify(userPublicIdentifier)}`);
     }
     const { data: state } = await this.cfCoreService.getStateChannel(channel.multisigAddress);
 

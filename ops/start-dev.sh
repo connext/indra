@@ -19,6 +19,7 @@ INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-foo}"
 log_level=3
 nats_port=4222
 node_port=8080
+dash_port=9999
 port=3000
 
 if [[ "$ETH_NETWORK" == "rinkeby" ]]
@@ -44,6 +45,7 @@ pg_user="$project"
 # docker images
 builder_image="${project}_builder"
 daicard_devserver_image="$builder_image"
+dashboard_image="$builder_image"
 database_image="postgres:9-alpine"
 ethprovider_image="trufflesuite/ganache-cli:v6.4.5"
 nats_image="nats:2.0.0-linux"
@@ -131,6 +133,19 @@ services:
     volumes:
       - `pwd`:/root
     working_dir: /root/modules/daicard
+
+  dashboard:
+    image: $dashboard_image
+    entrypoint: npm start
+    environment:
+      NODE_ENV: development
+    networks:
+      - $project
+    ports:
+      - "$dash_port:3000"
+    volumes:
+      - `pwd`:/root
+    working_dir: /root/modules/dashboard
 
   node:
     image: $node_image
