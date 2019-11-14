@@ -535,11 +535,17 @@ export class StateChannel {
   }
 
   static fromJson(json: StateChannelJSON): StateChannel {
+    const dropNulls = (arr: any[] | undefined) => {
+      if (arr) {
+        return arr.filter((x: any) => !!x);
+      }
+      return arr;
+    };
     return new StateChannel(
       json.multisigAddress,
       json.userNeuteredExtendedKeys,
       new Map(
-        [...Object.values(json.proposedAppInstances || [])].map((proposal): [
+        [...Object.values(dropNulls(json.proposedAppInstances) || [])].map((proposal): [
           string,
           AppInstanceProposal
         ] => {
@@ -547,7 +553,7 @@ export class StateChannel {
         })
       ),
       new Map(
-        [...Object.values(json.appInstances || [])].map((appInstanceEntry): [
+        [...Object.values(dropNulls(json.appInstances) || [])].map((appInstanceEntry): [
           string,
           AppInstance
         ] => {
