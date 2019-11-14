@@ -13,6 +13,11 @@ version=$(shell cat package.json | grep '"version":' | awk -F '"' '{print $$4}')
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
 bot=$(cwd)/modules/payment-bot
+cf-adjudicator-contracts=$(cwd)/modules/cf-adjudicator-contracts
+cf-apps=$(cwd)/modules/cf-apps
+cf-funding-protocol-contracts=$(cwd)/modules/cf-funding-protocol-contracts
+cf-core=$(cwd)/modules/cf-core
+cf-types=$(cwd)/modules/cf-types
 client=$(cwd)/modules/client
 contracts=$(cwd)/modules/contracts
 daicard=$(cwd)/modules/daicard
@@ -105,11 +110,17 @@ watch: watch-node
 start-test: prod deployed-contracts
 	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test bash ops/start-prod.sh
 
+test-cf: cf-core
+	bash ops/test-cf.sh
+
+watch-cf: cf-core
+	bash ops/test-cf.sh --watch
+
 test-ui: payment-bot
 	bash ops/test-ui.sh
 
 watch-ui: node-modules
-	bash ops/test-ui.sh watch
+	bash ops/test-ui.sh --watch
 
 test-bot: payment-bot
 	bash ops/test-bot.sh
@@ -134,12 +145,37 @@ builder: ops/builder.dockerfile
 	docker build --file ops/builder.dockerfile --tag $(project)_builder:latest .
 	$(log_finish) && touch $(flags)/$@
 
-client: contracts types messaging $(shell find $(client)/src $(find_options))
+cf-adjudicator-contracts: node-modules $(shell find $(cf-adjudicator-contracts)/contracts $(cf-adjudicator-contracts)/waffle.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/cf-adjudicator-contracts && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
+cf-apps: node-modules cf-adjudicator-contracts $(shell find $(cf-apps)/contracts $(cf-apps)/waffle.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/cf-apps && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
+cf-core: node-modules types cf-adjudicator-contracts cf-funding-protocol-contracts $(shell find $(cf-core)/src $(cf-core)/tsconfig.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/cf-core && npm run build:ts"
+	$(log_finish) && touch $(flags)/$@
+
+cf-funding-protocol-contracts: node-modules $(shell find $(cf-funding-protocol-contracts)/contracts $(cf-funding-protocol-contracts)/waffle.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/cf-funding-protocol-contracts && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
+cf-types: node-modules $(shell find $(cf-types)/src $(cf-types)/tsconfig.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/cf-types && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
+client: cf-core contracts types messaging $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-contracts: node-modules $(shell find $(contracts)/contracts $(find_options))
+contracts: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/contracts && npm run build"
 	$(log_finish) && touch $(flags)/$@
@@ -164,12 +200,12 @@ hasura: ops/hasura.dockerfile ops/hasura.entry.sh
 	docker build --file ops/hasura.dockerfile --tag $(project)_hasura:latest .
 	$(log_finish) && touch $(flags)/$@
 
-messaging: node-modules $(shell find $(messaging)/src $(find_options))
+messaging: node-modules types $(shell find $(messaging)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/messaging && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-node: contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
+node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build"
 	$(log_finish) && touch $(flags)/$@
@@ -177,6 +213,7 @@ node: contracts types messaging $(shell find $(node)/src $(node)/migrations $(fi
 node-modules: builder package.json $(shell ls modules/**/package.json)
 	$(log_start)
 	$(docker_run) "lerna bootstrap --hoist"
+	$(docker_run) "cd node_modules/eccrypto && npm run install"
 	$(log_finish) && touch $(flags)/$@
 
 node-prod: node $(node)/ops/prod.dockerfile $(node)/ops/entry.sh
@@ -199,7 +236,7 @@ indra-proxy-prod: daicard-prod ws-tcp-relay $(shell find $(proxy) $(find_options
 	docker build --file $(proxy)/indra.connext.network/prod.dockerfile --tag $(project)_proxy:latest .
 	$(log_finish) && touch $(flags)/$@
 
-types: node-modules messaging $(shell find $(types)/src $(find_options))
+types: node-modules cf-types $(shell find $(types)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/types && npm run build"
 	$(log_finish) && touch $(flags)/$@

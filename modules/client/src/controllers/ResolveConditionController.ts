@@ -1,3 +1,6 @@
+import { bigNumberify } from "ethers/utils";
+
+import { stringify, xpubToAddress } from "../lib/utils";
 import {
   ConnextEvents,
   convert,
@@ -7,10 +10,7 @@ import {
   ResolveLinkedTransferParameters,
   ResolveLinkedTransferResponse,
   TransferCondition,
-} from "@connext/types";
-import { bigNumberify } from "ethers/utils";
-
-import { replaceBN } from "../lib/utils";
+} from "../types";
 
 import { AbstractController } from "./AbstractController";
 
@@ -24,9 +24,7 @@ export class ResolveConditionController extends AbstractController {
   public resolve = async (
     params: ResolveConditionParameters,
   ): Promise<ResolveConditionResponse> => {
-    this.log.info(
-      `Resolve condition called with parameters: ${JSON.stringify(params, replaceBN, 2)}`,
-    );
+    this.log.info(`Resolve condition called with parameters: ${stringify(params)}`);
 
     const res = await this.conditionResolvers[params.conditionType](params);
     return res;
@@ -37,7 +35,7 @@ export class ResolveConditionController extends AbstractController {
   private resolveLinkedTransfer = async (
     params: ResolveLinkedTransferParameters,
   ): Promise<ResolveLinkedTransferResponse> => {
-    this.log.info(`Resolving link: ${JSON.stringify(params)}`);
+    this.log.info(`Resolving link: ${stringify(params)}`);
 
     // convert and validate
     const { assetId, amount } = await this.node.fetchLinkedTransfer(params.paymentId);
@@ -88,6 +86,12 @@ export class ResolveConditionController extends AbstractController {
 
     const freeBal = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBal[this.connext.freeBalanceAddress];
+    const nodeFreeBal = freeBal[xpubToAddress(this.connext.nodePublicIdentifier)];
+    if (nodeFreeBal.lt(amountBN)) {
+      this.log.debug(
+        `Node has insufficient collateral (${nodeFreeBal.toString()}) to afford payment (${amountBN.toString()}) of asset ${assetId}. Expect resolution to take longer with collateral...`,
+      );
+    }
 
     // TODO: dont listen to linked transfer app in default listener, only listen for it here
 

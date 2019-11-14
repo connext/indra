@@ -10,15 +10,15 @@ import { QRGenerate } from "./qrCode";
 const style = withStyles(theme => ({
   icon: {
     width: "40px",
-    height: "40px"
-  }
+    height: "40px",
+  },
 }));
 
-const zero = "0.0"
+const zero = "0.0";
 const generateQrUrl = (amount, xpub) =>
   `${window.location.origin}/send?amount=${amount || zero}&recipient=${xpub}`;
 
-export const RequestCard = style((props) => {
+export const RequestCard = style(props => {
   const { maxDeposit, xpub } = props;
 
   const [amount, setAmount] = useState({ value: Currency.DAI(zero), display: "0" });
@@ -26,21 +26,21 @@ export const RequestCard = style((props) => {
 
   useEffect(() => setQrUrl(generateQrUrl(amount.value, xpub)), [amount.value, xpub]);
 
-  const updateAmountHandler = (input) => {
-    let value, error
+  const updateAmountHandler = input => {
+    let value, error;
     try {
-      value = Currency.DAI(input)
+      value = Currency.DAI(input);
     } catch (e) {
-      error = `Invalid Currency amount`
+      error = `Invalid Currency amount`;
     }
     if (!maxDeposit) {
-      error = `Channels are still starting up, please wait.`
+      error = `Channels are still starting up, please wait.`;
     }
     if (value && maxDeposit && value.wad.gt(maxDeposit.toDAI().wad)) {
-      error = `Channel balances are capped at ${maxDeposit.toDAI().format()}`
+      error = `Channel balances are capped at ${maxDeposit.toDAI().format()}`;
     }
     if (value && value.wad.lt(Zero)) {
-      error = "Please enter a payment amount above 0"
+      error = "Please enter a payment amount above 0";
     }
     setQrUrl(generateQrUrl(error ? zero : value.amount, xpub));
     setAmount({ value: value ? value.amount : zero, display: input, error });
@@ -57,16 +57,15 @@ export const RequestCard = style((props) => {
         paddingTop: "10%",
         paddingBottom: "10%",
         textAlign: "center",
-        justifyContent: "center"
+        justifyContent: "center",
       }}
     >
-
       <Grid container>
         <Grid item xs={4}>
           <Typography style={{ marginTop: "6px" }}>Channel ID:</Typography>
         </Grid>
         <Grid item xs={8}>
-          <Copyable text={xpub}/>
+          <Copyable text={xpub} />
         </Grid>
       </Grid>
 
@@ -75,7 +74,7 @@ export const RequestCard = style((props) => {
           <Typography style={{ marginTop: "6px" }}>Request Link:</Typography>
         </Grid>
         <Grid item xs={8}>
-          <Copyable text={amount.error ? 'error' : qrUrl}/>
+          <Copyable text={amount.error ? "error" : qrUrl} />
         </Grid>
       </Grid>
 
@@ -105,7 +104,7 @@ export const RequestCard = style((props) => {
             background: "#FFF",
             border: "1px solid #F22424",
             color: "#F22424",
-            width: "15%"
+            width: "15%",
           }}
           size="medium"
           onClick={() => props.history.push("/")}

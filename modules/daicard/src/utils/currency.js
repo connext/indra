@@ -1,35 +1,34 @@
-import { ethers as eth } from 'ethers'
+import { ethers as eth } from "ethers";
 
-import { toBN } from './bn'
+import { toBN } from "./bn";
 
-const { commify, formatUnits, parseUnits } = eth.utils
+const { commify, formatUnits, parseUnits } = eth.utils;
 
 export class Currency {
-
   ////////////////////////////////////////
   // Static Properties/Methods
 
-  static DAI = (amount, daiRate) => new Currency('DAI', amount, daiRate)
-  static DEI = (amount, daiRate) => new Currency('DEI', amount, daiRate)
-  static ETH = (amount, daiRate) => new Currency('ETH', amount, daiRate)
-  static FIN = (amount, daiRate) => new Currency('FIN', amount, daiRate)
-  static WEI = (amount, daiRate) => new Currency('WEI', amount, daiRate)
+  static DAI = (amount, daiRate) => new Currency("DAI", amount, daiRate);
+  static DEI = (amount, daiRate) => new Currency("DEI", amount, daiRate);
+  static ETH = (amount, daiRate) => new Currency("ETH", amount, daiRate);
+  static FIN = (amount, daiRate) => new Currency("FIN", amount, daiRate);
+  static WEI = (amount, daiRate) => new Currency("WEI", amount, daiRate);
 
   typeToSymbol = {
-    'DAI': '$',
-    'DEI': 'DEI ',
-    'ETH': eth.constants.EtherSymbol,
-    'FIN': 'FIN ',
-    'WEI': 'WEI ',
-  }
+    DAI: "$",
+    DEI: "DEI ",
+    ETH: eth.constants.EtherSymbol,
+    FIN: "FIN ",
+    WEI: "WEI ",
+  };
 
   defaultOptions = {
-    'DAI': { commas: false, decimals: 2, symbol: true, round: true },
-    'DEI': { commas: false, decimals: 0, symbol: false, round: true },
-    'ETH': { commas: false, decimals: 3, symbol: true, round: true },
-    'FIN': { commas: false, decimals: 3, symbol: false, round: true },
-    'WEI': { commas: false, decimals: 0, symbol: false, round: true },
-  }
+    DAI: { commas: false, decimals: 2, symbol: true, round: true },
+    DEI: { commas: false, decimals: 0, symbol: false, round: true },
+    ETH: { commas: false, decimals: 3, symbol: true, round: true },
+    FIN: { commas: false, decimals: 3, symbol: false, round: true },
+    WEI: { commas: false, decimals: 0, symbol: false, round: true },
+  };
 
   ////////////////////////////////////////
   // Private Properties
@@ -38,22 +37,22 @@ export class Currency {
   // ray is in units like MakerDAO's ray aka an integer w 36 extra units of precision
   // So: this.wad is to the currency amount as wei is to an ether amount
   // These let us handle divisions & decimals cleanly w/out needing a BigDecimal library
-  wad
-  ray
-  type
+  wad;
+  ray;
+  type;
 
   ////////////////////////////////////////
   // Constructor
 
-  constructor (type, amount, daiRate) {
-    this.type = type
-    this.daiRate = typeof daiRate !== 'undefined' ? daiRate : '1'
-    this.daiRateGiven = !!daiRate
+  constructor(type, amount, daiRate) {
+    this.type = type;
+    this.daiRate = typeof daiRate !== "undefined" ? daiRate : "1";
+    this.daiRateGiven = !!daiRate;
     try {
-      this.wad = this.toWad(amount._hex ? toBN(amount._hex) : amount)
-      this.ray = this.toRay(amount._hex ? toBN(amount._hex) : amount)
+      this.wad = this.toWad(amount._hex ? toBN(amount._hex) : amount);
+      this.ray = this.toRay(amount._hex ? toBN(amount._hex) : amount);
     } catch (e) {
-      throw new Error(`Invalid currency amount (${amount}): ${e}`)
+      throw new Error(`Invalid currency amount (${amount}): ${e}`);
     }
   }
 
@@ -62,105 +61,108 @@ export class Currency {
 
   // Returns a decimal string
   get amount() {
-    return this.fromWad(this.wad)
+    return this.fromWad(this.wad);
   }
 
   get currency() {
     return {
       amount: this.amount,
       type: this.type,
-    }
+    };
   }
 
   get symbol() {
-    return this.typeToSymbol[this.type]
+    return this.typeToSymbol[this.type];
   }
 
   get floor() {
-    return this._floor(this.amount)
+    return this._floor(this.amount);
   }
 
   ////////////////////////////////////////
   // Public Methods
 
   toString() {
-    return this.amount.slice(0, this.amount.indexOf('.'))
+    return this.amount.slice(0, this.amount.indexOf("."));
   }
 
   isEthType(type) {
-    return ['ETH', 'FIN', 'WEI'].includes(type || this.type)
+    return ["ETH", "FIN", "WEI"].includes(type || this.type);
   }
 
   isTokenType(type) {
-    return ['DAI', 'DEI'].includes(type || this.type)
+    return ["DAI", "DEI"].includes(type || this.type);
   }
 
   toBN() {
-    return toBN(this._round(this.amount))
+    return toBN(this._round(this.amount));
   }
 
   format(_options) {
     const amt = this.amount;
     const options = {
       ...this.defaultOptions[this.type],
-      ..._options || {},
+      ...(_options || {}),
     };
     const symbol = options.symbol ? `${this.symbol}` : ``;
-    const nDecimals = amt.length - amt.indexOf('.') - 1;
-    const amount = options.round ? this.round(options.decimals)
-      : (options.decimals > nDecimals) ? amt + '0'.repeat(options.decimals - nDecimals)
-      : (options.decimals < nDecimals) ? amt.substring(0, amt.indexOf('.') + options.decimals + 1)
+    const nDecimals = amt.length - amt.indexOf(".") - 1;
+    const amount = options.round
+      ? this.round(options.decimals)
+      : options.decimals > nDecimals
+      ? amt + "0".repeat(options.decimals - nDecimals)
+      : options.decimals < nDecimals
+      ? amt.substring(0, amt.indexOf(".") + options.decimals + 1)
       : amt;
-    return `${symbol}${options.commas ? commify(amount) : amount}`
+    return `${symbol}${options.commas ? commify(amount) : amount}`;
   }
 
   round(decimals) {
-    const amt = this.amount
-    const nDecimals = amt.length - amt.indexOf('.') - 1
+    const amt = this.amount;
+    const nDecimals = amt.length - amt.indexOf(".") - 1;
     // rounding to more decimals than are available: pad with zeros
-    if (typeof decimals === 'number' && decimals > nDecimals) {
-      return amt + '0'.repeat(decimals - nDecimals)
+    if (typeof decimals === "number" && decimals > nDecimals) {
+      return amt + "0".repeat(decimals - nDecimals);
     }
     // rounding to fewer decimals than are available: round
     // Note: rounding n=1099.9 to nearest int is same as floor(n + 0.5)
     // roundUp plays same role as 0.5 in above example
-    if (typeof decimals === 'number' && decimals < nDecimals) {
-      const roundUp = toBN(`5${'0'.repeat(18 - decimals - 1)}`)
-      const rounded = this.fromWad(this.wad.add(roundUp))
-      return rounded.slice(0, amt.length - (nDecimals - decimals)).replace(/\.$/, '')
+    if (typeof decimals === "number" && decimals < nDecimals) {
+      const roundUp = toBN(`5${"0".repeat(18 - decimals - 1)}`);
+      const rounded = this.fromWad(this.wad.add(roundUp));
+      return rounded.slice(0, amt.length - (nDecimals - decimals)).replace(/\.$/, "");
     }
     // rounding to same decimals as are available: return amount w no changes
-    return this.amount
+    return this.amount;
   }
 
   // In units of ray aka append an extra 36 units of precision
   // eg ETH:WEI rate is 1e18 ray aka 1e54
-  getRate = (currency) => {
+  getRate = currency => {
     const exchangeRates = {
       DAI: this.toRay(this.daiRate),
       DEI: this.toRay(parseUnits(this.daiRate, 18).toString()),
-      ETH: this.toRay('1'),
-      FIN: this.toRay(parseUnits('1', 3).toString()),
-      WEI: this.toRay(parseUnits('1', 18).toString()),
-    }
+      ETH: this.toRay("1"),
+      FIN: this.toRay(parseUnits("1", 3).toString()),
+      WEI: this.toRay(parseUnits("1", 18).toString()),
+    };
     if (
       (this.isEthType() && this.isEthType(currency)) ||
       (this.isTokenType() && this.isTokenType(currency))
     ) {
-      return exchangeRates[currency]
+      return exchangeRates[currency];
     }
     if (!this.daiRateGiven) {
-      console.warn(`Provide DAI:ETH rate for accurate ${this.type} -> ${currency} conversions`)
-      console.warn(`Using default eth price of $${this.daiRate} (amount: ${this.amount})`)
+      console.warn(`Provide DAI:ETH rate for accurate ${this.type} -> ${currency} conversions`);
+      console.warn(`Using default eth price of $${this.daiRate} (amount: ${this.amount})`);
     }
-    return exchangeRates[currency]
-  }
+    return exchangeRates[currency];
+  };
 
-  toDAI = (daiRate) => this._convert('DAI', daiRate)
-  toDEI = (daiRate) => this._convert('DEI', daiRate)
-  toETH = (daiRate) => this._convert('ETH', daiRate)
-  toFIN = (daiRate) => this._convert('FIN', daiRate)
-  toWEI = (daiRate) => this._convert('WEI', daiRate)
+  toDAI = daiRate => this._convert("DAI", daiRate);
+  toDEI = daiRate => this._convert("DEI", daiRate);
+  toETH = daiRate => this._convert("ETH", daiRate);
+  toFIN = daiRate => this._convert("FIN", daiRate);
+  toWEI = daiRate => this._convert("WEI", daiRate);
 
   ////////////////////////////////////////
   // Private Methods
@@ -170,36 +172,29 @@ export class Currency {
       this.daiRate = daiRate;
       this.daiRateGiven = true;
     }
-    const thisToTargetRate = this.toRay(this.getRate(targetType)).div(this.getRate(this.type))
-    const targetAmount = this.fromRay(this.fromRoundRay(this.ray.mul(thisToTargetRate)))
+    const thisToTargetRate = this.toRay(this.getRate(targetType)).div(this.getRate(this.type));
+    const targetAmount = this.fromRay(this.fromRoundRay(this.ray.mul(thisToTargetRate)));
     // console.debug(`Converted: ${this.amount} ${this.type} => ${targetAmount} ${targetType}`)
     return new Currency(
       targetType,
       targetAmount.toString(),
       this.daiRateGiven ? this.daiRate : undefined,
-    )
-  }
+    );
+  };
 
   // convert to wad, add 0.5 wad, convert back to dec string, then truncate decimal
-  _round = (decStr) =>
-    this._floor(this.fromWad(this.toWad(decStr).add(this.toWad('0.5'))).toString())
+  _round = decStr =>
+    this._floor(this.fromWad(this.toWad(decStr).add(this.toWad("0.5"))).toString());
 
-  _floor = (decStr) =>
-    decStr.substring(0, decStr.indexOf('.'))
+  _floor = decStr => decStr.substring(0, decStr.indexOf("."));
 
-  toWad = (n) =>
-    parseUnits(n.toString(), 18)
+  toWad = n => parseUnits(n.toString(), 18);
 
-  toRay = (n) =>
-    this.toWad(this.toWad(n.toString()))
+  toRay = n => this.toWad(this.toWad(n.toString()));
 
-  fromWad = (n) =>
-    formatUnits(n.toString(), 18)
+  fromWad = n => formatUnits(n.toString(), 18);
 
-  fromRoundRay = (n) =>
-    this._round(this.fromRay(n))
+  fromRoundRay = n => this._round(this.fromRay(n));
 
-  fromRay = (n) =>
-    this.fromWad(this._round(this.fromWad(n.toString())))
-
+  fromRay = n => this.fromWad(this._round(this.fromWad(n.toString())));
 }

@@ -1,16 +1,16 @@
-import {
-  CFCoreChannel,
-  convert,
-  RegisteredAppDetails,
-  SimpleSwapAppStateBigNumber,
-  SwapParameters,
-} from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import { freeBalanceAddressFromXpub, replaceBN } from "../lib/utils";
+import { stringify, xpubToAddress } from "../lib/utils";
+import {
+  CFCoreChannel,
+  CFCoreTypes,
+  convert,
+  RegisteredAppDetails,
+  SimpleSwapAppStateBigNumber,
+  SwapParameters,
+} from "../types";
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notGreaterThan, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
@@ -85,7 +85,7 @@ export class SwapController extends AbstractController {
     const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
     const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
     const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
-    const nodeBal = preSwapToBal[freeBalanceAddressFromXpub(this.connext.nodePublicIdentifier)];
+    const nodeBal = preSwapToBal[xpubToAddress(this.connext.nodePublicIdentifier)];
     const swappedAmount = calculateExchange(amount, swapRate);
     const errs = [
       invalidAddress(fromAssetId),
@@ -116,11 +116,7 @@ export class SwapController extends AbstractController {
     // check app id
     if (!msg.data) {
       this.log.warn(
-        `This should not have this structure when emitted, strange. msg: ${JSON.stringify(
-          msg,
-          null,
-          2,
-        )}`,
+        `This should not have this structure when emitted, strange. msg: ${stringify(msg)}`,
       );
       return;
     }
@@ -129,7 +125,7 @@ export class SwapController extends AbstractController {
       return;
     }
 
-    rej(`Install rejected. Event data: ${JSON.stringify(msg.data, replaceBN, 2)}`);
+    rej(`Install rejected. Event data: ${stringify(msg.data)}`);
     return msg.data;
   };
 

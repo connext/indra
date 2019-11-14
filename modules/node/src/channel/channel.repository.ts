@@ -12,6 +12,10 @@ const logger = new CLogger("ChannelRepository");
 
 @EntityRepository(Channel)
 export class ChannelRepository extends Repository<Channel> {
+  async findAll(available: boolean = true): Promise<Channel[]> {
+    return await this.find({ where: { available } });
+  }
+
   async findByMultisigAddress(multisigAddress: string): Promise<Channel | undefined> {
     return await this.findOne({
       where: { multisigAddress },

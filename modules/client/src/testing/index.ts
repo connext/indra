@@ -1,24 +1,18 @@
-import { App, BigNumber, Omit, User } from "@connext/types";
-import { Address } from "@counterfactual/types";
-
 import { capitalize } from "../lib/utils";
+import { App, BigNumber } from "../types";
 
-export const mkAddress = (prefix: string = "0x"): Address => prefix.padEnd(42, "0");
+export const mkAddress = (prefix: string = "0x"): string => prefix.padEnd(42, "0");
 export const mkHash = (prefix: string = "0x"): string => prefix.padEnd(66, "0");
 
 ////////////////////////////////////////
 // Channel and App types mocking
 export type SuccinctChannel<T = string | number | BigNumber> = {
   id: number;
-  user: User;
+  user: string;
   counterpartyXpub: string;
   multisigAddress: string;
   apps: App<T>[];
   updates: SuccinctChannelUpdate<T>[];
-};
-
-export type SuccinctUser = Omit<User, "channels"> & {
-  updates: SuccinctChannelUpdate[];
 };
 
 export type SuccinctChannelUpdate<T = string | number | BigNumber> = {

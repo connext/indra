@@ -16,7 +16,8 @@ INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl cer
 INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER}"
 INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
 INDRA_MODE="${INDRA_MODE:-staging}" # set to "prod" to use versioned docker images
-HASURA_ADMIN_SECRET="${HASURA_ADMIN_SECRET:-supersecret}"
+INDRA_HASURA_SECRET="${INDRA_HASURA_SECRET:-supersecret}"
+INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-cxt1234}" # pass this in through CI
 
 ####################
 # Internal Config
@@ -208,6 +209,7 @@ services:
     image: $node_image
     entrypoint: bash ops/entry.sh
     environment:
+      INDRA_ADMIN_TOKEN: $INDRA_ADMIN_TOKEN
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC_FILE: /run/secrets/$eth_mnemonic_name
       INDRA_ETH_RPC_URL: $INDRA_ETH_PROVIDER
@@ -274,7 +276,7 @@ services:
   hasura:
     image: $hasura_image
     environment:
-      HASURA_GRAPHQL_ADMIN_SECRET: $HASURA_ADMIN_SECRET
+      HASURA_GRAPHQL_ADMIN_SECRET: $INDRA_HASURA_SECRET
       HASURA_GRAPHQL_ENABLE_ALLOWLIST: "true"
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true"
       HASURA_GRAPHQL_ENABLED_APIS: "graphql,metadata"

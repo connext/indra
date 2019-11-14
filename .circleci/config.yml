@@ -26,6 +26,13 @@ jobs:
       - run: make start-test
       - run: make test-bot
 
+  test-cf:
+    machine:
+      image: ubuntu-1604:201903-01
+    steps:
+      - checkout
+      - run: make test-cf
+
   push-latest-images:
     machine:
       image: ubuntu-1604:201903-01
@@ -61,6 +68,7 @@ jobs:
               export INDRA_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
               export INDRA_PISA_URL=$RINKEBY_PISA_URL
               export INDRA_DOMAINNAME="$STAGING_DOMAINNAME"
+              export INDRA_ADMIN_TOKEN="$INDRA_ADMIN_TOKEN"
               make restart-prod
               docker container prune -f
               docker image ls -q | xargs docker image rm || true
@@ -83,6 +91,7 @@ jobs:
               export INDRA_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
               export INDRA_PISA_URL=$RINKEBY_PISA_URL
               export INDRA_DOMAINNAME="$RINKEBY_DOMAINNAME"
+              export INDRA_ADMIN_TOKEN="$INDRA_ADMIN_TOKEN"
               make restart-prod
               docker container prune -f
               docker image ls -q | xargs docker image rm || true
@@ -98,6 +107,7 @@ jobs:
               export INDRA_ETH_PROVIDER=$MAINNET_ETH_PROVIDER
               export INDRA_PISA_URL=$MAINNET_PISA_URL
               export INDRA_DOMAINNAME="$MAINNET_DOMAINNAME"
+              export INDRA_ADMIN_TOKEN="$INDRA_ADMIN_TOKEN"
               make restart-prod
               docker container prune -f
               docker image ls -q | xargs docker image rm || true
@@ -110,6 +120,7 @@ workflows:
       - test-node
       - test-ui
       - test-bot
+      - test-cf
 
       - push-latest-images:
           filters:
@@ -119,6 +130,7 @@ workflows:
             - test-node
             - test-ui
             - test-bot
+            - test-cf
 
       - push-prod-images:
           filters:
@@ -128,6 +140,7 @@ workflows:
             - test-node
             - test-ui
             - test-bot
+            - test-cf
 
       - deploy-staging:
           requires:

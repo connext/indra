@@ -3,9 +3,13 @@ import { Node as NodeTypes } from "@counterfactual/types";
 
 export let walletConnector = null;
 
-export async function initWalletConnect(uri, client) {
+export function initWalletConnect(uri, client) {
   walletConnector = new WalletConnectBrowser({ uri });
 
+  registerWalletConnectListeners(client)
+}
+
+export function registerWalletConnectListeners(client) {
   walletConnector.on("session_request", (error, payload) => {
     if (error) {
       throw error;
@@ -38,72 +42,77 @@ export async function initWalletConnect(uri, client) {
 
 export function cleanWalletConnect() {
   // Delete walletConnector
-  localStorage.removeItem("walletconnect")
   walletConnector = null;
+  // delete url
+  localStorage.removeItem(`wcUri`)
 }
 
 export function displaySessionApproval(payload) {
-  verifyFields(payload, ["chainId"])
+  verifyFields(payload, ["chainId"]);
   walletConnector.approveSession({ accounts: [], chainId: payload.chainId });
   //TODO: proc modal that approves the walletconnection from the wallet
 }
 
 function verifyFields(params, keys) {
-  if (keys.length <= 0 || (keys.filter(k => typeof k !== "string")).length !== 0) {
-    throw new Error(`[verifyFields] Must provide an array of fields to check`)
+  if (keys.length <= 0 || keys.filter(k => typeof k !== "string").length !== 0) {
+    throw new Error(`[verifyFields] Must provide an array of fields to check`);
   }
   if (typeof params !== "object") {
-    throw new Error(`[verifyFields] Must provide a params object`)
+    throw new Error(`[verifyFields] Must provide a params object`);
   }
 
   const naStr = keys.filter(k => !!!params[k]);
   if (naStr.length !== 0) {
-    throw new Error(`[verifyFields] Params missing needed keys. Params: ${prettyPrint(params)}, keys: ${prettyPrint(keys)}`)
+    throw new Error(
+      `[verifyFields] Params missing needed keys. Params: ${prettyPrint(
+        params,
+      )}, keys: ${prettyPrint(keys)}`,
+    );
   }
   return;
 }
 
 function prettyPrint(obj) {
-  return JSON.stringify(obj, null, 2)
+  return JSON.stringify(obj, null, 2);
 }
 
 async function mapPayloadToClient(payload, channel) {
   const { params, id, method } = payload;
   if (!params || typeof params !== "object") {
-    throw new Error(`Invalid payload params. Payload: ${prettyPrint(payload)}`)
+    throw new Error(`Invalid payload params. Payload: ${prettyPrint(payload)}`);
   }
 
   if (!id) {
-    throw new Error(`Invalid payload id. Payload: ${prettyPrint(payload)}`)
+    throw new Error(`Invalid payload id. Payload: ${prettyPrint(payload)}`);
   }
 
   if (!method || typeof method !== "string") {
-    throw new Error(`Invalid payload method. Payload: ${prettyPrint(payload)}`)
+    throw new Error(`Invalid payload method. Payload: ${prettyPrint(payload)}`);
   }
 
   let result;
   try {
     switch (method) {
       case "chan_store_set":
-        verifyFields(params, ["pairs"])
-        const { pairs } = params
-        result = await channel.channelRouter.set(pairs)
+        verifyFields(params, ["pairs"]);
+        const { pairs } = params;
+        result = await channel.channelRouter.set(pairs);
         break;
 
       case "chan_store_get":
-        verifyFields(params, ["path"])
-        const { path } = params
-        result = await channel.channelRouter.get(path)
+        verifyFields(params, ["path"]);
+        const { path } = params;
+        result = await channel.channelRouter.get(path);
         break;
 
       case "chan_node_auth":
-        verifyFields(params, ["message"])
-        const { message } = params
-        result = await channel.channelRouter.signMessage(message)
+        verifyFields(params, ["message"]);
+        const { message } = params;
+        result = await channel.channelRouter.signMessage(message);
         break;
 
       case "chan_config":
-        result = await channel.channelProviderConfig(params)
+        result = await channel.channelProviderConfig(params);
         break;
 
       case NodeTypes.RpcMethodName.DEPOSIT:
@@ -116,7 +125,7 @@ async function mapPayloadToClient(payload, channel) {
         result = await channel.getAppInstances(params);
         break;
       case NodeTypes.RpcMethodName.GET_FREE_BALANCE_STATE:
-        verifyFields(params, ["tokenAddress", "multisigAddress"])
+        verifyFields(params, ["tokenAddress", "multisigAddress"]);
         const { tokenAddress } = params;
         result = await channel.getFreeBalance(tokenAddress);
         break;
@@ -161,7 +170,13 @@ async function mapPayloadToClient(payload, channel) {
         result = await channel.withdrawCommitment(params);
         break;
       default:
-        console.error(`Wallet connect mapping error, unknown method. Payload: ${JSON.stringify(payload, null, 2)}`);
+        console.error(
+          `Wallet connect mapping error, unknown method. Payload: ${JSON.stringify(
+            payload,
+            null,
+            2,
+          )}`,
+        );
         break;
     }
   } catch (e) {
