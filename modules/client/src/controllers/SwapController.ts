@@ -114,14 +114,14 @@ export class SwapController extends AbstractController {
   // depending on when theyre emitted :thinking:
   private rejectInstallSwap = (rej: any, msg: { data: { appInstanceId: string } }): any => {
     // check app id
+    const appId = msg.data ? msg.data.appInstanceId : (msg as any).appInstanceId;
     if (!msg.data) {
       this.log.warn(
         `This should not have this structure when emitted, strange. msg: ${stringify(msg)}`,
       );
-      return;
     }
 
-    if (this.appId !== msg.data.appInstanceId) {
+    if (this.appId !== appId) {
       return;
     }
 
