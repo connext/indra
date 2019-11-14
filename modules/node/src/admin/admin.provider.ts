@@ -34,6 +34,10 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getNoFreeBalance();
   }
 
+  async getChannelStates(userPublicIdentifier: any):  Promise<any[]> {
+    return await this.adminService.getChannelStates(userPublicIdentifier);
+  }
+
   async getIncorrectMultisigAddresses(): Promise<
     {
       oldMultisigAddress: string;
@@ -53,6 +57,11 @@ class AdminMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "admin.get-no-free-balance",
       this.authService.useAdminToken(this.getNoFreeBalance.bind(this)),
+    );
+
+    await super.connectRequestReponse(
+      "admin.get-channel-states",
+      this.authService.useAdminToken(this.getChannelStates.bind(this)),
     );
 
     await super.connectRequestReponse(
