@@ -133,19 +133,19 @@ services:
     volumes:
       - `pwd`:/root
     working_dir: /root/modules/daicard
-  
-  # dashboard:
-  #   image: $dashboard_image
-  #   entrypoint: npm start
-  #   environment:
-  #     NODE_ENV: development
-  #   networks:
-  #     - $project
-  #   ports:
-  #     - "$dash_port:$dash_port"
-  #   volumes:
-  #     - `pwd`:/root
-  #   working_dir: /root/modules/dashboard
+
+  dashboard:
+    image: $dashboard_image
+    entrypoint: npm start
+    environment:
+      NODE_ENV: development
+    networks:
+      - $project
+    ports:
+      - "$dash_port:3000"
+    volumes:
+      - `pwd`:/root
+    working_dir: /root/modules/dashboard
 
   node:
     image: $node_image
