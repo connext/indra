@@ -1,6 +1,6 @@
 {
   "name": "@connext/messaging",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
   "types": "dist/index.d.ts",
@@ -14,7 +14,7 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "@connext/types": "1.0.2",
+    "@connext/types": "1.0.3",
     "ts-nats": "1.2.4",
     "websocket-nats": "0.3.3"
   },
