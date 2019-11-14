@@ -1,15 +1,15 @@
-import { Address, Node as NodeTypes, OutcomeType } from "@counterfactual/types";
 import { BigNumber } from "ethers/utils";
 
-import { CFCoreChannel } from ".";
+import { Address, CFCoreTypes, OutcomeType, SolidityValueType } from "./cf";
+import { CFCoreChannel } from "./channel";
 
 ////////////////////////////////////
 ////// APP REGISTRY
 
 export const SupportedApplications = {
+  SimpleLinkedTransferApp: "SimpleLinkedTransferApp",
+  SimpleTransferApp: "SimpleTransferApp",
   SimpleTwoPartySwapApp: "SimpleTwoPartySwapApp",
-  UnidirectionalLinkedTransferApp: "UnidirectionalLinkedTransferApp",
-  UnidirectionalTransferApp: "UnidirectionalTransferApp",
 };
 export type SupportedApplication = keyof typeof SupportedApplications;
 
@@ -21,7 +21,7 @@ export type SupportedNetwork = keyof typeof SupportedNetworks;
 
 export type IRegisteredAppDetails = {
   [index in SupportedApplication]: Partial<
-    NodeTypes.ProposeInstallVirtualParams & { initialStateFinalized: boolean }
+    CFCoreTypes.ProposeInstallVirtualParams & { initialStateFinalized: boolean }
   >;
 };
 
@@ -78,25 +78,42 @@ export type CoinTransfer<T = string> = {
 };
 export type CoinTransferBigNumber = CoinTransfer<BigNumber>;
 
-// all the types of counterfactual app states
-// TODO: add swap app
+// all the types of cf app states
 export type AppState<T = string> =
-  | UnidirectionalTransferAppState<T>
-  | UnidirectionalLinkedTransferAppState<T>;
+  | SimpleTransferAppState<T>
+  | SimpleLinkedTransferAppState<T>
+  | SimpleSwapAppState<T>;
 export type AppStateBigNumber = AppState<BigNumber>;
 
-// all the types of counterfactual app actions
-// TODO: add swap app
-export type AppAction<T = string> =
-  | UnidirectionalTransferAppAction<T>
-  | UnidirectionalLinkedTransferAppAction<T>;
-export type AppActionBigNumber = AppAction<BigNumber>;
+// all the types of cf app actions
+export type AppAction<T = string> = SimpleLinkedTransferAppAction | SolidityValueType;
+export type AppActionBigNumber = AppAction<BigNumber> | SolidityValueType;
 
 //////// Swap apps
 export type SimpleSwapAppState<T = string> = {
   coinTransfers: CoinTransfer<T>[][];
 };
 export type SimpleSwapAppStateBigNumber = SimpleSwapAppState<BigNumber>;
+
+//////// Simple transfer app
+export type SimpleTransferAppState<T = string> = {
+  coinTransfers: CoinTransfer<T>[];
+};
+export type SimpleTransferAppStateBigNumber = SimpleTransferAppState<BigNumber>;
+
+//////// Simple linked transfer app
+export type SimpleLinkedTransferAppState<T = string> = {
+  coinTransfers: CoinTransfer<T>[];
+  linkedHash: string;
+  amount: T;
+  assetId: string;
+  paymentId: string;
+  preImage: string;
+};
+export type SimpleLinkedTransferAppStateBigNumber = SimpleLinkedTransferAppState<BigNumber>;
+export type SimpleLinkedTransferAppAction = {
+  preImage: string;
+};
 
 ////// Unidirectional transfer app
 export type UnidirectionalTransferAppState<T = string> = {

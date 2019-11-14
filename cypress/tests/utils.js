@@ -70,6 +70,7 @@ my.pay = (to, value) => {
   my.goToSend()
   cy.contains('button', /send/i).click()
   cy.contains('h5', /payment success/i).should('exist')
+  cy.contains('button', /home/i).click()
 }
 
 my.cashoutEther = () => {
@@ -147,7 +148,9 @@ my.getAccount = () => {
   return cy.wrap(new Cypress.Promise((resolve, reject) => {
     return my.getMnemonic().then(mnemonic => {
       return my.getAddress().then(address => {
-        return resolve({ address, mnemonic })
+        return my.getXpub().then(xpub => {
+          return resolve({ address, mnemonic, xpub })
+        })
       })
     })
   }))

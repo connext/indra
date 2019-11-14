@@ -1,26 +1,28 @@
-import { RegisteredAppDetails, SupportedApplications } from "@connext/types";
-import { AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
 import EthCrypto from "eth-crypto";
 import { bigNumberify, formatParamType } from "ethers/utils";
 import { fromMnemonic } from "ethers/utils/hdnode";
 import { EventEmitter } from "events";
 
 import { ChannelRouter } from "./channelRouter";
-import { ConnextInternal } from "./connext";
+import { ConnextClient } from "./connext";
+import { Logger } from "./lib/logger";
+import { stringify } from "./lib/utils";
 import {
+  AppInstanceInfo,
+  CFCoreTypes,
   CreateChannelMessage,
   DepositConfirmationMessage,
   InstallMessage,
   InstallVirtualMessage,
   ProposeMessage,
+  RegisteredAppDetails,
   RejectInstallVirtualMessage,
+  SupportedApplications,
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
   WithdrawMessage,
-} from "./lib/cfCore";
-import { Logger } from "./lib/logger";
-import { replaceBN } from "./lib/utils";
+} from "./types";
 import { appProposalValidation } from "./validation/appProposals";
 
 // TODO: index of connext events only?
@@ -31,7 +33,7 @@ type CallbackStruct = {
 export class ConnextListener extends EventEmitter {
   private log: Logger;
   private channelRouter: ChannelRouter;
-  private connext: ConnextInternal;
+  private connext: ConnextClient;
 
   // TODO: add custom parsing functions here to convert event data
   // to something more usable?
@@ -63,34 +65,26 @@ export class ConnextListener extends EventEmitter {
       // validate and automatically install for the known and supported
       // applications
       this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL, data.data);
-      // check if message is from us, return if so
-      // FIXME: type of ProposeMessage should extend CFCore.NodeMessage, which
-      // has a from field, but ProposeMessage does not
-      if ((data as any).from === this.connext.publicIdentifier) {
-        this.log.debug(
-          `Received proposal from our own node, doing nothing: ${JSON.stringify(data)}`,
-        );
-        return;
-      }
       // check based on supported applications
       // matched app, take appropriate default actions
       const matchedResult = await this.matchAppInstance(data);
       if (!matchedResult) {
-        this.log.warn(`No matched app, doing nothing, ${JSON.stringify(data)}`);
-        return;
-      }
-      if (matchedResult.matchedApp.name === "SimpleTransferApp") {
-        this.log.debug(
-          `Caught propose install for what should always be a virtual app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
-        );
+        this.log.warn(`No matched app, doing nothing, ${stringify(data)}`);
         return;
       }
       // matched app, take appropriate default actions
       const { appInfo, matchedApp } = matchedResult;
-      await this.verifyAndInstallKnownApp(appInfo, matchedApp, false);
+      // return if its from us
+      // TODO: initatorXpub isnt in types
+      if ((appInfo as any).initatorXpub === this.connext.publicIdentifier) {
+        this.log.info(`Received proposal from our own node, doing nothing: ${stringify(data)}`);
+        return;
+      }
+      await this.verifyAndInstallKnownApp(appInfo, matchedApp);
       return;
     },
     PROPOSE_INSTALL_VIRTUAL: async (data: ProposeMessage): Promise<void> => {
+      this.log.warn(`Got PROPOSE_INSTALL_VIRTUAL message but it's depreciated.. :(`);
       // validate and automatically install for the known and supported
       // applications
       this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data.data);
@@ -106,14 +100,13 @@ export class ConnextListener extends EventEmitter {
       if (!matchedResult) {
         return;
       }
+      const { appInfo, matchedApp } = matchedResult;
       if (matchedResult.matchedApp.name !== "SimpleTransferApp") {
         this.log.debug(
           `Caught propose install virtual for what should always be a regular app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
         );
         return;
       }
-      // matched app, take appropriate default actions
-      const { appInfo, matchedApp } = matchedResult;
       await this.verifyAndInstallKnownApp(appInfo, matchedApp);
       return;
     },
@@ -159,11 +152,11 @@ export class ConnextListener extends EventEmitter {
     },
   };
 
-  constructor(channelRouter: ChannelRouter, connext: ConnextInternal) {
+  constructor(channelRouter: ChannelRouter, connext: ConnextClient) {
     super();
     this.channelRouter = channelRouter;
     this.connext = connext;
-    this.log = new Logger("ConnextListener", connext.opts.logLevel);
+    this.log = new Logger("ConnextListener", connext.log.logLevel);
   }
 
   public register = async (): Promise<void> => {
@@ -175,15 +168,18 @@ export class ConnextListener extends EventEmitter {
 
   public registerCfListener = (event: CFCoreTypes.EventName, cb: Function): void => {
     // replace with new fn
-    this.log.info(`Registering listener for ${event}`);
-    this.channelRouter.on(event, async (res: any) => {
-      await cb(res);
-      this.emit(event, res);
-    });
+    this.log.debug(`Registering listener for ${event}`);
+    this.channelRouter.on(
+      event,
+      async (res: any): Promise<void> => {
+        await cb(res);
+        this.emit(event, res);
+      },
+    );
   };
 
   public removeCfListener = (event: CFCoreTypes.EventName, cb: Function): boolean => {
-    this.log.info(`Removing listener for ${event}`);
+    this.log.debug(`Removing listener for ${event}`);
     try {
       this.removeListener(event, cb as any);
       return true;
@@ -196,49 +192,43 @@ export class ConnextListener extends EventEmitter {
   };
 
   public registerDefaultListeners = (): void => {
-    Object.entries(this.defaultCallbacks).forEach(([event, callback]) => {
+    Object.entries(this.defaultCallbacks).forEach(([event, callback]: any): any => {
       this.channelRouter.on(CFCoreTypes.EventName[event], callback);
     });
 
-    this.channelRouter.on(CFCoreTypes.RpcMethodName.INSTALL, (data: any) => {
+    this.channelRouter.on(CFCoreTypes.RpcMethodName.INSTALL, (data: any): any => {
       const appInstance = data.result.result.appInstance;
-      this.log.debug(
-        `Emitting CFCoreTypes.RpcMethodName.INSTALL event: ${JSON.stringify(appInstance)}`,
-      );
+      this.log.debug(`Emitting CFCoreTypes.RpcMethodName.INSTALL event: ${stringify(appInstance)}`);
       this.connext.messaging.publish(
         `indra.client.${this.connext.publicIdentifier}.install.${appInstance.identityHash}`,
-        JSON.stringify(appInstance),
+        stringify(appInstance),
       );
     });
 
-    this.channelRouter.on(CFCoreTypes.RpcMethodName.UNINSTALL, (data: any) => {
+    this.channelRouter.on(CFCoreTypes.RpcMethodName.UNINSTALL, (data: any): any => {
       const result = data.result.result;
-      this.log.debug(
-        `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(result)}`,
-      );
+      this.log.debug(`Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${stringify(result)}`);
       this.connext.messaging.publish(
         `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
-        JSON.stringify(result),
+        stringify(result),
       );
     });
   };
 
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
-    this.log.debug(`Emitted ${event} with data ${JSON.stringify(data)} at ${Date.now()}`);
+    this.log.debug(`Emitted ${event} with data ${stringify(data)} at ${Date.now()}`);
     this.emit(event, data);
   };
 
   private matchAppInstance = async (
     data: ProposeMessage,
   ): Promise<{ matchedApp: RegisteredAppDetails; appInfo: AppInstanceInfo } | undefined> => {
-    const filteredApps = this.connext.appRegistry.filter((app: RegisteredAppDetails) => {
+    const filteredApps = this.connext.appRegistry.filter((app: RegisteredAppDetails): boolean => {
       return app.appDefinitionAddress === data.data.params.appDefinition;
     });
 
     if (!filteredApps || filteredApps.length === 0) {
-      this.log.info(
-        `Proposed app not in registered applications. App: ${JSON.stringify(data, replaceBN, 2)}`,
-      );
+      this.log.info(`Proposed app not in registered applications. App: ${stringify(data)}`);
       return undefined;
     }
 
@@ -247,11 +237,7 @@ export class ConnextListener extends EventEmitter {
       this.log.error(
         `Proposed app matched ${
           filteredApps.length
-        } registered applications by definition address. App: ${JSON.stringify(
-          data,
-          replaceBN,
-          2,
-        )}`,
+        } registered applications by definition address. App: ${stringify(data)}`,
       );
       return undefined;
     }
@@ -273,8 +259,9 @@ export class ConnextListener extends EventEmitter {
   private verifyAndInstallKnownApp = async (
     appInstance: AppInstanceInfo,
     matchedApp: RegisteredAppDetails,
-    isVirtual: boolean = true,
   ): Promise<void> => {
+    // virtual is now determined by presence of intermediary identifier
+    const isVirtual = !!appInstance.intermediaryIdentifier;
     const invalidProposal = await appProposalValidation[matchedApp.name](
       appInstance,
       matchedApp,
@@ -303,40 +290,67 @@ export class ConnextListener extends EventEmitter {
       // request collateral in token of the app
       await this.connext.requestCollateral(appInstance.initiatorDepositTokenAddress);
     }
-    this.log.info(`Proposal for app install successful, attempting install now...`);
+    this.log.debug(`Proposal for app install successful, attempting install now...`);
     let res: CFCoreTypes.InstallResult;
     if (isVirtual) {
       res = await this.connext.installVirtualApp(appInstance.identityHash);
     } else {
       res = await this.connext.installApp(appInstance.identityHash);
     }
-    this.log.info(`App installed, res: ${JSON.stringify(res, replaceBN, 2)}`);
+    this.log.debug(`App installed, res: ${stringify(res)}`);
     return;
   };
 
   private registerAvailabilitySubscription = async (): Promise<void> => {
     const subject = `online.${this.connext.publicIdentifier}`;
-    await this.connext.messaging.subscribe(subject, async (msg: any) => {
-      if (!msg.reply) {
-        this.log.info(`No reply found for msg: ${msg}`);
-        return;
-      }
+    await this.connext.messaging.subscribe(
+      subject,
+      async (msg: any): Promise<any> => {
+        if (!msg.reply) {
+          this.log.warn(`No reply found for msg: ${msg}`);
+          return;
+        }
 
-      const response = true;
-      this.connext.messaging.publish(msg.reply, {
-        err: null,
-        response,
-      });
-    });
-    this.log.info(`Connected message pattern "${subject}"`);
+        const response = true;
+        this.connext.messaging.publish(msg.reply, {
+          err: null,
+          response,
+        });
+      },
+    );
+    this.log.debug(`Connected message pattern "${subject}"`);
   };
 
   private registerLinkedTransferSubscription = async (): Promise<void> => {
     const subject = `transfer.send-async.${this.connext.publicIdentifier}`;
     await this.connext.messaging.subscribe(subject, async (data: any) => {
-      this.log.info(`Received message for subscription: ${JSON.stringify(data)}`);
-      const { encryptedPreImage, paymentId } = data;
+      this.log.info(`Received message for subscription: ${stringify(data)}`);
+      let paymentId: string;
+      let encryptedPreImage: string;
+      let amount: string;
+      let assetId: string;
+      if (data.paymentId) {
+        this.log.debug(`Not nested data`);
+        paymentId = data.paymentId;
+        encryptedPreImage = data.encryptedPreImage;
+        amount = data.amount;
+        assetId = data.assetId;
+      } else if (data.data) {
+        this.log.debug(`Nested data`);
+        const parsedData = JSON.parse(data.data);
+        paymentId = parsedData.paymentId;
+        encryptedPreImage = parsedData.encryptedPreImage;
+        amount = parsedData.amount;
+        assetId = parsedData.assetId;
+      } else {
+        throw new Error(`Could not parse data from message: ${stringify(data)}`);
+      }
+
+      if (!paymentId || !encryptedPreImage) {
+        throw new Error(`Unable to parse transfer details from message ${stringify(data)}`);
+      }
       await this.connext.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
+      this.log.info(`Successfully reclaimed transfer with paymentId: ${paymentId}`);
     });
   };
 }

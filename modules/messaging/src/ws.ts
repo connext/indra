@@ -1,4 +1,4 @@
-import { Node } from "@counterfactual/types";
+import { Node } from "@connext/types";
 import * as wsNats from "websocket-nats";
 
 import { Logger } from "./logger";

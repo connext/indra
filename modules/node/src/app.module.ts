@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { AdminModule } from "./admin/admin.module";
 import { AppRegistryModule } from "./appRegistry/appRegistry.module";
 import { AuthModule } from "./auth/auth.module";
 import { CFCoreController } from "./cfCore/cfCore.controller";
@@ -18,6 +19,7 @@ import { TransferModule } from "./transfer/transfer.module";
   controllers: [CFCoreController],
   exports: [ConfigModule],
   imports: [
+    AdminModule,
     AppRegistryModule,
     AuthModule,
     CFCoreModule,

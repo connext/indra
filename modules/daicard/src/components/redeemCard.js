@@ -154,7 +154,7 @@ const RedeemCard = props => {
   }, [location, validateLink]);
 
   const redeemPayment = async () => {
-    if (!state.matches("modal.confirm")) {
+    if (!channel || !state.matches("modal.confirm")) {
       return;
     }
     console.log(`Attempting to redeem payment.`);
@@ -400,7 +400,7 @@ const RedeemCardModal = ({
       ) : state.matches("modal.collateralizing") ? (
         <Grid>
           <DialogTitle disableTypography>
-            <Typography variant="h5" style={{ color: "#F22424" }}>
+            <Typography variant="h5" color="primary">
               Requesting Collateral...
             </Typography>
           </DialogTitle>

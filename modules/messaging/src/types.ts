@@ -1,4 +1,4 @@
-import { Node } from "@counterfactual/types";
+import { MessagingConfig, Node } from "@connext/types";
 
 export interface MessagingConfig {
   clusterId?: string;

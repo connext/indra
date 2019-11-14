@@ -3,6 +3,9 @@ import { parseEther } from "ethers/utils";
 
 import { PaymentProfile } from "./paymentProfile/paymentProfile.entity";
 
+// PROTOCOL CONSTANTS
+export const CF_PATH = "m/44'/60'/0'/25446";
+
 export enum Network {
   GANACHE = "ganache",
   KOVAN = "kovan",
@@ -13,6 +16,7 @@ export enum Network {
 }
 
 // PROVIDERS
+export const AdminMessagingProviderId = "ADMIN_MESSAGING";
 export const AppRegistryProviderId = "APP_REGISTRY";
 export const AuthProviderId = "AUTH";
 export const CFCoreProviderId = "CF_CORE";

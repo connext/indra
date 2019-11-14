@@ -245,7 +245,7 @@ const SendCard = props => {
   };
 
   const paymentHandler = async () => {
-    if (amount.error || recipient.error) return;
+    if (!channel || !token || amount.error || recipient.error) return;
     if (!recipient.value) {
       setRecipient({
         ...recipient,
@@ -283,7 +283,7 @@ const SendCard = props => {
   };
 
   const linkHandler = async () => {
-    if (amount.error) return;
+    if (!channel || !token || amount.error) return;
     if (recipient.error && !recipient.value) {
       setRecipient({ ...recipient, error: null });
     }

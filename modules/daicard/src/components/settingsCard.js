@@ -102,19 +102,19 @@ const SettingsCard = props => {
   const [showRecovery, setShowRecovery] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
-  const useWalletConnext = localStorage.getItem("useWalletConnext");
-  const { classes, setWalletConnext } = props;
+  const { classes, setWalletConnext, getWalletConnext, store, xpub } = props;
+  const useWalletConnext = getWalletConnext()
 
-  const generateNewAddress = () => {
-    // TODO: withdraw channel balance first? Decollateralize?
+  const generateNewAddress = async () => {
     setIsBurning(true);
-    localStorage.removeItem("mnemonic");
+    store && await store.reset(); // remove anything in the store related to the old channel
+    localStorage.removeItem("mnemonic", mnemonic);
     window.location.reload();
   };
 
   const recoverAddressFromMnemonic = async () => {
+    store && await store.reset(); // remove anything in the store related to the old channel
     localStorage.setItem("mnemonic", mnemonic);
-    localStorage.removeItem(`${ConnextClientStorePrefix}:EXTENDED_PRIVATE_KEY`);
     window.location.reload();
   };
 

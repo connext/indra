@@ -2,14 +2,15 @@ import { AddressZero } from "ethers/constants";
 import { BigNumber, getAddress } from "ethers/utils";
 
 import { AppState, CoinTransfer } from "./app";
+import { AssetAmount, PaymentProfile } from "./channel";
 import {
   DepositParameters,
   LinkedTransferParameters,
+  LinkedTransferToRecipientParameters,
   SwapParameters,
   TransferParameters,
   WithdrawParameters,
 } from "./inputs";
-import { AssetAmount, MultisigState, PaymentProfile } from "./node";
 
 /////////////////////////////////////////////
 ///////// CONVERSION FNS
@@ -144,14 +145,6 @@ export function convertAssetAmountWithId<To extends NumericTypeName>(
   return convertAssetAmount(to, asset);
 }
 
-export function convertMultisig<To extends NumericTypeName>(
-  to: To,
-  obj: MultisigState<any>,
-): MultisigState<NumericTypes[To]> {
-  const fromType = getType(obj.freeBalanceA);
-  return convertFields(fromType, to, ["freeBalanceA", "freeBalanceB"], obj);
-}
-
 export function convertPaymentProfile<To extends NumericTypeName>(
   to: To,
   obj: PaymentProfile<any>,
@@ -200,6 +193,13 @@ export function convertLinkedTransferParametersToAsset<To extends NumericTypeNam
   return convertAssetAmountWithId(to, obj);
 }
 
+export function convertLinkedTransferToRecipientParametersToAsset<To extends NumericTypeName>(
+  to: To,
+  obj: LinkedTransferToRecipientParameters<any>,
+): LinkedTransferToRecipientParameters<NumericTypes[To]> {
+  return convertAssetAmountWithId(to, obj);
+}
+
 export function convertWithdrawParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: WithdrawParameters<any>,
@@ -213,7 +213,10 @@ export function convertAppState<To extends NumericTypeName>(
 ): AppState<NumericTypes[To]> {
   return {
     ...obj,
-    transfers: [convertAmountField(to, obj.transfers[0]), convertAmountField(to, obj.transfers[1])],
+    coinTransfers: [
+      convertAmountField(to, obj.coinTransfers[0]),
+      convertAmountField(to, obj.coinTransfers[1]),
+    ],
   };
 }
 
@@ -223,7 +226,7 @@ export const convert = {
   Asset: convertAssetAmount,
   Deposit: convertDepositParametersToAsset,
   LinkedTransfer: convertLinkedTransferParametersToAsset,
-  Multisig: convertMultisig,
+  LinkedTransferToRecipient: convertLinkedTransferToRecipientParametersToAsset,
   PaymentProfile: convertPaymentProfile,
   ResolveLinkedTransfer: convertAssetAmountWithId,
   SwapParameters: convertSwapParameters,

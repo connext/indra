@@ -169,14 +169,16 @@ function Home(props) {
   const [link, setLink] = useState(undefined);
   const [paymentState, paymentAction] = useMachine(sendMachine);
 
-  const { classes, balance, channel, history, token } = props;
+  const { classes, balance, channel, history, parseQRCode, token } = props;
 
-  const scanQRCode = async data => {
+  const scanQRCode = data => {
     setScanModal(false);
-    if (data.startsWith("wc:")) {
-      await initWalletConnect(data, channel);
+    if (channel && data.startsWith("wc:")) {
+      localStorage.setItem(`wcUri`, data)
+      initWalletConnect(data, channel);
     } else {
-      history.push(data);
+      const url = parseQRCode(data)
+      history.push(url)
     }
   };
 

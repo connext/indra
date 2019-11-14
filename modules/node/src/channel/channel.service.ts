@@ -1,5 +1,4 @@
 import { ChannelAppSequences } from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Injectable } from "@nestjs/common";
 import { AddressZero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
@@ -13,7 +12,7 @@ import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.en
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { CLogger, freeBalanceAddressFromXpub } from "../util";
-import { CreateChannelMessage } from "../util/cfCore";
+import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
@@ -29,6 +28,14 @@ export class ChannelService {
     private readonly cfCoreRepository: CFCoreRecordRepository,
     private readonly onchainRepository: OnchainTransactionRepository,
   ) {}
+
+  /**
+   * Returns all channel records.
+   * @param available available value of channel
+   */
+  async findAll(available: boolean = true): Promise<Channel[]> {
+    return await this.channelRepository.findAll(available);
+  }
 
   /**
    * Starts create channel process within CF core
@@ -111,12 +118,15 @@ export class ChannelService {
 
       // set in flight so that it cant be double sent
       await this.channelRepository.setInflightCollateralization(channel, true);
-      try {
-        return this.deposit(channel.multisigAddress, amountDeposit, normalizedAssetId);
-      } catch (e) {
-        await this.clearCollateralizationInFlight(channel.multisigAddress);
-        throw e;
-      }
+      const result = this.deposit(channel.multisigAddress, amountDeposit, normalizedAssetId)
+        .then((res: CFCoreTypes.DepositResult) => {
+          return res;
+        })
+        .catch(async (e: any) => {
+          await this.clearCollateralizationInFlight(channel.multisigAddress);
+          throw e;
+        });
+      return result;
     }
     logger.log(
       `${userPubId} already has collateral of ${nodeFreeBalance} for asset ${normalizedAssetId}`,
@@ -181,33 +191,33 @@ export class ChannelService {
    * Returns the app sequence number of the node and the user
    *
    * @param userPublicIdentifier users xpub
-   * @param userAppSequenceNumber sequence number provided by user
+   * @param userSequenceNumber sequence number provided by user
    */
   async verifyAppSequenceNumber(
     userPublicIdentifier: string,
-    userAppSequenceNumber: number,
+    userSequenceNumber: number,
   ): Promise<ChannelAppSequences> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     const sc = (await this.cfCoreService.getStateChannel(channel.multisigAddress)).data;
-    let nodeAppSequenceNumber;
+    let nodeSequenceNumber;
     try {
-      nodeAppSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
+      nodeSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
     } catch (e) {
       if (e.message.indexOf("There are no installed AppInstances in this StateChannel") !== -1) {
-        nodeAppSequenceNumber = 0;
+        nodeSequenceNumber = 0;
       } else {
         throw e;
       }
     }
-    if (nodeAppSequenceNumber !== userAppSequenceNumber) {
+    if (nodeSequenceNumber !== userSequenceNumber) {
       logger.warn(
-        `Node app sequence number (${nodeAppSequenceNumber}) ` +
-          `!== user app sequence number (${userAppSequenceNumber})`,
+        `Node app sequence number (${nodeSequenceNumber}) ` +
+          `!== user app sequence number (${userSequenceNumber})`,
       );
     }
     return {
-      nodeAppSequenceNumber,
-      userAppSequenceNumber,
+      nodeSequenceNumber,
+      userSequenceNumber,
     };
   }
 
@@ -250,12 +260,20 @@ export class ChannelService {
     );
   }
 
-  async getChannelStates(userPublicIdentifier: string): Promise<CFCoreRecord[]> {
+  // TODO: define type for state channel
+  async getChannelState(userPublicIdentifier: string): Promise<any> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     if (!channel) {
       throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
     }
+    const { data: state } = await this.cfCoreService.getStateChannel(channel.multisigAddress);
 
-    return await this.cfCoreRepository.findRecordsForRestore(channel.multisigAddress);
+    // FIXME: this has to be [] not {}, we should fix this better
+    state.singleAssetTwoPartyIntermediaryAgreements =
+      Object.values(state.singleAssetTwoPartyIntermediaryAgreements).length === 0
+        ? []
+        : state.singleAssetTwoPartyIntermediaryAgreements;
+
+    return state;
   }
 }
