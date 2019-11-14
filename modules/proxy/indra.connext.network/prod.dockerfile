@@ -9,6 +9,6 @@ COPY ops/wait-for.sh /root/wait-for.sh
 COPY modules/proxy/indra.connext.network/prod.conf /etc/nginx/nginx.conf
 COPY modules/proxy/indra.connext.network/entry.sh /root/entry.sh
 
-COPY modules/daicard/build /var/www/html
+COPY modules/daicard/build /var/www/html/daicard
 
 ENTRYPOINT ["bash", "/root/entry.sh"]
