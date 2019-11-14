@@ -84,8 +84,6 @@ export class ResolveConditionController extends AbstractController {
 
     const freeBal = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBal[this.connext.freeBalanceAddress];
-    const nodeFreeBal = freeBal[xpubToAddress(this.connext.nodePublicIdentifier)];
-    validate(notLessThan(amountBN, nodeFreeBal));
 
     // TODO: dont listen to linked transfer app in default listener, only listen for it here
 
