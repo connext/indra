@@ -1,10 +1,8 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { InstallVirtualMessage, Node, NODE_EVENTS } from "../../../types";
-import { getCreate2MultisigAddress, prettyPrintObject } from "../../../utils";
+import { Node } from "../../../types";
 import { NodeController } from "../../controller";
-import { NO_MULTISIG_FOR_APP_INSTANCE_ID } from "../../errors";
 
 import { installVirtual } from "./operation";
 
@@ -19,7 +17,7 @@ export default class InstallVirtualController extends NodeController {
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { appInstanceId, intermediaryIdentifier } = params;
 
-    const multisigAddressWithHub = getCreate2MultisigAddress(
+    const multisigAddressWithHub = await store.getMultisigAddressWithCounterparty(
       [publicIdentifier, intermediaryIdentifier],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
@@ -29,16 +27,23 @@ export default class InstallVirtualController extends NodeController {
 
     const { proposedByIdentifier } = proposal;
 
-    const multisigAddressWithResponding = getCreate2MultisigAddress(
+    // assume that there may not be existing sc between
+    // virtual channel participants
+    const multisigAddressWithResponding = await store.getMultisigAddressWithCounterparty(
       [publicIdentifier, proposedByIdentifier],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
+      true,
     );
 
-    const multisigAddressBetweenHubAndResponding = getCreate2MultisigAddress(
+    // because this is the initiators store, it may not have
+    // access to this multisig address between the proposedBy
+    // and the intermediary
+    const multisigAddressBetweenHubAndResponding = await store.getMultisigAddressWithCounterparty(
       [intermediaryIdentifier, proposedByIdentifier],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
+      true
     );
 
     return [
@@ -59,7 +64,7 @@ export default class InstallVirtualController extends NodeController {
       throw Error("Cannot install virtual app: you did not provide an intermediary.");
     }
 
-    const multisigAddress = getCreate2MultisigAddress(
+    const multisigAddress = await store.getMultisigAddressWithCounterparty(
       [publicIdentifier, intermediaryIdentifier],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,

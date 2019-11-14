@@ -226,7 +226,6 @@ class App extends React.Component {
       const xpub = hdNode.neuter().extendedKey;
       const keyGen = index => {
         const res = hdNode.derivePath(index);
-        console.log(`***** expected signer: ${res.address} for idx ${index}`);
         return Promise.resolve(res.privateKey)
       };
       channel = await connext.connect({

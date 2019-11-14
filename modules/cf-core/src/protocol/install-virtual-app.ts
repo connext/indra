@@ -20,10 +20,10 @@ import {
   TwoPartyFixedOutcomeInterpreterParams,
   virtualAppAgreementEncoding,
 } from "../types";
-import { getCreate2MultisigAddress } from "../utils";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
+import { Store } from "../store";
 
 export const encodeSingleAssetTwoPartyIntermediaryAgreementParams = params =>
   defaultAbiCoder.encode([virtualAppAgreementEncoding], [params]);
@@ -56,7 +56,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       message: { params, processID },
       stateChannelsMap,
       network,
-      provider
+      provider,
     } = context;
 
     const {
@@ -74,7 +74,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       params as InstallVirtualAppParams,
       stateChannelsMap,
       network,
-      provider
+      provider,
     );
 
     const intermediaryAddress = stateChannelWithIntermediary.getMultisigOwnerAddrOf(
@@ -320,7 +320,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelsMap,
       (virtualAppInstanceIdentityHash as unknown) as string,
       (virtualAppInstanceDefaultOutcome as unknown) as string,
-      network
+      network,
     );
 
     const initiatorAddress = stateChannelWithInitiating.getMultisigOwnerAddrOf(
@@ -1047,12 +1047,15 @@ function constructTimeLockedPassThroughAppInstance(
 function getOrCreateStateChannelWithUsers(
   stateChannelsMap: Map<string, StateChannel>,
   userXpubs: string[],
-  network: NetworkContext
+  network: NetworkContext,
+  allowGeneratedMultisig: boolean = false,
 ): StateChannel {
-  const multisigAddress = getCreate2MultisigAddress(
+  const multisigAddress = Store.getMultisigAddressWithCounterpartyFromMap(
+    stateChannelsMap,
     userXpubs,
     network.ProxyFactory,
-    network.MinimumViableMultisig
+    network.MinimumViableMultisig,
+    allowGeneratedMultisig,
   );
 
   return (
@@ -1065,7 +1068,7 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForInitiating(
   params: InstallVirtualAppParams,
   stateChannelsMap: Map<string, StateChannel>,
   network: NetworkContext,
-  provider: BaseProvider
+  provider: BaseProvider,
 ): Promise<
   [StateChannel, StateChannel, StateChannel, AppInstance, AppInstance]
 > {
@@ -1081,13 +1084,15 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForInitiating(
   const stateChannelWithAllThreeParties = getOrCreateStateChannelWithUsers(
     stateChannelsMap,
     [initiatorXpub, responderXpub, intermediaryXpub],
-    network
+    network,
+    true,
   );
 
   const stateChannelWithResponding = getOrCreateStateChannelWithUsers(
     stateChannelsMap,
     [initiatorXpub, responderXpub],
-    network
+    network,
+    true,
   );
 
   const virtualAppInstance = constructVirtualAppInstance(params);
@@ -1103,12 +1108,15 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForInitiating(
   const initiatorAddress = xkeyKthAddress(initiatorXpub, 0);
   const intermediaryAddress = xkeyKthAddress(intermediaryXpub, 0);
 
+  const multisigAddressWithIntermediary = Store.getMultisigAddressWithCounterpartyFromMap(
+    stateChannelsMap,
+    [initiatorXpub, intermediaryXpub],
+    network.ProxyFactory,
+    network.MinimumViableMultisig,
+  );
+
   const stateChannelWithIntermediary = stateChannelsMap.get(
-    getCreate2MultisigAddress(
-      [initiatorXpub, intermediaryXpub],
-      network.ProxyFactory,
-      network.MinimumViableMultisig
-    )
+    multisigAddressWithIntermediary
   );
 
   if (!stateChannelWithIntermediary) {
@@ -1152,7 +1160,7 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForIntermediary(
   stateChannelsMap: Map<string, StateChannel>,
   virtualAppInstanceIdentityHash: string,
   virtualAppInstanceDefaultOutcome: string,
-  network: NetworkContext
+  network: NetworkContext,
 ): Promise<[StateChannel, StateChannel, StateChannel, AppInstance]> {
   const {
     initiatorBalanceDecrement,
@@ -1166,7 +1174,8 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForIntermediary(
   const stateChannelWithAllThreeParties = getOrCreateStateChannelWithUsers(
     stateChannelsMap,
     [initiatorXpub, responderXpub, intermediaryXpub],
-    network
+    network,
+    true
   );
 
   const timeLockedPassThroughAppInstance = await constructTimeLockedPassThroughAppInstance(
@@ -1177,12 +1186,15 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForIntermediary(
     params
   );
 
+  const multisigAddressWithIntermediary = Store.getMultisigAddressWithCounterpartyFromMap(
+    stateChannelsMap,
+    [initiatorXpub, intermediaryXpub],
+    network.ProxyFactory,
+    network.MinimumViableMultisig,
+  );
+
   const channelWithInitiating = stateChannelsMap.get(
-    getCreate2MultisigAddress(
-      [initiatorXpub, intermediaryXpub],
-      network.ProxyFactory,
-      network.MinimumViableMultisig
-    )
+    multisigAddressWithIntermediary
   );
 
   if (!channelWithInitiating) {
@@ -1191,12 +1203,15 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForIntermediary(
     );
   }
 
+  const multisigAddressWithResponding = Store.getMultisigAddressWithCounterpartyFromMap(
+    stateChannelsMap,
+    [responderXpub, intermediaryXpub],
+    network.ProxyFactory,
+    network.MinimumViableMultisig,
+  );
+
   const channelWithResponding = stateChannelsMap.get(
-    getCreate2MultisigAddress(
-      [responderXpub, intermediaryXpub],
-      network.ProxyFactory,
-      network.MinimumViableMultisig
-    )
+    multisigAddressWithResponding
   );
 
   if (!channelWithResponding) {
@@ -1260,7 +1275,7 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForResponding(
   params: InstallVirtualAppParams,
   stateChannelsMap: Map<string, StateChannel>,
   network: NetworkContext,
-  provider: BaseProvider
+  provider: BaseProvider,
 ): Promise<
   [StateChannel, StateChannel, StateChannel, AppInstance, AppInstance]
 > {
@@ -1276,13 +1291,15 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForResponding(
   const stateChannelWithAllThreeParties = getOrCreateStateChannelWithUsers(
     stateChannelsMap,
     [initiatorXpub, responderXpub, intermediaryXpub],
-    network
+    network,
+    true
   );
 
   const stateChannelWithInitiating = getOrCreateStateChannelWithUsers(
     stateChannelsMap,
     [initiatorXpub, responderXpub],
-    network
+    network,
+    true
   );
 
   const virtualAppInstance = constructVirtualAppInstance(params);
@@ -1295,12 +1312,14 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForResponding(
     params
   );
 
+  const multisigAddressWithIntermediary = Store.getMultisigAddressWithCounterpartyFromMap(
+    stateChannelsMap,
+    [responderXpub, intermediaryXpub],
+    network.ProxyFactory,
+    network.MinimumViableMultisig,
+  )
   const stateChannelWithIntermediary = stateChannelsMap.get(
-    getCreate2MultisigAddress(
-      [responderXpub, intermediaryXpub],
-      network.ProxyFactory,
-      network.MinimumViableMultisig
-    )
+    multisigAddressWithIntermediary
   );
 
   if (!stateChannelWithIntermediary) {

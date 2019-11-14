@@ -14,11 +14,11 @@ import {
 import { xkeyKthAddress } from "../machine/xkeys";
 import { AppInstance, StateChannel } from "../models";
 import { NetworkContext } from "../types";
-import { getCreate2MultisigAddress } from "../utils";
 
 import { computeTokenIndexedFreeBalanceIncrements } from "./utils/get-outcome-increments";
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
+import { Store } from "../store";
 
 function xkeyTo0thAddress(xpub: string) {
   return fromExtendedKey(xpub).derivePath("0").address;
@@ -54,7 +54,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       message: { processID, params },
       provider,
       stateChannelsMap,
-      network
+      network,
     } = context;
 
     const {
@@ -74,7 +74,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelsMap,
       params!,
       provider,
-      network
+      network,
     );
 
     const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
@@ -195,7 +195,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       },
       provider,
       stateChannelsMap,
-      network
+      network,
     } = context;
 
     const {
@@ -215,7 +215,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelsMap,
       params!,
       provider,
-      network
+      network,
     );
 
     const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
@@ -387,7 +387,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       },
       provider,
       stateChannelsMap,
-      network
+      network,
     } = context;
 
     const {
@@ -407,7 +407,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelsMap,
       params!,
       provider,
-      network
+      network,
     );
 
     const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
@@ -513,22 +513,24 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
 function getStateChannelFromMapWithOwners(
   stateChannelsMap: Map<string, StateChannel>,
   userXpubs: string[],
-  network: NetworkContext
+  network: NetworkContext,
+  allowGeneratedMultisig: boolean = false,
 ): StateChannel {
-  return stateChannelsMap.get(
-    getCreate2MultisigAddress(
-      userXpubs,
-      network.ProxyFactory,
-      network.MinimumViableMultisig
-    )
-  )!;
+  const multisigAddress = Store.getMultisigAddressWithCounterpartyFromMap(
+    stateChannelsMap,
+    userXpubs,
+    network.ProxyFactory,
+    network.MinimumViableMultisig,
+    allowGeneratedMultisig
+  );
+  return stateChannelsMap.get(multisigAddress)!;
 }
 
 async function getUpdatedStateChannelAndAppInstanceObjectsForInitiating(
   stateChannelsMap: Map<string, StateChannel>,
   params: ProtocolParameters,
   provider: BaseProvider,
-  network: NetworkContext
+  network: NetworkContext,
 ): Promise<[StateChannel, StateChannel, StateChannel, AppInstance]> {
   const {
     intermediaryXpub,
@@ -550,19 +552,21 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForInitiating(
     getStateChannelFromMapWithOwners(
       stateChannelsMap,
       [initiatorXpub, responderXpub, intermediaryXpub],
-      network
+      network,
+      true,
     ),
 
     getStateChannelFromMapWithOwners(
       stateChannelsMap,
       [initiatorXpub, intermediaryXpub],
-      network
+      network,
     ),
 
     getStateChannelFromMapWithOwners(
       stateChannelsMap,
       [initiatorXpub, responderXpub],
-      network
+      network,
+      true
     )
   ];
 
@@ -636,7 +640,7 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForResponding(
   stateChannelsMap: Map<string, StateChannel>,
   params: ProtocolParameters,
   provider: BaseProvider,
-  network: NetworkContext
+  network: NetworkContext,
 ): Promise<[StateChannel, StateChannel, StateChannel, AppInstance]> {
   const {
     intermediaryXpub,
@@ -658,19 +662,21 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForResponding(
     getStateChannelFromMapWithOwners(
       stateChannelsMap,
       [initiatorXpub, responderXpub, intermediaryXpub],
-      network
+      network,
+      true
     ),
 
     getStateChannelFromMapWithOwners(
       stateChannelsMap,
       [responderXpub, intermediaryXpub],
-      network
+      network,
     ),
 
     getStateChannelFromMapWithOwners(
       stateChannelsMap,
       [initiatorXpub, responderXpub],
-      network
+      network,
+      true
     )
   ];
 
@@ -754,7 +760,7 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
   stateChannelsMap: Map<string, StateChannel>,
   params: ProtocolParameters,
   provider: BaseProvider,
-  network: NetworkContext
+  network: NetworkContext,
 ): Promise<[StateChannel, StateChannel, StateChannel, AppInstance]> {
   const {
     intermediaryXpub,
@@ -776,19 +782,20 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
     getStateChannelFromMapWithOwners(
       stateChannelsMap,
       [initiatorXpub, responderXpub, intermediaryXpub],
-      network
+      network,
+      true
     ),
 
     getStateChannelFromMapWithOwners(
       stateChannelsMap,
       [initiatorXpub, intermediaryXpub],
-      network
+      network,
     ),
 
     getStateChannelFromMapWithOwners(
       stateChannelsMap,
       [intermediaryXpub, responderXpub],
-      network
+      network,
     )
   ];
 
