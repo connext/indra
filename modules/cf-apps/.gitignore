@@ -1,0 +1,14 @@
+*.swp
+.env
+.jest.cache
+.rpt2_cache/
+build
+dist
+docs/venv/*
+jest-cache
+jest-coverage/clover.xml
+jest-coverage/coverage-final.json
+jest-coverage/lcov-report/
+jest-coverage/lcov.info
+networks/
+node_modules

@@ -1,5 +1,3 @@
-import { RegisteredAppDetails, SupportedApplications } from "@connext/types";
-import { AppInstanceInfo, Node as CFCoreTypes } from "@counterfactual/types";
 import EthCrypto from "eth-crypto";
 import { bigNumberify, formatParamType } from "ethers/utils";
 import { fromMnemonic } from "ethers/utils/hdnode";
@@ -7,20 +5,24 @@ import { EventEmitter } from "events";
 
 import { ChannelRouter } from "./channelRouter";
 import { ConnextClient } from "./connext";
+import { Logger } from "./lib/logger";
+import { stringify } from "./lib/utils";
 import {
+  AppInstanceInfo,
+  CFCoreTypes,
   CreateChannelMessage,
   DepositConfirmationMessage,
   InstallMessage,
   InstallVirtualMessage,
   ProposeMessage,
+  RegisteredAppDetails,
   RejectInstallVirtualMessage,
+  SupportedApplications,
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
   WithdrawMessage,
-} from "./lib/cfCore";
-import { Logger } from "./lib/logger";
-import { stringify } from "./lib/utils";
+} from "./types";
 import { appProposalValidation } from "./validation/appProposals";
 
 // TODO: index of connext events only?
@@ -63,13 +65,6 @@ export class ConnextListener extends EventEmitter {
       // validate and automatically install for the known and supported
       // applications
       this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL, data.data);
-      // check if message is from us, return if so
-      // FIXME: type of ProposeMessage should extend CFCore.NodeMessage, which
-      // has a from field, but ProposeMessage does not
-      if ((data as any).from === this.connext.publicIdentifier) {
-        this.log.debug(`Received proposal from our own node, doing nothing: ${stringify(data)}`);
-        return;
-      }
       // check based on supported applications
       // matched app, take appropriate default actions
       const matchedResult = await this.matchAppInstance(data);
@@ -77,18 +72,19 @@ export class ConnextListener extends EventEmitter {
         this.log.warn(`No matched app, doing nothing, ${stringify(data)}`);
         return;
       }
-      if (matchedResult.matchedApp.name === "SimpleTransferApp") {
-        this.log.debug(
-          `Caught propose install for what should always be a virtual app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
-        );
-        return;
-      }
       // matched app, take appropriate default actions
       const { appInfo, matchedApp } = matchedResult;
-      await this.verifyAndInstallKnownApp(appInfo, matchedApp, false);
+      // return if its from us
+      // TODO: initatorXpub isnt in types
+      if ((appInfo as any).initatorXpub === this.connext.publicIdentifier) {
+        this.log.info(`Received proposal from our own node, doing nothing: ${stringify(data)}`);
+        return;
+      }
+      await this.verifyAndInstallKnownApp(appInfo, matchedApp);
       return;
     },
     PROPOSE_INSTALL_VIRTUAL: async (data: ProposeMessage): Promise<void> => {
+      this.log.warn(`Got PROPOSE_INSTALL_VIRTUAL message but it's depreciated.. :(`);
       // validate and automatically install for the known and supported
       // applications
       this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data.data);
@@ -104,14 +100,13 @@ export class ConnextListener extends EventEmitter {
       if (!matchedResult) {
         return;
       }
+      const { appInfo, matchedApp } = matchedResult;
       if (matchedResult.matchedApp.name !== "SimpleTransferApp") {
         this.log.debug(
           `Caught propose install virtual for what should always be a regular app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
         );
         return;
       }
-      // matched app, take appropriate default actions
-      const { appInfo, matchedApp } = matchedResult;
       await this.verifyAndInstallKnownApp(appInfo, matchedApp);
       return;
     },
@@ -264,8 +259,9 @@ export class ConnextListener extends EventEmitter {
   private verifyAndInstallKnownApp = async (
     appInstance: AppInstanceInfo,
     matchedApp: RegisteredAppDetails,
-    isVirtual: boolean = true,
   ): Promise<void> => {
+    // virtual is now determined by presence of intermediary identifier
+    const isVirtual = !!appInstance.intermediaryIdentifier;
     const invalidProposal = await appProposalValidation[matchedApp.name](
       appInstance,
       matchedApp,
@@ -327,13 +323,34 @@ export class ConnextListener extends EventEmitter {
 
   private registerLinkedTransferSubscription = async (): Promise<void> => {
     const subject = `transfer.send-async.${this.connext.publicIdentifier}`;
-    await this.connext.messaging.subscribe(
-      subject,
-      async (data: any): Promise<any> => {
-        this.log.info(`Received message for subscription: ${stringify(data)}`);
-        const { encryptedPreImage, paymentId } = data;
-        await this.connext.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
-      },
-    );
+    await this.connext.messaging.subscribe(subject, async (data: any) => {
+      this.log.info(`Received message for subscription: ${stringify(data)}`);
+      let paymentId: string;
+      let encryptedPreImage: string;
+      let amount: string;
+      let assetId: string;
+      if (data.paymentId) {
+        this.log.debug(`Not nested data`);
+        paymentId = data.paymentId;
+        encryptedPreImage = data.encryptedPreImage;
+        amount = data.amount;
+        assetId = data.assetId;
+      } else if (data.data) {
+        this.log.debug(`Nested data`);
+        const parsedData = JSON.parse(data.data);
+        paymentId = parsedData.paymentId;
+        encryptedPreImage = parsedData.encryptedPreImage;
+        amount = parsedData.amount;
+        assetId = parsedData.assetId;
+      } else {
+        throw new Error(`Could not parse data from message: ${stringify(data)}`);
+      }
+
+      if (!paymentId || !encryptedPreImage) {
+        throw new Error(`Unable to parse transfer details from message ${stringify(data)}`);
+      }
+      await this.connext.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
+      this.log.info(`Successfully reclaimed transfer with paymentId: ${paymentId}`);
+    });
   };
 }

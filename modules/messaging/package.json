@@ -1,10 +1,11 @@
 {
   "name": "@connext/messaging",
-  "version": "0.4.0",
+  "version": "1.0.2",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
   "types": "dist/index.d.ts",
   "license": "MIT",
+  "files": ["dist", "src"],
   "scripts": {
     "build": "tsc -p . && rollup -c",
     "build:watch": "tsc -p . && rollup -c -w",
@@ -13,13 +14,13 @@
     "prepare": "npm run build"
   },
   "dependencies": {
+    "@connext/types": "1.0.2",
     "ts-nats": "1.2.4",
     "websocket-nats": "0.3.3"
   },
   "devDependencies": {
-    "@counterfactual/types": "0.0.44",
-    "rollup": "1.26.3",
-    "rollup-plugin-typescript2": "0.24.3",
+    "rollup": "1.26.4",
+    "rollup-plugin-typescript2": "0.25.2",
     "typescript": "3.5.3"
   }
 }

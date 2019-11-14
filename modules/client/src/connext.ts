@@ -1,20 +1,49 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
+import "core-js/stable";
+import EthCrypto from "eth-crypto";
+import { Contract, providers, Wallet } from "ethers";
+import { AddressZero } from "ethers/constants";
+import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
+import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
+import tokenAbi from "human-standard-token-abi";
+import "regenerator-runtime/runtime";
+
+import { ChannelRouter } from "./channelRouter";
+import { ConditionalTransferController } from "./controllers/ConditionalTransferController";
+import { DepositController } from "./controllers/DepositController";
+import { ResolveConditionController } from "./controllers/ResolveConditionController";
+import { SwapController } from "./controllers/SwapController";
+import { TransferController } from "./controllers/TransferController";
+import { WithdrawalController } from "./controllers/WithdrawalController";
+import { CFCore } from "./lib/cfCore";
+import { CF_PATH } from "./lib/constants";
+import { Logger } from "./lib/logger";
+import { stringify, withdrawalKey, xpubToAddress } from "./lib/utils";
+import { ConnextListener } from "./listener";
+import { NodeApiClient } from "./node";
 import {
+  Address,
   AppActionBigNumber,
+  AppInstanceJson,
   AppRegistry,
   AppStateBigNumber,
   CFCoreChannel,
+  CFCoreTypes,
   ChannelProviderConfig,
   ChannelState,
   ClientOptions,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
+  ConnextClientStorePrefix,
   ConnextEvent,
+  CreateChannelMessage,
   CreateChannelResponse,
   DepositParameters,
+  EXTENDED_PRIVATE_KEY_PATH,
   GetChannelResponse,
   GetConfigResponse,
   IConnextClient,
+  InternalClientOptions,
   makeChecksum,
   makeChecksumOrEthAddress,
   PaymentProfile,
@@ -32,36 +61,7 @@ import {
   TransferParameters,
   WithdrawalResponse,
   WithdrawParameters,
-} from "@connext/types";
-import { Address, AppInstanceJson, Node as CFCoreTypes } from "@counterfactual/types";
-import "core-js/stable";
-import EthCrypto from "eth-crypto";
-import { Contract, providers, Wallet } from "ethers";
-import { AddressZero } from "ethers/constants";
-import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
-import { fromMnemonic } from "ethers/utils/hdnode";
-import tokenAbi from "human-standard-token-abi";
-import "regenerator-runtime/runtime";
-
-import { ChannelRouter } from "./channelRouter";
-import { ConditionalTransferController } from "./controllers/ConditionalTransferController";
-import { DepositController } from "./controllers/DepositController";
-import { ResolveConditionController } from "./controllers/ResolveConditionController";
-import { SwapController } from "./controllers/SwapController";
-import { TransferController } from "./controllers/TransferController";
-import { WithdrawalController } from "./controllers/WithdrawalController";
-import { CFCore, CreateChannelMessage, EXTENDED_PRIVATE_KEY_PATH } from "./lib/cfCore";
-import { CF_PATH } from "./lib/constants";
-import { Logger } from "./lib/logger";
-import {
-  freeBalanceAddressFromXpub,
-  publicIdentifierToAddress,
-  stringify,
-  withdrawalKey,
-} from "./lib/utils";
-import { ConnextListener } from "./listener";
-import { NodeApiClient } from "./node";
-import { InternalClientOptions } from "./types";
+} from "./types";
 import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 
@@ -70,6 +70,48 @@ const MAX_WITHDRAWAL_RETRIES = 3;
 export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   const { logLevel, ethProviderUrl, mnemonic, nodeUrl, store, channelProvider } = opts;
   const log = new Logger("ConnextConnect", logLevel);
+
+  // set channel provider config
+  let channelProviderConfig: ChannelProviderConfig;
+  let xpub: string;
+  let keyGen: (index: string) => Promise<string>;
+  if (mnemonic) {
+    // Convert mnemonic into xpub + keyGen if provided
+    const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
+    xpub = hdNode.neuter().extendedKey;
+    keyGen = (index: string): Promise<string> =>
+      Promise.resolve(hdNode.derivePath(index).privateKey);
+    channelProviderConfig = {
+      freeBalanceAddress: xpubToAddress(xpub),
+      nodeUrl,
+      signerAddress: xpubToAddress(xpub),
+      type: RpcType.CounterfactualNode,
+      userPublicIdentifier: xpub,
+    };
+  } else if (channelProvider) {
+    // enable the channel provider, which sets the config property
+    await channelProvider.enable();
+    channelProviderConfig = {
+      ...channelProvider.config,
+      type: RpcType.ChannelProvider,
+    };
+  } else if (opts.xpub && opts.keyGen) {
+    xpub = opts.xpub;
+    keyGen = opts.keyGen;
+    channelProviderConfig = {
+      freeBalanceAddress: xpubToAddress(xpub),
+      nodeUrl,
+      signerAddress: xpubToAddress(xpub),
+      type: RpcType.CounterfactualNode,
+      userPublicIdentifier: xpub,
+    };
+  } else {
+    throw new Error(
+      `Client must be instantiated with xpub and keygen, or a channel provider if not using mnemonic`,
+    );
+  }
+
+  log.debug(`Using channel provider config: ${stringify(channelProviderConfig)}`);
 
   // setup network information
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
@@ -83,34 +125,6 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
       throw { code: "UNSUPPORTED_OPERATION" };
     };
   }
-
-  // set channel provider config
-  let channelProviderConfig: ChannelProviderConfig;
-  if (channelProvider) {
-    // enable the channel provider, which sets the config property
-    await channelProvider.enable();
-    channelProviderConfig = {
-      ...channelProvider.config,
-      type: RpcType.ChannelProvider,
-    };
-  } else if (mnemonic) {
-    // generate extended private key from mnemonic
-    const hdNode = fromMnemonic(mnemonic);
-    const xpriv = hdNode.extendedKey;
-    const xpub = hdNode.derivePath(CF_PATH).neuter().extendedKey;
-    await store.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }]);
-    channelProviderConfig = {
-      freeBalanceAddress: freeBalanceAddressFromXpub(xpub),
-      nodeUrl,
-      signerAddress: hdNode.derivePath(CF_PATH).address,
-      type: RpcType.CounterfactualNode,
-      userPublicIdentifier: xpub,
-    } as any;
-  } else {
-    throw new Error(`Must provide a channel provider or mnemonic on startup.`);
-  }
-
-  log.debug(`Using channel provider config: ${stringify(channelProviderConfig)}`);
 
   log.debug(`Creating messaging service client (logLevel: ${logLevel})`);
   const messagingFactory = new MessagingServiceFactory({
@@ -132,15 +146,16 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
       break;
     case RpcType.CounterfactualNode:
       const cfCore = await CFCore.create(
-        messaging as any, // TODO: FIX
+        messaging as any,
         store,
-        { STORE_KEY_PREFIX: "store" },
-        ethProvider,
         config.contractAddresses,
+        { STORE_KEY_PREFIX: ConnextClientStorePrefix },
+        ethProvider,
         { acquireLock: node.acquireLock.bind(node) },
+        xpub,
+        keyGen,
       );
-      const wallet = Wallet.fromMnemonic(opts.mnemonic!, CF_PATH);
-      channelRouter = new ChannelRouter(cfCore, channelProviderConfig, store, wallet);
+      channelRouter = new ChannelRouter(cfCore, channelProviderConfig, store, await keyGen("0"));
       break;
     default:
       throw new Error(`Unrecognized channel provider type: ${channelProviderConfig.type}`);
@@ -187,6 +202,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     channelRouter,
     config,
     ethProvider,
+    keyGen,
     messaging,
     multisigAddress,
     network,
@@ -200,9 +216,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   } catch (e) {
     log.warn(e);
     if (e.message.includes(`StateChannel does not exist yet`)) {
-      console.log("Restoring client state");
+      log.debug("Restoring client state");
       await client.restoreState();
-      console.log("Newly restored client is ready to go!");
+      log.debug("Newly restored client is ready to go!");
     } else {
       throw e;
     }
@@ -211,12 +227,15 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   log.debug("Registering subscriptions");
   await client.registerSubscriptions();
 
-  log.debug("Reclaiming pending async transfers");
-  await client.reclaimPendingAsyncTransfers();
-
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
   log.debug("Resubmitting active withdrawals");
   await client.resubmitActiveWithdrawal();
+
+  // wait for wd verification to reclaim any pending async transfers
+  // since if the hub never submits you should not continue interacting
+  log.debug("Reclaiming pending async transfers");
+  // no need to await this if it needs collateral
+  client.reclaimPendingAsyncTransfers();
 
   log.debug("Done creating channel client");
   return client;
@@ -241,6 +260,7 @@ export class ConnextClient implements IConnextClient {
   public store: Store;
 
   private opts: InternalClientOptions;
+  private keyGen: (index: string) => Promise<string>;
 
   private depositController: DepositController;
   private transferController: TransferController;
@@ -255,6 +275,7 @@ export class ConnextClient implements IConnextClient {
     this.channelRouter = opts.channelRouter;
     this.config = opts.config;
     this.ethProvider = opts.ethProvider;
+    this.keyGen = opts.keyGen;
     this.messaging = opts.messaging;
     this.network = opts.network;
     this.network = opts.network;
@@ -321,15 +342,21 @@ export class ConnextClient implements IConnextClient {
         break;
       case RpcType.CounterfactualNode:
         const cfCore = await CFCore.create(
-          this.messaging as any, // TODO: FIX
+          this.messaging as any,
           this.store,
-          { STORE_KEY_PREFIX: "store" },
-          this.ethProvider,
           this.config.contractAddresses,
+          { STORE_KEY_PREFIX: ConnextClientStorePrefix },
+          this.ethProvider,
           { acquireLock: this.node.acquireLock.bind(this.node) },
+          this.publicIdentifier,
+          this.keyGen,
         );
-        const wallet = Wallet.fromMnemonic(this.opts.mnemonic!, CF_PATH);
-        channelRouter = new ChannelRouter(cfCore, this.channelRouter.config, this.store, wallet);
+        channelRouter = new ChannelRouter(
+          cfCore,
+          this.channelRouter.config,
+          this.store,
+          await this.keyGen("0"),
+        );
         break;
       default:
         throw new Error(`Unrecognized channel provider type: ${this.routerType}`);
@@ -497,45 +524,39 @@ export class ConnextClient implements IConnextClient {
     if (!this.store || this.routerType === RpcType.ChannelProvider) {
       throw new Error(`Cannot restore state with channel provider`);
     }
-    const hdNode = fromMnemonic(this.opts.mnemonic!);
-    const xpriv = hdNode.extendedKey;
-    const xpub = hdNode.derivePath("m/44'/60'/0'/25446").neuter().extendedKey;
     this.channelRouter.reset();
-    // always set the mnemonic in the store
-    await this.channelRouter.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xpriv }], false);
     try {
+      throw new Error(`Reimplement Pisa`);
       // try to recover states from our given store's restore method
       const restoreStates = await this.channelRouter.restore();
       const stateToRestore = restoreStates.find(
         (p: { path: string; value: any }): boolean =>
-          p.path === `store/${xpub}/channel/${this.multisigAddress}`,
+          p.path === `store/${this.publicIdentifier}/channel/${this.multisigAddress}`,
       );
       if (!stateToRestore) {
         throw new Error(
-          `Couldn't restore states for "store/${xpub}/channel/${this.multisigAddress}."`,
+          `Couldn't restore states for "store/${this.publicIdentifier}/channel/${this.multisigAddress}."`,
         );
       }
       this.log.info(`Found state to restore from backup: ${stringify(stateToRestore)}`);
       await this.channelRouter.set([stateToRestore], false);
     } catch (e) {
-      const stateToRestore = await this.node.restoreStates(xpub);
+      this.log.info(`Could not restore from store, attempting to restore from node: ${e}`);
+      const stateToRestore = await this.node.restoreState(this.publicIdentifier);
       if (!stateToRestore) {
         throw new Error(
-          `No matching states found by node for "store/${xpub}/channel/${this.multisigAddress}."`,
+          `No matching states found by node for "store/${this.publicIdentifier}/channel/${this.multisigAddress}."`,
         );
       }
       this.log.info(`Found state to restore from node: ${stringify(stateToRestore)}`);
       // TODO: this should prob not be hardcoded like this
-      const actualStates = stateToRestore.map((state: { path: string; value: object }): any => {
-        return {
-          path: `store${state.path
-            .replace(this.nodePublicIdentifier, xpub)
-            .substring(state.path.indexOf("/"))}`,
-          value: state.value[state.path],
-        };
-      });
-      await this.store.set(actualStates, false);
-      this.log.debug(`restored state from node!`);
+      await this.store.set([
+        {
+          path: `${ConnextClientStorePrefix}/${this.publicIdentifier}/channel/${this.multisigAddress}`,
+          value: stateToRestore,
+        },
+      ]);
+      this.log.info(`Succesfully restored state from node!`);
     }
     await this.restart();
   };
@@ -565,7 +586,7 @@ export class ConnextClient implements IConnextClient {
     assetId: string,
     notifyCounterparty: boolean = false,
   ): Promise<CFCoreTypes.DepositResult> => {
-    const depositAddr = publicIdentifierToAddress(this.publicIdentifier);
+    const depositAddr = xpubToAddress(this.publicIdentifier);
     let bal: BigNumber;
 
     if (assetId === AddressZero) {
@@ -619,7 +640,7 @@ export class ConnextClient implements IConnextClient {
         // but need the nodes free balance
         // address in the multisig
         const obj = {};
-        obj[freeBalanceAddressFromXpub(this.nodePublicIdentifier)] = new BigNumber(0);
+        obj[xpubToAddress(this.nodePublicIdentifier)] = new BigNumber(0);
         obj[this.freeBalanceAddress] = new BigNumber(0);
         return obj;
       }
@@ -838,7 +859,18 @@ export class ConnextClient implements IConnextClient {
   ): Promise<ResolveLinkedTransferResponse> => {
     this.log.info(`Reclaiming transfer ${paymentId}`);
     // decrypt secret and resolve
-    const privateKey = fromMnemonic(this.opts.mnemonic).derivePath(CF_PATH).privateKey;
+    let privateKey: string;
+    if (this.opts.mnemonic) {
+      privateKey = fromMnemonic(this.opts.mnemonic)
+        .derivePath(CF_PATH)
+        .derivePath("0").privateKey;
+    } else if (this.keyGen) {
+      // TODO: make this use app key?
+      privateKey = await this.keyGen("0");
+    } else {
+      throw new Error(`No way to decode transfer, this should never happen!`);
+    }
+
     const cipher = EthCrypto.cipher.parse(encryptedPreImage);
 
     const preImage = await EthCrypto.decryptWithPrivateKey(privateKey, cipher);
@@ -871,10 +903,11 @@ export class ConnextClient implements IConnextClient {
   };
 
   public matchTx = (
-    givenTransaction: Transaction,
+    givenTransaction: Transaction | undefined,
     expected: CFCoreTypes.MinimalTransaction,
   ): boolean => {
     return (
+      givenTransaction &&
       givenTransaction.to === expected.to &&
       bigNumberify(givenTransaction.value).eq(expected.value) &&
       givenTransaction.data === expected.data

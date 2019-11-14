@@ -1,9 +1,8 @@
-import { BigNumber, convert, WithdrawParameters, WithdrawalResponse } from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
 import { TransactionResponse } from "ethers/providers";
 import { getAddress } from "ethers/utils";
 
 import { stringify, withdrawalKey } from "../lib/utils";
+import { BigNumber, CFCoreTypes, convert, WithdrawalResponse, WithdrawParameters } from "../types";
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 

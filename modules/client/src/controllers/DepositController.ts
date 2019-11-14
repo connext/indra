@@ -1,10 +1,9 @@
-import { BigNumber, ChannelState, convert, DepositParameters } from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
 import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
 
-import { publicIdentifierToAddress, stringify } from "../lib/utils";
+import { stringify, xpubToAddress } from "../lib/utils";
+import { BigNumber, CFCoreTypes, ChannelState, convert, DepositParameters } from "../types";
 import { invalidAddress } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
 
@@ -23,9 +22,7 @@ export class DepositController extends AbstractController {
     // TODO: remove free balance stuff?
     const preDepositBalances = await this.connext.getFreeBalance(assetId);
 
-    this.log.info(
-      `\nDepositing ${amount} of ${assetId} into ${this.connext.multisigAddress}\n`,
-    );
+    this.log.info(`\nDepositing ${amount} of ${assetId} into ${this.connext.multisigAddress}\n`);
 
     // register listeners
     this.log.info("Registering listeners........");
@@ -70,8 +67,7 @@ export class DepositController extends AbstractController {
     amount: BigNumber,
   ): Promise<string | undefined> => {
     // check asset balance of address
-    // TODO: fix for non-eth balances
-    const depositAddr = publicIdentifierToAddress(this.connext.publicIdentifier);
+    const depositAddr = xpubToAddress(this.connext.publicIdentifier);
     let bal: BigNumber;
     if (assetId === AddressZero) {
       bal = await this.ethProvider.getBalance(depositAddr);

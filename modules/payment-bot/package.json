@@ -11,16 +11,15 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@connext/client": "0.4.0",
+    "@connext/client": "1.0.2",
     "commander": "4.0.0",
     "dotenv": "8.2.0",
-    "ethers": "4.0.37",
+    "ethers": "4.0.39",
     "pisa-client": "0.1.4-connext-beta.1",
     "uuid": "3.3.3"
   },
   "devDependencies": {
-    "@counterfactual/types": "0.0.44",
-    "@connext/types": "0.4.0",
+    "@connext/types": "1.0.2",
     "@types/node-fetch": "2.5.3",
     "env-cmd": "10.0.1",
     "ts-node": "8.4.1",

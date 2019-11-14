@@ -1,18 +1,18 @@
+import { Zero } from "ethers/constants";
+import { BigNumber } from "ethers/utils";
+
+import { delayAndThrow, stringify, xpubToAddress } from "../lib/utils";
 import {
   CFCoreChannel,
+  CFCoreTypes,
   convert,
   RegisteredAppDetails,
+  RejectInstallVirtualMessage,
   SimpleTransferAppStateBigNumber,
   SupportedApplication,
   SupportedApplications,
   TransferParameters,
-} from "@connext/types";
-import { Node as CFCoreTypes } from "@counterfactual/types";
-import { Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
-
-import { RejectInstallVirtualMessage } from "../lib/cfCore";
-import { freeBalanceAddressFromXpub, stringify } from "../lib/utils";
+} from "../types";
 import { invalidAddress, invalidXpub } from "../validation/addresses";
 import { falsy, notLessThanOrEqualTo } from "../validation/bn";
 
@@ -21,7 +21,7 @@ import { AbstractController } from "./AbstractController";
 export class TransferController extends AbstractController {
   private appId: string;
 
-  private timeout: NodeJS.Timeout;
+  private timeout: number;
 
   public transfer = async (params: TransferParameters): Promise<CFCoreChannel> => {
     this.log.info(`Transfer called with parameters: ${stringify(params)}`);
@@ -139,11 +139,11 @@ export class TransferController extends AbstractController {
       coinTransfers: [
         {
           amount,
-          to: freeBalanceAddressFromXpub(this.connext.publicIdentifier),
+          to: xpubToAddress(this.connext.publicIdentifier),
         },
         {
           amount: Zero,
-          to: freeBalanceAddressFromXpub(recipient),
+          to: xpubToAddress(recipient),
         },
       ],
     };
@@ -172,16 +172,15 @@ export class TransferController extends AbstractController {
     this.appId = res.appInstanceId;
 
     try {
-      await new Promise((res: any, rej: any): any => {
-        boundReject = this.rejectInstallTransfer.bind(null, rej);
-        boundResolve = this.resolveInstallTransfer.bind(null, res);
-        this.listener.on(CFCoreTypes.EventName.INSTALL_VIRTUAL, boundResolve);
-        this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
-        this.timeout = setTimeout((): void => {
-          this.cleanupInstallListeners(boundResolve, boundReject);
-          boundReject({ data: { appInstanceId: this.appId } } as RejectInstallVirtualMessage);
-        }, 5000);
-      });
+      const raceRes = await Promise.race([
+        new Promise((res: any, rej: any): any => {
+          boundReject = this.rejectInstallTransfer.bind(null, rej);
+          boundResolve = this.resolveInstallTransfer.bind(null, res);
+          this.listener.on(CFCoreTypes.EventName.INSTALL_VIRTUAL, boundResolve);
+          this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
+        }),
+        delayAndThrow(15_000, "App install took longer than 15 seconds"),
+      ]);
       this.log.info(`App was installed successfully!: ${stringify(res)}`);
       return res.appInstanceId;
     } catch (e) {

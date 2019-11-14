@@ -1,0 +1,46 @@
+{
+  "name": "@connext/cf-adjudicator-contracts",
+  "version": "0.4.1",
+  "description": "Smart contracts for an State Channel AppInstance Adjudicator",
+  "license": "MIT",
+  "files": ["build", "contracts"],
+  "scripts": {
+    "build": "waffle waffle.json",
+    "test": "ts-mocha test/*",
+    "lint:fix": "yarn lint:ts:fix && yarn lint:sol:fix",
+    "lint": "yarn lint:ts && yarn lint:sol",
+    "lint:sol:fix": "yarn lint:sol --fix",
+    "lint:sol": "solium -d .",
+    "lint:ts:fix": "yarn lint:ts --fix",
+    "lint:ts": "tslint -c tslint.json test/**/*.ts"
+  },
+  "keywords": [
+    "ethereum",
+    "counterfactual",
+    "state channels",
+    "solidity"
+  ],
+  "devDependencies": {
+    "@connext/cf-types": "1.0.2",
+    "@types/node": "12.12.7",
+    "@types/chai": "4.2.4",
+    "chai": "4.2.0",
+    "dotenv": "8.2.0",
+    "eth-gas-reporter": "0.2.12",
+    "ethereum-waffle": "2.1.0",
+    "ethers": "4.0.39",
+    "ethlint": "1.2.5",
+    "openzeppelin-solidity": "2.3.0",
+    "shx": "0.3.2",
+    "solc": "0.5.11",
+    "truffle": "5.0.44",
+    "truffle-deploy-registry": "0.5.1",
+    "truffle-hdwallet-provider": "1.0.17",
+    "ts-mocha": "6.0.0",
+    "ts-node": "8.4.1",
+    "tslint": "5.20.1"
+  },
+  "resolutions": {
+    "ethereum-waffle/solc": "0.5.11"
+  }
+}

@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { arrayify, HDNode, hexlify, randomBytes, verifyMessage } from "ethers/utils";
+import { arrayify, hexlify, randomBytes, verifyMessage } from "ethers/utils";
+import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { ChannelRepository } from "../channel/channel.repository";
 import { CLogger, isValidHex, isXpub } from "../util";
@@ -17,6 +18,10 @@ const badSubject = (warning: string): any => {
   logger.warn(warning);
   return { err: `Invalid subject` } as any;
 };
+
+export function getAuthAddressFromXpub(xpub: string): string {
+  return fromExtendedKey(xpub).derivePath("0").address;
+}
 
 @Injectable()
 export class AuthService {
@@ -52,7 +57,7 @@ export class AuthService {
         return callback(multisig, data);
       }
       const { userPublicIdentifier } = channel;
-      const xpubAddress = HDNode.fromExtendedKey(userPublicIdentifier).address;
+      const xpubAddress = getAuthAddressFromXpub(userPublicIdentifier);
       logger.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
       const authRes = this.verifySig(xpubAddress, data);
       if (authRes) {
@@ -69,7 +74,7 @@ export class AuthService {
       if (!xpub || !isXpub(xpub)) {
         return badSubject(`Subject's last item isn't a valid xpub: ${subject}`);
       }
-      const xpubAddress = HDNode.fromExtendedKey(xpub).address;
+      const xpubAddress = getAuthAddressFromXpub(xpub);
       const authRes = this.verifySig(xpubAddress, data);
       if (authRes && subject.startsWith("channel.restore-states")) {
         logger.error(`Auth failed (${authRes.err}) but we're just gonna ignore that for now..`);
