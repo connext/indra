@@ -77,9 +77,7 @@ export class ConnextListener extends EventEmitter {
       // return if its from us
       // TODO: initatorXpub isnt in types
       if ((appInfo as any).initatorXpub === this.connext.publicIdentifier) {
-        this.log.info(
-          `Received proposal from our own node, doing nothing: ${stringify(data)}`,
-        );
+        this.log.info(`Received proposal from our own node, doing nothing: ${stringify(data)}`);
         return;
       }
       await this.verifyAndInstallKnownApp(appInfo, matchedApp);
@@ -329,15 +327,21 @@ export class ConnextListener extends EventEmitter {
       this.log.info(`Received message for subscription: ${stringify(data)}`);
       let paymentId: string;
       let encryptedPreImage: string;
+      let amount: string;
+      let assetId: string;
       if (data.paymentId) {
         this.log.debug(`Not nested data`);
         paymentId = data.paymentId;
         encryptedPreImage = data.encryptedPreImage;
+        amount = data.amount;
+        assetId = data.assetId;
       } else if (data.data) {
         this.log.debug(`Nested data`);
         const parsedData = JSON.parse(data.data);
         paymentId = parsedData.paymentId;
         encryptedPreImage = parsedData.encryptedPreImage;
+        amount = parsedData.amount;
+        assetId = parsedData.assetId;
       } else {
         throw new Error(`Could not parse data from message: ${stringify(data)}`);
       }

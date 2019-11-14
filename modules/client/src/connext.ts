@@ -227,12 +227,15 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   log.debug("Registering subscriptions");
   await client.registerSubscriptions();
 
-  log.debug("Reclaiming pending async transfers");
-  await client.reclaimPendingAsyncTransfers();
-
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
   log.debug("Resubmitting active withdrawals");
   await client.resubmitActiveWithdrawal();
+
+  // wait for wd verification to reclaim any pending async transfers
+  // since if the hub never submits you should not continue interacting
+  log.debug("Reclaiming pending async transfers");
+  // no need to await this if it needs collateral
+  client.reclaimPendingAsyncTransfers();
 
   log.debug("Done creating channel client");
   return client;
