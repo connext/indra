@@ -1,6 +1,6 @@
 import { bigNumberify } from "ethers/utils";
 
-import { stringify } from "../lib/utils";
+import { stringify, xpubToAddress } from "../lib/utils";
 import {
   ConnextEvents,
   convert,
@@ -86,6 +86,12 @@ export class ResolveConditionController extends AbstractController {
 
     const freeBal = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBal[this.connext.freeBalanceAddress];
+    const nodeFreeBal = freeBal[xpubToAddress(this.connext.nodePublicIdentifier)];
+    if (nodeFreeBal.lt(amountBN)) {
+      this.log.debug(
+        `Node has insufficient collateral (${nodeFreeBal.toString()}) to afford payment (${amountBN.toString()}) of asset ${assetId}. Expect resolution to take longer with collateral...`,
+      );
+    }
 
     // TODO: dont listen to linked transfer app in default listener, only listen for it here
 

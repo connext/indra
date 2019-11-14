@@ -1,10 +1,7 @@
-import { HashZero } from "ethers/constants";
-import { TransactionResponse } from "ethers/providers";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
 import { CreateChannelMessage, Node, NODE_EVENTS } from "../../../types";
-import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
 
 /**
@@ -33,10 +30,11 @@ export default class CreateChannelController extends NodeController {
     const { owners } = params;
     const { networkContext, store } = requestHandler;
 
-    const multisigAddress = getCreate2MultisigAddress(
+    const multisigAddress = await store.getMultisigAddressWithCounterparty(
       owners,
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
+      true,
     );
 
     // Check if the database has stored the relevant data for this state channel

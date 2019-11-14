@@ -1,3 +1,4 @@
+import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -6,11 +7,10 @@ import { Protocol, xkeyKthAddress } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { Node } from "../../../types";
-import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
   INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET,
-  NULL_INITIAL_STATE_FOR_PROPOSAL,
+  NULL_INITIAL_STATE_FOR_PROPOSAL
 } from "../../errors";
 
 /**
@@ -22,19 +22,27 @@ import {
 export default class ProposeInstallController extends NodeController {
   @jsonRpcMethod(Node.RpcMethodName.PROPOSE_INSTALL)
   @jsonRpcMethod(Node.RpcMethodName.PROPOSE_INSTALL_VIRTUAL)
-  public executeMethod = super.executeMethod;
+  public executeMethod: (
+    requestHandler: RequestHandler,
+    params: Node.MethodParams,
+  ) => Promise<Node.MethodResult> = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.ProposeInstallParams
+    params: Node.ProposeInstallParams,
   ): Promise<string[]> {
-    const { publicIdentifier, networkContext } = requestHandler;
+    const { publicIdentifier, networkContext, store } = requestHandler;
     const { proposedToIdentifier } = params;
 
-    const multisigAddress = getCreate2MultisigAddress(
+    // TODO: no way to determine if this is a virtual or regular app being
+    // proposed. because it may be a virtual app, and the function defaults
+    // to pulling from the store, assume it is okay to use a generated
+    // multisig
+    const multisigAddress = await store.getMultisigAddressWithCounterparty(
       [publicIdentifier, proposedToIdentifier],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
+      true,
     );
 
     return [multisigAddress];
@@ -42,8 +50,8 @@ export default class ProposeInstallController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: Node.ProposeInstallParams
-  ) {
+    params: Node.ProposeInstallParams,
+  ): Promise<void> {
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { initialState } = params;
 
@@ -56,15 +64,20 @@ export default class ProposeInstallController extends NodeController {
       initiatorDeposit,
       responderDeposit,
       initiatorDepositTokenAddress: initiatorDepositTokenAddressParam,
-      responderDepositTokenAddress: responderDepositTokenAddressParam
+      responderDepositTokenAddress: responderDepositTokenAddressParam,
     } = params;
 
     const myIdentifier = publicIdentifier;
 
-    const multisigAddress = getCreate2MultisigAddress(
-      [myIdentifier, proposedToIdentifier],
+    // TODO: no way to determine if this is a virtual or regular app being
+    // proposed. because it may be a virtual app, and the function defaults
+    // to pulling from the store, assume it is okay to use a generated
+    // multisig
+    const multisigAddress = await store.getMultisigAddressWithCounterparty(
+      [publicIdentifier, proposedToIdentifier],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
+      true
     );
 
     const initiatorDepositTokenAddress =
@@ -76,21 +89,21 @@ export default class ProposeInstallController extends NodeController {
     const stateChannel = await store.getOrCreateStateChannelBetweenVirtualAppParticipants(
       multisigAddress,
       myIdentifier,
-      proposedToIdentifier
+      proposedToIdentifier,
     );
 
     assertSufficientFundsWithinFreeBalance(
       stateChannel,
       myIdentifier,
       initiatorDepositTokenAddress,
-      initiatorDeposit
+      initiatorDeposit,
     );
 
     assertSufficientFundsWithinFreeBalance(
       stateChannel,
       proposedToIdentifier,
       responderDepositTokenAddress,
-      responderDeposit
+      responderDeposit,
     );
 
     params.initiatorDepositTokenAddress = initiatorDepositTokenAddress;
@@ -99,21 +112,21 @@ export default class ProposeInstallController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.ProposeInstallParams
+    params: Node.ProposeInstallParams,
   ): Promise<Node.ProposeInstallResult> {
-    const {
-      store,
-      publicIdentifier,
-      networkContext,
-      protocolRunner
-    } = requestHandler;
+    const { store, publicIdentifier, networkContext, protocolRunner } = requestHandler;
 
     const { proposedToIdentifier } = params;
 
-    const multisigAddress = getCreate2MultisigAddress(
+    // TODO: no way to determine if this is a virtual or regular app being
+    // proposed. because it may be a virtual app, and the function defaults
+    // to pulling from the store, assume it is okay to use a generated
+    // multisig
+    const multisigAddress = await store.getMultisigAddressWithCounterparty(
       [publicIdentifier, proposedToIdentifier],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
+      true
     );
 
     await protocolRunner.initiateProtocol(
@@ -121,15 +134,16 @@ export default class ProposeInstallController extends NodeController {
       await store.getStateChannelsMap(),
       {
         ...params,
+        multisigAddress,
         initiatorXpub: publicIdentifier,
         responderXpub: proposedToIdentifier
       }
     );
 
     return {
-      appInstanceId: (await store.getStateChannel(
-        multisigAddress
-      )).mostRecentlyProposedAppInstance().identityHash
+      appInstanceId: (
+        await store.getStateChannel(multisigAddress)
+      ).mostRecentlyProposedAppInstance().identityHash,
     };
   }
 }
@@ -138,13 +152,13 @@ function assertSufficientFundsWithinFreeBalance(
   channel: StateChannel,
   publicIdentifier: string,
   tokenAddress: string,
-  depositAmount: BigNumber
-) {
+  depositAmount: BigNumber,
+): void {
   if (!channel.hasFreeBalance) return;
 
-  const freeBalanceForToken = channel
-    .getFreeBalanceClass()
-    .getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0));
+  const freeBalanceForToken =
+    channel.getFreeBalanceClass().getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0)) ||
+    Zero;
 
   if (freeBalanceForToken.lt(depositAmount)) {
     throw Error(
@@ -153,8 +167,8 @@ function assertSufficientFundsWithinFreeBalance(
         channel.multisigAddress,
         tokenAddress,
         freeBalanceForToken,
-        depositAmount
-      )
+        depositAmount,
+      ),
     );
   }
 }

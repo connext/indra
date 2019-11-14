@@ -37,6 +37,7 @@ import {
   toBN,
   tokenToWei,
   weiToToken,
+  initWalletConnect,
 } from "./utils";
 
 const urls = {
@@ -138,7 +139,7 @@ class App extends React.Component {
     this.refreshBalances.bind(this);
     this.autoDeposit.bind(this);
     this.autoSwap.bind(this);
-    this.scanQRCode.bind(this);
+    this.parseQRCode.bind(this);
     this.setWalletConnext.bind(this);
     this.getWalletConnext.bind(this);
   }
@@ -163,10 +164,20 @@ class App extends React.Component {
     return wc === "true";
   };
 
+  initWalletConnext = () => {
+    // item set when you scan a wallet connect QR
+    // if a wc qr code has been scanned before, make
+    // sure to init the mapping and create new wc
+    // connector
+    const uri = localStorage.getItem(`wcUri`)
+    const { channel } = this.state;
+    if (!channel) return;
+    if (!uri) return;
+    initWalletConnect(uri, channel)
+  };
+
   // Channel doesn't get set up until after provider is set
   async componentDidMount() {
-    // make sure starting from sq 1 with wallet connect
-    cleanWalletConnect();
     const { ethprovider, machine } = this.state;
     machine.start();
     machine.onTransition(state => {
@@ -226,7 +237,6 @@ class App extends React.Component {
       const xpub = hdNode.neuter().extendedKey;
       const keyGen = index => {
         const res = hdNode.derivePath(index);
-        console.log(`***** expected signer: ${res.address} for idx ${index}`);
         return Promise.resolve(res.privateKey)
       };
       channel = await connext.connect({
@@ -264,7 +274,7 @@ class App extends React.Component {
       });
       channel = await connext.connect({
         ethProviderUrl: urls.ethProviderUrl,
-        logLevel: 5,
+        logLevel: 4,
         channelProvider,
       });
     } else {
@@ -326,6 +336,7 @@ class App extends React.Component {
     });
 
     machine.send("READY");
+    this.initWalletConnext();
     await this.startPoller();
   }
 
@@ -343,17 +354,17 @@ class App extends React.Component {
     await this.setDepositLimits();
     if (!useWalletConnext) {
       await this.autoDeposit();
+      await this.autoSwap();
     } else {
       console.log("Using wallet connext, turning off autodeposit");
     }
-    await this.autoSwap();
     interval(async (iteration, stop) => {
       await this.refreshBalances();
       await this.setDepositLimits();
       if (!useWalletConnext) {
         await this.autoDeposit();
+        await this.autoSwap();
       }
-      await this.autoSwap();
     }, 3000);
   };
 
@@ -576,7 +587,7 @@ class App extends React.Component {
   //                    Handlers                       //
   // ************************************************* //
 
-  scanQRCode = async data => {
+  parseQRCode = data => {
     // potential URLs to scan and their params
     const urls = {
       "/send?": ["recipient", "amount"],
@@ -584,7 +595,7 @@ class App extends React.Component {
     };
     let args = {};
     let path = null;
-    for (let [url, fields] of Object.entries(urls)) {
+    for (const [url, fields] of Object.entries(urls)) {
       const strArr = data.split(url);
       if (strArr.length === 1) {
         // incorrect entry
@@ -670,7 +681,7 @@ class App extends React.Component {
                     {...props}
                     balance={balance}
                     swapRate={swapRate}
-                    scanQRCode={this.scanQRCode}
+                    parseQRCode={this.parseQRCode}
                     channel={channel}
                   />
                   <SetupCard {...props} minDeposit={minDeposit} maxDeposit={maxDeposit} />

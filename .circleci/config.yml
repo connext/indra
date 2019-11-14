@@ -120,6 +120,7 @@ workflows:
       - test-node
       - test-ui
       - test-bot
+      - test-cf
 
       - push-latest-images:
           filters:
@@ -129,6 +130,7 @@ workflows:
             - test-node
             - test-ui
             - test-bot
+            - test-cf
 
       - push-prod-images:
           filters:
@@ -138,6 +140,7 @@ workflows:
             - test-node
             - test-ui
             - test-bot
+            - test-cf
 
       - deploy-staging:
           requires:

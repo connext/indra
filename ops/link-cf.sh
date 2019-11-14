@@ -18,7 +18,7 @@ do
   else cf_dot_git="counterfactual/packages/$repo/.git"
   fi
 
-  if [[ -d "$tmp_dir" ]]
+  if [[ -d "$tmp_dir/" ]]
   then
     cd $tmp_dir
     git fetch --all --prune
@@ -27,14 +27,26 @@ do
     git clone $bridge_repo $tmp_dir
   fi
 
-  mkdir -p $local_dot_git
-  rm -rf $local_dot_git
-  echo "cp $tmp_dir/.git -> $local_dot_git"
-  cp -rf $tmp_dir/.git $local_dot_git
+  mkdir -p "$local_dot_git"
+  if [[ -f "$local_dot_git/index" ]]
+  then
+    cd $local_dot_git
+    git fetch --all --prune
+    cd -
+  else
+    echo "cp $tmp_dir/.git -> $local_dot_git"
+    cp -rf $tmp_dir/.git $local_dot_git
+  fi
 
-  mkdir -p $cf_dot_git
-  rm -rf $cf_dot_git
-  echo "cp $tmp_dir/.git -> $cf_dot_git"
-  cp -rf $tmp_dir/.git $cf_dot_git
+  mkdir -p "$cf_dot_git"
+  if [[ -f "$cf_dot_git/index" ]]
+  then
+    cd $cf_dot_git
+    git fetch --all --prune
+    cd -
+  else
+    echo "cp $tmp_dir/.git -> $cf_dot_git"
+    cp -rf $tmp_dir/.git $cf_dot_git
+  fi
 
 done

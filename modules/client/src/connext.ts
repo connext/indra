@@ -216,9 +216,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   } catch (e) {
     log.warn(e);
     if (e.message.includes(`StateChannel does not exist yet`)) {
-      console.log("Restoring client state");
+      log.debug("Restoring client state");
       await client.restoreState();
-      console.log("Newly restored client is ready to go!");
+      log.debug("Newly restored client is ready to go!");
     } else {
       throw e;
     }
@@ -227,12 +227,15 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   log.debug("Registering subscriptions");
   await client.registerSubscriptions();
 
-  log.debug("Reclaiming pending async transfers");
-  await client.reclaimPendingAsyncTransfers();
-
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
   log.debug("Resubmitting active withdrawals");
   await client.resubmitActiveWithdrawal();
+
+  // wait for wd verification to reclaim any pending async transfers
+  // since if the hub never submits you should not continue interacting
+  log.debug("Reclaiming pending async transfers");
+  // no need to await this if it needs collateral
+  client.reclaimPendingAsyncTransfers();
 
   log.debug("Done creating channel client");
   return client;
@@ -900,10 +903,11 @@ export class ConnextClient implements IConnextClient {
   };
 
   public matchTx = (
-    givenTransaction: Transaction,
+    givenTransaction: Transaction | undefined,
     expected: CFCoreTypes.MinimalTransaction,
   ): boolean => {
     return (
+      givenTransaction &&
       givenTransaction.to === expected.to &&
       bigNumberify(givenTransaction.value).eq(expected.value) &&
       givenTransaction.data === expected.data

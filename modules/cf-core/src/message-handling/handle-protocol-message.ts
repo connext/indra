@@ -9,7 +9,7 @@ import {
   UpdateParams,
   WithdrawParams,
 } from "../machine";
-import { ProtocolParameters } from "../machine/types";
+import { ProposeInstallParams, ProtocolParameters } from "../machine/types";
 import { NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../methods/errors";
 import { StateChannel } from "../models";
 import { UNASSIGNED_SEQ_NO } from "../protocol/utils/signature-forwarder";
@@ -21,7 +21,8 @@ import {
   NodeMessageWrappedProtocolMessage,
   SolidityValueType,
 } from "../types";
-import { bigNumberifyJson, getCreate2MultisigAddress } from "../utils";
+import { bigNumberifyJson } from "../utils";
+import { Store } from "../store";
 
 /**
  * Forwards all received NodeMessages that are for the machine's internal
@@ -53,19 +54,22 @@ export async function handleReceivedProtocolMessage(
     preProtocolStateChannelsMap
   );
 
-  const outgoingEventData = getOutgoingEventDataFromProtocol(
+  const outgoingEventData = await getOutgoingEventDataFromProtocol(
     protocol,
     params!,
     publicIdentifier,
     postProtocolStateChannelsMap,
-    networkContext
+    networkContext,
+    store,
   );
 
   if (
     outgoingEventData &&
     (protocol === Protocol.Install || protocol === Protocol.InstallVirtualApp)
   ) {
-    const appInstanceId = outgoingEventData!.data["appInstanceId"];
+    const appInstanceId =
+      outgoingEventData!.data["appInstanceId"] ||
+      (outgoingEventData!.data as any).params["appInstanceId"];
     if (appInstanceId) {
       let proposal;
       try {
@@ -100,12 +104,13 @@ function emitOutgoingNodeMessage(router: RpcRouter, msg: object) {
   return router.emit(msg["type"], msg, "outgoing");
 }
 
-function getOutgoingEventDataFromProtocol(
+async function getOutgoingEventDataFromProtocol(
   protocol: string,
   params: ProtocolParameters,
   publicIdentifier: string,
   stateChannelsMap: Map<string, StateChannel>,
-  networkContext: NetworkContext
+  networkContext: NetworkContext,
+  store: Store,
 ) {
   const baseEvent = { from: publicIdentifier };
 
@@ -117,13 +122,7 @@ function getOutgoingEventDataFromProtocol(
         data: {
           params,
           appInstanceId: stateChannelsMap
-            .get(
-              getCreate2MultisigAddress(
-                [params.initiatorXpub, params.responderXpub],
-                networkContext.ProxyFactory,
-                networkContext.MinimumViableMultisig
-              )
-            )!
+            .get((params as ProposeInstallParams).multisigAddress)!
             .mostRecentlyProposedAppInstance().identityHash
         }
       };
@@ -136,13 +135,7 @@ function getOutgoingEventDataFromProtocol(
           // remove it, but after telling all consumers about this change
           params: {
             appInstanceId: stateChannelsMap
-              .get(
-                getCreate2MultisigAddress(
-                  [params.responderXpub, params.initiatorXpub],
-                  networkContext.ProxyFactory,
-                  networkContext.MinimumViableMultisig
-                )
-              )!
+              .get((params as InstallParams).multisigAddress)!
               .mostRecentlyInstalledAppInstance().identityHash
           }
         }
@@ -184,10 +177,11 @@ function getOutgoingEventDataFromProtocol(
         )
       };
     case Protocol.InstallVirtualApp:
-      const virtualChannel = getCreate2MultisigAddress(
+      const virtualChannel = await store.getMultisigAddressWithCounterparty(
         [params.responderXpub, params.initiatorXpub],
         networkContext.ProxyFactory,
-        networkContext.MinimumViableMultisig
+        networkContext.MinimumViableMultisig,
+        true,
       );
       if (stateChannelsMap.has(virtualChannel)) {
         return {
@@ -267,13 +261,15 @@ async function getQueueNamesListByProtocolName(
   params: ProtocolParameters,
   requestHandler: RequestHandler
 ): Promise<string[]> {
-  const { publicIdentifier, networkContext } = requestHandler;
+  const { publicIdentifier, networkContext, store } = requestHandler;
 
-  function multisigAddressFor(xpubs: string[]) {
-    return getCreate2MultisigAddress(
+  async function multisigAddressFor(xpubs: string[]) {
+    const allowGenerated = protocol === Protocol.Setup || protocol === Protocol.InstallVirtualApp;
+    return await store.getMultisigAddressWithCounterparty(
       xpubs,
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
+      allowGenerated,
     );
   }
 
@@ -321,15 +317,15 @@ async function getQueueNamesListByProtocolName(
 
       if (publicIdentifier === intermediaryXpub) {
         return [
-          multisigAddressFor([initiatorXpub, intermediaryXpub]),
-          multisigAddressFor([responderXpub, intermediaryXpub])
+          await multisigAddressFor([initiatorXpub, intermediaryXpub]),
+          await multisigAddressFor([responderXpub, intermediaryXpub])
         ];
       }
 
       if (publicIdentifier === responderXpub) {
         return [
-          multisigAddressFor([responderXpub, intermediaryXpub]),
-          multisigAddressFor([responderXpub, initiatorXpub])
+          await multisigAddressFor([responderXpub, intermediaryXpub]),
+          await multisigAddressFor([responderXpub, initiatorXpub])
         ];
       }
 
@@ -347,16 +343,16 @@ async function getQueueNamesListByProtocolName(
 
       if (publicIdentifier === intermediary) {
         return [
-          multisigAddressFor([initiator, intermediary]),
-          multisigAddressFor([responder, intermediary]),
+          await multisigAddressFor([initiator, intermediary]),
+          await multisigAddressFor([responder, intermediary]),
           targetAppIdentityHash
         ];
       }
 
       if (publicIdentifier === responder) {
         return [
-          multisigAddressFor([responder, intermediary]),
-          multisigAddressFor([responder, initiator]),
+          await multisigAddressFor([responder, intermediary]),
+          await multisigAddressFor([responder, initiator]),
           targetAppIdentityHash
         ];
       }

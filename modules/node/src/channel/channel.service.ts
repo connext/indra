@@ -118,12 +118,15 @@ export class ChannelService {
 
       // set in flight so that it cant be double sent
       await this.channelRepository.setInflightCollateralization(channel, true);
-      try {
-        return this.deposit(channel.multisigAddress, amountDeposit, normalizedAssetId);
-      } catch (e) {
-        await this.clearCollateralizationInFlight(channel.multisigAddress);
-        throw e;
-      }
+      const result = this.deposit(channel.multisigAddress, amountDeposit, normalizedAssetId)
+        .then((res: CFCoreTypes.DepositResult) => {
+          return res;
+        })
+        .catch(async (e: any) => {
+          await this.clearCollateralizationInFlight(channel.multisigAddress);
+          throw e;
+        });
+      return result;
     }
     logger.log(
       `${userPubId} already has collateral of ${nodeFreeBalance} for asset ${normalizedAssetId}`,

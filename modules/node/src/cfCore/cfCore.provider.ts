@@ -7,7 +7,7 @@ import { fromMnemonic } from "ethers/utils/hdnode";
 import { ConfigService } from "../config/config.service";
 import { CFCoreProviderId, CF_PATH, MessagingProviderId } from "../constants";
 import { LockService } from "../lock/lock.service";
-import { CLogger, freeBalanceAddressFromXpub } from "../util";
+import { CLogger, xpubToAddress } from "../util";
 import { CFCore } from "../util/cfCore";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
@@ -25,16 +25,11 @@ export const cfCoreProviderFactory: Provider = {
   ): Promise<CFCore> => {
     const hdNode = fromMnemonic(config.getMnemonic()).derivePath(CF_PATH);
     const publicExtendedKey = hdNode.neuter().extendedKey;
+    const provider = config.getEthProvider();
     logger.log(`Derived xpub from mnemonic: ${publicExtendedKey}`);
 
     // test that provider works
     const { chainId, name: networkName } = await config.getEthNetwork();
-    const signerAddr = hdNode.neuter().address;
-    const provider = config.getEthProvider();
-    const balance = (await provider.getBalance(signerAddr)).toString();
-    logger.log(
-      `Balance of signer address ${signerAddr} on ${networkName} (chainId ${chainId}): ${balance}`,
-    );
     const cfCore = await CFCore.create(
       messaging as any, // TODO: FIX
       store,
@@ -48,11 +43,14 @@ export const cfCoreProviderFactory: Provider = {
         return Promise.resolve(hdNode.derivePath(uniqueId).privateKey);
       },
     );
+    const signerAddr = xpubToAddress(cfCore.publicIdentifier);
+    const balance = (await provider.getBalance(signerAddr)).toString();
+    logger.log(
+      `Balance of signer address ${signerAddr} on ${networkName} (chainId ${chainId}): ${balance}`,
+    );
     logger.log("CFCore created");
     logger.log(`Public Identifier ${JSON.stringify(cfCore.publicIdentifier)}`);
-    logger.log(
-      `Free balance address ${JSON.stringify(freeBalanceAddressFromXpub(cfCore.publicIdentifier))}`,
-    );
+    logger.log(`Free balance address ${xpubToAddress(cfCore.publicIdentifier)}`);
     return cfCore;
   },
 };

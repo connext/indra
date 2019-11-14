@@ -21,7 +21,7 @@ import { AbstractController } from "./AbstractController";
 export class TransferController extends AbstractController {
   private appId: string;
 
-  private timeout: NodeJS.Timeout;
+  private timeout: number;
 
   public transfer = async (params: TransferParameters): Promise<CFCoreChannel> => {
     this.log.info(`Transfer called with parameters: ${stringify(params)}`);

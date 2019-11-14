@@ -3,7 +3,6 @@ import { appIdentityToHash } from "../../../machine";
 import { AppInstanceProposal } from "../../../models";
 import { Store } from "../../../store";
 import { NetworkContext, Node } from "../../../types";
-import { getCreate2MultisigAddress } from "../../../utils";
 
 /**
  * Creates a AppInstanceProposal to reflect the proposal received from
@@ -31,10 +30,15 @@ export async function createProposedAppInstance(
     timeout
   } = params;
 
-  const multisigAddress = getCreate2MultisigAddress(
+  // TODO: no way to determine if this is a virtual or regular app being
+  // proposed. because it may be a virtual app, and the function defaults
+  // to pulling from the store, assume it is okay to use a generated
+  // multisig
+  const multisigAddress = await store.getMultisigAddressWithCounterparty(
     [myIdentifier, proposedToIdentifier],
     networkContext.ProxyFactory,
-    networkContext.MinimumViableMultisig
+    networkContext.MinimumViableMultisig,
+    true
   );
 
   const stateChannel = await store.getOrCreateStateChannelBetweenVirtualAppParticipants(

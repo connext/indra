@@ -3,7 +3,6 @@ import { jsonRpcMethod } from "rpc-server";
 import { RequestHandler } from "../../../request-handler";
 import { Node } from "../../../types";
 import {
-  getCreate2MultisigAddress,
   getFirstElementInListNotEqualTo
 } from "../../../utils";
 import { NodeController } from "../../controller";
@@ -25,25 +24,29 @@ export default class UninstallVirtualController extends NodeController {
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { appInstanceId, intermediaryIdentifier } = params;
 
-    const multisigAddressForStateChannelWithIntermediary = getCreate2MultisigAddress(
+    const multisigAddressForStateChannelWithIntermediary = await store.getMultisigAddressWithCounterparty(
       [publicIdentifier, intermediaryIdentifier],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
     );
 
     const stateChannelWithResponding = await store.getChannelFromAppInstanceID(
       appInstanceId
     );
 
-    const multisigAddressBetweenHubAndResponding = getCreate2MultisigAddress(
+    // because this is the initiators store, it may not have
+    // access to this multisig address between the proposedBy
+    // and the intermediary
+    const multisigAddressBetweenHubAndResponding = await store.getMultisigAddressWithCounterparty(
       [
         stateChannelWithResponding.userNeuteredExtendedKeys.filter(
           x => x !== publicIdentifier
-        )[0],
+        )[0], 
         intermediaryIdentifier
       ],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
+      true
     );
 
     return [
