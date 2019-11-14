@@ -10,5 +10,6 @@ COPY modules/proxy/indra.connext.network/prod.conf /etc/nginx/nginx.conf
 COPY modules/proxy/indra.connext.network/entry.sh /root/entry.sh
 
 COPY modules/daicard/build /var/www/html/daicard
+COPY modules/dashboard/build /var/www/html/dashboard
 
 ENTRYPOINT ["bash", "/root/entry.sh"]
