@@ -50,6 +50,7 @@ type AppABIEncodings = {
 };
 
 export type ProposeInstallParams = {
+  multisigAddress: string;
   initiatorXpub: string;
   responderXpub: string;
   appDefinition: string;

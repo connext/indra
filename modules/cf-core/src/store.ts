@@ -9,6 +9,7 @@ import {
   NO_MULTISIG_FOR_APP_INSTANCE_ID,
   NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID,
   NO_STATE_CHANNEL_FOR_MULTISIG_ADDR,
+  NO_MULTISIG_FOR_COUNTERPARTIES,
 } from "./methods/errors";
 import {
   AppInstance,
@@ -17,7 +18,7 @@ import {
   StateChannelJSON,
 } from "./models";
 import { NetworkContext, Node, SolidityValueType } from "./types";
-import { prettyPrintObject } from "./utils";
+import { getCreate2MultisigAddress, prettyPrintObject } from "./utils";
 
 /**
  * A simple ORM around StateChannels and AppInstances stored using the
@@ -209,6 +210,44 @@ export class Store {
   public async getAppInstance(appInstanceId: string): Promise<AppInstance> {
     const channel = await this.getChannelFromAppInstanceID(appInstanceId);
     return channel.getAppInstance(appInstanceId);
+  }
+
+  public async getMultisigAddressWithCounterparty(
+    owners: string[],
+    proxyFactoryAddress: string,
+    minimumViableMultisigAddress: string,
+    acceptGeneratedMultisig: boolean = false,
+  ) {
+    const stateChannelsMap = await this.getStateChannelsMap();
+    return Store.getMultisigAddressWithCounterpartyFromMap(stateChannelsMap, owners, proxyFactoryAddress, minimumViableMultisigAddress, acceptGeneratedMultisig)
+  }
+
+  // TODO: remove if store is added to Context type
+  public static getMultisigAddressWithCounterpartyFromMap(
+    stateChannelsMap: Map<string, StateChannel>,
+    owners: string[],
+    proxyFactoryAddress: string,
+    minimumViableMultisigAddress: string,
+    acceptGeneratedMultisig: boolean = false,
+  ) {
+    for (const stateChannel of stateChannelsMap.values()) {
+      if (
+        stateChannel.userNeuteredExtendedKeys.sort().toString() ===
+        owners.sort().toString()
+      ) {
+        return stateChannel.multisigAddress;
+      }
+    }
+
+    if (acceptGeneratedMultisig) {
+      return getCreate2MultisigAddress(
+        owners,
+        proxyFactoryAddress,
+        minimumViableMultisigAddress,
+      );
+    }
+
+    throw new Error(NO_MULTISIG_FOR_COUNTERPARTIES(owners));
   }
 
   public async getOrCreateStateChannelBetweenVirtualAppParticipants(

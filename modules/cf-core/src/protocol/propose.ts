@@ -1,4 +1,4 @@
-import { bigNumberify, defaultAbiCoder, keccak256 } from "ethers/utils";
+import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { SetStateCommitment } from "../ethereum";
@@ -14,7 +14,6 @@ import {
   ProtocolMessage
 } from "../machine/types";
 import { AppInstanceProposal, StateChannel } from "../models";
-import { getCreate2MultisigAddress } from "../utils";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
@@ -29,6 +28,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const { processID, params } = message;
 
     const {
+      multisigAddress,
       initiatorXpub,
       responderXpub,
       appDefinition,
@@ -42,19 +42,13 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       outcomeType
     } = params as ProposeInstallParams;
 
-    const multisigAddress = getCreate2MultisigAddress(
-      [initiatorXpub, responderXpub],
-      network.ProxyFactory,
-      network.MinimumViableMultisig
-    );
-
-    const preProtocolStateChannel =
-      stateChannelsMap.get(multisigAddress) ||
-      StateChannel.createEmptyChannel(multisigAddress, [
-        initiatorXpub,
-        responderXpub
-      ]);
-
+    const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)
+      ? stateChannelsMap.get(multisigAddress)!
+      : StateChannel.createEmptyChannel(multisigAddress, [
+          initiatorXpub,
+          responderXpub
+        ]);
+    
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
       abiEncodings,
@@ -145,6 +139,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const { params, processID } = message;
 
     const {
+      multisigAddress,
       initiatorXpub,
       responderXpub,
       appDefinition,
@@ -162,18 +157,12 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: initiatorSignatureOnInitialState }
     } = message;
 
-    const multisigAddress = getCreate2MultisigAddress(
-      [initiatorXpub, responderXpub],
-      network.ProxyFactory,
-      network.MinimumViableMultisig
-    );
-
-    const preProtocolStateChannel =
-      stateChannelsMap.get(multisigAddress) ||
-      StateChannel.createEmptyChannel(multisigAddress, [
-        initiatorXpub,
-        responderXpub
-      ]);
+    const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)
+      ? stateChannelsMap.get(multisigAddress)!
+      : StateChannel.createEmptyChannel(multisigAddress, [
+          initiatorXpub,
+          responderXpub
+        ]);
 
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
