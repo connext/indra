@@ -94,3 +94,18 @@ export interface DepositConfirmationMessage extends Node.NodeMessage {
 }
 
 export interface RejectInstallVirtualMessage extends RejectProposalMessage {}
+
+export type EventEmittedMessage =
+  | RejectProposalMessage
+  | RejectInstallVirtualMessage
+  | WithdrawConfirmationMessage
+  | WithdrawMessage
+  | UninstallVirtualMessage
+  | UninstallMessage
+  | UpdateStateMessage
+  | InstallVirtualMessage
+  | InstallMessage
+  | ProposeMessage
+  | DepositConfirmationMessage
+  | CreateChannelMessage
+  | NodeMessageWrappedProtocolMessage;
