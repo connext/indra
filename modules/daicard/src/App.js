@@ -307,6 +307,7 @@ class App extends React.Component {
     });
 
     channel.on("RECIEVE_TRANSFER_STARTED", data => {
+      console.log("Received RECIEVE_TRANSFER_STARTED event: ", data);
       machine.send("START_RECEIVE");
     });
 
