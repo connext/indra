@@ -2,12 +2,11 @@ import { Node as NodeTypes } from "@connext/types";
 import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
 
 import { Node, NODE_EVENTS, ProposeMessage } from "../../src";
-import { EventEmittedMessage } from "../../src/types";
-import { deBigNumberifyJson } from "../../src/utils";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
 import {
+  assertNodeMessage,
   collateralizeChannel,
   createChannel,
   getAppInstanceProposal,
@@ -35,24 +34,6 @@ async function assertEqualProposedApps(
     const appB = await getAppInstanceProposal(nodeB, id);
     expect(appA).toEqual(appB);
   }
-}
-
-function assertNodeMessage(
-  msg: EventEmittedMessage,
-  expected: any, // should be partial of nested types
-  shouldExist: string[] = [],
-): void {
-  // ensure keys exist, shouldExist is array of
-  // keys, ie. data.appInstanceId
-  shouldExist.forEach(key => {
-    let subset = { ...msg };
-    key.split(".").forEach(k => {
-      expect(subset[k]).toBeDefined();
-      subset = subset[k];
-    });
-  });
-  // cast both to strings instead of BNs
-  expect(deBigNumberifyJson(msg)).toMatchObject(deBigNumberifyJson(expected));
 }
 
 describe("Node method follows spec - propose install", () => {
