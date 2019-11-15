@@ -1,7 +1,9 @@
+import { Node as NodeTypes } from "@connext/types";
 import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
 
 import { Node, NODE_EVENTS, ProposeMessage } from "../../src";
-import { ProposeInstallParams } from "../../src/machine/types";
+import { EventEmittedMessage } from "../../src/types";
+import { deBigNumberifyJson } from "../../src/utils";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
@@ -35,21 +37,22 @@ async function assertEqualProposedApps(
   }
 }
 
-function assertMessageStructure(
-  msg: ProposeMessage,
-  expectedParams: ProposeInstallParams,
-  proposerXpub: string,
+function assertNodeMessage(
+  msg: EventEmittedMessage,
+  expected: any, // should be partial of nested types
+  shouldExist: string[] = [],
 ): void {
-  const {
-    from,
-    type,
-    data: { params, appInstanceId },
-  } = msg;
-  // TODO: y
-  expect(from).toBe(params.responderXpub);
-  expect(params).toEqual(expectedParams);
-  expect(type).toEqual(NODE_EVENTS.PROPOSE_INSTALL);
-  expect(appInstanceId).toBeDefined();
+  // ensure keys exist, shouldExist is array of
+  // keys, ie. data.appInstanceId
+  shouldExist.forEach(key => {
+    let subset = { ...msg };
+    key.split(".").forEach(k => {
+      expect(subset[k]).toBeDefined();
+      subset = subset[k];
+    });
+  });
+  // cast both to strings instead of BNs
+  expect(deBigNumberifyJson(msg)).toMatchObject(deBigNumberifyJson(expected));
 }
 
 describe("Node method follows spec - propose install", () => {
@@ -70,7 +73,7 @@ describe("Node method follows spec - propose install", () => {
     it("propose install an app with eth and a meta", async (done: jest.DoneCallback) => {
       const rpc = makeProposeCall(nodeB, TicTacToeApp);
       const paramsWithMeta = {
-        ...(rpc.parameters as ProposeInstallParams),
+        ...(rpc.parameters as NodeTypes.ProposeInstallParams),
         meta: {
           info: "Provided meta",
         },
@@ -85,7 +88,14 @@ describe("Node method follows spec - propose install", () => {
           multisigAddress,
           responderXpub: nodeB.publicIdentifier,
         };
-        assertMessageStructure(msg, expectedParams, nodeA.publicIdentifier);
+        const expectedMessage = {
+          data: {
+            params: expectedParams,
+          },
+          from: nodeA.publicIdentifier,
+          type: NODE_EVENTS.PROPOSE_INSTALL,
+        };
+        assertNodeMessage(msg, expectedMessage, ["data.appInstanceId"]);
         // both nodes should have 1 app, they should be the same
         await assertEqualProposedApps(nodeA, nodeB, [msg.data.appInstanceId]);
         done();
