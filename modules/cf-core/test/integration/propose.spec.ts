@@ -25,7 +25,7 @@ async function assertEqualProposedApps(
 ): Promise<void> {
   const proposedA = await getProposedAppInstances(nodeA);
   const proposedB = await getProposedAppInstances(nodeB);
-  expect(proposedB.length).toEqual(proposedB.length);
+  expect(proposedB.length).toEqual(proposedA.length);
   expect(proposedB.length).toEqual(expectedAppIds.length);
   expect(proposedA).toEqual(proposedB);
   // check each appID
@@ -59,23 +59,21 @@ describe("Node method follows spec - propose install", () => {
           info: "Provided meta",
         },
       };
+      const expectedMessage = {
+        data: {
+          params: {
+            ...paramsWithMeta,
+            initiatorXpub: nodeA.publicIdentifier,
+            multisigAddress,
+            responderXpub: nodeB.publicIdentifier,
+          },
+        },
+        from: nodeA.publicIdentifier,
+        type: NODE_EVENTS.PROPOSE_INSTALL,
+      };
 
       nodeB.once(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
         // make sure message has the right structure
-        const expectedParams = {
-          ...paramsWithMeta,
-          // not inc. in controller params
-          initiatorXpub: nodeA.publicIdentifier,
-          multisigAddress,
-          responderXpub: nodeB.publicIdentifier,
-        };
-        const expectedMessage = {
-          data: {
-            params: expectedParams,
-          },
-          from: nodeA.publicIdentifier,
-          type: NODE_EVENTS.PROPOSE_INSTALL,
-        };
         assertNodeMessage(msg, expectedMessage, ["data.appInstanceId"]);
         // both nodes should have 1 app, they should be the same
         await assertEqualProposedApps(nodeA, nodeB, [msg.data.appInstanceId]);
