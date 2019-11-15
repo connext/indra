@@ -185,6 +185,11 @@ daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))
 	$(docker_run) "cd modules/daicard && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
+dashboard-prod: node-modules client $(shell find $(dashboard)/src $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/dashboard && npm run build"
+	$(log_finish) && touch $(flags)/$@
+
 daicard-proxy: $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/daicard.io/prod.dockerfile --tag daicard_proxy:latest .
@@ -226,7 +231,7 @@ indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
 	docker build --file $(proxy)/indra.connext.network/dev.dockerfile --tag $(project)_proxy:dev .
 	$(log_finish) && touch $(flags)/$@
 
-indra-proxy-prod: daicard-prod ws-tcp-relay $(shell find $(proxy) $(find_options))
+indra-proxy-prod: daicard-prod dashboard-prod ws-tcp-relay $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/indra.connext.network/prod.dockerfile --tag $(project)_proxy:latest .
 	$(log_finish) && touch $(flags)/$@
