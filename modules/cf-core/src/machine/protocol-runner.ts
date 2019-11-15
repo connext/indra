@@ -9,41 +9,41 @@ import { Opcode, Protocol } from "./enums";
 import { MiddlewareContainer } from "./middleware";
 import {
   Context,
-  InstallParams,
-  InstallVirtualAppParams,
+  InstallProtocolParams,
+  InstallVirtualAppProtocolParams,
   Middleware,
-  ProposeInstallParams,
+  ProposeInstallProtocolParams,
   ProtocolMessage,
-  SetupParams,
-  TakeActionParams,
-  UninstallParams,
-  UninstallVirtualAppParams,
-  UpdateParams,
-  WithdrawParams,
+  SetupProtocolParams,
+  TakeActionProtocolParams,
+  UninstallProtocolParams,
+  UninstallVirtualAppProtocolParams,
+  UpdateProtocolParams,
+  WithdrawProtocolParams,
 } from "./types";
 
 /**
 Type-level mapping from Protocol to Protocol Param
-For e.g., ParamTypeOf<Protocol.Install> = InstallParams
+For e.g., ParamTypeOf<Protocol.Install> = InstallProtocolParams
 This syntax is preferred according to https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-8.html#conditional-types
 **/
 // tslint:disable
 type ParamTypeOf<T extends Protocol> = T extends Protocol.Install
-  ? InstallParams
+  ? InstallProtocolParams
   : T extends Protocol.Update
-  ? UpdateParams
+  ? UpdateProtocolParams
   : T extends Protocol.Uninstall
-  ? UninstallParams
+  ? UninstallProtocolParams
   : T extends Protocol.InstallVirtualApp
-  ? InstallVirtualAppParams
+  ? InstallVirtualAppProtocolParams
   : T extends Protocol.UninstallVirtualApp
-  ? UninstallVirtualAppParams
+  ? UninstallVirtualAppProtocolParams
   : T extends Protocol.TakeAction
-  ? TakeActionParams
+  ? TakeActionProtocolParams
   : T extends Protocol.Withdraw
-  ? WithdrawParams
+  ? WithdrawProtocolParams
   : T extends Protocol.Propose
-  ? ProposeInstallParams
+  ? ProposeInstallProtocolParams
   : never;
 // tslint:enable
 
@@ -118,7 +118,7 @@ export class ProtocolRunner {
     });
   }
 
-  public async runSetupProtocol(params: SetupParams) {
+  public async runSetupProtocol(params: SetupProtocolParams) {
     const protocol = Protocol.Setup;
     return this.runProtocol(
       new Map<string, StateChannel>(),
