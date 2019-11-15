@@ -541,34 +541,38 @@ export class StateChannel {
       }
       return arr;
     };
-    return new StateChannel(
-      json.multisigAddress,
-      json.userNeuteredExtendedKeys,
-      new Map(
-        [...Object.values(dropNulls(json.proposedAppInstances) || [])].map((proposal): [
-          string,
-          AppInstanceProposal
-        ] => {
-          return [proposal[0], proposal[1]];
-        })
-      ),
-      new Map(
-        [...Object.values(dropNulls(json.appInstances) || [])].map((appInstanceEntry): [
-          string,
-          AppInstance
-        ] => {
-          return [
-            appInstanceEntry[0],
-            AppInstance.fromJson(appInstanceEntry[1])
-          ];
-        })
-      ),
-      new Map(json.singleAssetTwoPartyIntermediaryAgreements || []),
-      json.freeBalanceAppInstance
-        ? AppInstance.fromJson(json.freeBalanceAppInstance)
-        : undefined,
-      json.monotonicNumProposedApps
-    );
+    try {
+      return new StateChannel(
+        json.multisigAddress,
+        json.userNeuteredExtendedKeys,
+        new Map(
+          [...Object.values(dropNulls(json.proposedAppInstances) || [])].map((proposal): [
+            string,
+            AppInstanceProposal
+          ] => {
+            return [proposal[0], proposal[1]];
+          })
+        ),
+        new Map(
+          [...Object.values(dropNulls(json.appInstances) || [])].map((appInstanceEntry): [
+            string,
+            AppInstance
+          ] => {
+            return [
+              appInstanceEntry[0],
+              AppInstance.fromJson(appInstanceEntry[1])
+            ];
+          })
+        ),
+        new Map(json.singleAssetTwoPartyIntermediaryAgreements || []),
+        json.freeBalanceAppInstance
+          ? AppInstance.fromJson(json.freeBalanceAppInstance)
+          : undefined,
+        json.monotonicNumProposedApps
+      );
+    } catch (e) {
+      throw new Error(`could not create state channel from json: ${prettyPrintObject(json)}. Error: ${e}`);
+    }
   }
 
   static async getPeersAddressFromChannel(
