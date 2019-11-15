@@ -38,7 +38,7 @@ export type ProtocolMessage = {
   customData: { [key: string]: any };
 };
 
-export type SetupParams = {
+export type SetupProtocolParams = {
   initiatorXpub: string;
   responderXpub: string;
   multisigAddress: string;
@@ -49,7 +49,7 @@ type AppABIEncodings = {
   actionEncoding: string | undefined;
 };
 
-export type ProposeInstallParams = {
+export type ProposeInstallProtocolParams = {
   multisigAddress: string;
   initiatorXpub: string;
   responderXpub: string;
@@ -65,7 +65,7 @@ export type ProposeInstallParams = {
   meta?: Object;
 };
 
-export type UpdateParams = {
+export type UpdateProtocolParams = {
   initiatorXpub: string;
   responderXpub: string;
   multisigAddress: string;
@@ -73,7 +73,7 @@ export type UpdateParams = {
   newState: SolidityValueType;
 };
 
-export type TakeActionParams = {
+export type TakeActionProtocolParams = {
   initiatorXpub: string;
   responderXpub: string;
   multisigAddress: string;
@@ -81,7 +81,7 @@ export type TakeActionParams = {
   action: SolidityValueType;
 };
 
-export type WithdrawParams = {
+export type WithdrawProtocolParams = {
   initiatorXpub: string;
   responderXpub: string;
   multisigAddress: string;
@@ -90,7 +90,7 @@ export type WithdrawParams = {
   tokenAddress: string;
 };
 
-export type InstallParams = {
+export type InstallProtocolParams = {
   initiatorXpub: string;
   initiatorDepositTokenAddress: string;
   responderXpub: string;
@@ -115,14 +115,14 @@ export type InstallParams = {
   disableLimit: boolean;
 };
 
-export type UninstallParams = {
+export type UninstallProtocolParams = {
   appIdentityHash: string;
   initiatorXpub: string;
   responderXpub: string;
   multisigAddress: string;
 };
 
-export type InstallVirtualAppParams = {
+export type InstallVirtualAppProtocolParams = {
   initiatorXpub: string;
   responderXpub: string;
   intermediaryXpub: string;
@@ -142,7 +142,7 @@ export type InstallVirtualAppParams = {
   outcomeType: OutcomeType;
 };
 
-export type UninstallVirtualAppParams = {
+export type UninstallVirtualAppProtocolParams = {
   initiatorXpub: string;
   responderXpub: string;
   intermediaryXpub: string;
@@ -151,11 +151,11 @@ export type UninstallVirtualAppParams = {
 };
 
 export type ProtocolParameters =
-  | SetupParams
-  | ProposeInstallParams
-  | UpdateParams
-  | InstallParams
-  | UninstallParams
-  | WithdrawParams
-  | InstallVirtualAppParams
-  | UninstallVirtualAppParams;
+  | SetupProtocolParams
+  | ProposeInstallProtocolParams
+  | UpdateProtocolParams
+  | InstallProtocolParams
+  | UninstallProtocolParams
+  | WithdrawProtocolParams
+  | InstallVirtualAppProtocolParams
+  | UninstallVirtualAppProtocolParams;
