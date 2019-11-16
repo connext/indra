@@ -34,7 +34,6 @@ export async function handleReceivedProtocolMessage(
   msg: NodeMessageWrappedProtocolMessage
 ) {
   const {
-    publicIdentifier,
     protocolRunner,
     store,
     router,
@@ -57,7 +56,6 @@ export async function handleReceivedProtocolMessage(
   const outgoingEventData = await getOutgoingEventDataFromProtocol(
     protocol,
     params!,
-    publicIdentifier,
     postProtocolStateChannelsMap,
     networkContext,
     store,
@@ -105,14 +103,14 @@ function emitOutgoingNodeMessage(router: RpcRouter, msg: object) {
 }
 
 async function getOutgoingEventDataFromProtocol(
-  protocol: string,
+  protocol: Protocol,
   params: ProtocolParameters,
-  publicIdentifier: string,
   stateChannelsMap: Map<string, StateChannel>,
   networkContext: NetworkContext,
   store: Store,
 ) {
-  const baseEvent = { from: publicIdentifier };
+  // default to the pubId that initiated the protocol
+  const baseEvent = { from: params.initiatorXpub };
 
   switch (protocol) {
     case Protocol.Propose:
