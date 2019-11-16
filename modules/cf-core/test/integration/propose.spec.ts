@@ -53,16 +53,16 @@ describe("Node method follows spec - propose install", () => {
 
     it("propose install an app with eth and a meta", async (done: jest.DoneCallback) => {
       const rpc = makeProposeCall(nodeB, TicTacToeApp);
-      const paramsWithMeta = {
+      const parameters = {
         ...(rpc.parameters as NodeTypes.ProposeInstallParams),
         meta: {
           info: "Provided meta",
         },
       };
-      const expectedMessage = {
+      const expectedMessageB = {
         data: {
           params: {
-            ...paramsWithMeta,
+            ...parameters,
             initiatorXpub: nodeA.publicIdentifier,
             multisigAddress,
             responderXpub: nodeB.publicIdentifier,
@@ -74,15 +74,17 @@ describe("Node method follows spec - propose install", () => {
 
       nodeB.once(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
         // make sure message has the right structure
-        assertNodeMessage(msg, expectedMessage, ["data.appInstanceId"]);
+        assertNodeMessage(msg, expectedMessageB, ["data.appInstanceId"]);
         // both nodes should have 1 app, they should be the same
         await assertEqualProposedApps(nodeA, nodeB, [msg.data.appInstanceId]);
         done();
       });
 
+      // TODO: add expected message B
+
       await nodeA.rpcRouter.dispatch({
         ...rpc,
-        parameters: paramsWithMeta,
+        parameters,
       });
     });
   });
