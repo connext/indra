@@ -25,6 +25,7 @@ import {
   invalidAddress,
   invalidXpub,
   notLessThanOrEqualTo,
+  notNegative,
   validate,
 } from "../validation";
 
@@ -62,6 +63,7 @@ export class ConditionalTransferController extends AbstractController {
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
     validate(
+      notNegative(amount),
       invalidAddress(assetId),
       notLessThanOrEqualTo(amount, preTransferBal),
       invalid32ByteHexString(paymentId),
@@ -115,9 +117,12 @@ export class ConditionalTransferController extends AbstractController {
     // convert params + validate
     const { amount, assetId, paymentId, preImage } = convert.LinkedTransfer("bignumber", params);
 
+    console.log('amount: ', amount);
+
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
     validate(
+      notNegative(amount),
       invalidAddress(assetId),
       notLessThanOrEqualTo(amount, preTransferBal),
       invalid32ByteHexString(paymentId),
