@@ -1,11 +1,11 @@
 import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server/src/contract-deployments.jest";
-import { Node as NodeTypes } from "@connext/cf-types";
 
 import { Node } from "../../src";
 import { NODE_EVENTS, ProposeMessage } from "../../src/types";
 
 import { setup, SetupContext } from "./setup";
 import {
+  assertProposeMessage,
   collateralizeChannel,
   confirmProposedAppInstance,
   createChannel,
@@ -14,6 +14,7 @@ import {
   installTTTVirtual,
   makeVirtualProposal
 } from "./utils";
+import { ProposeInstallProtocolParams } from "../../src/machine/types";
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
@@ -40,6 +41,8 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
         await collateralizeChannel(multisigAddressAB, nodeA, nodeB);
         await collateralizeChannel(multisigAddressBC, nodeB, nodeC);
 
+        let proposedParams: ProposeInstallProtocolParams;
+
         nodeA.once(NODE_EVENTS.INSTALL_VIRTUAL, async () => {
           const [virtualAppNodeA] = await getInstalledAppInstances(nodeA);
 
@@ -52,7 +55,9 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
 
         nodeC.once(
           NODE_EVENTS.PROPOSE_INSTALL_VIRTUAL,
-          async ({ data: { params, appInstanceId } }: ProposeMessage) => {
+          async (msg: ProposeMessage) => {
+            assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams)
+            const { data: { params, appInstanceId } } = msg;
             const [proposedAppNodeC] = await getProposedAppInstances(nodeC);
 
             confirmProposedAppInstance(params, proposedAppNodeC, true);
@@ -71,6 +76,7 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
           nodeB,
           TicTacToeApp
         );
+        proposedParams = params;
 
         const [proposedAppNodeA] = await getProposedAppInstances(nodeA);
 
