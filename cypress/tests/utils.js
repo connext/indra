@@ -25,9 +25,9 @@ my.isStarting = () => cy.contains('span', /starting/i).should('exist')
 my.doneStarting = () => cy.contains('span', /starting/i).should('not.exist')
 
 //Dashboard 
-my.goToDashboard = () => cy.get(`a[href="/dashboard"]`).click()
-my.goToDebug = () => cy.get(`a[href="/dashboard/debug"]`).click()
-my.goToDebugChannel = () => cy.get(`a[href="/dashboard/debug/channel"]`).click()
+// my.goToDashboard = () => cy.get(`a[href="/dashboard"]`).click()
+// my.goToDebug = () => cy.get(`a[href="/dashboard/debug"]`).click()
+// my.goToDebugChannel = () => cy.get(`a[href="/dashboard/debug/channel"]`).click()
 
 //DaiCard
 my.goToDeposit = () => cy.get(`a[href="/deposit"]`).click()

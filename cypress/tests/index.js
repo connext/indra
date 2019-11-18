@@ -131,15 +131,15 @@ describe('Daicard', () => {
 })
 
 
-describe('Dashboard', () => {
-  beforeEach(() => {
-    cy.visit(Cypress.env('publicUrl'))
-  })
-  describe('Debug', () => {
-    it(`Should navigate to debug screen`, () => {
-      my.goToDashboard()
-      my.goToDebug()
-      my.goToDebugChannel()
-    })
-  })
-})
+// describe('Dashboard', () => {
+//   beforeEach(() => {
+//     cy.visit(Cypress.env('publicUrl'))
+//   })
+//   describe('Debug', () => {
+//     it(`Should navigate to debug screen`, () => {
+//       my.goToDashboard()
+//       my.goToDebug()
+//       my.goToDebugChannel()
+//     })
+//   })
+// })
