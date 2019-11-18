@@ -20,7 +20,7 @@ import {
   Node,
   NODE_EVENTS,
   OutcomeType,
-  SolidityValueType,
+  SolidityValueType
 } from "../../../types";
 import { prettyPrintObject } from "../../../utils";
 import { DEPOSIT_FAILED } from "../../errors";

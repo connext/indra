@@ -15,5 +15,5 @@ export {
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
-  WithdrawMessage,
+  WithdrawMessage
 } from "./types";
