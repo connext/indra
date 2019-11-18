@@ -3,8 +3,7 @@ import { getAddress } from "ethers/utils";
 
 import { stringify, withdrawalKey } from "../lib/utils";
 import { BigNumber, CFCoreTypes, convert, WithdrawalResponse, WithdrawParameters } from "../types";
-import { invalidAddress } from "../validation/addresses";
-import { falsy, notLessThanOrEqualTo } from "../validation/bn";
+import { invalidAddress, notLessThanOrEqualTo, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
@@ -14,10 +13,14 @@ export class WithdrawalController extends AbstractController {
     const myFreeBalanceAddress = this.connext.freeBalanceAddress;
 
     const { amount, assetId, recipient, userSubmitted } = convert.Withdraw("bignumber", params);
-
-    const invalid = await this.validateInputs(amount, assetId, recipient);
-    if (invalid) {
-      throw new Error(invalid);
+    const freeBalance = await this.connext.getFreeBalance(assetId);
+    const preWithdrawalBal = freeBalance[this.connext.freeBalanceAddress];
+    validate(
+      notLessThanOrEqualTo(amount, preWithdrawalBal),
+      invalidAddress(assetId), // check address of asset
+    );
+    if (recipient) {
+      validate(invalidAddress(recipient));
     }
 
     const preWithdrawBalances = await this.connext.getFreeBalance(assetId);
@@ -83,27 +86,6 @@ export class WithdrawalController extends AbstractController {
 
   /////////////////////////////////
   ////// PRIVATE METHODS
-
-  ////// Validation
-  private validateInputs = async (
-    amount: BigNumber,
-    assetId: string,
-    recipient?: string,
-  ): Promise<string | undefined> => {
-    // TODO: fix for non-eth withdrawals
-    // check the free balance can handle requested amnt
-    const freeBalance = await this.connext.getFreeBalance(assetId);
-    const preWithdrawalBal = freeBalance[this.connext.freeBalanceAddress];
-    const errs = [
-      notLessThanOrEqualTo(amount, preWithdrawalBal),
-      invalidAddress(assetId), // check address of asset
-    ];
-    if (recipient) {
-      errs.push(invalidAddress(recipient));
-    }
-    return errs ? errs.filter(falsy)[0] : undefined;
-  };
-
   ////// Listener callbacks
   private withdrawConfirmedCallback = async (data: any): Promise<void> => {
     this.log.info(`Withdrawal confimed.`);
