@@ -171,6 +171,8 @@ describe("Node method follows spec - install", () => {
         let preInstallERC20BalanceNodeB: BigNumber;
         let postInstallERC20BalanceNodeB: BigNumber;
 
+        let proposedParams: ProposeInstallProtocolParams;
+
         nodeB.on(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
           [
             preInstallERC20BalanceNodeA,
@@ -181,10 +183,11 @@ describe("Node method follows spec - install", () => {
             multisigAddress,
             erc20TokenAddress
           );
+          assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
           makeInstallCall(nodeB, msg.data.appInstanceId);
         });
 
-        nodeA.on(NODE_EVENTS.INSTALL, async () => {
+        nodeA.on(NODE_EVENTS.INSTALL, async (msg: InstallMessage) => {
           const [appInstanceNodeA] = await getInstalledAppInstances(nodeA);
           const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
           expect(appInstanceNodeA).toEqual(appInstanceNodeB);
@@ -207,10 +210,12 @@ describe("Node method follows spec - install", () => {
             preInstallERC20BalanceNodeB
           );
 
+          assertInstallMessage(nodeB.publicIdentifier, msg, appInstanceNodeA.identityHash)
+
           done();
         });
 
-        await makeAndSendProposeCall(
+        const { params } = await makeAndSendProposeCall(
           nodeA,
           nodeB,
           TicTacToeApp,
@@ -220,6 +225,7 @@ describe("Node method follows spec - install", () => {
           One,
           erc20TokenAddress
         );
+        proposedParams = params;
       });
 
       it("sends proposal with null initial state", async () => {
