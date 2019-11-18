@@ -70,5 +70,5 @@ export function notPositive(value: any): string | undefined {
 }
 
 export function notNegative(value: any): string | undefined {
-  return notLessThan(value, 0);
+  return notLessThan(0, value);
 }
