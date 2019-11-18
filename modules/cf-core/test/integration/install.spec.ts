@@ -10,7 +10,8 @@ import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
 import {
-  assertNodeMessage,
+  assertInstallMessage,
+  assertProposeMessage,
   collateralizeChannel,
   constructAppProposalRpc,
   createChannel,
@@ -26,28 +27,6 @@ import {
 expect.extend({ toBeLt });
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
-
-function assertProposeMessage(senderId: string, msg: ProposeMessage, params: ProposeInstallProtocolParams) {
-  assertNodeMessage(msg, {
-    from: senderId,
-    type: NODE_EVENTS.PROPOSE_INSTALL,
-    data: {
-      params,
-    }
-  }, ['data.appInstanceId'])
-}
-
-function assertInstallMessage(senderId: string, msg: InstallMessage, appInstanceId: string) {
-  assertNodeMessage(msg, {
-    from: senderId,
-    type: NODE_EVENTS.INSTALL,
-    data: {
-      params: {
-        appInstanceId
-      }
-    }
-  })
-}
 
 describe("Node method follows spec - install", () => {
   let multisigAddress: string;

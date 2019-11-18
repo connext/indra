@@ -42,6 +42,7 @@ import {
 } from "./unidirectional-transfer";
 import { EventEmittedMessage } from "../../src/types";
 import { deBigNumberifyJson } from "../../src/utils";
+import { ProposeInstallProtocolParams } from "../../src/machine/types";
 
 interface AppContext {
   appDefinition: string;
@@ -82,6 +83,28 @@ export function assertNodeMessage(
   });
   // cast both to strings instead of BNs
   expect(deBigNumberifyJson(msg)).toMatchObject(deBigNumberifyJson(expected));
+}
+
+export function assertProposeMessage(senderId: string, msg: ProposeMessage, params: ProposeInstallProtocolParams) {
+  assertNodeMessage(msg, {
+    from: senderId,
+    type: NODE_EVENTS.PROPOSE_INSTALL,
+    data: {
+      params,
+    }
+  }, ['data.appInstanceId'])
+}
+
+export function assertInstallMessage(senderId: string, msg: InstallMessage, appInstanceId: string) {
+  assertNodeMessage(msg, {
+    from: senderId,
+    type: NODE_EVENTS.INSTALL,
+    data: {
+      params: {
+        appInstanceId
+      }
+    }
+  })
 }
 
 /**
@@ -558,7 +581,7 @@ export async function installApp(
   initiatorDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
   responderDeposit: BigNumber = Zero,
   responderDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS
-): Promise<[string, NodeTypes.ProposeInstallParams]> {
+): Promise<[string, ProposeInstallProtocolParams]> {
   const appContext = getAppContext(appDefinition, initialState);
 
   const installationProposalRpc = constructAppProposalRpc(
@@ -572,10 +595,13 @@ export async function installApp(
     responderDepositTokenAddress
   );
 
-  const proposedParams = installationProposalRpc.parameters as NodeTypes.ProposeInstallParams;
+  const proposedParams = installationProposalRpc.parameters as ProposeInstallProtocolParams;
 
   return new Promise(async resolve => {
     nodeB.once(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
+      // assert message
+      assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
+
       const {
         data: { appInstanceId }
       } = msg;
@@ -588,7 +614,8 @@ export async function installApp(
 
       nodeA.once(NODE_EVENTS.INSTALL, async (msg: InstallMessage) => {
         if (msg.data.params.appInstanceId === appInstanceId) {
-          const appInstanceId = msg.data.params.appInstanceId;
+          // assert message
+          assertInstallMessage(nodeB.publicIdentifier, msg, appInstanceId);
           const appInstanceNodeA = await getAppInstance(nodeA, appInstanceId);
           const appInstanceNodeB = await getAppInstance(nodeB, appInstanceId);
           expect(appInstanceNodeA).toEqual(appInstanceNodeB);
@@ -816,7 +843,7 @@ export async function makeAndSendProposeCall(
   responderDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS
 ): Promise<{
   appInstanceId: string;
-  params: NodeTypes.ProposeInstallParams;
+  params: ProposeInstallProtocolParams;
 }> {
   const installationProposalRpc = makeProposeCall(
     nodeB,
