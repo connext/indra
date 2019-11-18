@@ -736,7 +736,7 @@ export async function makeVirtualProposal(
   responderDeposit?: BigNumber
 ): Promise<{
   appInstanceId: string;
-  params: NodeTypes.ProposeInstallVirtualParams;
+  params: ProposeInstallProtocolParams;
 }> {
   const appContext = getAppContext(appDefinition, initialState);
 
@@ -752,7 +752,7 @@ export async function makeVirtualProposal(
     assetId || CONVENTION_FOR_ETH_TOKEN_ADDRESS
   );
 
-  const params = virtualProposalRpc.parameters as NodeTypes.ProposeInstallVirtualParams;
+  const params = virtualProposalRpc.parameters as ProposeInstallProtocolParams;
 
   const {
     result: {
