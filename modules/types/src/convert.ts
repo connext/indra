@@ -35,19 +35,9 @@ const getType = (input: any): NumericTypeName => {
 
 const castFunctions: any = {
   "bignumber-str": (x: BigNumber): string => x.toString(),
-  "number-bignumber": (x: number): BigNumber => {
-    if (x < 0) {
-      throw new Error(`Input value ${x} cannot be a negative number`);
-    }
-    return new BigNumber(x);
-  },
+  "number-bignumber": (x: number): BigNumber => new BigNumber(x),
   "number-str": (x: number): string => x.toString(),
-  "str-bignumber": (x: string): BigNumber => {
-    if (x[0] === "-") {
-      throw new Error(`Input value ${x} cannot be a negative number`);
-    }
-    return new BigNumber(x);
-  },
+  "str-bignumber": (x: string): BigNumber => new BigNumber(x),
 };
 
 export const convertFields = (
