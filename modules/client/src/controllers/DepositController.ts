@@ -4,8 +4,7 @@ import tokenAbi from "human-standard-token-abi";
 
 import { stringify, xpubToAddress } from "../lib/utils";
 import { BigNumber, CFCoreTypes, ChannelState, convert, DepositParameters } from "../types";
-import { invalidAddress } from "../validation/addresses";
-import { falsy, notLessThanOrEqualTo, notPositive } from "../validation/bn";
+import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
@@ -14,10 +13,23 @@ export class DepositController extends AbstractController {
     const myFreeBalanceAddress = this.connext.freeBalanceAddress;
 
     const { assetId, amount } = convert.Deposit("bignumber", params);
-    const invalid = await this.validateInputs(assetId, amount);
-    if (invalid) {
-      throw new Error(invalid);
+
+    // check asset balance of address
+    const depositAddr = xpubToAddress(this.connext.publicIdentifier);
+    let bal: BigNumber;
+    if (assetId === AddressZero) {
+      bal = await this.ethProvider.getBalance(depositAddr);
+    } else {
+      // get token balance
+      const token = new Contract(assetId, tokenAbi, this.ethProvider);
+      // TODO: correct? how can i use allowance?
+      bal = await token.balanceOf(depositAddr);
     }
+    validate(
+      invalidAddress(assetId),
+      notPositive(amount),
+      notLessThanOrEqualTo(amount, bal), // cant deposit more than default addr owns
+    );
 
     // TODO: remove free balance stuff?
     const preDepositBalances = await this.connext.getFreeBalance(assetId);
@@ -60,30 +72,6 @@ export class DepositController extends AbstractController {
 
   /////////////////////////////////
   ////// PRIVATE METHODS
-
-  ////// Validation
-  private validateInputs = async (
-    assetId: string,
-    amount: BigNumber,
-  ): Promise<string | undefined> => {
-    // check asset balance of address
-    const depositAddr = xpubToAddress(this.connext.publicIdentifier);
-    let bal: BigNumber;
-    if (assetId === AddressZero) {
-      bal = await this.ethProvider.getBalance(depositAddr);
-    } else {
-      // get token balance
-      const token = new Contract(assetId, tokenAbi, this.ethProvider);
-      // TODO: correct? how can i use allowance?
-      bal = await token.balanceOf(depositAddr);
-    }
-    const errs = [
-      invalidAddress(assetId),
-      notPositive(amount),
-      notLessThanOrEqualTo(amount, bal), // cant deposit more than default addr owns
-    ];
-    return errs ? errs.filter(falsy)[0] : undefined;
-  };
 
   ////// Listener callbacks
   private depositConfirmedCallback = (data: any): void => {

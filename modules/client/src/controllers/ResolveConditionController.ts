@@ -2,15 +2,13 @@ import { bigNumberify } from "ethers/utils";
 
 import { stringify, xpubToAddress } from "../lib/utils";
 import {
-  ConnextEvents,
-  convert,
-  LinkedTransferParameters,
   ResolveConditionParameters,
   ResolveConditionResponse,
   ResolveLinkedTransferParameters,
   ResolveLinkedTransferResponse,
   TransferCondition,
 } from "../types";
+import { notLessThan, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
@@ -86,12 +84,6 @@ export class ResolveConditionController extends AbstractController {
 
     const freeBal = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBal[this.connext.freeBalanceAddress];
-    const nodeFreeBal = freeBal[xpubToAddress(this.connext.nodePublicIdentifier)];
-    if (nodeFreeBal.lt(amountBN)) {
-      this.log.debug(
-        `Node has insufficient collateral (${nodeFreeBal.toString()}) to afford payment (${amountBN.toString()}) of asset ${assetId}. Expect resolution to take longer with collateral...`,
-      );
-    }
 
     // TODO: dont listen to linked transfer app in default listener, only listen for it here
 
@@ -111,7 +103,7 @@ export class ResolveConditionController extends AbstractController {
           "uninstalling is not what we expected......",
       );
     } else if (postTransferBal[this.connext.freeBalanceAddress].lte(preTransferBal)) {
-      this.log.info(
+      this.log.warn(
         "Free balance after transfer is lte free balance " +
           "before transfer..... That's not great..",
       );
