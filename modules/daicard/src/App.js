@@ -67,7 +67,7 @@ const DEPOSIT_ESTIMATED_GAS = toBN("25000");
 const MAX_CHANNEL_VALUE = Currency.DAI("30");
 const CF_PATH = "m/44'/60'/0'/25446";
 
-const REACT_APP_SAI_TOKEN = "0xeec918d74c746167564401103096D45BbD494B74";
+const REACT_APP_SAI_TOKEN = process.env.REACT_APP_SAI_TOKEN;
 
 // it is important to add a default payment
 // profile on initial load in the case the
