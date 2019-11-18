@@ -641,6 +641,7 @@ class App extends React.Component {
     const {
       balance,
       channel,
+      ethprovider,
       swapRate,
       machine,
       maxDeposit,
@@ -747,6 +748,7 @@ class App extends React.Component {
                   {...props}
                   balance={balance}
                   channel={channel}
+                  ethprovider={ethprovider}
                   swapRate={swapRate}
                   machine={machine}
                   refreshBalances={this.refreshBalances.bind(this)}

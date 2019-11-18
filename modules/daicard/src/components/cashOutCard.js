@@ -44,7 +44,7 @@ const style = withStyles(theme => ({
 }));
 
 export const CashoutCard = style(
-  ({ balance, channel, classes, history, machine, refreshBalances, swapRate, token }) => {
+  ({ balance, channel, classes, ethprovider, history, machine, refreshBalances, swapRate, token }) => {
     const [recipient, setRecipient] = useState({ display: "", value: undefined, error: undefined });
     const [scan, setScan] = useState(false);
     const [withdrawing, setWithdrawing] = useState(false);
@@ -55,16 +55,17 @@ export const CashoutCard = style(
       if (value.includes("ethereum:")) {
         newVal = value.split(":")[1];
       }
+      let address = await ethprovider.resolveName(newVal);
       if (newVal === "") {
-        error = "Please provide an address";
-      } else if (!isHexString(newVal)) {
-        error = `Invalid hex string: ${newVal}`;
-      } else if (arrayify(newVal).length !== 20) {
-        error = `Invalid length: ${newVal}`;
+        error = "Please provide an address or ens name";
+      } else if (!isHexString(newVal) && !isHexString(address)) {
+        error = `Invalid hex string: ${address || newVal}`;
+      } else if (arrayify(newVal).length !== 20 && !isHexString(address)) {
+        error = `Invalid length: ${address || newVal}`;
       }
       setRecipient({
         display: value,
-        value: error ? undefined : newVal,
+        value: error ? undefined : (address || newVal),
         error,
       });
       setScan(false);
