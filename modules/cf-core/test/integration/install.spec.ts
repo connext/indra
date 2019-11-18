@@ -4,11 +4,13 @@ import { BigNumber } from "ethers/utils";
 
 import { Node, NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
-import { NODE_EVENTS, ProposeMessage, InstallMessage } from "../../src/types";
+import { ProposeInstallProtocolParams } from "../../src/machine/types";
+import { InstallMessage, NODE_EVENTS, ProposeMessage } from "../../src/types";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
 import {
+  assertNodeMessage,
   collateralizeChannel,
   constructAppProposalRpc,
   createChannel,
@@ -19,9 +21,7 @@ import {
   makeAndSendProposeCall,
   makeInstallCall,
   transferERC20Tokens,
-  assertNodeMessage
 } from "./utils";
-import { ProposeInstallProtocolParams } from "../../src/machine/types";
 
 expect.extend({ toBeLt });
 
