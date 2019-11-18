@@ -103,6 +103,7 @@ export namespace Node {
     GET_STATE = "chan_getState",
     GET_STATE_CHANNEL = "chan_getStateChannel",
     INSTALL = "chan_install",
+    INSTALL_BALANCE_REFUND = "chan_installBalanceRefund",
     INSTALL_VIRTUAL = "chan_installVirtual",
     PROPOSE_INSTALL = "chan_proposeInstall",
     PROPOSE_INSTALL_VIRTUAL = "chan_proposeInstallVirtual",
@@ -255,6 +256,11 @@ export namespace Node {
   export type InstallParams = {
     appInstanceId: string;
   };
+
+  export type InstallBalanceRefundParams = {
+    multisigAddress: string;
+    tokenAddress?: string;
+  }
 
   export type InstallResult = {
     appInstance: AppInstanceJson;
