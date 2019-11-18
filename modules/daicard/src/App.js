@@ -342,7 +342,7 @@ class App extends React.Component {
 
     const saiBalance = await this.getSaiBalance(wallet || ethprovider);
     if (saiBalance.gt(0)) {
-      this.setState({ saiBalance })
+      this.setState({ saiBalance });
       machine.send("SAI");
     } else {
       machine.send("READY");
@@ -353,10 +353,14 @@ class App extends React.Component {
 
   getSaiBalance = async wallet => {
     const { channel } = this.state;
-    if (!REACT_APP_SAI_TOKEN) {
+    if (!channel.config.contractAddresses.SAIToken) {
       return;
     }
-    const saiToken = new Contract(REACT_APP_SAI_TOKEN, tokenArtifacts.abi, wallet);
+    const saiToken = new Contract(
+      channel.config.contractAddresses.SAIToken,
+      tokenArtifacts.abi,
+      wallet,
+    );
     const freeSaiBalance = await channel.getFreeBalance(saiToken.address);
     const mySaiBalance = freeSaiBalance[channel.freeBalanceAddress];
     return mySaiBalance;
