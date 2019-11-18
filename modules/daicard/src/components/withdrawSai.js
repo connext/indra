@@ -6,8 +6,9 @@ import {
   DialogContentText,
   DialogTitle,
   TextField,
+  Typography,
 } from "@material-ui/core";
-import { getAddress } from "ethers/utils";
+import { getAddress, formatEther } from "ethers/utils";
 import React, { useState } from "react";
 
 export const WithdrawSaiDialog = ({ channel, machine, saiTokenAddress, saiBalance }) => {
@@ -23,6 +24,7 @@ export const WithdrawSaiDialog = ({ channel, machine, saiTokenAddress, saiBalanc
       setRecipientError("Please enter a valid Ethereum address.");
       return;
     }
+    setWithdrawing(true);
     machine.send("READY");
     machine.send("START_WITHDRAW");
     const result = await channel.withdraw({
@@ -31,7 +33,6 @@ export const WithdrawSaiDialog = ({ channel, machine, saiTokenAddress, saiBalanc
       recipient: recipientAddress,
     });
     console.log(`Cashout result: ${JSON.stringify(result)}`);
-    setWithdrawing(true);
     console.log(`Withdrawing ${saiBalance.toString()} SAI to: ${recipientAddress}`);
     const txHash = result.transaction.hash;
     setWithdrawing(false);
@@ -40,16 +41,19 @@ export const WithdrawSaiDialog = ({ channel, machine, saiTokenAddress, saiBalanc
 
   return (
     <Dialog
-      open={machine.state.matches("sai")}
+      open={machine.state.matches("sai") || withdrawing}
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
     >
       <DialogTitle id="alert-dialog-title">You have SAI in Your Channel!</DialogTitle>
-      <DialogContent>
-        <DialogContentText id="alert-dialog-description">
+      <DialogContent dividers>
+        <Typography variant="body1">
           We've transitioned the DaiCard from SAI (single-collateral DAI) to DAI (multi-collateral
           DAI)! Please withdraw the SAI from your channel in order to keep using your daicard.
-        </DialogContentText>
+        </Typography>
+        <Typography variant="h6" component="p">
+          Sai Balance: {saiBalance ? formatEther(saiBalance) : 0}
+        </Typography>
         <TextField
           autoFocus
           margin="dense"
@@ -61,11 +65,13 @@ export const WithdrawSaiDialog = ({ channel, machine, saiTokenAddress, saiBalanc
           variant="outlined"
           helperText={recipientError}
           error={!!recipientError}
-          disabled={withdrawing}
         />
+        <Typography variant="caption">
+          Contact us at support@connext.network with any issues!
+        </Typography>
       </DialogContent>
       <DialogActions>
-        <Button onClick={withdrawSai} color="primary" autoFocus>
+        <Button onClick={withdrawSai} color="primary" variant="contained" disabled={withdrawing}>
           Withdraw SAI
         </Button>
       </DialogActions>
