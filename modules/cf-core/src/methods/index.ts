@@ -9,6 +9,7 @@ import InstallBalanceRefundController from "./state-channel/install-balance-refu
 import ProposeInstallAppInstanceController from "./app-instance/propose-install/controller";
 import RejectInstallController from "./app-instance/reject-install/controller";
 import TakeActionController from "./app-instance/take-action/controller";
+import UninstallBalanceRefundController from "./state-channel/uninstall-balance-refund/controller";
 import UninstallVirtualController from "./app-instance/uninstall-virtual/controller";
 import UninstallController from "./app-instance/uninstall/controller";
 import UpdateStateController from "./app-instance/update-state/controller";
@@ -44,6 +45,7 @@ export {
   RejectInstallController,
   TakeActionController,
   UninstallController,
+  UninstallBalanceRefundController,
   UninstallVirtualController,
   UpdateStateController,
   WithdrawCommitmentController,

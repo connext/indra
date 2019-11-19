@@ -1,9 +1,7 @@
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
 import { AddressZero, One } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { Node } from "../../src";
-import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import {
   CoinBalanceRefundState,
   NODE_EVENTS,
@@ -20,7 +18,6 @@ import {
   getFreeBalanceState
 } from "./utils";
 import { xkeyKthAddress } from "../../src/machine";
-import { Transaction } from "ethers/utils";
 
 expect.extend({ toBeLt, toBeEq });
 
@@ -69,13 +66,20 @@ describe("Node method follows spec - install balance refund", () => {
         await provider.waitForTransaction(tx.hash!);
         const multisigBalance = await provider.getBalance(multisigAddress);
         console.log('multisigBalance: ', multisigBalance);
-        expect(multisigBalance).toBeEq(1)
+        expect(multisigBalance).toBeEq(1);
 
         const [app] = await getInstalledAppInstances(nodeA);
         console.log('app: ', app);
 
-        const freeBalance = await getFreeBalanceState(nodeA, multisigAddress);
-        console.log('freeBalance: ', freeBalance);
+        await nodeA.rpcRouter.dispatch({
+          id: Date.now(),
+          methodName: NodeTypes.RpcMethodName.UNINSTALL_BALANCE_REFUND,
+          parameters: {
+            multisigAddress,
+            tokenAddress: AddressZero
+          } as NodeTypes.InstallBalanceRefundParams
+        });
+
         const [postSendBalA, postSendBalB] = await getBalances(
           nodeA,
           nodeB,

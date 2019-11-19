@@ -114,6 +114,7 @@ export namespace Node {
     TAKE_ACTION = "chan_takeAction",
     UNINSTALL = "chan_uninstall",
     UNINSTALL_VIRTUAL = "chan_uninstallVirtual",
+    UNINSTALL_BALANCE_REFUND = "chan_uninstallBalanceRefund",
     WITHDRAW = "chan_withdraw",
     WITHDRAW_COMMITMENT = "chan_withdrawCommitment"
   }
@@ -260,7 +261,7 @@ export namespace Node {
   export type InstallBalanceRefundParams = {
     multisigAddress: string;
     tokenAddress?: string;
-  }
+  };
 
   export type InstallResult = {
     appInstance: AppInstanceJson;
@@ -312,6 +313,10 @@ export namespace Node {
 
   export type UninstallParams = {
     appInstanceId: string;
+  };
+
+  export type UninstallBalanceRefundParams = {
+    multisigAddress: string;
   };
 
   export type UninstallResult = {};

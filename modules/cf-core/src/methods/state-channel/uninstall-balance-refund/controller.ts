@@ -4,13 +4,16 @@ import { jsonRpcMethod } from "rpc-server";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
-import { Node } from "../../../types";
+import { DepositConfirmationMessage, Node, NODE_EVENTS } from "../../../types";
 import { NodeController } from "../../controller";
 import { BALANCE_REFUND_APP_ALREADY_INSTALLED } from "../../errors";
-import { installBalanceRefundApp } from "../deposit/operation";
+import {
+  installBalanceRefundApp,
+  uninstallBalanceRefundApp
+} from "../deposit/operation";
 
-export default class InstallBalanceRefundController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.INSTALL_BALANCE_REFUND)
+export default class UninstallBalanceRefundController extends NodeController {
+  @jsonRpcMethod(Node.RpcMethodName.UNINSTALL_BALANCE_REFUND)
   public executeMethod: (
     requestHandler: RequestHandler,
     params: Node.MethodParams
@@ -25,7 +28,7 @@ export default class InstallBalanceRefundController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: Node.InstallBalanceRefundParams
+    params: Node.DepositParams
   ): Promise<void> {
     const { store, networkContext } = requestHandler;
     const { multisigAddress } = params;
@@ -46,7 +49,10 @@ export default class InstallBalanceRefundController extends NodeController {
 
     params.tokenAddress = tokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
 
-    await installBalanceRefundApp(requestHandler, { ...params, amount: Zero });
+    await uninstallBalanceRefundApp(requestHandler, {
+      ...params,
+      amount: Zero
+    });
 
     return {
       multisigBalance: await provider.getBalance(multisigAddress)
