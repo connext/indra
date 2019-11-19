@@ -49,10 +49,10 @@ export const useAddress = (initialAddress, ethProvider) => {
       setResolved(false);
       if (network && network.ensAddress && value.endsWith('.eth')) {
         setResolved('pending');
-        value = await resolveAddress(value, ethProvider);
+        value = await resolveAddress(value, ethProvider, network);
         setResolved(true);
       }
-      if (value.endsWith('.eth')) {
+      if (value && value.endsWith('.eth')) {
         error = `Network "${network.name}" (chainId ${network.chainId}) doesn't support ENS`;
       } else if (value === "") {
         error = "Please provide an address or ens name";
@@ -160,10 +160,10 @@ export const useXpub = (initialXpub, ethProvider) => {
       setResolved(false);
       if (network && network.ensAddress && value.endsWith('.eth')) {
         setResolved('pending');
-        value = await resolveXpub(value, ethProvider);
+        value = await resolveXpub(value, ethProvider, network);
         setResolved(true);
       }
-      if (value.endsWith('.eth')) {
+      if (value && value.endsWith('.eth')) {
         error = `Network "${network.name}" (chainId ${network.chainId}) doesn't support ENS`;
       } else if (!value || !value.startsWith("xpub")) {
         error = `Invalid xpub: should start with "xpub"`;
@@ -197,7 +197,7 @@ export const XpubInput = ({ xpub, setXpub }) => {
         helperText={
           (xpub.resolved === 'pending' ? `Resolving ENS name...` : '')
           || xpub.error
-          || (xpub.resolved === true ? `ENS name resolved to: ${xpub.value}` : false)
+          || (xpub.value && xpub.resolved === true ? `ENS name resolved to: ${xpub.value.substring(0, 42)}...` : false)
           || "Ignored for linked payments"
         }
         error={xpub.error !== null}
