@@ -1,9 +1,9 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
-import { Contract, providers, Wallet } from "ethers";
+import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
+import { BigNumber, bigNumberify, formatEther, Network, Transaction } from "ethers/utils";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
@@ -39,7 +39,6 @@ import {
   CreateChannelMessage,
   CreateChannelResponse,
   DepositParameters,
-  EXTENDED_PRIVATE_KEY_PATH,
   GetChannelResponse,
   GetConfigResponse,
   IConnextClient,
@@ -196,6 +195,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
 
   channelRouter.multisigAddress = multisigAddress;
 
+  // create a token contract based on the provided token
+  const token = new Contract(config.contractAddresses.Token, tokenAbi, ethProvider);
+
   // create the new client
   const client = new ConnextClient({
     appRegistry: await node.appRegistry(),
@@ -208,6 +210,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     network,
     node,
     store,
+    token,
     ...opts, // use any provided opts by default
   });
 
@@ -237,6 +240,10 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // no need to await this if it needs collateral
   client.reclaimPendingAsyncTransfers();
 
+  // TODO: should we have a flag for this?
+  log.debug(`Reinstalling balance refund app for ${config.contractAddresses.Token}`);
+  await client.reinstallBalanceRefundApp(config.contractAddresses.Token);
+
   log.debug("Done creating channel client");
   return client;
 };
@@ -258,6 +265,7 @@ export class ConnextClient implements IConnextClient {
   public routerType: RpcType;
   public signerAddress: Address;
   public store: Store;
+  public token: Contract;
 
   private opts: InternalClientOptions;
   private keyGen: (index: string) => Promise<string>;
@@ -280,6 +288,7 @@ export class ConnextClient implements IConnextClient {
     this.network = opts.network;
     this.network = opts.network;
     this.node = opts.node;
+    this.token = opts.token;
     this.store = opts.store;
 
     this.freeBalanceAddress = this.channelRouter.config.freeBalanceAddress;
@@ -757,6 +766,14 @@ export class ConnextClient implements IConnextClient {
     return await this.channelRouter.installApp(appInstanceId);
   };
 
+  public installBalanceRefundApp = async (assetId: string): Promise<CFCoreTypes.DepositResult> => {
+    return await this.channelRouter.installBalanceRefundApp(assetId);
+  };
+
+  public uninstallBalanceRefundApp = async (): Promise<CFCoreTypes.DepositResult> => {
+    return await this.channelRouter.uninstallBalanceRefundApp();
+  };
+
   public uninstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
     // check the app is actually installed
     const err = await this.appNotInstalled(appInstanceId);
@@ -848,7 +865,7 @@ export class ConnextClient implements IConnextClient {
   public reclaimPendingAsyncTransfers = async (): Promise<void> => {
     const pendingTransfers = await this.node.getPendingAsyncTransfers();
     for (const transfer of pendingTransfers) {
-      const { amount, assetId, encryptedPreImage, paymentId } = transfer;
+      const { encryptedPreImage, paymentId } = transfer;
       await this.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
     }
   };
@@ -884,8 +901,52 @@ export class ConnextClient implements IConnextClient {
     return response;
   };
 
+  /**
+   * Uninstalls balance refund app if it's installed and reinstalls. The purpose is to
+   * reclaim any asynchronously deposited funds.
+   */
+  public reinstallBalanceRefundApp = async (assetId: string): Promise<void> => {
+    // uninstall if it exists and has been deposited into
+    const existingBalanceRefundApp = await this.getBalanceRefundAppForToken();
+    if (existingBalanceRefundApp) {
+      const multisigBalance: BigNumber = await this.token.balanceOf(this.multisigAddress);
+      if (multisigBalance.gt(existingBalanceRefundApp.latestState["threshold"])) {
+        this.log.info(
+          `multisig balance ${formatEther(
+            multisigBalance,
+          )} greater than balance refund threshold ${formatEther(
+            existingBalanceRefundApp.latestState["threshold"],
+          )}, reinstalling to claim funds`,
+        );
+        await this.uninstallBalanceRefundApp();
+      } else {
+        this.log.info(
+          `multisig balance ${formatEther(
+            multisigBalance,
+          )} equal to balance refund threshold ${formatEther(
+            existingBalanceRefundApp.latestState["threshold"],
+          )}, will not reinstall balance refund app`,
+        );
+        return;
+      }
+    }
+
+    // either it has been uninstalled or wasnt installed
+    await this.installBalanceRefundApp(assetId);
+  };
+
   ///////////////////////////////////
   // LOW LEVEL METHODS
+
+  public getBalanceRefundAppForToken = async (): Promise<AppInstanceJson> => {
+    const apps = await this.getAppInstances();
+    return apps.find((appInstance: AppInstanceJson) => {
+      return (
+        appInstance.appInterface.addr === this.config.contractAddresses.CoinBalanceRefundApp &&
+        appInstance.latestState["tokenAddress"] === this.config.contractAddresses.Token
+      );
+    });
+  };
 
   public getRegisteredAppDetails = (appName: SupportedApplication): RegisteredAppDetails => {
     const appInfo = this.appRegistry.filter((app: RegisteredAppDetails): boolean => {
