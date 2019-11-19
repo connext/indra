@@ -2,15 +2,11 @@ import { Zero } from "ethers/constants";
 import { jsonRpcMethod } from "rpc-server";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
-import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
-import { DepositConfirmationMessage, Node, NODE_EVENTS } from "../../../types";
+import { Node } from "../../../types";
 import { NodeController } from "../../controller";
-import { BALANCE_REFUND_APP_ALREADY_INSTALLED } from "../../errors";
-import {
-  installBalanceRefundApp,
-  uninstallBalanceRefundApp
-} from "../deposit/operation";
+import { BALANCE_REFUND_APP_NOT_INSTALLED } from "../../errors";
+import { uninstallBalanceRefundApp } from "../deposit/operation";
 
 export default class UninstallBalanceRefundController extends NodeController {
   @jsonRpcMethod(Node.RpcMethodName.UNINSTALL_BALANCE_REFUND)
@@ -21,36 +17,36 @@ export default class UninstallBalanceRefundController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.DepositParams
+    params: Node.UninstallBalanceRefundParams
   ): Promise<string[]> {
     return [params.multisigAddress];
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: Node.DepositParams
+    params: Node.UninstallBalanceRefundParams
   ): Promise<void> {
     const { store, networkContext } = requestHandler;
     const { multisigAddress } = params;
 
     const channel = await store.getStateChannel(multisigAddress);
 
-    if (channel.hasAppInstanceOfKind(networkContext.CoinBalanceRefundApp)) {
-      throw Error(BALANCE_REFUND_APP_ALREADY_INSTALLED);
+    if (!channel.hasAppInstanceOfKind(networkContext.CoinBalanceRefundApp)) {
+      throw Error(BALANCE_REFUND_APP_NOT_INSTALLED);
     }
   }
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.InstallBalanceRefundParams
+    params: Node.UninstallBalanceRefundParams
   ): Promise<Node.DepositResult> {
     const { provider } = requestHandler;
-    const { multisigAddress, tokenAddress } = params;
-
-    params.tokenAddress = tokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
+    const { multisigAddress } = params;
 
     await uninstallBalanceRefundApp(requestHandler, {
       ...params,
+      // unused params to make types happy
+      tokenAddress: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       amount: Zero
     });
 
