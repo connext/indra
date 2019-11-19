@@ -150,7 +150,7 @@ export class TransferController extends AbstractController {
 
     // note: intermediary is added in connext.ts as well
     const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding } = appInfo;
-    const params: CFCoreTypes.ProposeInstallVirtualParams = {
+    const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,
@@ -160,7 +160,6 @@ export class TransferController extends AbstractController {
       initialState,
       initiatorDeposit: amount,
       initiatorDepositTokenAddress: assetId,
-      intermediaryIdentifier: this.connext.nodePublicIdentifier,
       outcomeType: appInfo.outcomeType,
       proposedToIdentifier: recipient,
       responderDeposit: Zero,
@@ -168,11 +167,11 @@ export class TransferController extends AbstractController {
       timeout: Zero, // TODO: fix, add to app info?
     };
 
-    const res = await this.connext.proposeInstallVirtualApp(params);
+    const res = await this.connext.proposeInstallApp(params);
     this.appId = res.appInstanceId;
 
     try {
-      const raceRes = await Promise.race([
+      await Promise.race([
         new Promise((res: any, rej: any): any => {
           boundReject = this.rejectInstallTransfer.bind(null, rej);
           boundResolve = this.resolveInstallTransfer.bind(null, res);

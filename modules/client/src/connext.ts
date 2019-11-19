@@ -722,15 +722,6 @@ export class ConnextClient implements IConnextClient {
     return await this.channelRouter.updateState(appInstanceId, newState);
   };
 
-  public proposeInstallVirtualApp = async (
-    params: CFCoreTypes.ProposeInstallVirtualParams,
-  ): Promise<CFCoreTypes.ProposeInstallVirtualResult> => {
-    if (params.intermediaryIdentifier !== this.nodePublicIdentifier) {
-      throw new Error(`Cannot install virtual app without node as intermediary`);
-    }
-    return await this.channelRouter.proposeInstallVirtualApp(params);
-  };
-
   public proposeInstallApp = async (
     params: CFCoreTypes.ProposeInstallParams,
   ): Promise<CFCoreTypes.ProposeInstallResult> => {
