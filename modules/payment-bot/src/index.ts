@@ -29,14 +29,15 @@ process.on("unhandledRejection", (e: any): any => {
 // Begin executing w/in an async wrapper function
 
 (async (): Promise<void> => {
-  const assetId = config.assetId ? config.assetId : AddressZero;
-  const client = await getOrCreateChannel(assetId);
+  const client = await getOrCreateChannel();
+  const assetId = config.assetId ? client.config.contractAddresses.Token : AddressZero;
 
   const logEthAndAssetFreeBalance = async (): Promise<void> => {
-    logEthFreeBalance(AddressZero, await client.getFreeBalance(assetId));
-    if (assetId !== AddressZero) {
-      logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
-    }
+    logEthFreeBalance(AddressZero, await client.getFreeBalance());
+    logEthFreeBalance(
+      client.config.contractAddresses.Token,
+      await client.getFreeBalance(client.config.contractAddresses.Token),
+    );
   };
 
   if (config.getFreeBalance) {
