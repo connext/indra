@@ -19,8 +19,6 @@ import React, { useState } from "react";
 import Copyable from "./copyable";
 import { MySnackbar } from "./snackBar";
 
-import { ConnextClientStorePrefix } from "@connext/types";
-
 const styles = {
   top: {
     paddingLeft: 12,
@@ -102,7 +100,7 @@ const SettingsCard = props => {
   const [showRecovery, setShowRecovery] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
-  const { classes, setWalletConnext, getWalletConnext, store, xpub } = props;
+  const { classes, setWalletConnext, getWalletConnext, store } = props;
   const useWalletConnext = getWalletConnext()
 
   const generateNewAddress = async () => {

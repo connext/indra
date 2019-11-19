@@ -54,7 +54,7 @@ describe('Daicard', () => {
         // No invalid xpub addresses
         cy.get('input[type="text"]').clear().type('0xabc123')
         my.goToSend()
-        cy.contains('p', /invalid recipient/i).should('exist')
+        cy.contains('p', /invalid/i).should('exist')
       })
     })
 

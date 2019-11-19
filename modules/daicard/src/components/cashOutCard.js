@@ -1,28 +1,15 @@
-import {
-  Button,
-  CircularProgress,
-  Grid,
-  FormControl,
-  FormHelperText,
-  IconButton,
-  InputBase,
-  Modal,
-  Tooltip,
-  Typography,
-  withStyles,
-} from "@material-ui/core";
+import { Button, CircularProgress, Grid, Typography, withStyles } from "@material-ui/core";
 import PropTypes from "prop-types";
-
+import { Unarchive as UnarchiveIcon } from "@material-ui/icons";
 import { AddressZero, Zero } from "ethers/constants";
-import { arrayify, isHexString } from "ethers/utils";
-import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { useState } from "react";
 
 import EthIcon from "../assets/Eth.svg";
 import DaiIcon from "../assets/dai.svg";
 import { inverse } from "../utils";
 
-import { QRScan } from "./qrCode";
+import { useAddress, AddressInput } from "./input";
+
 
 const styles = {
   top: {
@@ -97,30 +84,8 @@ const styles = {
 
 const CashoutCard = props => {
   const { balance, channel, classes, history, machine, refreshBalances, swapRate, token } = props;
-  const [recipient, setRecipient] = useState({ display: "", value: undefined, error: undefined });
-  const [scan, setScan] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
-
-  const updateRecipientHandler = async value => {
-    let newVal = value;
-    let error;
-    if (value.includes("ethereum:")) {
-      newVal = value.split(":")[1];
-    }
-    if (newVal === "") {
-      error = "Please provide an address";
-    } else if (!isHexString(newVal)) {
-      error = `Invalid hex string: ${newVal}`;
-    } else if (arrayify(newVal).length !== 20) {
-      error = `Invalid length: ${newVal}`;
-    }
-    setRecipient({
-      display: value,
-      value: error ? undefined : newVal,
-      error,
-    });
-    setScan(false);
-  };
+  const [recipient, setRecipient] = useAddress(null, ethProvider);
 
   const cashoutTokens = async () => {
     const value = recipient.value;
@@ -181,7 +146,8 @@ const CashoutCard = props => {
 
   return (
     <Grid container spacing={2} direction="column" className={classes.top}>
-      {/* <Grid container wrap="nowrap" direction="row" justify="center" alignItems="center">
+      {/*
+      <Grid container wrap="nowrap" direction="row" justify="center" alignItems="center">
         <Grid item xs={12}>
           <UnarchiveIcon className={classes.icon} />
         </Grid>
@@ -196,40 +162,16 @@ const CashoutCard = props => {
             </span>
           </Typography>
         </Grid>
-      </Grid> */}
+      </Grid>
+      */}
       <Grid item xs={12}>
         <Typography className={classes.ethPrice} variant="caption">
           <span>{"Current ETH price: $" + swapRate}</span>
         </Typography>
       </Grid>
-      <FormControl xs={12} className={classes.xpubWrapper}>
-        <InputBase
-          fullWidth
-          className={classes.xpubInput}
-          onChange={evt => updateRecipientHandler(evt.target.value)}
-          type="text"
-          value={recipient.display}
-          placeholder={"Address"}
-          endAdornment={
-            <Tooltip disableFocusListener disableTouchListener title="Scan with QR code">
-              <IconButton
-                className={classes.QRButton}
-                disableTouchRipple
-                variant="contained"
-                onClick={() => setScan(true)}
-              >
-                <QRIcon className={classes.icon} />
-              </IconButton>
-            </Tooltip>
-          }
-        />
-        {recipient.error && (
-          <FormHelperText className={classes.helperText}>{recipient.error}</FormHelperText>
-        )}
-      </FormControl>
-      <Modal id="qrscan" open={scan} onClose={() => setScan(false)} className={classes.modal}>
-        <QRScan handleResult={updateRecipientHandler} history={history} />
-      </Modal>
+      <Grid item xs={12}>
+        <AddressInput address={recipient} setAddress={setRecipient} />
+      </Grid>
       <Grid className={classes.buttonSpacer} />
       <Grid className={classes.buttonSpacer} />
       <Grid container direction="row" className={classes.cashoutWrapper}>
