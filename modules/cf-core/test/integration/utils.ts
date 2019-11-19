@@ -407,7 +407,6 @@ export function constructInstallVirtualRpc(
 
 export function constructVirtualProposalRpc(
   proposedToIdentifier: string,
-  intermediaryIdentifier: string,
   appDefinition: string,
   abiEncodings: AppABIEncodings,
   initialState: SolidityValueType = {},
@@ -427,13 +426,8 @@ export function constructVirtualProposalRpc(
     responderDepositTokenAddress
   ).parameters as NodeTypes.ProposeInstallParams;
 
-  const installVirtualParams: NodeTypes.ProposeInstallVirtualParams = {
-    ...installProposalParams,
-    intermediaryIdentifier
-  };
-
   return jsonRpcDeserialize({
-    params: installVirtualParams,
+    params: installProposalParams,
     id: Date.now(),
     method: NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
     jsonrpc: "2.0"
@@ -646,16 +640,18 @@ export async function installVirtualApp(
   initiatorDeposit?: BigNumber,
   responderDeposit?: BigNumber
 ): Promise<string> {
-  nodeC.on(
-    NODE_EVENTS.PROPOSE_INSTALL_VIRTUAL,
-    async ({ data: { appInstanceId: eventAppInstanceId } }: ProposeMessage) => {
+  nodeC.once(
+    NODE_EVENTS.PROPOSE_INSTALL,
+    async (msg: ProposeMessage) => {
       const {
         appInstanceId,
-        params: { intermediaryIdentifier }
+        params,
       } = await proposal;
+      assertProposeMessage(nodeA.publicIdentifier, msg, params)
+      const { data: { appInstanceId: eventAppInstanceId } } = msg;
       if (eventAppInstanceId === appInstanceId) {
         nodeC.rpcRouter.dispatch(
-          constructInstallVirtualRpc(appInstanceId, intermediaryIdentifier)
+          constructInstallVirtualRpc(appInstanceId, nodeB.publicIdentifier)
         );
       }
     }
@@ -664,7 +660,6 @@ export async function installVirtualApp(
   const proposal = makeVirtualProposal(
     nodeA,
     nodeC,
-    nodeB,
     appDefinition,
     initialState,
     assetId,
@@ -702,7 +697,7 @@ export async function confirmChannelCreation(
 }
 
 export async function confirmAppInstanceInstallation(
-  proposedParams: NodeTypes.ProposeInstallParams,
+  proposedParams: ProposeInstallProtocolParams,
   appInstance: AppInstanceJson
 ) {
   expect(appInstance.appInterface.addr).toEqual(proposedParams.appDefinition);
@@ -728,7 +723,6 @@ export async function getState(
 export async function makeVirtualProposal(
   nodeA: Node,
   nodeC: Node,
-  nodeB: Node,
   appDefinition: string,
   initialState?: SolidityValueType,
   assetId?: string,
@@ -742,7 +736,6 @@ export async function makeVirtualProposal(
 
   const virtualProposalRpc = constructVirtualProposalRpc(
     nodeC.publicIdentifier,
-    nodeB.publicIdentifier,
     appContext.appDefinition,
     appContext.abiEncodings,
     appContext.initialState,
@@ -784,7 +777,6 @@ export async function makeInstallCall(node: Node, appInstanceId: string) {
 export async function makeVirtualProposeCall(
   nodeA: Node,
   nodeC: Node,
-  nodeB: Node,
   appDefinition: string,
   initialState?: SolidityValueType
 ): Promise<{
@@ -795,7 +787,6 @@ export async function makeVirtualProposeCall(
 
   const virtualProposalRpc = constructVirtualProposalRpc(
     nodeC.publicIdentifier,
-    nodeB.publicIdentifier,
     appContext.appDefinition,
     appContext.abiEncodings,
     appContext.initialState
@@ -863,7 +854,7 @@ export async function makeAndSendProposeCall(
 
   return {
     appInstanceId,
-    params: installationProposalRpc.parameters as NodeTypes.ProposeInstallParams
+    params: installationProposalRpc.parameters as ProposeInstallProtocolParams
   };
 }
 
