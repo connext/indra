@@ -340,7 +340,7 @@ function Home(props) {
           error={amount.error !== null}
           onChange={evt => updateAmountHandler(evt.target.value.replace("$", ""))}
           type="numeric"
-          value={amount.display === "" ? null : "$" + amount.display}
+          value={amount.display === "" ? "" : "$" + amount.display}
           placeholder={"$0.00"}
           // startAdornment={<Typography className={classes.startAdornment}>$</Typography>}
         />
@@ -359,7 +359,7 @@ function Home(props) {
           error={amount.error !== null && recipient.error !== null}
           onChange={evt => updateRecipientHandler(evt.target.value)}
           type="text"
-          value={recipient.display}
+          value={recipient.display || ""}
           placeholder={"Recipient"}
           endAdornment={
             <Tooltip disableFocusListener disableTouchListener title="Scan with QR code">

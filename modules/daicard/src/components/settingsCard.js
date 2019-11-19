@@ -115,19 +115,8 @@ const SettingsCard = props => {
     window.location.reload();
   };
 
-  const closeModal = () => {
-    setCopied(false);
-  };
-
   return (
     <Grid container spacing={2} direction="column" className={classes.top}>
-      <MySnackbar
-        variant="success"
-        openWhen={copied}
-        onClose={() => closeModal()}
-        message="Copied!"
-      />
-
       <Grid item xs={12} className={classes.button}>
         <Button
           disableTouchRipple

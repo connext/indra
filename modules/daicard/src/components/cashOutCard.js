@@ -82,7 +82,7 @@ const styles = {
 };
 
 const CashoutCard = props => {
-  const { balance, channel, classes, history, machine, refreshBalances, swapRate, token } = props;
+  const { balance, channel, classes, ethProvider, history, machine, refreshBalances, swapRate, token } = props;
   const [withdrawing, setWithdrawing] = useState(false);
   const [recipient, setRecipient] = useAddress(null, ethProvider);
 

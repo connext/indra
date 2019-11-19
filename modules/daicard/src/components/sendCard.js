@@ -150,16 +150,16 @@ const formatAmountString = amount => {
 };
 
 const SendCard = props => {
+  const { match, balance, channel, classes, ethProvider, history, location, token } = props;
   const [amount, setAmount] = useState({ display: "", error: null, value: null });
   const [link, setLink] = useState(undefined);
   const [paymentState, paymentAction] = useMachine(sendMachine);
   const [recipient, setRecipient, setRecipientError] = useXpub(null, ethProvider);
 
-  const { match, balance, channel, classes, history, location, token } = props;
 
   useEffect(() => {
     amount.display && updateAmountHandler(amount.display);
-    recipient.display && updateRecipientHandler(recipient.display);
+    recipient.display && setRecipient(recipient.display);
     // Only need to run this on first render to deal w query string values
     // onChange handlers take care of this afterwards so we don't need this function to
     // eslint-disable-next-line react-hooks/exhaustive-deps
