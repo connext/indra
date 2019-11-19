@@ -9,6 +9,7 @@ import { arrayify, isHexString } from "ethers/utils";
 import React, { useEffect, useState } from "react";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 
+import { resolveAddress, resolveXpub } from "../utils";
 import { QRScan } from "./qrCode";
 
 const useDebounce = (value, delay) => {
@@ -48,7 +49,7 @@ export const useAddress = (initialAddress, ethProvider) => {
       setResolved(false);
       if (network && network.ensAddress && value.endsWith('.eth')) {
         setResolved('pending');
-        value = await ethProvider.resolveName(value);
+        value = await resolveAddress(value, ethProvider);
         setResolved(true);
       }
       if (value.endsWith('.eth')) {
@@ -86,8 +87,8 @@ export const AddressInput = ({ address, setAddress }) => {
         required
         helperText={
           (address.resolved === 'pending' ? `Resolving ENS name...` : '')
-          || (address.resolved === true ? `ENS name resolved to: ${address.value}` : false)
           || address.error
+          || (address.resolved === true ? `ENS name resolved to: ${address.value}` : false)
         }
         error={!!address.error}
         InputProps={{
@@ -134,31 +135,49 @@ export const AddressInput = ({ address, setAddress }) => {
   );
 }
 
-export const useXpub = (initialXpub) => {
-  const [xpubDisplay, setXpubDisplay] = useState(initialXpub);
-  const [xpubValue, setXpubValue] = useState(null);
-  const [xpubError, setXpubError] = useState(null);
-  const debouncedXpub = useDebounce(xpubDisplay, 1000);
+export const useXpub = (initialXpub, ethProvider) => {
+  const [network, setNetwork] = useState(null);
+  const [display, setDisplay] = useState(initialXpub);
+  const [resolved, setResolved] = useState(false);
+  const [value, setValue] = useState(null);
+  const [error, setError] = useState(null);
+  const debounced = useDebounce(display, 1000);
   useEffect(() => {
     (async () => {
-      if (debouncedXpub === null) return;
+      await ethProvider.ready;
+      const network = await ethProvider.getNetwork();
+      console.log(`Set network ${JSON.stringify(network)}`);
+      setNetwork(network);
+    })()
+  }, []);
+  useEffect(() => {
+    (async () => {
+      if (debounced === null) return;
       const xpubLen = 111;
       let value = null;
       let error = null;
-      value = debouncedXpub;
-      if (!value || !value.startsWith("xpub")) {
+      value = debounced;
+      setResolved(false);
+      if (network && network.ensAddress && value.endsWith('.eth')) {
+        setResolved('pending');
+        value = await resolveXpub(value, ethProvider);
+        setResolved(true);
+      }
+      if (value.endsWith('.eth')) {
+        error = `Network "${network.name}" (chainId ${network.chainId}) doesn't support ENS`;
+      } else if (!value || !value.startsWith("xpub")) {
         error = `Invalid xpub: should start with "xpub"`;
       }
       if (!error && value.length !== xpubLen) {
         error = `Invalid length: ${value.length} (expected ${xpubLen})`;
       }
-      setXpubValue(error ? undefined : value);
-      setXpubError(error);
+      setValue(error ? undefined : value);
+      setError(error);
     })()
-  }, [debouncedXpub]);
+  }, [debounced]);
   return [
-    { display: xpubDisplay, value: xpubValue, error: xpubError },
-    setXpubDisplay,
+    { display, value, error, resolved },
+    setDisplay,
   ];
 }
 
@@ -175,7 +194,12 @@ export const XpubInput = ({ xpub, setXpub }) => {
         onChange={evt => setXpub(evt.target.value)}
         margin="normal"
         variant="outlined"
-        helperText={xpub.error ? xpub.error : "Ignored for linked payments"}
+        helperText={
+          (xpub.resolved === 'pending' ? `Resolving ENS name...` : '')
+          || xpub.error
+          || (xpub.resolved === true ? `ENS name resolved to: ${xpub.value}` : false)
+          || "Ignored for linked payments"
+        }
         error={xpub.error !== null}
         InputProps={{
           endAdornment: (

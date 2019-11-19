@@ -1,7 +1,6 @@
 import { Button, CircularProgress, Grid, Typography, withStyles } from "@material-ui/core";
 import { Unarchive as UnarchiveIcon } from "@material-ui/icons";
 import { AddressZero, Zero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
 import React, { useState } from "react";
 
 import EthIcon from "../assets/Eth.svg";
@@ -34,7 +33,7 @@ const style = withStyles(theme => ({
 }));
 
 export const CashoutCard = style(({
-  balance, channel, classes, ethProvider, history, machine, network, refreshBalances, swapRate, token,
+  balance, channel, classes, ethProvider, history, machine, refreshBalances, swapRate, token,
 }) => {
     const [withdrawing, setWithdrawing] = useState(false);
     const [recipient, setRecipient] = useAddress(null, ethProvider);

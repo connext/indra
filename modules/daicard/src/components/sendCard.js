@@ -50,11 +50,11 @@ const formatAmountString = amount => {
   return `${whole || "0"}.${part ? part.padEnd(2, "0") : "00"}`;
 };
 
-export const SendCard = style(({ balance, channel, classes, history, location, token }) => {
+export const SendCard = style(({ balance, channel, classes, ethProvider, history, location, token }) => {
   const [amount, setAmount] = useState({ display: "", error: null, value: null });
   const [link, setLink] = useState(undefined);
   const [paymentState, paymentAction] = useMachine(sendMachine);
-  const [recipient, setRecipient] = useXpub(null);
+  const [recipient, setRecipient] = useXpub(null, ethProvider);
 
   // need to extract token balance so it can be used as a dependency for the hook properly
   const tokenBalance = balance.channel.token.wad;

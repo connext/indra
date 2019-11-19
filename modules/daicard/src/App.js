@@ -129,8 +129,6 @@ class App extends React.Component {
       minDeposit: null,
       network: {},
       useWalletConnext: false,
-      sendScanArgs: { amount: null, recipient: null },
-      redeemScanArgs: { amount: null, recipient: null },
       state: {},
       swapRate,
       token: null,
@@ -617,20 +615,6 @@ class App extends React.Component {
     if (args === {}) {
       console.log("could not detect params");
     }
-    switch (path) {
-      case "/send":
-        this.setState({
-          sendScanArgs: { ...args },
-        });
-        break;
-      case "/redeem":
-        this.setState({
-          redeemScanArgs: { ...args },
-        });
-        break;
-      default:
-        break;
-    }
     return path;
   };
 
@@ -648,7 +632,6 @@ class App extends React.Component {
       maxDeposit,
       minDeposit,
       network,
-      sendScanArgs,
       token,
       wallet,
     } = this.state;
@@ -731,7 +714,7 @@ class App extends React.Component {
                   {...props}
                   balance={balance}
                   channel={channel}
-                  scanArgs={sendScanArgs}
+                  ethProvider={ethProvider}
                   token={token}
                 />
               )}
@@ -739,7 +722,11 @@ class App extends React.Component {
             <Route
               path="/redeem"
               render={props => (
-                <RedeemCard {...props} channel={channel} tokenProfile={this.state.tokenProfile} />
+                <RedeemCard
+                  {...props}
+                  channel={channel}
+                  tokenProfile={this.state.tokenProfile}
+                />
               )}
             />
             <Route
