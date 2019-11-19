@@ -11,8 +11,13 @@ import {
   SimpleSwapAppStateBigNumber,
   SwapParameters,
 } from "../types";
-import { invalidAddress } from "../validation/addresses";
-import { falsy, notGreaterThan, notLessThanOrEqualTo, notPositive } from "../validation/bn";
+import {
+  invalidAddress,
+  notGreaterThan,
+  notLessThanOrEqualTo,
+  notPositive,
+  validate,
+} from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
@@ -30,15 +35,19 @@ export class SwapController extends AbstractController {
       "bignumber",
       params,
     );
-
-    const invalid = await this.validate(amount, toAssetId, fromAssetId, swapRate);
-    if (invalid) {
-      throw new Error(invalid.toString());
-    }
-
-    // For below sanity check
     const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
+    const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
     const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
+    const nodeBal = preSwapToBal[xpubToAddress(this.connext.nodePublicIdentifier)];
+    const swappedAmount = calculateExchange(amount, swapRate);
+    validate(
+      invalidAddress(fromAssetId),
+      invalidAddress(toAssetId),
+      notLessThanOrEqualTo(amount, userBal),
+      notGreaterThan(amount, Zero),
+      notLessThanOrEqualTo(swappedAmount, nodeBal),
+      notPositive(parseEther(swapRate)),
+    );
 
     // get app definition from constants
     const appInfo = this.connext.getRegisteredAppDetails("SimpleTwoPartySwapApp");
@@ -63,7 +72,6 @@ export class SwapController extends AbstractController {
     const diffTo = postSwapToBal[this.connext.freeBalanceAddress].sub(
       preSwapToBal[this.connext.freeBalanceAddress],
     );
-    const swappedAmount = calculateExchange(amount, swapRate);
     if (!diffFrom.eq(amount) || !diffTo.eq(swappedAmount)) {
       throw new Error("Invalid final swap amounts - this shouldn't happen!!");
     }
@@ -75,29 +83,6 @@ export class SwapController extends AbstractController {
 
   /////////////////////////////////
   ////// PRIVATE METHODS
-  private validate = async (
-    amount: BigNumber,
-    toAssetId: string,
-    fromAssetId: string,
-    swapRate: string,
-  ): Promise<undefined | string> => {
-    // check that there is sufficient free balance for amount
-    const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
-    const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
-    const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
-    const nodeBal = preSwapToBal[xpubToAddress(this.connext.nodePublicIdentifier)];
-    const swappedAmount = calculateExchange(amount, swapRate);
-    const errs = [
-      invalidAddress(fromAssetId),
-      invalidAddress(toAssetId),
-      notLessThanOrEqualTo(amount, userBal),
-      notGreaterThan(amount, Zero),
-      notLessThanOrEqualTo(swappedAmount, nodeBal),
-      notPositive(parseEther(swapRate)),
-    ];
-    return errs ? errs.filter(falsy)[0] : undefined;
-  };
-
   // TODO: fix type of data
   private resolveInstallSwap = (res: (value?: unknown) => void, data: any): any => {
     if (this.appId !== data.params.appInstanceId) {
