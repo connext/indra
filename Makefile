@@ -196,11 +196,6 @@ daicard-proxy: $(shell find $(proxy) $(find_options))
 	docker build --file $(proxy)/daicard.io/prod.dockerfile --tag daicard_proxy:latest .
 	$(log_finish) && touch $(flags)/$@
 
-dashboard-prod: node-modules client $(shell find $(dashboard)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/dashboard && npm run build"
-	$(log_finish) && touch $(flags)/$@
-
 database: node-modules $(shell find $(database) $(find_options))
 	$(log_start)
 	docker build --file $(database)/db.dockerfile --tag $(project)_database:latest $(database)

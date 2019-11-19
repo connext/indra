@@ -1,6 +1,9 @@
 {
   "1": {
     "Token": {
+      "address": "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+    },
+    "SAIToken": {
       "address": "0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359",
       "bytecode": "0xa288eb5e119c76a1fc65ceb646ecf0a77657f66bb08038a226a37a467a43d035",
       "txHash": "0x91b318fd3498c14a1495357d6a4e895fd29c3d915ee695a6fbc8ef72908a1aa8"
@@ -75,7 +78,7 @@
     }
   },
   "4": {
-    "Token": {
+    "SAIToken": {
       "address": "0xFab46E002BbF0b4509813474841E0716E6730136",
       "bytecode": "0x9ee358e4863490e5417fd2a4504e5547dbaea7e77677d4c797db5be5418b8d30",
       "txHash": "0x0174127f12e41181608ba85e08ce8a1decfb4face489090c7c9aa33b1f1c5673"
@@ -147,6 +150,9 @@
     },
     "ProxyFactory": {
       "address": "0x8eb543b35DE94B0E636402C7cA32947b22853eDF"
+    },
+    "Token": {
+      "address": "0xaFF4481D10270F50f203E0763e2597776068CBc5"
     }
   },
   "4447": {
