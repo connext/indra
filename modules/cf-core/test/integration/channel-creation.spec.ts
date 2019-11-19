@@ -4,8 +4,11 @@ import { setup, SetupContext } from "./setup";
 import {
   confirmChannelCreation,
   getChannelAddresses,
-  getMultisigCreationTransactionHash
+  getMultisigCreationTransactionHash,
+  assertNodeMessage,
+  constructChannelCreationRpc
 } from "./utils";
+import { isHexString } from "ethers/utils";
 
 describe("Node can create multisig, other owners get notified", () => {
   let nodeA: Node;
@@ -20,6 +23,31 @@ describe("Node can create multisig, other owners get notified", () => {
   });
 
   describe("Queued channel creation", () => {
+    it("Node A and Node B can create a channel", async done => {
+      const owners = [
+        nodeA.publicIdentifier,
+        nodeB.publicIdentifier
+      ];
+
+      nodeA.once(NODE_EVENTS.CREATE_CHANNEL, async (msg: CreateChannelMessage) => {
+        assertNodeMessage(msg, {
+          from: nodeB.publicIdentifier,
+          type: NODE_EVENTS.CREATE_CHANNEL,
+          data: {
+            owners: [
+              nodeB.freeBalanceAddress,
+              nodeA.freeBalanceAddress,
+            ],
+            counterpartyXpub: nodeB.publicIdentifier,
+          }
+        }, ['data.multisigAddress']);
+        done();
+      });
+
+      const txHash = await nodeB.rpcRouter.dispatch(constructChannelCreationRpc(owners));
+      expect(isHexString(txHash)).toBeTruthy();
+    })
+  
     it("Node A can create multiple back-to-back channels with Node B and Node C", async done => {
       const ownersABPublicIdentifiers = [
         nodeA.publicIdentifier,
