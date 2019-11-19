@@ -17,8 +17,6 @@ import React, { useState } from "react";
 
 import { Copyable } from "./copyable";
 
-import { ConnextClientStorePrefix } from "@connext/types";
-
 const style = withStyles(theme => ({
   card: {
     display: "flex",
@@ -49,7 +47,7 @@ export const SettingsCard = style(props => {
   const [showRecovery, setShowRecovery] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
-  const { classes, setWalletConnext, getWalletConnext, store, xpub } = props;
+  const { classes, setWalletConnext, getWalletConnext, store } = props;
   const useWalletConnext = getWalletConnext()
 
   const generateNewAddress = async () => {
