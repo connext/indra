@@ -9,7 +9,6 @@ import { inverse } from "../utils";
 
 import { useAddress, AddressInput } from "./input";
 
-
 const style = withStyles(theme => ({
   icon: {
     width: "40px",

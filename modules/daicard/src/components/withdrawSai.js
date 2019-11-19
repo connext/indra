@@ -7,20 +7,16 @@ import {
   TextField,
   Typography,
 } from "@material-ui/core";
-import { getAddress } from "ethers/utils";
 import React, { useState } from "react";
 
-export const WithdrawSaiDialog = ({ channel, machine, saiBalance }) => {
-  const [recipient, setRecipient] = useState("");
-  const [recipientError, setRecipientError] = useState("");
+import { useAddress, AddressInput } from "./input";
+
+export const WithdrawSaiDialog = ({ channel, ethProvider, machine, saiBalance }) => {
+  const [recipient, setRecipient] = useAddress(null, ethProvider);
   const [withdrawing, setWithdrawing] = useState(false);
 
   const withdrawSai = async () => {
-    let recipientAddress;
-    try {
-      recipientAddress = getAddress(recipient);
-    } catch (e) {
-      setRecipientError("Please enter a valid Ethereum address.");
+    if (!recipient || !recipient.value || recipient.error) {
       return;
     }
     setWithdrawing(true);
@@ -29,10 +25,10 @@ export const WithdrawSaiDialog = ({ channel, machine, saiBalance }) => {
     const result = await channel.withdraw({
       amount: saiBalance.toString(),
       assetId: channel.config.contractAddresses.SAIToken,
-      recipient: recipientAddress,
+      recipient: recipient.value,
     });
     console.log(`Cashout result: ${JSON.stringify(result)}`);
-    console.log(`Withdrawing ${saiBalance.format()} SAI to: ${recipientAddress}`);
+    console.log(`Withdrawing ${saiBalance.format()} SAI to: ${recipient.value}`);
     const txHash = result.transaction.hash;
     setWithdrawing(false);
     machine.send("SUCCESS_WITHDRAW", { txHash });
@@ -53,18 +49,9 @@ export const WithdrawSaiDialog = ({ channel, machine, saiBalance }) => {
         <Typography variant="h6" component="p">
           Sai Balance: {saiBalance ? saiBalance.toDAI().format() : 0}
         </Typography>
-        <TextField
-          autoFocus
-          margin="dense"
-          id="name"
-          value={recipient}
-          label="Withdrawal Address"
-          onChange={event => setRecipient(event.target.value)}
-          fullWidth
-          variant="outlined"
-          helperText={recipientError}
-          error={!!recipientError}
-        />
+        <Grid item xs={12}>
+          <AddressInput address={recipient} setAddress={setRecipient} />
+        </Grid>
         <Typography variant="caption">
           Contact us at support@connext.network with any issues!
         </Typography>
