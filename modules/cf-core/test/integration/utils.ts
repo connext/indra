@@ -86,11 +86,15 @@ export function assertNodeMessage(
 }
 
 export function assertProposeMessage(senderId: string, msg: ProposeMessage, params: ProposeInstallProtocolParams) {
+  const { multisigAddress, initiatorXpub, responderXpub: proposedToIdentifier, ...emittedParams } = params;
   assertNodeMessage(msg, {
     from: senderId,
     type: NODE_EVENTS.PROPOSE_INSTALL,
     data: {
-      params,
+      params: {
+        ...emittedParams,
+        proposedToIdentifier
+      },
     }
   }, ['data.appInstanceId'])
 }
@@ -640,23 +644,25 @@ export async function installVirtualApp(
   initiatorDeposit?: BigNumber,
   responderDeposit?: BigNumber
 ): Promise<string> {
-  nodeC.once(
+  nodeC.on(
     NODE_EVENTS.PROPOSE_INSTALL,
     async (msg: ProposeMessage) => {
       const {
         appInstanceId,
         params,
       } = await proposal;
-      assertProposeMessage(nodeA.publicIdentifier, msg, params)
       const { data: { appInstanceId: eventAppInstanceId } } = msg;
       if (eventAppInstanceId === appInstanceId) {
-        nodeC.rpcRouter.dispatch(
+        assertProposeMessage(nodeA.publicIdentifier, msg, params)
+        await nodeC.rpcRouter.dispatch(
           constructInstallVirtualRpc(appInstanceId, nodeB.publicIdentifier)
         );
       }
     }
   );
 
+  // await in listener bc event is emitted before
+  // promise officially resolves
   const proposal = makeVirtualProposal(
     nodeA,
     nodeC,
@@ -668,7 +674,7 @@ export async function installVirtualApp(
   );
 
   return new Promise((resolve: (appInstanceId: string) => void) =>
-    nodeA.once(
+    nodeA.on(
       NODE_EVENTS.INSTALL_VIRTUAL,
       async ({
         data: {
@@ -676,7 +682,9 @@ export async function installVirtualApp(
         }
       }: InstallVirtualMessage) => {
         const { appInstanceId } = await proposal;
-        if (eventAppInstanceId === appInstanceId) resolve(appInstanceId);
+        if (eventAppInstanceId === appInstanceId) {
+          resolve(appInstanceId);
+        }
       }
     )
   );
