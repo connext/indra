@@ -54,7 +54,7 @@ export const SendCard = style(({ balance, channel, classes, ethProvider, history
   const [amount, setAmount] = useState({ display: "", error: null, value: null });
   const [link, setLink] = useState(undefined);
   const [paymentState, paymentAction] = useMachine(sendMachine);
-  const [recipient, setRecipient] = useXpub(null, ethProvider);
+  const [recipient, setRecipient, setRecipientError] = useXpub(null, ethProvider);
 
   // need to extract token balance so it can be used as a dependency for the hook properly
   const tokenBalance = balance.channel.token.wad;
@@ -90,10 +90,7 @@ export const SendCard = style(({ balance, channel, classes, ethProvider, history
   const paymentHandler = async () => {
     if (!channel || !token || amount.error || recipient.error) return;
     if (!recipient.value) {
-      setRecipient({
-        ...recipient,
-        error: "Recipent must be specified for p2p transfer",
-      });
+      setRecipientError("Recipent must be specified for p2p transfer");
       return;
     }
     console.log(`Sending ${amount.value} to ${recipient.value}`);
@@ -128,7 +125,7 @@ export const SendCard = style(({ balance, channel, classes, ethProvider, history
   const linkHandler = async () => {
     if (!channel || !token || amount.error) return;
     if (recipient.error && !recipient.value) {
-      setRecipient({ ...recipient, error: null });
+      setRecipientError(null);
     }
     if (toBN(amount.value.toDEI()).gt(LINK_LIMIT.wad)) {
       setAmount({ ...amount, error: `Linked payments are capped at ${LINK_LIMIT.format()}.` });
