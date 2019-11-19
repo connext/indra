@@ -11,7 +11,6 @@ import { getAddress } from "ethers/utils";
 import React, { useState } from "react";
 
 export const WithdrawSaiDialog = ({ channel, machine, saiBalance }) => {
-  console.log('saiBalance: ', saiBalance);
   const [recipient, setRecipient] = useState("");
   const [recipientError, setRecipientError] = useState("");
   const [withdrawing, setWithdrawing] = useState(false);
@@ -33,7 +32,7 @@ export const WithdrawSaiDialog = ({ channel, machine, saiBalance }) => {
       recipient: recipientAddress,
     });
     console.log(`Cashout result: ${JSON.stringify(result)}`);
-    console.log(`Withdrawing ${saiBalance.toDAI()} SAI to: ${recipientAddress}`);
+    console.log(`Withdrawing ${saiBalance.format()} SAI to: ${recipientAddress}`);
     const txHash = result.transaction.hash;
     setWithdrawing(false);
     machine.send("SUCCESS_WITHDRAW", { txHash });
@@ -52,7 +51,7 @@ export const WithdrawSaiDialog = ({ channel, machine, saiBalance }) => {
           DAI)! Please withdraw the SAI from your channel in order to keep using your daicard.
         </Typography>
         <Typography variant="h6" component="p">
-          Sai Balance: {saiBalance ? saiBalance.toDAI() : 0}
+          Sai Balance: {saiBalance ? saiBalance.toDAI().format() : 0}
         </Typography>
         <TextField
           autoFocus
