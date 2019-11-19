@@ -26,7 +26,6 @@ import { CFCoreTypes, ProposeMessage } from "../util/cfCore";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
-import { ProposeInstallProtocolParams } from "@connext/cf-core/dist/src/machine/types";
 
 const logger = new CLogger("AppRegistryService");
 
@@ -58,23 +57,6 @@ export class AppRegistryService {
       console.error(e);
       await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
       return;
-    }
-  }
-
-  /**
-   * Reject app installs for virtual apps that node is intermediary of
-   * based on invalid conditions.
-   * @param data Data from CF event PROPOSE_INSTALL_VIRTUAL
-   */
-  async allowOrRejectVirtual(
-    data: ProposeMessage,
-  ): Promise<void | CFCoreTypes.RejectInstallResult> {
-    try {
-      await this.verifyVirtualAppProposal(data.data, data.from);
-    } catch (e) {
-      logger.error(`Caught error during proposed app validation, rejecting virtual install`);
-      console.error(e);
-      return await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
     }
   }
 
