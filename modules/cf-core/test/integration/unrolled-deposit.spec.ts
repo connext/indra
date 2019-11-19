@@ -65,19 +65,14 @@ describe("Node method follows spec - install balance refund", () => {
         });
         await provider.waitForTransaction(tx.hash!);
         const multisigBalance = await provider.getBalance(multisigAddress);
-        console.log('multisigBalance: ', multisigBalance);
         expect(multisigBalance).toBeEq(1);
-
-        const [app] = await getInstalledAppInstances(nodeA);
-        console.log('app: ', app);
 
         await nodeA.rpcRouter.dispatch({
           id: Date.now(),
           methodName: NodeTypes.RpcMethodName.UNINSTALL_BALANCE_REFUND,
           parameters: {
-            multisigAddress,
-            tokenAddress: AddressZero
-          } as NodeTypes.InstallBalanceRefundParams
+            multisigAddress
+          } as NodeTypes.UninstallBalanceRefundParams
         });
 
         const [postSendBalA, postSendBalB] = await getBalances(
