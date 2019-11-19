@@ -114,11 +114,15 @@ async function getOutgoingEventDataFromProtocol(
 
   switch (protocol) {
     case Protocol.Propose:
+      const { multisigAddress, initiatorXpub, responderXpub, ...emittedParams} = params as ProposeInstallProtocolParams;
       return {
         ...baseEvent,
         type: NODE_EVENTS.PROPOSE_INSTALL,
         data: {
-          params,
+          params: {
+            ...emittedParams,
+            proposedToIdentifier: responderXpub,
+          },
           appInstanceId: stateChannelsMap
             .get((params as ProposeInstallProtocolParams).multisigAddress)!
             .mostRecentlyProposedAppInstance().identityHash

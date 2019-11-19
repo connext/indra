@@ -39,7 +39,7 @@ export interface NodeMessageWrappedProtocolMessage extends Node.NodeMessage {
 
 export interface ProposeMessage extends Node.NodeMessage {
   data: {
-    params: ProposeInstallProtocolParams;
+    params: Node.ProposeInstallParams;
     appInstanceId: string;
   };
 }
