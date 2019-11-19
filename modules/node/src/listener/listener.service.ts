@@ -118,9 +118,6 @@ export default class ListenerService implements OnModuleInit {
             logger.debug(`No post-install actions configured.`);
         }
       },
-      PROPOSE_INSTALL_VIRTUAL: (data: ProposeMessage): void => {
-        throw new Error(`This event should not be thrown! ${JSON.stringify(data)}`);
-      },
       PROPOSE_STATE: (data: any): void => {
         // TODO: need to validate all apps here as well?
         logEvent(CFCoreTypes.EventName.PROPOSE_STATE, data);

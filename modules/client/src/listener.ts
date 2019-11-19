@@ -83,33 +83,6 @@ export class ConnextListener extends EventEmitter {
       await this.verifyAndInstallKnownApp(appInfo, matchedApp);
       return;
     },
-    PROPOSE_INSTALL_VIRTUAL: async (data: ProposeMessage): Promise<void> => {
-      this.log.warn(`Got PROPOSE_INSTALL_VIRTUAL message but it's depreciated.. :(`);
-      // validate and automatically install for the known and supported
-      // applications
-      this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data.data);
-      // if the from is us, ignore
-      // FIXME: type of ProposeVirtualMessage should extend Node.NodeMessage,
-      // which has a from field, but ProposeVirtualMessage does not
-      if ((data as any).from === this.connext.publicIdentifier) {
-        return;
-      }
-      // check based on supported applications
-      // matched app, take appropriate default actions
-      const matchedResult = await this.matchAppInstance(data);
-      if (!matchedResult) {
-        return;
-      }
-      const { appInfo, matchedApp } = matchedResult;
-      if (matchedResult.matchedApp.name !== "SimpleTransferApp") {
-        this.log.debug(
-          `Caught propose install virtual for what should always be a regular app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
-        );
-        return;
-      }
-      await this.verifyAndInstallKnownApp(appInfo, matchedApp);
-      return;
-    },
     PROPOSE_STATE: (data: any): void => {
       // TODO: validate the proposed state
       // TODO: are we using this flow in any of the known/supported

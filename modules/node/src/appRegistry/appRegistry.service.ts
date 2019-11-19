@@ -26,6 +26,7 @@ import { CFCoreTypes, ProposeMessage } from "../util/cfCore";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
+import { ProposeInstallProtocolParams } from "@connext/cf-core/dist/src/machine/types";
 
 const logger = new CLogger("AppRegistryService");
 
