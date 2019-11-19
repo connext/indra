@@ -37,10 +37,10 @@ function Home(props) {
     const {classes} = props; 
   return (
     <Grid className={classes.top} container>
-      <Card className={classes.card} component={Link} to={"/debug"}>
+      <Card className={classes.card} component={Link} to={"/dashboard/debug"}>
         <Typography className={classes.cardText}>Debug</Typography>
       </Card>
-      <Card className={classes.card} component={Link} to={"/stats"}>
+      <Card className={classes.card} component={Link} to={"/dashboard/stats"}>
         <Typography className={classes.cardText}>Node Stats</Typography>
       </Card>
     </Grid>

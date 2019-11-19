@@ -24,13 +24,18 @@ my.xpubRegex = /^xpub[a-zA-Z0-9]{107}/i
 my.isStarting = () => cy.contains('span', /starting/i).should('exist')
 my.doneStarting = () => cy.contains('span', /starting/i).should('not.exist')
 
+//Dashboard 
+// my.goToDashboard = () => cy.get(`a[href="/dashboard"]`).click()
+// my.goToDebug = () => cy.get(`a[href="/dashboard/debug"]`).click()
+// my.goToDebugChannel = () => cy.get(`a[href="/dashboard/debug/channel"]`).click()
+
+//DaiCard
 my.goToDeposit = () => cy.get(`a#goToDepositButton`).click()
 my.goToSettings = () => cy.get(`a#goToSettingsButton`).click()
 my.goToRequest = () => cy.get(`a#goToRequestButton`).click()
 my.goToSend = () => cy.get(`a#goToSendButton`).click()
 my.goToCashout = () => cy.get(`a#goToCashoutButton`).click()
 my.goHome = () => cy.get('a#goToHomeButton').click()
-
 my.goNextIntro = () => cy.contains('button', /^next$/i).click()
 my.goCloseIntro = () => cy.contains('button', /^got it!$/i).click()
 

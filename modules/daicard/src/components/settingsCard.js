@@ -93,14 +93,13 @@ const styles = {
 };
 
 const SettingsCard = props => {
-  const [copied, setCopied] = useState(false);
   const [inputRecovery, setInputRecovery] = useState(false);
   const [isBurning, setIsBurning] = useState(false);
   const [mnemonic, setMnemonic] = useState("");
   const [showRecovery, setShowRecovery] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
-  const { classes, setWalletConnext, getWalletConnext, store } = props;
+  const { classes, setWalletConnext, getWalletConnext, store, history } = props;
   const useWalletConnext = getWalletConnext()
 
   const generateNewAddress = async () => {
@@ -285,6 +284,23 @@ const SettingsCard = props => {
             </DialogContent>
           </Grid>
         </Dialog>
+      </Grid>
+
+      <Grid item xs={12}>
+        <Button
+          disableTouchRipple
+          variant="outlined"
+          style={{
+            background: "#FFF",
+            border: "1px solid #F22424",
+            color: "#F22424",
+            width: "15%",
+          }}
+          size="medium"
+          onClick={() => history.push("/")}
+        >
+          Back
+        </Button>
       </Grid>
     </Grid>
   );

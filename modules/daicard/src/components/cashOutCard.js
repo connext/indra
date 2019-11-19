@@ -10,7 +10,6 @@ import { inverse } from "../utils";
 
 import { useAddress, AddressInput } from "./input";
 
-
 const styles = {
   top: {
     paddingLeft: 12,
