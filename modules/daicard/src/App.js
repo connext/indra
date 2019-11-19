@@ -67,8 +67,6 @@ const DEPOSIT_ESTIMATED_GAS = toBN("25000");
 const MAX_CHANNEL_VALUE = Currency.DAI("30");
 const CF_PATH = "m/44'/60'/0'/25446";
 
-const REACT_APP_SAI_TOKEN = process.env.REACT_APP_SAI_TOKEN;
-
 // it is important to add a default payment
 // profile on initial load in the case the
 // user is being paid without depositing, or
@@ -134,7 +132,7 @@ class App extends React.Component {
       useWalletConnext: false,
       sendScanArgs: { amount: null, recipient: null },
       redeemScanArgs: { amount: null, recipient: null },
-      saiAmount: Zero,
+      saiBalance: Currency.DAI("0", swapRate),
       state: {},
       swapRate,
       token: null,
@@ -342,7 +340,7 @@ class App extends React.Component {
 
     const saiBalance = await this.getSaiBalance(wallet || ethprovider);
     if (saiBalance && saiBalance.gt(0)) {
-      this.setState({ saiBalance });
+      this.setState({ saiBalance: Currency.DEI(saiBalance, swapRate) });
       machine.send("SAI");
     } else {
       machine.send("READY");
@@ -354,7 +352,7 @@ class App extends React.Component {
   getSaiBalance = async wallet => {
     const { channel } = this.state;
     if (!channel.config.contractAddresses.SAIToken) {
-      return;
+      return Zero;
     }
     const saiToken = new Contract(
       channel.config.contractAddresses.SAIToken,
@@ -695,12 +693,15 @@ class App extends React.Component {
               message="Starting Channel Controllers..."
               duration={30 * 60 * 1000}
             />
-            <WithdrawSaiDialog
-              channel={channel}
-              saiTokenAddress={REACT_APP_SAI_TOKEN}
-              machine={machine}
-              saiBalance={saiBalance}
-            />
+            {saiBalance.toBN().gt(0) ? (
+              <WithdrawSaiDialog
+                channel={channel}
+                machine={machine}
+                saiBalance={saiBalance}
+              />
+            ) : (
+              <></>
+            )}
 
             <Route
               exact

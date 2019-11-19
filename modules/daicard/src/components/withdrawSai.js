@@ -7,10 +7,11 @@ import {
   TextField,
   Typography,
 } from "@material-ui/core";
-import { getAddress, formatEther } from "ethers/utils";
+import { getAddress } from "ethers/utils";
 import React, { useState } from "react";
 
-export const WithdrawSaiDialog = ({ channel, machine, saiTokenAddress, saiBalance }) => {
+export const WithdrawSaiDialog = ({ channel, machine, saiBalance }) => {
+  console.log('saiBalance: ', saiBalance);
   const [recipient, setRecipient] = useState("");
   const [recipientError, setRecipientError] = useState("");
   const [withdrawing, setWithdrawing] = useState(false);
@@ -28,11 +29,11 @@ export const WithdrawSaiDialog = ({ channel, machine, saiTokenAddress, saiBalanc
     machine.send("START_WITHDRAW");
     const result = await channel.withdraw({
       amount: saiBalance.toString(),
-      assetId: saiTokenAddress,
+      assetId: channel.config.contractAddresses.SAIToken,
       recipient: recipientAddress,
     });
     console.log(`Cashout result: ${JSON.stringify(result)}`);
-    console.log(`Withdrawing ${saiBalance.toString()} SAI to: ${recipientAddress}`);
+    console.log(`Withdrawing ${saiBalance.toDAI()} SAI to: ${recipientAddress}`);
     const txHash = result.transaction.hash;
     setWithdrawing(false);
     machine.send("SUCCESS_WITHDRAW", { txHash });
@@ -51,7 +52,7 @@ export const WithdrawSaiDialog = ({ channel, machine, saiTokenAddress, saiBalanc
           DAI)! Please withdraw the SAI from your channel in order to keep using your daicard.
         </Typography>
         <Typography variant="h6" component="p">
-          Sai Balance: {saiBalance ? formatEther(saiBalance) : 0}
+          Sai Balance: {saiBalance ? saiBalance.toDAI() : 0}
         </Typography>
         <TextField
           autoFocus
