@@ -12,6 +12,9 @@ export const CANNOT_DEPOSIT =
 export const BALANCE_REFUND_APP_ALREADY_INSTALLED =
   "Balance refund app is installed, please uninstall first.";
 
+export const BALANCE_REFUND_APP_NOT_INSTALLED =
+  "Balance refund app is not installed.";
+
 export const CANNOT_UNINSTALL_FREE_BALANCE = (
   multisigAddress: string
 ): string => `Cannot uninstall the FreeBalance of channel: ${multisigAddress}`;

@@ -2,7 +2,6 @@ import { Zero } from "ethers/constants";
 import { jsonRpcMethod } from "rpc-server";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
-import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { Node } from "../../../types";
 import { NodeController } from "../../controller";
@@ -18,7 +17,7 @@ export default class InstallBalanceRefundController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.DepositParams
+    params: Node.InstallBalanceRefundParams
   ): Promise<string[]> {
     return [params.multisigAddress];
   }
