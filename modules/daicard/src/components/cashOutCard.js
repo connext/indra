@@ -13,7 +13,7 @@ import { Unarchive as UnarchiveIcon } from "@material-ui/icons";
 import { AddressZero, Zero } from "ethers/constants";
 import { arrayify, isHexString } from "ethers/utils";
 import QRIcon from "mdi-material-ui/QrcodeScan";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import EthIcon from "../assets/Eth.svg";
 import DaiIcon from "../assets/dai.svg";
@@ -43,38 +43,55 @@ const style = withStyles(theme => ({
   },
 }));
 
-export const CashoutCard = style(({
-  balance, channel, classes, ethProvider, history, machine, network, refreshBalances, swapRate, token,
-}) => {
-    const [recipient, setRecipient] = useState({ display: "", value: undefined, error: undefined });
-    const [scan, setScan] = useState(false);
-    const [withdrawing, setWithdrawing] = useState(false);
+const useDebounce = (value, delay) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay)
+    return () => clearTimeout(handler);
+  }, [value]);
+  return debouncedValue;
+}
 
-    // TODO: add 1 second delay to this
-    const updateRecipientHandler = async value => {
-      let newVal = value;
+const useAddress = (address, ethProvider, network, setScan) => {
+  const [recipientDisplay, setRecipientDisplay] = useState(null);
+  const [recipientValue, setRecipientValue] = useState(null);
+  const [recipientError, setRecipientError] = useState(null);
+  const debouncedRecipient = useDebounce(recipientDisplay, 1000);
+  useEffect(() => {
+    (async () => {
+      if (debouncedRecipient === null) return;
+      let newVal = debouncedRecipient;
       let error;
-      if (value.includes("ethereum:")) {
-        newVal = value.split(":")[1];
+      if (debouncedRecipient.startsWith("ethereum:")) {
+        newVal = debouncedRecipient.split(":")[1];
       }
-      console.log(ethProvider);
       if (network.ensAddress && newVal.endsWith('.eth')) {
         newVal = await ethProvider.resolveName(newVal);
       }
       if (newVal === "") {
         error = "Please provide an address or ens name";
       } else if (!isHexString(newVal)) {
-        error = `Invalid hex string: ${newVal}`;
+        error = `Invalid hex string`;
       } else if (arrayify(newVal).length !== 20) {
-        error = `Invalid length: ${newVal}`;
+        error = `Invalid length: ${newVal.length} (expected 42)`;
       }
-      setRecipient({
-        display: value,
-        value: error ? undefined : newVal,
-        error,
-      });
+      setRecipientValue(error ? undefined : newVal);
+      setRecipientError(error);
       setScan(false);
-    };
+    })()
+  }, [debouncedRecipient]);
+  const setAddress = setRecipientDisplay;
+  return ([{ display: recipientDisplay, value: recipientValue, error: recipientError }, setAddress]);
+}
+
+export const CashoutCard = style(({
+  balance, channel, classes, ethProvider, history, machine, network, refreshBalances, swapRate, token,
+}) => {
+    const [scan, setScan] = useState(false);
+    const [withdrawing, setWithdrawing] = useState(false);
+    const [recipient, setRecipient] = useAddress(null, ethProvider, network, setScan);
 
     const cashoutTokens = async () => {
       const value = recipient.value;
@@ -174,7 +191,7 @@ export const CashoutCard = style(({
             label="Address"
             placeholder="0x0..."
             value={recipient.display || ""}
-            onChange={evt => updateRecipientHandler(evt.target.value)}
+            onChange={evt => setRecipient(evt.target.value)}
             margin="normal"
             variant="outlined"
             required
@@ -216,7 +233,7 @@ export const CashoutCard = style(({
             right: "0",
           }}
         >
-          <QRScan handleResult={updateRecipientHandler} history={history} />
+          <QRScan handleResult={setRecipient} history={history} />
         </Modal>
         <Grid item xs={12}>
           <Grid container spacing={8} direction="row" alignItems="center" justify="center">
