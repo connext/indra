@@ -41,8 +41,6 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
         await collateralizeChannel(multisigAddressAB, nodeA, nodeB);
         await collateralizeChannel(multisigAddressBC, nodeB, nodeC);
 
-        let proposedParams: ProposeInstallProtocolParams;
-
         nodeA.once(NODE_EVENTS.INSTALL_VIRTUAL, async () => {
           const [virtualAppNodeA] = await getInstalledAppInstances(nodeA);
 
@@ -56,6 +54,7 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
         nodeC.once(
           NODE_EVENTS.PROPOSE_INSTALL,
           async (msg: ProposeMessage) => {
+            const { params: proposedParams } = await proposal;
             assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams)
             const { data: { params, appInstanceId } } = msg;
             const [proposedAppNodeC] = await getProposedAppInstances(nodeC);
@@ -66,16 +65,16 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
               nodeA.publicIdentifier
             );
 
-            installTTTVirtual(nodeC, appInstanceId, nodeB.publicIdentifier);
+            await installTTTVirtual(nodeC, appInstanceId, nodeB.publicIdentifier);
           }
         );
 
-        const { params } = await makeVirtualProposal(
+        const proposal = makeVirtualProposal(
           nodeA,
           nodeC,
           TicTacToeApp
         );
-        proposedParams = params;
+        const { params } = await proposal;
 
         const [proposedAppNodeA] = await getProposedAppInstances(nodeA);
 
