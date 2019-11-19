@@ -40,14 +40,13 @@ const style = withStyles(theme => ({
   },
 }));
 
-export const SettingsCard = style(props => {
+export const SettingsCard = style(({ classes, setWalletConnext, getWalletConnext, store, history }) => {
   const [inputRecovery, setInputRecovery] = useState(false);
   const [isBurning, setIsBurning] = useState(false);
   const [mnemonic, setMnemonic] = useState("");
   const [showRecovery, setShowRecovery] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
-  const { classes, setWalletConnext, getWalletConnext, store } = props;
   const useWalletConnext = getWalletConnext()
 
   const generateNewAddress = async () => {
@@ -277,7 +276,7 @@ export const SettingsCard = style(props => {
             width: "15%",
           }}
           size="medium"
-          onClick={() => props.history.push("/")}
+          onClick={() => history.push("/")}
         >
           Back
         </Button>

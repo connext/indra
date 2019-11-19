@@ -47,20 +47,20 @@ function Debug(props) {
   return (
     <Grid className={classes.top} container>
       <Grid className={classes.appBar} container>
-      <Button className={classes.button} component={Link} to={"/"}>
+      <Button className={classes.button} component={Link} to={"/dashboard"}>
           <HomeIcon className={classes.icon} />
         </Button>
-        <Button className={classes.button} component={Link} to={"/debug/channel"}>
+        <Button className={classes.button} component={Link} to={"/dashboard/debug/channel"}>
           <Typography className={classes.buttonText}>Channels</Typography>
         </Button>
-        <Button className={classes.button} component={Link} to={"/debug/transfer"}>
+        <Button className={classes.button} component={Link} to={"/dashboard/debug/transfer"}>
           <Typography className={classes.buttonText}>Transfer</Typography>
         </Button>
 
       </Grid>
         <Switch>
-          <Route exact path="/debug/channel" render={props => <DebugChannel {...props} messaging={messaging}/>} />
-          <Route exact path="/debug/transfer" render={props => <DebugTransfer {...props} messaging={messaging} />} />
+          <Route exact path="/dashboard/debug/channel" render={props => <DebugChannel {...props} messaging={messaging}/>} />
+          <Route exact path="/dashboard/debug/transfer" render={props => <DebugTransfer {...props} messaging={messaging} />} />
         </Switch>
     </Grid>
   );

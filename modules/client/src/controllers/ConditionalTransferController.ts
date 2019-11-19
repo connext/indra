@@ -20,7 +20,14 @@ import {
   SupportedApplications,
   TransferCondition,
 } from "../types";
-import { falsy, invalid32ByteHexString, invalidAddress, notLessThanOrEqualTo } from "../validation";
+import {
+  invalid32ByteHexString,
+  invalidAddress,
+  invalidXpub,
+  notLessThanOrEqualTo,
+  notNegative,
+  validate,
+} from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
@@ -32,8 +39,6 @@ type ConditionalExecutors = {
 
 export class ConditionalTransferController extends AbstractController {
   private appId: string;
-
-  private timeout: NodeJS.Timeout;
 
   public conditionalTransfer = async (
     params: ConditionalTransferParameters,
@@ -54,9 +59,18 @@ export class ConditionalTransferController extends AbstractController {
       "bignumber",
       params,
     );
-    if (!recipient) {
-      throw new Error(`A recipient must be specified for transfer of type ${params.conditionType}`);
-    }
+
+    const freeBalance = await this.connext.getFreeBalance(assetId);
+    const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
+    validate(
+      notNegative(amount),
+      invalidAddress(assetId),
+      notLessThanOrEqualTo(amount, preTransferBal),
+      invalid32ByteHexString(paymentId),
+      invalid32ByteHexString(preImage),
+      invalidXpub(recipient),
+    );
+
     const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
 
     // wait for linked transfer
@@ -102,10 +116,18 @@ export class ConditionalTransferController extends AbstractController {
   ): Promise<LinkedTransferResponse> => {
     // convert params + validate
     const { amount, assetId, paymentId, preImage } = convert.LinkedTransfer("bignumber", params);
-    const invalid = await this.validateLinked(amount, assetId, paymentId, preImage);
-    if (invalid) {
-      throw new Error(invalid);
-    }
+
+    console.log('amount: ', amount);
+
+    const freeBalance = await this.connext.getFreeBalance(assetId);
+    const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
+    validate(
+      notNegative(amount),
+      invalidAddress(assetId),
+      notLessThanOrEqualTo(amount, preTransferBal),
+      invalid32ByteHexString(paymentId),
+      invalid32ByteHexString(preImage),
+    );
 
     const appInfo = this.connext.getRegisteredAppDetails(
       SupportedApplications.SimpleLinkedTransferApp as SupportedApplication,
@@ -148,24 +170,6 @@ export class ConditionalTransferController extends AbstractController {
       paymentId,
       preImage,
     };
-  };
-
-  private validateLinked = async (
-    amount: BigNumber,
-    assetId: string,
-    paymentId: string,
-    preImage: string,
-  ): Promise<undefined | string> => {
-    // check that there is sufficient free balance for amount
-    const freeBalance = await this.connext.getFreeBalance(assetId);
-    const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
-    const errs = [
-      invalidAddress(assetId),
-      notLessThanOrEqualTo(amount, preTransferBal),
-      invalid32ByteHexString(paymentId),
-      invalid32ByteHexString(preImage),
-    ];
-    return errs ? errs.filter(falsy)[0] : undefined;
   };
 
   // creates a promise that is resolved once the app is installed
