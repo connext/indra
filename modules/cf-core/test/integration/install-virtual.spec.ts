@@ -54,7 +54,7 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
         });
 
         nodeC.once(
-          NODE_EVENTS.PROPOSE_INSTALL_VIRTUAL,
+          NODE_EVENTS.PROPOSE_INSTALL,
           async (msg: ProposeMessage) => {
             assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams)
             const { data: { params, appInstanceId } } = msg;
@@ -73,7 +73,6 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
         const { params } = await makeVirtualProposal(
           nodeA,
           nodeC,
-          nodeB,
           TicTacToeApp
         );
         proposedParams = params;
