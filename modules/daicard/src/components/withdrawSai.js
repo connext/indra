@@ -4,7 +4,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  TextField,
   Typography,
 } from "@material-ui/core";
 import React, { useState } from "react";
@@ -49,9 +48,7 @@ export const WithdrawSaiDialog = ({ channel, ethProvider, machine, saiBalance })
         <Typography variant="h6" component="p">
           Sai Balance: {saiBalance ? saiBalance.toDAI().format() : 0}
         </Typography>
-        <Grid item xs={12}>
-          <AddressInput address={recipient} setAddress={setRecipient} />
-        </Grid>
+        <AddressInput address={recipient} setAddress={setRecipient} />
         <Typography variant="caption">
           Contact us at support@connext.network with any issues!
         </Typography>

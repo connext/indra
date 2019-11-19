@@ -337,9 +337,9 @@ class App extends React.Component {
       tokenProfile,
     });
 
-    const saiBalance = await this.getSaiBalance(wallet || ethProvider);
-    if (saiBalance && saiBalance.gt(0)) {
-      this.setState({ saiBalance: Currency.DEI(saiBalance, swapRate) });
+    const saiBalance = Currency.DEI(await this.getSaiBalance(wallet || ethProvider), swapRate);
+    if (saiBalance && saiBalance.wad.gt(0)) {
+      this.setState({ saiBalance });
       machine.send("SAI");
     } else {
       machine.send("READY");
@@ -678,9 +678,10 @@ class App extends React.Component {
               message="Starting Channel Controllers..."
               duration={30 * 60 * 1000}
             />
-            {saiBalance.toBN().gt(0) ? (
+            {saiBalance.wad.gt(0) ? (
               <WithdrawSaiDialog
                 channel={channel}
+                ethProvider={ethProvider}
                 machine={machine}
                 saiBalance={saiBalance}
               />
