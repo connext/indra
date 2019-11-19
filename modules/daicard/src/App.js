@@ -123,7 +123,7 @@ class App extends React.Component {
           total: Currency.ETH("0", swapRate),
         },
       },
-      ethprovider: new eth.providers.JsonRpcProvider(urls.ethProviderUrl),
+      ethProvider: new eth.providers.JsonRpcProvider(urls.ethProviderUrl),
       machine: interpret(rootMachine),
       maxDeposit: null,
       minDeposit: null,
@@ -178,7 +178,7 @@ class App extends React.Component {
 
   // Channel doesn't get set up until after provider is set
   async componentDidMount() {
-    const { ethprovider, machine } = this.state;
+    const { ethProvider, machine } = this.state;
     machine.start();
     machine.onTransition(state => {
       this.setState({ state });
@@ -199,9 +199,10 @@ class App extends React.Component {
     }
 
     let wallet;
-    const network = await ethprovider.getNetwork();
+    await ethProvider.ready;
+    const network = await ethProvider.getNetwork();
     if (!useWalletConnext) {
-      wallet = eth.Wallet.fromMnemonic(mnemonic, CF_PATH + "/0").connect(ethprovider);
+      wallet = eth.Wallet.fromMnemonic(mnemonic, CF_PATH + "/0").connect(ethProvider);
       this.setState({ network, wallet });
     }
 
@@ -288,7 +289,7 @@ class App extends React.Component {
     const token = new Contract(
       channel.config.contractAddresses.Token,
       tokenArtifacts.abi,
-      wallet || ethprovider,
+      wallet || ethProvider,
     );
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
@@ -370,8 +371,8 @@ class App extends React.Component {
   };
 
   refreshBalances = async () => {
-    const { balance, channel, ethprovider, swapRate, token } = this.state;
-    let gasPrice = await ethprovider.getGasPrice();
+    const { balance, channel, ethProvider, swapRate, token } = this.state;
+    let gasPrice = await ethProvider.getGasPrice();
     let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
     let totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
     const minDeposit = Currency.WEI(
@@ -387,7 +388,7 @@ class App extends React.Component {
     const freeEtherBalance = await channel.getFreeBalance();
     const freeTokenBalance = await channel.getFreeBalance(token.address);
     balance.onChain.ether = Currency.WEI(
-      await ethprovider.getBalance(channel.signerAddress),
+      await ethProvider.getBalance(channel.signerAddress),
       swapRate,
     ).toETH();
     balance.onChain.token = Currency.DEI(
@@ -418,8 +419,8 @@ class App extends React.Component {
   };
 
   setDepositLimits = async () => {
-    const { swapRate, ethprovider } = this.state;
-    let gasPrice = await ethprovider.getGasPrice();
+    const { swapRate, ethProvider } = this.state;
+    let gasPrice = await ethProvider.getGasPrice();
     let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
     let totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
     const minDeposit = Currency.WEI(
@@ -641,7 +642,7 @@ class App extends React.Component {
     const {
       balance,
       channel,
-      ethprovider,
+      ethProvider,
       swapRate,
       machine,
       maxDeposit,
@@ -748,16 +749,28 @@ class App extends React.Component {
                   {...props}
                   balance={balance}
                   channel={channel}
-                  ethprovider={ethprovider}
+                  ethProvider={ethProvider}
                   swapRate={swapRate}
                   machine={machine}
+                  network={network}
                   refreshBalances={this.refreshBalances.bind(this)}
                   token={token}
                 />
               )}
             />
-            <Route path="/support" render={props => <SupportCard {...props} channel={channel} />} />
-            <Confirmations machine={machine} network={network} />
+            <Route
+              path="/support"
+              render={props => (
+                <SupportCard
+                  {...props}
+                  channel={channel}
+                />
+              )}
+            />
+            <Confirmations
+              machine={machine}
+              network={network}
+            />
           </Paper>
         </Grid>
       </Router>
