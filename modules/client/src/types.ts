@@ -7,7 +7,7 @@ import {
   GetConfigResponse,
   Store,
 } from "@connext/types";
-import { providers } from "ethers";
+import { Contract, providers } from "ethers";
 import { Network } from "ethers/utils";
 
 import { ChannelRouter } from "./channelRouter";
@@ -95,6 +95,7 @@ export type InternalClientOptions = ClientOptions & {
   multisigAddress: string;
   network: Network;
   node: NodeApiClient;
+  token: Contract;
   store: Store;
 };
 
