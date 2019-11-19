@@ -341,7 +341,7 @@ class App extends React.Component {
     });
 
     const saiBalance = await this.getSaiBalance(wallet || ethprovider);
-    if (saiBalance.gt(0)) {
+    if (saiBalance && saiBalance.gt(0)) {
       this.setState({ saiBalance });
       machine.send("SAI");
     } else {
