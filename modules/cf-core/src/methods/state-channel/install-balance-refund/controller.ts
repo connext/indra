@@ -6,7 +6,6 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { RequestHandler } from "../../../request-handler";
 import { Node } from "../../../types";
 import { NodeController } from "../../controller";
-import { BALANCE_REFUND_APP_ALREADY_INSTALLED } from "../../errors";
 import {
   installBalanceRefundApp,
   uninstallBalanceRefundApp
@@ -30,10 +29,7 @@ export default class InstallBalanceRefundController extends NodeController {
     return [params.multisigAddress];
   }
 
-  protected async beforeExecution(
-    requestHandler: RequestHandler,
-    params: Node.InstallBalanceRefundParams
-  ): Promise<void> {}
+  protected async beforeExecution(): Promise<void> {}
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
