@@ -6,6 +6,7 @@ import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
 
 import { AdminService } from "./admin.service";
+import { StateChannelJSON } from "@connext/cf-core";
 
 class AdminMessaging extends AbstractMessagingProvider {
   constructor(
@@ -34,8 +35,8 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getNoFreeBalance();
   }
 
-  async getChannelStates(userPublicIdentifier: any):  Promise<any[]> {
-    return await this.adminService.getChannelStates(userPublicIdentifier);
+  async getChannelState(userPublicIdentifier: any): Promise<StateChannelJSON> {
+    return await this.adminService.getChannelState(userPublicIdentifier);
   }
 
   async getIncorrectMultisigAddresses(): Promise<
@@ -61,7 +62,7 @@ class AdminMessaging extends AbstractMessagingProvider {
 
     await super.connectRequestReponse(
       "admin.get-channel-states",
-      this.authService.useAdminToken(this.getChannelStates.bind(this)),
+      this.authService.useAdminToken(this.getChannelState.bind(this)),
     );
 
     await super.connectRequestReponse(
