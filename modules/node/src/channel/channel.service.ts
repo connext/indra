@@ -107,31 +107,32 @@ export class ChannelService {
     );
     const nodeFreeBalance = freeBalance[freeBalanceAddress];
 
-    if (nodeFreeBalance.lt(collateralNeeded)) {
-      const amountDeposit = collateralNeeded.gt(profile.amountToCollateralize)
-        ? collateralNeeded.sub(nodeFreeBalance)
-        : profile.amountToCollateralize.sub(nodeFreeBalance);
+    if (nodeFreeBalance.gte(collateralNeeded)) {
       logger.log(
-        `Collateralizing ${channel.multisigAddress} with ${amountDeposit.toString()}, ` +
-          `token: ${normalizedAssetId}`,
+        `${userPubId} already has collateral of ${nodeFreeBalance} for asset ${normalizedAssetId}`,
       );
-
-      // set in flight so that it cant be double sent
-      await this.channelRepository.setInflightCollateralization(channel, true);
-      const result = this.deposit(channel.multisigAddress, amountDeposit, normalizedAssetId)
-        .then((res: CFCoreTypes.DepositResult) => {
-          return res;
-        })
-        .catch(async (e: any) => {
-          await this.clearCollateralizationInFlight(channel.multisigAddress);
-          throw e;
-        });
-      return result;
+      return undefined;
     }
+
+    const amountDeposit = collateralNeeded.gt(profile.amountToCollateralize)
+      ? collateralNeeded.sub(nodeFreeBalance)
+      : profile.amountToCollateralize.sub(nodeFreeBalance);
     logger.log(
-      `${userPubId} already has collateral of ${nodeFreeBalance} for asset ${normalizedAssetId}`,
+      `Collateralizing ${channel.multisigAddress} with ${amountDeposit.toString()}, ` +
+        `token: ${normalizedAssetId}`,
     );
-    return undefined;
+
+    // set in flight so that it cant be double sent
+    await this.channelRepository.setInflightCollateralization(channel, true);
+    const result = this.deposit(channel.multisigAddress, amountDeposit, normalizedAssetId)
+      .then((res: CFCoreTypes.DepositResult) => {
+        return res;
+      })
+      .catch(async (e: any) => {
+        await this.clearCollateralizationInFlight(channel.multisigAddress);
+        throw e;
+      });
+    return result;
   }
 
   async clearCollateralizationInFlight(multisigAddress: string): Promise<Channel> {
