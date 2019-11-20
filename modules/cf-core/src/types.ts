@@ -28,7 +28,6 @@ export {
 } from "@connext/types";
 
 import { ProtocolMessage } from "./machine";
-import { ProposeInstallProtocolParams } from "./machine/types";
 
 export type NodeEvents = Node.EventName;
 export const NODE_EVENTS = Node.EventName;
