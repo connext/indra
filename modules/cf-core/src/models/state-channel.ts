@@ -1,4 +1,4 @@
-import { BigNumber, bigNumberify } from "ethers/utils";
+import { BigNumber } from "ethers/utils";
 
 import { flip, flipTokenIndexedBalances } from "../ethereum/utils/free-balance-app";
 import { xkeyKthAddress } from "../machine/xkeys";
@@ -459,8 +459,20 @@ export class StateChannel {
 
     appInstances.set(appInstance.identityHash, appInstance);
 
+    // If the app is in the proposed apps, make sure it is
+    // removed (otherwise channel is persisted with proposal + 
+    // installed application after protocol)
+    // NOTE: `deposit` will install an app, but never propose it
+
+    let proposedAppInstances;
+    if (this.proposedAppInstances.has(appInstance.identityHash)) {
+      const withoutProposal = this.removeProposal(appInstance.identityHash);
+      proposedAppInstances = withoutProposal.proposedAppInstances;
+    }
+
     return this.build({
-      appInstances
+      appInstances,
+      proposedAppInstances
     }).addActiveAppAndIncrementFreeBalance(
       appInstance.identityHash,
       flipTokenIndexedBalances(tokenIndexedDecrements)
