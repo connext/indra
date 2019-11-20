@@ -32,6 +32,7 @@ import { rootMachine } from "./state";
 import {
   cleanWalletConnect,
   Currency,
+  inverse,
   migrate,
   minBN,
   storeFactory,
@@ -619,6 +620,65 @@ class App extends React.Component {
   //                    Handlers                       //
   // ************************************************* //
 
+
+  withdrawAllTokens = async (recipient, setWithdrawing) => {
+    const { balance, channel, machine, token } = this.state;
+    if (!channel || !recipient) return;
+    const total = balance.channel.total;
+    if (total.wad.lte(Zero)) return;
+    // Put lock on actions, no more autoswaps until we're done withdrawing
+    machine.send("START_WITHDRAW");
+    setWithdrawing(true);
+    console.log(`Withdrawing ${total.toETH().format()} to: ${recipient}`);
+    const result = await channel.withdraw({
+      amount: balance.channel.token.wad.toString(),
+      assetId: token.address,
+      recipient,
+    });
+    console.log(`Cashout result: ${JSON.stringify(result)}`);
+    const txHash = result.transaction.hash;
+    setWithdrawing(false);
+    machine.send("SUCCESS_WITHDRAW", { txHash });
+  };
+
+  withdrawAllEther = async (recipient, setWithdrawing) => {
+    const { balance, channel, machine, swapRate, token } = this.state;
+    if (!channel || !recipient) return;
+    const total = balance.channel.total;
+    if (total.wad.lte(Zero)) return;
+    // Put lock on actions, no more autoswaps until we're done withdrawing
+    machine.send("START_WITHDRAW");
+    setWithdrawing(true);
+    console.log(`Withdrawing ${total.toETH().format()} to: ${recipient}`);
+    // swap all in-channel tokens for eth
+    if (balance.channel.token.wad.gt(Zero)) {
+      await channel.addPaymentProfile({
+        amountToCollateralize: total.toETH().wad.toString(),
+        minimumMaintainedCollateral: total.toETH().wad.toString(),
+        assetId: AddressZero,
+        recipient,
+      });
+      await channel.requestCollateral(AddressZero);
+      await channel.swap({
+        amount: balance.channel.token.wad.toString(),
+        fromAssetId: token.address,
+        swapRate: inverse(swapRate),
+        toAssetId: AddressZero,
+      });
+      await this.refreshBalances();
+    }
+    const result = await channel.withdraw({
+      amount: balance.channel.ether.wad.toString(),
+      assetId: AddressZero,
+      recipient,
+    });
+    console.log(`Cashout result: ${JSON.stringify(result)}`);
+    const txHash = result.transaction.hash;
+    setWithdrawing(false);
+    machine.send("SUCCESS_WITHDRAW", { txHash });
+  };
+
+
   parseQRCode = data => {
     // potential URLs to scan and their params
     const urls = {
@@ -844,13 +904,11 @@ class App extends React.Component {
                   />
                   <CashoutCard
                     {...props}
+                    withdrawAllTokens={this.withdrawAllTokens.bind(this)}
+                    withdrawAllEther={this.withdrawAllEther.bind(this)}
                     balance={balance}
-                    channel={channel}
                     ethProvider={ethProvider}
                     swapRate={swapRate}
-                    machine={machine}
-                    refreshBalances={this.refreshBalances.bind(this)}
-                    token={token}
                   />
                 </Grid>
               )}
