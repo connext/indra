@@ -17,3 +17,7 @@ export {
   UpdateStateMessage,
   WithdrawMessage,
 } from "./types";
+export {
+  StateChannel,
+  StateChannelJSON,
+} from "./models";
