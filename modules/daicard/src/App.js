@@ -2,7 +2,7 @@ import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
-import { formatEther, parseEther } from "ethers/utils";
+import { formatEther, hexlify, parseEther, randomBytes } from "ethers/utils";
 import interval from "interval-promise";
 import { PisaClient } from "pisa-client";
 import React from "react";
@@ -63,6 +63,7 @@ const urls = {
 };
 
 // Constants for channel max/min - this is also enforced on the hub
+const LINK_LIMIT = Currency.DAI("10"); // $10 capped linked payments
 const WITHDRAW_ESTIMATED_GAS = toBN("300000");
 const DEPOSIT_ESTIMATED_GAS = toBN("25000");
 const MAX_CHANNEL_VALUE = Currency.DAI("30");
@@ -620,6 +621,67 @@ class App extends React.Component {
   //                    Handlers                       //
   // ************************************************* //
 
+  sendPayment = async (amount, recipient, paymentAction) => {
+    const { channel, token } = this.state;
+    if (!channel || !token || amount.error || recipient.error) return;
+    console.log(`Sending ${amount.value} to ${recipient.value}`);
+    paymentAction("NEW_P2P");
+    // there is a chance the payment will fail when it is first sent
+    // due to lack of collateral. collateral will be auto-triggered on the
+    // hub side. retry for 1min, then fail
+    const endingTs = Date.now() + 60 * 1000;
+    let transferRes = undefined;
+    while (Date.now() < endingTs) {
+      try {
+        transferRes = await channel.conditionalTransfer({
+          assetId: token.address,
+          amount: amount.value.wad.toString(),
+          conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
+          paymentId: hexlify(randomBytes(32)),
+          preImage: hexlify(randomBytes(32)),
+          recipient: recipient.value,
+        });
+        break;
+      } catch (e) {
+        await new Promise(res => setTimeout(res, 5000));
+      }
+    }
+    if (!transferRes) {
+      paymentAction("ERROR");
+      return;
+    }
+    paymentAction("DONE");
+  }
+
+  createLinkPayment = async (amount, recipient, paymentAction) => {
+    const { channel, token } = this.state;
+    if (!channel || !token || amount.error) return;
+    paymentAction("NEW_LINK");
+    try {
+      console.log(`Creating ${amount.value.format()} link payment`);
+      const link = await channel.conditionalTransfer({
+        assetId: token.address,
+        amount: amount.value.wad.toString(),
+        conditionType: "LINKED_TRANSFER",
+        paymentId: hexlify(randomBytes(32)),
+        preImage: hexlify(randomBytes(32)),
+      });
+      console.log(`Created link payment: ${JSON.stringify(link, null, 2)}`);
+      console.log(
+        `link params: secret=${link.preImage}&paymentId=${link.paymentId}&` +
+          `assetId=${token.address}&amount=${amount.value.amount}`,
+      );
+      paymentAction("DONE");
+      return ({
+        baseUrl: `${window.location.origin}/redeem`,
+        paymentId: link.paymentId,
+        secret: link.preImage,
+      });
+    } catch (e) {
+      console.warn("Unexpected error creating link payment:", e);
+      paymentAction("ERROR");
+    }
+  }
 
   withdrawAllTokens = async (recipient, setWithdrawing) => {
     const { balance, channel, machine, token } = this.state;
@@ -784,7 +846,10 @@ class App extends React.Component {
                     balance={balance}
                     channel={channel}
                     className={classes.home}
+                    createLinkPayment={this.createLinkPayment.bind(this)}
+                    ethProvider={ethProvider}
                     parseQRCode={this.parseQRCode}
+                    sendPayment={this.sendPayment.bind(this)}
                     swapRate={swapRate}
                     token={token}
                   />
@@ -864,6 +929,8 @@ class App extends React.Component {
                   />
                   <SendCard
                     {...props}
+                    sendPayment={this.sendPayment.bind(this)}
+                    createLinkPayment={this.createLinkPayment.bind(this)}
                     balance={balance}
                     channel={channel}
                     ethProvider={ethProvider}

@@ -28,10 +28,10 @@ import { useMachine } from "@xstate/react";
 import { sendMachine } from "../state";
 import { hexlify, randomBytes } from "ethers/utils";
 
-import Copyable from "./copyable";
-
 import "../App.css";
 
+import Copyable from "./copyable";
+import { useXpub, XpubInput } from "./input"
 import { QRScan } from "./qrCode";
 
 const LINK_LIMIT = Currency.DAI("10"); // $10 capped linked payments
@@ -162,14 +162,13 @@ const styles = {
 };
 
 function Home(props) {
+  const { classes, balance, createLinkPayment, channel, ethProvider, history, parseQRCode, sendPayment, token } = props;
+  const [recipient, setRecipient, setRecipientError] = useXpub(null, ethProvider);
   const [scanModal, setScanModal] = useState(false);
   const [sending, setSending] = useState(false);
   const [amount, setAmount] = useState({ display: "", error: null, value: "" });
-  const [recipient, setRecipient] = useState({ display: "", error: null, value: null });
   const [link, setLink] = useState(undefined);
   const [paymentState, paymentAction] = useMachine(sendMachine);
-
-  const { classes, balance, channel, history, parseQRCode, token } = props;
 
   const scanQRCode = data => {
     setScanModal(false);
@@ -186,80 +185,6 @@ function Home(props) {
 
   const closeModal = () => {
     paymentAction("DISMISS");
-  };
-
-  const paymentHandler = async () => {
-    if (amount.error || recipient.error) return;
-    if (!recipient.value) {
-      setRecipient({
-        ...recipient,
-        error: "Recipent must be specified for p2p transfer",
-      });
-      return;
-    }
-    console.log(`Sending ${amount.value} to ${recipient.value}`);
-    paymentAction("NEW_P2P");
-    // there is a chance the payment will fail when it is first sent
-    // due to lack of collateral. collateral will be auto-triggered on the
-    // hub side. retry for 1min, then fail
-    const endingTs = Date.now() + 60 * 1000;
-    let transferRes = undefined;
-    while (Date.now() < endingTs) {
-      try {
-        transferRes = await channel.conditionalTransfer({
-          assetId: token.address,
-          amount: amount.value.wad.toString(),
-          conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
-          paymentId: hexlify(randomBytes(32)),
-          preImage: hexlify(randomBytes(32)),
-          recipient: recipient.value,
-        });
-        break;
-      } catch (e) {
-        await new Promise(res => setTimeout(res, 5000));
-      }
-    }
-    if (!transferRes) {
-      paymentAction("ERROR");
-      return;
-    }
-    paymentAction("DONE");
-  };
-
-  const linkHandler = async () => {
-    if (amount.error) return;
-    if (recipient.error && !recipient.value) {
-      setRecipient({ ...recipient, error: null });
-    }
-    if (toBN(amount.value.toDEI()).gt(LINK_LIMIT.wad)) {
-      setAmount({ ...amount, error: `Linked payments are capped at ${LINK_LIMIT.format()}.` });
-      return;
-    }
-    paymentAction("NEW_LINK");
-    try {
-      console.log(`Creating ${amount.value.format()} link payment`);
-      const link = await channel.conditionalTransfer({
-        assetId: token.address,
-        amount: amount.value.wad.toString(),
-        conditionType: "LINKED_TRANSFER",
-        paymentId: hexlify(randomBytes(32)),
-        preImage: hexlify(randomBytes(32)),
-      });
-      console.log(`Created link payment: ${JSON.stringify(link, null, 2)}`);
-      console.log(
-        `link params: secret=${link.preImage}&paymentId=${link.paymentId}&` +
-          `assetId=${token.address}&amount=${amount.value.amount}`,
-      );
-      paymentAction("DONE");
-      setLink({
-        baseUrl: `${window.location.origin}/redeem`,
-        paymentId: link.paymentId,
-        secret: link.preImage,
-      });
-    } catch (e) {
-      console.warn("Unexpected error creating link payment:", e);
-      paymentAction("ERROR");
-    }
   };
 
   const updateAmountHandler = useCallback(
@@ -303,14 +228,12 @@ function Home(props) {
     if (!error && value.length !== xpubLen) {
       error = `Invalid recipient: expected ${xpubLen} characters, got ${value.length}`;
     }
-
     setRecipient({
       display: rawValue,
       error,
       value: error ? null : value,
     });
   };
-
 
   return (
     <Grid container className={classes.top}>
@@ -350,35 +273,7 @@ function Home(props) {
         )}
       </FormControl>
       <Grid item xs={12} className={classes.xpubWrapper}>
-      <FormControl xs={12} className={classes.xpubWrapper}>
-
-        <InputBase
-          fullWidth
-          className={classes.xpubInput}
-          classes={{ input: classes.xpubInputInner }}
-          error={amount.error !== null && recipient.error !== null}
-          onChange={evt => updateRecipientHandler(evt.target.value)}
-          type="text"
-          value={recipient.display || ""}
-          placeholder={"Recipient"}
-          endAdornment={
-            <Tooltip disableFocusListener disableTouchListener title="Scan with QR code">
-              <IconButton
-                className={classes.QRButton}
-                disableTouchRipple
-                variant="contained"
-                onClick={() => setScanModal(true)}
-              >
-                <QRIcon className={classes.icon} />
-              </IconButton>
-            </Tooltip>
-          }
-        />
-         <FormHelperText className={recipient.error ? classes.helperText : classes.helperTextGray}>
-          {recipient.error ? recipient.error : null}
-          {sending && !recipient.error && "Recipient ignored for link payments"}
-        </FormHelperText>
-        </FormControl>
+        <XpubInput xpub={recipient} setXpub={setRecipient} />
       </Grid>
       <Grid container spacing={0} direction="column">
         <Grid className={classes.buttonSpacer} />
@@ -392,8 +287,18 @@ function Home(props) {
               color="primary"
               variant="contained"
               size="large"
-              onClick={() => {
-                linkHandler();
+              onClick={async () => {
+                if (recipient.error && !recipient.value) {
+                  setRecipientError(null);
+                }
+                if (toBN(amount.value.toDEI()).gt(LINK_LIMIT.wad)) {
+                  setAmount({
+                    ...amount,
+                    error: `Linked payments are capped at ${LINK_LIMIT.format()}.`,
+                  });
+                  return;
+                }
+                setLink(await createLinkPayment(amount, recipient, paymentAction));
                 setSending(false);
               }}
             >
@@ -406,6 +311,7 @@ function Home(props) {
               </Grid>
             </Button>
             <Button
+              id="goToSendButton"
               className={classes.button}
               disableTouchRipple
               color="primary"
@@ -417,8 +323,12 @@ function Home(props) {
                 paymentState === "processingP2p" ||
                 paymentState === "processingLink"
               }
-              onClick={() => {
-                paymentHandler();
+              onClick={async () => {
+                if (!recipient.value) {
+                  setRecipientError("Recipent must be specified for p2p transfer");
+                  return;
+                }
+                await sendPayment(amount, recipient, paymentAction);
                 setSending(false);
               }}
             >

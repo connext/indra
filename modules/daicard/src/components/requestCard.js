@@ -70,8 +70,6 @@ const generateQrUrl = (amount, xpub) =>
 const RequestCard = props => {
   const { classes, maxDeposit, xpub, match } = props;
 
-  console.log(xpub);
-
   const [amount, setAmount] = useState({
     value: match.params.amount ? match.params.amount : Currency.DAI(zero),
     display: match.params.amount ? match.params.amount : "0.00",
@@ -99,7 +97,6 @@ const RequestCard = props => {
     setQrUrl(generateQrUrl(error ? zero : value.amount, xpub));
     setAmount({ value: value ? value.amount : zero, display: input, error });
   };
-
 
   return (
     <Grid container spacing={2} direction="column" className={classes.top}>

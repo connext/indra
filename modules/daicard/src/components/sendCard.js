@@ -17,7 +17,6 @@ import PropTypes from "prop-types";
 import { Send as SendIcon, Link as LinkIcon } from "@material-ui/icons";
 import { useMachine } from "@xstate/react";
 import { Zero } from "ethers/constants";
-import { hexlify, randomBytes } from "ethers/utils";
 import React, { useCallback, useEffect, useState } from "react";
 import queryString from "query-string";
 
@@ -150,12 +149,11 @@ const formatAmountString = amount => {
 };
 
 const SendCard = props => {
-  const { match, balance, channel, classes, ethProvider, history, location, token } = props;
+  const { match, balance, channel, classes, createLinkPayment, ethProvider, history, location, sendPayment, token } = props;
   const [amount, setAmount] = useState({ display: "", error: null, value: null });
   const [link, setLink] = useState(undefined);
   const [paymentState, paymentAction] = useMachine(sendMachine);
   const [recipient, setRecipient, setRecipientError] = useXpub(null, ethProvider);
-
 
   useEffect(() => {
     amount.display && updateAmountHandler(amount.display);
@@ -166,9 +164,7 @@ const SendCard = props => {
   }, []);
 
   // need to extract token balance so it can be used as a dependency for the hook properly
-
   const tokenBalance = balance.channel.token.wad;
-
   const updateAmountHandler = useCallback(
     rawValue => {
       let value = null;
@@ -197,77 +193,6 @@ const SendCard = props => {
     },
     [tokenBalance],
   );
-
-  const paymentHandler = async () => {
-    if (!channel || !token || amount.error || recipient.error) return;
-    if (!recipient.value) {
-      setRecipientError("Recipent must be specified for p2p transfer");
-      return;
-    }
-    console.log(`Sending ${amount.value} to ${recipient.value}`);
-    paymentAction("NEW_P2P");
-    // there is a chance the payment will fail when it is first sent
-    // due to lack of collateral. collateral will be auto-triggered on the
-    // hub side. retry for 1min, then fail
-    const endingTs = Date.now() + 60 * 1000;
-    let transferRes = undefined;
-    while (Date.now() < endingTs) {
-      try {
-        transferRes = await channel.conditionalTransfer({
-          assetId: token.address,
-          amount: amount.value.wad.toString(),
-          conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
-          paymentId: hexlify(randomBytes(32)),
-          preImage: hexlify(randomBytes(32)),
-          recipient: recipient.value,
-        });
-        break;
-      } catch (e) {
-        await new Promise(res => setTimeout(res, 5000));
-      }
-    }
-    if (!transferRes) {
-      paymentAction("ERROR");
-      return;
-    }
-    paymentAction("DONE");
-  };
-
-  const linkHandler = async () => {
-    if (!channel || !token || amount.error) return;
-    if (recipient.error && !recipient.value) {
-      setRecipientError(null);
-    }
-    if (toBN(amount.value.toDEI()).gt(LINK_LIMIT.wad)) {
-      setAmount({ ...amount, error: `Linked payments are capped at ${LINK_LIMIT.format()}.` });
-      return;
-    }
-    paymentAction("NEW_LINK");
-    try {
-      console.log(`Creating ${amount.value.format()} link payment`);
-      const link = await channel.conditionalTransfer({
-        assetId: token.address,
-        amount: amount.value.wad.toString(),
-        conditionType: "LINKED_TRANSFER",
-        paymentId: hexlify(randomBytes(32)),
-        preImage: hexlify(randomBytes(32)),
-      });
-      console.log(`Created link payment: ${JSON.stringify(link, null, 2)}`);
-      console.log(
-        `link params: secret=${link.preImage}&paymentId=${link.paymentId}&` +
-          `assetId=${token.address}&amount=${amount.value.amount}`,
-      );
-      paymentAction("DONE");
-      setLink({
-        baseUrl: `${window.location.origin}/redeem`,
-        paymentId: link.paymentId,
-        secret: link.preImage,
-      });
-    } catch (e) {
-      console.warn("Unexpected error creating link payment:", e);
-      paymentAction("ERROR");
-    }
-  };
 
   const closeModal = () => {
     paymentAction("DISMISS");
@@ -314,8 +239,18 @@ const SendCard = props => {
           color="primary"
           variant="contained"
           size="large"
-          onClick={() => {
-            linkHandler();
+          onClick={async () => {
+            if (recipient.error && !recipient.value) {
+              setRecipientError(null);
+            }
+            if (toBN(amount.value.toDEI()).gt(LINK_LIMIT.wad)) {
+              setAmount({
+                ...amount,
+                error: `Linked payments are capped at ${LINK_LIMIT.format()}.`,
+              });
+              return;
+            }
+            setLink(await createLinkPayment(amount, recipient, paymentAction));
           }}
         >
           <Grid container direction="row" className={classes.linkButtonInner}>
@@ -339,7 +274,11 @@ const SendCard = props => {
             paymentState === "processingLink"
           }
           onClick={() => {
-            paymentHandler();
+            if (!recipient.value) {
+              setRecipientError("Recipent must be specified for p2p transfer");
+              return;
+            }
+            sendPayment(amount, recipient, paymentAction);
           }}
         >
           Send

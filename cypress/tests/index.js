@@ -26,7 +26,7 @@ describe('Daicard', () => {
         my.burnCard()
         my.deposit(depositEth).then(tokensDeposited => {
           my.linkPay(payTokens).then(redeemLink => {
-            // TODO: has sender balance subtracted link amount?
+            my.clickClose();
             my.restoreMnemonic(recipientMnemonic)
             cy.visit(redeemLink)
             cy.contains('button', /redeem/i).click()
@@ -43,17 +43,12 @@ describe('Daicard', () => {
       my.deposit(depositEth).then(tokensDeposited => {
         // No zero payments
         cy.get('input[type="numeric"]').clear().type('0')
-        my.goToSend()
         cy.contains('p', /greater than 0/i).should('exist')
-        my.goHome()
         // No payments greater than the card's balance
         cy.get('input[type="numeric"]').clear().type('1' + tokensDeposited)
-        my.goToSend()
         cy.contains('p', /less than your balance/i).should('exist')
-        my.goHome()
         // No invalid xpub addresses
-        cy.get('input[type="text"]').clear().type('0xabc123')
-        my.goToSend()
+        cy.get('input[type="string"]').clear().type('0xabc123')
         cy.contains('p', /invalid/i).should('exist')
       })
     })
@@ -68,7 +63,6 @@ describe('Daicard', () => {
         })
       })
     })
-
   })
 
   describe('Request', () => {

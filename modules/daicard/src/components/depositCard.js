@@ -31,11 +31,9 @@ const styles = {
 
 function DepositCard(props) {
   const { classes, address, maxDeposit, minDeposit } = props;
-
   const minEth = minDeposit ? minDeposit.toETH().format() : "?.??";
   const maxEth = maxDeposit ? maxDeposit.toETH().format() : "?.??";
   const maxDai = maxDeposit ? maxDeposit.toDAI().format() : "?.??";
-
   return (
     <Grid container spacing={2} direction="column" className={classes.top}>
       <Grid item xs={12} margin="1em">
