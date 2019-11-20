@@ -6,7 +6,6 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { RequestHandler } from "../../../request-handler";
 import { Node } from "../../../types";
 import { NodeController } from "../../controller";
-import { BALANCE_REFUND_APP_NOT_INSTALLED } from "../../errors";
 import { uninstallBalanceRefundApp } from "../deposit/operation";
 import { BigNumber } from "ethers/utils";
 import { Contract } from "ethers";
@@ -25,10 +24,7 @@ export default class UninstallBalanceRefundController extends NodeController {
     return [params.multisigAddress];
   }
 
-  protected async beforeExecution(
-    requestHandler: RequestHandler,
-    params: Node.UninstallBalanceRefundParams
-  ): Promise<void> {}
+  protected async beforeExecution(): Promise<void> {}
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
@@ -56,12 +52,18 @@ export default class UninstallBalanceRefundController extends NodeController {
       multisigBalance = await erc20Contract.balanceOf(multisigAddress);
     }
 
-    await uninstallBalanceRefundApp(requestHandler, {
-      ...params,
-      // unused params to make types happy
-      tokenAddress: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-      amount: Zero
-    });
+    const blockNumber = await provider.getBlockNumber();
+
+    await uninstallBalanceRefundApp(
+      requestHandler,
+      {
+        ...params,
+        // unused params to make types happy
+        tokenAddress: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+        amount: Zero
+      },
+      blockNumber
+    );
 
     return {
       multisigBalance

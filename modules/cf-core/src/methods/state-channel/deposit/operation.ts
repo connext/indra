@@ -153,7 +153,8 @@ export async function makeDeposit(
 
 export async function uninstallBalanceRefundApp(
   requestHandler: RequestHandler,
-  params: Node.DepositParams
+  params: Node.DepositParams,
+  blockNumberToUseIfNecessary?: number
 ) {
   const {
     publicIdentifier,
@@ -186,7 +187,8 @@ export async function uninstallBalanceRefundApp(
       initiatorXpub: publicIdentifier,
       responderXpub: peerAddress,
       multisigAddress: stateChannel.multisigAddress,
-      appIdentityHash: refundApp.identityHash
+      appIdentityHash: refundApp.identityHash,
+      blockNumberToUseIfNecessary
     }
   );
 }
