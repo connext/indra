@@ -3,7 +3,6 @@ import { jsonRpcMethod } from "rpc-server";
 import { RequestHandler } from "../../../request-handler";
 import { CreateChannelMessage, Node, NODE_EVENTS } from "../../../types";
 import { NodeController } from "../../controller";
-import { xkeysToSortedKthAddresses } from "../../../machine";
 
 /**
  * This instantiates a StateChannel object to encapsulate the "channel"
@@ -56,7 +55,7 @@ export default class CreateChannelController extends NodeController {
     params: Node.CreateChannelParams
   ) {
     const { owners } = params;
-    const { publicIdentifier, protocolRunner, outgoing } = requestHandler;
+    const { publicIdentifier, protocolRunner, outgoing, store } = requestHandler;
 
     const [responderXpub] = owners.filter(x => x !== publicIdentifier);
 
@@ -66,14 +65,15 @@ export default class CreateChannelController extends NodeController {
       initiatorXpub: publicIdentifier
     });
 
-    const ownersAddr = xkeysToSortedKthAddresses(owners, 0);
+    // use state channel for owners
+    const sc = await store.getStateChannel(multisigAddress);
 
     const msg: CreateChannelMessage = {
       from: publicIdentifier,
       type: NODE_EVENTS.CREATE_CHANNEL,
       data: {
         multisigAddress,
-        owners: ownersAddr,
+        owners: sc.multisigOwners,
         counterpartyXpub: responderXpub
       } as Node.CreateChannelResult
     };
