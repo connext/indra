@@ -85,7 +85,7 @@ const style = theme => ({
   paper: {
     width: "100%",
     backgroundColor:"#282b2e",
-    padding: `0px ${theme.spacing(1)}px 0 ${theme.spacing(1)}px`,
+    padding: `0px ${theme.spacing(3)}px 0 ${theme.spacing(3)}px`,
     [theme.breakpoints.up("sm")]: {
       width: "450px",
       height: "650px",
@@ -742,6 +742,12 @@ class App extends React.Component {
 
 
   parseQRCode = data => {
+    const { channel } = this.state;
+    if (channel && data.startsWith("wc:")) {
+      localStorage.setItem(`wcUri`, data)
+      initWalletConnect(data, channel);
+      return;
+    }
     // potential URLs to scan and their params
     const urls = {
       "/send?": ["recipient", "amount"],
@@ -756,7 +762,7 @@ class App extends React.Component {
         continue;
       }
       if (strArr[0] !== window.location.origin) {
-        throw new Error("incorrect site");
+        console.warn(`Incorrect site, got ${strArr[0]}, expected ${window.location.origin}`);
       }
       // add the chosen url to the path scanned
       path = url + strArr[1];

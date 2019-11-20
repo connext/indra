@@ -1,26 +1,20 @@
 import {
   Button,
+  Fab,
   Grid,
   Modal,
   withStyles,
 } from "@material-ui/core";
 import PropTypes from "prop-types";
-import { SaveAlt as ReceiveIcon, Send as SendIcon, Link as LinkIcon } from "@material-ui/icons";
+import { SaveAlt as ReceiveIcon, Send as SendIcon } from "@material-ui/icons";
 import QRIcon from "mdi-material-ui/QrcodeScan";
-import React, { useCallback, useState } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Currency, initWalletConnect, toBN } from "../utils";
-import { Zero } from "ethers/constants";
-import MaskedInput from "react-text-mask";
-import { useMachine } from "@xstate/react";
-import { sendMachine } from "../state";
-import { hexlify, randomBytes } from "ethers/utils";
+import { Currency, initWalletConnect } from "../utils";
 
 import "../App.css";
 
 import ChannelCard from "./channelCard";
-import Copyable from "./copyable";
-import { useXpub, XpubInput } from "./input"
 import { QRScan } from "./qrCode";
 
 const LINK_LIMIT = Currency.DAI("10"); // $10 capped linked payments
@@ -151,20 +145,8 @@ const styles = {
 };
 
 function Home(props) {
-  const { classes, balance, createLinkPayment, channel, ethProvider, history, network, parseQRCode, sendPayment, swapRate, token } = props;
+  const { classes, balance, history, network, parseQRCode, swapRate } = props;
   const [scanModal, setScanModal] = useState(false);
-
-  const scanQRCode = data => {
-    setScanModal(false);
-    if (channel && data.startsWith("wc:")) {
-      localStorage.setItem(`wcUri`, data)
-      initWalletConnect(data, channel);
-    } else {
-      const url = parseQRCode(data)
-      history.push(url)
-    }
-  };
-
   return (
     <Grid container className={classes.top}>
       <Modal
@@ -173,7 +155,10 @@ function Home(props) {
         onClose={() => setScanModal(false)}
         className={classes.modal}
       >
-        <QRScan handleResult={scanQRCode} />
+        <QRScan handleResult={(data) => {
+          setScanModal(false);
+          history.push(parseQRCode(data));
+        }}/>
       </Modal>
       <Grid container spacing={0} direction="column" style={{ margin: "1em 0 3em 0" }}>
         <ChannelCard
@@ -183,7 +168,21 @@ function Home(props) {
           network={network}
         />
       </Grid>
-
+      <Grid container spacing={0} direction="column">
+        <Grid item>
+          <Fab
+            style={{
+              float: "right",
+              color: "#FFF",
+              backgroundColor: "#fca311",
+              size: "large",
+            }}
+            onClick={() => setScanModal(true)}
+          >
+            <QRIcon />
+          </Fab>
+        </Grid>
+      </Grid>
       <Grid container spacing={0} direction="column">
         <Grid className={classes.buttonSpacer} />
         <Grid className={classes.buttonSpacer} />
@@ -216,7 +215,6 @@ function Home(props) {
               <SendIcon className={classes.buttonIcon} />
             </Button>
           </Grid>
-
          <Grid className={classes.buttonSpacer} />
            <Grid>
              <Button
