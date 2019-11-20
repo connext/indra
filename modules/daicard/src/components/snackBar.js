@@ -17,13 +17,6 @@ import {
 import React from "react";
 import classNames from "classnames";
 
-const variantIcon = {
-  success: CheckCircleIcon,
-  warning: HourglassIcon,
-  error: ErrorIcon,
-  info: InfoIcon,
-};
-
 const style = withStyles(theme => ({
   success: {
     backgroundColor: green[600],
@@ -59,6 +52,12 @@ export const MySnackbar = style(props => {
     duration,
     txHash,
   } = props;
+  const variantIcon = {
+    success: CheckCircleIcon,
+    warning: HourglassIcon,
+    error: ErrorIcon,
+    info: InfoIcon,
+  };
   const Icon = variantIcon[variant];
 
   let networkPrefix = "";

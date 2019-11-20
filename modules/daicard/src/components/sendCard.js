@@ -143,17 +143,17 @@ const styles = {
   }
 };
 
-const formatAmountString = amount => {
-  const [whole, part] = amount.split(".");
-  return `${whole || "0"}.${part ? part.padEnd(2, "0") : "00"}`;
-};
-
 const SendCard = props => {
   const { balance, classes, createLinkPayment, ethProvider, history, location, sendPayment } = props;
   const [amount, setAmount] = useAmount(null, balance.channel.token, Currency.DEI("1")); 
   const [link, setLink] = useState(undefined);
   const [paymentState, paymentAction] = useMachine(sendMachine);
   const [recipient, setRecipient, setRecipientError] = useXpub(null, ethProvider);
+
+  const formatAmountString = amount => {
+    const [whole, part] = amount.split(".");
+    return `${whole || "0"}.${part ? part.padEnd(2, "0") : "00"}`;
+  };
 
   useEffect(() => {
     const query = queryString.parse(location.search);

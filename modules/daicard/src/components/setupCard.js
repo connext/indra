@@ -18,29 +18,6 @@ const style = withStyles(theme => ({
   },
 }));
 
-const screens = (classes, minEth, minDai, maxEth, maxDai) => [
-  {
-    title: "Welcome to Your Dai Card!",
-    message: "Here are some helpful tips to get you started with the next generation of payments.",
-  },
-  {
-    title: "Your Mnemonic",
-    message: `
-      A mnemonic is required to access your card's funds.
-      Before you deposit or redeem, copy it somewhere you won't lose it.
-      You can access your mnemonic anytime via the settings page.
-      BEWARE: If you're using an incognito or temporary in-app browser,
-      your mnemonic will be burned when you close this page.
-    `,
-  },
-  {
-    title: "Deposit Boundaries",
-    message: `The card needs a minimum deposit of ${minEth} (${minDai}) to cover the gas costs
-      of getting setup. No more than ${maxEth} (${maxDai}) will be added to your channel at a time,
-      any excess funds you send will be kept on-chain & not deposited into your channel.`,
-  },
-];
-
 export const SetupCard = style(({ classes, minDeposit, maxDeposit }) => {
   const [index, setIndex] = useState(0);
   const [open, setOpen] = useState(!localStorage.getItem("hasBeenWarned"));
@@ -48,6 +25,29 @@ export const SetupCard = style(({ classes, minDeposit, maxDeposit }) => {
     localStorage.setItem("hasBeenWarned", "true");
     setOpen(false);
   };
+
+  const screens = (classes, minEth, minDai, maxEth, maxDai) => [
+    {
+      title: "Welcome to Your Dai Card!",
+      message: "Here are some helpful tips to get you started with the next generation of payments.",
+    },
+    {
+      title: "Your Mnemonic",
+      message: `
+        A mnemonic is required to access your card's funds.
+        Before you deposit or redeem, copy it somewhere you won't lose it.
+        You can access your mnemonic anytime via the settings page.
+        BEWARE: If you're using an incognito or temporary in-app browser,
+        your mnemonic will be burned when you close this page.
+      `,
+    },
+    {
+      title: "Deposit Boundaries",
+      message: `The card needs a minimum deposit of ${minEth} (${minDai}) to cover the gas costs
+        of getting setup. No more than ${maxEth} (${maxDai}) will be added to your channel at a time,
+        any excess funds you send will be kept on-chain & not deposited into your channel.`,
+    },
+  ];
 
   const minEth = minDeposit ? minDeposit.toETH().format() : "$?.??";
   const minDai = minDeposit ? minDeposit.toDAI().format() : "$?.??";

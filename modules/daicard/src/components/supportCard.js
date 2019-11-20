@@ -11,40 +11,6 @@ const styles = {
 };
 
 const SupportCard = props => {
-  const { channel } = props;
-  const [channelState, setChannelState] = useState(undefined);
-
-  useEffect(() => {
-    (async () => {
-      setChannelState(await channel.getChannel());
-    })();
-  }, [channel]);
-
-  const openDiscord = () => {
-    window.open("https://discord.gg/q2cakRc", "_blank");
-    window.close();
-    return false;
-  };
-
-  const exitableState =
-    channelState &&
-    channelState.sigUser &&
-    channelState.sigHub &&
-    channelState.sigUser !== "0x0" &&
-    channelState.sigHub !== "0x0";
-
-  const channelRender = channelState => {
-    return Object.entries(channelState).map(([key, value], i) => {
-      return (
-        <div>
-          <span>
-            {key}: {value}{" "}
-          </span>
-        </div>
-      );
-    });
-  };
-
   return (
     <Grid
       container
@@ -69,22 +35,6 @@ const SupportCard = props => {
           <span>{`There seems to be an error with your channel. Contact us on discord to resolve this gaslessly!`}</span>
         </Typography>
       </Grid>
-      <Grid container>
-        <Grid item xs={12}>
-          {exitableState && (
-            <Typography paragraph variant="subtitle2">
-              <span>{`If you need your funds now, use this state to call 'startExitWithUpdate' onchain at ${channelState.contractAddress}.`}</span>
-            </Typography>
-          )}
-        </Grid>
-        <Grid item xs={12}>
-          {exitableState && (
-            <Typography variant="caption" style={{ fontSize: "10px" }}>
-              {channelRender(channelState)}
-            </Typography>
-          )}
-        </Grid>
-      </Grid>
 
       <Grid item xs={12}>
         <Button
@@ -97,7 +47,11 @@ const SupportCard = props => {
             width: "15%",
           }}
           size="medium"
-          onClick={() => openDiscord()}
+          onClick={() => {
+            window.open("https://discord.gg/q2cakRc", "_blank");
+            window.close();
+            return false;
+          }}
         >
           Support
         </Button>
