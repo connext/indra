@@ -85,7 +85,6 @@ const DebugChannel = props => {
   });
 
   const getChannelState = async () => {
-    console.log("TOKEN: ", token)
     var res = await messaging.request("admin.get-channel-states", 5000, {
       token: token,
       id:xPubSearch
@@ -96,8 +95,6 @@ const DebugChannel = props => {
     extractedValues.freeBalanceAppInstance.latestState.balances[0].forEach((balance)=>{
       balance.amount.readable = bigNumberify(balance.amount._hex).toString()
     })
-
-    console.log("Extracted: ", JSON.stringify(extractedValues))
     
     setChannelState(extractedValues);
   };
