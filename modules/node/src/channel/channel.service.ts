@@ -4,7 +4,6 @@ import { AddressZero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { BigNumber, getAddress } from "ethers/utils";
 
-import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
@@ -15,7 +14,7 @@ import { CLogger, freeBalanceAddressFromXpub } from "../util";
 import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
-import { ChannelRepository } from "./channel.repository"; 
+import { ChannelRepository } from "./channel.repository";
 
 const logger = new CLogger("ChannelService");
 
@@ -25,7 +24,6 @@ export class ChannelService {
     private readonly cfCoreService: CFCoreService,
     private readonly configService: ConfigService,
     private readonly channelRepository: ChannelRepository,
-    private readonly cfCoreRepository: CFCoreRecordRepository,
     private readonly onchainRepository: OnchainTransactionRepository,
   ) {}
 
@@ -121,6 +119,9 @@ export class ChannelService {
       `Collateralizing ${channel.multisigAddress} with ${amountDeposit.toString()}, ` +
         `token: ${normalizedAssetId}`,
     );
+
+    // make sure client's balance refund app is uninstalled
+    await this.cfCoreService.uninstallBalanceRefundApp();
 
     // set in flight so that it cant be double sent
     await this.channelRepository.setInflightCollateralization(channel, true);
@@ -265,7 +266,9 @@ export class ChannelService {
   async getChannelState(userPublicIdentifier: string): Promise<any> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     if (!channel) {
-      throw new Error(`No channel exists for userPublicIdentifier ${JSON.stringify(userPublicIdentifier)}`);
+      throw new Error(
+        `No channel exists for userPublicIdentifier ${JSON.stringify(userPublicIdentifier)}`,
+      );
     }
     const { data: state } = await this.cfCoreService.getStateChannel(channel.multisigAddress);
 
