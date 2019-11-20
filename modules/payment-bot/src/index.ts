@@ -30,7 +30,7 @@ process.on("unhandledRejection", (e: any): any => {
 
 (async (): Promise<void> => {
   const client = await getOrCreateChannel();
-  const assetId = config.assetId ? client.config.contractAddresses.Token : AddressZero;
+  const assetId = config.useToken ? client.config.contractAddresses.Token : AddressZero;
 
   const logEthAndAssetFreeBalance = async (): Promise<void> => {
     logEthFreeBalance(AddressZero, await client.getFreeBalance());
