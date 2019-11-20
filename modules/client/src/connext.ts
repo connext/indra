@@ -242,7 +242,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
 
   // TODO: should we have a flag for this?
   log.debug(`Reinstalling balance refund app for ${config.contractAddresses.Token}`);
-  await client.reinstallBalanceRefundApp(config.contractAddresses.Token);
+  await client.installBalanceRefundApp(config.contractAddresses.Token);
 
   log.debug("Done creating channel client");
   return client;
@@ -900,52 +900,8 @@ export class ConnextClient implements IConnextClient {
     return response;
   };
 
-  /**
-   * Uninstalls balance refund app if it's installed and reinstalls. The purpose is to
-   * reclaim any asynchronously deposited funds.
-   */
-  public reinstallBalanceRefundApp = async (assetId: string): Promise<void> => {
-    // uninstall if it exists and has been deposited into
-    const existingBalanceRefundApp = await this.getBalanceRefundAppForToken();
-    if (existingBalanceRefundApp) {
-      const multisigBalance: BigNumber = await this.token.balanceOf(this.multisigAddress);
-      if (multisigBalance.gt(existingBalanceRefundApp.latestState["threshold"])) {
-        this.log.info(
-          `multisig balance ${formatEther(
-            multisigBalance,
-          )} greater than balance refund threshold ${formatEther(
-            existingBalanceRefundApp.latestState["threshold"],
-          )}, reinstalling to claim funds`,
-        );
-        await this.uninstallBalanceRefundApp();
-      } else {
-        this.log.info(
-          `multisig balance ${formatEther(
-            multisigBalance,
-          )} equal to balance refund threshold ${formatEther(
-            existingBalanceRefundApp.latestState["threshold"],
-          )}, will not reinstall balance refund app`,
-        );
-        return;
-      }
-    }
-
-    // either it has been uninstalled or wasnt installed
-    await this.installBalanceRefundApp(assetId);
-  };
-
   ///////////////////////////////////
   // LOW LEVEL METHODS
-
-  public getBalanceRefundAppForToken = async (): Promise<AppInstanceJson> => {
-    const apps = await this.getAppInstances();
-    return apps.find((appInstance: AppInstanceJson) => {
-      return (
-        appInstance.appInterface.addr === this.config.contractAddresses.CoinBalanceRefundApp &&
-        appInstance.latestState["tokenAddress"] === this.config.contractAddresses.Token
-      );
-    });
-  };
 
   public getRegisteredAppDetails = (appName: SupportedApplication): RegisteredAppDetails => {
     const appInfo = this.appRegistry.filter((app: RegisteredAppDetails): boolean => {
