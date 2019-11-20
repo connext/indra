@@ -27,6 +27,7 @@ import { SendCard } from "./components/sendCard";
 import { SettingsCard } from "./components/settingsCard";
 import { SetupCard } from "./components/setupCard";
 import { SupportCard } from "./components/supportCard";
+import { WithdrawSaiDialog } from "./components/withdrawSai";
 import { rootMachine } from "./state";
 import {
   cleanWalletConnect,
@@ -123,14 +124,13 @@ class App extends React.Component {
           total: Currency.ETH("0", swapRate),
         },
       },
-      ethprovider: new eth.providers.JsonRpcProvider(urls.ethProviderUrl),
+      ethProvider: new eth.providers.JsonRpcProvider(urls.ethProviderUrl),
       machine: interpret(rootMachine),
       maxDeposit: null,
       minDeposit: null,
       network: {},
       useWalletConnext: false,
-      sendScanArgs: { amount: null, recipient: null },
-      redeemScanArgs: { amount: null, recipient: null },
+      saiBalance: Currency.DAI("0", swapRate),
       state: {},
       swapRate,
       token: null,
@@ -169,16 +169,16 @@ class App extends React.Component {
     // if a wc qr code has been scanned before, make
     // sure to init the mapping and create new wc
     // connector
-    const uri = localStorage.getItem(`wcUri`)
+    const uri = localStorage.getItem(`wcUri`);
     const { channel } = this.state;
     if (!channel) return;
     if (!uri) return;
-    initWalletConnect(uri, channel)
+    initWalletConnect(uri, channel);
   };
 
   // Channel doesn't get set up until after provider is set
   async componentDidMount() {
-    const { ethprovider, machine } = this.state;
+    const { ethProvider, machine } = this.state;
     machine.start();
     machine.onTransition(state => {
       this.setState({ state });
@@ -199,9 +199,10 @@ class App extends React.Component {
     }
 
     let wallet;
-    const network = await ethprovider.getNetwork();
+    await ethProvider.ready;
+    const network = await ethProvider.getNetwork();
     if (!useWalletConnext) {
-      wallet = eth.Wallet.fromMnemonic(mnemonic, CF_PATH + "/0").connect(ethprovider);
+      wallet = eth.Wallet.fromMnemonic(mnemonic, CF_PATH + "/0").connect(ethProvider);
       this.setState({ network, wallet });
     }
 
@@ -237,7 +238,7 @@ class App extends React.Component {
       const xpub = hdNode.neuter().extendedKey;
       const keyGen = index => {
         const res = hdNode.derivePath(index);
-        return Promise.resolve(res.privateKey)
+        return Promise.resolve(res.privateKey);
       };
       channel = await connext.connect({
         ethProviderUrl: urls.ethProviderUrl,
@@ -288,7 +289,7 @@ class App extends React.Component {
     const token = new Contract(
       channel.config.contractAddresses.Token,
       tokenArtifacts.abi,
-      wallet || ethprovider,
+      wallet || ethProvider,
     );
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
@@ -336,10 +337,31 @@ class App extends React.Component {
       tokenProfile,
     });
 
-    machine.send("READY");
+    const saiBalance = Currency.DEI(await this.getSaiBalance(wallet || ethProvider), swapRate);
+    if (saiBalance && saiBalance.wad.gt(0)) {
+      this.setState({ saiBalance });
+      machine.send("SAI");
+    } else {
+      machine.send("READY");
+    }
     this.initWalletConnext();
     await this.startPoller();
   }
+
+  getSaiBalance = async wallet => {
+    const { channel } = this.state;
+    if (!channel.config.contractAddresses.SAIToken) {
+      return Zero;
+    }
+    const saiToken = new Contract(
+      channel.config.contractAddresses.SAIToken,
+      tokenArtifacts.abi,
+      wallet,
+    );
+    const freeSaiBalance = await channel.getFreeBalance(saiToken.address);
+    const mySaiBalance = freeSaiBalance[channel.freeBalanceAddress];
+    return mySaiBalance;
+  };
 
   // ************************************************* //
   //                    Pollers                        //
@@ -352,7 +374,6 @@ class App extends React.Component {
   startPoller = async () => {
     const { useWalletConnext } = this.state;
     await this.refreshBalances();
-    await this.setDepositLimits();
     if (!useWalletConnext) {
       await this.autoDeposit();
       await this.autoSwap();
@@ -361,7 +382,6 @@ class App extends React.Component {
     }
     interval(async (iteration, stop) => {
       await this.refreshBalances();
-      await this.setDepositLimits();
       if (!useWalletConnext) {
         await this.autoDeposit();
         await this.autoSwap();
@@ -370,8 +390,19 @@ class App extends React.Component {
   };
 
   refreshBalances = async () => {
-    const { balance, channel, ethprovider, swapRate, token } = this.state;
-    let gasPrice = await ethprovider.getGasPrice();
+    const { channel, swapRate } = this.state;
+    const { maxDeposit, minDeposit } = await this.getDepositLimits();
+    this.setState({ maxDeposit, minDeposit });
+    if (!channel || !swapRate) {
+      return;
+    }
+    const balance = await this.getChannelBalances();
+    this.setState({ balance });
+  };
+
+  getDepositLimits = async () => {
+    const { swapRate, ethProvider } = this.state;
+    let gasPrice = await ethProvider.getGasPrice();
     let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
     let totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
     const minDeposit = Currency.WEI(
@@ -379,15 +410,16 @@ class App extends React.Component {
       swapRate,
     ).toETH();
     const maxDeposit = MAX_CHANNEL_VALUE.toETH(swapRate); // Or get based on payment profile?
-    this.setState({ maxDeposit, minDeposit });
-    if (!channel || !swapRate) {
-      return;
-    }
+    return { maxDeposit, minDeposit };
+  };
+
+  getChannelBalances = async () => {
+    const { balance, channel, swapRate, token, ethProvider } = this.state;
     const getTotal = (ether, token) => Currency.WEI(ether.wad.add(token.toETH().wad), swapRate);
     const freeEtherBalance = await channel.getFreeBalance();
     const freeTokenBalance = await channel.getFreeBalance(token.address);
     balance.onChain.ether = Currency.WEI(
-      await ethprovider.getBalance(channel.signerAddress),
+      await ethProvider.getBalance(channel.signerAddress),
       swapRate,
     ).toETH();
     balance.onChain.token = Currency.DEI(
@@ -414,20 +446,7 @@ class App extends React.Component {
     logIfNotZero(balance.onChain.ether.wad, `chain ether balance`);
     logIfNotZero(balance.channel.token.wad, `channel token balance`);
     logIfNotZero(balance.channel.ether.wad, `channel ether balance`);
-    this.setState({ balance });
-  };
-
-  setDepositLimits = async () => {
-    const { swapRate, ethprovider } = this.state;
-    let gasPrice = await ethprovider.getGasPrice();
-    let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
-    let totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
-    const minDeposit = Currency.WEI(
-      totalDepositGasWei.add(totalWithdrawalGasWei),
-      swapRate,
-    ).toETH();
-    const maxDeposit = MAX_CHANNEL_VALUE.toETH(swapRate); // Or get based on payment profile?
-    this.setState({ maxDeposit, minDeposit });
+    return balance;
   };
 
   autoDeposit = async () => {
@@ -616,20 +635,6 @@ class App extends React.Component {
     if (args === {}) {
       console.log("could not detect params");
     }
-    switch (path) {
-      case "/send":
-        this.setState({
-          sendScanArgs: { ...args },
-        });
-        break;
-      case "/redeem":
-        this.setState({
-          redeemScanArgs: { ...args },
-        });
-        break;
-      default:
-        break;
-    }
     return path;
   };
 
@@ -641,12 +646,13 @@ class App extends React.Component {
     const {
       balance,
       channel,
+      ethProvider,
       swapRate,
       machine,
       maxDeposit,
       minDeposit,
       network,
-      sendScanArgs,
+      saiBalance,
       token,
       wallet,
     } = this.state;
@@ -672,6 +678,16 @@ class App extends React.Component {
               message="Starting Channel Controllers..."
               duration={30 * 60 * 1000}
             />
+            {saiBalance.wad.gt(0) ? (
+              <WithdrawSaiDialog
+                channel={channel}
+                ethProvider={ethProvider}
+                machine={machine}
+                saiBalance={saiBalance}
+              />
+            ) : (
+              <></>
+            )}
 
             <Route
               exact
@@ -729,7 +745,7 @@ class App extends React.Component {
                   {...props}
                   balance={balance}
                   channel={channel}
-                  scanArgs={sendScanArgs}
+                  ethProvider={ethProvider}
                   token={token}
                 />
               )}
@@ -737,7 +753,11 @@ class App extends React.Component {
             <Route
               path="/redeem"
               render={props => (
-                <RedeemCard {...props} channel={channel} tokenProfile={this.state.tokenProfile} />
+                <RedeemCard
+                  {...props}
+                  channel={channel}
+                  tokenProfile={this.state.tokenProfile}
+                />
               )}
             />
             <Route
@@ -747,15 +767,28 @@ class App extends React.Component {
                   {...props}
                   balance={balance}
                   channel={channel}
+                  ethProvider={ethProvider}
                   swapRate={swapRate}
                   machine={machine}
+                  network={network}
                   refreshBalances={this.refreshBalances.bind(this)}
                   token={token}
                 />
               )}
             />
-            <Route path="/support" render={props => <SupportCard {...props} channel={channel} />} />
-            <Confirmations machine={machine} network={network} />
+            <Route
+              path="/support"
+              render={props => (
+                <SupportCard
+                  {...props}
+                  channel={channel}
+                />
+              )}
+            />
+            <Confirmations
+              machine={machine}
+              network={network}
+            />
           </Paper>
         </Grid>
       </Router>

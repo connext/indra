@@ -1,25 +1,13 @@
-import {
-  Button,
-  CircularProgress,
-  Grid,
-  InputAdornment,
-  Modal,
-  TextField,
-  Tooltip,
-  Typography,
-  withStyles,
-} from "@material-ui/core";
+import { Button, CircularProgress, Grid, Typography, withStyles } from "@material-ui/core";
 import { Unarchive as UnarchiveIcon } from "@material-ui/icons";
 import { AddressZero, Zero } from "ethers/constants";
-import { arrayify, isHexString } from "ethers/utils";
-import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { useState } from "react";
 
 import EthIcon from "../assets/Eth.svg";
 import DaiIcon from "../assets/dai.svg";
 import { inverse } from "../utils";
 
-import { QRScan } from "./qrCode";
+import { useAddress, AddressInput } from "./input";
 
 const style = withStyles(theme => ({
   icon: {
@@ -43,32 +31,11 @@ const style = withStyles(theme => ({
   },
 }));
 
-export const CashoutCard = style(
-  ({ balance, channel, classes, history, machine, refreshBalances, swapRate, token }) => {
-    const [recipient, setRecipient] = useState({ display: "", value: undefined, error: undefined });
-    const [scan, setScan] = useState(false);
+export const CashoutCard = style(({
+  balance, channel, classes, ethProvider, history, machine, refreshBalances, swapRate, token,
+}) => {
     const [withdrawing, setWithdrawing] = useState(false);
-
-    const updateRecipientHandler = async value => {
-      let newVal = value;
-      let error;
-      if (value.includes("ethereum:")) {
-        newVal = value.split(":")[1];
-      }
-      if (newVal === "") {
-        error = "Please provide an address";
-      } else if (!isHexString(newVal)) {
-        error = `Invalid hex string: ${newVal}`;
-      } else if (arrayify(newVal).length !== 20) {
-        error = `Invalid length: ${newVal}`;
-      }
-      setRecipient({
-        display: value,
-        value: error ? undefined : newVal,
-        error,
-      });
-      setScan(false);
-    };
+    const [recipient, setRecipient] = useAddress(null, ethProvider);
 
     const cashoutTokens = async () => {
       const value = recipient.value;
@@ -162,56 +129,8 @@ export const CashoutCard = style(
           </Typography>
         </Grid>
         <Grid item xs={12}>
-          <TextField
-            style={{ width: "100%" }}
-            id="outlined-with-placeholder"
-            label="Address"
-            placeholder="0x0..."
-            value={recipient.display || ""}
-            onChange={evt => updateRecipientHandler(evt.target.value)}
-            margin="normal"
-            variant="outlined"
-            required
-            helperText={recipient.error}
-            error={!!recipient.error}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <Tooltip disableFocusListener disableTouchListener title="Scan with QR code">
-                    <Button
-                      disableTouchRipple
-                      variant="contained"
-                      color="primary"
-                      style={{ color: "primary" }}
-                      onClick={() => setScan(true)}
-                    >
-                      <QRIcon />
-                    </Button>
-                  </Tooltip>
-                </InputAdornment>
-              ),
-            }}
-          />
+          <AddressInput address={recipient} setAddress={setRecipient} />
         </Grid>
-        <Modal
-          id="qrscan"
-          open={scan}
-          onClose={() => setScan(false)}
-          style={{
-            justifyContent: "center",
-            alignItems: "center",
-            textAlign: "center",
-            position: "absolute",
-            top: "10%",
-            width: "375px",
-            marginLeft: "auto",
-            marginRight: "auto",
-            left: "0",
-            right: "0",
-          }}
-        >
-          <QRScan handleResult={updateRecipientHandler} history={history} />
-        </Modal>
         <Grid item xs={12}>
           <Grid container spacing={8} direction="row" alignItems="center" justify="center">
             <Grid item xs={6}>

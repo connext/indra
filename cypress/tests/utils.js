@@ -72,6 +72,7 @@ my.restoreMnemonic = (mnemonic) => {
 my.pay = (to, value) => {
   my.goToSend()
   cy.get('input[type="string"]').clear().type(to)
+  cy.contains('p', /ignored for link/i).should('not.exist')
   cy.get('input[type="number"]').clear().type(value)
   cy.contains('button', /send/i).click()
   cy.contains('h5', /payment success/i).should('exist')
