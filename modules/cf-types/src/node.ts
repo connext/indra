@@ -185,6 +185,11 @@ export namespace Node {
     multisigBalance: BigNumber;
   };
 
+  export type InstallBalanceRefundResult = {
+    multisigBalance: BigNumber;
+    recipient: string;
+  };
+
   export type GetAppInstanceDetailsParams = {
     appInstanceId: string;
   };

@@ -25,23 +25,21 @@ export default class UninstallBalanceRefundController extends NodeController {
   protected async beforeExecution(
     requestHandler: RequestHandler,
     params: Node.UninstallBalanceRefundParams
-  ): Promise<void> {
-    const { store, networkContext } = requestHandler;
-    const { multisigAddress } = params;
-
-    const channel = await store.getStateChannel(multisigAddress);
-
-    if (!channel.hasAppInstanceOfKind(networkContext.CoinBalanceRefundApp)) {
-      throw Error(BALANCE_REFUND_APP_NOT_INSTALLED);
-    }
-  }
+  ): Promise<void> {}
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: Node.UninstallBalanceRefundParams
   ): Promise<Node.DepositResult> {
-    const { provider } = requestHandler;
+    const { provider, store, networkContext } = requestHandler;
     const { multisigAddress } = params;
+
+    const channel = await store.getStateChannel(multisigAddress);
+    if (!channel.hasAppInstanceOfKind(networkContext.CoinBalanceRefundApp)) {
+      return {
+        multisigBalance: await provider.getBalance(multisigAddress)
+      };
+    }
 
     await uninstallBalanceRefundApp(requestHandler, {
       ...params,

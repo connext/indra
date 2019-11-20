@@ -125,7 +125,7 @@ describe("Node method follows spec - install balance refund", () => {
 
       await transferERC20Tokens(multisigAddress, erc20TokenAddress);
 
-      await nodeA.rpcRouter.dispatch({
+      await nodeB.rpcRouter.dispatch({
         id: Date.now(),
         methodName: NodeTypes.RpcMethodName.UNINSTALL_BALANCE_REFUND,
         parameters: {
@@ -155,18 +155,15 @@ describe("Node method follows spec - install balance refund", () => {
     });
   });
 
-  it("cannot install when already installed", async done => {
+  it("install does not error if already installed", async done => {
     nodeB.on(NODE_EVENTS.INSTALL, async () => {
-      await expect(
-        nodeA.rpcRouter.dispatch({
-          id: Date.now(),
-          methodName: NodeTypes.RpcMethodName.INSTALL_BALANCE_REFUND,
-          parameters: {
-            multisigAddress,
-            tokenAddress: AddressZero
-          } as NodeTypes.InstallBalanceRefundParams
-        })
-      ).rejects.toThrow(/balance refund app is installed/i);
+      const [appInstanceNodeA] = await getInstalledAppInstances(nodeA);
+      const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
+      expect(appInstanceNodeA).toBeDefined();
+      expect(appInstanceNodeA).toEqual(appInstanceNodeB);
+      expect(
+        (appInstanceNodeA.latestState as CoinBalanceRefundState).recipient
+      ).toBe(xkeyKthAddress(nodeA.publicIdentifier, 0));
       done();
     });
 
@@ -180,15 +177,18 @@ describe("Node method follows spec - install balance refund", () => {
     });
   });
 
-  it("cannot uninstall if not installed", async () => {
-    await expect(
-      nodeA.rpcRouter.dispatch({
-        id: Date.now(),
-        methodName: NodeTypes.RpcMethodName.UNINSTALL_BALANCE_REFUND,
-        parameters: {
-          multisigAddress
-        } as NodeTypes.InstallBalanceRefundParams
-      })
-    ).rejects.toThrow(/balance refund app is not installed/i);
+  it("uninstall does not error if not installed", async () => {
+    await nodeA.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.UNINSTALL_BALANCE_REFUND,
+      parameters: {
+        multisigAddress,
+        tokenAddress: AddressZero
+      } as NodeTypes.InstallBalanceRefundParams
+    });
+    const appInstancesNodeA = await getInstalledAppInstances(nodeA);
+    const appInstancesNodeB = await getInstalledAppInstances(nodeB);
+    expect(appInstancesNodeA.length).toBe(0);
+    expect(appInstancesNodeB.length).toBe(0);
   });
 });
