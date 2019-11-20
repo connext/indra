@@ -230,6 +230,15 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   log.debug("Registering subscriptions");
   await client.registerSubscriptions();
 
+  // TODO: should we have a flag for this?
+  // this probably needs to be before the below operations so that it doesnt cause issues
+  // with collateralizing/withdrawing
+  log.debug(`Reinstalling balance refund app for ${config.contractAddresses.Token}`);
+  await client.installBalanceRefundApp(config.contractAddresses.Token);
+  token.on("Transfer", (oldValue, newValue) => {
+    console.log(`Got a transfer. oldValue: ${oldValue}, newValue: ${newValue}`);
+  });
+
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
   log.debug("Resubmitting active withdrawals");
   await client.resubmitActiveWithdrawal();
@@ -239,10 +248,6 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   log.debug("Reclaiming pending async transfers");
   // no need to await this if it needs collateral
   client.reclaimPendingAsyncTransfers();
-
-  // TODO: should we have a flag for this?
-  log.debug(`Reinstalling balance refund app for ${config.contractAddresses.Token}`);
-  await client.installBalanceRefundApp(config.contractAddresses.Token);
 
   log.debug("Done creating channel client");
   return client;
