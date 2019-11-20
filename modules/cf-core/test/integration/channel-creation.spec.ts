@@ -4,7 +4,7 @@ import { setup, SetupContext } from "./setup";
 import {
   confirmChannelCreation,
   getChannelAddresses,
-  getMultisigCreationTransactionHash,
+  getMultisigCreationAddress,
   assertNodeMessage,
   constructChannelCreationRpc
 } from "./utils";
@@ -22,42 +22,71 @@ describe("Node can create multisig, other owners get notified", () => {
     nodeC = context["C"].node;
   });
 
+  it("Node A and Node B can create a channel", async done => {
+    const owners = [
+      nodeA.publicIdentifier,
+      nodeB.publicIdentifier
+    ];
+
+    const expectedMsg = {
+      from: nodeB.publicIdentifier,
+      type: NODE_EVENTS.CREATE_CHANNEL,
+      data: {
+        owners: [
+          nodeB.freeBalanceAddress,
+          nodeA.freeBalanceAddress,
+        ],
+        counterpartyXpub: nodeB.publicIdentifier,
+      }
+    }
+
+    let assertionCount = 0;
+
+    nodeA.once(NODE_EVENTS.CREATE_CHANNEL, async (msg: CreateChannelMessage) => {
+      assertNodeMessage(msg, expectedMsg, ['data.multisigAddress']);
+      assertionCount += 1;
+      if (assertionCount === 2) done();
+    });
+
+    nodeB.once(NODE_EVENTS.CREATE_CHANNEL, async (msg: CreateChannelMessage) => {
+      assertNodeMessage(msg, {
+        ...expectedMsg,
+        data: {
+          ...expectedMsg.data,
+          counterpartyXpub: nodeA.publicIdentifier,
+        }
+      }, ['data.multisigAddress'])
+      assertionCount += 1;
+      if (assertionCount === 3) done();
+    });
+
+    const { result: { result: { multisigAddress } } } = await nodeB.rpcRouter.dispatch(constructChannelCreationRpc(owners));
+    expect(isHexString(multisigAddress)).toBeTruthy();
+    assertionCount += 1;
+    if (assertionCount === 3) done();
+  });
+
   describe("Queued channel creation", () => {
-    it("Node A and Node B can create a channel", async done => {
-      const owners = [
-        nodeA.publicIdentifier,
-        nodeB.publicIdentifier
-      ];
-
-      nodeA.once(NODE_EVENTS.CREATE_CHANNEL, async (msg: CreateChannelMessage) => {
-        assertNodeMessage(msg, {
-          from: nodeB.publicIdentifier,
-          type: NODE_EVENTS.CREATE_CHANNEL,
-          data: {
-            owners: [
-              nodeB.freeBalanceAddress,
-              nodeA.freeBalanceAddress,
-            ],
-            counterpartyXpub: nodeB.publicIdentifier,
-          }
-        }, ['data.multisigAddress']);
-        done();
-      });
-
-      const txHash = await nodeB.rpcRouter.dispatch(constructChannelCreationRpc(owners));
-      expect(isHexString(txHash)).toBeTruthy();
-    })
-  
     it("Node A can create multiple back-to-back channels with Node B and Node C", async done => {
       const ownersABPublicIdentifiers = [
         nodeA.publicIdentifier,
         nodeB.publicIdentifier
       ];
 
+      const ownersABFreeBalanceAddr = [
+        nodeA.freeBalanceAddress,
+        nodeB.freeBalanceAddress,
+      ]
+
       const ownersACPublicIdentifiers = [
         nodeA.publicIdentifier,
         nodeC.publicIdentifier
       ];
+
+      const ownersACFreeBalanceAddr = [
+        nodeA.freeBalanceAddress,
+        nodeC.freeBalanceAddress,
+      ]
 
       nodeA.on(
         NODE_EVENTS.CREATE_CHANNEL,
@@ -72,7 +101,7 @@ describe("Node can create multisig, other owners get notified", () => {
             await confirmChannelCreation(
               nodeA,
               nodeB,
-              ownersABPublicIdentifiers,
+              ownersABFreeBalanceAddr,
               msg.data
             );
           } else {
@@ -85,7 +114,7 @@ describe("Node can create multisig, other owners get notified", () => {
             await confirmChannelCreation(
               nodeA,
               nodeC,
-              ownersACPublicIdentifiers,
+              ownersACFreeBalanceAddr,
               msg.data
             );
 
@@ -94,12 +123,12 @@ describe("Node can create multisig, other owners get notified", () => {
         }
       );
 
-      const txHash1 = await getMultisigCreationTransactionHash(
+      const txHash1 = await getMultisigCreationAddress(
         nodeA,
         ownersABPublicIdentifiers
       );
 
-      const txHash2 = await getMultisigCreationTransactionHash(
+      const txHash2 = await getMultisigCreationAddress(
         nodeA,
         ownersACPublicIdentifiers
       );
