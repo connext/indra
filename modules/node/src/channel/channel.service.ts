@@ -121,7 +121,7 @@ export class ChannelService {
     );
 
     // make sure client's balance refund app is uninstalled
-    await this.cfCoreService.uninstallBalanceRefundApp();
+    await this.cfCoreService.uninstallBalanceRefundApp(channel.multisigAddress);
 
     // set in flight so that it cant be double sent
     await this.channelRepository.setInflightCollateralization(channel, true);

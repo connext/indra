@@ -215,13 +215,13 @@ export class CFCoreService {
     return uninstallResponse.result.result as CFCoreTypes.UninstallResult;
   }
 
-  async uninstallBalanceRefundApp(): Promise<CFCoreTypes.DepositResult> {
+  async uninstallBalanceRefundApp(multisigAddress: string): Promise<CFCoreTypes.DepositResult> {
     // check the app is actually installed
     logger.log(`Calling uninstallBalanceRefundApp`);
     const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: CFCoreTypes.RpcMethodName.UNINSTALL_BALANCE_REFUND,
-      parameters: {} as CFCoreTypes.UninstallBalanceRefundParams,
+      parameters: { multisigAddress } as CFCoreTypes.UninstallBalanceRefundParams,
     });
 
     logger.log(
