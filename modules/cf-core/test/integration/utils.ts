@@ -558,21 +558,30 @@ export async function collateralizeChannel(
 
 export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
   return new Promise(async resolve => {
-    nodeB.on(NODE_EVENTS.CREATE_CHANNEL, async (msg: CreateChannelMessage) => {
+    const sortedOwners = [nodeA.freeBalanceAddress, nodeB.freeBalanceAddress].sort()
+    nodeB.once(NODE_EVENTS.CREATE_CHANNEL, async (msg: CreateChannelMessage) => {
       assertNodeMessage(msg, {
         from: nodeA.publicIdentifier,
         type: NODE_EVENTS.CREATE_CHANNEL,
         data: {
-          owners: [
-            nodeB.freeBalanceAddress,
-            nodeA.freeBalanceAddress,
-          ],
+          owners: sortedOwners,
           counterpartyXpub: nodeA.publicIdentifier,
         }
-      })
+      }, ['data.multisigAddress'])
       expect(await getInstalledAppInstances(nodeB)).toEqual([]);
       resolve(msg.data.multisigAddress);
     });
+
+    nodeA.once(NODE_EVENTS.CREATE_CHANNEL, (msg: CreateChannelMessage) => {
+      assertNodeMessage(msg, {
+        from: nodeA.publicIdentifier,
+        type: NODE_EVENTS.CREATE_CHANNEL,
+        data: {
+          owners: sortedOwners,
+          counterpartyXpub: nodeB.publicIdentifier,
+        }
+      }, ['data.multisigAddress'])
+    })
 
     // trigger channel creation but only resolve with the multisig address
     // as acknowledged by the node
