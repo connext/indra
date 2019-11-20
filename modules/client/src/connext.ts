@@ -237,6 +237,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   await client.installBalanceRefundApp(config.contractAddresses.Token);
   token.on("Transfer", (oldValue, newValue) => {
     console.log(`Got a transfer. oldValue: ${oldValue}, newValue: ${newValue}`);
+    // TODO: uninstall when transfer goes to multisig
   });
 
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
