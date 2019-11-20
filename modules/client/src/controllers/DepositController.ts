@@ -8,6 +8,7 @@ import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../
 
 import { AbstractController } from "./AbstractController";
 
+// TODO: refactor to use unrolled version
 export class DepositController extends AbstractController {
   public deposit = async (params: DepositParameters): Promise<ChannelState> => {
     const myFreeBalanceAddress = this.connext.freeBalanceAddress;
