@@ -535,7 +535,6 @@ export class ConnextClient implements IConnextClient {
     }
     this.channelRouter.reset();
     try {
-      throw new Error(`Reimplement Pisa`);
       // try to recover states from our given store's restore method
       const restoreStates = await this.channelRouter.restore();
       const stateToRestore = restoreStates.find(
