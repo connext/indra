@@ -119,6 +119,7 @@ export type UninstallParams = {
   initiatorXpub: string;
   responderXpub: string;
   multisigAddress: string;
+  blockNumberToUseIfNecessary?: number;
 };
 
 export type InstallVirtualAppParams = {
