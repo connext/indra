@@ -1,12 +1,11 @@
 import { InputAdornment, TextField } from "@material-ui/core";
 
-import { Zero } from "ethers/constants";
 import React, { useEffect, useState } from "react";
 
 import { Currency } from "../../utils";
 import { useDebounce } from "./utils";
 
-export const useAmount = (initialAmount, max) => {
+export const useAmount = (initialAmount, max, min) => {
   const [display, setDisplay] = useState(initialAmount);
   const [value, setValue] = useState(null);
   const [error, setError] = useState(null);
@@ -26,10 +25,10 @@ export const useAmount = (initialAmount, max) => {
       error = `Invalid Currency amount`;
     }
     if (value && max && value.wad.gt(max.toDAI().wad)) {
-      error = `Channel balances are capped at ${max.toDAI().format()}`;
+      error = `Greater than max: ${max.toDAI().format()}`;
     }
-    if (value && value.wad.lt(Zero)) {
-      error = "Please enter a payment amount above 0";
+    if (value && min && value.wad.lt(min.toDAI().wad)) {
+      error = `Less than min: ${min.toDAI().format()}`;
     }
     setValue(error ? undefined : value);
     setError(error);
@@ -41,12 +40,13 @@ export const useAmount = (initialAmount, max) => {
   ];
 }
 
-export const AmountInput = ({ amount, setAmount }) => {
+export const AmountInput = ({ amount, setAmount, messages }) => {
+  const errorKey = amount.error ? amount.error.split(' ')[0].toLowerCase() : null
   return (
     <div>
       <TextField
         error={!!amount.error}
-        helperText={amount.error || " "}
+        helperText={(messages && messages[errorKey]) ? messages[errorKey] : (amount.error || " ")}
         id="outlined-with-placeholder"
         InputProps={{ startAdornment: (<InputAdornment position="start">$</InputAdornment>) }}
         label="Amount"

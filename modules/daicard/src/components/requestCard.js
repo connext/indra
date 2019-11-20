@@ -67,7 +67,7 @@ const styles = {
 
 const RequestCard = props => {
   const { classes, maxDeposit, xpub, match } = props;
-  const [amount, setAmount] = useAmount(null, maxDeposit); 
+  const [amount, setAmount] = useAmount(null, maxDeposit, Currency.DEI("0")); 
   const [qrUrl, setQrUrl] = useState("");
   const amountStr = (amount && amount.value && amount.value.amount) ? amount.value.amount : "0.0";
   const generateQrUrl = (amount, xpub) =>
