@@ -177,6 +177,33 @@ describe("Node method follows spec - install balance refund", () => {
     });
   });
 
+  it("can uninstall with no changes", async done => {
+    nodeB.on(NODE_EVENTS.INSTALL, async () => {
+      await nodeB.rpcRouter.dispatch({
+        id: Date.now(),
+        methodName: NodeTypes.RpcMethodName.UNINSTALL_BALANCE_REFUND,
+        parameters: {
+          multisigAddress,
+          tokenAddress: AddressZero
+        } as NodeTypes.InstallBalanceRefundParams
+      });
+      const appInstancesNodeA = await getInstalledAppInstances(nodeA);
+      const appInstancesNodeB = await getInstalledAppInstances(nodeB);
+      expect(appInstancesNodeA.length).toBe(0);
+      expect(appInstancesNodeB.length).toBe(0);
+      done();
+    });
+
+    await nodeA.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.INSTALL_BALANCE_REFUND,
+      parameters: {
+        multisigAddress,
+        tokenAddress: AddressZero
+      } as NodeTypes.InstallBalanceRefundParams
+    });
+  });
+
   it("uninstall does not error if not installed", async () => {
     await nodeA.rpcRouter.dispatch({
       id: Date.now(),
