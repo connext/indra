@@ -15,6 +15,7 @@ import { Contract } from "ethers";
 import { BigNumber } from "ethers/utils";
 import { xkeyKthAddress } from "../../../machine";
 
+// TODO: maybe a better name? since it's a little smarter than just a plain install
 export default class InstallBalanceRefundController extends NodeController {
   @jsonRpcMethod(Node.RpcMethodName.INSTALL_BALANCE_REFUND)
   public executeMethod: (
@@ -48,6 +49,8 @@ export default class InstallBalanceRefundController extends NodeController {
 
     params.tokenAddress = tokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
 
+    const freeBalanceAddress = xkeyKthAddress(publicIdentifier, 0);
+
     const channel = await store.getStateChannel(multisigAddress);
     let multisigBalance: BigNumber;
     if (params.tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
@@ -64,17 +67,17 @@ export default class InstallBalanceRefundController extends NodeController {
       // if app is already pointing at us and the multisig balance has not changed,
       // do not uninstall
       const appIsCorrectlyInstalled =
-        balanceRefundApp.latestState["recipient"] ===
-          xkeyKthAddress(publicIdentifier, 0) &&
+        balanceRefundApp.latestState["recipient"] === freeBalanceAddress &&
         multisigBalance.eq(balanceRefundApp.latestState["threshold"]);
 
       if (appIsCorrectlyInstalled) {
         return {
           multisigBalance,
-          latestState: balanceRefundApp.latestState
+          recipient: freeBalanceAddress
         };
       }
 
+      // balance refund app is installed but in the wrong state, so reinstall
       await uninstallBalanceRefundApp(requestHandler, {
         ...params,
         amount: Zero
@@ -83,7 +86,7 @@ export default class InstallBalanceRefundController extends NodeController {
     await installBalanceRefundApp(requestHandler, { ...params, amount: Zero });
     return {
       multisigBalance,
-      recipient: xkeyKthAddress(publicIdentifier, 0)
+      recipient: freeBalanceAddress
     };
   }
 }
