@@ -838,6 +838,7 @@ class App extends React.Component {
                     {...props}
                     address={channelSignerOrZero()}
                     balance={balance}
+                    hideBalance={true}
                     swapRate={swapRate}
                     network={network}
                   />
@@ -848,6 +849,7 @@ class App extends React.Component {
                     className={classes.home}
                     createLinkPayment={this.createLinkPayment.bind(this)}
                     ethProvider={ethProvider}
+                    network={network}
                     parseQRCode={this.parseQRCode}
                     sendPayment={this.sendPayment.bind(this)}
                     swapRate={swapRate}

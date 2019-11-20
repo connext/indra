@@ -69,9 +69,11 @@ const RequestCard = props => {
   const { classes, maxDeposit, xpub, match } = props;
   const [amount, setAmount] = useAmount(null, maxDeposit, Currency.DEI("0")); 
   const [qrUrl, setQrUrl] = useState("");
+
   const amountStr = (amount && amount.value && amount.value.amount) ? amount.value.amount : "0.0";
   const generateQrUrl = (amount, xpub) =>
     `${window.location.origin}/send?amount=${amount}&recipient=${xpub}`;
+
   useEffect(() => {
     if (match && match.params && match.params.amount) {
       setAmount(match.params.amount);
@@ -80,6 +82,7 @@ const RequestCard = props => {
   useEffect(() => {
     setQrUrl(generateQrUrl(amountStr, xpub));
   }, [amountStr, xpub]);
+
   return (
     <Grid container spacing={2} direction="column" className={classes.top}>
       <AmountInput amount={amount} setAmount={setAmount} />

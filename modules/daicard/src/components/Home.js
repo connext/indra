@@ -2,19 +2,7 @@ import {
   Button,
   Grid,
   Modal,
-  FormControl,
-  FormHelperText,
-  InputBase,
-  IconButton,
   withStyles,
-  Tooltip,
-  Typography,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
 } from "@material-ui/core";
 import PropTypes from "prop-types";
 import { SaveAlt as ReceiveIcon, Send as SendIcon, Link as LinkIcon } from "@material-ui/icons";
@@ -30,6 +18,7 @@ import { hexlify, randomBytes } from "ethers/utils";
 
 import "../App.css";
 
+import ChannelCard from "./channelCard";
 import Copyable from "./copyable";
 import { useXpub, XpubInput } from "./input"
 import { QRScan } from "./qrCode";
@@ -162,13 +151,8 @@ const styles = {
 };
 
 function Home(props) {
-  const { classes, balance, createLinkPayment, channel, ethProvider, history, parseQRCode, sendPayment, token } = props;
-  const [recipient, setRecipient, setRecipientError] = useXpub(null, ethProvider);
+  const { classes, balance, createLinkPayment, channel, ethProvider, history, network, parseQRCode, sendPayment, swapRate, token } = props;
   const [scanModal, setScanModal] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [amount, setAmount] = useState({ display: "", error: null, value: "" });
-  const [link, setLink] = useState(undefined);
-  const [paymentState, paymentAction] = useMachine(sendMachine);
 
   const scanQRCode = data => {
     setScanModal(false);
@@ -181,60 +165,6 @@ function Home(props) {
     }
   };
 
-  const tokenBalance = balance.channel.token.wad;
-
-  const closeModal = () => {
-    paymentAction("DISMISS");
-  };
-
-  const updateAmountHandler = useCallback(
-    rawValue => {
-      let value = null;
-      let error = null;
-      if (!rawValue) {
-        error = `Invalid amount: must be greater than 0`;
-      }
-      if (!error) {
-        try {
-          value = Currency.DAI(rawValue);
-        } catch (e) {
-          error = `Please enter a valid amount`;
-        }
-      }
-      if (!error && value && value.wad.gt(tokenBalance)) {
-        error = `Invalid amount: must be less than your balance`;
-      }
-      if (!error && value && value.wad.lte(Zero)) {
-        error = "Invalid amount: must be greater than 0";
-      }
-
-      setAmount({
-        display: rawValue,
-        error,
-        value: error ? null : value,
-      });
-    },
-    [tokenBalance],
-  );
-
-  const updateRecipientHandler = rawValue => {
-    const xpubLen = 111;
-    let value = null;
-    let error = null;
-    value = rawValue;
-    if (!value || !value.startsWith("xpub")) {
-      error = "Invalid recipient: should start with xpub";
-    }
-    if (!error && value.length !== xpubLen) {
-      error = `Invalid recipient: expected ${xpubLen} characters, got ${value.length}`;
-    }
-    setRecipient({
-      display: rawValue,
-      error,
-      value: error ? null : value,
-    });
-  };
-
   return (
     <Grid container className={classes.top}>
       <Modal
@@ -245,99 +175,18 @@ function Home(props) {
       >
         <QRScan handleResult={scanQRCode} />
       </Modal>
-      <SendCardModal
-        amount={amount.display ? amount.display : "0"}
-        classes={classes}
-        closeModal={closeModal}
-        history={history}
-        link={link}
-        paymentState={paymentState}
-        recipient={recipient.value}
-      />
-      <FormControl className={classes.valueInputWrapper}>
-        <InputBase
-          required
-          fullWidth={true}
-          className={classes.valueInput}
-          classes={{ input: classes.valueInputInner }}
-          error={amount.error !== null}
-          onChange={evt => updateAmountHandler(evt.target.value.replace("$", ""))}
-          type="numeric"
-          value={amount.display === "" ? "" : "$" + amount.display}
-          placeholder={"$0.00"}
-          // startAdornment={<Typography className={classes.startAdornment}>$</Typography>}
+      <Grid container spacing={0} direction="column" style={{ margin: "1em 0 3em 0" }}>
+        <ChannelCard
+          big={true}
+          balance={balance}
+          swapRate={swapRate}
+          network={network}
         />
-
-        {amount.error && (
-          <FormHelperText className={classes.helperText}>{amount.error}</FormHelperText>
-        )}
-      </FormControl>
-      <Grid item xs={12} className={classes.xpubWrapper}>
-        <XpubInput xpub={recipient} setXpub={setRecipient} />
       </Grid>
+
       <Grid container spacing={0} direction="column">
         <Grid className={classes.buttonSpacer} />
         <Grid className={classes.buttonSpacer} />
-        {sending === true && (
-          <Grid container direction="row" className={classes.linkSendWrapper}>
-            <Button
-              className={classes.button}
-              disableTouchRipple
-              disabled={!!amount.error}
-              color="primary"
-              variant="contained"
-              size="large"
-              onClick={async () => {
-                if (recipient.error && !recipient.value) {
-                  setRecipientError(null);
-                }
-                if (toBN(amount.value.toDEI()).gt(LINK_LIMIT.wad)) {
-                  setAmount({
-                    ...amount,
-                    error: `Linked payments are capped at ${LINK_LIMIT.format()}.`,
-                  });
-                  return;
-                }
-                setLink(await createLinkPayment(amount, recipient, paymentAction));
-                setSending(false);
-              }}
-            >
-              <Grid container direction="row" className={classes.linkButtonInner}>
-                <Typography>Link</Typography>
-                <LinkIcon className={classes.buttonIcon} />
-                <Typography className={classes.linkSub}>
-                  <span>{`${LINK_LIMIT.format()} Max`}</span>
-                </Typography>
-              </Grid>
-            </Button>
-            <Button
-              id="goToSendButton"
-              className={classes.button}
-              disableTouchRipple
-              color="primary"
-              size="large"
-              variant="contained"
-              disabled={
-                !!amount.error ||
-                !!recipient.error ||
-                paymentState === "processingP2p" ||
-                paymentState === "processingLink"
-              }
-              onClick={async () => {
-                if (!recipient.value) {
-                  setRecipientError("Recipent must be specified for p2p transfer");
-                  return;
-                }
-                await sendPayment(amount, recipient, paymentAction);
-                setSending(false);
-              }}
-            >
-              Send
-              <SendIcon className={classes.buttonIcon} />
-            </Button>
-          </Grid>
-        )}
-        {sending === false && (
           <Grid container directiom="row" className={classes.requestSendWrapper}>
             <Button
               id="goToRequestButton"
@@ -347,7 +196,7 @@ function Home(props) {
               variant="contained"
               size="large"
               component={Link}
-              to={`/request${amount.display ? `?amount=${amount.display}` : ""}`}
+              to={"/request"}
             >
               Request
               <ReceiveIcon className={classes.buttonIcon} />
@@ -360,190 +209,48 @@ function Home(props) {
               color="primary"
               size="large"
               variant="contained"
-              // component={Link}
-              // to={`/send${amount.display || recipient.display ? "?" : ""}${
-              //   amount.display ? `amount=${amount.display}` : ""
-              // }${amount.display && recipient.display ? "&" : ""}${
-              //   recipient.display ? `recipient=${recipient.display}` : ""
-              // }`}
-              onClick={() =>setSending(true)}
+              component={Link}
+              to="/send"
             >
               Send
               <SendIcon className={classes.buttonIcon} />
             </Button>
           </Grid>
-        )}
 
          <Grid className={classes.buttonSpacer} />
-         {sending ? (<Button
-          id="goToDepositButton"
-          className={classes.buttonOutlined}
-          disableTouchRipple
-          fullWidth
-          color="primary"
-          variant="outlined"
-          size="large"
-          onClick={()=>setSending(false)}
-        >
-          Cancel
-        </Button>):(<Grid><Button
-          id="goToDepositButton"
-          className={classes.buttonOutlined}
-          disableTouchRipple
-          fullWidth
-          color="primary"
-          variant="outlined"
-          size="large"
-          component={Link}
-          to="/deposit"
-        >
-          Deposit
-        </Button>
-        <Grid className={classes.buttonSpacer} />
-        <Button
-          id="goToCashoutButton"
-          className={classes.buttonOutlined}
-          disableTouchRipple
-          fullWidth
-          color="primary"
-          variant="outlined"
-          size="large"
-          component={Link}
-          to="/cashout"
-        >
-          Cash Out
-        </Button>
-        </Grid>)}
+           <Grid>
+             <Button
+              id="goToDepositButton"
+              className={classes.buttonOutlined}
+              disableTouchRipple
+              fullWidth
+              color="primary"
+              variant="outlined"
+              size="large"
+              component={Link}
+              to="/deposit"
+            >
+              Deposit
+            </Button>
+          <Grid className={classes.buttonSpacer} />
+          <Button
+            id="goToCashoutButton"
+            className={classes.buttonOutlined}
+            disableTouchRipple
+            fullWidth
+            color="primary"
+            variant="outlined"
+            size="large"
+            component={Link}
+            to="/cashout"
+          >
+            Cash Out
+          </Button>
+        </Grid>
       </Grid>
     </Grid>
   );
 }
-
-const SendCardModal = ({ amount, classes, closeModal, history, link, paymentState, recipient }) => (
-  <Dialog
-    open={!paymentState.matches("idle")}
-    onBackdropClick={
-      paymentState === "processingP2p" || paymentState === "processingLink"
-        ? null
-        : () => closeModal()
-    }
-    fullWidth
-    className={classes.sendCardModalWrap}
-  >
-    <Grid className={classes.sendCardModalGrid} container justify="center">
-      {paymentState.matches("processingP2p") ? (
-        <Grid>
-          <DialogTitle disableTypography>
-            <Typography variant="h5" color="primary">
-              Payment In Progress
-            </Typography>
-          </DialogTitle>
-          <DialogContent>
-            <CircularProgress style={{ marginTop: "1em" }} />
-          </DialogContent>
-        </Grid>
-      ) : paymentState.matches("processingLink") ? (
-        <Grid>
-          <DialogTitle disableTypography>
-            <Typography variant="h5" color="primary">
-              Payment In Progress
-            </Typography>
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText variant="body1" className={classes.dialogText}>
-              Link payment is being generated. This should take just a couple seconds.
-            </DialogContentText>
-            <CircularProgress style={{ marginTop: "1em" }} />
-          </DialogContent>
-        </Grid>
-      ) : paymentState.matches("successP2p") ? (
-        <Grid>
-          <DialogTitle disableTypography>
-            <Typography variant="h5" style={{ color: "#009247" }}>
-              Payment Success!
-            </Typography>
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText variant="body1" className={classes.dialogText}>
-              Amount: ${formatAmountString(amount)}
-            </DialogContentText>
-            <DialogContentText variant="body1" className={classes.dialogText}>
-              To: {recipient.substr(0, 8)}...
-            </DialogContentText>
-          </DialogContent>
-        </Grid>
-      ) : paymentState.matches("successLink") ? (
-        <div style={{ width: "100%" }}>
-          <DialogTitle disableTypography>
-            <Typography variant="h5" style={{ color: "#009247" }}>
-              Payment Link Created!
-            </Typography>
-          </DialogTitle>
-          <DialogContent className={classes.modalContent}>
-            <DialogContentText className={classes.dialogText} variant="body1" style={{}}>
-              Anyone with this link can redeem the payment. Save a copy of it somewhere safe and
-              only share it with the person you want to pay.
-            </DialogContentText>
-            <Copyable
-              text={
-                link ? `${link.baseUrl}?paymentId=${link.paymentId}&secret=${link.secret}` : "???"
-              }
-            />
-          </DialogContent>
-        </div>
-      ) : paymentState.matches("error") ? (
-        <Grid>
-          <DialogTitle disableTypography>
-            <Typography variant="h5" style={{ color: "#F22424" }}>
-              Payment Failed
-            </Typography>
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText variant="body1" className={classes.dialogTextRed}>
-              An unknown error occured when making your payment.
-            </DialogContentText>
-            <DialogContentText variant="body1" className={classes.dialogTextRed}>
-              Please try again in 30s and contact support if you continue to experience issues.
-              (Settings --> Support)
-            </DialogContentText>
-          </DialogContent>
-        </Grid>
-      ) : (
-        <div />
-      )}
-
-      {paymentState === "processingP2p" || paymentState === "processingLink" ? (
-        <div />
-      ) : (
-        <DialogActions>
-          <Button
-            disableTouchRipple
-            color="primary"
-            variant="outlined"
-            size="medium"
-            onClick={() => closeModal()}
-          >
-            Close
-          </Button>
-          <Button
-            disableTouchRipple
-            style={{
-              background: "#FFF",
-              border: "1px solid #F22424",
-              color: "#F22424",
-              marginLeft: "5%",
-            }}
-            variant="outlined"
-            size="medium"
-            onClick={() => history.push("/")}
-          >
-            Home
-          </Button>
-        </DialogActions>
-      )}
-    </Grid>
-  </Dialog>
-);
 
 Home.propTypes = {
   classes: PropTypes.object.isRequired,

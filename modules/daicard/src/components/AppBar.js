@@ -43,7 +43,7 @@ const styles = {
 };
 
 const AppBarComponent = props => {
-  const { classes } = props;
+  const { classes, hideBalance } = props;
   return (
     <AppBar position="sticky"  elevation={0} className={classes.top}>
       <Grid container className={classes.containerTop}>
@@ -60,9 +60,11 @@ const AppBarComponent = props => {
             <Home className={classes.icon} />
           </IconButton>
         </Grid>
-        <Grid item xs={6}>
-          <ChannelCard network={props.network} balance={props.balance} swapRate={props.swapRate} />
-        </Grid>
+        {hideBalance ? <div/> :
+          <Grid item xs={6}>
+            <ChannelCard network={props.network} balance={props.balance} swapRate={props.swapRate} />
+          </Grid>
+        }
         <Grid item xs={3}>
           <IconButton
             id="goToSettingsButton"

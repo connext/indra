@@ -80,29 +80,11 @@ const styles = {
 };
 
 const CashoutCard = props => {
-  const { balance, classes, ethProvider, swapRate, withdrawAllEther, withdrawAllTokens } = props;
+  const { classes, ethProvider, swapRate, withdrawAllEther, withdrawAllTokens } = props;
   const [withdrawing, setWithdrawing] = useState(false);
   const [recipient, setRecipient] = useAddress(null, ethProvider);
   return (
     <Grid container spacing={2} direction="column" className={classes.top}>
-      {/*
-      <Grid container wrap="nowrap" direction="row" justify="center" alignItems="center">
-        <Grid item xs={12}>
-          <UnarchiveIcon className={classes.icon} />
-        </Grid>
-      </Grid>
-      <Grid item xs={12}>
-        <Grid container direction="row" justify="center" alignItems="center">
-          <Typography variant="h2">
-            <span>
-              {balance.channel.token
-                .toDAI(swapRate)
-                .format({ decimals: 2, symbol: false, round: false })}
-            </span>
-          </Typography>
-        </Grid>
-      </Grid>
-      */}
       <Grid item xs={12}>
         <Typography className={classes.ethPrice} variant="caption">
           <span>{"Current ETH price: $" + swapRate}</span>

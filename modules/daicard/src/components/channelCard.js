@@ -16,6 +16,11 @@ const styles = {
     fontWeight: "500",
     fontSize: 36,
   },
+  rowExtraLarge: {
+    color: "#fca311",
+    fontWeight: "500",
+    fontSize: 100,
+  },
   pending: {
     marginBottom: "3%",
     color: "white",
@@ -29,6 +34,16 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
   },
+  networkTextLarge: {
+    marginTop: "-8px",
+    fontSize: 16,
+    color: "green",
+  },
+  networkTextMissingLarge: {
+    marginTop: "-8px",
+    fontSize: 16,
+    color: "#fca311",
+  },
   networkText: {
     marginTop: "-8px",
     fontSize: 8,
@@ -38,6 +53,16 @@ const styles = {
     marginTop: "-8px",
     fontSize: 8,
     color: "#fca311",
+  },
+  iconLarge: {
+    marginTop: "-10px",
+    color: "green",
+    fontSize: 16,
+  },
+  iconNetworkMissingLarge: {
+    marginTop: "-10px",
+    color: "#fca311",
+    fontSize: 16,
   },
   icon: {
     marginTop: "-10px",
@@ -52,7 +77,7 @@ const styles = {
 };
 
 const ChannelCard = props => {
-  const { classes, balance, swapRate, network } = props;
+  const { classes, balance, big, swapRate, network } = props;
   const split = balance => {
     const bal = balance.format({ decimals: 2, symbol: false, round: false });
     const whole = bal.substring(0, bal.indexOf("."));
@@ -61,21 +86,31 @@ const ChannelCard = props => {
   };
 
   return (
-    <Grid item xs={12}>
+    <Grid item xs={12} style={{ display: "inline-block", textAlign: "center" }}>
       <Typography style={{ display: "inline-block" }} className={classes.row}>
         {"$ "}
       </Typography>
       <span id="balance-channel-token">
-        <Typography style={{ display: "inline-block" }} className={classes.rowLarge}>
+        <Typography
+          style={{ display: "inline-block" }}
+          className={big ? classes.rowExtraLarge : classes.rowLarge}
+        >
           <span>{split(balance.channel.token.toDAI(swapRate)).whole}</span>
         </Typography>
-        <Typography style={{ display: "inline-block" }} className={classes.row}>
+        <Typography
+          style={{ display: "inline-block" }}
+          className={big ? classes.rowExtraLarge : classes.rowLarge}
+        >
           <span>{split(balance.channel.token.toDAI(swapRate)).part}</span>
         </Typography>
       </span>
       <Grid className={classes.networkWrapper}>
-        <CheckCircle className={network.name ? classes.icon : classes.iconNetworkMissing} />
-        <Typography className={network.name ? classes.networkText : classes.networkTextMissing}>
+        <CheckCircle className={network.name
+          ? classes[`icon${big ? "Large" : ""}`]
+          : classes[`iconNetworkMissing${big ? "Large" : ""}`]} />
+        <Typography className={network.name
+          ? classes[`networkText${big ? "Large" : ""}`]
+          : classes[`networkTextMissing${big ? "Large" : ""}`]}>
           {network.name ? network.name.toUpperCase() : "NO NETWORK"}
         </Typography>
       </Grid>
