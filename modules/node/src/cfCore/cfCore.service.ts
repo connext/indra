@@ -215,6 +215,23 @@ export class CFCoreService {
     return uninstallResponse.result.result as CFCoreTypes.UninstallResult;
   }
 
+  async uninstallBalanceRefundApp(): Promise<CFCoreTypes.DepositResult> {
+    // check the app is actually installed
+    logger.log(`Calling uninstallBalanceRefundApp`);
+    const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: CFCoreTypes.RpcMethodName.UNINSTALL_BALANCE_REFUND,
+      parameters: {} as CFCoreTypes.UninstallBalanceRefundParams,
+    });
+
+    logger.log(
+      `uninstallBalanceRefundApp called with result ${JSON.stringify(
+        uninstallResponse.result.result,
+      )}`,
+    );
+    return uninstallResponse.result.result as CFCoreTypes.DepositResult;
+  }
+
   async getAppInstances(): Promise<AppInstanceJson[]> {
     const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
