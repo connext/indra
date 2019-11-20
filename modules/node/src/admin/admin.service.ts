@@ -49,11 +49,17 @@ export class AdminService {
     return corrupted;
   }
 
-  /** 11/8 Get Channels */
+  /**  Get Channels by xpub */
 
   async getChannelStates(userPublicIdentifier: any): Promise<CFCoreRecord[]> {
     // get channel by xpub
     return await this.channelService.getChannelState(userPublicIdentifier.id);
+  }
+
+  //Get all channels
+  async getAllChannelsState(): Promise<CFCoreRecord[]> {
+    // get channel by xpub
+    return await this.channelService.getAllChannelsState();
   }
 
   /**

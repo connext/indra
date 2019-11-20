@@ -38,6 +38,10 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getChannelStates(userPublicIdentifier);
   }
 
+  async getAllChannelsState():  Promise<any[]> {
+    return await this.adminService.getAllChannelsState();
+  }
+
   async getIncorrectMultisigAddresses(): Promise<
     {
       oldMultisigAddress: string;
@@ -62,6 +66,11 @@ class AdminMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "admin.get-channel-states",
       this.authService.useAdminToken(this.getChannelStates.bind(this)),
+    );
+
+    await super.connectRequestReponse(
+      "admin.get-all-channel-states",
+      this.authService.useAdminToken(this.getAllChannelsState.bind(this)),
     );
 
     await super.connectRequestReponse(

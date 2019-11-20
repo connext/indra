@@ -48,7 +48,7 @@ const styles = {
 };
 
 function Stats(props) {
-  const { classes, messaging } = props;
+  const { classes, messaging, token} = props;
   return (
     <Grid className={classes.top} container>
       <Grid className={classes.appBar} container>
@@ -72,10 +72,10 @@ function Stats(props) {
 
       </Grid>
         <Switch>
-          <Route exact path="/dashboard/stats/summary" render={props => <StatsSummary {...props} messaging={messaging}/>} />
-          <Route exact path="/dashboard/stats/transfers" render={props => <StatsTransfers {...props} messaging={messaging}/>} />
-          <Route exact path="/dashboard/stats/gas" render={props => <StatsGas {...props} messaging={messaging} />} />
-          <Route exact path="/dashboard/stats/export" render={props => <StatsExport {...props} messaging={messaging}/>} />
+          <Route exact path="/dashboard/stats/summary" render={props => <StatsSummary {...props} messaging={messaging} token={token} />} />
+          <Route exact path="/dashboard/stats/transfers" render={props => <StatsTransfers {...props} messaging={messaging} token={token}/>} />
+          <Route exact path="/dashboard/stats/gas" render={props => <StatsGas {...props} messaging={messaging} token={token}/>} />
+          <Route exact path="/dashboard/stats/export" render={props => <StatsExport {...props} messaging={messaging} token={token}/>} />
         </Switch>
     </Grid>
   );
