@@ -117,23 +117,28 @@ export function assertInstallMessage(senderId: string, msg: InstallMessage, appI
  * ensure a channel has been instantiated and to get its multisig address
  * back in the event data.
  */
-export async function getMultisigCreationTransactionHash(
+export async function getMultisigCreationAddress(
   node: Node,
   xpubs: string[]
 ): Promise<string> {
   const {
     result: {
-      result: { transactionHash }
+      result: { multisigAddress }
     }
-  } = await node.rpcRouter.dispatch({
-    id: Date.now(),
-    methodName: NodeTypes.RpcMethodName.CREATE_CHANNEL,
-    parameters: {
-      owners: xpubs
-    }
-  });
+  } = await node.rpcRouter.dispatch(constructChannelCreationRpc(xpubs));
 
-  return transactionHash;
+  return multisigAddress;
+}
+
+export function constructChannelCreationRpc(owners: string[]) {
+  return jsonRpcDeserialize({
+    id: Date.now(),
+    method: NodeTypes.RpcMethodName.CREATE_CHANNEL,
+    jsonrpc: "2.0",
+    params: {
+      owners,
+    }
+  })
 }
 
 /**
@@ -554,13 +559,24 @@ export async function collateralizeChannel(
 export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
   return new Promise(async resolve => {
     nodeB.on(NODE_EVENTS.CREATE_CHANNEL, async (msg: CreateChannelMessage) => {
+      assertNodeMessage(msg, {
+        from: nodeA.publicIdentifier,
+        type: NODE_EVENTS.CREATE_CHANNEL,
+        data: {
+          owners: [
+            nodeB.freeBalanceAddress,
+            nodeA.freeBalanceAddress,
+          ],
+          counterpartyXpub: nodeA.publicIdentifier,
+        }
+      })
       expect(await getInstalledAppInstances(nodeB)).toEqual([]);
       resolve(msg.data.multisigAddress);
     });
 
     // trigger channel creation but only resolve with the multisig address
     // as acknowledged by the node
-    await getMultisigCreationTransactionHash(nodeA, [
+    await getMultisigCreationAddress(nodeA, [
       nodeA.publicIdentifier,
       nodeB.publicIdentifier
     ]);
@@ -693,7 +709,7 @@ export async function installVirtualApp(
 export async function confirmChannelCreation(
   nodeA: Node,
   nodeB: Node,
-  ownersPublicIdentifiers: string[],
+  ownersFreeBalanceAddress: string[],
   data: NodeTypes.CreateChannelResult
 ) {
   const openChannelsNodeA = await getChannelAddresses(nodeA);
@@ -701,7 +717,7 @@ export async function confirmChannelCreation(
 
   expect(openChannelsNodeA.has(data.multisigAddress)).toBeTruthy();
   expect(openChannelsNodeB.has(data.multisigAddress)).toBeTruthy();
-  expect(data.owners).toEqual(ownersPublicIdentifiers);
+  expect(data.owners.sort()).toEqual(ownersFreeBalanceAddress.sort());
 }
 
 export async function confirmAppInstanceInstallation(
