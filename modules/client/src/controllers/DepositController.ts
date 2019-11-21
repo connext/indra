@@ -37,8 +37,6 @@ export class DepositController extends AbstractController {
 
     this.log.info(`\nDepositing ${amount} of ${assetId} into ${this.connext.multisigAddress}\n`);
 
-    await this.connext.uninstallBalanceRefundApp();
-
     // register listeners
     this.log.info("Registering listeners........");
     this.registerListeners();
@@ -46,6 +44,7 @@ export class DepositController extends AbstractController {
 
     try {
       this.log.info(`Calling ${CFCoreTypes.RpcMethodName.DEPOSIT}`);
+      await this.connext.uninstallBalanceRefundApp();
       const depositResponse = await this.connext.providerDeposit(amount, assetId);
       this.log.info(`Deposit Response: ${stringify(depositResponse)}`);
 
