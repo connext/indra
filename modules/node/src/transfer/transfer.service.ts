@@ -240,8 +240,7 @@ export class TransferService {
       this.channelService.requestCollateral(userPubId, assetId, amountBN);
     }
 
-    const preTransferBal =
-      freeBal[freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)];
+    const preTransferBal = freeBal[this.cfCoreService.cfCore.freeBalanceAddress];
 
     const network = await this.configService.getEthNetwork();
     const appInfo = await this.appRegistryRepository.findByNameAndNetwork(
@@ -286,15 +285,13 @@ export class TransferService {
       assetId,
     );
 
-    const diff = preTransferBal.sub(
-      postTransferBal[freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)],
-    );
+    const diff = preTransferBal.sub(postTransferBal[this.cfCoreService.cfCore.freeBalanceAddress]);
 
     if (!diff.eq(amountBN)) {
       logger.warn(`Got an unexpected difference of free balances before and after uninstalling`);
       logger.warn(
         `preTransferBal: ${preTransferBal.toString()}, postTransferBalance: ${postTransferBal[
-          freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)
+          this.cfCoreService.cfCore.freeBalanceAddress
         ].toString()}, expected ${amount}`,
       );
     }
