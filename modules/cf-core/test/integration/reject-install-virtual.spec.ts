@@ -2,7 +2,7 @@ import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server
 import { Node as NodeTypes } from "@connext/cf-types";
 
 import { Node } from "../../src";
-import { NODE_EVENTS, ProposeMessage } from "../../src/types";
+import { NODE_EVENTS, ProposeMessage, RejectInstallVirtualMessage } from "../../src/types";
 
 import { setup, SetupContext } from "./setup";
 import {
@@ -10,7 +10,8 @@ import {
   constructRejectInstallRpc,
   createChannel,
   getProposedAppInstances,
-  makeVirtualProposeCall
+  makeVirtualProposeCall,
+  assertNodeMessage
 } from "./utils";
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
@@ -35,8 +36,17 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
         await createChannel(nodeA, nodeB);
         await createChannel(nodeB, nodeC);
 
-        nodeA.on(NODE_EVENTS.REJECT_INSTALL_VIRTUAL, async () => {
+        let appInstanceId: string;
+
+        nodeA.on(NODE_EVENTS.REJECT_INSTALL_VIRTUAL, async (msg: RejectInstallVirtualMessage) => {
           expect((await getProposedAppInstances(nodeA)).length).toEqual(0);
+          assertNodeMessage(msg, {
+            from: nodeC.publicIdentifier,
+            data: {
+              appInstanceId,
+            },
+            type: NODE_EVENTS.REJECT_INSTALL_VIRTUAL,
+          });
           done();
         });
 
@@ -44,6 +54,7 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
           NODE_EVENTS.PROPOSE_INSTALL,
           async ({ data: { params, appInstanceId } }: ProposeMessage) => {
             const [proposedAppInstanceC] = await getProposedAppInstances(nodeC);
+            appInstanceId = proposedAppInstanceC.identityHash;
 
             confirmProposedAppInstance(params, proposedAppInstanceC);
 
