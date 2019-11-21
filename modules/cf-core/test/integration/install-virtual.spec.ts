@@ -1,7 +1,7 @@
 import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server/src/contract-deployments.jest";
 
 import { Node } from "../../src";
-import { NODE_EVENTS, ProposeMessage } from "../../src/types";
+import { NODE_EVENTS, ProposeMessage, InstallVirtualMessage } from "../../src/types";
 
 import { setup, SetupContext } from "./setup";
 import {
@@ -12,9 +12,9 @@ import {
   getInstalledAppInstances,
   getProposedAppInstances,
   installTTTVirtual,
-  makeVirtualProposal
+  makeVirtualProposal,
+  assertNodeMessage
 } from "./utils";
-import { ProposeInstallProtocolParams } from "../../src/machine/types";
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
@@ -41,12 +41,22 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
         await collateralizeChannel(multisigAddressAB, nodeA, nodeB);
         await collateralizeChannel(multisigAddressBC, nodeB, nodeC);
 
-        nodeA.once(NODE_EVENTS.INSTALL_VIRTUAL, async () => {
+        nodeA.once(NODE_EVENTS.INSTALL_VIRTUAL, async (msg: InstallVirtualMessage) => {
           const [virtualAppNodeA] = await getInstalledAppInstances(nodeA);
 
           const [virtualAppNodeC] = await getInstalledAppInstances(nodeC);
 
           expect(virtualAppNodeA).toEqual(virtualAppNodeC);
+
+          assertNodeMessage(msg, {
+            from: nodeC.publicIdentifier,
+            type: NODE_EVENTS.INSTALL_VIRTUAL,
+            data: {
+              params: {
+                appInstanceId: virtualAppNodeA.identityHash,
+              }
+            }
+          });
 
           done();
         });
