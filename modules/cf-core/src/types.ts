@@ -101,6 +101,13 @@ export interface DepositStartedMessage extends Node.NodeMessage {
   };
 }
 
+export interface DepositFailedMessage extends Node.NodeMessage {
+  data: {
+    params: Node.DepositParams;
+    errors: string[];
+  };
+}
+
 export interface RejectInstallVirtualMessage extends RejectProposalMessage {}
 
 export type EventEmittedMessage =
@@ -116,5 +123,6 @@ export type EventEmittedMessage =
   | ProposeMessage
   | DepositConfirmationMessage
   | DepositStartedMessage
+  | DepositFailedMessage
   | CreateChannelMessage
   | NodeMessageWrappedProtocolMessage;
