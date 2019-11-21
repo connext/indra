@@ -1,5 +1,6 @@
 import { Node } from "@connext/types";
 import { TransactionReceipt } from "ethers/providers";
+import { BigNumber } from "ethers/utils";
 
 export {
   AppABIEncodings,
@@ -93,6 +94,13 @@ export interface DepositConfirmationMessage extends Node.NodeMessage {
   data: Node.DepositParams;
 }
 
+export interface DepositStartedMessage extends Node.NodeMessage {
+  data: {
+    value: BigNumber;
+    txHash: string;
+  };
+}
+
 export interface RejectInstallVirtualMessage extends RejectProposalMessage {}
 
 export type EventEmittedMessage =
@@ -107,5 +115,6 @@ export type EventEmittedMessage =
   | InstallMessage
   | ProposeMessage
   | DepositConfirmationMessage
+  | DepositStartedMessage
   | CreateChannelMessage
   | NodeMessageWrappedProtocolMessage;
