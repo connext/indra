@@ -16,11 +16,12 @@ import {
   AppInterface,
   CoinBalanceRefundState,
   coinBalanceRefundStateEncoding,
+  DepositFailedMessage,
   NetworkContext,
   Node,
   NODE_EVENTS,
   OutcomeType,
-  SolidityValueType,
+  SolidityValueType
 } from "../../../types";
 import { prettyPrintObject } from "../../../utils";
 import { DEPOSIT_FAILED } from "../../errors";
@@ -99,7 +100,7 @@ export async function makeDeposit(
   params: Node.DepositParams
 ): Promise<void> {
   const { multisigAddress, amount, tokenAddress } = params;
-  const { provider, blocksNeededForConfirmation, outgoing } = requestHandler;
+  const { provider, blocksNeededForConfirmation, outgoing, publicIdentifier } = requestHandler;
 
   const signer = await requestHandler.getSigner();
 
@@ -113,6 +114,7 @@ export async function makeDeposit(
   let txResponse: TransactionResponse;
 
   let retryCount = DEPOSIT_RETRY_COUNT;
+  const errors: string[] = [];
   while (retryCount > 0) {
     try {
       if (tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
@@ -126,26 +128,33 @@ export async function makeDeposit(
       }
       break;
     } catch (e) {
+      errors.push(e.toString());
+      const failMsg: DepositFailedMessage = {
+        from: publicIdentifier,
+        type: NODE_EVENTS.DEPOSIT_FAILED,
+        data: { errors, params },
+      };
       if (e.toString().includes("reject") || e.toString().includes("denied")) {
-        outgoing.emit(NODE_EVENTS.DEPOSIT_FAILED, e);
+        outgoing.emit(NODE_EVENTS.DEPOSIT_FAILED, failMsg);
         throw Error(`${DEPOSIT_FAILED}: ${prettyPrintObject(e)}`);
       }
 
       retryCount -= 1;
 
       if (retryCount === 0) {
-        outgoing.emit(
-          NODE_EVENTS.DEPOSIT_FAILED,
-          `Could not deposit after ${DEPOSIT_RETRY_COUNT} attempts`
-        );
+        outgoing.emit(NODE_EVENTS.DEPOSIT_FAILED, failMsg);
         throw Error(`${DEPOSIT_FAILED}: ${prettyPrintObject(e)}`);
       }
     }
   }
 
   outgoing.emit(NODE_EVENTS.DEPOSIT_STARTED, {
-    value: amount,
-    txHash: txResponse!.hash
+    from: publicIdentifier,
+    type: NODE_EVENTS.DEPOSIT_STARTED,
+    data: {
+      value: amount,
+      txHash: txResponse!.hash
+    },
   });
 
   await txResponse!.wait(blocksNeededForConfirmation);
