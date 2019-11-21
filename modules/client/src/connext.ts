@@ -233,11 +233,21 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // TODO: should we have a flag for this?
   // this probably needs to be before the below operations so that it doesnt cause issues
   // with collateralizing/withdrawing
+  // balance refund app needs to be installed by us so that we can always accept async deposits
   log.debug(`Reinstalling balance refund app for ${config.contractAddresses.Token}`);
   await client.installBalanceRefundApp(config.contractAddresses.Token);
-  token.on("Transfer", (oldValue, newValue) => {
-    console.log(`Got a transfer. oldValue: ${oldValue}, newValue: ${newValue}`);
-    // TODO: uninstall when transfer goes to multisig
+
+  // listener on token transfers to multisig to reinstall balance refund
+  // this is because in the case that the counterparty deposits in their channel,
+  // we want to make sure we end up having our balance refund app installed in order
+  // to accept async deposits. further, if an async deposit comes in while we are
+  // online, we want to capture that value by reinstalling the balance refund app
+  token.on("Transfer", async (src: string, dst: string, wad: string) => {
+    log.info(`Got a transfer to multisig. src: ${src}, dst: ${dst}, wad: ${wad}`);
+    // reinstall balance refund app for token
+    await client.installBalanceRefundApp(config.contractAddresses.Token);
+    const freeBalance = await client.getFreeBalance(config.contractAddresses.Token);
+    log.info(`updated FreeBalance: ${stringify(freeBalance)}`);
   });
 
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
