@@ -3,7 +3,7 @@ import "core-js/stable";
 import EthCrypto from "eth-crypto";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { BigNumber, bigNumberify, formatEther, Network, Transaction } from "ethers/utils";
+import { BigNumber, bigNumberify, formatEther, Network, Transaction, getAddress } from "ethers/utils";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
@@ -243,6 +243,10 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // to accept async deposits. further, if an async deposit comes in while we are
   // online, we want to capture that value by reinstalling the balance refund app
   token.on("Transfer", async (src: string, dst: string, wad: string) => {
+    if (getAddress(dst) !== client.multisigAddress) {
+      // not our multisig
+      return;
+    }
     log.info(`Got a transfer to multisig. src: ${src}, dst: ${dst}, wad: ${wad}`);
     // reinstall balance refund app for token
     await client.installBalanceRefundApp(config.contractAddresses.Token);
