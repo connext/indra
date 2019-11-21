@@ -4,13 +4,12 @@ import { AddressZero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { BigNumber, getAddress } from "ethers/utils";
 
-import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
-import { CLogger, freeBalanceAddressFromXpub } from "../util";
+import { CLogger } from "../util";
 import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
@@ -100,10 +99,7 @@ export class ChannelService {
       channel.multisigAddress,
       normalizedAssetId,
     );
-    const freeBalanceAddress = freeBalanceAddressFromXpub(
-      this.cfCoreService.cfCore.publicIdentifier,
-    );
-    const nodeFreeBalance = freeBalance[freeBalanceAddress];
+    const nodeFreeBalance = freeBalance[this.cfCoreService.cfCore.freeBalanceAddress];
 
     if (nodeFreeBalance.gte(collateralNeeded)) {
       logger.log(
@@ -126,7 +122,24 @@ export class ChannelService {
     // set in flight so that it cant be double sent
     await this.channelRepository.setInflightCollateralization(channel, true);
     const result = this.deposit(channel.multisigAddress, amountDeposit, normalizedAssetId)
-      .then((res: CFCoreTypes.DepositResult) => {
+      .then(async (res: CFCoreTypes.DepositResult) => {
+        logger.log(`Deposit result: ${JSON.stringify(res)}`);
+        const freeBalancePostDeposit = await this.cfCoreService.getFreeBalance(
+          userPubId,
+          channel.multisigAddress,
+          normalizedAssetId,
+        );
+        const nodeFreeBalancePostDeposit =
+          freeBalancePostDeposit[this.cfCoreService.cfCore.freeBalanceAddress];
+        const gtExpectedFreeBalanceIncrease = nodeFreeBalancePostDeposit
+          .sub(nodeFreeBalance)
+          .sub(amountDeposit);
+        if (gtExpectedFreeBalanceIncrease.gt(0)) {
+          logger.warn(
+            `Received extra free balance of ${gtExpectedFreeBalanceIncrease.toString()}, refunding client!`,
+          );
+          // TODO: transfer funds
+        }
         return res;
       })
       .catch(async (e: any) => {

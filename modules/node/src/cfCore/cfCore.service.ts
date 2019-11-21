@@ -50,7 +50,7 @@ export class CFCoreService {
         // NOTE: can return free balance obj with 0s,
         // but need the free balance address in the multisig
         const obj = {};
-        obj[freeBalanceAddressFromXpub(this.cfCore.publicIdentifier)] = Zero;
+        obj[this.cfCore.freeBalanceAddress] = Zero;
         obj[freeBalanceAddressFromXpub(userPubId)] = Zero;
         return obj;
       }
