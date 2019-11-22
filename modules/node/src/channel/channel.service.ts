@@ -1,5 +1,5 @@
 import { ChannelAppSequences } from "@connext/types";
-import { Injectable, forwardRef, Inject } from "@nestjs/common";
+import { forwardRef, Injectable, Inject } from "@nestjs/common";
 import { AddressZero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { BigNumber, getAddress } from "ethers/utils";
@@ -141,7 +141,11 @@ export class ChannelService {
           logger.warn(
             `Received extra free balance of ${gtExpectedFreeBalanceIncrease.toString()}, refunding client!`,
           );
-          // TODO: transfer funds
+          await this.transferService.sendTransferToClient(
+            userPubId,
+            gtExpectedFreeBalanceIncrease,
+            assetId,
+          );
         }
         return res;
       })
