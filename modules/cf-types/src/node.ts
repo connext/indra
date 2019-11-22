@@ -136,7 +136,6 @@ export namespace Node {
     WITHDRAWAL_STARTED = "withdrawalStartedEvent",
     PROPOSE_INSTALL = "proposeInstallEvent",
     PROTOCOL_MESSAGE_EVENT = "protocolMessageEvent",
-    WITHDRAW_EVENT = "withdrawEvent",
     REJECT_INSTALL_VIRTUAL = "rejectInstallEvent"
   }
 

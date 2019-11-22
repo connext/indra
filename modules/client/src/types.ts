@@ -24,7 +24,8 @@ export {
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
-  WithdrawMessage,
+  WithdrawConfirmationMessage,
+  WithdrawStartedMessage,
 } from "@connext/cf-core";
 
 export {

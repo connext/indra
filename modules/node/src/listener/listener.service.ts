@@ -22,7 +22,7 @@ import {
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
-  WithdrawMessage,
+  WithdrawConfirmationMessage,
 } from "../util/cfCore";
 
 const logger = new CLogger("ListenerService");
@@ -153,10 +153,7 @@ export default class ListenerService implements OnModuleInit {
       UPDATE_STATE: (data: UpdateStateMessage): void => {
         logEvent(CFCoreTypes.EventName.UPDATE_STATE, data);
       },
-      WITHDRAW_EVENT: (data: any): void => {
-        logEvent(CFCoreTypes.EventName.WITHDRAW_EVENT, data);
-      },
-      WITHDRAWAL_CONFIRMED: (data: WithdrawMessage): void => {
+      WITHDRAWAL_CONFIRMED: (data: WithdrawConfirmationMessage): void => {
         logEvent(CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED, data);
       },
       WITHDRAWAL_FAILED: (data: any): void => {

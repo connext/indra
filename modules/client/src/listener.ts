@@ -1,6 +1,4 @@
-import EthCrypto from "eth-crypto";
-import { bigNumberify, formatParamType } from "ethers/utils";
-import { fromMnemonic } from "ethers/utils/hdnode";
+import { bigNumberify } from "ethers/utils";
 import { EventEmitter } from "events";
 
 import { ChannelRouter } from "./channelRouter";
@@ -21,7 +19,8 @@ import {
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
-  WithdrawMessage,
+  WithdrawConfirmationMessage,
+  WithdrawStartedMessage,
 } from "./types";
 import { appProposalValidation } from "./validation/appProposals";
 
@@ -110,16 +109,13 @@ export class ConnextListener extends EventEmitter {
     UPDATE_STATE: (data: UpdateStateMessage): void => {
       this.emitAndLog(CFCoreTypes.EventName.UPDATE_STATE, data.data);
     },
-    WITHDRAW_EVENT: (data: any): void => {
-      this.emitAndLog(CFCoreTypes.EventName.WITHDRAW_EVENT, data);
-    },
-    WITHDRAWAL_CONFIRMED: (data: WithdrawMessage): void => {
+    WITHDRAWAL_CONFIRMED: (data: WithdrawConfirmationMessage): void => {
       this.emitAndLog(CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED, data.data);
     },
     WITHDRAWAL_FAILED: (data: any): void => {
       this.emitAndLog(CFCoreTypes.EventName.WITHDRAWAL_FAILED, data);
     },
-    WITHDRAWAL_STARTED: (data: any): void => {
+    WITHDRAWAL_STARTED: (data: WithdrawStartedMessage): void => {
       this.log.info(`withdrawal for ${data.value.toString()} started. hash: ${data.txHash}`);
       this.emitAndLog(CFCoreTypes.EventName.WITHDRAWAL_STARTED, data);
     },

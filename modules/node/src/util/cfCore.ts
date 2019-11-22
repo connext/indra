@@ -18,7 +18,7 @@ export {
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
-  WithdrawMessage,
+  WithdrawConfirmationMessage,
 } from "@connext/cf-core";
 import MinimumViableMultisig from "@connext/cf-funding-protocol-contracts/build/MinimumViableMultisig.json";
 import Proxy from "@connext/cf-funding-protocol-contracts/build/Proxy.json";
