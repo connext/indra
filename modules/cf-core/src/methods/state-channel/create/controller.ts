@@ -3,6 +3,7 @@ import { jsonRpcMethod } from "rpc-server";
 import { RequestHandler } from "../../../request-handler";
 import { CreateChannelMessage, Node, NODE_EVENTS } from "../../../types";
 import { NodeController } from "../../controller";
+import { xkeysToSortedKthAddresses } from "../../../machine";
 
 /**
  * This instantiates a StateChannel object to encapsulate the "channel"
@@ -66,14 +67,14 @@ export default class CreateChannelController extends NodeController {
     });
 
     // use state channel for owners
-    const sc = await store.getStateChannel(multisigAddress);
+    const addressOwners = xkeysToSortedKthAddresses(owners, 0);
 
     const msg: CreateChannelMessage = {
       from: publicIdentifier,
       type: NODE_EVENTS.CREATE_CHANNEL,
       data: {
         multisigAddress,
-        owners: sc.multisigOwners,
+        owners: addressOwners,
         counterpartyXpub: responderXpub
       } as Node.CreateChannelResult
     };
