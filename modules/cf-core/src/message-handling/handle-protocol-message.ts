@@ -162,6 +162,9 @@ async function getOutgoingEventDataFromProtocol(
         )
       };
     case Protocol.Withdraw:
+      // NOTE: responder will only ever emit a withdraw started
+      // event. does not include tx hash
+      // determine if the withdraw is finishing or if it is starting
       return {
         ...baseEvent,
         type: NODE_EVENTS.WITHDRAWAL_STARTED,
@@ -239,13 +242,15 @@ function getUninstallEventData({
   return { appInstanceId };
 }
 
-function getWithdrawEventData(params: WithdrawProtocolParams): Node.WithdrawParams {
+function getWithdrawEventData(params: WithdrawProtocolParams) {
   const { multisigAddress, tokenAddress, recipient, amount } = params;
   return {
-    amount,
-    multisigAddress,
-    recipient,
-    tokenAddress,
+    params: {
+      multisigAddress,
+      tokenAddress,
+      recipient,
+      amount
+    },
   };
 }
 
