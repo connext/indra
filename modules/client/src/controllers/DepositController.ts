@@ -54,7 +54,9 @@ export class DepositController extends AbstractController {
         preDepositBalances[myFreeBalanceAddress],
       );
 
-      if (!diff.eq(amount)) {
+      // changing this from !eq to lt. now that we have async deposits there is an edge case
+      // where it could be more than amount
+      if (diff.lt(amount)) {
         throw new Error("My balance was not increased by the deposit amount.");
       }
 
