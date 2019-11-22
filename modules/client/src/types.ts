@@ -16,15 +16,19 @@ import { NodeApiClient } from "./node";
 export {
   CreateChannelMessage,
   DepositConfirmationMessage,
+  DepositFailedMessage,
+  DepositStartedMessage,
   EXTENDED_PRIVATE_KEY_PATH,
   InstallMessage,
   InstallVirtualMessage,
   ProposeMessage,
   RejectInstallVirtualMessage,
+  RejectProposalMessage,
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
   WithdrawConfirmationMessage,
+  WithdrawFailedMessage,
   WithdrawStartedMessage,
 } from "@connext/cf-core";
 
