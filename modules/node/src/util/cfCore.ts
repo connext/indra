@@ -14,6 +14,7 @@ export {
   InstallVirtualMessage,
   JsonRpcResponse,
   Node as CFCore,
+  NodeMessageWrappedProtocolMessage,
   ProposeMessage,
   RejectInstallVirtualMessage,
   RejectProposalMessage,

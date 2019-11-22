@@ -19,16 +19,17 @@ import {
   DepositStartedMessage,
   InstallMessage,
   InstallVirtualMessage,
+  NodeMessageWrappedProtocolMessage,
   ProposeMessage,
   RejectInstallVirtualMessage,
+  RejectProposalMessage,
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
   WithdrawConfirmationMessage,
   WithdrawFailedMessage,
-  WithdrawStartedMessage
+  WithdrawStartedMessage,
 } from "../util/cfCore";
-import { NodeMessageWrappedProtocolMessage, RejectProposalMessage } from "@connext/cf-core/dist/src/types";
 
 const logger = new CLogger("ListenerService");
 
