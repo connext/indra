@@ -75,13 +75,20 @@ export interface UninstallVirtualMessage extends Node.NodeMessage {
 }
 
 export interface WithdrawStartedMessage extends Node.NodeMessage {
-  data: Node.WithdrawParams;
+  data: { 
+    params: Node.WithdrawParams;
+    txHash?: string; // not included in responder events
+  };
 }
 
 export interface WithdrawConfirmationMessage extends Node.NodeMessage {
   data: {
     txReceipt: TransactionReceipt;
   };
+}
+
+export interface WithdrawFailedMessage extends Node.NodeMessage {
+  data: string; // failure error
 }
 
 export interface RejectProposalMessage extends Node.NodeMessage {
@@ -115,6 +122,7 @@ export type EventEmittedMessage =
   | RejectInstallVirtualMessage
   | WithdrawConfirmationMessage
   | WithdrawStartedMessage
+  | WithdrawFailedMessage
   | UninstallVirtualMessage
   | UninstallMessage
   | UpdateStateMessage
