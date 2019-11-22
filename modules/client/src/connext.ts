@@ -262,7 +262,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // since if the hub never submits you should not continue interacting
   log.debug("Reclaiming pending async transfers");
   // no need to await this if it needs collateral
-  client.reclaimPendingAsyncTransfers();
+  await client.reclaimPendingAsyncTransfers();
 
   log.debug("Done creating channel client");
   return client;
