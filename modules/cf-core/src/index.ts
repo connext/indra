@@ -6,6 +6,7 @@ export * from "./private-keys-generator";
 export {
   CreateChannelMessage,
   DepositConfirmationMessage,
+  DepositStartedMessage,
   InstallMessage,
   InstallVirtualMessage,
   NODE_EVENTS,
@@ -17,8 +18,9 @@ export {
   UpdateStateMessage,
   WithdrawStartedMessage,
   WithdrawConfirmationMessage,
+  WithdrawFailedMessage
 } from "./types";
 export {
   StateChannel,
-  StateChannelJSON,
+  StateChannelJSON
 } from "./models";
