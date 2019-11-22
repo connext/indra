@@ -166,7 +166,7 @@ export const SettingsCard = style(props => {
                     variant="contained"
                     color="primary"
                     style={{ color: "#FFF", marginRight: "-10%" }}
-                    onClick={() => recoverAddressFromMnemonic()}
+                    onClick={async () => await recoverAddressFromMnemonic()}
                   >
                     <SubmitIcon />
                   </Button>
@@ -241,7 +241,7 @@ export const SettingsCard = style(props => {
                         }}
                         variant="contained"
                         size="small"
-                        onClick={() => generateNewAddress()}
+                        onClick={async () => await generateNewAddress()}
                       >
                         Burn
                       </Button>
