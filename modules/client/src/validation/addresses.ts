@@ -15,7 +15,7 @@ function isValidAddress(value: any): boolean {
 
 export function invalidXpub(value: string): string | undefined {
   if (!value || !value.startsWith("xpub")) {
-    return `Value must start with "xpub". Value: ${value}`;
+    return `Value "${value}" must start with "xpub"`;
   }
 
   return undefined;
@@ -23,7 +23,7 @@ export function invalidXpub(value: string): string | undefined {
 
 export function invalidAddress(value: string): string | undefined {
   if (!value || !isValidAddress(value)) {
-    return `Value provided is not a valid eth address. Value: ${value}`;
+    return `Value "${value}" is not a valid eth address`;
   }
 
   return undefined;

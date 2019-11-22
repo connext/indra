@@ -66,8 +66,15 @@ export const rootMachine = Machine(
       start: {
         on: {
           READY: "ready",
+          SAI: "sai",
         },
         ...notifyStates("start"),
+      },
+      sai: {
+        on: {
+          READY: "ready",
+        },
+        ...notifyStates("sai"),
       },
       ready: {
         id: "operations",

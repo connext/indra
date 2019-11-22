@@ -52,30 +52,30 @@ function Stats(props) {
   return (
     <Grid className={classes.top} container>
       <Grid className={classes.appBar} container>
-      <Button className={classes.button} component={Link} to={"/"}>
+      <Button className={classes.button} component={Link} to={"/dashboard"}>
           <HomeIcon className={classes.icon} />
         </Button>
-        <Button className={classes.button} component={Link} to={"/stats/summary"}>
+        <Button className={classes.button} component={Link} to={"/dashboard/stats/summary"}>
           <Typography className={classes.buttonText}>Summary</Typography>
         </Button>
-        <Button className={classes.button} component={Link} to={"/stats/transfers"}>
+        <Button className={classes.button} component={Link} to={"/dashboard/stats/transfers"}>
           <Typography className={classes.buttonText}>Transfers</Typography>
         </Button>
         
-        <Button className={classes.button} component={Link} to={"/stats/gas"}>
+        <Button className={classes.button} component={Link} to={"/dashboard/stats/gas"}>
           <Typography className={classes.buttonText}>Gas</Typography>
         </Button>
         
-        <Button className={classes.button} component={Link} to={"/stats/export"}>
+        <Button className={classes.button} component={Link} to={"/dashboard/stats/export"}>
           <Typography className={classes.buttonText}>Export</Typography>
         </Button>
 
       </Grid>
         <Switch>
-          <Route exact path="/stats/summary" render={props => <StatsSummary {...props} messaging={messaging}/>} />
-          <Route exact path="/stats/transfers" render={props => <StatsTransfers {...props} messaging={messaging}/>} />
-          <Route exact path="/stats/gas" render={props => <StatsGas {...props} messaging={messaging} />} />
-          <Route exact path="/stats/export" render={props => <StatsExport {...props} messaging={messaging}/>} />
+          <Route exact path="/dashboard/stats/summary" render={props => <StatsSummary {...props} messaging={messaging}/>} />
+          <Route exact path="/dashboard/stats/transfers" render={props => <StatsTransfers {...props} messaging={messaging}/>} />
+          <Route exact path="/dashboard/stats/gas" render={props => <StatsGas {...props} messaging={messaging} />} />
+          <Route exact path="/dashboard/stats/export" render={props => <StatsExport {...props} messaging={messaging}/>} />
         </Switch>
     </Grid>
   );

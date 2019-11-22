@@ -21,6 +21,7 @@ cf-types=$(cwd)/modules/cf-types
 client=$(cwd)/modules/client
 contracts=$(cwd)/modules/contracts
 daicard=$(cwd)/modules/daicard
+dashboard=$(cwd)/modules/dashboard
 database=$(cwd)/modules/database
 messaging=$(cwd)/modules/messaging
 node=$(cwd)/modules/node
