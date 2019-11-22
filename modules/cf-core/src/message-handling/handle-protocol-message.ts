@@ -223,10 +223,13 @@ async function getOutgoingEventDataFromProtocol(
 }
 
 function getStateUpdateEventData(
-  { appIdentityHash: appInstanceId }: TakeActionProtocolParams | UpdateProtocolParams,
+  params: TakeActionProtocolParams | UpdateProtocolParams,
   newState: SolidityValueType
 ) {
-  return { newState, appInstanceId };
+  // note: action does not exist on type `UpdateProtocolParams`
+  // so use any cast
+  const { appIdentityHash: appInstanceId, action } = params as any;
+  return { newState, appInstanceId, action };
 }
 
 function getUninstallVirtualAppEventData({
