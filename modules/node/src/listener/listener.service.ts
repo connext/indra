@@ -106,7 +106,7 @@ export default class ListenerService implements OnModuleInit {
           case SupportedApplications.SimpleLinkedTransferApp:
             logger.debug(`Saving linked transfer`);
             const proposedAppParams = data.data;
-            const initiatorXpub = (proposedAppParams.params as any).initiatorXpub;
+            const initiatorXpub = data.from;
             const initialState = proposedAppParams.params
               .initialState as SimpleLinkedTransferAppStateBigNumber;
             await this.transferService.saveLinkedTransfer(
