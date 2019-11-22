@@ -1,5 +1,5 @@
 import { ChannelAppSequences } from "@connext/types";
-import { Injectable } from "@nestjs/common";
+import { Injectable, forwardRef, Inject } from "@nestjs/common";
 import { AddressZero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { BigNumber, getAddress } from "ethers/utils";
@@ -9,6 +9,7 @@ import { ConfigService } from "../config/config.service";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
+import { TransferService } from "../transfer/transfer.service";
 import { CLogger } from "../util";
 import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
@@ -22,6 +23,8 @@ export class ChannelService {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly configService: ConfigService,
+    @Inject(forwardRef(() => TransferService))
+    private readonly transferService: TransferService,
     private readonly channelRepository: ChannelRepository,
     private readonly onchainRepository: OnchainTransactionRepository,
   ) {}

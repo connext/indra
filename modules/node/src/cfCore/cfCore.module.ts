@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
+import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigModule } from "../config/config.module";
 import { DatabaseModule } from "../database/database.module";
 import { LockModule } from "../lock/lock.module";
@@ -18,7 +19,7 @@ import { CFCoreService } from "./cfCore.service";
     ConfigModule,
     DatabaseModule,
     MessagingModule,
-    TypeOrmModule.forFeature([CFCoreRecordRepository]),
+    TypeOrmModule.forFeature([CFCoreRecordRepository, AppRegistryRepository]),
     LockModule,
   ],
   providers: [cfCoreProviderFactory, CFCoreService],

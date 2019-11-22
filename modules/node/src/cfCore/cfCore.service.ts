@@ -1,10 +1,12 @@
-import { AppActionBigNumber, ConnextNodeStorePrefix } from "@connext/types";
+import { NatsMessagingService } from "@connext/messaging";
+import { AppActionBigNumber, ConnextNodeStorePrefix, SupportedApplication } from "@connext/types";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
+import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigService } from "../config/config.service";
-import { CFCoreProviderId } from "../constants";
+import { CFCoreProviderId, MessagingProviderId, Network } from "../constants";
 import { CLogger, freeBalanceAddressFromXpub, replaceBN } from "../util";
 import {
   AppInstanceJson,
@@ -12,6 +14,8 @@ import {
   CFCore,
   CFCoreTypes,
   getMultisigAddressfromXpubs,
+  InstallMessage,
+  RejectProposalMessage,
 } from "../util/cfCore";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
@@ -23,7 +27,9 @@ export class CFCoreService {
   constructor(
     @Inject(CFCoreProviderId) public readonly cfCore: CFCore,
     private readonly configService: ConfigService,
+    @Inject(MessagingProviderId) private readonly messagingProvider: NatsMessagingService,
     private readonly cfCoreRepository: CFCoreRecordRepository,
+    private readonly appRegistryRepository: AppRegistryRepository,
   ) {
     this.cfCore = cfCore;
   }
@@ -138,6 +144,68 @@ export class CFCoreService {
     });
     logger.log(`proposeInstallApp called with result ${JSON.stringify(proposeRes.result.result)}`);
     return proposeRes.result.result as CFCoreTypes.ProposeInstallResult;
+  }
+
+  async proposeAndWaitForInstallApp(
+    userPubId: string,
+    initialState: any,
+    initiatorDeposit: BigNumber,
+    initiatorDepositTokenAddress: string,
+    responderDeposit: BigNumber,
+    responderDepositTokenAddress: string,
+    app: SupportedApplication,
+  ): Promise<CFCoreTypes.ProposeInstallResult | undefined> {
+    let boundResolve: (value?: any) => void;
+    let boundReject: (reason?: any) => void;
+
+    const network = await this.configService.getEthNetwork();
+    const appInfo = await this.appRegistryRepository.findByNameAndNetwork(
+      app,
+      network.name as Network,
+    );
+    // note: intermediary is added in connext.ts as well
+    const {
+      actionEncoding,
+      appDefinitionAddress: appDefinition,
+      outcomeType,
+      stateEncoding,
+    } = appInfo;
+    const params: CFCoreTypes.ProposeInstallParams = {
+      abiEncodings: {
+        actionEncoding,
+        stateEncoding,
+      },
+      appDefinition,
+      initialState,
+      initiatorDeposit,
+      initiatorDepositTokenAddress,
+      outcomeType,
+      proposedToIdentifier: userPubId,
+      responderDeposit,
+      responderDepositTokenAddress,
+      timeout: Zero,
+    };
+
+    const proposeRes = await this.proposeInstallApp(params);
+
+    try {
+      await new Promise((res: () => any, rej: (msg: string) => any): void => {
+        boundResolve = this.resolveInstallTransfer.bind(null, res);
+        boundReject = this.rejectInstallTransfer.bind(null, rej);
+        this.messagingProvider.subscribe(
+          `indra.client.${userPubId}.install.${proposeRes.appInstanceId}`,
+          boundResolve,
+        );
+        this.cfCore.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
+      });
+      logger.log(`App was installed successfully!: ${JSON.stringify(proposeRes)}`);
+      return proposeRes;
+    } catch (e) {
+      logger.error(`Error installing app: ${e.toString()}`);
+      return undefined;
+    } finally {
+      this.cleanupInstallListeners(boundReject, proposeRes.appInstanceId, userPubId);
+    }
   }
 
   async installApp(appInstanceId: string): Promise<CFCoreTypes.InstallResult> {
@@ -317,6 +385,26 @@ export class CFCoreService {
     const path = `${prefix}/${this.cfCore.publicIdentifier}/channel/${multisig}`;
     return await this.cfCoreRepository.get(path);
   }
+
+  private resolveInstallTransfer = (
+    res: (value?: unknown) => void,
+    message: InstallMessage,
+  ): InstallMessage => {
+    res(message);
+    return message;
+  };
+
+  private rejectInstallTransfer = (
+    rej: (reason?: string) => void,
+    msg: RejectProposalMessage,
+  ): any => {
+    return rej(`Install failed. Event data: ${JSON.stringify(msg, replaceBN, 2)}`);
+  };
+
+  private cleanupInstallListeners = (boundReject: any, appId: string, userPubId: string): void => {
+    this.messagingProvider.unsubscribe(`indra.client.${userPubId}.install.${appId}`);
+    this.cfCore.off(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
+  };
 
   private async appNotInstalled(appInstanceId: string): Promise<string | undefined> {
     const apps = await this.getAppInstances();
