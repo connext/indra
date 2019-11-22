@@ -16,6 +16,7 @@ export {
   UninstallVirtualMessage,
   UpdateStateMessage,
   WithdrawStartedMessage,
+  WithdrawConfirmationMessage,
 } from "./types";
 export {
   StateChannel,
