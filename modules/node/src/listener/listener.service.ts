@@ -15,6 +15,8 @@ import {
   CFCoreTypes,
   CreateChannelMessage,
   DepositConfirmationMessage,
+  DepositFailedMessage,
+  DepositStartedMessage,
   InstallMessage,
   InstallVirtualMessage,
   ProposeMessage,
@@ -23,7 +25,10 @@ import {
   UninstallVirtualMessage,
   UpdateStateMessage,
   WithdrawConfirmationMessage,
+  WithdrawFailedMessage,
+  WithdrawStartedMessage
 } from "../util/cfCore";
+import { NodeMessageWrappedProtocolMessage, RejectProposalMessage } from "@connext/cf-core/dist/src/types";
 
 const logger = new CLogger("ListenerService");
 
@@ -71,10 +76,10 @@ export default class ListenerService implements OnModuleInit {
           this.channelService.clearCollateralizationInFlight(data.data.multisigAddress);
         }
       },
-      DEPOSIT_FAILED: (data: any): void => {
+      DEPOSIT_FAILED: (data: DepositFailedMessage): void => {
         logEvent(CFCoreTypes.EventName.DEPOSIT_FAILED, data);
       },
-      DEPOSIT_STARTED: (data: any): void => {
+      DEPOSIT_STARTED: (data: DepositStartedMessage): void => {
         logEvent(CFCoreTypes.EventName.DEPOSIT_STARTED, data);
       },
       INSTALL: async (data: InstallMessage): Promise<void> => {
@@ -118,14 +123,10 @@ export default class ListenerService implements OnModuleInit {
             logger.debug(`No post-install actions configured.`);
         }
       },
-      PROPOSE_STATE: (data: any): void => {
-        // TODO: need to validate all apps here as well?
-        logEvent(CFCoreTypes.EventName.PROPOSE_STATE, data);
-      },
-      PROTOCOL_MESSAGE_EVENT: (data: any): void => {
+      PROTOCOL_MESSAGE_EVENT: (data: NodeMessageWrappedProtocolMessage): void => {
         logEvent(CFCoreTypes.EventName.PROTOCOL_MESSAGE_EVENT, data);
       },
-      REJECT_INSTALL: async (data: any): Promise<void> => {
+      REJECT_INSTALL: async (data: RejectProposalMessage): Promise<void> => {
         logEvent(CFCoreTypes.EventName.REJECT_INSTALL, data);
 
         const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(
@@ -141,9 +142,6 @@ export default class ListenerService implements OnModuleInit {
       REJECT_INSTALL_VIRTUAL: (data: RejectInstallVirtualMessage): void => {
         logEvent(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, data);
       },
-      REJECT_STATE: (data: any): void => {
-        logEvent(CFCoreTypes.EventName.REJECT_STATE, data);
-      },
       UNINSTALL: (data: UninstallMessage): void => {
         logEvent(CFCoreTypes.EventName.UNINSTALL, data);
       },
@@ -156,10 +154,10 @@ export default class ListenerService implements OnModuleInit {
       WITHDRAWAL_CONFIRMED: (data: WithdrawConfirmationMessage): void => {
         logEvent(CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED, data);
       },
-      WITHDRAWAL_FAILED: (data: any): void => {
+      WITHDRAWAL_FAILED: (data: WithdrawFailedMessage): void => {
         logEvent(CFCoreTypes.EventName.WITHDRAWAL_FAILED, data);
       },
-      WITHDRAWAL_STARTED: (data: any): void => {
+      WITHDRAWAL_STARTED: (data: WithdrawStartedMessage): void => {
         logEvent(CFCoreTypes.EventName.WITHDRAWAL_STARTED, data);
       },
     };
