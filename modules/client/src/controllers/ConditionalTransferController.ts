@@ -115,9 +115,10 @@ export class ConditionalTransferController extends AbstractController {
     params: LinkedTransferParameters,
   ): Promise<LinkedTransferResponse> => {
     // convert params + validate
-    const { amount, assetId, paymentId, preImage } = convert.LinkedTransfer("bignumber", params);
-
-    console.log('amount: ', amount);
+    const { amount, assetId, paymentId, preImage, meta } = convert.LinkedTransfer(
+      "bignumber",
+      params,
+    );
 
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
@@ -159,6 +160,7 @@ export class ConditionalTransferController extends AbstractController {
       assetId,
       initialState,
       appInfo,
+      meta,
     );
 
     if (!appId) {
@@ -179,6 +181,7 @@ export class ConditionalTransferController extends AbstractController {
     assetId: string,
     initialState: SimpleLinkedTransferAppStateBigNumber,
     appInfo: RegisteredAppDetails,
+    meta?: object,
   ): Promise<string | undefined> => {
     let boundResolve: (value?: any) => void;
     let boundReject: (reason?: any) => void;
@@ -199,6 +202,7 @@ export class ConditionalTransferController extends AbstractController {
       initialState,
       initiatorDeposit,
       initiatorDepositTokenAddress: assetId,
+      meta,
       outcomeType,
       proposedToIdentifier: this.connext.nodePublicIdentifier,
       responderDeposit: Zero,
