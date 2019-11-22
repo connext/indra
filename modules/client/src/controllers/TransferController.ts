@@ -13,8 +13,7 @@ import {
   SupportedApplications,
   TransferParameters,
 } from "../types";
-import { invalidAddress, invalidXpub } from "../validation/addresses";
-import { falsy, notLessThanOrEqualTo } from "../validation/bn";
+import { invalidAddress, invalidXpub, notLessThanOrEqualTo, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
@@ -28,19 +27,19 @@ export class TransferController extends AbstractController {
 
     // convert params + validate
     const { recipient, amount, assetId } = convert.TransferParameters("bignumber", params);
-    const invalid = await this.validate(recipient, amount, assetId);
-    if (invalid) {
-      throw new Error(invalid.toString());
-    }
+    const freeBalance = await this.connext.getFreeBalance(assetId);
+    const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
+    validate(
+      invalidXpub(recipient),
+      invalidAddress(assetId),
+      notLessThanOrEqualTo(amount, preTransferBal),
+    );
 
     // make sure recipient is online
     // const res = await this.node.recipientOnline(recipient);
     // if (!res) {
     //   throw new Error(`Recipient is offline.`);
     // }
-
-    const freeBal = await this.connext.getFreeBalance(assetId);
-    const preTransferBal = freeBal[this.connext.freeBalanceAddress];
 
     // verify app is supported without swallowing errors
     const appInfo = this.connext.getRegisteredAppDetails(
@@ -78,22 +77,6 @@ export class TransferController extends AbstractController {
 
   /////////////////////////////////
   ////// PRIVATE METHODS
-  private validate = async (
-    recipient: string,
-    amount: BigNumber,
-    assetId: string,
-  ): Promise<undefined | string> => {
-    // check that there is sufficient free balance for amount
-    const freeBalance = await this.connext.getFreeBalance(assetId);
-    const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
-    const errs = [
-      invalidXpub(recipient),
-      invalidAddress(assetId),
-      notLessThanOrEqualTo(amount, preTransferBal),
-    ];
-    return errs ? errs.filter(falsy)[0] : undefined;
-  };
-
   // TODO: fix type of data
   private resolveInstallTransfer = (res: (value?: unknown) => void, data: any): any => {
     if (this.appId !== data.params.appInstanceId) {

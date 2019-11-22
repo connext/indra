@@ -50,7 +50,7 @@ describe('Daicard', () => {
         cy.contains('p', /less than your balance/i).should('exist')
         // No invalid xpub addresses
         cy.get('input[type="string"]').clear().type('0xabc123')
-        cy.contains('p', /invalid recipient/i).should('exist')
+        cy.contains('p', /invalid/i).should('exist')
       })
     })
 
@@ -129,3 +129,17 @@ describe('Daicard', () => {
     })
   })
 })
+
+
+// describe('Dashboard', () => {
+//   beforeEach(() => {
+//     cy.visit(Cypress.env('publicUrl'))
+//   })
+//   describe('Debug', () => {
+//     it(`Should navigate to debug screen`, () => {
+//       my.goToDashboard()
+//       my.goToDebug()
+//       my.goToDebugChannel()
+//     })
+//   })
+// })
