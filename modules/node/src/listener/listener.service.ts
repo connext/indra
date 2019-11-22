@@ -35,7 +35,7 @@ function logEvent(
   event: CFCoreTypes.EventName,
   res: CFCoreTypes.NodeMessage & { data: any },
 ): void {
-  logger.log(
+  logger.debug(
     `${event} event fired from ${res && res.from ? res.from : null}, data: ${
       res ? JSON.stringify(res.data) : "event did not have a result"
     }`,
