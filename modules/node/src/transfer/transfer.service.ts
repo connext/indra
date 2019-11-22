@@ -315,12 +315,12 @@ export class TransferService {
     };
   }
 
-  async sendAsyncTransferToClient(
+  async sendTransferToClient(
     userPubId: string,
     amount: BigNumber,
     assetId: string,
   ): Promise<string> {
-    logger.debug(`sendAsyncTransferToClient(${userPubId}, ${amount}, ${assetId}`);
+    logger.debug(`sendTransferToClient(${userPubId}, ${amount}, ${assetId}`);
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
     if (!channel) {
       throw new Error(`No channel exists for userPubId ${userPubId}`);
