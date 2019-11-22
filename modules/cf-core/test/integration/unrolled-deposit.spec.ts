@@ -69,10 +69,10 @@ describe("Node method follows spec - install balance refund", () => {
 
       await nodeA.rpcRouter.dispatch({
         id: Date.now(),
-        methodName: NodeTypes.RpcMethodName.UNINSTALL_BALANCE_REFUND,
+        methodName: NodeTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS,
         parameters: {
           multisigAddress
-        } as NodeTypes.UninstallBalanceRefundParams
+        } as NodeTypes.RescindDepositRightsParams
       });
 
       const [postSendBalA, postSendBalB] = await getBalances(
@@ -89,11 +89,11 @@ describe("Node method follows spec - install balance refund", () => {
 
     await nodeA.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.INSTALL_BALANCE_REFUND,
+      methodName: NodeTypes.RpcMethodName.REQUEST_DEPOSIT_RIGHTS,
       parameters: {
         multisigAddress,
         tokenAddress: AddressZero
-      } as NodeTypes.InstallBalanceRefundParams
+      } as NodeTypes.RequestDepositRightsParams
     });
   });
 
@@ -127,10 +127,10 @@ describe("Node method follows spec - install balance refund", () => {
 
       await nodeB.rpcRouter.dispatch({
         id: Date.now(),
-        methodName: NodeTypes.RpcMethodName.UNINSTALL_BALANCE_REFUND,
+        methodName: NodeTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS,
         parameters: {
           multisigAddress
-        } as NodeTypes.UninstallBalanceRefundParams
+        } as NodeTypes.RescindDepositRightsParams
       });
 
       const [postSendBalA, postSendBalB] = await getBalances(
@@ -147,11 +147,11 @@ describe("Node method follows spec - install balance refund", () => {
 
     await nodeA.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.INSTALL_BALANCE_REFUND,
+      methodName: NodeTypes.RpcMethodName.REQUEST_DEPOSIT_RIGHTS,
       parameters: {
         multisigAddress,
         tokenAddress: erc20TokenAddress
-      } as NodeTypes.InstallBalanceRefundParams
+      } as NodeTypes.RequestDepositRightsParams
     });
   });
 
@@ -169,11 +169,11 @@ describe("Node method follows spec - install balance refund", () => {
 
     await nodeA.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.INSTALL_BALANCE_REFUND,
+      methodName: NodeTypes.RpcMethodName.REQUEST_DEPOSIT_RIGHTS,
       parameters: {
         multisigAddress,
         tokenAddress: AddressZero
-      } as NodeTypes.InstallBalanceRefundParams
+      } as NodeTypes.RequestDepositRightsParams
     });
   });
 
@@ -181,11 +181,10 @@ describe("Node method follows spec - install balance refund", () => {
     nodeB.on(NODE_EVENTS.INSTALL, async () => {
       await nodeB.rpcRouter.dispatch({
         id: Date.now(),
-        methodName: NodeTypes.RpcMethodName.UNINSTALL_BALANCE_REFUND,
+        methodName: NodeTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS,
         parameters: {
-          multisigAddress,
-          tokenAddress: AddressZero
-        } as NodeTypes.InstallBalanceRefundParams
+          multisigAddress
+        } as NodeTypes.RescindDepositRightsParams
       });
       const appInstancesNodeA = await getInstalledAppInstances(nodeA);
       const appInstancesNodeB = await getInstalledAppInstances(nodeB);
@@ -196,22 +195,21 @@ describe("Node method follows spec - install balance refund", () => {
 
     await nodeA.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.INSTALL_BALANCE_REFUND,
+      methodName: NodeTypes.RpcMethodName.REQUEST_DEPOSIT_RIGHTS,
       parameters: {
         multisigAddress,
         tokenAddress: AddressZero
-      } as NodeTypes.InstallBalanceRefundParams
+      } as NodeTypes.RequestDepositRightsParams
     });
   });
 
   it("uninstall does not error if not installed", async () => {
     await nodeA.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.UNINSTALL_BALANCE_REFUND,
+      methodName: NodeTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS,
       parameters: {
-        multisigAddress,
-        tokenAddress: AddressZero
-      } as NodeTypes.InstallBalanceRefundParams
+        multisigAddress
+      } as NodeTypes.RescindDepositRightsParams
     });
     const appInstancesNodeA = await getInstalledAppInstances(nodeA);
     const appInstancesNodeB = await getInstalledAppInstances(nodeB);

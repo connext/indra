@@ -15,8 +15,8 @@ import { BigNumber } from "ethers/utils";
 import { xkeyKthAddress } from "../../../machine";
 
 // TODO: maybe a better name? since it's a little smarter than just a plain install
-export default class InstallBalanceRefundController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.INSTALL_BALANCE_REFUND)
+export default class RequestDepositRightsController extends NodeController {
+  @jsonRpcMethod(Node.RpcMethodName.REQUEST_DEPOSIT_RIGHTS)
   public executeMethod: (
     requestHandler: RequestHandler,
     params: Node.MethodParams
@@ -24,7 +24,7 @@ export default class InstallBalanceRefundController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.InstallBalanceRefundParams
+    params: Node.RequestDepositRightsParams
   ): Promise<string[]> {
     return [params.multisigAddress];
   }
@@ -33,8 +33,8 @@ export default class InstallBalanceRefundController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.InstallBalanceRefundParams
-  ): Promise<Node.InstallBalanceRefundResult> {
+    params: Node.RequestDepositRightsParams
+  ): Promise<Node.RequestDepositRightsResult> {
     const {
       provider,
       store,

@@ -10,8 +10,8 @@ import { uninstallBalanceRefundApp } from "../deposit/operation";
 import { BigNumber } from "ethers/utils";
 import { Contract } from "ethers";
 
-export default class UninstallBalanceRefundController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.UNINSTALL_BALANCE_REFUND)
+export default class RescindDepositRightsController extends NodeController {
+  @jsonRpcMethod(Node.RpcMethodName.RESCIND_DEPOSIT_RIGHTS)
   public executeMethod: (
     requestHandler: RequestHandler,
     params: Node.MethodParams
@@ -19,7 +19,7 @@ export default class UninstallBalanceRefundController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.UninstallBalanceRefundParams
+    params: Node.RescindDepositRightsParams
   ): Promise<string[]> {
     return [params.multisigAddress];
   }
@@ -28,7 +28,7 @@ export default class UninstallBalanceRefundController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.UninstallBalanceRefundParams
+    params: Node.RescindDepositRightsParams
   ): Promise<Node.DepositResult> {
     const { provider, store, networkContext } = requestHandler;
     const { multisigAddress } = params;

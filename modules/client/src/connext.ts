@@ -235,7 +235,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // with collateralizing/withdrawing
   // balance refund app needs to be installed by us so that we can always accept async deposits
   log.debug(`Reinstalling balance refund app for ${config.contractAddresses.Token}`);
-  await client.installBalanceRefundApp(config.contractAddresses.Token);
+  await client.requestDepositRights(config.contractAddresses.Token);
 
   // listener on token transfers to multisig to reinstall balance refund
   // this is because in the case that the counterparty deposits in their channel,
@@ -249,7 +249,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     }
     log.info(`Got a transfer to multisig. src: ${src}, dst: ${dst}, wad: ${wad}`);
     // reinstall balance refund app for token
-    await client.installBalanceRefundApp(config.contractAddresses.Token);
+    await client.requestDepositRights(config.contractAddresses.Token);
     const freeBalance = await client.getFreeBalance(config.contractAddresses.Token);
     log.info(`updated FreeBalance: ${stringify(freeBalance)}`);
   });
@@ -785,12 +785,12 @@ export class ConnextClient implements IConnextClient {
     return await this.channelRouter.installApp(appInstanceId);
   };
 
-  public installBalanceRefundApp = async (assetId: string): Promise<CFCoreTypes.DepositResult> => {
-    return await this.channelRouter.installBalanceRefundApp(assetId);
+  public requestDepositRights = async (assetId: string): Promise<CFCoreTypes.DepositResult> => {
+    return await this.channelRouter.requestDepositRights(assetId);
   };
 
-  public uninstallBalanceRefundApp = async (): Promise<CFCoreTypes.DepositResult> => {
-    return await this.channelRouter.uninstallBalanceRefundApp();
+  public rescindDepositRights = async (): Promise<CFCoreTypes.DepositResult> => {
+    return await this.channelRouter.rescindDepositRights();
   };
 
   public uninstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {

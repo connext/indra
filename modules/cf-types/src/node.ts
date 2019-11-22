@@ -103,7 +103,7 @@ export namespace Node {
     GET_STATE = "chan_getState",
     GET_STATE_CHANNEL = "chan_getStateChannel",
     INSTALL = "chan_install",
-    INSTALL_BALANCE_REFUND = "chan_installBalanceRefund",
+    REQUEST_DEPOSIT_RIGHTS = "chan_requestDepositRights",
     INSTALL_VIRTUAL = "chan_installVirtual",
     PROPOSE_INSTALL = "chan_proposeInstall",
     PROPOSE_INSTALL_VIRTUAL = "chan_proposeInstallVirtual",
@@ -114,7 +114,7 @@ export namespace Node {
     TAKE_ACTION = "chan_takeAction",
     UNINSTALL = "chan_uninstall",
     UNINSTALL_VIRTUAL = "chan_uninstallVirtual",
-    UNINSTALL_BALANCE_REFUND = "chan_uninstallBalanceRefund",
+    RESCIND_DEPOSIT_RIGHTS = "chan_rescindDepositRights",
     WITHDRAW = "chan_withdraw",
     WITHDRAW_COMMITMENT = "chan_withdrawCommitment"
   }
@@ -185,7 +185,7 @@ export namespace Node {
     multisigBalance: BigNumber;
   };
 
-  export type InstallBalanceRefundResult = {
+  export type RequestDepositRightsResult = {
     multisigBalance: BigNumber;
     recipient: string;
   };
@@ -263,7 +263,7 @@ export namespace Node {
     appInstanceId: string;
   };
 
-  export type InstallBalanceRefundParams = {
+  export type RequestDepositRightsParams = {
     multisigAddress: string;
     tokenAddress?: string;
   };
@@ -320,7 +320,7 @@ export namespace Node {
     appInstanceId: string;
   };
 
-  export type UninstallBalanceRefundParams = {
+  export type RescindDepositRightsParams = {
     multisigAddress: string;
   };
 

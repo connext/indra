@@ -235,11 +235,13 @@ export class ChannelRouter {
     } as CFCoreTypes.InstallParams);
   };
 
-  public installBalanceRefundApp = async (assetId: string): Promise<CFCoreTypes.DepositResult> => {
-    return await this._send(CFCoreTypes.RpcMethodName.INSTALL_BALANCE_REFUND, {
+  public requestDepositRights = async (
+    assetId: string,
+  ): Promise<CFCoreTypes.RequestDepositRightsResult> => {
+    return await this._send(CFCoreTypes.RpcMethodName.REQUEST_DEPOSIT_RIGHTS, {
       multisigAddress: this.multisigAddress,
       tokenAddress: assetId,
-    } as CFCoreTypes.InstallBalanceRefundParams);
+    } as CFCoreTypes.RequestDepositRightsParams);
   };
 
   public uninstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
@@ -248,10 +250,10 @@ export class ChannelRouter {
     } as CFCoreTypes.UninstallParams);
   };
 
-  public uninstallBalanceRefundApp = async (): Promise<CFCoreTypes.DepositResult> => {
-    return await this._send(CFCoreTypes.RpcMethodName.UNINSTALL_BALANCE_REFUND, {
+  public rescindDepositRights = async (): Promise<CFCoreTypes.DepositResult> => {
+    return await this._send(CFCoreTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS, {
       multisigAddress: this.multisigAddress,
-    } as CFCoreTypes.UninstallBalanceRefundParams);
+    } as CFCoreTypes.RescindDepositRightsParams);
   };
 
   public uninstallVirtualApp = async (

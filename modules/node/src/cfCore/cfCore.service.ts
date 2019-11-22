@@ -283,19 +283,17 @@ export class CFCoreService {
     return uninstallResponse.result.result as CFCoreTypes.UninstallResult;
   }
 
-  async uninstallBalanceRefundApp(multisigAddress: string): Promise<CFCoreTypes.DepositResult> {
+  async rescindDepositRights(multisigAddress: string): Promise<CFCoreTypes.DepositResult> {
     // check the app is actually installed
-    logger.log(`Calling uninstallBalanceRefundApp`);
+    logger.log(`Calling rescindDepositRights`);
     const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.UNINSTALL_BALANCE_REFUND,
-      parameters: { multisigAddress } as CFCoreTypes.UninstallBalanceRefundParams,
+      methodName: CFCoreTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS,
+      parameters: { multisigAddress } as CFCoreTypes.RescindDepositRightsParams,
     });
 
     logger.log(
-      `uninstallBalanceRefundApp called with result ${JSON.stringify(
-        uninstallResponse.result.result,
-      )}`,
+      `rescindDepositRights called with result ${JSON.stringify(uninstallResponse.result.result)}`,
     );
     return uninstallResponse.result.result as CFCoreTypes.DepositResult;
   }

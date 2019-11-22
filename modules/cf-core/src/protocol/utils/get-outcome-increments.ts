@@ -94,11 +94,13 @@ async function handleRefundAppOutcomeSpecialCase(
   while (attempts <= 10) {
     const [{ to, amount }] = decodeRefundAppState(mutableOutcome);
     const currentBlockNumber = await provider.getBlockNumber();
-    if (
-      amount.gt(0) ||
-      (blockNumberToUseIfNecessary &&
-        currentBlockNumber >= blockNumberToUseIfNecessary)
-    ) {
+    // if blockNumberToUseIfNecessary is specified and has elapsed, use the decoded state even
+    // if amount is 0
+    const blockNumberSpecifiedAndElapsed =
+      blockNumberToUseIfNecessary &&
+      currentBlockNumber >= blockNumberToUseIfNecessary;
+    // if blockNumberToUseIfNecessary is not specified, wait for nonzero balance refund or error
+    if (amount.gt(0) || blockNumberSpecifiedAndElapsed) {
       return {
         [(appInstance.state as CoinBalanceRefundState).tokenAddress]: {
           [to]: amount
