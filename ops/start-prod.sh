@@ -25,7 +25,7 @@ ganache_chain_id="4447"
 log_level="3" # set to 5 for all logs or to 0 for none
 nats_port="4222"
 node_port="8080"
-number_of_services="7" # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services="8" # NOTE: Gotta update this manually when adding/removing services :(
 project="indra"
 
 ####################
