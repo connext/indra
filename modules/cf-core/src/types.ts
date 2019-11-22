@@ -74,8 +74,8 @@ export interface UninstallVirtualMessage extends Node.NodeMessage {
   data: Node.UninstallVirtualParams;
 }
 
-export interface WithdrawMessage extends Node.NodeMessage {
-  data: Node.WithdrawEventData;
+export interface WithdrawStartedMessage extends Node.NodeMessage {
+  data: Node.WithdrawParams;
 }
 
 export interface WithdrawConfirmationMessage extends Node.NodeMessage {
@@ -114,7 +114,7 @@ export type EventEmittedMessage =
   | RejectProposalMessage
   | RejectInstallVirtualMessage
   | WithdrawConfirmationMessage
-  | WithdrawMessage
+  | WithdrawStartedMessage
   | UninstallVirtualMessage
   | UninstallMessage
   | UpdateStateMessage

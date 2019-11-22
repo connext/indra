@@ -18,10 +18,11 @@ import RpcRouter from "../rpc-router";
 import {
   EventEmittedMessage,
   NetworkContext,
+  Node,
   NODE_EVENTS,
   NodeMessageWrappedProtocolMessage,
   SolidityValueType,
-  WithdrawMessage,
+  WithdrawStartedMessage,
 } from "../types";
 import { bigNumberifyJson } from "../utils";
 import { Store } from "../store";
@@ -163,9 +164,9 @@ async function getOutgoingEventDataFromProtocol(
     case Protocol.Withdraw:
       return {
         ...baseEvent,
-        type: NODE_EVENTS.WITHDRAWAL_CONFIRMED,
+        type: NODE_EVENTS.WITHDRAWAL_STARTED,
         data: getWithdrawEventData(params as WithdrawProtocolParams)
-      } as WithdrawMessage;
+      } as WithdrawStartedMessage;
     case Protocol.TakeAction:
     case Protocol.Update:
       return {
@@ -238,8 +239,14 @@ function getUninstallEventData({
   return { appInstanceId };
 }
 
-function getWithdrawEventData({ amount }: WithdrawProtocolParams) {
-  return { amount };
+function getWithdrawEventData(params: WithdrawProtocolParams): Node.WithdrawParams {
+  const { multisigAddress, tokenAddress, recipient, amount } = params;
+  return {
+    amount,
+    multisigAddress,
+    recipient,
+    tokenAddress,
+  };
 }
 
 function getSetupEventData(
