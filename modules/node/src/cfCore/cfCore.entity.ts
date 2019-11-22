@@ -2,10 +2,14 @@ import { Column, CreateDateColumn, Entity, PrimaryColumn, UpdateDateColumn } fro
 
 @Entity("node_records")
 export class CFCoreRecord {
-  @CreateDateColumn()
+  @CreateDateColumn({
+    default: Date.now(),
+  })
   createdAt!: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({
+    default: Date.now(),
+  })
   updatedAt!: Date;
 
   @PrimaryColumn()
