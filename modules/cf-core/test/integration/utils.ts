@@ -726,13 +726,14 @@ export async function installVirtualApp(
   return new Promise((resolve: (appInstanceId: string) => void) =>
     nodeA.on(
       NODE_EVENTS.INSTALL_VIRTUAL,
-      async ({
-        data: {
-          params: { appInstanceId: eventAppInstanceId }
-        }
-      }: InstallVirtualMessage) => {
+      async (msg: InstallVirtualMessage) => {
         const { appInstanceId } = await proposal;
-        if (eventAppInstanceId === appInstanceId) {
+        if (msg.data.params.appInstanceId === appInstanceId) {
+          assertNodeMessage(msg, {
+            from: nodeC.publicIdentifier,
+            type: NODE_EVENTS.INSTALL_VIRTUAL,
+            data: {params: { appInstanceId }},
+          })
           resolve(appInstanceId);
         }
       }
