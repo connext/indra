@@ -49,7 +49,7 @@ export class AppRegistryService {
    */
   async allowOrReject(data: ProposeMessage): Promise<AppRegistry | void> {
     try {
-      const registryAppInfo = await this.verifyAppProposal(data.data);
+      const registryAppInfo = await this.verifyAppProposal(data.data, data.from);
       await this.cfCoreService.installApp(data.data.appInstanceId);
       return registryAppInfo;
     } catch (e) {
@@ -57,23 +57,6 @@ export class AppRegistryService {
       console.error(e);
       await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
       return;
-    }
-  }
-
-  /**
-   * Reject app installs for virtual apps that node is intermediary of
-   * based on invalid conditions.
-   * @param data Data from CF event PROPOSE_INSTALL_VIRTUAL
-   */
-  async allowOrRejectVirtual(
-    data: ProposeMessage,
-  ): Promise<void | CFCoreTypes.RejectInstallResult> {
-    try {
-      await this.verifyVirtualAppProposal(data.data, data.from);
-    } catch (e) {
-      logger.error(`Caught error during proposed app validation, rejecting virtual install`);
-      console.error(e);
-      return await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
     }
   }
 
@@ -292,6 +275,9 @@ export class AppRegistryService {
     const initiatorChannel = await this.channelRepository.findByUserPublicIdentifier(
       initiatorIdentifier,
     );
+    if (!initiatorChannel) {
+      throw new Error(`Could not find channel for user: ${initiatorIdentifier}`);
+    }
     const freeBalanceInitiatorAsset = await this.cfCoreService.getFreeBalance(
       initiatorIdentifier,
       initiatorChannel.multisigAddress,
@@ -347,12 +333,14 @@ export class AppRegistryService {
 
   // TODO: there is a lot of duplicate logic here + client. ideally, much
   // of this would be moved to a shared library.
-  private async verifyAppProposal(proposedAppParams: {
-    params: CFCoreTypes.ProposeInstallParams;
-    appInstanceId: string;
-  }): Promise<AppRegistry | void> {
+  private async verifyAppProposal(
+    proposedAppParams: {
+      params: CFCoreTypes.ProposeInstallParams;
+      appInstanceId: string;
+    },
+    initiatorIdentifier: string, // will always be `from` field
+  ): Promise<AppRegistry | void> {
     const myIdentifier = this.cfCoreService.cfCore.publicIdentifier;
-    const initiatorIdentifier = (proposedAppParams.params as any).initiatorXpub;
     if (initiatorIdentifier === myIdentifier) {
       logger.log(`Received proposal from our own node.`);
       return;

@@ -1,4 +1,5 @@
 import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server/src/contract-deployments.jest";
+import { Node as NodeTypes } from "@connext/types";
 import { One, Zero } from "ethers/constants";
 
 import {
@@ -15,12 +16,28 @@ import {
   constructGetStateRpc,
   constructTakeActionRpc,
   createChannel,
-  installVirtualApp
+  installVirtualApp,
+  assertNodeMessage
 } from "./utils";
 
 jest.setTimeout(15000);
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
+
+// NOTE: no initiator events
+function confirmMessages(initiator: Node, responder: Node, expectedData: NodeTypes.UpdateStateEventData) {
+  const expected = {
+    from: initiator.publicIdentifier,
+    type: NODE_EVENTS.UPDATE_STATE,
+    data: expectedData,
+  };
+  // initiator.once(NODE_EVENTS.UPDATE_STATE, (msg: UpdateStateMessage) => {
+  //   assertNodeMessage(msg, expected);
+  // });
+  responder.once(NODE_EVENTS.UPDATE_STATE, (msg: UpdateStateMessage) => {
+    assertNodeMessage(msg, expected);
+  });
+}
 
 describe("Node method follows spec - takeAction virtual", () => {
   let nodeA: Node;
@@ -67,17 +84,7 @@ describe("Node method follows spec - takeAction virtual", () => {
 
         nodeC.once(
           NODE_EVENTS.UPDATE_STATE,
-          async ({
-            data: { newState, appInstanceId: retAppInstanceId }
-          }: UpdateStateMessage) => {
-            /**
-             * TEST #1
-             * The event emitted by Node C after an action is taken by A
-             * sends the appInstanceId and the newState correctly.
-             */
-            expect(retAppInstanceId).toEqual(appInstanceId);
-            expect(newState).toEqual(expectedNewState);
-
+          async () => {
             const req = constructGetStateRpc(appInstanceId);
 
             /**
@@ -107,6 +114,17 @@ describe("Node method follows spec - takeAction virtual", () => {
             done();
           }
         );
+
+        /**
+         * TEST #1
+         * The event emitted by Node C after an action is taken by A
+         * sends the appInstanceId and the newState correctly.
+         */
+        confirmMessages(nodeA, nodeC, { 
+          newState: expectedNewState,
+          appInstanceId,
+          action: validAction,
+        });
 
         const takeActionReq = constructTakeActionRpc(
           appInstanceId,

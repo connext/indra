@@ -163,7 +163,7 @@ export const SettingsCard = style(({ classes, setWalletConnext, getWalletConnext
                     variant="contained"
                     color="primary"
                     style={{ color: "#FFF", marginRight: "-10%" }}
-                    onClick={() => recoverAddressFromMnemonic()}
+                    onClick={async () => await recoverAddressFromMnemonic()}
                   >
                     <SubmitIcon />
                   </Button>
@@ -238,7 +238,7 @@ export const SettingsCard = style(({ classes, setWalletConnext, getWalletConnext
                         }}
                         variant="contained"
                         size="small"
-                        onClick={() => generateNewAddress()}
+                        onClick={async () => await generateNewAddress()}
                       >
                         Burn
                       </Button>

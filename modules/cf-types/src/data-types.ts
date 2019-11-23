@@ -1,5 +1,5 @@
 // https://github.com/counterfactual/monorepo/blob/master/packages/cf.js/API_REFERENCE.md#data-types
-import { BigNumber, BigNumberish } from "ethers/utils";
+import { BigNumber } from "ethers/utils";
 
 import { AppInterface, SolidityValueType } from ".";
 

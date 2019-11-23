@@ -17,7 +17,7 @@ import {
   StateChannel,
   StateChannelJSON,
 } from "./models";
-import { NetworkContext, Node, SolidityValueType } from "./types";
+import { Node, SolidityValueType } from "./types";
 import { getCreate2MultisigAddress, prettyPrintObject } from "./utils";
 
 /**
