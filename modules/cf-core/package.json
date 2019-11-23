@@ -19,6 +19,7 @@
   "dependencies": {
     "@connext/cf-adjudicator-contracts": "0.4.1",
     "@connext/cf-funding-protocol-contracts": "0.4.1",
+    "@connext/cf-types": "1.1.1",
     "@connext/types": "1.1.1",
     "@counterfactual/cf-adjudicator-contracts": "0.0.9",
     "@counterfactual/cf-funding-protocol-contracts": "0.0.12",
