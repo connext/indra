@@ -1,0 +1,14 @@
+name: CI
+
+on: push
+
+jobs:
+  test-bot:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - run: make prod
+    - run: make start-test
+    - run: make test-bot
