@@ -2,7 +2,7 @@ import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
 
-import { stringify, xpubToAddress } from "../lib/utils";
+import { stringify, xpubToAddress } from "../lib";
 import { BigNumber, CFCoreTypes, ChannelState, convert, DepositParameters } from "../types";
 import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 

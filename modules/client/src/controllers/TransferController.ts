@@ -1,7 +1,7 @@
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
-import { delayAndThrow, stringify, xpubToAddress } from "../lib/utils";
+import { delayAndThrow, stringify, xpubToAddress } from "../lib";
 import {
   CFCoreChannel,
   CFCoreTypes,

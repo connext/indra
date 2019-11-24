@@ -4,8 +4,7 @@ import { Transaction } from "ethers/utils";
 import uuid = require("uuid");
 
 import { ChannelRouter } from "./channelRouter";
-import { Logger } from "./lib/logger";
-import { stringify } from "./lib/utils";
+import { Logger, stringify } from "./lib";
 import {
   AppRegistry,
   CFCoreTypes,

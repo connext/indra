@@ -1,12 +1,3 @@
-import { HDNode } from "ethers/utils";
-
-export {
-  AppInstanceJson,
-  AppInstanceProposal,
-  Node as CFCoreTypes,
-  OutcomeType,
-} from "@connext/types";
-
 export {
   CreateChannelMessage,
   DepositConfirmationMessage,
@@ -28,3 +19,9 @@ export {
   xkeyKthHDNode,
   xkeysToSortedKthAddresses,
 } from "@connext/cf-core";
+export {
+  AppInstanceJson,
+  AppInstanceProposal,
+  Node as CFCoreTypes,
+  OutcomeType,
+} from "@connext/types";

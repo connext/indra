@@ -5,8 +5,7 @@ import { EventEmitter } from "events";
 
 import { ChannelRouter } from "./channelRouter";
 import { ConnextClient } from "./connext";
-import { Logger } from "./lib/logger";
-import { stringify } from "./lib/utils";
+import { Logger, stringify } from "./lib";
 import {
   AppInstanceInfo,
   CFCoreTypes,

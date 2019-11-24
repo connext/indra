@@ -15,10 +15,7 @@ import { ResolveConditionController } from "./controllers/ResolveConditionContro
 import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
-import { CFCore } from "./lib/cfCore";
-import { CF_PATH } from "./lib/constants";
-import { Logger } from "./lib/logger";
-import { stringify, withdrawalKey, xpubToAddress } from "./lib/utils";
+import { CF_PATH, CFCore, Logger, stringify, withdrawalKey, xpubToAddress } from "./lib";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import {

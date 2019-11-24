@@ -2,7 +2,7 @@ import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import { stringify, xpubToAddress } from "../lib/utils";
+import { stringify, xpubToAddress } from "../lib";
 import {
   CFCoreChannel,
   CFCoreTypes,

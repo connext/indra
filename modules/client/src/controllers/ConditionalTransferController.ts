@@ -2,7 +2,7 @@ import EthCrypto from "eth-crypto";
 import { HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import { createLinkedHash, delayAndThrow, stringify, xpubToAddress } from "../lib/utils";
+import { createLinkedHash, delayAndThrow, stringify, xpubToAddress } from "../lib";
 import {
   BigNumber,
   CFCoreTypes,

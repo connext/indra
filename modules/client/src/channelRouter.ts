@@ -2,7 +2,7 @@ import { Wallet } from "ethers";
 import { arrayify, BigNumber } from "ethers/utils";
 import { RpcParameters } from "rpc-server";
 
-import { withdrawalKey } from "./lib/utils";
+import { withdrawalKey } from "./lib";
 import {
   AppActionBigNumber,
   AppStateBigNumber,

@@ -1,8 +1,7 @@
 import { bigNumberify, getAddress } from "ethers/utils";
 
 import { ConnextClient } from "../connext";
-import { Logger } from "../lib/logger";
-import { stringify, xpubToAddress } from "../lib/utils";
+import { Logger, stringify, xpubToAddress } from "../lib";
 import {
   AppInstanceInfo,
   AppInstanceJson,
