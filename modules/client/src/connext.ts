@@ -522,38 +522,25 @@ export class ConnextClient implements IConnextClient {
       throw new Error(`Cannot restore state with channel provider`);
     }
     this.channelRouter.reset();
+    const path = `${ConnextClientStorePrefix}/${this.publicIdentifier}/channel/${this.multisigAddress}`;
+    let state;
     try {
       // try to recover states from our given store's restore method
-      const restoreStates = await this.channelRouter.restore();
-      const stateToRestore = restoreStates.find(
-        (p: { path: string; value: any }): boolean =>
-          p.path === `store/${this.publicIdentifier}/channel/${this.multisigAddress}`,
-      );
-      if (!stateToRestore) {
-        throw new Error(
-          `Couldn't restore states for "store/${this.publicIdentifier}/channel/${this.multisigAddress}."`,
-        );
+      state = await this.channelRouter.restore();
+      this.log.info(`Found state to restore from store's backup: ${stringify(state)}`);
+      if (!state || !state.path) {
+        throw new Error(`No matching paths found in store backup's state`);
       }
-      this.log.info(`Found state to restore from backup: ${stringify(stateToRestore)}`);
-      await this.channelRouter.set([stateToRestore], false);
+      state = state.path;
     } catch (e) {
-      this.log.info(`Could not restore from store, attempting to restore from node: ${e}`);
-      const stateToRestore = await this.node.restoreState(this.publicIdentifier);
-      if (!stateToRestore) {
-        throw new Error(
-          `No matching states found by node for "store/${this.publicIdentifier}/channel/${this.multisigAddress}."`,
-        );
+      this.log.info(e);
+      state = await this.node.restoreState(this.publicIdentifier);
+      this.log.info(`Found state to restore from node: ${stringify(state)}`);
+      if (!state) {
+        throw new Error(`No matching states found by node for ${this.publicIdentifier}`);
       }
-      this.log.info(`Found state to restore from node: ${stringify(stateToRestore)}`);
-      // TODO: this should prob not be hardcoded like this
-      await this.store.set([
-        {
-          path: `${ConnextClientStorePrefix}/${this.publicIdentifier}/channel/${this.multisigAddress}`,
-          value: stateToRestore,
-        },
-      ]);
-      this.log.info(`Succesfully restored state from node!`);
     }
+    await this.channelRouter.set([{ path, value: state }]);
     await this.restart();
   };
 

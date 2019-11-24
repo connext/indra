@@ -11,7 +11,7 @@ import { ConfigService } from "../config/config.service";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
-import { CLogger, xpubToAddress } from "../util";
+import { CLogger, stringify, xpubToAddress } from "../util";
 import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
@@ -169,14 +169,14 @@ export class ChannelService {
         !creationData.data.owners.includes(existing.userPublicIdentifier)
       ) {
         throw new Error(
-          `Channel has already been created with different owners! ${JSON.stringify(
+          `Channel has already been created with different owners! ${stringify(
             existing,
           )}. Event data: ${creationData}`,
         );
       }
       logger.log(`Channel already exists in database`);
     }
-    logger.log(`Creating new channel from data ${JSON.stringify(creationData)}`);
+    logger.log(`Creating new channel from data ${stringify(creationData)}`);
     const channel = new Channel();
     channel.userPublicIdentifier = creationData.data.counterpartyXpub;
     channel.nodePublicIdentifier = this.cfCoreService.cfCore.publicIdentifier;
@@ -263,16 +263,21 @@ export class ChannelService {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     if (!channel) {
       throw new Error(
-        `No channel exists for userPublicIdentifier ${JSON.stringify(userPublicIdentifier)}`,
+        `No channel exists for userPublicIdentifier ${userPublicIdentifier}`,
       );
     }
     const { data: state } = await this.cfCoreService.getStateChannel(channel.multisigAddress);
 
-    // FIXME: this has to be [] not {}, we should fix this better
+    // FIXME: these need to be [] not {}, we should fix this better
     state.singleAssetTwoPartyIntermediaryAgreements =
       Object.values(state.singleAssetTwoPartyIntermediaryAgreements).length === 0
         ? []
         : state.singleAssetTwoPartyIntermediaryAgreements;
+
+    state.proposedAppInstances =
+      Object.values(state.proposedAppInstances).length === 0 ? [] : state.proposedAppInstances;
+
+    state.appInstances = Object.values(state.appInstances).length === 0 ? [] : state.appInstances;
 
     return state;
   }
