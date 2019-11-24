@@ -20,7 +20,6 @@ import {
 import {
   sortAddresses,
   xkeyKthAddress,
-  xkeyKthHDNode,
   xkeysToSortedKthAddresses,
   xkeysToSortedKthSigningKeys,
 } from "./xkeys";
@@ -45,7 +44,6 @@ export {
   UpdateParams,
   WithdrawParams,
   xkeyKthAddress,
-  xkeyKthHDNode,
   xkeysToSortedKthAddresses,
   xkeysToSortedKthSigningKeys,
 };

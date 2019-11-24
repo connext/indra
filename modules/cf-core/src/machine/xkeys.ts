@@ -1,61 +1,59 @@
 import { Wallet } from "ethers";
 import { computeAddress, SigningKey } from "ethers/utils";
 import { fromExtendedKey, fromMnemonic, HDNode } from "ethers/utils/hdnode";
+import memoize from "memoizee";
 
 /**
- * Helpful info:
- *
  * BIP-32 specified HD Wallets
  * BIP-39 specifies how to convert mnemonic to/from entropy and mnemonic to seed
  * BIP-43 specifies that the first field should be purpose (i.e. "m / purpose'")
- * BIP-44 specifies that if the purpose is 44, then the format is:
- *   "m / purpose' / cointype' / account' / change / index"
+ * BIP-44 specifies format of: "m/purpose'/cointype'/account'/change/index" (iff purpose is 44)
  */
 
-export function computeRandomExtendedPrvKey(): string {
-  return fromMnemonic(Wallet.createRandom().mnemonic).extendedKey;
-}
+// Primitive mode is faster but only works if params are strings or strings[]
+// maxAge specifies how long the cache lives before being cleared
+const memoizeOptions = { primitive: true, maxAge: 60 * 1000 };
 
-export function sortAddresses(addrs: string[]): string[] {
-  return addrs.sort((a: string, b: string): number => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
-}
+const sortSigningkeys = memoize(
+  (addrs: SigningKey[]): SigningKey[] =>
+    addrs.sort((a: SigningKey, b: SigningKey): number =>
+      parseInt(a.address, 16) < parseInt(b.address, 16) ? -1 : 1,
+    ),
+  memoizeOptions,
+);
 
-function sortSigningkeys(addrs: SigningKey[]): SigningKey[] {
-  return addrs.sort((a: SigningKey, b: SigningKey): number =>
-    parseInt(a.address, 16) < parseInt(b.address, 16) ? -1 : 1,
+const xkeyKthHDNode = memoize(
+  (xkey: string, k: number | string = "0"): HDNode =>
+    fromExtendedKey(xkey).derivePath(k.toString()),
+  memoizeOptions,
+);
+
+// Not deterministic: don't memoize
+export const computeRandomExtendedPrvKey = (): string =>
+  fromMnemonic(Wallet.createRandom().mnemonic).extendedKey;
+
+export const sortAddresses = memoize(
+  (addrs: string[]): string[] =>
+    addrs.sort((a: string, b: string): number => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1)),
+  memoizeOptions,
+);
+
+export const xkeyKthAddress = (xkey: string, k: number | string = "0"): string =>
+  memoize((xkey: string, k: string): string => xkeyKthHDNode(xkey, k).address, memoizeOptions)(
+    xkey,
+    k.toString(),
   );
-}
 
-const xkeyKthAddressCache = {} as any;
-export function xkeyKthAddress(xkey: string, k: number | string = "0"): string {
-  const index = k.toString();
-  if (!xkeyKthAddressCache[xkey]) {
-    xkeyKthAddressCache[xkey] = {};
-  }
-  if (!xkeyKthAddressCache[xkey][index]) {
-    xkeyKthAddressCache[xkey][index] = xkeyKthHDNode(xkey, index).address;
-  }
-  return xkeyKthAddressCache[xkey][k];
-}
+export const xkeysToSortedKthAddresses = memoize(
+  (xkeys: string[], k: number): string[] =>
+    sortAddresses(xkeys.map((xkey: string): string => xkeyKthAddress(xkey, k))),
+  memoizeOptions,
+);
 
-const xkeyKthNodeCache = {} as any;
-export function xkeyKthHDNode(xkey: string, k: number | string = "0"): HDNode {
-  const index = k.toString();
-  if (!xkeyKthNodeCache[xkey]) {
-    xkeyKthNodeCache[xkey] = {};
-  }
-  if (!xkeyKthNodeCache[xkey][index]) {
-    xkeyKthNodeCache[xkey][index] = fromExtendedKey(xkey).derivePath(index);
-  }
-  return xkeyKthNodeCache[xkey][index];
-}
-
-export function xkeysToSortedKthAddresses(xkeys: string[], k: number): string[] {
-  return sortAddresses(xkeys.map((xkey: string): string => xkeyKthAddress(xkey, k)));
-}
-
-export function xkeysToSortedKthSigningKeys(xkeys: string[], k: number): SigningKey[] {
-  return sortSigningkeys(
-    xkeys.map((xkey: string): SigningKey => new SigningKey(xkeyKthHDNode(xkey, k).privateKey)),
-  );
-}
+export const xkeysToSortedKthSigningKeys = memoize(
+  (xkeys: string[], k: number): SigningKey[] =>
+    sortSigningkeys(
+      xkeys.map((xkey: string): SigningKey => new SigningKey(xkeyKthHDNode(xkey, k).privateKey)),
+    ),
+  memoizeOptions,
+);

@@ -16,7 +16,6 @@ export {
   UpdateStateMessage,
   WithdrawMessage,
   xkeyKthAddress as xpubToAddress,
-  xkeyKthHDNode,
   xkeysToSortedKthAddresses,
 } from "@connext/cf-core";
 export {
