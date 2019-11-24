@@ -39,10 +39,6 @@ process.on("unhandledRejection", (e: any): any => {
     }
   };
 
-  if (config.getFreeBalance) {
-    await logEthAndAssetFreeBalance();
-  }
-
   if (config.deposit) {
     const depositParams: DepositParameters = {
       amount: parseEther(config.deposit).toString(),
@@ -216,6 +212,10 @@ process.on("unhandledRejection", (e: any): any => {
   if (config.restore) {
     console.log(`Restoring states from the node: ${config.restore}`);
     await client.restoreState();
+  }
+
+  if (config.getFreeBalance) {
+    await logEthAndAssetFreeBalance();
   }
 
   if (!config.open) {
