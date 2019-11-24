@@ -66,11 +66,12 @@ bash ops/payment-bot.sh -i 2 -d 0.1 -a -m "$mnemonic2"
 #echo -e "$divider";echo "Removing sender's state to trigger a restore"
 #rm modules/payment-bot/.payment-bot-db/2.json
 
-echo -e "$divider";echo "Sending eth to recipient bot"
-bash ops/payment-bot.sh -i 2 -t 0.025 -c $id -m "$mnemonic2"
+# comment virtual app tests out for now. revisit this when we have virtual apps working
+# echo -e "$divider";echo "Sending eth to recipient bot"
+# bash ops/payment-bot.sh -i 2 -t 0.025 -c $id -m "$mnemonic2"
 
-echo -e "$divider";echo "Sending tokens to recipient bot"
-bash ops/payment-bot.sh -i 2 -t 0.05 -c $id -a -m "$mnemonic2"
+# echo -e "$divider";echo "Sending tokens to recipient bot"
+# bash ops/payment-bot.sh -i 2 -t 0.05 -c $id -a -m "$mnemonic2"
 
 echo -e "$divider";echo "Stopping recipient listener so it can redeem a link payment"
 cleanup
