@@ -5,13 +5,13 @@ import { BigNumber } from "ethers/utils";
 
 import { ConfigService } from "../config/config.service";
 import { CFCoreProviderId } from "../constants";
-import { CLogger, freeBalanceAddressFromXpub, replaceBN } from "../util";
+import { CLogger, replaceBN, xpubToAddress } from "../util";
 import {
   AppInstanceJson,
   AppInstanceProposal,
   CFCore,
   CFCoreTypes,
-  getMultisigAddressfromXpubs,
+  getCreate2MultisigAddress,
 } from "../util/cfCore";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
@@ -50,8 +50,8 @@ export class CFCoreService {
         // NOTE: can return free balance obj with 0s,
         // but need the free balance address in the multisig
         const obj = {};
-        obj[freeBalanceAddressFromXpub(this.cfCore.publicIdentifier)] = Zero;
-        obj[freeBalanceAddressFromXpub(userPubId)] = Zero;
+        obj[xpubToAddress(this.cfCore.publicIdentifier)] = Zero;
+        obj[xpubToAddress(userPubId)] = Zero;
         return obj;
       }
 
@@ -289,7 +289,7 @@ export class CFCoreService {
     const addresses = await this.configService.getContractAddresses();
     const proxyFactory = addresses.ProxyFactory;
     const mVMultisig = addresses.MinimumViableMultisig;
-    return getMultisigAddressfromXpubs(owners, proxyFactory, mVMultisig);
+    return getCreate2MultisigAddress(owners, proxyFactory, mVMultisig);
   }
 
   /**

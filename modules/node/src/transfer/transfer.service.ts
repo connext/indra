@@ -20,10 +20,10 @@ import { mkHash } from "../test";
 import {
   CLogger,
   createLinkedHash,
-  freeBalanceAddressFromXpub,
   InstallMessage,
   RejectProposalMessage,
   replaceBN,
+  xpubToAddress,
 } from "../util";
 import { AppInstanceJson, CFCoreTypes } from "../util/cfCore";
 
@@ -240,8 +240,7 @@ export class TransferService {
       this.channelService.requestCollateral(userPubId, assetId, amountBN);
     }
 
-    const preTransferBal =
-      freeBal[freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)];
+    const preTransferBal = freeBal[xpubToAddress(this.cfCoreService.cfCore.publicIdentifier)];
 
     const network = await this.configService.getEthNetwork();
     const appInfo = await this.appRegistryRepository.findByNameAndNetwork(
@@ -259,7 +258,7 @@ export class TransferService {
         },
         {
           amount: Zero,
-          to: freeBalanceAddressFromXpub(userPubId),
+          to: xpubToAddress(userPubId),
         },
       ],
       linkedHash,
@@ -287,14 +286,14 @@ export class TransferService {
     );
 
     const diff = preTransferBal.sub(
-      postTransferBal[freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)],
+      postTransferBal[xpubToAddress(this.cfCoreService.cfCore.publicIdentifier)],
     );
 
     if (!diff.eq(amountBN)) {
       logger.warn(`Got an unexpected difference of free balances before and after uninstalling`);
       logger.warn(
         `preTransferBal: ${preTransferBal.toString()}, postTransferBalance: ${postTransferBal[
-          freeBalanceAddressFromXpub(this.cfCoreService.cfCore.publicIdentifier)
+          xpubToAddress(this.cfCoreService.cfCore.publicIdentifier)
         ].toString()}, expected ${amount}`,
       );
     }

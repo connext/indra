@@ -15,35 +15,37 @@ import {
   UninstallParams,
   UninstallVirtualAppParams,
   UpdateParams,
-  WithdrawParams
+  WithdrawParams,
 } from "./types";
 import {
+  sortAddresses,
   xkeyKthAddress,
   xkeyKthHDNode,
   xkeysToSortedKthAddresses,
-  xkeysToSortedKthSigningKeys
+  xkeysToSortedKthSigningKeys,
 } from "./xkeys";
 
 export {
   appIdentityToHash,
-  ProtocolRunner,
   Context,
+  InstallParams,
+  InstallVirtualAppParams,
   Instruction,
   Middleware,
   Opcode,
   Protocol,
   ProtocolExecutionFlow,
   ProtocolMessage,
+  ProtocolRunner,
   SetupParams,
-  InstallParams,
-  UpdateParams,
-  UninstallParams,
-  WithdrawParams,
+  sortAddresses,
   TakeActionParams,
-  InstallVirtualAppParams,
+  UninstallParams,
   UninstallVirtualAppParams,
+  UpdateParams,
+  WithdrawParams,
   xkeyKthAddress,
   xkeyKthHDNode,
   xkeysToSortedKthAddresses,
-  xkeysToSortedKthSigningKeys
+  xkeysToSortedKthSigningKeys,
 };

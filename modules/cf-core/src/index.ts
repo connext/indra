@@ -17,3 +17,10 @@ export {
   UpdateStateMessage,
   WithdrawMessage,
 } from "./types";
+export { getCreate2MultisigAddress } from "./utils";
+export {
+  sortAddresses,
+  xkeyKthAddress,
+  xkeyKthHDNode,
+  xkeysToSortedKthAddresses,
+} from "./machine";

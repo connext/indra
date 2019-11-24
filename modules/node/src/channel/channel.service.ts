@@ -11,11 +11,11 @@ import { ConfigService } from "../config/config.service";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
-import { CLogger, freeBalanceAddressFromXpub } from "../util";
+import { CLogger, xpubToAddress } from "../util";
 import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
-import { ChannelRepository } from "./channel.repository"; 
+import { ChannelRepository } from "./channel.repository";
 
 const logger = new CLogger("ChannelService");
 
@@ -102,9 +102,7 @@ export class ChannelService {
       channel.multisigAddress,
       normalizedAssetId,
     );
-    const freeBalanceAddress = freeBalanceAddressFromXpub(
-      this.cfCoreService.cfCore.publicIdentifier,
-    );
+    const freeBalanceAddress = xpubToAddress(this.cfCoreService.cfCore.publicIdentifier);
     const nodeFreeBalance = freeBalance[freeBalanceAddress];
 
     if (nodeFreeBalance.lt(collateralNeeded)) {
@@ -264,7 +262,9 @@ export class ChannelService {
   async getChannelState(userPublicIdentifier: string): Promise<any> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     if (!channel) {
-      throw new Error(`No channel exists for userPublicIdentifier ${JSON.stringify(userPublicIdentifier)}`);
+      throw new Error(
+        `No channel exists for userPublicIdentifier ${JSON.stringify(userPublicIdentifier)}`,
+      );
     }
     const { data: state } = await this.cfCoreService.getStateChannel(channel.multisigAddress);
 
