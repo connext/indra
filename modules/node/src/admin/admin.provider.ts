@@ -1,4 +1,5 @@
 import { IMessagingService } from "@connext/messaging";
+import { StateChannelJSON } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 
 import { AuthService } from "../auth/auth.service";
@@ -6,7 +7,6 @@ import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
 
 import { AdminService } from "./admin.service";
-import { StateChannelJSON } from "@connext/cf-core";
 
 class AdminMessaging extends AbstractMessagingProvider {
   constructor(

@@ -1,10 +1,10 @@
+import { StateChannelJSON } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 
 import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelService } from "../channel/channel.service";
 import { CLogger } from "../util";
-import { StateChannelJSON } from "@connext/cf-core";
 
 const logger = new CLogger("AdminService");
 
