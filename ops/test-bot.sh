@@ -34,8 +34,30 @@ trap cleanup EXIT SIGINT
 rm -f ops/recipient-bot.log
 touch ops/recipient-bot.log
 
+function logInstalledApps {
+  senderStore=modules/payment-bot/.payment-bot-db/2.json
+  recipientStore=modules/payment-bot/.payment-bot-db/1.json
+  senderApps=0
+  recipientApps=0
+  if [[ -f "$senderStore" ]]
+  then senderApps="`cat $senderStore | grep channel | cut -d ":" -f3- | tr -d '\\\' | cut -c 3- | rev | cut -c 3- | rev | jq '.appInstances | length'`"
+  fi
+  if [[ -f "$recipientStore" ]]
+  then recipientApps="`cat $recipientStore | grep channel | cut -d ":" -f3- | tr -d '\\\' | cut -c 3- | rev | cut -c 3- | rev | jq '.appInstances | length'`"
+  fi
+  echo -e "$divider";echo "Installed apps:"
+  echo "Sender: $senderApps"
+  echo "Recipient: $recipientApps"
+  if [[ "$senderApps" != "0" || "$recipientApps" != "0" ]]
+  then echo "Error: no lingering apps should be left uninstalled" && echo && exit 1
+  fi
+}
+
+
 ########################################
 ## Run Tests
+
+logInstalledApps
 
 echo -e "$divider";echo "Requesting eth collateral for recipient bot"
 bash ops/payment-bot.sh -i 1 -q -m "$mnemonic1"
@@ -49,9 +71,9 @@ bash ops/payment-bot.sh -i 2 -d 0.1 -m "$mnemonic2"
 echo -e "$divider";echo "Depositing tokens into sender bot"
 bash ops/payment-bot.sh -i 2 -d 0.1 -a $tokenAddress -m "$mnemonic2"
 
-echo -e "$divider";echo "Skipping state restore tests for now.."
-#echo -e "$divider";echo "Removing sender's state to trigger a restore"
-#rm modules/payment-bot/.payment-bot-db/2.json
+echo -e "$divider";echo "Removing sender's state to trigger a restore"
+rm modules/payment-bot/.payment-bot-db/2.json
+bash ops/payment-bot.sh -i 2
 
 echo -e "$divider";echo "Skipping sync transfer tests for now.."
 #echo -e "$divider";echo "Starting recipient bot in background, waiting for payments"
@@ -65,33 +87,28 @@ echo -e "$divider";echo "Skipping sync transfer tests for now.."
 #echo -e "$divider";echo "Stopping recipient listener so it can redeem a link payment"
 #cleanup
 
-echo -e "$divider";echo "Generating a link payment"
-bash ops/payment-bot.sh -i 2 -a $tokenAddress -l 0.01 -p "$paymentId1" -h "$preImage1" -m "$mnemonic2" -g
-
-# TODO: this isn't working right..
-echo -e "$divider";echo "Starting sender in background so they can uninstall link transfer app"
-bash ops/payment-bot.sh -i 2 -m "$mnemonic2" -o &
-sleep 5
-
-echo -e "$divider";echo "Redeeming link payment"
-bash ops/payment-bot.sh -i 1 -a $tokenAddress -y 0.01 -p "$paymentId1" -h "$preImage1" -m "$mnemonic1" -g &>> ops/recipient-bot.log &
-
-echo -e "$divider";echo "Stopping recipient listener so it can redeem an async payment"
-cleanup
-
-echo -e "$divider";echo "Skipping async transfer tests for now.."
-exit
-
-echo -e "$divider";echo "Generating an async payment"
-bash ops/payment-bot.sh -i 2 -a $tokenAddress -n 0.01 -c $id -p "$paymentId2" -h "$preImage2" -m "$mnemonic2" -g
-
-echo -e "$divider";echo "Starting sender in background so they can uninstall link transfer app"
-bash ops/payment-bot.sh -i 2 -m "$mnemonic2" -o &
+echo -e "$divider";echo "Generating an async payment & leaving the sender running so it can uninstall the app after"
+bash ops/payment-bot.sh -i 2 -a $tokenAddress -n 0.01 -c $id -p "$paymentId2" -h "$preImage2" -m "$mnemonic2" -o &
 sleep 5
 
 echo -e "$divider";echo "Redeeming async payment"
-bash ops/payment-bot.sh -i 1 -a $tokenAddress -g &>> ops/recipient-bot.log &
+bash ops/payment-bot.sh -i 1 -a $tokenAddress
+
+echo -e "$divider";echo "Giving the sender a few seconds to finish uninstalling.."
+sleep 5
+cleanup
+logInstalledApps
+
+echo -e "$divider";echo "Generating a link payment & leaving the sender running so it can uninstall the app after"
+bash ops/payment-bot.sh -i 2 -a $tokenAddress -l 0.01 -p "$paymentId1" -h "$preImage1" -m "$mnemonic2" -o &
 sleep 5
 
-echo -e "$divider";echo "Tests finished successfully"
+echo -e "$divider";echo "Redeeming link payment"
+bash ops/payment-bot.sh -i 1 -a $tokenAddress -y 0.01 -p "$paymentId1" -h "$preImage1" -m "$mnemonic1"
+
+echo -e "$divider";echo "Giving the sender a few seconds to finish uninstalling.."
+sleep 5
 cleanup
+logInstalledApps
+
+echo -e "$divider";echo "Tests finished successfully"
