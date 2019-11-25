@@ -1,7 +1,7 @@
 import { SetStateCommitment } from "../ethereum";
 import { ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
-import { Context, ProtocolMessage, UpdateParams } from "../machine/types";
+import { Context, ProtocolMessage, UpdateProtocolParams } from "../machine/types";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
@@ -26,7 +26,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       responderXpub,
       newState
-    } = params as UpdateParams;
+    } = params as UpdateProtocolParams;
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)!;
 
@@ -97,7 +97,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       initiatorXpub,
       newState
-    } = params as UpdateParams;
+    } = params as UpdateProtocolParams;
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)!;
 

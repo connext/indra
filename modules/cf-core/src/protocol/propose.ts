@@ -10,7 +10,7 @@ import {
 import { Opcode, Protocol } from "../machine/enums";
 import {
   Context,
-  ProposeInstallParams,
+  ProposeInstallProtocolParams,
   ProtocolMessage
 } from "../machine/types";
 import { AppInstanceProposal, StateChannel } from "../models";
@@ -40,7 +40,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       timeout,
       initialState,
       outcomeType
-    } = params as ProposeInstallParams;
+    } = params as ProposeInstallProtocolParams;
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)
       ? stateChannelsMap.get(multisigAddress)!
@@ -151,7 +151,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       timeout,
       initialState,
       outcomeType
-    } = params as ProposeInstallParams;
+    } = params as ProposeInstallProtocolParams;
 
     const {
       customData: { signature: initiatorSignatureOnInitialState }
