@@ -4,7 +4,7 @@ import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts
 import ProxyFactory from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/ProxyFactory.json";
 import TwoPartyFixedOutcomeApp from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/TwoPartyFixedOutcomeApp.json";
 import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
-import { OutcomeType, SingleAssetTwoPartyIntermediaryAgreement } from "@connext/cf-types";
+import { OutcomeType, SingleAssetTwoPartyIntermediaryAgreement } from "@connext/types";
 import { Contract, ContractFactory, Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";

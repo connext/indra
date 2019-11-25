@@ -1,4 +1,4 @@
-import { StateChannelJSON } from "@connext/cf-types";
+import { StateChannelJSON } from "@connext/types";
 import { getAddress, hexlify, randomBytes } from "ethers/utils";
 
 import { StateChannel } from "../../../../../src/models";

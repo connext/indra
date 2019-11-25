@@ -1,4 +1,4 @@
-import { StateChannelJSON } from "@connext/cf-types";
+import { StateChannelJSON } from "@connext/types";
 import { solidityKeccak256 } from "ethers/utils";
 
 import {

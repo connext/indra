@@ -1,5 +1,5 @@
 import { BigNumber } from "ethers/utils";
-import { StateChannelJSON, SingleAssetTwoPartyIntermediaryAgreement } from "@connext/cf-types";
+import { StateChannelJSON, SingleAssetTwoPartyIntermediaryAgreement } from "@connext/types";
 
 import { flip, flipTokenIndexedBalances } from "../ethereum/utils/free-balance-app";
 import { xkeyKthAddress } from "../machine/xkeys";
