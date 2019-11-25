@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Grid, Typography, withStyles } from "@material-ui/core";
 import PropTypes from "prop-types";
 
@@ -32,8 +32,8 @@ const styles = {
   },
 };
 
-const StatsSummary = async () => {
-  const { classes } = props;
+const StatsSummary = props => {
+  const { classes, messaging, token } = props;
 
   const [allChannels, setAllChannels] = useState(null);
 
@@ -43,17 +43,6 @@ const StatsSummary = async () => {
     }
     (async () => {
       const getChannels = async () => {
-        // var res = await messaging.request(
-        //   "admin.get-channel-states",
-        //   5000,
-        //   {
-        //     userPublicIdentifier:
-        //       "xpub6DgQCJcuAkGqtpzj3eHC7uLatyyPoNGQVegrRsSWFyHVXCZb4PVo6b8sRCHDJuEMfJsfaoB64AjaouN8mdAWpLEGMffwcZetbDx9M5Z9AKg",
-        //   },
-        //   {
-        //     token: "foo",
-        //   },
-        // );
         var res = await messaging.request("admin.get-all-channel-states", 5000, {
           token: token,
         });

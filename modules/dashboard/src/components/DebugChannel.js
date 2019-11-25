@@ -90,6 +90,7 @@ const DebugChannel = props => {
       id:xPubSearch
     });
 
+    console.log(res)
 
     var extractedValues = Object.values(res)[0].response;
     extractedValues.freeBalanceAppInstance.latestState.balances[0].forEach((balance)=>{
