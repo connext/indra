@@ -14,6 +14,7 @@ import {
   DepositStartedMessage,
   InstallMessage,
   InstallVirtualMessage,
+  NodeMessageWrappedProtocolMessage,
   ProposeMessage,
   RegisteredAppDetails,
   RejectInstallVirtualMessage,
@@ -27,7 +28,6 @@ import {
   WithdrawStartedMessage,
 } from "./types";
 import { appProposalValidation } from "./validation/appProposals";
-import { NodeMessageWrappedProtocolMessage } from "@connext/cf-core/dist/src/types";
 
 // TODO: index of connext events only?
 type CallbackStruct = {
@@ -70,6 +70,11 @@ export class ConnextListener extends EventEmitter {
       // validate and automatically install for the known and supported
       // applications
       this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL, msg.data);
+      // return if its from us
+      if (msg.from === this.connext.publicIdentifier) {
+        this.log.info(`Received proposal from our own node, doing nothing: ${stringify(msg)}`);
+        return;
+      }
       // check based on supported applications
       // matched app, take appropriate default actions
       const matchedResult = await this.matchAppInstance(msg);
@@ -91,6 +96,7 @@ export class ConnextListener extends EventEmitter {
     PROTOCOL_MESSAGE_EVENT: (msg: NodeMessageWrappedProtocolMessage): void => {
       this.emitAndLog(CFCoreTypes.EventName.PROTOCOL_MESSAGE_EVENT, msg.data);
     },
+
     REJECT_INSTALL: (msg: RejectProposalMessage): void => {
       this.emitAndLog(CFCoreTypes.EventName.REJECT_INSTALL, msg.data);
     },
@@ -113,7 +119,10 @@ export class ConnextListener extends EventEmitter {
       this.emitAndLog(CFCoreTypes.EventName.WITHDRAWAL_FAILED, msg.data);
     },
     WITHDRAWAL_STARTED: (msg: WithdrawStartedMessage): void => {
-      const { params: { amount }, txHash } = msg.data;
+      const {
+        params: { amount },
+        txHash,
+      } = msg.data;
       this.log.info(`withdrawal for ${amount.toString()} started. hash: ${txHash}`);
       this.emitAndLog(CFCoreTypes.EventName.WITHDRAWAL_STARTED, msg.data);
     },
@@ -188,14 +197,14 @@ export class ConnextListener extends EventEmitter {
   };
 
   private matchAppInstance = async (
-    data: ProposeMessage,
+    msg: ProposeMessage,
   ): Promise<{ matchedApp: RegisteredAppDetails; appInfo: AppInstanceInfo } | undefined> => {
     const filteredApps = this.connext.appRegistry.filter((app: RegisteredAppDetails): boolean => {
-      return app.appDefinitionAddress === data.data.params.appDefinition;
+      return app.appDefinitionAddress === msg.data.params.appDefinition;
     });
 
     if (!filteredApps || filteredApps.length === 0) {
-      this.log.info(`Proposed app not in registered applications. App: ${stringify(data)}`);
+      this.log.info(`Proposed app not in registered applications. App: ${stringify(msg)}`);
       return undefined;
     }
 
@@ -204,21 +213,23 @@ export class ConnextListener extends EventEmitter {
       this.log.error(
         `Proposed app matched ${
           filteredApps.length
-        } registered applications by definition address. App: ${stringify(data)}`,
+        } registered applications by definition address. App: ${stringify(msg)}`,
       );
       return undefined;
     }
+    const { params, appInstanceId } = msg.data;
+    const { initiatorDeposit, initiatorDepositTokenAddress, responderDeposit, responderDepositTokenAddress } = params;
     // matched app, take appropriate default actions
     return {
       appInfo: {
-        ...data.data.params,
-        identityHash: data.data.appInstanceId,
-        initiatorDeposit: bigNumberify(data.data.params.initiatorDeposit),
-        initiatorDepositTokenAddress: data.data.params.initiatorDepositTokenAddress,
-        proposedByIdentifier: data.from,
+        ...params,
+        identityHash: appInstanceId,
+        initiatorDeposit: bigNumberify(initiatorDeposit),
+        initiatorDepositTokenAddress,
+        proposedByIdentifier: msg.from,
         proposedToIdentifier: this.connext.publicIdentifier,
-        responderDeposit: bigNumberify(data.data.params.responderDeposit),
-        responderDepositTokenAddress: data.data.params.responderDepositTokenAddress,
+        responderDeposit: bigNumberify(responderDeposit),
+        responderDepositTokenAddress,
       },
       matchedApp: filteredApps[0],
     };

@@ -26,7 +26,7 @@ export class TransferController extends AbstractController {
     this.log.info(`Transfer called with parameters: ${stringify(params)}`);
 
     // convert params + validate
-    const { recipient, amount, assetId } = convert.TransferParameters("bignumber", params);
+    const { recipient, amount, assetId, meta } = convert.TransferParameters("bignumber", params);
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
     validate(
@@ -47,7 +47,7 @@ export class TransferController extends AbstractController {
     );
 
     // install the transfer application
-    const appId = await this.transferAppInstalled(amount, recipient, assetId, appInfo);
+    const appId = await this.transferAppInstalled(amount, recipient, assetId, appInfo, meta);
     if (!appId) {
       throw new Error(`App was not installed`);
     }
@@ -114,6 +114,7 @@ export class TransferController extends AbstractController {
     recipient: string,
     assetId: string,
     appInfo: RegisteredAppDetails,
+    meta?: object,
   ): Promise<string | undefined> => {
     let boundResolve: (value?: any) => void;
     let boundReject: (msg: RejectInstallVirtualMessage) => void;
@@ -148,6 +149,7 @@ export class TransferController extends AbstractController {
       responderDeposit: Zero,
       responderDepositTokenAddress: assetId,
       timeout: Zero, // TODO: fix, add to app info?
+      meta,
     };
 
     const res = await this.connext.proposeInstallApp(params);

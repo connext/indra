@@ -109,6 +109,7 @@ export const SendCard = style(({ balance, channel, classes, ethProvider, history
           paymentId: hexlify(randomBytes(32)),
           preImage: hexlify(randomBytes(32)),
           recipient: recipient.value,
+          meta: { source: "daicard" }
         });
         break;
       } catch (e) {
@@ -140,6 +141,7 @@ export const SendCard = style(({ balance, channel, classes, ethProvider, history
         conditionType: "LINKED_TRANSFER",
         paymentId: hexlify(randomBytes(32)),
         preImage: hexlify(randomBytes(32)),
+        meta: { source: "daicard" }
       });
       console.log(`Created link payment: ${JSON.stringify(link, null, 2)}`);
       console.log(

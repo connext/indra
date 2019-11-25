@@ -1,4 +1,4 @@
-import { ChannelAppSequences } from "@connext/types";
+import { ChannelAppSequences, StateChannelJSON } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { AddressZero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
@@ -15,7 +15,6 @@ import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository"; 
-import { StateChannelJSON } from "@connext/cf-core";
 
 const logger = new CLogger("ChannelService");
 
@@ -263,10 +262,20 @@ export class ChannelService {
   async getChannelState(userPublicIdentifier: string): Promise<StateChannelJSON> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     if (!channel) {
-      throw new Error(`No channel exists for userPublicIdentifier ${JSON.stringify(userPublicIdentifier)}`);
+      throw new Error(
+        `No channel exists for userPublicIdentifier ${JSON.stringify(userPublicIdentifier)}`,
+      );
     }
     const { data: state } = await this.cfCoreService.getStateChannel(channel.multisigAddress);
 
     return state.toJson();
+  }
+
+  async getAllChannelsState(): Promise<any> {
+    const channels = await this.channelRepository.findAll();
+    if (!channels) {
+      throw new Error(`No channels found. This should never happen`);
+    }
+    return channels;
   }
 }

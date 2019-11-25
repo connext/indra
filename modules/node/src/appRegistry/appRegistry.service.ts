@@ -375,7 +375,6 @@ export class AppRegistryService {
   private async verifyVirtualAppProposal(
     proposedAppParams: {
       params: CFCoreTypes.ProposeInstallParams;
-      // ^^ may be propose install virtual despite what package types say..
       appInstanceId: string;
     },
     initiatorIdentifier: string,
@@ -435,6 +434,7 @@ export class AppRegistryService {
           proposedAppParams.params.initiatorDepositTokenAddress,
           bigNumberify(proposedAppParams.params.initiatorDeposit),
           proposedAppParams.appInstanceId,
+          proposedAppParams.params.meta,
         );
         break;
       default:
