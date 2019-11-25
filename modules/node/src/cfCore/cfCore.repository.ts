@@ -1,10 +1,10 @@
 import { EntityRepository, Like, Repository } from "typeorm";
 
+import { CLogger } from "../util";
+
 import { CFCoreRecord } from "./cfCore.entity";
 
-import { CLogger, stringify } from "../util";
-
-const logger = new CLogger("CFCoreRecordRepository")
+const logger = new CLogger("CFCoreRecordRepository");
 
 type StringKeyValue = { [path: string]: StringKeyValue };
 
