@@ -23,14 +23,10 @@ export class PeerToPeerTransfer {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @CreateDateColumn({
-    default: Date.now(),
-  })
+  @CreateDateColumn()
   createdAt!: Date;
 
-  @UpdateDateColumn({
-    default: Date.now(),
-  })
+  @UpdateDateColumn()
   updatedAt!: Date;
 
   @Column("text", {
@@ -79,14 +75,10 @@ export class LinkedTransfer {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @CreateDateColumn({
-    default: Date.now(),
-  })
+  @CreateDateColumn()
   createdAt!: Date;
 
-  @UpdateDateColumn({
-    default: Date.now(),
-  })
+  @UpdateDateColumn()
   updatedAt!: Date;
 
   @Column("text", {
