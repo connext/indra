@@ -229,8 +229,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // wait for wd verification to reclaim any pending async transfers
   // since if the hub never submits you should not continue interacting
   log.debug("Reclaiming pending async transfers");
-  // no need to await this if it needs collateral
-  client.reclaimPendingAsyncTransfers();
+  // NOTE: Removing the following await results in a subtle race condition during bot tests.
+  //       Don't remove this await again unless you really know what you're doing & bot tests pass
+  await client.reclaimPendingAsyncTransfers();
 
   log.debug("Done creating channel client");
   return client;
