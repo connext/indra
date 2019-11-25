@@ -1,3 +1,4 @@
+import Proxy from "@connext/cf-funding-protocol-contracts/build/Proxy.json";
 import { AppActionBigNumber, ConnextNodeStorePrefix } from "@connext/types";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
@@ -289,7 +290,8 @@ export class CFCoreService {
     const addresses = await this.configService.getContractAddresses();
     const proxyFactory = addresses.ProxyFactory;
     const mVMultisig = addresses.MinimumViableMultisig;
-    return getCreate2MultisigAddress(owners, proxyFactory, mVMultisig);
+    const proxyBytecode = Proxy.evm.bytecode.object;
+    return getCreate2MultisigAddress(owners, proxyFactory, mVMultisig, proxyBytecode);
   }
 
   /**

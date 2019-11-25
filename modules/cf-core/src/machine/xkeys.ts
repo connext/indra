@@ -12,7 +12,7 @@ import memoize from "memoizee";
 
 const xkeyKthHDNode = memoize(
   (xkey: string, k: string): HDNode => fromExtendedKey(xkey).derivePath(k),
-  { max: 1000, maxAge: 60 * 1000, primitive: true },
+  { max: 100, maxAge: 60 * 1000, primitive: true },
 );
 
 const sortSigningkeys = (addrs: SigningKey[]): SigningKey[] =>

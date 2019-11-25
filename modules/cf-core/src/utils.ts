@@ -9,9 +9,10 @@ import {
   Signature,
   solidityKeccak256,
 } from "ethers/utils";
+import memoize from "memoizee";
 
 import { JSON_STRINGIFY_SPACE } from "./constants";
-import { MinimumViableMultisig, Proxy } from "./contracts";
+import { MinimumViableMultisig } from "./contracts";
 import { xkeysToSortedKthAddresses } from "./machine/xkeys";
 
 export function getFirstElementInListNotEqualTo(test: string, list: string[]) {
@@ -35,20 +36,17 @@ export function timeout(ms: number) {
  * @param {string[]} owners - the addresses of the owners of the multisig
  * @param {string} proxyFactoryAddress - address of ProxyFactory library
  * @param {string} minimumViableMultisigAddress - address of masterCopy of multisig
+ * @param {string} proxyBytecode - bytecode that will be used to deploy this multisig proxy
  *
  * @returns {string} the address of the multisig
  */
-// FIXME: More general caching strategy -- don't keep doing this
-const cache = {} as any;
-export function getCreate2MultisigAddress(
-  owners: string[],
-  proxyFactoryAddress: string,
-  minimumViableMultisigAddress: string
-): string {
-  const cacheKey = owners + proxyFactoryAddress + minimumViableMultisigAddress;
-
-  cache[cacheKey] =
-    cache[cacheKey] ||
+export const getCreate2MultisigAddress = memoize(
+  (
+    owners: string[],
+    proxyFactoryAddress: string,
+    minimumViableMultisigAddress: string,
+    proxyBytecode: string,
+  ): string =>
     getAddress(
       solidityKeccak256(
         ["bytes1", "address", "uint256", "bytes32"],
@@ -59,23 +57,22 @@ export function getCreate2MultisigAddress(
             ["bytes32", "uint256"],
             [
               keccak256(
-                new Interface(MinimumViableMultisig.abi).functions.setup.encode(
-                  [xkeysToSortedKthAddresses(owners, 0)]
-                )
+                new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+                  xkeysToSortedKthAddresses(owners, 0),
+                ]),
               ),
-              0
-            ]
+              0,
+            ],
           ),
           solidityKeccak256(
             ["bytes", "uint256"],
-            [`0x${Proxy.evm.bytecode.object}`, minimumViableMultisigAddress]
-          )
-        ]
-      ).slice(-40)
-    );
-
-  return cache[cacheKey];
-}
+            [`0x${proxyBytecode.replace("0x", "")}`, minimumViableMultisigAddress],
+          ),
+        ],
+      ).slice(-40),
+    ),
+  { max: 100, maxAge: 60 * 1000, primitive: true },
+);
 
 export const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 
