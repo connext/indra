@@ -78,6 +78,18 @@ clean: stop
 	rm -rf modules/**/dist
 	rm -rf modules/**/node_modules/**/.git
 
+quick-reset:
+	bash ops/db.sh 'truncate table app_registry cascade;'
+	bash ops/db.sh 'truncate table channel cascade;'
+	bash ops/db.sh 'truncate table channel_payment_profiles_payment_profile cascade;'
+	bash ops/db.sh 'truncate table linked_transfer cascade;'
+	bash ops/db.sh 'truncate table node_records cascade;'
+	bash ops/db.sh 'truncate table onchain_transaction cascade;'
+	bash ops/db.sh 'truncate table payment_profile cascade;'
+	bash ops/db.sh 'truncate table peer_to_peer_transfer cascade;'
+	rm -rf $(bot)/.payment-bot-db/*
+	touch modules/node/src/main.ts
+
 reset: stop
 	docker container prune -f
 	docker volume rm `docker volume ls -q -f name=$(project)_database_test_*` 2> /dev/null || true
