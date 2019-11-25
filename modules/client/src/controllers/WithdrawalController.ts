@@ -32,6 +32,8 @@ export class WithdrawalController extends AbstractController {
 
     let transaction: TransactionResponse | undefined;
     try {
+      this.log.info(`Calling this.connext.rescindDepositRights before withdrawal`);
+      await this.connext.rescindDepositRights();
       if (!userSubmitted) {
         this.log.info(`Calling ${CFCoreTypes.RpcMethodName.WITHDRAW_COMMITMENT}`);
         const withdrawResponse = await this.connext.withdrawCommitment(amount, assetId, recipient);
@@ -75,6 +77,9 @@ export class WithdrawalController extends AbstractController {
       this.log.error(`Failed to withdraw... ${stringify(e)}`);
       this.removeListeners();
       throw new Error(e);
+    } finally {
+      this.log.info(`Calling this.connext.requestDepositRights after withdrawal`);
+      await this.connext.requestDepositRights(assetId);
     }
 
     return {
