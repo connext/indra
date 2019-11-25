@@ -86,6 +86,11 @@ export const bigNumberifyJson = (json: object) =>
     val
   ) => (val && val["_hex"] ? bigNumberify(val) : val));
 
+export const deBigNumberifyJson = (json: object) => 
+  JSON.parse(JSON.stringify(json), (
+    key,
+    val
+  ) => (val && BigNumber.isBigNumber(val) ? val.toHexString() : val));
 /**
  * Converts an array of signatures into a single string
  *
