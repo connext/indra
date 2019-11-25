@@ -24,6 +24,5 @@ export {
   WithdrawStartedMessage
 } from "./types";
 export {
-  StateChannel,
-  StateChannelJSON
+  StateChannel
 } from "./models";

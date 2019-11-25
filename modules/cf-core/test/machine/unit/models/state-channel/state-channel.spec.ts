@@ -1,6 +1,7 @@
+import { StateChannelJSON } from "@connext/cf-types";
 import { getAddress, hexlify, randomBytes } from "ethers/utils";
 
-import { StateChannel, StateChannelJSON } from "../../../../../src/models";
+import { StateChannel } from "../../../../../src/models";
 import { getRandomExtendedPubKeys } from "../../../integration/random-signing-keys";
 import { generateRandomNetworkContext } from "../../../mocks";
 

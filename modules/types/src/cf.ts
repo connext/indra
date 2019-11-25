@@ -21,6 +21,7 @@ export {
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   singleAssetTwoPartyCoinTransferInterpreterParamsEncoding,
   SolidityValueType,
+  StateChannelJSON,
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams,
   twoPartyFixedOutcomeInterpreterParamsEncoding,

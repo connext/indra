@@ -74,6 +74,27 @@ export type AppInstanceJson = {
   };
 };
 
+export type SingleAssetTwoPartyIntermediaryAgreement = {
+  timeLockedPassThroughIdentityHash: string;
+  capitalProvided: string;
+  capitalProvider: string;
+  virtualAppUser: string;
+  tokenAddress: string;
+};
+
+export type StateChannelJSON = {
+  readonly multisigAddress: string;
+  readonly userNeuteredExtendedKeys: string[];
+  readonly proposedAppInstances: [string, AppInstanceProposal][];
+  readonly appInstances: [string, AppInstanceJson][];
+  readonly singleAssetTwoPartyIntermediaryAgreements: [
+    string,
+    SingleAssetTwoPartyIntermediaryAgreement
+  ][];
+  readonly freeBalanceAppInstance: AppInstanceJson | undefined;
+  readonly monotonicNumProposedApps: number;
+};
+
 export type AppInstanceInfo = {
   identityHash: string;
   appDefinition: string;

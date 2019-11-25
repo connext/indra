@@ -1,4 +1,5 @@
 import { BigNumber } from "ethers/utils";
+import { StateChannelJSON, SingleAssetTwoPartyIntermediaryAgreement } from "@connext/cf-types";
 
 import { flip, flipTokenIndexedBalances } from "../ethereum/utils/free-balance-app";
 import { xkeyKthAddress } from "../machine/xkeys";
@@ -37,27 +38,6 @@ const ERRORS = {
 function sortAddresses(addrs: string[]) {
   return addrs.sort((a, b) => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
 }
-
-export type SingleAssetTwoPartyIntermediaryAgreement = {
-  timeLockedPassThroughIdentityHash: string;
-  capitalProvided: string;
-  capitalProvider: string;
-  virtualAppUser: string;
-  tokenAddress: string;
-};
-
-export type StateChannelJSON = {
-  readonly multisigAddress: string;
-  readonly userNeuteredExtendedKeys: string[];
-  readonly proposedAppInstances: [string, AppInstanceProposal][];
-  readonly appInstances: [string, AppInstanceJson][];
-  readonly singleAssetTwoPartyIntermediaryAgreements: [
-    string,
-    SingleAssetTwoPartyIntermediaryAgreement
-  ][];
-  readonly freeBalanceAppInstance: AppInstanceJson | undefined;
-  readonly monotonicNumProposedApps: number;
-};
 
 export class StateChannel {
   constructor(

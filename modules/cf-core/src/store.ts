@@ -1,3 +1,4 @@
+import { StateChannelJSON } from "@connext/cf-types";
 import { solidityKeccak256 } from "ethers/utils";
 
 import {
@@ -15,7 +16,6 @@ import {
   AppInstance,
   AppInstanceProposal,
   StateChannel,
-  StateChannelJSON,
 } from "./models";
 import { Node, SolidityValueType } from "./types";
 import { getCreate2MultisigAddress, prettyPrintObject } from "./utils";
