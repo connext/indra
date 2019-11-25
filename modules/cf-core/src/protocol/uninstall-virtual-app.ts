@@ -9,7 +9,7 @@ import {
   Context,
   ProtocolMessage,
   ProtocolParameters,
-  UninstallVirtualAppParams,
+  UninstallVirtualAppProtocolParams,
 } from "../machine/types";
 import { xkeyKthAddress } from "../machine/xkeys";
 import { AppInstance, StateChannel } from "../models";
@@ -60,7 +60,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     const {
       intermediaryXpub,
       responderXpub
-    } = params as UninstallVirtualAppParams;
+    } = params as UninstallVirtualAppProtocolParams;
 
     const intermediaryAddress = xkeyKthAddress(intermediaryXpub, 0);
     const responderAddress = xkeyKthAddress(responderXpub, 0);
@@ -201,7 +201,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     const {
       initiatorXpub,
       responderXpub
-    } = params as UninstallVirtualAppParams;
+    } = params as UninstallVirtualAppProtocolParams;
 
     const initiatorAddress = xkeyKthAddress(initiatorXpub, 0);
     const responderAddress = xkeyKthAddress(responderXpub, 0);
@@ -393,7 +393,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     const {
       initiatorXpub,
       intermediaryXpub
-    } = params as UninstallVirtualAppParams;
+    } = params as UninstallVirtualAppProtocolParams;
 
     const initiatorAddress = xkeyKthAddress(initiatorXpub, 0);
     const intermediaryAddress = xkeyKthAddress(intermediaryXpub, 0);
@@ -538,7 +538,7 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForInitiating(
     initiatorXpub,
     targetAppIdentityHash,
     targetOutcome
-  } = params as UninstallVirtualAppParams;
+  } = params as UninstallVirtualAppProtocolParams;
 
   const initiatorAddress = xkeyTo0thAddress(initiatorXpub);
   const intermediaryAddress = xkeyTo0thAddress(intermediaryXpub);
@@ -648,7 +648,7 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForResponding(
     initiatorXpub,
     targetAppIdentityHash,
     targetOutcome
-  } = params as UninstallVirtualAppParams;
+  } = params as UninstallVirtualAppProtocolParams;
 
   const initiatorAddress = xkeyTo0thAddress(initiatorXpub);
   const intermediaryAddress = xkeyTo0thAddress(intermediaryXpub);
@@ -768,7 +768,7 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
     initiatorXpub,
     targetAppIdentityHash,
     targetOutcome
-  } = params as UninstallVirtualAppParams;
+  } = params as UninstallVirtualAppProtocolParams;
 
   const initiatorAddress = xkeyTo0thAddress(initiatorXpub);
   const intermediaryAddress = xkeyTo0thAddress(intermediaryXpub);

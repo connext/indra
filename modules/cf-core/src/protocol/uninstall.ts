@@ -7,7 +7,7 @@ import {
   Context,
   ProtocolExecutionFlow,
   ProtocolMessage,
-  UninstallParams
+  UninstallProtocolParams
 } from "../machine/types";
 import { StateChannel } from "../models";
 
@@ -33,12 +33,12 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
     const { message, provider, stateChannelsMap, network } = context;
     const { params, processID } = message;
-    const { responderXpub, appIdentityHash } = params as UninstallParams;
+    const { responderXpub, appIdentityHash } = params as UninstallProtocolParams;
 
     const responderAddress = xkeyKthAddress(responderXpub, 0);
 
     const postProtocolStateChannel = await computeStateTransition(
-      params as UninstallParams,
+      params as UninstallProtocolParams,
       stateChannelsMap,
       provider
     );
@@ -91,12 +91,12 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
   1 /* Responding */: async function*(context: Context) {
     const { message, provider, stateChannelsMap, network } = context;
     const { params, processID } = message;
-    const { initiatorXpub, appIdentityHash } = params as UninstallParams;
+    const { initiatorXpub, appIdentityHash } = params as UninstallProtocolParams;
 
     const initiatorAddress = xkeyKthAddress(initiatorXpub, 0);
 
     const postProtocolStateChannel = await computeStateTransition(
-      params as UninstallParams,
+      params as UninstallProtocolParams,
       stateChannelsMap,
       provider
     );
@@ -149,7 +149,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 };
 
 async function computeStateTransition(
-  params: UninstallParams,
+  params: UninstallProtocolParams,
   stateChannelsMap: Map<string, StateChannel>,
   provider: BaseProvider
 ) {

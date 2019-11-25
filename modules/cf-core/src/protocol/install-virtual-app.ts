@@ -6,7 +6,7 @@ import { ConditionalTransaction, SetStateCommitment } from "../ethereum";
 import { Opcode, Protocol } from "../machine/enums";
 import {
   Context,
-  InstallVirtualAppParams,
+  InstallVirtualAppProtocolParams,
   ProtocolExecutionFlow,
   ProtocolMessage,
 } from "../machine/types";
@@ -62,7 +62,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     const {
       intermediaryXpub,
       responderXpub
-    } = params as InstallVirtualAppParams;
+    } = params as InstallVirtualAppProtocolParams;
 
     const [
       stateChannelWithInitiatingAndIntermediary,
@@ -71,7 +71,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       virtualAppInstance,
       timeLockedPassThroughAppInstance
     ] = await getUpdatedStateChannelAndVirtualAppObjectsForInitiating(
-      params as InstallVirtualAppParams,
+      params as InstallVirtualAppProtocolParams,
       stateChannelsMap,
       network,
       provider,
@@ -308,7 +308,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       }
     } = m1;
 
-    const { initiatorXpub, responderXpub } = params as InstallVirtualAppParams;
+    const { initiatorXpub, responderXpub } = params as InstallVirtualAppProtocolParams;
 
     const [
       stateChannelBetweenVirtualAppUsers,
@@ -316,7 +316,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelWithResponding,
       timeLockedPassThroughAppInstance
     ] = await getUpdatedStateChannelAndVirtualAppObjectsForIntermediary(
-      params as InstallVirtualAppParams,
+      params as InstallVirtualAppProtocolParams,
       stateChannelsMap,
       (virtualAppInstanceIdentityHash as unknown) as string,
       (virtualAppInstanceDefaultOutcome as unknown) as string,
@@ -607,7 +607,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     const {
       intermediaryXpub,
       initiatorXpub
-    } = params as InstallVirtualAppParams;
+    } = params as InstallVirtualAppProtocolParams;
 
     const [
       stateChannelWithRespondingAndIntermediary,
@@ -616,7 +616,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       virtualAppInstance,
       timeLockedPassThroughAppInstance
     ] = await getUpdatedStateChannelAndVirtualAppObjectsForResponding(
-      params as InstallVirtualAppParams,
+      params as InstallVirtualAppProtocolParams,
       stateChannelsMap,
       network,
       provider
@@ -891,12 +891,12 @@ function computeInterpreterParameters(
  *       computeOutcome function.
  *
  * @param {StateChannel} stateChannelBetweenEndpoints - The StateChannel object between the endpoints
- * @param {InstallVirtualAppParams} params - Parameters of the new App to be installed
+ * @param {InstallVirtualAppProtocolParams} params - Parameters of the new App to be installed
  *
  * @returns {AppInstance} an AppInstance with the correct metadata
  */
 function constructVirtualAppInstance(
-  params: InstallVirtualAppParams
+  params: InstallVirtualAppProtocolParams
 ): AppInstance {
   const {
     initiatorXpub,
@@ -955,7 +955,7 @@ function constructVirtualAppInstance(
  * @param {StateChannel} threePartyStateChannel - The StateChannel object with all 3
  *        participants of this protocol as the owner-set.
  *
- * @param {InstallVirtualAppParams} params - Parameters of the new App to be installed
+ * @param {InstallVirtualAppProtocolParams} params - Parameters of the new App to be installed
  *
  * @returns {AppInstance} an AppInstance with the correct metadata
  */
@@ -964,7 +964,7 @@ function constructTimeLockedPassThroughAppInstance(
   virtualAppInstanceIdentityHash: string,
   virtualAppDefaultOutcome: string,
   network: NetworkContext,
-  params: InstallVirtualAppParams
+  params: InstallVirtualAppProtocolParams
 ): AppInstance {
   const {
     intermediaryXpub,
@@ -1065,7 +1065,7 @@ function getOrCreateStateChannelWithUsers(
 }
 
 async function getUpdatedStateChannelAndVirtualAppObjectsForInitiating(
-  params: InstallVirtualAppParams,
+  params: InstallVirtualAppProtocolParams,
   stateChannelsMap: Map<string, StateChannel>,
   network: NetworkContext,
   provider: BaseProvider,
@@ -1079,7 +1079,7 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForInitiating(
     initiatorXpub,
     intermediaryXpub,
     responderXpub
-  } = params as InstallVirtualAppParams;
+  } = params as InstallVirtualAppProtocolParams;
 
   const stateChannelWithAllThreeParties = getOrCreateStateChannelWithUsers(
     stateChannelsMap,
@@ -1156,7 +1156,7 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForInitiating(
 }
 
 async function getUpdatedStateChannelAndVirtualAppObjectsForIntermediary(
-  params: InstallVirtualAppParams,
+  params: InstallVirtualAppProtocolParams,
   stateChannelsMap: Map<string, StateChannel>,
   virtualAppInstanceIdentityHash: string,
   virtualAppInstanceDefaultOutcome: string,
@@ -1169,7 +1169,7 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForIntermediary(
     intermediaryXpub,
     responderXpub,
     tokenAddress
-  } = params as InstallVirtualAppParams;
+  } = params as InstallVirtualAppProtocolParams;
 
   const stateChannelWithAllThreeParties = getOrCreateStateChannelWithUsers(
     stateChannelsMap,
@@ -1272,7 +1272,7 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForIntermediary(
 }
 
 async function getUpdatedStateChannelAndVirtualAppObjectsForResponding(
-  params: InstallVirtualAppParams,
+  params: InstallVirtualAppProtocolParams,
   stateChannelsMap: Map<string, StateChannel>,
   network: NetworkContext,
   provider: BaseProvider,
@@ -1286,7 +1286,7 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForResponding(
     intermediaryXpub,
     responderXpub,
     tokenAddress
-  } = params as InstallVirtualAppParams;
+  } = params as InstallVirtualAppProtocolParams;
 
   const stateChannelWithAllThreeParties = getOrCreateStateChannelWithUsers(
     stateChannelsMap,
