@@ -263,11 +263,7 @@ export class CFCoreService {
 
   async uninstallApp(appInstanceId: string): Promise<CFCoreTypes.UninstallResult> {
     // check the app is actually installed
-    const err = await this.appNotInstalled(appInstanceId);
-    if (err) {
-      logger.error(err);
-      throw new Error(err);
-    }
+    await this.assertAppInstalled(appInstanceId);
     logger.log(`Calling uninstallApp for appInstanceId ${appInstanceId}`);
     const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),

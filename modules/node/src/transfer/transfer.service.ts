@@ -53,11 +53,13 @@ export class TransferService {
     assetId: string,
     amount: BigNumber,
     appInstanceId: string,
+    meta?: object,
   ): Promise<PeerToPeerTransfer> {
     const transfer = new PeerToPeerTransfer();
     transfer.amount = amount;
     transfer.appInstanceId = appInstanceId;
     transfer.assetId = assetId;
+    transfer.meta = meta;
 
     const senderChannel = await this.channelRepository.findByUserPublicIdentifier(senderPubId);
     if (!senderChannel) {
@@ -82,6 +84,7 @@ export class TransferService {
     appInstanceId: string,
     linkedHash: string,
     paymentId: string,
+    meta?: object,
   ): Promise<LinkedTransfer> {
     const senderChannel = await this.channelRepository.findByUserPublicIdentifier(senderPubId);
     if (!senderChannel) {
@@ -96,6 +99,7 @@ export class TransferService {
     transfer.paymentId = paymentId;
     transfer.senderChannel = senderChannel;
     transfer.status = LinkedTransferStatus.PENDING;
+    transfer.meta = meta;
 
     return await this.linkedTransferRepository.save(transfer);
   }

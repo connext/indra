@@ -9,7 +9,7 @@ import { bigNumberify } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { ERC20 } from "../../../contracts";
-import { InstallParams, Protocol, xkeyKthAddress } from "../../../machine";
+import { InstallProtocolParams, Protocol, xkeyKthAddress } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import {
@@ -66,7 +66,7 @@ export async function installBalanceRefundApp(
     tokenAddress!
   );
 
-  const installParams: InstallParams = {
+  const InstallProtocolParams: InstallProtocolParams = {
     initialState: depositContext.initialState,
     initiatorXpub: publicIdentifier,
     responderXpub: peerAddress,
@@ -90,7 +90,7 @@ export async function installBalanceRefundApp(
   await protocolRunner.initiateProtocol(
     Protocol.Install,
     stateChannelsMap,
-    installParams
+    InstallProtocolParams
   );
 }
 

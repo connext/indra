@@ -65,6 +65,11 @@ export class ConnextListener extends EventEmitter {
       // validate and automatically install for the known and supported
       // applications
       this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL, data.data);
+      // return if its from us
+      if (data.from === this.connext.publicIdentifier) {
+        this.log.info(`Received proposal from our own node, doing nothing: ${stringify(data)}`);
+        return;
+      }
       // check based on supported applications
       // matched app, take appropriate default actions
       const matchedResult = await this.matchAppInstance(data);
@@ -74,40 +79,12 @@ export class ConnextListener extends EventEmitter {
       }
       // matched app, take appropriate default actions
       const { appInfo, matchedApp } = matchedResult;
-      // return if its from us
-      // TODO: initatorXpub isnt in types
-      if ((appInfo as any).initatorXpub === this.connext.publicIdentifier) {
-        this.log.info(`Received proposal from our own node, doing nothing: ${stringify(data)}`);
-        return;
-      }
       await this.verifyAndInstallKnownApp(appInfo, matchedApp);
       return;
     },
-    PROPOSE_INSTALL_VIRTUAL: async (data: ProposeMessage): Promise<void> => {
+    PROPOSE_INSTALL_VIRTUAL: async (): Promise<void> => {
       this.log.warn(`Got PROPOSE_INSTALL_VIRTUAL message but it's depreciated.. :(`);
-      // validate and automatically install for the known and supported
-      // applications
-      this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data.data);
-      // if the from is us, ignore
-      // FIXME: type of ProposeVirtualMessage should extend Node.NodeMessage,
-      // which has a from field, but ProposeVirtualMessage does not
-      if ((data as any).from === this.connext.publicIdentifier) {
-        return;
-      }
-      // check based on supported applications
-      // matched app, take appropriate default actions
-      const matchedResult = await this.matchAppInstance(data);
-      if (!matchedResult) {
-        return;
-      }
-      const { appInfo, matchedApp } = matchedResult;
-      if (matchedResult.matchedApp.name !== "SimpleTransferApp") {
-        this.log.debug(
-          `Caught propose install virtual for what should always be a regular app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
-        );
-        return;
-      }
-      await this.verifyAndInstallKnownApp(appInfo, matchedApp);
+      // don't do anything here, will cathc on
       return;
     },
     PROPOSE_STATE: (data: any): void => {
@@ -241,16 +218,25 @@ export class ConnextListener extends EventEmitter {
       );
       return undefined;
     }
+    const { params, appInstanceId } = data.data;
+    const {
+      initiatorDeposit,
+      initiatorDepositTokenAddress,
+      responderXpub,
+      responderDeposit,
+      responderDepositTokenAddress,
+    } = params;
     // matched app, take appropriate default actions
     return {
       appInfo: {
-        ...data.data.params,
-        identityHash: data.data.appInstanceId,
-        initiatorDeposit: bigNumberify(data.data.params.initiatorDeposit),
-        initiatorDepositTokenAddress: data.data.params.initiatorDepositTokenAddress,
+        ...params,
+        identityHash: appInstanceId,
+        initiatorDeposit: bigNumberify(initiatorDeposit),
+        initiatorDepositTokenAddress,
         proposedByIdentifier: data.from,
-        responderDeposit: bigNumberify(data.data.params.responderDeposit),
-        responderDepositTokenAddress: data.data.params.responderDepositTokenAddress,
+        proposedToIdentifier: responderXpub,
+        responderDeposit: bigNumberify(responderDeposit),
+        responderDepositTokenAddress,
       },
       matchedApp: filteredApps[0],
     };

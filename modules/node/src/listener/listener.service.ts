@@ -110,6 +110,7 @@ export default class ListenerService implements OnModuleInit {
               proposedAppParams.appInstanceId,
               initialState.linkedHash,
               initialState.paymentId,
+              proposedAppParams.params.meta,
             );
             logger.debug(`Linked transfer saved!`);
             break;
