@@ -50,8 +50,8 @@ export class ConnextListener extends EventEmitter {
       this.emitAndLog(CFCoreTypes.EventName.DEPOSIT_FAILED, data);
     },
     DEPOSIT_STARTED: (data: any): void => {
-      this.log.info(`deposit for ${data.value.toString()} started. hash: ${data.txHash}`);
       this.emitAndLog(CFCoreTypes.EventName.DEPOSIT_STARTED, data);
+      this.log.info(`deposit for ${data.value.toString()} started. hash: ${data.txHash}`);
     },
     INSTALL: (data: InstallMessage): void => {
       this.emitAndLog(CFCoreTypes.EventName.INSTALL, data.data);
@@ -61,9 +61,8 @@ export class ConnextListener extends EventEmitter {
       this.emitAndLog(CFCoreTypes.EventName.INSTALL_VIRTUAL, data.data);
     },
     PROPOSE_INSTALL: async (data: ProposeMessage): Promise<void> => {
-      // validate and automatically install for the known and supported
-      // applications
       this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL, data.data);
+      // validate and automatically install for the known and supported applications
       // check based on supported applications
       // matched app, take appropriate default actions
       const matchedResult = await this.matchAppInstance(data);
@@ -83,10 +82,9 @@ export class ConnextListener extends EventEmitter {
       return;
     },
     PROPOSE_INSTALL_VIRTUAL: async (data: ProposeMessage): Promise<void> => {
-      this.log.warn(`Got PROPOSE_INSTALL_VIRTUAL message but it's depreciated.. :(`);
-      // validate and automatically install for the known and supported
-      // applications
       this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL_VIRTUAL, data.data);
+      this.log.warn(`Got PROPOSE_INSTALL_VIRTUAL message but it's depreciated.. :(`);
+      // validate and automatically install for the known and supported applications
       // if the from is us, ignore
       // FIXME: type of ProposeVirtualMessage should extend Node.NodeMessage,
       // which has a from field, but ProposeVirtualMessage does not
@@ -146,8 +144,8 @@ export class ConnextListener extends EventEmitter {
       this.emitAndLog(CFCoreTypes.EventName.WITHDRAWAL_FAILED, data);
     },
     WITHDRAWAL_STARTED: (data: any): void => {
-      this.log.info(`withdrawal for ${data.value.toString()} started. hash: ${data.txHash}`);
       this.emitAndLog(CFCoreTypes.EventName.WITHDRAWAL_STARTED, data);
+      this.log.info(`withdrawal for ${data.value.toString()} started. hash: ${data.txHash}`);
     },
   };
 
@@ -215,6 +213,13 @@ export class ConnextListener extends EventEmitter {
   };
 
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
+    const protocol =
+      event === CFCoreTypes.EventName.PROTOCOL_MESSAGE_EVENT
+        ? data.data
+          ? data.data.protocol
+          : data.protocol
+        : "";
+    this.log.info(`Recieved ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
     this.log.debug(`Emitted ${event} with data ${stringify(data)} at ${Date.now()}`);
     this.emit(event, data);
   };

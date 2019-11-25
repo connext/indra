@@ -328,9 +328,10 @@ export class TransferService {
   }
 
   private async takeActionAndUninstallLink(appId: string, preImage: string): Promise<void> {
-    console.log(`Taking action on app at ${Date.now()}`);
     try {
+      logger.log(`Taking action on app ${appId} at ${Date.now()}`);
       await this.cfCoreService.takeAction(appId, { preImage });
+      logger.log(`Uninstalling app ${appId} at ${Date.now()}`);
       await this.cfCoreService.uninstallApp(appId);
     } catch (e) {
       throw new Error(`takeActionAndUninstallLink: ${e}`);

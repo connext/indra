@@ -211,11 +211,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   try {
     await client.getFreeBalance();
   } catch (e) {
-    log.warn(e);
     if (e.message.includes(`StateChannel does not exist yet`)) {
-      log.debug("Restoring client state");
+      log.debug(`Restoring client state: ${e}`);
       await client.restoreState();
-      log.debug("Newly restored client is ready to go!");
     } else {
       throw e;
     }
@@ -527,18 +525,17 @@ export class ConnextClient implements IConnextClient {
     try {
       // try to recover states from our given store's restore method
       state = await this.channelRouter.restore();
-      this.log.info(`Found state to restore from store's backup: ${stringify(state)}`);
       if (!state || !state.path) {
         throw new Error(`No matching paths found in store backup's state`);
       }
+      this.log.info(`Found state to restore from store's backup: ${stringify(state.path)}`);
       state = state.path;
     } catch (e) {
-      this.log.info(e);
       state = await this.node.restoreState(this.publicIdentifier);
-      this.log.info(`Found state to restore from node: ${stringify(state)}`);
       if (!state) {
         throw new Error(`No matching states found by node for ${this.publicIdentifier}`);
       }
+      this.log.info(`Found state to restore from node: ${stringify(state)}`);
     }
     await this.channelRouter.set([{ path, value: state }]);
     await this.restart();

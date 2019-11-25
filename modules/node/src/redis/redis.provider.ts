@@ -45,8 +45,8 @@ export const redlockClientFactory: FactoryProvider = {
       retryJitter: 1000, // time in ms
     });
 
-    redlockClient.on("clientError", (err: any) => {
-      console.error("A redis error has occurred:", err);
+    redlockClient.on("clientError", (e: any) => {
+      logger.error(`A redis error has occurred: ${e.message}`, e.stack);
     });
 
     return redlockClient;

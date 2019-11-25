@@ -117,8 +117,6 @@ export class ConditionalTransferController extends AbstractController {
     // convert params + validate
     const { amount, assetId, paymentId, preImage } = convert.LinkedTransfer("bignumber", params);
 
-    console.log('amount: ', amount);
-
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
     validate(
@@ -223,7 +221,8 @@ export class ConditionalTransferController extends AbstractController {
         }),
         delayAndThrow(15_000, "App install took longer than 15 seconds"),
       ]);
-      this.log.info(`App was installed successfully!: ${stringify(raceRes as object)}`);
+      this.log.info(`Installed app ${this.appId}`);
+      this.log.debug(`Installed app details: ${stringify(raceRes as object)}`);
       return proposeRes.appInstanceId;
     } catch (e) {
       this.log.error(`Error installing app: ${e.toString()}`);

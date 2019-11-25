@@ -55,10 +55,9 @@ export class SwapController extends AbstractController {
     // install the swap app
     await this.swapAppInstall(amount, toAssetId, fromAssetId, swapRate, appInfo);
 
-    this.log.info(`Swap app installed! Uninstalling without updating state.`);
+    this.log.info(`Swap app installed! Uninstalling ${this.appId} without updating state.`);
 
-    // if app installed, that means swap was accepted
-    // now uninstall
+    // if app installed, that means swap was accepted now uninstall
     await this.connext.uninstallApp(this.appId);
 
     // Sanity check to ensure swap was executed correctly

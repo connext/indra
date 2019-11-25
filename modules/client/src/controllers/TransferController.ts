@@ -52,6 +52,7 @@ export class TransferController extends AbstractController {
       throw new Error(`App was not installed`);
     }
 
+    this.log.info(`Uninstalling app ${appId}`);
     await this.connext.uninstallVirtualApp(appId);
 
     // sanity check, free balance decreased by payment amount
