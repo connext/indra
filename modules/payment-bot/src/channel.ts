@@ -35,11 +35,12 @@ export const getOrCreateChannel = async (assetId?: string): Promise<IConnextClie
     minimumMaintainedCollateral: parseEther("0.01").toString(),
   });
 
-  if (assetId) {
+  if (assetId && assetId !== AddressZero) {
+    console.log(`Setting up payment profile for 10 ${makeChecksum(assetId)}`);
     await client.addPaymentProfile({
       amountToCollateralize: parseEther("10").toString(),
       assetId: makeChecksum(assetId),
-      minimumMaintainedCollateral: parseEther("5").toString(),
+      minimumMaintainedCollateral: parseEther("1").toString(),
     });
   }
 

@@ -26,7 +26,6 @@ program
   .option("-c, --counterparty <id>", "Counterparty public identifier")
   .option("-d, --deposit <amount>", "Deposit amount in Ether units")
   .option("-e, --pre-image <preImage>", "Redeem a linked payment with preImage")
-  .option("-g, --get-free-balance", "Print bot's free balance and exit")
   .option("-h, --preImage <preImage>", "Create linked payment with preimage")
   .option("-i, --identifier <id>", "Bot identifier")
   .option("-l, --linked <amount>", "Create linked payment")

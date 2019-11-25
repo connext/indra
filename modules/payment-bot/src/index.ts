@@ -20,6 +20,11 @@ process.on("warning", (e: any): any => {
   process.exit(1);
 });
 
+process.on("uncaughtException", (e: any): any => {
+  console.error(e);
+  process.exit(1);
+});
+
 process.on("unhandledRejection", (e: any): any => {
   console.error(e);
   process.exit(1);
@@ -200,11 +205,10 @@ process.on("unhandledRejection", (e: any): any => {
     await client.restoreState();
   }
 
-  if (config.getFreeBalance) {
-    logEthFreeBalance(AddressZero, await client.getFreeBalance(assetId));
-    if (assetId !== AddressZero) {
-      logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
-    }
+  console.log("Done");
+  logEthFreeBalance(AddressZero, await client.getFreeBalance(AddressZero));
+  if (assetId !== AddressZero) {
+    logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
   }
 
   if (!config.open) {
