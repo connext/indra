@@ -10,50 +10,34 @@ import memoize from "memoizee";
  * BIP-44 specifies format of: "m/purpose'/cointype'/account'/change/index" (iff purpose is 44)
  */
 
-// Primitive mode is faster but only works if params are strings or strings[]
-// maxAge specifies how long the cache lives before being cleared
-const memoizeOptions = { primitive: true, maxAge: 60 * 1000 };
-
-const sortSigningkeys = memoize(
-  (addrs: SigningKey[]): SigningKey[] =>
-    addrs.sort((a: SigningKey, b: SigningKey): number =>
-      parseInt(a.address, 16) < parseInt(b.address, 16) ? -1 : 1,
-    ),
-  memoizeOptions,
-);
-
 const xkeyKthHDNode = memoize(
-  (xkey: string, k: number | string = "0"): HDNode =>
-    fromExtendedKey(xkey).derivePath(k.toString()),
-  memoizeOptions,
+  (xkey: string, k: string): HDNode => fromExtendedKey(xkey).derivePath(k),
+  { max: 1000, maxAge: 60 * 1000, primitive: true },
 );
 
-// Not deterministic: don't memoize
+const sortSigningkeys = (addrs: SigningKey[]): SigningKey[] =>
+  addrs.sort((a: SigningKey, b: SigningKey): number =>
+    parseInt(a.address, 16) < parseInt(b.address, 16) ? -1 : 1,
+  );
+
 export const computeRandomExtendedPrvKey = (): string =>
   fromMnemonic(Wallet.createRandom().mnemonic).extendedKey;
 
-export const sortAddresses = memoize(
-  (addrs: string[]): string[] =>
-    addrs.sort((a: string, b: string): number => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1)),
-  memoizeOptions,
-);
+export const sortAddresses = (addrs: string[]): string[] =>
+  addrs.sort((a: string, b: string): number => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
 
 export const xkeyKthAddress = (xkey: string, k: number | string = "0"): string =>
-  memoize((xkey: string, k: string): string => xkeyKthHDNode(xkey, k).address, memoizeOptions)(
-    xkey,
-    k.toString(),
-  );
+  xkeyKthHDNode(xkey, k.toString()).address;
 
-export const xkeysToSortedKthAddresses = memoize(
-  (xkeys: string[], k: number): string[] =>
-    sortAddresses(xkeys.map((xkey: string): string => xkeyKthAddress(xkey, k))),
-  memoizeOptions,
-);
+export const xkeysToSortedKthAddresses = (xkeys: string[], k: number | string = "0"): string[] =>
+  sortAddresses(xkeys.map((xkey: string): string => xkeyKthAddress(xkey, k)));
 
-export const xkeysToSortedKthSigningKeys = memoize(
-  (xkeys: string[], k: number): SigningKey[] =>
-    sortSigningkeys(
-      xkeys.map((xkey: string): SigningKey => new SigningKey(xkeyKthHDNode(xkey, k).privateKey)),
+export const xkeysToSortedKthSigningKeys = (
+  xkeys: string[],
+  k: number | string = "0",
+): SigningKey[] =>
+  sortSigningkeys(
+    xkeys.map(
+      (xkey: string): SigningKey => new SigningKey(xkeyKthHDNode(xkey, k.toString()).privateKey),
     ),
-  memoizeOptions,
-);
+  );

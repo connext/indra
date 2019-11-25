@@ -79,7 +79,7 @@ echo -e "$divider";echo "Skipping sync transfer tests for now.."
 #echo -e "$divider";echo "Starting recipient bot in background, waiting for payments"
 #rm -f ops/recipient-bot.log
 #bash ops/payment-bot.sh -i 1 -a $tokenAddress -m "$mnemonic1" -o &> ops/recipient-bot.log &
-#sleep 5 # give recipient a sec to get set up
+#sleep 3 # give recipient a sec to get set up
 #echo -e "$divider";echo "Sending eth to recipient bot"
 #bash ops/payment-bot.sh -i 2 -t 0.025 -c $id -m "$mnemonic2"
 #echo -e "$divider";echo "Sending tokens to recipient bot"
@@ -89,25 +89,25 @@ echo -e "$divider";echo "Skipping sync transfer tests for now.."
 
 echo -e "$divider";echo "Generating an async payment & leaving the sender running so it can uninstall the app after"
 bash ops/payment-bot.sh -i 2 -a $tokenAddress -n 0.01 -c $id -p "$paymentId2" -h "$preImage2" -m "$mnemonic2" -o &
-sleep 5
+sleep 3
 
 echo -e "$divider";echo "Redeeming async payment"
 bash ops/payment-bot.sh -i 1 -a $tokenAddress
 
 echo -e "$divider";echo "Giving the sender a few seconds to finish uninstalling.."
-sleep 5
+sleep 2
 cleanup
 logInstalledApps
 
 echo -e "$divider";echo "Generating a link payment & leaving the sender running so it can uninstall the app after"
 bash ops/payment-bot.sh -i 2 -a $tokenAddress -l 0.01 -p "$paymentId1" -h "$preImage1" -m "$mnemonic2" -o &
-sleep 5
+sleep 3
 
 echo -e "$divider";echo "Redeeming link payment"
 bash ops/payment-bot.sh -i 1 -a $tokenAddress -y 0.01 -p "$paymentId1" -h "$preImage1" -m "$mnemonic1"
 
 echo -e "$divider";echo "Giving the sender a few seconds to finish uninstalling.."
-sleep 5
+sleep 2
 cleanup
 logInstalledApps
 
