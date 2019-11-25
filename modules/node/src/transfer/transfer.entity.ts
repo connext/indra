@@ -23,10 +23,10 @@ export class PeerToPeerTransfer {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: "timestamp" })
   createdAt!: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: "timestamp" })
   updatedAt!: Date;
 
   @Column("text", {
@@ -75,10 +75,10 @@ export class LinkedTransfer {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: "timestamp" })
   createdAt!: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: "timestamp" })
   updatedAt!: Date;
 
   @Column("text", {
