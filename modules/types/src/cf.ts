@@ -20,6 +20,7 @@ export {
   SignedStateHashUpdate,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   singleAssetTwoPartyCoinTransferInterpreterParamsEncoding,
+  SingleAssetTwoPartyIntermediaryAgreement,
   SolidityValueType,
   StateChannelJSON,
   TwoPartyFixedOutcome,
