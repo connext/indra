@@ -13,8 +13,7 @@ import {
   SupportedApplications,
   TransferParameters,
 } from "../types";
-import { invalidAddress, invalidXpub } from "../validation/addresses";
-import { falsy, notLessThanOrEqualTo } from "../validation/bn";
+import { invalidAddress, invalidXpub, notLessThanOrEqualTo, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
@@ -27,11 +26,14 @@ export class TransferController extends AbstractController {
     this.log.info(`Transfer called with parameters: ${stringify(params)}`);
 
     // convert params + validate
-    const { recipient, amount, assetId } = convert.TransferParameters("bignumber", params);
-    const invalid = await this.validate(recipient, amount, assetId);
-    if (invalid) {
-      throw new Error(invalid.toString());
-    }
+    const { recipient, amount, assetId, meta } = convert.TransferParameters("bignumber", params);
+    const freeBalance = await this.connext.getFreeBalance(assetId);
+    const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
+    validate(
+      invalidXpub(recipient),
+      invalidAddress(assetId),
+      notLessThanOrEqualTo(amount, preTransferBal),
+    );
 
     // make sure recipient is online
     // const res = await this.node.recipientOnline(recipient);
@@ -39,16 +41,13 @@ export class TransferController extends AbstractController {
     //   throw new Error(`Recipient is offline.`);
     // }
 
-    const freeBal = await this.connext.getFreeBalance(assetId);
-    const preTransferBal = freeBal[this.connext.freeBalanceAddress];
-
     // verify app is supported without swallowing errors
     const appInfo = this.connext.getRegisteredAppDetails(
       SupportedApplications.SimpleTransferApp as SupportedApplication,
     );
 
     // install the transfer application
-    const appId = await this.transferAppInstalled(amount, recipient, assetId, appInfo);
+    const appId = await this.transferAppInstalled(amount, recipient, assetId, appInfo, meta);
     if (!appId) {
       throw new Error(`App was not installed`);
     }
@@ -78,22 +77,6 @@ export class TransferController extends AbstractController {
 
   /////////////////////////////////
   ////// PRIVATE METHODS
-  private validate = async (
-    recipient: string,
-    amount: BigNumber,
-    assetId: string,
-  ): Promise<undefined | string> => {
-    // check that there is sufficient free balance for amount
-    const freeBalance = await this.connext.getFreeBalance(assetId);
-    const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
-    const errs = [
-      invalidXpub(recipient),
-      invalidAddress(assetId),
-      notLessThanOrEqualTo(amount, preTransferBal),
-    ];
-    return errs ? errs.filter(falsy)[0] : undefined;
-  };
-
   // TODO: fix type of data
   private resolveInstallTransfer = (res: (value?: unknown) => void, data: any): any => {
     if (this.appId !== data.params.appInstanceId) {
@@ -131,6 +114,7 @@ export class TransferController extends AbstractController {
     recipient: string,
     assetId: string,
     appInfo: RegisteredAppDetails,
+    meta?: object,
   ): Promise<string | undefined> => {
     let boundResolve: (value?: any) => void;
     let boundReject: (msg: RejectInstallVirtualMessage) => void;
@@ -150,7 +134,7 @@ export class TransferController extends AbstractController {
 
     // note: intermediary is added in connext.ts as well
     const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding } = appInfo;
-    const params: CFCoreTypes.ProposeInstallVirtualParams = {
+    const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {
         actionEncoding,
         stateEncoding,
@@ -160,7 +144,7 @@ export class TransferController extends AbstractController {
       initialState,
       initiatorDeposit: amount,
       initiatorDepositTokenAddress: assetId,
-      intermediaryIdentifier: this.connext.nodePublicIdentifier,
+      meta,
       outcomeType: appInfo.outcomeType,
       proposedToIdentifier: recipient,
       responderDeposit: Zero,
@@ -168,7 +152,7 @@ export class TransferController extends AbstractController {
       timeout: Zero, // TODO: fix, add to app info?
     };
 
-    const res = await this.connext.proposeInstallVirtualApp(params);
+    const res = await this.connext.proposeInstallApp(params);
     this.appId = res.appInstanceId;
 
     try {

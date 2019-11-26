@@ -40,6 +40,8 @@ import {
   initialTransferState,
   transferAbiEncodings
 } from "./unidirectional-transfer";
+import { EventEmittedMessage } from "../../src/types";
+import { deBigNumberifyJson } from "../../src/utils";
 
 interface AppContext {
   appDefinition: string;
@@ -54,6 +56,33 @@ const {
   UnidirectionalLinkedTransferApp,
   UnidirectionalTransferApp
 } = global["networkContext"] as NetworkContextForTestSuite;
+
+/**
+ * Checks the msg is what is expected, and that specificied keys exist
+ * in the message.
+ *
+ * @param msg msg to check
+ * @param expected expected message, can be partial
+ * @param shouldExist array of keys to check existence of if value not known 
+ * for `expected` (e.g `appInstanceId`s)
+ */
+export function assertNodeMessage(
+  msg: EventEmittedMessage,
+  expected: any, // should be partial of nested types
+  shouldExist: string[] = [],
+): void {
+  // ensure keys exist, shouldExist is array of
+  // keys, ie. data.appInstanceId
+  shouldExist.forEach(key => {
+    let subset = { ...msg };
+    key.split(".").forEach(k => {
+      expect(subset[k]).toBeDefined();
+      subset = subset[k];
+    });
+  });
+  // cast both to strings instead of BNs
+  expect(deBigNumberifyJson(msg)).toMatchObject(deBigNumberifyJson(expected));
+}
 
 /**
  * Even though this function returns a transaction hash, the calling Node

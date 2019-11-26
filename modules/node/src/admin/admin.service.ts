@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelService } from "../channel/channel.service";
 import { CLogger } from "../util";
@@ -48,6 +49,19 @@ export class AdminService {
     return corrupted;
   }
 
+  /**  Get Channels by xpub */
+
+  async getChannelStates(userPublicIdentifier: any): Promise<CFCoreRecord[]> {
+    // get channel by xpub
+    return await this.channelService.getChannelState(userPublicIdentifier.id);
+  }
+
+  //Get all channels
+  async getAllChannelsState(): Promise<CFCoreRecord[]> {
+    // get channel by xpub
+    return await this.channelService.getAllChannelsState();
+  }
+
   /**
    * October 31, 2019
    *
@@ -88,9 +102,8 @@ export class AdminService {
         id: channelId,
       } = channel;
       // calculate the expected multsig address
-      const expectedMultisigAddress = await this.cfCoreService.getExpectedMultisigAddressFromUserXpub(
-        userXpub,
-      );
+      const getMultisig = this.cfCoreService.getExpectedMultisigAddressFromUserXpub;
+      const expectedMultisigAddress = await getMultisig(userXpub);
 
       // if it matches, return
       if (expectedMultisigAddress === oldMultisigAddress) {
