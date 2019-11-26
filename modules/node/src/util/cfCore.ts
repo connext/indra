@@ -17,7 +17,6 @@ export {
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
-  WithdrawMessage,
   xkeyKthAddress as xpubToAddress,
   xkeysToSortedKthAddresses,
   WithdrawConfirmationMessage,
