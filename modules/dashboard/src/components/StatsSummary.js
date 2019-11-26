@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Grid, Typography, withStyles } from "@material-ui/core";
 import PropTypes from "prop-types";
+import { bigNumberify, toNumber, toString } from "ethers/utils";
 
 const styles = {
   top: {
@@ -26,6 +27,7 @@ const styles = {
   },
   cardText: {
     textAlign: "center",
+    width: "90%",
     fontSize: "24px",
     color: "#002868",
     textDecoration: "none",
@@ -36,6 +38,7 @@ const StatsSummary = props => {
   const { classes, messaging, token } = props;
 
   const [allChannels, setAllChannels] = useState(null);
+  const [channelTotal, setChannelTotal] = useState(0);
 
   useEffect(() => {
     if (!messaging) {
@@ -46,15 +49,53 @@ const StatsSummary = props => {
         var res = await messaging.request("admin.get-all-channel-states", 5000, {
           token: token,
         });
-        setAllChannels(res);
+
+        let xPubsToSearch = [];
+        Object.values(res)[0].response.forEach(row => {
+          xPubsToSearch.push(row.userPublicIdentifier);
+        });
+
+        setAllChannels(xPubsToSearch);
+        let channelTotalArr = [];
+        xPubsToSearch.forEach(async xPub => {
+          var currentChannelValue = await getChannelAmount(xPub);
+          currentChannelValue !== 0 && channelTotalArr.push(currentChannelValue);
+        });
+        var channelTotalArrReduced = channelTotalArr.reduce((a, b) => {
+          return a + b;
+        }, 0);
+        return channelTotalArrReduced
       };
-      await getChannels();
+      var channelTotalArrReduced = await getChannels();
+      setChannelTotal(channelTotalArrReduced);
     })();
   });
+
+  const getChannelAmount = async xPub => {
+    var res = await messaging.request("admin.get-channel-states", 5000, {
+      token: token,
+      id: xPub,
+    });
+
+    var extractedValues = Object.values(res)[0].response;
+    let balanceArr = [];
+    extractedValues.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
+      balanceArr.push(parseInt(balance.amount._hex, 16));
+    });
+
+    var balanceArrReduced = balanceArr.reduce((a, b) => {
+      return a + b;
+    }, 0);
+
+    return balanceArrReduced;
+  };
+
   return (
     <Grid className={classes.top} container>
-      <Typography className={classes.cardText}>Hello</Typography>
-      <Typography className={classes.cardText}>World</Typography>
+      {/* <Typography className={classes.cardText}>{JSON.stringify(allChannels)}</Typography> */}
+      <Typography className={classes.cardText}>
+        total value locked: {JSON.stringify(channelTotal)}
+      </Typography>
     </Grid>
   );
 };
