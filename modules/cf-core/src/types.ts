@@ -28,6 +28,7 @@ export {
 } from "@connext/types";
 
 import { ProtocolMessage } from "./machine";
+import { ProposeInstallProtocolParams } from "./machine/types";
 
 export type NodeEvents = Node.EventName;
 export const NODE_EVENTS = Node.EventName;
@@ -38,7 +39,7 @@ export interface NodeMessageWrappedProtocolMessage extends Node.NodeMessage {
 
 export interface ProposeMessage extends Node.NodeMessage {
   data: {
-    params: Node.ProposeInstallParams;
+    params: ProposeInstallProtocolParams;
     appInstanceId: string;
   };
 }
@@ -94,3 +95,18 @@ export interface DepositConfirmationMessage extends Node.NodeMessage {
 }
 
 export interface RejectInstallVirtualMessage extends RejectProposalMessage {}
+
+export type EventEmittedMessage =
+  | RejectProposalMessage
+  | RejectInstallVirtualMessage
+  | WithdrawConfirmationMessage
+  | WithdrawMessage
+  | UninstallVirtualMessage
+  | UninstallMessage
+  | UpdateStateMessage
+  | InstallVirtualMessage
+  | InstallMessage
+  | ProposeMessage
+  | DepositConfirmationMessage
+  | CreateChannelMessage
+  | NodeMessageWrappedProtocolMessage;
