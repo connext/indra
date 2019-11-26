@@ -13,10 +13,10 @@ import { MessagingServiceFactory } from "@connext/messaging";
 const env = {
   authToken: process.env.REACT_APP_INDRA_NATS_TOKEN
     || 'foobar',
-  // nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE
-  //   || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
   nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE
-  || `ws://localhost:3000/api/messaging`,
+    || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
+//   nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE
+//   || `ws://localhost:3000/api/messaging`,
   urlPrefix: process.env.REACT_APP_URL_PREFIX
     || '',
 }
