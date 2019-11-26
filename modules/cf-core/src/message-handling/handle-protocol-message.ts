@@ -16,10 +16,13 @@ import { UNASSIGNED_SEQ_NO } from "../protocol/utils/signature-forwarder";
 import { RequestHandler } from "../request-handler";
 import RpcRouter from "../rpc-router";
 import {
+  EventEmittedMessage,
   NetworkContext,
+  Node,
   NODE_EVENTS,
   NodeMessageWrappedProtocolMessage,
   SolidityValueType,
+  WithdrawStartedMessage,
 } from "../types";
 import { bigNumberifyJson } from "../utils";
 import { Store } from "../store";
@@ -98,7 +101,7 @@ export async function handleReceivedProtocolMessage(
   }
 }
 
-function emitOutgoingNodeMessage(router: RpcRouter, msg: object) {
+function emitOutgoingNodeMessage(router: RpcRouter, msg: EventEmittedMessage) {
   return router.emit(msg["type"], msg, "outgoing");
 }
 
@@ -108,17 +111,21 @@ async function getOutgoingEventDataFromProtocol(
   stateChannelsMap: Map<string, StateChannel>,
   networkContext: NetworkContext,
   store: Store,
-) {
+): Promise<EventEmittedMessage | undefined> {
   // default to the pubId that initiated the protocol
   const baseEvent = { from: params.initiatorXpub };
 
   switch (protocol) {
     case Protocol.Propose:
+      const { multisigAddress, initiatorXpub, responderXpub, ...emittedParams} = params as ProposeInstallProtocolParams;
       return {
         ...baseEvent,
         type: NODE_EVENTS.PROPOSE_INSTALL,
         data: {
-          params,
+          params: {
+            ...emittedParams,
+            proposedToIdentifier: responderXpub,
+          },
           appInstanceId: stateChannelsMap
             .get((params as ProposeInstallProtocolParams).multisigAddress)!
             .mostRecentlyProposedAppInstance().identityHash
@@ -155,11 +162,14 @@ async function getOutgoingEventDataFromProtocol(
         )
       };
     case Protocol.Withdraw:
+      // NOTE: responder will only ever emit a withdraw started
+      // event. does not include tx hash
+      // determine if the withdraw is finishing or if it is starting
       return {
         ...baseEvent,
-        type: NODE_EVENTS.WITHDRAWAL_CONFIRMED,
+        type: NODE_EVENTS.WITHDRAWAL_STARTED,
         data: getWithdrawEventData(params as WithdrawProtocolParams)
-      };
+      } as WithdrawStartedMessage;
     case Protocol.TakeAction:
     case Protocol.Update:
       return {
@@ -213,10 +223,13 @@ async function getOutgoingEventDataFromProtocol(
 }
 
 function getStateUpdateEventData(
-  { appIdentityHash: appInstanceId }: TakeActionProtocolParams | UpdateProtocolParams,
+  params: TakeActionProtocolParams | UpdateProtocolParams,
   newState: SolidityValueType
 ) {
-  return { newState, appInstanceId };
+  // note: action does not exist on type `UpdateProtocolParams`
+  // so use any cast
+  const { appIdentityHash: appInstanceId, action } = params as any;
+  return { newState, appInstanceId, action };
 }
 
 function getUninstallVirtualAppEventData({
@@ -232,8 +245,16 @@ function getUninstallEventData({
   return { appInstanceId };
 }
 
-function getWithdrawEventData({ amount }: WithdrawProtocolParams) {
-  return amount;
+function getWithdrawEventData(params: WithdrawProtocolParams) {
+  const { multisigAddress, tokenAddress, recipient, amount } = params;
+  return {
+    params: {
+      multisigAddress,
+      tokenAddress,
+      recipient,
+      amount
+    },
+  };
 }
 
 function getSetupEventData(

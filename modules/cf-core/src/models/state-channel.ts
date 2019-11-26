@@ -1,4 +1,5 @@
-import { BigNumber, bigNumberify } from "ethers/utils";
+import { BigNumber } from "ethers/utils";
+import { StateChannelJSON, SingleAssetTwoPartyIntermediaryAgreement } from "@connext/types";
 
 import { flip, flipTokenIndexedBalances } from "../ethereum/utils/free-balance-app";
 import { xkeyKthAddress } from "../machine/xkeys";
@@ -37,27 +38,6 @@ const ERRORS = {
 function sortAddresses(addrs: string[]) {
   return addrs.sort((a, b) => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
 }
-
-export type SingleAssetTwoPartyIntermediaryAgreement = {
-  timeLockedPassThroughIdentityHash: string;
-  capitalProvided: string;
-  capitalProvider: string;
-  virtualAppUser: string;
-  tokenAddress: string;
-};
-
-export type StateChannelJSON = {
-  readonly multisigAddress: string;
-  readonly userNeuteredExtendedKeys: string[];
-  readonly proposedAppInstances: [string, AppInstanceProposal][];
-  readonly appInstances: [string, AppInstanceJson][];
-  readonly singleAssetTwoPartyIntermediaryAgreements: [
-    string,
-    SingleAssetTwoPartyIntermediaryAgreement
-  ][];
-  readonly freeBalanceAppInstance: AppInstanceJson | undefined;
-  readonly monotonicNumProposedApps: number;
-};
 
 export class StateChannel {
   constructor(
@@ -459,8 +439,20 @@ export class StateChannel {
 
     appInstances.set(appInstance.identityHash, appInstance);
 
+    // If the app is in the proposed apps, make sure it is
+    // removed (otherwise channel is persisted with proposal + 
+    // installed application after protocol)
+    // NOTE: `deposit` will install an app, but never propose it
+
+    let proposedAppInstances;
+    if (this.proposedAppInstances.has(appInstance.identityHash)) {
+      const withoutProposal = this.removeProposal(appInstance.identityHash);
+      proposedAppInstances = withoutProposal.proposedAppInstances;
+    }
+
     return this.build({
-      appInstances
+      appInstances,
+      proposedAppInstances
     }).addActiveAppAndIncrementFreeBalance(
       appInstance.identityHash,
       flipTokenIndexedBalances(tokenIndexedDecrements)

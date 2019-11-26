@@ -6,14 +6,23 @@ export * from "./private-keys-generator";
 export {
   CreateChannelMessage,
   DepositConfirmationMessage,
+  DepositStartedMessage,
+  DepositFailedMessage,
+  EventEmittedMessage,
   InstallMessage,
   InstallVirtualMessage,
   NODE_EVENTS,
+  NodeMessageWrappedProtocolMessage,
   ProposeMessage,
   RejectInstallVirtualMessage,
   RejectProposalMessage,
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
-  WithdrawMessage
+  WithdrawConfirmationMessage,
+  WithdrawFailedMessage,
+  WithdrawStartedMessage
 } from "./types";
+export {
+  StateChannel
+} from "./models";

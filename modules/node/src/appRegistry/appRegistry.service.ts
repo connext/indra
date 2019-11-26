@@ -49,8 +49,7 @@ export class AppRegistryService {
    */
   async allowOrReject(data: ProposeMessage): Promise<AppRegistry | void> {
     try {
-      // TODO: remove any casting when #573 is merged
-      const registryAppInfo = await this.verifyAppProposal(data.data as any, data.from);
+      const registryAppInfo = await this.verifyAppProposal(data.data, data.from);
       await this.cfCoreService.installApp(data.data.appInstanceId);
       return registryAppInfo;
     } catch (e) {
@@ -276,6 +275,9 @@ export class AppRegistryService {
     const initiatorChannel = await this.channelRepository.findByUserPublicIdentifier(
       initiatorIdentifier,
     );
+    if (!initiatorChannel) {
+      throw new Error(`Could not find channel for user: ${initiatorIdentifier}`);
+    }
     const freeBalanceInitiatorAsset = await this.cfCoreService.getFreeBalance(
       initiatorIdentifier,
       initiatorChannel.multisigAddress,
@@ -336,7 +338,7 @@ export class AppRegistryService {
       params: CFCoreTypes.ProposeInstallParams;
       appInstanceId: string;
     },
-    initiatorIdentifier: string,
+    initiatorIdentifier: string, // will always be `from` field
   ): Promise<AppRegistry | void> {
     const myIdentifier = this.cfCoreService.cfCore.publicIdentifier;
     if (initiatorIdentifier === myIdentifier) {

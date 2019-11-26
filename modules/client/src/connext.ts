@@ -262,6 +262,8 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // since if the hub never submits you should not continue interacting
   log.debug("Reclaiming pending async transfers");
   // no need to await this if it needs collateral
+  // TODO: without await causes race conditions in bot, refactor to
+  // use events
   await client.reclaimPendingAsyncTransfers();
 
   log.debug("Done creating channel client");
@@ -390,8 +392,10 @@ export class ConnextClient implements IConnextClient {
       default:
         throw new Error(`Unrecognized channel provider type: ${this.routerType}`);
     }
+    // TODO: this is very confusing to have to do, lets try to figure out a better way
     this.node.channelRouter = channelRouter;
     this.channelRouter = channelRouter;
+    this.listener = new ConnextListener(channelRouter, this);
     await this.isAvailable();
   };
 
@@ -748,15 +752,6 @@ export class ConnextClient implements IConnextClient {
       throw new Error("Cannot take action on an app with a finalized state.");
     }
     return await this.channelRouter.updateState(appInstanceId, newState);
-  };
-
-  public proposeInstallVirtualApp = async (
-    params: CFCoreTypes.ProposeInstallVirtualParams,
-  ): Promise<CFCoreTypes.ProposeInstallVirtualResult> => {
-    if (params.intermediaryIdentifier !== this.nodePublicIdentifier) {
-      throw new Error(`Cannot install virtual app without node as intermediary`);
-    }
-    return await this.channelRouter.proposeInstallVirtualApp(params);
   };
 
   public proposeInstallApp = async (

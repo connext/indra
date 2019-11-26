@@ -35,22 +35,22 @@ const styles = {
 const StatsSummary = props => {
   const { classes, messaging, token } = props;
 
-  const [allChannels, setAllChannels] = useState(null);
+//   const [allChannels, setAllChannels] = useState(null);
 
-  useEffect(() => {
-    if (!messaging) {
-      return;
-    }
-    (async () => {
-      const getChannels = async () => {
-        var res = await messaging.request("admin.get-all-channel-states", 5000, {
-          token: token,
-        });
-        setAllChannels(res);
-      };
-      await getChannels();
-    })();
-  });
+//   useEffect(() => {
+//     if (!messaging) {
+//       return;
+//     }
+//     (async () => {
+//       const getChannels = async () => {
+//         var res = await messaging.request("admin.get-all-channel-states", 5000, {
+//           token: token,
+//         });
+//         setAllChannels(res);
+//       };
+//       await getChannels();
+//     })();
+//   });
   return (
     <Grid className={classes.top} container>
       <Typography className={classes.cardText}>Hello</Typography>

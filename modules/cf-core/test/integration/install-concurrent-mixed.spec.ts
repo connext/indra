@@ -61,7 +61,7 @@ describe("Concurrently installing virtual and regular applications without issue
       makeInstallCall(nodeB, msg.data.appInstanceId);
     });
 
-    nodeC.on(NODE_EVENTS.PROPOSE_INSTALL_VIRTUAL, (msg: ProposeMessage) => {
+    nodeC.on(NODE_EVENTS.PROPOSE_INSTALL, (msg: ProposeMessage) => {
       installTTTVirtual(nodeC, msg.data.appInstanceId, nodeB.publicIdentifier);
     });
 
@@ -90,7 +90,6 @@ describe("Concurrently installing virtual and regular applications without issue
 
       return constructVirtualProposalRpc(
         nodeC.publicIdentifier,
-        nodeB.publicIdentifier,
         appContext.appDefinition,
         appContext.abiEncodings,
         appContext.initialState,
