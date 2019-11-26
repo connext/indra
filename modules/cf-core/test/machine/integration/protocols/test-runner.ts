@@ -1,4 +1,5 @@
 import IdentityApp from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/IdentityApp.json";
+import ProxyFactory from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/ProxyFactory.json";
 import { OutcomeType } from "@connext/cf-types";
 import { Contract, ContractFactory } from "ethers";
 import { One, Two, Zero } from "ethers/constants";
@@ -51,22 +52,27 @@ export class TestRunner {
     this.mininodeB = new MiniNode(network, provider);
     this.mininodeC = new MiniNode(network, provider);
 
+    const proxyBytecode = ProxyFactory.evm.bytecode.object;
+
     this.multisigAB = getCreate2MultisigAddress(
       [this.mininodeA.xpub, this.mininodeB.xpub],
       network.ProxyFactory,
-      network.MinimumViableMultisig
+      network.MinimumViableMultisig,
+      proxyBytecode
     );
 
     this.multisigAC = getCreate2MultisigAddress(
       [this.mininodeA.xpub, this.mininodeC.xpub],
       network.ProxyFactory,
-      network.MinimumViableMultisig
+      network.MinimumViableMultisig,
+      proxyBytecode
     );
 
     this.multisigBC = getCreate2MultisigAddress(
       [this.mininodeB.xpub, this.mininodeC.xpub],
       network.ProxyFactory,
-      network.MinimumViableMultisig
+      network.MinimumViableMultisig,
+      proxyBytecode
     );
 
     this.mr = new MessageRouter([
