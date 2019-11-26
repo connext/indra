@@ -59,13 +59,14 @@ describe("Node method follows spec - install balance refund", () => {
       expect(preSendBalA).toBeEq(0);
       expect(preSendBalB).toBeEq(0);
 
+      const preDepositMultisig = await provider.getBalance(multisigAddress);
       const tx = await provider.getSigner().sendTransaction({
         to: multisigAddress,
         value: One
       });
       await provider.waitForTransaction(tx.hash!);
       const multisigBalance = await provider.getBalance(multisigAddress);
-      expect(multisigBalance).toBeEq(1);
+      expect(multisigBalance).toBeEq(preDepositMultisig.add(One));
 
       await nodeA.rpcRouter.dispatch({
         id: Date.now(),
