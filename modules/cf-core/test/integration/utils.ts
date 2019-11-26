@@ -10,7 +10,7 @@ import {
   SolidityValueType
 } from "@connext/cf-types";
 import { Contract, Wallet } from "ethers";
-import { One, Zero } from "ethers/constants";
+import { AddressZero, One, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
@@ -28,7 +28,7 @@ import {
   UninstallVirtualMessage
 } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
-import { xkeyKthAddress } from "../../src/machine";
+import { xkeyKthAddress, xkeysToSortedKthAddresses } from "../../src/machine";
 
 import { initialLinkedState, linkedAbiEncodings } from "./linked-transfer";
 import {
@@ -40,6 +40,9 @@ import {
   initialTransferState,
   transferAbiEncodings
 } from "./unidirectional-transfer";
+import { EventEmittedMessage, DepositConfirmationMessage, DepositStartedMessage } from "../../src/types";
+import { deBigNumberifyJson, prettyPrintObject } from "../../src/utils";
+import { ProposeInstallProtocolParams } from "../../src/machine/types";
 
 interface AppContext {
   appDefinition: string;
@@ -56,28 +59,86 @@ const {
 } = global["networkContext"] as NetworkContextForTestSuite;
 
 /**
+ * Checks the msg is what is expected, and that specificied keys exist
+ * in the message.
+ *
+ * @param msg msg to check
+ * @param expected expected message, can be partial
+ * @param shouldExist array of keys to check existence of if value not known 
+ * for `expected` (e.g `appInstanceId`s)
+ */
+export function assertNodeMessage(
+  msg: EventEmittedMessage,
+  expected: any, // should be partial of nested types
+  shouldExist: string[] = [],
+): void {
+  // ensure keys exist, shouldExist is array of
+  // keys, ie. data.appInstanceId
+  shouldExist.forEach(key => {
+    let subset = { ...msg };
+    key.split(".").forEach(k => {
+      expect(subset[k]).toBeDefined();
+      subset = subset[k];
+    });
+  });
+  // cast both to strings instead of BNs
+  expect(deBigNumberifyJson(msg)).toMatchObject(deBigNumberifyJson(expected));
+}
+
+export function assertProposeMessage(senderId: string, msg: ProposeMessage, params: ProposeInstallProtocolParams) {
+  const { multisigAddress, initiatorXpub, responderXpub: proposedToIdentifier, ...emittedParams } = params;
+  assertNodeMessage(msg, {
+    from: senderId,
+    type: NODE_EVENTS.PROPOSE_INSTALL,
+    data: {
+      params: {
+        ...emittedParams,
+        proposedToIdentifier
+      },
+    }
+  }, ['data.appInstanceId'])
+}
+
+export function assertInstallMessage(senderId: string, msg: InstallMessage, appInstanceId: string) {
+  assertNodeMessage(msg, {
+    from: senderId,
+    type: NODE_EVENTS.INSTALL,
+    data: {
+      params: {
+        appInstanceId
+      }
+    }
+  })
+}
+
+/**
  * Even though this function returns a transaction hash, the calling Node
  * will receive an event (CREATE_CHANNEL) that should be subscribed to to
  * ensure a channel has been instantiated and to get its multisig address
  * back in the event data.
  */
-export async function getMultisigCreationTransactionHash(
+export async function getMultisigCreationAddress(
   node: Node,
   xpubs: string[]
 ): Promise<string> {
   const {
     result: {
-      result: { transactionHash }
+      result: { multisigAddress }
     }
-  } = await node.rpcRouter.dispatch({
-    id: Date.now(),
-    methodName: NodeTypes.RpcMethodName.CREATE_CHANNEL,
-    parameters: {
-      owners: xpubs
-    }
-  });
+  } = await node.rpcRouter.dispatch(constructChannelCreationRpc(xpubs));
 
-  return transactionHash;
+  return multisigAddress;
+}
+
+export function constructChannelCreationRpc(owners: string[]) {
+  return jsonRpcDeserialize({
+    id: Date.now(),
+    method: NodeTypes.RpcMethodName.CREATE_CHANNEL,
+    jsonrpc: "2.0",
+    params: {
+      owners,
+    }
+  })
 }
 
 /**
@@ -211,7 +272,33 @@ export async function deposit(
 ) {
   const depositReq = constructDepositRpc(multisigAddress, amount, tokenAddress);
 
-  await node.rpcRouter.dispatch(depositReq);
+  return new Promise(async resolve => {
+    node.once(NODE_EVENTS.DEPOSIT_CONFIRMED, (msg: DepositConfirmationMessage) => {
+      assertNodeMessage(msg, {
+        from: node.publicIdentifier,
+        type: NODE_EVENTS.DEPOSIT_CONFIRMED,
+        data: {
+          multisigAddress,
+          amount,
+          tokenAddress: tokenAddress || AddressZero
+        }
+      });
+      resolve();
+    });
+
+    node.once(NODE_EVENTS.DEPOSIT_STARTED, (msg: DepositStartedMessage) => {
+      assertNodeMessage(msg, {
+        from: node.publicIdentifier,
+        type: NODE_EVENTS.DEPOSIT_STARTED,
+        data: {
+          value: amount,
+        }
+      }, ['data.txHash']);
+    });
+
+    // TODO: how to test deposit failed events?
+    await node.rpcRouter.dispatch(depositReq);
+  })
 }
 
 export async function deployStateDepositHolder(
@@ -355,7 +442,6 @@ export function constructInstallVirtualRpc(
 
 export function constructVirtualProposalRpc(
   proposedToIdentifier: string,
-  intermediaryIdentifier: string,
   appDefinition: string,
   abiEncodings: AppABIEncodings,
   initialState: SolidityValueType = {},
@@ -375,15 +461,10 @@ export function constructVirtualProposalRpc(
     responderDepositTokenAddress
   ).parameters as NodeTypes.ProposeInstallParams;
 
-  const installVirtualParams: NodeTypes.ProposeInstallVirtualParams = {
-    ...installProposalParams,
-    intermediaryIdentifier
-  };
-
   return jsonRpcDeserialize({
-    params: installVirtualParams,
+    params: installProposalParams,
     id: Date.now(),
-    method: NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
+    method: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
     jsonrpc: "2.0"
   });
 }
@@ -495,22 +576,41 @@ export async function collateralizeChannel(
   amount: BigNumber = One,
   tokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS
 ): Promise<void> {
-  const depositReq = constructDepositRpc(multisigAddress, amount, tokenAddress);
-  await node1.rpcRouter.dispatch(depositReq);
+  await deposit(node1, multisigAddress, amount, tokenAddress);
   if (!node2) return;
-  await node2.rpcRouter.dispatch(depositReq);
+  await deposit(node2, multisigAddress, amount, tokenAddress);
 }
 
 export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
   return new Promise(async resolve => {
-    nodeB.on(NODE_EVENTS.CREATE_CHANNEL, async (msg: CreateChannelMessage) => {
+    const sortedOwners = xkeysToSortedKthAddresses([nodeA.publicIdentifier, nodeB.publicIdentifier], 0)
+    nodeB.once(NODE_EVENTS.CREATE_CHANNEL, async (msg: CreateChannelMessage) => {
+      assertNodeMessage(msg, {
+        from: nodeA.publicIdentifier,
+        type: NODE_EVENTS.CREATE_CHANNEL,
+        data: {
+          owners: sortedOwners,
+          counterpartyXpub: nodeA.publicIdentifier,
+        }
+      }, ['data.multisigAddress'])
       expect(await getInstalledAppInstances(nodeB)).toEqual([]);
       resolve(msg.data.multisigAddress);
     });
 
+    nodeA.once(NODE_EVENTS.CREATE_CHANNEL, (msg: CreateChannelMessage) => {
+      assertNodeMessage(msg, {
+        from: nodeA.publicIdentifier,
+        type: NODE_EVENTS.CREATE_CHANNEL,
+        data: {
+          owners: sortedOwners,
+          counterpartyXpub: nodeB.publicIdentifier,
+        }
+      }, ['data.multisigAddress'])
+    })
+
     // trigger channel creation but only resolve with the multisig address
     // as acknowledged by the node
-    await getMultisigCreationTransactionHash(nodeA, [
+    await getMultisigCreationAddress(nodeA, [
       nodeA.publicIdentifier,
       nodeB.publicIdentifier
     ]);
@@ -529,7 +629,7 @@ export async function installApp(
   initiatorDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
   responderDeposit: BigNumber = Zero,
   responderDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS
-): Promise<[string, NodeTypes.ProposeInstallParams]> {
+): Promise<[string, ProposeInstallProtocolParams]> {
   const appContext = getAppContext(appDefinition, initialState);
 
   const installationProposalRpc = constructAppProposalRpc(
@@ -543,10 +643,13 @@ export async function installApp(
     responderDepositTokenAddress
   );
 
-  const proposedParams = installationProposalRpc.parameters as NodeTypes.ProposeInstallParams;
+  const proposedParams = installationProposalRpc.parameters as ProposeInstallProtocolParams;
 
   return new Promise(async resolve => {
     nodeB.once(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
+      // assert message
+      assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
+
       const {
         data: { appInstanceId }
       } = msg;
@@ -559,7 +662,8 @@ export async function installApp(
 
       nodeA.once(NODE_EVENTS.INSTALL, async (msg: InstallMessage) => {
         if (msg.data.params.appInstanceId === appInstanceId) {
-          const appInstanceId = msg.data.params.appInstanceId;
+          // assert message
+          assertInstallMessage(nodeB.publicIdentifier, msg, appInstanceId);
           const appInstanceNodeA = await getAppInstance(nodeA, appInstanceId);
           const appInstanceNodeB = await getAppInstance(nodeB, appInstanceId);
           expect(appInstanceNodeA).toEqual(appInstanceNodeB);
@@ -591,24 +695,27 @@ export async function installVirtualApp(
   responderDeposit?: BigNumber
 ): Promise<string> {
   nodeC.on(
-    NODE_EVENTS.PROPOSE_INSTALL_VIRTUAL,
-    async ({ data: { appInstanceId: eventAppInstanceId } }: ProposeMessage) => {
+    NODE_EVENTS.PROPOSE_INSTALL,
+    async (msg: ProposeMessage) => {
       const {
         appInstanceId,
-        params: { intermediaryIdentifier }
+        params,
       } = await proposal;
+      const { data: { appInstanceId: eventAppInstanceId } } = msg;
       if (eventAppInstanceId === appInstanceId) {
-        nodeC.rpcRouter.dispatch(
-          constructInstallVirtualRpc(appInstanceId, intermediaryIdentifier)
+        assertProposeMessage(nodeA.publicIdentifier, msg, params)
+        await nodeC.rpcRouter.dispatch(
+          constructInstallVirtualRpc(appInstanceId, nodeB.publicIdentifier)
         );
       }
     }
   );
 
+  // await in listener bc event is emitted before
+  // promise officially resolves
   const proposal = makeVirtualProposal(
     nodeA,
     nodeC,
-    nodeB,
     appDefinition,
     initialState,
     assetId,
@@ -617,15 +724,18 @@ export async function installVirtualApp(
   );
 
   return new Promise((resolve: (appInstanceId: string) => void) =>
-    nodeA.once(
+    nodeA.on(
       NODE_EVENTS.INSTALL_VIRTUAL,
-      async ({
-        data: {
-          params: { appInstanceId: eventAppInstanceId }
-        }
-      }: InstallVirtualMessage) => {
+      async (msg: InstallVirtualMessage) => {
         const { appInstanceId } = await proposal;
-        if (eventAppInstanceId === appInstanceId) resolve(appInstanceId);
+        if (msg.data.params.appInstanceId === appInstanceId) {
+          assertNodeMessage(msg, {
+            from: nodeC.publicIdentifier,
+            type: NODE_EVENTS.INSTALL_VIRTUAL,
+            data: {params: { appInstanceId }},
+          })
+          resolve(appInstanceId);
+        }
       }
     )
   );
@@ -634,7 +744,7 @@ export async function installVirtualApp(
 export async function confirmChannelCreation(
   nodeA: Node,
   nodeB: Node,
-  ownersPublicIdentifiers: string[],
+  ownersFreeBalanceAddress: string[],
   data: NodeTypes.CreateChannelResult
 ) {
   const openChannelsNodeA = await getChannelAddresses(nodeA);
@@ -642,11 +752,11 @@ export async function confirmChannelCreation(
 
   expect(openChannelsNodeA.has(data.multisigAddress)).toBeTruthy();
   expect(openChannelsNodeB.has(data.multisigAddress)).toBeTruthy();
-  expect(data.owners).toEqual(ownersPublicIdentifiers);
+  expect(data.owners.sort()).toEqual(ownersFreeBalanceAddress.sort());
 }
 
 export async function confirmAppInstanceInstallation(
-  proposedParams: NodeTypes.ProposeInstallParams,
+  proposedParams: ProposeInstallProtocolParams,
   appInstance: AppInstanceJson
 ) {
   expect(appInstance.appInterface.addr).toEqual(proposedParams.appDefinition);
@@ -672,7 +782,6 @@ export async function getState(
 export async function makeVirtualProposal(
   nodeA: Node,
   nodeC: Node,
-  nodeB: Node,
   appDefinition: string,
   initialState?: SolidityValueType,
   assetId?: string,
@@ -680,13 +789,12 @@ export async function makeVirtualProposal(
   responderDeposit?: BigNumber
 ): Promise<{
   appInstanceId: string;
-  params: NodeTypes.ProposeInstallVirtualParams;
+  params: ProposeInstallProtocolParams;
 }> {
   const appContext = getAppContext(appDefinition, initialState);
 
   const virtualProposalRpc = constructVirtualProposalRpc(
     nodeC.publicIdentifier,
-    nodeB.publicIdentifier,
     appContext.appDefinition,
     appContext.abiEncodings,
     appContext.initialState,
@@ -696,7 +804,7 @@ export async function makeVirtualProposal(
     assetId || CONVENTION_FOR_ETH_TOKEN_ADDRESS
   );
 
-  const params = virtualProposalRpc.parameters as NodeTypes.ProposeInstallVirtualParams;
+  const params = virtualProposalRpc.parameters as ProposeInstallProtocolParams;
 
   const {
     result: {
@@ -704,7 +812,7 @@ export async function makeVirtualProposal(
     }
   } = await nodeA.rpcRouter.dispatch({
     parameters: params,
-    methodName: NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
+    methodName: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
     id: Date.now()
   });
 
@@ -728,7 +836,6 @@ export async function makeInstallCall(node: Node, appInstanceId: string) {
 export async function makeVirtualProposeCall(
   nodeA: Node,
   nodeC: Node,
-  nodeB: Node,
   appDefinition: string,
   initialState?: SolidityValueType
 ): Promise<{
@@ -739,7 +846,6 @@ export async function makeVirtualProposeCall(
 
   const virtualProposalRpc = constructVirtualProposalRpc(
     nodeC.publicIdentifier,
-    nodeB.publicIdentifier,
     appContext.appDefinition,
     appContext.abiEncodings,
     appContext.initialState
@@ -787,7 +893,7 @@ export async function makeAndSendProposeCall(
   responderDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS
 ): Promise<{
   appInstanceId: string;
-  params: NodeTypes.ProposeInstallParams;
+  params: ProposeInstallProtocolParams;
 }> {
   const installationProposalRpc = makeProposeCall(
     nodeB,
@@ -807,7 +913,7 @@ export async function makeAndSendProposeCall(
 
   return {
     appInstanceId,
-    params: installationProposalRpc.parameters as NodeTypes.ProposeInstallParams
+    params: installationProposalRpc.parameters as ProposeInstallProtocolParams
   };
 }
 

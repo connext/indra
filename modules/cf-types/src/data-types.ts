@@ -1,5 +1,5 @@
 // https://github.com/counterfactual/monorepo/blob/master/packages/cf.js/API_REFERENCE.md#data-types
-import { BigNumber, BigNumberish } from "ethers/utils";
+import { BigNumber } from "ethers/utils";
 
 import { AppInterface, SolidityValueType } from ".";
 
@@ -72,6 +72,27 @@ export type AppInstanceJson = {
     limit: { _hex: string };
     tokenAddress: string;
   };
+};
+
+export type SingleAssetTwoPartyIntermediaryAgreement = {
+  timeLockedPassThroughIdentityHash: string;
+  capitalProvided: string;
+  capitalProvider: string;
+  virtualAppUser: string;
+  tokenAddress: string;
+};
+
+export type StateChannelJSON = {
+  readonly multisigAddress: string;
+  readonly userNeuteredExtendedKeys: string[];
+  readonly proposedAppInstances: [string, AppInstanceProposal][];
+  readonly appInstances: [string, AppInstanceJson][];
+  readonly singleAssetTwoPartyIntermediaryAgreements: [
+    string,
+    SingleAssetTwoPartyIntermediaryAgreement
+  ][];
+  readonly freeBalanceAppInstance: AppInstanceJson | undefined;
+  readonly monotonicNumProposedApps: number;
 };
 
 export type AppInstanceInfo = {

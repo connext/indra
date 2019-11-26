@@ -5,6 +5,7 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../../src/constants";
 import { AppInstance, StateChannel } from "../../../../../src/models";
 import { getRandomExtendedPubKeys } from "../../../integration/random-signing-keys";
 import { generateRandomNetworkContext } from "../../../mocks";
+import { AppInstanceProposal } from "@connext/types";
 
 describe("StateChannel::setupChannel", () => {
   const multisigAddress = getAddress(hexlify(randomBytes(20)));
@@ -20,6 +21,14 @@ describe("StateChannel::setupChannel", () => {
       multisigAddress,
       xpubs
     );
+  });
+
+  it("should have empty map for proposed app instances", () => {
+    expect(sc.proposedAppInstances).toEqual(new Map<string, AppInstanceProposal>());
+  });
+
+  it("should have empty map for app instances", () => {
+    expect(sc.appInstances).toEqual(new Map<string, AppInstance>());
   });
 
   it("should not alter any of the base properties", () => {

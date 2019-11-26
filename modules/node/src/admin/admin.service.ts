@@ -1,3 +1,4 @@
+import { StateChannelJSON } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 
 import { CFCoreRecord } from "../cfCore/cfCore.entity";
@@ -49,11 +50,17 @@ export class AdminService {
     return corrupted;
   }
 
-  /** 11/8 Get Channels */
+  /**  Get Channels by xpub */
 
-  async getChannelStates(userPublicIdentifier: any): Promise<CFCoreRecord[]> {
+  async getChannelState(userPublicIdentifier: any): Promise<StateChannelJSON> {
     // get channel by xpub
     return await this.channelService.getChannelState(userPublicIdentifier.id);
+  }
+
+  //Get all channels
+  async getAllChannelsState(): Promise<CFCoreRecord[]> {
+    // get channel by xpub
+    return await this.channelService.getAllChannelsState();
   }
 
   /**

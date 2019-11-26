@@ -90,7 +90,9 @@ const DebugChannel = props => {
       id:xPubSearch
     });
 
-    var extractedValues = Object.values(Object.values(res)[0].response[0].value)[0];
+    console.log(res)
+
+    var extractedValues = Object.values(res)[0].response;
     extractedValues.freeBalanceAppInstance.latestState.balances[0].forEach((balance)=>{
       balance.amount.readable = bigNumberify(balance.amount._hex).toString()
     })
@@ -125,7 +127,6 @@ const DebugChannel = props => {
             ),
           }}
         />
-        {/* <Typography className={classes.cardText}>{noFreeBalance}</Typography> */}
         {!!channelState &&
           Object.entries(channelState).map(([k, v], i) => {
             // if (Object.entries(v).length > 1) {

@@ -6,7 +6,7 @@ import { One, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { getAddress, hexlify } from "ethers/utils";
 
-import { Node, NODE_EVENTS } from "../../src";
+import { Node, NODE_EVENTS, WithdrawStartedMessage } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import { toBeEq, toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
@@ -17,11 +17,57 @@ import {
   createChannel,
   deployStateDepositHolder,
   deposit,
+  getFreeBalanceState,
   transferERC20Tokens,
-  getFreeBalanceState
+  assertNodeMessage
 } from "./utils";
+import { WithdrawConfirmationMessage } from "../../src/types";
+import { Node as NodeTypes } from "@connext/types";
 
 expect.extend({ toBeEq, toBeLt });
+
+// NOTE: responder does not have confirm event for any withdrawals
+function confirmWithdrawalMessages(initiator: Node, responder: Node, params: NodeTypes.WithdrawParams) {
+  // initiator messages
+  initiator.once(NODE_EVENTS.WITHDRAWAL_CONFIRMED, (msg: WithdrawConfirmationMessage) => {
+    assertNodeMessage(msg, {
+      from: initiator.publicIdentifier,
+      type: NODE_EVENTS.WITHDRAWAL_CONFIRMED,
+      data: {
+        txReceipt: {
+          from: initiator.freeBalanceAddress,
+          to: params.multisigAddress,
+        }
+      }
+    }, [
+      "data.txReceipt.blockHash",
+      "data.txReceipt.blockNumber",
+      "data.txReceipt.byzantium",
+      "data.txReceipt.confirmations",
+      "data.txReceipt.contractAddress",
+      "data.txReceipt.cumulativeGasUsed",
+      "data.txReceipt.gasUsed",
+      "data.txReceipt.logs",
+      "data.txReceipt.logsBloom",
+      "data.txReceipt.status",
+      "data.txReceipt.transactionHash",
+      "data.txReceipt.transactionIndex",
+    ])
+  });
+
+  const startedMsg = {
+    from: initiator.publicIdentifier,
+    type: NODE_EVENTS.WITHDRAWAL_STARTED,
+    data: { params }
+  };
+  initiator.once(NODE_EVENTS.WITHDRAWAL_STARTED, (msg: any) => {
+    assertNodeMessage(msg, startedMsg, [ 'data.txHash' ]);
+  });
+
+  responder.once(NODE_EVENTS.WITHDRAWAL_STARTED, (msg: WithdrawStartedMessage) => {
+    assertNodeMessage(msg, startedMsg);
+  });
+}
 
 describe("Node method follows spec - withdraw", () => {
   let nodeA: Node;
@@ -65,6 +111,8 @@ describe("Node method follows spec - withdraw", () => {
       CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       recipient
     );
+
+    confirmWithdrawalMessages(nodeA, nodeB, withdrawReq.parameters as NodeTypes.WithdrawParams);
 
     const {
       result: {
@@ -123,6 +171,8 @@ describe("Node method follows spec - withdraw", () => {
       recipient
     );
 
+    confirmWithdrawalMessages(nodeA, nodeB, withdrawReq.parameters as NodeTypes.WithdrawParams);
+
     await nodeA.rpcRouter.dispatch(withdrawReq);
 
     expect(await erc20Contract.functions.balanceOf(multisigAddress)).toBeEq(
@@ -149,7 +199,7 @@ describe("Node method follows spec - withdraw", () => {
       );
     };
 
-     expect(await getFreeBalance(nodeA)).toEqual(await getFreeBalance(nodeB));
+    expect(await getFreeBalance(nodeA)).toEqual(await getFreeBalance(nodeB));
 
     expect(postDepositMultisigBalance).toBeEq(startingMultisigBalance.add(One));
 
@@ -163,6 +213,10 @@ describe("Node method follows spec - withdraw", () => {
       CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       recipient
     );
+
+    // NOTE: no initiator withdrawal started event
+    // and no confirm events
+    confirmWithdrawalMessages(nodeA, nodeB, withdrawCommitmentReq.parameters as NodeTypes.WithdrawParams);
 
     const {
       result: {

@@ -1,10 +1,9 @@
-import { ChannelAppSequences } from "@connext/types";
+import { ChannelAppSequences, StateChannelJSON } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { AddressZero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { BigNumber, getAddress } from "ethers/utils";
 
-import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
@@ -260,20 +259,23 @@ export class ChannelService {
     );
   }
 
-  // TODO: define type for state channel
-  async getChannelState(userPublicIdentifier: string): Promise<any> {
+  async getChannelState(userPublicIdentifier: string): Promise<StateChannelJSON> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     if (!channel) {
-      throw new Error(`No channel exists for userPublicIdentifier ${JSON.stringify(userPublicIdentifier)}`);
+      throw new Error(
+        `No channel exists for userPublicIdentifier ${JSON.stringify(userPublicIdentifier)}`,
+      );
     }
     const { data: state } = await this.cfCoreService.getStateChannel(channel.multisigAddress);
 
-    // FIXME: this has to be [] not {}, we should fix this better
-    state.singleAssetTwoPartyIntermediaryAgreements =
-      Object.values(state.singleAssetTwoPartyIntermediaryAgreements).length === 0
-        ? []
-        : state.singleAssetTwoPartyIntermediaryAgreements;
+    return state.toJson();
+  }
 
-    return state;
+  async getAllChannelsState(): Promise<any> {
+    const channels = await this.channelRepository.findAll();
+    if (!channels) {
+      throw new Error(`No channels found. This should never happen`);
+    }
+    return channels;
   }
 }

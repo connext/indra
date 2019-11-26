@@ -1,5 +1,6 @@
 import { Node } from "@connext/types";
 import { TransactionReceipt } from "ethers/providers";
+import { BigNumber } from "ethers/utils";
 
 export {
   AppABIEncodings,
@@ -73,14 +74,21 @@ export interface UninstallVirtualMessage extends Node.NodeMessage {
   data: Node.UninstallVirtualParams;
 }
 
-export interface WithdrawMessage extends Node.NodeMessage {
-  data: Node.WithdrawEventData;
+export interface WithdrawStartedMessage extends Node.NodeMessage {
+  data: { 
+    params: Node.WithdrawParams;
+    txHash?: string; // not included in responder events
+  };
 }
 
 export interface WithdrawConfirmationMessage extends Node.NodeMessage {
   data: {
     txReceipt: TransactionReceipt;
   };
+}
+
+export interface WithdrawFailedMessage extends Node.NodeMessage {
+  data: string; // failure error
 }
 
 export interface RejectProposalMessage extends Node.NodeMessage {
@@ -93,4 +101,36 @@ export interface DepositConfirmationMessage extends Node.NodeMessage {
   data: Node.DepositParams;
 }
 
+export interface DepositStartedMessage extends Node.NodeMessage {
+  data: {
+    value: BigNumber;
+    txHash: string;
+  };
+}
+
+export interface DepositFailedMessage extends Node.NodeMessage {
+  data: {
+    params: Node.DepositParams;
+    errors: string[];
+  };
+}
+
 export interface RejectInstallVirtualMessage extends RejectProposalMessage {}
+
+export type EventEmittedMessage =
+  | RejectProposalMessage
+  | RejectInstallVirtualMessage
+  | WithdrawConfirmationMessage
+  | WithdrawStartedMessage
+  | WithdrawFailedMessage
+  | UninstallVirtualMessage
+  | UninstallMessage
+  | UpdateStateMessage
+  | InstallVirtualMessage
+  | InstallMessage
+  | ProposeMessage
+  | DepositConfirmationMessage
+  | DepositStartedMessage
+  | DepositFailedMessage
+  | CreateChannelMessage
+  | NodeMessageWrappedProtocolMessage;

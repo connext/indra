@@ -73,7 +73,7 @@ export const storeFactory = options => {
 
     reset: () => {
       // TODO: Should we also scrub legacy channel prefixes?
-      const channelPrefix = `${ConnextClientStorePrefix}:store/`
+      const channelPrefix = `${ConnextClientStorePrefix}:${ConnextClientStorePrefix}/`
       // get all keys in local storage that match prefix
       Object.entries(localStorage).forEach(([key, value]) => {
         if (key.includes(channelPrefix)) {

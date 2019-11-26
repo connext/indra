@@ -1,8 +1,7 @@
 import { SetStateCommitment } from "../ethereum";
 import { ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
-import { Context, ProtocolMessage, TakeActionParams } from "../machine/types";
-import { StateChannel } from "../models/state-channel";
+import { Context, ProtocolMessage, TakeActionProtocolParams } from "../machine/types";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
@@ -27,7 +26,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       responderXpub,
       action
-    } = params as TakeActionParams;
+    } = params as TakeActionProtocolParams;
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)!;
 
@@ -100,7 +99,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       initiatorXpub,
       action
-    } = params as TakeActionParams;
+    } = params as TakeActionProtocolParams;
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)!;
 

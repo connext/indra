@@ -1,7 +1,13 @@
-import { Column, Entity, PrimaryColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, PrimaryColumn, UpdateDateColumn } from "typeorm";
 
 @Entity("node_records")
 export class CFCoreRecord {
+  @CreateDateColumn({ type: "timestamp" })
+  createdAt!: Date;
+
+  @UpdateDateColumn({ type: "timestamp" })
+  updatedAt!: Date;
+
   @PrimaryColumn()
   path!: string;
 
