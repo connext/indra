@@ -4,11 +4,14 @@ import { BigNumber } from "ethers/utils";
 
 import { Node, NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
-import { NODE_EVENTS, ProposeMessage } from "../../src/types";
+import { ProposeInstallProtocolParams } from "../../src/machine/types";
+import { InstallMessage, NODE_EVENTS, ProposeMessage } from "../../src/types";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
 import {
+  assertInstallMessage,
+  assertProposeMessage,
   collateralizeChannel,
   constructAppProposalRpc,
   createChannel,
@@ -18,7 +21,7 @@ import {
   getProposedAppInstances,
   makeAndSendProposeCall,
   makeInstallCall,
-  transferERC20Tokens
+  transferERC20Tokens,
 } from "./utils";
 
 expect.extend({ toBeLt });
@@ -50,6 +53,8 @@ describe("Node method follows spec - install", () => {
         let preInstallETHBalanceNodeB: BigNumber;
         let postInstallETHBalanceNodeB: BigNumber;
 
+        let proposeInstallParams: ProposeInstallProtocolParams;
+
         nodeB.on(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
           [
             preInstallETHBalanceNodeA,
@@ -60,6 +65,7 @@ describe("Node method follows spec - install", () => {
             multisigAddress,
             CONVENTION_FOR_ETH_TOKEN_ADDRESS
           );
+          assertProposeMessage(nodeA.publicIdentifier, msg, proposeInstallParams);
           makeInstallCall(nodeB, msg.data.appInstanceId);
         });
 
@@ -75,7 +81,7 @@ describe("Node method follows spec - install", () => {
         //   }
         // });
 
-        nodeA.on(NODE_EVENTS.INSTALL, async () => {
+        nodeA.on(NODE_EVENTS.INSTALL, async (msg: InstallMessage) => {
           const [appInstanceNodeA] = await getInstalledAppInstances(nodeA);
           const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
           expect(appInstanceNodeA).toBeDefined();
@@ -98,6 +104,9 @@ describe("Node method follows spec - install", () => {
 
           expect(postInstallETHBalanceNodeB).toBeLt(preInstallETHBalanceNodeB);
 
+          // assert install message
+          assertInstallMessage(nodeB.publicIdentifier, msg, appInstanceNodeA.identityHash);
+
           done();
 
           // FIXME: add the below when there are symmetric events
@@ -107,7 +116,7 @@ describe("Node method follows spec - install", () => {
           // }
         });
 
-        await makeAndSendProposeCall(
+        const { params } = await makeAndSendProposeCall(
           nodeA,
           nodeB,
           TicTacToeApp,
@@ -117,6 +126,7 @@ describe("Node method follows spec - install", () => {
           One,
           CONVENTION_FOR_ETH_TOKEN_ADDRESS
         );
+        proposeInstallParams = params;
       });
 
       it("install app with ERC20", async done => {
@@ -140,6 +150,8 @@ describe("Node method follows spec - install", () => {
         let preInstallERC20BalanceNodeB: BigNumber;
         let postInstallERC20BalanceNodeB: BigNumber;
 
+        let proposedParams: ProposeInstallProtocolParams;
+
         nodeB.on(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
           [
             preInstallERC20BalanceNodeA,
@@ -150,10 +162,11 @@ describe("Node method follows spec - install", () => {
             multisigAddress,
             erc20TokenAddress
           );
+          assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
           makeInstallCall(nodeB, msg.data.appInstanceId);
         });
 
-        nodeA.on(NODE_EVENTS.INSTALL, async () => {
+        nodeA.on(NODE_EVENTS.INSTALL, async (msg: InstallMessage) => {
           const [appInstanceNodeA] = await getInstalledAppInstances(nodeA);
           const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
           expect(appInstanceNodeA).toEqual(appInstanceNodeB);
@@ -176,10 +189,12 @@ describe("Node method follows spec - install", () => {
             preInstallERC20BalanceNodeB
           );
 
+          assertInstallMessage(nodeB.publicIdentifier, msg, appInstanceNodeA.identityHash)
+
           done();
         });
 
-        await makeAndSendProposeCall(
+        const { params } = await makeAndSendProposeCall(
           nodeA,
           nodeB,
           TicTacToeApp,
@@ -189,6 +204,7 @@ describe("Node method follows spec - install", () => {
           One,
           erc20TokenAddress
         );
+        proposedParams = params;
       });
 
       it("sends proposal with null initial state", async () => {

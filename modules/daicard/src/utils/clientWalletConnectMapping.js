@@ -142,9 +142,6 @@ async function mapPayloadToClient(payload, channel) {
       case NodeTypes.RpcMethodName.UPDATE_STATE:
         result = await channel.updateState(params);
         break;
-      case NodeTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL:
-        result = await channel.proposeInstallVirtualApp(params);
-        break;
       case NodeTypes.RpcMethodName.PROPOSE_INSTALL:
         result = await channel.proposeInstallApp(params);
         break;

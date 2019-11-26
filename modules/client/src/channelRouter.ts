@@ -201,15 +201,6 @@ export class ChannelRouter {
     } as CFCoreTypes.UpdateStateParams);
   };
 
-  public proposeInstallVirtualApp = async (
-    params: CFCoreTypes.ProposeInstallVirtualParams, // TODO THIS HAS TO CHANGE
-  ): Promise<CFCoreTypes.ProposeInstallVirtualResult> => {
-    return await this._send(
-      CFCoreTypes.RpcMethodName.PROPOSE_INSTALL_VIRTUAL,
-      params as CFCoreTypes.ProposeInstallVirtualParams,
-    );
-  };
-
   public proposeInstallApp = async (
     params: CFCoreTypes.ProposeInstallParams, // TODO THIS HAS TO CHANGE
   ): Promise<CFCoreTypes.ProposeInstallResult> => {

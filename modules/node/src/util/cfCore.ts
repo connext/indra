@@ -7,18 +7,23 @@ export {
 export {
   CreateChannelMessage,
   DepositConfirmationMessage,
+  DepositFailedMessage,
+  DepositStartedMessage,
   EXTENDED_PRIVATE_KEY_PATH,
   InstallMessage,
   InstallVirtualMessage,
   JsonRpcResponse,
   Node as CFCore,
+  NodeMessageWrappedProtocolMessage,
   ProposeMessage,
   RejectInstallVirtualMessage,
   RejectProposalMessage,
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
-  WithdrawMessage,
+  WithdrawConfirmationMessage,
+  WithdrawFailedMessage,
+  WithdrawStartedMessage,
 } from "@connext/cf-core";
 import MinimumViableMultisig from "@connext/cf-funding-protocol-contracts/build/MinimumViableMultisig.json";
 import Proxy from "@connext/cf-funding-protocol-contracts/build/Proxy.json";

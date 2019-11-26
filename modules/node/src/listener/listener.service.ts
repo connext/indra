@@ -15,14 +15,20 @@ import {
   CFCoreTypes,
   CreateChannelMessage,
   DepositConfirmationMessage,
+  DepositFailedMessage,
+  DepositStartedMessage,
   InstallMessage,
   InstallVirtualMessage,
+  NodeMessageWrappedProtocolMessage,
   ProposeMessage,
   RejectInstallVirtualMessage,
+  RejectProposalMessage,
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
-  WithdrawMessage,
+  WithdrawConfirmationMessage,
+  WithdrawFailedMessage,
+  WithdrawStartedMessage,
 } from "../util/cfCore";
 
 const logger = new CLogger("ListenerService");
@@ -71,10 +77,10 @@ export default class ListenerService implements OnModuleInit {
           this.channelService.clearCollateralizationInFlight(data.data.multisigAddress);
         }
       },
-      DEPOSIT_FAILED: (data: any): void => {
+      DEPOSIT_FAILED: (data: DepositFailedMessage): void => {
         logEvent(CFCoreTypes.EventName.DEPOSIT_FAILED, data);
       },
-      DEPOSIT_STARTED: (data: any): void => {
+      DEPOSIT_STARTED: (data: DepositStartedMessage): void => {
         logEvent(CFCoreTypes.EventName.DEPOSIT_STARTED, data);
       },
       INSTALL: async (data: InstallMessage): Promise<void> => {
@@ -100,7 +106,7 @@ export default class ListenerService implements OnModuleInit {
           case SupportedApplications.SimpleLinkedTransferApp:
             logger.debug(`Saving linked transfer`);
             const proposedAppParams = data.data;
-            const initiatorXpub = (proposedAppParams.params as any).initiatorXpub;
+            const initiatorXpub = data.from;
             const initialState = proposedAppParams.params
               .initialState as SimpleLinkedTransferAppStateBigNumber;
             await this.transferService.saveLinkedTransfer(
@@ -119,17 +125,10 @@ export default class ListenerService implements OnModuleInit {
             logger.debug(`No post-install actions configured.`);
         }
       },
-      PROPOSE_INSTALL_VIRTUAL: (data: ProposeMessage): void => {
-        throw new Error(`This event should not be thrown! ${JSON.stringify(data)}`);
-      },
-      PROPOSE_STATE: (data: any): void => {
-        // TODO: need to validate all apps here as well?
-        logEvent(CFCoreTypes.EventName.PROPOSE_STATE, data);
-      },
-      PROTOCOL_MESSAGE_EVENT: (data: any): void => {
+      PROTOCOL_MESSAGE_EVENT: (data: NodeMessageWrappedProtocolMessage): void => {
         logEvent(CFCoreTypes.EventName.PROTOCOL_MESSAGE_EVENT, data);
       },
-      REJECT_INSTALL: async (data: any): Promise<void> => {
+      REJECT_INSTALL: async (data: RejectProposalMessage): Promise<void> => {
         logEvent(CFCoreTypes.EventName.REJECT_INSTALL, data);
 
         const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(
@@ -145,9 +144,6 @@ export default class ListenerService implements OnModuleInit {
       REJECT_INSTALL_VIRTUAL: (data: RejectInstallVirtualMessage): void => {
         logEvent(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, data);
       },
-      REJECT_STATE: (data: any): void => {
-        logEvent(CFCoreTypes.EventName.REJECT_STATE, data);
-      },
       UNINSTALL: (data: UninstallMessage): void => {
         logEvent(CFCoreTypes.EventName.UNINSTALL, data);
       },
@@ -157,16 +153,13 @@ export default class ListenerService implements OnModuleInit {
       UPDATE_STATE: (data: UpdateStateMessage): void => {
         logEvent(CFCoreTypes.EventName.UPDATE_STATE, data);
       },
-      WITHDRAW_EVENT: (data: any): void => {
-        logEvent(CFCoreTypes.EventName.WITHDRAW_EVENT, data);
-      },
-      WITHDRAWAL_CONFIRMED: (data: WithdrawMessage): void => {
+      WITHDRAWAL_CONFIRMED: (data: WithdrawConfirmationMessage): void => {
         logEvent(CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED, data);
       },
-      WITHDRAWAL_FAILED: (data: any): void => {
+      WITHDRAWAL_FAILED: (data: WithdrawFailedMessage): void => {
         logEvent(CFCoreTypes.EventName.WITHDRAWAL_FAILED, data);
       },
-      WITHDRAWAL_STARTED: (data: any): void => {
+      WITHDRAWAL_STARTED: (data: WithdrawStartedMessage): void => {
         logEvent(CFCoreTypes.EventName.WITHDRAWAL_STARTED, data);
       },
     };

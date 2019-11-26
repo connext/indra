@@ -40,7 +40,7 @@ type FreeBalanceState = {
 
 type FreeBalanceStateJSON = {
   tokenAddresses: string[];
-  balances: CoinTransferJSON[][];
+  balances: CoinTransferJSON[][]; // why is this serialized?
   activeApps: string[];
 };
 

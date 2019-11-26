@@ -1,5 +1,5 @@
 import { AppInstance } from "./app-instance";
 import { AppInstanceProposal } from "./app-instance-proposal";
-import { StateChannel, StateChannelJSON } from "./state-channel";
+import { StateChannel } from "./state-channel";
 
-export { AppInstance, AppInstanceProposal, StateChannel, StateChannelJSON };
+export { AppInstance, AppInstanceProposal, StateChannel };

@@ -1,10 +1,9 @@
-import { ChannelAppSequences } from "@connext/types";
+import { ChannelAppSequences, StateChannelJSON } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { AddressZero, HashZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { BigNumber, getAddress } from "ethers/utils";
 
-import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
@@ -15,7 +14,7 @@ import { CLogger, freeBalanceAddressFromXpub } from "../util";
 import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
-import { ChannelRepository } from "./channel.repository";
+import { ChannelRepository } from "./channel.repository"; 
 
 const logger = new CLogger("ChannelService");
 
@@ -260,8 +259,7 @@ export class ChannelService {
     );
   }
 
-  // TODO: define type for state channel
-  async getChannelState(userPublicIdentifier: string): Promise<any> {
+  async getChannelState(userPublicIdentifier: string): Promise<StateChannelJSON> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     if (!channel) {
       throw new Error(
@@ -270,13 +268,7 @@ export class ChannelService {
     }
     const { data: state } = await this.cfCoreService.getStateChannel(channel.multisigAddress);
 
-    // FIXME: this has to be [] not {}, we should fix this better
-    state.singleAssetTwoPartyIntermediaryAgreements =
-      Object.values(state.singleAssetTwoPartyIntermediaryAgreements).length === 0
-        ? []
-        : state.singleAssetTwoPartyIntermediaryAgreements;
-
-    return state;
+    return state.toJson();
   }
 
   async getAllChannelsState(): Promise<any> {

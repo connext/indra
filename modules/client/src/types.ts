@@ -16,15 +16,21 @@ import { NodeApiClient } from "./node";
 export {
   CreateChannelMessage,
   DepositConfirmationMessage,
+  DepositFailedMessage,
+  DepositStartedMessage,
   EXTENDED_PRIVATE_KEY_PATH,
   InstallMessage,
   InstallVirtualMessage,
+  NodeMessageWrappedProtocolMessage,
   ProposeMessage,
   RejectInstallVirtualMessage,
+  RejectProposalMessage,
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
-  WithdrawMessage,
+  WithdrawConfirmationMessage,
+  WithdrawFailedMessage,
+  WithdrawStartedMessage,
 } from "@connext/cf-core";
 
 export {
@@ -70,6 +76,7 @@ export {
   SimpleLinkedTransferAppStateBigNumber,
   SimpleSwapAppStateBigNumber,
   SimpleTransferAppStateBigNumber,
+  StateChannelJSON,
   Store,
   SupportedApplication,
   SupportedApplications,

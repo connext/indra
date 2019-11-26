@@ -68,7 +68,7 @@ export default class WithdrawController extends NodeController {
       outgoing
     } = requestHandler;
 
-    const { multisigAddress, amount, recipient } = params;
+    const { multisigAddress, recipient } = params;
 
     params.recipient = recipient || xkeyKthAddress(publicIdentifier, 0);
 
@@ -100,8 +100,12 @@ export default class WithdrawController extends NodeController {
       }
 
       outgoing.emit(NODE_EVENTS.WITHDRAWAL_STARTED, {
-        value: amount,
-        txHash: txResponse.hash
+        from: publicIdentifier,
+        type: NODE_EVENTS.WITHDRAWAL_STARTED,
+        data: {
+          params,
+          txHash: txResponse.hash
+        }
       });
 
       const txReceipt = await provider.waitForTransaction(
@@ -110,10 +114,16 @@ export default class WithdrawController extends NodeController {
       );
 
       outgoing.emit(NODE_EVENTS.WITHDRAWAL_CONFIRMED, {
-        txReceipt
+        from: publicIdentifier,
+        type: NODE_EVENTS.WITHDRAWAL_CONFIRMED,
+        data: { txReceipt }
       });
     } catch (e) {
-      outgoing.emit(NODE_EVENTS.WITHDRAWAL_FAILED, e);
+      outgoing.emit(NODE_EVENTS.WITHDRAWAL_FAILED, {
+        from: publicIdentifier,
+        type: NODE_EVENTS.WITHDRAWAL_FAILED,
+        data: e.toString()
+      });
       throw Error(`${WITHDRAWAL_FAILED}: ${prettyPrintObject(e)}`);
     }
 

@@ -1,10 +1,11 @@
 import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server/src/contract-deployments.jest";
 
 import { Node } from "../../src";
-import { NODE_EVENTS, ProposeMessage } from "../../src/types";
+import { NODE_EVENTS, ProposeMessage, RejectProposalMessage } from "../../src/types";
 
 import { setup, SetupContext } from "./setup";
 import {
+  assertNodeMessage,
   collateralizeChannel,
   confirmProposedAppInstance,
   constructRejectInstallRpc,
@@ -12,7 +13,7 @@ import {
   getAppInstanceProposal,
   getInstalledAppInstances,
   getProposedAppInstances,
-  makeAndSendProposeCall
+  makeAndSendProposeCall,
 } from "./utils";
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
@@ -38,7 +39,15 @@ describe("Node method follows spec - rejectInstall", () => {
         expect(await getInstalledAppInstances(nodeA)).toEqual([]);
         expect(await getInstalledAppInstances(nodeB)).toEqual([]);
 
-        nodeA.on(NODE_EVENTS.REJECT_INSTALL, async () => {
+        let proposedAppId: string;
+        nodeA.on(NODE_EVENTS.REJECT_INSTALL, async (msg: RejectProposalMessage) => {
+          assertNodeMessage(msg, {
+            from: nodeB.publicIdentifier,
+            type: NODE_EVENTS.REJECT_INSTALL,
+            data: {
+              appInstanceId: proposedAppId
+            }
+          })
           expect((await getProposedAppInstances(nodeA)).length).toEqual(0);
           done();
         });
@@ -47,6 +56,7 @@ describe("Node method follows spec - rejectInstall", () => {
         nodeB.on(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
           const rejectReq = constructRejectInstallRpc(msg.data.appInstanceId);
           expect((await getProposedAppInstances(nodeA)).length).toEqual(1);
+          proposedAppId = msg.data.appInstanceId;
           await nodeB.rpcRouter.dispatch(rejectReq);
           expect((await getProposedAppInstances(nodeB)).length).toEqual(0);
         });

@@ -1,4 +1,5 @@
 import { IMessagingService } from "@connext/messaging";
+import { StateChannelJSON } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 
 import { AuthService } from "../auth/auth.service";
@@ -34,8 +35,8 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getNoFreeBalance();
   }
 
-  async getChannelStates(userPublicIdentifier: any):  Promise<any[]> {
-    return await this.adminService.getChannelStates(userPublicIdentifier);
+  async getChannelState(userPublicIdentifier: any): Promise<StateChannelJSON> {
+    return await this.adminService.getChannelState(userPublicIdentifier);
   }
 
   async getAllChannelsState():  Promise<any[]> {
@@ -65,7 +66,7 @@ class AdminMessaging extends AbstractMessagingProvider {
 
     await super.connectRequestReponse(
       "admin.get-channel-states",
-      this.authService.useAdminToken(this.getChannelStates.bind(this)),
+      this.authService.useAdminToken(this.getChannelState.bind(this)),
     );
 
     await super.connectRequestReponse(

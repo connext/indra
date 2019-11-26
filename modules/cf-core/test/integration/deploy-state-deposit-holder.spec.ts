@@ -33,8 +33,6 @@ describe("Node method follows spec - deploy state desposit holder", () => {
 
     multisigAddress = await createChannel(nodeA, nodeB);
     expect(multisigAddress).toBeDefined();
-    nodeA.off(NODE_EVENTS.DEPOSIT_CONFIRMED);
-    nodeB.off(NODE_EVENTS.DEPOSIT_CONFIRMED);
   });
 
   it("deploys the multisig when the method is called", async () => {

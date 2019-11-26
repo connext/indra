@@ -127,9 +127,6 @@ export interface IConnextClient {
   proposeInstallApp(
     params: CFCoreTypes.ProposeInstallParams,
   ): Promise<CFCoreTypes.ProposeInstallResult>;
-  proposeInstallVirtualApp(
-    params: CFCoreTypes.ProposeInstallVirtualParams,
-  ): Promise<CFCoreTypes.ProposeInstallVirtualResult>;
   installVirtualApp(appInstanceId: string): Promise<CFCoreTypes.InstallVirtualResult>;
   installApp(appInstanceId: string): Promise<CFCoreTypes.InstallResult>;
   rejectInstallApp(appInstanceId: string): Promise<CFCoreTypes.UninstallResult>;
