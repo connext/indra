@@ -231,6 +231,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   log.debug("Reclaiming pending async transfers");
   // NOTE: Removing the following await results in a subtle race condition during bot tests.
   //       Don't remove this await again unless you really know what you're doing & bot tests pass
+  // no need to await this if it needs collateral
+  // TODO: without await causes race conditions in bot, refactor to
+  // use events
   await client.reclaimPendingAsyncTransfers();
 
   log.debug("Done creating channel client");
@@ -357,8 +360,10 @@ export class ConnextClient implements IConnextClient {
       default:
         throw new Error(`Unrecognized channel provider type: ${this.routerType}`);
     }
+    // TODO: this is very confusing to have to do, lets try to figure out a better way
     this.node.channelRouter = channelRouter;
     this.channelRouter = channelRouter;
+    this.listener = new ConnextListener(channelRouter, this);
     await this.isAvailable();
   };
 
@@ -703,15 +708,6 @@ export class ConnextClient implements IConnextClient {
     return await this.channelRouter.updateState(appInstanceId, newState);
   };
 
-  public proposeInstallVirtualApp = async (
-    params: CFCoreTypes.ProposeInstallVirtualParams,
-  ): Promise<CFCoreTypes.ProposeInstallVirtualResult> => {
-    if (params.intermediaryIdentifier !== this.nodePublicIdentifier) {
-      throw new Error(`Cannot install virtual app without node as intermediary`);
-    }
-    return await this.channelRouter.proposeInstallVirtualApp(params);
-  };
-
   public proposeInstallApp = async (
     params: CFCoreTypes.ProposeInstallParams,
   ): Promise<CFCoreTypes.ProposeInstallResult> => {
@@ -829,7 +825,7 @@ export class ConnextClient implements IConnextClient {
   public reclaimPendingAsyncTransfers = async (): Promise<void> => {
     const pendingTransfers = await this.node.getPendingAsyncTransfers();
     for (const transfer of pendingTransfers) {
-      const { amount, assetId, encryptedPreImage, paymentId } = transfer;
+      const { encryptedPreImage, paymentId } = transfer;
       await this.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
     }
   };

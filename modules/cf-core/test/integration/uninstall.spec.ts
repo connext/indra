@@ -8,6 +8,7 @@ import { toBeEq } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
 import {
+  assertNodeMessage,
   collateralizeChannel,
   constructUninstallRpc,
   createChannel,
@@ -19,6 +20,16 @@ import {
 expect.extend({ toBeEq });
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
+
+function assertUninstallMessage(senderId: string, appInstanceId: string, msg: UninstallMessage) {
+  assertNodeMessage(msg, {
+    from: senderId,
+    type: NODE_EVENTS.UNINSTALL,
+    data: {
+      appInstanceId
+    },
+  });
+}
 
 describe("Node A and B install apps of different outcome types, then uninstall them to test outcomes types and interpreters", () => {
   let nodeA: Node;
@@ -67,7 +78,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
       );
 
       nodeB.once(NODE_EVENTS.UNINSTALL, async (msg: UninstallMessage) => {
-        expect(msg.data.appInstanceId).toBe(appInstanceId);
+        assertUninstallMessage(nodeA.publicIdentifier, appInstanceId, msg);
 
         const balancesSeenByB = await getFreeBalanceState(
           nodeB,
@@ -103,7 +114,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
       );
 
       nodeB.once(NODE_EVENTS.UNINSTALL, async (msg: UninstallMessage) => {
-        expect(msg.data.appInstanceId).toBe(appInstanceId);
+        assertUninstallMessage(nodeA.publicIdentifier, appInstanceId, msg);
 
         const balancesSeenByB = await getFreeBalanceState(
           nodeB,
@@ -139,7 +150,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
       );
 
       nodeB.once(NODE_EVENTS.UNINSTALL, async (msg: UninstallMessage) => {
-        expect(msg.data.appInstanceId).toBe(appInstanceId);
+        assertUninstallMessage(nodeA.publicIdentifier, appInstanceId, msg);
 
         const balancesSeenByB = await getFreeBalanceState(
           nodeB,

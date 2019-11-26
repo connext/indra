@@ -1,4 +1,5 @@
 import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server/src/contract-deployments.jest";
+import { Node as NodeTypes } from "@connext/types";
 import { One, Zero } from "ethers/constants";
 
 import {
@@ -14,10 +15,26 @@ import {
   constructGetStateRpc,
   constructTakeActionRpc,
   createChannel,
-  installApp
+  installApp,
+  assertNodeMessage
 } from "./utils";
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
+
+// NOTE: no initiator events
+function confirmMessages(initiator: Node, responder: Node, expectedData: NodeTypes.UpdateStateEventData) {
+  const expected = {
+    from: initiator.publicIdentifier,
+    type: NODE_EVENTS.UPDATE_STATE,
+    data: expectedData,
+  };
+  // initiator.once(NODE_EVENTS.UPDATE_STATE, (msg: UpdateStateMessage) => {
+  //   assertNodeMessage(msg, expected);
+  // });
+  responder.once(NODE_EVENTS.UPDATE_STATE, (msg: UpdateStateMessage) => {
+    assertNodeMessage(msg, expected);
+  });
+}
 
 describe("Node method follows spec - takeAction", () => {
   let nodeA: Node;
@@ -43,7 +60,6 @@ describe("Node method follows spec - takeAction", () => {
 
       it("can take action", async done => {
         await createChannel(nodeA, nodeB);
-
         const [appInstanceId] = await installApp(nodeA, nodeB, TicTacToeApp);
 
         const expectedNewState = {
@@ -53,14 +69,6 @@ describe("Node method follows spec - takeAction", () => {
         };
 
         nodeB.on(NODE_EVENTS.UPDATE_STATE, async (msg: UpdateStateMessage) => {
-          /**
-           * TEST #1
-           * The event emitted by Node C after an action is taken by A
-           * sends the appInstanceId and the newState correctly.
-           */
-          expect(msg.data.appInstanceId).toEqual(appInstanceId);
-          expect(msg.data.newState).toEqual(expectedNewState);
-
           /**
            * TEST #3
            * The database of Node C is correctly updated and querying it works
@@ -84,6 +92,17 @@ describe("Node method follows spec - takeAction", () => {
         );
 
         /**
+         * TEST #1
+         * The event emittted by Node C after an action is taken by A
+         * sends the appInstanceId and the newState correctly.
+         */
+        confirmMessages(nodeA, nodeB, { 
+          newState: expectedNewState,
+          appInstanceId,
+          action: validAction,
+        });
+
+        /**
          * TEST #2
          * The return value from the call to Node A includes the new state
          */
@@ -92,6 +111,12 @@ describe("Node method follows spec - takeAction", () => {
             result: { newState }
           }
         } = await nodeA.rpcRouter.dispatch(takeActionReq);
+        // allow nodeA to confirm its messages
+        await new Promise(resolve => {
+          nodeA.once(NODE_EVENTS.UPDATE_STATE, () => {
+            setTimeout(resolve, 2000)
+          });
+        });
 
         expect(newState).toEqual(expectedNewState);
       });

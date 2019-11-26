@@ -145,19 +145,19 @@ export class TransferController extends AbstractController {
       initialState,
       initiatorDeposit: amount,
       initiatorDepositTokenAddress: assetId,
-      meta,
       outcomeType: appInfo.outcomeType,
       proposedToIdentifier: recipient,
       responderDeposit: Zero,
       responderDepositTokenAddress: assetId,
       timeout: Zero, // TODO: fix, add to app info?
+      meta,
     };
 
     const res = await this.connext.proposeInstallApp(params);
     this.appId = res.appInstanceId;
 
     try {
-      const raceRes = await Promise.race([
+      await Promise.race([
         new Promise((res: any, rej: any): any => {
           boundReject = this.rejectInstallTransfer.bind(null, rej);
           boundResolve = this.resolveInstallTransfer.bind(null, res);

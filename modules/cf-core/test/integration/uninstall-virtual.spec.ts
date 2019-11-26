@@ -9,7 +9,8 @@ import {
   constructUninstallVirtualRpc,
   createChannel,
   getInstalledAppInstances,
-  installVirtualApp
+  installVirtualApp,
+  assertNodeMessage
 } from "./utils";
 
 jest.setTimeout(10000);
@@ -56,10 +57,14 @@ describe("Node method follows spec - uninstall virtual", () => {
         nodeC.once(
           NODE_EVENTS.UNINSTALL_VIRTUAL,
           async (msg: UninstallVirtualMessage) => {
-            expect(msg.data.appInstanceId).toBe(appInstanceId);
-            expect(msg.data.intermediaryIdentifier).toBe(
-              nodeB.publicIdentifier
-            );
+            assertNodeMessage(msg, {
+              from: nodeA.publicIdentifier,
+              type: NODE_EVENTS.UNINSTALL_VIRTUAL,
+              data: {
+                intermediaryIdentifier: nodeB.publicIdentifier,
+                appInstanceId,
+              }
+            })
 
             expect(await getInstalledAppInstances(nodeC)).toEqual([]);
 

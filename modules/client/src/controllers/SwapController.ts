@@ -94,12 +94,10 @@ export class SwapController extends AbstractController {
     return data;
   };
 
-  // TODO: fix types of data, they seem to have different strucs
-  // depending on when theyre emitted :thinking:
-  private rejectInstallSwap = (rej: any, msg: { data: { appInstanceId: string } }): any => {
+  private rejectInstallSwap = (rej: any, msg: any): any => {
     // check app id
-    const appId = msg.data ? msg.data.appInstanceId : (msg as any).appInstanceId;
-    if (!msg.data) {
+    const appId = msg.appInstanceId || msg.data.appInstanceId;
+    if (msg.data) {
       this.log.warn(
         `This should not have this structure when emitted, strange. msg: ${stringify(msg)}`,
       );
@@ -109,8 +107,8 @@ export class SwapController extends AbstractController {
       return;
     }
 
-    rej(`Install rejected. Event data: ${stringify(msg.data)}`);
-    return msg.data;
+    rej(`Install rejected. Event data: ${stringify(msg)}`);
+    return msg;
   };
 
   // TODO: fix for virtual exchanges!

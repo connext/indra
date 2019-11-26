@@ -1,3 +1,4 @@
+import { StateChannelJSON } from "@connext/types";
 import { solidityKeccak256 } from "ethers/utils";
 
 import { Proxy } from "./contracts";
@@ -16,9 +17,8 @@ import {
   AppInstance,
   AppInstanceProposal,
   StateChannel,
-  StateChannelJSON,
 } from "./models";
-import { NetworkContext, Node, SolidityValueType } from "./types";
+import { Node, SolidityValueType } from "./types";
 import { getCreate2MultisigAddress, prettyPrintObject } from "./utils";
 
 /**

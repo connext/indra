@@ -49,7 +49,7 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
         });
 
         nodeC.on(
-          NODE_EVENTS.PROPOSE_INSTALL_VIRTUAL,
+          NODE_EVENTS.PROPOSE_INSTALL,
           async (msg: ProposeMessage) => {
             const { appInstanceId } = msg.data;
 
@@ -78,7 +78,6 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
         const result = await makeVirtualProposeCall(
           nodeA,
           nodeC,
-          nodeB,
           TicTacToeApp
         );
 

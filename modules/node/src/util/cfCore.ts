@@ -1,12 +1,15 @@
 export {
   CreateChannelMessage,
   DepositConfirmationMessage,
+  DepositFailedMessage,
+  DepositStartedMessage,
   EXTENDED_PRIVATE_KEY_PATH,
   getCreate2MultisigAddress,
   InstallMessage,
   InstallVirtualMessage,
   JsonRpcResponse,
   Node as CFCore,
+  NodeMessageWrappedProtocolMessage,
   ProposeMessage,
   RejectInstallVirtualMessage,
   RejectProposalMessage,
@@ -17,6 +20,9 @@ export {
   WithdrawMessage,
   xkeyKthAddress as xpubToAddress,
   xkeysToSortedKthAddresses,
+  WithdrawConfirmationMessage,
+  WithdrawFailedMessage,
+  WithdrawStartedMessage,
 } from "@connext/cf-core";
 export {
   AppInstanceJson,

@@ -5,7 +5,7 @@ import { One, Two, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import log from "loglevel";
 
-import { Node, NODE_EVENTS } from "../../src";
+import { Node, NODE_EVENTS, DepositConfirmationMessage, DepositStartedMessage } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import { INSUFFICIENT_ERC20_FUNDS_TO_DEPOSIT } from "../../src/methods/errors";
 import { toBeEq } from "../machine/integration/bignumber-jest-matcher";
@@ -17,11 +17,42 @@ import {
   getFreeBalanceState,
   getTokenIndexedFreeBalanceStates,
   transferERC20Tokens,
+  assertNodeMessage,
 } from "./utils";
+import { Node as NodeTypes } from "@connext/types";
 
 expect.extend({ toBeEq });
 
 log.setLevel(log.levels.SILENT);
+
+// NOTE: no deposit started event emitted for responder
+function confirmDepositMessages(initiator: Node, responder: Node, params: NodeTypes.DepositParams) {
+  const startedMsg = {
+    from: initiator.publicIdentifier,
+    type: NODE_EVENTS.DEPOSIT_STARTED,
+    data: {
+      value: params.amount,
+    }
+  };
+
+  const confirmMsg = {
+    from: initiator.publicIdentifier,
+    type: NODE_EVENTS.DEPOSIT_CONFIRMED,
+    data: params,
+  };
+
+  initiator.once(NODE_EVENTS.DEPOSIT_STARTED, (msg: DepositStartedMessage) => {
+    assertNodeMessage(msg, startedMsg, ["data.txHash"])
+  });
+
+  initiator.once(NODE_EVENTS.DEPOSIT_CONFIRMED, (msg: DepositConfirmationMessage) => {
+    assertNodeMessage(msg, confirmMsg)
+  });
+
+  responder.once(NODE_EVENTS.DEPOSIT_CONFIRMED, (msg: DepositConfirmationMessage) => {
+    assertNodeMessage(msg, confirmMsg)
+  });
+}
 
 describe("Node method follows spec - deposit", () => {
   let nodeA: Node;
@@ -59,7 +90,8 @@ describe("Node method follows spec - deposit", () => {
 
     const preDepositBalance = await provider.getBalance(multisigAddress);
 
-    nodeB.once(NODE_EVENTS.DEPOSIT_CONFIRMED, async () => {
+    nodeB.once(NODE_EVENTS.DEPOSIT_CONFIRMED, async (msg: DepositConfirmationMessage) => {
+      confirmDepositMessages(nodeB, nodeA, depositReq.parameters as any);
       await nodeB.rpcRouter.dispatch(depositReq);
       expect(await provider.getBalance(multisigAddress)).toBeEq(preDepositBalance.add(2));
 
@@ -71,6 +103,7 @@ describe("Node method follows spec - deposit", () => {
 
     // so that the deposit from Node B doesn't throw `Recent depositConfirmedEvent which has no event handler`
     nodeA.off(NODE_EVENTS.DEPOSIT_CONFIRMED);
+    confirmDepositMessages(nodeA, nodeB, depositReq.parameters as any);
     await nodeA.rpcRouter.dispatch(depositReq);
   });
 
