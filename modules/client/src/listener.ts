@@ -70,11 +70,6 @@ export class ConnextListener extends EventEmitter {
       // validate and automatically install for the known and supported
       // applications
       this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL, msg.data);
-      // return if its from us
-      if (msg.from === this.connext.publicIdentifier) {
-        this.log.info(`Received proposal from our own node, doing nothing: ${stringify(msg)}`);
-        return;
-      }
       // check based on supported applications
       // matched app, take appropriate default actions
       const matchedResult = await this.matchAppInstance(msg);
@@ -82,14 +77,13 @@ export class ConnextListener extends EventEmitter {
         this.log.warn(`No matched app, doing nothing, ${stringify(msg)}`);
         return;
       }
-      // matched app, take appropriate default actions
-      const { appInfo, matchedApp } = matchedResult;
       // return if its from us
-      // TODO: initatorXpub isnt in types
-      if ((appInfo as any).initatorXpub === this.connext.publicIdentifier) {
+      if (msg.from === this.connext.publicIdentifier) {
         this.log.info(`Received proposal from our own node, doing nothing: ${stringify(msg)}`);
         return;
       }
+      // matched app, take appropriate default actions
+      const { appInfo, matchedApp } = matchedResult;
       await this.verifyAndInstallKnownApp(appInfo, matchedApp);
       return;
     },
@@ -172,14 +166,20 @@ export class ConnextListener extends EventEmitter {
       this.channelRouter.on(CFCoreTypes.EventName[event], callback);
     });
 
-    this.channelRouter.on(CFCoreTypes.RpcMethodName.INSTALL, (data: any): any => {
-      const appInstance = data.result.result.appInstance;
-      this.log.debug(`Emitting CFCoreTypes.RpcMethodName.INSTALL event: ${stringify(appInstance)}`);
-      this.connext.messaging.publish(
-        `indra.client.${this.connext.publicIdentifier}.install.${appInstance.identityHash}`,
-        stringify(appInstance),
-      );
-    });
+    this.channelRouter.on(
+      CFCoreTypes.RpcMethodName.INSTALL,
+      async (msg: any): Promise<void> => {
+        const {
+          result: {
+            result: { appInstance },
+          },
+        } = msg;
+        await this.connext.messaging.publish(
+          `indra.client.${this.connext.publicIdentifier}.install.${appInstance.identityHash}`,
+          stringify(appInstance),
+        );
+      },
+    );
 
     this.channelRouter.on(CFCoreTypes.RpcMethodName.UNINSTALL, (data: any): any => {
       const result = data.result.result;
@@ -218,7 +218,12 @@ export class ConnextListener extends EventEmitter {
       return undefined;
     }
     const { params, appInstanceId } = msg.data;
-    const { initiatorDeposit, initiatorDepositTokenAddress, responderDeposit, responderDepositTokenAddress } = params;
+    const {
+      initiatorDeposit,
+      initiatorDepositTokenAddress,
+      responderDeposit,
+      responderDepositTokenAddress,
+    } = params;
     // matched app, take appropriate default actions
     return {
       appInfo: {
