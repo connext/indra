@@ -49,29 +49,14 @@ export class AppRegistryService {
    */
   async allowOrReject(data: ProposeMessage): Promise<AppRegistry | void> {
     try {
-      const registryAppInfo = await this.verifyAppProposal(data.data);
+      // TODO: remove any casting when #573 is merged
+      const registryAppInfo = await this.verifyAppProposal(data.data as any, data.from);
       await this.cfCoreService.installApp(data.data.appInstanceId);
       return registryAppInfo;
     } catch (e) {
       logger.error(`Failed to verify app, rejecting install: ${e.message}`, e.stack);
       await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
       return;
-    }
-  }
-
-  /**
-   * Reject app installs for virtual apps that node is intermediary of
-   * based on invalid conditions.
-   * @param data Data from CF event PROPOSE_INSTALL_VIRTUAL
-   */
-  async allowOrRejectVirtual(
-    data: ProposeMessage,
-  ): Promise<void | CFCoreTypes.RejectInstallResult> {
-    try {
-      await this.verifyVirtualAppProposal(data.data, data.from);
-    } catch (e) {
-      logger.error(`Failed to verify virutal app, rejecting install: ${e.message}`, e.stack);
-      return await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
     }
   }
 
@@ -343,12 +328,14 @@ export class AppRegistryService {
 
   // TODO: there is a lot of duplicate logic here + client. ideally, much
   // of this would be moved to a shared library.
-  private async verifyAppProposal(proposedAppParams: {
-    params: CFCoreTypes.ProposeInstallParams;
-    appInstanceId: string;
-  }): Promise<AppRegistry | void> {
+  private async verifyAppProposal(
+    proposedAppParams: {
+      params: CFCoreTypes.ProposeInstallParams;
+      appInstanceId: string;
+    },
+    initiatorIdentifier: string,
+  ): Promise<AppRegistry | void> {
     const myIdentifier = this.cfCoreService.cfCore.publicIdentifier;
-    const initiatorIdentifier = (proposedAppParams.params as any).initiatorXpub;
     if (initiatorIdentifier === myIdentifier) {
       logger.log(`Received proposal from our own node.`);
       return;
@@ -383,7 +370,6 @@ export class AppRegistryService {
   private async verifyVirtualAppProposal(
     proposedAppParams: {
       params: CFCoreTypes.ProposeInstallParams;
-      // ^^ may be propose install virtual despite what package types say..
       appInstanceId: string;
     },
     initiatorIdentifier: string,
@@ -443,6 +429,7 @@ export class AppRegistryService {
           proposedAppParams.params.initiatorDepositTokenAddress,
           bigNumberify(proposedAppParams.params.initiatorDeposit),
           proposedAppParams.appInstanceId,
+          proposedAppParams.params.meta,
         );
         break;
       default:

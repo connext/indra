@@ -4,8 +4,7 @@ import { Opcode, Protocol } from "../machine/enums";
 import {
   Context,
   ProtocolMessage,
-  ProtocolParameters,
-  SetupParams
+  SetupProtocolParams
 } from "../machine/types";
 import { StateChannel } from "../models/state-channel";
 
@@ -30,7 +29,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       responderXpub,
       initiatorXpub
-    } = params as SetupParams;
+    } = params as SetupProtocolParams;
 
     const stateChannel = StateChannel.setupChannel(
       network.IdentityApp,
@@ -87,7 +86,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       multisigAddress,
       initiatorXpub,
       responderXpub
-    } = params as SetupParams;
+    } = params as SetupProtocolParams;
 
     const stateChannel = StateChannel.setupChannel(
       network.IdentityApp,

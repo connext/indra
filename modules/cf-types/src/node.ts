@@ -277,6 +277,7 @@ export namespace Node {
     initialState: SolidityValueType;
     proposedToIdentifier: string;
     outcomeType: OutcomeType;
+    meta?: Object;
   };
 
   export type ProposeInstallVirtualParams = ProposeInstallParams & {

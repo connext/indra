@@ -10,7 +10,7 @@ import {
 } from "../ethereum";
 import { ProtocolExecutionFlow } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
-import { Context, ProtocolMessage, WithdrawParams } from "../machine/types";
+import { Context, ProtocolMessage, WithdrawProtocolParams } from "../machine/types";
 import { AppInstance, StateChannel } from "../models";
 import {
   coinBalanceRefundStateEncoding,
@@ -61,7 +61,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       recipient,
       amount,
       tokenAddress
-    } = params as WithdrawParams;
+    } = params as WithdrawProtocolParams;
 
     const preInstallRefundAppStateChannel = stateChannelsMap.get(
       multisigAddress
@@ -73,7 +73,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     const postInstallRefundAppStateChannel = addRefundAppToStateChannel(
       preInstallRefundAppStateChannel,
-      params as WithdrawParams,
+      params as WithdrawProtocolParams,
       network
     );
 
@@ -303,7 +303,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       recipient,
       amount,
       tokenAddress
-    } = params as WithdrawParams;
+    } = params as WithdrawProtocolParams;
 
     const preInstallRefundAppStateChannel = stateChannelsMap.get(
       multisigAddress
@@ -315,7 +315,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     const postInstallRefundAppStateChannel = addRefundAppToStateChannel(
       preInstallRefundAppStateChannel,
-      params as WithdrawParams,
+      params as WithdrawProtocolParams,
       network
     );
 
@@ -519,14 +519,14 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
  * parameters also passed in with recipient and amount information.
  *
  * @param {StateChannel} stateChannel - the pre-install-refund-app StateChannel
- * @param {WithdrawParams} params - params with recipient and amount
+ * @param {WithdrawProtocolParams} params - params with recipient and amount
  * @param {NetworkContext} network - metadata on the addresses on the chain
  *
  * @returns {StateChannel} - the same StateChannel with an ETHBalanceRefundApp added
  */
 function addRefundAppToStateChannel(
   stateChannel: StateChannel,
-  params: WithdrawParams,
+  params: WithdrawProtocolParams,
   network: NetworkContext
 ): StateChannel {
   const {

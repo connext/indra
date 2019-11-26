@@ -8,6 +8,8 @@ import { AddReclaimedLinks1568746114079 } from "../../migrations/1568746114079-a
 import { AddOnchainTransactions1569489199954 } from "../../migrations/1569489199954-add-onchain-transaction";
 import { AddRecipientToLinks1569862328684 } from "../../migrations/1569862328684-add-recipient-to-links";
 import { AddTransferView1571072372000 } from "../../migrations/1571072372000-add-transfer-view";
+import { AddTransferMetas1574449936874 } from "../../migrations/1574449936874-add-transfer-metas";
+import { AddCfcoreTimestamps1574451273832 } from "../../migrations/1574451273832-add-cfcore-timestamps";
 import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { Channel } from "../channel/channel.entity";
@@ -35,6 +37,8 @@ const migrations = [
   AddOnchainTransactions1569489199954,
   AddRecipientToLinks1569862328684,
   AddTransferView1571072372000,
+  AddCfcoreTimestamps1574451273832,
+  AddTransferMetas1574449936874,
 ];
 
 @Injectable()
