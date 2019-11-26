@@ -363,8 +363,10 @@ export class ConnextClient implements IConnextClient {
       default:
         throw new Error(`Unrecognized channel provider type: ${this.routerType}`);
     }
+    // TODO: this is very confusing to have to do, lets try to figure out a better way
     this.node.channelRouter = channelRouter;
     this.channelRouter = channelRouter;
+    this.listener = new ConnextListener(channelRouter, this);
     await this.isAvailable();
   };
 
