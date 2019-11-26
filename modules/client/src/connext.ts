@@ -840,7 +840,7 @@ export class ConnextClient implements IConnextClient {
   public reclaimPendingAsyncTransfers = async (): Promise<void> => {
     const pendingTransfers = await this.node.getPendingAsyncTransfers();
     for (const transfer of pendingTransfers) {
-      const { amount, assetId, encryptedPreImage, paymentId } = transfer;
+      const { encryptedPreImage, paymentId } = transfer;
       await this.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
     }
   };
