@@ -2,12 +2,12 @@ import { NatsMessagingService } from "@connext/messaging";
 import { AppActionBigNumber, ConnextNodeStorePrefix, SupportedApplication } from "@connext/types";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
+import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigService } from "../config/config.service";
 import { CFCoreProviderId, MessagingProviderId, Network } from "../constants";
-import { CLogger, freeBalanceAddressFromXpub, replaceBN } from "../util";
+import { CLogger, freeBalanceAddressFromXpub, replaceBN, stringify } from "../util";
 import {
   AppInstanceJson,
   AppInstanceProposal,
@@ -131,6 +131,12 @@ export class CFCoreService {
       } as CFCoreTypes.DepositParams,
     });
     logger.log(`deposit called with result ${JSON.stringify(depositRes.result.result)}`);
+    const multisig = bigNumberify(depositRes.result.result.multisigBalance);
+    if (multisig.lt(amount)) {
+      logger.error(
+        `multisig balance is lt deposit amount. deposited: ${multisig.toString()}, requested: ${amount.toString()}`,
+      );
+    }
     return depositRes.result.result as CFCoreTypes.DepositResult;
   }
 
@@ -198,7 +204,7 @@ export class CFCoreService {
         );
         this.cfCore.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
       });
-      logger.log(`App was installed successfully!: ${JSON.stringify(proposeRes)}`);
+      logger.log(`App was installed successfully!: ${stringify(proposeRes)}`);
       return proposeRes;
     } catch (e) {
       logger.error(`Error installing app: ${e.toString()}`);
@@ -216,7 +222,7 @@ export class CFCoreService {
         appInstanceId,
       } as CFCoreTypes.InstallParams,
     });
-    logger.log(`installApp called with result ${JSON.stringify(installRes.result.result)}`);
+    logger.log(`installApp called with result ${stringify(installRes.result.result)}`);
     return installRes.result.result as CFCoreTypes.InstallResult;
   }
 
@@ -228,7 +234,7 @@ export class CFCoreService {
         appInstanceId,
       } as CFCoreTypes.RejectInstallParams,
     });
-    logger.log(`rejectInstallApp called with result ${JSON.stringify(rejectRes.result.result)}`);
+    logger.log(`rejectInstallApp called with result ${stringify(rejectRes.result.result)}`);
     return rejectRes.result.result as CFCoreTypes.RejectInstallResult;
   }
 
