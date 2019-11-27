@@ -20,9 +20,9 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
-    "@connext/cf-core": "1.2.11",
-    "@connext/messaging": "1.2.11",
-    "@connext/types": "1.2.11",
+    "@connext/cf-core": "1.2.12",
+    "@connext/messaging": "1.2.12",
+    "@connext/types": "1.2.12",
     "@connext/cf-funding-protocol-contracts": "0.4.1",
     "@nestjs/common": "6.5.3",
     "@nestjs/core": "6.5.3",
