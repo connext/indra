@@ -1,9 +1,19 @@
 import { Contract } from "ethers";
-import { AddressZero } from "ethers/constants";
+import { AddressZero, Zero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
 
-import { stringify, xpubToAddress } from "../lib/utils";
-import { BigNumber, CFCoreTypes, ChannelState, convert, DepositParameters } from "../types";
+import { delayAndThrow, stringify, xpubToAddress } from "../lib/utils";
+import {
+  BigNumber,
+  CFCoreTypes,
+  ChannelState,
+  CoinBalanceRefundAppStateBigNumber,
+  convert,
+  DepositParameters,
+  RejectProposalMessage,
+  SupportedApplication,
+  SupportedApplications,
+} from "../types";
 import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
@@ -45,6 +55,11 @@ export class DepositController extends AbstractController {
     try {
       this.log.info(`Calling ${CFCoreTypes.RpcMethodName.DEPOSIT}`);
       await this.connext.rescindDepositRights();
+      // propose the app install
+      const err = await this.proposeDepositInstall(amount, assetId);
+      if (err) {
+        throw new Error(err);
+      }
       const depositResponse = await this.connext.providerDeposit(amount, assetId);
       this.log.info(`Deposit Response: ${stringify(depositResponse)}`);
 
@@ -77,6 +92,75 @@ export class DepositController extends AbstractController {
   /////////////////////////////////
   ////// PRIVATE METHODS
 
+  private proposeDepositInstall = async (
+    amount: BigNumber,
+    assetId: string,
+  ): Promise<string | undefined> => {
+    let boundReject: (msg: RejectProposalMessage) => void;
+
+    const threshold =
+      assetId === AddressZero
+        ? await this.ethProvider.getBalance(this.connext.multisigAddress)
+        : await new Contract(assetId!, tokenAbi, this.ethProvider).functions.balanceOf(
+            this.connext.multisigAddress,
+          );
+
+    const initialState: CoinBalanceRefundAppStateBigNumber = {
+      multisig: this.connext.multisigAddress,
+      recipient: this.connext.freeBalanceAddress,
+      threshold,
+      tokenAddress: assetId,
+    };
+
+    const {
+      actionEncoding,
+      appDefinitionAddress: appDefinition,
+      stateEncoding,
+      outcomeType,
+    } = this.connext.getRegisteredAppDetails(
+      SupportedApplications.CoinBalanceRefundApp as SupportedApplication,
+    );
+
+    const params: CFCoreTypes.ProposeInstallParams = {
+      abiEncodings: {
+        actionEncoding,
+        stateEncoding,
+      },
+      appDefinition,
+      initialState,
+      initiatorDeposit: Zero,
+      initiatorDepositTokenAddress: assetId,
+      outcomeType,
+      proposedToIdentifier: this.connext.nodePublicIdentifier,
+      responderDeposit: Zero,
+      responderDepositTokenAddress: assetId,
+      timeout: Zero,
+    };
+
+    const { appInstanceId } = await this.connext.proposeInstallApp(params);
+
+    try {
+      await Promise.race([
+        new Promise((res: any, rej: any): any => {
+          boundReject = this.rejectInstallCoinBalance.bind(null, rej);
+          this.connext.messaging.subscribe(
+            `indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${appInstanceId}`,
+            res,
+          );
+          this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
+        }),
+        delayAndThrow(15_000, "App install took longer than 15 seconds"),
+      ]);
+      this.log.info(`App was proposed successfully!: ${appInstanceId}`);
+      return undefined;
+    } catch (e) {
+      this.log.error(`Error installing app: ${e.toString()}`);
+      return e.message();
+    } finally {
+      this.cleanupInstallListeners(appInstanceId, boundReject);
+    }
+  };
+
   ////// Listener callbacks
   private depositConfirmedCallback = (data: any): void => {
     this.removeListeners();
@@ -84,6 +168,13 @@ export class DepositController extends AbstractController {
 
   private depositFailedCallback = (data: any): void => {
     this.removeListeners();
+  };
+
+  private rejectInstallCoinBalance = (
+    rej: (reason?: string) => void,
+    msg: RejectProposalMessage,
+  ): void => {
+    return rej(`Install failed. Event data: ${stringify(msg)}`);
   };
 
   ////// Listener registration/deregistration
@@ -110,4 +201,11 @@ export class DepositController extends AbstractController {
       this.depositFailedCallback,
     );
   }
+
+  private cleanupInstallListeners = (appId: string, boundReject: any): void => {
+    this.connext.messaging.unsubscribe(
+      `indra.node.${this.connext.nodePublicIdentifier}.install.${appId}`,
+    );
+    this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
+  };
 }
