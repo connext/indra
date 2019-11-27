@@ -317,6 +317,7 @@ export namespace Node {
 
   export type RescindDepositRightsParams = {
     multisigAddress: string;
+    tokenAddress?: string;
   };
 
   export type UninstallResult = {};
