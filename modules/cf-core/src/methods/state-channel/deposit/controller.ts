@@ -114,8 +114,18 @@ export default class DepositController extends NodeController {
     await messagingService.send(counterpartyAddress, payload);
     outgoing.emit(NODE_EVENTS.DEPOSIT_CONFIRMED, payload);
 
+    const multisigBalance =
+    params.tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS
+      ? await provider.getBalance(multisigAddress)
+      : await new Contract(
+          tokenAddress!,
+          ERC20.abi,
+          provider
+        ).functions.balanceOf(multisigAddress);
+
     return {
-      multisigBalance: await provider.getBalance(multisigAddress)
+      multisigBalance,
+      tokenAddress: params.tokenAddress!,
     };
   }
 }
