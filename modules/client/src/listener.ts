@@ -90,7 +90,6 @@ export class ConnextListener extends EventEmitter {
     PROTOCOL_MESSAGE_EVENT: (msg: NodeMessageWrappedProtocolMessage): void => {
       this.emitAndLog(CFCoreTypes.EventName.PROTOCOL_MESSAGE_EVENT, msg.data);
     },
-
     REJECT_INSTALL: (msg: RejectProposalMessage): void => {
       this.emitAndLog(CFCoreTypes.EventName.REJECT_INSTALL, msg.data);
     },
