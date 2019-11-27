@@ -3,7 +3,7 @@ import "core-js/stable";
 import EthCrypto from "eth-crypto";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { BigNumber, bigNumberify, formatEther, Network, Transaction, getAddress } from "ethers/utils";
+import { BigNumber, bigNumberify, getAddress, Network, Transaction } from "ethers/utils";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
@@ -234,8 +234,13 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // this probably needs to be before the below operations so that it doesnt cause issues
   // with collateralizing/withdrawing
   // balance refund app needs to be installed by us so that we can always accept async deposits
-  log.debug(`Reinstalling balance refund app for ${config.contractAddresses.Token}`);
-  await client.requestDepositRights(config.contractAddresses.Token);
+  // check if balance refund app is already installed
+
+  // TODO: what if you want to claim deposit rights for ETH?
+  if (!(await client.balanceRefundAppInstalled())) {
+    log.debug(`Reinstalling balance refund app for ${config.contractAddresses.Token}`);
+    await client.requestDepositRights(config.contractAddresses.Token);
+  }
 
   // listener on token transfers to multisig to reinstall balance refund
   // this is because in the case that the counterparty deposits in their channel,
@@ -248,6 +253,10 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
       return;
     }
     log.info(`Got a transfer to multisig. src: ${src}, dst: ${dst}, wad: ${wad}`);
+    // check if balance refund app is already installed
+    if (await client.balanceRefundAppInstalled()) {
+      return;
+    }
     // reinstall balance refund app for token
     await client.requestDepositRights(config.contractAddresses.Token);
     const freeBalance = await client.getFreeBalance(config.contractAddresses.Token);
@@ -308,7 +317,6 @@ export class ConnextClient implements IConnextClient {
     this.keyGen = opts.keyGen;
     this.messaging = opts.messaging;
     this.network = opts.network;
-    this.network = opts.network;
     this.node = opts.node;
     this.token = opts.token;
     this.store = opts.store;
@@ -339,6 +347,10 @@ export class ConnextClient implements IConnextClient {
     );
   }
 
+  /**
+   * Creates a promise that returns when the channel is available,
+   * ie. when the setup protocol or create channel call is completed
+   */
   public isAvailable = async (): Promise<void> => {
     return new Promise(
       async (resolve: any, reject: any): Promise<any> => {
@@ -353,6 +365,20 @@ export class ConnextClient implements IConnextClient {
         resolve();
       },
     );
+  };
+
+  /**
+   * Checks if the coin balance refund app is installed.
+   *
+   * NOTE: should probably take assetId into account
+   */
+  public balanceRefundAppInstalled = async (): Promise<boolean> => {
+    const apps = await this.getAppInstances();
+    const filtered = apps.filter(
+      (app: AppInstanceJson) =>
+        app.appInterface.addr === this.config.contractAddresses.CoinBalanceRefundApp,
+    );
+    return filtered.length > 0;
   };
 
   // register subscriptions
@@ -780,7 +806,9 @@ export class ConnextClient implements IConnextClient {
     return await this.channelRouter.installApp(appInstanceId);
   };
 
-  public requestDepositRights = async (assetId: string): Promise<CFCoreTypes.RequestDepositRightsResult> => {
+  public requestDepositRights = async (
+    assetId: string,
+  ): Promise<CFCoreTypes.RequestDepositRightsResult> => {
     return await this.channelRouter.requestDepositRights(assetId);
   };
 
