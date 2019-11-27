@@ -237,10 +237,8 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // check if balance refund app is already installed
 
   // TODO: what if you want to claim deposit rights for ETH?
-  if (!(await client.balanceRefundAppInstalled())) {
-    log.debug(`Reinstalling balance refund app for ${config.contractAddresses.Token}`);
-    await client.requestDepositRights(config.contractAddresses.Token);
-  }
+  log.debug(`Reinstalling balance refund app for ${config.contractAddresses.Token}`);
+  await client.requestDepositRights(config.contractAddresses.Token);
 
   // listener on token transfers to multisig to reinstall balance refund
   // this is because in the case that the counterparty deposits in their channel,
@@ -253,10 +251,6 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
       return;
     }
     log.info(`Got a transfer to multisig. src: ${src}, dst: ${dst}, wad: ${wad}`);
-    // check if balance refund app is already installed
-    if (await client.balanceRefundAppInstalled()) {
-      return;
-    }
     // reinstall balance refund app for token
     await client.requestDepositRights(config.contractAddresses.Token);
     const freeBalance = await client.getFreeBalance(config.contractAddresses.Token);
@@ -419,6 +413,7 @@ export class ConnextClient implements IConnextClient {
         throw new Error(`Unrecognized channel provider type: ${this.routerType}`);
     }
     // TODO: this is very confusing to have to do, lets try to figure out a better way
+    channelRouter.multisigAddress = this.multisigAddress;
     this.node.channelRouter = channelRouter;
     this.channelRouter = channelRouter;
     this.listener = new ConnextListener(channelRouter, this);
