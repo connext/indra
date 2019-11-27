@@ -140,4 +140,5 @@ export interface IConnextClient {
   ): Promise<CFCoreTypes.UpdateStateResult>;
   uninstallApp(appInstanceId: string): Promise<CFCoreTypes.UninstallResult>;
   uninstallVirtualApp(appInstanceId: string): Promise<CFCoreTypes.UninstallVirtualResult>;
+  balanceRefundAppInstalled(): Promise<boolean>;
 }
