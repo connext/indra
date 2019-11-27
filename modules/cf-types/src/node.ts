@@ -176,6 +176,7 @@ export namespace Node {
 
   export type DepositResult = {
     multisigBalance: BigNumber;
+    tokenAddress: string;
   };
 
   export type RequestDepositRightsResult = {
