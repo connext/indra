@@ -8,6 +8,7 @@ import {
   AppInstanceJson,
   RegisteredAppDetails,
   SupportedApplication,
+  SupportedApplications,
 } from "../types";
 
 type ProposalValidator = {
@@ -107,13 +108,7 @@ export const validateLinkedTransferApp = async (
   isVirtual: boolean,
   connext: ConnextClient,
 ): Promise<string | undefined> => {
-  return undefined;
-};
-
-export const appProposalValidation: ProposalValidator = {
-  SimpleLinkedTransferApp: validateLinkedTransferApp,
-  SimpleTransferApp: validateSimpleTransferApp,
-  SimpleTwoPartySwapApp: validateSwapApp,
+  return baseAppValidation(app, registeredInfo, isVirtual, connext);
 };
 
 const baseAppValidation = async (
@@ -154,8 +149,12 @@ const baseAppValidation = async (
   }
 
   // check that the outcome type is the same
-  if (bigNumberify(app.initiatorDeposit).isZero() && bigNumberify(app.responderDeposit).isZero()) {
-    return `Refusing to install app with two zero value deposits. Proposed app: ${stringify(app)}`;
+  if (
+    bigNumberify(app.initiatorDeposit).isZero() &&
+    bigNumberify(app.responderDeposit).isZero() &&
+    registeredInfo.name !== SupportedApplications.CoinBalanceRefundApp
+  ) {
+    return `Refusing to install app with two zero value deposits that is not a refund app. Proposed app: ${stringify(app)}`;
   }
 
   // check that there is enough in the free balance of desired currency
@@ -205,4 +204,11 @@ const baseAppValidation = async (
   }
 
   return undefined;
+};
+
+export const appProposalValidation: ProposalValidator = {
+  CoinBalanceRefundApp: baseAppValidation,
+  SimpleLinkedTransferApp: validateLinkedTransferApp,
+  SimpleTransferApp: validateSimpleTransferApp,
+  SimpleTwoPartySwapApp: validateSwapApp,
 };
