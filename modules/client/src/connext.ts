@@ -780,7 +780,7 @@ export class ConnextClient implements IConnextClient {
     return await this.channelRouter.installApp(appInstanceId);
   };
 
-  public requestDepositRights = async (assetId: string): Promise<CFCoreTypes.DepositResult> => {
+  public requestDepositRights = async (assetId: string): Promise<CFCoreTypes.RequestDepositRightsResult> => {
     return await this.channelRouter.requestDepositRights(assetId);
   };
 
