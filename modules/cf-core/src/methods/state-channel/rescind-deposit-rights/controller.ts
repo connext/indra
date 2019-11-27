@@ -32,19 +32,9 @@ export default class RescindDepositRightsController extends NodeController {
   ): Promise<Node.DepositResult> {
     const { provider, store, networkContext } = requestHandler;
     const { multisigAddress } = params;
+    const tokenAddress = params.tokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
 
-    const channel = await store.getStateChannel(multisigAddress);
-    if (!channel.hasAppInstanceOfKind(networkContext.CoinBalanceRefundApp)) {
-      return {
-        multisigBalance: await provider.getBalance(multisigAddress)
-      };
-    }
-
-    const balanceRefundApp = channel.getAppInstanceOfKind(
-      networkContext.CoinBalanceRefundApp
-    );
     let multisigBalance: BigNumber;
-    const tokenAddress = balanceRefundApp.latestState["tokenAddress"];
     if (tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
       multisigBalance = await provider.getBalance(multisigAddress);
     } else {
@@ -52,7 +42,13 @@ export default class RescindDepositRightsController extends NodeController {
       multisigBalance = await erc20Contract.balanceOf(multisigAddress);
     }
 
-    const blockNumber = await provider.getBlockNumber();
+    const channel = await store.getStateChannel(multisigAddress);
+    if (!channel.hasAppInstanceOfKind(networkContext.CoinBalanceRefundApp)) {
+      return {
+        multisigBalance,
+        tokenAddress,
+      };
+    }
 
     await uninstallBalanceRefundApp(
       requestHandler,
@@ -62,11 +58,12 @@ export default class RescindDepositRightsController extends NodeController {
         tokenAddress: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
         amount: Zero
       },
-      blockNumber
+      await provider.getBlockNumber(),
     );
 
     return {
-      multisigBalance
+      multisigBalance,
+      tokenAddress,
     };
   }
 }
