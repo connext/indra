@@ -1,5 +1,4 @@
 import { DepositConfirmationMessage, NODE_EVENTS } from "@connext/cf-core";
-import { NatsMessagingService } from "@connext/messaging";
 import {
   ResolveLinkedTransferResponse,
   SimpleLinkedTransferAppStateBigNumber,

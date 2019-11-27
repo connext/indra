@@ -10,7 +10,7 @@ import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.en
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { TransferService } from "../transfer/transfer.service";
-import { CLogger } from "../util";
+import { CLogger, stringify } from "../util";
 import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
@@ -77,7 +77,6 @@ export class ChannelService {
       throw new Error(`Channel does not exist for user ${userPubId}`);
     }
 
-    // TODO: this wont work until we can set this to false when deposit confirms :(
     if (channel.collateralizationInFlight) {
       logger.log(`Collateral request is in flight, try request again for user ${userPubId} later`);
       return undefined;
@@ -126,7 +125,7 @@ export class ChannelService {
     await this.channelRepository.setInflightCollateralization(channel, true);
     const result = this.deposit(channel.multisigAddress, amountDeposit, normalizedAssetId)
       .then(async (res: CFCoreTypes.DepositResult) => {
-        logger.log(`Deposit result: ${JSON.stringify(res)}`);
+        logger.log(`Deposit result: ${stringify(res)}`);
         const freeBalancePostDeposit = await this.cfCoreService.getFreeBalance(
           userPubId,
           channel.multisigAddress,
