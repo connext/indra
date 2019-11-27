@@ -91,6 +91,9 @@ export default class ListenerService implements OnModuleInit {
         logEvent(CFCoreTypes.EventName.INSTALL_VIRTUAL, data);
       },
       PROPOSE_INSTALL: async (data: ProposeMessage): Promise<void> => {
+        if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
+          logger.debug(`Recieved proposal from our own node. Doing nothing.`);
+        }
         logEvent(CFCoreTypes.EventName.PROPOSE_INSTALL, data);
 
         // TODO: better architecture
@@ -101,12 +104,13 @@ export default class ListenerService implements OnModuleInit {
           return;
         }
 
+        const proposedAppParams = data.data;
+        const initiatorXpub = data.from;
+
         // post-install tasks
         switch (allowedOrRejected.name) {
           case SupportedApplications.SimpleLinkedTransferApp:
             logger.debug(`Saving linked transfer`);
-            const proposedAppParams = data.data;
-            const initiatorXpub = data.from;
             const initialState = proposedAppParams.params
               .initialState as SimpleLinkedTransferAppStateBigNumber;
             await this.transferService.saveLinkedTransfer(
@@ -121,6 +125,14 @@ export default class ListenerService implements OnModuleInit {
             logger.debug(`Linked transfer saved!`);
             break;
           // TODO: add something for swap app? maybe for history preserving reasons.
+          case SupportedApplications.CoinBalanceRefundApp:
+            await this.messagingClient
+              .emit(
+                `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${proposedAppParams.appInstanceId}`,
+                proposedAppParams,
+              )
+              .toPromise();
+            break;
           default:
             logger.debug(`No post-install actions configured.`);
         }
