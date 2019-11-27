@@ -112,6 +112,14 @@ export class ConfigService implements OnModuleInit {
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
         stateEncoding: `tuple(${singleAssetTwoPartyCoinTransferEncoding} coinTransfers, bytes32 linkedHash, uint256 amount, address assetId, bytes32 paymentId, bytes32 preImage)`,
       },
+      {
+        allowNodeInstall: true,
+        appDefinitionAddress: addressBook[SupportedApplications.CoinBalanceRefundApp],
+        name: SupportedApplications.CoinBalanceRefundApp,
+        network: Network[ethNetwork.name.toUpperCase()],
+        outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+        stateEncoding: `tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)`,
+      },
     ];
   }
 

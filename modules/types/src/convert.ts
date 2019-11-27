@@ -1,7 +1,7 @@
 import { AddressZero } from "ethers/constants";
 import { BigNumber, getAddress } from "ethers/utils";
 
-import { AppState, CoinTransfer } from "./app";
+import { AppState, CoinTransfer, CoinBalanceRefundAppState } from "./app";
 import { AssetAmount, PaymentProfile } from "./channel";
 import {
   DepositParameters,
@@ -153,6 +153,14 @@ export function convertPaymentProfile<To extends NumericTypeName>(
   return convertFields(fromType, to, ["amountToCollateralize", "minimumMaintainedCollateral"], obj);
 }
 
+export function convertCoinBalanceRefund<To extends NumericTypeName>(
+  to: To,
+  obj: CoinBalanceRefundAppState<any>,
+): CoinBalanceRefundAppState<NumericTypes[To]> {
+  const fromType = getType(obj.threshold);
+  return convertFields(fromType, to, ["threshold"], obj);
+}
+
 /////////////////////////////////////////////
 ////// INPUT PARAMETER CONVERSIONS
 /**
@@ -224,6 +232,7 @@ export function convertAppState<To extends NumericTypeName>(
 export const convert = {
   AppState: convertAppState,
   Asset: convertAssetAmount,
+  CoinBalanceRefundApp: convertCoinBalanceRefund,
   Deposit: convertDepositParametersToAsset,
   LinkedTransfer: convertLinkedTransferParametersToAsset,
   LinkedTransferToRecipient: convertLinkedTransferToRecipientParametersToAsset,

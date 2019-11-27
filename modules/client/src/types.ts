@@ -46,6 +46,8 @@ export {
   ChannelProviderConfig,
   ChannelState,
   ClientOptions,
+  CoinBalanceRefundAppState,
+  CoinBalanceRefundAppStateBigNumber,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
   ConnextClientStorePrefix,
