@@ -5,6 +5,7 @@ import { bigNumberify } from "ethers/utils";
 
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
+import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { MessagingClientProviderId } from "../constants";
 import { LinkedTransferStatus } from "../transfer/transfer.entity";
@@ -57,6 +58,7 @@ export default class ListenerService implements OnModuleInit {
     private readonly transferService: TransferService,
     @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
     private readonly linkedTransferRepository: LinkedTransferRepository,
+    private readonly channelRepository: ChannelRepository,
   ) {}
 
   // TODO: move the business logic into the respective modules?
@@ -91,6 +93,7 @@ export default class ListenerService implements OnModuleInit {
         logEvent(CFCoreTypes.EventName.INSTALL_VIRTUAL, data);
       },
       PROPOSE_INSTALL: async (data: ProposeMessage): Promise<void> => {
+        console.log("data: ", data);
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
           logger.debug(`Recieved proposal from our own node. Doing nothing.`);
         }
@@ -126,10 +129,16 @@ export default class ListenerService implements OnModuleInit {
             break;
           // TODO: add something for swap app? maybe for history preserving reasons.
           case SupportedApplications.CoinBalanceRefundApp:
-            logger.warn(`sending acceptance message for ${proposedAppParams.appInstanceId}`)
+            const channel = await this.channelRepository.findByUserPublicIdentifier(initiatorXpub);
+            if (!channel) {
+              throw new Error(`Channel does not exist for ${initiatorXpub}`);
+            }
+            logger.warn(
+              `sending acceptance message to indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
+            );
             await this.messagingClient
               .emit(
-                `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${proposedAppParams.appInstanceId}`,
+                `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
                 proposedAppParams,
               )
               .toPromise();
