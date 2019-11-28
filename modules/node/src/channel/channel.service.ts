@@ -1,8 +1,15 @@
-import { ChannelAppSequences, StateChannelJSON } from "@connext/types";
-import { forwardRef, Injectable, Inject } from "@nestjs/common";
-import { AddressZero, HashZero } from "ethers/constants";
+import {
+  ChannelAppSequences,
+  StateChannelJSON,
+  SupportedApplication,
+  SupportedApplications,
+} from "@connext/types";
+import { forwardRef, Inject, Injectable } from "@nestjs/common";
+import { Contract } from "ethers";
+import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { BigNumber, getAddress } from "ethers/utils";
+import tokenAbi from "human-standard-token-abi";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
@@ -14,7 +21,7 @@ import { CLogger, stringify } from "../util";
 import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
-import { ChannelRepository } from "./channel.repository"; 
+import { ChannelRepository } from "./channel.repository";
 
 const logger = new CLogger("ChannelService");
 
@@ -62,7 +69,55 @@ export class ChannelService {
       throw new Error(`No channel exists for multisigAddress ${multisigAddress}`);
     }
 
+    await this.proposeCoinBalanceRefund(assetId, channel);
+
     return await this.cfCoreService.deposit(multisigAddress, amount, getAddress(assetId));
+  }
+
+  async proposeCoinBalanceRefund(assetId: string, channel: Channel): Promise<void> {
+    // any deposit has to first propose the balance refund app
+    const ethProvider = this.configService.getEthProvider();
+    const threshold =
+      assetId === AddressZero
+        ? await ethProvider.getBalance(channel.multisigAddress)
+        : await new Contract(assetId!, tokenAbi, ethProvider).functions.balanceOf(
+            channel.multisigAddress,
+          );
+
+    const initialState = {
+      multisig: channel.multisigAddress,
+      recipient: this.cfCoreService.cfCore.freeBalanceAddress,
+      threshold,
+      tokenAddress: assetId,
+    };
+
+    const {
+      actionEncoding,
+      appDefinitionAddress: appDefinition,
+      stateEncoding,
+      outcomeType,
+    } = await this.configService.getDefaultAppByName(
+      SupportedApplications.CoinBalanceRefundApp as SupportedApplication,
+    );
+
+    const params: CFCoreTypes.ProposeInstallParams = {
+      abiEncodings: {
+        actionEncoding,
+        stateEncoding,
+      },
+      appDefinition,
+      initialState,
+      initiatorDeposit: Zero,
+      initiatorDepositTokenAddress: assetId,
+      outcomeType,
+      proposedToIdentifier: this.cfCoreService.cfCore.publicIdentifier,
+      responderDeposit: Zero,
+      responderDepositTokenAddress: assetId,
+      timeout: Zero,
+    };
+
+    // propose install + wait for client confirmation
+    await this.cfCoreService.proposeInstallApp(params, true);
   }
 
   async requestCollateral(

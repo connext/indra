@@ -77,14 +77,31 @@ export class ConnextListener extends EventEmitter {
         this.log.warn(`No matched app, doing nothing, ${stringify(msg)}`);
         return;
       }
+      const {
+        data: { appInstanceId, params },
+        from,
+      } = msg;
       // return if its from us
-      if (msg.from === this.connext.publicIdentifier) {
+      if (from === this.connext.publicIdentifier) {
         this.log.info(`Received proposal from our own node, doing nothing: ${stringify(msg)}`);
         return;
       }
       // matched app, take appropriate default actions
       const { appInfo, matchedApp } = matchedResult;
       await this.verifyAndInstallKnownApp(appInfo, matchedApp);
+      // only publish for coin balance refund app
+      const coinBalanceDef = this.connext.appRegistry.filter(
+        app => app.name === SupportedApplications.CoinBalanceRefundApp,
+      )[0];
+      if (params.appDefinition !== coinBalanceDef.appDefinitionAddress) {
+        console.warn(`not sending propose message, not the coinbalance refund app`);
+        return;
+      }
+      console.warn(`sending proposal accepted for ${appInstanceId}`);
+      await this.connext.messaging.publish(
+        `indra.client.${this.connext.publicIdentifier}.proposalAccepted.${appInstanceId}`,
+        stringify(params),
+      );
       return;
     },
     PROTOCOL_MESSAGE_EVENT: (msg: NodeMessageWrappedProtocolMessage): void => {
@@ -269,10 +286,11 @@ export class ConnextListener extends EventEmitter {
       return;
     }
 
-    if (matchedApp.name === SupportedApplications.SimpleTransferApp) {
-      // request collateral in token of the app
-      await this.connext.requestCollateral(appInstance.initiatorDepositTokenAddress);
+    // dont automatically install coin balance refund app
+    if (matchedApp.name === SupportedApplications.CoinBalanceRefundApp) {
+      return;
     }
+
     this.log.debug(`Proposal for app install successful, attempting install now...`);
     let res: CFCoreTypes.InstallResult;
     if (isVirtual) {

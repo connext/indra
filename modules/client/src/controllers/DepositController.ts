@@ -56,7 +56,7 @@ export class DepositController extends AbstractController {
       this.log.info(`Calling ${CFCoreTypes.RpcMethodName.DEPOSIT}`);
       await this.connext.rescindDepositRights();
       // propose the app install
-      const err = await this.proposeDepositInstall(amount, assetId);
+      const err = await this.proposeDepositInstall(assetId);
       if (err) {
         throw new Error(err);
       }
@@ -92,10 +92,7 @@ export class DepositController extends AbstractController {
   /////////////////////////////////
   ////// PRIVATE METHODS
 
-  private proposeDepositInstall = async (
-    amount: BigNumber,
-    assetId: string,
-  ): Promise<string | undefined> => {
+  private proposeDepositInstall = async (assetId: string): Promise<string | undefined> => {
     let boundReject: (msg: RejectProposalMessage) => void;
 
     const threshold =
@@ -137,12 +134,14 @@ export class DepositController extends AbstractController {
       timeout: Zero,
     };
 
-    const { appInstanceId } = await this.connext.proposeInstallApp(params);
-
+    let appId;
     try {
       await Promise.race([
-        new Promise((res: any, rej: any): any => {
+        new Promise(async (res: any, rej: any) => {
           boundReject = this.rejectInstallCoinBalance.bind(null, rej);
+          const { appInstanceId } = await this.connext.proposeInstallApp(params);
+          appId = appInstanceId;
+          console.warn(`waiting for proposal acceptance of ${appInstanceId}`);
           this.connext.messaging.subscribe(
             `indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${appInstanceId}`,
             res,
@@ -151,13 +150,13 @@ export class DepositController extends AbstractController {
         }),
         delayAndThrow(15_000, "App install took longer than 15 seconds"),
       ]);
-      this.log.info(`App was proposed successfully!: ${appInstanceId}`);
+      this.log.info(`App was proposed successfully!: ${appId}`);
       return undefined;
     } catch (e) {
       this.log.error(`Error installing app: ${e.toString()}`);
       return e.message();
     } finally {
-      this.cleanupInstallListeners(appInstanceId, boundReject);
+      this.cleanupInstallListeners(appId, boundReject);
     }
   };
 

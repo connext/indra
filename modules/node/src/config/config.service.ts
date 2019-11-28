@@ -1,5 +1,5 @@
 import { MessagingConfig } from "@connext/messaging";
-import { ContractAddresses, SupportedApplications } from "@connext/types";
+import { ContractAddresses, SupportedApplications, SupportedApplication } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
@@ -81,6 +81,11 @@ export class ConfigService implements OnModuleInit {
     const chainId = (await this.getEthNetwork()).chainId.toString();
     const ethAddressBook = JSON.parse(this.get("INDRA_ETH_CONTRACT_ADDRESSES"));
     return getAddress(ethAddressBook[chainId].Token.address);
+  }
+
+  async getDefaultAppByName(name: SupportedApplication): Promise<DefaultApp> {
+    const apps = await this.getDefaultApps();
+    return apps.filter((app: DefaultApp) => app.name === name)[0];
   }
 
   async getDefaultApps(): Promise<DefaultApp[]> {
