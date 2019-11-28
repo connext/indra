@@ -138,8 +138,13 @@ const baseAppValidation = async (
   }
 
   // check that the encoding is the same
-  log.info(`app.abiEncodings.actionEncoding: ${app.abiEncodings.actionEncoding}`);
-  log.info(`registeredInfo.actionEncoding: ${registeredInfo.actionEncoding}`);
+  // FIXME: stupid hacky thing for null vs undefined
+  app.abiEncodings.actionEncoding = app.abiEncodings.actionEncoding
+    ? app.abiEncodings.actionEncoding
+    : null;
+  registeredInfo.actionEncoding = registeredInfo.actionEncoding
+    ? registeredInfo.actionEncoding
+    : null;
   if (app.abiEncodings.actionEncoding !== registeredInfo.actionEncoding) {
     return `Incorrect action encoding detected. Proposed app: ${stringify(app)}`;
   }
@@ -154,7 +159,9 @@ const baseAppValidation = async (
     bigNumberify(app.responderDeposit).isZero() &&
     registeredInfo.name !== SupportedApplications.CoinBalanceRefundApp
   ) {
-    return `Refusing to install app with two zero value deposits that is not a refund app. Proposed app: ${stringify(app)}`;
+    return `Refusing to install app with two zero value deposits that is not a refund app. Proposed app: ${stringify(
+      app,
+    )}`;
   }
 
   // check that there is enough in the free balance of desired currency
