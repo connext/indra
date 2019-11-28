@@ -67,6 +67,7 @@ export class ConnextListener extends EventEmitter {
       this.emitAndLog(CFCoreTypes.EventName.INSTALL_VIRTUAL, msg.data);
     },
     PROPOSE_INSTALL: async (msg: ProposeMessage): Promise<void> => {
+      console.log('msg: ', msg);
       // validate and automatically install for the known and supported
       // applications
       this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL, msg.data);
@@ -97,9 +98,11 @@ export class ConnextListener extends EventEmitter {
         console.warn(`not sending propose message, not the coinbalance refund app`);
         return;
       }
-      console.warn(`sending proposal accepted for ${appInstanceId}`);
+      console.warn(
+        `Sending acceptance message to: indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
+      );
       await this.connext.messaging.publish(
-        `indra.client.${this.connext.publicIdentifier}.proposalAccepted.${appInstanceId}`,
+        `indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
         stringify(params),
       );
       return;

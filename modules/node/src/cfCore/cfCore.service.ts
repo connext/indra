@@ -142,7 +142,6 @@ export class CFCoreService {
 
   async proposeInstallApp(
     params: CFCoreTypes.ProposeInstallParams,
-    waitForProposal: boolean = false,
   ): Promise<CFCoreTypes.ProposeInstallResult> {
     const proposeRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
@@ -150,38 +149,39 @@ export class CFCoreService {
       parameters: params,
     });
     logger.log(`proposeInstallApp called with result ${JSON.stringify(proposeRes.result.result)}`);
+    return proposeRes.result.result as CFCoreTypes.ProposeInstallResult;
+  }
 
-    if (!waitForProposal) {
-      return proposeRes.result.result as CFCoreTypes.ProposeInstallResult;
-    }
-
-    logger.log(`waiting for client to publish proposal results`);
-
-    // some apps, currently only CoinBalanceRefund, will require the hub
-    // to wait for explicit client indication that the app has been properly
-    // installed
-    const { appInstanceId } = proposeRes.result.result;
+  async proposeAndWaitForAccepted(
+    params: CFCoreTypes.ProposeInstallParams,
+    multisigAddress: string,
+  ): Promise<CFCoreTypes.ProposeInstallResult> {
     let boundReject: (msg: RejectProposalMessage) => void;
-    let error;
+    let proposeRes: CFCoreTypes.ProposeInstallResult;
     try {
-      await new Promise((res: () => any, rej: (msg: string) => any): void => {
-        boundReject = this.rejectInstallTransfer.bind(null, rej);
-        this.messagingProvider.subscribe(
-          `indra.client.${params.proposedToIdentifier}.proposalAccepted.${appInstanceId}`,
-          res,
-        );
-        this.cfCore.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
-      });
+      await new Promise(
+        async (res: () => any, rej: (msg: string) => any): Promise<void> => {
+          boundReject = this.rejectInstallTransfer.bind(null, rej);
+          console.log(
+            `Subscribing to: indra.client.${params.proposedToIdentifier}.proposalAccepted.${multisigAddress}`,
+          );
+          await this.messagingProvider.subscribe(
+            `indra.client.${params.proposedToIdentifier}.proposalAccepted.${multisigAddress}`,
+            res,
+          );
+          this.cfCore.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
+
+          proposeRes = await this.proposeInstallApp(params);
+          logger.log(`waiting for client to publish proposal results`);
+        },
+      );
+      return proposeRes;
     } catch (e) {
       logger.error(`Error installing app: ${e.toString()}`);
-      error = e;
+      throw e;
     } finally {
-      this.cleanupProposalListeners(boundReject, appInstanceId, params.proposedToIdentifier);
+      this.cleanupProposalListeners(boundReject, multisigAddress, params.proposedToIdentifier);
     }
-    if (error) {
-      throw error;
-    }
-    return proposeRes.result.result as CFCoreTypes.ProposeInstallResult;
   }
 
   async proposeAndWaitForInstallApp(
@@ -436,8 +436,14 @@ export class CFCoreService {
     this.cfCore.off(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
   };
 
-  private cleanupProposalListeners = (boundReject: any, appId: string, userPubId: string): void => {
-    this.messagingProvider.unsubscribe(`indra.client.${userPubId}.proposalAccepted.${appId}`);
+  private cleanupProposalListeners = (
+    boundReject: any,
+    multisigAddress: string,
+    userPubId: string,
+  ): void => {
+    this.messagingProvider.unsubscribe(
+      `indra.client.${userPubId}.proposalAccepted.${multisigAddress}`,
+    );
     this.cfCore.off(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
   };
 

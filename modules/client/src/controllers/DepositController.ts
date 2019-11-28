@@ -134,18 +134,21 @@ export class DepositController extends AbstractController {
       timeout: Zero,
     };
 
-    let appId;
+    let appId: string;
     try {
       await Promise.race([
         new Promise(async (res: any, rej: any) => {
           boundReject = this.rejectInstallCoinBalance.bind(null, rej);
+          console.warn(
+            `subscribing to indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
+          );
+          await this.connext.messaging.subscribe(
+            `indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
+            res,
+          );
           const { appInstanceId } = await this.connext.proposeInstallApp(params);
           appId = appInstanceId;
           console.warn(`waiting for proposal acceptance of ${appInstanceId}`);
-          this.connext.messaging.subscribe(
-            `indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${appInstanceId}`,
-            res,
-          );
           this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
         }),
         delayAndThrow(15_000, "App install took longer than 15 seconds"),
