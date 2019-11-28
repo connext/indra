@@ -67,7 +67,6 @@ export class ConnextListener extends EventEmitter {
       this.emitAndLog(CFCoreTypes.EventName.INSTALL_VIRTUAL, msg.data);
     },
     PROPOSE_INSTALL: async (msg: ProposeMessage): Promise<void> => {
-      console.log('msg: ', msg);
       // validate and automatically install for the known and supported
       // applications
       this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL, msg.data);
@@ -79,7 +78,7 @@ export class ConnextListener extends EventEmitter {
         return;
       }
       const {
-        data: { appInstanceId, params },
+        data: { params },
         from,
       } = msg;
       // return if its from us
@@ -92,7 +91,7 @@ export class ConnextListener extends EventEmitter {
       await this.verifyAndInstallKnownApp(appInfo, matchedApp);
       // only publish for coin balance refund app
       const coinBalanceDef = this.connext.appRegistry.filter(
-        app => app.name === SupportedApplications.CoinBalanceRefundApp,
+        (app: RegisteredAppDetails) => app.name === SupportedApplications.CoinBalanceRefundApp,
       )[0];
       if (params.appDefinition !== coinBalanceDef.appDefinitionAddress) {
         console.warn(`not sending propose message, not the coinbalance refund app`);
