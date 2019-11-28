@@ -121,6 +121,13 @@ export class CFCoreService {
     amount: BigNumber,
     assetId: string = AddressZero,
   ): Promise<CFCoreTypes.DepositResult> {
+    logger.debug(
+      `Calling ${CFCoreTypes.RpcMethodName.DEPOSIT} with params: ${JSON.stringify({
+        amount,
+        multisigAddress,
+        tokenAddress: assetId,
+      })}`,
+    );
     const depositRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: CFCoreTypes.RpcMethodName.DEPOSIT,
@@ -130,7 +137,7 @@ export class CFCoreService {
         tokenAddress: assetId,
       } as CFCoreTypes.DepositParams,
     });
-    logger.log(`deposit called with result ${JSON.stringify(depositRes.result.result)}`);
+    logger.debug(`deposit called with result ${JSON.stringify(depositRes.result.result)}`);
     const multisig = bigNumberify(depositRes.result.result.multisigBalance);
     if (multisig.lt(amount)) {
       logger.error(
@@ -143,12 +150,17 @@ export class CFCoreService {
   async proposeInstallApp(
     params: CFCoreTypes.ProposeInstallParams,
   ): Promise<CFCoreTypes.ProposeInstallResult> {
+    logger.debug(
+      `Calling ${CFCoreTypes.RpcMethodName.PROPOSE_INSTALL} with params: ${JSON.stringify(params)}`,
+    );
     const proposeRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: CFCoreTypes.RpcMethodName.PROPOSE_INSTALL,
       parameters: params,
     });
-    logger.log(`proposeInstallApp called with result ${JSON.stringify(proposeRes.result.result)}`);
+    logger.debug(
+      `proposeInstallApp called with result ${JSON.stringify(proposeRes.result.result)}`,
+    );
     return proposeRes.result.result as CFCoreTypes.ProposeInstallResult;
   }
 
@@ -162,7 +174,7 @@ export class CFCoreService {
       await new Promise(
         async (res: () => any, rej: (msg: string) => any): Promise<void> => {
           boundReject = this.rejectInstallTransfer.bind(null, rej);
-          console.log(
+          logger.debug(
             `Subscribing to: indra.client.${params.proposedToIdentifier}.proposalAccepted.${multisigAddress}`,
           );
           await this.messagingProvider.subscribe(
@@ -172,7 +184,7 @@ export class CFCoreService {
           this.cfCore.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
 
           proposeRes = await this.proposeInstallApp(params);
-          logger.log(`waiting for client to publish proposal results`);
+          logger.debug(`waiting for client to publish proposal results`);
         },
       );
       return proposeRes;
@@ -200,7 +212,6 @@ export class CFCoreService {
       app,
       network.name as Network,
     );
-    // note: intermediary is added in connext.ts as well
     const {
       actionEncoding,
       appDefinitionAddress: appDefinition,
