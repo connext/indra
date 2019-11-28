@@ -117,7 +117,7 @@ export class ChannelService {
     };
 
     // propose install + wait for client confirmation
-    await this.cfCoreService.proposeInstallApp(params, true);
+    await this.cfCoreService.proposeAndWaitForAccepted(params, channel.multisigAddress);
   }
 
   async requestCollateral(
