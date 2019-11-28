@@ -110,7 +110,7 @@ export class ChannelService {
       initiatorDeposit: Zero,
       initiatorDepositTokenAddress: assetId,
       outcomeType,
-      proposedToIdentifier: this.cfCoreService.cfCore.publicIdentifier,
+      proposedToIdentifier: channel.userPublicIdentifier,
       responderDeposit: Zero,
       responderDepositTokenAddress: assetId,
       timeout: Zero,
