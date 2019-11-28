@@ -48,7 +48,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
           initiatorXpub,
           responderXpub
         ]);
-    
+
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
       abiEncodings,
