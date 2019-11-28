@@ -126,6 +126,7 @@ export default class ListenerService implements OnModuleInit {
             break;
           // TODO: add something for swap app? maybe for history preserving reasons.
           case SupportedApplications.CoinBalanceRefundApp:
+            logger.warn(`sending acceptance message for ${proposedAppParams.appInstanceId}`)
             await this.messagingClient
               .emit(
                 `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${proposedAppParams.appInstanceId}`,
