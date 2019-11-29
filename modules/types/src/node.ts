@@ -62,4 +62,4 @@ export type CreateChannelResponse = {
   transactionHash: string;
 };
 
-export type RequestCollateralResponse = CFCoreTypes.DepositResult | undefined;
+export type RequestCollateralResponse = { transactionHash: string } | undefined;
