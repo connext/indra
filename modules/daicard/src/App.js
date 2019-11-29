@@ -62,8 +62,6 @@ const urls = {
 };
 
 // Constants for channel max/min - this is also enforced on the hub
-const WITHDRAW_ESTIMATED_GAS = toBN("300000");
-const DEPOSIT_ESTIMATED_GAS = toBN("25000");
 const MAX_CHANNEL_VALUE = Currency.DAI("30");
 const CF_PATH = "m/44'/60'/0'/25446";
 
@@ -127,7 +125,6 @@ class App extends React.Component {
       ethProvider: new eth.providers.JsonRpcProvider(urls.ethProviderUrl),
       machine: interpret(rootMachine),
       maxDeposit: null,
-      minDeposit: null,
       network: {},
       useWalletConnext: false,
       saiBalance: Currency.DAI("0", swapRate),
@@ -136,12 +133,6 @@ class App extends React.Component {
       token: null,
       tokenProfile: null,
     };
-    this.refreshBalances.bind(this);
-    this.autoDeposit.bind(this);
-    this.autoSwap.bind(this);
-    this.parseQRCode.bind(this);
-    this.setWalletConnext.bind(this);
-    this.getWalletConnext.bind(this);
   }
 
   // ************************************************* //
@@ -375,15 +366,13 @@ class App extends React.Component {
     const { useWalletConnext } = this.state;
     await this.refreshBalances();
     if (!useWalletConnext) {
-      await this.autoDeposit();
       await this.autoSwap();
     } else {
       console.log("Using wallet connext, turning off autodeposit");
     }
-    interval(async (iteration, stop) => {
+    interval(async () => {
       await this.refreshBalances();
       if (!useWalletConnext) {
-        await this.autoDeposit();
         await this.autoSwap();
       }
     }, 3000);
@@ -391,8 +380,8 @@ class App extends React.Component {
 
   refreshBalances = async () => {
     const { channel, swapRate } = this.state;
-    const { maxDeposit, minDeposit } = await this.getDepositLimits();
-    this.setState({ maxDeposit, minDeposit });
+    const { maxDeposit } = await this.getDepositLimits();
+    this.setState({ maxDeposit });
     if (!channel || !swapRate) {
       return;
     }
@@ -401,16 +390,9 @@ class App extends React.Component {
   };
 
   getDepositLimits = async () => {
-    const { swapRate, ethProvider } = this.state;
-    let gasPrice = await ethProvider.getGasPrice();
-    let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
-    let totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
-    const minDeposit = Currency.WEI(
-      totalDepositGasWei.add(totalWithdrawalGasWei),
-      swapRate,
-    ).toETH();
+    const { swapRate } = this.state;
     const maxDeposit = MAX_CHANNEL_VALUE.toETH(swapRate); // Or get based on payment profile?
-    return { maxDeposit, minDeposit };
+    return { maxDeposit };
   };
 
   getChannelBalances = async () => {
@@ -419,11 +401,11 @@ class App extends React.Component {
     const freeEtherBalance = await channel.getFreeBalance();
     const freeTokenBalance = await channel.getFreeBalance(token.address);
     balance.onChain.ether = Currency.WEI(
-      await ethProvider.getBalance(channel.signerAddress),
+      await ethProvider.getBalance(channel.multisigAddress),
       swapRate,
     ).toETH();
     balance.onChain.token = Currency.DEI(
-      await token.balanceOf(channel.signerAddress),
+      await token.balanceOf(channel.multisigAddress),
       swapRate,
     ).toDAI();
     balance.onChain.total = getTotal(balance.onChain.ether, balance.onChain.token).toETH();
@@ -447,93 +429,6 @@ class App extends React.Component {
     logIfNotZero(balance.channel.token.wad, `channel token balance`);
     logIfNotZero(balance.channel.ether.wad, `channel ether balance`);
     return balance;
-  };
-
-  autoDeposit = async () => {
-    const {
-      balance,
-      channel,
-      machine,
-      maxDeposit,
-      minDeposit,
-      state,
-      swapRate,
-      token,
-    } = this.state;
-    if (!state.matches("ready")) {
-      console.warn(`Channel not available yet.`);
-      return;
-    }
-    if (
-      state.matches("ready.deposit.pending") ||
-      state.matches("ready.swap.pending") ||
-      state.matches("ready.withdraw.pending")
-    ) {
-      console.warn(`Another operation is pending, waiting to autoswap`);
-      return;
-    }
-    if (balance.onChain.ether.wad.eq(Zero)) {
-      console.debug(`No on-chain eth to deposit`);
-      return;
-    }
-
-    let nowMaxDeposit = maxDeposit.wad.sub(this.state.balance.channel.total.wad);
-    if (nowMaxDeposit.lte(Zero)) {
-      console.debug(
-        `Channel balance (${balance.channel.total.toDAI().format()}) is at or above ` +
-          `cap of ${maxDeposit.toDAI(swapRate).format()}`,
-      );
-      return;
-    }
-
-    if (balance.onChain.token.wad.gt(Zero) || balance.onChain.ether.wad.gt(minDeposit.wad)) {
-      machine.send(["START_DEPOSIT"]);
-
-      if (balance.onChain.token.wad.gt(Zero)) {
-        const amount = minBN([
-          Currency.WEI(nowMaxDeposit, swapRate).toDAI().wad,
-          balance.onChain.token.wad,
-        ]);
-        const depositParams = {
-          amount: amount.toString(),
-          assetId: token.address.toLowerCase(),
-        };
-        console.log(
-          `Depositing ${depositParams.amount} tokens into channel: ${channel.opts.multisigAddress}`,
-        );
-        const result = await channel.deposit(depositParams);
-        await this.refreshBalances();
-        console.log(`Successfully deposited tokens! Result: ${JSON.stringify(result, null, 2)}`);
-      } else {
-        console.debug(`No tokens to deposit`);
-      }
-
-      nowMaxDeposit = maxDeposit.wad.sub(this.state.balance.channel.total.wad);
-      if (nowMaxDeposit.lte(Zero)) {
-        console.debug(
-          `Channel balance (${balance.channel.total.toDAI().format()}) is at or above ` +
-            `cap of ${maxDeposit.toDAI(swapRate).format()}`,
-        );
-        machine.send(["SUCCESS_DEPOSIT"]);
-        return;
-      }
-      if (balance.onChain.ether.wad.lt(minDeposit.wad)) {
-        console.debug(
-          `Not enough on-chain eth to deposit: ${balance.onChain.ether.toETH().format()}`,
-        );
-        machine.send(["SUCCESS_DEPOSIT"]);
-        return;
-      }
-
-      const amount = minBN([balance.onChain.ether.wad.sub(minDeposit.wad), nowMaxDeposit]);
-      console.log(`Depositing ${amount} wei into channel: ${channel.opts.multisigAddress}`);
-      const result = await channel.deposit({ amount: amount.toString() });
-      await this.refreshBalances();
-      console.log(`Successfully deposited ether! Result: ${JSON.stringify(result, null, 2)}`);
-
-      machine.send(["SUCCESS_DEPOSIT"]);
-      this.autoSwap();
-    }
   };
 
   autoSwap = async () => {
@@ -650,19 +545,17 @@ class App extends React.Component {
       swapRate,
       machine,
       maxDeposit,
-      minDeposit,
       network,
       saiBalance,
       token,
-      wallet,
     } = this.state;
-    const address = wallet ? wallet.address : channel ? channel.signerAddress : AddressZero;
+    const depositAddress = channel ? channel.multisigAddress : AddressZero;
     const { classes } = this.props;
     return (
       <Router>
         <Grid className={classes.app}>
           <Paper elevation={1} className={classes.paper}>
-            <AppBarComponent address={address} />
+            <AppBarComponent address={depositAddress} />
 
             <MySnackbar
               variant="warning"
@@ -701,7 +594,7 @@ class App extends React.Component {
                     parseQRCode={this.parseQRCode}
                     channel={channel}
                   />
-                  <SetupCard {...props} minDeposit={minDeposit} maxDeposit={maxDeposit} />
+                  <SetupCard {...props} maxDeposit={maxDeposit} />
                 </Grid>
               )}
             />
@@ -710,9 +603,8 @@ class App extends React.Component {
               render={props => (
                 <DepositCard
                   {...props}
-                  address={address}
+                  address={depositAddress}
                   maxDeposit={maxDeposit}
-                  minDeposit={minDeposit}
                 />
               )}
             />

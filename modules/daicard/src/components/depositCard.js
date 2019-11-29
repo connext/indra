@@ -11,8 +11,7 @@ const style = withStyles(theme => ({
   },
 }));
 
-export const DepositCard = style(({ address, history, maxDeposit, minDeposit }) => {
-  const minEth = minDeposit ? minDeposit.toETH().format() : "?.??";
+export const DepositCard = style(({ address, history, maxDeposit }) => {
   const maxEth = maxDeposit ? maxDeposit.toETH().format() : "?.??";
   const maxDai = maxDeposit ? maxDeposit.toDAI().format() : "?.??";
 
@@ -37,11 +36,6 @@ export const DepositCard = style(({ address, history, maxDeposit, minDeposit }) 
       <Grid item xs={12}>
         <Typography variant="body2">
           <span> Send funds to this address to deposit. </span>
-        </Typography>
-        <Typography variant="body2">
-          <Tooltip disableFocusListener disableTouchListener title="Because gas">
-            <span>{`Deposit minimum of: ${minEth || "?.??"}.`}</span>
-          </Tooltip>
         </Typography>
         <Typography variant="body2">
           <span>{`Up to ${maxEth || "?.??"} Eth 
