@@ -11,6 +11,7 @@ import "regenerator-runtime/runtime";
 import { ChannelRouter } from "./channelRouter";
 import { ConditionalTransferController } from "./controllers/ConditionalTransferController";
 import { DepositController } from "./controllers/DepositController";
+import { RequestDepositRightsController } from "./controllers/RequestDepositRightsController";
 import { ResolveConditionController } from "./controllers/ResolveConditionController";
 import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
@@ -236,11 +237,13 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // balance refund app needs to be installed by us so that we can always accept async deposits
   // check if balance refund app is already installed
 
-  // TODO: what if you want to claim deposit rights for ETH?
   log.debug(`Requesting deposit rights for ${config.contractAddresses.Token}`);
-  await client.requestDepositRights(config.contractAddresses.Token);
+  let req = await client.requestDepositRights(config.contractAddresses.Token);
+  log.debug(`Rights request result: ${req}`);
+
   log.debug(`Requesting deposit rights for ${AddressZero}`);
-  await client.requestDepositRights(config.contractAddresses.Token);
+  req = await client.requestDepositRights(config.contractAddresses.Token);
+  log.debug(`Rights request result: ${req}`);
 
   // listener on token transfers to multisig to reinstall balance refund
   // this is because in the case that the counterparty deposits in their channel,
@@ -316,6 +319,7 @@ export class ConnextClient implements IConnextClient {
   private withdrawalController: WithdrawalController;
   private conditionalTransferController: ConditionalTransferController;
   private resolveConditionController: ResolveConditionController;
+  private requestDepositRightsController: RequestDepositRightsController;
 
   constructor(opts: InternalClientOptions) {
     this.opts = opts;
@@ -354,6 +358,10 @@ export class ConnextClient implements IConnextClient {
       "ConditionalTransferController",
       this,
     );
+    this.requestDepositRightsController = new RequestDepositRightsController(
+      "RequestDepositRightsController",
+      this,
+    );
   }
 
   /**
@@ -381,13 +389,14 @@ export class ConnextClient implements IConnextClient {
    *
    * NOTE: should probably take assetId into account
    */
-  public balanceRefundAppInstalled = async (): Promise<boolean> => {
+  public getBalanceRefundApp = async (assetId: string = AddressZero): Promise<AppInstanceJson> => {
     const apps = await this.getAppInstances();
     const filtered = apps.filter(
       (app: AppInstanceJson) =>
-        app.appInterface.addr === this.config.contractAddresses.CoinBalanceRefundApp,
+        app.appInterface.addr === this.config.contractAddresses.CoinBalanceRefundApp &&
+        app.latestState["tokenAddress"] === assetId,
     );
-    return filtered.length > 0;
+    return filtered.length === 0 ? undefined : filtered[0];
   };
 
   // register subscriptions
@@ -505,6 +514,12 @@ export class ConnextClient implements IConnextClient {
 
   public deposit = async (params: DepositParameters): Promise<ChannelState> => {
     return await this.depositController.deposit(params);
+  };
+
+  public requestDepositRights = async (
+    assetId: string,
+  ): Promise<CFCoreTypes.RequestDepositRightsResult> => {
+    return await this.requestDepositRightsController.requestDepositRights(assetId);
   };
 
   public swap = async (params: SwapParameters): Promise<CFCoreChannel> => {
@@ -816,14 +831,10 @@ export class ConnextClient implements IConnextClient {
     return await this.channelRouter.installApp(appInstanceId);
   };
 
-  public requestDepositRights = async (
-    assetId: string,
-  ): Promise<CFCoreTypes.RequestDepositRightsResult> => {
-    return await this.channelRouter.requestDepositRights(assetId);
-  };
-
-  public rescindDepositRights = async (): Promise<CFCoreTypes.DepositResult> => {
-    return await this.channelRouter.rescindDepositRights();
+  public rescindDepositRights = async (
+    assetId: string = AddressZero,
+  ): Promise<CFCoreTypes.DepositResult> => {
+    return await this.channelRouter.rescindDepositRights(assetId);
   };
 
   public uninstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
