@@ -32,7 +32,8 @@ export default class RescindDepositRightsController extends NodeController {
   ): Promise<Node.DepositResult> {
     const { provider, store, networkContext } = requestHandler;
     const { multisigAddress } = params;
-    const tokenAddress = params.tokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
+    const tokenAddress =
+      params.tokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
 
     let multisigBalance: BigNumber;
     if (tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
@@ -46,7 +47,7 @@ export default class RescindDepositRightsController extends NodeController {
     if (!channel.hasAppInstanceOfKind(networkContext.CoinBalanceRefundApp)) {
       return {
         multisigBalance,
-        tokenAddress,
+        tokenAddress
       };
     }
 
@@ -55,15 +56,15 @@ export default class RescindDepositRightsController extends NodeController {
       {
         ...params,
         // unused params to make types happy
-        tokenAddress: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+        tokenAddress,
         amount: Zero
       },
-      await provider.getBlockNumber(),
+      await provider.getBlockNumber()
     );
 
     return {
       multisigBalance,
-      tokenAddress,
+      tokenAddress
     };
   }
 }

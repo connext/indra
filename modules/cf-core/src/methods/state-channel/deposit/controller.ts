@@ -46,7 +46,12 @@ export default class DepositController extends NodeController {
 
     const channel = await store.getStateChannel(multisigAddress);
 
-    if (channel.hasAppInstanceOfKind(networkContext.CoinBalanceRefundApp)) {
+    if (
+      channel.hasBalanceRefundAppInstance(
+        networkContext.CoinBalanceRefundApp,
+        tokenAddress
+      )
+    ) {
       throw Error(CANNOT_DEPOSIT);
     }
 
@@ -115,17 +120,17 @@ export default class DepositController extends NodeController {
     outgoing.emit(NODE_EVENTS.DEPOSIT_CONFIRMED, payload);
 
     const multisigBalance =
-    params.tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS
-      ? await provider.getBalance(multisigAddress)
-      : await new Contract(
-          tokenAddress!,
-          ERC20.abi,
-          provider
-        ).functions.balanceOf(multisigAddress);
+      params.tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS
+        ? await provider.getBalance(multisigAddress)
+        : await new Contract(
+            tokenAddress!,
+            ERC20.abi,
+            provider
+          ).functions.balanceOf(multisigAddress);
 
     return {
       multisigBalance,
-      tokenAddress: params.tokenAddress!,
+      tokenAddress: params.tokenAddress!
     };
   }
 }

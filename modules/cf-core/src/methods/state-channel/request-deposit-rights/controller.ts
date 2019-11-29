@@ -56,9 +56,15 @@ export default class RequestDepositRightsController extends NodeController {
       multisigBalance = await erc20Contract.balanceOf(multisigAddress);
     }
 
-    if (channel.hasAppInstanceOfKind(networkContext.CoinBalanceRefundApp)) {
-      const balanceRefundApp = channel.getAppInstanceOfKind(
-        networkContext.CoinBalanceRefundApp
+    if (
+      channel.hasBalanceRefundAppInstance(
+        networkContext.CoinBalanceRefundApp,
+        params.tokenAddress
+      )
+    ) {
+      const balanceRefundApp = channel.getBalanceRefundAppInstance(
+        networkContext.CoinBalanceRefundApp,
+        params.tokenAddress
       );
       // if app is already pointing at us and the multisig balance has not changed,
       // do not uninstall
@@ -68,8 +74,11 @@ export default class RequestDepositRightsController extends NodeController {
 
       if (appIsCorrectlyInstalled) {
         return {
-          multisigBalance,
-          recipient: freeBalanceAddress
+          freeBalance: channel
+            .getFreeBalanceClass()
+            .withTokenAddress(params.tokenAddress),
+          recipient: freeBalanceAddress,
+          tokenAddress: params.tokenAddress
         };
       }
 
@@ -81,8 +90,11 @@ export default class RequestDepositRightsController extends NodeController {
     }
     await installBalanceRefundApp(requestHandler, { ...params, amount: Zero });
     return {
-      multisigBalance,
-      recipient: freeBalanceAddress
+      freeBalance: channel
+        .getFreeBalanceClass()
+        .withTokenAddress(params.tokenAddress),
+      recipient: freeBalanceAddress,
+      tokenAddress: params.tokenAddress
     };
   }
 }

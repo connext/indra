@@ -180,8 +180,11 @@ export namespace Node {
   };
 
   export type RequestDepositRightsResult = {
-    multisigBalance: BigNumber;
+    freeBalance: {
+      [s: string]: BigNumber;
+    };
     recipient: string;
+    tokenAddress: string;
   };
 
   export type GetAppInstanceDetailsParams = {
