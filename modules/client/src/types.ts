@@ -73,6 +73,7 @@ export {
   ResolveConditionResponse,
   ResolveLinkedTransferParameters,
   ResolveLinkedTransferResponse,
+  RequestDepositRightsParameters,
   RpcConnection,
   RpcType,
   SimpleLinkedTransferAppStateBigNumber,
