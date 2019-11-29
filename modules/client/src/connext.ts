@@ -237,7 +237,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // check if balance refund app is already installed
 
   // TODO: what if you want to claim deposit rights for ETH?
-  log.debug(`Reinstalling balance refund app for ${config.contractAddresses.Token}`);
+  log.debug(`Requesting deposit rights for ${config.contractAddresses.Token}`);
+  await client.requestDepositRights(config.contractAddresses.Token);
+  log.debug(`Requesting deposit rights for ${AddressZero}`);
   await client.requestDepositRights(config.contractAddresses.Token);
 
   // listener on token transfers to multisig to reinstall balance refund
@@ -254,6 +256,19 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     // reinstall balance refund app for token
     await client.requestDepositRights(config.contractAddresses.Token);
     const freeBalance = await client.getFreeBalance(config.contractAddresses.Token);
+    log.info(`updated FreeBalance: ${stringify(freeBalance)}`);
+  });
+
+  // listener on ETH transfers to multisig to reinstall balance refund
+  // this is because in the case that the counterparty deposits in their channel,
+  // we want to make sure we end up having our balance refund app installed in order
+  // to accept async deposits. further, if an async deposit comes in while we are
+  // online, we want to capture that value by reinstalling the balance refund app
+  ethProvider.on(client.multisigAddress, async (balance: BigNumber) => {
+    log.info(`Got a transfer to multisig. balance: ${balance}`);
+    // reinstall balance refund app for ETH
+    await client.requestDepositRights(AddressZero);
+    const freeBalance = await client.getFreeBalance(AddressZero);
     log.info(`updated FreeBalance: ${stringify(freeBalance)}`);
   });
 
