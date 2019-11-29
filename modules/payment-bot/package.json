@@ -15,6 +15,7 @@
     "commander": "4.0.0",
     "dotenv": "8.2.0",
     "ethers": "4.0.39",
+    "human-standard-token-abi": "2.0.0",
     "pisa-client": "0.1.4-connext-beta.1",
     "uuid": "3.3.3"
   },
