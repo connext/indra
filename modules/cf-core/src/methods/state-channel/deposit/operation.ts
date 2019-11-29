@@ -71,7 +71,7 @@ export async function installBalanceRefundApp(
     tokenAddress!
   );
 
-  const InstallProtocolParams: InstallProtocolParams = {
+  const installProtocolParams: InstallProtocolParams = {
     initialState: depositContext.initialState,
     initiatorXpub: publicIdentifier,
     responderXpub: peerAddress,
@@ -95,7 +95,7 @@ export async function installBalanceRefundApp(
   await protocolRunner.initiateProtocol(
     Protocol.Install,
     stateChannelsMap,
-    InstallProtocolParams
+    installProtocolParams
   );
 }
 
