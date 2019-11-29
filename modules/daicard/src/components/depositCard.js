@@ -1,4 +1,4 @@
-import { Button, Grid, Tooltip, Typography, withStyles } from "@material-ui/core";
+import { Button, Grid, Typography, withStyles } from "@material-ui/core";
 import React from "react";
 
 import { Copyable } from "./copyable";

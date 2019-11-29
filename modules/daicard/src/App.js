@@ -35,7 +35,6 @@ import {
   migrate,
   minBN,
   storeFactory,
-  toBN,
   tokenToWei,
   weiToToken,
   initWalletConnect,
