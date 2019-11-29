@@ -241,9 +241,10 @@ export class ChannelRouter {
     } as CFCoreTypes.UninstallParams);
   };
 
-  public rescindDepositRights = async (): Promise<CFCoreTypes.DepositResult> => {
+  public rescindDepositRights = async (assetId: string): Promise<CFCoreTypes.DepositResult> => {
     return await this._send(CFCoreTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS, {
       multisigAddress: this.multisigAddress,
+      tokenAddress: assetId,
     } as CFCoreTypes.RescindDepositRightsParams);
   };
 
