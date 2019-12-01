@@ -168,6 +168,19 @@ export class StateChannel {
     );
   }
 
+  public hasProposedBalanceRefundAppInstance(
+    balanceRefundAppDefinitionAddress: string,
+    tokenAddress: string
+  ) {
+    return (
+      Array.from(this.proposedAppInstances.values()).filter(
+        (appInstance: AppInstanceProposal) =>
+          appInstance.appDefinition === balanceRefundAppDefinitionAddress &&
+          appInstance.initialState["tokenAddress"] === tokenAddress
+      ).length > 0
+    );
+  }
+
   public getBalanceRefundAppInstance(
     balanceRefundAppDefinitionAddress: string,
     tokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS

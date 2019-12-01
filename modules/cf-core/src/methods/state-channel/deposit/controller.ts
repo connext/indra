@@ -12,7 +12,8 @@ import {
   CANNOT_DEPOSIT,
   FAILED_TO_GET_ERC20_BALANCE,
   INSUFFICIENT_ERC20_FUNDS_TO_DEPOSIT,
-  INSUFFICIENT_FUNDS
+  INSUFFICIENT_FUNDS,
+  COIN_BALANCE_NOT_PROPOSED
 } from "../../errors";
 
 import {
@@ -53,6 +54,15 @@ export default class DepositController extends NodeController {
       )
     ) {
       throw Error(CANNOT_DEPOSIT);
+    }
+
+    if (
+      !channel.hasProposedBalanceRefundAppInstance(
+        networkContext.CoinBalanceRefundApp,
+        tokenAddress
+      )
+    ) {
+      throw Error(COIN_BALANCE_NOT_PROPOSED);
     }
 
     const address = await requestHandler.getSignerAddress();
