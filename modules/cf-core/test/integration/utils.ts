@@ -58,6 +58,56 @@ const {
   UnidirectionalTransferApp
 } = global["networkContext"] as NetworkContextForTestSuite;
 
+export async function requestDepositRights(
+  node: Node,
+  multisigAddress: string,
+  tokenAddress: string = AddressZero
+) {
+  return await node.rpcRouter.dispatch(
+    constructRequestDepositRightsRpcCall(multisigAddress, tokenAddress)
+  );
+}
+
+export function constructRequestDepositRightsRpcCall(
+  multisigAddress: string,
+  tokenAddress: string = AddressZero
+) {
+  return jsonRpcDeserialize({
+    id: Date.now(),
+    method: NodeTypes.RpcMethodName.REQUEST_DEPOSIT_RIGHTS,
+    jsonrpc: "2.0",
+    params: {
+      multisigAddress,
+      tokenAddress
+    }
+  });
+}
+
+export async function rescindDepositRights(
+  node: Node,
+  multisigAddress: string,
+  tokenAddress: string = AddressZero
+) {
+  return await node.rpcRouter.dispatch(
+    constructRescindDepositRightsRpcCall(multisigAddress, tokenAddress)
+  );
+}
+
+export function constructRescindDepositRightsRpcCall(
+  multisigAddress: string,
+  tokenAddress: string = AddressZero
+) {
+  return jsonRpcDeserialize({
+    id: Date.now(),
+    method: NodeTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS,
+    jsonrpc: "2.0",
+    params: {
+      multisigAddress,
+      tokenAddress
+    }
+  });
+}
+
 /**
  * Checks the msg is what is expected, and that specificied keys exist
  * in the message.

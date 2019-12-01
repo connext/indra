@@ -17,6 +17,8 @@ import {
   getBalances,
   getInstalledAppInstances,
   getProposedAppInstances,
+  rescindDepositRights,
+  requestDepositRights,
   transferERC20Tokens
 } from "./utils";
 import { xkeyKthAddress } from "../../src/machine";
@@ -112,13 +114,7 @@ describe("Node method follows spec - install balance refund", () => {
       const multisigBalance = await provider.getBalance(multisigAddress);
       expect(multisigBalance).toBeEq(preDepositMultisig.add(One));
 
-      await nodeA.rpcRouter.dispatch({
-        id: Date.now(),
-        methodName: NodeTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS,
-        parameters: {
-          multisigAddress
-        } as NodeTypes.RescindDepositRightsParams
-      });
+      await rescindDepositRights(nodeA, multisigAddress);
 
       const [postSendBalA, postSendBalB] = await getBalances(
         nodeA,
@@ -132,14 +128,7 @@ describe("Node method follows spec - install balance refund", () => {
       done();
     });
 
-    await nodeA.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.REQUEST_DEPOSIT_RIGHTS,
-      parameters: {
-        multisigAddress,
-        tokenAddress: AddressZero
-      } as NodeTypes.RequestDepositRightsParams
-    });
+    await requestDepositRights(nodeA, multisigAddress);
   });
 
   it("install app with tokens, sending tokens should increase free balance", async done => {
@@ -170,14 +159,7 @@ describe("Node method follows spec - install balance refund", () => {
 
       await transferERC20Tokens(multisigAddress, erc20TokenAddress);
 
-      await nodeB.rpcRouter.dispatch({
-        id: Date.now(),
-        methodName: NodeTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS,
-        parameters: {
-          tokenAddress: erc20TokenAddress,
-          multisigAddress
-        } as NodeTypes.RescindDepositRightsParams
-      });
+      await rescindDepositRights(nodeB, multisigAddress, erc20TokenAddress);
 
       const [postSendBalA, postSendBalB] = await getBalances(
         nodeA,
@@ -191,14 +173,7 @@ describe("Node method follows spec - install balance refund", () => {
       done();
     });
 
-    await nodeA.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.REQUEST_DEPOSIT_RIGHTS,
-      parameters: {
-        multisigAddress,
-        tokenAddress: erc20TokenAddress
-      } as NodeTypes.RequestDepositRightsParams
-    });
+    await requestDepositRights(nodeA, multisigAddress, erc20TokenAddress);
   });
 
   it("install app with both eth and tokens, sending eth and tokens should increase free balance", async done => {
@@ -237,14 +212,7 @@ describe("Node method follows spec - install balance refund", () => {
 
       await transferERC20Tokens(multisigAddress, erc20TokenAddress);
 
-      await nodeB.rpcRouter.dispatch({
-        id: Date.now(),
-        methodName: NodeTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS,
-        parameters: {
-          multisigAddress,
-          tokenAddress: erc20TokenAddress
-        } as NodeTypes.RescindDepositRightsParams
-      });
+      await rescindDepositRights(nodeB, multisigAddress, erc20TokenAddress);
 
       const [postSendBalAToken, postSendBalBToken] = await getBalances(
         nodeA,
@@ -274,14 +242,7 @@ describe("Node method follows spec - install balance refund", () => {
       const multisigBalance = await provider.getBalance(multisigAddress);
       expect(multisigBalance).toBeEq(preDepositMultisig.add(One));
 
-      await nodeB.rpcRouter.dispatch({
-        id: Date.now(),
-        methodName: NodeTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS,
-        parameters: {
-          multisigAddress,
-          tokenAddress: AddressZero
-        } as NodeTypes.RescindDepositRightsParams
-      });
+      await rescindDepositRights(nodeB, multisigAddress);
 
       const [postSendBalAEth, postSendBalBEth] = await getBalances(
         nodeA,
@@ -360,25 +321,12 @@ describe("Node method follows spec - install balance refund", () => {
       done();
     });
 
-    await nodeA.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.REQUEST_DEPOSIT_RIGHTS,
-      parameters: {
-        multisigAddress,
-        tokenAddress: AddressZero
-      } as NodeTypes.RequestDepositRightsParams
-    });
+    await requestDepositRights(nodeA, multisigAddress);
   });
 
   it("can uninstall with no changes", async done => {
     nodeB.on(NODE_EVENTS.INSTALL, async () => {
-      await nodeB.rpcRouter.dispatch({
-        id: Date.now(),
-        methodName: NodeTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS,
-        parameters: {
-          multisigAddress
-        } as NodeTypes.RescindDepositRightsParams
-      });
+      await rescindDepositRights(nodeB, multisigAddress);
       const appInstancesNodeA = await getInstalledAppInstances(nodeA);
       const appInstancesNodeB = await getInstalledAppInstances(nodeB);
       expect(appInstancesNodeA.length).toBe(0);
@@ -386,24 +334,11 @@ describe("Node method follows spec - install balance refund", () => {
       done();
     });
 
-    await nodeA.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.REQUEST_DEPOSIT_RIGHTS,
-      parameters: {
-        multisigAddress,
-        tokenAddress: AddressZero
-      } as NodeTypes.RequestDepositRightsParams
-    });
+    await requestDepositRights(nodeA, multisigAddress);
   });
 
   it("uninstall does not error if not installed", async () => {
-    await nodeA.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS,
-      parameters: {
-        multisigAddress
-      } as NodeTypes.RescindDepositRightsParams
-    });
+    await rescindDepositRights(nodeA, multisigAddress);
     const appInstancesNodeA = await getInstalledAppInstances(nodeA);
     const appInstancesNodeB = await getInstalledAppInstances(nodeB);
     expect(appInstancesNodeA.length).toBe(0);
