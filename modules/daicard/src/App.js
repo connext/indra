@@ -367,7 +367,7 @@ class App extends React.Component {
     if (!useWalletConnext) {
       await this.autoSwap();
     } else {
-      console.log("Using wallet connext, turning off autodeposit");
+      console.log("Using wallet connext, turning off autoswap");
     }
     interval(async () => {
       await this.refreshBalances();
