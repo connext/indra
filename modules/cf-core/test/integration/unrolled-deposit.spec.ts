@@ -1,5 +1,4 @@
-import DolphinCoin from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/DolphinCoin.json";
-import { AddressZero, One, Zero } from "ethers/constants";
+import { AddressZero, One } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { Node } from "../../src";
@@ -7,7 +6,6 @@ import {
   CoinBalanceRefundState,
   NODE_EVENTS,
   Node as NodeTypes,
-  OutcomeType
 } from "../../src/types";
 import { toBeLt, toBeEq } from "../machine/integration/bignumber-jest-matcher";
 
@@ -17,56 +15,19 @@ import {
   getBalances,
   getInstalledAppInstances,
   getProposedAppInstances,
+  getProposeCoinBalanceRefundAppParams,
   rescindDepositRights,
   requestDepositRights,
   transferERC20Tokens
 } from "./utils";
 import { xkeyKthAddress } from "../../src/machine";
 import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
-import { Contract } from "ethers";
-import { BigNumber } from "ethers/utils";
 
 expect.extend({ toBeLt, toBeEq });
 
 const { CoinBalanceRefundApp } = global[
   "networkContext"
 ] as NetworkContextForTestSuite;
-
-async function getProposeCoinBalanceRefundAppParams(
-  provider: JsonRpcProvider,
-  multisigAddress: string,
-  tokenAddress: string,
-  balanceRefundRecipientNode: Node,
-  proposedToNode: Node
-): Promise<NodeTypes.ProposeInstallParams> {
-  let threshold: BigNumber;
-  if (tokenAddress === AddressZero) {
-    threshold = await provider.getBalance(multisigAddress);
-  } else {
-    const contract = new Contract(tokenAddress, DolphinCoin.abi, provider);
-    threshold = await contract.balanceOf(multisigAddress);
-  }
-  return {
-    abiEncodings: {
-      actionEncoding: undefined,
-      stateEncoding: `tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)`
-    },
-    appDefinition: CoinBalanceRefundApp,
-    initialState: {
-      multisig: multisigAddress,
-      recipient: xkeyKthAddress(balanceRefundRecipientNode.publicIdentifier, 0),
-      threshold,
-      tokenAddress
-    },
-    initiatorDeposit: Zero,
-    initiatorDepositTokenAddress: tokenAddress,
-    outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-    proposedToIdentifier: proposedToNode.publicIdentifier,
-    responderDeposit: Zero,
-    responderDepositTokenAddress: tokenAddress,
-    timeout: Zero
-  };
-}
 
 describe("Node method follows spec - install balance refund", () => {
   let multisigAddress: string;
