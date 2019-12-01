@@ -273,14 +273,7 @@ describe("Node method follows spec - install balance refund", () => {
       });
     });
 
-    await nodeA.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.REQUEST_DEPOSIT_RIGHTS,
-      parameters: {
-        multisigAddress,
-        tokenAddress: AddressZero
-      } as NodeTypes.RequestDepositRightsParams
-    });
+    await requestDepositRights(nodeA, multisigAddress);
 
     parameters = await getProposeCoinBalanceRefundAppParams(
       provider,
@@ -299,14 +292,7 @@ describe("Node method follows spec - install balance refund", () => {
       });
     });
 
-    await nodeA.rpcRouter.dispatch({
-      id: Date.now(),
-      methodName: NodeTypes.RpcMethodName.REQUEST_DEPOSIT_RIGHTS,
-      parameters: {
-        multisigAddress,
-        tokenAddress: erc20TokenAddress
-      } as NodeTypes.RequestDepositRightsParams
-    });
+    await requestDepositRights(nodeA, multisigAddress, erc20TokenAddress);
   });
 
   it("install does not error if already installed", async done => {
@@ -344,4 +330,8 @@ describe("Node method follows spec - install balance refund", () => {
     expect(appInstancesNodeA.length).toBe(0);
     expect(appInstancesNodeB.length).toBe(0);
   });
+
+  it("should not interfere with normal deposits", async () => {
+
+  })
 });
