@@ -19,7 +19,7 @@ import {
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
 // Postgres testing is pretty pointless here, since it's using a different interface
-describe.skip("Node method follows spec - rejectInstallVirtual", () => {
+describe("Node method follows spec - rejectInstallVirtual", () => {
   let nodeA: Node;
   let nodeB: Node;
   let nodeC: Node;
@@ -38,7 +38,7 @@ describe.skip("Node method follows spec - rejectInstallVirtual", () => {
     "Node A makes a proposal through an intermediary Node B to install a " +
       "Virtual AppInstance with Node C. Node C rejects proposal. Node A confirms rejection",
     () => {
-      it("sends proposal with non-null initial state", async done => {
+      it.skip("sends proposal with non-null initial state", async done => {
         await createChannel(nodeA, nodeB);
         await createChannel(nodeB, nodeC);
 
