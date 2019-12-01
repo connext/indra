@@ -62,4 +62,5 @@ export type CreateChannelResponse = {
   transactionHash: string;
 };
 
-export type RequestCollateralResponse = { transactionHash: string } | undefined;
+// TODO: why was this changed?
+export type RequestCollateralResponse = CFCoreTypes.DepositResult | undefined;
