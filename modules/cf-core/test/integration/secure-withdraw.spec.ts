@@ -107,7 +107,7 @@ describe("Node method follows spec - withdraw", () => {
   it("has the right balance for both parties after withdrawal", async () => {
     const startingMultisigBalance = await provider.getBalance(multisigAddress);
 
-    await deposit(nodeA, multisigAddress, One);
+    await deposit(nodeA, multisigAddress, One, nodeB);
 
     const postDepositMultisigBalance = await provider.getBalance(
       multisigAddress
@@ -168,7 +168,7 @@ describe("Node method follows spec - withdraw", () => {
       multisigAddress
     );
 
-    await deposit(nodeA, multisigAddress, One, erc20ContractAddress);
+    await deposit(nodeA, multisigAddress, One, nodeB, erc20ContractAddress);
 
     const postDepositMultisigTokenBalance = await erc20Contract.functions.balanceOf(
       multisigAddress
@@ -207,7 +207,7 @@ describe("Node method follows spec - withdraw", () => {
   it("Node A produces a withdraw commitment and non-Node A submits the commitment to the network", async () => {
     const startingMultisigBalance = await provider.getBalance(multisigAddress);
 
-    await deposit(nodeA, multisigAddress, One);
+    await deposit(nodeA, multisigAddress, One, nodeB);
 
     const postDepositMultisigBalance = await provider.getBalance(
       multisigAddress
