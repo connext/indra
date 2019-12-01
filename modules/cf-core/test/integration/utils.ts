@@ -40,8 +40,8 @@ import {
   initialTransferState,
   transferAbiEncodings
 } from "./unidirectional-transfer";
-import { EventEmittedMessage, DepositConfirmationMessage, DepositStartedMessage } from "../../src/types";
-import { deBigNumberifyJson, prettyPrintObject } from "../../src/utils";
+import { DepositConfirmationMessage, DepositStartedMessage, EventEmittedMessage } from "../../src/types";
+import { deBigNumberifyJson } from "../../src/utils";
 import { ProposeInstallProtocolParams } from "../../src/machine/types";
 
 interface AppContext {
