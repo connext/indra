@@ -437,7 +437,7 @@ class App extends React.Component {
       return;
     }
     if (
-      state.matches("ready.deposit.pending") ||
+      // state.matches("ready.deposit.pending") ||
       state.matches("ready.swap.pending") ||
       state.matches("ready.withdraw.pending")
     ) {
