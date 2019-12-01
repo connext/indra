@@ -326,13 +326,16 @@ export class CFCoreService {
     return uninstallResponse.result.result as CFCoreTypes.UninstallResult;
   }
 
-  async rescindDepositRights(multisigAddress: string): Promise<CFCoreTypes.DepositResult> {
+  async rescindDepositRights(
+    multisigAddress: string,
+    tokenAddress: string = AddressZero,
+  ): Promise<CFCoreTypes.DepositResult> {
     // check the app is actually installed
     logger.log(`Calling rescindDepositRights`);
     const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: CFCoreTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS,
-      parameters: { multisigAddress } as CFCoreTypes.RescindDepositRightsParams,
+      parameters: { multisigAddress, tokenAddress } as CFCoreTypes.RescindDepositRightsParams,
     });
 
     logger.log(

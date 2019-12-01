@@ -173,8 +173,8 @@ export class ChannelService {
         `token: ${normalizedAssetId}`,
     );
 
-    // make sure client's balance refund app is uninstalled
-    await this.cfCoreService.rescindDepositRights(channel.multisigAddress);
+    // make sure client's balance refund app is uninstalled for asset
+    await this.cfCoreService.rescindDepositRights(channel.multisigAddress, normalizedAssetId);
 
     // set in flight so that it cant be double sent
     await this.channelRepository.setInflightCollateralization(channel, true);
