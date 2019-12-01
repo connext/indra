@@ -9,7 +9,6 @@ import {
   CFCoreTypes,
   CoinBalanceRefundAppStateBigNumber,
   RejectProposalMessage,
-  RequestDepositRightsParameters,
   SupportedApplication,
   SupportedApplications,
 } from "../types";
