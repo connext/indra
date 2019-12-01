@@ -22,7 +22,8 @@ import {
   getFreeBalanceState,
   getTokenIndexedFreeBalanceStates,
   transferERC20Tokens,
-  assertNodeMessage
+  assertNodeMessage,
+  deposit
 } from "./utils";
 import { Node as NodeTypes } from "@connext/types";
 
@@ -101,34 +102,19 @@ describe("Node method follows spec - deposit", () => {
     expect(Object.values(freeBalanceState)).toMatchObject([Zero, Zero]);
   });
 
-  it("has the right balance for both parties after deposits", async done => {
-    const depositReq = constructDepositRpc(multisigAddress, One);
-
+  it("has the right balance for both parties after deposits", async () => {
     const preDepositBalance = await provider.getBalance(multisigAddress);
 
-    nodeB.once(
-      NODE_EVENTS.DEPOSIT_CONFIRMED,
-      async (msg: DepositConfirmationMessage) => {
-        confirmDepositMessages(nodeB, nodeA, depositReq.parameters as any);
-        await nodeB.rpcRouter.dispatch(depositReq);
-        expect(await provider.getBalance(multisigAddress)).toBeEq(
-          preDepositBalance.add(2)
-        );
+    await deposit(nodeB, multisigAddress, One, nodeA);
+    await deposit(nodeA, multisigAddress, One, nodeB);
 
-        const freeBalanceState = await getFreeBalanceState(
-          nodeA,
-          multisigAddress
-        );
-
-        expect(Object.values(freeBalanceState)).toMatchObject([One, One]);
-        done();
-      }
+    expect(await provider.getBalance(multisigAddress)).toBeEq(
+      preDepositBalance.add(2)
     );
 
-    // so that the deposit from Node B doesn't throw `Recent depositConfirmedEvent which has no event handler`
-    nodeA.off(NODE_EVENTS.DEPOSIT_CONFIRMED);
-    confirmDepositMessages(nodeA, nodeB, depositReq.parameters as any);
-    await nodeA.rpcRouter.dispatch(depositReq);
+    const freeBalanceState = await getFreeBalanceState(nodeA, multisigAddress);
+
+    expect(Object.values(freeBalanceState)).toMatchObject([One, One]);
   });
 
   it("updates balances correctly when depositing both ERC20 tokens and ETH", async () => {
@@ -142,23 +128,6 @@ describe("Node method follows spec - deposit", () => {
       new JsonRpcProvider(global["ganacheURL"])
     );
 
-    const erc20DepositRequest = constructDepositRpc(
-      multisigAddress,
-      One,
-      erc20ContractAddress
-    );
-
-    await expect(
-      nodeA.rpcRouter.dispatch(erc20DepositRequest)
-    ).rejects.toThrowError(
-      INSUFFICIENT_ERC20_FUNDS_TO_DEPOSIT(
-        await nodeA.signerAddress(),
-        erc20ContractAddress,
-        One,
-        Zero
-      )
-    );
-
     await transferERC20Tokens(await nodeA.signerAddress());
     await transferERC20Tokens(await nodeB.signerAddress());
 
@@ -167,8 +136,8 @@ describe("Node method follows spec - deposit", () => {
       multisigAddress
     );
 
-    await nodeA.rpcRouter.dispatch(erc20DepositRequest);
-    await nodeB.rpcRouter.dispatch(erc20DepositRequest);
+    await deposit(nodeA, multisigAddress, One, nodeB, erc20ContractAddress);
+    await deposit(nodeB, multisigAddress, One, nodeA, erc20ContractAddress);
 
     expect(await provider.getBalance(multisigAddress)).toEqual(
       preDepositBalance
@@ -192,12 +161,10 @@ describe("Node method follows spec - deposit", () => {
 
     // now deposits ETH
 
-    const ethDepositReq = constructDepositRpc(multisigAddress, One);
-
     preDepositBalance = await provider.getBalance(multisigAddress);
 
-    await nodeA.rpcRouter.dispatch(ethDepositReq);
-    await nodeB.rpcRouter.dispatch(ethDepositReq);
+    await deposit(nodeA, multisigAddress, One, nodeB);
+    await deposit(nodeB, multisigAddress, One, nodeA);
 
     expect(await provider.getBalance(multisigAddress)).toBeEq(
       preDepositBalance.add(2)
