@@ -193,10 +193,18 @@ export async function uninstallBalanceRefundApp(
 
   const stateChannel = await store.getStateChannel(params.multisigAddress);
 
-  const refundApp = stateChannel.getBalanceRefundAppInstance(
-    CoinBalanceRefundApp,
-    tokenAddress
-  );
+  let refundApp;
+  try {
+    refundApp = stateChannel.getBalanceRefundAppInstance(
+      CoinBalanceRefundApp,
+      tokenAddress
+    );
+  } catch (e) {
+    if (e.message.includes(`No CoinBalanceRefund app instance`)) {
+      // no need to unintall, already uninstalled
+      return;
+    }
+  }
 
   await protocolRunner.initiateProtocol(
     Protocol.Uninstall,
