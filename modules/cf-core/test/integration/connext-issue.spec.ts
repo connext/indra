@@ -11,7 +11,7 @@ import {
 } from "./connext-utils";
 import { initialLinkedState } from "./linked-transfer";
 import { setup, SetupContext } from "./setup";
-import { collateralizeChannel, createChannel } from "./utils";
+import { collateralizeChannel, createChannel, deposit } from "./utils";
 
 jest.setTimeout(10_000);
 
@@ -124,19 +124,8 @@ describe("Can update and install multiple apps simultaneously", () => {
     // this deposits into both nodes. realistically, we want
     // to have nodeA deposit into AB, and nodeB collateralize
     // BC
-    await collateralizeChannel(
-      multisigAddressAB,
-      nodeA,
-      undefined, // choose not to fund nodeB
-      bigNumberify(15)
-    );
-
-    await collateralizeChannel(
-      multisigAddressBC,
-      nodeB,
-      undefined, // choose not to fund nodeC
-      bigNumberify(15)
-    );
+    await deposit(nodeA, multisigAddressAB, bigNumberify(15), nodeB);
+    await deposit(nodeB, multisigAddressBC, bigNumberify(15), nodeC);
   });
 
   /**
