@@ -218,11 +218,10 @@ describe("Node method follows spec - install balance refund", () => {
     });
 
     let parameters = await getProposeCoinBalanceRefundAppParams(
-      provider,
       multisigAddress,
-      AddressZero,
-      nodeA,
-      nodeB
+      nodeA.publicIdentifier,
+      nodeB.publicIdentifier,
+      AddressZero
     );
 
     await new Promise(async res => {
@@ -237,11 +236,10 @@ describe("Node method follows spec - install balance refund", () => {
     await requestDepositRights(nodeA, multisigAddress);
 
     parameters = await getProposeCoinBalanceRefundAppParams(
-      provider,
       multisigAddress,
-      erc20TokenAddress,
-      nodeA,
-      nodeB
+      nodeA.publicIdentifier,
+      nodeB.publicIdentifier,
+      erc20TokenAddress
     );
 
     await new Promise(async res => {
