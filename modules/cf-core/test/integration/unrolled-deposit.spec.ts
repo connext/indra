@@ -330,8 +330,4 @@ describe("Node method follows spec - install balance refund", () => {
     expect(appInstancesNodeA.length).toBe(0);
     expect(appInstancesNodeB.length).toBe(0);
   });
-
-  it("should not interfere with normal deposits", async () => {
-
-  })
 });
