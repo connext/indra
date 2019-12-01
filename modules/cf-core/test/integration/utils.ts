@@ -55,6 +55,7 @@ interface AppContext {
 }
 
 const {
+  CoinBalanceRefundApp,
   TicTacToeApp,
   SimpleTransferApp,
   UnidirectionalLinkedTransferApp,
@@ -329,12 +330,72 @@ export async function getProposedAppInstances(
   return result.appInstances;
 }
 
+export async function getProposeCoinBalanceRefundAppParams(
+  multisigAddress: string,
+  balanceRefundRecipientIdentifer: string,
+  proposedToIdentifier: string,
+  tokenAddress: string = AddressZero
+): Promise<NodeTypes.ProposeInstallParams> {
+  const provider = new JsonRpcProvider(global["ganacheURL"]);
+  let threshold: BigNumber;
+  if (tokenAddress === AddressZero) {
+    threshold = await provider.getBalance(multisigAddress);
+  } else {
+    const contract = new Contract(tokenAddress, DolphinCoin.abi, provider);
+    threshold = await contract.balanceOf(multisigAddress);
+  }
+  return {
+    abiEncodings: {
+      actionEncoding: undefined,
+      stateEncoding: `tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)`
+    },
+    appDefinition: CoinBalanceRefundApp,
+    initialState: {
+      multisig: multisigAddress,
+      recipient: xkeyKthAddress(balanceRefundRecipientIdentifer, 0),
+      threshold,
+      tokenAddress
+    },
+    initiatorDeposit: Zero,
+    initiatorDepositTokenAddress: tokenAddress,
+    outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+    proposedToIdentifier,
+    responderDeposit: Zero,
+    responderDepositTokenAddress: tokenAddress,
+    timeout: Zero
+  };
+}
+
 export async function deposit(
   node: Node,
   multisigAddress: string,
   amount: BigNumber = One,
+  proposedToNode: Node,
   tokenAddress?: string
 ) {
+  const proposeParams = await getProposeCoinBalanceRefundAppParams(
+    multisigAddress,
+    node.publicIdentifier,
+    proposedToNode.publicIdentifier,
+    tokenAddress
+  );
+  await new Promise(async resolve => {
+    proposedToNode.once(NODE_EVENTS.PROPOSE_INSTALL, (msg: ProposeMessage) => {
+      // TODO: assert this?
+      // assertNodeMessage(msg, {
+      //   from: node.publicIdentifier,
+      //   type: NODE_EVENTS.PROPOSE_INSTALL,
+      //   data: proposeParams
+      // });
+      resolve();
+    });
+
+    node.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
+      parameters: proposeParams
+    });
+  });
   const depositReq = constructDepositRpc(multisigAddress, amount, tokenAddress);
 
   return new Promise(async resolve => {
@@ -632,13 +693,12 @@ export function constructUninstallVirtualRpc(
 export async function collateralizeChannel(
   multisigAddress: string,
   node1: Node,
-  node2?: Node,
+  node2: Node,
   amount: BigNumber = One,
   tokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS
 ): Promise<void> {
-  await deposit(node1, multisigAddress, amount, tokenAddress);
-  if (!node2) return;
-  await deposit(node2, multisigAddress, amount, tokenAddress);
+  await deposit(node1, multisigAddress, amount, node2, tokenAddress);
+  await deposit(node2, multisigAddress, amount, node1, tokenAddress);
 }
 
 export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
