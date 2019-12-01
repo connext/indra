@@ -9,6 +9,9 @@ export const APP_ALREADY_UNINSTALLED = (id: string): string =>
 export const CANNOT_DEPOSIT =
   "Cannot deposit while another deposit is occurring in the channel.";
 
+export const COIN_BALANCE_NOT_PROPOSED = 
+  "No coin balance refund app proposed in channel.";
+
 export const BALANCE_REFUND_APP_ALREADY_INSTALLED =
   "Balance refund app is installed, please uninstall first.";
 
