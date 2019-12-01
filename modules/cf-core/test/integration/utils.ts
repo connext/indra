@@ -18,7 +18,6 @@ import {
   CreateChannelMessage,
   InstallMessage,
   InstallVirtualMessage,
-  jsonRpcDeserialize,
   JsonRpcResponse,
   Node,
   NODE_EVENTS,
@@ -76,15 +75,14 @@ export function constructRequestDepositRightsRpcCall(
   multisigAddress: string,
   tokenAddress: string = AddressZero
 ) {
-  return jsonRpcDeserialize({
+  return {
     id: Date.now(),
-    method: NodeTypes.RpcMethodName.REQUEST_DEPOSIT_RIGHTS,
-    jsonrpc: "2.0",
-    params: {
+    methodName: NodeTypes.RpcMethodName.REQUEST_DEPOSIT_RIGHTS,
+    parameters: {
       multisigAddress,
       tokenAddress
     }
-  });
+  };
 }
 
 export async function rescindDepositRights(
@@ -101,15 +99,14 @@ export function constructRescindDepositRightsRpcCall(
   multisigAddress: string,
   tokenAddress: string = AddressZero
 ) {
-  return jsonRpcDeserialize({
+  return {
     id: Date.now(),
-    method: NodeTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS,
-    jsonrpc: "2.0",
-    params: {
+    methodName: NodeTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS,
+    parameters: {
       multisigAddress,
       tokenAddress
     }
-  });
+  };
 }
 
 /**
@@ -202,14 +199,13 @@ export async function getMultisigCreationAddress(
 }
 
 export function constructChannelCreationRpc(owners: string[]) {
-  return jsonRpcDeserialize({
+  return {
     id: Date.now(),
-    method: NodeTypes.RpcMethodName.CREATE_CHANNEL,
-    jsonrpc: "2.0",
-    params: {
+    methodName: NodeTypes.RpcMethodName.CREATE_CHANNEL,
+    parameters: {
       owners
     }
-  });
+  };
 }
 
 /**
@@ -309,12 +305,11 @@ export async function getTokenIndexedFreeBalanceStates(
 export async function getInstalledAppInstances(
   node: Node
 ): Promise<AppInstanceJson[]> {
-  const rpc = jsonRpcDeserialize({
-    jsonrpc: "2.0",
+  const rpc = {
     id: Date.now(),
-    method: NodeTypes.RpcMethodName.GET_APP_INSTANCES,
-    params: {} as NodeTypes.GetAppInstancesParams
-  });
+    methodName: NodeTypes.RpcMethodName.GET_APP_INSTANCES,
+    parameters: {} as NodeTypes.GetAppInstancesParams
+  };
   const response = (await node.rpcRouter.dispatch(rpc)) as JsonRpcResponse;
   const result = response.result.result as NodeTypes.GetAppInstancesResult;
   return result.appInstances;
@@ -323,12 +318,11 @@ export async function getInstalledAppInstances(
 export async function getProposedAppInstances(
   node: Node
 ): Promise<AppInstanceProposal[]> {
-  const rpc = jsonRpcDeserialize({
-    jsonrpc: "2.0",
+  const rpc = {
     id: Date.now(),
-    method: NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
-    params: {} as NodeTypes.GetProposedAppInstancesParams
-  });
+    methodName: NodeTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
+    parameters: {} as NodeTypes.GetProposedAppInstancesParams
+  };
   const response = (await node.rpcRouter.dispatch(rpc)) as JsonRpcResponse;
   const result = response.result
     .result as NodeTypes.GetProposedAppInstancesResult;
@@ -401,16 +395,15 @@ export function constructDepositRpc(
   amount: BigNumber,
   tokenAddress?: string
 ): Rpc {
-  return jsonRpcDeserialize({
+  return {
     id: Date.now(),
-    method: NodeTypes.RpcMethodName.DEPOSIT,
-    params: {
+    methodName: NodeTypes.RpcMethodName.DEPOSIT,
+    parameters: {
       multisigAddress,
       amount,
       tokenAddress
-    } as NodeTypes.DepositParams,
-    jsonrpc: "2.0"
-  });
+    } as NodeTypes.DepositParams
+  };
 }
 
 export function constructWithdrawCommitmentRpc(
@@ -438,39 +431,36 @@ export function constructWithdrawRpc(
   tokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
   recipient?: string
 ): Rpc {
-  return jsonRpcDeserialize({
+  return {
     id: Date.now(),
-    method: NodeTypes.RpcMethodName.WITHDRAW,
-    params: {
+    methodName: NodeTypes.RpcMethodName.WITHDRAW,
+    parameters: {
       tokenAddress,
       multisigAddress,
       amount,
       recipient
-    } as NodeTypes.WithdrawParams,
-    jsonrpc: "2.0"
-  });
+    } as NodeTypes.WithdrawParams
+  };
 }
 
 export function constructInstallRpc(appInstanceId: string): Rpc {
-  return jsonRpcDeserialize({
+  return {
     id: Date.now(),
-    method: NodeTypes.RpcMethodName.INSTALL,
-    params: {
+    methodName: NodeTypes.RpcMethodName.INSTALL,
+    parameters: {
       appInstanceId
-    } as NodeTypes.InstallParams,
-    jsonrpc: "2.0"
-  });
+    } as NodeTypes.InstallParams
+  };
 }
 
 export function constructRejectInstallRpc(appInstanceId: string): Rpc {
-  return jsonRpcDeserialize({
+  return {
     id: Date.now(),
-    method: NodeTypes.RpcMethodName.REJECT_INSTALL,
-    params: {
+    methodName: NodeTypes.RpcMethodName.REJECT_INSTALL,
+    parameters: {
       appInstanceId
-    } as NodeTypes.RejectInstallParams,
-    jsonrpc: "2.0"
-  });
+    } as NodeTypes.RejectInstallParams
+  };
 }
 
 export function constructAppProposalRpc(
@@ -484,11 +474,10 @@ export function constructAppProposalRpc(
   responderDepositTokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS
 ): Rpc {
   const { outcomeType } = getAppContext(appDefinition, initialState);
-  return jsonRpcDeserialize({
+  return {
     id: Date.now(),
-    method: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
-    jsonrpc: "2.0",
-    params: {
+    methodName: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
+    parameters: {
       proposedToIdentifier,
       initiatorDeposit,
       initiatorDepositTokenAddress,
@@ -500,22 +489,21 @@ export function constructAppProposalRpc(
       outcomeType,
       timeout: One
     } as NodeTypes.ProposeInstallParams
-  });
+  };
 }
 
 export function constructInstallVirtualRpc(
   appInstanceId: string,
   intermediaryIdentifier: string
 ): Rpc {
-  return jsonRpcDeserialize({
-    params: {
+  return {
+    parameters: {
       appInstanceId,
       intermediaryIdentifier
     } as NodeTypes.InstallVirtualParams,
     id: Date.now(),
-    method: NodeTypes.RpcMethodName.INSTALL_VIRTUAL,
-    jsonrpc: "2.0"
-  });
+    methodName: NodeTypes.RpcMethodName.INSTALL_VIRTUAL
+  };
 }
 
 export function constructVirtualProposalRpc(
@@ -539,12 +527,11 @@ export function constructVirtualProposalRpc(
     responderDepositTokenAddress
   ).parameters as NodeTypes.ProposeInstallParams;
 
-  return jsonRpcDeserialize({
-    params: installProposalParams,
+  return {
+    parameters: installProposalParams,
     id: Date.now(),
-    method: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
-    jsonrpc: "2.0"
-  });
+    methodName: NodeTypes.RpcMethodName.PROPOSE_INSTALL
+  };
 }
 
 /**
@@ -587,64 +574,59 @@ export function confirmProposedAppInstance(
 }
 
 export function constructGetStateRpc(appInstanceId: string): Rpc {
-  return jsonRpcDeserialize({
-    params: {
+  return {
+    parameters: {
       appInstanceId
     },
     id: Date.now(),
-    method: NodeTypes.RpcMethodName.GET_STATE,
-    jsonrpc: "2.0"
-  });
+    methodName: NodeTypes.RpcMethodName.GET_STATE
+  };
 }
 
 export function constructTakeActionRpc(
   appInstanceId: string,
   action: any
 ): Rpc {
-  return jsonRpcDeserialize({
-    params: {
+  return {
+    parameters: {
       appInstanceId,
       action
     } as NodeTypes.TakeActionParams,
     id: Date.now(),
-    jsonrpc: "2.0",
-    method: NodeTypes.RpcMethodName.TAKE_ACTION
-  });
+    methodName: NodeTypes.RpcMethodName.TAKE_ACTION
+  };
 }
 
 export function constructGetAppsRpc(): Rpc {
-  return jsonRpcDeserialize({
-    params: {},
+  return {
+    parameters: {},
     id: Date.now(),
-    method: NodeTypes.RpcMethodName.GET_APP_INSTANCES,
-    jsonrpc: "2.0"
-  });
+    methodName: NodeTypes.RpcMethodName.GET_APP_INSTANCES
+  };
 }
 
 export function constructUninstallRpc(appInstanceId: string): Rpc {
-  return jsonRpcDeserialize({
-    params: {
+  return {
+    parameters: {
       appInstanceId
     } as NodeTypes.UninstallParams,
     id: Date.now(),
-    jsonrpc: "2.0",
-    method: NodeTypes.RpcMethodName.UNINSTALL
-  });
+    methodName: NodeTypes.RpcMethodName.UNINSTALL
+  };
 }
 
 export function constructUninstallVirtualRpc(
   appInstanceId: string,
   intermediaryIdentifier: string
 ): Rpc {
-  return jsonRpcDeserialize({
-    params: {
+  return {
+    parameters: {
       appInstanceId,
       intermediaryIdentifier
     } as NodeTypes.UninstallVirtualParams,
     id: Date.now(),
-    jsonrpc: "2.0",
-    method: NodeTypes.RpcMethodName.UNINSTALL_VIRTUAL
-  });
+    methodName: NodeTypes.RpcMethodName.UNINSTALL_VIRTUAL
+  };
 }
 
 export async function collateralizeChannel(
