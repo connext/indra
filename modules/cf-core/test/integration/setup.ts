@@ -1,5 +1,4 @@
 import { CF_PATH, CFCoreTypes } from "@connext/types";
-import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
 import { Wallet } from "ethers";
 import {
   JsonRpcProvider,
@@ -29,30 +28,18 @@ export interface SetupContext {
   [nodeName: string]: NodeContext;
 }
 
-export async function setupWithMemoryMessagingAndPostgresStore(
+export async function setupWithMemoryMessagingAndSlowStore(
   global: any,
   nodeCPresent: boolean = false,
-  newExtendedPrvKeys: boolean = false
+  newExtendedPrvKeys: boolean = false,
 ): Promise<SetupContext> {
-  const memoryMessagingService = new MemoryMessagingService();
-
-  const postgresServiceFactory = new PostgresServiceFactory({
-    type: "postgres",
-    database: process.env.POSTGRES_DATABASE!,
-    username: process.env.POSTGRES_USER!,
-    host: process.env.POSTGRES_HOST!,
-    password: process.env.POSTGRES_PASSWORD!,
-    port: Number(process.env.POSTGRES_PORT!)
-  });
-
-  await postgresServiceFactory.connectDb();
-
+  const asyncStoreDelay = 200; // milliseconds
   return setup(
     global,
     nodeCPresent,
     newExtendedPrvKeys,
-    memoryMessagingService,
-    postgresServiceFactory
+    new MemoryMessagingService(),
+    new MemoryStoreServiceFactory(asyncStoreDelay),
   );
 }
 

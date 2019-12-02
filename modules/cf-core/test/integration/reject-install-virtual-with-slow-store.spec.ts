@@ -6,7 +6,7 @@ import { NetworkContextForTestSuite } from "../contracts";
 
 import {
   SetupContext,
-  setupWithMemoryMessagingAndPostgresStore
+  setupWithMemoryMessagingAndSlowStore
 } from "./setup";
 import {
   confirmProposedAppInstance,
@@ -24,7 +24,7 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
   let nodeC: Node;
 
   beforeAll(async () => {
-    const context: SetupContext = await setupWithMemoryMessagingAndPostgresStore(
+    const context: SetupContext = await setupWithMemoryMessagingAndSlowStore(
       global,
       true
     );

@@ -31,17 +31,10 @@ ethprovider_host="${project}_ethprovider_$suffix"
 ethprovider_port="8545"
 eth_rpc_url="http://$ethprovider_host:8545"
 
-postgres_db="${project}_$suffix"
-postgres_host="${project}_database_$suffix"
-postgres_password="$project"
-postgres_port="5432"
-postgres_user="$project"
-
 # Kill the dependency containers when this script exits
 function cleanup {
   echo;echo "Tests finished, stopping test containers.."
   docker container stop $ethprovider_host 2> /dev/null || true
-  docker container stop $postgres_host 2> /dev/null || true
 }
 trap cleanup EXIT
 
@@ -62,18 +55,6 @@ docker run \
     --mnemonic="$eth_mnemonic" \
     --networkId="4447"
 
-echo "Starting $postgres_host.."
-docker run \
-  --detach \
-  --env="POSTGRES_DB=$postgres_db" \
-  --env="POSTGRES_PASSWORD=$postgres_password" \
-  --env="POSTGRES_USER=$postgres_user" \
-  --name="$postgres_host" \
-  --network="$network" \
-  --rm \
-  --tmpfs="/var/lib/postgresql/data" \
-  postgres:9-alpine
-
 ########################################
 # Run Tests
 
@@ -81,12 +62,6 @@ docker run \
   --entrypoint="bash" \
   --env="GANACHE_HOST=$ethprovider_host" \
   --env="GANACHE_PORT=$ethprovider_port" \
-  --env="POSTGRES_USER=$postgres_user" \
-  --env="POSTGRES_HOST=$postgres_host" \
-  --env="POSTGRES_DATABASE=$postgres_db" \
-  --env="POSTGRES_PASSWORD=$postgres_password" \
-  --env="POSTGRES_PORT=$postgres_port" \
-  --env="POSTGRES_STORE_KEY=dev" \
   --interactive \
   --name="${project}_test_cf_core" \
   --network="$network" \
