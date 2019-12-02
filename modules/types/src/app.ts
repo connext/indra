@@ -35,13 +35,6 @@ export type DefaultApp = {
 
 export type AppRegistry = DefaultApp[];
 
-export const KnownNodeAppNames = {
-  SIMPLE_TWO_PARTY_SWAP: "SimpleTwoPartySwapApp",
-  UNIDIRECTIONAL_LINKED_TRANSFER: "UnidirectionalLinkedTransferApp",
-  UNIDIRECTIONAL_TRANSFER: "UnidirectionalTransferApp",
-};
-export type KnownNodeApp = keyof typeof KnownNodeAppNames;
-
 ////////////////////////////////////
 ////// APP TYPES
 
