@@ -228,11 +228,11 @@ const baseAppValidation = async (
   return undefined;
 };
 
-function validateVirtualAppInfo(
+const validateVirtualAppInfo = (
   app: AppInstanceInfo,
   nodeIdentifier: string,
   freeBalance: CFCoreTypes.GetFreeBalanceStateResult,
-): string | undefined {
+): string | undefined => {
   // check that the intermediary includes your node if it is not an app with your node
   if (!app.intermediaryIdentifier) {
     return invalidAppMessage(`Virtual apps should have intermediaries`, app);
@@ -255,6 +255,6 @@ function validateVirtualAppInfo(
   return undefined;
 }
 
-function invalidAppMessage(prefix: string, app: AppInstanceInfo): string {
+const invalidAppMessage = (prefix: string, app: AppInstanceInfo): string => {
   return `${prefix}. Proposed app: ${stringify(app)}`;
 }
