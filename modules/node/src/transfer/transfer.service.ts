@@ -208,22 +208,28 @@ export class TransferService {
       await new Promise(async (resolve, reject) => {
         this.cfCoreService.cfCore.on(
           NODE_EVENTS.DEPOSIT_CONFIRMED,
-          (msg: DepositConfirmationMessage) => {
+          async (msg: DepositConfirmationMessage) => {
             if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
               return;
             }
             if (msg.data.multisigAddress !== channel.multisigAddress) {
               return;
             }
+            // make sure free balance is appropriate
+            const fb = await this.cfCoreService.getFreeBalance(
+              userPubId,
+              channel.multisigAddress,
+              assetId,
+            );
+            if (fb[freeBalanceAddr].lt(amountBN)) {
+              // wait for resolve
+              return;
+            }
             resolve();
           },
         );
         try {
-          const result = await this.channelService.requestCollateral(userPubId, assetId, amountBN);
-          if (!result) {
-            // no collateral request sent
-            resolve();
-          }
+          await this.channelService.requestCollateral(userPubId, assetId, amountBN);
         } catch (e) {
           reject(e);
         }
