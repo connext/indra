@@ -1,8 +1,3 @@
-import ChallengeRegistry from "@counterfactual/cf-adjudicator-contracts/expected-build-artifacts/ChallengeRegistry.json";
-import DolphinCoin from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/DolphinCoin.json";
-import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
-import ProxyFactory from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/ProxyFactory.json";
-import TwoPartyFixedOutcomeApp from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/TwoPartyFixedOutcomeApp.json";
 import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
 import { OutcomeType, SingleAssetTwoPartyIntermediaryAgreement } from "@connext/types";
 import { Contract, ContractFactory, Wallet } from "ethers";
@@ -19,6 +14,13 @@ import { xkeysToSortedKthSigningKeys } from "../../../src/machine/xkeys";
 import { AppInstance, StateChannel } from "../../../src/models";
 import { FreeBalanceClass } from "../../../src/models/free-balance";
 import { encodeSingleAssetTwoPartyIntermediaryAgreementParams } from "../../../src/protocol/install-virtual-app";
+import {
+  ChallengeRegistry,
+  DolphinCoin,
+  MinimumViableMultisig,
+  ProxyFactory,
+  TwoPartyFixedOutcomeApp,
+} from "../../contracts";
 import { transferERC20Tokens } from "../../integration/utils";
 
 import { toBeEq } from "./bignumber-jest-matcher";

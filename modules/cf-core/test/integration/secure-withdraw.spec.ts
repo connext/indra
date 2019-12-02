@@ -1,4 +1,3 @@
-import DolphinCoin from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/DolphinCoin.json";
 import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
 import { randomBytes } from "crypto";
 import { Contract, Wallet } from "ethers";
@@ -8,6 +7,7 @@ import { getAddress, hexlify } from "ethers/utils";
 
 import { Node, NODE_EVENTS, WithdrawStartedMessage } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
+import { DolphinCoin } from "../contracts";
 import { toBeEq, toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";

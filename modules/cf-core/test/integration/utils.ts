@@ -1,4 +1,3 @@
-import DolphinCoin from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/DolphinCoin.json";
 import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
 import {
   AppABIEncodings,
@@ -8,7 +7,7 @@ import {
   Node as NodeTypes,
   OutcomeType,
   SolidityValueType
-} from "@connext/cf-types";
+} from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -28,6 +27,7 @@ import {
   UninstallVirtualMessage
 } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
+import { DolphinCoin } from "../contracts";
 import { xkeyKthAddress, xkeysToSortedKthAddresses } from "../../src/machine";
 
 import { initialLinkedState, linkedAbiEncodings } from "./linked-transfer";

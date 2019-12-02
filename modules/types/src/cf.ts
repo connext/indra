@@ -8,6 +8,7 @@ export {
   AppInterface,
   CoinBalanceRefundState,
   coinBalanceRefundStateEncoding,
+  ContractABI,
   DeployedContractNetworksFileEntry,
   EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
   multiAssetMultiPartyCoinTransferEncoding,

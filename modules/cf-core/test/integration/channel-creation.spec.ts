@@ -1,14 +1,15 @@
+import { isHexString } from "ethers/utils";
+
 import { CreateChannelMessage, Node, NODE_EVENTS } from "../../src";
 
 import { setup, SetupContext } from "./setup";
 import {
+  assertNodeMessage,
   confirmChannelCreation,
+  constructChannelCreationRpc,
   getChannelAddresses,
   getMultisigCreationAddress,
-  assertNodeMessage,
-  constructChannelCreationRpc
 } from "./utils";
-import { isHexString } from "ethers/utils";
 
 describe("Node can create multisig, other owners get notified", () => {
   let nodeA: Node;
