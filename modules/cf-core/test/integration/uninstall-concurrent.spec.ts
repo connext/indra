@@ -1,4 +1,3 @@
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
 import { One } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
@@ -10,6 +9,7 @@ import {
   ProposeMessage,
   UninstallMessage
 } from "../../src/types";
+import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";

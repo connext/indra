@@ -1,9 +1,9 @@
 import { Address, AppInstanceJson } from "@connext/types";
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
 import { One, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { Node } from "../../src";
+import { NetworkContextForTestSuite } from "../contracts";
 
 import { initialSimpleTransferState } from "./simple-transfer";
 import {

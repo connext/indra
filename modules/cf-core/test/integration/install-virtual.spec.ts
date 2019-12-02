@@ -1,7 +1,6 @@
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
-
 import { Node } from "../../src";
 import { NODE_EVENTS, ProposeMessage, InstallVirtualMessage } from "../../src/types";
+import { NetworkContextForTestSuite } from "../contracts";
 
 import { setup, SetupContext } from "./setup";
 import {

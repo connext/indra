@@ -1,4 +1,3 @@
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
 import { One } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
@@ -6,6 +5,7 @@ import { Node, NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import { ProposeInstallProtocolParams } from "../../src/machine/types";
 import { InstallMessage, NODE_EVENTS, ProposeMessage } from "../../src/types";
+import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";

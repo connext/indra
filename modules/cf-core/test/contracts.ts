@@ -9,6 +9,7 @@ import MinimumViableMultisig from "@connext/cf-funding-protocol-contracts/build/
 import Proxy from "@connext/cf-funding-protocol-contracts/build/Proxy.json";
 import ProxyFactory from "@connext/cf-funding-protocol-contracts/build/ProxyFactory.json";
 import TwoPartyFixedOutcomeApp from "@connext/cf-funding-protocol-contracts/build/TwoPartyFixedOutcomeApp.json";
+import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
 
 export {
   AppWithAction,
@@ -19,6 +20,7 @@ export {
   ERC20,
   IdentityApp,
   MinimumViableMultisig,
+  NetworkContextForTestSuite,
   Proxy,
   ProxyFactory,
   TwoPartyFixedOutcomeApp,

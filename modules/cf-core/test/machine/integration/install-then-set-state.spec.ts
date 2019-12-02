@@ -1,4 +1,3 @@
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
 import {
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   multiAssetMultiPartyCoinTransferInterpreterParamsEncoding,
@@ -28,6 +27,7 @@ import {
   ChallengeRegistry,
   DolphinCoin,
   MinimumViableMultisig,
+  NetworkContextForTestSuite,
   ProxyFactory,
 } from "../../contracts";
 import { transferERC20Tokens } from "../../integration/utils";

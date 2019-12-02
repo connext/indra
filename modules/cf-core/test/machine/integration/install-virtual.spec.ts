@@ -1,4 +1,3 @@
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
 import { OutcomeType, SingleAssetTwoPartyIntermediaryAgreement } from "@connext/types";
 import { Contract, ContractFactory, Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
@@ -18,6 +17,7 @@ import {
   ChallengeRegistry,
   DolphinCoin,
   MinimumViableMultisig,
+  NetworkContextForTestSuite,
   ProxyFactory,
   TwoPartyFixedOutcomeApp,
 } from "../../contracts";

@@ -1,4 +1,3 @@
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
 import { randomBytes } from "crypto";
 import { Contract, Wallet } from "ethers";
 import { One, Zero } from "ethers/constants";
@@ -7,7 +6,7 @@ import { getAddress, hexlify } from "ethers/utils";
 
 import { Node, NODE_EVENTS, WithdrawStartedMessage } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
-import { DolphinCoin } from "../contracts";
+import { DolphinCoin, NetworkContextForTestSuite } from "../contracts";
 import { toBeEq, toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";

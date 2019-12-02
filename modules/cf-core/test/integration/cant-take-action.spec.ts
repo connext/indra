@@ -1,6 +1,5 @@
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
-
 import { INVALID_ACTION, Node } from "../../src";
+import { NetworkContextForTestSuite } from "../contracts";
 
 import { setup, SetupContext } from "./setup";
 import { constructTakeActionRpc, createChannel, installApp } from "./utils";
