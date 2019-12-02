@@ -1,12 +1,11 @@
+import { SupportedNetwork } from "@connext/types";
 import { EntityRepository, Repository } from "typeorm";
-
-import { Network } from "../constants";
 
 import { AppRegistry } from "./appRegistry.entity";
 
 @EntityRepository(AppRegistry)
 export class AppRegistryRepository extends Repository<AppRegistry> {
-  async findByNameAndNetwork(name: string, network: Network): Promise<AppRegistry> {
+  async findByNameAndNetwork(name: string, network: SupportedNetwork): Promise<AppRegistry> {
     return this.findOne({ where: { name, network } });
   }
 
