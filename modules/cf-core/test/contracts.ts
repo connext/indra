@@ -9,7 +9,15 @@ import MinimumViableMultisig from "@connext/cf-funding-protocol-contracts/build/
 import Proxy from "@connext/cf-funding-protocol-contracts/build/Proxy.json";
 import ProxyFactory from "@connext/cf-funding-protocol-contracts/build/ProxyFactory.json";
 import TwoPartyFixedOutcomeApp from "@connext/cf-funding-protocol-contracts/build/TwoPartyFixedOutcomeApp.json";
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
+import { NetworkContext } from "@connext/types";
+
+type NetworkContextForTestSuite = NetworkContext & {
+  TicTacToeApp: string;
+  DolphinCoin: string;
+  UnidirectionalTransferApp: string;
+  UnidirectionalLinkedTransferApp: string;
+  SimpleTransferApp: string;
+};
 
 export {
   AppWithAction,
