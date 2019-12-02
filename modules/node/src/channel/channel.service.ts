@@ -69,6 +69,9 @@ export class ChannelService {
       throw new Error(`No channel exists for multisigAddress ${multisigAddress}`);
     }
 
+    // make sure client's balance refund app is uninstalled for asset
+    await this.cfCoreService.rescindDepositRights(channel.multisigAddress, assetId);
+
     await this.proposeCoinBalanceRefund(assetId, channel);
 
     return await this.cfCoreService.deposit(multisigAddress, amount, getAddress(assetId));
@@ -172,9 +175,6 @@ export class ChannelService {
       `Collateralizing ${channel.multisigAddress} with ${amountDeposit.toString()}, ` +
         `token: ${normalizedAssetId}`,
     );
-
-    // make sure client's balance refund app is uninstalled for asset
-    await this.cfCoreService.rescindDepositRights(channel.multisigAddress, normalizedAssetId);
 
     // set in flight so that it cant be double sent
     await this.channelRepository.setInflightCollateralization(channel, true);

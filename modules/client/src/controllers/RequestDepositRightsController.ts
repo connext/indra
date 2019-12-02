@@ -121,7 +121,7 @@ export class RequestDepositRightsController extends AbstractController {
       await Promise.race([
         new Promise(async (res: any, rej: any) => {
           boundReject = this.rejectInstallCoinBalance.bind(null, rej);
-          console.warn(
+          this.log.info(
             `subscribing to indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
           );
           await this.connext.messaging.subscribe(
@@ -130,10 +130,10 @@ export class RequestDepositRightsController extends AbstractController {
           );
           const { appInstanceId } = await this.connext.proposeInstallApp(params);
           appId = appInstanceId;
-          console.warn(`waiting for proposal acceptance of ${appInstanceId}`);
+          this.log.info(`waiting for proposal acceptance of ${appInstanceId}`);
           this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
         }),
-        delayAndThrow(15_000, "App install took longer than 15 seconds"),
+        delayAndThrow(90_000, "App install took longer than 15 seconds"),
       ]);
       this.log.info(`App was proposed successfully!: ${appId}`);
       return undefined;
