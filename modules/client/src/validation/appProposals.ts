@@ -1,3 +1,4 @@
+import { CFCoreTypes, OutcomeType } from "@connext/types";
 import { bigNumberify, getAddress } from "ethers/utils";
 
 import { ConnextClient } from "../connext";
@@ -123,7 +124,6 @@ const baseAppValidation = async (
 ): Promise<string | undefined> => {
   const log = new Logger("baseAppValidation", connext.log.logLevel);
   // check the initial state is consistent
-  // FIXME: why isnt this in the cf types?
   log.info(`Validating app: ${stringify(app)}`);
   // check that identity hash isnt used by another app
   const apps = await connext.getAppInstances();
@@ -132,27 +132,66 @@ const baseAppValidation = async (
       (a: AppInstanceJson): boolean => a.identityHash === app.identityHash,
     );
     if (sharedIds.length !== 0) {
-      return `Duplicate app id detected. Proposed app: ${stringify(app)}`;
+      return invalidAppMessage(`Duplicate app id detected`, app);
     }
   }
 
   // check that the app definition is the same
   if (app.appDefinition !== registeredInfo.appDefinitionAddress) {
-    return `Incorrect app definition detected. Proposed app: ${stringify(app)}`;
+    return invalidAppMessage(`Incorrect app definition detected`, app);
   }
 
   // check that the encoding is the same
   if (app.abiEncodings.actionEncoding !== registeredInfo.actionEncoding) {
-    return `Incorrect action encoding detected. Proposed app: ${stringify(app)}`;
+    return invalidAppMessage(`Incorrect action encoding detected`, app);
   }
 
   if (app.abiEncodings.stateEncoding !== registeredInfo.stateEncoding) {
-    return `Incorrect state encoding detected. Proposed app: ${stringify(app)}`;
+    return invalidAppMessage(`Incorrect state encoding detected`, app);
   }
 
   // check that the outcome type is the same
-  if (bigNumberify(app.initiatorDeposit).isZero() && bigNumberify(app.responderDeposit).isZero()) {
-    return `Refusing to install app with two zero value deposits. Proposed app: ${stringify(app)}`;
+  const outcomeTypeMsg = invalidAppMessage(
+    `No interpreter params provided for ${registeredInfo.outcomeType}`,
+    app,
+  );
+  switch (registeredInfo.outcomeType) {
+    case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER:
+      if (!app.multiAssetMultiPartyCoinTransferInterpreterParams) {
+        return outcomeTypeMsg;
+      }
+      break;
+    case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER:
+      if (!app.singleAssetTwoPartyCoinTransferInterpreterParams) {
+        return outcomeTypeMsg;
+      }
+      break;
+    case OutcomeType.TWO_PARTY_FIXED_OUTCOME:
+      if (!app.twoPartyOutcomeInterpreterParams) {
+        return outcomeTypeMsg;
+      }
+      break;
+    default:
+      return invalidAppMessage(`Unrecognized outcome type`, app);
+  }
+
+  // make sure there are no two person 0 value deposits for all but the
+  // coinbalance refund app
+  const isRefund = app.appDefinition === connext.config.contractAddresses["CoinBalanceRefundApp"];
+  if (
+    !isRefund &&
+    bigNumberify(app.initiatorDeposit).isZero() &&
+    bigNumberify(app.responderDeposit).isZero()
+  ) {
+    return invalidAppMessage(`Refusing to install app with two zero value deposits`, app);
+  }
+
+  // make sure that the app is allowed to be installed by the node
+  if (
+    app.proposedByIdentifier === connext.nodePublicIdentifier &&
+    !registeredInfo.allowNodeInstall
+  ) {
+    return invalidAppMessage(`Node is not allowed to install this app`, app);
   }
 
   // check that there is enough in the free balance of desired currency
@@ -162,44 +201,60 @@ const baseAppValidation = async (
   );
   const userFreeBalance = responderFreeBalance[xpubToAddress(connext.publicIdentifier)];
   if (userFreeBalance.lt(app.responderDeposit)) {
-    return `Insufficient free balance for requested asset,
+    return invalidAppMessage(
+      `Insufficient free balance for requested asset,
       freeBalance: ${userFreeBalance.toString()}
-      required: ${app.responderDeposit}. Proposed app: ${stringify(app)}`;
+      required: ${app.responderDeposit}`,
+      app,
+    );
+  }
+
+  // check that ledger apps have no intermediary
+  if (!isVirtual && app.intermediaryIdentifier) {
+    return invalidAppMessage(`Direct apps with node should not have intermediary`, app);
+  }
+
+  if (!isVirtual) {
+    return undefined;
   }
 
   // if it is a virtual app, check that the intermediary has sufficient
   // collateral in your channel
-  const initiatorFreeBalance = await connext.getFreeBalance(
-    getAddress(app.initiatorDepositTokenAddress),
-  );
-  const nodeFreeBalance = initiatorFreeBalance[xpubToAddress(connext.nodePublicIdentifier)];
-  if (isVirtual && nodeFreeBalance.lt(app.initiatorDeposit)) {
-    const reqRes = await connext.requestCollateral(app.initiatorDepositTokenAddress);
-    connext.log.debug(
-      `Collateral request response: ${stringify(
-        reqRes || { msg: `Returned void, likely that request timed out` },
-      )}`,
-    );
-    return `Insufficient collateral for requested asset,
-    freeBalance of node: ${nodeFreeBalance.toString()}
-    required: ${app.initiatorDeposit}. Proposed app: ${stringify(app)}`;
-  }
+  const freeBalance = await connext.getFreeBalance(getAddress(app.initiatorDepositTokenAddress));
 
-  // check that the intermediary includes your node if it is not an app with your node
-  const hasIntermediaries = app.intermediaryIdentifier;
-  if (hasIntermediaries && !isVirtual) {
-    return `Apps with connected node should have no intermediaries. Proposed app: ${stringify(
-      app,
-    )}`;
-  }
-
-  if (isVirtual && !hasIntermediaries) {
-    return `Virtual apps should have intermediaries. Proposed app: ${stringify(app)}`;
-  }
-
-  if (isVirtual && app.intermediaryIdentifier !== connext.nodePublicIdentifier) {
-    return `Connected node is not in proposed intermediaries. Proposed app: ${stringify(app)}`;
-  }
+  const virtualErrs = validateVirtualAppInfo(app, connext.nodePublicIdentifier, freeBalance);
+  if (virtualErrs) return virtualErrs;
 
   return undefined;
 };
+
+function validateVirtualAppInfo(
+  app: AppInstanceInfo,
+  nodeIdentifier: string,
+  freeBalance: CFCoreTypes.GetFreeBalanceStateResult,
+): string | undefined {
+  // check that the intermediary includes your node if it is not an app with your node
+  if (!app.intermediaryIdentifier) {
+    return invalidAppMessage(`Virtual apps should have intermediaries`, app);
+  }
+
+  const nodeFreeBalance = freeBalance[xpubToAddress(nodeIdentifier)];
+  if (nodeFreeBalance.lt(app.initiatorDeposit)) {
+    return invalidAppMessage(
+      `Insufficient collateral for requested asset,
+    freeBalance of node: ${nodeFreeBalance.toString()}
+    required: ${app.initiatorDeposit}`,
+      app,
+    );
+  }
+
+  if (app.intermediaryIdentifier !== nodeIdentifier) {
+    return invalidAppMessage(`Connected node is not in proposed intermediaries`, app);
+  }
+
+  return undefined;
+}
+
+function invalidAppMessage(prefix: string, app: AppInstanceInfo): string {
+  return `${prefix}. Proposed app: ${stringify(app)}`;
+}
