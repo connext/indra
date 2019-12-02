@@ -77,9 +77,6 @@ export class WithdrawalController extends AbstractController {
       this.log.error(`Failed to withdraw... ${stringify(e)}`);
       this.removeListeners();
       throw new Error(e);
-    } finally {
-      this.log.info(`Calling this.connext.requestDepositRights after withdrawal`);
-      await this.connext.requestDepositRights(assetId);
     }
 
     return {

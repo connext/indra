@@ -49,6 +49,7 @@ import {
   PaymentProfile,
   RegisteredAppDetails,
   RequestCollateralResponse,
+  RequestDepositRightsParameters,
   ResolveConditionParameters,
   ResolveConditionResponse,
   ResolveLinkedTransferResponse,
@@ -231,49 +232,14 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   log.debug("Registering subscriptions");
   await client.registerSubscriptions();
 
-  // TODO: should we have a flag for this?
-  // this probably needs to be before the below operations so that it doesnt cause issues
-  // with collateralizing/withdrawing
-  // balance refund app needs to be installed by us so that we can always accept async deposits
-  // check if balance refund app is already installed
-
+  // make sure we don't have a balance refund app hanging around installed
   log.debug(`Requesting deposit rights for ${config.contractAddresses.Token}`);
-  let req = await client.requestDepositRights(config.contractAddresses.Token);
+  let req = await client.rescindDepositRights(config.contractAddresses.Token);
   log.debug(`Rights request result: ${req}`);
 
   log.debug(`Requesting deposit rights for ${AddressZero}`);
-  req = await client.requestDepositRights(config.contractAddresses.Token);
+  req = await client.rescindDepositRights(config.contractAddresses.Token);
   log.debug(`Rights request result: ${req}`);
-
-  // listener on token transfers to multisig to reinstall balance refund
-  // this is because in the case that the counterparty deposits in their channel,
-  // we want to make sure we end up having our balance refund app installed in order
-  // to accept async deposits. further, if an async deposit comes in while we are
-  // online, we want to capture that value by reinstalling the balance refund app
-  token.on("Transfer", async (src: string, dst: string, wad: string) => {
-    if (getAddress(dst) !== client.multisigAddress) {
-      // not our multisig
-      return;
-    }
-    log.info(`Got a transfer to multisig. src: ${src}, dst: ${dst}, wad: ${wad}`);
-    // reinstall balance refund app for token
-    await client.requestDepositRights(config.contractAddresses.Token);
-    const freeBalance = await client.getFreeBalance(config.contractAddresses.Token);
-    log.info(`updated FreeBalance: ${stringify(freeBalance)}`);
-  });
-
-  // listener on ETH transfers to multisig to reinstall balance refund
-  // this is because in the case that the counterparty deposits in their channel,
-  // we want to make sure we end up having our balance refund app installed in order
-  // to accept async deposits. further, if an async deposit comes in while we are
-  // online, we want to capture that value by reinstalling the balance refund app
-  ethProvider.on(client.multisigAddress, async (balance: BigNumber) => {
-    log.info(`Got a transfer to multisig. balance: ${balance}`);
-    // reinstall balance refund app for ETH
-    await client.requestDepositRights(AddressZero);
-    const freeBalance = await client.getFreeBalance(AddressZero);
-    log.info(`updated FreeBalance: ${stringify(freeBalance)}`);
-  });
 
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
   log.debug("Resubmitting active withdrawals");
@@ -517,9 +483,13 @@ export class ConnextClient implements IConnextClient {
   };
 
   public requestDepositRights = async (
-    assetId: string,
+    params: RequestDepositRightsParameters,
   ): Promise<CFCoreTypes.RequestDepositRightsResult> => {
-    return await this.requestDepositRightsController.requestDepositRights(assetId);
+    return await this.requestDepositRightsController.requestDepositRights(params);
+  };
+
+  public rescindDepositRights = async (assetId: string): Promise<CFCoreTypes.DepositResult> => {
+    return await this.channelRouter.rescindDepositRights(assetId);
   };
 
   public swap = async (params: SwapParameters): Promise<CFCoreChannel> => {
@@ -829,12 +799,6 @@ export class ConnextClient implements IConnextClient {
       throw new Error(alreadyInstalled);
     }
     return await this.channelRouter.installApp(appInstanceId);
-  };
-
-  public rescindDepositRights = async (
-    assetId: string = AddressZero,
-  ): Promise<CFCoreTypes.DepositResult> => {
-    return await this.channelRouter.rescindDepositRights(assetId);
   };
 
   public uninstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {

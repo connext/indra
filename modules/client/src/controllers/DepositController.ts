@@ -54,7 +54,7 @@ export class DepositController extends AbstractController {
 
     try {
       this.log.info(`Calling ${CFCoreTypes.RpcMethodName.DEPOSIT}`);
-      await this.connext.rescindDepositRights();
+      await this.connext.rescindDepositRights(assetId);
       // propose the app install
       const err = await this.proposeDepositInstall(assetId);
       if (err) {

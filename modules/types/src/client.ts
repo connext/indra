@@ -85,7 +85,10 @@ export interface IConnextClient {
   conditionalTransfer(params: ConditionalTransferParameters): Promise<ConditionalTransferResponse>;
   restoreState(): Promise<void>;
   channelProviderConfig(): Promise<ChannelProviderConfig>;
-  requestDepositRights(assetId: string): Promise<CFCoreTypes.RequestDepositRightsResult>;
+  requestDepositRights(
+    params: RequestDepositRightsParameters,
+  ): Promise<CFCoreTypes.RequestDepositRightsResult>;
+  rescindDepositRights(assetId: string): Promise<CFCoreTypes.DepositResult>;
 
   ///////////////////////////////////
   // NODE EASY ACCESS METHODS

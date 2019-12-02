@@ -51,6 +51,7 @@ process.on("unhandledRejection", (e: any): any => {
     const signer = provider.getSigner();
     console.log(`Depositing ${config.deposit} of asset ${assetId}`);
     let tx: TransactionResponse;
+    await client.requestDepositRights({ assetId, timeoutMs: 60_000 });
     if (assetId === AddressZero) {
       tx = await signer.sendTransaction({
         to: client.multisigAddress,
@@ -62,11 +63,7 @@ process.on("unhandledRejection", (e: any): any => {
     }
     const receipt = await tx.wait();
     console.log(`Deposit tx receipt: ${JSON.stringify(receipt)}`);
-    await new Promise(res => {
-      client.on(`indra.client.${client.publicIdentifier}.freeBalanceUpdated` as any, data => {
-        res(data);
-      });
-    });
+    await client.rescindDepositRights(assetId);
     console.log(`Successfully deposited!`);
     await logEthAndAssetFreeBalance();
   }

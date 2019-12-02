@@ -9,18 +9,20 @@ import {
   CFCoreTypes,
   CoinBalanceRefundAppStateBigNumber,
   RejectProposalMessage,
+  RequestDepositRightsParameters,
   SupportedApplication,
   SupportedApplications,
 } from "../types";
-import { invalidAddress, validate } from "../validation";
+import { invalidAddress, notNegative, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
 export class RequestDepositRightsController extends AbstractController {
   public requestDepositRights = async (
-    assetId: string,
+    params: RequestDepositRightsParameters,
   ): Promise<CFCoreTypes.RequestDepositRightsResult> => {
-    validate(invalidAddress(assetId));
+    const { assetId, timeoutMs } = params;
+    validate(invalidAddress(assetId), notNegative(timeoutMs));
 
     let multisigBalance: BigNumber;
     if (assetId === AddressZero) {
@@ -45,6 +47,7 @@ export class RequestDepositRightsController extends AbstractController {
       }
       this.log.info(`Balance refund app is not in the correct state, uninstalling first`);
       await this.connext.rescindDepositRights(assetId);
+      this.log.info(`Balance refund app uninstalled`);
     }
 
     // propose the app install
@@ -61,11 +64,18 @@ export class RequestDepositRightsController extends AbstractController {
     );
     this.log.info("Deposit rights gained!");
 
+    const freeBalance = await this.connext.getFreeBalance(assetId);
     this.listener.emit(`indra.client.${this.connext.publicIdentifier}.freeBalanceUpdated`, {
-      freeBalance: await this.connext.getFreeBalance(assetId),
+      freeBalance,
     });
+
+    setTimeout(async () => {
+      console.log(`Timeout expired, uninstalling balance refund app`);
+      await this.connext.rescindDepositRights(assetId);
+    }, timeoutMs);
+
     return {
-      freeBalance: await this.connext.getFreeBalance(assetId),
+      freeBalance,
       recipient: this.connext.freeBalanceAddress,
       tokenAddress: assetId,
     };
