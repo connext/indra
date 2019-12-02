@@ -139,7 +139,7 @@ export class RequestDepositRightsController extends AbstractController {
       return undefined;
     } catch (e) {
       this.log.error(`Error installing app: ${e.toString()}`);
-      return e.message();
+      return e.message;
     } finally {
       this.cleanupInstallListeners(appId, boundReject);
     }
