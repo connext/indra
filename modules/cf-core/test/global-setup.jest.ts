@@ -14,8 +14,7 @@ import {
 
 dotenvExtended.load();
 const env = {
-  GANACHE_HOST: process.env.GANACHE_HOST || "localhost",
-  GANACHE_PORT: process.env.GANACHE_PORT || "8545",
+  ETHPROVIDER_URL: process.env.ETHPROVIDER_URL || "http://localhost:8545",
   SUGAR_DADDY:
     process.env.SUGAR_DADDY ||
     "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat",
@@ -29,9 +28,10 @@ const fundAddress = async (to: string, ethProvider: JsonRpcProvider): Promise<vo
 };
 
 export default async function globalSetup(): Promise<void> {
-  console.log(`==================== globalSetup activated!`);
-  const ethProviderUrl = `http://${env.GANACHE_HOST}:${env.GANACHE_PORT}`;
-  const ethProvider = new JsonRpcProvider(ethProviderUrl);
+  console.log(`==================== globalSetup activated! ${env.ETHPROVIDER_URL}`);
+  const ethProvider = new JsonRpcProvider(env.ETHPROVIDER_URL);
+  const network = await ethProvider.getNetwork();
+  console.log(`==================== Connected to ethprovider for ${JSON.stringify(network)}`);
   await Promise.all(
     [A_EXTENDED_PRIVATE_KEY, B_EXTENDED_PRIVATE_KEY, C_EXTENDED_PRIVATE_KEY].map(
       (xprv: string): Promise<void> =>
@@ -41,6 +41,6 @@ export default async function globalSetup(): Promise<void> {
   const fundedAccount = Wallet.createRandom().connect(ethProvider);
   await fundAddress(fundedAccount.address, ethProvider);
   global["fundedPrivateKey"] = fundedAccount.privateKey;
-  global["ganacheUrl"] = ethProviderUrl;
+  global["ganacheUrl"] = env.ETHPROVIDER_URL;
   global["networkContext"] = await deployTestArtifactsToChain(fundedAccount);
 }

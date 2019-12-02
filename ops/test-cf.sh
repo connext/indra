@@ -30,7 +30,7 @@ network="${project}_$suffix"
 ethprovider_host="${project}_ethprovider_$suffix"
 ethprovider_port="8545"
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-eth_rpc_url="http://$ethprovider_host:8545"
+ethprovider_url="http://$ethprovider_host:$ethprovider_port"
 
 # Kill the dependency containers when this script exits
 function cleanup {
@@ -53,16 +53,17 @@ docker run \
   --tmpfs="/data" \
   trufflesuite/ganache-cli:v6.4.3 \
     --db="/data" \
+    --host="0.0.0.0" \
     --mnemonic="$eth_mnemonic" \
-    --networkId="4447"
+    --networkId="4447" \
+    --port="$ethprovider_port"
 
 ########################################
 # Run Tests
 
 docker run \
   --entrypoint="bash" \
-  --env="GANACHE_HOST=$ethprovider_host" \
-  --env="GANACHE_PORT=$ethprovider_port" \
+  --env="ETHPROVIDER_URL=$ethprovider_url" \
   --env="SUGAR_DADDY=$eth_mnemonic" \
   --interactive \
   --name="${project}_test_cf_core" \
