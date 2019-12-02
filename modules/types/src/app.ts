@@ -19,12 +19,6 @@ export const SupportedNetworks = {
 };
 export type SupportedNetwork = keyof typeof SupportedNetworks;
 
-export type IRegisteredAppDetails = {
-  [index in SupportedApplication]: Partial<
-    CFCoreTypes.ProposeInstallVirtualParams & { initialStateFinalized: boolean }
-  >;
-};
-
 export type RegisteredAppDetails = {
   id: number;
   name: SupportedApplication;
