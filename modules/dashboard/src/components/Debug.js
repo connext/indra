@@ -3,7 +3,7 @@ import { Button, Grid, Typography, withStyles } from "@material-ui/core";
 import { Switch, Route,Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import DebugChannel from "./DebugChannel";
-import DebugTransfer from "./DebugTransfer";
+import DebugNode from "./DebugNode";
 import { Home as HomeIcon} from "@material-ui/icons";
 
 const styles = {
@@ -53,14 +53,14 @@ function Debug(props) {
         <Button className={classes.button} component={Link} to={"/dashboard/debug/channel"}>
           <Typography className={classes.buttonText}>Channels</Typography>
         </Button>
-        <Button className={classes.button} component={Link} to={"/dashboard/debug/transfer"}>
-          <Typography className={classes.buttonText}>Transfer</Typography>
+        <Button className={classes.button} component={Link} to={"/dashboard/debug/node"}>
+          <Typography className={classes.buttonText}>Node</Typography>
         </Button>
 
       </Grid>
         <Switch>
           <Route exact path="/dashboard/debug/channel" render={props => <DebugChannel {...props} messaging={messaging} token={token} />} />
-          <Route exact path="/dashboard/debug/transfer" render={props => <DebugTransfer {...props} messaging={messaging} token={token}  />} />
+          <Route exact path="/dashboard/debug/node" render={props => <DebugNode {...props} messaging={messaging} token={token}  />} />
         </Switch>
     </Grid>
   );

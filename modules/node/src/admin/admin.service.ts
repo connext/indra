@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelService } from "../channel/channel.service";
+import { TransferService } from "../transfer/transfer.service";
 import { CLogger } from "../util";
 
 const logger = new CLogger("AdminService");
@@ -12,6 +13,7 @@ export class AdminService {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
+    private readonly transferService: TransferService,
   ) {}
 
   /**
@@ -60,6 +62,10 @@ export class AdminService {
   async getAllChannelsState(): Promise<CFCoreRecord[]> {
     // get channel by xpub
     return await this.channelService.getAllChannelsState();
+  }
+
+  async getAllTransfers(): Promise<any[]> {
+    return await this.transferService.fetchAllTransfers();
   }
 
   /**

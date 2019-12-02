@@ -113,6 +113,10 @@ export class TransferService {
     return await this.linkedTransferRepository.findByPaymentId(paymentId);
   }
 
+  async fetchAllTransfers(): Promise<any> {
+    return await this.linkedTransferRepository.findAllTransfers();
+  }
+
   async setRecipientAndEncryptedPreImageOnLinkedTransfer(
     senderPublicIdentifier: string,
     recipientPublicIdentifier: string,

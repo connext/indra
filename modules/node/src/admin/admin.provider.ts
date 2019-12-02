@@ -42,6 +42,10 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getAllChannelsState();
   }
 
+  async getAllTransfers():  Promise<any[]> {
+    return await this.adminService.getAllTransfers();
+  }
+
   async getIncorrectMultisigAddresses(): Promise<
     {
       oldMultisigAddress: string;

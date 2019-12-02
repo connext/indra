@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { Button, Grid, InputAdornment, TextField, Typography, withStyles } from "@material-ui/core";
+import {
+  Button,
+  CircularProgress,
+  Grid,
+  InputAdornment,
+  TextField,
+  Typography,
+  withStyles,
+} from "@material-ui/core";
 import { Search as SearchIcon } from "@material-ui/icons";
 import PropTypes from "prop-types";
 import { bigNumberify, toNumber, toString } from "ethers/utils";
@@ -48,6 +56,9 @@ const styles = {
     width: "40%",
     margin: "2% 5% 5% 1%",
   },
+  error: {
+    color:"red"
+  }
 };
 
 const DebugChannel = props => {
@@ -57,6 +68,9 @@ const DebugChannel = props => {
   const [xPubSearch, setXPubSearch] = useState("");
   const [noFreeBalance, setNoFreeBalance] = useState(null);
   const [channelState, setChannelState] = useState(null);
+  const [freeBalance, setFreeBalance] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState(null)
 
   useEffect(() => {
     if (!messaging) {
@@ -85,19 +99,32 @@ const DebugChannel = props => {
   });
 
   const getChannelState = async () => {
+    setLoading(true);
+    try{
     var res = await messaging.request("admin.get-channel-states", 5000, {
       token: token,
-      id:xPubSearch
+      id: xPubSearch,
     });
 
-    console.log(res)
-
     var extractedValues = Object.values(res)[0].response;
-    extractedValues.freeBalanceAppInstance.latestState.balances[0].forEach((balance)=>{
-      balance.amount.readable = bigNumberify(balance.amount._hex).toString()
-    })
-    
+    let freeBalanceTotalHolder = [];
+    extractedValues.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
+      balance.amount.readable = bigNumberify(balance.amount._hex).toString();
+      freeBalanceTotalHolder.push(balance.amount.readable);
+    });
+
+    var freeBalanceTotalReduced = freeBalanceTotalHolder.reduce((a, b) => {
+      return a + b;
+    }, 0);
+
+    setFreeBalance(freeBalanceTotalReduced);
     setChannelState(extractedValues);
+    setLoading(false);
+    setSearchError(null)
+  }catch{
+    setLoading(false)
+    setSearchError("xPub not found")
+  }
   };
 
   return (
@@ -121,12 +148,18 @@ const DebugChannel = props => {
                     await getChannelState();
                   }}
                 >
-                  <SearchIcon />
+                  {loading ? <CircularProgress color="blue" /> : <SearchIcon />}
                 </Button>
               </InputAdornment>
             ),
           }}
         />
+         <Grid className={classes.channelStateGrid}>
+          <Typography className={classes.error}>{searchError}</Typography>
+        </Grid>
+        <Grid className={classes.channelStateGrid}>
+          <Typography className={classes.cardTextBold}>Free Balance: {freeBalance}</Typography>
+        </Grid>
         {!!channelState &&
           Object.entries(channelState).map(([k, v], i) => {
             // if (Object.entries(v).length > 1) {
@@ -136,9 +169,9 @@ const DebugChannel = props => {
             //   );
             // } else {
             return (
-              <Grid className={classes.channelStateGrid}>
+              <Grid>
                 <Typography className={classes.cardTextBold} key={k}>{`${k}: `}</Typography>
-                  <pre>{`${JSON.stringify(v, null, 4)}`}</pre>
+                <pre>{`${JSON.stringify(v, null, 4)}`}</pre>
               </Grid>
             );
             // }
