@@ -6,7 +6,7 @@ import {
   CFCoreChannel,
   CFCoreTypes,
   convert,
-  RegisteredAppDetails,
+  DefaultApp,
   RejectInstallVirtualMessage,
   SimpleTransferAppStateBigNumber,
   SupportedApplication,
@@ -113,7 +113,7 @@ export class TransferController extends AbstractController {
     amount: BigNumber,
     recipient: string,
     assetId: string,
-    appInfo: RegisteredAppDetails,
+    appInfo: DefaultApp,
     meta?: object,
   ): Promise<string | undefined> => {
     let boundResolve: (value?: any) => void;

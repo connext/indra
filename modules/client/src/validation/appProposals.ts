@@ -3,17 +3,12 @@ import { bigNumberify, getAddress } from "ethers/utils";
 import { ConnextClient } from "../connext";
 import { Logger } from "../lib/logger";
 import { stringify, xpubToAddress } from "../lib/utils";
-import {
-  AppInstanceInfo,
-  AppInstanceJson,
-  RegisteredAppDetails,
-  SupportedApplication,
-} from "../types";
+import { AppInstanceInfo, AppInstanceJson, DefaultApp, SupportedApplication } from "../types";
 
 type ProposalValidator = {
   [index in SupportedApplication]: (
     app: AppInstanceInfo,
-    registeredInfo: RegisteredAppDetails,
+    registeredInfo: DefaultApp,
     isVirtual: boolean,
     connext: ConnextClient,
   ) => Promise<string | undefined>;
@@ -21,7 +16,7 @@ type ProposalValidator = {
 
 export const validateSwapApp = async (
   app: AppInstanceInfo,
-  registeredInfo: RegisteredAppDetails,
+  registeredInfo: DefaultApp,
   isVirtual: boolean,
   connext: ConnextClient,
 ): Promise<string | undefined> => {
@@ -40,7 +35,7 @@ export const validateSwapApp = async (
 
 export const validateTransferApp = async (
   app: AppInstanceInfo,
-  registeredInfo: RegisteredAppDetails,
+  registeredInfo: DefaultApp,
   isVirtual: boolean,
   connext: ConnextClient,
   // TODO: ideally this wouldnt get passed in, but you need it
@@ -71,7 +66,7 @@ export const validateTransferApp = async (
 
 export const validateSimpleTransferApp = async (
   app: AppInstanceInfo,
-  registeredInfo: RegisteredAppDetails,
+  registeredInfo: DefaultApp,
   isVirtual: boolean,
   connext: ConnextClient,
   // TODO: ideally this wouldnt get passed in, but you need it
@@ -100,13 +95,17 @@ export const validateSimpleTransferApp = async (
   return undefined;
 };
 
-// TODO: implement
 export const validateLinkedTransferApp = async (
   app: AppInstanceInfo,
-  registeredInfo: RegisteredAppDetails,
+  registeredInfo: DefaultApp,
   isVirtual: boolean,
   connext: ConnextClient,
 ): Promise<string | undefined> => {
+  const baseValidation = await baseAppValidation(app, registeredInfo, isVirtual, connext);
+  if (baseValidation) {
+    return baseValidation;
+  }
+
   return undefined;
 };
 
@@ -118,7 +117,7 @@ export const appProposalValidation: ProposalValidator = {
 
 const baseAppValidation = async (
   app: AppInstanceInfo,
-  registeredInfo: RegisteredAppDetails,
+  registeredInfo: DefaultApp,
   isVirtual: boolean,
   connext: ConnextClient,
 ): Promise<string | undefined> => {
@@ -143,8 +142,6 @@ const baseAppValidation = async (
   }
 
   // check that the encoding is the same
-  log.info(`app.abiEncodings.actionEncoding: ${app.abiEncodings.actionEncoding}`);
-  log.info(`registeredInfo.actionEncoding: ${registeredInfo.actionEncoding}`);
   if (app.abiEncodings.actionEncoding !== registeredInfo.actionEncoding) {
     return `Incorrect action encoding detected. Proposed app: ${stringify(app)}`;
   }

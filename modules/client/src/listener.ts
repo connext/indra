@@ -9,6 +9,7 @@ import {
   AppInstanceInfo,
   CFCoreTypes,
   CreateChannelMessage,
+  DefaultApp,
   DepositConfirmationMessage,
   DepositFailedMessage,
   DepositStartedMessage,
@@ -16,7 +17,6 @@ import {
   InstallVirtualMessage,
   NodeMessageWrappedProtocolMessage,
   ProposeMessage,
-  RegisteredAppDetails,
   RejectInstallVirtualMessage,
   RejectProposalMessage,
   SupportedApplications,
@@ -198,8 +198,8 @@ export class ConnextListener extends EventEmitter {
 
   private matchAppInstance = async (
     msg: ProposeMessage,
-  ): Promise<{ matchedApp: RegisteredAppDetails; appInfo: AppInstanceInfo } | undefined> => {
-    const filteredApps = this.connext.appRegistry.filter((app: RegisteredAppDetails): boolean => {
+  ): Promise<{ matchedApp: DefaultApp; appInfo: AppInstanceInfo } | undefined> => {
+    const filteredApps = this.connext.appRegistry.filter((app: DefaultApp): boolean => {
       return app.appDefinitionAddress === msg.data.params.appDefinition;
     });
 
@@ -242,7 +242,7 @@ export class ConnextListener extends EventEmitter {
 
   private verifyAndInstallKnownApp = async (
     appInstance: AppInstanceInfo,
-    matchedApp: RegisteredAppDetails,
+    matchedApp: DefaultApp,
   ): Promise<void> => {
     // virtual is now determined by presence of intermediary identifier
     const isVirtual = !!appInstance.intermediaryIdentifier;
