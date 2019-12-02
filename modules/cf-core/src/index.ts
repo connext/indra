@@ -1,6 +1,7 @@
 export * from "rpc-server";
+export { sortAddresses, xkeyKthAddress, xkeysToSortedKthAddresses } from "./machine";
 export * from "./methods/errors";
-export { getNetworkEnum, EthereumNetworkName } from "./network-configuration";
+export { StateChannel } from "./models";
 export * from "./node";
 export * from "./private-keys-generator";
 export {
@@ -21,10 +22,6 @@ export {
   UpdateStateMessage,
   WithdrawConfirmationMessage,
   WithdrawFailedMessage,
-  WithdrawStartedMessage
+  WithdrawStartedMessage,
 } from "./types";
 export { getCreate2MultisigAddress } from "./utils";
-export { sortAddresses, xkeyKthAddress, xkeysToSortedKthAddresses } from "./machine";
-export {
-  StateChannel
-} from "./models";
