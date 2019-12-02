@@ -21,6 +21,8 @@
     "solidity"
   ],
   "devDependencies": {
+    "@connext/types": "1.2.9",
+    "@connext/cf-adjudicator-contracts": "0.4.1",
     "@types/chai": "4.2.4",
     "@types/node": "12.12.7",
     "chai": "4.2.0",
