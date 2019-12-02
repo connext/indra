@@ -29,6 +29,7 @@ network="${project}_$suffix"
 
 ethprovider_host="${project}_ethprovider_$suffix"
 ethprovider_port="8545"
+eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 eth_rpc_url="http://$ethprovider_host:8545"
 
 # Kill the dependency containers when this script exits
@@ -62,6 +63,7 @@ docker run \
   --entrypoint="bash" \
   --env="GANACHE_HOST=$ethprovider_host" \
   --env="GANACHE_PORT=$ethprovider_port" \
+  --env="SUGAR_DADDY=$eth_mnemonic" \
   --interactive \
   --name="${project}_test_cf_core" \
   --network="$network" \

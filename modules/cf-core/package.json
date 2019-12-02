@@ -32,7 +32,7 @@
   "devDependencies": {
     "@babel/core": "7.7.2",
     "@babel/plugin-proposal-object-rest-spread": "7.6.2",
-    "@counterfactual/local-ganache-server": "0.0.10",
+    "@connext/cf-apps": "0.4.1",
     "@types/chai": "4.2.4",
     "@types/dotenv-safe": "5.0.4",
     "@types/jest": "24.0.22",

@@ -42,9 +42,7 @@ describe("Uses a provided signing key generation function to sign channel state 
       beforeEach(async () => {
         const provider = new JsonRpcProvider(global["ganacheURL"]);
         const messagingService = new MemoryMessagingService();
-        const nodeConfig = {
-          STORE_KEY_PREFIX: process.env.FIREBASE_STORE_PREFIX_KEY!
-        };
+        const nodeConfig = { STORE_KEY_PREFIX: "test" };
 
         const lockService = new MemoryLockService();
 

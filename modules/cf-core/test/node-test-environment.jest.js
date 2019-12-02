@@ -11,12 +11,9 @@ class NodeEnvironment extends NodeJSEnvironment {
 
   async setup() {
     await super.setup();
-
-    const chain = global["chain"];
-
-    this.global.networkContext = chain.networkContext;
-    this.global.fundedPrivateKey = chain.fundedPrivateKey;
-    this.global.ganacheURL = `http://localhost:${process.env.GANACHE_PORT}`;
+    this.global.fundedPrivateKey = global["fundedPrivateKey"];
+    this.global.ganacheURL = global["ganacheUrl"];
+    this.global.networkContext = global["networkContext"];
   }
 
 
