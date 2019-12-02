@@ -1,3 +1,5 @@
+import * as connext from "@connext/client";
+import { CF_PATH } from "@connext/types";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -9,7 +11,6 @@ import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import tokenArtifacts from "openzeppelin-solidity/build/contracts/ERC20Mintable.json";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
-import * as connext from "@connext/client";
 import { interpret } from "xstate";
 
 import "./App.css";
@@ -65,7 +66,6 @@ const urls = {
 const WITHDRAW_ESTIMATED_GAS = toBN("300000");
 const DEPOSIT_ESTIMATED_GAS = toBN("25000");
 const MAX_CHANNEL_VALUE = Currency.DAI("30");
-const CF_PATH = "m/44'/60'/0'/25446";
 
 // it is important to add a default payment
 // profile on initial load in the case the

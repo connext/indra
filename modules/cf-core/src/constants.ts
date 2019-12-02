@@ -1,6 +1,7 @@
 import { AddressZero } from "ethers/constants";
 
-// Adds indentation, white space, and line break characters to the return-value JSON text to make it easier to read
+export { CF_PATH } from "@connext/types";
+
 export const JSON_STRINGIFY_SPACE = 2;
 
 /**
@@ -12,6 +13,3 @@ export const JSON_STRINGIFY_SPACE = 2;
  * also carries data about ERC20 tokens.
  */
 export const CONVENTION_FOR_ETH_TOKEN_ADDRESS = AddressZero;
-
-// 25446 is 0x6366... or "cf" in ascii, for "Counterfactual".
-export const CF_PATH = "m/44'/60'/0'/25446";

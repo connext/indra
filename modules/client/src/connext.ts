@@ -1,4 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
+import { CF_PATH } from "@connext/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
 import { Contract, providers, Wallet } from "ethers";
@@ -15,7 +16,7 @@ import { ResolveConditionController } from "./controllers/ResolveConditionContro
 import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
-import { CF_PATH, CFCore, Logger, stringify, withdrawalKey, xpubToAddress } from "./lib";
+import { CFCore, Logger, stringify, withdrawalKey, xpubToAddress } from "./lib";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import {

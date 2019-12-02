@@ -1,11 +1,11 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { ConnextNodeStorePrefix } from "@connext/types";
+import { CF_PATH, ConnextNodeStorePrefix } from "@connext/types";
 import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { fromMnemonic } from "ethers/utils/hdnode";
 
 import { ConfigService } from "../config/config.service";
-import { CFCoreProviderId, CF_PATH, MessagingProviderId } from "../constants";
+import { CFCoreProviderId, MessagingProviderId } from "../constants";
 import { LockService } from "../lock/lock.service";
 import { CLogger, xpubToAddress } from "../util";
 import { CFCore } from "../util/cfCore";
