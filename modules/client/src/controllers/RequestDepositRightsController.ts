@@ -27,13 +27,14 @@ export class RequestDepositRightsController extends AbstractController {
     if (assetId === AddressZero) {
       multisigBalance = await this.connext.ethProvider.getBalance(this.connext.multisigAddress);
     } else {
-      // make sure there is not a collateralization in flight
-      const { collateralizationInFlight } = await this.node.getChannel();
-      if (collateralizationInFlight && assetId === this.connext.token.address) {
-        throw new Error(`Cannot claim deposit rights while hub is depositing.`);
-      }
       const token = new Contract(assetId, tokenAbi, this.connext.ethProvider);
       multisigBalance = await token.balanceOf(this.connext.multisigAddress);
+    }
+
+    // make sure there is not a collateralization in flight
+    const { collateralizationInFlight } = await this.node.getChannel();
+    if (collateralizationInFlight) {
+      throw new Error(`Cannot claim deposit rights while hub is depositing.`);
     }
 
     this.registerListeners(assetId);
@@ -96,8 +97,8 @@ export class RequestDepositRightsController extends AbstractController {
   /////////////////////////////////
   ////// PRIVATE METHODS
 
-  private registerListeners = (assetId?: string): void => {
-    if (assetId || assetId === AddressZero) {
+  private registerListeners = (assetId: string = AddressZero): void => {
+    if (assetId === AddressZero) {
       // register listener for eth
       // listener on ETH transfers to multisig to uninstall balance refund
       // for eth
@@ -114,44 +115,42 @@ export class RequestDepositRightsController extends AbstractController {
         const freeBalance = await this.connext.getFreeBalance(AddressZero);
         this.log.info(`updated FreeBalance: ${stringify(freeBalance)}`);
       });
-      return;
+    } else {
+      // listener on token transfers to multisig to uninstall balance refuns
+      // this is because in the case that the counterparty deposits in their
+      // channel, we want to minimize the amount of time the balance token
+      // refund app is installed on the client. this will allow the deposit to
+      // be shown immediately upon transfer
+      this.connext.token.on("Transfer", async (src: string, dst: string, wad: string) => {
+        if (getAddress(dst) !== this.connext.multisigAddress) {
+          // not our multisig
+          return;
+        }
+        this.log.info(`Got a transfer to multisig. src: ${src}, dst: ${dst}, wad: ${wad}`);
+        // uninstall balance refund app for token
+        if (getAddress(src) === xpubToAddress(this.connext.nodePublicIdentifier)) {
+          // transfer is from node, dont uninstall refund app
+          this.log.info(`Transfer from node, not uninstalling balance refund app`);
+          return;
+        }
+        this.log.info(`Uninstalling balance refund app`);
+        await this.connext.rescindDepositRights(this.connext.config.contractAddresses.Token);
+        const freeBalance = await this.connext.getFreeBalance(
+          this.connext.config.contractAddresses.Token,
+        );
+        this.log.info(`updated FreeBalance: ${stringify(freeBalance)}`);
+      });
     }
-    // listener on token transfers to multisig to uninstall balance refuns
-    // this is because in the case that the counterparty deposits in their
-    // channel, we want to minimize the amount of time the balance token
-    // refund app is installed on the client. this will allow the deposit to
-    // be shown immediately upon transfer
-    this.connext.token.on("Transfer", async (src: string, dst: string, wad: string) => {
-      if (getAddress(dst) !== this.connext.multisigAddress) {
-        // not our multisig
-        return;
-      }
-      this.log.info(`Got a transfer to multisig. src: ${src}, dst: ${dst}, wad: ${wad}`);
-      // uninstall balance refund app for token
-      if (getAddress(src) === xpubToAddress(this.connext.nodePublicIdentifier)) {
-        // transfer is from node, dont uninstall refund app
-        this.log.info(`Transfer from node, not uninstalling balance refund app`);
-        return;
-      }
-      this.log.info(`Uninstalling balance refund app`);
-      await this.connext.rescindDepositRights(this.connext.config.contractAddresses.Token);
-      const freeBalance = await this.connext.getFreeBalance(
-        this.connext.config.contractAddresses.Token,
-      );
-      this.log.info(`updated FreeBalance: ${stringify(freeBalance)}`);
-    });
   };
 
-  private cleanupListeners = (assetId?: string): void => {
-    if (assetId || assetId === AddressZero) {
+  private cleanupListeners = (assetId: string = AddressZero): void => {
+    if (assetId === AddressZero) {
       this.log.info(`Removing all eth provider listeners for multisig`);
       this.ethProvider.removeAllListeners(this.connext.multisigAddress);
-      return;
+    } else {
+      this.log.info(`Removing all token transfer listeners`);
+      this.connext.token.removeAllListeners("Transfer");
     }
-
-    this.log.info(`Removing all token transfer listeners`);
-    this.connext.token.removeAllListeners("Transfer");
-    return;
   };
 
   private proposeDepositInstall = async (assetId: string): Promise<string | undefined> => {
