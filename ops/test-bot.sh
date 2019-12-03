@@ -34,7 +34,7 @@ trap cleanup EXIT SIGINT
 rm -f ops/recipient-bot.log
 touch ops/recipient-bot.log
 
-function logInstalledApps {
+function checkInstalledApps {
   senderStore=modules/payment-bot/.payment-bot-db/2.json
   recipientStore=modules/payment-bot/.payment-bot-db/1.json
   senderApps=0
@@ -45,11 +45,14 @@ function logInstalledApps {
   if [[ -f "$recipientStore" ]]
   then recipientApps="`cat $recipientStore | grep channel | cut -d ":" -f3- | tr -d '\\\' | cut -c 3- | rev | cut -c 3- | rev | jq '.appInstances | length'`"
   fi
-  echo -e "$divider";echo "Installed apps:"
-  echo "Sender: $senderApps"
-  echo "Recipient: $recipientApps"
   if [[ "$senderApps" != "0" || "$recipientApps" != "0" ]]
-  then echo "Error: no lingering apps should be left uninstalled" && echo && exit 1
+  then 
+    echo -e "$divider";echo "Installed apps:"
+    echo "Sender: $senderApps"
+    echo "Recipient: $recipientApps"
+    echo "Error: no lingering apps should be left uninstalled"
+    echo
+    exit 1
   fi
 }
 
@@ -57,7 +60,7 @@ function logInstalledApps {
 ########################################
 ## Run Tests
 
-logInstalledApps
+checkInstalledApps
 
 echo -e "$divider";echo "Requesting eth collateral for recipient bot"
 bash ops/payment-bot.sh -i 1 -q -m "$mnemonic1"
@@ -97,7 +100,7 @@ bash ops/payment-bot.sh -i 1 -a $tokenAddress
 echo -e "$divider";echo "Giving the sender a few seconds to finish uninstalling.."
 sleep 2
 cleanup
-logInstalledApps
+checkInstalledApps
 
 echo -e "$divider";echo "Generating a link payment & leaving the sender running so it can uninstall the app after"
 bash ops/payment-bot.sh -i 2 -a $tokenAddress -l 0.01 -p "$paymentId1" -h "$preImage1" -m "$mnemonic2" -o &
@@ -109,9 +112,14 @@ bash ops/payment-bot.sh -i 1 -a $tokenAddress -y 0.01 -p "$paymentId1" -h "$preI
 echo -e "$divider";echo "Giving the sender a few seconds to finish uninstalling.."
 sleep 2
 cleanup
-logInstalledApps
+checkInstalledApps
 
 echo -e "$divider";echo "Withdrawing tokens from recipient"
 bash ops/payment-bot.sh -i 1 -a $tokenAddress -w 0.02
+
+echo -e "$divider";echo "Withdrawing ether from sender"
+bash ops/payment-bot.sh -i 2 -w 0.02
+
+checkInstalledApps
 
 echo -e "$divider";echo "Tests finished successfully"
