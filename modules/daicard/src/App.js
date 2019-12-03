@@ -394,10 +394,18 @@ class App extends React.Component {
       assetId: AddressZero,
       timeoutMs,
     })
-    await channel.requestDepositRights({ 
-      assetId: token.address,
-      timeoutMs,
-    })
+    try {
+      await channel.requestDepositRights({ 
+        assetId: token.address,
+        timeoutMs,
+      })
+    } catch (e) {
+      if (e.message.includes(`Cannot claim deposit rights while hub is depositing`)) {
+        this.setState({ timeoutMs: 0 })
+        console.warn(`Cannot start deposit timer, hub is collateralizing us.`)
+        return;
+      }
+    }
     
     this.setState({ timeoutMs })
     setInterval(async () => { await this.tick() }, 1000)
