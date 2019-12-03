@@ -15,14 +15,14 @@
   },
   "dependencies": {
     "@connext/cf-types": "1.2.14",
-    "ethers": "4.0.39"
+    "ethers": "4.0.40"
   },
   "devDependencies": {
-    "@types/jest": "24.0.22",
+    "@types/jest": "24.0.23",
     "jest": "24.9.0",
-    "rollup": "1.26.4",
+    "rollup": "1.27.8",
     "rollup-plugin-typescript2": "0.25.2",
-    "ts-jest": "24.1.0",
+    "ts-jest": "24.2.0",
     "typescript": "3.5.3"
   }
 }
