@@ -50,7 +50,6 @@ cypress/videos
 .vscode
 
 # Misc
-.env
 .rpt2_cache
 
 # Git submodules
