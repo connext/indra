@@ -116,7 +116,7 @@ export class ConfigService implements OnModuleInit {
         allowNodeInstall: true,
         appDefinitionAddress: addressBook[SupportedApplications.CoinBalanceRefundApp],
         name: "CoinBalanceRefundApp",
-        network: SupportedNetworks[ethNetwork.name.toUpperCase()],
+        network: SupportedNetworks[ethNetwork.name.toLowerCase()],
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
         stateEncoding: `tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)`,
       },
