@@ -1,7 +1,12 @@
 import { AddressZero } from "ethers/constants";
 import { BigNumber, getAddress } from "ethers/utils";
 
-import { AppState, CoinTransfer, CoinBalanceRefundAppState } from "./app";
+import {
+  AppState,
+  CoinTransfer,
+  SimpleLinkedTransferAppState,
+  CoinBalanceRefundAppState,
+} from "./app";
 import { AssetAmount, PaymentProfile } from "./channel";
 import {
   DepositParameters,
@@ -228,6 +233,19 @@ export function convertAppState<To extends NumericTypeName>(
   };
 }
 
+export function convertLinkedTransferAppState<To extends NumericTypeName>(
+  to: To,
+  obj: AppState<any>,
+): SimpleLinkedTransferAppState<NumericTypes[To]> {
+  return {
+    ...convertAmountField(to, obj),
+    coinTransfers: [
+      convertAmountField(to, obj.coinTransfers[0]),
+      convertAmountField(to, obj.coinTransfers[1]),
+    ],
+  };
+}
+
 // DEFINE CONVERSION OBJECT TO BE EXPORTED
 export const convert = {
   AppState: convertAppState,
@@ -235,9 +253,12 @@ export const convert = {
   CoinBalanceRefundApp: convertCoinBalanceRefund,
   Deposit: convertDepositParametersToAsset,
   LinkedTransfer: convertLinkedTransferParametersToAsset,
+  LinkedTransferAppState: convertLinkedTransferAppState,
   LinkedTransferToRecipient: convertLinkedTransferToRecipientParametersToAsset,
   PaymentProfile: convertPaymentProfile,
   ResolveLinkedTransfer: convertAssetAmountWithId,
+  SimpleTransferAppState: convertAppState,
+  SwapAppState: convertAppState,
   SwapParameters: convertSwapParameters,
   Transfer: convertAssetAmount,
   TransferParameters: convertTransferParametersToAsset,

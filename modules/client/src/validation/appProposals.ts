@@ -1,35 +1,65 @@
+import { Zero } from "ethers/constants";
 import { bigNumberify, getAddress } from "ethers/utils";
 
 import { ConnextClient } from "../connext";
 import { Logger } from "../lib/logger";
 import { stringify, xpubToAddress } from "../lib/utils";
 import {
-  AppInstanceInfo,
-  AppInstanceJson,
-  RegisteredAppDetails,
+  CFCoreTypes,
+  CoinTransferBigNumber,
+  convert,
+  DefaultApp,
+  SimpleLinkedTransferAppState,
+  SimpleLinkedTransferAppStateBigNumber,
+  SimpleSwapAppState,
+  SimpleSwapAppStateBigNumber,
+  SimpleTransferAppState,
+  SimpleTransferAppStateBigNumber,
   SupportedApplication,
   SupportedApplications,
 } from "../types";
 
+import { invalidAddress } from "./addresses";
+import { invalid32ByteHexString } from "./hexStrings";
+import { validator } from "./validator";
+
 type ProposalValidator = {
   [index in SupportedApplication]: (
-    app: AppInstanceInfo,
-    registeredInfo: RegisteredAppDetails,
-    isVirtual: boolean,
+    params: CFCoreTypes.ProposeInstallParams,
+    proposedByIdentifier: string,
+    registeredInfo: DefaultApp,
     connext: ConnextClient,
   ) => Promise<string | undefined>;
 };
 
 export const validateSwapApp = async (
-  app: AppInstanceInfo,
-  registeredInfo: RegisteredAppDetails,
-  isVirtual: boolean,
+  params: CFCoreTypes.ProposeInstallParams,
+  proposedByIdentifier: string,
+  registeredInfo: DefaultApp,
   connext: ConnextClient,
 ): Promise<string | undefined> => {
-  const baseValidation = await baseAppValidation(app, registeredInfo, isVirtual, connext);
+  const baseValidation = await baseAppValidation(
+    params,
+    proposedByIdentifier,
+    registeredInfo,
+    connext,
+  );
   if (baseValidation) {
     return baseValidation;
   }
+
+  // validate initial state
+  const { coinTransfers } = convert.SwapAppState(
+    "bignumber",
+    params.initialState as SimpleSwapAppState,
+  ) as SimpleSwapAppStateBigNumber;
+
+  if (coinTransfers.length !== 0) {
+    return invalidAppMessage(`Incorrect number of coin transfers in initial app state`, params);
+  }
+
+  const coinTransferErrs = validateCoinTransfers(coinTransfers[0]);
+  if (coinTransferErrs) return invalidAppMessage(coinTransferErrs, params);
 
   // validate the timeout is above the minimum (?)
 
@@ -39,175 +69,262 @@ export const validateSwapApp = async (
   return undefined;
 };
 
-export const validateTransferApp = async (
-  app: AppInstanceInfo,
-  registeredInfo: RegisteredAppDetails,
-  isVirtual: boolean,
-  connext: ConnextClient,
-  // TODO: ideally this wouldnt get passed in, but you need it
-  // to check things like your public identifier, open apps,
-  // free balance, etc.
-): Promise<string | undefined> => {
-  const baseValidation = await baseAppValidation(app, registeredInfo, isVirtual, connext);
-  if (baseValidation) {
-    return baseValidation;
-  }
-
-  // check that the receivers deposit is 0
-  // assume the recipient is always the responder
-  if (!app.responderDeposit.isZero()) {
-    return `Responder (payee) must have a zero balance in proposed app. Proposed app: ${stringify(
-      app,
-    )}`;
-  }
-
-  if (app.initiatorDeposit.isZero()) {
-    return `Initiator (payor) must have nonzero balance in proposed app. Proposed app: ${stringify(
-      app,
-    )}`;
-  }
-
-  return undefined;
-};
-
 export const validateSimpleTransferApp = async (
-  app: AppInstanceInfo,
-  registeredInfo: RegisteredAppDetails,
-  isVirtual: boolean,
+  params: CFCoreTypes.ProposeInstallParams,
+  proposedByIdentifier: string,
+  registeredInfo: DefaultApp,
   connext: ConnextClient,
   // TODO: ideally this wouldnt get passed in, but you need it
   // to check things like your public identifier, open apps,
   // free balance, etc.
 ): Promise<string | undefined> => {
-  const baseValidation = await baseAppValidation(app, registeredInfo, isVirtual, connext);
+  const baseValidation = await baseAppValidation(
+    params,
+    proposedByIdentifier,
+    registeredInfo,
+    connext,
+  );
   if (baseValidation) {
     return baseValidation;
   }
 
+  const { responderDeposit, initiatorDeposit, initialState } = params;
+
   // check that the receivers deposit is 0
   // assume the recipient is always the responder
-  if (!app.responderDeposit.isZero()) {
+  if (!responderDeposit.isZero()) {
     return `Responder (payee) must have a zero balance in proposed app. Proposed app: ${stringify(
-      app,
+      params,
     )}`;
   }
 
-  if (app.initiatorDeposit.isZero()) {
+  if (initiatorDeposit.isZero()) {
     return `Initiator (payor) must have nonzero balance in proposed app. Proposed app: ${stringify(
-      app,
+      params,
     )}`;
+  }
+
+  // validate initial state
+  const { coinTransfers } = convert.SimpleTransferAppState(
+    "bignumber",
+    initialState as SimpleTransferAppState,
+  ) as SimpleTransferAppStateBigNumber;
+
+  const coinTransferErrs = validateCoinTransfers(coinTransfers);
+  if (coinTransferErrs) return invalidAppMessage(coinTransferErrs, params);
+
+  return undefined;
+};
+
+export const validateLinkedTransferApp = async (
+  params: CFCoreTypes.ProposeInstallParams,
+  proposedByIdentifier: string,
+  registeredInfo: DefaultApp,
+  connext: ConnextClient,
+): Promise<string | undefined> => {
+  const baseValidation = await baseAppValidation(
+    params,
+    proposedByIdentifier,
+    registeredInfo,
+    connext,
+  );
+  if (baseValidation) {
+    return baseValidation;
+  }
+
+  const { responderDeposit, initialState, initiatorDeposit, initiatorDepositTokenAddress } = params;
+
+  // check that the receivers deposit is 0
+  // assume the recipient is always the responder
+  if (!responderDeposit.isZero()) {
+    return invalidAppMessage(`Responder (payee) must have a zero balance in proposed app`, params);
+  }
+
+  if (initiatorDeposit.isZero()) {
+    return invalidAppMessage(`Initiator (payor) must have nonzero balance in proposed app`, params);
+  }
+
+  // validate initial state
+  const {
+    coinTransfers,
+    amount,
+    assetId,
+    linkedHash,
+    paymentId,
+    preImage,
+  } = convert.LinkedTransferAppState(
+    "bignumber",
+    initialState as SimpleLinkedTransferAppState,
+  ) as SimpleLinkedTransferAppStateBigNumber;
+
+  // check valid addresses and non-negative coin transfers
+  const coinTransferErrs = validateCoinTransfers(coinTransfers);
+  if (coinTransferErrs) return invalidAppMessage(coinTransferErrs, params);
+
+  // make sure amount is same as coin transfer amount
+  const nonzeroCoinTransfer = coinTransfers.filter(transfer => {
+    return !transfer.amount.isZero();
+  });
+
+  if (nonzeroCoinTransfer.length > 1) {
+    return invalidAppMessage(
+      `Not installing an app with two nonzero coin transfer entries`,
+      params,
+    );
+  }
+
+  if (!nonzeroCoinTransfer[0].amount.eq(initiatorDeposit)) {
+    return invalidAppMessage(`Responder deposit does not match amount in coin transfers`, params);
+  }
+
+  if (!amount.eq(initiatorDeposit)) {
+    return invalidAppMessage(`Responder deposit does not match amount in initial state`, params);
+  }
+
+  // make sure assetId is the same as initiator token address
+  if (assetId !== initiatorDepositTokenAddress) {
+    return invalidAppMessage(
+      `Initiator deposit token address does not match the assetId of the initial state`,
+      params,
+    );
+  }
+
+  // make sure hash, paymentId, and preimage are 32 byte hex strings
+  if (
+    invalid32ByteHexString(paymentId) ||
+    invalid32ByteHexString(preImage) ||
+    invalid32ByteHexString(linkedHash)
+  ) {
+    return invalidAppMessage(
+      `Invalid 32 byte hex string detected in paymentId, preImage, or linkedHash`,
+      params,
+    );
   }
 
   return undefined;
 };
 
-// TODO: implement
-export const validateLinkedTransferApp = async (
-  app: AppInstanceInfo,
-  registeredInfo: RegisteredAppDetails,
-  isVirtual: boolean,
-  connext: ConnextClient,
-): Promise<string | undefined> => {
-  return baseAppValidation(app, registeredInfo, isVirtual, connext);
+export const appProposalValidation: ProposalValidator = {
+  SimpleLinkedTransferApp: validateLinkedTransferApp,
+  SimpleTransferApp: validateSimpleTransferApp,
+  SimpleTwoPartySwapApp: validateSwapApp,
 };
 
 const baseAppValidation = async (
-  app: AppInstanceInfo,
-  registeredInfo: RegisteredAppDetails,
-  isVirtual: boolean,
+  params: CFCoreTypes.ProposeInstallParams,
+  proposedByIdentifier: string,
+  registeredInfo: DefaultApp,
   connext: ConnextClient,
 ): Promise<string | undefined> => {
   const log = new Logger("baseAppValidation", connext.log.logLevel);
   // check the initial state is consistent
-  // FIXME: why isnt this in the cf types?
-  log.info(`Validating app: ${stringify(app)}`);
-  // check that identity hash isnt used by another app
-  const apps = await connext.getAppInstances();
-  if (apps) {
-    const sharedIds = (await connext.getAppInstances()).filter(
-      (a: AppInstanceJson): boolean => a.identityHash === app.identityHash,
-    );
-    if (sharedIds.length !== 0) {
-      return `Duplicate app id detected. Proposed app: ${stringify(app)}`;
-    }
-  }
-
+  log.info(`Validating app: ${stringify(params)}`);
   // check that the app definition is the same
-  if (app.appDefinition !== registeredInfo.appDefinitionAddress) {
-    return `Incorrect app definition detected. Proposed app: ${stringify(app)}`;
+  if (params.appDefinition !== registeredInfo.appDefinitionAddress) {
+    return invalidAppMessage(`Incorrect app definition detected`, params);
   }
 
   // check that the encoding is the same
   // FIXME: stupid hacky thing for null vs undefined
-  app.abiEncodings.actionEncoding = app.abiEncodings.actionEncoding
-    ? app.abiEncodings.actionEncoding
+  params.abiEncodings.actionEncoding = params.abiEncodings.actionEncoding
+    ? params.abiEncodings.actionEncoding
     : null;
   registeredInfo.actionEncoding = registeredInfo.actionEncoding
     ? registeredInfo.actionEncoding
     : null;
-  if (app.abiEncodings.actionEncoding !== registeredInfo.actionEncoding) {
-    return `Incorrect action encoding detected. Proposed app: ${stringify(app)}`;
+  if (params.abiEncodings.actionEncoding !== registeredInfo.actionEncoding) {
+    return invalidAppMessage(`Incorrect action encoding detected`, params);
   }
 
-  if (app.abiEncodings.stateEncoding !== registeredInfo.stateEncoding) {
-    return `Incorrect state encoding detected. Proposed app: ${stringify(app)}`;
+  if (params.abiEncodings.stateEncoding !== registeredInfo.stateEncoding) {
+    return invalidAppMessage(`Incorrect state encoding detected`, params);
   }
 
-  // check that the outcome type is the same
+  // neither deposit should be negative
+  if (bigNumberify(params.initiatorDeposit).lt(0) || bigNumberify(params.responderDeposit).lt(0)) {
+    return invalidAppMessage(`Refusing to install app with negative deposits`, params);
+  }
+
+  // neither token address should be invalid
   if (
-    bigNumberify(app.initiatorDeposit).isZero() &&
-    bigNumberify(app.responderDeposit).isZero() &&
-    registeredInfo.name !== SupportedApplications.CoinBalanceRefundApp
+    invalidAddress(params.initiatorDepositTokenAddress) ||
+    invalidAddress(params.responderDepositTokenAddress)
   ) {
-    return `Refusing to install app with two zero value deposits that is not a refund app. Proposed app: ${stringify(
-      app,
-    )}`;
+    return invalidAppMessage(`Refusing to install app with negative deposits`, params);
+  }
+
+  // make sure there are no two person 0 value deposits for all but the
+  // coinbalance refund app
+  const isRefund =
+    params.appDefinition === connext.config.contractAddresses["CoinBalanceRefundApp"];
+  if (
+    !isRefund &&
+    bigNumberify(params.initiatorDeposit).isZero() &&
+    bigNumberify(params.responderDeposit).isZero()
+  ) {
+    return invalidAppMessage(`Refusing to install app with two zero value deposits`, params);
+  }
+
+  // make sure that the app is allowed to be installed by the node
+  if (proposedByIdentifier === connext.nodePublicIdentifier && !registeredInfo.allowNodeInstall) {
+    return invalidAppMessage(`Node is not allowed to install this app`, params);
   }
 
   // check that there is enough in the free balance of desired currency
-  // to install app
-  const responderFreeBalance = await connext.getFreeBalance(
-    getAddress(app.responderDepositTokenAddress),
+  // to install apps
+  const responderAssetBalance = await connext.getFreeBalance(
+    getAddress(params.responderDepositTokenAddress),
   );
-  const userFreeBalance = responderFreeBalance[xpubToAddress(connext.publicIdentifier)];
-  if (userFreeBalance.lt(app.responderDeposit)) {
-    return `Insufficient free balance for requested asset,
+  const userFreeBalance = responderAssetBalance[xpubToAddress(connext.publicIdentifier)];
+  if (userFreeBalance.lt(params.responderDeposit)) {
+    return invalidAppMessage(
+      `Insufficient free balance for requested asset,
       freeBalance: ${userFreeBalance.toString()}
-      required: ${app.responderDeposit}. Proposed app: ${stringify(app)}`;
-  }
-
-  // if it is a virtual app, check that the intermediary has sufficient
-  // collateral in your channel
-  const initiatorFreeBalance = await connext.getFreeBalance(
-    getAddress(app.initiatorDepositTokenAddress),
-  );
-  const nodeFreeBalance = initiatorFreeBalance[xpubToAddress(connext.nodePublicIdentifier)];
-  if (isVirtual && nodeFreeBalance.lt(app.initiatorDeposit)) {
-    const reqRes = await connext.requestCollateral(app.initiatorDepositTokenAddress);
-    connext.log.debug(
-      `Collateral request response: ${stringify(
-        reqRes || { msg: `Returned void, likely that request timed out` },
-      )}`,
+      required: ${params.responderDeposit}`,
+      params,
     );
-    return `Insufficient collateral for requested asset,
-    freeBalance of node: ${nodeFreeBalance.toString()}
-    required: ${app.initiatorDeposit}. Proposed app: ${stringify(app)}`;
   }
 
-  // check that the intermediary includes your node if it is not an app with your node
-  const hasIntermediaries = app.intermediaryIdentifier;
-  if (hasIntermediaries && !isVirtual) {
-    return `Apps with connected node should have no intermediaries. Proposed app: ${stringify(
-      app,
-    )}`;
+  // check that the intermediary has sufficient collateral in your
+  // channel
+  const initiatorAssetBalance = await connext.getFreeBalance(
+    getAddress(params.initiatorDepositTokenAddress),
+  );
+  const nodeFreeBalance = initiatorAssetBalance[xpubToAddress(connext.nodePublicIdentifier)];
+  if (nodeFreeBalance.lt(params.initiatorDeposit)) {
+    return invalidAppMessage(
+      `Insufficient free balance for requested asset,
+      freeBalance: ${nodeFreeBalance.toString()}
+      required: ${params.initiatorDeposit}`,
+      params,
+    );
   }
 
-  if (isVirtual && !hasIntermediaries) {
-    return `Virtual apps should have intermediaries. Proposed app: ${stringify(app)}`;
-  }
+  return undefined;
+};
 
-  if (isVirtual && app.intermediaryIdentifier !== connext.nodePublicIdentifier) {
-    return `Connected node is not in proposed intermediaries. Proposed app: ${stringify(app)}`;
+const invalidAppMessage = (prefix: string, params: CFCoreTypes.ProposeInstallParams): string => {
+  return `${prefix}. Proposed app: ${stringify(params)}`;
+};
+
+const validateCoinTransfers = (coinTransfers: CoinTransferBigNumber[]): string => {
+  const errs = validator(
+    coinTransfers.map((coinTransfer: CoinTransferBigNumber) => {
+      if (coinTransfer.amount.lt(Zero)) {
+        return `Will not install swap app with negative coin transfer amounts`;
+      }
+
+      if (invalidAddress(coinTransfer.to)) {
+        return `Will not install app with invalid coin transfer addresses`;
+      }
+
+      return undefined;
+    }),
+  );
+
+  if (errs.length > 0) {
+    // all error messages will be the same, only return first
+    return errs.toString();
   }
 
   return undefined;

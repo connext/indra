@@ -1,10 +1,12 @@
 import { DepositConfirmationMessage, NODE_EVENTS } from "@connext/cf-core";
 import {
+  DefaultApp,
   ResolveLinkedTransferResponse,
   SimpleLinkedTransferAppStateBigNumber,
   SimpleTransferAppStateBigNumber,
   SupportedApplication,
   SupportedApplications,
+  SupportedNetwork,
 } from "@connext/types";
 import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
@@ -14,6 +16,7 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService, DefaultApp } from "../config/config.service";
+import { MessagingProviderId } from "../constants";
 import { mkHash } from "../test";
 import { CLogger, createLinkedHash, freeBalanceAddressFromXpub } from "../util";
 import { AppInstanceJson } from "../util/cfCore";

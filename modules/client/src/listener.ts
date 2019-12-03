@@ -6,9 +6,9 @@ import { ConnextClient } from "./connext";
 import { Logger } from "./lib/logger";
 import { stringify } from "./lib/utils";
 import {
-  AppInstanceInfo,
   CFCoreTypes,
   CreateChannelMessage,
+  DefaultApp,
   DepositConfirmationMessage,
   DepositFailedMessage,
   DepositStartedMessage,
@@ -16,7 +16,6 @@ import {
   InstallVirtualMessage,
   NodeMessageWrappedProtocolMessage,
   ProposeMessage,
-  RegisteredAppDetails,
   RejectInstallVirtualMessage,
   RejectProposalMessage,
   SupportedApplications,
@@ -216,8 +215,15 @@ export class ConnextListener extends EventEmitter {
 
   private matchAppInstance = async (
     msg: ProposeMessage,
-  ): Promise<{ matchedApp: RegisteredAppDetails; appInfo: AppInstanceInfo } | undefined> => {
-    const filteredApps = this.connext.appRegistry.filter((app: RegisteredAppDetails): boolean => {
+  ): Promise<
+    | undefined
+    | {
+        matchedApp: DefaultApp;
+        proposeParams: CFCoreTypes.ProposeInstallParams;
+        appInstanceId: string;
+      }
+  > => {
+    const filteredApps = this.connext.appRegistry.filter((app: DefaultApp): boolean => {
       return app.appDefinitionAddress === msg.data.params.appDefinition;
     });
 
@@ -236,45 +242,38 @@ export class ConnextListener extends EventEmitter {
       return undefined;
     }
     const { params, appInstanceId } = msg.data;
-    const {
-      initiatorDeposit,
-      initiatorDepositTokenAddress,
-      responderDeposit,
-      responderDepositTokenAddress,
-    } = params;
+    const { initiatorDeposit, responderDeposit } = params;
     // matched app, take appropriate default actions
     return {
-      appInfo: {
-        ...params,
-        identityHash: appInstanceId,
-        initiatorDeposit: bigNumberify(initiatorDeposit),
-        initiatorDepositTokenAddress,
-        proposedByIdentifier: msg.from,
-        proposedToIdentifier: this.connext.publicIdentifier,
-        responderDeposit: bigNumberify(responderDeposit),
-        responderDepositTokenAddress,
-      },
+      appInstanceId,
       matchedApp: filteredApps[0],
+      proposeParams: {
+        ...params,
+        initiatorDeposit: bigNumberify(initiatorDeposit),
+        responderDeposit: bigNumberify(responderDeposit),
+      },
     };
   };
 
   private verifyAndInstallKnownApp = async (
-    appInstance: AppInstanceInfo,
-    matchedApp: RegisteredAppDetails,
+    msg: ProposeMessage,
+    matchedApp: DefaultApp,
   ): Promise<void> => {
-    // virtual is now determined by presence of intermediary identifier
-    const isVirtual = !!appInstance.intermediaryIdentifier;
+    const {
+      data: { params, appInstanceId },
+      from,
+    } = msg;
     const invalidProposal = await appProposalValidation[matchedApp.name](
-      appInstance,
+      params,
+      from,
       matchedApp,
-      isVirtual,
       this.connext,
     );
 
     if (invalidProposal) {
       // reject app installation
       this.log.error(`Proposed app is invalid. ${invalidProposal}`);
-      await this.connext.rejectInstallApp(appInstance.identityHash);
+      await this.connext.rejectInstallApp(appInstanceId);
       return;
     }
 
@@ -295,10 +294,14 @@ export class ConnextListener extends EventEmitter {
 
     this.log.debug(`Proposal for app install successful, attempting install now...`);
     let res: CFCoreTypes.InstallResult;
-    if (isVirtual) {
-      res = await this.connext.installVirtualApp(appInstance.identityHash);
+
+    // TODO: determine virtual app in a more resilient way
+    // for now only simple transfer apps are virtual apps
+    const virtualAppDefs = [this.connext.config.contractAddresses["SimpleTransferApp"]];
+    if (virtualAppDefs.includes(params.appDefinition)) {
+      res = await this.connext.installVirtualApp(appInstanceId);
     } else {
-      res = await this.connext.installApp(appInstance.identityHash);
+      res = await this.connext.installApp(appInstanceId);
     }
     this.log.debug(`App installed, res: ${stringify(res)}`);
     return;

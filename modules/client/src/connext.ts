@@ -39,6 +39,7 @@ import {
   ConnextEvent,
   CreateChannelMessage,
   CreateChannelResponse,
+  DefaultApp,
   DepositParameters,
   GetChannelResponse,
   GetConfigResponse,
@@ -47,7 +48,6 @@ import {
   makeChecksum,
   makeChecksumOrEthAddress,
   PaymentProfile,
-  RegisteredAppDetails,
   RequestCollateralResponse,
   RequestDepositRightsParameters,
   ResolveConditionParameters,
@@ -931,8 +931,8 @@ export class ConnextClient implements IConnextClient {
   ///////////////////////////////////
   // LOW LEVEL METHODS
 
-  public getRegisteredAppDetails = (appName: SupportedApplication): RegisteredAppDetails => {
-    const appInfo = this.appRegistry.filter((app: RegisteredAppDetails): boolean => {
+  public getRegisteredAppDetails = (appName: SupportedApplication): DefaultApp => {
+    const appInfo = this.appRegistry.filter((app: DefaultApp): boolean => {
       return app.name === appName && app.network === this.network.name;
     });
 
