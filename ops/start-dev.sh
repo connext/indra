@@ -9,8 +9,9 @@ docker swarm init 2> /dev/null || true
 ####################
 # External Env Vars
 
-ETH_NETWORK="${1:-kovan}"
+INDRA_ETH_NETWORK="${1:-ganache}"
 INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-foo}"
+INDRA_UI="${INDRA_UI:-daicard}"
 
 ####################
 # Internal Config
@@ -22,11 +23,11 @@ node_port=8080
 dash_port=9999
 port=3000
 
-if [[ "$ETH_NETWORK" == "rinkeby" ]]
+if [[ "$INDRA_ETH_NETWORK" == "rinkeby" ]]
 then eth_rpc_url="https://rinkeby.infura.io/metamask"
-elif [[ "$ETH_NETWORK" == "kovan" ]]
+elif [[ "$INDRA_ETH_NETWORK" == "kovan" ]]
 then eth_rpc_url="https://kovan.infura.io/metamask"
-elif [[ "$ETH_NETWORK" == "ganache" ]]
+elif [[ "$INDRA_ETH_NETWORK" == "ganache" ]]
 then
   eth_rpc_url="http://ethprovider:8545"
   make deployed-contracts
@@ -44,8 +45,7 @@ pg_user="$project"
 
 # docker images
 builder_image="${project}_builder"
-daicard_devserver_image="$builder_image"
-dashboard_image="$builder_image"
+ui_image="$builder_image"
 database_image="postgres:9-alpine"
 ethprovider_image="trufflesuite/ganache-cli:v6.4.5"
 nats_image="nats:2.0.0-linux"
@@ -54,6 +54,11 @@ proxy_image="${project}_proxy:dev"
 redis_image=redis:5-alpine
 redis_url="redis://redis:6379"
 relay_image="${project}_relay"
+
+if [[ "$INDRA_UI" == "dashboard" ]]
+then ui_working_dir=/root/modules/dashboard
+else ui_working_dir=/root/modules/daicard
+fi
 
 ####################
 # Deploy according to above configuration
@@ -89,7 +94,7 @@ then
   echo "Created ATTACHABLE network with id $id"
 fi
 
-number_of_services=9 # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services=8 # NOTE: Gotta update this manually when adding/removing services :(
 
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
@@ -112,10 +117,11 @@ services:
   proxy:
     image: $proxy_image
     environment:
-      DAICARD_URL: http://daicard:3000
+      DOMAINNAME: localhost
       ETH_RPC_URL: $eth_rpc_url
       MESSAGING_URL: http://relay:4223
       MODE: dev
+      UI_URL: http://ui:3000
     networks:
       - $project
     ports:
@@ -123,8 +129,8 @@ services:
     volumes:
       - certs:/etc/letsencrypt
 
-  daicard:
-    image: $daicard_devserver_image
+  ui:
+    image: $ui_image
     entrypoint: npm start
     environment:
       NODE_ENV: development
@@ -132,20 +138,7 @@ services:
       - $project
     volumes:
       - `pwd`:/root
-    working_dir: /root/modules/daicard
-
-  dashboard:
-    image: $dashboard_image
-    entrypoint: npm start
-    environment:
-      NODE_ENV: development
-    networks:
-      - $project
-    ports:
-      - "$dash_port:3000"
-    volumes:
-      - `pwd`:/root
-    working_dir: /root/modules/dashboard
+    working_dir: $ui_working_dir
 
   node:
     image: $node_image
