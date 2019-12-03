@@ -93,6 +93,7 @@ export type StateChannelJSON = {
   ][];
   readonly freeBalanceAppInstance: AppInstanceJson | undefined;
   readonly monotonicNumProposedApps: number;
+  readonly proxyBytecode?: string;
 };
 
 export type AppInstanceInfo = {
