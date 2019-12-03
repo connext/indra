@@ -7,9 +7,11 @@ import {
   ResolveLinkedTransferToRecipientParameters,
   WithdrawParameters,
 } from "@connext/types";
+import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
+import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 import { formatEther, hexlify, parseEther, randomBytes } from "ethers/utils";
+import tokenAbi from "human-standard-token-abi";
 
 import { getOrCreateChannel } from "./channel";
 import { config } from "./config";
@@ -29,14 +31,15 @@ process.on("unhandledRejection", (e: any): any => {
 // Begin executing w/in an async wrapper function
 
 (async (): Promise<void> => {
-  const assetId = config.assetId ? config.assetId : AddressZero;
-  const client = await getOrCreateChannel(assetId);
+  const client = await getOrCreateChannel();
+  const assetId = config.useToken ? client.config.contractAddresses.Token : AddressZero;
 
   const logEthAndAssetFreeBalance = async (): Promise<void> => {
-    logEthFreeBalance(AddressZero, await client.getFreeBalance(assetId));
-    if (assetId !== AddressZero) {
-      logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
-    }
+    logEthFreeBalance(AddressZero, await client.getFreeBalance());
+    logEthFreeBalance(
+      client.config.contractAddresses.Token,
+      await client.getFreeBalance(client.config.contractAddresses.Token),
+    );
   };
 
   if (config.getFreeBalance) {
@@ -44,14 +47,23 @@ process.on("unhandledRejection", (e: any): any => {
   }
 
   if (config.deposit) {
-    const depositParams: DepositParameters = {
-      amount: parseEther(config.deposit).toString(),
-    };
-    if (assetId !== AddressZero) {
-      depositParams.assetId = assetId;
-    }
+    const provider = new JsonRpcProvider(config.ethProviderUrl);
+    const signer = provider.getSigner();
     console.log(`Depositing ${config.deposit} of asset ${assetId}`);
-    await client.deposit(depositParams);
+    let tx: TransactionResponse;
+    await client.requestDepositRights({ assetId, timeoutMs: 60_000 });
+    if (assetId === AddressZero) {
+      tx = await signer.sendTransaction({
+        to: client.multisigAddress,
+        value: parseEther(config.deposit),
+      });
+    } else {
+      const contract = new Contract(assetId, tokenAbi, signer);
+      tx = await contract.transfer(client.multisigAddress, parseEther(config.deposit));
+    }
+    const receipt = await tx.wait();
+    console.log(`Deposit tx receipt: ${JSON.stringify(receipt)}`);
+    await client.rescindDepositRights(assetId);
     console.log(`Successfully deposited!`);
     await logEthAndAssetFreeBalance();
   }

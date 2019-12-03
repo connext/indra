@@ -20,8 +20,6 @@ import { AbstractController } from "./AbstractController";
 export class TransferController extends AbstractController {
   private appId: string;
 
-  private timeout: number;
-
   public transfer = async (params: TransferParameters): Promise<CFCoreChannel> => {
     this.log.info(`Transfer called with parameters: ${stringify(params)}`);
 
@@ -87,14 +85,10 @@ export class TransferController extends AbstractController {
       res();
       return;
     }
-    if (this.timeout) {
-      clearTimeout(this.timeout);
-    }
     res(data);
     return data;
   };
 
-  // TODO: fix types of data
   private rejectInstallTransfer = (
     rej: (reason?: string) => void,
     msg: RejectInstallVirtualMessage,
@@ -133,7 +127,7 @@ export class TransferController extends AbstractController {
     };
 
     // note: intermediary is added in connext.ts as well
-    const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding } = appInfo;
+    const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding, outcomeType } = appInfo;
     const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {
         actionEncoding,
@@ -144,7 +138,7 @@ export class TransferController extends AbstractController {
       initialState,
       initiatorDeposit: amount,
       initiatorDepositTokenAddress: assetId,
-      outcomeType: appInfo.outcomeType,
+      outcomeType,
       proposedToIdentifier: recipient,
       responderDeposit: Zero,
       responderDepositTokenAddress: assetId,

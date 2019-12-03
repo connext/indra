@@ -3,7 +3,7 @@ import { JsonRpcProvider } from "ethers/providers";
 import { getAddress, hexlify, randomBytes } from "ethers/utils";
 import log from "loglevel";
 
-import { Node, NODE_EVENTS } from "../../src";
+import { Node } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import { toBeEq } from "../machine/integration/bignumber-jest-matcher";
 
@@ -19,7 +19,7 @@ expect.extend({ toBeEq });
 
 log.setLevel(log.levels.SILENT);
 
-describe("Node method follows spec - deploy state desposit holder", () => {
+describe("Node method follows spec - deploy state deposit holder", () => {
   let nodeA: Node;
   let nodeB: Node;
   let provider: JsonRpcProvider;
@@ -44,7 +44,7 @@ describe("Node method follows spec - deploy state desposit holder", () => {
 
   it("cannot withdraw when multisig has not been deployed", async () => {
     const startingMultisigBalance = await provider.getBalance(multisigAddress);
-    await deposit(nodeA, multisigAddress, One);
+    await deposit(nodeA, multisigAddress, One, nodeB);
 
     const postDepositMultisigBalance = await provider.getBalance(
       multisigAddress

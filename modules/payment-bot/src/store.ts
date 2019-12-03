@@ -103,11 +103,13 @@ export class Store implements CFCoreTypes.IStoreService {
 
   public async restore(): Promise<any[]> {
     return this.pisaClient && this.wallet
-      ? (await this.pisaClient.restore(
-          (digest: string): Promise<string> => this.wallet!.signMessage(arrayify(digest)),
-          this.wallet.address,
-          await this.wallet.provider.getBlockNumber(),
-        )).map((b: any): any => JSON.parse(toUtf8String(arrayify(b.data))))
+      ? (
+          await this.pisaClient.restore(
+            (digest: string): Promise<string> => this.wallet!.signMessage(arrayify(digest)),
+            this.wallet.address,
+            await this.wallet.provider.getBlockNumber(),
+          )
+        ).map((b: any): any => JSON.parse(toUtf8String(arrayify(b.data))))
       : [];
   }
 }

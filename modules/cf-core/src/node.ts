@@ -219,11 +219,12 @@ export class Node {
           type: NODE_EVENTS.PROTOCOL_MESSAGE_EVENT
         } as NodeMessageWrappedProtocolMessage);
 
-        const msg = await Promise.race([counterpartyResponse, timeout(60000)]);
+        // 90 seconds is the default lock acquiring time time
+        const msg = await Promise.race([counterpartyResponse, timeout(90000)]);
 
         if (!msg || !("data" in (msg as NodeMessageWrappedProtocolMessage))) {
           throw Error(
-            `IO_SEND_AND_WAIT timed out after 30s waiting for counterparty reply in ${data.protocol}`
+            `IO_SEND_AND_WAIT timed out after 90s waiting for counterparty reply in ${data.protocol}`
           );
         }
 

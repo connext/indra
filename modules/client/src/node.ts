@@ -25,7 +25,7 @@ import {
 // Include our access token when interacting with these subjects
 const guardedSubjects = ["channel", "lock", "transfer"];
 
-const API_TIMEOUT = 35_000;
+const API_TIMEOUT = 100_000;
 
 export interface INodeApiClient {
   acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;

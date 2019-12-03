@@ -36,7 +36,7 @@ export const useAddress = (initialAddress, ethProvider) => {
       const network = await ethProvider.getNetwork();
       setNetwork(network);
     })()
-  }, []);
+  }, [ethProvider]);
   useEffect(() => {
     (async () => {
       if (debouncedAddress === null) return;
@@ -63,7 +63,7 @@ export const useAddress = (initialAddress, ethProvider) => {
       setValue(error ? undefined : value);
       setError(error);
     })()
-  }, [debouncedAddress, network]);
+  }, [debouncedAddress, network, ethProvider]);
   return [
     { display, value, error, resolved },
     setDisplay,
@@ -147,7 +147,7 @@ export const useXpub = (initialXpub, ethProvider) => {
       const network = await ethProvider.getNetwork();
       setNetwork(network);
     })()
-  }, []);
+  }, [ethProvider]);
   useEffect(() => {
     (async () => {
       if (debounced === null) return;
@@ -171,7 +171,7 @@ export const useXpub = (initialXpub, ethProvider) => {
       setValue(error ? undefined : value);
       setError(error);
     })()
-  }, [debounced]);
+  }, [debounced, ethProvider, network]);
   return [
     { display, value, error, resolved },
     setDisplay,

@@ -74,7 +74,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
   async requestCollateral(
     pubId: string,
     data: { assetId?: string },
-  ): Promise<RequestCollateralResponse> {
+  ): Promise<CFCoreTypes.DepositResult> {
     // do not allow clients to specify an amount to collateralize with
     return this.channelService.requestCollateral(pubId, getAddress(data.assetId));
   }

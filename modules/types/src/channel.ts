@@ -33,6 +33,7 @@ export type CFCoreChannel = {
   userPublicIdentifier: string;
   multisigAddress: string;
   available: boolean;
+  collateralizationInFlight: boolean;
 };
 
 export type ChannelState<T = string> = {
