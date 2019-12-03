@@ -1,7 +1,6 @@
+import { SupportedNetwork } from "@connext/types"
 import { Controller } from "@nestjs/common";
 import { MessagePattern } from "@nestjs/microservices";
-
-import { Network } from "../constants";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -12,7 +11,7 @@ export class AppRegistryController {
 
   @MessagePattern("app-registry")
   async get(
-    data: { name?: string; network?: Network; appDefinitionAddress?: string } | undefined,
+    data: { name?: string; network?: SupportedNetwork; appDefinitionAddress?: string } | undefined,
   ): Promise<AppRegistry[]> {
     if (data && data.network && data.name) {
       return [await this.appRegistryRepository.findByNameAndNetwork(data.name, data.network)];

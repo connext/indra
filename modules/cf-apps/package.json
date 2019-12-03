@@ -17,7 +17,7 @@
     "lint:ts": "tslint -c tslint.json -p ."
   },
   "devDependencies": {
-    "@connext/types": "1.2.9",
+    "@connext/types": "1.2.14",
     "@connext/cf-adjudicator-contracts": "0.4.1",
     "@connext/cf-funding-protocol-contracts": "0.4.1",
     "@types/chai": "4.2.4",

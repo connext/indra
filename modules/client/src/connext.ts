@@ -2,7 +2,7 @@ import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import { CF_PATH } from "@connext/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
-import { Contract, providers, Wallet } from "ethers";
+import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
@@ -36,8 +36,8 @@ import {
   ConnextEvent,
   CreateChannelMessage,
   CreateChannelResponse,
+  DefaultApp,
   DepositParameters,
-  EXTENDED_PRIVATE_KEY_PATH,
   GetChannelResponse,
   GetConfigResponse,
   IConnextClient,
@@ -45,7 +45,6 @@ import {
   makeChecksum,
   makeChecksumOrEthAddress,
   PaymentProfile,
-  RegisteredAppDetails,
   RequestCollateralResponse,
   ResolveConditionParameters,
   ResolveConditionResponse,
@@ -865,8 +864,8 @@ export class ConnextClient implements IConnextClient {
   ///////////////////////////////////
   // LOW LEVEL METHODS
 
-  public getRegisteredAppDetails = (appName: SupportedApplication): RegisteredAppDetails => {
-    const appInfo = this.appRegistry.filter((app: RegisteredAppDetails): boolean => {
+  public getRegisteredAppDetails = (appName: SupportedApplication): DefaultApp => {
+    const appInfo = this.appRegistry.filter((app: DefaultApp): boolean => {
       return app.name === appName && app.network === this.network.name;
     });
 

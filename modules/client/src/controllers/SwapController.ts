@@ -7,7 +7,7 @@ import {
   CFCoreChannel,
   CFCoreTypes,
   convert,
-  RegisteredAppDetails,
+  DefaultApp,
   SimpleSwapAppStateBigNumber,
   SwapParameters,
 } from "../types";
@@ -117,7 +117,7 @@ export class SwapController extends AbstractController {
     toAssetId: string,
     fromAssetId: string,
     swapRate: string,
-    appInfo: RegisteredAppDetails,
+    appInfo: DefaultApp,
   ): Promise<any> => {
     let boundResolve;
     let boundReject;

@@ -1,9 +1,11 @@
 import { DepositConfirmationMessage, NODE_EVENTS } from "@connext/cf-core";
 import { NatsMessagingService } from "@connext/messaging";
 import {
+  DefaultApp,
   ResolveLinkedTransferResponse,
   SimpleLinkedTransferAppStateBigNumber,
   SupportedApplications,
+  SupportedNetwork,
 } from "@connext/types";
 import { Inject, Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
@@ -14,8 +16,8 @@ import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
-import { ConfigService, DefaultApp } from "../config/config.service";
-import { MessagingProviderId, Network } from "../constants";
+import { ConfigService } from "../config/config.service";
+import { MessagingProviderId } from "../constants";
 import { mkHash } from "../test";
 import {
   CLogger,
@@ -249,7 +251,7 @@ export class TransferService {
     const network = await this.configService.getEthNetwork();
     const appInfo = await this.appRegistryRepository.findByNameAndNetwork(
       SupportedApplications.SimpleLinkedTransferApp,
-      network.name as Network,
+      network.name as SupportedNetwork,
     );
 
     const initialState: SimpleLinkedTransferAppStateBigNumber = {

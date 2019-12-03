@@ -1,5 +1,4 @@
-{
-  "name": "@connext/cf-adjudicator-contracts",
+{ "name": "@connext/cf-adjudicator-contracts",
   "version": "0.4.1",
   "description": "Smart contracts for an State Channel AppInstance Adjudicator",
   "license": "MIT",
@@ -21,7 +20,7 @@
     "solidity"
   ],
   "devDependencies": {
-    "@connext/types": "1.2.9",
+    "@connext/types": "1.2.14",
     "@types/node": "12.12.7",
     "@types/chai": "4.2.4",
     "chai": "4.2.0",

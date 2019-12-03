@@ -9,11 +9,11 @@ import {
   ConditionalTransferParameters,
   ConditionalTransferResponse,
   convert,
+  DefaultApp,
   LinkedTransferParameters,
   LinkedTransferResponse,
   LinkedTransferToRecipientParameters,
   LinkedTransferToRecipientResponse,
-  RegisteredAppDetails,
   RejectInstallVirtualMessage,
   SimpleLinkedTransferAppStateBigNumber,
   SupportedApplication,
@@ -180,7 +180,7 @@ export class ConditionalTransferController extends AbstractController {
     initiatorDeposit: BigNumber,
     assetId: string,
     initialState: SimpleLinkedTransferAppStateBigNumber,
-    appInfo: RegisteredAppDetails,
+    appInfo: DefaultApp,
     meta?: object,
   ): Promise<string | undefined> => {
     let boundResolve: (value?: any) => void;
