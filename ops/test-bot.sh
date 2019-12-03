@@ -111,4 +111,7 @@ sleep 2
 cleanup
 logInstalledApps
 
+echo -e "$divider";echo "Withdrawing tokens from recipient"
+bash ops/payment-bot.sh -i 1 -a $tokenAddress -w 0.02
+
 echo -e "$divider";echo "Tests finished successfully"
