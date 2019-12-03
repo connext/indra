@@ -69,8 +69,8 @@ export async function setup(
 
   const lockService = new MemoryLockService();
 
+  const hdNodeA = fromExtendedKey(extendedPrvKeyA).derivePath(CF_PATH);
   const storeServiceA = storeServiceFactory.createStoreService!(`test_${generateUUID()}`);
-  await storeServiceA.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedPrvKeyA }]);
   const nodeA = await Node.create(
     messagingService,
     storeServiceA,
@@ -78,6 +78,8 @@ export async function setup(
     nodeConfig,
     provider,
     lockService,
+    hdNodeA.neuter().extendedKey,
+    (index: string): Promise<string> => Promise.resolve(hdNodeA.derivePath(index).privateKey),
   );
 
   setupContext["A"] = {
@@ -85,8 +87,8 @@ export async function setup(
     store: storeServiceA,
   };
 
+  const hdNodeB = fromExtendedKey(extendedPrvKeyB).derivePath(CF_PATH);
   const storeServiceB = storeServiceFactory.createStoreService!(`test_${generateUUID()}`);
-  await storeServiceB.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedPrvKeyB }]);
   const nodeB = await Node.create(
     messagingService,
     storeServiceB,
@@ -94,6 +96,8 @@ export async function setup(
     nodeConfig,
     provider,
     lockService,
+    hdNodeB.neuter().extendedKey,
+    (index: string): Promise<string> => Promise.resolve(hdNodeB.derivePath(index).privateKey),
   );
   setupContext["B"] = {
     node: nodeB,
