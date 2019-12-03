@@ -5,7 +5,7 @@ import { SetStateCommitment } from "../ethereum";
 import { ConditionalTransaction } from "../ethereum/conditional-transaction-commitment";
 import { ProtocolExecutionFlow } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
-import { Context, InstallParams, ProtocolMessage } from "../machine/types";
+import { Context, InstallProtocolParams, ProtocolMessage } from "../machine/types";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../methods/errors";
 import { AppInstance, StateChannel } from "../models";
 import { TokenIndexedCoinTransferMap } from "../models/free-balance";
@@ -53,13 +53,13 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       network
     } = context;
 
-    const { responderXpub, multisigAddress } = params as InstallParams;
+    const { responderXpub, multisigAddress } = params as InstallProtocolParams;
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)!;
 
     const postProtocolStateChannel = computeStateChannelTransition(
       preProtocolStateChannel,
-      params as InstallParams
+      params as InstallProtocolParams
     );
 
     const newAppInstance = postProtocolStateChannel.mostRecentlyInstalledAppInstance();
@@ -190,13 +190,13 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // Aliasing `signature` to this variable name for code clarity
     const counterpartySignatureOnConditionalTransaction = signature;
 
-    const { initiatorXpub, multisigAddress } = params as InstallParams;
+    const { initiatorXpub, multisigAddress } = params as InstallProtocolParams;
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)!;
 
     const postProtocolStateChannel = computeStateChannelTransition(
       preProtocolStateChannel,
-      params as InstallParams
+      params as InstallProtocolParams
     );
 
     const newAppInstance = postProtocolStateChannel.mostRecentlyInstalledAppInstance();
@@ -306,13 +306,13 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
  * StateChannel after the protocol would be executed with correct signatures.
  *
  * @param {StateChannel} stateChannel - The pre-protocol state of the channel
- * @param {InstallParams} params - Parameters about the new AppInstance
+ * @param {InstallProtocolParams} params - Parameters about the new AppInstance
  *
  * @returns {Promise<StateChannel>} - The post-protocol state of the channel
  */
 function computeStateChannelTransition(
   stateChannel: StateChannel,
-  params: InstallParams
+  params: InstallProtocolParams
 ): StateChannel {
   const {
     initiatorBalanceDecrement,
@@ -396,7 +396,7 @@ function computeStateChannelTransition(
  *
  * Note that this is _not_ a built-in part of the protocol. Here we are _restricting_
  * all newly installed AppInstances to be either of type COIN_TRANSFER or
- * TWO_PARTY_FIXED_OUTCOME. In the future, we will be extending the InstallParams
+ * TWO_PARTY_FIXED_OUTCOME. In the future, we will be extending the InstallProtocolParams
  * to indidicate the interpreterAddress and interpreterParams so the developers
  * installing apps have more control, however for now we are putting this logic
  * inside of the client (the Node) by adding an "outcomeType" variable which

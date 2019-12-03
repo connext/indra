@@ -29,7 +29,7 @@ export type DepositParametersBigNumber = DepositParameters<BigNumber>;
 // TODO: would we ever want to pay people in the same app with multiple currencies?
 export type TransferParameters<T = string> = DepositParameters<T> & {
   recipient: Address;
-  meta?: any; // TODO: meta types? should this be a string
+  meta?: object;
 };
 export type TransferParametersBigNumber = TransferParameters<BigNumber>;
 
@@ -99,6 +99,7 @@ export type LinkedTransferParameters<T = string> = {
   assetId?: Address;
   paymentId: string;
   preImage: string;
+  meta?: object;
 };
 export type LinkedTransferParametersBigNumber = LinkedTransferParameters<BigNumber>;
 
@@ -106,6 +107,7 @@ export type LinkedTransferResponse = {
   paymentId: string;
   preImage: string;
   freeBalance: CFCoreTypes.GetFreeBalanceStateResult;
+  meta?: object;
 };
 
 export type LinkedTransferToRecipientParameters<T = string> = Omit<
