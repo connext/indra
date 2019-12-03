@@ -18,7 +18,7 @@ const style = withStyles(theme => ({
   },
 }));
 
-const screens = (classes, minEth, minDai, maxEth, maxDai) => [
+const screens = (maxEth, maxDai) => [
   {
     title: "Welcome to Your Dai Card!",
     message: "Here are some helpful tips to get you started with the next generation of payments.",
@@ -35,13 +35,11 @@ const screens = (classes, minEth, minDai, maxEth, maxDai) => [
   },
   {
     title: "Deposit Boundaries",
-    message: `The card needs a minimum deposit of ${minEth} (${minDai}) to cover the gas costs
-      of getting setup. No more than ${maxEth} (${maxDai}) will be added to your channel at a time,
-      any excess funds you send will be kept on-chain & not deposited into your channel.`,
+    message: `We recommend no more than ${maxEth} (${maxDai}) are added to your channel at a time!`,
   },
 ];
 
-export const SetupCard = style(({ classes, minDeposit, maxDeposit }) => {
+export const SetupCard = style(({ classes, maxDeposit }) => {
   const [index, setIndex] = useState(0);
   const [open, setOpen] = useState(!localStorage.getItem("hasBeenWarned"));
   const handleClose = () => {
@@ -49,12 +47,10 @@ export const SetupCard = style(({ classes, minDeposit, maxDeposit }) => {
     setOpen(false);
   };
 
-  const minEth = minDeposit ? minDeposit.toETH().format() : "$?.??";
-  const minDai = minDeposit ? minDeposit.toDAI().format() : "$?.??";
   const maxEth = maxDeposit ? maxDeposit.toETH().format() : "$?.??";
   const maxDai = maxDeposit ? maxDeposit.toDAI().format() : "$?.??";
 
-  const display = screens(classes, minEth, minDai, maxEth, maxDai);
+  const display = screens(maxEth, maxDai);
   const isFinal = index === display.length - 1;
   const progress = 100 * ((index + 1) / display.length);
 

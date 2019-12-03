@@ -153,13 +153,19 @@ async function computeStateTransition(
   stateChannelsMap: Map<string, StateChannel>,
   provider: BaseProvider
 ) {
-  const { appIdentityHash, multisigAddress } = params;
+  const {
+    appIdentityHash,
+    multisigAddress,
+    blockNumberToUseIfNecessary
+  } = params;
   const stateChannel = stateChannelsMap.get(multisigAddress) as StateChannel;
   return stateChannel.uninstallApp(
     appIdentityHash,
     await computeTokenIndexedFreeBalanceIncrements(
       stateChannel.getAppInstance(appIdentityHash),
-      provider
+      provider,
+      undefined,
+      blockNumberToUseIfNecessary
     )
   );
 }

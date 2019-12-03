@@ -1,3 +1,4 @@
+
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -27,14 +28,17 @@ export default class WithdrawController extends NodeController {
 
     const stateChannel = await store.getStateChannel(params.multisigAddress);
 
+    const tokenAddress =
+      params.tokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
+
     if (
-      stateChannel.hasAppInstanceOfKind(networkContext.CoinBalanceRefundApp)
+      stateChannel.hasBalanceRefundAppInstance(
+        networkContext.CoinBalanceRefundApp,
+        tokenAddress
+      )
     ) {
       throw Error(CANNOT_WITHDRAW);
     }
-
-    const tokenAddress =
-      params.tokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
 
     const senderBalance = stateChannel
       .getFreeBalanceClass()

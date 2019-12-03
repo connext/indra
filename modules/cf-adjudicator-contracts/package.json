@@ -20,7 +20,7 @@
     "solidity"
   ],
   "devDependencies": {
-    "@connext/types": "1.2.14",
+    "@connext/types": "1.2.16",
     "@types/node": "12.12.14",
     "@types/chai": "4.2.6",
     "chai": "4.2.0",
