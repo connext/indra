@@ -1,16 +1,15 @@
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
-import { bigNumberify } from "ethers/utils";
+import { bigNumberify, getAddress } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
-import { delayAndThrow, stringify } from "../lib/utils";
+import { delayAndThrow, stringify, xpubToAddress } from "../lib/utils";
 import {
   BigNumber,
   CFCoreTypes,
   CoinBalanceRefundAppStateBigNumber,
   RejectProposalMessage,
   RequestDepositRightsParameters,
-  SupportedApplication,
   SupportedApplications,
 } from "../types";
 import { invalidAddress, notNegative, validate } from "../validation";
@@ -24,6 +23,12 @@ export class RequestDepositRightsController extends AbstractController {
     const { assetId, timeoutMs } = params;
     validate(invalidAddress(assetId), notNegative(timeoutMs));
 
+    // make sure there is not a collateralization in flight
+    const { collateralizationInFlight } = await this.node.getChannel();
+    if (collateralizationInFlight && assetId === this.connext.token.address) {
+      throw new Error(`Cannot claim deposit rights while hub is depositing.`);
+    }
+
     let multisigBalance: BigNumber;
     if (assetId === AddressZero) {
       multisigBalance = await this.connext.ethProvider.getBalance(this.connext.multisigAddress);
@@ -32,18 +37,26 @@ export class RequestDepositRightsController extends AbstractController {
       multisigBalance = await token.balanceOf(this.connext.multisigAddress);
     }
 
+    this.registerListeners(assetId);
+
     const existingBalanceRefundApp = await this.connext.getBalanceRefundApp(assetId);
     if (existingBalanceRefundApp) {
       if (
         bigNumberify(existingBalanceRefundApp.latestState["threshold"]).eq(multisigBalance) &&
         existingBalanceRefundApp.latestState["recipient"] === this.connext.freeBalanceAddress
       ) {
-        this.log.info(`Balance refund app is in the correct state, doing nothing`);
+        this.log.info(
+          `Balance refund app for ${assetId} is in the correct state, setting timeout + doing nothing`,
+        );
+        setTimeout(async () => {
+          await this.connext.rescindDepositRights(assetId);
+          this.cleanupListeners(assetId);
+        }, timeoutMs);
         return {
           freeBalance: await this.connext.getFreeBalance(assetId),
           recipient: this.connext.freeBalanceAddress,
           tokenAddress: assetId,
-        } as any;
+        };
       }
       this.log.info(`Balance refund app is not in the correct state, uninstalling first`);
       await this.connext.rescindDepositRights(assetId);
@@ -51,7 +64,7 @@ export class RequestDepositRightsController extends AbstractController {
     }
 
     // propose the app install
-    this.log.info(`Installing balance refund app`);
+    this.log.info(`Installing balance refund app for ${assetId}`);
     const err = await this.proposeDepositInstall(assetId);
     if (err) {
       throw new Error(err);
@@ -62,7 +75,7 @@ export class RequestDepositRightsController extends AbstractController {
     this.log.info(
       `requestDepositRightsResponse Response: ${stringify(requestDepositRightsResponse)}`,
     );
-    this.log.info("Deposit rights gained!");
+    this.log.info(`Deposit rights gained for ${assetId}`);
 
     const freeBalance = await this.connext.getFreeBalance(assetId);
     this.listener.emit(`indra.client.${this.connext.publicIdentifier}.freeBalanceUpdated`, {
@@ -70,7 +83,7 @@ export class RequestDepositRightsController extends AbstractController {
     });
 
     setTimeout(async () => {
-      console.log(`Timeout expired, uninstalling balance refund app`);
+      this.cleanupListeners(assetId);
       await this.connext.rescindDepositRights(assetId);
     }, timeoutMs);
 
@@ -83,6 +96,64 @@ export class RequestDepositRightsController extends AbstractController {
 
   /////////////////////////////////
   ////// PRIVATE METHODS
+
+  private registerListeners = (assetId?: string): void => {
+    if (assetId || assetId === AddressZero) {
+      // register listener for eth
+      // listener on ETH transfers to multisig to uninstall balance refund
+      // for eth
+      // FIXME: race condition? hub collateralizes with eth and rights
+      // are rescinded before client deposits?
+      this.ethProvider.on(this.connext.multisigAddress, async (balance: BigNumber) => {
+        this.log.info(`Got a transfer to multisig. balance: ${balance}`);
+        // reinstall balance refund app for ETH
+        if (balance.isZero()) {
+          this.log.info(`Multisig transfer has 0 balance, not uninstalling`);
+          return;
+        }
+        await this.connext.rescindDepositRights(AddressZero);
+        const freeBalance = await this.connext.getFreeBalance(AddressZero);
+        this.log.info(`updated FreeBalance: ${stringify(freeBalance)}`);
+      });
+      return;
+    }
+    // listener on token transfers to multisig to uninstall balance refuns
+    // this is because in the case that the counterparty deposits in their
+    // channel, we want to minimize the amount of time the balance token
+    // refund app is installed on the client. this will allow the deposit to
+    // be shown immediately upon transfer
+    this.connext.token.on("Transfer", async (src: string, dst: string, wad: string) => {
+      if (getAddress(dst) !== this.connext.multisigAddress) {
+        // not our multisig
+        return;
+      }
+      this.log.info(`Got a transfer to multisig. src: ${src}, dst: ${dst}, wad: ${wad}`);
+      // uninstall balance refund app for token
+      if (getAddress(src) === xpubToAddress(this.connext.nodePublicIdentifier)) {
+        // transfer is from node, dont uninstall refund app
+        this.log.info(`Transfer from node, not uninstalling balance refund app`);
+        return;
+      }
+      this.log.info(`Uninstalling balance refund app`);
+      await this.connext.rescindDepositRights(this.connext.config.contractAddresses.Token);
+      const freeBalance = await this.connext.getFreeBalance(
+        this.connext.config.contractAddresses.Token,
+      );
+      this.log.info(`updated FreeBalance: ${stringify(freeBalance)}`);
+    });
+  };
+
+  private cleanupListeners = (assetId?: string): void => {
+    if (assetId || assetId === AddressZero) {
+      this.log.info(`Removing all eth provider listeners for multisig`);
+      this.ethProvider.removeAllListeners(this.connext.multisigAddress);
+      return;
+    }
+
+    this.log.info(`Removing all token transfer listeners`);
+    this.connext.token.removeAllListeners("Transfer");
+    return;
+  };
 
   private proposeDepositInstall = async (assetId: string): Promise<string | undefined> => {
     let boundReject: (msg: RejectProposalMessage) => void;
@@ -106,9 +177,7 @@ export class RequestDepositRightsController extends AbstractController {
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = this.connext.getRegisteredAppDetails(
-      SupportedApplications.CoinBalanceRefundApp as SupportedApplication,
-    );
+    } = this.connext.getRegisteredAppDetails(SupportedApplications.CoinBalanceRefundApp as any);
 
     const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {

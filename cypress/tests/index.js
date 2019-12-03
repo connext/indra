@@ -21,7 +21,7 @@ describe('Daicard', () => {
   })
 
   describe('Send', (done) => {
-    it(`Should send a payment when a link payment is opened in another card`, () => {
+    it.only(`Should send a payment when a link payment is opened in another card`, () => {
       my.getMnemonic().then(recipientMnemonic => {
         my.burnCard()
         my.deposit(depositEth).then(tokensDeposited => {

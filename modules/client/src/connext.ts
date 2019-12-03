@@ -168,6 +168,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   node.nodePublicIdentifier = config.nodePublicIdentifier;
 
   const myChannel = await node.getChannel();
+  console.log(`******* myChannel: ${stringify(myChannel)}`)
   let multisigAddress: string;
   if (!myChannel) {
     log.debug("no channel detected, creating channel..");
@@ -233,13 +234,13 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   await client.registerSubscriptions();
 
   // make sure we don't have a balance refund app hanging around installed
-  log.debug(`Requesting deposit rights for ${config.contractAddresses.Token}`);
+  log.debug(`Rescinding deposit rights for ${config.contractAddresses.Token}`);
   let req = await client.rescindDepositRights(config.contractAddresses.Token);
-  log.debug(`Rights request result: ${req}`);
+  log.debug(`Rights rescind result: ${req}`);
 
-  log.debug(`Requesting deposit rights for ${AddressZero}`);
+  log.debug(`Rescinding deposit rights for ${AddressZero}`);
   req = await client.rescindDepositRights(config.contractAddresses.Token);
-  log.debug(`Rights request result: ${req}`);
+  log.debug(`Rights rescind result: ${req}`);
 
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
   log.debug("Resubmitting active withdrawals");

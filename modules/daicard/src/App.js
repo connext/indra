@@ -363,6 +363,7 @@ class App extends React.Component {
   //  - channel eth to see if I need to swap?
   startPoller = async () => {
     const { useWalletConnext } = this.state;
+    await this.startDepositTimer();
     await this.refreshBalances();
     if (!useWalletConnext) {
       await this.autoSwap();
@@ -376,6 +377,61 @@ class App extends React.Component {
       }
     }, 3000);
   };
+
+  // start the deposit timer
+  startDepositTimer = async () => {
+    // use 5 min timer
+    let { timeoutMs } = this.state;
+    if (!timeoutMs || timeoutMs === 0) {
+      timeoutMs = (5 * 60 * 1000);
+    }
+    const { channel, token } = this.state;
+    if (!channel || !token) {
+      return;
+    }
+    // claim deposit rights
+    await channel.requestDepositRights({ 
+      assetId: AddressZero,
+      timeoutMs,
+    })
+    await channel.requestDepositRights({ 
+      assetId: token.address,
+      timeoutMs,
+    })
+    
+    this.setState({ timeoutMs })
+    setInterval(async () => { await this.tick() }, 1000)
+  }
+
+  tick = async () => {
+    const { timeoutMs, channel, token } = this.state;
+    if (!channel || !token) {
+      return;
+    }
+    if (timeoutMs === 0) {
+      return;
+    }
+    // set to 0 when no balance refund apps are installed
+
+    // TODO: how to display if an eth balance refund but not a token
+    // balance refund?
+    const test = [
+      await channel.getBalanceRefundApp(AddressZero),
+      await channel.getBalanceRefundApp(token.address),
+    ]
+    const balanceRefundApps = test.filter(x => {
+      return !!x && x.latestState["recipient"] === channel.freeBalanceAddress
+    });
+    // set timer to 0 if any balance refund apps have
+    // been uninstalled
+    if (balanceRefundApps.length !== 2) {
+      this.setState({ timeoutMs: 0 })
+      return;
+    }
+
+    const timeout = timeoutMs - 1000;
+    this.setState({ timeoutMs: timeout })
+  }
 
   refreshBalances = async () => {
     const { channel, swapRate } = this.state;
@@ -546,6 +602,7 @@ class App extends React.Component {
       maxDeposit,
       network,
       saiBalance,
+      timeoutMs,
       token,
     } = this.state;
     const depositAddress = channel ? channel.multisigAddress : AddressZero;
@@ -588,6 +645,8 @@ class App extends React.Component {
                 <Grid>
                   <Home
                     {...props}
+                    startDepositTimer={this.startDepositTimer}
+                    depositTimer={timeoutMs}
                     balance={balance}
                     swapRate={swapRate}
                     parseQRCode={this.parseQRCode}
