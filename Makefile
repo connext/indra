@@ -9,6 +9,7 @@ SHELL=/bin/bash
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
 
 version=$(shell cat package.json | grep '"version":' | awk -F '"' '{print $$4}')
+solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
@@ -155,7 +156,7 @@ watch-node: node-modules
 
 builder: ops/builder.dockerfile
 	$(log_start)
-	docker build --file ops/builder.dockerfile --tag $(project)_builder:latest .
+	docker build --file ops/builder.dockerfile --build-arg SOLC_VERSION=$(solc_version) --tag $(project)_builder:latest .
 	$(log_finish) && touch $(flags)/$@
 
 cf-adjudicator-contracts: node-modules $(shell find $(cf-adjudicator-contracts)/contracts $(cf-adjudicator-contracts)/waffle.json $(find_options))
