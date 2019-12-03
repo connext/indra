@@ -23,16 +23,15 @@ export class RequestDepositRightsController extends AbstractController {
     const { assetId, timeoutMs } = params;
     validate(invalidAddress(assetId), notNegative(timeoutMs));
 
-    // make sure there is not a collateralization in flight
-    const { collateralizationInFlight } = await this.node.getChannel();
-    if (collateralizationInFlight && assetId === this.connext.token.address) {
-      throw new Error(`Cannot claim deposit rights while hub is depositing.`);
-    }
-
     let multisigBalance: BigNumber;
     if (assetId === AddressZero) {
       multisigBalance = await this.connext.ethProvider.getBalance(this.connext.multisigAddress);
     } else {
+      // make sure there is not a collateralization in flight
+      const { collateralizationInFlight } = await this.node.getChannel();
+      if (collateralizationInFlight && assetId === this.connext.token.address) {
+        throw new Error(`Cannot claim deposit rights while hub is depositing.`);
+      }
       const token = new Contract(assetId, tokenAbi, this.connext.ethProvider);
       multisigBalance = await token.balanceOf(this.connext.multisigAddress);
     }
