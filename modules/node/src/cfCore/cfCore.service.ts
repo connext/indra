@@ -3,8 +3,6 @@ import { NatsMessagingService } from "@connext/messaging";
 import {
   AppActionBigNumber,
   ConnextNodeStorePrefix,
-  InstallMessage,
-  RejectProposalMessage,
   SupportedApplication,
   SupportedNetwork,
 } from "@connext/types";
@@ -14,7 +12,7 @@ import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigService } from "../config/config.service";
-import { CFCoreProviderId } from "../constants";
+import { CFCoreProviderId, MessagingProviderId } from "../constants";
 import { CLogger, replaceBN, stringify, xpubToAddress } from "../util";
 import {
   AppInstanceJson,
@@ -22,6 +20,8 @@ import {
   CFCore,
   CFCoreTypes,
   getCreate2MultisigAddress,
+  InstallMessage,
+  RejectProposalMessage,
 } from "../util/cfCore";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
