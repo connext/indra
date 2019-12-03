@@ -279,6 +279,24 @@ export class ChannelService {
     return state;
   }
 
+  async getChannelStateByMultiSig(multisigAddress: string): Promise<any> {
+    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
+    if (!channel) {
+      throw new Error(
+        `No channel exists for multisigAddress ${JSON.stringify(multisigAddress)}`,
+      );
+    }
+    const { data: state } = await this.cfCoreService.getStateChannel(channel.multisigAddress);
+
+    // FIXME: this has to be [] not {}, we should fix this better
+    state.singleAssetTwoPartyIntermediaryAgreements =
+      Object.values(state.singleAssetTwoPartyIntermediaryAgreements).length === 0
+        ? []
+        : state.singleAssetTwoPartyIntermediaryAgreements;
+
+    return state;
+  }
+
   async getAllChannelsState(): Promise<any> {
     const channels = await this.channelRepository.findAll();
     if (!channels) {

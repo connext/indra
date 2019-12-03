@@ -59,11 +59,9 @@ const StatsSummary = props => {
   const getChannels = async () => {
     setLoading(true);
     try {
-      console.log(token)
       var res = await messaging.request("admin.get-all-channel-states", 5000, {
         token: token,
       });
-      console.log(res)
 
       let xPubsToSearch = [];
       Object.values(res)[0].response.forEach(row => {
@@ -83,7 +81,7 @@ const StatsSummary = props => {
       setChannelTotal(channelTotalArrReduced);
       setLoading(false);
       setSearchError(null);
-    } catch(e) {
+    } catch (e) {
       setLoading(false);
       setSearchError(`error loading summary stats: ${e}`);
     }
@@ -123,9 +121,14 @@ const StatsSummary = props => {
       {loading ? (
         <CircularProgress color="secondary" />
       ) : (
-        <Typography className={classes.cardText}>
-          total value locked: {JSON.stringify(channelTotal)}
-        </Typography>
+        <Grid container>
+          <Typography className={classes.cardText}>
+            total channels: {allChannels ? allChannels.length : 0}
+          </Typography>
+          <Typography className={classes.cardText}>
+            total free balances: {JSON.stringify(channelTotal/1000000000000000000)}
+          </Typography>
+        </Grid>
       )}
     </Grid>
   );

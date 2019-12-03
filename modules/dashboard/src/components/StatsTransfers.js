@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useEffect, useState} from "react";
 import {  Grid, Typography, withStyles } from "@material-ui/core";
 import PropTypes from "prop-types";
 
@@ -33,7 +33,26 @@ const styles = {
 };
 
 function StatsTransfers(props) {
-    const {classes} = props; 
+    const {classes, token, messaging } = props; 
+
+    const [allTransfers, setAllTransfers] = useState(null)
+
+    useEffect(() => {
+      getTransfers();    
+    }, []);
+
+    const getTransfers = async() => {
+      async function requestTransfers(){
+        var res = await messaging.request("admin.get-all-transfers", 5000, {
+          token: token
+        });
+        setAllTransfers(res)
+      }
+      while (!messaging) {
+       setTimeout(requestTransfers, 200);
+      }     
+    }
+  
   return (
     <Grid className={classes.top} container>
         <Typography className={classes.cardText}>Hello</Typography>

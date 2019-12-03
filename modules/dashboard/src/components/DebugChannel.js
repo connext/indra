@@ -57,7 +57,11 @@ const styles = {
     margin: "2% 5% 5% 1%",
   },
   error: {
-    color:"red"
+    color:"red",
+    
+  },
+  errorWrap:{
+    width:"100%"
   }
 };
 
@@ -66,6 +70,7 @@ const DebugChannel = props => {
 
   // const [messaging, setMessaging] = useState(props.messaging);
   const [xPubSearch, setXPubSearch] = useState("");
+  const [multiSigSearch, setMultiSigSearch] = useState("");
   const [noFreeBalance, setNoFreeBalance] = useState(null);
   const [channelState, setChannelState] = useState(null);
   const [freeBalance, setFreeBalance] = useState(0);
@@ -126,9 +131,40 @@ const DebugChannel = props => {
     setSearchError("xPub not found")
   }
   };
+  const getChannelStateByMultisig = async () => {
+    setLoading(true);
+    try{
+    var res = await messaging.request("admin.get-channel-state-by-multisig", 5000, {
+      token: token,
+      id: multiSigSearch,
+    });
+
+    var extractedValues = Object.values(res)[0].response;
+    let freeBalanceTotalHolder = [];
+    extractedValues.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
+      balance.amount.readable = bigNumberify(balance.amount._hex).toString();
+      freeBalanceTotalHolder.push(balance.amount.readable);
+    });
+
+    var freeBalanceTotalReduced = freeBalanceTotalHolder.reduce((a, b) => {
+      return a + b;
+    }, 0);
+
+    setFreeBalance(freeBalanceTotalReduced);
+    setChannelState(extractedValues);
+    setLoading(false);
+    setSearchError(null)
+  }catch{
+    setLoading(false)
+    setSearchError("Multisig not found")
+  }
+  };
 
   return (
     <Grid className={classes.top} container>
+        <Grid className={classes.errorWrap}>
+          <Typography className={classes.error}>{searchError}</Typography>
+        </Grid>
       <Grid className={classes.xPubEntry}>
         <TextField
           fullWidth
@@ -154,9 +190,52 @@ const DebugChannel = props => {
             ),
           }}
         />
-         <Grid className={classes.channelStateGrid}>
-          <Typography className={classes.error}>{searchError}</Typography>
+         
+        <Grid className={classes.channelStateGrid}>
+          <Typography className={classes.cardTextBold}>Free Balance: {freeBalance}</Typography>
         </Grid>
+        {!!channelState &&
+          Object.entries(channelState).map(([k, v], i) => {
+            // if (Object.entries(v).length > 1) {
+            //   return(
+            //     Object.entries(channelState).map(([k2, v2], i) => {
+            //     <Typography className={classes.cardText}>{`${k}: ${}`}</Typography>})
+            //   );
+            // } else {
+            return (
+              <Grid>
+                <Typography className={classes.cardTextBold} key={k}>{`${k}: `}</Typography>
+                <pre>{`${JSON.stringify(v, null, 4)}`}</pre>
+              </Grid>
+            );
+            // }
+          })}
+      </Grid>
+      <Grid className={classes.xPubEntry}>
+        <TextField
+          fullWidth
+          id="outlined"
+          label="Multisig Address"
+          type="string"
+          value={multiSigSearch}
+          onChange={evt => setMultiSigSearch(evt.target.value)}
+          margin="normal"
+          variant="outlined"
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <Button
+                  variant="contained"
+                  onClick={async () => {
+                    await getChannelStateByMultisig();
+                  }}
+                >
+                  {loading ? <CircularProgress color="blue" /> : <SearchIcon />}
+                </Button>
+              </InputAdornment>
+            ),
+          }}
+        />
         <Grid className={classes.channelStateGrid}>
           <Typography className={classes.cardTextBold}>Free Balance: {freeBalance}</Typography>
         </Grid>

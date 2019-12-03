@@ -54,8 +54,13 @@ export class AdminService {
   /**  Get Channels by xpub */
 
   async getChannelStates(userPublicIdentifier: any): Promise<CFCoreRecord[]> {
-    // get channel by xpub
+    // get channel by xpubgetChannelStateByMultiSig
     return await this.channelService.getChannelState(userPublicIdentifier.id);
+  }
+
+  async getChannelStateByMultiSig(multisigAddress: string): Promise<CFCoreRecord[]> {
+    // get channel by xpub
+    return await this.channelService.getChannelStateByMultiSig(multisigAddress);
   }
 
   //Get all channels

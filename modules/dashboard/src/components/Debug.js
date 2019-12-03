@@ -42,25 +42,25 @@ const styles = {
 };
 
 function Debug(props) {
-  const { classes, messaging, token } = props;
+  const { classes, messaging, token, prefix } = props;
   console.log(messaging)
   return (
     <Grid className={classes.top} container>
       <Grid className={classes.appBar} container>
-      <Button className={classes.button} component={Link} to={"/dashboard"}>
+      <Button className={classes.button} component={Link} to={`${prefix}`}>
           <HomeIcon className={classes.icon} />
         </Button>
-        <Button className={classes.button} component={Link} to={"/dashboard/debug/channel"}>
+        <Button className={classes.button} component={Link} to={`${prefix}/debug/channel`}>
           <Typography className={classes.buttonText}>Channels</Typography>
         </Button>
-        <Button className={classes.button} component={Link} to={"/dashboard/debug/node"}>
+        <Button className={classes.button} component={Link} to={`${prefix}/debug/node`}>
           <Typography className={classes.buttonText}>Node</Typography>
         </Button>
 
       </Grid>
         <Switch>
-          <Route exact path="/dashboard/debug/channel" render={props => <DebugChannel {...props} messaging={messaging} token={token} />} />
-          <Route exact path="/dashboard/debug/node" render={props => <DebugNode {...props} messaging={messaging} token={token}  />} />
+          <Route exact path={`${prefix}/debug/channel`} render={props => <DebugChannel {...props} messaging={messaging} token={token} />} />
+          <Route exact path={`${prefix}/debug/node`} render={props => <DebugNode {...props} messaging={messaging} token={token}  />} />
         </Switch>
     </Grid>
   );
