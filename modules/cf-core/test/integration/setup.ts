@@ -17,6 +17,7 @@ import { MemoryStoreServiceFactory } from "../services/memory-store-service";
 import {
   A_EXTENDED_PRIVATE_KEY,
   B_EXTENDED_PRIVATE_KEY,
+  C_EXTENDED_PRIVATE_KEY,
 } from "../test-constants.jest";
 
 export interface NodeContext {
@@ -106,6 +107,7 @@ export async function setup(
 
   let nodeC: Node;
   if (nodeCPresent) {
+    const hdNodeC = fromExtendedKey(C_EXTENDED_PRIVATE_KEY).derivePath(CF_PATH);
     const storeServiceC = storeServiceFactory.createStoreService!(`test_${generateUUID()}`);
     nodeC = await Node.create(
       messagingService,
@@ -114,6 +116,8 @@ export async function setup(
       nodeConfig,
       provider,
       lockService,
+      hdNodeC.neuter().extendedKey,
+      (index: string): Promise<string> => Promise.resolve(hdNodeC.derivePath(index).privateKey),
     );
     setupContext["C"] = {
       node: nodeC,
