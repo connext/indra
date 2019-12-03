@@ -199,6 +199,7 @@ my.getChannelTokenBalance = () => {
 my.deposit = (value) => {
   return cy.wrap(new Cypress.Promise((resolve, reject) => {
     my.getAddress().then(address => {
+      cy.contains('button', /start timer/i).should('not.exist');
       cy.log(`Depositing ${value} eth into channel ${address}`)
       return cy.wrap(wallet.sendTransaction({
         to: address,
@@ -219,6 +220,7 @@ my.deposit = (value) => {
 my.depositToken = (value) => {
   return cy.wrap(new Cypress.Promise((resolve, reject) => {
     my.getAddress().then(address => {
+      cy.contains('button', /start timer/i).should('not.exist');
       cy.log(`Depositing ${value} tokens into channel ${address}`)
       return cy.wrap(token.transfer(
         address,
