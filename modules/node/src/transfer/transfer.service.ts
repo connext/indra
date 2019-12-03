@@ -6,7 +6,6 @@ import {
   SimpleTransferAppStateBigNumber,
   SupportedApplication,
   SupportedApplications,
-  SupportedNetwork,
 } from "@connext/types";
 import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
@@ -15,8 +14,7 @@ import { BigNumber, bigNumberify } from "ethers/utils";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
-import { ConfigService, DefaultApp } from "../config/config.service";
-import { MessagingProviderId } from "../constants";
+import { ConfigService } from "../config/config.service";
 import { mkHash } from "../test";
 import { CLogger, createLinkedHash, freeBalanceAddressFromXpub } from "../util";
 import { AppInstanceJson } from "../util/cfCore";

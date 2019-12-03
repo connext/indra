@@ -3,9 +3,9 @@ import { BigNumber, getAddress } from "ethers/utils";
 
 import {
   AppState,
+  CoinBalanceRefundAppState,
   CoinTransfer,
   SimpleLinkedTransferAppState,
-  CoinBalanceRefundAppState,
 } from "./app";
 import { AssetAmount, PaymentProfile } from "./channel";
 import {

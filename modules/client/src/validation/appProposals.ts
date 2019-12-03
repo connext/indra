@@ -162,7 +162,7 @@ export const validateLinkedTransferApp = async (
   if (coinTransferErrs) return invalidAppMessage(coinTransferErrs, params);
 
   // make sure amount is same as coin transfer amount
-  const nonzeroCoinTransfer = coinTransfers.filter(transfer => {
+  const nonzeroCoinTransfer = coinTransfers.filter((transfer: CoinTransferBigNumber) => {
     return !transfer.amount.isZero();
   });
 
@@ -202,12 +202,6 @@ export const validateLinkedTransferApp = async (
   }
 
   return undefined;
-};
-
-export const appProposalValidation: ProposalValidator = {
-  SimpleLinkedTransferApp: validateLinkedTransferApp,
-  SimpleTransferApp: validateSimpleTransferApp,
-  SimpleTwoPartySwapApp: validateSwapApp,
 };
 
 const baseAppValidation = async (

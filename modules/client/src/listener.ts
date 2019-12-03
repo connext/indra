@@ -86,11 +86,11 @@ export class ConnextListener extends EventEmitter {
         return;
       }
       // matched app, take appropriate default actions
-      const { appInfo, matchedApp } = matchedResult;
-      await this.verifyAndInstallKnownApp(appInfo, matchedApp);
+      const { matchedApp } = matchedResult;
+      await this.verifyAndInstallKnownApp(msg, matchedApp);
       // only publish for coin balance refund app
       const coinBalanceDef = this.connext.appRegistry.filter(
-        (app: RegisteredAppDetails) => app.name === SupportedApplications.CoinBalanceRefundApp,
+        (app: DefaultApp) => app.name === SupportedApplications.CoinBalanceRefundApp,
       )[0];
       if (params.appDefinition !== coinBalanceDef.appDefinitionAddress) {
         console.warn(`not sending propose message, not the coinbalance refund app`);

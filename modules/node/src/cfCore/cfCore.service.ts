@@ -1,12 +1,17 @@
 import { NatsMessagingService } from "@connext/messaging";
-import { AppActionBigNumber, ConnextNodeStorePrefix, SupportedApplication } from "@connext/types";
+import {
+  AppActionBigNumber,
+  ConnextNodeStorePrefix,
+  SupportedApplication,
+  SupportedNetwork,
+} from "@connext/types";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigService } from "../config/config.service";
-import { CFCoreProviderId, MessagingProviderId, Network } from "../constants";
+import { CFCoreProviderId, MessagingProviderId } from "../constants";
 import { CLogger, freeBalanceAddressFromXpub, replaceBN, stringify } from "../util";
 import {
   AppInstanceJson,
@@ -210,7 +215,7 @@ export class CFCoreService {
     const network = await this.configService.getEthNetwork();
     const appInfo = await this.appRegistryRepository.findByNameAndNetwork(
       app,
-      network.name as Network,
+      network.name as SupportedNetwork,
     );
     const {
       actionEncoding,
