@@ -22,23 +22,21 @@ const env = {
 
 const fundAddress = async (to: string, ethProvider: JsonRpcProvider): Promise<void> => {
   const sugarDaddy = Wallet.fromMnemonic(env.SUGAR_DADDY).connect(ethProvider);
-  const tx = await sugarDaddy.sendTransaction({ to, value: parseEther("10") });
+  const tx = await sugarDaddy.sendTransaction({ to, value: parseEther("1000") });
   if (!tx.hash) throw new Error(`Couldn't fund account ${to}`);
   await ethProvider.waitForTransaction(tx.hash);
 };
 
 export default async function globalSetup(): Promise<void> {
-  console.log(`==================== globalSetup activated! ${env.ETHPROVIDER_URL}`);
-  const ethProvider = new JsonRpcProvider(env.ETHPROVIDER_URL);
+  const ethProvider = new JsonRpcProvider(env.ETHPROVIDER_URL) as any;
   const network = await ethProvider.getNetwork();
-  console.log(`==================== Connected to ethprovider for ${JSON.stringify(network)}`);
-  await Promise.all(
-    [A_EXTENDED_PRIVATE_KEY, B_EXTENDED_PRIVATE_KEY, C_EXTENDED_PRIVATE_KEY].map(
-      (xprv: string): Promise<void> =>
-        fundAddress(fromExtendedKey(xprv).derivePath(`${CF_PATH}/0`).address, ethProvider),
-    ),
-  );
   const fundedAccount = Wallet.createRandom().connect(ethProvider);
+  const addresses = [A_EXTENDED_PRIVATE_KEY, B_EXTENDED_PRIVATE_KEY, C_EXTENDED_PRIVATE_KEY].map(
+    (xprv: string): string => fromExtendedKey(xprv).derivePath(`${CF_PATH}/0`).address,
+  );
+  await fundAddress(addresses[0], ethProvider);
+  await fundAddress(addresses[1], ethProvider);
+  await fundAddress(addresses[2], ethProvider);
   await fundAddress(fundedAccount.address, ethProvider);
   global["fundedPrivateKey"] = fundedAccount.privateKey;
   global["ganacheUrl"] = env.ETHPROVIDER_URL;

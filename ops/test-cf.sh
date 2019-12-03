@@ -49,10 +49,12 @@ docker run \
   --detach \
   --name="$ethprovider_host" \
   --network="$network" \
+  --publish="8545:8545" \
   --rm \
   --tmpfs="/data" \
   trufflesuite/ganache-cli:v6.4.3 \
     --db="/data" \
+    --defaultBalanceEther="10000" \
     --host="0.0.0.0" \
     --mnemonic="$eth_mnemonic" \
     --networkId="4447" \
@@ -73,14 +75,15 @@ docker run \
   --volume="`pwd`:/root" \
   ${project}_builder -c '
     set -e
-    echo "CF tester container launched!";echo
+    echo "CF tester container launched!"
+    echo "Waiting for ethprovider to wake up.."
+    bash ops/wait-for.sh ${ETHPROVIDER_URL#*://} &> /dev/null
     cd modules/cf-core
-    rm -rf .env
-    env > .env
     export PATH=./node_modules/.bin:$PATH
     function finish {
       echo && echo "CF tester container exiting.." && exit
     }
     trap finish SIGTERM SIGINT
+    echo "Launching tests!";echo
     '"$command"'
   '
