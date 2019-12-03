@@ -5,10 +5,10 @@ import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
-import { IdentityApp, ProxyFactory } from "../../../contracts";
 import { Protocol, xkeyKthAddress } from "../../../../src/machine";
 import { sortAddresses } from "../../../../src/machine/xkeys";
 import { getCreate2MultisigAddress } from "../../../../src/utils";
+import { IdentityApp, Proxy } from "../../../contracts";
 import { toBeEq } from "../bignumber-jest-matcher";
 import { connectToGanache } from "../connect-ganache";
 import { MessageRouter } from "../message-router";
@@ -50,7 +50,7 @@ export class TestRunner {
     this.mininodeB = new MiniNode(network, provider);
     this.mininodeC = new MiniNode(network, provider);
 
-    const proxyBytecode = ProxyFactory.evm.bytecode.object;
+    const proxyBytecode = Proxy.evm.bytecode.object;
 
     this.multisigAB = getCreate2MultisigAddress(
       [this.mininodeA.xpub, this.mininodeB.xpub],
@@ -249,22 +249,26 @@ export class TestRunner {
       xkeyKthAddress(this.mininodeB.xpub, 1),
     ]);
 
-    await this.mininodeA.protocolRunner.initiateProtocol(Protocol.Install, this.mininodeA.scm, {
-      appInterface: { stateEncoding, addr: this.identityApp.address, actionEncoding: undefined },
-      appSeqNo: 1,
-      defaultTimeout: 40,
-      disableLimit: false,
-      initialState,
-      initiatorBalanceDecrement: One,
-      initiatorDepositTokenAddress: tokenAddress,
-      initiatorXpub: this.mininodeA.xpub,
-      multisigAddress: this.multisigAB,
-      outcomeType,
-      participants,
-      responderBalanceDecrement: One,
-      responderDepositTokenAddress: tokenAddress,
-      responderXpub: this.mininodeB.xpub,
-    });
+    await this.mininodeA.protocolRunner.initiateProtocol(
+      Protocol.Install,
+      this.mininodeA.scm,
+      {
+        appInterface: { stateEncoding, addr: this.identityApp.address, actionEncoding: undefined },
+        appSeqNo: 1,
+        defaultTimeout: 40,
+        disableLimit: false,
+        initialState,
+        initiatorBalanceDecrement: One,
+        initiatorDepositTokenAddress: tokenAddress,
+        initiatorXpub: this.mininodeA.xpub,
+        multisigAddress: this.multisigAB,
+        outcomeType,
+        participants,
+        responderBalanceDecrement: One,
+        responderDepositTokenAddress: tokenAddress,
+        responderXpub: this.mininodeB.xpub,
+      },
+    );
   }
 
   async installSplitDeposits(
@@ -366,7 +370,7 @@ export class TestRunner {
   }
 
   async uninstall() {
-    const multisig = this.mininodeA.scm.get(this.multisigAC);
+    const multisig = this.mininodeA.scm.get(this.multisigAB);
     if (!multisig) {
       throw new Error(`uninstall: Couldn't find multisig for ${this.multisigAC}`);
     }
