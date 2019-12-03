@@ -14,7 +14,7 @@
   "devDependencies": {
     "@connext/cf-adjudicator-contracts": "0.4.1",
     "@connext/cf-funding-protocol-contracts": "0.4.1",
-    "@connext/cf-types": "1.2.9",
+    "@connext/cf-types": "1.2.14",
     "@types/chai": "4.2.4",
     "chai": "4.2.0",
     "dotenv": "8.2.0",
