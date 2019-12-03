@@ -5,7 +5,7 @@ project="indra"
 cypress="node_modules/.bin/cypress"
 
 # Make sure cypress is installed while we wait for the recipient bot to do it's thing
-$cypress install > /dev/null
+$cypress install
 
 ########################################
 ## Start the UI e2e watcher if in watch mode
