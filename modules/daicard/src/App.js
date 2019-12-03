@@ -111,6 +111,8 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     const swapRate = "100.00";
+    const machine = interpret(rootMachine);
+    console.log(`machine keys: ${Object.keys(machine)}`);
     this.state = {
       balance: {
         channel: {
@@ -125,13 +127,13 @@ class App extends React.Component {
         },
       },
       ethProvider: new eth.providers.JsonRpcProvider(urls.ethProviderUrl),
-      machine: interpret(rootMachine),
+      machine,
       maxDeposit: null,
       minDeposit: null,
       network: {},
       useWalletConnext: false,
       saiBalance: Currency.DAI("0", swapRate),
-      state: {},
+      state: machine.initialState,
       swapRate,
       token: null,
       tokenProfile: null,
@@ -653,9 +655,11 @@ class App extends React.Component {
       minDeposit,
       network,
       saiBalance,
+      state,
       token,
       wallet,
     } = this.state;
+    console.log(`state keys: ${Object.keys(state)}`);
     const address = wallet ? wallet.address : channel ? channel.signerAddress : AddressZero;
     const { classes } = this.props;
     return (
@@ -666,14 +670,14 @@ class App extends React.Component {
 
             <MySnackbar
               variant="warning"
-              openWhen={machine.state.matches("migrate.pending.show")}
+              openWhen={state.matches("migrate.pending.show")}
               onClose={() => machine.send("DISMISS_MIGRATE")}
               message="Migrating legacy channel to 2.0..."
               duration={30 * 60 * 1000}
             />
             <MySnackbar
               variant="info"
-              openWhen={machine.state.matches("start.pending.show")}
+              openWhen={state.matches("start.pending.show")}
               onClose={() => machine.send("DISMISS_START")}
               message="Starting Channel Controllers..."
               duration={30 * 60 * 1000}
@@ -787,6 +791,7 @@ class App extends React.Component {
             />
             <Confirmations
               machine={machine}
+              state={state}
               network={network}
             />
           </Paper>
