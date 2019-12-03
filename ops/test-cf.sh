@@ -44,6 +44,8 @@ docker network create --attachable $network 2> /dev/null || true
 ########################################
 # Start dependencies
 
+# TODO: the gasLimit shouldn't need to be 1000x higher than mainnet..
+
 echo "Starting $ethprovider_host.."
 docker run \
   --detach \
@@ -52,9 +54,11 @@ docker run \
   --publish="8545:8545" \
   --rm \
   --tmpfs="/data" \
-  trufflesuite/ganache-cli:v6.4.3 \
+  trufflesuite/ganache-cli:v6.7.0 \
     --db="/data" \
     --defaultBalanceEther="10000" \
+    --gasLimit="9000000000" \
+    --gasPrice="1000000000" \
     --host="0.0.0.0" \
     --mnemonic="$eth_mnemonic" \
     --networkId="4447" \

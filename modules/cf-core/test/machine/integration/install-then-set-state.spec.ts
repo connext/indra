@@ -41,15 +41,15 @@ import {
 
 // ProxyFactory.createProxy uses assembly `call` so we can't estimate
 // gas needed, so we hard-code this number to ensure the tx completes
-const CREATE_PROXY_AND_SETUP_GAS = 6e9;
+const CREATE_PROXY_AND_SETUP_GAS = 1e6;
 
 // The ChallengeRegistry.setState call _could_ be estimated but we haven't
 // written this test to do that yet
-const SETSTATE_COMMITMENT_GAS = 6e9;
+const SETSTATE_COMMITMENT_GAS = 1e6;
 
 // Also we can't estimate the install commitment gas b/c it uses
 // delegatecall for the conditional transaction
-const CONDITIONAL_TX_DELEGATECALL_GAS = 6e9;
+const CONDITIONAL_TX_DELEGATECALL_GAS = 1e6;
 
 let provider: JsonRpcProvider;
 let wallet: Wallet;

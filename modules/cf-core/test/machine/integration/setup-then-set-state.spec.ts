@@ -5,7 +5,7 @@ import { JsonRpcProvider } from "ethers/providers";
 import { Interface, keccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../src/constants";
-import { ChallengeRegistry, MinimumViableMultisig, ProxyFactory } from "../../contracts";
+import { ChallengeRegistry, MinimumViableMultisig, Proxy, ProxyFactory } from "../../contracts";
 import { SetStateCommitment, SetupCommitment } from "../../../src/ethereum";
 import { xkeysToSortedKthSigningKeys } from "../../../src/machine";
 import { StateChannel } from "../../../src/models";
@@ -70,7 +70,8 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
         getCreate2MultisigAddress(
           xprvs,
           network.ProxyFactory,
-          network.MinimumViableMultisig
+          network.MinimumViableMultisig,
+          Proxy.evm.bytecode.object,
         )
       );
 
