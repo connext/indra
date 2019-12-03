@@ -2,9 +2,9 @@ import { Node } from "@connext/types";
 
 export class MemoryStoreService implements Node.IStoreService {
   private readonly store: Map<string, any> = new Map();
-  constructor(private readonly asyncDelay: number = 0) {}
+  constructor(private readonly delay: number = 0) {}
   async get(path: string): Promise<any> {
-    await new Promise((res: any): any => setTimeout(() => res(), this.asyncDelay));
+    await new Promise((res: any): any => setTimeout(() => res(), this.delay));
     if (
       path.endsWith("channel") ||
       path.endsWith("appInstanceIdToProposedAppInstance")
@@ -33,21 +33,21 @@ export class MemoryStoreService implements Node.IStoreService {
   }
 
   async set(pairs: { path: string; value: any }[]): Promise<void> {
-    await new Promise(res => setTimeout(() => res(), this.asyncDelay))
+    await new Promise(res => setTimeout(() => res(), this.delay))
     for (const pair of pairs) {
       this.store.set(pair.path, JSON.parse(JSON.stringify(pair.value)));
     }
   }
 
   async reset() {
-    await new Promise(res => setTimeout(() => res(), this.asyncDelay))
+    await new Promise(res => setTimeout(() => res(), this.delay))
     this.store.clear();
   }
 }
 
 export class MemoryStoreServiceFactory implements Node.ServiceFactory {
-  constructor(private readonly asyncDelay: number = 0) {}
+  constructor(private readonly delay: number = 0) {}
   createStoreService() {
-    return new MemoryStoreService(this.asyncDelay);
+    return new MemoryStoreService(this.delay);
   }
 }

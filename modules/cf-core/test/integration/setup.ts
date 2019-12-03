@@ -34,13 +34,13 @@ export async function setupWithMemoryMessagingAndSlowStore(
   nodeCPresent: boolean = false,
   newExtendedPrvKeys: boolean = false,
 ): Promise<SetupContext> {
-  const asyncStoreDelay = 200; // milliseconds
+  const storeDelay = 2; // milliseconds (tests timeout if too high)
   return setup(
     global,
     nodeCPresent,
     newExtendedPrvKeys,
     new MemoryMessagingService(),
-    new MemoryStoreServiceFactory(asyncStoreDelay),
+    new MemoryStoreServiceFactory(storeDelay),
   );
 }
 
