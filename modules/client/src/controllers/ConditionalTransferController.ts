@@ -2,6 +2,7 @@ import EthCrypto from "eth-crypto";
 import { HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
+import { CF_METHOD_TIMEOUT } from "../lib/constants";
 import { createLinkedHash, delayAndThrow, stringify, xpubToAddress } from "../lib/utils";
 import {
   BigNumber,
@@ -225,7 +226,7 @@ export class ConditionalTransferController extends AbstractController {
           );
           this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
         }),
-        delayAndThrow(15_000, "App install took longer than 15 seconds"),
+        delayAndThrow(CF_METHOD_TIMEOUT, "App install took longer than 15 seconds"),
       ]);
       this.log.info(`App was installed successfully!: ${stringify(raceRes as object)}`);
       return proposeRes.appInstanceId;
