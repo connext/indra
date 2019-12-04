@@ -311,9 +311,9 @@ export class TransferService {
     // TODO: if sender is offline, this will fail
     this.cfCoreService
       .takeAction(senderApp.identityHash, { preImage })
-      .then(() => this.cfCoreService.uninstallApp(receiverAppInstallRes.appInstanceId))
+      .then(() => this.cfCoreService.uninstallApp(senderApp.identityHash))
       .then(() => this.linkedTransferRepository.markAsReclaimed(transfer))
-      .catch(logger.error);
+      .catch((e: any): void => logger.error(e.message, e.stack));
 
     return {
       freeBalance: await this.cfCoreService.getFreeBalance(

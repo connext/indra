@@ -11,7 +11,7 @@ export class CLogger extends Logger {
   }
   error(message: string, trace: string = "No stack trace"): void {
     try {
-      super.error(message, trace);
+      super.error(message, trace, this.cxt);
     } catch (e) {
       console.error(message);
       console.error(`WARNING Nest logger failed: ${e.message}`);
