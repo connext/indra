@@ -12,7 +12,7 @@ import {
 import memoize from "memoizee";
 
 import { JSON_STRINGIFY_SPACE } from "./constants";
-import { MinimumViableMultisig } from "./contracts";
+import { MinimumViableMultisig, Proxy } from "./contracts";
 import { xkeysToSortedKthAddresses } from "./machine/xkeys";
 
 export function getFirstElementInListNotEqualTo(test: string, list: string[]) {
@@ -47,8 +47,7 @@ export const getCreate2MultisigAddress = memoize(
   (
     owners: string[],
     proxyFactoryAddress: string,
-    minimumViableMultisigAddress: string,
-    proxyBytecode: string
+    minimumViableMultisigAddress: string
   ): string =>
     getAddress(
       solidityKeccak256(
@@ -71,7 +70,7 @@ export const getCreate2MultisigAddress = memoize(
           solidityKeccak256(
             ["bytes", "uint256"],
             [
-              `0x${proxyBytecode.replace("0x", "")}`,
+              `0x${Proxy.evm.bytecode.object.replace("0x", "")}`,
               minimumViableMultisigAddress
             ]
           )

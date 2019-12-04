@@ -24,10 +24,6 @@ describe("StateChannel::setupChannel", () => {
     );
   });
 
-  it("should have the bytecode stored in the channel", () => {
-    expect(sc.proxyBytecode).toEqual(Proxy.evm.bytecode.object);
-  });
-
   it("should have empty map for proposed app instances", () => {
     expect(sc.proposedAppInstances).toEqual(
       new Map<string, AppInstanceProposal>()

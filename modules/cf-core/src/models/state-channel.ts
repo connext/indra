@@ -64,8 +64,7 @@ export class StateChannel {
       SingleAssetTwoPartyIntermediaryAgreement
     > = new Map<string, SingleAssetTwoPartyIntermediaryAgreement>([]),
     private readonly freeBalanceAppInstance?: AppInstance,
-    private readonly monotonicNumProposedApps: number = 0,
-    public readonly proxyBytecode: string = Proxy.evm.bytecode.object
+    private readonly monotonicNumProposedApps: number = 0
   ) {
     userNeuteredExtendedKeys.forEach(xpub => {
       if (!xpub.startsWith("xpub")) {
@@ -280,7 +279,6 @@ export class StateChannel {
     >;
     freeBalanceAppInstance?: AppInstance;
     monotonicNumProposedApps?: number;
-    proxyBytecode?: string;
   }) {
     return new StateChannel(
       args.multisigAddress || this.multisigAddress,
@@ -290,8 +288,7 @@ export class StateChannel {
       args.singleAssetTwoPartyIntermediaryAgreements ||
         this.singleAssetTwoPartyIntermediaryAgreements,
       args.freeBalanceAppInstance || this.freeBalanceAppInstance,
-      args.monotonicNumProposedApps || this.monotonicNumProposedApps,
-      args.proxyBytecode || this.proxyBytecode
+      args.monotonicNumProposedApps || this.monotonicNumProposedApps
     );
   }
 
@@ -349,8 +346,7 @@ export class StateChannel {
     freeBalanceAppAddress: string,
     multisigAddress: string,
     userNeuteredExtendedKeys: string[],
-    freeBalanceTimeout?: number,
-    proxyBytecode?: string
+    freeBalanceTimeout?: number
   ) {
     return new StateChannel(
       multisigAddress,
@@ -363,15 +359,13 @@ export class StateChannel {
         freeBalanceAppAddress,
         freeBalanceTimeout || HARD_CODED_ASSUMPTIONS.freeBalanceDefaultTimeout
       ),
-      1,
-      proxyBytecode
+      1
     );
   }
 
   public static createEmptyChannel(
     multisigAddress: string,
-    userNeuteredExtendedKeys: string[],
-    proxyBytecode?: string
+    userNeuteredExtendedKeys: string[]
   ) {
     return new StateChannel(
       multisigAddress,
@@ -382,8 +376,7 @@ export class StateChannel {
       // Note that this FreeBalance is undefined because a channel technically
       // does not have a FreeBalance before the `setup` protocol gets run
       undefined,
-      1,
-      proxyBytecode
+      1
     );
   }
 
@@ -583,7 +576,6 @@ export class StateChannel {
 
   toJson(): StateChannelJSON {
     return {
-      proxyBytecode: this.proxyBytecode,
       multisigAddress: this.multisigAddress,
       userNeuteredExtendedKeys: this.userNeuteredExtendedKeys,
       proposedAppInstances: [...this.proposedAppInstances.entries()],
@@ -618,14 +610,6 @@ export class StateChannel {
       }
       return arr;
     };
-    // affirmative error checking
-    if (!json.proxyBytecode) {
-      throw new Error(
-        `no bytecode found, could not create state channel from json: ${prettyPrintObject(
-          json
-        )}`
-      );
-    }
     try {
       return new StateChannel(
         json.multisigAddress,
@@ -651,8 +635,7 @@ export class StateChannel {
         json.freeBalanceAppInstance
           ? AppInstance.fromJson(json.freeBalanceAppInstance)
           : undefined,
-        json.monotonicNumProposedApps,
-        json.proxyBytecode
+        json.monotonicNumProposedApps
       );
     } catch (e) {
       throw new Error(

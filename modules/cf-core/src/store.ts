@@ -229,7 +229,7 @@ export class Store {
     owners: string[],
     proxyFactoryAddress: string,
     minimumViableMultisigAddress: string,
-    acceptGeneratedMultisig: boolean = false,
+    acceptGeneratedMultisig: boolean = false
   ) {
     for (const stateChannel of stateChannelsMap.values()) {
       if (
@@ -245,7 +245,6 @@ export class Store {
         owners,
         proxyFactoryAddress,
         minimumViableMultisigAddress,
-        Proxy.evm.bytecode.object,
       );
     }
 

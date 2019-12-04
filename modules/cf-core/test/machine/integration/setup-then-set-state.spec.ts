@@ -71,7 +71,6 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
           xprvs,
           network.ProxyFactory,
           network.MinimumViableMultisig,
-          Proxy.evm.bytecode.object,
         )
       );
 

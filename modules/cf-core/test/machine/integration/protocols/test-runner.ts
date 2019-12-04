@@ -19,11 +19,12 @@ expect.extend({ toBeEq });
 export enum Participant {
   A,
   B,
-  C,
+  C
 }
 
 export class TestRunner {
-  static readonly TEST_TOKEN_ADDRESS: string = "0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290";
+  static readonly TEST_TOKEN_ADDRESS: string =
+    "0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290";
 
   private identityApp!: Contract;
   public mininodeA!: MiniNode;
@@ -43,7 +44,7 @@ export class TestRunner {
     this.identityApp = await new ContractFactory(
       IdentityApp.abi,
       IdentityApp.evm.bytecode,
-      wallet,
+      wallet
     ).deploy();
 
     this.mininodeA = new MiniNode(network, provider);
@@ -55,22 +56,19 @@ export class TestRunner {
     this.multisigAB = getCreate2MultisigAddress(
       [this.mininodeA.xpub, this.mininodeB.xpub],
       network.ProxyFactory,
-      network.MinimumViableMultisig,
-      proxyBytecode,
+      network.MinimumViableMultisig
     );
 
     this.multisigAC = getCreate2MultisigAddress(
       [this.mininodeA.xpub, this.mininodeC.xpub],
       network.ProxyFactory,
-      network.MinimumViableMultisig,
-      proxyBytecode,
+      network.MinimumViableMultisig
     );
 
     this.multisigBC = getCreate2MultisigAddress(
       [this.mininodeB.xpub, this.mininodeC.xpub],
       network.ProxyFactory,
-      network.MinimumViableMultisig,
-      proxyBytecode,
+      network.MinimumViableMultisig
     );
 
     this.mr = new MessageRouter([
@@ -246,14 +244,18 @@ export class TestRunner {
 
     const participants = sortAddresses([
       xkeyKthAddress(this.mininodeA.xpub, 1),
-      xkeyKthAddress(this.mininodeB.xpub, 1),
+      xkeyKthAddress(this.mininodeB.xpub, 1)
     ]);
 
     await this.mininodeA.protocolRunner.initiateProtocol(
       Protocol.Install,
       this.mininodeA.scm,
       {
-        appInterface: { stateEncoding, addr: this.identityApp.address, actionEncoding: undefined },
+        appInterface: {
+          stateEncoding,
+          addr: this.identityApp.address,
+          actionEncoding: undefined
+        },
         appSeqNo: 1,
         defaultTimeout: 40,
         disableLimit: false,
@@ -266,8 +268,8 @@ export class TestRunner {
         participants,
         responderBalanceDecrement: One,
         responderDepositTokenAddress: tokenAddress,
-        responderXpub: this.mininodeB.xpub,
-      },
+        responderXpub: this.mininodeB.xpub
+      }
     );
   }
 
@@ -344,11 +346,11 @@ export class TestRunner {
   async uninstallVirtual() {
     const multisig = this.mininodeA.scm.get(this.multisigAC);
     if (!multisig) {
-      throw new Error(`uninstallVirtual: Couldn't find multisig for ${this.multisigAC}`);
+      throw new Error(
+        `uninstallVirtual: Couldn't find multisig for ${this.multisigAC}`
+      );
     }
-    const [virtualAppInstance] = [
-      ...multisig.appInstances.values()
-    ];
+    const [virtualAppInstance] = [...multisig.appInstances.values()];
 
     await this.mininodeA.protocolRunner.initiateProtocol(
       Protocol.UninstallVirtualApp,
@@ -372,7 +374,9 @@ export class TestRunner {
   async uninstall() {
     const multisig = this.mininodeA.scm.get(this.multisigAB);
     if (!multisig) {
-      throw new Error(`uninstall: Couldn't find multisig for ${this.multisigAC}`);
+      throw new Error(
+        `uninstall: Couldn't find multisig for ${this.multisigAC}`
+      );
     }
     const appInstances = multisig.appInstances;
 
