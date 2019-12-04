@@ -4,7 +4,7 @@ import { Transaction } from "ethers/utils";
 import uuid = require("uuid");
 
 import { ChannelRouter } from "./channelRouter";
-import { Logger, stringify } from "./lib";
+import { Logger, NATS_TIMEOUT, stringify } from "./lib";
 import {
   AppRegistry,
   CFCoreTypes,
@@ -23,8 +23,6 @@ import {
 
 // Include our access token when interacting with these subjects
 const guardedSubjects = ["channel", "lock", "transfer"];
-
-const API_TIMEOUT = 100_000;
 
 export interface INodeApiClient {
   acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;
@@ -314,13 +312,13 @@ export class NodeApiClient implements INodeApiClient {
       this.assertAuthToken();
       payload.token = await this.token;
     }
-    let msg = await this.messaging.request(subject, API_TIMEOUT, payload);
+    let msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
     let error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     if (error && error.startsWith("Invalid token")) {
       this.log.info(`Auth error, token might have expired. Let's get a fresh token & try again.`);
       this.token = this.getAuthToken();
       payload.token = await this.token;
-      msg = await this.messaging.request(subject, API_TIMEOUT, payload);
+      msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
       error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     }
     if (!msg.data) {

@@ -3,8 +3,7 @@ import { AddressZero, Zero } from "ethers/constants";
 import { bigNumberify, getAddress } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
-import { xpubToAddress } from "../lib";
-import { delayAndThrow, stringify } from "../lib/utils";
+import { CF_METHOD_TIMEOUT, delayAndThrow, stringify, xpubToAddress } from "../lib";
 import {
   BigNumber,
   CFCoreTypes,
@@ -211,7 +210,10 @@ export class RequestDepositRightsController extends AbstractController {
           this.log.info(`waiting for proposal acceptance of ${appInstanceId}`);
           this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
         }),
-        delayAndThrow(90_000, "App install took longer than 15 seconds"),
+        delayAndThrow(
+          CF_METHOD_TIMEOUT,
+          `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
+        ),
       ]);
       this.log.info(`App was proposed successfully!: ${appId}`);
       return undefined;

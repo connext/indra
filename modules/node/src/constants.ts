@@ -12,6 +12,11 @@ export enum Network {
   HOMESTEAD = "homestead",
 }
 
+// should be 3x the IO_SEND_AND_WAIT_TIMEOUT of cf-core
+// to account for 3 IO_SEND_AND_WAITs by intermediary in
+// the install virtual protocol
+export const LOCK_SERVICE_TTL = 90_000;
+
 // PROVIDERS
 export const AdminMessagingProviderId = "ADMIN_MESSAGING";
 export const AppRegistryProviderId = "APP_REGISTRY";

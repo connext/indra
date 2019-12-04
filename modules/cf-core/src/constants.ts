@@ -2,6 +2,8 @@ import { AddressZero } from "ethers/constants";
 
 export { CF_PATH } from "@connext/types";
 
+// Adds indentation, white space, and line break characters to the return-value
+// JSON text to make it easier to read
 export const JSON_STRINGIFY_SPACE = 2;
 
 /**
@@ -13,3 +15,7 @@ export const JSON_STRINGIFY_SPACE = 2;
  * also carries data about ERC20 tokens.
  */
 export const CONVENTION_FOR_ETH_TOKEN_ADDRESS = AddressZero;
+
+// 1 messaging timeout there, 1 messaging timeout back
+// assume messaging timeout of 15s
+export const IO_SEND_AND_WAIT_TIMEOUT = 30_000;

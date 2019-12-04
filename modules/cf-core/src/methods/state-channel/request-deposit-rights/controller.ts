@@ -1,8 +1,8 @@
-import ERC20 from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/ERC20.json";
 import { Zero } from "ethers/constants";
 import { jsonRpcMethod } from "rpc-server";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
+import { ERC20 } from "../../../contracts";
 import { RequestHandler } from "../../../request-handler";
 import { Node } from "../../../types";
 import { NodeController } from "../../controller";

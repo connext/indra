@@ -12,7 +12,7 @@ import { StateChannel } from "./models";
 import { getFreeBalanceAddress } from "./models/free-balance";
 import {
   getPrivateKeysGeneratorAndXPubOrThrow,
-  PrivateKeysGetter,
+  PrivateKeysGetter
 } from "./private-keys-generator";
 import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
@@ -21,9 +21,10 @@ import {
   NetworkContext,
   Node as NodeTypes,
   NODE_EVENTS,
-  NodeMessageWrappedProtocolMessage,
+  NodeMessageWrappedProtocolMessage
 } from "./types";
 import { timeout } from "./utils";
+import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 
 export interface NodeConfig {
   // The prefix for any keys used in the store by this Node depends on the
@@ -208,7 +209,10 @@ export class Node {
         } as NodeMessageWrappedProtocolMessage);
 
         // 90 seconds is the default lock acquiring time time
-        const msg = await Promise.race([counterpartyResponse, timeout(90000)]);
+        const msg = await Promise.race([
+          counterpartyResponse,
+          timeout(IO_SEND_AND_WAIT_TIMEOUT)
+        ]);
 
         if (!msg || !("data" in (msg as NodeMessageWrappedProtocolMessage))) {
           throw Error(
