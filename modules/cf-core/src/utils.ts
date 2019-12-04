@@ -7,7 +7,7 @@ import {
   keccak256,
   recoverAddress,
   Signature,
-  solidityKeccak256,
+  solidityKeccak256
 } from "ethers/utils";
 import memoize from "memoizee";
 
@@ -39,13 +39,16 @@ export function timeout(ms: number) {
  * @param {string} proxyBytecode - bytecode that will be used to deploy this multisig proxy
  *
  * @returns {string} the address of the multisig
+ *
+ * NOTE: if the encoding of the multisig owners is changed YOU WILL break all
+ * existing channels
  */
 export const getCreate2MultisigAddress = memoize(
   (
     owners: string[],
     proxyFactoryAddress: string,
     minimumViableMultisigAddress: string,
-    proxyBytecode: string,
+    proxyBytecode: string
   ): string =>
     getAddress(
       solidityKeccak256(
@@ -57,21 +60,25 @@ export const getCreate2MultisigAddress = memoize(
             ["bytes32", "uint256"],
             [
               keccak256(
-                new Interface(MinimumViableMultisig.abi).functions.setup.encode([
-                  xkeysToSortedKthAddresses(owners, 0),
-                ]),
+                // see encoding notes
+                new Interface(
+                  MinimumViableMultisig.abi
+                ).functions.setup.encode([xkeysToSortedKthAddresses(owners, 0)])
               ),
-              0,
-            ],
+              0
+            ]
           ),
           solidityKeccak256(
             ["bytes", "uint256"],
-            [`0x${proxyBytecode.replace("0x", "")}`, minimumViableMultisigAddress],
-          ),
-        ],
-      ).slice(-40),
+            [
+              `0x${proxyBytecode.replace("0x", "")}`,
+              minimumViableMultisigAddress
+            ]
+          )
+        ]
+      ).slice(-40)
     ),
-  { max: 100, maxAge: 60 * 1000, primitive: true },
+  { max: 100, maxAge: 60 * 1000, primitive: true }
 );
 
 export const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
@@ -83,11 +90,10 @@ export const bigNumberifyJson = (json: object) =>
     val
   ) => (val && val["_hex"] ? bigNumberify(val) : val));
 
-export const deBigNumberifyJson = (json: object) => 
-  JSON.parse(JSON.stringify(json), (
-    key,
-    val
-  ) => (val && BigNumber.isBigNumber(val) ? val.toHexString() : val));
+export const deBigNumberifyJson = (json: object) =>
+  JSON.parse(JSON.stringify(json), (key, val) =>
+    val && BigNumber.isBigNumber(val) ? val.toHexString() : val
+  );
 /**
  * Converts an array of signatures into a single string
  *
