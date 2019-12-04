@@ -226,7 +226,10 @@ export class ConditionalTransferController extends AbstractController {
           );
           this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
         }),
-        delayAndThrow(CF_METHOD_TIMEOUT, "App install took longer than 15 seconds"),
+        delayAndThrow(
+          CF_METHOD_TIMEOUT,
+          `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
+        ),
       ]);
       this.log.info(`App was installed successfully!: ${stringify(raceRes as object)}`);
       return proposeRes.appInstanceId;

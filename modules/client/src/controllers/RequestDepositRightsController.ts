@@ -211,7 +211,10 @@ export class RequestDepositRightsController extends AbstractController {
           this.log.info(`waiting for proposal acceptance of ${appInstanceId}`);
           this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
         }),
-        delayAndThrow(CF_METHOD_TIMEOUT, "App install took longer than 15 seconds"),
+        delayAndThrow(
+          CF_METHOD_TIMEOUT,
+          `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
+        ),
       ]);
       this.log.info(`App was proposed successfully!: ${appId}`);
       return undefined;
