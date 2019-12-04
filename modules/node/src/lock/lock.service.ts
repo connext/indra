@@ -37,10 +37,7 @@ export class LockService {
             logger.debug(`Releasing lock for ${lock.resource} with secret ${lock.value}`);
             lock
               .unlock()
-              .then(() => {
-                logger.debug(`Lock released at: ${Date.now()}`);
-                resolve(retVal);
-              })
+              .then(() => resolve(retVal))
               .catch((e: any) => {
                 const acquisitionDelta = Date.now() - acquiredAt;
                 if (acquisitionDelta < hardcodedTTL) {
