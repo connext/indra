@@ -19,4 +19,4 @@ export const CF_PATH = "m/44'/60'/0'/25446";
 
 // 1 messaging timeout there, 1 messaging timeout back
 // assume messaging timeout of 15s
-export const IO_SEND_AND_WAIT_TIMEOUT = 30_000;
+export const IO_SEND_AND_WAIT_TIMEOUT = 90_000;
