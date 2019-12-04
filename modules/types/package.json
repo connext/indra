@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@connext/cf-types": "1.2.16",
-    "@connext/cf-core": "1.2.16",
     "ethers": "4.0.40"
   },
   "devDependencies": {
