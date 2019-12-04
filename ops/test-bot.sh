@@ -44,7 +44,7 @@ function checkInstalledApps {
   if [[ -f "$recipientStore" ]]
   then recipientApps="`cat $recipientStore | grep channel | cut -d ":" -f3- | tr -d '\\\' | cut -c 3- | rev | cut -c 3- | rev | jq '.appInstances | length'`"
   fi
-  if [[ "$senderApps" != "0" || "$recipientApps" != "0" ]]
+  if [[ ("$senderApps" != "0" && "$senderApps" != "") || ("$recipientApps" != "0" && "$recipientApps" != "") ]]
   then 
     echo -e "$divider";echo "Installed apps:"
     echo "Sender: $senderApps"
