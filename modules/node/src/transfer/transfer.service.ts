@@ -310,7 +310,7 @@ export class TransferService {
     // dont await so caller isnt blocked by this
     // TODO: if sender is offline, this will fail
     this.cfCoreService
-      .takeAction(senderApp.identityHash, preImage)
+      .takeAction(senderApp.identityHash, { preImage })
       .then(() => this.cfCoreService.uninstallApp(receiverAppInstallRes.appInstanceId))
       .then(() => this.linkedTransferRepository.markAsReclaimed(transfer))
       .catch(logger.error);
