@@ -92,7 +92,7 @@ echo -e "$divider";echo "Skipping sync transfer tests for now.."
 
 echo -e "$divider";echo "Generating an async payment & leaving the sender running so it can uninstall the app after"
 bash ops/payment-bot.sh -i 2 -a -n 0.01 -c $id -p "$paymentId2" -h "$preImage2" -m "$mnemonic2" -o | tee -a $senderLog &
-sleep 3
+sleep 10
 
 echo -e "$divider";echo "Redeeming async payment"
 bash ops/payment-bot.sh -i 1 -a | tee -a $recipientLog
@@ -104,7 +104,7 @@ checkInstalledApps
 
 echo -e "$divider";echo "Generating a link payment & leaving the sender running so it can uninstall the app after"
 bash ops/payment-bot.sh -i 2 -a -l 0.01 -p "$paymentId1" -h "$preImage1" -m "$mnemonic2" -o | tee -a $senderLog &
-sleep 3
+sleep 10
 
 echo -e "$divider";echo "Redeeming link payment"
 bash ops/payment-bot.sh -i 1 -a -y 0.01 -p "$paymentId1" -h "$preImage1" -m "$mnemonic1" | tee -a $recipientLog
