@@ -618,6 +618,14 @@ export class StateChannel {
       }
       return arr;
     };
+    // affirmative error checking
+    if (!json.proxyBytecode) {
+      throw new Error(
+        `no bytecode found, could not create state channel from json: ${prettyPrintObject(
+          json
+        )}`
+      );
+    }
     try {
       return new StateChannel(
         json.multisigAddress,
