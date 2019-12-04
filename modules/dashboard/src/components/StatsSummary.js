@@ -68,6 +68,8 @@ const StatsSummary = props => {
         xPubsToSearch.push(row.userPublicIdentifier);
       });
 
+      console.log(xPubsToSearch)
+
       setAllChannels(xPubsToSearch);
       let channelTotalArr = [];
 
@@ -88,12 +90,16 @@ const StatsSummary = props => {
   };
 
   const getChannelAmount = async xPub => {
-    var res = await messaging.request("admin.get-channel-states", 5000, {
+  console.log("xpub: ", xPub)
+    try{
+    var res = await messaging.request("get-channel-state-by-xpub", 5000, {
       token: token,
       id: xPub,
     });
+    console.log(res)
 
     var extractedValues = Object.values(res)[0].response;
+    console.log(extractedValues)
     let balanceArr = [];
     extractedValues.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
       balanceArr.push(parseInt(balance.amount._hex, 16));
@@ -104,6 +110,9 @@ const StatsSummary = props => {
     }, 0);
 
     return balanceArrReduced;
+  }catch{
+    console.log("ERROR GETTING CHANNEL")
+  }
   };
 
   return (

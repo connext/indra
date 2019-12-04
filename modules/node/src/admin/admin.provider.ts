@@ -6,6 +6,8 @@ import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
 
 import { AdminService } from "./admin.service";
+import { Channel } from "../channel/channel.entity";
+import { CFCoreRecord } from "../cfCore/cfCore.entity";
 
 class AdminMessaging extends AbstractMessagingProvider {
   constructor(
@@ -34,12 +36,12 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getNoFreeBalance();
   }
 
-  async getChannelStates(userPublicIdentifier: any):  Promise<any[]> {
-    return await this.adminService.getChannelStates(userPublicIdentifier);
+  async getChannelStateByXpub(userPublicIdentifier: any):  Promise<Channel[]> {
+    return await this.adminService.getChannelStateByXpub(userPublicIdentifier.id);
   }
 
-  async getChannelStateByMultiSig(multisigAddress: string):  Promise<any[]> {
-    return await this.adminService.getChannelStateByMultiSig(multisigAddress);
+  async getChannelStateByMultiSig(multisigAddress: any):  Promise<Channel[]> {
+    return await this.adminService.getChannelStateByMultiSig(multisigAddress.id);
   }
 
   async getAllChannelsState():  Promise<any[]> {
@@ -72,8 +74,8 @@ class AdminMessaging extends AbstractMessagingProvider {
     );
 
     await super.connectRequestReponse(
-      "admin.get-channel-states",
-      this.authService.useAdminToken(this.getChannelStates.bind(this)),
+      "admin.get-channel-state-by-xpub",
+      this.authService.useAdminToken(this.getChannelStateByXpub.bind(this)),
     );
 
     await super.connectRequestReponse(

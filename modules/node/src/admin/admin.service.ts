@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
+import { Channel } from "../channel/channel.entity";
 import { ChannelService } from "../channel/channel.service";
 import { TransferService } from "../transfer/transfer.service";
 import { CLogger } from "../util";
@@ -53,12 +54,11 @@ export class AdminService {
 
   /**  Get Channels by xpub */
 
-  async getChannelStates(userPublicIdentifier: any): Promise<CFCoreRecord[]> {
-    // get channel by xpubgetChannelStateByMultiSig
-    return await this.channelService.getChannelState(userPublicIdentifier.id);
+  async getChannelStateByXpub(userPublicIdentifier: string): Promise<Channel[]> {
+    return await this.channelService.getChannelState(userPublicIdentifier);
   }
 
-  async getChannelStateByMultiSig(multisigAddress: string): Promise<CFCoreRecord[]> {
+  async getChannelStateByMultiSig(multisigAddress: string): Promise<Channel[]> {
     // get channel by xpub
     return await this.channelService.getChannelStateByMultiSig(multisigAddress);
   }

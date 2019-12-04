@@ -57,12 +57,11 @@ const styles = {
     margin: "2% 5% 5% 1%",
   },
   error: {
-    color:"red",
-    
+    color: "red",
   },
-  errorWrap:{
-    width:"100%"
-  }
+  errorWrap: {
+    width: "100%",
+  },
 };
 
 const DebugChannel = props => {
@@ -75,7 +74,7 @@ const DebugChannel = props => {
   const [channelState, setChannelState] = useState(null);
   const [freeBalance, setFreeBalance] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [searchError, setSearchError] = useState(null)
+  const [searchError, setSearchError] = useState(null);
 
   useEffect(() => {
     if (!messaging) {
@@ -105,66 +104,66 @@ const DebugChannel = props => {
 
   const getChannelState = async () => {
     setLoading(true);
-    try{
-    var res = await messaging.request("admin.get-channel-states", 5000, {
-      token: token,
-      id: xPubSearch,
-    });
+    try {
+      var res = await messaging.request("get-channel-state-by-xpub", 5000, {
+        token: token,
+        id: xPubSearch,
+      });
 
-    var extractedValues = Object.values(res)[0].response;
-    let freeBalanceTotalHolder = [];
-    extractedValues.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
-      balance.amount.readable = bigNumberify(balance.amount._hex).toString();
-      freeBalanceTotalHolder.push(balance.amount.readable);
-    });
+      var extractedValues = Object.values(res)[0].response;
+      let freeBalanceTotalHolder = [];
+      extractedValues.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
+        balance.amount.readable = bigNumberify(balance.amount._hex).toString();
+        freeBalanceTotalHolder.push(balance.amount.readable);
+      });
 
-    var freeBalanceTotalReduced = freeBalanceTotalHolder.reduce((a, b) => {
-      return a + b;
-    }, 0);
+      var freeBalanceTotalReduced = freeBalanceTotalHolder.reduce((a, b) => {
+        return a + b;
+      }, 0);
 
-    setFreeBalance(freeBalanceTotalReduced);
-    setChannelState(extractedValues);
-    setLoading(false);
-    setSearchError(null)
-  }catch{
-    setLoading(false)
-    setSearchError("xPub not found")
-  }
+      setFreeBalance(freeBalanceTotalReduced);
+      setChannelState(extractedValues);
+      setLoading(false);
+      setSearchError(null);
+    } catch {
+      setLoading(false);
+      setSearchError("xPub not found");
+    }
   };
   const getChannelStateByMultisig = async () => {
     setLoading(true);
-    try{
-    var res = await messaging.request("admin.get-channel-state-by-multisig", 5000, {
-      token: token,
-      id: multiSigSearch,
-    });
+    try {
+      var res = await messaging.request("admin.get-channel-state-by-multisig", 5000, {
+        token: token,
+        id: multiSigSearch,
+      });
 
-    var extractedValues = Object.values(res)[0].response;
-    let freeBalanceTotalHolder = [];
-    extractedValues.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
-      balance.amount.readable = bigNumberify(balance.amount._hex).toString();
-      freeBalanceTotalHolder.push(balance.amount.readable);
-    });
+      var extractedValues = Object.values(res)[0].response;
+      let freeBalanceTotalHolder = [];
+      extractedValues.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
+        balance.amount.readable = bigNumberify(balance.amount._hex).toString();
+        freeBalanceTotalHolder.push(balance.amount.readable);
+      });
 
-    var freeBalanceTotalReduced = freeBalanceTotalHolder.reduce((a, b) => {
-      return a + b;
-    }, 0);
+      var freeBalanceTotalReduced = freeBalanceTotalHolder.reduce((a, b) => {
+        return a + b;
+      }, 0);
 
-    setFreeBalance(freeBalanceTotalReduced);
-    setChannelState(extractedValues);
-    setLoading(false);
-    setSearchError(null)
-  }catch{
-    setLoading(false)
-    setSearchError("Multisig not found")
-  }
+      setFreeBalance(freeBalanceTotalReduced);
+      setChannelState(extractedValues);
+      setLoading(false);
+      setSearchError(null);
+    } catch {
+      setLoading(false);
+      setSearchError("Multisig not found");
+    }
   };
 
   return (
     <Grid className={classes.top} container>
-        <Grid className={classes.errorWrap}>
-          <Typography className={classes.error}>{searchError}</Typography>
-        </Grid>
+      <Grid className={classes.errorWrap}>
+        <Typography className={classes.error}>{searchError}</Typography>
+      </Grid>
       <Grid className={classes.xPubEntry}>
         <TextField
           fullWidth
@@ -190,7 +189,7 @@ const DebugChannel = props => {
             ),
           }}
         />
-         
+
         <Grid className={classes.channelStateGrid}>
           <Typography className={classes.cardTextBold}>Free Balance: {freeBalance}</Typography>
         </Grid>

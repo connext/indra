@@ -261,7 +261,7 @@ export class ChannelService {
   }
 
   // TODO: define type for state channel
-  async getChannelState(userPublicIdentifier: string): Promise<any> {
+  async getChannelState(userPublicIdentifier: string): Promise<any[]> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     if (!channel) {
       throw new Error(
@@ -279,7 +279,7 @@ export class ChannelService {
     return state;
   }
 
-  async getChannelStateByMultiSig(multisigAddress: string): Promise<any> {
+  async getChannelStateByMultiSig(multisigAddress: string): Promise<any[]> {
     const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
     if (!channel) {
       throw new Error(
