@@ -17,7 +17,7 @@ import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.en
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { TransferService } from "../transfer/transfer.service";
-import { CLogger, stringify } from "../util";
+import { CLogger, stringify, xpubToAddress } from "../util";
 import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
@@ -69,8 +69,24 @@ export class ChannelService {
       throw new Error(`No channel exists for multisigAddress ${multisigAddress}`);
     }
 
-    // make sure client's balance refund app is uninstalled for asset
-    await this.cfCoreService.rescindDepositRights(channel.multisigAddress, assetId);
+    // don't allow deposit if user's balance refund app is installed
+    const balanceRefundApp = await this.cfCoreService.getCoinBalanceRefundApp(assetId);
+    if (
+      balanceRefundApp &&
+      balanceRefundApp.latestState["recipient"] === xpubToAddress(channel.userPublicIdentifier)
+    ) {
+      throw new Error(
+        `Cannot deposit, user's CoinBalanceRefundApp is installed for ${channel.userPublicIdentifier}`,
+      );
+    }
+
+    if (
+      balanceRefundApp &&
+      balanceRefundApp.latestState["recipient"] === this.cfCoreService.cfCore.freeBalanceAddress
+    ) {
+      logger.log(`Node's CoinBalanceRefundApp is installed, removing first.`);
+      await this.cfCoreService.rescindDepositRights(assetId);
+    }
 
     await this.proposeCoinBalanceRefund(assetId, channel);
 
