@@ -51,7 +51,6 @@ docker run \
   --detach \
   --name="$ethprovider_host" \
   --network="$network" \
-  --publish="8545:8545" \
   --rm \
   --tmpfs="/data" \
   trufflesuite/ganache-cli:v6.7.0 \
