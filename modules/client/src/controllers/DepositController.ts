@@ -139,7 +139,7 @@ export class DepositController extends AbstractController {
       await Promise.race([
         new Promise(async (res: any, rej: any) => {
           boundReject = this.rejectInstallCoinBalance.bind(null, rej);
-          console.warn(
+          this.log.warn(
             `subscribing to indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
           );
           await this.connext.messaging.subscribe(
@@ -148,7 +148,7 @@ export class DepositController extends AbstractController {
           );
           const { appInstanceId } = await this.connext.proposeInstallApp(params);
           appId = appInstanceId;
-          console.warn(`waiting for proposal acceptance of ${appInstanceId}`);
+          this.log.warn(`waiting for proposal acceptance of ${appInstanceId}`);
           this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
         }),
         delayAndThrow(

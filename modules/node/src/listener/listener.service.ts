@@ -93,7 +93,6 @@ export default class ListenerService implements OnModuleInit {
         logEvent(CFCoreTypes.EventName.INSTALL_VIRTUAL, data);
       },
       PROPOSE_INSTALL: async (data: ProposeMessage): Promise<void> => {
-        console.log("data: ", data);
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
           logger.debug(`Recieved proposal from our own node. Doing nothing.`);
         }
