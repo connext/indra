@@ -30,9 +30,6 @@ function cleanup {
 }
 trap cleanup EXIT SIGINT
 
-rm -f ops/recipient-bot.log
-touch ops/recipient-bot.log
-
 function checkInstalledApps {
   senderStore=modules/payment-bot/.payment-bot-db/2.json
   recipientStore=modules/payment-bot/.payment-bot-db/1.json
@@ -55,6 +52,10 @@ function checkInstalledApps {
   fi
 }
 
+recipientLog=.recipient-bot.log
+senderLog=.sender-bot.log
+rm -f $recipientLog $senderLog
+touch $recipientLog $senderLog
 
 ########################################
 ## Run Tests
@@ -62,20 +63,20 @@ function checkInstalledApps {
 checkInstalledApps
 
 echo -e "$divider";echo "Requesting eth collateral for recipient bot"
-bash ops/payment-bot.sh -i 1 -q -m "$mnemonic1"
+bash ops/payment-bot.sh -i 1 -q -m "$mnemonic1" | tee -a $recipientLog
 
 echo -e "$divider";echo "Requesting token collateral for recipient bot"
-bash ops/payment-bot.sh -i 1 -q -a -m "$mnemonic1"
+bash ops/payment-bot.sh -i 1 -q -a -m "$mnemonic1" | tee -a $recipientLog
 
 echo -e "$divider";echo "Depositing eth into sender bot"
-bash ops/payment-bot.sh -i 2 -d 0.1 -m "$mnemonic2"
+bash ops/payment-bot.sh -i 2 -d 0.1 -m "$mnemonic2" | tee -a $senderLog
 
 echo -e "$divider";echo "Depositing tokens into sender bot"
-bash ops/payment-bot.sh -i 2 -d 0.1 -a -m "$mnemonic2"
+bash ops/payment-bot.sh -i 2 -d 0.1 -a -m "$mnemonic2" | tee -a $senderLog
 
 echo -e "$divider";echo "Removing sender's state to trigger a restore"
 rm modules/payment-bot/.payment-bot-db/2.json
-bash ops/payment-bot.sh -i 2
+bash ops/payment-bot.sh -i 2 | tee -a $senderLog
 
 echo -e "$divider";echo "Skipping sync transfer tests for now.."
 #echo -e "$divider";echo "Starting recipient bot in background, waiting for payments"
@@ -90,11 +91,11 @@ echo -e "$divider";echo "Skipping sync transfer tests for now.."
 #cleanup
 
 echo -e "$divider";echo "Generating an async payment & leaving the sender running so it can uninstall the app after"
-bash ops/payment-bot.sh -i 2 -a -n 0.01 -c $id -p "$paymentId2" -h "$preImage2" -m "$mnemonic2" -o &
+bash ops/payment-bot.sh -i 2 -a -n 0.01 -c $id -p "$paymentId2" -h "$preImage2" -m "$mnemonic2" -o | tee -a $senderLog &
 sleep 3
 
 echo -e "$divider";echo "Redeeming async payment"
-bash ops/payment-bot.sh -i 1 -a
+bash ops/payment-bot.sh -i 1 -a | tee -a $recipientLog
 
 echo -e "$divider";echo "Giving the sender a few seconds to finish uninstalling.."
 sleep 2
@@ -102,11 +103,11 @@ cleanup
 checkInstalledApps
 
 echo -e "$divider";echo "Generating a link payment & leaving the sender running so it can uninstall the app after"
-bash ops/payment-bot.sh -i 2 -a -l 0.01 -p "$paymentId1" -h "$preImage1" -m "$mnemonic2" -o &
+bash ops/payment-bot.sh -i 2 -a -l 0.01 -p "$paymentId1" -h "$preImage1" -m "$mnemonic2" -o | tee -a $senderLog &
 sleep 3
 
 echo -e "$divider";echo "Redeeming link payment"
-bash ops/payment-bot.sh -i 1 -a -y 0.01 -p "$paymentId1" -h "$preImage1" -m "$mnemonic1"
+bash ops/payment-bot.sh -i 1 -a -y 0.01 -p "$paymentId1" -h "$preImage1" -m "$mnemonic1" | tee -a $recipientLog
 
 echo -e "$divider";echo "Giving the sender a few seconds to finish uninstalling.."
 sleep 2
@@ -114,10 +115,10 @@ cleanup
 checkInstalledApps
 
 echo -e "$divider";echo "Withdrawing tokens from recipient"
-bash ops/payment-bot.sh -i 1 -a -w 0.02
+bash ops/payment-bot.sh -i 1 -a -w 0.02 | tee -a $recipientLog
 
 echo -e "$divider";echo "Withdrawing ether from sender"
-bash ops/payment-bot.sh -i 2 -w 0.02
+bash ops/payment-bot.sh -i 2 -w 0.02 | tee -a $senderLog
 
 checkInstalledApps
 
