@@ -120,6 +120,20 @@ function useWalletConnext() {
   return [walletConnext, setWc];
 }
 
+const getSaiBalance = async (wallet, channel) => {
+  if (!channel.config.contractAddresses.SAIToken) {
+    return Zero;
+  }
+  const saiToken = new Contract(
+    channel.config.contractAddresses.SAIToken,
+    tokenArtifacts.abi,
+    wallet,
+  );
+  const freeSaiBalance = await channel.getFreeBalance(saiToken.address);
+  const mySaiBalance = freeSaiBalance[channel.freeBalanceAddress];
+  return mySaiBalance;
+};
+
 function parseQRCode(data) {
   // potential URLs to scan and their params
   const urls = {
@@ -324,7 +338,7 @@ const App = style(({ classes }) => {
       setTokenProfile(tokenProfile);
       console.log(`Set a default token profile: ${JSON.stringify(tokenProfile)}`);
 
-      const saiBalance = Currency.DEI(await getSaiBalance(wallet || ethProvider), swapRate);
+      const saiBalance = Currency.DEI(await getSaiBalance(wallet || ethProvider, channel), swapRate);
       if (saiBalance && saiBalance.wad.gt(0)) {
         setSaiBalance(saiBalance);
         machineAction("SAI");
@@ -341,20 +355,6 @@ const App = style(({ classes }) => {
     }
     init();
   }, []);
-
-  const getSaiBalance = async wallet => {
-    if (!channel.config.contractAddresses.SAIToken) {
-      return Zero;
-    }
-    const saiToken = new Contract(
-      channel.config.contractAddresses.SAIToken,
-      tokenArtifacts.abi,
-      wallet,
-    );
-    const freeSaiBalance = await channel.getFreeBalance(saiToken.address);
-    const mySaiBalance = freeSaiBalance[channel.freeBalanceAddress];
-    return mySaiBalance;
-  };
 
   // ************************************************* //
   //                    Pollers                        //
