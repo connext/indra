@@ -2,7 +2,8 @@ import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
 
-import { delayAndThrow, stringify, xpubToAddress } from "../lib/utils";
+import { xpubToAddress } from "../lib";
+import { delayAndThrow, stringify } from "../lib/utils";
 import {
   BigNumber,
   CFCoreTypes,
