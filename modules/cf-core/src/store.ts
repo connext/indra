@@ -2,7 +2,6 @@ import { StateChannelJSON } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import { solidityKeccak256 } from "ethers/utils";
 
-import { Proxy } from "./contracts";
 import {
   DB_NAMESPACE_ALL_COMMITMENTS,
   DB_NAMESPACE_CHANNEL,

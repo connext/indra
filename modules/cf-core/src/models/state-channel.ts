@@ -4,7 +4,6 @@ import {
 } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 
-import { Proxy } from "../contracts";
 import {
   flip,
   flipTokenIndexedBalances

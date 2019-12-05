@@ -7,7 +7,7 @@ import {
 } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
-import { MinimumViableMultisig, Proxy } from "../../../contracts";
+import { MinimumViableMultisig } from "../../../contracts";
 import { xkeysToSortedKthAddresses } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
 import { Node } from "../../../types";

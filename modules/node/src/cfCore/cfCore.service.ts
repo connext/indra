@@ -1,4 +1,3 @@
-import Proxy from "@connext/cf-funding-protocol-contracts/build/Proxy.json";
 import { NatsMessagingService } from "@connext/messaging";
 import {
   AppActionBigNumber,
