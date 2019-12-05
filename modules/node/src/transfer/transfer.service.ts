@@ -16,8 +16,7 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { mkHash } from "../test";
-import { CLogger, createLinkedHash, freeBalanceAddressFromXpub } from "../util";
-import { AppInstanceJson } from "../util/cfCore";
+import { AppInstanceJson, CLogger, createLinkedHash, xpubToAddress } from "../util";
 
 import {
   LinkedTransfer,
@@ -258,7 +257,7 @@ export class TransferService {
         },
         {
           amount: Zero,
-          to: freeBalanceAddressFromXpub(userPubId),
+          to: xpubToAddress(userPubId),
         },
       ],
       linkedHash,
@@ -350,7 +349,7 @@ export class TransferService {
         },
         {
           amount: Zero,
-          to: freeBalanceAddressFromXpub(userPubId),
+          to: xpubToAddress(userPubId),
         },
       ],
     };

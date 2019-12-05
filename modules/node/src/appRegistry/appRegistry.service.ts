@@ -17,10 +17,10 @@ import { TransferService } from "../transfer/transfer.service";
 import {
   bigNumberifyObj,
   CLogger,
-  freeBalanceAddressFromXpub,
   isEthAddress,
   normalizeEthAddresses,
   stringify,
+  xpubToAddress,
 } from "../util";
 import { CFCoreTypes, ProposeMessage } from "../util/cfCore";
 
@@ -294,8 +294,7 @@ export class AppRegistryService {
       initiatorChannel.multisigAddress,
       initiatorDepositTokenAddress,
     );
-    const initiatorFreeBalance =
-      freeBalanceInitiatorAsset[freeBalanceAddressFromXpub(initiatorIdentifier)];
+    const initiatorFreeBalance = freeBalanceInitiatorAsset[xpubToAddress(initiatorIdentifier)];
     if (initiatorFreeBalance.lt(initiatorDeposit)) {
       throw new Error(
         `Initiator has insufficient funds to install proposed app. Initiator free balance: ${initiatorFreeBalance.toString()}, deposit requested: ${initiatorDeposit.toString()}`,
@@ -324,8 +323,7 @@ export class AppRegistryService {
         responderDepositTokenAddress,
       );
     }
-    const balAvailable =
-      freeBalanceResponderAsset[freeBalanceAddressFromXpub(proposedToIdentifier)];
+    const balAvailable = freeBalanceResponderAsset[xpubToAddress(proposedToIdentifier)];
     if (balAvailable.lt(responderDeposit)) {
       throw new Error(`Node has insufficient balance to install the app with proposed deposit.`);
     }

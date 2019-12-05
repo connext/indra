@@ -10,7 +10,7 @@ import React, { useState } from "react";
 
 import { useAddress, AddressInput } from "./input";
 
-export const WithdrawSaiDialog = ({ channel, ethProvider, machine, saiBalance }) => {
+export const WithdrawSaiDialog = ({ channel, ethProvider, machine, state, saiBalance }) => {
   const [recipient, setRecipient] = useAddress(null, ethProvider);
   const [withdrawing, setWithdrawing] = useState(false);
 
@@ -35,7 +35,7 @@ export const WithdrawSaiDialog = ({ channel, ethProvider, machine, saiBalance })
 
   return (
     <Dialog
-      open={machine.state.matches("sai") || withdrawing}
+      open={state.matches("sai") || withdrawing}
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
     >

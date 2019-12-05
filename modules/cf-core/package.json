@@ -1,6 +1,6 @@
 {
   "name": "@connext/cf-core",
-  "version": "1.2.18",
+  "version": "1.3.2",
   "main": "dist/src/index.js",
   "iife": "dist/src/index.iife.js",
   "types": "dist/src/index.d.ts",
@@ -19,7 +19,7 @@
   "dependencies": {
     "@connext/cf-adjudicator-contracts": "0.4.1",
     "@connext/cf-funding-protocol-contracts": "0.4.1",
-    "@connext/types": "1.2.18",
+    "@connext/types": "1.3.2",
     "@counterfactual/cf-adjudicator-contracts": "0.0.9",
     "@counterfactual/cf-funding-protocol-contracts": "0.0.12",
     "ethers": "4.0.39",
@@ -33,8 +33,8 @@
   "devDependencies": {
     "@babel/core": "7.7.2",
     "@babel/plugin-proposal-object-rest-spread": "7.6.2",
-    "@connext/cf-types": "1.2.18",
-    "@connext/types": "1.2.18",
+    "@connext/cf-types": "1.3.2",
+    "@connext/types": "1.3.2",
     "@counterfactual/local-ganache-server": "0.0.10",
     "@counterfactual/postgresql-node-connector": "0.0.8",
     "@types/chai": "4.2.4",

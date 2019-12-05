@@ -5,7 +5,7 @@ import { isEthAddress } from "./validate";
 export const xpubToAddress = (xpub: string, path: string = "0"): string =>
   HDNode.fromExtendedKey(xpub).derivePath(path).address;
 
-export const stringify = (obj: object, space: number = 0): string =>
+export const stringify = (obj: any, space: number = 0): string =>
   JSON.stringify(obj, replaceBN, space);
 
 export const replaceBN = (key: string, value: any): any =>
