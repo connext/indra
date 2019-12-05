@@ -1,11 +1,12 @@
 import { IMessagingService } from "@connext/messaging";
 import { StateChannelJSON } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
+import { RpcException } from "@nestjs/microservices";
 
 import { AuthService } from "../auth/auth.service";
 import { Channel } from "../channel/channel.entity";
-import { LinkedTransfer } from "../transfer/transfer.entity";
 import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
+import { LinkedTransfer } from "../transfer/transfer.entity";
 import { AbstractMessagingProvider, stringify } from "../util";
 
 import { AdminService } from "./admin.service";
@@ -42,7 +43,7 @@ class AdminMessaging extends AbstractMessagingProvider {
   }): Promise<StateChannelJSON> {
     const { userPublicIdentifier } = data;
     if (!userPublicIdentifier) {
-      throw new Error(`No public identifier supplied: ${stringify(data)}`);
+      throw new RpcException(`No public identifier supplied: ${stringify(data)}`);
     }
     return await this.adminService.getStateChannelByUserPublicIdentifier(userPublicIdentifier);
   }
@@ -50,7 +51,7 @@ class AdminMessaging extends AbstractMessagingProvider {
   async getStateChannelByMultisig(data: { multisigAddress: string }): Promise<StateChannelJSON> {
     const { multisigAddress } = data;
     if (!multisigAddress) {
-      throw new Error(`No multisig address supplied: ${stringify(data)}`);
+      throw new RpcException(`No multisig address supplied: ${stringify(data)}`);
     }
     return await this.adminService.getStateChannelByMultisig(multisigAddress);
   }
@@ -68,7 +69,7 @@ class AdminMessaging extends AbstractMessagingProvider {
   }): Promise<LinkedTransfer | undefined> {
     const { paymentId } = data;
     if (!paymentId) {
-      throw new Error(`No paymentId supplied: ${stringify(data)}`);
+      throw new RpcException(`No paymentId supplied: ${stringify(data)}`);
     }
     return await this.adminService.getLinkedTransferByPaymentId(paymentId);
   }
