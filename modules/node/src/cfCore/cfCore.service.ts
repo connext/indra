@@ -111,14 +111,10 @@ export class CFCoreService {
         multisigAddress,
       } as CFCoreTypes.DeployStateDepositHolderParams,
     };
-    logger.debug(
-      `Calling chan_deployStateDepositHolder with params: ${stringify(params)}`,
-    );
+    logger.debug(`Calling chan_deployStateDepositHolder with params: ${stringify(params)}`);
     const deployRes = await this.cfCore.rpcRouter.dispatch(params);
     logger.debug(
-      `chan_deployStateDepositHolder called with result: ${stringify(
-        deployRes.result.result,
-      )}`,
+      `chan_deployStateDepositHolder called with result: ${stringify(deployRes.result.result)}`,
     );
     return deployRes.result.result as CFCoreTypes.DeployStateDepositHolderResult;
   }
@@ -165,9 +161,7 @@ export class CFCoreService {
       methodName: CFCoreTypes.RpcMethodName.PROPOSE_INSTALL,
       parameters: params,
     });
-    logger.debug(
-      `proposeInstallApp called with result ${stringify(proposeRes.result.result)}`,
-    );
+    logger.debug(`proposeInstallApp called with result ${stringify(proposeRes.result.result)}`);
     return proposeRes.result.result as CFCoreTypes.ProposeInstallResult;
   }
 
@@ -309,9 +303,7 @@ export class CFCoreService {
       } as CFCoreTypes.TakeActionParams,
     });
 
-    logger.log(
-      `takeAction called with result: ${stringify(actionResponse.result)}`,
-    );
+    logger.log(`takeAction called with result: ${stringify(actionResponse.result)}`);
     return actionResponse.result.result as CFCoreTypes.TakeActionResult;
   }
 
@@ -327,9 +319,7 @@ export class CFCoreService {
       },
     });
 
-    logger.log(
-      `uninstallApp called with result ${stringify(uninstallResponse.result.result)}`,
-    );
+    logger.log(`uninstallApp called with result ${stringify(uninstallResponse.result.result)}`);
     return uninstallResponse.result.result as CFCoreTypes.UninstallResult;
   }
 
@@ -376,6 +366,7 @@ export class CFCoreService {
         app.appInterface.addr === contractAddresses.CoinBalanceRefundApp &&
         app.latestState["tokenAddress"] === tokenAddress,
     );
+    console.log("coinBalanceRefundAppArray: ", coinBalanceRefundAppArray);
     if (coinBalanceRefundAppArray.length > 1) {
       throw new Error(
         "More than 1 instance of CoinBalanceRefundApp installed for asset! This should never happen.",
@@ -395,9 +386,7 @@ export class CFCoreService {
     });
 
     logger.log(
-      `getProposedAppInstances called with result ${stringify(
-        appInstanceResponse.result.result,
-      )}`,
+      `getProposedAppInstances called with result ${stringify(appInstanceResponse.result.result)}`,
     );
     return appInstanceResponse.result.result.appInstances as AppInstanceProposal[];
   }
