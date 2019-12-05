@@ -10,8 +10,7 @@ const style = withStyles(theme => ({
 }));
 
 // TODO: close confirmations based on emitted events
-export const Confirmations = style(props => {
-  const { machine, network, state } = props;
+export const Confirmations = style(({ machine, network, state }) => {
   return (
     <div>
       <MySnackbar

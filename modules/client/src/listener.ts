@@ -95,7 +95,7 @@ export class ConnextListener extends EventEmitter {
         this.log.info(`not sending propose message, not the coinbalance refund app`);
         return;
       }
-      this.log.warn(
+      this.log.info(
         `Sending acceptance message to: indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
       );
       await this.connext.messaging.publish(

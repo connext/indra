@@ -231,15 +231,6 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // check if there is a coin refund app installed
   await client.uninstallCoinBalanceIfNeeded();
 
-  // make sure we don't have a balance refund app hanging around installed
-  log.debug(`Rescinding deposit rights for ${config.contractAddresses.Token}`);
-  const tokenReq = await client.rescindDepositRights(config.contractAddresses.Token);
-  log.debug(`Rights rescind result: ${tokenReq}`);
-
-  log.debug(`Rescinding deposit rights for ${AddressZero}`);
-  const ethReq = await client.rescindDepositRights(AddressZero);
-  log.debug(`Rights rescind result: ${ethReq}`);
-
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
   log.debug("Resubmitting active withdrawals");
   await client.resubmitActiveWithdrawal();

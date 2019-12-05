@@ -56,7 +56,7 @@ process.on("unhandledRejection", (e: any): any => {
     const signer = provider.getSigner();
     console.log(`Depositing ${config.deposit} of asset ${assetId}`);
     let tx: TransactionResponse;
-    await client.requestDepositRights({ assetId, timeoutMs: 60_000 });
+    await client.requestDepositRights({ assetId });
     if (assetId === AddressZero) {
       tx = await signer.sendTransaction({
         to: client.multisigAddress,

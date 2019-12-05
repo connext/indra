@@ -27,8 +27,6 @@ export const Home = style(({ balance, swapRate, channel, history, parseQRCode, d
     }
   };
 
-  const ms = depositTimer % (60 * 1000);
-  const minutes = Math.floor(depositTimer / (60 * 1000));
   return (
     <>
       <Grid container direction="row" style={{ marginBottom: "-7.5%" }}>
@@ -126,33 +124,6 @@ export const Home = style(({ balance, swapRate, channel, history, parseQRCode, d
           >
             Cash Out
           </Button>
-        </Grid>
-        <Grid item xs={12}>
-          {depositTimer > 0 ? (
-            <div>
-              <Typography variant="h5" color="primary">
-                Deposit time remaining:
-              </Typography>
-              <Typography variant="h6" color="primary">
-                {`${minutes} min ${ms / 1000} s`}
-              </Typography>
-              <Typography variant="body2" color="primary">
-                Send funds to the multisig address in the top right.
-              </Typography>
-            </div>
-          ) : (
-            <div>
-              <Button
-                disableTouchRipple
-                color="primary"
-                size="medium"
-                variant="outlined"
-                onClick={startDepositTimer}
-              >
-                Start timer
-              </Button>
-            </div>
-          )}
         </Grid>
       </Grid>
     </>
