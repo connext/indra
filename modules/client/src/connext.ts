@@ -232,6 +232,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   log.debug("Registering subscriptions");
   await client.registerSubscriptions();
 
+  // check if there is a coin refund app installed
+  await client.uninstallCoinBalanceIfNeeded();
+
   // make sure we don't have a balance refund app hanging around installed
   log.debug(`Rescinding deposit rights for ${config.contractAddresses.Token}`);
   const tokenReq = await client.rescindDepositRights(config.contractAddresses.Token);
@@ -624,6 +627,13 @@ export class ConnextClient implements IConnextClient {
     return this.listener.on(event, callback);
   };
 
+  public once = (
+    event: ConnextEvent | CFCoreTypes.EventName,
+    callback: (...args: any[]) => void,
+  ): ConnextListener => {
+    return this.listener.once(event, callback);
+  };
+
   public emit = (event: ConnextEvent | CFCoreTypes.EventName, data: any): boolean => {
     return this.listener.emit(event, data);
   };
@@ -956,6 +966,84 @@ export class ConnextClient implements IConnextClient {
       bigNumberify(givenTransaction.value).eq(expected.value) &&
       givenTransaction.data === expected.data
     );
+  };
+
+  public uninstallCoinBalanceIfNeeded = async (): Promise<void> => {
+    // check if there is a coin refund app installed
+    const coinRefund = (await this.getAppInstances()).filter(app => {
+      return app.appInterface.addr === this.config.contractAddresses.CoinBalanceRefundApp;
+    })[0];
+    if (!coinRefund) {
+      this.log.debug("No coin balance refund app found");
+      return;
+    }
+
+    this.log.debug(
+      "Installed coin balance refund app found, checking if deposit has been executed",
+    );
+    // if the balance of the multisig is *higher* than the threshold, then a
+    // deposit has been executed.
+    // because only one deposit can be performed at once, assume that
+    // uninstalling will safely add the deposit to the free balance of the
+    // correct channel participant.
+
+    // NOTE: in the case of a transaction being stuck in the mempool due to a
+    // highly clogged chain, your channel will be **locked** because of this
+    // permanently installed application
+
+    const latestState = coinRefund.latestState;
+    const threshold = bigNumberify(latestState["threshold"]);
+    const isClientDeposit = latestState["recipient"] === this.freeBalanceAddress;
+    const isTokenDeposit =
+      latestState["tokenAddress"] && latestState["tokenAddress"] !== AddressZero;
+    const multisigBalance = !isTokenDeposit
+      ? await this.ethProvider.getBalance(this.multisigAddress)
+      : await new Contract(
+          latestState["tokenAddress"],
+          tokenAbi,
+          this.ethProvider,
+        ).functions.balanceOf(this.multisigAddress);
+
+    if (multisigBalance.lt(threshold)) {
+      throw new Error(
+        `Something is wrong! multisig balance is less than the threshold of the installed coin balance refund app.`,
+      );
+    }
+
+    // define helper fn to uninstall coin balance refund
+    const uninstallRefund = async (): Promise<void> => {
+      this.log.debug("Deposit has been executed, uninstalling refund app");
+      // deposit has been executed, uninstall
+      await this.uninstallApp(coinRefund.identityHash);
+      this.log.debug("Successfully uninstalled");
+    };
+
+    // deposit still needs to be executed, wait to uninstall
+    if (multisigBalance.eq(threshold)) {
+      this.log.warn(
+        `Coin balance refund app found installed, but no deposit successfully executed. Leaving app installed and waiting for deposit of ${
+          latestState["tokenAddress"]
+        } from ${isClientDeposit ? `client` : `node`}`,
+      );
+      // if the deposit is from the user, register a listener to wait for
+      // for successful uninstalling since their queued uninstall request
+      // would be lost. if the deposit is from the node, they will be waiting
+      // to send an uninstall request to the client
+      if (isClientDeposit) {
+        if (isTokenDeposit) {
+          new Contract(latestState["tokenAddress"], tokenAbi, this.ethProvider).once(
+            "Transfer",
+            async () => await uninstallRefund(),
+          );
+        } else {
+          this.ethProvider.once(this.multisigAddress, async () => await uninstallRefund());
+        }
+      }
+      return;
+    }
+
+    // multisig bal > threshold so deposit has been executed, uninstall
+    await uninstallRefund();
   };
 
   public resubmitActiveWithdrawal = async (): Promise<void> => {
