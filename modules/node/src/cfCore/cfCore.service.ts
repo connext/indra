@@ -1,3 +1,4 @@
+import { StateChannel } from "@connext/cf-core";
 import { AppActionBigNumber, ConnextNodeStorePrefix } from "@connext/types";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
@@ -59,11 +60,10 @@ export class CFCoreService {
     }
   }
 
-  // TODO: fix typings, is StateChannel exported?
-  async getStateChannel(multisigAddress: string): Promise<{ data: any }> {
+  async getStateChannel(multisigAddress: string): Promise<{ data: StateChannel }> {
     const params = {
       id: Date.now(),
-      methodName: "chan_getStateChannel", // FIXME: CFCoreTypes.RpcMethodName.GET_STATE_CHANNEL,
+      methodName: CFCoreTypes.RpcMethodName.GET_STATE_CHANNEL,
       parameters: {
         multisigAddress,
       },
