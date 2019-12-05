@@ -1,9 +1,10 @@
+import { StateChannelJSON } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 
-import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
 import { ChannelService } from "../channel/channel.service";
+import { LinkedTransfer } from "../transfer/transfer.entity";
 import { TransferService } from "../transfer/transfer.service";
 import { CLogger } from "../util";
 
@@ -16,6 +17,35 @@ export class AdminService {
     private readonly channelService: ChannelService,
     private readonly transferService: TransferService,
   ) {}
+
+  /////////////////////////////////////////
+  ///// GENERAL PURPOSE ADMIN FNS
+
+  /**  Get channels by xpub */
+  async getStateChannelByUserPublicIdentifier(
+    userPublicIdentifier: string,
+  ): Promise<StateChannelJSON> {
+    return await this.channelService.getStateChannel(userPublicIdentifier);
+  }
+
+  /**  Get channels by multisig */
+  async getStateChannelByMultisig(multisigAddress: string): Promise<StateChannelJSON> {
+    return await this.channelService.getStateChannelByMultisig(multisigAddress);
+  }
+
+  /** Get all channels */
+  async getAllChannels(): Promise<Channel[]> {
+    return await this.channelService.getAllChannels();
+  }
+
+  /** Get all transfers */
+  // @hunter -- see notes in transfer service fns
+  async getAllTransfers(): Promise<LinkedTransfer[]> {
+    return await this.transferService.fetchAllTransfers();
+  }
+
+  /////////////////////////////////////////
+  ///// PURPOSE BUILT ADMIN FNS
 
   /**
    * October 30, 2019
@@ -50,27 +80,6 @@ export class AdminService {
       }
     }
     return corrupted;
-  }
-
-  /**  Get Channels by xpub */
-
-  async getChannelStateByXpub(userPublicIdentifier: string): Promise<Channel[]> {
-    return await this.channelService.getChannelState(userPublicIdentifier);
-  }
-
-  async getChannelStateByMultiSig(multisigAddress: string): Promise<Channel[]> {
-    // get channel by xpub
-    return await this.channelService.getChannelStateByMultiSig(multisigAddress);
-  }
-
-  //Get all channels
-  async getAllChannelsState(): Promise<CFCoreRecord[]> {
-    // get channel by xpub
-    return await this.channelService.getAllChannelsState();
-  }
-
-  async getAllTransfers(): Promise<any[]> {
-    return await this.transferService.fetchAllTransfers();
   }
 
   /**
