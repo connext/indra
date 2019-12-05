@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Grid, Typography, withStyles } from "@material-ui/core";
+import { Button,Grid, Typography, withStyles } from "@material-ui/core";
 import PropTypes from "prop-types";
 
 const styles = {
@@ -32,30 +32,57 @@ const styles = {
   },
 };
 
-function StatsTransfers({ classes, messaging }) {
-  const [allTransfers, setAllTransfers] = useState(null);
+const  StatsTransfers = props=> {
+  const {classes, messaging} = props;
 
-  useEffect(() => {
-    getTransfers();
-  }, []);
+
+  const [allTransfers, setAllTransfers] = useState(null);
+  const [averageTransfer, setAverageTransfer] = useState(0)
+
+  // useEffect(() => {
+  // }, []);
 
   const getTransfers = async () => {
-    async function requestTransfers() {
-      const res = await messaging.getAllTransfers();
-      setAllTransfers(res);
-    }
+      const res = await messaging.getAllLinkedTransfers();
 
-    // @hunter -- there has to be a better way to do this instead
-    // of the setTimeout and while loop method
-    while (!messaging || !messaging.connected) {
-      setTimeout(requestTransfers, 200);
-    }
+      let totalTransfers = []; 
+      if(res){
+        for (let transfer of res){
+        totalTransfers.push(parseInt(transfer.amount._hex, 16));
+      }
+      var totalTransfersReduced = totalTransfers.reduce((a, b) => {
+        return a + b;
+        }, 0);
+      }
+      var averageTransfer = (totalTransfersReduced / res.length) / 1000000000000000000
+
+      setAverageTransfer(averageTransfer)
+      setAllTransfers(res);
+  };
+
+  const onRefresh = async () => {
+    console.log("refreshing!");
+    await getTransfers();
   };
 
   return (
     <Grid className={classes.top} container>
-      <Typography className={classes.cardText}>Hello</Typography>
-      <Typography className={classes.cardText}>World</Typography>
+    <Button
+        onClick={async () => {
+          await onRefresh();
+        }}
+      >
+        Refresh stats
+      </Button>
+      <Grid>
+      <Typography className={classes.cardText}>
+            total transfers: {allTransfers ? allTransfers.length : 0}
+      </Typography>
+      <Typography className={classes.cardText}>average transfer size: {averageTransfer? averageTransfer:0}</Typography>
+      {/* <Typography className={classes.cardText}>
+            total transfers: {allTransfers ? JSON.stringify(allTransfers) : 0}
+      </Typography> */}
+      </Grid>
     </Grid>
   );
 }

@@ -36,11 +36,20 @@ const styles = {
   },
 };
 
+const address = {
+  mainnet: "0xF80fd6F5eF91230805508bB28d75248024E50F6F", //"0xf3f722f6ca6026fb7cc9b63523bbc6a73d3aad39",
+  // staging: "0x0f41a9aaee33d3520f853cb706c24ca75cac874e",
+  // rinkeby: "0x5307b4f67ca8746562a4a9fdeb0714033008ef4a",
+};
+
 const StatsSummary = props => {
   const { classes, messaging, token } = props;
 
   const [allChannels, setAllChannels] = useState(null);
   const [channelTotal, setChannelTotal] = useState(0);
+  const [nodeTotal, setNodeTotal] = useState(0);
+  const [allTransfers, setAllTransfers] = useState(null);
+  const [averageTransfer, setAverageTransfer] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState(null);
 
@@ -53,30 +62,40 @@ const StatsSummary = props => {
   const onRefresh = async () => {
     console.log("refreshing!");
     await getChannels();
+    await getTransfers();
   };
 
   const getChannels = async () => {
     setLoading(true);
     try {
       const res = await messaging.getAllChannelStates();
-
+      console.log("Res", res);
       let xPubsToSearch = [];
-      Object.values(res)[0].response.forEach(row => {
+      for (let row of res) {
         xPubsToSearch.push(row.userPublicIdentifier);
-      });
+      }
 
       console.log(xPubsToSearch);
 
       setAllChannels(xPubsToSearch);
       let channelTotalArr = [];
+      let nodeChannelTotalArr = [];
 
       for (let xPub of xPubsToSearch) {
-        const currentChannelValue = await getChannelAmount(xPub);
+        const currentChannelValue = await getUserChannelAmount(xPub);
+        const currentNodeChannelValue = await getNodeChannelAmount(xPub);
+
         currentChannelValue !== 0 && channelTotalArr.push(currentChannelValue);
+        currentNodeChannelValue !== 0 && nodeChannelTotalArr.push(currentNodeChannelValue);
       }
       var channelTotalArrReduced = channelTotalArr.reduce((a, b) => {
         return a + b;
       }, 0);
+      var nodeChannelTotalArrReduced = nodeChannelTotalArr.reduce((a, b) => {
+        return a + b;
+      }, 0);
+      
+      setNodeTotal(nodeChannelTotalArrReduced);
       setChannelTotal(channelTotalArrReduced);
       setLoading(false);
       setSearchError(null);
@@ -86,14 +105,14 @@ const StatsSummary = props => {
     }
   };
 
-  const getChannelAmount = async xPub => {
-    console.log("xpub: ", xPub);
+  const getUserChannelAmount = async xPub => {
     try {
       const res = await messaging.getStateChannelByUserPubId(xPub);
-      console.log(res);
       let balanceArr = [];
       res.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
-        balanceArr.push(parseInt(balance.amount._hex, 16));
+        if (balance.to !== address.mainnet) {
+          balanceArr.push(parseInt(balance.amount._hex, 16));
+        }
       });
 
       const balanceArrReduced = balanceArr.reduce((a, b) => {
@@ -101,9 +120,46 @@ const StatsSummary = props => {
       }, 0);
 
       return balanceArrReduced;
-    } catch {
-      console.log("ERROR GETTING CHANNEL");
+    } catch (e) {
+      setSearchError(`error getting channel: ${e}`);
     }
+  };
+  const getNodeChannelAmount = async xPub => {
+    try {
+      const res = await messaging.getStateChannelByUserPubId(xPub);
+      let balanceArr = [];
+      res.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
+        if (balance.to === address.mainnet) {
+          balanceArr.push(parseInt(balance.amount._hex, 16));
+        }
+      });
+
+      const balanceArrReduced = balanceArr.reduce((a, b) => {
+        return a + b;
+      }, 0);
+
+      return balanceArrReduced;
+    } catch (e) {
+      setSearchError(`error getting channel: ${e}`);
+    }
+  };
+
+  const getTransfers = async () => {
+    const res = await messaging.getAllLinkedTransfers();
+
+    let totalTransfers = [];
+    if (res) {
+      for (let transfer of res) {
+        totalTransfers.push(parseInt(transfer.amount._hex, 16));
+      }
+      var totalTransfersReduced = totalTransfers.reduce((a, b) => {
+        return a + b;
+      }, 0);
+    }
+    var averageTransfer = totalTransfersReduced / res.length / 1000000000000000000;
+
+    setAverageTransfer(averageTransfer);
+    setAllTransfers(res);
   };
 
   return (
@@ -126,7 +182,20 @@ const StatsSummary = props => {
             total channels: {allChannels ? allChannels.length : 0}
           </Typography>
           <Typography className={classes.cardText}>
-            total free balances: {JSON.stringify(channelTotal / 1000000000000000000)}
+            collateral ratio: {JSON.stringify(nodeTotal / channelTotal)}
+          </Typography>
+          <Typography className={classes.cardText}>
+            TVL:payment volume:{" "}
+            {nodeTotal && allTransfers && allTransfers.length > 0
+              ? (nodeTotal/1000000000000000000) / allTransfers.length
+              : 0}
+          </Typography>
+
+          <Typography className={classes.cardText}>
+            total user balances: {JSON.stringify(channelTotal / 1000000000000000000)}
+          </Typography>
+          <Typography className={classes.cardText}>
+            total node balances: {JSON.stringify(nodeTotal / 1000000000000000000)}
           </Typography>
         </Grid>
       )}

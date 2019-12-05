@@ -209,26 +209,7 @@ const DebugChannel = ({ classes, messaging }) => {
             ),
           }}
         />
-        <Grid className={classes.channelStateGrid}>
-          <Typography className={classes.cardTextBold}>Free Balance: {freeBalance}</Typography>
-        </Grid>
-        {!!channelState &&
-          Object.entries(channelState).map(([k, v], i) => {
-            // if (Object.entries(v).length > 1) {
-            //   return(
-            //     Object.entries(channelState).map(([k2, v2], i) => {
-            //     <Typography className={classes.cardText}>{`${k}: ${}`}</Typography>})
-            //   );
-            // } else {
-            return (
-              <Grid>
-                <Typography className={classes.cardTextBold} key={k}>{`${k}: `}</Typography>
-                <pre>{`${JSON.stringify(v, null, 4)}`}</pre>
-              </Grid>
-            );
-            // }
-          })}
-      </Grid>
+    </Grid>
     </Grid>
   );
 };

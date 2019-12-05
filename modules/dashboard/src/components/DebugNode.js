@@ -49,6 +49,7 @@ function DebugNode(props) {
           await axios.get("http://api.ethplorer.io/getAddressInfo/" + address + "?apiKey=freekey"),
       ),
     );
+
     var eth = {
       mainnet: balances[0].data.ETH.balance,
       staging: balances[1].data.ETH.balance,
