@@ -11,6 +11,7 @@ import { MinimumViableMultisig } from "../../../contracts";
 import { xkeysToSortedKthAddresses } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
 import { Node } from "../../../types";
+import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
 
 export default class GetStateDepositHolderAddressController extends NodeController {
@@ -23,33 +24,17 @@ export default class GetStateDepositHolderAddressController extends NodeControll
   ): Promise<Node.GetStateDepositHolderAddressResult> {
     const { owners } = params;
     const { networkContext } = requestHandler;
-
-    const multisigOwners = xkeysToSortedKthAddresses(owners, 0);
-
-    const setupData = new Interface(
-      MinimumViableMultisig.abi
-    ).functions.setup.encode([multisigOwners]);
-
-    const address = getAddress(
-      solidityKeccak256(
-        ["bytes1", "address", "uint256", "bytes32"],
-        [
-          "0xff",
-          networkContext.ProxyFactory,
-          solidityKeccak256(["bytes32", "uint256"], [keccak256(setupData), 0]),
-          keccak256(
-            solidityPack(
-              ["bytes", "uint256"],
-              [
-                `0x${Proxy.evm.bytecode.object}`,
-                networkContext.MinimumViableMultisig
-              ]
-            )
-          )
-        ]
-      ).slice(-40)
+    if (!networkContext.provider) {
+      throw new Error(
+        `getCreate2MultisigAddress needs access to an eth provider`
+      );
+    }
+    const address = await getCreate2MultisigAddress(
+      xkeysToSortedKthAddresses(owners, 0),
+      networkContext.ProxyFactory,
+      networkContext.MinimumViableMultisig,
+      networkContext.provider
     );
-
     return { address };
   }
 }
