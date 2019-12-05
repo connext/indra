@@ -1,3 +1,5 @@
+import { BaseProvider } from "ethers/providers";
+
 import {
   AppIdentity,
   AppInterface,
@@ -43,6 +45,7 @@ export interface NetworkContext {
   TimeLockedPassThrough: string;
   TwoPartyFixedOutcomeFromVirtualAppInterpreter: string;
   TwoPartyFixedOutcomeInterpreter: string;
+  provider?: BaseProvider;
 }
 
 // Keep in sync with above
