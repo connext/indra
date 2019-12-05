@@ -18,6 +18,7 @@ import {
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
+// Postgres testing is pretty pointless here, since it's using a different interface
 describe("Node method follows spec - rejectInstallVirtual", () => {
   let nodeA: Node;
   let nodeB: Node;
@@ -37,7 +38,7 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
     "Node A makes a proposal through an intermediary Node B to install a " +
       "Virtual AppInstance with Node C. Node C rejects proposal. Node A confirms rejection",
     () => {
-      it("sends proposal with non-null initial state", async done => {
+      it.skip("sends proposal with non-null initial state", async done => {
         await createChannel(nodeA, nodeB);
         await createChannel(nodeB, nodeC);
 
@@ -48,39 +49,31 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
           done();
         });
 
-        nodeC.on(
-          NODE_EVENTS.PROPOSE_INSTALL_VIRTUAL,
-          async (msg: ProposeMessage) => {
-            const { appInstanceId } = msg.data;
+        nodeC.on(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
+          const { appInstanceId } = msg.data;
 
-            const [proposedAppInstanceA] = await getProposedAppInstances(nodeA);
-            const [proposedAppInstanceC] = await getProposedAppInstances(nodeC);
+          const [proposedAppInstanceA] = await getProposedAppInstances(nodeA);
+          const [proposedAppInstanceC] = await getProposedAppInstances(nodeC);
 
-            confirmProposedAppInstance(proposalParams, proposedAppInstanceA);
+          confirmProposedAppInstance(proposalParams, proposedAppInstanceA);
 
-            confirmProposedAppInstance(proposalParams, proposedAppInstanceC);
+          confirmProposedAppInstance(proposalParams, proposedAppInstanceC);
 
-            expect(proposedAppInstanceC.proposedByIdentifier).toEqual(
-              nodeA.publicIdentifier
-            );
-            expect(proposedAppInstanceA.identityHash).toEqual(
-              proposedAppInstanceC.identityHash
-            );
+          expect(proposedAppInstanceC.proposedByIdentifier).toEqual(
+            nodeA.publicIdentifier
+          );
+          expect(proposedAppInstanceA.identityHash).toEqual(
+            proposedAppInstanceC.identityHash
+          );
 
-            const rejectReq = constructRejectInstallRpc(appInstanceId);
+          const rejectReq = constructRejectInstallRpc(appInstanceId);
 
-            await nodeC.rpcRouter.dispatch(rejectReq);
+          await nodeC.rpcRouter.dispatch(rejectReq);
 
-            expect((await getProposedAppInstances(nodeC)).length).toEqual(0);
-          }
-        );
+          expect((await getProposedAppInstances(nodeC)).length).toEqual(0);
+        });
 
-        const result = await makeVirtualProposeCall(
-          nodeA,
-          nodeC,
-          nodeB,
-          TicTacToeApp
-        );
+        const result = await makeVirtualProposeCall(nodeA, nodeC, TicTacToeApp);
 
         proposalParams = result.params;
       });

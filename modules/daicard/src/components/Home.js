@@ -1,4 +1,4 @@
-import { Button, Fab, Grid, Modal, withStyles } from "@material-ui/core";
+import { Button, Fab, Grid, Modal, withStyles, Typography } from "@material-ui/core";
 import { SaveAlt as ReceiveIcon, Send as SendIcon } from "@material-ui/icons";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { useState } from "react";
@@ -13,20 +13,22 @@ import { initWalletConnect } from "../utils";
 
 const style = withStyles({});
 
-export const Home = style(({ balance, swapRate, channel, history, parseQRCode }) => {
+export const Home = style(({ balance, swapRate, channel, history, parseQRCode, depositTimer, startDepositTimer }) => {
   const [scanModal, setScanModal] = useState(false);
 
   const scanQRCode = data => {
     setScanModal(false);
     if (channel && data.startsWith("wc:")) {
-      localStorage.setItem(`wcUri`, data)
+      localStorage.setItem(`wcUri`, data);
       initWalletConnect(data, channel);
     } else {
-      const url = parseQRCode(data)
-      history.push(url)
+      const url = parseQRCode(data);
+      history.push(url);
     }
   };
 
+  const ms = depositTimer % (60 * 1000);
+  const minutes = Math.floor(depositTimer / (60 * 1000));
   return (
     <>
       <Grid container direction="row" style={{ marginBottom: "-7.5%" }}>
@@ -124,6 +126,33 @@ export const Home = style(({ balance, swapRate, channel, history, parseQRCode })
           >
             Cash Out
           </Button>
+        </Grid>
+        <Grid item xs={12}>
+          {depositTimer > 0 ? (
+            <div>
+              <Typography variant="h5" color="primary">
+                Deposit time remaining:
+              </Typography>
+              <Typography variant="h6" color="primary">
+                {`${minutes} min ${ms / 1000} s`}
+              </Typography>
+              <Typography variant="body2" color="primary">
+                Send funds to the multisig address in the top right.
+              </Typography>
+            </div>
+          ) : (
+            <div>
+              <Button
+                disableTouchRipple
+                color="primary"
+                size="medium"
+                variant="outlined"
+                onClick={startDepositTimer}
+              >
+                Start timer
+              </Button>
+            </div>
+          )}
         </Grid>
       </Grid>
     </>

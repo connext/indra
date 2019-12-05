@@ -103,16 +103,15 @@ export namespace Node {
     GET_STATE = "chan_getState",
     GET_STATE_CHANNEL = "chan_getStateChannel",
     INSTALL = "chan_install",
+    REQUEST_DEPOSIT_RIGHTS = "chan_requestDepositRights",
     INSTALL_VIRTUAL = "chan_installVirtual",
     PROPOSE_INSTALL = "chan_proposeInstall",
-    PROPOSE_INSTALL_VIRTUAL = "chan_proposeInstallVirtual",
-    PROPOSE_STATE = "chan_proposeState",
     REJECT_INSTALL = "chan_rejectInstall",
-    REJECT_STATE = "chan_rejectState",
     UPDATE_STATE = "chan_updateState",
     TAKE_ACTION = "chan_takeAction",
     UNINSTALL = "chan_uninstall",
     UNINSTALL_VIRTUAL = "chan_uninstallVirtual",
+    RESCIND_DEPOSIT_RIGHTS = "chan_rescindDepositRights",
     WITHDRAW = "chan_withdraw",
     WITHDRAW_COMMITMENT = "chan_withdrawCommitment"
   }
@@ -126,9 +125,7 @@ export namespace Node {
     DEPOSIT_STARTED = "depositStartedEvent",
     INSTALL = "installEvent",
     INSTALL_VIRTUAL = "installVirtualEvent",
-    PROPOSE_STATE = "proposeStateEvent",
     REJECT_INSTALL = "rejectInstallEvent",
-    REJECT_STATE = "rejectStateEvent",
     UNINSTALL = "uninstallEvent",
     UNINSTALL_VIRTUAL = "uninstallVirtualEvent",
     UPDATE_STATE = "updateStateEvent",
@@ -136,9 +133,7 @@ export namespace Node {
     WITHDRAWAL_FAILED = "withdrawalFailed",
     WITHDRAWAL_STARTED = "withdrawalStartedEvent",
     PROPOSE_INSTALL = "proposeInstallEvent",
-    PROPOSE_INSTALL_VIRTUAL = "proposeInstallEvent",
     PROTOCOL_MESSAGE_EVENT = "protocolMessageEvent",
-    WITHDRAW_EVENT = "withdrawEvent",
     REJECT_INSTALL_VIRTUAL = "rejectInstallEvent"
   }
 
@@ -181,6 +176,15 @@ export namespace Node {
 
   export type DepositResult = {
     multisigBalance: BigNumber;
+    tokenAddress: string;
+  };
+
+  export type RequestDepositRightsResult = {
+    freeBalance: {
+      [s: string]: BigNumber;
+    };
+    recipient: string;
+    tokenAddress: string;
   };
 
   export type GetAppInstanceDetailsParams = {
@@ -256,6 +260,11 @@ export namespace Node {
     appInstanceId: string;
   };
 
+  export type RequestDepositRightsParams = {
+    multisigAddress: string;
+    tokenAddress?: string;
+  };
+
   export type InstallResult = {
     appInstance: AppInstanceJson;
   };
@@ -307,6 +316,11 @@ export namespace Node {
 
   export type UninstallParams = {
     appInstanceId: string;
+  };
+
+  export type RescindDepositRightsParams = {
+    multisigAddress: string;
+    tokenAddress?: string;
   };
 
   export type UninstallResult = {};

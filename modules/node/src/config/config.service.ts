@@ -1,11 +1,16 @@
 import { MessagingConfig } from "@connext/messaging";
-import { ContractAddresses, SupportedApplications } from "@connext/types";
+import {
+  ContractAddresses,
+  DefaultApp,
+  SupportedApplication,
+  SupportedApplications,
+  SupportedNetworks,
+} from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
 import { getAddress, Network as EthNetwork } from "ethers/utils";
 
-import { Network } from "../constants";
 import { OutcomeType } from "../util/cfCore";
 
 type PostgresConfig = {
@@ -14,16 +19,6 @@ type PostgresConfig = {
   password: string;
   port: number;
   username: string;
-};
-
-export type DefaultApp = {
-  actionEncoding?: string;
-  allowNodeInstall: boolean;
-  appDefinitionAddress: string;
-  name: string;
-  network: Network;
-  outcomeType: OutcomeType;
-  stateEncoding: string;
 };
 
 const singleAssetTwoPartyCoinTransferEncoding = `tuple(address to, uint256 amount)[2]`;
@@ -83,6 +78,11 @@ export class ConfigService implements OnModuleInit {
     return getAddress(ethAddressBook[chainId].Token.address);
   }
 
+  async getDefaultAppByName(name: SupportedApplication): Promise<DefaultApp> {
+    const apps = await this.getDefaultApps();
+    return apps.filter((app: DefaultApp) => app.name === name)[0];
+  }
+
   async getDefaultApps(): Promise<DefaultApp[]> {
     const ethNetwork = await this.getEthNetwork();
     const addressBook = await this.getContractAddresses();
@@ -90,16 +90,16 @@ export class ConfigService implements OnModuleInit {
       {
         allowNodeInstall: false,
         appDefinitionAddress: addressBook[SupportedApplications.SimpleTransferApp],
-        name: SupportedApplications.SimpleTransferApp,
-        network: Network[ethNetwork.name.toUpperCase()],
+        name: "SimpleTransferApp",
+        network: SupportedNetworks[ethNetwork.name.toLowerCase()],
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
         stateEncoding: `tuple(${singleAssetTwoPartyCoinTransferEncoding} coinTransfers)`,
       },
       {
         allowNodeInstall: true,
         appDefinitionAddress: addressBook[SupportedApplications.SimpleTwoPartySwapApp],
-        name: SupportedApplications.SimpleTwoPartySwapApp,
-        network: Network[ethNetwork.name.toUpperCase()],
+        name: "SimpleTwoPartySwapApp",
+        network: SupportedNetworks[ethNetwork.name.toLowerCase()],
         outcomeType: OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
         stateEncoding: `tuple(${multiAssetMultiPartyCoinTransferEncoding} coinTransfers)`,
       },
@@ -107,10 +107,18 @@ export class ConfigService implements OnModuleInit {
         actionEncoding: `tuple(bytes32 preImage)`,
         allowNodeInstall: true,
         appDefinitionAddress: addressBook[SupportedApplications.SimpleLinkedTransferApp],
-        name: SupportedApplications.SimpleLinkedTransferApp,
-        network: Network[ethNetwork.name.toUpperCase()],
+        name: "SimpleLinkedTransferApp",
+        network: SupportedNetworks[ethNetwork.name.toLowerCase()],
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
         stateEncoding: `tuple(${singleAssetTwoPartyCoinTransferEncoding} coinTransfers, bytes32 linkedHash, uint256 amount, address assetId, bytes32 paymentId, bytes32 preImage)`,
+      },
+      {
+        allowNodeInstall: true,
+        appDefinitionAddress: addressBook[SupportedApplications.CoinBalanceRefundApp],
+        name: "CoinBalanceRefundApp",
+        network: SupportedNetworks[ethNetwork.name.toLowerCase()],
+        outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+        stateEncoding: `tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)`,
       },
     ];
   }

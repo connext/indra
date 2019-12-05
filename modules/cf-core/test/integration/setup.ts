@@ -1,6 +1,6 @@
 import { CF_PATH } from "@counterfactual/local-ganache-server";
 import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
-import { Node as NodeTypes } from "@connext/cf-types";
+import { CFCoreTypes } from "@connext/types";
 import { Wallet } from "ethers";
 import {
   JsonRpcProvider,
@@ -23,7 +23,7 @@ import {
 
 export interface NodeContext {
   node: Node;
-  store: NodeTypes.IStoreService;
+  store: CFCoreTypes.IStoreService;
 }
 
 export interface SetupContext {
@@ -61,8 +61,8 @@ export async function setup(
   global: any,
   nodeCPresent: boolean = false,
   newExtendedPrvKey: boolean = false,
-  messagingService: NodeTypes.IMessagingService = new MemoryMessagingService(),
-  storeServiceFactory: NodeTypes.ServiceFactory = new MemoryStoreServiceFactory()
+  messagingService: CFCoreTypes.IMessagingService = new MemoryMessagingService(),
+  storeServiceFactory: CFCoreTypes.ServiceFactory = new MemoryStoreServiceFactory()
 ): Promise<SetupContext> {
   const setupContext: SetupContext = {};
 

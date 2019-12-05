@@ -1,3 +1,4 @@
+
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -27,14 +28,17 @@ export default class WithdrawController extends NodeController {
 
     const stateChannel = await store.getStateChannel(params.multisigAddress);
 
+    const tokenAddress =
+      params.tokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
+
     if (
-      stateChannel.hasAppInstanceOfKind(networkContext.CoinBalanceRefundApp)
+      stateChannel.hasBalanceRefundAppInstance(
+        networkContext.CoinBalanceRefundApp,
+        tokenAddress
+      )
     ) {
       throw Error(CANNOT_WITHDRAW);
     }
-
-    const tokenAddress =
-      params.tokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
 
     const senderBalance = stateChannel
       .getFreeBalanceClass()
@@ -68,7 +72,7 @@ export default class WithdrawController extends NodeController {
       outgoing
     } = requestHandler;
 
-    const { multisigAddress, amount, recipient } = params;
+    const { multisigAddress, recipient } = params;
 
     params.recipient = recipient || xkeyKthAddress(publicIdentifier, 0);
 
@@ -100,8 +104,12 @@ export default class WithdrawController extends NodeController {
       }
 
       outgoing.emit(NODE_EVENTS.WITHDRAWAL_STARTED, {
-        value: amount,
-        txHash: txResponse.hash
+        from: publicIdentifier,
+        type: NODE_EVENTS.WITHDRAWAL_STARTED,
+        data: {
+          params,
+          txHash: txResponse.hash
+        }
       });
 
       const txReceipt = await provider.waitForTransaction(
@@ -110,10 +118,16 @@ export default class WithdrawController extends NodeController {
       );
 
       outgoing.emit(NODE_EVENTS.WITHDRAWAL_CONFIRMED, {
-        txReceipt
+        from: publicIdentifier,
+        type: NODE_EVENTS.WITHDRAWAL_CONFIRMED,
+        data: { txReceipt }
       });
     } catch (e) {
-      outgoing.emit(NODE_EVENTS.WITHDRAWAL_FAILED, e);
+      outgoing.emit(NODE_EVENTS.WITHDRAWAL_FAILED, {
+        from: publicIdentifier,
+        type: NODE_EVENTS.WITHDRAWAL_FAILED,
+        data: e.toString()
+      });
       throw Error(`${WITHDRAWAL_FAILED}: ${prettyPrintObject(e)}`);
     }
 

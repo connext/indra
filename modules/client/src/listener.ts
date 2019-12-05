@@ -1,6 +1,4 @@
-import EthCrypto from "eth-crypto";
-import { bigNumberify, formatParamType } from "ethers/utils";
-import { fromMnemonic } from "ethers/utils/hdnode";
+import { bigNumberify } from "ethers/utils";
 import { EventEmitter } from "events";
 
 import { ChannelRouter } from "./channelRouter";
@@ -8,20 +6,25 @@ import { ConnextClient } from "./connext";
 import { Logger } from "./lib/logger";
 import { stringify } from "./lib/utils";
 import {
-  AppInstanceInfo,
   CFCoreTypes,
   CreateChannelMessage,
+  DefaultApp,
   DepositConfirmationMessage,
+  DepositFailedMessage,
+  DepositStartedMessage,
   InstallMessage,
   InstallVirtualMessage,
+  NodeMessageWrappedProtocolMessage,
   ProposeMessage,
-  RegisteredAppDetails,
   RejectInstallVirtualMessage,
+  RejectProposalMessage,
   SupportedApplications,
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
-  WithdrawMessage,
+  WithdrawConfirmationMessage,
+  WithdrawFailedMessage,
+  WithdrawStartedMessage,
 } from "./types";
 import { appProposalValidation } from "./validation/appProposals";
 
@@ -38,94 +41,101 @@ export class ConnextListener extends EventEmitter {
   // TODO: add custom parsing functions here to convert event data
   // to something more usable?
   private defaultCallbacks: CallbackStruct = {
-    COUNTER_DEPOSIT_CONFIRMED: (data: DepositConfirmationMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.COUNTER_DEPOSIT_CONFIRMED, data.data);
+    COUNTER_DEPOSIT_CONFIRMED: (msg: DepositConfirmationMessage): void => {
+      this.emitAndLog(CFCoreTypes.EventName.COUNTER_DEPOSIT_CONFIRMED, msg.data);
     },
-    CREATE_CHANNEL: (data: CreateChannelMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.CREATE_CHANNEL, data.data);
+    CREATE_CHANNEL: (msg: CreateChannelMessage): void => {
+      this.emitAndLog(CFCoreTypes.EventName.CREATE_CHANNEL, msg.data);
     },
-    DEPOSIT_CONFIRMED: async (data: DepositConfirmationMessage): Promise<void> => {
-      this.emitAndLog(CFCoreTypes.EventName.DEPOSIT_CONFIRMED, data);
+    DEPOSIT_CONFIRMED: async (msg: DepositConfirmationMessage): Promise<void> => {
+      this.emitAndLog(CFCoreTypes.EventName.DEPOSIT_CONFIRMED, msg.data);
     },
-    DEPOSIT_FAILED: (data: any): void => {
-      this.emitAndLog(CFCoreTypes.EventName.DEPOSIT_FAILED, data);
+    DEPOSIT_FAILED: (msg: DepositFailedMessage): void => {
+      this.emitAndLog(CFCoreTypes.EventName.DEPOSIT_FAILED, msg.data);
     },
-    DEPOSIT_STARTED: (data: any): void => {
-      this.log.info(`deposit for ${data.value.toString()} started. hash: ${data.txHash}`);
-      this.emitAndLog(CFCoreTypes.EventName.DEPOSIT_STARTED, data);
+    DEPOSIT_STARTED: (msg: DepositStartedMessage): void => {
+      const { value, txHash } = msg.data;
+      this.log.info(`deposit for ${value.toString()} started. hash: ${txHash}`);
+      this.emitAndLog(CFCoreTypes.EventName.DEPOSIT_STARTED, msg.data);
     },
-    INSTALL: (data: InstallMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.INSTALL, data.data);
+    INSTALL: (msg: InstallMessage): void => {
+      this.emitAndLog(CFCoreTypes.EventName.INSTALL, msg.data);
     },
     // TODO: make cf return app instance id and app def?
-    INSTALL_VIRTUAL: (data: InstallVirtualMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.INSTALL_VIRTUAL, data.data);
+    INSTALL_VIRTUAL: (msg: InstallVirtualMessage): void => {
+      this.emitAndLog(CFCoreTypes.EventName.INSTALL_VIRTUAL, msg.data);
     },
-    PROPOSE_INSTALL: async (data: ProposeMessage): Promise<void> => {
+    PROPOSE_INSTALL: async (msg: ProposeMessage): Promise<void> => {
       // validate and automatically install for the known and supported
       // applications
-      this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL, data.data);
-      // return if its from us
-      if (data.from === this.connext.publicIdentifier) {
-        this.log.info(`Received proposal from our own node, doing nothing: ${stringify(data)}`);
-        return;
-      }
+      this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL, msg.data);
       // check based on supported applications
       // matched app, take appropriate default actions
-      const matchedResult = await this.matchAppInstance(data);
+      const matchedResult = await this.matchAppInstance(msg);
       if (!matchedResult) {
-        this.log.warn(`No matched app, doing nothing, ${stringify(data)}`);
+        this.log.warn(`No matched app, doing nothing, ${stringify(msg)}`);
+        return;
+      }
+      const {
+        data: { params },
+        from,
+      } = msg;
+      // return if its from us
+      if (from === this.connext.publicIdentifier) {
+        this.log.info(`Received proposal from our own node, doing nothing: ${stringify(msg)}`);
         return;
       }
       // matched app, take appropriate default actions
-      const { appInfo, matchedApp } = matchedResult;
-      await this.verifyAndInstallKnownApp(appInfo, matchedApp);
+      const { matchedApp } = matchedResult;
+      await this.verifyAndInstallKnownApp(msg, matchedApp);
+      // only publish for coin balance refund app
+      const coinBalanceDef = this.connext.appRegistry.filter(
+        (app: DefaultApp) => app.name === SupportedApplications.CoinBalanceRefundApp,
+      )[0];
+      if (params.appDefinition !== coinBalanceDef.appDefinitionAddress) {
+        console.warn(`not sending propose message, not the coinbalance refund app`);
+        return;
+      }
+      console.warn(
+        `Sending acceptance message to: indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
+      );
+      await this.connext.messaging.publish(
+        `indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
+        stringify(params),
+      );
       return;
     },
-    PROPOSE_INSTALL_VIRTUAL: async (): Promise<void> => {
-      this.log.warn(`Got PROPOSE_INSTALL_VIRTUAL message but it's depreciated.. :(`);
-      // don't do anything here, will cathc on
-      return;
+    PROTOCOL_MESSAGE_EVENT: (msg: NodeMessageWrappedProtocolMessage): void => {
+      this.emitAndLog(CFCoreTypes.EventName.PROTOCOL_MESSAGE_EVENT, msg.data);
     },
-    PROPOSE_STATE: (data: any): void => {
-      // TODO: validate the proposed state
-      // TODO: are we using this flow in any of the known/supported
-      // applications
-      this.emitAndLog(CFCoreTypes.EventName.PROPOSE_STATE, data);
+    REJECT_INSTALL: (msg: RejectProposalMessage): void => {
+      this.emitAndLog(CFCoreTypes.EventName.REJECT_INSTALL, msg.data);
     },
-    PROTOCOL_MESSAGE_EVENT: (data: any): void => {
-      this.emitAndLog(CFCoreTypes.EventName.PROTOCOL_MESSAGE_EVENT, data);
+    REJECT_INSTALL_VIRTUAL: (msg: RejectInstallVirtualMessage): void => {
+      this.emitAndLog(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, msg.data);
     },
-    REJECT_INSTALL: (data: any): void => {
-      this.emitAndLog(CFCoreTypes.EventName.REJECT_INSTALL, data);
+    UNINSTALL: (msg: UninstallMessage): void => {
+      this.emitAndLog(CFCoreTypes.EventName.UNINSTALL, msg.data);
     },
-    REJECT_INSTALL_VIRTUAL: (data: RejectInstallVirtualMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, data.data);
+    UNINSTALL_VIRTUAL: (msg: UninstallVirtualMessage): void => {
+      this.emitAndLog(CFCoreTypes.EventName.UNINSTALL_VIRTUAL, msg.data);
     },
-    REJECT_STATE: (data: any): void => {
-      this.emitAndLog(CFCoreTypes.EventName.REJECT_STATE, data);
+    UPDATE_STATE: (msg: UpdateStateMessage): void => {
+      this.emitAndLog(CFCoreTypes.EventName.UPDATE_STATE, msg.data);
     },
-    UNINSTALL: (data: UninstallMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.UNINSTALL, data.data);
+    WITHDRAWAL_CONFIRMED: (msg: WithdrawConfirmationMessage): void => {
+      this.emitAndLog(CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED, msg.data);
     },
-    UNINSTALL_VIRTUAL: (data: UninstallVirtualMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.UNINSTALL_VIRTUAL, data.data);
+    WITHDRAWAL_FAILED: (msg: WithdrawFailedMessage): void => {
+      this.emitAndLog(CFCoreTypes.EventName.WITHDRAWAL_FAILED, msg.data);
     },
-    UPDATE_STATE: (data: UpdateStateMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.UPDATE_STATE, data.data);
-    },
-    WITHDRAW_EVENT: (data: any): void => {
-      this.emitAndLog(CFCoreTypes.EventName.WITHDRAW_EVENT, data);
-    },
-    WITHDRAWAL_CONFIRMED: (data: WithdrawMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED, data.data);
-    },
-    WITHDRAWAL_FAILED: (data: any): void => {
-      this.emitAndLog(CFCoreTypes.EventName.WITHDRAWAL_FAILED, data);
-    },
-    WITHDRAWAL_STARTED: (data: any): void => {
-      this.log.info(`withdrawal for ${data.value.toString()} started. hash: ${data.txHash}`);
-      this.emitAndLog(CFCoreTypes.EventName.WITHDRAWAL_STARTED, data);
+    WITHDRAWAL_STARTED: (msg: WithdrawStartedMessage): void => {
+      const {
+        params: { amount },
+        txHash,
+      } = msg.data;
+      this.log.info(`withdrawal for ${amount.toString()} started. hash: ${txHash}`);
+      this.emitAndLog(CFCoreTypes.EventName.WITHDRAWAL_STARTED, msg.data);
     },
   };
 
@@ -173,14 +183,20 @@ export class ConnextListener extends EventEmitter {
       this.channelRouter.on(CFCoreTypes.EventName[event], callback);
     });
 
-    this.channelRouter.on(CFCoreTypes.RpcMethodName.INSTALL, (data: any): any => {
-      const appInstance = data.result.result.appInstance;
-      this.log.debug(`Emitting CFCoreTypes.RpcMethodName.INSTALL event: ${stringify(appInstance)}`);
-      this.connext.messaging.publish(
-        `indra.client.${this.connext.publicIdentifier}.install.${appInstance.identityHash}`,
-        stringify(appInstance),
-      );
-    });
+    this.channelRouter.on(
+      CFCoreTypes.RpcMethodName.INSTALL,
+      async (msg: any): Promise<void> => {
+        const {
+          result: {
+            result: { appInstance },
+          },
+        } = msg;
+        await this.connext.messaging.publish(
+          `indra.client.${this.connext.publicIdentifier}.install.${appInstance.identityHash}`,
+          stringify(appInstance),
+        );
+      },
+    );
 
     this.channelRouter.on(CFCoreTypes.RpcMethodName.UNINSTALL, (data: any): any => {
       const result = data.result.result;
@@ -198,14 +214,21 @@ export class ConnextListener extends EventEmitter {
   };
 
   private matchAppInstance = async (
-    data: ProposeMessage,
-  ): Promise<{ matchedApp: RegisteredAppDetails; appInfo: AppInstanceInfo } | undefined> => {
-    const filteredApps = this.connext.appRegistry.filter((app: RegisteredAppDetails): boolean => {
-      return app.appDefinitionAddress === data.data.params.appDefinition;
+    msg: ProposeMessage,
+  ): Promise<
+    | undefined
+    | {
+        matchedApp: DefaultApp;
+        proposeParams: CFCoreTypes.ProposeInstallParams;
+        appInstanceId: string;
+      }
+  > => {
+    const filteredApps = this.connext.appRegistry.filter((app: DefaultApp): boolean => {
+      return app.appDefinitionAddress === msg.data.params.appDefinition;
     });
 
     if (!filteredApps || filteredApps.length === 0) {
-      this.log.info(`Proposed app not in registered applications. App: ${stringify(data)}`);
+      this.log.info(`Proposed app not in registered applications. App: ${stringify(msg)}`);
       return undefined;
     }
 
@@ -214,51 +237,43 @@ export class ConnextListener extends EventEmitter {
       this.log.error(
         `Proposed app matched ${
           filteredApps.length
-        } registered applications by definition address. App: ${stringify(data)}`,
+        } registered applications by definition address. App: ${stringify(msg)}`,
       );
       return undefined;
     }
-    const { params, appInstanceId } = data.data;
-    const {
-      initiatorDeposit,
-      initiatorDepositTokenAddress,
-      responderXpub,
-      responderDeposit,
-      responderDepositTokenAddress,
-    } = params;
+    const { params, appInstanceId } = msg.data;
+    const { initiatorDeposit, responderDeposit } = params;
     // matched app, take appropriate default actions
     return {
-      appInfo: {
-        ...params,
-        identityHash: appInstanceId,
-        initiatorDeposit: bigNumberify(initiatorDeposit),
-        initiatorDepositTokenAddress,
-        proposedByIdentifier: data.from,
-        proposedToIdentifier: responderXpub,
-        responderDeposit: bigNumberify(responderDeposit),
-        responderDepositTokenAddress,
-      },
+      appInstanceId,
       matchedApp: filteredApps[0],
+      proposeParams: {
+        ...params,
+        initiatorDeposit: bigNumberify(initiatorDeposit),
+        responderDeposit: bigNumberify(responderDeposit),
+      },
     };
   };
 
   private verifyAndInstallKnownApp = async (
-    appInstance: AppInstanceInfo,
-    matchedApp: RegisteredAppDetails,
+    msg: ProposeMessage,
+    matchedApp: DefaultApp,
   ): Promise<void> => {
-    // virtual is now determined by presence of intermediary identifier
-    const isVirtual = !!appInstance.intermediaryIdentifier;
+    const {
+      data: { params, appInstanceId },
+      from,
+    } = msg;
     const invalidProposal = await appProposalValidation[matchedApp.name](
-      appInstance,
+      params,
+      from,
       matchedApp,
-      isVirtual,
       this.connext,
     );
 
     if (invalidProposal) {
       // reject app installation
       this.log.error(`Proposed app is invalid. ${invalidProposal}`);
-      await this.connext.rejectInstallApp(appInstance.identityHash);
+      await this.connext.rejectInstallApp(appInstanceId);
       return;
     }
 
@@ -272,16 +287,21 @@ export class ConnextListener extends EventEmitter {
       return;
     }
 
-    if (matchedApp.name === SupportedApplications.SimpleTransferApp) {
-      // request collateral in token of the app
-      await this.connext.requestCollateral(appInstance.initiatorDepositTokenAddress);
+    // dont automatically install coin balance refund app
+    if (matchedApp.name === SupportedApplications.CoinBalanceRefundApp) {
+      return;
     }
+
     this.log.debug(`Proposal for app install successful, attempting install now...`);
     let res: CFCoreTypes.InstallResult;
-    if (isVirtual) {
-      res = await this.connext.installVirtualApp(appInstance.identityHash);
+
+    // TODO: determine virtual app in a more resilient way
+    // for now only simple transfer apps are virtual apps
+    const virtualAppDefs = [this.connext.config.contractAddresses["SimpleTransferApp"]];
+    if (virtualAppDefs.includes(params.appDefinition)) {
+      res = await this.connext.installVirtualApp(appInstanceId);
     } else {
-      res = await this.connext.installApp(appInstance.identityHash);
+      res = await this.connext.installApp(appInstanceId);
     }
     this.log.debug(`App installed, res: ${stringify(res)}`);
     return;
@@ -313,21 +333,15 @@ export class ConnextListener extends EventEmitter {
       this.log.info(`Received message for subscription: ${stringify(data)}`);
       let paymentId: string;
       let encryptedPreImage: string;
-      let amount: string;
-      let assetId: string;
       if (data.paymentId) {
         this.log.debug(`Not nested data`);
         paymentId = data.paymentId;
         encryptedPreImage = data.encryptedPreImage;
-        amount = data.amount;
-        assetId = data.assetId;
       } else if (data.data) {
         this.log.debug(`Nested data`);
         const parsedData = JSON.parse(data.data);
         paymentId = parsedData.paymentId;
         encryptedPreImage = parsedData.encryptedPreImage;
-        amount = parsedData.amount;
-        assetId = parsedData.assetId;
       } else {
         throw new Error(`Could not parse data from message: ${stringify(data)}`);
       }

@@ -1,12 +1,13 @@
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
+import { CF_METHOD_TIMEOUT } from "../lib/constants";
 import { delayAndThrow, stringify, xpubToAddress } from "../lib/utils";
 import {
   CFCoreChannel,
   CFCoreTypes,
   convert,
-  RegisteredAppDetails,
+  DefaultApp,
   RejectInstallVirtualMessage,
   SimpleTransferAppStateBigNumber,
   SupportedApplication,
@@ -19,8 +20,6 @@ import { AbstractController } from "./AbstractController";
 
 export class TransferController extends AbstractController {
   private appId: string;
-
-  private timeout: number;
 
   public transfer = async (params: TransferParameters): Promise<CFCoreChannel> => {
     this.log.info(`Transfer called with parameters: ${stringify(params)}`);
@@ -87,14 +86,10 @@ export class TransferController extends AbstractController {
       res();
       return;
     }
-    if (this.timeout) {
-      clearTimeout(this.timeout);
-    }
     res(data);
     return data;
   };
 
-  // TODO: fix types of data
   private rejectInstallTransfer = (
     rej: (reason?: string) => void,
     msg: RejectInstallVirtualMessage,
@@ -113,7 +108,7 @@ export class TransferController extends AbstractController {
     amount: BigNumber,
     recipient: string,
     assetId: string,
-    appInfo: RegisteredAppDetails,
+    appInfo: DefaultApp,
     meta?: object,
   ): Promise<string | undefined> => {
     let boundResolve: (value?: any) => void;
@@ -133,7 +128,7 @@ export class TransferController extends AbstractController {
     };
 
     // note: intermediary is added in connext.ts as well
-    const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding } = appInfo;
+    const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding, outcomeType } = appInfo;
     const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {
         actionEncoding,
@@ -144,26 +139,29 @@ export class TransferController extends AbstractController {
       initialState,
       initiatorDeposit: amount,
       initiatorDepositTokenAddress: assetId,
-      meta,
-      outcomeType: appInfo.outcomeType,
+      outcomeType,
       proposedToIdentifier: recipient,
       responderDeposit: Zero,
       responderDepositTokenAddress: assetId,
       timeout: Zero, // TODO: fix, add to app info?
+      meta,
     };
 
     const res = await this.connext.proposeInstallApp(params);
     this.appId = res.appInstanceId;
 
     try {
-      const raceRes = await Promise.race([
+      await Promise.race([
         new Promise((res: any, rej: any): any => {
           boundReject = this.rejectInstallTransfer.bind(null, rej);
           boundResolve = this.resolveInstallTransfer.bind(null, res);
           this.listener.on(CFCoreTypes.EventName.INSTALL_VIRTUAL, boundResolve);
           this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
         }),
-        delayAndThrow(15_000, "App install took longer than 15 seconds"),
+        delayAndThrow(
+          CF_METHOD_TIMEOUT,
+          `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
+        ),
       ]);
       this.log.info(`App was installed successfully!: ${stringify(res)}`);
       return res.appInstanceId;

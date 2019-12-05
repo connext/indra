@@ -199,13 +199,14 @@ my.getChannelTokenBalance = () => {
 my.deposit = (value) => {
   return cy.wrap(new Cypress.Promise((resolve, reject) => {
     my.getAddress().then(address => {
+      cy.contains('button', /start timer/i).should('not.exist');
       cy.log(`Depositing ${value} eth into channel ${address}`)
       return cy.wrap(wallet.sendTransaction({
         to: address,
         value: eth.utils.parseEther(value)
       })).then(tx => {
         return cy.wrap(wallet.provider.waitForTransaction(tx.hash)).then(() => {
-          cy.contains('span', /processing deposit/i).should('exist')
+          // cy.contains('span', /processing deposit/i).should('exist')
           cy.contains('span', /processing swap/i).should('exist')
           cy.contains('span', /swap was successful/i).should('exist')
           cy.resolve(my.getChannelTokenBalance).should('not.contain', '0.00')
@@ -219,25 +220,18 @@ my.deposit = (value) => {
 my.depositToken = (value) => {
   return cy.wrap(new Cypress.Promise((resolve, reject) => {
     my.getAddress().then(address => {
-      cy.log(`Sending ${gasMoney} eth for gas money`)
-      return cy.wrap(wallet.sendTransaction({
-        to: address,
-        value: eth.utils.parseEther(gasMoney)
-      })).then(tx => {
+      cy.contains('button', /start timer/i).should('not.exist');
+      cy.log(`Depositing ${value} tokens into channel ${address}`)
+      return cy.wrap(token.transfer(
+        address,
+        eth.utils.parseEther(value).toHexString(),
+      )).then(tx => {
+        cy.log(`Waiting for tx ${tx.hash} to be mined...`)
         return cy.wrap(wallet.provider.waitForTransaction(tx.hash)).then(() => {
-          cy.log(`Depositing ${value} tokens into channel ${address}`)
-          return cy.wrap(token.transfer(
-            address,
-            eth.utils.parseEther(value).toHexString(),
-          )).then(tx => {
-            cy.log(`Waiting for tx ${tx.hash} to be mined...`)
-            return cy.wrap(wallet.provider.waitForTransaction(tx.hash)).then(() => {
-              cy.contains('span', /processing deposit/i).should('exist')
-              cy.contains('span', /deposit confirmed/i).should('exist')
-              cy.resolve(my.getChannelTokenBalance).should('not.contain', '0.00')
-              my.getChannelTokenBalance().then(resolve)
-            })
-          })
+          // cy.contains('span', /processing deposit/i).should('exist')
+          // cy.contains('span', /deposit confirmed/i).should('exist')
+          cy.resolve(my.getChannelTokenBalance).should('not.contain', '0.00')
+          my.getChannelTokenBalance().then(resolve)
         })
       })
     })

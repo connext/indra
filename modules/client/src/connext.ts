@@ -1,9 +1,9 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
-import { Contract, providers, Wallet } from "ethers";
+import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
+import { BigNumber, bigNumberify, getAddress, Network, Transaction } from "ethers/utils";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
@@ -11,6 +11,7 @@ import "regenerator-runtime/runtime";
 import { ChannelRouter } from "./channelRouter";
 import { ConditionalTransferController } from "./controllers/ConditionalTransferController";
 import { DepositController } from "./controllers/DepositController";
+import { RequestDepositRightsController } from "./controllers/RequestDepositRightsController";
 import { ResolveConditionController } from "./controllers/ResolveConditionController";
 import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
@@ -38,8 +39,8 @@ import {
   ConnextEvent,
   CreateChannelMessage,
   CreateChannelResponse,
+  DefaultApp,
   DepositParameters,
-  EXTENDED_PRIVATE_KEY_PATH,
   GetChannelResponse,
   GetConfigResponse,
   IConnextClient,
@@ -47,8 +48,8 @@ import {
   makeChecksum,
   makeChecksumOrEthAddress,
   PaymentProfile,
-  RegisteredAppDetails,
   RequestCollateralResponse,
+  RequestDepositRightsParameters,
   ResolveConditionParameters,
   ResolveConditionResponse,
   ResolveLinkedTransferResponse,
@@ -196,6 +197,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
 
   channelRouter.multisigAddress = multisigAddress;
 
+  // create a token contract based on the provided token
+  const token = new Contract(config.contractAddresses.Token, tokenAbi, ethProvider);
+
   // create the new client
   const client = new ConnextClient({
     appRegistry: await node.appRegistry(),
@@ -208,6 +212,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     network,
     node,
     store,
+    token,
     ...opts, // use any provided opts by default
   });
 
@@ -227,6 +232,15 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   log.debug("Registering subscriptions");
   await client.registerSubscriptions();
 
+  // make sure we don't have a balance refund app hanging around installed
+  log.debug(`Rescinding deposit rights for ${config.contractAddresses.Token}`);
+  const tokenReq = await client.rescindDepositRights(config.contractAddresses.Token);
+  log.debug(`Rights rescind result: ${tokenReq}`);
+
+  log.debug(`Rescinding deposit rights for ${AddressZero}`);
+  const ethReq = await client.rescindDepositRights(AddressZero);
+  log.debug(`Rights rescind result: ${ethReq}`);
+
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
   log.debug("Resubmitting active withdrawals");
   await client.resubmitActiveWithdrawal();
@@ -235,7 +249,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // since if the hub never submits you should not continue interacting
   log.debug("Reclaiming pending async transfers");
   // no need to await this if it needs collateral
-  client.reclaimPendingAsyncTransfers();
+  // TODO: without await causes race conditions in bot, refactor to
+  // use events
+  await client.reclaimPendingAsyncTransfers();
 
   log.debug("Done creating channel client");
   return client;
@@ -258,6 +274,7 @@ export class ConnextClient implements IConnextClient {
   public routerType: RpcType;
   public signerAddress: Address;
   public store: Store;
+  public token: Contract;
 
   private opts: InternalClientOptions;
   private keyGen: (index: string) => Promise<string>;
@@ -268,6 +285,7 @@ export class ConnextClient implements IConnextClient {
   private withdrawalController: WithdrawalController;
   private conditionalTransferController: ConditionalTransferController;
   private resolveConditionController: ResolveConditionController;
+  private requestDepositRightsController: RequestDepositRightsController;
 
   constructor(opts: InternalClientOptions) {
     this.opts = opts;
@@ -278,8 +296,8 @@ export class ConnextClient implements IConnextClient {
     this.keyGen = opts.keyGen;
     this.messaging = opts.messaging;
     this.network = opts.network;
-    this.network = opts.network;
     this.node = opts.node;
+    this.token = opts.token;
     this.store = opts.store;
 
     this.freeBalanceAddress = this.channelRouter.config.freeBalanceAddress;
@@ -306,8 +324,16 @@ export class ConnextClient implements IConnextClient {
       "ConditionalTransferController",
       this,
     );
+    this.requestDepositRightsController = new RequestDepositRightsController(
+      "RequestDepositRightsController",
+      this,
+    );
   }
 
+  /**
+   * Creates a promise that returns when the channel is available,
+   * ie. when the setup protocol or create channel call is completed
+   */
   public isAvailable = async (): Promise<void> => {
     return new Promise(
       async (resolve: any, reject: any): Promise<any> => {
@@ -322,6 +348,21 @@ export class ConnextClient implements IConnextClient {
         resolve();
       },
     );
+  };
+
+  /**
+   * Checks if the coin balance refund app is installed.
+   *
+   * NOTE: should probably take assetId into account
+   */
+  public getBalanceRefundApp = async (assetId: string = AddressZero): Promise<AppInstanceJson> => {
+    const apps = await this.getAppInstances();
+    const filtered = apps.filter(
+      (app: AppInstanceJson) =>
+        app.appInterface.addr === this.config.contractAddresses.CoinBalanceRefundApp &&
+        app.latestState["tokenAddress"] === assetId,
+    );
+    return filtered.length === 0 ? undefined : filtered[0];
   };
 
   // register subscriptions
@@ -361,8 +402,11 @@ export class ConnextClient implements IConnextClient {
       default:
         throw new Error(`Unrecognized channel provider type: ${this.routerType}`);
     }
+    // TODO: this is very confusing to have to do, lets try to figure out a better way
+    channelRouter.multisigAddress = this.multisigAddress;
     this.node.channelRouter = channelRouter;
     this.channelRouter = channelRouter;
+    this.listener = new ConnextListener(channelRouter, this);
     await this.isAvailable();
   };
 
@@ -436,6 +480,16 @@ export class ConnextClient implements IConnextClient {
 
   public deposit = async (params: DepositParameters): Promise<ChannelState> => {
     return await this.depositController.deposit(params);
+  };
+
+  public requestDepositRights = async (
+    params: RequestDepositRightsParameters,
+  ): Promise<CFCoreTypes.RequestDepositRightsResult> => {
+    return await this.requestDepositRightsController.requestDepositRights(params);
+  };
+
+  public rescindDepositRights = async (assetId: string): Promise<CFCoreTypes.DepositResult> => {
+    return await this.channelRouter.rescindDepositRights(assetId);
   };
 
   public swap = async (params: SwapParameters): Promise<CFCoreChannel> => {
@@ -721,15 +775,6 @@ export class ConnextClient implements IConnextClient {
     return await this.channelRouter.updateState(appInstanceId, newState);
   };
 
-  public proposeInstallVirtualApp = async (
-    params: CFCoreTypes.ProposeInstallVirtualParams,
-  ): Promise<CFCoreTypes.ProposeInstallVirtualResult> => {
-    if (params.intermediaryIdentifier !== this.nodePublicIdentifier) {
-      throw new Error(`Cannot install virtual app without node as intermediary`);
-    }
-    return await this.channelRouter.proposeInstallVirtualApp(params);
-  };
-
   public proposeInstallApp = async (
     params: CFCoreTypes.ProposeInstallParams,
   ): Promise<CFCoreTypes.ProposeInstallResult> => {
@@ -847,7 +892,7 @@ export class ConnextClient implements IConnextClient {
   public reclaimPendingAsyncTransfers = async (): Promise<void> => {
     const pendingTransfers = await this.node.getPendingAsyncTransfers();
     for (const transfer of pendingTransfers) {
-      const { amount, assetId, encryptedPreImage, paymentId } = transfer;
+      const { encryptedPreImage, paymentId } = transfer;
       await this.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
     }
   };
@@ -886,8 +931,8 @@ export class ConnextClient implements IConnextClient {
   ///////////////////////////////////
   // LOW LEVEL METHODS
 
-  public getRegisteredAppDetails = (appName: SupportedApplication): RegisteredAppDetails => {
-    const appInfo = this.appRegistry.filter((app: RegisteredAppDetails): boolean => {
+  public getRegisteredAppDetails = (appName: SupportedApplication): DefaultApp => {
+    const appInfo = this.appRegistry.filter((app: DefaultApp): boolean => {
       return app.name === appName && app.network === this.network.name;
     });
 

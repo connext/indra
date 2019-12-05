@@ -1,7 +1,12 @@
 import { AddressZero } from "ethers/constants";
 import { BigNumber, getAddress } from "ethers/utils";
 
-import { AppState, CoinTransfer } from "./app";
+import {
+  AppState,
+  CoinBalanceRefundAppState,
+  CoinTransfer,
+  SimpleLinkedTransferAppState,
+} from "./app";
 import { AssetAmount, PaymentProfile } from "./channel";
 import {
   DepositParameters,
@@ -153,6 +158,14 @@ export function convertPaymentProfile<To extends NumericTypeName>(
   return convertFields(fromType, to, ["amountToCollateralize", "minimumMaintainedCollateral"], obj);
 }
 
+export function convertCoinBalanceRefund<To extends NumericTypeName>(
+  to: To,
+  obj: CoinBalanceRefundAppState<any>,
+): CoinBalanceRefundAppState<NumericTypes[To]> {
+  const fromType = getType(obj.threshold);
+  return convertFields(fromType, to, ["threshold"], obj);
+}
+
 /////////////////////////////////////////////
 ////// INPUT PARAMETER CONVERSIONS
 /**
@@ -220,15 +233,32 @@ export function convertAppState<To extends NumericTypeName>(
   };
 }
 
+export function convertLinkedTransferAppState<To extends NumericTypeName>(
+  to: To,
+  obj: AppState<any>,
+): SimpleLinkedTransferAppState<NumericTypes[To]> {
+  return {
+    ...convertAmountField(to, obj),
+    coinTransfers: [
+      convertAmountField(to, obj.coinTransfers[0]),
+      convertAmountField(to, obj.coinTransfers[1]),
+    ],
+  };
+}
+
 // DEFINE CONVERSION OBJECT TO BE EXPORTED
 export const convert = {
   AppState: convertAppState,
   Asset: convertAssetAmount,
+  CoinBalanceRefundApp: convertCoinBalanceRefund,
   Deposit: convertDepositParametersToAsset,
   LinkedTransfer: convertLinkedTransferParametersToAsset,
+  LinkedTransferAppState: convertLinkedTransferAppState,
   LinkedTransferToRecipient: convertLinkedTransferToRecipientParametersToAsset,
   PaymentProfile: convertPaymentProfile,
   ResolveLinkedTransfer: convertAssetAmountWithId,
+  SimpleTransferAppState: convertAppState,
+  SwapAppState: convertAppState,
   SwapParameters: convertSwapParameters,
   Transfer: convertAssetAmount,
   TransferParameters: convertTransferParametersToAsset,

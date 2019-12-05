@@ -1,5 +1,6 @@
 import { BigNumber, Network } from "ethers/utils";
 
+import { SupportedApplication } from "./app";
 import { CFCoreTypes, NetworkContext } from "./cf";
 import { CFCoreChannel } from "./channel";
 
@@ -15,7 +16,7 @@ export interface MessagingConfig {
 
 export type ContractAddresses = NetworkContext & {
   Token: string;
-  [KnownNodeApp: string]: string;
+  [SupportedApplication: string]: string;
 };
 
 export interface NodeConfig {
@@ -62,4 +63,5 @@ export type CreateChannelResponse = {
   transactionHash: string;
 };
 
+// TODO: why was this changed?
 export type RequestCollateralResponse = CFCoreTypes.DepositResult | undefined;

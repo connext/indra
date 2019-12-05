@@ -15,6 +15,7 @@ import {
   ConditionalTransferParameters,
   ConditionalTransferResponse,
   DepositParameters,
+  RequestDepositRightsParameters,
   ResolveConditionParameters,
   ResolveConditionResponse,
   ResolveLinkedTransferResponse,
@@ -84,6 +85,10 @@ export interface IConnextClient {
   conditionalTransfer(params: ConditionalTransferParameters): Promise<ConditionalTransferResponse>;
   restoreState(): Promise<void>;
   channelProviderConfig(): Promise<ChannelProviderConfig>;
+  requestDepositRights(
+    params: RequestDepositRightsParameters,
+  ): Promise<CFCoreTypes.RequestDepositRightsResult>;
+  rescindDepositRights(assetId: string): Promise<CFCoreTypes.DepositResult>;
 
   ///////////////////////////////////
   // NODE EASY ACCESS METHODS
@@ -127,9 +132,6 @@ export interface IConnextClient {
   proposeInstallApp(
     params: CFCoreTypes.ProposeInstallParams,
   ): Promise<CFCoreTypes.ProposeInstallResult>;
-  proposeInstallVirtualApp(
-    params: CFCoreTypes.ProposeInstallVirtualParams,
-  ): Promise<CFCoreTypes.ProposeInstallVirtualResult>;
   installVirtualApp(appInstanceId: string): Promise<CFCoreTypes.InstallVirtualResult>;
   installApp(appInstanceId: string): Promise<CFCoreTypes.InstallResult>;
   rejectInstallApp(appInstanceId: string): Promise<CFCoreTypes.UninstallResult>;

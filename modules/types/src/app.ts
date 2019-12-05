@@ -7,6 +7,7 @@ import { CFCoreChannel } from "./channel";
 ////// APP REGISTRY
 
 export const SupportedApplications = {
+  CoinBalanceRefundApp: "CoinBalanceRefundApp",
   SimpleLinkedTransferApp: "SimpleLinkedTransferApp",
   SimpleTransferApp: "SimpleTransferApp",
   SimpleTwoPartySwapApp: "SimpleTwoPartySwapApp",
@@ -14,35 +15,26 @@ export const SupportedApplications = {
 export type SupportedApplication = keyof typeof SupportedApplications;
 
 export const SupportedNetworks = {
+  ganache: "ganache",
+  goerli: "goerli",
+  homestead: "homestead",
   kovan: "kovan",
-  mainnet: "mainnet",
+  rinkeby: "rinkeby",
+  ropsten: "ropsten",
 };
 export type SupportedNetwork = keyof typeof SupportedNetworks;
 
-export type IRegisteredAppDetails = {
-  [index in SupportedApplication]: Partial<
-    CFCoreTypes.ProposeInstallVirtualParams & { initialStateFinalized: boolean }
-  >;
-};
-
-export type RegisteredAppDetails = {
-  id: number;
+export type DefaultApp = {
+  actionEncoding?: string;
+  allowNodeInstall: boolean;
+  appDefinitionAddress: string;
   name: SupportedApplication;
   network: SupportedNetwork;
   outcomeType: OutcomeType;
-  appDefinitionAddress: string;
   stateEncoding: string;
-  actionEncoding: string;
 };
 
-export type AppRegistry = RegisteredAppDetails[];
-
-export const KnownNodeAppNames = {
-  SIMPLE_TWO_PARTY_SWAP: "SimpleTwoPartySwapApp",
-  UNIDIRECTIONAL_LINKED_TRANSFER: "UnidirectionalLinkedTransferApp",
-  UNIDIRECTIONAL_TRANSFER: "UnidirectionalTransferApp",
-};
-export type KnownNodeApp = keyof typeof KnownNodeAppNames;
+export type AppRegistry = DefaultApp[];
 
 ////////////////////////////////////
 ////// APP TYPES
@@ -51,7 +43,7 @@ export type KnownNodeApp = keyof typeof KnownNodeAppNames;
 export type App<T = string> = {
   id: number;
   channel: CFCoreChannel;
-  appRegistry: RegisteredAppDetails; // TODO: is this right?
+  appRegistry: DefaultApp; // TODO: is this right?
   appId: number;
   xpubPartyA: string;
   xpubPartyB: string;
@@ -168,3 +160,12 @@ export enum UnidirectionalLinkedTransferAppStage {
   PAYMENT_CLAIMED,
   CHANNEL_CLOSED,
 }
+
+////// CoinBalanceRefund types
+export type CoinBalanceRefundAppState<T = string> = {
+  multisig: string;
+  recipient: string;
+  threshold: T;
+  tokenAddress: string;
+};
+export type CoinBalanceRefundAppStateBigNumber = CoinBalanceRefundAppState<BigNumber>;

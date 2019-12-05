@@ -7,7 +7,7 @@ import {
   GetConfigResponse,
   Store,
 } from "@connext/types";
-import { providers } from "ethers";
+import { Contract, providers } from "ethers";
 import { Network } from "ethers/utils";
 
 import { ChannelRouter } from "./channelRouter";
@@ -16,15 +16,21 @@ import { NodeApiClient } from "./node";
 export {
   CreateChannelMessage,
   DepositConfirmationMessage,
+  DepositFailedMessage,
+  DepositStartedMessage,
   EXTENDED_PRIVATE_KEY_PATH,
   InstallMessage,
   InstallVirtualMessage,
+  NodeMessageWrappedProtocolMessage,
   ProposeMessage,
   RejectInstallVirtualMessage,
+  RejectProposalMessage,
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
-  WithdrawMessage,
+  WithdrawConfirmationMessage,
+  WithdrawFailedMessage,
+  WithdrawStartedMessage,
 } from "@connext/cf-core";
 
 export {
@@ -40,6 +46,9 @@ export {
   ChannelProviderConfig,
   ChannelState,
   ClientOptions,
+  CoinBalanceRefundAppState,
+  CoinBalanceRefundAppStateBigNumber,
+  CoinTransferBigNumber,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
   ConnextClientStorePrefix,
@@ -47,6 +56,7 @@ export {
   ConnextEvents,
   convert,
   CreateChannelResponse,
+  DefaultApp,
   DepositParameters,
   GetChannelResponse,
   GetConfigResponse,
@@ -59,17 +69,21 @@ export {
   makeChecksumOrEthAddress,
   Node as CFCoreTypes,
   PaymentProfile,
-  RegisteredAppDetails,
   RequestCollateralResponse,
   ResolveConditionParameters,
   ResolveConditionResponse,
   ResolveLinkedTransferParameters,
   ResolveLinkedTransferResponse,
+  RequestDepositRightsParameters,
   RpcConnection,
   RpcType,
+  SimpleLinkedTransferAppState,
   SimpleLinkedTransferAppStateBigNumber,
+  SimpleSwapAppState,
   SimpleSwapAppStateBigNumber,
+  SimpleTransferAppState,
   SimpleTransferAppStateBigNumber,
+  StateChannelJSON,
   Store,
   SupportedApplication,
   SupportedApplications,
@@ -95,6 +109,7 @@ export type InternalClientOptions = ClientOptions & {
   multisigAddress: string;
   network: Network;
   node: NodeApiClient;
+  token: Contract;
   store: Store;
 };
 

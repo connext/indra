@@ -6,14 +6,10 @@ import { PaymentProfile } from "./paymentProfile/paymentProfile.entity";
 // PROTOCOL CONSTANTS
 export const CF_PATH = "m/44'/60'/0'/25446";
 
-export enum Network {
-  GANACHE = "ganache",
-  KOVAN = "kovan",
-  RINKEBY = "rinkeby",
-  ROPSTEN = "ropsten",
-  GOERLI = "goerli",
-  HOMESTEAD = "homestead",
-}
+// should be 3x the IO_SEND_AND_WAIT_TIMEOUT of cf-core
+// to account for 3 IO_SEND_AND_WAITs by intermediary in
+// the install virtual protocol
+export const LOCK_SERVICE_TTL = 90_000;
 
 // PROVIDERS
 export const AdminMessagingProviderId = "ADMIN_MESSAGING";

@@ -4,11 +4,11 @@ import { AddressZero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
 import { Connection } from "typeorm";
 
+import { CFCoreModule } from "../cfCore/cfCore.module";
 import { ChannelModule } from "../channel/channel.module";
 import { ConfigModule } from "../config/config.module";
-import { defaultPaymentProfileEth, CFCoreProviderId } from "../constants";
+import { CFCoreProviderId, defaultPaymentProfileEth } from "../constants";
 import { DatabaseModule } from "../database/database.module";
-import { CFCoreModule } from "../cfCore/cfCore.module";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import {
   clearDb,
