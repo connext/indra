@@ -133,7 +133,7 @@ export default class ListenerService implements OnModuleInit {
             if (!channel) {
               throw new Error(`Channel does not exist for ${initiatorXpub}`);
             }
-            logger.warn(
+            logger.debug(
               `sending acceptance message to indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
             );
             await this.messagingClient

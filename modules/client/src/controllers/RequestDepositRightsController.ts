@@ -21,8 +21,9 @@ export class RequestDepositRightsController extends AbstractController {
   public requestDepositRights = async (
     params: RequestDepositRightsParameters,
   ): Promise<CFCoreTypes.RequestDepositRightsResult> => {
-    const { assetId, timeoutMs } = params;
-    validate(invalidAddress(assetId), notNegative(timeoutMs));
+    params.assetId = params.assetId || AddressZero;
+    const { assetId } = params;
+    validate(invalidAddress(assetId));
 
     let multisigBalance: BigNumber;
     if (assetId === AddressZero) {
@@ -38,7 +39,7 @@ export class RequestDepositRightsController extends AbstractController {
       throw new Error(`Cannot claim deposit rights while hub is depositing.`);
     }
 
-    this.registerListeners(assetId);
+    // this.registerListeners(assetId);
 
     const existingBalanceRefundApp = await this.connext.getBalanceRefundApp(assetId);
     if (existingBalanceRefundApp) {
@@ -47,12 +48,8 @@ export class RequestDepositRightsController extends AbstractController {
         existingBalanceRefundApp.latestState["recipient"] === this.connext.freeBalanceAddress
       ) {
         this.log.info(
-          `Balance refund app for ${assetId} is in the correct state, setting timeout + doing nothing`,
+          `Balance refund app for ${assetId} is in the correct state, doing nothing`,
         );
-        setTimeout(async () => {
-          await this.connext.rescindDepositRights(assetId);
-          this.cleanupListeners(assetId);
-        }, timeoutMs);
         return {
           freeBalance: await this.connext.getFreeBalance(assetId),
           recipient: this.connext.freeBalanceAddress,
@@ -82,11 +79,6 @@ export class RequestDepositRightsController extends AbstractController {
     this.listener.emit(`indra.client.${this.connext.publicIdentifier}.freeBalanceUpdated`, {
       freeBalance,
     });
-
-    setTimeout(async () => {
-      this.cleanupListeners(assetId);
-      await this.connext.rescindDepositRights(assetId);
-    }, timeoutMs);
 
     return {
       freeBalance,
