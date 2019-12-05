@@ -1,13 +1,13 @@
 import { IMessagingService } from "@connext/messaging";
+import { StateChannelJSON } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 
 import { AuthService } from "../auth/auth.service";
+import { Channel } from "../channel/channel.entity";
 import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
-import { AbstractMessagingProvider } from "../util";
+import { AbstractMessagingProvider, stringify } from "../util";
 
 import { AdminService } from "./admin.service";
-import { Channel } from "../channel/channel.entity";
-import { CFCoreRecord } from "../cfCore/cfCore.entity";
 
 class AdminMessaging extends AbstractMessagingProvider {
   constructor(
@@ -36,19 +36,29 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getNoFreeBalance();
   }
 
-  async getChannelStateByXpub(userPublicIdentifier: any):  Promise<Channel[]> {
-    return await this.adminService.getChannelStateByXpub(userPublicIdentifier.id);
+  async getStateChannelByUserPublicIdentifier(data: {
+    userPublicIdentifier: string;
+  }): Promise<StateChannelJSON> {
+    const { userPublicIdentifier } = data;
+    if (!userPublicIdentifier) {
+      throw new Error(`No public identifier supplied: ${stringify(data)}`);
+    }
+    return await this.adminService.getStateChannelByUserPublicIdentifier(userPublicIdentifier);
   }
 
-  async getChannelStateByMultiSig(multisigAddress: any):  Promise<Channel[]> {
-    return await this.adminService.getChannelStateByMultiSig(multisigAddress.id);
+  async getStateChannelByMultisig(data: { multisigAddress: string }): Promise<StateChannelJSON> {
+    const { multisigAddress } = data;
+    if (!multisigAddress) {
+      throw new Error(`No multisig address supplied: ${stringify(data)}`);
+    }
+    return await this.adminService.getStateChannelByMultisig(multisigAddress);
   }
 
-  async getAllChannelsState():  Promise<any[]> {
-    return await this.adminService.getAllChannelsState();
+  async getAllChannels(): Promise<Channel[]> {
+    return await this.adminService.getAllChannels();
   }
 
-  async getAllTransfers():  Promise<any[]> {
+  async getAllTransfers(): Promise<any[]> {
     return await this.adminService.getAllTransfers();
   }
 
@@ -74,18 +84,18 @@ class AdminMessaging extends AbstractMessagingProvider {
     );
 
     await super.connectRequestReponse(
-      "admin.get-channel-state-by-xpub",
-      this.authService.useAdminToken(this.getChannelStateByXpub.bind(this)),
+      "admin.get-state-channel-by-xpub",
+      this.authService.useAdminToken(this.getStateChannelByUserPublicIdentifier.bind(this)),
     );
 
     await super.connectRequestReponse(
-      "admin.get-channel-state-by-multisig",
-      this.authService.useAdminToken(this.getChannelStateByMultiSig.bind(this)),
+      "admin.get-state-channel-by-multisig",
+      this.authService.useAdminToken(this.getStateChannelByMultisig.bind(this)),
     );
 
     await super.connectRequestReponse(
-      "admin.get-all-channel-states",
-      this.authService.useAdminToken(this.getAllChannelsState.bind(this)),
+      "admin.get-all-channels",
+      this.authService.useAdminToken(this.getAllChannels.bind(this)),
     );
 
     await super.connectRequestReponse(
