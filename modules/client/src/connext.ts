@@ -228,6 +228,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   log.debug("Registering subscriptions");
   await client.registerSubscriptions();
 
+  // check if there is a coin refund app installed
+  await client.uninstallCoinBalanceIfNeeded();
+
   // make sure we don't have a balance refund app hanging around installed
   log.debug(`Rescinding deposit rights for ${config.contractAddresses.Token}`);
   const tokenReq = await client.rescindDepositRights(config.contractAddresses.Token);
