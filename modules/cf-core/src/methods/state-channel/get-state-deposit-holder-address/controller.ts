@@ -30,7 +30,7 @@ export default class GetStateDepositHolderAddressController extends NodeControll
       );
     }
     const address = await getCreate2MultisigAddress(
-      xkeysToSortedKthAddresses(owners, 0),
+      owners,
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
       networkContext.provider
