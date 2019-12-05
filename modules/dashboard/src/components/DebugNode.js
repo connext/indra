@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Grid, Typography, withStyles } from "@material-ui/core";
 import PropTypes from "prop-types";
-import { nullLiteral } from "@babel/types";
 const axios = require("axios");
 
 const styles = {

@@ -10,7 +10,7 @@ import {
 } from "@material-ui/core";
 import { Search as SearchIcon } from "@material-ui/icons";
 import PropTypes from "prop-types";
-import { bigNumberify, toNumber, toString } from "ethers/utils";
+import { bigNumberify } from "ethers/utils";
 
 const styles = {
   top: {
@@ -64,9 +64,7 @@ const styles = {
   },
 };
 
-const DebugChannel = props => {
-  const { classes, messaging, token } = props;
-
+const DebugChannel = ({ classes, messaging }) => {
   // const [messaging, setMessaging] = useState(props.messaging);
   const [xPubSearch, setXPubSearch] = useState("");
   const [multiSigSearch, setMultiSigSearch] = useState("");
@@ -77,85 +75,61 @@ const DebugChannel = props => {
   const [searchError, setSearchError] = useState(null);
 
   useEffect(() => {
-    if (!messaging) {
+    if (!messaging || !messaging.connected) {
       return;
     }
     (async () => {
-      const getNoFreeBalance = async () => {
-        // var res = await messaging.request(
-        //   "admin.get-channel-states",
-        //   5000,
-        //   {
-        //     userPublicIdentifier:
-        //       "xpub6DgQCJcuAkGqtpzj3eHC7uLatyyPoNGQVegrRsSWFyHVXCZb4PVo6b8sRCHDJuEMfJsfaoB64AjaouN8mdAWpLEGMffwcZetbDx9M5Z9AKg",
-        //   },
-        //   {
-        //     token: "foo",
-        //   },
-        // );
-        var res = await messaging.request("admin.get-no-free-balance", 5000, {
-          token: token,
-        });
-        setNoFreeBalance(JSON.stringify(res));
-      };
-      await getNoFreeBalance();
+      const res = await messaging.getChannelStatesWithNoFreeBalanceApp();
+      setNoFreeBalance(JSON.stringify(res));
     })();
   });
 
   const getChannelState = async () => {
     setLoading(true);
     try {
-      var res = await messaging.request("get-channel-state-by-xpub", 5000, {
-        token: token,
-        id: xPubSearch,
-      });
+      const res = await messaging.getChannelStateByUserPubId(xPubSearch);
 
-      var extractedValues = Object.values(res)[0].response;
       let freeBalanceTotalHolder = [];
-      extractedValues.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
+      res.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
         balance.amount.readable = bigNumberify(balance.amount._hex).toString();
         freeBalanceTotalHolder.push(balance.amount.readable);
       });
 
-      var freeBalanceTotalReduced = freeBalanceTotalHolder.reduce((a, b) => {
+      const freeBalanceTotalReduced = freeBalanceTotalHolder.reduce((a, b) => {
         return a + b;
       }, 0);
 
       setFreeBalance(freeBalanceTotalReduced);
-      setChannelState(extractedValues);
+      setChannelState(res);
       setLoading(false);
       setSearchError(null);
     } catch {
       setLoading(false);
-      setSearchError("xPub not found");
+      setSearchError(`xPub (${xPubSearch}) not found`);
     }
   };
   const getChannelStateByMultisig = async () => {
     setLoading(true);
     try {
-      var res = await messaging.request("admin.get-channel-state-by-multisig", 5000, {
-        token: token,
-        id: multiSigSearch,
-      });
+      const res = await messaging.getChannelStateByMultisig();
 
-      var extractedValues = Object.values(res)[0].response;
       let freeBalanceTotalHolder = [];
-      extractedValues.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
+      res.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
         balance.amount.readable = bigNumberify(balance.amount._hex).toString();
         freeBalanceTotalHolder.push(balance.amount.readable);
       });
 
-      var freeBalanceTotalReduced = freeBalanceTotalHolder.reduce((a, b) => {
+      const freeBalanceTotalReduced = freeBalanceTotalHolder.reduce((a, b) => {
         return a + b;
       }, 0);
 
       setFreeBalance(freeBalanceTotalReduced);
-      setChannelState(extractedValues);
+      setChannelState(res);
       setLoading(false);
       setSearchError(null);
     } catch {
       setLoading(false);
-      setSearchError("Multisig not found");
+      setSearchError(`Multisig (${multiSigSearch}) not found`);
     }
   };
 
