@@ -105,12 +105,12 @@ export class TransferService {
   }
 
   // @hunter -- this should be pulling from the transfer view right?
-  async fetchLinkedTransfer(paymentId: string): Promise<LinkedTransfer> {
+  async getLinkedTransferByPaymentId(paymentId: string): Promise<LinkedTransfer | undefined> {
     return await this.linkedTransferRepository.findByPaymentId(paymentId);
   }
 
   // @hunter -- this should be pulling from the transfer view right?
-  async fetchAllLinkedTransfers(): Promise<LinkedTransfer[]> {
+  async getAllLinkedTransfers(): Promise<LinkedTransfer[]> {
     return await this.linkedTransferRepository.findAll();
   }
 

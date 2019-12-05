@@ -4,6 +4,7 @@ import { FactoryProvider } from "@nestjs/common/interfaces";
 
 import { AuthService } from "../auth/auth.service";
 import { Channel } from "../channel/channel.entity";
+import { LinkedTransfer } from "../transfer/transfer.entity";
 import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
 import { AbstractMessagingProvider, stringify } from "../util";
 
@@ -58,8 +59,18 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getAllChannels();
   }
 
-  async getAllLinkedTransfers(): Promise<any[]> {
+  async getAllLinkedTransfers(): Promise<LinkedTransfer[]> {
     return await this.adminService.getAllLinkedTransfers();
+  }
+
+  async getLinkedTransferByPaymentId(data: {
+    paymentId: string;
+  }): Promise<LinkedTransfer | undefined> {
+    const { paymentId } = data;
+    if (!paymentId) {
+      throw new Error(`No paymentId supplied: ${stringify(data)}`);
+    }
+    return await this.adminService.getLinkedTransferByPaymentId(paymentId);
   }
 
   async getIncorrectMultisigAddresses(): Promise<
@@ -99,8 +110,13 @@ class AdminMessaging extends AbstractMessagingProvider {
     );
 
     await super.connectRequestReponse(
-      "admin.get-all-transfers",
+      "admin.get-all-linked-transfers",
       this.authService.useAdminToken(this.getAllLinkedTransfers.bind(this)),
+    );
+
+    await super.connectRequestReponse(
+      "admin.get-linked-transfer-by-payment-id",
+      this.authService.useAdminToken(this.getLinkedTransferByPaymentId.bind(this)),
     );
 
     await super.connectRequestReponse(

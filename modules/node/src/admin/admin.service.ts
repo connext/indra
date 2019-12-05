@@ -41,7 +41,13 @@ export class AdminService {
   /** Get all transfers */
   // @hunter -- see notes in transfer service fns
   async getAllLinkedTransfers(): Promise<LinkedTransfer[]> {
-    return await this.transferService.fetchAllLinkedTransfers();
+    return await this.transferService.getAllLinkedTransfers();
+  }
+
+  /** Get transfer */
+  // @hunter -- see notes in transfer service fns
+  async getLinkedTransferByPaymentId(paymentId: string): Promise<LinkedTransfer | undefined> {
+    return await this.transferService.getLinkedTransferByPaymentId(paymentId);
   }
 
   /////////////////////////////////////////

@@ -47,8 +47,14 @@ export default class AdminMessaging {
 
   ///////////////////////////////////////
   ////// TRANSFER API METHODS
-  async getAllTransfers() {
-    return await this.send("get-all-transfers")
+  async getAllLinkedTransfers() {
+    return await this.send("get-all-linked-transfers")
+  }
+
+  async getLinkedTransferByPaymentId(paymentId) {
+    return await this.send("get-linked-transfer-by-payment-id", {
+      paymentId
+    })
   }
 
   ///////////////////////////////////////
