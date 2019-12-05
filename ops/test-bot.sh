@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -e -o pipefail
 
 project="indra"
 export ETH_RPC_URL="http://172.17.0.1:8545"
