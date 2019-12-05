@@ -41,9 +41,7 @@ const styles = {
   },
 };
 
-function Debug(props) {
-  const { classes, messaging, token, prefix } = props;
-  console.log(messaging);
+function Debug({ classes, messaging, prefix }) {
   return (
     <Grid className={classes.top} container>
       <Grid className={classes.appBar} container>
@@ -61,12 +59,12 @@ function Debug(props) {
         <Route
           exact
           path={`${prefix}/debug/channel`}
-          render={props => <DebugChannel {...props} messaging={messaging} token={token} />}
+          render={props => <DebugChannel {...props} messaging={messaging} />}
         />
         <Route
           exact
           path={`${prefix}/debug/node`}
-          render={props => <DebugNode {...props} messaging={messaging} token={token} />}
+          render={props => <DebugNode {...props} messaging={messaging} />}
         />
       </Switch>
     </Grid>

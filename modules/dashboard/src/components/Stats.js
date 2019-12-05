@@ -1,15 +1,13 @@
 import React from "react";
 import { Button, Grid, Typography, withStyles } from "@material-ui/core";
-import { Home as HomeIcon} from "@material-ui/icons";
+import { Home as HomeIcon } from "@material-ui/icons";
 
-import { Switch, Route,Link } from "react-router-dom";
+import { Switch, Route, Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import StatsSummary from "./StatsSummary";
 import StatsGas from "./StatsGas";
 import StatsTransfers from "./StatsTransfers";
 import StatsExport from "./StatsExport";
-
-
 
 const styles = {
   top: {
@@ -22,7 +20,7 @@ const styles = {
   appBar: {
     width: "100%",
     paddingTop: "15px",
-    justifyContent:"flex-start"
+    justifyContent: "flex-start",
   },
   button: {
     display: "flex",
@@ -41,18 +39,17 @@ const styles = {
     fontSize: "24px",
     color: "#002868",
     textDecoration: "none",
-    paddingLeft:"2%",
-    paddingRight:"2%",
+    paddingLeft: "2%",
+    paddingRight: "2%",
   },
-  icon:{color:"#002868"}
+  icon: { color: "#002868" },
 };
 
-function Stats(props) {
-  const { classes, messaging, token, prefix} = props;
+function Stats({ classes, messaging, prefix }) {
   return (
     <Grid className={classes.top} container>
       <Grid className={classes.appBar} container>
-      <Button className={classes.button} component={Link} to={`${prefix}`}>
+        <Button className={classes.button} component={Link} to={`${prefix}`}>
           <HomeIcon className={classes.icon} />
         </Button>
         <Button className={classes.button} component={Link} to={`${prefix}/stats/summary`}>
@@ -61,22 +58,37 @@ function Stats(props) {
         <Button className={classes.button} component={Link} to={`${prefix}/stats/transfers`}>
           <Typography className={classes.buttonText}>Transfers</Typography>
         </Button>
-        
+
         <Button className={classes.button} component={Link} to={`${prefix}/stats/gas`}>
           <Typography className={classes.buttonText}>Gas</Typography>
         </Button>
-        
+
         <Button className={classes.button} component={Link} to={`${prefix}/stats/export`}>
           <Typography className={classes.buttonText}>Export</Typography>
         </Button>
-
       </Grid>
-        <Switch>
-          <Route exact path={`${prefix}/stats/summary`} render={props => <StatsSummary {...props} messaging={messaging} token={token} />} />
-          <Route exact path={`${prefix}/stats/transfers`} render={props => <StatsTransfers {...props} messaging={messaging} token={token}/>} />
-          <Route exact path={`${prefix}/stats/gas`} render={props => <StatsGas {...props} messaging={messaging} token={token}/>} />
-          <Route exact path={`${prefix}/stats/export`} render={props => <StatsExport {...props} messaging={messaging} token={token}/>} />
-        </Switch>
+      <Switch>
+        <Route
+          exact
+          path={`${prefix}/stats/summary`}
+          render={props => <StatsSummary {...props} messaging={messaging} />}
+        />
+        <Route
+          exact
+          path={`${prefix}/stats/transfers`}
+          render={props => <StatsTransfers {...props} messaging={messaging} />}
+        />
+        <Route
+          exact
+          path={`${prefix}/stats/gas`}
+          render={props => <StatsGas {...props} messaging={messaging} />}
+        />
+        <Route
+          exact
+          path={`${prefix}/stats/export`}
+          render={props => <StatsExport {...props} messaging={messaging} />}
+        />
+      </Switch>
     </Grid>
   );
 }
