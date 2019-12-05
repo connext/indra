@@ -53,22 +53,25 @@ export class TestRunner {
 
     const proxyBytecode = Proxy.evm.bytecode.object;
 
-    this.multisigAB = getCreate2MultisigAddress(
+    this.multisigAB = await getCreate2MultisigAddress(
       [this.mininodeA.xpub, this.mininodeB.xpub],
       network.ProxyFactory,
-      network.MinimumViableMultisig
+      network.MinimumViableMultisig,
+      provider
     );
 
-    this.multisigAC = getCreate2MultisigAddress(
+    this.multisigAC = await getCreate2MultisigAddress(
       [this.mininodeA.xpub, this.mininodeC.xpub],
       network.ProxyFactory,
-      network.MinimumViableMultisig
+      network.MinimumViableMultisig,
+      provider
     );
 
-    this.multisigBC = getCreate2MultisigAddress(
+    this.multisigBC = await getCreate2MultisigAddress(
       [this.mininodeB.xpub, this.mininodeC.xpub],
       network.ProxyFactory,
-      network.MinimumViableMultisig
+      network.MinimumViableMultisig,
+      provider
     );
 
     this.mr = new MessageRouter([
@@ -85,22 +88,26 @@ export class TestRunner {
   async setup() {
     this.mininodeA.scm.set(
       this.multisigAB,
-      (await this.mininodeA.protocolRunner.runSetupProtocol({
-        initiatorXpub: this.mininodeA.xpub,
-        responderXpub: this.mininodeB.xpub,
-        multisigAddress: this.multisigAB
-      })).get(this.multisigAB)!
+      (
+        await this.mininodeA.protocolRunner.runSetupProtocol({
+          initiatorXpub: this.mininodeA.xpub,
+          responderXpub: this.mininodeB.xpub,
+          multisigAddress: this.multisigAB
+        })
+      ).get(this.multisigAB)!
     );
 
     await this.mr.waitForAllPendingPromises();
 
     this.mininodeB.scm.set(
       this.multisigBC,
-      (await this.mininodeB.protocolRunner.runSetupProtocol({
-        initiatorXpub: this.mininodeB.xpub,
-        responderXpub: this.mininodeC.xpub,
-        multisigAddress: this.multisigBC
-      })).get(this.multisigBC)!
+      (
+        await this.mininodeB.protocolRunner.runSetupProtocol({
+          initiatorXpub: this.mininodeB.xpub,
+          responderXpub: this.mininodeC.xpub,
+          multisigAddress: this.multisigBC
+        })
+      ).get(this.multisigBC)!
     );
 
     await this.mr.waitForAllPendingPromises();
