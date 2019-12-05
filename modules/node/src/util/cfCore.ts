@@ -29,10 +29,6 @@ import MinimumViableMultisig from "@connext/cf-funding-protocol-contracts/build/
 import Proxy from "@connext/cf-funding-protocol-contracts/build/Proxy.json";
 import { ethers as eth } from "ethers";
 
-export function freeBalanceAddressFromXpub(xpub: string): string {
-  return eth.utils.getAddress(eth.utils.HDNode.fromExtendedKey(xpub).derivePath("0").address);
-}
-
 export function xkeyKthHDNode(xkey: string, k: number): eth.utils.HDNode.HDNode {
   return eth.utils.HDNode.fromExtendedKey(xkey).derivePath(`${k}`);
 }
@@ -46,7 +42,7 @@ export function sortAddresses(addrs: string[]): string[] {
 }
 
 export function xkeysToSortedKthAddresses(xkeys: string[], k: number): string[] {
-  return sortAddresses(xkeys.map(xkey => xkeyKthAddress(xkey, k)));
+  return sortAddresses(xkeys.map((xkey: string) => xkeyKthAddress(xkey, k)));
 }
 
 // TODO: this should be imported from cf utils

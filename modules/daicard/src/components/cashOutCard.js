@@ -31,9 +31,18 @@ const style = withStyles(theme => ({
   },
 }));
 
-export const CashoutCard = style(({
-  balance, channel, classes, ethProvider, history, machine, refreshBalances, swapRate, token,
-}) => {
+export const CashoutCard = style(
+  ({
+    balance,
+    channel,
+    classes,
+    ethProvider,
+    history,
+    machine,
+    refreshBalances,
+    swapRate,
+    token,
+  }) => {
     const [withdrawing, setWithdrawing] = useState(false);
     const [recipient, setRecipient] = useAddress(null, ethProvider);
 

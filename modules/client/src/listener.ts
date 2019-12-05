@@ -93,10 +93,10 @@ export class ConnextListener extends EventEmitter {
         (app: DefaultApp) => app.name === SupportedApplications.CoinBalanceRefundApp,
       )[0];
       if (params.appDefinition !== coinBalanceDef.appDefinitionAddress) {
-        console.warn(`not sending propose message, not the coinbalance refund app`);
+        this.log.info(`not sending propose message, not the coinbalance refund app`);
         return;
       }
-      console.warn(
+      this.log.info(
         `Sending acceptance message to: indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
       );
       await this.connext.messaging.publish(
