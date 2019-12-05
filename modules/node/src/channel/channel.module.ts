@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { forwardRef, Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { AuthModule } from "../auth/auth.module";
@@ -8,6 +8,7 @@ import { ConfigModule } from "../config/config.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { PaymentProfileRepository } from "../paymentProfile/paymentProfile.repository";
+import { TransferModule } from "../transfer/transfer.module";
 
 import { channelProviderFactory } from "./channel.provider";
 import { ChannelRepository } from "./channel.repository";
@@ -27,6 +28,7 @@ import { ChannelService } from "./channel.service";
     ]),
     ConfigModule,
     AuthModule,
+    forwardRef(() => TransferModule),
   ],
   providers: [ChannelService, channelProviderFactory],
 })

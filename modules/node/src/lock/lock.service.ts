@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import Redlock, { Lock } from "redlock";
 
-import { RedlockProviderId } from "../constants";
+import { LOCK_SERVICE_TTL, RedlockProviderId } from "../constants";
 import { CLogger } from "../util";
 
 const logger = new CLogger("LockService");
@@ -15,7 +15,7 @@ export class LockService {
     callback: (...args: any[]) => any,
     timeout: number,
   ): Promise<any> {
-    const hardcodedTTL = 90_000;
+    const hardcodedTTL = LOCK_SERVICE_TTL;
     logger.debug(`Using lock ttl of ${hardcodedTTL / 1000} seconds`);
     logger.debug(`Acquiring lock for ${lockName} ${Date.now()}`);
     return new Promise((resolve: any, reject: any): any => {
@@ -64,8 +64,8 @@ export class LockService {
     });
   }
 
-  async acquireLock(lockName: string, lockTTL: number = 90_000): Promise<string> {
-    const hardcodedTTL = 90_000;
+  async acquireLock(lockName: string, lockTTL: number = LOCK_SERVICE_TTL): Promise<string> {
+    const hardcodedTTL = LOCK_SERVICE_TTL;
     logger.debug(`Using lock ttl of ${hardcodedTTL / 1000} seconds`);
     logger.debug(`Acquiring lock for ${lockName} at ${Date.now()}`);
     return new Promise((resolve: any, reject: any): any => {

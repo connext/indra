@@ -7,6 +7,7 @@ import { CFCoreChannel } from "./channel";
 ////// APP REGISTRY
 
 export const SupportedApplications = {
+  CoinBalanceRefundApp: "CoinBalanceRefundApp",
   SimpleLinkedTransferApp: "SimpleLinkedTransferApp",
   SimpleTransferApp: "SimpleTransferApp",
   SimpleTwoPartySwapApp: "SimpleTwoPartySwapApp",
@@ -159,3 +160,12 @@ export enum UnidirectionalLinkedTransferAppStage {
   PAYMENT_CLAIMED,
   CHANNEL_CLOSED,
 }
+
+////// CoinBalanceRefund types
+export type CoinBalanceRefundAppState<T = string> = {
+  multisig: string;
+  recipient: string;
+  threshold: T;
+  tokenAddress: string;
+};
+export type CoinBalanceRefundAppStateBigNumber = CoinBalanceRefundAppState<BigNumber>;

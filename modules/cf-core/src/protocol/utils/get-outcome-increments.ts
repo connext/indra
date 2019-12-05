@@ -5,7 +5,7 @@ import { AppInstance } from "../../models";
 import {
   CoinTransfer,
   convertCoinTransfersToCoinTransfersMap,
-  TokenIndexedCoinTransferMap,
+  TokenIndexedCoinTransferMap
 } from "../../models/free-balance";
 import {
   CoinBalanceRefundState,
@@ -14,7 +14,7 @@ import {
   OutcomeType,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcome,
-  TwoPartyFixedOutcomeInterpreterParams,
+  TwoPartyFixedOutcomeInterpreterParams
 } from "../../types";
 import { wait } from "../../utils";
 
@@ -27,7 +27,8 @@ import { wait } from "../../utils";
 export async function computeTokenIndexedFreeBalanceIncrements(
   appInstance: AppInstance,
   provider: BaseProvider,
-  encodedOutcomeOverride: string = ""
+  encodedOutcomeOverride: string = "",
+  blockNumberToUseIfNecessary?: number
 ): Promise<TokenIndexedCoinTransferMap> {
   const { outcomeType } = appInstance;
 
@@ -40,7 +41,8 @@ export async function computeTokenIndexedFreeBalanceIncrements(
     return handleRefundAppOutcomeSpecialCase(
       encodedOutcome,
       appInstance,
-      provider
+      provider,
+      blockNumberToUseIfNecessary
     );
   }
 
@@ -84,14 +86,21 @@ export async function computeTokenIndexedFreeBalanceIncrements(
 async function handleRefundAppOutcomeSpecialCase(
   encodedOutcome: string,
   appInstance: AppInstance,
-  provider: BaseProvider
+  provider: BaseProvider,
+  blockNumberToUseIfNecessary?: number
 ): Promise<TokenIndexedCoinTransferMap> {
   let mutableOutcome = encodedOutcome;
   let attempts = 1;
   while (attempts <= 10) {
     const [{ to, amount }] = decodeRefundAppState(mutableOutcome);
-
-    if (amount.gt(0)) {
+    const currentBlockNumber = await provider.getBlockNumber();
+    // if blockNumberToUseIfNecessary is specified and has elapsed, use the decoded state even
+    // if amount is 0
+    const blockNumberSpecifiedAndElapsed =
+      blockNumberToUseIfNecessary &&
+      currentBlockNumber >= blockNumberToUseIfNecessary;
+    // if blockNumberToUseIfNecessary is not specified, wait for nonzero balance refund or error
+    if (amount.gt(0) || blockNumberSpecifiedAndElapsed) {
       return {
         [(appInstance.state as CoinBalanceRefundState).tokenAddress]: {
           [to]: amount
@@ -209,7 +218,10 @@ function decodeSingleAssetTwoPartyCoinTransfer(
     encodedOutcome
   );
 
-  return [{ to: to1, amount: amount1 }, { to: to2, amount: amount2 }];
+  return [
+    { to: to1, amount: amount1 },
+    { to: to2, amount: amount2 }
+  ];
 }
 
 function decodeMultiAssetMultiPartyCoinTransfer(

@@ -13,27 +13,32 @@ import {
   FAILED_TO_GET_ERC20_BALANCE,
   INSUFFICIENT_ERC20_FUNDS_TO_DEPOSIT,
   INSUFFICIENT_FUNDS,
+  COIN_BALANCE_NOT_PROPOSED
 } from "../../errors";
 
-import { installBalanceRefundApp, makeDeposit, uninstallBalanceRefundApp } from "./operation";
+import {
+  installBalanceRefundApp,
+  makeDeposit,
+  uninstallBalanceRefundApp
+} from "./operation";
 
 export default class DepositController extends NodeController {
   @jsonRpcMethod(Node.RpcMethodName.DEPOSIT)
   public executeMethod: (
     requestHandler: RequestHandler,
-    params: Node.MethodParams,
+    params: Node.MethodParams
   ) => Promise<Node.MethodResult> = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.DepositParams,
+    params: Node.DepositParams
   ): Promise<string[]> {
     return [params.multisigAddress];
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: Node.DepositParams,
+    params: Node.DepositParams
   ): Promise<void> {
     const { store, provider, networkContext } = requestHandler;
     const { multisigAddress, amount, tokenAddress: tokenAddressParam } = params;
@@ -42,8 +47,22 @@ export default class DepositController extends NodeController {
 
     const channel = await store.getStateChannel(multisigAddress);
 
-    if (channel.hasAppInstanceOfKind(networkContext.CoinBalanceRefundApp)) {
+    if (
+      channel.hasBalanceRefundAppInstance(
+        networkContext.CoinBalanceRefundApp,
+        tokenAddress
+      )
+    ) {
       throw Error(CANNOT_DEPOSIT);
+    }
+
+    if (
+      !channel.hasProposedBalanceRefundAppInstance(
+        networkContext.CoinBalanceRefundApp,
+        tokenAddress
+      )
+    ) {
+      throw Error(COIN_BALANCE_NOT_PROPOSED);
     }
 
     const address = await requestHandler.getSignerAddress();
@@ -59,7 +78,14 @@ export default class DepositController extends NodeController {
       }
 
       if (balance.lt(amount)) {
-        throw Error(INSUFFICIENT_ERC20_FUNDS_TO_DEPOSIT(address, tokenAddress, amount, balance));
+        throw Error(
+          INSUFFICIENT_ERC20_FUNDS_TO_DEPOSIT(
+            address,
+            tokenAddress,
+            amount,
+            balance
+          )
+        );
       }
     } else {
       const balanceOfSigner = await provider.getBalance(address);
@@ -72,7 +98,7 @@ export default class DepositController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.DepositParams,
+    params: Node.DepositParams
   ): Promise<Node.DepositResult> {
     const { outgoing, provider } = requestHandler;
     const { multisigAddress, tokenAddress } = params;
@@ -91,20 +117,30 @@ export default class DepositController extends NodeController {
     const [counterpartyAddress] = await StateChannel.getPeersAddressFromChannel(
       publicIdentifier,
       store,
-      multisigAddress,
+      multisigAddress
     );
 
     const payload: DepositConfirmationMessage = {
       from: publicIdentifier,
       type: NODE_EVENTS.DEPOSIT_CONFIRMED,
-      data: params,
+      data: params
     };
 
     await messagingService.send(counterpartyAddress, payload);
     outgoing.emit(NODE_EVENTS.DEPOSIT_CONFIRMED, payload);
 
+    const multisigBalance =
+      params.tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS
+        ? await provider.getBalance(multisigAddress)
+        : await new Contract(
+            tokenAddress!,
+            ERC20.abi,
+            provider
+          ).functions.balanceOf(multisigAddress);
+
     return {
-      multisigBalance: await provider.getBalance(multisigAddress),
+      multisigBalance,
+      tokenAddress: params.tokenAddress!
     };
   }
 }
