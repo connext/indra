@@ -197,26 +197,6 @@ export class ChannelService {
     const result = this.deposit(channel.multisigAddress, amountDeposit, normalizedAssetId)
       .then(async (res: CFCoreTypes.DepositResult) => {
         logger.log(`Deposit result: ${stringify(res)}`);
-        const freeBalancePostDeposit = await this.cfCoreService.getFreeBalance(
-          userPubId,
-          channel.multisigAddress,
-          normalizedAssetId,
-        );
-        const nodeFreeBalancePostDeposit =
-          freeBalancePostDeposit[this.cfCoreService.cfCore.freeBalanceAddress];
-        const gtExpectedFreeBalanceIncrease = nodeFreeBalancePostDeposit
-          .sub(nodeFreeBalance)
-          .sub(amountDeposit);
-        if (gtExpectedFreeBalanceIncrease.gt(0)) {
-          logger.warn(
-            `Received extra free balance of ${gtExpectedFreeBalanceIncrease.toString()}, refunding client!`,
-          );
-          await this.transferService.sendTransferToClient(
-            userPubId,
-            gtExpectedFreeBalanceIncrease,
-            assetId,
-          );
-        }
         return res;
       })
       .catch(async (e: any) => {
