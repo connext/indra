@@ -85,7 +85,7 @@ export class ChannelService {
       balanceRefundApp.latestState["recipient"] === this.cfCoreService.cfCore.freeBalanceAddress
     ) {
       logger.log(`Node's CoinBalanceRefundApp is installed, removing first.`);
-      await this.cfCoreService.rescindDepositRights(assetId);
+      await this.cfCoreService.rescindDepositRights(channel.multisigAddress, assetId);
     }
 
     await this.proposeCoinBalanceRefund(assetId, channel);
