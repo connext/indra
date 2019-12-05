@@ -40,8 +40,8 @@ export class AdminService {
 
   /** Get all transfers */
   // @hunter -- see notes in transfer service fns
-  async getAllTransfers(): Promise<LinkedTransfer[]> {
-    return await this.transferService.fetchAllTransfers();
+  async getAllLinkedTransfers(): Promise<LinkedTransfer[]> {
+    return await this.transferService.fetchAllLinkedTransfers();
   }
 
   /////////////////////////////////////////

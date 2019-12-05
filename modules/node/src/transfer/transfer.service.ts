@@ -113,12 +113,14 @@ export class TransferService {
     return await this.linkedTransferRepository.save(transfer);
   }
 
-  async fetchLinkedTransfer(paymentId: string): Promise<any> {
+  // @hunter -- this should be pulling from the transfer view right?
+  async fetchLinkedTransfer(paymentId: string): Promise<LinkedTransfer> {
     return await this.linkedTransferRepository.findByPaymentId(paymentId);
   }
 
-  async fetchAllTransfers(): Promise<any> {
-    return await this.linkedTransferRepository.findAllTransfers();
+  // @hunter -- this should be pulling from the transfer view right?
+  async fetchAllLinkedTransfers(): Promise<LinkedTransfer[]> {
+    return await this.linkedTransferRepository.findAll();
   }
 
   async setRecipientAndEncryptedPreImageOnLinkedTransfer(

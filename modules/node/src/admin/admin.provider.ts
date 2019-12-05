@@ -58,8 +58,8 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getAllChannels();
   }
 
-  async getAllTransfers(): Promise<any[]> {
-    return await this.adminService.getAllTransfers();
+  async getAllLinkedTransfers(): Promise<any[]> {
+    return await this.adminService.getAllLinkedTransfers();
   }
 
   async getIncorrectMultisigAddresses(): Promise<
@@ -100,7 +100,7 @@ class AdminMessaging extends AbstractMessagingProvider {
 
     await super.connectRequestReponse(
       "admin.get-all-transfers",
-      this.authService.useAdminToken(this.getAllTransfers.bind(this)),
+      this.authService.useAdminToken(this.getAllLinkedTransfers.bind(this)),
     );
 
     await super.connectRequestReponse(
