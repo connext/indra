@@ -32,8 +32,8 @@ export class LinkedTransferRepository extends Repository<LinkedTransfer> {
     });
   }
 
-  async findAllTransfers(available: boolean = true): Promise<LinkedTransfer[]> {
-    return await this.find({ where: { available }  });
+  async findAll(): Promise<LinkedTransfer[]> {
+    return await this.find();
   }
 
   async markAsRedeemed(
