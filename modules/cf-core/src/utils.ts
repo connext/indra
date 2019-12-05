@@ -77,7 +77,7 @@ export const getCreate2MultisigAddress = memoize(
         ]
       ).slice(-40)
     ),
-  { max: 100, maxAge: 60 * 1000, primitive: true }
+  { max: 100, maxAge: 60 * 1000 }
 );
 
 export const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
