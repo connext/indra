@@ -33,7 +33,7 @@ export default class InstallVirtualController extends NodeController {
       [publicIdentifier, proposedByIdentifier],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
-      true,
+      networkContext.provider
     );
 
     // because this is the initiators store, it may not have
@@ -43,13 +43,13 @@ export default class InstallVirtualController extends NodeController {
       [intermediaryIdentifier, proposedByIdentifier],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
-      true
+      networkContext.provider
     );
 
     return [
       multisigAddressWithHub,
       multisigAddressWithResponding,
-      multisigAddressBetweenHubAndResponding,
+      multisigAddressBetweenHubAndResponding
     ];
   }
 
@@ -67,7 +67,7 @@ export default class InstallVirtualController extends NodeController {
     const multisigAddress = await store.getMultisigAddressWithCounterparty(
       [publicIdentifier, intermediaryIdentifier],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig,
+      networkContext.MinimumViableMultisig
     );
 
     const stateChannelWithIntermediary = await store.getStateChannel(multisigAddress);

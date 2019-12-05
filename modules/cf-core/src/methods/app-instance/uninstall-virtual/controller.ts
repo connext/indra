@@ -41,12 +41,12 @@ export default class UninstallVirtualController extends NodeController {
       [
         stateChannelWithResponding.userNeuteredExtendedKeys.filter(
           x => x !== publicIdentifier
-        )[0], 
+        )[0],
         intermediaryIdentifier
       ],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
-      true
+      networkContext.provider
     );
 
     return [

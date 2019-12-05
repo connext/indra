@@ -72,7 +72,7 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
     proxyFactory.once("ProxyCreation", async proxy => {
       // TODO: Test this separately
       expect(proxy).toBe(
-        getCreate2MultisigAddress(
+        await getCreate2MultisigAddress(
           xprvs,
           network.ProxyFactory,
           network.MinimumViableMultisig,

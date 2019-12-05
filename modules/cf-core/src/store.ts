@@ -1,23 +1,20 @@
 import { StateChannelJSON } from "@connext/types";
+import { BaseProvider } from "ethers/providers";
 import { solidityKeccak256 } from "ethers/utils";
 
 import { Proxy } from "./contracts";
 import {
   DB_NAMESPACE_ALL_COMMITMENTS,
   DB_NAMESPACE_CHANNEL,
-  DB_NAMESPACE_WITHDRAWALS,
+  DB_NAMESPACE_WITHDRAWALS
 } from "./db-schema";
 import {
   NO_MULTISIG_FOR_APP_INSTANCE_ID,
   NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID,
   NO_STATE_CHANNEL_FOR_MULTISIG_ADDR,
-  NO_MULTISIG_FOR_COUNTERPARTIES,
+  NO_MULTISIG_FOR_COUNTERPARTIES
 } from "./methods/errors";
-import {
-  AppInstance,
-  AppInstanceProposal,
-  StateChannel,
-} from "./models";
+import { AppInstance, AppInstanceProposal, StateChannel } from "./models";
 import { Node, SolidityValueType } from "./types";
 import { getCreate2MultisigAddress, prettyPrintObject } from "./utils";
 
@@ -30,6 +27,49 @@ export class Store {
     private readonly storeService: Node.IStoreService,
     private readonly storeKeyPrefix: string
   ) {}
+
+  // TODO: remove if store is added to Context type
+  public static async getMultisigAddressWithCounterpartyFromMap(
+    stateChannelsMap: Map<string, StateChannel>,
+    owners: string[],
+    proxyFactoryAddress: string,
+    minimumViableMultisigAddress: string,
+    provider?: BaseProvider
+  ): Promise<string> {
+    for (const stateChannel of stateChannelsMap.values()) {
+      if (
+        stateChannel.userNeuteredExtendedKeys.sort().toString() ===
+        owners.sort().toString()
+      ) {
+        return stateChannel.multisigAddress;
+      }
+    }
+    if (provider) {
+      return await getCreate2MultisigAddress(
+        owners,
+        proxyFactoryAddress,
+        minimumViableMultisigAddress,
+        provider
+      );
+    }
+    throw new Error(NO_MULTISIG_FOR_COUNTERPARTIES(owners));
+  }
+
+  public async getMultisigAddressWithCounterparty(
+    owners: string[],
+    proxyFactoryAddress: string,
+    minimumViableMultisigAddress: string,
+    provider?: BaseProvider
+  ) {
+    const stateChannelsMap = await this.getStateChannelsMap();
+    return await Store.getMultisigAddressWithCounterpartyFromMap(
+      stateChannelsMap,
+      owners,
+      proxyFactoryAddress,
+      minimumViableMultisigAddress,
+      provider
+    );
+  }
 
   /**
    * Returns an object with the keys being the multisig addresses and the
@@ -211,44 +251,6 @@ export class Store {
   public async getAppInstance(appInstanceId: string): Promise<AppInstance> {
     const channel = await this.getChannelFromAppInstanceID(appInstanceId);
     return channel.getAppInstance(appInstanceId);
-  }
-
-  public async getMultisigAddressWithCounterparty(
-    owners: string[],
-    proxyFactoryAddress: string,
-    minimumViableMultisigAddress: string,
-    acceptGeneratedMultisig: boolean = false,
-  ) {
-    const stateChannelsMap = await this.getStateChannelsMap();
-    return Store.getMultisigAddressWithCounterpartyFromMap(stateChannelsMap, owners, proxyFactoryAddress, minimumViableMultisigAddress, acceptGeneratedMultisig)
-  }
-
-  // TODO: remove if store is added to Context type
-  public static getMultisigAddressWithCounterpartyFromMap(
-    stateChannelsMap: Map<string, StateChannel>,
-    owners: string[],
-    proxyFactoryAddress: string,
-    minimumViableMultisigAddress: string,
-    acceptGeneratedMultisig: boolean = false
-  ) {
-    for (const stateChannel of stateChannelsMap.values()) {
-      if (
-        stateChannel.userNeuteredExtendedKeys.sort().toString() ===
-        owners.sort().toString()
-      ) {
-        return stateChannel.multisigAddress;
-      }
-    }
-
-    if (acceptGeneratedMultisig) {
-      return getCreate2MultisigAddress(
-        owners,
-        proxyFactoryAddress,
-        minimumViableMultisigAddress,
-      );
-    }
-
-    throw new Error(NO_MULTISIG_FOR_COUNTERPARTIES(owners));
   }
 
   public async getOrCreateStateChannelBetweenVirtualAppParticipants(
