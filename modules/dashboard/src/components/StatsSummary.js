@@ -89,7 +89,7 @@ const StatsSummary = props => {
   const getChannelAmount = async xPub => {
     console.log("xpub: ", xPub);
     try {
-      const res = await messaging.getChannelStateByUserPubId(xPub);
+      const res = await messaging.getStateChannelByUserPubId(xPub);
       console.log(res);
       let balanceArr = [];
       res.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {

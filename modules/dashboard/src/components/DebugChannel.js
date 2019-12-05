@@ -87,7 +87,7 @@ const DebugChannel = ({ classes, messaging }) => {
   const getChannelState = async () => {
     setLoading(true);
     try {
-      const res = await messaging.getChannelStateByUserPubId(xPubSearch);
+      const res = await messaging.getStateChannelByUserPubId(xPubSearch);
 
       let freeBalanceTotalHolder = [];
       res.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
@@ -108,10 +108,10 @@ const DebugChannel = ({ classes, messaging }) => {
       setSearchError(`xPub (${xPubSearch}) not found`);
     }
   };
-  const getChannelStateByMultisig = async () => {
+  const getStateChannelByMultisig = async () => {
     setLoading(true);
     try {
-      const res = await messaging.getChannelStateByMultisig();
+      const res = await messaging.getStateChannelByMultisig(multiSigSearch);
 
       let freeBalanceTotalHolder = [];
       res.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
@@ -200,7 +200,7 @@ const DebugChannel = ({ classes, messaging }) => {
                 <Button
                   variant="contained"
                   onClick={async () => {
-                    await getChannelStateByMultisig();
+                    await getStateChannelByMultisig();
                   }}
                 >
                   {loading ? <CircularProgress color="blue" /> : <SearchIcon />}

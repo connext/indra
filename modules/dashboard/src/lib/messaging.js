@@ -29,13 +29,13 @@ export default class AdminMessaging {
     return await this.send("get-no-free-balance")
   }
 
-  async getChannelStateByUserPubId(userPublicIdentifier) {
+  async getStateChannelByUserPubId(userPublicIdentifier) {
     return await this.send("get-state-channel-by-xpub", {
       userPublicIdentifier,
     });
   }
 
-  async getChannelStateByMultisig(multisigAddress) {
+  async getStateChannelByMultisig(multisigAddress) {
     return await this.send("get-state-channel-by-multisig", {
       multisigAddress,
     })
@@ -59,7 +59,7 @@ export default class AdminMessaging {
 
   ///////////////////////////////////////
   ////// SEND REQUEST
-  async send(subject, data = {}) {
+  async send(subject, data) {
     // assert connected
     if (!this.connected) {
       throw new Error(`Call messaging.connect before calling send`);
@@ -68,12 +68,12 @@ export default class AdminMessaging {
     // data is optional
     console.debug(
       `Sending request to admin.${subject} ${
-        Object.keys(data).length > 0 ? `with data: ${stringify(data)}` : `without data`
+        data ? `with data: ${stringify(data)}` : `without data`
       }`,
     );
 
     const payload = {
-      ...data,
+      ...(data || {}),
       id: uuid.v4(),
       token: this.token,
     };
