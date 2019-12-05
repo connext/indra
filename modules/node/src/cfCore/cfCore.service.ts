@@ -424,8 +424,8 @@ export class CFCoreService {
     const addresses = await this.configService.getContractAddresses();
     const proxyFactory = addresses.ProxyFactory;
     const mVMultisig = addresses.MinimumViableMultisig;
-    const proxyBytecode = Proxy.evm.bytecode.object;
-    return getCreate2MultisigAddress(owners, proxyFactory, mVMultisig, proxyBytecode);
+    const ethProvider = this.configService.getEthProvider();
+    return getCreate2MultisigAddress(owners, proxyFactory, mVMultisig, ethProvider);
   }
 
   /**
