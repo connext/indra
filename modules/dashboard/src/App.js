@@ -6,8 +6,6 @@ import Debug from "./components/Debug";
 import Stats from "./components/Stats";
 import DashboardMessaging from "./lib/messaging";
 
-// const nc = await connect({ servers: ["wss://daicard.io/api/messaging"] });
-
 const env = {
   authToken: process.env.REACT_APP_INDRA_NATS_TOKEN || "foo",
   nodeUrl:
