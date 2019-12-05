@@ -37,7 +37,7 @@ const styles = {
 };
 
 const address = {
-  mainnet: "0xF80fd6F5eF91230805508bB28d75248024E50F6F", //"0xf3f722f6ca6026fb7cc9b63523bbc6a73d3aad39",
+  mainnet: "0xf3f722f6ca6026fb7cc9b63523bbc6a73d3aad39", //"0xF80fd6F5eF91230805508bB28d75248024E50F6F", //,
   // staging: "0x0f41a9aaee33d3520f853cb706c24ca75cac874e",
   // rinkeby: "0x5307b4f67ca8746562a4a9fdeb0714033008ef4a",
 };
@@ -94,7 +94,7 @@ const StatsSummary = props => {
       var nodeChannelTotalArrReduced = nodeChannelTotalArr.reduce((a, b) => {
         return a + b;
       }, 0);
-      
+
       setNodeTotal(nodeChannelTotalArrReduced);
       setChannelTotal(channelTotalArrReduced);
       setLoading(false);
