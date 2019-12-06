@@ -1,7 +1,7 @@
 import {
   EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
   NetworkContext
-} from "@connext/cf-types";
+} from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { BaseProvider } from "ethers/providers";

@@ -17,5 +17,5 @@ module.exports = {
   "testURL": "http://localhost/",
   "transform": { "^.+(?!\\.d)\\.ts$": "ts-jest" },
   "transformIgnorePatterns": [ ".*\\.d\\.ts$", "node_modules/(?!@counterfactual)" ],
-  "verbose": false,
+  "verbose": true,
 }

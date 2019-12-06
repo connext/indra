@@ -4,9 +4,9 @@ pragma experimental "ABIEncoderV2";
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 /* solium-disable-next-line */
-import "@counterfactual/cf-adjudicator-contracts/contracts/interfaces/CounterfactualApp.sol";
+import "@connext/cf-adjudicator-contracts/contracts/interfaces/CounterfactualApp.sol";
 /* solium-disable-next-line */
-import "@counterfactual/cf-funding-protocol-contracts/contracts/libs/LibOutcome.sol";
+import "@connext/cf-funding-protocol-contracts/contracts/libs/LibOutcome.sol";
 
 
 /// @title Unidirectional Transfer App

@@ -29,19 +29,13 @@ network="${project}_$suffix"
 
 ethprovider_host="${project}_ethprovider_$suffix"
 ethprovider_port="8545"
-eth_rpc_url="http://$ethprovider_host:8545"
-
-postgres_db="${project}_$suffix"
-postgres_host="${project}_database_$suffix"
-postgres_password="$project"
-postgres_port="5432"
-postgres_user="$project"
+eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+ethprovider_url="http://$ethprovider_host:$ethprovider_port"
 
 # Kill the dependency containers when this script exits
 function cleanup {
   echo;echo "Tests finished, stopping test containers.."
   docker container stop $ethprovider_host 2> /dev/null || true
-  docker container stop $postgres_host 2> /dev/null || true
 }
 trap cleanup EXIT
 
@@ -50,6 +44,8 @@ docker network create --attachable $network 2> /dev/null || true
 ########################################
 # Start dependencies
 
+# TODO: the gasLimit shouldn't need to be 1000x higher than mainnet..
+
 echo "Starting $ethprovider_host.."
 docker run \
   --detach \
@@ -57,36 +53,23 @@ docker run \
   --network="$network" \
   --rm \
   --tmpfs="/data" \
-  trufflesuite/ganache-cli:v6.4.3 \
+  trufflesuite/ganache-cli:v6.7.0 \
     --db="/data" \
+    --defaultBalanceEther="10000" \
+    --gasLimit="9000000000" \
+    --gasPrice="1000000000" \
+    --host="0.0.0.0" \
     --mnemonic="$eth_mnemonic" \
-    --networkId="4447"
-
-echo "Starting $postgres_host.."
-docker run \
-  --detach \
-  --env="POSTGRES_DB=$postgres_db" \
-  --env="POSTGRES_PASSWORD=$postgres_password" \
-  --env="POSTGRES_USER=$postgres_user" \
-  --name="$postgres_host" \
-  --network="$network" \
-  --rm \
-  --tmpfs="/var/lib/postgresql/data" \
-  postgres:9-alpine
+    --networkId="4447" \
+    --port="$ethprovider_port"
 
 ########################################
 # Run Tests
 
 docker run \
   --entrypoint="bash" \
-  --env="GANACHE_HOST=$ethprovider_host" \
-  --env="GANACHE_PORT=$ethprovider_port" \
-  --env="POSTGRES_USER=$postgres_user" \
-  --env="POSTGRES_HOST=$postgres_host" \
-  --env="POSTGRES_DATABASE=$postgres_db" \
-  --env="POSTGRES_PASSWORD=$postgres_password" \
-  --env="POSTGRES_PORT=$postgres_port" \
-  --env="POSTGRES_STORE_KEY=dev" \
+  --env="ETHPROVIDER_URL=$ethprovider_url" \
+  --env="SUGAR_DADDY=$eth_mnemonic" \
   --interactive \
   --name="${project}_test_cf_core" \
   --network="$network" \
@@ -95,14 +78,15 @@ docker run \
   --volume="`pwd`:/root" \
   ${project}_builder -c '
     set -e
-    echo "CF tester container launched!";echo
+    echo "CF tester container launched!"
+    echo "Waiting for ethprovider to wake up.."
+    bash ops/wait-for.sh ${ETHPROVIDER_URL#*://} &> /dev/null
     cd modules/cf-core
-    rm -rf .env
-    env > .env
     export PATH=./node_modules/.bin:$PATH
     function finish {
       echo && echo "CF tester container exiting.." && exit
     }
     trap finish SIGTERM SIGINT
+    echo "Launching tests!";echo
     '"$command"'
   '

@@ -1,4 +1,4 @@
-import { OutcomeType } from "@connext/cf-types";
+import { OutcomeType } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 import { getAddress, hexlify, randomBytes } from "ethers/utils";
 

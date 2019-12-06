@@ -1,4 +1,4 @@
-import { AppABIEncodings } from "@connext/cf-types";
+import { AppABIEncodings } from "@connext/types";
 
 export const tttAbiEncodings: AppABIEncodings = {
   stateEncoding: `

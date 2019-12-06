@@ -27,7 +27,7 @@ export const objMap = <T, F extends keyof T, R>(
   func: (val: T[F], field: F) => R,
 ): { [key in keyof T]: R } => {
   const res: any = {};
-  for (const key in obj) {
+  for (const key of Object.keys(obj).sort()) {
     if ((obj as any).hasOwnProperty(key)) {
       res[key] = func(key as any, obj[key] as any);
     }
@@ -40,8 +40,8 @@ export function logEthFreeBalance(
   assetId: string,
   freeBalance: CFCoreTypes.GetFreeBalanceStateResult,
 ): void {
-  console.info(`Channel's free balance of ${assetId}:`);
-  const cb = (k: string, v: any): void => console.info(k, formatEther(v));
+  console.log(`Channel's free balance of ${assetId}:`);
+  const cb = (k: string, v: any): void => console.log(`${k}: ${formatEther(v)}`);
   // @ts-ignore
   objMap(freeBalance, cb);
 }

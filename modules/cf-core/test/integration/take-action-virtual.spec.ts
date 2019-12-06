@@ -1,4 +1,3 @@
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server/src/contract-deployments.jest";
 import { Node as NodeTypes } from "@connext/types";
 import { One, Zero } from "ethers/constants";
 
@@ -8,6 +7,7 @@ import {
   NODE_EVENTS,
   UpdateStateMessage
 } from "../../src";
+import { NetworkContextForTestSuite } from "../contracts";
 
 import { setup, SetupContext } from "./setup";
 import { validAction } from "./tic-tac-toe";

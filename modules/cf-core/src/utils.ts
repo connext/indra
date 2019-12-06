@@ -1,3 +1,5 @@
+import { Contract } from "ethers";
+import { Provider } from "ethers/providers";
 import {
   BigNumber,
   bigNumberify,
@@ -7,11 +9,12 @@ import {
   keccak256,
   recoverAddress,
   Signature,
-  solidityKeccak256,
+  solidityKeccak256
 } from "ethers/utils";
+import memoize from "memoizee";
 
 import { JSON_STRINGIFY_SPACE } from "./constants";
-import { MinimumViableMultisig, Proxy } from "./contracts";
+import { MinimumViableMultisig, ProxyFactory } from "./contracts";
 import { xkeysToSortedKthAddresses } from "./machine/xkeys";
 
 export function getFirstElementInListNotEqualTo(test: string, list: string[]) {
@@ -35,47 +38,52 @@ export function timeout(ms: number) {
  * @param {string[]} owners - the addresses of the owners of the multisig
  * @param {string} proxyFactoryAddress - address of ProxyFactory library
  * @param {string} minimumViableMultisigAddress - address of masterCopy of multisig
+ * @param {string} provider - to fetch proxyBytecode from the proxyFactoryAddress
  *
  * @returns {string} the address of the multisig
+ *
+ * NOTE: if the encoding of the multisig owners is changed YOU WILL break all
+ * existing channels
  */
-// FIXME: More general caching strategy -- don't keep doing this
-const cache = {} as any;
-export function getCreate2MultisigAddress(
+// TODO: memoize
+export const getCreate2MultisigAddress = async (
   owners: string[],
   proxyFactoryAddress: string,
-  minimumViableMultisigAddress: string
-): string {
-  const cacheKey = owners + proxyFactoryAddress + minimumViableMultisigAddress;
-
-  cache[cacheKey] =
-    cache[cacheKey] ||
-    getAddress(
-      solidityKeccak256(
-        ["bytes1", "address", "uint256", "bytes32"],
-        [
-          "0xff",
-          proxyFactoryAddress,
-          solidityKeccak256(
-            ["bytes32", "uint256"],
-            [
-              keccak256(
-                new Interface(MinimumViableMultisig.abi).functions.setup.encode(
-                  [xkeysToSortedKthAddresses(owners, 0)]
-                )
-              ),
-              0
-            ]
-          ),
-          solidityKeccak256(
-            ["bytes", "uint256"],
-            [`0x${Proxy.evm.bytecode.object}`, minimumViableMultisigAddress]
-          )
-        ]
-      ).slice(-40)
-    );
-
-  return cache[cacheKey];
-}
+  minimumViableMultisigAddress: string,
+  ethProvider: Provider
+): Promise<string> => {
+  const proxyFactory = new Contract(
+    proxyFactoryAddress,
+    ProxyFactory.abi,
+    ethProvider
+  );
+  const proxyBytecode = await proxyFactory.functions.proxyCreationCode();
+  return getAddress(
+    solidityKeccak256(
+      ["bytes1", "address", "uint256", "bytes32"],
+      [
+        "0xff",
+        proxyFactoryAddress,
+        solidityKeccak256(
+          ["bytes32", "uint256"],
+          [
+            keccak256(
+              // see encoding notes
+              new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+                xkeysToSortedKthAddresses(owners, 0)
+              ])
+            ),
+            0
+          ]
+        ),
+        solidityKeccak256(
+          ["bytes", "uint256"],
+          [`0x${proxyBytecode.replace("0x", "")}`, minimumViableMultisigAddress]
+        )
+      ]
+    ).slice(-40)
+  );
+};
 
 export const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 
@@ -86,11 +94,10 @@ export const bigNumberifyJson = (json: object) =>
     val
   ) => (val && val["_hex"] ? bigNumberify(val) : val));
 
-export const deBigNumberifyJson = (json: object) => 
-  JSON.parse(JSON.stringify(json), (
-    key,
-    val
-  ) => (val && BigNumber.isBigNumber(val) ? val.toHexString() : val));
+export const deBigNumberifyJson = (json: object) =>
+  JSON.parse(JSON.stringify(json), (key, val) =>
+    val && BigNumber.isBigNumber(val) ? val.toHexString() : val
+  );
 /**
  * Converts an array of signatures into a single string
  *

@@ -1,12 +1,12 @@
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server/src/contract-deployments.jest";
-import { Node as NodeTypes } from "@connext/cf-types";
+import { Node as NodeTypes } from "@connext/types";
 
 import { Node } from "../../src";
 import { NODE_EVENTS, ProposeMessage } from "../../src/types";
+import { NetworkContextForTestSuite } from "../contracts";
 
 import {
   SetupContext,
-  setupWithMemoryMessagingAndPostgresStore
+  setupWithMemoryMessagingAndSlowStore
 } from "./setup";
 import {
   confirmProposedAppInstance,
@@ -25,7 +25,7 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
   let nodeC: Node;
 
   beforeAll(async () => {
-    const context: SetupContext = await setupWithMemoryMessagingAndPostgresStore(
+    const context: SetupContext = await setupWithMemoryMessagingAndSlowStore(
       global,
       true
     );

@@ -18,15 +18,14 @@ import {
   WithdrawProtocolParams
 } from "./types";
 import {
+  sortAddresses,
   xkeyKthAddress,
-  xkeyKthHDNode,
   xkeysToSortedKthAddresses,
-  xkeysToSortedKthSigningKeys
+  xkeysToSortedKthSigningKeys,
 } from "./xkeys";
 
 export {
   appIdentityToHash,
-  ProtocolRunner,
   Context,
   Instruction,
   Middleware,
@@ -34,6 +33,7 @@ export {
   Protocol,
   ProtocolExecutionFlow,
   ProtocolMessage,
+  ProtocolRunner,
   SetupProtocolParams,
   InstallProtocolParams,
   UpdateProtocolParams,
@@ -43,7 +43,7 @@ export {
   InstallVirtualAppProtocolParams,
   UninstallVirtualAppProtocolParams,
   xkeyKthAddress,
-  xkeyKthHDNode,
   xkeysToSortedKthAddresses,
-  xkeysToSortedKthSigningKeys
+  xkeysToSortedKthSigningKeys,
+  sortAddresses,
 };

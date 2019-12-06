@@ -1,4 +1,4 @@
-import { AppIdentity } from "@connext/cf-types";
+import { AppIdentity } from "@connext/types";
 import * as chai from "chai";
 import { solidity } from "ethereum-waffle";
 import {
@@ -9,7 +9,7 @@ import {
   keccak256,
   recoverAddress,
   Signature,
-  solidityPack
+  solidityPack,
 } from "ethers/utils";
 
 export const expect = chai.use(solidity).expect;

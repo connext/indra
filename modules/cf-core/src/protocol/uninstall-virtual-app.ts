@@ -510,18 +510,17 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
   }
 };
 
-function getStateChannelFromMapWithOwners(
+async function getStateChannelFromMapWithOwners(
   stateChannelsMap: Map<string, StateChannel>,
   userXpubs: string[],
-  network: NetworkContext,
-  allowGeneratedMultisig: boolean = false,
-): StateChannel {
-  const multisigAddress = Store.getMultisigAddressWithCounterpartyFromMap(
+  network: NetworkContext
+): Promise<StateChannel> {
+  const multisigAddress = await Store.getMultisigAddressWithCounterpartyFromMap(
     stateChannelsMap,
     userXpubs,
     network.ProxyFactory,
     network.MinimumViableMultisig,
-    allowGeneratedMultisig
+    network.provider
   );
   return stateChannelsMap.get(multisigAddress)!;
 }
@@ -549,24 +548,22 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForInitiating(
     stateChannelWithIntermediary,
     stateChannelWithResponding
   ] = [
-    getStateChannelFromMapWithOwners(
+    await getStateChannelFromMapWithOwners(
       stateChannelsMap,
       [initiatorXpub, responderXpub, intermediaryXpub],
-      network,
-      true,
+      network
     ),
 
-    getStateChannelFromMapWithOwners(
+    await getStateChannelFromMapWithOwners(
       stateChannelsMap,
       [initiatorXpub, intermediaryXpub],
-      network,
+      network
     ),
 
-    getStateChannelFromMapWithOwners(
+    await getStateChannelFromMapWithOwners(
       stateChannelsMap,
       [initiatorXpub, responderXpub],
-      network,
-      true
+      network
     )
   ];
 
@@ -659,24 +656,22 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForResponding(
     stateChannelWithIntermediary,
     stateChannelWithInitiating
   ] = [
-    getStateChannelFromMapWithOwners(
+    await getStateChannelFromMapWithOwners(
       stateChannelsMap,
       [initiatorXpub, responderXpub, intermediaryXpub],
-      network,
-      true
+      network
     ),
 
-    getStateChannelFromMapWithOwners(
+    await getStateChannelFromMapWithOwners(
       stateChannelsMap,
       [responderXpub, intermediaryXpub],
-      network,
+      network
     ),
 
-    getStateChannelFromMapWithOwners(
+    await getStateChannelFromMapWithOwners(
       stateChannelsMap,
       [initiatorXpub, responderXpub],
-      network,
-      true
+      network
     )
   ];
 
@@ -779,23 +774,22 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
     stateChannelWithInitiating,
     stateChannelWithResponding
   ] = [
-    getStateChannelFromMapWithOwners(
+    await getStateChannelFromMapWithOwners(
       stateChannelsMap,
       [initiatorXpub, responderXpub, intermediaryXpub],
-      network,
-      true
+      network
     ),
 
-    getStateChannelFromMapWithOwners(
+    await getStateChannelFromMapWithOwners(
       stateChannelsMap,
       [initiatorXpub, intermediaryXpub],
-      network,
+      network
     ),
 
-    getStateChannelFromMapWithOwners(
+    await getStateChannelFromMapWithOwners(
       stateChannelsMap,
       [intermediaryXpub, responderXpub],
-      network,
+      network
     )
   ];
 

@@ -1,4 +1,4 @@
-import { SolidityValueType } from "@connext/cf-types";
+import { SolidityValueType } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";

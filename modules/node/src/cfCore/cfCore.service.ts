@@ -19,7 +19,7 @@ import {
   CFCore,
   CFCoreTypes,
   CLogger,
-  getMultisigAddressfromXpubs,
+  getCreate2MultisigAddress,
   InstallMessage,
   RejectProposalMessage,
   stringify,
@@ -68,7 +68,7 @@ export class CFCoreService {
         obj[xpubToAddress(userPubId)] = Zero;
         return obj;
       }
-
+      logger.error(e.message, e.stack);
       throw e;
     }
   }
@@ -190,7 +190,7 @@ export class CFCoreService {
       );
       return proposeRes;
     } catch (e) {
-      logger.error(`Error installing app: ${e.toString()}`);
+      logger.error(`Error installing app: ${e.message}`, e.stack);
       throw e;
     } finally {
       this.cleanupProposalListeners(boundReject, multisigAddress, params.proposedToIdentifier);
@@ -249,7 +249,7 @@ export class CFCoreService {
       logger.log(`App was installed successfully!: ${stringify(proposeRes)}`);
       return proposeRes;
     } catch (e) {
-      logger.error(`Error installing app: ${e.toString()}`);
+      logger.error(`Error installing app: ${e.message}`, e.stack);
       return undefined;
     } finally {
       this.cleanupInstallListeners(boundReject, proposeRes.appInstanceId, userPubId);
@@ -435,7 +435,8 @@ export class CFCoreService {
     const addresses = await this.configService.getContractAddresses();
     const proxyFactory = addresses.ProxyFactory;
     const mVMultisig = addresses.MinimumViableMultisig;
-    return getMultisigAddressfromXpubs(owners, proxyFactory, mVMultisig);
+    const ethProvider = this.configService.getEthProvider();
+    return getCreate2MultisigAddress(owners, proxyFactory, mVMultisig, ethProvider);
   }
 
   /**

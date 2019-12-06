@@ -136,7 +136,7 @@ describe("Can update and install multiple apps simultaneously", () => {
    * - hanging on client or node
    *
    * These errors were successfully reproduced by connext in the `test-bot-farm`
-   * script, both with the postgres store and the memory store.
+   * script, both with an on-disk store and an in-memory store.
    */
 
   it("should be able to redeem a pregenerated linked payment while simultaneously receiving a direct transfer", async done => {

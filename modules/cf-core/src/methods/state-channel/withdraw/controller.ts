@@ -96,12 +96,7 @@ export default class WithdrawController extends NodeController {
 
     let txResponse: TransactionResponse;
     try {
-      if (provider instanceof JsonRpcProvider) {
-        const signer = await provider.getSigner();
-        txResponse = await signer.sendTransaction(tx);
-      } else {
-        txResponse = await wallet.sendTransaction(tx);
-      }
+      txResponse = await wallet.sendTransaction(tx);
 
       outgoing.emit(NODE_EVENTS.WITHDRAWAL_STARTED, {
         from: publicIdentifier,

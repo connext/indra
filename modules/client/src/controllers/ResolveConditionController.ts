@@ -1,6 +1,6 @@
 import { bigNumberify } from "ethers/utils";
 
-import { stringify, xpubToAddress } from "../lib/utils";
+import { stringify, xpubToAddress } from "../lib";
 import {
   ResolveConditionParameters,
   ResolveConditionResponse,
