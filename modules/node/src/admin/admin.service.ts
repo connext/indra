@@ -4,7 +4,8 @@ import { Injectable } from "@nestjs/common";
 import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelService } from "../channel/channel.service";
-import { CLogger } from "../util";
+import { ConfigService } from "../config/config.service";
+import { CLogger, getCreate2MultisigAddress } from "../util";
 
 const logger = new CLogger("AdminService");
 
@@ -13,6 +14,7 @@ export class AdminService {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -57,7 +59,7 @@ export class AdminService {
     return await this.channelService.getChannelState(userPublicIdentifier.id);
   }
 
-  //Get all channels
+  // Get all channels
   async getAllChannelsState(): Promise<CFCoreRecord[]> {
     // get channel by xpub
     return await this.channelService.getAllChannelsState();
@@ -176,5 +178,61 @@ export class AdminService {
     }
 
     return toMerge;
+  }
+
+  async fixProxyFactoryAddresses(): Promise<void> {
+    const channels = await this.channelService.findAll();
+
+    for (const channel of channels) {
+      const { data: stateChannel } = await this.cfCoreService.getStateChannel(
+        channel.multisigAddress,
+      );
+      console.log("stateChannel: ", stateChannel);
+      const contractAddresses = await this.configService.getContractAddresses();
+
+      const expectedMultisigAddress = await getCreate2MultisigAddress(
+        stateChannel.userNeuteredExtendedKeys,
+        stateChannel.proxyFactoryAddress || contractAddresses.ProxyFactory,
+        contractAddresses.MinimumViableMultisig,
+        this.configService.getEthProvider(),
+      );
+
+      if (expectedMultisigAddress === stateChannel.multisigAddress) {
+        if (!stateChannel.proxyFactoryAddress) {
+          logger.log(`Multisig address is as expected, adding correct proxyFactory address`);
+          // save new state channel
+        }
+      } else {
+        // try old proxy factory addresses to get expected address
+      }
+    }
+  }
+
+  async getIncorrectProxyFactoryAddresses(): Promise<string[]> {
+    const channels = await this.channelService.findAll();
+
+    const incorrectChannels = [];
+    for (const channel of channels) {
+      const { data: stateChannel } = await this.cfCoreService.getStateChannel(
+        channel.multisigAddress,
+      );
+      console.log("stateChannel: ", stateChannel);
+      const contractAddresses = await this.configService.getContractAddresses();
+      const expectedMultisigAddress = await getCreate2MultisigAddress(
+        stateChannel.userNeuteredExtendedKeys,
+        stateChannel.proxyFactoryAddress || contractAddresses.ProxyFactory,
+        contractAddresses.MinimumViableMultisig,
+        this.configService.getEthProvider(),
+      );
+
+      if (expectedMultisigAddress !== stateChannel.multisigAddress) {
+        logger.error(
+          `expectedMultisigAddress ${expectedMultisigAddress} not equal to stateChannel.multisigAddress ${stateChannel.multisigAddress}`,
+        );
+        incorrectChannels.push(stateChannel.multisigAddress);
+      }
+    }
+
+    return incorrectChannels;
   }
 }

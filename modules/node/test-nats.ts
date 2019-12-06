@@ -9,7 +9,7 @@ async function start(): Promise<void> {
   // );
   // console.log("helloMsg: ", helloMsg);
   const history = await nc.request(
-    "transfer.get-history.xpub6DXwZMmWUq4bRZ3LtaBYwu47XV4Td19pnngok2Y7DnRzcCJSKCmD1AcLJDbZZf5dzZpvHqYzmRaKf7Gd2MV9qDvWwwN7VpBPNXQCZCbfyoK",
+    "admin.get-incorrect-proxy-address",
     1000,
     JSON.stringify({ id: "myid2" }),
   );

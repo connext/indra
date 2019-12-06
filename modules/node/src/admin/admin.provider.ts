@@ -39,7 +39,7 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getChannelState(userPublicIdentifier);
   }
 
-  async getAllChannelsState():  Promise<any[]> {
+  async getAllChannelsState(): Promise<any[]> {
     return await this.adminService.getAllChannelsState();
   }
 
@@ -56,6 +56,10 @@ class AdminMessaging extends AbstractMessagingProvider {
 
   async getChannelsForMerging(): Promise<any[]> {
     return await this.adminService.getChannelsForMerging();
+  }
+
+  async getIncorrectProxyFactoryAddresses(): Promise<string[]> {
+    return await this.adminService.getIncorrectProxyFactoryAddresses();
   }
 
   async setupSubscriptions(): Promise<void> {
@@ -82,6 +86,11 @@ class AdminMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "admin.get-channels-for-merging",
       this.authService.useAdminToken(this.getChannelsForMerging.bind(this)),
+    );
+
+    await super.connectRequestReponse(
+      "admin.get-incorrect-proxy-address",
+      this.getIncorrectProxyFactoryAddresses.bind(this),
     );
   }
 }

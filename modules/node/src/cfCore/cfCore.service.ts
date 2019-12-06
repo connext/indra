@@ -1,3 +1,4 @@
+import { StateChannel } from "@connext/cf-core";
 import { NatsMessagingService } from "@connext/messaging";
 import {
   AppActionBigNumber,
@@ -73,7 +74,7 @@ export class CFCoreService {
   }
 
   // TODO: fix typings, is StateChannel exported?
-  async getStateChannel(multisigAddress: string): Promise<{ data: any }> {
+  async getStateChannel(multisigAddress: string): Promise<{ data: StateChannel }> {
     const params = {
       id: Date.now(),
       methodName: "chan_getStateChannel", // FIXME: CFCoreTypes.RpcMethodName.GET_STATE_CHANNEL,
