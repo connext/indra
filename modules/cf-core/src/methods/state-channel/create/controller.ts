@@ -35,7 +35,7 @@ export default class CreateChannelController extends NodeController {
       owners,
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
-      true,
+      networkContext.provider
     );
 
     // Check if the database has stored the relevant data for this state channel

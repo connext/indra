@@ -4,9 +4,7 @@ import { Transaction } from "ethers/utils";
 import uuid = require("uuid");
 
 import { ChannelRouter } from "./channelRouter";
-import { NATS_TIMEOUT } from "./lib/constants";
-import { Logger } from "./lib/logger";
-import { stringify } from "./lib/utils";
+import { Logger, NATS_TIMEOUT, stringify } from "./lib";
 import {
   AppRegistry,
   CFCoreTypes,

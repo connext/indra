@@ -3,8 +3,7 @@ import { EventEmitter } from "events";
 
 import { ChannelRouter } from "./channelRouter";
 import { ConnextClient } from "./connext";
-import { Logger } from "./lib/logger";
-import { stringify } from "./lib/utils";
+import { Logger, stringify } from "./lib";
 import {
   CFCoreTypes,
   CreateChannelMessage,
@@ -209,6 +208,13 @@ export class ConnextListener extends EventEmitter {
   };
 
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
+    const protocol =
+      event === CFCoreTypes.EventName.PROTOCOL_MESSAGE_EVENT
+        ? data.data
+          ? data.data.protocol
+          : data.protocol
+        : "";
+    this.log.info(`Recieved ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
     this.log.debug(`Emitted ${event} with data ${stringify(data)} at ${Date.now()}`);
     this.emit(event, data);
   };

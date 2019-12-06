@@ -9,6 +9,7 @@ SHELL=/bin/bash
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
 
 version=$(shell cat package.json | grep '"version":' | awk -F '"' '{print $$4}')
+solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
@@ -78,6 +79,18 @@ clean: stop
 	rm -rf modules/**/dist
 	rm -rf modules/**/node_modules/**/.git
 
+quick-reset:
+	bash ops/db.sh 'truncate table app_registry cascade;'
+	bash ops/db.sh 'truncate table channel cascade;'
+	bash ops/db.sh 'truncate table channel_payment_profiles_payment_profile cascade;'
+	bash ops/db.sh 'truncate table linked_transfer cascade;'
+	bash ops/db.sh 'truncate table node_records cascade;'
+	bash ops/db.sh 'truncate table onchain_transaction cascade;'
+	bash ops/db.sh 'truncate table payment_profile cascade;'
+	bash ops/db.sh 'truncate table peer_to_peer_transfer cascade;'
+	rm -rf $(bot)/.payment-bot-db/*
+	touch modules/node/src/main.ts
+
 reset: stop
 	docker container prune -f
 	docker volume rm `docker volume ls -q -f name=$(project)_database_test_*` 2> /dev/null || true
@@ -143,7 +156,7 @@ watch-node: node-modules
 
 builder: ops/builder.dockerfile
 	$(log_start)
-	docker build --file ops/builder.dockerfile --tag $(project)_builder:latest .
+	docker build --file ops/builder.dockerfile --build-arg SOLC_VERSION=$(solc_version) --tag $(project)_builder:latest .
 	$(log_finish) && touch $(flags)/$@
 
 cf-adjudicator-contracts: node-modules $(shell find $(cf-adjudicator-contracts)/contracts $(cf-adjudicator-contracts)/waffle.json $(find_options))
@@ -156,7 +169,7 @@ cf-apps: node-modules cf-adjudicator-contracts $(shell find $(cf-apps)/contracts
 	$(docker_run) "cd modules/cf-apps && npm run build"
 	$(log_finish) && touch $(flags)/$@
 
-cf-core: node-modules types cf-adjudicator-contracts cf-funding-protocol-contracts $(shell find $(cf-core)/src $(cf-core)/tsconfig.json $(find_options))
+cf-core: node-modules types cf-adjudicator-contracts cf-apps cf-funding-protocol-contracts $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/cf-core && npm run build:ts"
 	$(log_finish) && touch $(flags)/$@

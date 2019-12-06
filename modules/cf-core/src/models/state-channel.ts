@@ -1,8 +1,8 @@
-import { BigNumber } from "ethers/utils";
 import {
-  StateChannelJSON,
-  SingleAssetTwoPartyIntermediaryAgreement
+  SingleAssetTwoPartyIntermediaryAgreement,
+  StateChannelJSON
 } from "@connext/types";
+import { BigNumber } from "ethers/utils";
 
 import {
   flip,
@@ -596,6 +596,12 @@ export class StateChannel {
     };
   }
 
+  /**
+   * The state channel JSON object should *always* have an associated proxy
+   * bytecode. There is no case where a JSON version of a state channel is
+   * created that did *not* have an associated bytecode with it
+   *
+   */
   static fromJson(json: StateChannelJSON): StateChannel {
     const dropNulls = (arr: any[] | undefined) => {
       if (arr) {

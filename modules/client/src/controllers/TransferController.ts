@@ -1,8 +1,7 @@
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
-import { CF_METHOD_TIMEOUT } from "../lib/constants";
-import { delayAndThrow, stringify, xpubToAddress } from "../lib/utils";
+import { CF_METHOD_TIMEOUT, delayAndThrow, stringify, xpubToAddress } from "../lib";
 import {
   CFCoreChannel,
   CFCoreTypes,
@@ -51,6 +50,7 @@ export class TransferController extends AbstractController {
       throw new Error(`App was not installed`);
     }
 
+    this.log.info(`Uninstalling app ${appId}`);
     await this.connext.uninstallVirtualApp(appId);
 
     // sanity check, free balance decreased by payment amount

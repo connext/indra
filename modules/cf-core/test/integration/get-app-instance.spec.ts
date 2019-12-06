@@ -1,6 +1,5 @@
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server/src/contract-deployments.jest";
-
 import { Node } from "../../src";
+import { NetworkContextForTestSuite } from "../contracts";
 
 import { setup, SetupContext } from "./setup";
 import {

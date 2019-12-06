@@ -1,7 +1,7 @@
 import { Node as NodeTypes } from "@connext/types";
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
 
 import { Node, NODE_EVENTS, ProposeMessage } from "../../src";
+import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";

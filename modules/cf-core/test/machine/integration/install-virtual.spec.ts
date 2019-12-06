@@ -1,9 +1,3 @@
-import ChallengeRegistry from "@counterfactual/cf-adjudicator-contracts/expected-build-artifacts/ChallengeRegistry.json";
-import DolphinCoin from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/DolphinCoin.json";
-import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
-import ProxyFactory from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/ProxyFactory.json";
-import TwoPartyFixedOutcomeApp from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/TwoPartyFixedOutcomeApp.json";
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
 import { OutcomeType, SingleAssetTwoPartyIntermediaryAgreement } from "@connext/types";
 import { Contract, ContractFactory, Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
@@ -19,6 +13,14 @@ import { xkeysToSortedKthSigningKeys } from "../../../src/machine/xkeys";
 import { AppInstance, StateChannel } from "../../../src/models";
 import { FreeBalanceClass } from "../../../src/models/free-balance";
 import { encodeSingleAssetTwoPartyIntermediaryAgreementParams } from "../../../src/protocol/install-virtual-app";
+import {
+  ChallengeRegistry,
+  DolphinCoin,
+  MinimumViableMultisig,
+  NetworkContextForTestSuite,
+  ProxyFactory,
+  TwoPartyFixedOutcomeApp,
+} from "../../contracts";
 import { transferERC20Tokens } from "../../integration/utils";
 
 import { toBeEq } from "./bignumber-jest-matcher";
@@ -30,11 +32,11 @@ import {
 
 // ProxyFactory.createProxy uses assembly `call` so we can't estimate
 // gas needed, so we hard-code this number to ensure the tx completes
-const CREATE_PROXY_AND_SETUP_GAS = 6e9;
+const CREATE_PROXY_AND_SETUP_GAS = 1e6;
 
 // The ChallengeRegistry.setState call _could_ be estimated but we haven't
 // written this test to do that yet
-const SETSTATE_COMMITMENT_GAS = 6e9;
+const SETSTATE_COMMITMENT_GAS = 1e6;
 
 let provider: JsonRpcProvider;
 let wallet: Wallet;

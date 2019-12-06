@@ -1,7 +1,7 @@
 import { TransactionResponse } from "ethers/providers";
 import { getAddress } from "ethers/utils";
 
-import { stringify, withdrawalKey } from "../lib/utils";
+import { stringify, withdrawalKey } from "../lib";
 import { BigNumber, CFCoreTypes, convert, WithdrawalResponse, WithdrawParameters } from "../types";
 import { invalidAddress, notLessThanOrEqualTo, validate } from "../validation";
 

@@ -1,17 +1,4 @@
-import MinimumViableMultisig from "@connext/cf-funding-protocol-contracts/build/MinimumViableMultisig.json";
-import Proxy from "@connext/cf-funding-protocol-contracts/build/Proxy.json";
-import {
-  BigNumber,
-  bigNumberify,
-  computeAddress,
-  getAddress,
-  HDNode,
-  hexlify,
-  Interface,
-  keccak256,
-  randomBytes,
-  solidityKeccak256,
-} from "ethers/utils";
+import { BigNumber, bigNumberify, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
 
 // Give abrv = true to abbreviate hex strings and xpubs to look like "xpub6FEC..kuQk"
@@ -79,9 +66,6 @@ export const delay = (ms: number): Promise<void> =>
 export const delayAndThrow = (ms: number, msg: string = ""): Promise<void> =>
   new Promise((res: any, rej: any): any => setTimeout((): void => rej(msg), ms));
 
-export const xpubToAddress = (xpub: string, path: string = "0"): string =>
-  HDNode.fromExtendedKey(xpub).derivePath(path).address;
-
 export const createLinkedHash = (
   amount: BigNumber,
   assetId: string,
@@ -94,61 +78,13 @@ export const createLinkedHash = (
   );
 };
 
-export const createRandom32ByteHexString = (): string => {
-  return hexlify(randomBytes(32));
-};
-
 export const withdrawalKey = (xpub: string): string => {
   return `${xpub}/latestNodeSubmittedWithdrawal`;
 };
 
+export const createRandom32ByteHexString = (): string => {
+  return hexlify(randomBytes(32));
+};
+
 export const createPaymentId = createRandom32ByteHexString;
 export const createPreImage = createRandom32ByteHexString;
-
-export function xkeyKthAddress(xkey: string, k: number): string {
-  return computeAddress(xkeyKthHDNode(xkey, k).publicKey);
-}
-
-export function sortAddresses(addrs: string[]): string[] {
-  return addrs.sort((a: string, b: string): number => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
-}
-
-export function xkeysToSortedKthAddresses(xkeys: string[], k: number): string[] {
-  return sortAddresses(xkeys.map((xkey: string): string => xkeyKthAddress(xkey, k)));
-}
-
-export function xkeyKthHDNode(xkey: string, k: number): HDNode.HDNode {
-  return HDNode.fromExtendedKey(xkey).derivePath(`${k}`);
-}
-
-// TODO: this should be imported from the counterfactual utils
-export function getMultisigAddressfromXpubs(
-  owners: string[],
-  proxyFactoryAddress: string,
-  minimumViableMultisigAddress: string,
-): string {
-  return getAddress(
-    solidityKeccak256(
-      ["bytes1", "address", "uint256", "bytes32"],
-      [
-        "0xff",
-        proxyFactoryAddress,
-        solidityKeccak256(
-          ["bytes32", "uint256"],
-          [
-            keccak256(
-              new Interface(MinimumViableMultisig.abi).functions.setup.encode([
-                xkeysToSortedKthAddresses(owners, 0),
-              ]),
-            ),
-            0,
-          ],
-        ),
-        solidityKeccak256(
-          ["bytes", "uint256"],
-          [`0x${Proxy.evm.bytecode.object}`, minimumViableMultisigAddress],
-        ),
-      ],
-    ).slice(-40),
-  );
-}

@@ -1,4 +1,4 @@
-import { NetworkContext } from "@connext/cf-types";
+import { NetworkContext } from "@connext/types";
 import { JsonRpcProvider } from "ethers/providers";
 import { SigningKey } from "ethers/utils";
 import { HDNode } from "ethers/utils/hdnode";

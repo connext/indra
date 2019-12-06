@@ -134,7 +134,7 @@ async function runTakeActionProtocol(
       // TODO: Fetch the revert reason
       throw Error(`${INVALID_ACTION}: ${prettyPrintObject(e)}`);
     }
-    throw Error(prettyPrintObject(e));
+    throw Error(`Couldn't run TakeAction protocol: ${prettyPrintObject(e)}`);
   }
 
   return {};

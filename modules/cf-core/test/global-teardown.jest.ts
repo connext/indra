@@ -1,3 +1,1 @@
-export default async function globalTeardown() {
-  global["chain"].server.close();
-}
+export default async function globalTeardown(): Promise<void> {}

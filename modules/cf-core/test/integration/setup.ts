@@ -1,6 +1,4 @@
-import { CF_PATH } from "@counterfactual/local-ganache-server";
-import { PostgresServiceFactory } from "@counterfactual/postgresql-node-connector";
-import { CFCoreTypes } from "@connext/types";
+import { CF_PATH, CFCoreTypes } from "@connext/types";
 import { Wallet } from "ethers";
 import {
   JsonRpcProvider,
@@ -18,7 +16,8 @@ import { MemoryMessagingService } from "../services/memory-messaging-service";
 import { MemoryStoreServiceFactory } from "../services/memory-store-service";
 import {
   A_EXTENDED_PRIVATE_KEY,
-  B_EXTENDED_PRIVATE_KEY
+  B_EXTENDED_PRIVATE_KEY,
+  C_EXTENDED_PRIVATE_KEY,
 } from "../test-constants.jest";
 
 export interface NodeContext {
@@ -30,30 +29,18 @@ export interface SetupContext {
   [nodeName: string]: NodeContext;
 }
 
-export async function setupWithMemoryMessagingAndPostgresStore(
+export async function setupWithMemoryMessagingAndSlowStore(
   global: any,
   nodeCPresent: boolean = false,
-  newExtendedPrvKeys: boolean = false
+  newExtendedPrvKeys: boolean = false,
 ): Promise<SetupContext> {
-  const memoryMessagingService = new MemoryMessagingService();
-
-  const postgresServiceFactory = new PostgresServiceFactory({
-    type: "postgres",
-    database: process.env.POSTGRES_DATABASE!,
-    username: process.env.POSTGRES_USER!,
-    host: process.env.POSTGRES_HOST!,
-    password: process.env.POSTGRES_PASSWORD!,
-    port: Number(process.env.POSTGRES_PORT!)
-  });
-
-  await postgresServiceFactory.connectDb();
-
+  const storeDelay = 2; // milliseconds (tests timeout if too high)
   return setup(
     global,
     nodeCPresent,
     newExtendedPrvKeys,
-    memoryMessagingService,
-    postgresServiceFactory
+    new MemoryMessagingService(),
+    new MemoryStoreServiceFactory(storeDelay),
   );
 }
 
@@ -62,13 +49,11 @@ export async function setup(
   nodeCPresent: boolean = false,
   newExtendedPrvKey: boolean = false,
   messagingService: CFCoreTypes.IMessagingService = new MemoryMessagingService(),
-  storeServiceFactory: CFCoreTypes.ServiceFactory = new MemoryStoreServiceFactory()
+  storeServiceFactory: CFCoreTypes.ServiceFactory = new MemoryStoreServiceFactory(),
 ): Promise<SetupContext> {
   const setupContext: SetupContext = {};
 
-  const nodeConfig = {
-    STORE_KEY_PREFIX: process.env.FIREBASE_STORE_PREFIX_KEY!
-  };
+  const nodeConfig = { STORE_KEY_PREFIX: "test" };
 
   const provider = new JsonRpcProvider(global["ganacheURL"]);
 
@@ -78,68 +63,65 @@ export async function setup(
   if (newExtendedPrvKey) {
     const newExtendedPrvKeys = await generateNewFundedExtendedPrvKeys(
       global["fundedPrivateKey"],
-      provider
+      provider,
     );
     extendedPrvKeyB = newExtendedPrvKeys.B_EXTENDED_PRV_KEY;
   }
 
   const lockService = new MemoryLockService();
 
-  const storeServiceA = storeServiceFactory.createStoreService!(
-    `${process.env.FIREBASE_STORE_SERVER_KEY!}_${generateUUID()}`
-  );
-  await storeServiceA.set([
-    { path: EXTENDED_PRIVATE_KEY_PATH, value: extendedPrvKeyA }
-  ]);
+  const hdNodeA = fromExtendedKey(extendedPrvKeyA).derivePath(CF_PATH);
+  const storeServiceA = storeServiceFactory.createStoreService!(`test_${generateUUID()}`);
   const nodeA = await Node.create(
     messagingService,
     storeServiceA,
     global["networkContext"],
     nodeConfig,
     provider,
-    lockService
+    lockService,
+    hdNodeA.neuter().extendedKey,
+    (index: string): Promise<string> => Promise.resolve(hdNodeA.derivePath(index).privateKey),
   );
 
   setupContext["A"] = {
     node: nodeA,
-    store: storeServiceA
+    store: storeServiceA,
   };
 
-  const storeServiceB = storeServiceFactory.createStoreService!(
-    `${process.env.FIREBASE_STORE_SERVER_KEY!}_${generateUUID()}`
-  );
-  await storeServiceB.set([
-    { path: EXTENDED_PRIVATE_KEY_PATH, value: extendedPrvKeyB }
-  ]);
+  const hdNodeB = fromExtendedKey(extendedPrvKeyB).derivePath(CF_PATH);
+  const storeServiceB = storeServiceFactory.createStoreService!(`test_${generateUUID()}`);
   const nodeB = await Node.create(
     messagingService,
     storeServiceB,
     global["networkContext"],
     nodeConfig,
     provider,
-    lockService
+    lockService,
+    hdNodeB.neuter().extendedKey,
+    (index: string): Promise<string> => Promise.resolve(hdNodeB.derivePath(index).privateKey),
   );
   setupContext["B"] = {
     node: nodeB,
-    store: storeServiceB
+    store: storeServiceB,
   };
 
   let nodeC: Node;
   if (nodeCPresent) {
-    const storeServiceC = storeServiceFactory.createStoreService!(
-      `${process.env.FIREBASE_STORE_SERVER_KEY!}_${generateUUID()}`
-    );
+    const hdNodeC = fromExtendedKey(C_EXTENDED_PRIVATE_KEY).derivePath(CF_PATH);
+    const storeServiceC = storeServiceFactory.createStoreService!(`test_${generateUUID()}`);
     nodeC = await Node.create(
       messagingService,
       storeServiceC,
       global["networkContext"],
       nodeConfig,
       provider,
-      lockService
+      lockService,
+      hdNodeC.neuter().extendedKey,
+      (index: string): Promise<string> => Promise.resolve(hdNodeC.derivePath(index).privateKey),
     );
     setupContext["C"] = {
       node: nodeC,
-      store: storeServiceC
+      store: storeServiceC,
     };
   }
 
@@ -148,14 +130,14 @@ export async function setup(
 
 export async function generateNewFundedWallet(
   fundedPrivateKey: string,
-  provider: Provider
+  provider: Provider,
 ) {
   const fundedWallet = new Wallet(fundedPrivateKey, provider);
   const wallet = Wallet.createRandom().connect(provider);
 
   const transactionToA: TransactionRequest = {
     to: wallet.address,
-    value: parseEther("20").toHexString()
+    value: parseEther("20").toHexString(),
   };
   await fundedWallet.sendTransaction(transactionToA);
   return wallet;
@@ -163,34 +145,30 @@ export async function generateNewFundedWallet(
 
 export async function generateNewFundedExtendedPrvKeys(
   fundedPrivateKey: string,
-  provider: Provider
+  provider: Provider,
 ) {
   const fundedWallet = new Wallet(fundedPrivateKey, provider);
   const A_EXTENDED_PRV_KEY = computeRandomExtendedPrvKey();
   const B_EXTENDED_PRV_KEY = computeRandomExtendedPrvKey();
 
-  const signerAPrivateKey = fromExtendedKey(A_EXTENDED_PRV_KEY).derivePath(
-    CF_PATH
-  ).privateKey;
-  const signerBPrivateKey = fromExtendedKey(B_EXTENDED_PRV_KEY).derivePath(
-    CF_PATH
-  ).privateKey;
+  const signerAPrivateKey = fromExtendedKey(A_EXTENDED_PRV_KEY).derivePath(CF_PATH).privateKey;
+  const signerBPrivateKey = fromExtendedKey(B_EXTENDED_PRV_KEY).derivePath(CF_PATH).privateKey;
 
   const signerAAddress = new Wallet(signerAPrivateKey).address;
   const signerBAddress = new Wallet(signerBPrivateKey).address;
 
   const transactionToA: TransactionRequest = {
     to: signerAAddress,
-    value: parseEther("1").toHexString()
+    value: parseEther("1").toHexString(),
   };
   const transactionToB: TransactionRequest = {
     to: signerBAddress,
-    value: parseEther("1").toHexString()
+    value: parseEther("1").toHexString(),
   };
   await fundedWallet.sendTransaction(transactionToA);
   await fundedWallet.sendTransaction(transactionToB);
   return {
     A_EXTENDED_PRV_KEY,
-    B_EXTENDED_PRV_KEY
+    B_EXTENDED_PRV_KEY,
   };
 }

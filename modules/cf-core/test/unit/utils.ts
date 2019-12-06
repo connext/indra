@@ -2,7 +2,7 @@ import {
   AppABIEncodings,
   OutcomeType,
   SolidityValueType
-} from "@connext/cf-types";
+} from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 import { bigNumberify, getAddress, hexlify, randomBytes } from "ethers/utils";
 

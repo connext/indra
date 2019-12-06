@@ -8,12 +8,7 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import { toBeEq } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
-import {
-  constructWithdrawRpc,
-  createChannel,
-  deployStateDepositHolder,
-  deposit
-} from "./utils";
+import { constructWithdrawRpc, createChannel, deployStateDepositHolder, deposit } from "./utils";
 
 expect.extend({ toBeEq });
 

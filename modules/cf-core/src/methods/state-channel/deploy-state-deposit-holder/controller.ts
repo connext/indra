@@ -10,7 +10,10 @@ import log from "loglevel";
 import { jsonRpcMethod } from "rpc-server";
 
 import { MinimumViableMultisig, ProxyFactory } from "../../../contracts";
-import { sortAddresses, xkeysToSortedKthAddresses } from "../../../machine/xkeys";
+import {
+  sortAddresses,
+  xkeysToSortedKthAddresses
+} from "../../../machine/xkeys";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { NetworkContext, Node } from "../../../types";
@@ -21,8 +24,8 @@ import {
   NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT
 } from "../../errors";
 
-// Estimate based on:
-// https://rinkeby.etherscan.io/tx/0xaac429aac389b6fccc7702c8ad5415248a5add8e8e01a09a42c4ed9733086bec
+// Estimate based on rinkeby transaction:
+// 0xaac429aac389b6fccc7702c8ad5415248a5add8e8e01a09a42c4ed9733086bec
 const CREATE_PROXY_AND_SETUP_GAS = 500_000;
 
 export default class DeployStateDepositHolderController extends NodeController {
@@ -60,7 +63,7 @@ async function sendMultisigDeployTx(
   signer: Signer,
   stateChannel: StateChannel,
   networkContext: NetworkContext,
-  retryCount: number = 3
+  retryCount: number = 1
 ): Promise<TransactionResponse> {
   const proxyFactory = new Contract(
     networkContext.ProxyFactory,

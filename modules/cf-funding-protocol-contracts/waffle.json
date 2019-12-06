@@ -1,4 +1,5 @@
 {
+  "compiler": "native",
   "compilerOptions": {
     "evmVersion": "petersburg",
     "metadata": {

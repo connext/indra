@@ -2,8 +2,10 @@ import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
+import { delayAndThrow, stringify } from "../lib";
+import { xpubToAddress } from "../lib/cfCore";
 import { CF_METHOD_TIMEOUT } from "../lib/constants";
-import { delayAndThrow, stringify, xpubToAddress } from "../lib/utils";
+
 import {
   CFCoreChannel,
   CFCoreTypes,
@@ -55,10 +57,9 @@ export class SwapController extends AbstractController {
     // install the swap app
     await this.swapAppInstall(amount, toAssetId, fromAssetId, swapRate, appInfo);
 
-    this.log.info(`Swap app installed! Uninstalling without updating state.`);
+    this.log.info(`Swap app installed! Uninstalling ${this.appId} without updating state.`);
 
-    // if app installed, that means swap was accepted
-    // now uninstall
+    // if app installed, that means swap was accepted now uninstall
     await this.connext.uninstallApp(this.appId);
 
     // Sanity check to ensure swap was executed correctly

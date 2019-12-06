@@ -1,11 +1,11 @@
-import AppWithAction from "@counterfactual/cf-adjudicator-contracts/expected-build-artifacts/AppWithAction.json";
-import { OutcomeType } from "@connext/cf-types";
+import { OutcomeType } from "@connext/types";
 import { Contract, ContractFactory, Wallet } from "ethers";
 import { BaseProvider } from "ethers/providers";
 import { bigNumberify } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
 import { Protocol } from "../../../../src/machine";
+import { AppWithAction } from "../../../contracts";
 import { toBeEq } from "../bignumber-jest-matcher";
 import { connectToGanache } from "../connect-ganache";
 

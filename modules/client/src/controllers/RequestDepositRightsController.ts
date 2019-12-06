@@ -3,8 +3,7 @@ import { AddressZero, Zero } from "ethers/constants";
 import { bigNumberify, getAddress } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
-import { CF_METHOD_TIMEOUT } from "../lib/constants";
-import { delayAndThrow, stringify, xpubToAddress } from "../lib/utils";
+import { CF_METHOD_TIMEOUT, delayAndThrow, stringify, xpubToAddress } from "../lib";
 import {
   BigNumber,
   CFCoreTypes,

@@ -1,12 +1,11 @@
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server/src/contract-deployments.jest";
-
 import { Node } from "../../src";
 import { NODE_EVENTS, UninstallMessage } from "../../src/types";
 import { timeout } from "../../src/utils";
+import { NetworkContextForTestSuite } from "../contracts";
 
 import {
   SetupContext,
-  setupWithMemoryMessagingAndPostgresStore
+  setupWithMemoryMessagingAndSlowStore
 } from "./setup";
 import {
   constructUninstallRpc,
@@ -22,7 +21,7 @@ describe("Node method follows spec - uninstall", () => {
   let nodeB: Node;
 
   beforeAll(async () => {
-    const context: SetupContext = await setupWithMemoryMessagingAndPostgresStore(
+    const context: SetupContext = await setupWithMemoryMessagingAndSlowStore(
       global
     );
     nodeA = context["A"].node;
@@ -39,7 +38,7 @@ describe("Node method follows spec - uninstall", () => {
 
       await createChannel(nodeA, nodeB);
 
-      // FIXME: There is some timing issue with postgres @snario noticed
+      // FIXME: There is some timing issue with slow stores @snario noticed
       await timeout(2000);
 
       const [appInstanceId] = await installApp(
@@ -52,7 +51,7 @@ describe("Node method follows spec - uninstall", () => {
       nodeB.once(NODE_EVENTS.UNINSTALL, async (msg: UninstallMessage) => {
         expect(msg.data.appInstanceId).toBe(appInstanceId);
 
-        // FIXME: There is some timing issue with postgres @snario noticed
+        // FIXME: There is some timing issue with slow stores @snario noticed
         await timeout(1000);
 
         expect(await getInstalledAppInstances(nodeB)).toEqual([]);

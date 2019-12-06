@@ -1,4 +1,4 @@
 import { connect, ConnextClient } from "./connext";
-import * as utils from "./lib/utils";
+import * as utils from "./lib";
 
 export { ConnextClient, connect, utils };

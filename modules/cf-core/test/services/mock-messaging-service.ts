@@ -1,4 +1,4 @@
-import { Node } from "@connext/cf-types";
+import { Node } from "@connext/types";
 
 class MockMessagingService implements Node.IMessagingService {
   async send() {}

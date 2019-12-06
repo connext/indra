@@ -31,22 +31,19 @@ export class LockService {
             // return
           } catch (e) {
             // TODO: check exception... if the lock failed
-            logger.error("Failed to execute callback while lock is held");
-            logger.error(e);
+            logger.error(`Failed to execute callback while lock is held: ${e.message}`, e.stack);
           } finally {
             // unlock
             logger.debug(`Releasing lock for ${lock.resource} with secret ${lock.value}`);
             lock
               .unlock()
-              .then(() => {
-                logger.debug(`Lock released at: ${Date.now()}`);
-                resolve(retVal);
-              })
+              .then(() => resolve(retVal))
               .catch((e: any) => {
                 const acquisitionDelta = Date.now() - acquiredAt;
                 if (acquisitionDelta < hardcodedTTL) {
                   logger.error(
-                    `Failed to release lock: ${e}; delta since lock acquisition: ${acquisitionDelta}`,
+                    `Failed to release lock after ${acquisitionDelta}ms: ${e.message}`,
+                    e.stack,
                   );
                   reject(e);
                 } else {
@@ -57,8 +54,7 @@ export class LockService {
           }
         })
         .catch((e: any) => {
-          logger.error("Failed to acquire the lock");
-          logger.error(e);
+          logger.error(`Failed to acquire the lock: ${e.message}`, e.stack);
           reject(e);
         });
     });
@@ -76,8 +72,7 @@ export class LockService {
           resolve(lock.value);
         })
         .catch((e: any) => {
-          logger.error(`Caught error locking resource ${lockName}`);
-          console.error(e);
+          logger.error(`Caught error locking resource ${lockName}`, e.stack);
           reject(e);
         });
     });
@@ -94,10 +89,9 @@ export class LockService {
           logger.debug(`Released lock for ${lockName}`);
           resolve();
         })
-        .catch((reason: any) => {
-          logger.error(`Caught error unlocking resource ${lockName}`);
-          console.error(reason);
-          reject(reason);
+        .catch((e: any) => {
+          logger.error(`Caught error unlocking resource ${lockName}: ${e.message}`, e.stack);
+          reject(e);
         });
     });
   }

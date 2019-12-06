@@ -1,4 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
+import { CF_PATH } from "@connext/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
 import { Contract, providers } from "ethers";
@@ -16,10 +17,7 @@ import { ResolveConditionController } from "./controllers/ResolveConditionContro
 import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
-import { CFCore } from "./lib/cfCore";
-import { CF_PATH } from "./lib/constants";
-import { Logger } from "./lib/logger";
-import { stringify, withdrawalKey, xpubToAddress } from "./lib/utils";
+import { CFCore, Logger, stringify, withdrawalKey, xpubToAddress } from "./lib";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import {
@@ -219,11 +217,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   try {
     await client.getFreeBalance();
   } catch (e) {
-    log.warn(e);
     if (e.message.includes(`StateChannel does not exist yet`)) {
-      log.debug("Restoring client state");
+      log.debug(`Restoring client state: ${e}`);
       await client.restoreState();
-      log.debug("Newly restored client is ready to go!");
     } else {
       throw e;
     }
@@ -242,6 +238,8 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // wait for wd verification to reclaim any pending async transfers
   // since if the hub never submits you should not continue interacting
   log.debug("Reclaiming pending async transfers");
+  // NOTE: Removing the following await results in a subtle race condition during bot tests.
+  //       Don't remove this await again unless you really know what you're doing & bot tests pass
   // no need to await this if it needs collateral
   // TODO: without await causes race conditions in bot, refactor to
   // use events
@@ -573,38 +571,24 @@ export class ConnextClient implements IConnextClient {
       throw new Error(`Cannot restore state with channel provider`);
     }
     this.channelRouter.reset();
+    const path = `${ConnextClientStorePrefix}/${this.publicIdentifier}/channel/${this.multisigAddress}`;
+    let state;
     try {
       // try to recover states from our given store's restore method
-      const restoreStates = await this.channelRouter.restore();
-      const stateToRestore = restoreStates.find(
-        (p: { path: string; value: any }): boolean =>
-          p.path === `store/${this.publicIdentifier}/channel/${this.multisigAddress}`,
-      );
-      if (!stateToRestore) {
-        throw new Error(
-          `Couldn't restore states for "store/${this.publicIdentifier}/channel/${this.multisigAddress}."`,
-        );
+      state = await this.channelRouter.restore();
+      if (!state || !state.path) {
+        throw new Error(`No matching paths found in store backup's state`);
       }
-      this.log.info(`Found state to restore from backup: ${stringify(stateToRestore)}`);
-      await this.channelRouter.set([stateToRestore], false);
+      this.log.info(`Found state to restore from store's backup: ${stringify(state.path)}`);
+      state = state.path;
     } catch (e) {
-      this.log.info(`Could not restore from store, attempting to restore from node: ${e}`);
-      const stateToRestore = await this.node.restoreState(this.publicIdentifier);
-      if (!stateToRestore) {
-        throw new Error(
-          `No matching states found by node for "store/${this.publicIdentifier}/channel/${this.multisigAddress}."`,
-        );
+      state = await this.node.restoreState(this.publicIdentifier);
+      if (!state) {
+        throw new Error(`No matching states found by node for ${this.publicIdentifier}`);
       }
-      this.log.info(`Found state to restore from node: ${stringify(stateToRestore)}`);
-      // TODO: this should prob not be hardcoded like this
-      await this.store.set([
-        {
-          path: `${ConnextClientStorePrefix}/${this.publicIdentifier}/channel/${this.multisigAddress}`,
-          value: stateToRestore,
-        },
-      ]);
-      this.log.info(`Succesfully restored state from node!`);
+      this.log.info(`Found state to restore from node: ${stringify(state)}`);
     }
+    await this.channelRouter.set([{ path, value: state }]);
     await this.restart();
   };
 

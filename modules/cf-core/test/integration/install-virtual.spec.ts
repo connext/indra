@@ -1,10 +1,10 @@
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server/src/contract-deployments.jest";
-
 import { Node } from "../../src";
 import { NODE_EVENTS, ProposeMessage, InstallVirtualMessage } from "../../src/types";
+import { NetworkContextForTestSuite } from "../contracts";
 
 import { setup, SetupContext } from "./setup";
 import {
+  assertNodeMessage,
   assertProposeMessage,
   collateralizeChannel,
   confirmProposedAppInstance,
@@ -13,7 +13,6 @@ import {
   getProposedAppInstances,
   installTTTVirtual,
   makeVirtualProposal,
-  assertNodeMessage
 } from "./utils";
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;

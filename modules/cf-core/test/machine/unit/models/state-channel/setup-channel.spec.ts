@@ -6,6 +6,7 @@ import { AppInstance, StateChannel } from "../../../../../src/models";
 import { getRandomExtendedPubKeys } from "../../../integration/random-signing-keys";
 import { generateRandomNetworkContext } from "../../../mocks";
 import { AppInstanceProposal } from "@connext/types";
+import { Proxy } from "../../../../contracts";
 
 describe("StateChannel::setupChannel", () => {
   const multisigAddress = getAddress(hexlify(randomBytes(20)));
@@ -24,7 +25,9 @@ describe("StateChannel::setupChannel", () => {
   });
 
   it("should have empty map for proposed app instances", () => {
-    expect(sc.proposedAppInstances).toEqual(new Map<string, AppInstanceProposal>());
+    expect(sc.proposedAppInstances).toEqual(
+      new Map<string, AppInstanceProposal>()
+    );
   });
 
   it("should have empty map for app instances", () => {

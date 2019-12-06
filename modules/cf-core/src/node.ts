@@ -11,10 +11,6 @@ import { Opcode, Protocol, ProtocolMessage, ProtocolRunner } from "./machine";
 import { StateChannel } from "./models";
 import { getFreeBalanceAddress } from "./models/free-balance";
 import {
-  EthereumNetworkName,
-  getNetworkContextForNetworkName
-} from "./network-configuration";
-import {
   getPrivateKeysGeneratorAndXPubOrThrow,
   PrivateKeysGetter
 } from "./private-keys-generator";
@@ -43,7 +39,6 @@ export class Node {
   private readonly outgoing: EventEmitter;
 
   private readonly protocolRunner: ProtocolRunner;
-  private readonly networkContext: NetworkContext;
 
   private readonly ioSendDeferrals = new Map<
     string,
@@ -64,7 +59,7 @@ export class Node {
   static async create(
     messagingService: NodeTypes.IMessagingService,
     storeService: NodeTypes.IStoreService,
-    networkOrNetworkContext: EthereumNetworkName | NetworkContext,
+    networkContext: NetworkContext,
     nodeConfig: NodeConfig,
     provider: BaseProvider,
     lockService?: NodeTypes.ILockService,
@@ -88,7 +83,7 @@ export class Node {
       storeService,
       nodeConfig,
       provider,
-      networkOrNetworkContext,
+      networkContext,
       blocksNeededForConfirmation,
       lockService
     );
@@ -103,20 +98,14 @@ export class Node {
     private readonly storeService: NodeTypes.IStoreService,
     private readonly nodeConfig: NodeConfig,
     private readonly provider: BaseProvider,
-    networkContext: EthereumNetworkName | NetworkContext,
-    readonly blocksNeededForConfirmation: number = REASONABLE_NUM_BLOCKS_TO_WAIT,
+    public readonly networkContext: NetworkContext,
+    public readonly blocksNeededForConfirmation: number = REASONABLE_NUM_BLOCKS_TO_WAIT,
     private readonly lockService?: NodeTypes.ILockService
   ) {
+    this.networkContext.provider = this.provider;
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
-
-    this.networkContext =
-      typeof networkContext === "string"
-        ? getNetworkContextForNetworkName(networkContext)
-        : networkContext;
-
     this.protocolRunner = this.buildProtocolRunner();
-
     log.info(
       `Waiting for ${this.blocksNeededForConfirmation} block confirmations`
     );

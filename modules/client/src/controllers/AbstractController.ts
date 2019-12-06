@@ -2,8 +2,7 @@ import { providers } from "ethers";
 
 import { ChannelRouter } from "../channelRouter";
 import { ConnextClient } from "../connext";
-import { CFCore } from "../lib/cfCore";
-import { Logger } from "../lib/logger";
+import { CFCore, Logger } from "../lib";
 import { ConnextListener } from "../listener";
 import { INodeApiClient } from "../node";
 

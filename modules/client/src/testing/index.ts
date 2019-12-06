@@ -1,4 +1,4 @@
-import { capitalize } from "../lib/utils";
+import { capitalize } from "../lib";
 import { App, BigNumber } from "../types";
 
 export const mkAddress = (prefix: string = "0x"): string => prefix.padEnd(42, "0");

@@ -1,7 +1,7 @@
 import { IMessagingService } from "@connext/messaging";
 import { providers } from "ethers";
 
-import { Logger } from "../lib/logger";
+import { Logger } from "../lib";
 import { INodeApiClient } from "../node";
 import {
   AppRegistry,

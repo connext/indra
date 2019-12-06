@@ -16,7 +16,8 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { mkHash } from "../test";
-import { AppInstanceJson, CLogger, createLinkedHash, xpubToAddress } from "../util";
+import { CLogger, createLinkedHash, xpubToAddress } from "../util";
+import { AppInstanceJson } from "../util/cfCore";
 
 import {
   LinkedTransfer,
@@ -309,10 +310,10 @@ export class TransferService {
     // dont await so caller isnt blocked by this
     // TODO: if sender is offline, this will fail
     this.cfCoreService
-      .takeAction(senderApp.identityHash, preImage)
-      .then(() => this.cfCoreService.uninstallApp(receiverAppInstallRes.appInstanceId))
+      .takeAction(senderApp.identityHash, { preImage })
+      .then(() => this.cfCoreService.uninstallApp(senderApp.identityHash))
       .then(() => this.linkedTransferRepository.markAsReclaimed(transfer))
-      .catch(logger.error);
+      .catch((e: any): void => logger.error(e.message, e.stack));
 
     return {
       freeBalance: await this.cfCoreService.getFreeBalance(

@@ -56,8 +56,7 @@ export class AppRegistryService {
       await this.cfCoreService.installApp(data.data.appInstanceId);
       return registryAppInfo;
     } catch (e) {
-      logger.error(`Caught error during proposed app validation, rejecting install`);
-      console.error(e);
+      logger.error(`Failed to verify app, rejecting install: ${e.message}`, e.stack);
       await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
       return;
     }

@@ -1,5 +1,3 @@
-import DolphinCoin from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/DolphinCoin.json";
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
 import { Contract } from "ethers";
 import { One, Two, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -12,6 +10,7 @@ import {
   DepositStartedMessage
 } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
+import { DolphinCoin, NetworkContextForTestSuite } from "../contracts";
 import { INSUFFICIENT_ERC20_FUNDS_TO_DEPOSIT } from "../../src/methods/errors";
 import { toBeEq } from "../machine/integration/bignumber-jest-matcher";
 
