@@ -21,7 +21,6 @@ import RpcRouter from "../rpc-router";
 import {
   EventEmittedMessage,
   NetworkContext,
-  Node,
   NODE_EVENTS,
   NodeMessageWrappedProtocolMessage,
   SolidityValueType,
@@ -39,7 +38,13 @@ export async function handleReceivedProtocolMessage(
   requestHandler: RequestHandler,
   msg: NodeMessageWrappedProtocolMessage
 ) {
-  const { protocolRunner, store, router, networkContext } = requestHandler;
+  const {
+    protocolRunner,
+    store,
+    router,
+    networkContext,
+    publicIdentifier
+  } = requestHandler;
 
   const { data } = bigNumberifyJson(msg) as NodeMessageWrappedProtocolMessage;
 
@@ -59,7 +64,8 @@ export async function handleReceivedProtocolMessage(
     params!,
     postProtocolStateChannelsMap,
     networkContext,
-    store
+    store,
+    publicIdentifier
   );
 
   if (
@@ -108,7 +114,8 @@ async function getOutgoingEventDataFromProtocol(
   params: ProtocolParameters,
   stateChannelsMap: Map<string, StateChannel>,
   networkContext: NetworkContext,
-  store: Store
+  store: Store,
+  publicIdentifier: string
 ): Promise<EventEmittedMessage | undefined> {
   // default to the pubId that initiated the protocol
   const baseEvent = { from: params.initiatorXpub };
@@ -192,12 +199,28 @@ async function getOutgoingEventDataFromProtocol(
         )
       };
     case Protocol.InstallVirtualApp:
+      const {
+        initiatorXpub: initiator,
+        intermediaryXpub,
+        responderXpub: responder
+      } = params as InstallVirtualAppProtocolParams;
       // channels for responders and initiators of virtual protocols are
-      // persisted at the end of the `propose` protocol
+      // persisted at the end of the `propose` protocol. channels with the
+      // intermediary should *already exist*
+      // HOWEVER -- if this *is* the intermediary, it will not have any
+      // channels between the responder and the initiator in its store
+      // since it is not involved in the `propose` protocol. in this case,
+      // you should allow the generation of the multisig in the store. Note that
+      // the intermediary will very likely *not* have this in their store, so
+      // there will not be any outgoing data for the protocol, so no install
+      // virtual event will be emitted on the node
+      const isIntermediary = publicIdentifier === intermediaryXpub;
+
       const virtualChannel = await store.getMultisigAddressWithCounterparty(
-        [params.responderXpub, params.initiatorXpub],
+        [responder, initiator],
         networkContext.ProxyFactory,
         networkContext.MinimumViableMultisig,
+        isIntermediary ? networkContext.provider : undefined
       );
       if (stateChannelsMap.has(virtualChannel)) {
         return {
