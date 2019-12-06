@@ -65,6 +65,11 @@ describe("StateChannel", () => {
     it("should have a singleAssetTwoPartyIntermediaryAgreements array", () => {
       expect(json.singleAssetTwoPartyIntermediaryAgreements).toEqual([]);
     });
+
+    it("should have the correct proxy factory address", () => {
+      expect(json.proxyFactoryAddress).toEqual(sc.proxyFactoryAddress);
+      expect(sc.proxyFactoryAddress).toEqual(ProxyFactory);
+    });
   });
 
   describe("should be able to rehydrate from json", () => {
