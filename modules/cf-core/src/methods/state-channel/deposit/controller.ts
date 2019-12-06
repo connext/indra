@@ -50,7 +50,7 @@ export default class DepositController extends NodeController {
     const channel = await store.getStateChannel(multisigAddress);
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
-      channel.multisigOwners,
+      channel.userNeuteredExtendedKeys,
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
       provider
