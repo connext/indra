@@ -7,9 +7,12 @@ import {
   UninstallProtocolParams,
   UninstallVirtualAppProtocolParams,
   UpdateProtocolParams,
-  WithdrawProtocolParams,
+  WithdrawProtocolParams
 } from "../machine";
-import { ProposeInstallProtocolParams, ProtocolParameters } from "../machine/types";
+import {
+  ProposeInstallProtocolParams,
+  ProtocolParameters
+} from "../machine/types";
 import { NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../methods/errors";
 import { StateChannel } from "../models";
 import { UNASSIGNED_SEQ_NO } from "../protocol/utils/signature-forwarder";
@@ -22,7 +25,7 @@ import {
   NODE_EVENTS,
   NodeMessageWrappedProtocolMessage,
   SolidityValueType,
-  WithdrawStartedMessage,
+  WithdrawStartedMessage
 } from "../types";
 import { bigNumberifyJson } from "../utils";
 import { Store } from "../store";
@@ -36,12 +39,7 @@ export async function handleReceivedProtocolMessage(
   requestHandler: RequestHandler,
   msg: NodeMessageWrappedProtocolMessage
 ) {
-  const {
-    protocolRunner,
-    store,
-    router,
-    networkContext
-  } = requestHandler;
+  const { protocolRunner, store, router, networkContext } = requestHandler;
 
   const { data } = bigNumberifyJson(msg) as NodeMessageWrappedProtocolMessage;
 
@@ -61,7 +59,7 @@ export async function handleReceivedProtocolMessage(
     params!,
     postProtocolStateChannelsMap,
     networkContext,
-    store,
+    store
   );
 
   if (
@@ -88,9 +86,9 @@ export async function handleReceivedProtocolMessage(
       }
       if (proposal) {
         await store.saveStateChannel(
-          (await store.getChannelFromAppInstanceID(
-            appInstanceId
-          )).removeProposal(appInstanceId)
+          (
+            await store.getChannelFromAppInstanceID(appInstanceId)
+          ).removeProposal(appInstanceId)
         );
       }
     }
@@ -110,21 +108,26 @@ async function getOutgoingEventDataFromProtocol(
   params: ProtocolParameters,
   stateChannelsMap: Map<string, StateChannel>,
   networkContext: NetworkContext,
-  store: Store,
+  store: Store
 ): Promise<EventEmittedMessage | undefined> {
   // default to the pubId that initiated the protocol
   const baseEvent = { from: params.initiatorXpub };
 
   switch (protocol) {
     case Protocol.Propose:
-      const { multisigAddress, initiatorXpub, responderXpub, ...emittedParams} = params as ProposeInstallProtocolParams;
+      const {
+        multisigAddress,
+        initiatorXpub,
+        responderXpub,
+        ...emittedParams
+      } = params as ProposeInstallProtocolParams;
       return {
         ...baseEvent,
         type: NODE_EVENTS.PROPOSE_INSTALL,
         data: {
           params: {
             ...emittedParams,
-            proposedToIdentifier: responderXpub,
+            proposedToIdentifier: responderXpub
           },
           appInstanceId: stateChannelsMap
             .get((params as ProposeInstallProtocolParams).multisigAddress)!
@@ -178,18 +181,23 @@ async function getOutgoingEventDataFromProtocol(
         data: getStateUpdateEventData(
           params as UpdateProtocolParams,
           stateChannelsMap
-            .get((params as TakeActionProtocolParams | UpdateProtocolParams).multisigAddress)!
+            .get(
+              (params as TakeActionProtocolParams | UpdateProtocolParams)
+                .multisigAddress
+            )!
             .getAppInstance(
-              (params as TakeActionProtocolParams | UpdateProtocolParams).appIdentityHash
+              (params as TakeActionProtocolParams | UpdateProtocolParams)
+                .appIdentityHash
             )!.state
         )
       };
     case Protocol.InstallVirtualApp:
+      // channels for responders and initiators of virtual protocols are
+      // persisted at the end of the `propose` protocol
       const virtualChannel = await store.getMultisigAddressWithCounterparty(
         [params.responderXpub, params.initiatorXpub],
         networkContext.ProxyFactory,
         networkContext.MinimumViableMultisig,
-        networkContext.provider
       );
       if (stateChannelsMap.has(virtualChannel)) {
         return {
@@ -253,7 +261,7 @@ function getWithdrawEventData(params: WithdrawProtocolParams) {
       tokenAddress,
       recipient,
       amount
-    },
+    }
   };
 }
 
@@ -280,20 +288,21 @@ async function getQueueNamesListByProtocolName(
   params: ProtocolParameters,
   requestHandler: RequestHandler
 ): Promise<string[]> {
-  const {
-    networkContext,
-    provider,
-    publicIdentifier,
-    store
-  } = requestHandler;
+  const { networkContext, provider, publicIdentifier, store } = requestHandler;
 
   async function multisigAddressFor(xpubs: string[]) {
-    const allowGenerated = protocol === Protocol.Setup || protocol === Protocol.InstallVirtualApp;
+    // allow generated multisig for setup protocol only!
+
+    // in propose, you may need to generate a multisig address for
+    // initiator and responder if it is a virtual app. but in the `install`
+    // step, these channels should have been persisted with end participants,
+    // and previously exist for intermediaries.
+    const allowed = protocol === Protocol.Setup;
     return await store.getMultisigAddressWithCounterparty(
       xpubs,
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
-      allowGenerated ? provider : undefined
+      allowed ? provider : undefined
     );
   }
 
@@ -317,7 +326,9 @@ async function getQueueNamesListByProtocolName(
      */
     case Protocol.TakeAction:
     case Protocol.Update:
-      const { appIdentityHash } = params as TakeActionProtocolParams | UpdateProtocolParams;
+      const { appIdentityHash } = params as
+        | TakeActionProtocolParams
+        | UpdateProtocolParams;
 
       return [appIdentityHash];
 
