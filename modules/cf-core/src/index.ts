@@ -1,5 +1,9 @@
 export * from "rpc-server";
-export { sortAddresses, xkeyKthAddress, xkeysToSortedKthAddresses } from "./machine";
+export {
+  sortAddresses,
+  xkeyKthAddress,
+  xkeysToSortedKthAddresses
+} from "./machine";
 export * from "./methods/errors";
 export { StateChannel } from "./models";
 export * from "./node";
@@ -22,6 +26,6 @@ export {
   UpdateStateMessage,
   WithdrawConfirmationMessage,
   WithdrawFailedMessage,
-  WithdrawStartedMessage,
+  WithdrawStartedMessage
 } from "./types";
 export { getCreate2MultisigAddress } from "./utils";
