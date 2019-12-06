@@ -39,8 +39,6 @@ export default class RequestDepositRightsController extends NodeController {
     const { multisigAddress } = params;
 
     const channel = await store.getStateChannel(multisigAddress);
-    console.log('channel: ', channel);
-    console.log('channel.userNeuteredExtendedKeys: ', channel.userNeuteredExtendedKeys);
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userNeuteredExtendedKeys,
@@ -49,7 +47,6 @@ export default class RequestDepositRightsController extends NodeController {
       provider
     );
 
-    console.log('expectedMultisigAddress: ', expectedMultisigAddress);
     if (expectedMultisigAddress !== channel.multisigAddress) {
       throw Error(INCORRECT_MULTISIG_ADDRESS);
     }
