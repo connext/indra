@@ -87,6 +87,7 @@ export default class ProposeInstallController extends NodeController {
 
     const stateChannel = await store.getOrCreateStateChannelBetweenVirtualAppParticipants(
       multisigAddress,
+      networkContext.ProxyFactory,
       myIdentifier,
       proposedToIdentifier,
     );

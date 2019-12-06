@@ -254,6 +254,7 @@ export class Store {
 
   public async getOrCreateStateChannelBetweenVirtualAppParticipants(
     multisigAddress: string,
+    proxyFactoryAddress: string,
     initiatorXpub: string,
     responderXpub: string
   ): Promise<StateChannel> {
@@ -265,10 +266,11 @@ export class Store {
           .toString()
           .includes(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress))
       ) {
-        const stateChannel = StateChannel.createEmptyChannel(multisigAddress, [
-          initiatorXpub,
-          responderXpub
-        ]);
+        const stateChannel = StateChannel.createEmptyChannel(
+          multisigAddress,
+          proxyFactoryAddress,
+          [initiatorXpub, responderXpub]
+        );
 
         await this.saveStateChannel(stateChannel);
 

@@ -10,7 +10,9 @@ describe("StateChannel", () => {
     const multisigAddress = getAddress(hexlify(randomBytes(20)));
     const xpubs = getRandomExtendedPubKeys(2);
 
-    const sc = new StateChannel(multisigAddress, xpubs);
+    const { ProxyFactory } = generateRandomNetworkContext();
+
+    const sc = new StateChannel(multisigAddress, ProxyFactory, xpubs);
 
     expect(sc).not.toBe(null);
     expect(sc).not.toBe(undefined);
@@ -24,14 +26,19 @@ describe("StateChannel", () => {
     const multisigAddress = getAddress(hexlify(randomBytes(20)));
     const xpubs = getRandomExtendedPubKeys(2);
 
-    const { IdentityApp } = generateRandomNetworkContext();
-
     let sc: StateChannel;
     let json: StateChannelJSON;
 
+    const { IdentityApp, ProxyFactory } = generateRandomNetworkContext();
+
     beforeAll(() => {
       // NOTE: this functionality is tested in `setup-channel.spec`
-      sc = StateChannel.setupChannel(IdentityApp, multisigAddress, xpubs);
+      sc = StateChannel.setupChannel(
+        IdentityApp,
+        ProxyFactory,
+        multisigAddress,
+        xpubs
+      );
       json = sc.toJson();
     });
 
@@ -64,7 +71,7 @@ describe("StateChannel", () => {
     const multisigAddress = getAddress(hexlify(randomBytes(20)));
     const xpubs = getRandomExtendedPubKeys(2);
 
-    const { IdentityApp } = generateRandomNetworkContext();
+    const { IdentityApp, ProxyFactory } = generateRandomNetworkContext();
 
     let sc: StateChannel;
     let json: StateChannelJSON;
@@ -72,7 +79,12 @@ describe("StateChannel", () => {
 
     beforeAll(() => {
       // NOTE: this functionality is tested in `setup-channel.spec`
-      sc = StateChannel.setupChannel(IdentityApp, multisigAddress, xpubs);
+      sc = StateChannel.setupChannel(
+        IdentityApp,
+        ProxyFactory,
+        multisigAddress,
+        xpubs
+      );
       json = sc.toJson();
       rehydrated = StateChannel.fromJson(json);
     });
@@ -94,7 +106,9 @@ describe("StateChannel", () => {
     });
 
     it("should not change the user xpubs", () => {
-      expect(rehydrated.userNeuteredExtendedKeys).toEqual(sc.userNeuteredExtendedKeys);
+      expect(rehydrated.userNeuteredExtendedKeys).toEqual(
+        sc.userNeuteredExtendedKeys
+      );
     });
 
     it("should not change the multisig address", () => {
@@ -102,7 +116,9 @@ describe("StateChannel", () => {
     });
 
     it("should have a singleAssetTwoPartyIntermediaryAgreements array", () => {
-      expect(rehydrated.singleAssetTwoPartyIntermediaryAgreements).toEqual(sc.singleAssetTwoPartyIntermediaryAgreements);
+      expect(rehydrated.singleAssetTwoPartyIntermediaryAgreements).toEqual(
+        sc.singleAssetTwoPartyIntermediaryAgreements
+      );
     });
   });
 });

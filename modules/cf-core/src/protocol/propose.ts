@@ -44,7 +44,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)
       ? stateChannelsMap.get(multisigAddress)!
-      : StateChannel.createEmptyChannel(multisigAddress, [
+      : StateChannel.createEmptyChannel(multisigAddress, network.ProxyFactory, [
           initiatorXpub,
           responderXpub
         ]);
@@ -159,7 +159,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)
       ? stateChannelsMap.get(multisigAddress)!
-      : StateChannel.createEmptyChannel(multisigAddress, [
+      : StateChannel.createEmptyChannel(multisigAddress, network.ProxyFactory, [
           initiatorXpub,
           responderXpub
         ]);

@@ -43,6 +43,7 @@ export async function createProposedAppInstance(
 
   const stateChannel = await store.getOrCreateStateChannelBetweenVirtualAppParticipants(
     multisigAddress,
+    networkContext.ProxyFactory,
     myIdentifier,
     proposedToIdentifier
   );
