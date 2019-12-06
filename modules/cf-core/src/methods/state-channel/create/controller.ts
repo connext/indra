@@ -31,6 +31,11 @@ export default class CreateChannelController extends NodeController {
     const { owners } = params;
     const { networkContext, store } = requestHandler;
 
+    // safe to use network context proxy factory address directly here
+    // using the assumption that `create` is only called for new state
+    // channels. also because the `getMultisigAddressWithCounterparty` function
+    // will default to using any existing multisig address for the provided
+    // owners before creating one
     const multisigAddress = await store.getMultisigAddressWithCounterparty(
       owners,
       networkContext.ProxyFactory,
