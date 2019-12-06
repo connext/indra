@@ -3,8 +3,7 @@ import { EventEmitter } from "events";
 
 import { ChannelRouter } from "./channelRouter";
 import { ConnextClient } from "./connext";
-import { Logger } from "./lib/logger";
-import { stringify } from "./lib/utils";
+import { Logger, stringify } from "./lib";
 import {
   CFCoreTypes,
   CreateChannelMessage,
@@ -76,20 +75,38 @@ export class ConnextListener extends EventEmitter {
         this.log.warn(`No matched app, doing nothing, ${stringify(msg)}`);
         return;
       }
+      const {
+        data: { params },
+        from,
+      } = msg;
       // return if its from us
-      if (msg.from === this.connext.publicIdentifier) {
+      if (from === this.connext.publicIdentifier) {
         this.log.info(`Received proposal from our own node, doing nothing: ${stringify(msg)}`);
         return;
       }
       // matched app, take appropriate default actions
       const { matchedApp } = matchedResult;
       await this.verifyAndInstallKnownApp(msg, matchedApp);
+      // only publish for coin balance refund app
+      const coinBalanceDef = this.connext.appRegistry.filter(
+        (app: DefaultApp) => app.name === SupportedApplications.CoinBalanceRefundApp,
+      )[0];
+      if (params.appDefinition !== coinBalanceDef.appDefinitionAddress) {
+        this.log.info(`not sending propose message, not the coinbalance refund app`);
+        return;
+      }
+      this.log.info(
+        `Sending acceptance message to: indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
+      );
+      await this.connext.messaging.publish(
+        `indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
+        stringify(params),
+      );
       return;
     },
     PROTOCOL_MESSAGE_EVENT: (msg: NodeMessageWrappedProtocolMessage): void => {
       this.emitAndLog(CFCoreTypes.EventName.PROTOCOL_MESSAGE_EVENT, msg.data);
     },
-
     REJECT_INSTALL: (msg: RejectProposalMessage): void => {
       this.emitAndLog(CFCoreTypes.EventName.REJECT_INSTALL, msg.data);
     },
@@ -191,6 +208,13 @@ export class ConnextListener extends EventEmitter {
   };
 
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
+    const protocol =
+      event === CFCoreTypes.EventName.PROTOCOL_MESSAGE_EVENT
+        ? data.data
+          ? data.data.protocol
+          : data.protocol
+        : "";
+    this.log.info(`Recieved ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
     this.log.debug(`Emitted ${event} with data ${stringify(data)} at ${Date.now()}`);
     this.emit(event, data);
   };
@@ -269,6 +293,11 @@ export class ConnextListener extends EventEmitter {
       return;
     }
 
+    // dont automatically install coin balance refund app
+    if (matchedApp.name === SupportedApplications.CoinBalanceRefundApp) {
+      return;
+    }
+
     this.log.debug(`Proposal for app install successful, attempting install now...`);
     let res: CFCoreTypes.InstallResult;
 
@@ -310,21 +339,15 @@ export class ConnextListener extends EventEmitter {
       this.log.info(`Received message for subscription: ${stringify(data)}`);
       let paymentId: string;
       let encryptedPreImage: string;
-      let amount: string;
-      let assetId: string;
       if (data.paymentId) {
         this.log.debug(`Not nested data`);
         paymentId = data.paymentId;
         encryptedPreImage = data.encryptedPreImage;
-        amount = data.amount;
-        assetId = data.assetId;
       } else if (data.data) {
         this.log.debug(`Nested data`);
         const parsedData = JSON.parse(data.data);
         paymentId = parsedData.paymentId;
         encryptedPreImage = parsedData.encryptedPreImage;
-        amount = parsedData.amount;
-        assetId = parsedData.assetId;
       } else {
         throw new Error(`Could not parse data from message: ${stringify(data)}`);
       }

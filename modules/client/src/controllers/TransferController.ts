@@ -1,7 +1,7 @@
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
-import { delayAndThrow, stringify, xpubToAddress } from "../lib/utils";
+import { CF_METHOD_TIMEOUT, delayAndThrow, stringify, xpubToAddress } from "../lib";
 import {
   CFCoreChannel,
   CFCoreTypes,
@@ -19,8 +19,6 @@ import { AbstractController } from "./AbstractController";
 
 export class TransferController extends AbstractController {
   private appId: string;
-
-  private timeout: number;
 
   public transfer = async (params: TransferParameters): Promise<CFCoreChannel> => {
     this.log.info(`Transfer called with parameters: ${stringify(params)}`);
@@ -52,6 +50,7 @@ export class TransferController extends AbstractController {
       throw new Error(`App was not installed`);
     }
 
+    this.log.info(`Uninstalling app ${appId}`);
     await this.connext.uninstallVirtualApp(appId);
 
     // sanity check, free balance decreased by payment amount
@@ -87,14 +86,10 @@ export class TransferController extends AbstractController {
       res();
       return;
     }
-    if (this.timeout) {
-      clearTimeout(this.timeout);
-    }
     res(data);
     return data;
   };
 
-  // TODO: fix types of data
   private rejectInstallTransfer = (
     rej: (reason?: string) => void,
     msg: RejectInstallVirtualMessage,
@@ -133,7 +128,7 @@ export class TransferController extends AbstractController {
     };
 
     // note: intermediary is added in connext.ts as well
-    const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding } = appInfo;
+    const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding, outcomeType } = appInfo;
     const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {
         actionEncoding,
@@ -144,7 +139,7 @@ export class TransferController extends AbstractController {
       initialState,
       initiatorDeposit: amount,
       initiatorDepositTokenAddress: assetId,
-      outcomeType: appInfo.outcomeType,
+      outcomeType,
       proposedToIdentifier: recipient,
       responderDeposit: Zero,
       responderDepositTokenAddress: assetId,
@@ -163,7 +158,10 @@ export class TransferController extends AbstractController {
           this.listener.on(CFCoreTypes.EventName.INSTALL_VIRTUAL, boundResolve);
           this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
         }),
-        delayAndThrow(15_000, "App install took longer than 15 seconds"),
+        delayAndThrow(
+          CF_METHOD_TIMEOUT,
+          `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
+        ),
       ]);
       this.log.info(`App was installed successfully!: ${stringify(res)}`);
       return res.appInstanceId;

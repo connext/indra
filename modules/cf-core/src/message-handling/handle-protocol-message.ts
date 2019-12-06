@@ -189,7 +189,7 @@ async function getOutgoingEventDataFromProtocol(
         [params.responderXpub, params.initiatorXpub],
         networkContext.ProxyFactory,
         networkContext.MinimumViableMultisig,
-        true,
+        networkContext.provider
       );
       if (stateChannelsMap.has(virtualChannel)) {
         return {
@@ -280,7 +280,12 @@ async function getQueueNamesListByProtocolName(
   params: ProtocolParameters,
   requestHandler: RequestHandler
 ): Promise<string[]> {
-  const { publicIdentifier, networkContext, store } = requestHandler;
+  const {
+    networkContext,
+    provider,
+    publicIdentifier,
+    store
+  } = requestHandler;
 
   async function multisigAddressFor(xpubs: string[]) {
     const allowGenerated = protocol === Protocol.Setup || protocol === Protocol.InstallVirtualApp;
@@ -288,7 +293,7 @@ async function getQueueNamesListByProtocolName(
       xpubs,
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
-      allowGenerated,
+      allowGenerated ? provider : undefined
     );
   }
 

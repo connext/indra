@@ -1,9 +1,9 @@
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
-import { Address, AppInstanceJson } from "@connext/cf-types";
+import { Address, AppInstanceJson } from "@connext/types";
 import { One, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { Node } from "../../src";
+import { NetworkContextForTestSuite } from "../contracts";
 
 import { initialSimpleTransferState } from "./simple-transfer";
 import {
@@ -13,7 +13,7 @@ import {
   installVirtualApp,
   takeAppAction,
   uninstallApp,
-  uninstallVirtualApp
+  uninstallVirtualApp,
 } from "./utils";
 
 type UnidirectionalLinkedTransferAppAction = {

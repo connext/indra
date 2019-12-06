@@ -5,6 +5,7 @@ import { bigNumberify } from "ethers/utils";
 
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
+import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { MessagingClientProviderId } from "../constants";
 import { LinkedTransferStatus } from "../transfer/transfer.entity";
@@ -41,7 +42,7 @@ function logEvent(
   event: CFCoreTypes.EventName,
   res: CFCoreTypes.NodeMessage & { data: any },
 ): void {
-  logger.log(
+  logger.debug(
     `${event} event fired from ${res && res.from ? res.from : null}, data: ${
       res ? JSON.stringify(res.data) : "event did not have a result"
     }`,
@@ -57,6 +58,7 @@ export default class ListenerService implements OnModuleInit {
     private readonly transferService: TransferService,
     @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
     private readonly linkedTransferRepository: LinkedTransferRepository,
+    private readonly channelRepository: ChannelRepository,
   ) {}
 
   // TODO: move the business logic into the respective modules?
@@ -91,6 +93,9 @@ export default class ListenerService implements OnModuleInit {
         logEvent(CFCoreTypes.EventName.INSTALL_VIRTUAL, data);
       },
       PROPOSE_INSTALL: async (data: ProposeMessage): Promise<void> => {
+        if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
+          logger.debug(`Recieved proposal from our own node. Doing nothing.`);
+        }
         logEvent(CFCoreTypes.EventName.PROPOSE_INSTALL, data);
 
         // TODO: better architecture
@@ -101,12 +106,13 @@ export default class ListenerService implements OnModuleInit {
           return;
         }
 
+        const proposedAppParams = data.data;
+        const initiatorXpub = data.from;
+
         // post-install tasks
         switch (allowedOrRejected.name) {
           case SupportedApplications.SimpleLinkedTransferApp:
             logger.debug(`Saving linked transfer`);
-            const proposedAppParams = data.data;
-            const initiatorXpub = data.from;
             const initialState = proposedAppParams.params
               .initialState as SimpleLinkedTransferAppStateBigNumber;
             await this.transferService.saveLinkedTransfer(
@@ -121,6 +127,21 @@ export default class ListenerService implements OnModuleInit {
             logger.debug(`Linked transfer saved!`);
             break;
           // TODO: add something for swap app? maybe for history preserving reasons.
+          case SupportedApplications.CoinBalanceRefundApp:
+            const channel = await this.channelRepository.findByUserPublicIdentifier(initiatorXpub);
+            if (!channel) {
+              throw new Error(`Channel does not exist for ${initiatorXpub}`);
+            }
+            logger.debug(
+              `sending acceptance message to indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
+            );
+            await this.messagingClient
+              .emit(
+                `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
+                proposedAppParams,
+              )
+              .toPromise();
+            break;
           default:
             logger.debug(`No post-install actions configured.`);
         }

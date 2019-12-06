@@ -1,13 +1,16 @@
-import ChallengeRegistry from "@counterfactual/cf-adjudicator-contracts/expected-build-artifacts/ChallengeRegistry.json";
-import MinimumViableMultisig from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/MinimumViableMultisig.json";
-import ProxyFactory from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/ProxyFactory.json";
-import { NetworkContext } from "@connext/cf-types";
+import { NetworkContext } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { WeiPerEther, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { Interface, keccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../src/constants";
+import {
+  ChallengeRegistry,
+  MinimumViableMultisig,
+  Proxy,
+  ProxyFactory
+} from "../../contracts";
 import { SetStateCommitment, SetupCommitment } from "../../../src/ethereum";
 import { xkeysToSortedKthSigningKeys } from "../../../src/machine";
 import { StateChannel } from "../../../src/models";
@@ -69,10 +72,11 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
     proxyFactory.once("ProxyCreation", async proxy => {
       // TODO: Test this separately
       expect(proxy).toBe(
-        getCreate2MultisigAddress(
+        await getCreate2MultisigAddress(
           xprvs,
           network.ProxyFactory,
-          network.MinimumViableMultisig
+          network.MinimumViableMultisig,
+          provider
         )
       );
 

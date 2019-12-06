@@ -30,7 +30,7 @@ export default class ProposeInstallController extends NodeController {
     requestHandler: RequestHandler,
     params: Node.ProposeInstallParams,
   ): Promise<string[]> {
-    const { publicIdentifier, networkContext, store } = requestHandler;
+    const { networkContext, publicIdentifier, store } = requestHandler;
     const { proposedToIdentifier } = params;
 
     // TODO: no way to determine if this is a virtual or regular app being
@@ -41,7 +41,7 @@ export default class ProposeInstallController extends NodeController {
       [publicIdentifier, proposedToIdentifier],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
-      true,
+      networkContext.provider
     );
 
     return [multisigAddress];
@@ -51,7 +51,7 @@ export default class ProposeInstallController extends NodeController {
     requestHandler: RequestHandler,
     params: Node.ProposeInstallParams,
   ): Promise<void> {
-    const { store, publicIdentifier, networkContext } = requestHandler;
+    const { networkContext, publicIdentifier, store } = requestHandler;
     const { initialState } = params;
 
     if (!initialState) {
@@ -76,7 +76,7 @@ export default class ProposeInstallController extends NodeController {
       [publicIdentifier, proposedToIdentifier],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
-      true
+      networkContext.provider
     );
 
     const initiatorDepositTokenAddress =
@@ -113,7 +113,12 @@ export default class ProposeInstallController extends NodeController {
     requestHandler: RequestHandler,
     params: Node.ProposeInstallParams,
   ): Promise<Node.ProposeInstallResult> {
-    const { store, publicIdentifier, networkContext, protocolRunner } = requestHandler;
+    const {
+      networkContext,
+      protocolRunner,
+      publicIdentifier,
+      store
+    } = requestHandler;
 
     const { proposedToIdentifier } = params;
 
@@ -125,7 +130,7 @@ export default class ProposeInstallController extends NodeController {
       [publicIdentifier, proposedToIdentifier],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
-      true
+      networkContext.provider
     );
 
     await protocolRunner.initiateProtocol(

@@ -1,9 +1,10 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
+import { CF_PATH } from "@connext/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
+import { BigNumber, bigNumberify, getAddress, Network, Transaction } from "ethers/utils";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
@@ -11,14 +12,12 @@ import "regenerator-runtime/runtime";
 import { ChannelRouter } from "./channelRouter";
 import { ConditionalTransferController } from "./controllers/ConditionalTransferController";
 import { DepositController } from "./controllers/DepositController";
+import { RequestDepositRightsController } from "./controllers/RequestDepositRightsController";
 import { ResolveConditionController } from "./controllers/ResolveConditionController";
 import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
-import { CFCore } from "./lib/cfCore";
-import { CF_PATH } from "./lib/constants";
-import { Logger } from "./lib/logger";
-import { stringify, withdrawalKey, xpubToAddress } from "./lib/utils";
+import { CFCore, Logger, stringify, withdrawalKey, xpubToAddress } from "./lib";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import {
@@ -48,6 +47,7 @@ import {
   makeChecksumOrEthAddress,
   PaymentProfile,
   RequestCollateralResponse,
+  RequestDepositRightsParameters,
   ResolveConditionParameters,
   ResolveConditionResponse,
   ResolveLinkedTransferResponse,
@@ -195,6 +195,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
 
   channelRouter.multisigAddress = multisigAddress;
 
+  // create a token contract based on the provided token
+  const token = new Contract(config.contractAddresses.Token, tokenAbi, ethProvider);
+
   // create the new client
   const client = new ConnextClient({
     appRegistry: await node.appRegistry(),
@@ -207,17 +210,16 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     network,
     node,
     store,
+    token,
     ...opts, // use any provided opts by default
   });
 
   try {
     await client.getFreeBalance();
   } catch (e) {
-    log.warn(e);
     if (e.message.includes(`StateChannel does not exist yet`)) {
-      log.debug("Restoring client state");
+      log.debug(`Restoring client state: ${e}`);
       await client.restoreState();
-      log.debug("Newly restored client is ready to go!");
     } else {
       throw e;
     }
@@ -236,6 +238,8 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // wait for wd verification to reclaim any pending async transfers
   // since if the hub never submits you should not continue interacting
   log.debug("Reclaiming pending async transfers");
+  // NOTE: Removing the following await results in a subtle race condition during bot tests.
+  //       Don't remove this await again unless you really know what you're doing & bot tests pass
   // no need to await this if it needs collateral
   // TODO: without await causes race conditions in bot, refactor to
   // use events
@@ -262,6 +266,7 @@ export class ConnextClient implements IConnextClient {
   public routerType: RpcType;
   public signerAddress: Address;
   public store: Store;
+  public token: Contract;
 
   private opts: InternalClientOptions;
   private keyGen: (index: string) => Promise<string>;
@@ -272,6 +277,7 @@ export class ConnextClient implements IConnextClient {
   private withdrawalController: WithdrawalController;
   private conditionalTransferController: ConditionalTransferController;
   private resolveConditionController: ResolveConditionController;
+  private requestDepositRightsController: RequestDepositRightsController;
 
   constructor(opts: InternalClientOptions) {
     this.opts = opts;
@@ -282,8 +288,8 @@ export class ConnextClient implements IConnextClient {
     this.keyGen = opts.keyGen;
     this.messaging = opts.messaging;
     this.network = opts.network;
-    this.network = opts.network;
     this.node = opts.node;
+    this.token = opts.token;
     this.store = opts.store;
 
     this.freeBalanceAddress = this.channelRouter.config.freeBalanceAddress;
@@ -310,8 +316,16 @@ export class ConnextClient implements IConnextClient {
       "ConditionalTransferController",
       this,
     );
+    this.requestDepositRightsController = new RequestDepositRightsController(
+      "RequestDepositRightsController",
+      this,
+    );
   }
 
+  /**
+   * Creates a promise that returns when the channel is available,
+   * ie. when the setup protocol or create channel call is completed
+   */
   public isAvailable = async (): Promise<void> => {
     return new Promise(
       async (resolve: any, reject: any): Promise<any> => {
@@ -326,6 +340,21 @@ export class ConnextClient implements IConnextClient {
         resolve();
       },
     );
+  };
+
+  /**
+   * Checks if the coin balance refund app is installed.
+   *
+   * NOTE: should probably take assetId into account
+   */
+  public getBalanceRefundApp = async (assetId: string = AddressZero): Promise<AppInstanceJson> => {
+    const apps = await this.getAppInstances();
+    const filtered = apps.filter(
+      (app: AppInstanceJson) =>
+        app.appInterface.addr === this.config.contractAddresses.CoinBalanceRefundApp &&
+        app.latestState["tokenAddress"] === assetId,
+    );
+    return filtered.length === 0 ? undefined : filtered[0];
   };
 
   // register subscriptions
@@ -366,6 +395,7 @@ export class ConnextClient implements IConnextClient {
         throw new Error(`Unrecognized channel provider type: ${this.routerType}`);
     }
     // TODO: this is very confusing to have to do, lets try to figure out a better way
+    channelRouter.multisigAddress = this.multisigAddress;
     this.node.channelRouter = channelRouter;
     this.channelRouter = channelRouter;
     this.listener = new ConnextListener(channelRouter, this);
@@ -442,6 +472,16 @@ export class ConnextClient implements IConnextClient {
 
   public deposit = async (params: DepositParameters): Promise<ChannelState> => {
     return await this.depositController.deposit(params);
+  };
+
+  public requestDepositRights = async (
+    params: RequestDepositRightsParameters,
+  ): Promise<CFCoreTypes.RequestDepositRightsResult> => {
+    return await this.requestDepositRightsController.requestDepositRights(params);
+  };
+
+  public rescindDepositRights = async (assetId: string): Promise<CFCoreTypes.DepositResult> => {
+    return await this.channelRouter.rescindDepositRights(assetId);
   };
 
   public swap = async (params: SwapParameters): Promise<CFCoreChannel> => {
@@ -531,38 +571,24 @@ export class ConnextClient implements IConnextClient {
       throw new Error(`Cannot restore state with channel provider`);
     }
     this.channelRouter.reset();
+    const path = `${ConnextClientStorePrefix}/${this.publicIdentifier}/channel/${this.multisigAddress}`;
+    let state;
     try {
       // try to recover states from our given store's restore method
-      const restoreStates = await this.channelRouter.restore();
-      const stateToRestore = restoreStates.find(
-        (p: { path: string; value: any }): boolean =>
-          p.path === `store/${this.publicIdentifier}/channel/${this.multisigAddress}`,
-      );
-      if (!stateToRestore) {
-        throw new Error(
-          `Couldn't restore states for "store/${this.publicIdentifier}/channel/${this.multisigAddress}."`,
-        );
+      state = await this.channelRouter.restore();
+      if (!state || !state.path) {
+        throw new Error(`No matching paths found in store backup's state`);
       }
-      this.log.info(`Found state to restore from backup: ${stringify(stateToRestore)}`);
-      await this.channelRouter.set([stateToRestore], false);
+      this.log.info(`Found state to restore from store's backup: ${stringify(state.path)}`);
+      state = state.path;
     } catch (e) {
-      this.log.info(`Could not restore from store, attempting to restore from node: ${e}`);
-      const stateToRestore = await this.node.restoreState(this.publicIdentifier);
-      if (!stateToRestore) {
-        throw new Error(
-          `No matching states found by node for "store/${this.publicIdentifier}/channel/${this.multisigAddress}."`,
-        );
+      state = await this.node.restoreState(this.publicIdentifier);
+      if (!state) {
+        throw new Error(`No matching states found by node for ${this.publicIdentifier}`);
       }
-      this.log.info(`Found state to restore from node: ${stringify(stateToRestore)}`);
-      // TODO: this should prob not be hardcoded like this
-      await this.store.set([
-        {
-          path: `${ConnextClientStorePrefix}/${this.publicIdentifier}/channel/${this.multisigAddress}`,
-          value: stateToRestore,
-        },
-      ]);
-      this.log.info(`Succesfully restored state from node!`);
+      this.log.info(`Found state to restore from node: ${stringify(state)}`);
     }
+    await this.channelRouter.set([{ path, value: state }]);
     await this.restart();
   };
 

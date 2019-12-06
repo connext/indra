@@ -21,12 +21,11 @@ const program = new commander.Command();
 program.version("0.0.1");
 
 program
-  .option("-a, --asset-id <address>", "Asset ID (token address) to take action with")
+  .option("-a, --use-token", "Use ERC20 token from config instead of ETH")
   .option("-b, --redeem-linked-to <amount>", "Redeem linked payment to recipient")
   .option("-c, --counterparty <id>", "Counterparty public identifier")
   .option("-d, --deposit <amount>", "Deposit amount in Ether units")
   .option("-e, --pre-image <preImage>", "Redeem a linked payment with preImage")
-  .option("-g, --get-free-balance", "Print bot's free balance and exit")
   .option("-h, --preImage <preImage>", "Create linked payment with preimage")
   .option("-i, --identifier <id>", "Bot identifier")
   .option("-l, --linked <amount>", "Create linked payment")

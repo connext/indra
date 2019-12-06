@@ -8,7 +8,7 @@ import {
   joinSignature,
   keccak256,
   randomBytes,
-  SigningKey
+  SigningKey,
 } from "ethers/utils";
 
 import ChallengeRegistry from "../build/ChallengeRegistry.json";

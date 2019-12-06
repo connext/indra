@@ -1,13 +1,13 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { ConnextNodeStorePrefix } from "@connext/types";
+import { CF_PATH, ConnextNodeStorePrefix } from "@connext/types";
 import { Provider } from "@nestjs/common";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { fromMnemonic } from "ethers/utils/hdnode";
 
 import { ConfigService } from "../config/config.service";
-import { CFCoreProviderId, CF_PATH, MessagingProviderId } from "../constants";
+import { CFCoreProviderId, MessagingProviderId } from "../constants";
 import { LockService } from "../lock/lock.service";
-import { CLogger, xpubToAddress } from "../util";
+import { CLogger } from "../util";
 import { CFCore } from "../util/cfCore";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
@@ -43,14 +43,14 @@ export const cfCoreProviderFactory: Provider = {
         return Promise.resolve(hdNode.derivePath(uniqueId).privateKey);
       },
     );
-    const signerAddr = xpubToAddress(cfCore.publicIdentifier);
+    const signerAddr = await cfCore.signerAddress();
     const balance = (await provider.getBalance(signerAddr)).toString();
     logger.log(
       `Balance of signer address ${signerAddr} on ${networkName} (chainId ${chainId}): ${balance}`,
     );
     logger.log("CFCore created");
     logger.log(`Public Identifier ${JSON.stringify(cfCore.publicIdentifier)}`);
-    logger.log(`Free balance address ${xpubToAddress(cfCore.publicIdentifier)}`);
+    logger.log(`Free balance address ${cfCore.freeBalanceAddress}`);
     return cfCore;
   },
 };

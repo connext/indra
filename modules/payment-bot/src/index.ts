@@ -7,9 +7,11 @@ import {
   ResolveLinkedTransferToRecipientParameters,
   WithdrawParameters,
 } from "@connext/types";
+import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
+import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 import { formatEther, hexlify, parseEther, randomBytes } from "ethers/utils";
+import tokenAbi from "human-standard-token-abi";
 
 import { getOrCreateChannel } from "./channel";
 import { config } from "./config";
@@ -17,6 +19,11 @@ import { checkForLinkedFields, logEthFreeBalance, replaceBN } from "./utils";
 
 process.on("warning", (e: any): any => {
   console.warn(e);
+  process.exit(1);
+});
+
+process.on("uncaughtException", (e: any): any => {
+  console.error(e);
   process.exit(1);
 });
 
@@ -29,14 +36,15 @@ process.on("unhandledRejection", (e: any): any => {
 // Begin executing w/in an async wrapper function
 
 (async (): Promise<void> => {
-  const assetId = config.assetId ? config.assetId : AddressZero;
-  const client = await getOrCreateChannel(assetId);
+  const client = await getOrCreateChannel();
+  const assetId = config.useToken ? client.config.contractAddresses.Token : AddressZero;
 
   const logEthAndAssetFreeBalance = async (): Promise<void> => {
-    logEthFreeBalance(AddressZero, await client.getFreeBalance(assetId));
-    if (assetId !== AddressZero) {
-      logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
-    }
+    logEthFreeBalance(AddressZero, await client.getFreeBalance());
+    logEthFreeBalance(
+      client.config.contractAddresses.Token,
+      await client.getFreeBalance(client.config.contractAddresses.Token),
+    );
   };
 
   if (config.getFreeBalance) {
@@ -44,23 +52,30 @@ process.on("unhandledRejection", (e: any): any => {
   }
 
   if (config.deposit) {
-    const depositParams: DepositParameters = {
-      amount: parseEther(config.deposit).toString(),
-    };
-    if (assetId !== AddressZero) {
-      depositParams.assetId = assetId;
-    }
+    const provider = new JsonRpcProvider(config.ethProviderUrl);
+    const signer = provider.getSigner();
     console.log(`Depositing ${config.deposit} of asset ${assetId}`);
-    await client.deposit(depositParams);
+    let tx: TransactionResponse;
+    await client.requestDepositRights({ assetId });
+    if (assetId === AddressZero) {
+      tx = await signer.sendTransaction({
+        to: client.multisigAddress,
+        value: parseEther(config.deposit),
+      });
+    } else {
+      const contract = new Contract(assetId, tokenAbi, signer);
+      tx = await contract.transfer(client.multisigAddress, parseEther(config.deposit));
+    }
+    const receipt = await tx.wait();
+    console.log(`Deposit tx receipt: ${JSON.stringify(receipt)}`);
+    await client.rescindDepositRights(assetId);
     console.log(`Successfully deposited!`);
-    await logEthAndAssetFreeBalance();
   }
 
   if (config.requestCollateral) {
     console.log(`Requesting collateral...`);
     await client.requestCollateral(assetId);
     console.log(`Successfully received collateral!`);
-    await logEthAndAssetFreeBalance();
   }
 
   if (config.transfer) {
@@ -71,7 +86,6 @@ process.on("unhandledRejection", (e: any): any => {
       recipient: config.counterparty,
     });
     console.log(`Successfully transferred!`);
-    await logEthAndAssetFreeBalance();
   }
 
   if (config.swap) {
@@ -85,7 +99,6 @@ process.on("unhandledRejection", (e: any): any => {
       toAssetId: assetId,
     });
     console.log(`Successfully swapped!`);
-    await logEthAndAssetFreeBalance();
   }
 
   if (config.linked) {
@@ -106,7 +119,6 @@ process.on("unhandledRejection", (e: any): any => {
     console.log(`Creating link payment for ${config.linked} of asset ${assetId}`);
     const res = await client.conditionalTransfer(linkedParams);
     console.log(`Successfully created! Linked response: ${JSON.stringify(res, replaceBN, 2)}`);
-    await logEthAndAssetFreeBalance();
   }
 
   if (config.linkedTo) {
@@ -140,7 +152,6 @@ process.on("unhandledRejection", (e: any): any => {
     console.log(`Redeeming link with parameters: ${JSON.stringify(resolveParams, replaceBN, 2)}`);
     const res = await client.resolveCondition(resolveParams);
     console.log(`Successfully redeemed! Resolve response: ${JSON.stringify(res, replaceBN, 2)}`);
-    await logEthAndAssetFreeBalance();
   }
 
   if (config.redeemLinkedTo) {
@@ -196,7 +207,6 @@ process.on("unhandledRejection", (e: any): any => {
     );
     await client.withdraw(withdrawParams);
     console.log(`Successfully withdrawn!`);
-    await logEthAndAssetFreeBalance();
   }
 
   if (config.uninstall) {
@@ -216,6 +226,12 @@ process.on("unhandledRejection", (e: any): any => {
   if (config.restore) {
     console.log(`Restoring states from the node: ${config.restore}`);
     await client.restoreState();
+  }
+
+  console.log("Done");
+  logEthFreeBalance(AddressZero, await client.getFreeBalance(AddressZero));
+  if (assetId !== AddressZero) {
+    logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
   }
 
   if (!config.open) {

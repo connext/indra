@@ -2,8 +2,7 @@ import { Zero } from "ethers/constants";
 import { bigNumberify, getAddress } from "ethers/utils";
 
 import { ConnextClient } from "../connext";
-import { Logger } from "../lib/logger";
-import { stringify, xpubToAddress } from "../lib/utils";
+import { Logger, stringify, xpubToAddress } from "../lib";
 import {
   CFCoreTypes,
   CoinTransferBigNumber,
@@ -16,6 +15,7 @@ import {
   SimpleTransferAppState,
   SimpleTransferAppStateBigNumber,
   SupportedApplication,
+  SupportedApplications,
 } from "../types";
 
 import { invalidAddress } from "./addresses";
@@ -161,7 +161,7 @@ export const validateLinkedTransferApp = async (
   if (coinTransferErrs) return invalidAppMessage(coinTransferErrs, params);
 
   // make sure amount is same as coin transfer amount
-  const nonzeroCoinTransfer = coinTransfers.filter(transfer => {
+  const nonzeroCoinTransfer = coinTransfers.filter((transfer: CoinTransferBigNumber) => {
     return !transfer.amount.isZero();
   });
 
@@ -203,12 +203,6 @@ export const validateLinkedTransferApp = async (
   return undefined;
 };
 
-export const appProposalValidation: ProposalValidator = {
-  SimpleLinkedTransferApp: validateLinkedTransferApp,
-  SimpleTransferApp: validateSimpleTransferApp,
-  SimpleTwoPartySwapApp: validateSwapApp,
-};
-
 const baseAppValidation = async (
   params: CFCoreTypes.ProposeInstallParams,
   proposedByIdentifier: string,
@@ -224,6 +218,13 @@ const baseAppValidation = async (
   }
 
   // check that the encoding is the same
+  // FIXME: stupid hacky thing for null vs undefined
+  params.abiEncodings.actionEncoding = params.abiEncodings.actionEncoding
+    ? params.abiEncodings.actionEncoding
+    : null;
+  registeredInfo.actionEncoding = registeredInfo.actionEncoding
+    ? registeredInfo.actionEncoding
+    : null;
   if (params.abiEncodings.actionEncoding !== registeredInfo.actionEncoding) {
     return invalidAppMessage(`Incorrect action encoding detected`, params);
   }
@@ -320,4 +321,11 @@ const validateCoinTransfers = (coinTransfers: CoinTransferBigNumber[]): string =
   }
 
   return undefined;
+};
+
+export const appProposalValidation: ProposalValidator = {
+  CoinBalanceRefundApp: baseAppValidation,
+  SimpleLinkedTransferApp: validateLinkedTransferApp,
+  SimpleTransferApp: validateSimpleTransferApp,
+  SimpleTwoPartySwapApp: validateSwapApp,
 };

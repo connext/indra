@@ -17,10 +17,10 @@ import { TransferService } from "../transfer/transfer.service";
 import {
   bigNumberifyObj,
   CLogger,
-  freeBalanceAddressFromXpub,
   isEthAddress,
   normalizeEthAddresses,
   stringify,
+  xpubToAddress,
 } from "../util";
 import { CFCoreTypes, ProposeMessage } from "../util/cfCore";
 
@@ -50,11 +50,13 @@ export class AppRegistryService {
   async allowOrReject(data: ProposeMessage): Promise<AppRegistry | void> {
     try {
       const registryAppInfo = await this.verifyAppProposal(data.data, data.from);
+      if (registryAppInfo.name === SupportedApplications.CoinBalanceRefundApp) {
+        return registryAppInfo;
+      }
       await this.cfCoreService.installApp(data.data.appInstanceId);
       return registryAppInfo;
     } catch (e) {
-      logger.error(`Caught error during proposed app validation, rejecting install`);
-      console.error(e);
+      logger.error(`Failed to verify app, rejecting install: ${e.message}`, e.stack);
       await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
       return;
     }
@@ -247,6 +249,10 @@ export class AppRegistryService {
       proposedToIdentifier,
     } = normalizeEthAddresses(bigNumberifyObj(params));
 
+    const appInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
+      params.appDefinition,
+    );
+
     if (timeout.lt(Zero)) {
       throw new Error(`"timeout" in params cannot be negative`);
     }
@@ -265,7 +271,11 @@ export class AppRegistryService {
 
     // NOTE: may need to remove this condition if we start working
     // with games
-    if (responderDeposit.isZero() && initiatorDeposit.isZero()) {
+    if (
+      responderDeposit.isZero() &&
+      initiatorDeposit.isZero() &&
+      appInfo.name !== SupportedApplications.CoinBalanceRefundApp
+    ) {
       throw new Error(
         `Cannot install an app with zero valued deposits for both initiator and responder.`,
       );
@@ -283,8 +293,7 @@ export class AppRegistryService {
       initiatorChannel.multisigAddress,
       initiatorDepositTokenAddress,
     );
-    const initiatorFreeBalance =
-      freeBalanceInitiatorAsset[freeBalanceAddressFromXpub(initiatorIdentifier)];
+    const initiatorFreeBalance = freeBalanceInitiatorAsset[xpubToAddress(initiatorIdentifier)];
     if (initiatorFreeBalance.lt(initiatorDeposit)) {
       throw new Error(
         `Initiator has insufficient funds to install proposed app. Initiator free balance: ${initiatorFreeBalance.toString()}, deposit requested: ${initiatorDeposit.toString()}`,
@@ -313,8 +322,7 @@ export class AppRegistryService {
         responderDepositTokenAddress,
       );
     }
-    const balAvailable =
-      freeBalanceResponderAsset[freeBalanceAddressFromXpub(proposedToIdentifier)];
+    const balAvailable = freeBalanceResponderAsset[xpubToAddress(proposedToIdentifier)];
     if (balAvailable.lt(responderDeposit)) {
       throw new Error(`Node has insufficient balance to install the app with proposed deposit.`);
     }
@@ -339,13 +347,7 @@ export class AppRegistryService {
       appInstanceId: string;
     },
     initiatorIdentifier: string, // will always be `from` field
-  ): Promise<AppRegistry | void> {
-    const myIdentifier = this.cfCoreService.cfCore.publicIdentifier;
-    if (initiatorIdentifier === myIdentifier) {
-      logger.log(`Received proposal from our own node.`);
-      return;
-    }
-
+  ): Promise<AppRegistry> {
     const registryAppInfo = await this.appProposalMatchesRegistry(proposedAppParams.params);
 
     if (!registryAppInfo.allowNodeInstall) {

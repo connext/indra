@@ -1,5 +1,4 @@
-import ChallengeRegistry from "@counterfactual/cf-adjudicator-contracts/expected-build-artifacts/ChallengeRegistry.json";
-import { Node } from "@connext/cf-types";
+import { Node } from "@connext/types";
 import {
   bigNumberify,
   Interface,
@@ -10,6 +9,7 @@ import {
 
 import { SetStateCommitment } from "../../../../src/ethereum";
 import { appIdentityToHash } from "../../../../src/ethereum/utils/app-identity";
+import { ChallengeRegistry } from "../../../contracts";
 import { createAppInstanceForTest } from "../../../unit/utils";
 import { generateRandomNetworkContext } from "../../mocks";
 

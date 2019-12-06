@@ -1,3 +1,5 @@
+import * as connext from "@connext/client";
+import { CF_PATH } from "@connext/types";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -9,7 +11,6 @@ import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import tokenArtifacts from "openzeppelin-solidity/build/contracts/ERC20Mintable.json";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
-import * as connext from "@connext/client";
 import { interpret } from "xstate";
 
 import "./App.css";
@@ -65,7 +66,6 @@ const urls = {
 const WITHDRAW_ESTIMATED_GAS = toBN("300000");
 const DEPOSIT_ESTIMATED_GAS = toBN("25000");
 const MAX_CHANNEL_VALUE = Currency.DAI("30");
-const CF_PATH = "m/44'/60'/0'/25446";
 
 // it is important to add a default payment
 // profile on initial load in the case the
@@ -107,10 +107,13 @@ const style = withStyles(theme => ({
   grid: {},
 }));
 
+const ethProvider = new eth.providers.JsonRpcProvider(urls.ethProviderUrl);
+
 class App extends React.Component {
   constructor(props) {
     super(props);
     const swapRate = "100.00";
+    const machine = interpret(rootMachine);
     this.state = {
       balance: {
         channel: {
@@ -125,13 +128,14 @@ class App extends React.Component {
         },
       },
       ethProvider: new eth.providers.JsonRpcProvider(urls.ethProviderUrl),
-      machine: interpret(rootMachine),
+      channel: null,
+      machine,
       maxDeposit: null,
       minDeposit: null,
       network: {},
       useWalletConnext: false,
       saiBalance: Currency.DAI("0", swapRate),
-      state: {},
+      state: machine.initialState,
       swapRate,
       token: null,
       tokenProfile: null,
@@ -178,7 +182,7 @@ class App extends React.Component {
 
   // Channel doesn't get set up until after provider is set
   async componentDidMount() {
-    const { ethProvider, machine } = this.state;
+    const { machine } = this.state;
     machine.start();
     machine.onTransition(state => {
       this.setState({ state });
@@ -289,7 +293,7 @@ class App extends React.Component {
     const token = new Contract(
       channel.config.contractAddresses.Token,
       tokenArtifacts.abi,
-      wallet || ethProvider,
+      ethProvider,
     );
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
@@ -337,7 +341,7 @@ class App extends React.Component {
       tokenProfile,
     });
 
-    const saiBalance = Currency.DEI(await this.getSaiBalance(wallet || ethProvider), swapRate);
+    const saiBalance = Currency.DEI(await this.getSaiBalance(ethProvider), swapRate);
     if (saiBalance && saiBalance.wad.gt(0)) {
       this.setState({ saiBalance });
       machine.send("SAI");
@@ -401,7 +405,7 @@ class App extends React.Component {
   };
 
   getDepositLimits = async () => {
-    const { swapRate, ethProvider } = this.state;
+    const { swapRate } = this.state;
     let gasPrice = await ethProvider.getGasPrice();
     let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
     let totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
@@ -414,7 +418,7 @@ class App extends React.Component {
   };
 
   getChannelBalances = async () => {
-    const { balance, channel, swapRate, token, ethProvider } = this.state;
+    const { balance, channel, swapRate, token } = this.state;
     const getTotal = (ether, token) => Currency.WEI(ether.wad.add(token.toETH().wad), swapRate);
     const freeEtherBalance = await channel.getFreeBalance();
     const freeTokenBalance = await channel.getFreeBalance(token.address);
@@ -638,21 +642,17 @@ class App extends React.Component {
     return path;
   };
 
-  closeModal = async () => {
-    this.setState({ loadingConnext: false });
-  };
-
   render() {
     const {
       balance,
       channel,
-      ethProvider,
       swapRate,
       machine,
       maxDeposit,
       minDeposit,
       network,
       saiBalance,
+      state,
       token,
       wallet,
     } = this.state;
@@ -666,14 +666,14 @@ class App extends React.Component {
 
             <MySnackbar
               variant="warning"
-              openWhen={machine.state.matches("migrate.pending.show")}
+              openWhen={state.matches("migrate.pending.show")}
               onClose={() => machine.send("DISMISS_MIGRATE")}
               message="Migrating legacy channel to 2.0..."
               duration={30 * 60 * 1000}
             />
             <MySnackbar
               variant="info"
-              openWhen={machine.state.matches("start.pending.show")}
+              openWhen={state.matches("start.pending.show")}
               onClose={() => machine.send("DISMISS_START")}
               message="Starting Channel Controllers..."
               duration={30 * 60 * 1000}
@@ -683,6 +683,7 @@ class App extends React.Component {
                 channel={channel}
                 ethProvider={ethProvider}
                 machine={machine}
+                state={state}
                 saiBalance={saiBalance}
               />
             ) : (
@@ -787,7 +788,9 @@ class App extends React.Component {
             />
             <Confirmations
               machine={machine}
+              state={state}
               network={network}
+              state={state}
             />
           </Paper>
         </Grid>

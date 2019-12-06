@@ -1,5 +1,4 @@
-import IdentityApp from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/IdentityApp.json";
-import { OutcomeType } from "@connext/cf-types";
+import { OutcomeType } from "@connext/types";
 import { Contract, ContractFactory } from "ethers";
 import { One, Two, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -9,6 +8,7 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
 import { Protocol, xkeyKthAddress } from "../../../../src/machine";
 import { sortAddresses } from "../../../../src/machine/xkeys";
 import { getCreate2MultisigAddress } from "../../../../src/utils";
+import { IdentityApp, Proxy } from "../../../contracts";
 import { toBeEq } from "../bignumber-jest-matcher";
 import { connectToGanache } from "../connect-ganache";
 import { MessageRouter } from "../message-router";
@@ -23,7 +23,7 @@ export enum Participant {
 }
 
 export class TestRunner {
-  static readonly TEST_TOKEN_ADDRESS =
+  static readonly TEST_TOKEN_ADDRESS: string =
     "0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290";
 
   private identityApp!: Contract;
@@ -36,7 +36,7 @@ export class TestRunner {
   public provider!: JsonRpcProvider;
   private mr!: MessageRouter;
 
-  async connectToGanache() {
+  async connectToGanache(): Promise<void> {
     const [provider, wallet, {}] = await connectToGanache();
     this.provider = provider;
     const network = global["networkContext"];
@@ -51,22 +51,27 @@ export class TestRunner {
     this.mininodeB = new MiniNode(network, provider);
     this.mininodeC = new MiniNode(network, provider);
 
-    this.multisigAB = getCreate2MultisigAddress(
+    const proxyBytecode = Proxy.evm.bytecode.object;
+
+    this.multisigAB = await getCreate2MultisigAddress(
       [this.mininodeA.xpub, this.mininodeB.xpub],
       network.ProxyFactory,
-      network.MinimumViableMultisig
+      network.MinimumViableMultisig,
+      provider
     );
 
-    this.multisigAC = getCreate2MultisigAddress(
+    this.multisigAC = await getCreate2MultisigAddress(
       [this.mininodeA.xpub, this.mininodeC.xpub],
       network.ProxyFactory,
-      network.MinimumViableMultisig
+      network.MinimumViableMultisig,
+      provider
     );
 
-    this.multisigBC = getCreate2MultisigAddress(
+    this.multisigBC = await getCreate2MultisigAddress(
       [this.mininodeB.xpub, this.mininodeC.xpub],
       network.ProxyFactory,
-      network.MinimumViableMultisig
+      network.MinimumViableMultisig,
+      provider
     );
 
     this.mr = new MessageRouter([
@@ -83,22 +88,26 @@ export class TestRunner {
   async setup() {
     this.mininodeA.scm.set(
       this.multisigAB,
-      (await this.mininodeA.protocolRunner.runSetupProtocol({
-        initiatorXpub: this.mininodeA.xpub,
-        responderXpub: this.mininodeB.xpub,
-        multisigAddress: this.multisigAB
-      })).get(this.multisigAB)!
+      (
+        await this.mininodeA.protocolRunner.runSetupProtocol({
+          initiatorXpub: this.mininodeA.xpub,
+          responderXpub: this.mininodeB.xpub,
+          multisigAddress: this.multisigAB
+        })
+      ).get(this.multisigAB)!
     );
 
     await this.mr.waitForAllPendingPromises();
 
     this.mininodeB.scm.set(
       this.multisigBC,
-      (await this.mininodeB.protocolRunner.runSetupProtocol({
-        initiatorXpub: this.mininodeB.xpub,
-        responderXpub: this.mininodeC.xpub,
-        multisigAddress: this.multisigBC
-      })).get(this.multisigBC)!
+      (
+        await this.mininodeB.protocolRunner.runSetupProtocol({
+          initiatorXpub: this.mininodeB.xpub,
+          responderXpub: this.mininodeC.xpub,
+          multisigAddress: this.multisigBC
+        })
+      ).get(this.multisigBC)!
     );
 
     await this.mr.waitForAllPendingPromises();
@@ -249,14 +258,6 @@ export class TestRunner {
       Protocol.Install,
       this.mininodeA.scm,
       {
-        participants,
-        outcomeType,
-        initialState,
-        initiatorXpub: this.mininodeA.xpub,
-        responderXpub: this.mininodeB.xpub,
-        multisigAddress: this.multisigAB,
-        initiatorBalanceDecrement: One,
-        responderBalanceDecrement: One,
         appInterface: {
           stateEncoding,
           addr: this.identityApp.address,
@@ -264,9 +265,17 @@ export class TestRunner {
         },
         appSeqNo: 1,
         defaultTimeout: 40,
+        disableLimit: false,
+        initialState,
+        initiatorBalanceDecrement: One,
         initiatorDepositTokenAddress: tokenAddress,
+        initiatorXpub: this.mininodeA.xpub,
+        multisigAddress: this.multisigAB,
+        outcomeType,
+        participants,
+        responderBalanceDecrement: One,
         responderDepositTokenAddress: tokenAddress,
-        disableLimit: false
+        responderXpub: this.mininodeB.xpub
       }
     );
   }
@@ -342,9 +351,13 @@ export class TestRunner {
   }
 
   async uninstallVirtual() {
-    const [virtualAppInstance] = [
-      ...this.mininodeA.scm.get(this.multisigAC)!.appInstances.values()
-    ];
+    const multisig = this.mininodeA.scm.get(this.multisigAC);
+    if (!multisig) {
+      throw new Error(
+        `uninstallVirtual: Couldn't find multisig for ${this.multisigAC}`
+      );
+    }
+    const [virtualAppInstance] = [...multisig.appInstances.values()];
 
     await this.mininodeA.protocolRunner.initiateProtocol(
       Protocol.UninstallVirtualApp,
@@ -366,7 +379,13 @@ export class TestRunner {
   }
 
   async uninstall() {
-    const appInstances = this.mininodeA.scm.get(this.multisigAB)!.appInstances;
+    const multisig = this.mininodeA.scm.get(this.multisigAB);
+    if (!multisig) {
+      throw new Error(
+        `uninstall: Couldn't find multisig for ${this.multisigAC}`
+      );
+    }
+    const appInstances = multisig.appInstances;
 
     const [key] = [...appInstances.keys()].filter(key => {
       return (

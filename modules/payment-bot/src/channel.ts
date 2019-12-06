@@ -7,7 +7,7 @@ import { config } from "./config";
 import { Store } from "./store";
 import { logEthFreeBalance } from "./utils";
 
-export const getOrCreateChannel = async (assetId?: string): Promise<IConnextClient> => {
+export const getOrCreateChannel = async (): Promise<IConnextClient> => {
   const store = new Store();
 
   const connextOpts: ClientOptions = {
@@ -18,7 +18,7 @@ export const getOrCreateChannel = async (assetId?: string): Promise<IConnextClie
     store,
   };
   const client = await connext.connect(connextOpts);
-  await client.isAvailable;
+  await client.isAvailable();
   const nodeFBAddress = connext.utils.xpubToAddress(client.nodePublicIdentifier);
   console.log("Payment bot launched:");
   console.log(` - mnemonic: ${connextOpts.mnemonic}`);
@@ -28,6 +28,7 @@ export const getOrCreateChannel = async (assetId?: string): Promise<IConnextClie
   console.log(` - multisigAddress: ${client.multisigAddress}`);
   console.log(` - User freeBalanceAddress: ${client.freeBalanceAddress}`);
   console.log(` - Node freeBalance address: ${nodeFBAddress}`);
+  console.log(` - token address: ${client.config.contractAddresses.Token}`);
 
   await client.addPaymentProfile({
     amountToCollateralize: parseEther("0.1").toString(),
@@ -35,33 +36,33 @@ export const getOrCreateChannel = async (assetId?: string): Promise<IConnextClie
     minimumMaintainedCollateral: parseEther("0.01").toString(),
   });
 
-  if (assetId) {
-    await client.addPaymentProfile({
-      amountToCollateralize: parseEther("10").toString(),
-      assetId: makeChecksum(assetId),
-      minimumMaintainedCollateral: parseEther("5").toString(),
-    });
-  }
+  await client.addPaymentProfile({
+    amountToCollateralize: parseEther("10").toString(),
+    assetId: makeChecksum(client.config.contractAddresses.Token),
+    minimumMaintainedCollateral: parseEther("5").toString(),
+  });
 
   client.on(
     CFCoreTypes.EventName.UNINSTALL_VIRTUAL,
-    async (data: CFCoreTypes.UninstallVirtualResult): Promise<void> => {
+    async (): Promise<void> => {
       console.log(`Bot event caught: ${CFCoreTypes.EventName.UNINSTALL_VIRTUAL}`);
       logEthFreeBalance(AddressZero, await client.getFreeBalance());
-      if (assetId) {
-        logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
-      }
+      logEthFreeBalance(
+        client.config.contractAddresses.Token,
+        await client.getFreeBalance(client.config.contractAddresses.Token),
+      );
     },
   );
 
   client.on(
     CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED,
-    async (data: any): Promise<void> => {
+    async (): Promise<void> => {
       console.log(`Bot event caught: ${CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED}`);
       logEthFreeBalance(AddressZero, await client.getFreeBalance());
-      if (assetId) {
-        logEthFreeBalance(assetId, await client.getFreeBalance(assetId));
-      }
+      logEthFreeBalance(
+        client.config.contractAddresses.Token,
+        await client.getFreeBalance(client.config.contractAddresses.Token),
+      );
     },
   );
 

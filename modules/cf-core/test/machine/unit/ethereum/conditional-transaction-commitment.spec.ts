@@ -1,4 +1,3 @@
-import ConditionalTransactionDelegateTarget from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/ConditionalTransactionDelegateTarget.json";
 import { AddressZero, HashZero, WeiPerEther } from "ethers/constants";
 import {
   getAddress,
@@ -14,6 +13,7 @@ import { MultisigTransaction } from "../../../../src/ethereum/types";
 import { appIdentityToHash } from "../../../../src/ethereum/utils/app-identity";
 import { StateChannel } from "../../../../src/models";
 import { FreeBalanceClass } from "../../../../src/models/free-balance";
+import { ConditionalTransactionDelegateTarget } from "../../../contracts";
 import { createAppInstanceForTest } from "../../../unit/utils";
 import { getRandomExtendedPubKey } from "../../integration/random-signing-keys";
 import { generateRandomNetworkContext } from "../../mocks";

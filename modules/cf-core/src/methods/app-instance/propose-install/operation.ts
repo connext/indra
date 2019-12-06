@@ -15,7 +15,7 @@ export async function createProposedAppInstance(
   myIdentifier: string,
   store: Store,
   networkContext: NetworkContext,
-  params: Node.ProposeInstallParams,
+  params: Node.ProposeInstallParams
 ): Promise<string> {
   const {
     abiEncodings,
@@ -38,7 +38,7 @@ export async function createProposedAppInstance(
     [myIdentifier, proposedToIdentifier],
     networkContext.ProxyFactory,
     networkContext.MinimumViableMultisig,
-    true
+    networkContext.provider
   );
 
   const stateChannel = await store.getOrCreateStateChannelBetweenVirtualAppParticipants(

@@ -1,5 +1,3 @@
-import DolphinCoin from "@counterfactual/cf-funding-protocol-contracts/expected-build-artifacts/DolphinCoin.json";
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
 import { randomBytes } from "crypto";
 import { Contract, Wallet } from "ethers";
 import { One, Zero } from "ethers/constants";
@@ -8,6 +6,7 @@ import { getAddress, hexlify } from "ethers/utils";
 
 import { Node, NODE_EVENTS, WithdrawStartedMessage } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
+import { DolphinCoin, NetworkContextForTestSuite } from "../contracts";
 import { toBeEq, toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
@@ -27,33 +26,44 @@ import { Node as NodeTypes } from "@connext/types";
 expect.extend({ toBeEq, toBeLt });
 
 // NOTE: responder does not have confirm event for any withdrawals
-function confirmWithdrawalMessages(initiator: Node, responder: Node, params: NodeTypes.WithdrawParams) {
+function confirmWithdrawalMessages(
+  initiator: Node,
+  responder: Node,
+  params: NodeTypes.WithdrawParams
+) {
   // initiator messages
-  initiator.once(NODE_EVENTS.WITHDRAWAL_CONFIRMED, (msg: WithdrawConfirmationMessage) => {
-    assertNodeMessage(msg, {
-      from: initiator.publicIdentifier,
-      type: NODE_EVENTS.WITHDRAWAL_CONFIRMED,
-      data: {
-        txReceipt: {
-          from: initiator.freeBalanceAddress,
-          to: params.multisigAddress,
-        }
-      }
-    }, [
-      "data.txReceipt.blockHash",
-      "data.txReceipt.blockNumber",
-      "data.txReceipt.byzantium",
-      "data.txReceipt.confirmations",
-      "data.txReceipt.contractAddress",
-      "data.txReceipt.cumulativeGasUsed",
-      "data.txReceipt.gasUsed",
-      "data.txReceipt.logs",
-      "data.txReceipt.logsBloom",
-      "data.txReceipt.status",
-      "data.txReceipt.transactionHash",
-      "data.txReceipt.transactionIndex",
-    ])
-  });
+  initiator.once(
+    NODE_EVENTS.WITHDRAWAL_CONFIRMED,
+    (msg: WithdrawConfirmationMessage) => {
+      assertNodeMessage(
+        msg,
+        {
+          from: initiator.publicIdentifier,
+          type: NODE_EVENTS.WITHDRAWAL_CONFIRMED,
+          data: {
+            txReceipt: {
+              from: initiator.freeBalanceAddress,
+              to: params.multisigAddress
+            }
+          }
+        },
+        [
+          "data.txReceipt.blockHash",
+          "data.txReceipt.blockNumber",
+          "data.txReceipt.byzantium",
+          "data.txReceipt.confirmations",
+          "data.txReceipt.contractAddress",
+          "data.txReceipt.cumulativeGasUsed",
+          "data.txReceipt.gasUsed",
+          "data.txReceipt.logs",
+          "data.txReceipt.logsBloom",
+          "data.txReceipt.status",
+          "data.txReceipt.transactionHash",
+          "data.txReceipt.transactionIndex"
+        ]
+      );
+    }
+  );
 
   const startedMsg = {
     from: initiator.publicIdentifier,
@@ -61,12 +71,15 @@ function confirmWithdrawalMessages(initiator: Node, responder: Node, params: Nod
     data: { params }
   };
   initiator.once(NODE_EVENTS.WITHDRAWAL_STARTED, (msg: any) => {
-    assertNodeMessage(msg, startedMsg, [ 'data.txHash' ]);
+    assertNodeMessage(msg, startedMsg, ["data.txHash"]);
   });
 
-  responder.once(NODE_EVENTS.WITHDRAWAL_STARTED, (msg: WithdrawStartedMessage) => {
-    assertNodeMessage(msg, startedMsg);
-  });
+  responder.once(
+    NODE_EVENTS.WITHDRAWAL_STARTED,
+    (msg: WithdrawStartedMessage) => {
+      assertNodeMessage(msg, startedMsg);
+    }
+  );
 }
 
 describe("Node method follows spec - withdraw", () => {
@@ -93,7 +106,7 @@ describe("Node method follows spec - withdraw", () => {
   it("has the right balance for both parties after withdrawal", async () => {
     const startingMultisigBalance = await provider.getBalance(multisigAddress);
 
-    await deposit(nodeA, multisigAddress, One);
+    await deposit(nodeA, multisigAddress, One, nodeB);
 
     const postDepositMultisigBalance = await provider.getBalance(
       multisigAddress
@@ -112,7 +125,11 @@ describe("Node method follows spec - withdraw", () => {
       recipient
     );
 
-    confirmWithdrawalMessages(nodeA, nodeB, withdrawReq.parameters as NodeTypes.WithdrawParams);
+    confirmWithdrawalMessages(
+      nodeA,
+      nodeB,
+      withdrawReq.parameters as NodeTypes.WithdrawParams
+    );
 
     const {
       result: {
@@ -150,7 +167,7 @@ describe("Node method follows spec - withdraw", () => {
       multisigAddress
     );
 
-    await deposit(nodeA, multisigAddress, One, erc20ContractAddress);
+    await deposit(nodeA, multisigAddress, One, nodeB, erc20ContractAddress);
 
     const postDepositMultisigTokenBalance = await erc20Contract.functions.balanceOf(
       multisigAddress
@@ -171,7 +188,11 @@ describe("Node method follows spec - withdraw", () => {
       recipient
     );
 
-    confirmWithdrawalMessages(nodeA, nodeB, withdrawReq.parameters as NodeTypes.WithdrawParams);
+    confirmWithdrawalMessages(
+      nodeA,
+      nodeB,
+      withdrawReq.parameters as NodeTypes.WithdrawParams
+    );
 
     await nodeA.rpcRouter.dispatch(withdrawReq);
 
@@ -185,7 +206,7 @@ describe("Node method follows spec - withdraw", () => {
   it("Node A produces a withdraw commitment and non-Node A submits the commitment to the network", async () => {
     const startingMultisigBalance = await provider.getBalance(multisigAddress);
 
-    await deposit(nodeA, multisigAddress, One);
+    await deposit(nodeA, multisigAddress, One, nodeB);
 
     const postDepositMultisigBalance = await provider.getBalance(
       multisigAddress
@@ -216,7 +237,11 @@ describe("Node method follows spec - withdraw", () => {
 
     // NOTE: no initiator withdrawal started event
     // and no confirm events
-    confirmWithdrawalMessages(nodeA, nodeB, withdrawCommitmentReq.parameters as NodeTypes.WithdrawParams);
+    confirmWithdrawalMessages(
+      nodeA,
+      nodeB,
+      withdrawCommitmentReq.parameters as NodeTypes.WithdrawParams
+    );
 
     const {
       result: {

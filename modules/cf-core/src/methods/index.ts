@@ -5,9 +5,11 @@ import GetAppInstanceStateController from "./app-instance/get-state/controller";
 import GetTokenIndexedFreeBalancesController from "./app-instance/get-token-indexed-free-balances/controller";
 import InstallVirtualAppInstanceController from "./app-instance/install-virtual/controller";
 import InstallAppInstanceController from "./app-instance/install/controller";
+import RequestDepositRightsController from "./state-channel/request-deposit-rights/controller";
 import ProposeInstallAppInstanceController from "./app-instance/propose-install/controller";
 import RejectInstallController from "./app-instance/reject-install/controller";
 import TakeActionController from "./app-instance/take-action/controller";
+import RescindDepositRightsController from "./state-channel/rescind-deposit-rights/controller";
 import UninstallVirtualController from "./app-instance/uninstall-virtual/controller";
 import UninstallController from "./app-instance/uninstall/controller";
 import UpdateStateController from "./app-instance/update-state/controller";
@@ -37,11 +39,13 @@ export {
   GetProposedAppInstancesController,
   GetProposedAppInstanceController,
   InstallAppInstanceController,
+  RequestDepositRightsController,
   InstallVirtualAppInstanceController,
   ProposeInstallAppInstanceController,
   RejectInstallController,
   TakeActionController,
   UninstallController,
+  RescindDepositRightsController,
   UninstallVirtualController,
   UpdateStateController,
   WithdrawCommitmentController,

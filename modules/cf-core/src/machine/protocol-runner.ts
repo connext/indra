@@ -19,13 +19,14 @@ import {
   UninstallProtocolParams,
   UninstallVirtualAppProtocolParams,
   UpdateProtocolParams,
-  WithdrawProtocolParams,
+  WithdrawProtocolParams
 } from "./types";
 
 /**
 Type-level mapping from Protocol to Protocol Param
 For e.g., ParamTypeOf<Protocol.Install> = InstallProtocolParams
-This syntax is preferred according to https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-8.html#conditional-types
+This syntax is preferred according to:
+https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-8.html#conditional-types
 **/
 // tslint:disable
 type ParamTypeOf<T extends Protocol> = T extends Protocol.Install
@@ -79,6 +80,7 @@ export class ProtocolRunner {
     public readonly network: NetworkContext,
     public readonly provider: BaseProvider
   ) {
+    this.network.provider = network.provider || provider;
     this.middlewares = new MiddlewareContainer();
   }
 

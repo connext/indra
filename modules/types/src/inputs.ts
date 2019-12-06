@@ -25,6 +25,8 @@ export type DepositParameters<T = string> = Omit<AssetAmount<T>, "assetId"> & {
 };
 export type DepositParametersBigNumber = DepositParameters<BigNumber>;
 
+export type RequestDepositRightsParameters = Omit<DepositParameters, "amount">;
+
 ////// Transfer types
 // TODO: would we ever want to pay people in the same app with multiple currencies?
 export type TransferParameters<T = string> = DepositParameters<T> & {

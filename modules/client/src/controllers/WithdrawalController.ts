@@ -1,7 +1,7 @@
 import { TransactionResponse } from "ethers/providers";
 import { getAddress } from "ethers/utils";
 
-import { stringify, withdrawalKey } from "../lib/utils";
+import { stringify, withdrawalKey } from "../lib";
 import { BigNumber, CFCoreTypes, convert, WithdrawalResponse, WithdrawParameters } from "../types";
 import { invalidAddress, notLessThanOrEqualTo, validate } from "../validation";
 
@@ -32,6 +32,8 @@ export class WithdrawalController extends AbstractController {
 
     let transaction: TransactionResponse | undefined;
     try {
+      this.log.info(`Calling this.connext.rescindDepositRights before withdrawal for ${assetId}`);
+      await this.connext.rescindDepositRights(assetId);
       if (!userSubmitted) {
         this.log.info(`Calling ${CFCoreTypes.RpcMethodName.WITHDRAW_COMMITMENT}`);
         const withdrawResponse = await this.connext.withdrawCommitment(amount, assetId, recipient);

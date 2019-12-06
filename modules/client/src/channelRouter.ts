@@ -2,7 +2,7 @@ import { Wallet } from "ethers";
 import { arrayify, BigNumber } from "ethers/utils";
 import { RpcParameters } from "rpc-server";
 
-import { withdrawalKey } from "./lib/utils";
+import { withdrawalKey } from "./lib";
 import {
   AppActionBigNumber,
   AppStateBigNumber,
@@ -226,10 +226,26 @@ export class ChannelRouter {
     } as CFCoreTypes.InstallParams);
   };
 
+  public requestDepositRights = async (
+    assetId: string,
+  ): Promise<CFCoreTypes.RequestDepositRightsResult> => {
+    return await this._send(CFCoreTypes.RpcMethodName.REQUEST_DEPOSIT_RIGHTS, {
+      multisigAddress: this.multisigAddress,
+      tokenAddress: assetId,
+    } as CFCoreTypes.RequestDepositRightsParams);
+  };
+
   public uninstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
     return await this._send(CFCoreTypes.RpcMethodName.UNINSTALL, {
       appInstanceId,
     } as CFCoreTypes.UninstallParams);
+  };
+
+  public rescindDepositRights = async (assetId: string): Promise<CFCoreTypes.DepositResult> => {
+    return await this._send(CFCoreTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS, {
+      multisigAddress: this.multisigAddress,
+      tokenAddress: assetId,
+    } as CFCoreTypes.RescindDepositRightsParams);
   };
 
   public uninstallVirtualApp = async (
@@ -253,7 +269,7 @@ export class ChannelRouter {
   ): Promise<CFCoreTypes.WithdrawResult> => {
     return await this._send(CFCoreTypes.RpcMethodName.WITHDRAW, {
       amount,
-      multisigAddress: this.config.multisigAddress,
+      multisigAddress: this.multisigAddress,
       recipient,
       tokenAddress: makeChecksum(assetId),
     } as CFCoreTypes.WithdrawParams);

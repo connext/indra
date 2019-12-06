@@ -34,7 +34,7 @@ export const redlockClientFactory: FactoryProvider = {
 
       // the max number of times Redlock will attempt
       // to lock a resource before erroring
-      retryCount: 350,
+      retryCount: 700,
 
       // the time in ms between attempts
       retryDelay: 100, // time in ms
@@ -42,11 +42,11 @@ export const redlockClientFactory: FactoryProvider = {
       // the max time in ms randomly added to retries
       // to improve performance under high contention
       // see https://www.awsarchitectureblog.com/2015/03/backoff.html
-      retryJitter: 1000, // time in ms
+      retryJitter: 5000, // time in ms
     });
 
-    redlockClient.on("clientError", (err: any) => {
-      console.error("A redis error has occurred:", err);
+    redlockClient.on("clientError", (e: any) => {
+      logger.error(`A redis error has occurred: ${e.message}`, e.stack);
     });
 
     return redlockClient;

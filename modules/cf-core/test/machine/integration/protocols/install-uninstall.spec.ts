@@ -1,4 +1,4 @@
-import { OutcomeType } from "@connext/cf-types";
+import { OutcomeType } from "@connext/types";
 import { Two, Zero } from "ethers/constants";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";

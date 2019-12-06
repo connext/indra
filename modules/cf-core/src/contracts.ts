@@ -3,7 +3,6 @@ import CounterfactualApp from "@connext/cf-adjudicator-contracts/build/Counterfa
 import ConditionalTransactionDelegateTarget from "@connext/cf-funding-protocol-contracts/build/ConditionalTransactionDelegateTarget.json";
 import ERC20 from "@connext/cf-funding-protocol-contracts/build/ERC20.json";
 import MinimumViableMultisig from "@connext/cf-funding-protocol-contracts/build/MinimumViableMultisig.json";
-import Proxy from "@connext/cf-funding-protocol-contracts/build/Proxy.json";
 import ProxyFactory from "@connext/cf-funding-protocol-contracts/build/ProxyFactory.json";
 
 export {
@@ -12,6 +11,5 @@ export {
   ConditionalTransactionDelegateTarget,
   ERC20,
   MinimumViableMultisig,
-  Proxy,
   ProxyFactory,
 };

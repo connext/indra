@@ -2,7 +2,10 @@ import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import { stringify, xpubToAddress } from "../lib/utils";
+import { delayAndThrow, stringify } from "../lib";
+import { xpubToAddress } from "../lib/cfCore";
+import { CF_METHOD_TIMEOUT } from "../lib/constants";
+
 import {
   CFCoreChannel,
   CFCoreTypes,
@@ -27,7 +30,6 @@ export const calculateExchange = (amount: BigNumber, swapRate: string): BigNumbe
 
 export class SwapController extends AbstractController {
   private appId: string;
-  private timeout: NodeJS.Timeout;
 
   public async swap(params: SwapParameters): Promise<CFCoreChannel> {
     // convert params + validate
@@ -55,10 +57,9 @@ export class SwapController extends AbstractController {
     // install the swap app
     await this.swapAppInstall(amount, toAssetId, fromAssetId, swapRate, appInfo);
 
-    this.log.info(`Swap app installed! Uninstalling without updating state.`);
+    this.log.info(`Swap app installed! Uninstalling ${this.appId} without updating state.`);
 
-    // if app installed, that means swap was accepted
-    // now uninstall
+    // if app installed, that means swap was accepted now uninstall
     await this.connext.uninstallApp(this.appId);
 
     // Sanity check to ensure swap was executed correctly
@@ -87,9 +88,6 @@ export class SwapController extends AbstractController {
   private resolveInstallSwap = (res: (value?: unknown) => void, data: any): any => {
     if (this.appId !== data.params.appInstanceId) {
       return;
-    }
-    if (this.timeout) {
-      clearTimeout(this.timeout);
     }
     res(data);
     return data;
@@ -175,17 +173,18 @@ export class SwapController extends AbstractController {
     // set app instance id
     this.appId = res.appInstanceId;
 
-    await new Promise((res: any, rej: any): any => {
-      boundReject = this.rejectInstallSwap.bind(null, rej);
-      boundResolve = this.resolveInstallSwap.bind(null, res);
-      this.listener.on(CFCoreTypes.EventName.INSTALL, boundResolve);
-      this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
-      // this.timeout = setTimeout(() => {
-      //   this.log.info("Install swap app timed out, rejecting install.")
-      //   this.cleanupInstallListeners(boundResolve, boundReject);
-      //   boundReject({ data: { appInstanceId: this.appId } });
-      // }, 5000);
-    });
+    await Promise.race([
+      new Promise((res: any, rej: any): any => {
+        boundReject = this.rejectInstallSwap.bind(null, rej);
+        boundResolve = this.resolveInstallSwap.bind(null, res);
+        this.listener.on(CFCoreTypes.EventName.INSTALL, boundResolve);
+        this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
+      }),
+      delayAndThrow(
+        CF_METHOD_TIMEOUT,
+        `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
+      ),
+    ]);
 
     this.cleanupInstallListeners(boundResolve, boundReject);
     return res.appInstanceId;

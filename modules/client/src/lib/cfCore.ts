@@ -1,1 +1,6 @@
-export { Node as CFCore } from "@connext/cf-core";
+export {
+  Node as CFCore,
+  sortAddresses,
+  xkeyKthAddress as xpubToAddress,
+  xkeysToSortedKthAddresses,
+} from "@connext/cf-core";

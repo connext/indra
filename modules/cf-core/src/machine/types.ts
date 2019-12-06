@@ -120,6 +120,7 @@ export type UninstallProtocolParams = {
   initiatorXpub: string;
   responderXpub: string;
   multisigAddress: string;
+  blockNumberToUseIfNecessary?: number;
 };
 
 export type InstallVirtualAppProtocolParams = {

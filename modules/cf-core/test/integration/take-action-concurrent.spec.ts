@@ -1,4 +1,3 @@
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
 import { One } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
@@ -9,8 +8,9 @@ import {
   NODE_EVENTS,
   ProposeMessage,
   UninstallMessage,
-  UpdateStateMessage
+  UpdateStateMessage,
 } from "../../src/types";
+import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
@@ -20,7 +20,7 @@ import {
   constructTakeActionRpc,
   createChannel,
   makeInstallCall,
-  makeProposeCall
+  makeProposeCall,
 } from "./utils";
 
 expect.extend({ toBeLt });

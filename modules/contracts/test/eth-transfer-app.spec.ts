@@ -1,4 +1,4 @@
-import { SolidityABIEncoderV2Type } from "@connext/cf-types";
+import { SolidityABIEncoderV2Type } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";

@@ -4,10 +4,14 @@ import { bigNumberify } from "ethers/utils";
 import { Node } from "../../src";
 import { toBeEq } from "../machine/integration/bignumber-jest-matcher";
 
-import { installAndRedeemLink, installLink, makeSimpleTransfer } from "./connext-utils";
+import {
+  installAndRedeemLink,
+  installLink,
+  makeSimpleTransfer
+} from "./connext-utils";
 import { initialLinkedState } from "./linked-transfer";
 import { setup, SetupContext } from "./setup";
-import { collateralizeChannel, createChannel } from "./utils";
+import { collateralizeChannel, createChannel, deposit } from "./utils";
 
 jest.setTimeout(10_000);
 
@@ -19,7 +23,7 @@ function generateInitialLinkedTransferStates(
   sender: Node,
   intermediary: Node,
   redeemer: Node,
-  numberApps: number = 3,
+  numberApps: number = 3
 ) {
   // TODO: app typings
   const linkStatesSender: { action: any; state: any }[] = [];
@@ -31,7 +35,7 @@ function generateInitialLinkedTransferStates(
     // the apps will have the same initial state, minus the transfer addresses
     const { action, state } = initialLinkedState(
       intermediary.freeBalanceAddress,
-      redeemer.freeBalanceAddress,
+      redeemer.freeBalanceAddress
     );
     linkStatesRedeemer.push({ action, state });
     // update the transfer address for the sender states to be the hubs
@@ -39,29 +43,33 @@ function generateInitialLinkedTransferStates(
     const hubTransfers = [
       {
         to: sender.freeBalanceAddress,
-        amount: action.amount,
+        amount: action.amount
       },
       {
         to: intermediary.freeBalanceAddress,
-        amount: Zero,
-      },
+        amount: Zero
+      }
     ];
     // sender has initial state installed with hub
     linkStatesSender.push({
       action,
-      state: { ...state, transfers: hubTransfers },
+      state: { ...state, transfers: hubTransfers }
     });
   }
   return {
     linkStatesRedeemer,
-    linkStatesSender,
+    linkStatesSender
   };
 }
 
 // installs an array of linked transfer apps between a
 // "funder" node and a "redeemer" node
 // TODO: fix typings
-async function installLinks(funder: Node, redeemer: Node, statesAndActions: any[]) {
+async function installLinks(
+  funder: Node,
+  redeemer: Node,
+  statesAndActions: any[]
+) {
   const appIds: string[] = [];
   for (const { state, action } of statesAndActions) {
     appIds.push(await installLink(funder, redeemer, state, action));
@@ -76,11 +84,16 @@ function redeemLinkPoller(
   intermediary: Node,
   redeemer: Node,
   statesAndActions: any[],
-  done: any,
+  done: any
 ) {
   setTimeout(async () => {
     while (statesAndActions.length > 0) {
-      await installAndRedeemLink(funder, intermediary, redeemer, statesAndActions.pop());
+      await installAndRedeemLink(
+        funder,
+        intermediary,
+        redeemer,
+        statesAndActions.pop()
+      );
     }
     done();
   }, 200);
@@ -111,19 +124,8 @@ describe("Can update and install multiple apps simultaneously", () => {
     // this deposits into both nodes. realistically, we want
     // to have nodeA deposit into AB, and nodeB collateralize
     // BC
-    await collateralizeChannel(
-      multisigAddressAB,
-      nodeA,
-      undefined, // choose not to fund nodeB
-      bigNumberify(15),
-    );
-
-    await collateralizeChannel(
-      multisigAddressBC,
-      nodeB,
-      undefined, // choose not to fund nodeC
-      bigNumberify(15),
-    );
+    await deposit(nodeA, multisigAddressAB, bigNumberify(15), nodeB);
+    await deposit(nodeB, multisigAddressBC, bigNumberify(15), nodeC);
   });
 
   /**
@@ -134,17 +136,15 @@ describe("Can update and install multiple apps simultaneously", () => {
    * - hanging on client or node
    *
    * These errors were successfully reproduced by connext in the `test-bot-farm`
-   * script, both with the postgres store and the memory store.
+   * script, both with an on-disk store and an in-memory store.
    */
 
   it("should be able to redeem a pregenerated linked payment while simultaneously receiving a direct transfer", async done => {
     // first, pregenerate several linked app initial states
-    const { linkStatesRedeemer, linkStatesSender } = generateInitialLinkedTransferStates(
-      nodeA,
-      nodeB,
-      nodeC,
-      2,
-    );
+    const {
+      linkStatesRedeemer,
+      linkStatesSender
+    } = generateInitialLinkedTransferStates(nodeA, nodeB, nodeC, 2);
 
     // try to install a linked app
     await installLinks(nodeA, nodeB, linkStatesSender);

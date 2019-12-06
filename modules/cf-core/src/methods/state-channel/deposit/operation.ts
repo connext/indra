@@ -9,7 +9,11 @@ import { bigNumberify } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { ERC20 } from "../../../contracts";
-import { InstallProtocolParams, Protocol, xkeyKthAddress } from "../../../machine";
+import {
+  InstallProtocolParams,
+  Protocol,
+  xkeyKthAddress
+} from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import {
@@ -67,7 +71,7 @@ export async function installBalanceRefundApp(
     tokenAddress!
   );
 
-  const InstallProtocolParams: InstallProtocolParams = {
+  const installProtocolParams: InstallProtocolParams = {
     initialState: depositContext.initialState,
     initiatorXpub: publicIdentifier,
     responderXpub: peerAddress,
@@ -91,7 +95,7 @@ export async function installBalanceRefundApp(
   await protocolRunner.initiateProtocol(
     Protocol.Install,
     stateChannelsMap,
-    InstallProtocolParams
+    installProtocolParams
   );
 }
 
@@ -100,7 +104,12 @@ export async function makeDeposit(
   params: Node.DepositParams
 ): Promise<void> {
   const { multisigAddress, amount, tokenAddress } = params;
-  const { provider, blocksNeededForConfirmation, outgoing, publicIdentifier } = requestHandler;
+  const {
+    provider,
+    blocksNeededForConfirmation,
+    outgoing,
+    publicIdentifier
+  } = requestHandler;
 
   const signer = await requestHandler.getSigner();
 
@@ -132,7 +141,7 @@ export async function makeDeposit(
       const failMsg: DepositFailedMessage = {
         from: publicIdentifier,
         type: NODE_EVENTS.DEPOSIT_FAILED,
-        data: { errors, params },
+        data: { errors, params }
       };
       if (e.toString().includes("reject") || e.toString().includes("denied")) {
         outgoing.emit(NODE_EVENTS.DEPOSIT_FAILED, failMsg);
@@ -154,7 +163,7 @@ export async function makeDeposit(
     data: {
       value: amount,
       txHash: txResponse!.hash
-    },
+    }
   });
 
   await txResponse!.wait(blocksNeededForConfirmation);
@@ -162,7 +171,8 @@ export async function makeDeposit(
 
 export async function uninstallBalanceRefundApp(
   requestHandler: RequestHandler,
-  params: Node.DepositParams
+  params: Node.DepositParams,
+  blockNumberToUseIfNecessary?: number
 ) {
   const {
     publicIdentifier,
@@ -171,7 +181,7 @@ export async function uninstallBalanceRefundApp(
     networkContext
   } = requestHandler;
 
-  const { multisigAddress } = params;
+  const { multisigAddress, tokenAddress } = params;
 
   const { CoinBalanceRefundApp } = networkContext;
 
@@ -183,9 +193,20 @@ export async function uninstallBalanceRefundApp(
 
   const stateChannel = await store.getStateChannel(params.multisigAddress);
 
-  const refundApp = stateChannel.getAppInstanceOfKind(CoinBalanceRefundApp);
+  let refundApp;
+  try {
+    refundApp = stateChannel.getBalanceRefundAppInstance(
+      CoinBalanceRefundApp,
+      tokenAddress
+    );
+  } catch (e) {
+    if (e.message.includes(`No CoinBalanceRefund app instance`)) {
+      // no need to unintall, already uninstalled
+      return;
+    }
+  }
 
-  const stateChannelsMap = await protocolRunner.initiateProtocol(
+  await protocolRunner.initiateProtocol(
     Protocol.Uninstall,
     // https://github.com/counterfactual/monorepo/issues/747
     new Map<string, StateChannel>([
@@ -195,7 +216,8 @@ export async function uninstallBalanceRefundApp(
       initiatorXpub: publicIdentifier,
       responderXpub: peerAddress,
       multisigAddress: stateChannel.multisigAddress,
-      appIdentityHash: refundApp.identityHash
+      appIdentityHash: refundApp.identityHash,
+      blockNumberToUseIfNecessary
     }
   );
 }

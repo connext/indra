@@ -1,4 +1,4 @@
-import { Button, Fab, Grid, Modal, withStyles } from "@material-ui/core";
+import { Button, Fab, Grid, Modal, withStyles, Typography } from "@material-ui/core";
 import { SaveAlt as ReceiveIcon, Send as SendIcon } from "@material-ui/icons";
 import QRIcon from "mdi-material-ui/QrcodeScan";
 import React, { useState } from "react";
@@ -13,17 +13,17 @@ import { initWalletConnect } from "../utils";
 
 const style = withStyles({});
 
-export const Home = style(({ balance, swapRate, channel, history, parseQRCode }) => {
+export const Home = style(({ balance, swapRate, channel, history, parseQRCode, depositTimer, startDepositTimer }) => {
   const [scanModal, setScanModal] = useState(false);
 
   const scanQRCode = data => {
     setScanModal(false);
     if (channel && data.startsWith("wc:")) {
-      localStorage.setItem(`wcUri`, data)
+      localStorage.setItem(`wcUri`, data);
       initWalletConnect(data, channel);
     } else {
-      const url = parseQRCode(data)
-      history.push(url)
+      const url = parseQRCode(data);
+      history.push(url);
     }
   };
 

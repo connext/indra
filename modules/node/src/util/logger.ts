@@ -4,13 +4,18 @@ export class CLogger extends Logger {
   public cxt: string;
   constructor(context: string) {
     super();
-    this.cxt = context || "";
+    this.cxt = context || "UNKNOWN CONTEXT";
   }
   log(message: string): void {
     super.log(message, this.cxt);
   }
-  error(message: string, trace?: string): void {
-    super.error(message, trace, this.cxt);
+  error(message: string, trace: string = "No stack trace"): void {
+    try {
+      super.error(message, trace, this.cxt);
+    } catch (e) {
+      console.error(message);
+      console.error(`WARNING Nest logger failed: ${e.message}`);
+    }
   }
   warn(message: string): void {
     super.warn(message, this.cxt);

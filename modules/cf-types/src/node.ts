@@ -103,6 +103,7 @@ export namespace Node {
     GET_STATE = "chan_getState",
     GET_STATE_CHANNEL = "chan_getStateChannel",
     INSTALL = "chan_install",
+    REQUEST_DEPOSIT_RIGHTS = "chan_requestDepositRights",
     INSTALL_VIRTUAL = "chan_installVirtual",
     PROPOSE_INSTALL = "chan_proposeInstall",
     REJECT_INSTALL = "chan_rejectInstall",
@@ -110,6 +111,7 @@ export namespace Node {
     TAKE_ACTION = "chan_takeAction",
     UNINSTALL = "chan_uninstall",
     UNINSTALL_VIRTUAL = "chan_uninstallVirtual",
+    RESCIND_DEPOSIT_RIGHTS = "chan_rescindDepositRights",
     WITHDRAW = "chan_withdraw",
     WITHDRAW_COMMITMENT = "chan_withdrawCommitment"
   }
@@ -174,6 +176,15 @@ export namespace Node {
 
   export type DepositResult = {
     multisigBalance: BigNumber;
+    tokenAddress: string;
+  };
+
+  export type RequestDepositRightsResult = {
+    freeBalance: {
+      [s: string]: BigNumber;
+    };
+    recipient: string;
+    tokenAddress: string;
   };
 
   export type GetAppInstanceDetailsParams = {
@@ -249,6 +260,11 @@ export namespace Node {
     appInstanceId: string;
   };
 
+  export type RequestDepositRightsParams = {
+    multisigAddress: string;
+    tokenAddress?: string;
+  };
+
   export type InstallResult = {
     appInstance: AppInstanceJson;
   };
@@ -300,6 +316,11 @@ export namespace Node {
 
   export type UninstallParams = {
     appInstanceId: string;
+  };
+
+  export type RescindDepositRightsParams = {
+    multisigAddress: string;
+    tokenAddress?: string;
   };
 
   export type UninstallResult = {};

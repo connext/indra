@@ -2,6 +2,7 @@ import { MessagingConfig } from "@connext/messaging";
 import {
   ContractAddresses,
   DefaultApp,
+  SupportedApplication,
   SupportedApplications,
   SupportedNetworks,
 } from "@connext/types";
@@ -77,6 +78,11 @@ export class ConfigService implements OnModuleInit {
     return getAddress(ethAddressBook[chainId].Token.address);
   }
 
+  async getDefaultAppByName(name: SupportedApplication): Promise<DefaultApp> {
+    const apps = await this.getDefaultApps();
+    return apps.filter((app: DefaultApp) => app.name === name)[0];
+  }
+
   async getDefaultApps(): Promise<DefaultApp[]> {
     const ethNetwork = await this.getEthNetwork();
     const addressBook = await this.getContractAddresses();
@@ -105,6 +111,14 @@ export class ConfigService implements OnModuleInit {
         network: SupportedNetworks[ethNetwork.name.toLowerCase()],
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
         stateEncoding: `tuple(${singleAssetTwoPartyCoinTransferEncoding} coinTransfers, bytes32 linkedHash, uint256 amount, address assetId, bytes32 paymentId, bytes32 preImage)`,
+      },
+      {
+        allowNodeInstall: true,
+        appDefinitionAddress: addressBook[SupportedApplications.CoinBalanceRefundApp],
+        name: "CoinBalanceRefundApp",
+        network: SupportedNetworks[ethNetwork.name.toLowerCase()],
+        outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+        stateEncoding: `tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)`,
       },
     ];
   }
