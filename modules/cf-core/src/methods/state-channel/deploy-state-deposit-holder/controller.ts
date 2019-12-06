@@ -5,7 +5,7 @@ import {
   Provider,
   TransactionResponse
 } from "ethers/providers";
-import { bigNumberify, Interface } from "ethers/utils";
+import { Interface } from "ethers/utils";
 import log from "loglevel";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -17,11 +17,16 @@ import {
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { NetworkContext, Node } from "../../../types";
-import { prettyPrintObject, sleep } from "../../../utils";
+import {
+  getCreate2MultisigAddress,
+  prettyPrintObject,
+  sleep
+} from "../../../utils";
 import { NodeController } from "../../controller";
 import {
   CHANNEL_CREATION_FAILED,
-  NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT
+  NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT,
+  INCORRECT_MULTISIG_ADDRESS
 } from "../../errors";
 
 // Estimate based on rinkeby transaction:
@@ -45,6 +50,18 @@ export default class DeployStateDepositHolderController extends NodeController {
 
     const channel = await store.getStateChannel(multisigAddress);
 
+    // make sure it is deployed to the right address
+    const expectedMultisigAddress = await getCreate2MultisigAddress(
+      channel.userNeuteredExtendedKeys,
+      channel.proxyFactoryAddress,
+      networkContext.MinimumViableMultisig,
+      provider
+    );
+
+    if (expectedMultisigAddress !== channel.multisigAddress) {
+      throw Error(INCORRECT_MULTISIG_ADDRESS);
+    }
+
     // Check if the contract has already been deployed on-chain
     if ((await provider.getCode(multisigAddress)) === "0x") {
       tx = await sendMultisigDeployTx(
@@ -65,8 +82,10 @@ async function sendMultisigDeployTx(
   networkContext: NetworkContext,
   retryCount: number = 1
 ): Promise<TransactionResponse> {
+  // make sure that the proxy factory used to deploy is the same as the one
+  // used when the channel was created
   const proxyFactory = new Contract(
-    networkContext.ProxyFactory,
+    stateChannel.proxyFactoryAddress,
     ProxyFactory.abi,
     signer
   );
