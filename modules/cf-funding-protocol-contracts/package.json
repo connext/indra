@@ -7,11 +7,11 @@
   "scripts": {
     "build": "waffle waffle.json",
     "test": "ts-mocha test/*",
-    "lint:fix": "yarn lint:ts:fix && yarn lint:sol:fix",
-    "lint": "yarn lint:ts && yarn lint:sol",
-    "lint:sol:fix": "yarn lint:sol --fix",
+    "lint:fix": "npm run lint:ts:fix && npm run lint:sol:fix",
+    "lint": "npm run lint:ts && npm run lint:sol",
+    "lint:sol:fix": "npm run lint:sol --fix",
     "lint:sol": "solium -d .",
-    "lint:ts:fix": "yarn lint:ts --fix",
+    "lint:ts:fix": "npm run lint:ts --fix",
     "lint:ts": "tslint -c tslint.json test/**/*.ts"
   },
   "keywords": [
