@@ -6,6 +6,8 @@ import { Node } from "../../../types";
 import { NodeController } from "../../controller";
 import WithdrawController from "../withdraw/controller";
 import { runWithdrawProtocol } from "../withdraw/operation";
+import { getCreate2MultisigAddress } from "../../../utils";
+import { INCORRECT_MULTISIG_ADDRESS } from "../../errors";
 
 // Note: This can't extend `WithdrawController` because the `methodName` static
 // members of each class are incompatible.
@@ -18,6 +20,27 @@ export default class WithdrawCommitmentController extends NodeController {
     params: Node.WithdrawCommitmentParams
   ): Promise<string[]> {
     return WithdrawController.getRequiredLockNames(requestHandler, params);
+  }
+
+  protected async beforeExecution(
+    requestHandler: RequestHandler,
+    params: Node.WithdrawCommitmentParams
+  ): Promise<void> {
+    const { store, provider, networkContext } = requestHandler;
+    const { multisigAddress } = params;
+
+    const channel = await store.getStateChannel(multisigAddress);
+
+    const expectedMultisigAddress = await getCreate2MultisigAddress(
+      channel.multisigOwners,
+      networkContext.ProxyFactory,
+      networkContext.MinimumViableMultisig,
+      provider
+    );
+
+    if (expectedMultisigAddress !== channel.multisigAddress) {
+      throw Error(INCORRECT_MULTISIG_ADDRESS);
+    }
   }
 
   protected async executeMethodImplementation(

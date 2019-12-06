@@ -13,7 +13,8 @@ import {
   FAILED_TO_GET_ERC20_BALANCE,
   INSUFFICIENT_ERC20_FUNDS_TO_DEPOSIT,
   INSUFFICIENT_FUNDS,
-  COIN_BALANCE_NOT_PROPOSED
+  COIN_BALANCE_NOT_PROPOSED,
+  INCORRECT_MULTISIG_ADDRESS
 } from "../../errors";
 
 import {
@@ -21,6 +22,7 @@ import {
   makeDeposit,
   uninstallBalanceRefundApp
 } from "./operation";
+import { getCreate2MultisigAddress } from "../../../utils";
 
 export default class DepositController extends NodeController {
   @jsonRpcMethod(Node.RpcMethodName.DEPOSIT)
@@ -46,6 +48,17 @@ export default class DepositController extends NodeController {
     const tokenAddress = tokenAddressParam || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
 
     const channel = await store.getStateChannel(multisigAddress);
+
+    const expectedMultisigAddress = await getCreate2MultisigAddress(
+      channel.multisigOwners,
+      networkContext.ProxyFactory,
+      networkContext.MinimumViableMultisig,
+      provider
+    );
+
+    if (expectedMultisigAddress !== channel.multisigAddress) {
+      throw Error(INCORRECT_MULTISIG_ADDRESS);
+    }
 
     if (
       channel.hasBalanceRefundAppInstance(

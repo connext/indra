@@ -6,12 +6,13 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { xkeyKthAddress } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
 import { Node, NODE_EVENTS } from "../../../types";
-import { prettyPrintObject } from "../../../utils";
+import { prettyPrintObject, getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
   CANNOT_WITHDRAW,
   INSUFFICIENT_FUNDS_TO_WITHDRAW,
-  WITHDRAWAL_FAILED
+  WITHDRAWAL_FAILED,
+  INCORRECT_MULTISIG_ADDRESS
 } from "../../errors";
 
 import { runWithdrawProtocol } from "./operation";
@@ -57,6 +58,27 @@ export default class WithdrawController extends NodeController {
     }
 
     return [params.multisigAddress];
+  }
+
+  protected async beforeExecution(
+    requestHandler: RequestHandler,
+    params: Node.WithdrawParams
+  ): Promise<void> {
+    const { store, provider, networkContext } = requestHandler;
+    const { multisigAddress } = params;
+
+    const channel = await store.getStateChannel(multisigAddress);
+
+    const expectedMultisigAddress = await getCreate2MultisigAddress(
+      channel.multisigOwners,
+      networkContext.ProxyFactory,
+      networkContext.MinimumViableMultisig,
+      provider
+    );
+
+    if (expectedMultisigAddress !== channel.multisigAddress) {
+      throw Error(INCORRECT_MULTISIG_ADDRESS);
+    }
   }
 
   protected async executeMethodImplementation(

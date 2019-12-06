@@ -1,18 +1,20 @@
+import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
+import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { ERC20 } from "../../../contracts";
+import { xkeyKthAddress } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
 import { Node } from "../../../types";
+import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
+import { INCORRECT_MULTISIG_ADDRESS } from "../../errors";
 import {
   installBalanceRefundApp,
   uninstallBalanceRefundApp
 } from "../deposit/operation";
-import { Contract } from "ethers";
-import { BigNumber } from "ethers/utils";
-import { xkeyKthAddress } from "../../../machine";
 
 // TODO: maybe a better name? since it's a little smarter than just a plain install
 export default class RequestDepositRightsController extends NodeController {
@@ -29,7 +31,26 @@ export default class RequestDepositRightsController extends NodeController {
     return [params.multisigAddress];
   }
 
-  protected async beforeExecution(): Promise<void> {}
+  protected async beforeExecution(
+    requestHandler: RequestHandler,
+    params: Node.RequestDepositRightsParams
+  ): Promise<void> {
+    const { store, provider, networkContext } = requestHandler;
+    const { multisigAddress } = params;
+
+    const channel = await store.getStateChannel(multisigAddress);
+
+    const expectedMultisigAddress = await getCreate2MultisigAddress(
+      channel.multisigOwners,
+      networkContext.ProxyFactory,
+      networkContext.MinimumViableMultisig,
+      provider
+    );
+
+    if (expectedMultisigAddress !== channel.multisigAddress) {
+      throw Error(INCORRECT_MULTISIG_ADDRESS);
+    }
+  }
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
