@@ -71,7 +71,7 @@ export default class WithdrawController extends NodeController {
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userNeuteredExtendedKeys,
-      networkContext.ProxyFactory,
+      channel.proxyFactoryAddress,
       networkContext.MinimumViableMultisig,
       provider
     );
