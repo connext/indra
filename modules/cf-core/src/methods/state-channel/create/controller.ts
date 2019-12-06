@@ -40,23 +40,24 @@ export default class CreateChannelController extends NodeController {
 
     // Check if the database has stored the relevant data for this state channel
     if (!(await store.hasStateChannel(multisigAddress))) {
-      await this.handleDeployedMultisigOnChain(
-        multisigAddress,
-        requestHandler,
-        params
-      );
+      await this.setupAndCreateChannel(multisigAddress, requestHandler, params);
     }
 
     return { multisigAddress };
   }
 
-  private async handleDeployedMultisigOnChain(
+  private async setupAndCreateChannel(
     multisigAddress: string,
     requestHandler: RequestHandler,
     params: Node.CreateChannelParams
   ) {
     const { owners } = params;
-    const { publicIdentifier, protocolRunner, outgoing, store } = requestHandler;
+    const {
+      publicIdentifier,
+      protocolRunner,
+      outgoing,
+      store
+    } = requestHandler;
 
     const [responderXpub] = owners.filter(x => x !== publicIdentifier);
 
