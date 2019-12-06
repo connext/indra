@@ -21,12 +21,15 @@ export class TransferMessaging extends AbstractMessagingProvider {
     super(messaging);
   }
 
-  async fetchLinkedTransfer(pubId: string, data: { paymentId: string }): Promise<any> {
+  async getLinkedTransferByPaymentId(
+    pubId: string,
+    data: { paymentId: string },
+  ): Promise<LinkedTransfer> {
     if (!data.paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${data}`);
     }
     logger.log(`Got fetch link request for: ${data.paymentId}`);
-    return await this.transferService.fetchLinkedTransfer(data.paymentId);
+    return await this.transferService.getLinkedTransferByPaymentId(data.paymentId);
   }
 
   async resolveLinkedTransfer(
@@ -77,9 +80,10 @@ export class TransferMessaging extends AbstractMessagingProvider {
   }
 
   async setupSubscriptions(): Promise<void> {
+    // TODO: rename to "get" when in branch to publish new client
     await super.connectRequestReponse(
       "transfer.fetch-linked.>",
-      this.authService.useVerifiedPublicIdentifier(this.fetchLinkedTransfer.bind(this)),
+      this.authService.useVerifiedPublicIdentifier(this.getLinkedTransferByPaymentId.bind(this)),
     );
     await super.connectRequestReponse(
       "transfer.resolve-linked.>",

@@ -51,15 +51,26 @@ all: dev prod
 dev: database node types client payment-bot indra-proxy ws-tcp-relay
 prod: database node-prod indra-proxy-prod ws-tcp-relay daicard-proxy
 
-start: dev
-	bash ops/start-dev.sh ganache
+start-daicard: dev
+	INDRA_UI=daicard bash ops/start-dev.sh ganache
+
+start-dashboard: dev
+	INDRA_UI=dashboard bash ops/start-dev.sh ganache
+
+start: start-daicard
 
 stop:
 	bash ops/stop.sh
 
-restart: dev
+restart-daicard: dev
 	bash ops/stop.sh
-	bash ops/start-dev.sh ganache
+	INDRA_UI=daicard bash ops/start-dev.sh ganache
+
+restart-dashboard: dev
+	bash ops/stop.sh
+	INDRA_UI=dashboard bash ops/start-dev.sh ganache
+
+restart: restart-daicard
 
 start-prod: prod
 	bash ops/start-prod.sh
