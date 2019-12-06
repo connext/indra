@@ -34,13 +34,13 @@ const styles = {
 };
 
 function Home(props) {
-    const {classes} = props; 
+    const {classes, prefix} = props; 
   return (
     <Grid className={classes.top} container>
-      <Card className={classes.card} component={Link} to={"/dashboard/debug"}>
+      <Card className={classes.card} component={Link} to={`${prefix}/debug`}>
         <Typography className={classes.cardText}>Debug</Typography>
       </Card>
-      <Card className={classes.card} component={Link} to={"/dashboard/stats"}>
+      <Card className={classes.card} component={Link} to={`${prefix}/stats`}>
         <Typography className={classes.cardText}>Node Stats</Typography>
       </Card>
     </Grid>

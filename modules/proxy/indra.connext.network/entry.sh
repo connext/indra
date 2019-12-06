@@ -3,11 +3,12 @@
 # Set default email & domain name
 domain="${DOMAINNAME:-localhost}"
 email="${EMAIL:-noreply@gmail.com}"
-daicard_url="${DAICARD_URL:-http://daicard:3000}"
 eth_rpc_url="${ETH_RPC_URL:-http://ethprovider:8545}"
 messaging_url="${MESSAGING_URL:-http://relay:4223}"
 mode="${MODE:-dev}"
-echo "domain=$domain email=$email eth=$eth_rpc_url messaging=$messaging_url daicard=$daicard_url mode=$mode"
+ui_url="${UI_URL:-http://ui:3000}"
+
+echo "domain=$domain email=$email eth=$eth_rpc_url messaging=$messaging_url ui=$ui_url mode=$mode"
 
 # Provide a message indicating that we're still waiting for everything to wake up
 function loading_msg {
@@ -36,10 +37,10 @@ done
 
 if [[ "$MODE" == "dev" ]]
 then
-  echo "waiting for ${daicard_url#*://}..."
-  bash wait_for.sh -t 60 ${daicard_url#*://} 2> /dev/null
+  echo "waiting for ${ui_url#*://}..."
+  bash wait_for.sh -t 60 ${ui_url#*://} 2> /dev/null
   # Do a more thorough check to ensure the dashboard is online
-  while ! curl -s $daicard_url > /dev/null
+  while ! curl -s $ui_url > /dev/null
   do sleep 2
   done
 fi
@@ -75,7 +76,7 @@ ln -sf $letsencrypt/$domain/fullchain.pem /etc/certs/fullchain.pem
 
 # Hack way to implement variables in the nginx.conf file
 sed -i 's/$hostname/'"$domain"'/' /etc/nginx/nginx.conf
-sed -i 's|$DAICARD_URL|'"$daicard_url"'|' /etc/nginx/nginx.conf
+sed -i 's|$UI_URL|'"$ui_url"'|' /etc/nginx/nginx.conf
 sed -i 's|$ETH_RPC_URL|'"$eth_rpc_url"'|' /etc/nginx/nginx.conf
 sed -i 's|$MESSAGING_URL|'"$messaging_url"'|' /etc/nginx/nginx.conf
 

@@ -32,6 +32,10 @@ export class LinkedTransferRepository extends Repository<LinkedTransfer> {
     });
   }
 
+  async findAll(): Promise<LinkedTransfer[]> {
+    return await this.find();
+  }
+
   async markAsRedeemed(
     transfer: LinkedTransfer,
     receiverChannel: Channel,

@@ -1,10 +1,10 @@
 import React from "react";
 import { Button, Grid, Typography, withStyles } from "@material-ui/core";
-import { Switch, Route,Link } from "react-router-dom";
+import { Switch, Route, Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import DebugChannel from "./DebugChannel";
-import DebugTransfer from "./DebugTransfer";
-import { Home as HomeIcon} from "@material-ui/icons";
+import DebugNode from "./DebugNode";
+import { Home as HomeIcon } from "@material-ui/icons";
 
 const styles = {
   top: {
@@ -36,32 +36,37 @@ const styles = {
     fontSize: "24px",
     color: "#002868",
     textDecoration: "none",
-    paddingLeft:"2%",
-    paddingRight:"2%",
+    paddingLeft: "2%",
+    paddingRight: "2%",
   },
 };
 
-function Debug(props) {
-  const { classes, messaging, token } = props;
-  console.log(messaging)
+function Debug({ classes, messaging, prefix }) {
   return (
     <Grid className={classes.top} container>
       <Grid className={classes.appBar} container>
-      <Button className={classes.button} component={Link} to={"/dashboard"}>
+        <Button className={classes.button} component={Link} to={`${prefix}`}>
           <HomeIcon className={classes.icon} />
         </Button>
-        <Button className={classes.button} component={Link} to={"/dashboard/debug/channel"}>
+        <Button className={classes.button} component={Link} to={`${prefix}/debug/channel`}>
           <Typography className={classes.buttonText}>Channels</Typography>
         </Button>
-        <Button className={classes.button} component={Link} to={"/dashboard/debug/transfer"}>
-          <Typography className={classes.buttonText}>Transfer</Typography>
+        <Button className={classes.button} component={Link} to={`${prefix}/debug/node`}>
+          <Typography className={classes.buttonText}>Node</Typography>
         </Button>
-
       </Grid>
-        <Switch>
-          <Route exact path="/dashboard/debug/channel" render={props => <DebugChannel {...props} messaging={messaging} token={token} />} />
-          <Route exact path="/dashboard/debug/transfer" render={props => <DebugTransfer {...props} messaging={messaging} token={token}  />} />
-        </Switch>
+      <Switch>
+        <Route
+          exact
+          path={`${prefix}/debug/channel`}
+          render={props => <DebugChannel {...props} messaging={messaging} />}
+        />
+        <Route
+          exact
+          path={`${prefix}/debug/node`}
+          render={props => <DebugNode {...props} messaging={messaging} />}
+        />
+      </Switch>
     </Grid>
   );
 }

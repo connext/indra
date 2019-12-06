@@ -332,7 +332,7 @@ export class ChannelService {
     );
   }
 
-  async getChannelState(userPublicIdentifier: string): Promise<StateChannelJSON> {
+  async getStateChannel(userPublicIdentifier: string): Promise<StateChannelJSON> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     if (!channel) {
       throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
@@ -342,7 +342,17 @@ export class ChannelService {
     return state.toJson();
   }
 
-  async getAllChannelsState(): Promise<any> {
+  async getStateChannelByMultisig(multisigAddress: string): Promise<StateChannelJSON> {
+    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
+    if (!channel) {
+      throw new Error(`No channel exists for multisigAddress ${multisigAddress}`);
+    }
+    const { data: state } = await this.cfCoreService.getStateChannel(multisigAddress);
+
+    return state.toJson();
+  }
+
+  async getAllChannels(): Promise<Channel[]> {
     const channels = await this.channelRepository.findAll();
     if (!channels) {
       throw new Error(`No channels found. This should never happen`);

@@ -1,11 +1,13 @@
 import { StateChannelJSON } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 
-import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { CFCoreService } from "../cfCore/cfCore.service";
+import { Channel } from "../channel/channel.entity";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { CLogger, getCreate2MultisigAddress } from "../util";
+import { LinkedTransfer } from "../transfer/transfer.entity";
+import { TransferService } from "../transfer/transfer.service";
 
 const logger = new CLogger("AdminService");
 
@@ -15,7 +17,43 @@ export class AdminService {
     private readonly cfCoreService: CFCoreService,
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
+    private readonly transferService: TransferService,
   ) {}
+
+  /////////////////////////////////////////
+  ///// GENERAL PURPOSE ADMIN FNS
+
+  /**  Get channels by xpub */
+  async getStateChannelByUserPublicIdentifier(
+    userPublicIdentifier: string,
+  ): Promise<StateChannelJSON> {
+    return await this.channelService.getStateChannel(userPublicIdentifier);
+  }
+
+  /**  Get channels by multisig */
+  async getStateChannelByMultisig(multisigAddress: string): Promise<StateChannelJSON> {
+    return await this.channelService.getStateChannelByMultisig(multisigAddress);
+  }
+
+  /** Get all channels */
+  async getAllChannels(): Promise<Channel[]> {
+    return await this.channelService.getAllChannels();
+  }
+
+  /** Get all transfers */
+  // @hunter -- see notes in transfer service fns
+  async getAllLinkedTransfers(): Promise<LinkedTransfer[]> {
+    return await this.transferService.getAllLinkedTransfers();
+  }
+
+  /** Get transfer */
+  // @hunter -- see notes in transfer service fns
+  async getLinkedTransferByPaymentId(paymentId: string): Promise<LinkedTransfer | undefined> {
+    return await this.transferService.getLinkedTransferByPaymentId(paymentId);
+  }
+
+  /////////////////////////////////////////
+  ///// PURPOSE BUILT ADMIN FNS
 
   /**
    * October 30, 2019
@@ -50,19 +88,6 @@ export class AdminService {
       }
     }
     return corrupted;
-  }
-
-  /**  Get Channels by xpub */
-
-  async getChannelState(userPublicIdentifier: any): Promise<StateChannelJSON> {
-    // get channel by xpub
-    return await this.channelService.getChannelState(userPublicIdentifier.id);
-  }
-
-  // Get all channels
-  async getAllChannelsState(): Promise<CFCoreRecord[]> {
-    // get channel by xpub
-    return await this.channelService.getAllChannelsState();
   }
 
   /**
