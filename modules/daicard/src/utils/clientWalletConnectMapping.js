@@ -6,7 +6,7 @@ export let walletConnector = null;
 export function initWalletConnect(uri, client) {
   walletConnector = new WalletConnectBrowser({ uri });
 
-  registerWalletConnectListeners(client)
+  registerWalletConnectListeners(client);
 }
 
 export function registerWalletConnectListeners(client) {
@@ -44,7 +44,7 @@ export function cleanWalletConnect() {
   // Delete walletConnector
   walletConnector = null;
   // delete url
-  localStorage.removeItem(`wcUri`)
+  localStorage.removeItem(`wcUri`);
 }
 
 export function displaySessionApproval(payload) {
@@ -122,7 +122,7 @@ async function mapPayloadToClient(payload, channel) {
         result = await channel.getState(params);
         break;
       case CFCoreTypes.RpcMethodName.GET_APP_INSTANCES:
-        result = await channel.getAppInstances(params);
+        result = await channel.channelRouter.getAppInstances(params);
         break;
       case CFCoreTypes.RpcMethodName.GET_FREE_BALANCE_STATE:
         verifyFields(params, ["tokenAddress", "multisigAddress"]);
