@@ -9,7 +9,11 @@ import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
 import { LinkedTransfer } from "../transfer/transfer.entity";
 import { AbstractMessagingProvider, stringify } from "../util";
 
-import { AdminService, FixProxyFactoryAddressesResponse } from "./admin.service";
+import {
+  AdminService,
+  FixProxyFactoryAddressesResponse,
+  GetChannelsWithoutProxyFactoryResponse,
+} from "./admin.service";
 
 class AdminMessaging extends AbstractMessagingProvider {
   constructor(
@@ -93,6 +97,10 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.fixProxyFactoryAddresses();
   }
 
+  async getChannelsWithoutProxyFactory(): Promise<GetChannelsWithoutProxyFactoryResponse> {
+    return await this.adminService.getChannelsWithoutProxyFactory();
+  }
+
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "admin.get-no-free-balance",
@@ -135,8 +143,13 @@ class AdminMessaging extends AbstractMessagingProvider {
     );
 
     await super.connectRequestReponse(
-      "admin.fix-proxy-addresses",
+      "admin.fix-proxy-factory-addresses",
       this.authService.useAdminToken(this.fixProxyFactoryAddresses.bind(this)),
+    );
+
+    await super.connectRequestReponse(
+      "admin.get-channels-no-proxy-factory",
+      this.authService.useAdminToken(this.getChannelsWithoutProxyFactory.bind(this)),
     );
   }
 }

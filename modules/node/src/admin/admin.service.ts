@@ -40,6 +40,11 @@ export interface FixProxyFactoryAddressesResponse {
   stillBrokenChannels: string[];
 }
 
+export interface GetChannelsWithoutProxyFactoryResponse {
+  noProxyAddress: Channel[];
+  incorrectProxyAddress: Channel[];
+}
+
 @Injectable()
 export class AdminService {
   constructor(
@@ -319,10 +324,7 @@ export class AdminService {
    * Retrieves all the state channels without a proxy factory address or with
    * the *wrong* multisig address
    */
-  async getChannelsWithoutProxyFactory(): Promise<{
-    noProxyAddress: Channel[];
-    incorrectProxyAddress: Channel[];
-  }> {
+  async getChannelsWithoutProxyFactory(): Promise<GetChannelsWithoutProxyFactoryResponse> {
     const channels = await this.getAllChannels();
 
     const noProxyAddress: Channel[] = [];
