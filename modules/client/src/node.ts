@@ -313,9 +313,11 @@ export class NodeApiClient implements INodeApiClient {
           this.log.warn(
             `Attempt ${attempt}/${NATS_ATTEMPTS} to send ${subject} failed: ${e.message}`,
           );
-          this.messaging.disconnect();
-          this.messaging.connect();
-          await timeout; // Wait at least a NATS_TIMEOUT before retrying
+          await this.messaging.disconnect();
+          await this.messaging.connect();
+          if (attempt + 1 <= NATS_ATTEMPTS) {
+            await timeout; // Wait at least a NATS_TIMEOUT before retrying
+          }
         } else {
           throw e;
         }
