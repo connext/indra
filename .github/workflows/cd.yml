@@ -1,0 +1,26 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - master
+      - staging
+
+jobs:
+
+  test-bot:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make prod
+    - run: make start-test
+    - run: make test-bot
+
+  test-ui:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make prod
+    - run: make start-test
+    - run: make test-ui
+
