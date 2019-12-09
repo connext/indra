@@ -9,7 +9,7 @@ async function start(): Promise<void> {
   // );
   // console.log("helloMsg: ", helloMsg);
   const history = await nc.request(
-    "admin.fix-proxy-addresses",
+    "admin.fix-proxy-factory-addresses",
     10000,
     JSON.stringify({ id: "myid2" }),
   );

@@ -284,14 +284,15 @@ export class AdminService {
     // address and edit the channel entry in the db
     const channelsToFix = noProxyAddress.concat(incorrectProxyAddress);
     logger.log(
-      `Hold my beer -- preparing to add or edit proxy factory address for ${channelsToFix.length} channels.`,
+      `Hold my 🍺 -- preparing to add or edit proxy factory address for ${channelsToFix.length} channels.`,
     );
 
     const { MinimumViableMultisig, ProxyFactory } = await this.configService.getContractAddresses();
     const network = await this.configService.getEthNetwork();
-    const historicalPfAddresses = HISTORICAL_PROXY_FACTORY_ADDRESSES[network.chainId] || [];
+    const proxyFactoryAddresses: string[] =
+      HISTORICAL_PROXY_FACTORY_ADDRESSES[network.chainId] || [];
 
-    const proxyFactoryAddresses = historicalPfAddresses.push(ProxyFactory);
+    proxyFactoryAddresses.push(ProxyFactory);
 
     for (const channel of channelsToFix) {
       const correctProxy = await this.getCorrectProxyFactoryAddress(
