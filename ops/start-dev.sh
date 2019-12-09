@@ -58,7 +58,9 @@ redis_url="redis://redis:6379"
 relay_image="${project}_relay"
 
 if [[ "$INDRA_UI" == "headless" ]]
-then ui_service=""
+then
+  ui_service=""
+  proxy_mode="ci"
 else
   if [[ "$INDRA_UI" == "dashboard" ]]
   then ui_working_dir=/root/modules/dashboard
@@ -69,6 +71,7 @@ else
     exit 1
   fi
   number_of_services=$(( $number_of_services + 1 ))
+  proxy_mode="dev"
   ui_service="
   ui:
     image: $ui_image
@@ -141,7 +144,7 @@ services:
       DOMAINNAME: localhost
       ETH_RPC_URL: $eth_rpc_url
       MESSAGING_URL: http://relay:4223
-      MODE: dev
+      MODE: $proxy_mode
       UI_URL: http://ui:3000
     networks:
       - $project
