@@ -51,24 +51,31 @@ all: dev prod
 dev: database node types client payment-bot indra-proxy ws-tcp-relay
 prod: database node-prod indra-proxy-prod ws-tcp-relay daicard-proxy
 
+start-headless: dev
+	INDRA_UI=headless bash ops/start-dev.sh
+
 start-daicard: dev
-	INDRA_UI=daicard bash ops/start-dev.sh ganache
+	INDRA_UI=daicard bash ops/start-dev.sh
 
 start-dashboard: dev
-	INDRA_UI=dashboard bash ops/start-dev.sh ganache
+	INDRA_UI=dashboard bash ops/start-dev.sh
 
 start: start-daicard
 
 stop:
 	bash ops/stop.sh
 
+restart-headless: dev
+	bash ops/stop.sh
+	INDRA_UI=headless bash ops/start-dev.sh
+
 restart-daicard: dev
 	bash ops/stop.sh
-	INDRA_UI=daicard bash ops/start-dev.sh ganache
+	INDRA_UI=daicard bash ops/start-dev.sh
 
 restart-dashboard: dev
 	bash ops/stop.sh
-	INDRA_UI=dashboard bash ops/start-dev.sh ganache
+	INDRA_UI=dashboard bash ops/start-dev.sh
 
 restart: restart-daicard
 

@@ -17,6 +17,8 @@ INDRA_UI="${INDRA_UI:-daicard}"
 # Internal Config
 # config & hard-coded stuff you might want to change
 
+number_of_services=5 # NOTE: Gotta update this manually when adding/removing services :(
+
 log_level=3
 nats_port=4222
 node_port=8080
@@ -55,13 +57,62 @@ redis_image=redis:5-alpine
 redis_url="redis://redis:6379"
 relay_image="${project}_relay"
 
-if [[ "$INDRA_UI" == "dashboard" ]]
-then ui_working_dir=/root/modules/dashboard
-else ui_working_dir=/root/modules/daicard
-fi
-
 ####################
 # Deploy according to above configuration
+
+if [[ "$INDRA_UI" == "headless" ]]
+then
+  ui_service=""
+  proxy_mode="ci"
+  proxy_ui_url=""
+else
+  if [[ "$INDRA_UI" == "dashboard" ]]
+  then ui_working_dir=/root/modules/dashboard
+  elif [[ "$INDRA_UI" == "daicard" ]]
+  then ui_working_dir=/root/modules/daicard
+  else
+    echo "INDRA_UI: Expected headless, dashboard, or daicard"
+    exit 1
+  fi
+  number_of_services=$(( $number_of_services + 3 ))
+  proxy_mode="dev"
+  proxy_ui_url="http://ui:3000"
+  ui_services="
+  proxy:
+    image: $proxy_image
+    environment:
+      DOMAINNAME: localhost
+      ETH_RPC_URL: $eth_rpc_url
+      MESSAGING_URL: http://relay:4223
+      MODE: $proxy_mode
+      UI_URL: $proxy_ui_url
+    networks:
+      - $project
+    ports:
+      - "$port:80"
+    volumes:
+      - certs:/etc/letsencrypt
+
+  relay:
+    image: $relay_image
+    command: ["nats:$nats_port"]
+    networks:
+      - $project
+    ports:
+      - "4223:4223"
+
+  ui:
+    image: $ui_image
+    entrypoint: npm start
+    environment:
+      NODE_ENV: development
+    networks:
+      - $project
+    volumes:
+      - `pwd`:/root
+    working_dir: $ui_working_dir
+  "
+fi
 
 # Get images that we aren't building locally
 function pull_if_unavailable {
@@ -94,8 +145,6 @@ then
   echo "Created ATTACHABLE network with id $id"
 fi
 
-number_of_services=8 # NOTE: Gotta update this manually when adding/removing services :(
-
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
@@ -114,31 +163,8 @@ volumes:
   database_dev:
 
 services:
-  proxy:
-    image: $proxy_image
-    environment:
-      DOMAINNAME: localhost
-      ETH_RPC_URL: $eth_rpc_url
-      MESSAGING_URL: http://relay:4223
-      MODE: dev
-      UI_URL: http://ui:3000
-    networks:
-      - $project
-    ports:
-      - "$port:80"
-    volumes:
-      - certs:/etc/letsencrypt
 
-  ui:
-    image: $ui_image
-    entrypoint: npm start
-    environment:
-      NODE_ENV: development
-    networks:
-      - $project
-    volumes:
-      - `pwd`:/root
-    working_dir: $ui_working_dir
+  $ui_services
 
   node:
     image: $node_image
@@ -203,14 +229,6 @@ services:
       - $project
     ports:
       - "$nats_port:$nats_port"
-
-  relay:
-    image: $relay_image
-    command: ["nats:$nats_port"]
-    networks:
-      - $project
-    ports:
-      - "4223:4223"
 
   redis:
     image: $redis_image
