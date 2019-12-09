@@ -272,7 +272,6 @@ export class AdminService {
       const repoPath = `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel/${stateChannel.multisigAddress}`;
 
       if (!stateChannel.proxyFactoryAddress) {
-        console.log("stateChannel: ", stateChannel);
         logger.log(
           `Found a state channel without a proxyFactory address: ${stateChannel.multisigAddress}`,
         );
