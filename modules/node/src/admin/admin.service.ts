@@ -346,10 +346,9 @@ export class AdminService {
           MinimumViableMultisig,
           this.configService.getEthProvider(),
         );
-        if (generatedMultisig === channel.multisigAddress) {
-          continue;
+        if (generatedMultisig !== channel.multisigAddress) {
+          incorrectProxyAddress.push(channel);
         }
-        incorrectProxyAddress.push(channel);
       }
     }
     return {
