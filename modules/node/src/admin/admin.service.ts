@@ -283,6 +283,7 @@ export class AdminService {
         logger.error(
           `This should never happen! stateChannel.multisigAddress ${stateChannel.multisigAddress} !== channel.multisigAddress ${channel.multisigAddress}`,
         );
+        stillBrokenChannels.push(stateChannel.multisigAddress);
         continue;
       }
 
