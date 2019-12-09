@@ -78,16 +78,21 @@ function prettyPrint(obj) {
 
 async function mapPayloadToClient(payload, channel) {
   const { params, id, method } = payload;
+  console.log("[mapPayloadToClient]", "payload", prettyPrint(payload));
   if (!params || typeof params !== "object") {
-    throw new Error(`Invalid payload params. Payload: ${prettyPrint(payload)}`);
+    throw new Error(
+      `WalletConnect Error - invalid payload params. Payload: ${prettyPrint(payload)}`,
+    );
   }
 
-  if (!id) {
-    throw new Error(`Invalid payload id. Payload: ${prettyPrint(payload)}`);
+  if (!id || typeof id !== "number") {
+    throw new Error(`WalletConnect Error - invalid payload id. Payload: ${prettyPrint(payload)}`);
   }
 
   if (!method || typeof method !== "string") {
-    throw new Error(`Invalid payload method. Payload: ${prettyPrint(payload)}`);
+    throw new Error(
+      `WalletConnect Error - invalid payload method. Payload: ${prettyPrint(payload)}`,
+    );
   }
 
   let result;
@@ -167,17 +172,15 @@ async function mapPayloadToClient(payload, channel) {
         result = await channel.withdrawCommitment(params);
         break;
       default:
-        console.error(
-          `Wallet connect mapping error, unknown method. Payload: ${JSON.stringify(
-            payload,
-            null,
-            2,
-          )}`,
-        );
+        console.error(`WalletConnect Error - unknown method: ${method}`);
         break;
     }
   } catch (e) {
-    console.error(`Wallet connect error: ${JSON.stringify(e, null, 2)}`);
+    console.error(`WalletConnect Error`, e);
   }
+  if (typeof result === "undefined") {
+    console.error("WalletConnect Error - result is undefined");
+  }
+  console.log("[mapPayloadToClient]", "result", result);
   walletConnector.approveRequest({ id, result });
 }
