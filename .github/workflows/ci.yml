@@ -11,6 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - run: make prod
-    - run: make start-test
+    - run: make dev
+    - run: make start-headless
     - run: make test-bot
