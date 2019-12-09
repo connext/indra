@@ -319,7 +319,6 @@ export class AdminService {
    * Retrieves all the state channels without a proxy factory address or with
    * the *wrong* multisig address
    */
-
   async getChannelsWithoutProxyFactory(): Promise<{
     noProxyAddress: Channel[];
     incorrectProxyAddress: Channel[];
