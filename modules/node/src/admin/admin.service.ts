@@ -1,15 +1,38 @@
-import { StateChannelJSON } from "@connext/types";
+import { ConnextNodeStorePrefix, StateChannelJSON } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 
+import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { Channel } from "../channel/channel.entity";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
-import { CLogger, getCreate2MultisigAddress } from "../util";
 import { LinkedTransfer } from "../transfer/transfer.entity";
 import { TransferService } from "../transfer/transfer.service";
+import { CLogger, getCreate2MultisigAddress } from "../util";
 
 const logger = new CLogger("AdminService");
+
+const HISTORICAL_PROXY_FACTORY_ADDRESSES = {
+  1: [
+    "0x90Bf287B6870A99E32130CED0Da8b02302a8a4dE",
+    "0xA16d9511C743d6D6177A65892DC2Eafd417BfD7A",
+    "0xc756Bf6A685573C6879D4363401940f02B4E27a1",
+    "0x6CF0c4Ab3F1e66913c0983DC0bb1202d958ABb8f",
+    "0x711C655e08aaA9081e0BDc431920507CCD96b7a0",
+    "0xF9015aA98BeBaE3e43945c48dc3fB6c0a5281986",
+  ],
+  4: [
+    "0x49f2eCa045B2372C334B6CcBB9232C48f9acA097",
+    "0x8A49B435cc3D2176B67e0D26170387EeDf135669",
+    "0xD891F41c4ba30b1FF4f604e30F64ae387DD85b4F",
+    "0x6CF0c4Ab3F1e66913c0983DC0bb1202d958ABb8f",
+    "0xc8d7Cf5638dfa5b79A070c5aC983716575bEF4B0",
+    "0xc40E9B210363163a143f454fa505ACeAA28Cd475",
+    "0x8eb543b35DE94B0E636402C7cA32947b22853eDF",
+    "0xc8d7Cf5638dfa5b79A070c5aC983716575bEF4B0",
+    "0x8eb543b35DE94B0E636402C7cA32947b22853eDF",
+  ],
+};
 
 @Injectable()
 export class AdminService {
@@ -18,6 +41,7 @@ export class AdminService {
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
     private readonly transferService: TransferService,
+    private readonly cfCoreRepository: CFCoreRecordRepository,
   ) {}
 
   /////////////////////////////////////////
@@ -206,29 +230,84 @@ export class AdminService {
   }
 
   async fixProxyFactoryAddresses(): Promise<void> {
+    const fixProxyFactoryInCfCoreRecord = async (multisigAddress, repoPath, pfAddress) => {
+      logger.log(`Multisig address is as expected, adding correct proxyFactory address`);
+      const cfCoreRecord = await this.cfCoreRepository.get(multisigAddress);
+      console.log("cfCoreRecord before: ", cfCoreRecord);
+      cfCoreRecord["proxyFactoryAddress"] = pfAddress;
+      console.log("cfCoreRecord after: ", cfCoreRecord);
+      // save to db
+      // uncomment below when console.logs show its working
+      // await this.cfCoreRepository.set([
+      //   {
+      //     path: repoPath,
+      //     value: cfCoreRecord,
+      //   },
+      // ]);
+    };
+
     const channels = await this.channelService.findAll();
 
     for (const channel of channels) {
       const { data: stateChannel } = await this.cfCoreService.getStateChannel(
         channel.multisigAddress,
       );
-      console.log("stateChannel: ", stateChannel);
       const contractAddresses = await this.configService.getContractAddresses();
 
-      const expectedMultisigAddress = await getCreate2MultisigAddress(
-        stateChannel.userNeuteredExtendedKeys,
-        stateChannel.proxyFactoryAddress || contractAddresses.ProxyFactory,
-        contractAddresses.MinimumViableMultisig,
-        this.configService.getEthProvider(),
-      );
+      if (stateChannel.multisigAddress !== channel.multisigAddress) {
+        // things will be very weird if this happens, so just dont allow this to happen
+        logger.error(
+          `This should never happen! stateChannel.multisigAddress ${stateChannel.multisigAddress} !== channel.multisigAddress ${channel.multisigAddress}`,
+        );
+        continue;
+      }
 
-      if (expectedMultisigAddress === stateChannel.multisigAddress) {
-        if (!stateChannel.proxyFactoryAddress) {
-          logger.log(`Multisig address is as expected, adding correct proxyFactory address`);
-          // save new state channel
+      let fixed = false;
+      const repoPath = `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel/${stateChannel.multisigAddress}`;
+
+      if (!stateChannel.proxyFactoryAddress) {
+        console.log("stateChannel: ", stateChannel);
+        logger.log(
+          `Found a state channel without a proxyFactory address: ${stateChannel.multisigAddress}`,
+        );
+        const expectedMultisigAddress = await getCreate2MultisigAddress(
+          stateChannel.userNeuteredExtendedKeys,
+          contractAddresses.ProxyFactory,
+          contractAddresses.MinimumViableMultisig,
+          this.configService.getEthProvider(),
+        );
+        if (expectedMultisigAddress === stateChannel.multisigAddress) {
+          await fixProxyFactoryInCfCoreRecord(
+            stateChannel.multisigAddress,
+            repoPath,
+            contractAddresses.ProxyFactory,
+          );
+          fixed = true;
+        } else {
+          // try old multisig addresses
+          const network = await this.configService.getEthNetwork();
+          const historicalPfAddresses = HISTORICAL_PROXY_FACTORY_ADDRESSES[network.chainId] || [];
+          for (const pfAddress of historicalPfAddresses) {
+            const expectedMultisigAddress = await getCreate2MultisigAddress(
+              stateChannel.userNeuteredExtendedKeys,
+              pfAddress,
+              contractAddresses.MinimumViableMultisig,
+              this.configService.getEthProvider(),
+            );
+            if (expectedMultisigAddress === stateChannel.multisigAddress) {
+              await fixProxyFactoryInCfCoreRecord(
+                stateChannel.multisigAddress,
+                pfAddress,
+                contractAddresses.ProxyFactory,
+              );
+              fixed = true;
+              break;
+            }
+          }
         }
-      } else {
-        // try old proxy factory addresses to get expected address
+        if (!fixed) {
+          logger.error(`Unable to fix state channel ${stateChannel.multisigAddress}`);
+        }
       }
     }
   }

@@ -93,6 +93,10 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getIncorrectProxyFactoryAddresses();
   }
 
+  async fixProxyFactoryAddresses(): Promise<void> {
+    return await this.adminService.fixProxyFactoryAddresses();
+  }
+
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "admin.get-no-free-balance",
@@ -137,6 +141,11 @@ class AdminMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "admin.get-incorrect-proxy-address",
       this.getIncorrectProxyFactoryAddresses.bind(this),
+    );
+
+    await super.connectRequestReponse(
+      "admin.fix-proxy-addresses",
+      this.fixProxyFactoryAddresses.bind(this),
     );
   }
 }
