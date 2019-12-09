@@ -10,7 +10,10 @@ import { RequestHandler } from "../../../request-handler";
 import { Node } from "../../../types";
 import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
-import { INCORRECT_MULTISIG_ADDRESS } from "../../errors";
+import {
+  INVALID_FACTORY_ADDRESS,
+  INCORRECT_MULTISIG_ADDRESS
+} from "../../errors";
 import {
   installBalanceRefundApp,
   uninstallBalanceRefundApp
@@ -39,6 +42,10 @@ export default class RequestDepositRightsController extends NodeController {
     const { multisigAddress } = params;
 
     const channel = await store.getStateChannel(multisigAddress);
+
+    if (!channel.proxyFactoryAddress) {
+      throw Error(INVALID_FACTORY_ADDRESS(channel.proxyFactoryAddress));
+    }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userNeuteredExtendedKeys,

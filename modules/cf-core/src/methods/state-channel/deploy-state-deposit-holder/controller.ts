@@ -26,7 +26,8 @@ import { NodeController } from "../../controller";
 import {
   CHANNEL_CREATION_FAILED,
   NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT,
-  INCORRECT_MULTISIG_ADDRESS
+  INCORRECT_MULTISIG_ADDRESS,
+  INVALID_FACTORY_ADDRESS
 } from "../../errors";
 
 // Estimate based on rinkeby transaction:
@@ -36,6 +37,31 @@ const CREATE_PROXY_AND_SETUP_GAS = 500_000;
 export default class DeployStateDepositHolderController extends NodeController {
   @jsonRpcMethod(Node.RpcMethodName.DEPLOY_STATE_DEPOSIT_HOLDER)
   public executeMethod = super.executeMethod;
+
+  protected async beforeExecution(
+    requestHandler: RequestHandler,
+    params: Node.DeployStateDepositHolderParams
+  ): Promise<void> {
+    const { store, provider, networkContext } = requestHandler;
+    const { multisigAddress } = params;
+
+    const channel = await store.getStateChannel(multisigAddress);
+
+    if (!channel.proxyFactoryAddress) {
+      throw Error(INVALID_FACTORY_ADDRESS(channel.proxyFactoryAddress));
+    }
+
+    const expectedMultisigAddress = await getCreate2MultisigAddress(
+      channel.userNeuteredExtendedKeys,
+      channel.proxyFactoryAddress,
+      networkContext.MinimumViableMultisig,
+      provider
+    );
+
+    if (expectedMultisigAddress !== channel.multisigAddress) {
+      throw Error(INCORRECT_MULTISIG_ADDRESS);
+    }
+  }
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,

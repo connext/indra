@@ -14,7 +14,8 @@ import {
   INSUFFICIENT_ERC20_FUNDS_TO_DEPOSIT,
   INSUFFICIENT_FUNDS,
   COIN_BALANCE_NOT_PROPOSED,
-  INCORRECT_MULTISIG_ADDRESS
+  INCORRECT_MULTISIG_ADDRESS,
+  INVALID_FACTORY_ADDRESS
 } from "../../errors";
 
 import {
@@ -48,6 +49,10 @@ export default class DepositController extends NodeController {
     const tokenAddress = tokenAddressParam || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
 
     const channel = await store.getStateChannel(multisigAddress);
+
+    if (!channel.proxyFactoryAddress) {
+      throw Error(INVALID_FACTORY_ADDRESS(channel.proxyFactoryAddress));
+    }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userNeuteredExtendedKeys,
