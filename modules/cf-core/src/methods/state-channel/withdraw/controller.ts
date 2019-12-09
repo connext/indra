@@ -1,4 +1,3 @@
-
 import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -10,9 +9,10 @@ import { prettyPrintObject, getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
   CANNOT_WITHDRAW,
+  INCORRECT_MULTISIG_ADDRESS,
   INSUFFICIENT_FUNDS_TO_WITHDRAW,
-  WITHDRAWAL_FAILED,
-  INCORRECT_MULTISIG_ADDRESS
+  INVALID_FACTORY_ADDRESS,
+  WITHDRAWAL_FAILED
 } from "../../errors";
 
 import { runWithdrawProtocol } from "./operation";
@@ -68,6 +68,10 @@ export default class WithdrawController extends NodeController {
     const { multisigAddress } = params;
 
     const channel = await store.getStateChannel(multisigAddress);
+
+    if (!channel.proxyFactoryAddress) {
+      throw Error(INVALID_MULTISIG_ADDRESS(channel.proxyFactoryAddress));
+    }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userNeuteredExtendedKeys,

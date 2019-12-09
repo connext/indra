@@ -7,7 +7,10 @@ import { NodeController } from "../../controller";
 import WithdrawController from "../withdraw/controller";
 import { runWithdrawProtocol } from "../withdraw/operation";
 import { getCreate2MultisigAddress } from "../../../utils";
-import { INCORRECT_MULTISIG_ADDRESS } from "../../errors";
+import {
+  INCORRECT_MULTISIG_ADDRESS,
+  INVALID_FACTORY_ADDRESS
+} from "../../errors";
 
 // Note: This can't extend `WithdrawController` because the `methodName` static
 // members of each class are incompatible.
@@ -30,6 +33,10 @@ export default class WithdrawCommitmentController extends NodeController {
     const { multisigAddress } = params;
 
     const channel = await store.getStateChannel(multisigAddress);
+
+    if (!channel.proxyFactoryAddress) {
+      throw Error(INVALID_MULTISIG_ADDRESS(channel.proxyFactoryAddress));
+    }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userNeuteredExtendedKeys,

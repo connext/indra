@@ -45,6 +45,9 @@ export const IMPROPERLY_FORMATTED_STRUCT =
 export const INCORRECT_MULTISIG_ADDRESS =
   "Channel multisig address does not match expected";
 
+export const INVALID_FACTORY_ADDRESS = (address: string): string =>
+  `Channel factory address is invalid: ${address}`;
+
 export const NO_NETWORK_PROVIDER_CREATE2 =
   "`getCreate2MultisigAddress` needs access to an eth provider within the network context";
 
