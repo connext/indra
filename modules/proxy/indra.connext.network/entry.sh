@@ -6,7 +6,7 @@ email="${EMAIL:-noreply@gmail.com}"
 eth_rpc_url="${ETH_RPC_URL:-http://ethprovider:8545}"
 messaging_url="${MESSAGING_URL:-http://relay:4223}"
 mode="${MODE:-dev}"
-ui_url="${UI_URL:-http://ui:3000}"
+ui_url="${UI_URL:-$messaging_url}"
 
 echo "domain=$domain email=$email eth=$eth_rpc_url messaging=$messaging_url ui=$ui_url mode=$mode"
 

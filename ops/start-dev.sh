@@ -61,6 +61,7 @@ if [[ "$INDRA_UI" == "headless" ]]
 then
   ui_service=""
   proxy_mode="ci"
+  proxy_ui_url=""
 else
   if [[ "$INDRA_UI" == "dashboard" ]]
   then ui_working_dir=/root/modules/dashboard
@@ -72,6 +73,7 @@ else
   fi
   number_of_services=$(( $number_of_services + 1 ))
   proxy_mode="dev"
+  proxy_ui_url="http://ui:3000"
   ui_service="
   ui:
     image: $ui_image
@@ -145,7 +147,7 @@ services:
       ETH_RPC_URL: $eth_rpc_url
       MESSAGING_URL: http://relay:4223
       MODE: $proxy_mode
-      UI_URL: http://ui:3000
+      UI_URL: $proxy_ui_url
     networks:
       - $project
     ports:
