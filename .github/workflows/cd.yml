@@ -7,20 +7,16 @@ on:
       - staging
 
 jobs:
-
-  test-bot:
-    runs-on: ubuntu-latest
+  full-test:
+    runs-on: self-hosted
     steps:
     - uses: actions/checkout@v1
+    - run: make clean
+    - run: make reset
     - run: make prod
+    - run: make test-node
+    - run: make test-cf
     - run: make start-test
     - run: make test-bot
-
-  test-ui:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - run: make prod
-    - run: make start-test
     - run: make test-ui
-
+    - run: make stop
