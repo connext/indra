@@ -98,28 +98,27 @@ async function mapPayloadToClient(payload, channel) {
   let result;
   try {
     switch (method) {
-      case "chan_store_set":
+      case "chan_storeSet":
         verifyFields(params, ["pairs"]);
         const { pairs } = params;
         result = await channel.channelRouter.set(pairs);
         break;
-
-      case "chan_store_get":
+      case "chan_storeGet":
         verifyFields(params, ["path"]);
         const { path } = params;
         result = await channel.channelRouter.get(path);
         break;
-
-      case "chan_node_auth":
+      case "chan_nodeAuth":
         verifyFields(params, ["message"]);
         const { message } = params;
         result = await channel.channelRouter.signMessage(message);
         break;
-
       case "chan_config":
         result = await channel.channelProviderConfig(params);
         break;
-
+      case "chan_restoreState":
+        result = await channel.restoreState(params);
+        break;
       case CFCoreTypes.RpcMethodName.DEPOSIT:
         result = await channel.providerDeposit(params);
         break;
@@ -134,7 +133,6 @@ async function mapPayloadToClient(payload, channel) {
         const { tokenAddress } = params;
         result = await channel.getFreeBalance(tokenAddress);
         break;
-
       case CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES:
         result = await channel.getProposedAppInstances(params);
         break;
