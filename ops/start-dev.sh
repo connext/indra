@@ -17,6 +17,8 @@ INDRA_UI="${INDRA_UI:-daicard}"
 # Internal Config
 # config & hard-coded stuff you might want to change
 
+number_of_services=7 # NOTE: Gotta update this manually when adding/removing services :(
+
 log_level=3
 nats_port=4222
 node_port=8080
@@ -55,9 +57,30 @@ redis_image=redis:5-alpine
 redis_url="redis://redis:6379"
 relay_image="${project}_relay"
 
-if [[ "$INDRA_UI" == "dashboard" ]]
-then ui_working_dir=/root/modules/dashboard
-else ui_working_dir=/root/modules/daicard
+if [[ "$INDRA_UI" == "headless" ]]
+then ui_service=""
+else
+  if [[ "$INDRA_UI" == "dashboard" ]]
+  then ui_working_dir=/root/modules/dashboard
+  elif [[ "$INDRA_UI" == "daicard" ]]
+  then ui_working_dir=/root/modules/daicard
+  else
+    echo "INDRA_UI: Expected headless, dashboard, or daicard"
+    exit 1
+  fi
+  number_of_services=$(( $number_of_services + 1 ))
+  ui_service="
+  ui:
+    image: $ui_image
+    entrypoint: npm start
+    environment:
+      NODE_ENV: development
+    networks:
+      - $project
+    volumes:
+      - `pwd`:/root
+    working_dir: $ui_working_dir
+  "
 fi
 
 ####################
@@ -94,8 +117,6 @@ then
   echo "Created ATTACHABLE network with id $id"
 fi
 
-number_of_services=8 # NOTE: Gotta update this manually when adding/removing services :(
-
 mkdir -p /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
@@ -129,16 +150,7 @@ services:
     volumes:
       - certs:/etc/letsencrypt
 
-  ui:
-    image: $ui_image
-    entrypoint: npm start
-    environment:
-      NODE_ENV: development
-    networks:
-      - $project
-    volumes:
-      - `pwd`:/root
-    working_dir: $ui_working_dir
+  $ui_service
 
   node:
     image: $node_image
