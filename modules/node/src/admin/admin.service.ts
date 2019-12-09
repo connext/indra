@@ -291,7 +291,7 @@ export class AdminService {
     const network = await this.configService.getEthNetwork();
     const historicalPfAddresses = HISTORICAL_PROXY_FACTORY_ADDRESSES[network.chainId] || [];
 
-    const proxyFactoryAddresses = historicalPfAddresses.push(ProxyFactory);
+    const proxyFactoryAddresses = historicalPfAddresses.concat(ProxyFactory);
 
     for (const channel of channelsToFix) {
       const correctProxy = await this.getCorrectProxyFactoryAddress(
