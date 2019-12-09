@@ -9,7 +9,7 @@ import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
 import { LinkedTransfer } from "../transfer/transfer.entity";
 import { AbstractMessagingProvider, stringify } from "../util";
 
-import { AdminService } from "./admin.service";
+import { AdminService, FixProxyFactoryAddressesResponse } from "./admin.service";
 
 class AdminMessaging extends AbstractMessagingProvider {
   constructor(
@@ -89,7 +89,7 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getChannelsForMerging();
   }
 
-  async fixProxyFactoryAddresses(): Promise<void> {
+  async fixProxyFactoryAddresses(): Promise<FixProxyFactoryAddressesResponse> {
     return await this.adminService.fixProxyFactoryAddresses();
   }
 

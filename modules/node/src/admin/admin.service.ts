@@ -34,6 +34,11 @@ const HISTORICAL_PROXY_FACTORY_ADDRESSES = {
   ],
 };
 
+export interface FixProxyFactoryAddressesResponse {
+  fixedChannels: string[];
+  stillBrokenChannels: string[];
+}
+
 @Injectable()
 export class AdminService {
   constructor(
@@ -229,23 +234,24 @@ export class AdminService {
     return toMerge;
   }
 
-  async fixProxyFactoryAddresses(): Promise<void> {
-    const fixProxyFactoryInCfCoreRecord = async (multisigAddress, repoPath, pfAddress) => {
+  async fixProxyFactoryAddresses(): Promise<FixProxyFactoryAddressesResponse> {
+    const fixProxyFactoryInCfCoreRecord = async (
+      repoPath: string,
+      pfAddress: string,
+    ): Promise<void> => {
       logger.log(`Multisig address is as expected, adding correct proxyFactory address`);
-      const cfCoreRecord = await this.cfCoreRepository.get(multisigAddress);
-      console.log("cfCoreRecord before: ", cfCoreRecord);
+      const cfCoreRecord = await this.cfCoreRepository.get(repoPath);
       cfCoreRecord["proxyFactoryAddress"] = pfAddress;
-      console.log("cfCoreRecord after: ", cfCoreRecord);
-      // save to db
-      // uncomment below when console.logs show its working
-      // await this.cfCoreRepository.set([
-      //   {
-      //     path: repoPath,
-      //     value: cfCoreRecord,
-      //   },
-      // ]);
+      await this.cfCoreRepository.set([
+        {
+          path: repoPath,
+          value: cfCoreRecord,
+        },
+      ]);
     };
 
+    const fixedChannels = [];
+    const stillBrokenChannels = [];
     const channels = await this.channelService.findAll();
 
     for (const channel of channels) {
@@ -277,11 +283,7 @@ export class AdminService {
           this.configService.getEthProvider(),
         );
         if (expectedMultisigAddress === stateChannel.multisigAddress) {
-          await fixProxyFactoryInCfCoreRecord(
-            stateChannel.multisigAddress,
-            repoPath,
-            contractAddresses.ProxyFactory,
-          );
+          await fixProxyFactoryInCfCoreRecord(repoPath, contractAddresses.ProxyFactory);
           fixed = true;
         } else {
           // try old multisig addresses
@@ -295,20 +297,25 @@ export class AdminService {
               this.configService.getEthProvider(),
             );
             if (expectedMultisigAddress === stateChannel.multisigAddress) {
-              await fixProxyFactoryInCfCoreRecord(
-                stateChannel.multisigAddress,
-                pfAddress,
-                contractAddresses.ProxyFactory,
-              );
+              await fixProxyFactoryInCfCoreRecord(pfAddress, contractAddresses.ProxyFactory);
               fixed = true;
               break;
             }
           }
         }
-        if (!fixed) {
+        if (fixed) {
+          logger.log(`Fixed channel ${stateChannel.multisigAddress}`);
+          fixedChannels.push(stateChannel.multisigAddress);
+        } else {
           logger.error(`Unable to fix state channel ${stateChannel.multisigAddress}`);
+          stillBrokenChannels.push(stateChannel.multisigAddress);
         }
       }
     }
+
+    return {
+      fixedChannels,
+      stillBrokenChannels,
+    };
   }
 }
