@@ -136,7 +136,7 @@ class AdminMessaging extends AbstractMessagingProvider {
 
     await super.connectRequestReponse(
       "admin.fix-proxy-addresses",
-      this.fixProxyFactoryAddresses.bind(this),
+      this.authService.useAdminToken(this.fixProxyFactoryAddresses.bind(this)),
     );
   }
 }
