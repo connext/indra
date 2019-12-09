@@ -311,32 +311,4 @@ export class AdminService {
       }
     }
   }
-
-  async getIncorrectProxyFactoryAddresses(): Promise<string[]> {
-    const channels = await this.channelService.findAll();
-
-    const incorrectChannels = [];
-    for (const channel of channels) {
-      const { data: stateChannel } = await this.cfCoreService.getStateChannel(
-        channel.multisigAddress,
-      );
-      console.log("stateChannel: ", stateChannel);
-      const contractAddresses = await this.configService.getContractAddresses();
-      const expectedMultisigAddress = await getCreate2MultisigAddress(
-        stateChannel.userNeuteredExtendedKeys,
-        stateChannel.proxyFactoryAddress || contractAddresses.ProxyFactory,
-        contractAddresses.MinimumViableMultisig,
-        this.configService.getEthProvider(),
-      );
-
-      if (expectedMultisigAddress !== stateChannel.multisigAddress) {
-        logger.error(
-          `expectedMultisigAddress ${expectedMultisigAddress} not equal to stateChannel.multisigAddress ${stateChannel.multisigAddress}`,
-        );
-        incorrectChannels.push(stateChannel.multisigAddress);
-      }
-    }
-
-    return incorrectChannels;
-  }
 }

@@ -89,10 +89,6 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getChannelsForMerging();
   }
 
-  async getIncorrectProxyFactoryAddresses(): Promise<string[]> {
-    return await this.adminService.getIncorrectProxyFactoryAddresses();
-  }
-
   async fixProxyFactoryAddresses(): Promise<void> {
     return await this.adminService.fixProxyFactoryAddresses();
   }
@@ -136,11 +132,6 @@ class AdminMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "admin.get-channels-for-merging",
       this.authService.useAdminToken(this.getChannelsForMerging.bind(this)),
-    );
-
-    await super.connectRequestReponse(
-      "admin.get-incorrect-proxy-address",
-      this.getIncorrectProxyFactoryAddresses.bind(this),
     );
 
     await super.connectRequestReponse(
