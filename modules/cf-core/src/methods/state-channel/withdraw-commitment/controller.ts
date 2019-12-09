@@ -35,7 +35,7 @@ export default class WithdrawCommitmentController extends NodeController {
     const channel = await store.getStateChannel(multisigAddress);
 
     if (!channel.proxyFactoryAddress) {
-      throw Error(INVALID_MULTISIG_ADDRESS(channel.proxyFactoryAddress));
+      throw Error(INVALID_FACTORY_ADDRESS(channel.proxyFactoryAddress));
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
