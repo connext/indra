@@ -234,6 +234,24 @@ export class AdminService {
     return toMerge;
   }
 
+  /**
+   * December 9, 2019
+   *
+   * We added a "proxyFactoryAddress" field to the state channels. This allows channels that were
+   * created at any time to be able to be deployed, even if the proxy factory address was changed.
+   *
+   * This function will fix old channels that did not have this field. The function does the
+   * following:
+   *
+   * 1. Calculate what the multisig address should be based on our "current" proxy factory address
+   *    for the specific network.
+   *   a. If it is correct, add the "proxyFactoryAddress" field in the DB.
+   *   b. If it is not correct, try calculcating the multisig address based on historical proxy
+   *      factory addresses we have deployed before. Once we find the correct address, update it
+   *      in the DB.
+   *   c. If none of the addresses are correct, add the channel to a "still broken" list and
+   *      reconcile offline.
+   */
   async fixProxyFactoryAddresses(): Promise<FixProxyFactoryAddressesResponse> {
     const fixProxyFactoryInCfCoreRecord = async (
       repoPath: string,
