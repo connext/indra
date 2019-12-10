@@ -118,7 +118,6 @@ export namespace Node {
 
   // SOURCE: https://github.com/counterfactual/monorepo/blob/master/packages/cf.js/API_REFERENCE.md#events
   export const EventNames = {
-    COUNTER_DEPOSIT_CONFIRMED_EVENT: "COUNTER_DEPOSIT_CONFIRMED_EVENT",
     CREATE_CHANNEL_EVENT: "CREATE_CHANNEL_EVENT",
     DEPOSIT_CONFIRMED_EVENT: "DEPOSIT_CONFIRMED_EVENT",
     DEPOSIT_FAILED_EVENT: "DEPOSIT_FAILED_EVENT",
