@@ -7,19 +7,6 @@ on:
       - staging
 
 jobs:
-  env-test:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - name: Dump GitHub context
-      run: echo "$GITHUB_CONTEXT"
-      env:
-        GITHUB_CONTEXT: ${{ toJson(github) }}
-    - name: print branch
-      run: echo "$BRANCH"
-      env:
-        BRANCH: ${{ github.ref }}
-
   test-units:
     runs-on: ubuntu-latest
     steps:
@@ -48,7 +35,7 @@ jobs:
     env:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-    if: github.ref == 'staging'
+    if: endsWith(github.ref, 'staging')
     needs: [test-units, test-bot, test-ui]
     runs-on: ubuntu-latest
     steps:
@@ -61,7 +48,7 @@ jobs:
     env:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-    if: github.ref == 'master'
+    if: endsWith(github.ref, 'master')
     needs: [test-units, test-bot, test-ui]
     runs-on: ubuntu-latest
     steps:
