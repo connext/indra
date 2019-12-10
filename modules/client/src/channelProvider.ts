@@ -8,12 +8,10 @@ import {
   ChannelProviderConfig,
   NewRpcMethodName,
   RpcConnection,
-  RpcType,
   Store,
 } from "./types";
 
 export class ChannelProvider {
-  private type: RpcType;
   private connection: RpcConnection;
 
   // TODO: replace this when signing keys are added!
@@ -113,45 +111,23 @@ export class ChannelProvider {
   ///////////////////////////////////////////////
   ///// SIGNING METHODS
   public signMessage = async (message: string): Promise<string> => {
-    switch (this.type) {
-      case RpcType.CounterfactualNode:
-        if (!this.wallet) {
-          throw new Error(`Cannot sign without a wallet when using smart client`);
-        }
-        // will have a mnemonic, sign with wallet
-        return await this.wallet.signMessage(arrayify(message));
-
-      case RpcType.ChannelProvider:
-        return await this._send(NewRpcMethodName.NODE_AUTH as any, { message });
-
-      default:
-        throw new Error(`Unrecognized RpcType: ${this.type}. (How'd you even get this far tho...)`);
+    if (!this.wallet) {
+      throw new Error(`Cannot sign without a wallet when using smart client`);
     }
+    // will have a mnemonic, sign with wallet
+    return await this.wallet.signMessage(arrayify(message));
   };
 
   ///////////////////////////////////////////////
   ///// STORE METHODS
 
   public get = async (path: string): Promise<any> => {
-    this.isApprovedGetSetPath(path);
-    switch (this.type) {
-      case RpcType.CounterfactualNode:
-        if (!this.store) {
-          throw new Error(
-            `Should have a defined store ref when provider type is a counterfactual node.`,
-          );
-        }
-        return await this.store.get(path);
-
-      case RpcType.ChannelProvider:
-        // route the store get call through the connection
-        return await this.connection._send(NewRpcMethodName.STORE_GET, {
-          path,
-        });
-
-      default:
-        throw new Error(`Unrecognized RpcType: ${this.type}. (How'd you even get this far tho...)`);
+    if (!this.store) {
+      throw new Error(
+        `Should have a defined store ref when provider type is a counterfactual node.`,
+      );
     }
+    return await this.store.get(path);
   };
 
   public set = async (
@@ -161,133 +137,54 @@ export class ChannelProvider {
     }[],
     allowDelete?: Boolean,
   ): Promise<void> => {
-    // verify it is in the approved paths for editing
-    pairs.forEach(({ path, value }) => {
-      this.isApprovedGetSetPath(path);
-    });
-    switch (this.type) {
-      case RpcType.CounterfactualNode:
-        if (!this.store) {
-          throw new Error(
-            `Should have a defined store ref when provider type is a counterfactual node.`,
-          );
-        }
-        return await this.store.set(pairs, allowDelete);
-
-      case RpcType.ChannelProvider:
-        // route the store get call through the connection
-        return await this.connection._send(NewRpcMethodName.STORE_SET, {
-          allowDelete,
-          pairs,
-        });
-
-      default:
-        throw new Error(`Unrecognized RpcType: ${this.type}. (How'd you even get this far tho...)`);
+    if (!this.store) {
+      throw new Error(
+        `Should have a defined store ref when provider type is a counterfactual node.`,
+      );
     }
+    return await this.store.set(pairs, allowDelete);
   };
 
   public restore = async (): Promise<{ path: string; value: any }[]> => {
-    switch (this.type) {
-      case RpcType.CounterfactualNode:
-        if (!this.store) {
-          throw new Error(
-            `Should have a defined store ref when provider type is a counterfactual node.`,
-          );
-        }
-        return await this.store.restore();
-
-      case RpcType.ChannelProvider:
-        // do not allow channel provider types to restore state
-        // TODO: can we route to the smart client here?
-        throw new Error(
-          `Cannot restore store with channel provider instantiation. Please contact original wallet provider.`,
-        );
-      default:
-        throw new Error(`Unrecognized RpcType: ${this.type}. (How'd you even get this far tho...)`);
+    if (!this.store) {
+      throw new Error(
+        `Should have a defined store ref when provider type is a counterfactual node.`,
+      );
     }
+    return await this.store.restore();
   };
 
   public reset = async (): Promise<void> => {
-    switch (this.type) {
-      case RpcType.CounterfactualNode:
-        if (!this.store) {
-          throw new Error(
-            `Should have a defined store ref when provider type is a counterfactual node.`,
-          );
-        }
-        return await this.store.reset();
-
-      case RpcType.ChannelProvider:
-        // do not allow channel provider types to reset store
-        throw new Error(
-          `Cannot restore store with channel provider instantiation. Please contact original wallet provider.`,
-        );
-      default:
-        throw new Error(`Unrecognized RpcType: ${this.type}. (How'd you even get this far tho...)`);
+    if (!this.store) {
+      throw new Error(
+        `Should have a defined store ref when provider type is a counterfactual node.`,
+      );
     }
+    return await this.store.reset();
   };
 
   public restoreState = async (path: string): Promise<void> => {
-    switch (this.type) {
-      case RpcType.CounterfactualNode:
-        this.reset();
-        let state;
-        state = await this.restore();
-        if (!state || !state.path) {
-          throw new Error(`No matching paths found in store backup's state`);
-        }
-        state = state.path;
-        return state;
-
-      case RpcType.ChannelProvider:
-        // do not allow channel provider types to reset store
-        return await this.connection._send(NewRpcMethodName.RESTORE_STATE, { path });
-      default:
-        throw new Error(`Unrecognized RpcType: ${this.type}. (How'd you even get this far tho...)`);
+    this.reset();
+    let state;
+    state = await this.restore();
+    if (!state || !state.path) {
+      throw new Error(`No matching paths found in store backup's state`);
     }
+    state = state.path;
+    return state;
   };
-
-  ///////////////////////////////////////////////
-  ///// PRIVATE METHODS
-
-  private isApprovedGetSetPath(path: string): void {
-    // if it is a smart client, all paths are approved
-    if (this.type === RpcType.CounterfactualNode) {
-      return;
-    }
-
-    // verify it is in the approved paths for editing
-    if (this.approvedStorePaths.indexOf(path) === -1) {
-      throw new Error(`Not an approved store path to get/set: ${path}`);
-    }
-  }
 
   // tslint:disable-next-line: function-name
   private async _send(
     methodName: CFCoreTypes.RpcMethodName,
     parameters: RpcParameters,
   ): Promise<any> {
-    let result: any;
-    switch (this.type) {
-      case RpcType.CounterfactualNode:
-        const ret = await this.connection.rpcRouter.dispatch({
-          id: Date.now(),
-          methodName,
-          parameters,
-        });
-        // cf module nests the return value in a `.result.result`
-        // should make sure that the channel provider call
-        // does not
-        result = ret.result.result;
-        break;
-
-      case RpcType.ChannelProvider:
-        result = await this.connection._send(methodName, parameters);
-        break;
-
-      default:
-        throw new Error(`Unknown rpc type: ${this.type}`);
-    }
+    const ret = await this.connection.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName,
+      parameters,
+    });
+    const result = ret.result.result;
     return result;
   }
 }
