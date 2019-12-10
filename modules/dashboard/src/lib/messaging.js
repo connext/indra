@@ -49,6 +49,11 @@ export default class AdminMessaging {
     return await this.send("get-channels-no-proxy-factory")
   }
 
+  async fixChannelsIncorrectProxyFactoryAddress() {
+    // use longer timeout bc this function takes a long time
+    return await this.send("fix-proxy-factory-addresses", {}, 90_000)
+  }
+
   ///////////////////////////////////////
   ////// TRANSFER API METHODS
   async getAllLinkedTransfers() {
@@ -63,7 +68,7 @@ export default class AdminMessaging {
 
   ///////////////////////////////////////
   ////// SEND REQUEST
-  async send(subject, data) {
+  async send(subject, data, timeout = API_TIMEOUT) {
     // assert connected
     if (!this.connected) {
       throw new Error(`Call messaging.connect before calling send`);
@@ -82,7 +87,7 @@ export default class AdminMessaging {
       token: this.token,
     };
 
-    const msg = await this.service.request(`admin.${subject}`, API_TIMEOUT, payload);
+    const msg = await this.service.request(`admin.${subject}`, timeout, payload);
     const error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
 
     if (!msg.data) {

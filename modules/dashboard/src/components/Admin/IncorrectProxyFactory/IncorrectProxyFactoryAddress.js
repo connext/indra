@@ -1,5 +1,6 @@
 import React from "react";
-import { Grid, styled, Button } from "@material-ui/core";
+import { styled } from '@material-ui/core/styles';
+import Grid from '@material-ui/core/Grid';
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
@@ -12,7 +13,7 @@ import Typography from "@material-ui/core/Typography";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 
 const StyledExpansionPanel = styled(ExpansionPanel)({
-  minWidth: "650px",
+  width: "100%",
 });
 
 export const IncorrectProxyFactoryAddress = ({ tableData }) => (

@@ -4,7 +4,7 @@ import { Switch, Route, Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import DebugChannel from "./DebugChannel";
 import DebugNode from "./DebugNode";
-import Admin from "./Admin";
+import Admin from "./Admin/Admin";
 import { Home as HomeIcon } from "@material-ui/icons";
 
 const styles = {
