@@ -75,7 +75,7 @@ export class ResolveConditionController extends AbstractController {
     // convert and validate
     const { paymentId, preImage } = params;
 
-    this.connext.emit("RECIEVE_TRANSFER_STARTED", { paymentId });
+    this.connext.emit("RECIEVE_TRANSFER_STARTED_EVENT", { paymentId });
 
     // convert and validate
     const { assetId, amount } = await this.node.fetchLinkedTransfer(params.paymentId);
@@ -90,7 +90,7 @@ export class ResolveConditionController extends AbstractController {
     try {
       await this.node.resolveLinkedTransfer(paymentId, preImage);
     } catch (e) {
-      this.connext.emit("RECIEVE_TRANSFER_FAILED", { paymentId });
+      this.connext.emit("RECIEVE_TRANSFER_FAILED_EVENT", { paymentId });
       throw e;
     }
 
@@ -109,7 +109,7 @@ export class ResolveConditionController extends AbstractController {
       );
     }
 
-    this.connext.emit("RECIEVE_TRANSFER_FINISHED", { paymentId });
+    this.connext.emit("RECIEVE_TRANSFER_FINISHED_EVENT", { paymentId });
 
     return {
       freeBalance: await this.connext.getFreeBalance(assetId),

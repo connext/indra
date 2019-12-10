@@ -595,21 +595,15 @@ export class ConnextClient implements IConnextClient {
   ///////////////////////////////////
   // EVENT METHODS
 
-  public on = (
-    event: ConnextEvent | CFCoreTypes.EventName,
-    callback: (...args: any[]) => void,
-  ): ConnextListener => {
+  public on = (event: ConnextEvent, callback: (...args: any[]) => void): ConnextListener => {
     return this.listener.on(event, callback);
   };
 
-  public once = (
-    event: ConnextEvent | CFCoreTypes.EventName,
-    callback: (...args: any[]) => void,
-  ): ConnextListener => {
+  public once = (event: ConnextEvent, callback: (...args: any[]) => void): ConnextListener => {
     return this.listener.once(event, callback);
   };
 
-  public emit = (event: ConnextEvent | CFCoreTypes.EventName, data: any): boolean => {
+  public emit = (event: ConnextEvent, data: any): boolean => {
     return this.listener.emit(event, data);
   };
 
