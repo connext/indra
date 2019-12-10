@@ -19,7 +19,7 @@ const StyledExpansionPanel = styled(ExpansionPanel)({
 export const IncorrectProxyFactoryAddress = ({ tableData }) => (
   <Grid item xs={12}>
     <StyledExpansionPanel>
-      <ExpansionPanelSummary expandIcon={<ExpandMoreIcon />}>
+      <ExpansionPanelSummary expandIcon={<ExpandMoreIcon />} disabled={!Array.isArray(tableData) || tableData.length === 0}>
         <Typography>{tableData.length} Affected Channels</Typography>
       </ExpansionPanelSummary>
       <ExpansionPanelDetails>

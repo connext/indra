@@ -2,7 +2,7 @@ import { MessagingServiceFactory } from "@connext/messaging";
 import uuid from "uuid";
 import { stringify } from "./utils";
 
-const API_TIMEOUT = 15000;
+const API_TIMEOUT = 30_000;
 
 export default class AdminMessaging {
   constructor(messagingUrl, token, logLevel = 5) {

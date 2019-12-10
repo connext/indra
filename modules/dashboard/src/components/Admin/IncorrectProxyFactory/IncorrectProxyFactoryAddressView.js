@@ -5,7 +5,7 @@ import Snackbar from '@material-ui/core/Snackbar';
 import { IncorrectProxyFactoryAddress } from "./IncorrectProxyFactoryAddress";
 
 export const GetIncorrectProxyFactoryAddress = ({ messaging }) => {
-  const [incorrectProxyFactoryAddressData, setIncorrectProxyFactoryAddressData] = useState([]);
+  const [incorrectProxyFactoryAddressData, setIncorrectProxyFactoryAddressData] = useState();
   const [disabled, setDisabled] = useState(false);
 
   const getChannelsIncorrectProxyFactoryAddress = async () => {
@@ -33,7 +33,7 @@ export const GetIncorrectProxyFactoryAddress = ({ messaging }) => {
           Get Channels With Incorrect Proxy Address
         </Button>
       </Grid>
-      {incorrectProxyFactoryAddressData.length > 0 && (
+      {Array.isArray(incorrectProxyFactoryAddressData) && (
         <IncorrectProxyFactoryAddress tableData={incorrectProxyFactoryAddressData} />
       )}
     </>
