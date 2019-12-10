@@ -44,33 +44,29 @@ export class ChannelProvider {
   }
 
   public enable = async (): Promise<ChannelProviderConfig> => {
-    return await this._config();
+    return this.config;
   };
 
   public send = async (
     method: CFCoreTypes.RpcMethodName | NewRpcMethodName,
-    params: RpcParameters = {},
+    params: any = {},
   ): Promise<any> => {
     let result;
     switch (method) {
       case NewRpcMethodName.STORE_SET:
-        const { pairs } = params;
-        result = await this.set(pairs);
+        result = await this.set(params.pairs);
         break;
       case NewRpcMethodName.STORE_GET:
-        const { path } = params;
-        result = await this.get(path);
+        result = await this.get(params.path);
         break;
       case NewRpcMethodName.NODE_AUTH:
-        const { message } = params;
-        result = await this.signMessage(message);
+        result = await this.signMessage(params.message);
         break;
       case NewRpcMethodName.CONFIG:
-        result = await this._config();
+        result = this.config;
         break;
       case NewRpcMethodName.RESTORE_STATE:
-        const { path } = params;
-        result = await this.restoreState(path);
+        result = await this.restoreState(params.path);
         break;
       default:
         result = await this._send(method as CFCoreTypes.RpcMethodName, params);

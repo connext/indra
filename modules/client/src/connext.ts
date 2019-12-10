@@ -385,7 +385,7 @@ export class ConnextClient implements IConnextClient {
   public restart = async (): Promise<void> => {
     // Create a fresh channelProvider & start using that.
     // End goal is to use this to restart the cfNode after restoring state
-    const channelProvider = = await createCFChannelProvider({
+    const channelProvider = await createCFChannelProvider({
       ethProvider: this.ethProvider,
       keyGen: this.keyGen,
       lockService: { acquireLock: this.node.acquireLock.bind(this.node) },
@@ -394,7 +394,7 @@ export class ConnextClient implements IConnextClient {
       nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
       nodeUrl: this.channelProvider.config.nodeUrl,
       store: this.store,
-      xpub:this.publicIdentifier,
+      xpub: this.publicIdentifier,
     });
     // TODO: this is very confusing to have to do, lets try to figure out a better way
     channelProvider.multisigAddress = this.multisigAddress;
