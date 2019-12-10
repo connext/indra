@@ -76,9 +76,9 @@ function prettyPrint(obj) {
   return JSON.stringify(obj, null, 2);
 }
 
-async function mapPayloadToClient(payload, channel) {
+function verifyPayload(payload) {
   const { params, id, method } = payload;
-  console.log("[mapPayloadToClient]", "payload", prettyPrint(payload));
+
   if (!params || typeof params !== "object") {
     throw new Error(
       `WalletConnect Error - invalid payload params. Payload: ${prettyPrint(payload)}`,
@@ -95,90 +95,24 @@ async function mapPayloadToClient(payload, channel) {
     );
   }
 
-  let result;
+  return;
+}
+
+async function mapPayloadToClient(payload, channel) {
   try {
-    switch (method) {
-      case "chan_storeSet":
-        verifyFields(params, ["pairs"]);
-        const { pairs } = params;
-        result = await channel.channelRouter.set(pairs);
-        break;
-      case "chan_storeGet":
-        verifyFields(params, ["path"]);
-        const { path } = params;
-        result = await channel.channelRouter.get(path);
-        break;
-      case "chan_nodeAuth":
-        verifyFields(params, ["message"]);
-        const { message } = params;
-        result = await channel.channelRouter.signMessage(message);
-        break;
-      case "chan_config":
-        result = await channel.channelProviderConfig(params);
-        break;
-      case "chan_restoreState":
-        result = await channel.restoreState(params);
-        break;
-      case CFCoreTypes.RpcMethodName.DEPOSIT:
-        result = await channel.providerDeposit(params);
-        break;
-      case CFCoreTypes.RpcMethodName.GET_STATE:
-        result = await channel.getState(params);
-        break;
-      case CFCoreTypes.RpcMethodName.GET_APP_INSTANCES:
-        result = await channel.channelRouter.getAppInstances(params);
-        break;
-      case CFCoreTypes.RpcMethodName.GET_FREE_BALANCE_STATE:
-        verifyFields(params, ["tokenAddress", "multisigAddress"]);
-        const { tokenAddress } = params;
-        result = await channel.getFreeBalance(tokenAddress);
-        break;
-      case CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES:
-        result = await channel.getProposedAppInstances(params);
-        break;
-      case CFCoreTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS:
-        result = await channel.getAppInstanceDetails(params);
-        break;
-      case CFCoreTypes.RpcMethodName.TAKE_ACTION:
-        result = await channel.takeAction(params);
-        break;
-      case CFCoreTypes.RpcMethodName.UPDATE_STATE:
-        result = await channel.updateState(params);
-        break;
-      case CFCoreTypes.RpcMethodName.PROPOSE_INSTALL:
-        result = await channel.proposeInstallApp(params);
-        break;
-      case CFCoreTypes.RpcMethodName.INSTALL_VIRTUAL:
-        result = await channel.installVirtualApp(params);
-        break;
-      case CFCoreTypes.RpcMethodName.INSTALL:
-        result = await channel.installApp(params);
-        break;
-      case CFCoreTypes.RpcMethodName.UNINSTALL:
-        result = await channel.uninstallApp(params);
-        break;
-      case CFCoreTypes.RpcMethodName.UNINSTALL_VIRTUAL:
-        result = await channel.uninstallVirtualApp(params);
-        break;
-      case CFCoreTypes.RpcMethodName.REJECT_INSTALL:
-        result = await channel.rejectInstallApp(params);
-        break;
-      case CFCoreTypes.RpcMethodName.WITHDRAW:
-        result = await channel.providerWithdraw(params);
-        break;
-      case CFCoreTypes.RpcMethodName.WITHDRAW_COMMITMENT:
-        result = await channel.withdrawCommitment(params);
-        break;
-      default:
-        console.error(`WalletConnect Error - unknown method: ${method}`);
-        break;
+    verifyPayload(payload);
+
+    let result = await channel.channelRouter.send(payload.method, payload.params);
+
+    if (typeof result === "undefined") {
+      const message = "WalletConnect Error - result is undefined";
+      console.error(message);
+      walletConnector.rejectRequest({ id: payload.id, error: { message } });
+    } else {
+      walletConnector.approveRequest({ id: payload.id, result });
     }
   } catch (e) {
-    console.error(`WalletConnect Error`, e);
+    console.error(message);
+    walletConnector.rejectRequest({ id: payload.id, error: { message: e.message } });
   }
-  if (typeof result === "undefined") {
-    console.error("WalletConnect Error - result is undefined");
-  }
-  console.log("[mapPayloadToClient]", "result", result);
-  walletConnector.approveRequest({ id, result });
 }
