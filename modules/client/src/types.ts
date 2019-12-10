@@ -7,7 +7,7 @@ import {
   NetworkContext,
   Store,
 } from "@connext/types";
-import { Contract, providers, Wallet } from "ethers";
+import { Contract, providers } from "ethers";
 import { Network } from "ethers/utils";
 
 import { ChannelProvider } from "./channelProvider";
@@ -42,7 +42,10 @@ export {
   AppRegistry,
   AppStateBigNumber,
   CFCoreChannel,
+  CFChannelProviderOptions,
   ChannelAppSequences,
+  ChannelProvider,
+  ChannelProviderConfig,
   ChannelState,
   ClientOptions,
   CoinBalanceRefundAppState,
@@ -75,7 +78,6 @@ export {
   ResolveLinkedTransferResponse,
   RequestDepositRightsParameters,
   RpcConnection,
-  RpcType,
   SimpleLinkedTransferAppState,
   SimpleLinkedTransferAppStateBigNumber,
   SimpleSwapAppState,
@@ -126,26 +128,4 @@ export enum NewRpcMethodName {
   CONFIG = "chan_config",
   RESTORE_STATE = "chan_restoreState",
   GET_STATE_CHANNEL = "chan_getStateChannel",
-}
-
-export type ChannelProviderConfig = {
-  freeBalanceAddress: string;
-  multisigAddress?: string; // may not be deployed yet
-  natsClusterId?: string;
-  natsToken?: string;
-  nodeUrl: string;
-  signerAddress: string;
-  userPublicIdentifier: string;
-};
-
-export interface CFChannelProviderOptions {
-  messaging: any;
-  store: Store;
-  networkContext: NetworkContext;
-  nodeConfig: any;
-  ethProvider: any;
-  lockService?: CFCoreTypes.ILockService;
-  xpub: string;
-  keyGen: CFCoreTypes.IPrivateKeyGenerator;
-  nodeUrl: string;
 }
