@@ -42,14 +42,12 @@ const address = {
   // rinkeby: "0x5307b4f67ca8746562a4a9fdeb0714033008ef4a",
 };
 
-const StatsSummary = props => {
-  const { classes, messaging, token } = props;
-
+const StatsSummary = ({ classes, messaging }) => {
   const [allChannels, setAllChannels] = useState(null);
   const [channelTotal, setChannelTotal] = useState(0);
   const [nodeTotal, setNodeTotal] = useState(0);
   const [allTransfers, setAllTransfers] = useState(null);
-  const [averageTransfer, setAverageTransfer] = useState(0);
+  const [, setAverageTransfer] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState(null);
 

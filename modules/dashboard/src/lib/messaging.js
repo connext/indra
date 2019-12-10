@@ -45,6 +45,10 @@ export default class AdminMessaging {
     return await this.send("get-all-channels")
   }
 
+  async getChannelsIncorrectProxyFactoryAddress() {
+    return await this.send("get-channels-no-proxy-factory")
+  }
+
   ///////////////////////////////////////
   ////// TRANSFER API METHODS
   async getAllLinkedTransfers() {
@@ -86,7 +90,7 @@ export default class AdminMessaging {
       return undefined;
     }
 
-    const { err, response, ...rest } = msg.data;
+    const { err, response } = msg.data;
     if (err || error) {
       throw new Error(`Error sending request. Message: ${stringify(msg)}`);
     }
