@@ -15,7 +15,9 @@ jobs:
       run: make clean && make reset
 
     - name: Test env vars
-      run: env && echo "email: $INDRA_EMAIL"
+      run: |
+        env
+        echo "email: $INDRA_EMAIL"
       env:
         TEST: foobar
         INDRA_EMAIL: ${{ secrets.INDRA_EMAIL }}
