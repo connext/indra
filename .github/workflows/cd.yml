@@ -13,9 +13,10 @@ jobs:
     - uses: actions/checkout@v1
     - run: make clean
     - run: make reset
-    - run: make prod
-    - run: make test-node
+    - run: make dev
     - run: make test-cf
+    - run: make test-node
+    - run: make prod
     - run: make start-test
     - run: make test-bot
     - run: make test-ui
