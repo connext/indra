@@ -42,12 +42,6 @@ const styles = {
     color: "#002868",
     textDecoration: "none",
   },
-  cardText: {
-    textAlign: "left",
-    fontSize: "18px",
-    color: "#002868",
-    textDecoration: "none",
-  },
   channelStateGrid: {},
   icon: {
     color: "#002868",
@@ -68,7 +62,7 @@ const DebugChannel = ({ classes, messaging }) => {
   // const [messaging, setMessaging] = useState(props.messaging);
   const [xPubSearch, setXPubSearch] = useState("");
   const [multiSigSearch, setMultiSigSearch] = useState("");
-  const [noFreeBalance, setNoFreeBalance] = useState(null);
+  const [, setNoFreeBalance] = useState(null);
   const [channelState, setChannelState] = useState(null);
   const [freeBalance, setFreeBalance] = useState(0);
   const [loading, setLoading] = useState(false);

@@ -4,6 +4,7 @@ import { Switch, Route, Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import DebugChannel from "./DebugChannel";
 import DebugNode from "./DebugNode";
+import Admin from "./Admin/Admin";
 import { Home as HomeIcon } from "@material-ui/icons";
 
 const styles = {
@@ -54,6 +55,9 @@ function Debug({ classes, messaging, prefix }) {
         <Button className={classes.button} component={Link} to={`${prefix}/debug/node`}>
           <Typography className={classes.buttonText}>Node</Typography>
         </Button>
+        <Button className={classes.button} component={Link} to={`${prefix}/debug/admin`}>
+          <Typography className={classes.buttonText}>Admin</Typography>
+        </Button>
       </Grid>
       <Switch>
         <Route
@@ -65,6 +69,11 @@ function Debug({ classes, messaging, prefix }) {
           exact
           path={`${prefix}/debug/node`}
           render={props => <DebugNode {...props} messaging={messaging} />}
+        />
+        <Route
+          exact
+          path={`${prefix}/debug/admin`}
+          render={props => <Admin {...props} messaging={messaging} />}
         />
       </Switch>
     </Grid>
