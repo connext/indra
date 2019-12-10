@@ -3,6 +3,7 @@ import { appIdentityToHash } from "../../../machine";
 import { AppInstanceProposal } from "../../../models";
 import { Store } from "../../../store";
 import { NetworkContext, Node } from "../../../types";
+import { NO_NETWORK_PROVIDER_CREATE2 } from "../../errors";
 
 /**
  * Creates a AppInstanceProposal to reflect the proposal received from
@@ -30,10 +31,18 @@ export async function createProposedAppInstance(
     timeout
   } = params;
 
-  // TODO: no way to determine if this is a virtual or regular app being
+  // no way to determine if this is a virtual or regular app being
   // proposed. because it may be a virtual app, and the function defaults
   // to pulling from the store, assume it is okay to use a generated
-  // multisig
+  // multisig.
+
+  // if the generated multisig address is wrong (because proxy has been
+  // redeployed), then there will be a state channel added to the store
+  // under the wrong multisig address, with *no* free balance app instance
+  // and this is where the app instance will be stored. the only time this
+  // should come up in practice (because it defaults to pulling multisig
+  // address from the store) is when it's a virtual app between a *new*
+  // initiator and responder pair.
   const multisigAddress = await store.getMultisigAddressWithCounterparty(
     [myIdentifier, proposedToIdentifier],
     networkContext.ProxyFactory,
@@ -43,6 +52,7 @@ export async function createProposedAppInstance(
 
   const stateChannel = await store.getOrCreateStateChannelBetweenVirtualAppParticipants(
     multisigAddress,
+    networkContext.ProxyFactory,
     myIdentifier,
     proposedToIdentifier
   );

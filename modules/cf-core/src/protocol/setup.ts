@@ -33,6 +33,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     const stateChannel = StateChannel.setupChannel(
       network.IdentityApp,
+      network.ProxyFactory,
       multisigAddress,
       [initiatorXpub, responderXpub]
     );
@@ -90,6 +91,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     const stateChannel = StateChannel.setupChannel(
       network.IdentityApp,
+      network.ProxyFactory,
       multisigAddress,
       [initiatorXpub, responderXpub]
     );

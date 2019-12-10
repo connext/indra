@@ -22,8 +22,8 @@ jobs:
       image: ubuntu-1604:201903-01
     steps:
       - checkout
-      - run: make prod
-      - run: make start-test
+      - run: make dev
+      - run: make start-headless
       - run: make test-bot
 
   test-cf:
@@ -117,10 +117,30 @@ workflows:
   version: 2
   test-and-deploy:
     jobs:
-      - test-node
-      - test-ui
-      - test-bot
-      - test-cf
+      - test-node:
+          filters:
+            branches:
+              only:
+               - master
+               - staging
+      - test-ui:
+          filters:
+            branches:
+              only:
+               - master
+               - staging
+      - test-bot:
+          filters:
+            branches:
+              only:
+               - master
+               - staging
+      - test-cf:
+          filters:
+            branches:
+              only:
+               - master
+               - staging
 
       - push-latest-images:
           filters:

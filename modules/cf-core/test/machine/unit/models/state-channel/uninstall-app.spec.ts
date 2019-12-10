@@ -22,6 +22,7 @@ describe("StateChannel::uninstallApp", () => {
 
     sc1 = StateChannel.setupChannel(
       networkContext.IdentityApp,
+      networkContext.ProxyFactory,
       multisigAddress,
       xpubs
     );

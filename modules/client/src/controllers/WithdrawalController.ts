@@ -25,7 +25,9 @@ export class WithdrawalController extends AbstractController {
 
     const preWithdrawBalances = await this.connext.getFreeBalance(assetId);
 
-    this.log.info(`\nWithdrawing ${amount} wei from ${this.connext.multisigAddress}\n`);
+    this.log.info(
+      `\nWithdrawing ${amount} wei from ${this.connext.multisigAddress} to ${recipient}\n`,
+    );
 
     // register listeners
     this.registerListeners();

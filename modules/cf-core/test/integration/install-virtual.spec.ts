@@ -1,5 +1,9 @@
-import { Node } from "../../src";
-import { NODE_EVENTS, ProposeMessage, InstallVirtualMessage } from "../../src/types";
+import { Node, VIRTUAL_APP_INSTALLATION_FAIL } from "../../src";
+import {
+  NODE_EVENTS,
+  ProposeMessage,
+  InstallVirtualMessage
+} from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 
 import { setup, SetupContext } from "./setup";
@@ -12,8 +16,10 @@ import {
   getInstalledAppInstances,
   getProposedAppInstances,
   installTTTVirtual,
-  makeVirtualProposal,
+  makeVirtualProposal
 } from "./utils";
+import { One, Zero } from "ethers/constants";
+import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
@@ -40,49 +46,47 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
         await collateralizeChannel(multisigAddressAB, nodeA, nodeB);
         await collateralizeChannel(multisigAddressBC, nodeB, nodeC);
 
-        nodeA.once(NODE_EVENTS.INSTALL_VIRTUAL, async (msg: InstallVirtualMessage) => {
-          const [virtualAppNodeA] = await getInstalledAppInstances(nodeA);
+        nodeA.once(
+          NODE_EVENTS.INSTALL_VIRTUAL,
+          async (msg: InstallVirtualMessage) => {
+            const [virtualAppNodeA] = await getInstalledAppInstances(nodeA);
 
-          const [virtualAppNodeC] = await getInstalledAppInstances(nodeC);
+            const [virtualAppNodeC] = await getInstalledAppInstances(nodeC);
 
-          expect(virtualAppNodeA).toEqual(virtualAppNodeC);
+            expect(virtualAppNodeA).toEqual(virtualAppNodeC);
 
-          assertNodeMessage(msg, {
-            from: nodeC.publicIdentifier,
-            type: NODE_EVENTS.INSTALL_VIRTUAL,
-            data: {
-              params: {
-                appInstanceId: virtualAppNodeA.identityHash,
+            assertNodeMessage(msg, {
+              from: nodeC.publicIdentifier,
+              type: NODE_EVENTS.INSTALL_VIRTUAL,
+              data: {
+                params: {
+                  appInstanceId: virtualAppNodeA.identityHash
+                }
               }
-            }
-          });
+            });
 
-          done();
-        });
-
-        nodeC.once(
-          NODE_EVENTS.PROPOSE_INSTALL,
-          async (msg: ProposeMessage) => {
-            const { params: proposedParams } = await proposal;
-            assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams)
-            const { data: { params, appInstanceId } } = msg;
-            const [proposedAppNodeC] = await getProposedAppInstances(nodeC);
-
-            confirmProposedAppInstance(params, proposedAppNodeC, true);
-
-            expect(proposedAppNodeC.proposedByIdentifier).toEqual(
-              nodeA.publicIdentifier
-            );
-
-            await installTTTVirtual(nodeC, appInstanceId, nodeB.publicIdentifier);
+            done();
           }
         );
 
-        const proposal = makeVirtualProposal(
-          nodeA,
-          nodeC,
-          TicTacToeApp
-        );
+        nodeC.once(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
+          const { params: proposedParams } = await proposal;
+          assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
+          const {
+            data: { params, appInstanceId }
+          } = msg;
+          const [proposedAppNodeC] = await getProposedAppInstances(nodeC);
+
+          confirmProposedAppInstance(params, proposedAppNodeC, true);
+
+          expect(proposedAppNodeC.proposedByIdentifier).toEqual(
+            nodeA.publicIdentifier
+          );
+
+          await installTTTVirtual(nodeC, appInstanceId, nodeB.publicIdentifier);
+        });
+
+        const proposal = makeVirtualProposal(nodeA, nodeC, TicTacToeApp);
         const { params } = await proposal;
 
         const [proposedAppNodeA] = await getProposedAppInstances(nodeA);
@@ -91,4 +95,83 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
       });
     }
   );
+
+  describe("Node A makes a virtual proposal through intermediary B to install a virtual app instance with c", () => {
+    let nodeA: Node;
+    let nodeB: Node;
+    let nodeC: Node;
+
+    let multisigAddressAB: string;
+    let multisigAddressBC: string;
+
+    beforeAll(async () => {
+      const context: SetupContext = await setup(global, true);
+      nodeA = context["A"].node;
+      nodeB = context["B"].node;
+      nodeC = context["C"].node;
+
+      multisigAddressAB = await createChannel(nodeA, nodeB);
+      multisigAddressBC = await createChannel(nodeB, nodeC);
+    });
+
+    it("should fail if intermediary has insufficient collateral in the channel", async done => {
+      // only collateralize initiator
+      await collateralizeChannel(
+        multisigAddressAB,
+        nodeA,
+        nodeB,
+        One,
+        CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+        false
+      );
+
+      // proposal will not involve intermediary, install from nodeC
+      nodeC.once(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
+        const {
+          data: { appInstanceId }
+        } = msg;
+        try {
+          await installTTTVirtual(nodeC, appInstanceId, nodeB.publicIdentifier);
+        } catch (e) {
+          expect(
+            e.message.includes(`Node Error: ${VIRTUAL_APP_INSTALLATION_FAIL}`)
+          ).toBeTruthy();
+        }
+        done();
+      });
+
+      // try to install a virtual app with insufficient collateral
+      const { params } = await makeVirtualProposal(nodeA, nodeC, TicTacToeApp);
+      expect(params.initiatorDeposit.gt(Zero)).toBeTruthy();
+
+      const [proposedAppNodeA] = await getProposedAppInstances(nodeA);
+
+      confirmProposedAppInstance(params, proposedAppNodeA);
+    });
+
+    // FIXME: does not emit event on intermediary during virtual install
+    it.skip("should emit an event on intermediaries node", async done => {
+      await collateralizeChannel(multisigAddressAB, nodeA, nodeB);
+      await collateralizeChannel(multisigAddressBC, nodeB, nodeC);
+
+      // verify nodeB receives event
+      nodeB.once(NODE_EVENTS.INSTALL_VIRTUAL, () => done());
+
+      // proposal will not involve intermediary, install from nodeC
+      nodeC.once(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
+        const {
+          data: { appInstanceId }
+        } = msg;
+        await installTTTVirtual(nodeC, appInstanceId, nodeB.publicIdentifier);
+      });
+
+      // try to install a virtual app with insufficient collateral
+      const { params } = await makeVirtualProposal(nodeA, nodeC, TicTacToeApp);
+      expect(params.initiatorDeposit.gt(Zero)).toBeTruthy();
+
+      const [proposedAppNodeA] = await getProposedAppInstances(nodeA);
+
+      confirmProposedAppInstance(params, proposedAppNodeA);
+    });
+  });
 });

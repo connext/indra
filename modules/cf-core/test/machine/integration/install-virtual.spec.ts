@@ -168,7 +168,8 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
     ) {
       return StateChannel.setupChannel(
         network.IdentityApp,
-        proxyAddress,
+        proxyFactory.address,
+        proxyAddress, // used as multisigAddress
         xpubs
       ).setFreeBalance(
         FreeBalanceClass.createWithFundedTokenAmounts(

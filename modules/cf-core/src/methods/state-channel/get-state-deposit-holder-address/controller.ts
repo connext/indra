@@ -1,18 +1,10 @@
-import {
-  getAddress,
-  Interface,
-  keccak256,
-  solidityKeccak256,
-  solidityPack
-} from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
 
-import { MinimumViableMultisig } from "../../../contracts";
-import { xkeysToSortedKthAddresses } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
 import { Node } from "../../../types";
 import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
+import { NO_NETWORK_PROVIDER_CREATE2 } from "../../errors";
 
 export default class GetStateDepositHolderAddressController extends NodeController {
   @jsonRpcMethod(Node.RpcMethodName.GET_STATE_DEPOSIT_HOLDER_ADDRESS)
@@ -23,18 +15,22 @@ export default class GetStateDepositHolderAddressController extends NodeControll
     params: Node.GetStateDepositHolderAddressParams
   ): Promise<Node.GetStateDepositHolderAddressResult> {
     const { owners } = params;
-    const { networkContext } = requestHandler;
+    const { networkContext, store } = requestHandler;
     if (!networkContext.provider) {
-      throw new Error(
-        `getCreate2MultisigAddress needs access to an eth provider`
-      );
+      throw new Error(NO_NETWORK_PROVIDER_CREATE2);
     }
-    const address = await getCreate2MultisigAddress(
+
+    // safe to use network context proxy factory address directly here.
+    // the `getMultisigAddressWithCounterparty` function will default
+    // to using any existing multisig address for the provided
+    // owners before creating one
+    const address = await store.getMultisigAddressWithCounterparty(
       owners,
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
-      networkContext.provider
+      networkContext.provider!
     );
+
     return { address };
   }
 }

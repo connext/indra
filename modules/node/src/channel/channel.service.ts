@@ -335,9 +335,7 @@ export class ChannelService {
   async getStateChannel(userPublicIdentifier: string): Promise<StateChannelJSON> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     if (!channel) {
-      throw new Error(
-        `No channel exists for userPublicIdentifier ${userPublicIdentifier}`,
-      );
+      throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
     }
     const { data: state } = await this.cfCoreService.getStateChannel(channel.multisigAddress);
 
