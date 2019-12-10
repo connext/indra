@@ -102,7 +102,7 @@ async function mapPayloadToClient(payload, channel) {
   try {
     verifyPayload(payload);
 
-    let result = await channel.channelRouter.send(payload.method, payload.params);
+    let result = await channel.channelProvider.send(payload.method, payload.params);
 
     if (typeof result === "undefined") {
       const message = "WalletConnect Error - result is undefined";
