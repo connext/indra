@@ -11,9 +11,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - run: echo github.ref {{ github.ref }}
+    - name: Dump GitHub context
+      run: echo "$GITHUB_CONTEXT"
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+    - name: print branch
+      run: echo "$BRANCH"
+      env:
+        BRANCH: ${{ github.ref }}
 
-  unit-tests:
+  test-units:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -21,7 +28,7 @@ jobs:
     - run: make test-cf
     - run: make test-node
 
-  bot-test:
+  test-bot:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -29,7 +36,7 @@ jobs:
     - run: make start-test
     - run: make test-bot
 
-  ui-test:
+  test-ui:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -42,7 +49,7 @@ jobs:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     if: github.ref == 'staging'
-    needs: [unit-tests, bot-test, ui-test]
+    needs: [test-units, test-bot, test-ui]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -55,7 +62,7 @@ jobs:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     if: github.ref == 'master'
-    needs: [unit-tests, bot-test, ui-test]
+    needs: [test-units, test-bot, test-ui]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
