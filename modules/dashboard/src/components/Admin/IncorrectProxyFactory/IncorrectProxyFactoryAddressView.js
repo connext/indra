@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Grid from "@material-ui/core/Grid";
 import Button from "@material-ui/core/Button";
+import Snackbar from '@material-ui/core/Snackbar';
 import { IncorrectProxyFactoryAddress } from "./IncorrectProxyFactoryAddress";
 
 export const GetIncorrectProxyFactoryAddress = ({ messaging }) => {
@@ -40,15 +41,17 @@ export const GetIncorrectProxyFactoryAddress = ({ messaging }) => {
 };
 
 export const FixIncorrectProxyFactoryAddress = ({ messaging }) => {
-  const [fixed, setFixed] = useState();
+  const [fixed, setFixed] = useState({ fixedChannels: [] });
   const [disabled, setDisabled] = useState(false);
+  const [open, setOpen] = React.useState(false);
 
   const fixIncorrectProxyFactoryAddresses = async () => {
     setDisabled(true);
     try {
-      const fixed = await messaging.fixChannelsIncorrectProxyFactoryAddress();
-      console.log("fixed: ", fixed);
-      setFixed(fixed);
+      const fixedResponse = await messaging.fixChannelsIncorrectProxyFactoryAddress();
+      console.log("fixedResponse: ", fixedResponse);
+      setFixed(fixedResponse);
+      setOpen(true);
     } finally {
       setDisabled(false);
     }
@@ -65,6 +68,11 @@ export const FixIncorrectProxyFactoryAddress = ({ messaging }) => {
       >
         Fix Channels With Incorrect Proxy Address
       </Button>
+      <Snackbar
+        open={open}
+        autoHideDuration={6000}
+        message={`Fixed ${fixed.fixedChannels.length} channels 🏗`}
+      />
     </Grid>
   );
 };
