@@ -1,6 +1,6 @@
 import { bigNumberify } from "ethers/utils";
 
-import { stringify, xpubToAddress } from "../lib";
+import { stringify } from "../lib";
 import {
   ResolveConditionParameters,
   ResolveConditionResponse,
@@ -8,7 +8,6 @@ import {
   ResolveLinkedTransferResponse,
   TransferCondition,
 } from "../types";
-import { notLessThan, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
