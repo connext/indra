@@ -159,9 +159,6 @@ export default class ListenerService implements OnModuleInit {
         transfer.status = LinkedTransferStatus.FAILED;
         await this.linkedTransferRepository.save(transfer);
       },
-      REJECT_INSTALL_VIRTUAL_EVENT: (data: RejectInstallVirtualMessage): void => {
-        logEvent("REJECT_INSTALL_VIRTUAL_EVENT", data);
-      },
       UNINSTALL_EVENT: (data: UninstallMessage): void => {
         logEvent("UNINSTALL_EVENT", data);
       },

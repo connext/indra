@@ -107,9 +107,6 @@ export class ConnextListener extends EventEmitter {
     REJECT_INSTALL_EVENT: (msg: RejectProposalMessage): void => {
       this.emitAndLog("REJECT_INSTALL_EVENT", msg.data);
     },
-    REJECT_INSTALL_VIRTUAL_EVENT: (msg: RejectInstallVirtualMessage): void => {
-      this.emitAndLog("REJECT_INSTALL_VIRTUAL_EVENT", msg.data);
-    },
     UNINSTALL_EVENT: (msg: UninstallMessage): void => {
       this.emitAndLog("UNINSTALL_EVENT", msg.data);
     },

@@ -165,7 +165,7 @@ export class TransferController extends AbstractController {
             boundResolve,
           );
           this.listener.on(
-            CFCoreTypes.EventNames.REJECT_INSTALL_VIRTUAL_EVENT as CFCoreTypes.EventName,
+            CFCoreTypes.EventNames.REJECT_INSTALL_EVENT as CFCoreTypes.EventName,
             boundReject,
           );
         }),
@@ -190,7 +190,7 @@ export class TransferController extends AbstractController {
       boundResolve,
     );
     this.listener.removeListener(
-      CFCoreTypes.EventNames.REJECT_INSTALL_VIRTUAL_EVENT as CFCoreTypes.EventName,
+      CFCoreTypes.EventNames.REJECT_INSTALL_EVENT as CFCoreTypes.EventName,
       boundReject,
     );
   };

@@ -1,10 +1,7 @@
-import { Node as NodeTypes } from "@connext/types";
-
 import { Node } from "../../src";
 import {
-  NODE_EVENTS,
   ProposeMessage,
-  RejectInstallVirtualMessage
+  RejectInstallVirtualMessage,
 } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 
@@ -43,7 +40,7 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
         let appInstanceId: string;
 
         nodeA.on(
-          "REJECT_INSTALL_VIRTUAL_EVENT",
+          "REJECT_INSTALL_EVENT",
           async (msg: RejectInstallVirtualMessage) => {
             expect((await getProposedAppInstances(nodeA)).length).toEqual(0);
             assertNodeMessage(msg, {
@@ -51,7 +48,7 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
               data: {
                 appInstanceId
               },
-              type: "REJECT_INSTALL_VIRTUAL_EVENT"
+              type: "REJECT_INSTALL_EVENT"
             });
             done();
           }

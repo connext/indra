@@ -230,7 +230,7 @@ export class RequestDepositRightsController extends AbstractController {
       `indra.node.${this.connext.nodePublicIdentifier}.install.${appId}`,
     );
     this.listener.removeListener(
-      CFCoreTypes.EventNames.REJECT_INSTALL_VIRTUAL_EVENT as CFCoreTypes.EventName,
+      CFCoreTypes.EventNames.REJECT_INSTALL_EVENT as CFCoreTypes.EventName,
       boundReject,
     );
   };
