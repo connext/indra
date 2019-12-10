@@ -3,7 +3,7 @@ import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
 import uuid = require("uuid");
 
-import { ChannelRouter } from "./channelRouter";
+import { ChannelProvider } from "./channelProvider";
 import { Logger, NATS_TIMEOUT, stringify } from "./lib";
 import {
   AppRegistry,
@@ -65,7 +65,7 @@ export class NodeApiClient implements INodeApiClient {
 
   private _userPublicIdentifier: string | undefined;
   private _nodePublicIdentifier: string | undefined;
-  private _channelRouter: ChannelRouter | undefined;
+  private _channelProvider: ChannelProvider | undefined;
   private token: Promise<string> | undefined;
 
   constructor(opts: NodeInitializationParameters) {
@@ -73,20 +73,20 @@ export class NodeApiClient implements INodeApiClient {
     this.log = new Logger("NodeApiClient", opts.logLevel);
     this._userPublicIdentifier = opts.userPublicIdentifier;
     this._nodePublicIdentifier = opts.nodePublicIdentifier;
-    this._channelRouter = opts.channelRouter;
-    if (this.channelRouter) {
+    this._channelProvider = opts.channelProvider;
+    if (this.channelProvider) {
       this.token = this.getAuthToken();
     }
   }
 
   ////////////////////////////////////////
   // GETTERS/SETTERS
-  get channelRouter(): ChannelRouter | undefined {
-    return this._channelRouter;
+  get channelProvider(): ChannelProvider | undefined {
+    return this._channelProvider;
   }
 
-  set channelRouter(channelRouter: ChannelRouter) {
-    this._channelRouter = channelRouter;
+  set channelProvider(channelProvider: ChannelProvider) {
+    this._channelProvider = channelProvider;
   }
 
   get userPublicIdentifier(): string | undefined {
@@ -281,9 +281,9 @@ export class NodeApiClient implements INodeApiClient {
     return new Promise(
       async (resolve: any, reject: any): Promise<any> => {
         const nonce = await this.send("auth.getNonce", {
-          address: this.channelRouter.signerAddress,
+          address: this.channelProvider.signerAddress,
         });
-        const sig = await this.channelRouter.send(NewRpcMethodName.NODE_AUTH, { message: nonce})
+        const sig = await this.channelProvider.send(NewRpcMethodName.NODE_AUTH, { message: nonce})
         const token = `${nonce}:${sig}`;
         return resolve(token);
       },
@@ -291,7 +291,7 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   private assertAuthToken(): void {
-    if (!this.channelRouter) {
+    if (!this.channelProvider) {
       throw new Error(
         `Must have instantiated a channel router (ie a signing thing) before setting auth token`,
       );

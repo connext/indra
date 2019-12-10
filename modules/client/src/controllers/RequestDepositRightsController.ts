@@ -46,9 +46,7 @@ export class RequestDepositRightsController extends AbstractController {
         bigNumberify(existingBalanceRefundApp.latestState["threshold"]).eq(multisigBalance) &&
         existingBalanceRefundApp.latestState["recipient"] === this.connext.freeBalanceAddress
       ) {
-        this.log.info(
-          `Balance refund app for ${assetId} is in the correct state, doing nothing`,
-        );
+        this.log.info(`Balance refund app for ${assetId} is in the correct state, doing nothing`);
         return {
           freeBalance: await this.connext.getFreeBalance(assetId),
           recipient: this.connext.freeBalanceAddress,
@@ -59,15 +57,18 @@ export class RequestDepositRightsController extends AbstractController {
       await this.connext.rescindDepositRights(assetId);
       this.log.info(`Balance refund app uninstalled`);
     }
-
     // propose the app install
     this.log.info(`Installing balance refund app for ${assetId}`);
     const err = await this.proposeDepositInstall(assetId);
     if (err) {
       throw new Error(err);
     }
-    const requestDepositRightsResponse = await this.connext.channelRouter.requestDepositRights(
-      assetId,
+    const requestDepositRightsResponse = await this.channelProvider.send(
+      CFCoreTypes.RpcMethodName.REQUEST_DEPOSIT_RIGHTS,
+      {
+        multisigAddress: this.channelProvider.multisigAddress,
+        tokenAddress: assetId,
+      } as CFCoreTypes.RequestDepositRightsParams,
     );
     this.log.info(
       `requestDepositRightsResponse Response: ${stringify(requestDepositRightsResponse)}`,

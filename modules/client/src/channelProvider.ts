@@ -5,21 +5,21 @@ import { RpcParameters } from "rpc-server";
 import { withdrawalKey } from "./lib";
 import {
   CFCoreTypes,
-  ChannelRouterConfig,
+  ChannelProviderConfig,
   NewRpcMethodName,
   RpcConnection,
   RpcType,
   Store,
 } from "./types";
 
-export class ChannelRouter {
+export class ChannelProvider {
   private type: RpcType;
   private connection: RpcConnection;
 
   // TODO: replace this when signing keys are added!
   // shouldnt really ever be used
   private wallet: Wallet | undefined;
-  private _config: ChannelRouterConfig; // tslint:disable-line: variable-name
+  private _config: ChannelProviderConfig; // tslint:disable-line: variable-name
   private _multisigAddress: string | undefined = undefined; // tslint:disable-line: variable-name
   private _signerAddress: string | undefined = undefined; // tslint:disable-line: variable-name
   private store: Store | undefined;
@@ -27,7 +27,7 @@ export class ChannelRouter {
 
   constructor(
     connection: RpcConnection,
-    config: ChannelRouterConfig,
+    config: ChannelProviderConfig,
     store?: Store,
     authKey?: any,
   ) {
@@ -42,6 +42,10 @@ export class ChannelRouter {
       withdrawalKey(this.config.userPublicIdentifier),
     ];
   }
+
+  public enable = async (): Promise<ChannelProviderConfig> => {
+    return await this._config();
+  };
 
   public send = async (
     method: CFCoreTypes.RpcMethodName | NewRpcMethodName,
@@ -78,7 +82,7 @@ export class ChannelRouter {
 
   ///////////////////////////////////////////////
   ///// GETTERS / SETTERS
-  get config(): ChannelRouterConfig {
+  get config(): ChannelProviderConfig {
     return this._config;
   }
 

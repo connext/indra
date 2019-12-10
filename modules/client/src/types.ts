@@ -2,7 +2,6 @@ import { IMessagingService } from "@connext/messaging";
 import {
   AppRegistry,
   BigNumber as connextBN,
-  ChannelProvider,
   ClientOptions,
   GetConfigResponse,
   NetworkContext,
@@ -11,7 +10,7 @@ import {
 import { Contract, providers, Wallet } from "ethers";
 import { Network } from "ethers/utils";
 
-import { ChannelRouter } from "./channelRouter";
+import { ChannelProvider } from "./channelProvider";
 import { NodeApiClient } from "./node";
 
 export {
@@ -101,8 +100,7 @@ export const BigNumber = connextBN;
 
 export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
-  channelRouter: ChannelRouter;
-  channelProvider?: ChannelProvider;
+  channelProvider: ChannelProvider;
   config: GetConfigResponse;
   ethProvider: providers.JsonRpcProvider;
   messaging: IMessagingService;
@@ -118,7 +116,7 @@ export interface NodeInitializationParameters {
   logLevel?: number;
   userPublicIdentifier?: string;
   nodePublicIdentifier?: string;
-  channelRouter?: ChannelRouter;
+  channelProvider?: ChannelProvider;
 }
 
 export enum NewRpcMethodName {
@@ -130,7 +128,7 @@ export enum NewRpcMethodName {
   GET_STATE_CHANNEL = "chan_getStateChannel",
 }
 
-export type ChannelRouterConfig = {
+export type ChannelProviderConfig = {
   freeBalanceAddress: string;
   multisigAddress?: string; // may not be deployed yet
   natsClusterId?: string;
