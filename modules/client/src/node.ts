@@ -19,6 +19,7 @@ import {
   SupportedApplication,
   SupportedNetwork,
   Transfer,
+  NewRpcMethodName,
 } from "./types";
 
 // Include our access token when interacting with these subjects
@@ -282,7 +283,7 @@ export class NodeApiClient implements INodeApiClient {
         const nonce = await this.send("auth.getNonce", {
           address: this.channelRouter.signerAddress,
         });
-        const sig = await this.channelRouter.signMessage(nonce);
+        const sig = await this.channelRouter.send(NewRpcMethodName.NODE_AUTH, { message: nonce})
         const token = `${nonce}:${sig}`;
         return resolve(token);
       },

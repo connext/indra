@@ -5,9 +5,10 @@ import {
   ChannelProvider,
   ClientOptions,
   GetConfigResponse,
+  NetworkContext,
   Store,
 } from "@connext/types";
-import { Contract, providers } from "ethers";
+import { Contract, providers, Wallet } from "ethers";
 import { Network } from "ethers/utils";
 
 import { ChannelRouter } from "./channelRouter";
@@ -43,7 +44,6 @@ export {
   AppStateBigNumber,
   CFCoreChannel,
   ChannelAppSequences,
-  ChannelProviderConfig,
   ChannelState,
   ClientOptions,
   CoinBalanceRefundAppState,
@@ -119,4 +119,35 @@ export interface NodeInitializationParameters {
   userPublicIdentifier?: string;
   nodePublicIdentifier?: string;
   channelRouter?: ChannelRouter;
+}
+
+export enum NewRpcMethodName {
+  STORE_SET = "chan_storeSet",
+  STORE_GET = "chan_storeGet",
+  NODE_AUTH = "chan_nodeAuth",
+  CONFIG = "chan_config",
+  RESTORE_STATE = "chan_restoreState",
+  GET_STATE_CHANNEL = "chan_getStateChannel",
+}
+
+export type ChannelRouterConfig = {
+  freeBalanceAddress: string;
+  multisigAddress?: string; // may not be deployed yet
+  natsClusterId?: string;
+  natsToken?: string;
+  nodeUrl: string;
+  signerAddress: string;
+  userPublicIdentifier: string;
+};
+
+export interface CFChannelProviderOptions {
+  messaging: any;
+  store: Store;
+  networkContext: NetworkContext;
+  nodeConfig: any;
+  ethProvider: any;
+  lockService?: CFCoreTypes.ILockService;
+  xpub: string;
+  keyGen: CFCoreTypes.IPrivateKeyGenerator;
+  nodeUrl: string;
 }

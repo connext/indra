@@ -1,5 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { CF_PATH } from "@connext/types";
+import { CF_PATH, ChannelProvider, ChannelProviderConfig } from "@connext/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
 import { Contract, providers } from "ethers";
@@ -26,9 +26,10 @@ import {
   AppInstanceJson,
   AppRegistry,
   AppStateBigNumber,
+  CFChannelProviderOptions,
   CFCoreChannel,
   CFCoreTypes,
-  ChannelProviderConfig,
+  ChannelRouterConfig,
   ChannelState,
   ClientOptions,
   ConditionalTransferParameters,
@@ -45,13 +46,13 @@ import {
   InternalClientOptions,
   makeChecksum,
   makeChecksumOrEthAddress,
+  NewRpcMethodName,
   PaymentProfile,
   RequestCollateralResponse,
   RequestDepositRightsParameters,
   ResolveConditionParameters,
   ResolveConditionResponse,
   ResolveLinkedTransferResponse,
-  RpcType,
   Store,
   SupportedApplication,
   SupportedNetwork,
@@ -66,51 +67,44 @@ import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 
 const MAX_WITHDRAWAL_RETRIES = 3;
 
+export const createCFChannelProvider = async ({
+  messaging,
+  store,
+  networkContext,
+  nodeConfig,
+  ethProvider,
+  lockService,
+  xpub,
+  keyGen,
+  nodeUrl,
+}: CFChannelProviderOptions): Promise<ChannelRouter> => {
+  const cfCore = await CFCore.create(
+    messaging as any,
+    store,
+    networkContext,
+    nodeConfig,
+    ethProvider,
+    lockService,
+    xpub,
+    keyGen,
+  );
+  const channelRouter = new ChannelRouter(
+    cfCore,
+    {
+      freeBalanceAddress: xpubToAddress(xpub),
+      nodeUrl,
+      signerAddress: xpubToAddress(xpub),
+      userPublicIdentifier: xpub,
+    },
+    store,
+    await keyGen("0"),
+  );
+  return channelRouter;
+};
+
 export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   const { logLevel, ethProviderUrl, mnemonic, nodeUrl, store, channelProvider } = opts;
   const log = new Logger("ConnextConnect", logLevel);
-
-  // set channel provider config
-  let channelProviderConfig: ChannelProviderConfig;
-  let xpub: string;
-  let keyGen: (index: string) => Promise<string>;
-  if (mnemonic) {
-    // Convert mnemonic into xpub + keyGen if provided
-    const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
-    xpub = hdNode.neuter().extendedKey;
-    keyGen = (index: string): Promise<string> =>
-      Promise.resolve(hdNode.derivePath(index).privateKey);
-    channelProviderConfig = {
-      freeBalanceAddress: xpubToAddress(xpub),
-      nodeUrl,
-      signerAddress: xpubToAddress(xpub),
-      type: RpcType.CounterfactualNode,
-      userPublicIdentifier: xpub,
-    };
-  } else if (channelProvider) {
-    // enable the channel provider, which sets the config property
-    await channelProvider.enable();
-    channelProviderConfig = {
-      ...channelProvider.config,
-      type: RpcType.ChannelProvider,
-    };
-  } else if (opts.xpub && opts.keyGen) {
-    xpub = opts.xpub;
-    keyGen = opts.keyGen;
-    channelProviderConfig = {
-      freeBalanceAddress: xpubToAddress(xpub),
-      nodeUrl,
-      signerAddress: xpubToAddress(xpub),
-      type: RpcType.CounterfactualNode,
-      userPublicIdentifier: xpub,
-    };
-  } else {
-    throw new Error(
-      `Client must be instantiated with xpub and keygen, or a channel provider if not using mnemonic`,
-    );
-  }
-
-  log.debug(`Using channel provider config: ${stringify(channelProviderConfig)}`);
 
   // setup network information
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
@@ -128,7 +122,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   log.debug(`Creating messaging service client (logLevel: ${logLevel})`);
   const messagingFactory = new MessagingServiceFactory({
     logLevel,
-    messagingUrl: channelProviderConfig.nodeUrl,
+    messagingUrl: nodeUrl,
   });
   const messaging = messagingFactory.createService("messaging");
   await messaging.connect();
@@ -138,31 +132,49 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   const config = await node.config();
   log.debug(`Node provided config: ${stringify(config)}`);
 
-  let channelRouter: ChannelRouter;
-  switch (channelProviderConfig.type) {
-    case RpcType.ChannelProvider:
-      channelRouter = new ChannelRouter(channelProvider!, channelProviderConfig);
-      break;
-    case RpcType.CounterfactualNode:
-      const cfCore = await CFCore.create(
-        messaging as any,
-        store,
-        config.contractAddresses,
-        { STORE_KEY_PREFIX: ConnextClientStorePrefix },
-        ethProvider,
-        { acquireLock: node.acquireLock.bind(node) },
-        xpub,
-        keyGen,
-      );
-      channelRouter = new ChannelRouter(cfCore, channelProviderConfig, store, await keyGen("0"));
-      break;
-    default:
-      throw new Error(`Unrecognized channel provider type: ${channelProviderConfig.type}`);
+  // create channel provider
+  let xpub: string;
+  let keyGen: (index: string) => Promise<string>;
+  let channelRouter: ChannelRouter | ChannelProvider;
+
+  if (!channelProvider) {
+    channelRouter = channelProvider;
+    if (!channelProvider.config || !Object.keys(channelProvider.config)) {
+      await channelProvider.enable();
+    }
+  } else if (mnemonic || (opts.xpub && opts.keyGen)) {
+    if (mnemonic) {
+      // Convert mnemonic into xpub + keyGen if provided
+      const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
+      xpub = hdNode.neuter().extendedKey;
+      keyGen = (index: string): Promise<string> =>
+        Promise.resolve(hdNode.derivePath(index).privateKey);
+    } else {
+      xpub = opts.xpub;
+      keyGen = opts.keyGen;
+    }
+    channelRouter = await createCFChannelProvider({
+      ethProvider,
+      keyGen,
+      lockService: { acquireLock: node.acquireLock.bind(node) },
+      messaging: messaging as any,
+      networkContext: config.contractAddresses,
+      nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
+      nodeUrl,
+      store,
+      xpub,
+    });
+  } else {
+    throw new Error(
+      `Client must be instantiated with xpub and keygen, or a channel provider if not using mnemonic`,
+    );
   }
+
+  log.debug(`Using channel provider config: ${stringify(channelRouter.config)}`);
 
   // set pubids + channel router
   node.channelRouter = channelRouter;
-  node.userPublicIdentifier = channelProviderConfig.userPublicIdentifier;
+  node.userPublicIdentifier = channelRouter.config.userPublicIdentifier;
   node.nodePublicIdentifier = config.nodePublicIdentifier;
 
   const myChannel = await node.getChannel();
@@ -263,7 +275,6 @@ export class ConnextClient implements IConnextClient {
   public node: NodeApiClient;
   public nodePublicIdentifier: string;
   public publicIdentifier: string;
-  public routerType: RpcType;
   public signerAddress: Address;
   public store: Store;
   public token: Contract;
@@ -294,7 +305,6 @@ export class ConnextClient implements IConnextClient {
 
     this.freeBalanceAddress = this.channelRouter.config.freeBalanceAddress;
     this.signerAddress = this.channelRouter.config.signerAddress;
-    this.routerType = this.channelRouter.config.type;
     this.publicIdentifier = this.channelRouter.config.userPublicIdentifier;
     this.multisigAddress = this.opts.multisigAddress;
     this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
@@ -368,32 +378,22 @@ export class ConnextClient implements IConnextClient {
   public restart = async (): Promise<void> => {
     // Create a fresh channelRouter & start using that.
     // End goal is to use this to restart the cfNode after restoring state
-    let channelRouter: ChannelRouter;
-    switch (this.routerType) {
-      case RpcType.ChannelProvider:
-        channelRouter = new ChannelRouter(this.opts.channelProvider!, this.channelRouter.config);
-        break;
-      case RpcType.CounterfactualNode:
-        const cfCore = await CFCore.create(
-          this.messaging as any,
-          this.store,
-          this.config.contractAddresses,
-          { STORE_KEY_PREFIX: ConnextClientStorePrefix },
-          this.ethProvider,
-          { acquireLock: this.node.acquireLock.bind(this.node) },
-          this.publicIdentifier,
-          this.keyGen,
-        );
-        channelRouter = new ChannelRouter(
-          cfCore,
-          this.channelRouter.config,
-          this.store,
-          await this.keyGen("0"),
-        );
-        break;
-      default:
-        throw new Error(`Unrecognized channel provider type: ${this.routerType}`);
-    }
+    const cfCore = await CFCore.create(
+      this.messaging as any,
+      this.store,
+      this.config.contractAddresses,
+      { STORE_KEY_PREFIX: ConnextClientStorePrefix },
+      this.ethProvider,
+      { acquireLock: this.node.acquireLock.bind(this.node) },
+      this.publicIdentifier,
+      this.keyGen,
+    );
+    const channelRouter = new ChannelRouter(
+      cfCore,
+      this.channelRouter.config,
+      this.store,
+      await this.keyGen("0"),
+    );
     // TODO: this is very confusing to have to do, lets try to figure out a better way
     channelRouter.multisigAddress = this.multisigAddress;
     this.node.channelRouter = channelRouter;
@@ -425,6 +425,10 @@ export class ConnextClient implements IConnextClient {
   };
 
   public channelProviderConfig = async (): Promise<ChannelProviderConfig> => {
+    return this.channelRouter.config as ChannelProviderConfig;
+  };
+
+  public channelRouterConfig = async (): Promise<ChannelRouterConfig> => {
     return this.channelRouter.config;
   };
 
@@ -481,7 +485,10 @@ export class ConnextClient implements IConnextClient {
   };
 
   public rescindDepositRights = async (assetId: string): Promise<CFCoreTypes.DepositResult> => {
-    return await this.channelRouter.rescindDepositRights(assetId);
+    return await this.channelRouter.send(CFCoreTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS, {
+      multisigAddress: this.multisigAddress,
+      tokenAddress: assetId,
+    } as CFCoreTypes.RescindDepositRightsParams);
   };
 
   public swap = async (params: SwapParameters): Promise<CFCoreChannel> => {
@@ -511,7 +518,8 @@ export class ConnextClient implements IConnextClient {
   public getLatestNodeSubmittedWithdrawal = async (): Promise<
     { retry: number; tx: CFCoreTypes.MinimalTransaction } | undefined
   > => {
-    const value = await this.channelRouter.get(withdrawalKey(this.publicIdentifier));
+    const path = withdrawalKey(this.publicIdentifier);
+    const value = await this.channelRouter.send(NewRpcMethodName.STORE_GET, { path });
 
     if (!value || value === "undefined") {
       return undefined;
@@ -542,9 +550,9 @@ export class ConnextClient implements IConnextClient {
           async (blockNumber: number): Promise<void> => {
             const found = await this.checkForUserWithdrawal(blockNumber);
             if (found) {
-              await this.channelRouter.set([
-                { path: withdrawalKey(this.publicIdentifier), value: undefined },
-              ]);
+              await this.channelRouter.send(NewRpcMethodName.STORE_SET, {
+                pairs: [{ path: withdrawalKey(this.publicIdentifier), value: undefined }],
+              });
               this.ethProvider.removeAllListeners("block");
               resolve();
             }
@@ -567,20 +575,12 @@ export class ConnextClient implements IConnextClient {
   // Restore State
 
   public restoreState = async (): Promise<void> => {
-    if (!this.store || this.routerType === RpcType.ChannelProvider) {
-      throw new Error(`Cannot restore state with channel provider`);
-    }
-    this.channelRouter.reset();
     const path = `${ConnextClientStorePrefix}/${this.publicIdentifier}/channel/${this.multisigAddress}`;
     let state;
+    state.path = path;
     try {
-      // try to recover states from our given store's restore method
-      state = await this.channelRouter.restore();
-      if (!state || !state.path) {
-        throw new Error(`No matching paths found in store backup's state`);
-      }
+      state = await this.channelRouter.send(NewRpcMethodName.RESTORE_STATE, { path });
       this.log.info(`Found state to restore from store's backup: ${stringify(state.path)}`);
-      state = state.path;
     } catch (e) {
       state = await this.node.restoreState(this.publicIdentifier);
       if (!state) {
@@ -588,7 +588,7 @@ export class ConnextClient implements IConnextClient {
       }
       this.log.info(`Found state to restore from node: ${stringify(state)}`);
     }
-    await this.channelRouter.set([{ path, value: state }]);
+    await this.channelRouter.send(NewRpcMethodName.STORE_SET, { pairs: [{ path, value: state }] });
     await this.restart();
   };
 
@@ -616,7 +616,9 @@ export class ConnextClient implements IConnextClient {
   ///////////////////////////////////
   // PROVIDER/ROUTER METHODS
   public getState = async (): Promise<CFCoreTypes.GetStateResult> => {
-    return await this.channelRouter.getState(this.multisigAddress);
+    return await this.channelRouter.send(NewRpcMethodName.GET_STATE_CHANNEL as any, {
+      multisigAddress: this.multisigAddress,
+    });
   };
 
   public providerDeposit = async (
@@ -645,19 +647,22 @@ export class ConnextClient implements IConnextClient {
       this.log.error(err);
       throw new Error(err);
     }
-
-    return await this.channelRouter.deposit(
+    return await this.channelRouter.send(CFCoreTypes.RpcMethodName.DEPOSIT, {
       amount,
-      assetId,
-      this.multisigAddress,
+      multisigAddress: this.multisigAddress,
       notifyCounterparty,
-    );
+      tokenAddress: makeChecksum(assetId),
+    } as CFCoreTypes.DepositParams);
   };
 
   // TODO: under what conditions will this fail?
   public getAppInstances = async (): Promise<AppInstanceJson[]> => {
     // TODO
-    return (await this.channelRouter.getAppInstances()).appInstances;
+    const { appInstances } = await await this.channelRouter.send(
+      CFCoreTypes.RpcMethodName.GET_APP_INSTANCES,
+      {} as CFCoreTypes.GetAppInstancesParams,
+    );
+    return appInstances;
   };
 
   // TODO: under what conditions will this fail?
@@ -669,7 +674,10 @@ export class ConnextClient implements IConnextClient {
     }
     const normalizedAssetId = makeChecksum(assetId);
     try {
-      return await this.channelRouter.getFreeBalance(assetId, this.multisigAddress);
+      return await this.channelRouter.send(CFCoreTypes.RpcMethodName.GET_FREE_BALANCE_STATE, {
+        multisigAddress: this.multisigAddress,
+        tokenAddress: makeChecksum(assetId),
+      } as CFCoreTypes.GetFreeBalanceStateParams);
     } catch (e) {
       const error = `No free balance exists for the specified token: ${normalizedAssetId}`;
       if (e.message.includes(error)) {
@@ -689,13 +697,18 @@ export class ConnextClient implements IConnextClient {
   public getProposedAppInstances = async (): Promise<
     CFCoreTypes.GetProposedAppInstancesResult | undefined
   > => {
-    return await this.channelRouter.getProposedAppInstances();
+    return await this.channelRouter.send(
+      CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
+      {} as CFCoreTypes.GetProposedAppInstancesParams,
+    );
   };
 
   public getProposedAppInstance = async (
     appInstanceId: string,
   ): Promise<CFCoreTypes.GetProposedAppInstanceResult | undefined> => {
-    return await this.channelRouter.getProposedAppInstance(appInstanceId);
+    return await this.channelRouter.send(CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES, {
+      appInstanceId,
+    } as CFCoreTypes.GetProposedAppInstanceParams);
   };
 
   public getAppInstanceDetails = async (
@@ -706,7 +719,9 @@ export class ConnextClient implements IConnextClient {
       this.log.warn(err);
       return undefined;
     }
-    return await this.channelRouter.getAppInstanceDetails(appInstanceId);
+    return await this.channelRouter.send(CFCoreTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS, {
+      appInstanceId,
+    } as CFCoreTypes.GetAppInstanceDetailsParams);
   };
 
   public getAppState = async (
@@ -718,7 +733,9 @@ export class ConnextClient implements IConnextClient {
       this.log.warn(err);
       return undefined;
     }
-    return await this.channelRouter.getAppState(appInstanceId);
+    return await this.channelRouter.send(CFCoreTypes.RpcMethodName.GET_STATE, {
+      appInstanceId,
+    } as CFCoreTypes.GetStateParams);
   };
 
   public takeAction = async (
@@ -737,7 +754,10 @@ export class ConnextClient implements IConnextClient {
     if ((state.state as any).finalized) {
       throw new Error("Cannot take action on an app with a finalized state.");
     }
-    return await this.channelRouter.takeAction(appInstanceId, action);
+    return await this.channelRouter.send(CFCoreTypes.RpcMethodName.TAKE_ACTION, {
+      action,
+      appInstanceId,
+    } as CFCoreTypes.TakeActionParams);
   };
 
   public updateState = async (
@@ -757,13 +777,19 @@ export class ConnextClient implements IConnextClient {
     if ((state.state as any).finalized) {
       throw new Error("Cannot take action on an app with a finalized state.");
     }
-    return await this.channelRouter.updateState(appInstanceId, newState);
+    return await this.channelRouter.send(CFCoreTypes.RpcMethodName.UPDATE_STATE, {
+      appInstanceId,
+      newState,
+    } as CFCoreTypes.UpdateStateParams);
   };
 
   public proposeInstallApp = async (
     params: CFCoreTypes.ProposeInstallParams,
   ): Promise<CFCoreTypes.ProposeInstallResult> => {
-    return await this.channelRouter.proposeInstallApp(params);
+    return await this.channelRouter.send(
+      CFCoreTypes.RpcMethodName.PROPOSE_INSTALL,
+      params as CFCoreTypes.ProposeInstallParams,
+    );
   };
 
   public installVirtualApp = async (
@@ -774,7 +800,10 @@ export class ConnextClient implements IConnextClient {
     if (alreadyInstalled) {
       throw new Error(alreadyInstalled);
     }
-    return await this.channelRouter.installVirtualApp(appInstanceId, this.nodePublicIdentifier);
+    return await this.channelRouter.send(CFCoreTypes.RpcMethodName.INSTALL_VIRTUAL, {
+      appInstanceId,
+      intermediaryIdentifier: this.nodePublicIdentifier,
+    } as CFCoreTypes.InstallVirtualParams);
   };
 
   public installApp = async (appInstanceId: string): Promise<CFCoreTypes.InstallResult> => {
@@ -783,7 +812,9 @@ export class ConnextClient implements IConnextClient {
     if (alreadyInstalled) {
       throw new Error(alreadyInstalled);
     }
-    return await this.channelRouter.installApp(appInstanceId);
+    return await this.channelRouter.send(CFCoreTypes.RpcMethodName.INSTALL, {
+      appInstanceId,
+    } as CFCoreTypes.InstallParams);
   };
 
   public uninstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
@@ -793,7 +824,9 @@ export class ConnextClient implements IConnextClient {
       this.log.error(err);
       throw new Error(err);
     }
-    return await this.channelRouter.uninstallApp(appInstanceId);
+    return await this.channelRouter.send(CFCoreTypes.RpcMethodName.UNINSTALL, {
+      appInstanceId,
+    } as CFCoreTypes.UninstallParams);
   };
 
   public uninstallVirtualApp = async (
@@ -806,11 +839,16 @@ export class ConnextClient implements IConnextClient {
       throw new Error(err);
     }
 
-    return await this.channelRouter.uninstallVirtualApp(appInstanceId, this.nodePublicIdentifier);
+    return await this.channelRouter.send(CFCoreTypes.RpcMethodName.UNINSTALL_VIRTUAL, {
+      appInstanceId,
+      intermediaryIdentifier: this.nodePublicIdentifier,
+    } as CFCoreTypes.UninstallVirtualParams);
   };
 
   public rejectInstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
-    return await this.channelRouter.rejectInstallApp(appInstanceId);
+    return await this.channelRouter.send(CFCoreTypes.RpcMethodName.REJECT_INSTALL, {
+      appInstanceId,
+    });
   };
 
   public providerWithdraw = async (
@@ -830,7 +868,12 @@ export class ConnextClient implements IConnextClient {
       throw new Error(err);
     }
 
-    return await this.channelRouter.withdraw(amount, assetId, recipient);
+    return await this.channelRouter.send(CFCoreTypes.RpcMethodName.WITHDRAW, {
+      amount,
+      multisigAddress: this.multisigAddress,
+      recipient,
+      tokenAddress: makeChecksum(assetId),
+    } as CFCoreTypes.WithdrawParams);
   };
 
   public withdrawCommitment = async (
@@ -849,18 +892,21 @@ export class ConnextClient implements IConnextClient {
       this.log.error(err);
       throw new Error(err);
     }
-    return await this.channelRouter.withdrawCommitment(
+    return await this.channelRouter.send(CFCoreTypes.RpcMethodName.WITHDRAW_COMMITMENT, {
       amount,
-      makeChecksumOrEthAddress(assetId),
+      multisigAddress: this.multisigAddress,
       recipient,
-    );
+      tokenAddress: makeChecksumOrEthAddress(assetId),
+    } as CFCoreTypes.WithdrawCommitmentParams);
   };
 
   ///////////////////////////////////
   // NODE METHODS
 
   public verifyAppSequenceNumber = async (): Promise<any> => {
-    const { data: sc } = await this.channelRouter.getStateChannel();
+    const { data: sc } = await this.channelRouter.send(NewRpcMethodName.GET_STATE_CHANNEL as any, {
+      multisigAddress: this.multisigAddress,
+    });
     let appSequenceNumber: number;
     try {
       appSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
@@ -945,7 +991,7 @@ export class ConnextClient implements IConnextClient {
 
   public uninstallCoinBalanceIfNeeded = async (): Promise<void> => {
     // check if there is a coin refund app installed
-    const coinRefund = (await this.getAppInstances()).filter(app => {
+    const coinRefund = (await this.getAppInstances()).filter((app: AppInstanceJson): boolean => {
       return app.appInterface.addr === this.config.contractAddresses.CoinBalanceRefundApp;
     })[0];
     if (!coinRefund) {
@@ -1022,7 +1068,8 @@ export class ConnextClient implements IConnextClient {
   };
 
   public resubmitActiveWithdrawal = async (): Promise<void> => {
-    const withdrawal = await this.channelRouter.get(withdrawalKey(this.publicIdentifier));
+    const path = withdrawalKey(this.publicIdentifier);
+    const withdrawal = await this.channelRouter.send(NewRpcMethodName.STORE_GET, { path });
 
     if (!withdrawal || withdrawal === "undefined") {
       // No active withdrawal, nothing to do
@@ -1046,12 +1093,14 @@ export class ConnextClient implements IConnextClient {
     if (this.matchTx(tx, withdrawal.tx)) {
       // the withdrawal in our store matches latest submitted tx,
       // clear value in store and return
-      await this.channelRouter.set([
-        {
-          path: withdrawalKey(this.publicIdentifier),
-          value: undefined,
-        },
-      ]);
+      await this.channelRouter.send(NewRpcMethodName.STORE_SET, {
+        pairs: [
+          {
+            path: withdrawalKey(this.publicIdentifier),
+            value: undefined,
+          },
+        ],
+      });
       return;
     }
 
@@ -1071,12 +1120,14 @@ export class ConnextClient implements IConnextClient {
     let { retry } = val;
     const { tx } = val;
     retry += 1;
-    await this.channelRouter.set([
-      {
-        path: withdrawalKey(this.publicIdentifier),
-        value: { tx, retry },
-      },
-    ]);
+    await this.channelRouter.send(NewRpcMethodName.STORE_SET, {
+      pairs: [
+        {
+          path: withdrawalKey(this.publicIdentifier),
+          value: { tx, retry },
+        },
+      ],
+    });
     if (retry >= MAX_WITHDRAWAL_RETRIES) {
       const msg = `Tried to have node submit withdrawal ${MAX_WITHDRAWAL_RETRIES} times and it did not work, try submitting from wallet.`;
       this.log.error(msg);

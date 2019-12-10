@@ -10,7 +10,7 @@ import {
 import { ConnextEvent } from "./basic";
 import { AppInstanceJson, CFCoreTypes } from "./cf";
 import { CFCoreChannel, ChannelAppSequences, ChannelState, PaymentProfile } from "./channel";
-import { ChannelProvider, ChannelProviderConfig } from "./channelProvider";
+import { ChannelProvider, ChannelRouterConfig } from "./channelProvider";
 import {
   ConditionalTransferParameters,
   ConditionalTransferResponse,
@@ -84,7 +84,7 @@ export interface IConnextClient {
   resolveCondition(params: ResolveConditionParameters): Promise<ResolveConditionResponse>;
   conditionalTransfer(params: ConditionalTransferParameters): Promise<ConditionalTransferResponse>;
   restoreState(): Promise<void>;
-  channelProviderConfig(): Promise<ChannelProviderConfig>;
+  channelProviderConfig(): Promise<ChannelRouterConfig>;
   requestDepositRights(
     params: RequestDepositRightsParameters,
   ): Promise<CFCoreTypes.RequestDepositRightsResult>;
