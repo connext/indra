@@ -1,5 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { CF_PATH, NetworkContext } from "@connext/types";
+import { CF_PATH } from "@connext/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
 import { Contract, providers } from "ethers";
@@ -68,15 +68,15 @@ import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 const MAX_WITHDRAWAL_RETRIES = 3;
 
 export const createCFChannelProvider = async ({
+  ethProvider,
+  keyGen,
+  lockService,
   messaging,
-  store,
   networkContext,
   nodeConfig,
-  ethProvider,
-  lockService,
-  xpub,
-  keyGen,
   nodeUrl,
+  store,
+  xpub,
 }: CFChannelProviderOptions): Promise<ChannelProvider> => {
   const cfCore = await CFCore.create(
     messaging as any,
@@ -88,14 +88,15 @@ export const createCFChannelProvider = async ({
     xpub,
     keyGen,
   );
+  const channelProviderConfig: ChannelProviderConfig = {
+    freeBalanceAddress: xpubToAddress(xpub),
+    nodeUrl,
+    signerAddress: xpubToAddress(xpub),
+    userPublicIdentifier: xpub,
+  };
   const channelProvider = new ChannelProvider(
     cfCore,
-    {
-      freeBalanceAddress: xpubToAddress(xpub),
-      nodeUrl,
-      signerAddress: xpubToAddress(xpub),
-      userPublicIdentifier: xpub,
-    },
+    channelProviderConfig,
     store,
     await keyGen("0"),
   );

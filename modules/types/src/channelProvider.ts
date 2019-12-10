@@ -14,15 +14,15 @@ export type ChannelProviderConfig = {
 };
 
 export interface CFChannelProviderOptions {
+  ethProvider: any;
+  keyGen: CFCoreTypes.IPrivateKeyGenerator;
+  lockService?: CFCoreTypes.ILockService;
   messaging: any;
-  store: Store;
   networkContext: NetworkContext;
   nodeConfig: any;
-  ethProvider: any;
-  lockService?: CFCoreTypes.ILockService;
-  xpub: string;
-  keyGen: CFCoreTypes.IPrivateKeyGenerator;
   nodeUrl: string;
+  xpub: string;
+  store: Store;
 }
 
 export type RpcConnection = ChannelProvider | any;
