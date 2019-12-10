@@ -38,7 +38,7 @@ export default class RejectInstallController extends NodeController {
 
     const rejectProposalMsg: RejectProposalMessage = {
       from: publicIdentifier,
-      type: NODE_EVENTS.REJECT_INSTALL_EVENT as NodeEvent,
+      type: "REJECT_INSTALL_EVENT" as NodeEvent,
       data: {
         appInstanceId
       }

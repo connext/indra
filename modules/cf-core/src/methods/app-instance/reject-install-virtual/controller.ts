@@ -17,7 +17,7 @@ export default async function rejectInstallVirtualController(
 
   const rejectInstallVirtualMsg: RejectInstallVirtualMessage = {
     from: publicIdentifier,
-    type: NODE_EVENTS.REJECT_INSTALL_VIRTUAL_EVENT as NodeEvent,
+    type: "REJECT_INSTALL_VIRTUAL_EVENT" as NodeEvent,
     data: {
       appInstanceId
     }

@@ -108,7 +108,7 @@ export class RequestHandler {
     const controllerCount = this.router.eventListenerCount(event);
 
     if (!controllerExecutionMethod && controllerCount === 0) {
-      if (event === NODE_EVENTS.DEPOSIT_CONFIRMED_EVENT) {
+      if (event === "DEPOSIT_CONFIRMED_EVENT") {
         log.info(
           `No event handler for counter depositing into channel: ${JSON.stringify(
             msg,

@@ -64,7 +64,7 @@ describe("Concurrently uninstalling virtual and regular applications without iss
     let totalAppsUninstalled = 0;
 
     // install a regular app
-    nodeB.on(NODE_EVENTS.PROPOSE_INSTALL_EVENT, (msg: ProposeMessage) => {
+    nodeB.on("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
       makeInstallCall(nodeB, msg.data.appInstanceId);
     });
 
@@ -82,7 +82,7 @@ describe("Concurrently uninstalling virtual and regular applications without iss
     };
 
     const appId = await new Promise(resolve => {
-      nodeA.on(NODE_EVENTS.INSTALL_EVENT, (msg: InstallMessage) => {
+      nodeA.on("INSTALL_EVENT", (msg: InstallMessage) => {
         resolve(msg.data.params.appInstanceId);
       });
 
@@ -108,12 +108,12 @@ describe("Concurrently uninstalling virtual and regular applications without iss
     );
 
     // set up uninstall handlers
-    nodeC.on(NODE_EVENTS.UNINSTALL_VIRTUAL_EVENT, () => {
+    nodeC.on("UNINSTALL_VIRTUAL_EVENT", () => {
       totalAppsUninstalled += 1;
       if (totalAppsUninstalled === 2) done();
     });
 
-    nodeA.on(NODE_EVENTS.UNINSTALL_EVENT, () => {
+    nodeA.on("UNINSTALL_EVENT", () => {
       totalAppsUninstalled += 1;
       if (totalAppsUninstalled === 2) done();
     });

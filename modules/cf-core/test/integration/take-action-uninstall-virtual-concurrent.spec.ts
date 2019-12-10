@@ -70,11 +70,11 @@ describe("Concurrently taking action on regular app and uninstallling virtual ap
       if (executedActions === 2) done();
     };
 
-    nodeC.on(NODE_EVENTS.UNINSTALL_VIRTUAL_EVENT, () => {
+    nodeC.on("UNINSTALL_VIRTUAL_EVENT", () => {
       incrementAndEnd();
     });
 
-    nodeB.on(NODE_EVENTS.UPDATE_STATE_EVENT, async () => {
+    nodeB.on("UPDATE_STATE_EVENT", async () => {
       incrementAndEnd();
     });
 

@@ -25,13 +25,13 @@ const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 function confirmMessages(initiator: Node, responder: Node, expectedData: NodeTypes.UpdateStateEventData) {
   const expected = {
     from: initiator.publicIdentifier,
-    type: NODE_EVENTS.UPDATE_STATE_EVENT,
+    type: "UPDATE_STATE_EVENT",
     data: expectedData,
   };
-  // initiator.once(NODE_EVENTS.UPDATE_STATE_EVENT, (msg: UpdateStateMessage) => {
+  // initiator.once("UPDATE_STATE_EVENT", (msg: UpdateStateMessage) => {
   //   assertNodeMessage(msg, expected);
   // });
-  responder.once(NODE_EVENTS.UPDATE_STATE_EVENT, (msg: UpdateStateMessage) => {
+  responder.once("UPDATE_STATE_EVENT", (msg: UpdateStateMessage) => {
     assertNodeMessage(msg, expected);
   });
 }
@@ -68,7 +68,7 @@ describe("Node method follows spec - takeAction", () => {
           winner: Zero
         };
 
-        nodeB.on(NODE_EVENTS.UPDATE_STATE_EVENT, async (msg: UpdateStateMessage) => {
+        nodeB.on("UPDATE_STATE_EVENT", async (msg: UpdateStateMessage) => {
           /**
            * TEST #3
            * The database of Node C is correctly updated and querying it works
@@ -113,7 +113,7 @@ describe("Node method follows spec - takeAction", () => {
         } = await nodeA.rpcRouter.dispatch(takeActionReq);
         // allow nodeA to confirm its messages
         await new Promise(resolve => {
-          nodeA.once(NODE_EVENTS.UPDATE_STATE_EVENT, () => {
+          nodeA.once("UPDATE_STATE_EVENT", () => {
             setTimeout(resolve, 2000)
           });
         });

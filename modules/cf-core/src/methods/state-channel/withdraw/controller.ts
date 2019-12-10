@@ -124,9 +124,9 @@ export default class WithdrawController extends NodeController {
     try {
       txResponse = await wallet.sendTransaction(tx);
 
-      outgoing.emit(NODE_EVENTS.WITHDRAWAL_STARTED_EVENT, {
+      outgoing.emit("WITHDRAWAL_STARTED_EVENT", {
         from: publicIdentifier,
-        type: NODE_EVENTS.WITHDRAWAL_STARTED_EVENT,
+        type: "WITHDRAWAL_STARTED_EVENT",
         data: {
           params,
           txHash: txResponse.hash
@@ -138,9 +138,9 @@ export default class WithdrawController extends NodeController {
         blocksNeededForConfirmation
       );
 
-      outgoing.emit(NODE_EVENTS.WITHDRAWAL_CONFIRMED_EVENT, {
+      outgoing.emit("WITHDRAWAL_CONFIRMED_EVENT", {
         from: publicIdentifier,
-        type: NODE_EVENTS.WITHDRAWAL_CONFIRMED_EVENT,
+        type: "WITHDRAWAL_CONFIRMED_EVENT",
         data: { txReceipt }
       });
     } catch (e) {

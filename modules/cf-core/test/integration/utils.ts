@@ -151,7 +151,7 @@ export function assertProposeMessage(
     msg,
     {
       from: senderId,
-      type: NODE_EVENTS.PROPOSE_INSTALL_EVENT,
+      type: "PROPOSE_INSTALL_EVENT",
       data: {
         params: {
           ...emittedParams,
@@ -170,7 +170,7 @@ export function assertInstallMessage(
 ) {
   assertNodeMessage(msg, {
     from: senderId,
-    type: NODE_EVENTS.INSTALL_EVENT,
+    type: "INSTALL_EVENT",
     data: {
       params: {
         appInstanceId
@@ -379,18 +379,15 @@ export async function deposit(
     tokenAddress
   );
   await new Promise(async resolve => {
-    proposedToNode.once(
-      NODE_EVENTS.PROPOSE_INSTALL_EVENT,
-      (msg: ProposeMessage) => {
-        // TODO: assert this?
-        // assertNodeMessage(msg, {
-        //   from: node.publicIdentifier,
-        //   type: NODE_EVENTS.PROPOSE_INSTALL_EVENT,
-        //   data: proposeParams
-        // });
-        resolve();
-      }
-    );
+    proposedToNode.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
+      // TODO: assert this?
+      // assertNodeMessage(msg, {
+      //   from: node.publicIdentifier,
+      //   type: "PROPOSE_INSTALL_EVENT",
+      //   data: proposeParams
+      // });
+      resolve();
+    });
 
     node.rpcRouter.dispatch({
       id: Date.now(),
@@ -401,28 +398,25 @@ export async function deposit(
   const depositReq = constructDepositRpc(multisigAddress, amount, tokenAddress);
 
   return new Promise(async resolve => {
-    node.once(
-      NODE_EVENTS.DEPOSIT_CONFIRMED_EVENT,
-      (msg: DepositConfirmationMessage) => {
-        assertNodeMessage(msg, {
-          from: node.publicIdentifier,
-          type: NODE_EVENTS.DEPOSIT_CONFIRMED_EVENT,
-          data: {
-            multisigAddress,
-            amount,
-            tokenAddress: tokenAddress || AddressZero
-          }
-        });
-        resolve();
-      }
-    );
+    node.once("DEPOSIT_CONFIRMED_EVENT", (msg: DepositConfirmationMessage) => {
+      assertNodeMessage(msg, {
+        from: node.publicIdentifier,
+        type: "DEPOSIT_CONFIRMED_EVENT",
+        data: {
+          multisigAddress,
+          amount,
+          tokenAddress: tokenAddress || AddressZero
+        }
+      });
+      resolve();
+    });
 
-    node.once(NODE_EVENTS.DEPOSIT_STARTED_EVENT, (msg: DepositStartedMessage) => {
+    node.once("DEPOSIT_STARTED_EVENT", (msg: DepositStartedMessage) => {
       assertNodeMessage(
         msg,
         {
           from: node.publicIdentifier,
-          type: NODE_EVENTS.DEPOSIT_STARTED_EVENT,
+          type: "DEPOSIT_STARTED_EVENT",
           data: {
             value: amount
           }
@@ -712,43 +706,37 @@ export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
       [nodeA.publicIdentifier, nodeB.publicIdentifier],
       0
     );
-    nodeB.once(
-      NODE_EVENTS.CREATE_CHANNEL_EVENT,
-      async (msg: CreateChannelMessage) => {
-        assertNodeMessage(
-          msg,
-          {
-            from: nodeA.publicIdentifier,
-            type: NODE_EVENTS.CREATE_CHANNEL_EVENT,
-            data: {
-              owners: sortedOwners,
-              counterpartyXpub: nodeA.publicIdentifier
-            }
-          },
-          ["data.multisigAddress"]
-        );
-        expect(await getInstalledAppInstances(nodeB)).toEqual([]);
-        resolve(msg.data.multisigAddress);
-      }
-    );
+    nodeB.once("CREATE_CHANNEL_EVENT", async (msg: CreateChannelMessage) => {
+      assertNodeMessage(
+        msg,
+        {
+          from: nodeA.publicIdentifier,
+          type: "CREATE_CHANNEL_EVENT",
+          data: {
+            owners: sortedOwners,
+            counterpartyXpub: nodeA.publicIdentifier
+          }
+        },
+        ["data.multisigAddress"]
+      );
+      expect(await getInstalledAppInstances(nodeB)).toEqual([]);
+      resolve(msg.data.multisigAddress);
+    });
 
-    nodeA.once(
-      NODE_EVENTS.CREATE_CHANNEL_EVENT,
-      (msg: CreateChannelMessage) => {
-        assertNodeMessage(
-          msg,
-          {
-            from: nodeA.publicIdentifier,
-            type: NODE_EVENTS.CREATE_CHANNEL_EVENT,
-            data: {
-              owners: sortedOwners,
-              counterpartyXpub: nodeB.publicIdentifier
-            }
-          },
-          ["data.multisigAddress"]
-        );
-      }
-    );
+    nodeA.once("CREATE_CHANNEL_EVENT", (msg: CreateChannelMessage) => {
+      assertNodeMessage(
+        msg,
+        {
+          from: nodeA.publicIdentifier,
+          type: "CREATE_CHANNEL_EVENT",
+          data: {
+            owners: sortedOwners,
+            counterpartyXpub: nodeB.publicIdentifier
+          }
+        },
+        ["data.multisigAddress"]
+      );
+    });
 
     // trigger channel creation but only resolve with the multisig address
     // as acknowledged by the node
@@ -788,38 +776,35 @@ export async function installApp(
   const proposedParams = installationProposalRpc.parameters as ProposeInstallProtocolParams;
 
   return new Promise(async resolve => {
-    nodeB.once(
-      NODE_EVENTS.PROPOSE_INSTALL_EVENT,
-      async (msg: ProposeMessage) => {
-        // assert message
-        assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
+    nodeB.once("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
+      // assert message
+      assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
 
-        const {
-          data: { appInstanceId }
-        } = msg;
+      const {
+        data: { appInstanceId }
+      } = msg;
 
-        // Sanity-check
-        confirmProposedAppInstance(
-          installationProposalRpc.parameters,
-          await getAppInstanceProposal(nodeA, appInstanceId)
-        );
+      // Sanity-check
+      confirmProposedAppInstance(
+        installationProposalRpc.parameters,
+        await getAppInstanceProposal(nodeA, appInstanceId)
+      );
 
-        nodeA.once(NODE_EVENTS.INSTALL_EVENT, async (msg: InstallMessage) => {
-          if (msg.data.params.appInstanceId === appInstanceId) {
-            // assert message
-            assertInstallMessage(nodeB.publicIdentifier, msg, appInstanceId);
-            const appInstanceNodeA = await getAppInstance(nodeA, appInstanceId);
-            const appInstanceNodeB = await getAppInstance(nodeB, appInstanceId);
-            expect(appInstanceNodeA).toEqual(appInstanceNodeB);
-            resolve([appInstanceId, proposedParams]);
-          }
-        });
+      nodeA.once("INSTALL_EVENT", async (msg: InstallMessage) => {
+        if (msg.data.params.appInstanceId === appInstanceId) {
+          // assert message
+          assertInstallMessage(nodeB.publicIdentifier, msg, appInstanceId);
+          const appInstanceNodeA = await getAppInstance(nodeA, appInstanceId);
+          const appInstanceNodeB = await getAppInstance(nodeB, appInstanceId);
+          expect(appInstanceNodeA).toEqual(appInstanceNodeB);
+          resolve([appInstanceId, proposedParams]);
+        }
+      });
 
-        await nodeB.rpcRouter.dispatch(
-          constructInstallRpc(msg.data.appInstanceId)
-        );
-      }
-    );
+      await nodeB.rpcRouter.dispatch(
+        constructInstallRpc(msg.data.appInstanceId)
+      );
+    });
 
     const response = await nodeA.rpcRouter.dispatch(installationProposalRpc);
 
@@ -839,7 +824,7 @@ export async function installVirtualApp(
   initiatorDeposit?: BigNumber,
   responderDeposit?: BigNumber
 ): Promise<string> {
-  nodeC.on(NODE_EVENTS.PROPOSE_INSTALL_EVENT, async (msg: ProposeMessage) => {
+  nodeC.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
     const { appInstanceId, params } = await proposal;
     const {
       data: { appInstanceId: eventAppInstanceId }
@@ -865,20 +850,17 @@ export async function installVirtualApp(
   );
 
   return new Promise((resolve: (appInstanceId: string) => void) =>
-    nodeA.on(
-      NODE_EVENTS.INSTALL_VIRTUAL_EVENT,
-      async (msg: InstallVirtualMessage) => {
-        const { appInstanceId } = await proposal;
-        if (msg.data.params.appInstanceId === appInstanceId) {
-          assertNodeMessage(msg, {
-            from: nodeC.publicIdentifier,
-            type: NODE_EVENTS.INSTALL_VIRTUAL_EVENT,
-            data: { params: { appInstanceId } }
-          });
-          resolve(appInstanceId);
-        }
+    nodeA.on("INSTALL_VIRTUAL_EVENT", async (msg: InstallVirtualMessage) => {
+      const { appInstanceId } = await proposal;
+      if (msg.data.params.appInstanceId === appInstanceId) {
+        assertNodeMessage(msg, {
+          from: nodeC.publicIdentifier,
+          type: "INSTALL_VIRTUAL_EVENT",
+          data: { params: { appInstanceId } }
+        });
+        resolve(appInstanceId);
       }
-    )
+    })
   );
 }
 
@@ -1160,7 +1142,7 @@ export async function uninstallVirtualApp(
   const rpc = constructUninstallVirtualRpc(appId, intermediaryPubId);
   return new Promise(async resolve => {
     counterparty.once(
-      NODE_EVENTS.UNINSTALL_VIRTUAL_EVENT,
+      "UNINSTALL_VIRTUAL_EVENT",
       (msg: UninstallVirtualMessage) => {
         resolve(msg.data.appInstanceId);
       }
@@ -1182,7 +1164,7 @@ export async function uninstallApp(
   appId: string
 ): Promise<string> {
   return new Promise(async resolve => {
-    counterparty.once(NODE_EVENTS.UNINSTALL_EVENT, (msg: UninstallMessage) => {
+    counterparty.once("UNINSTALL_EVENT", (msg: UninstallMessage) => {
       resolve(msg.data.appInstanceId);
     });
     await node.rpcRouter.dispatch(constructUninstallRpc(appId));

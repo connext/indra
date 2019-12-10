@@ -158,9 +158,9 @@ export async function makeDeposit(
     }
   }
 
-  outgoing.emit(NODE_EVENTS.DEPOSIT_STARTED_EVENT, {
+  outgoing.emit("DEPOSIT_STARTED_EVENT", {
     from: publicIdentifier,
-    type: NODE_EVENTS.DEPOSIT_STARTED_EVENT,
+    type: "DEPOSIT_STARTED_EVENT",
     data: {
       value: amount,
       txHash: txResponse!.hash

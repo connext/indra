@@ -1,7 +1,11 @@
 import { Node as NodeTypes } from "@connext/types";
 
 import { Node } from "../../src";
-import { NODE_EVENTS, ProposeMessage, RejectInstallVirtualMessage } from "../../src/types";
+import {
+  NODE_EVENTS,
+  ProposeMessage,
+  RejectInstallVirtualMessage
+} from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 
 import { setup, SetupContext } from "./setup";
@@ -38,20 +42,23 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
 
         let appInstanceId: string;
 
-        nodeA.on(NODE_EVENTS.REJECT_INSTALL_VIRTUAL_EVENT, async (msg: RejectInstallVirtualMessage) => {
-          expect((await getProposedAppInstances(nodeA)).length).toEqual(0);
-          assertNodeMessage(msg, {
-            from: nodeC.publicIdentifier,
-            data: {
-              appInstanceId,
-            },
-            type: NODE_EVENTS.REJECT_INSTALL_VIRTUAL_EVENT,
-          });
-          done();
-        });
+        nodeA.on(
+          "REJECT_INSTALL_VIRTUAL_EVENT",
+          async (msg: RejectInstallVirtualMessage) => {
+            expect((await getProposedAppInstances(nodeA)).length).toEqual(0);
+            assertNodeMessage(msg, {
+              from: nodeC.publicIdentifier,
+              data: {
+                appInstanceId
+              },
+              type: "REJECT_INSTALL_VIRTUAL_EVENT"
+            });
+            done();
+          }
+        );
 
         nodeC.once(
-          NODE_EVENTS.PROPOSE_INSTALL_EVENT,
+          "PROPOSE_INSTALL_EVENT",
           async ({ data: { params, appInstanceId } }: ProposeMessage) => {
             const [proposedAppInstanceC] = await getProposedAppInstances(nodeC);
             appInstanceId = proposedAppInstanceC.identityHash;

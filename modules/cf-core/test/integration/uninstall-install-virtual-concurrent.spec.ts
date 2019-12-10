@@ -60,11 +60,11 @@ describe("Node method follows spec when happening concurrently - install virtual
 
       // install regular app
       installedAppInstanceId = await new Promise(async resolve => {
-        nodeB.once(NODE_EVENTS.PROPOSE_INSTALL_EVENT, (msg: ProposeMessage) => {
+        nodeB.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
           makeInstallCall(nodeB, msg.data.appInstanceId);
         });
 
-        nodeA.once(NODE_EVENTS.INSTALL_EVENT, (msg: InstallMessage) => {
+        nodeA.once("INSTALL_EVENT", (msg: InstallMessage) => {
           resolve(msg.data.params.appInstanceId);
         });
 
@@ -85,12 +85,12 @@ describe("Node method follows spec when happening concurrently - install virtual
     it("nodeA calls uninstall and install virtual", async done => {
       let completedActions = 0;
 
-      nodeB.once(NODE_EVENTS.UNINSTALL_EVENT, () => {
+      nodeB.once("UNINSTALL_EVENT", () => {
         completedActions += 1;
         if (completedActions === 2) done();
       });
 
-      nodeA.once(NODE_EVENTS.INSTALL_VIRTUAL_EVENT, () => {
+      nodeA.once("INSTALL_VIRTUAL_EVENT", () => {
         completedActions += 1;
         if (completedActions === 2) done();
       });
@@ -102,12 +102,12 @@ describe("Node method follows spec when happening concurrently - install virtual
     it("separate nodes make the uninstall and install virtual calls", async done => {
       let completedActions = 0;
 
-      nodeA.once(NODE_EVENTS.UNINSTALL_EVENT, () => {
+      nodeA.once("UNINSTALL_EVENT", () => {
         completedActions += 1;
         if (completedActions === 2) done();
       });
 
-      nodeA.once(NODE_EVENTS.INSTALL_VIRTUAL_EVENT, () => {
+      nodeA.once("INSTALL_VIRTUAL_EVENT", () => {
         completedActions += 1;
         if (completedActions === 2) done();
       });

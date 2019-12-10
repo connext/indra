@@ -140,12 +140,12 @@ export default class DepositController extends NodeController {
 
     const payload: DepositConfirmationMessage = {
       from: publicIdentifier,
-      type: NODE_EVENTS.DEPOSIT_CONFIRMED_EVENT as NodeEvent,
+      type: "DEPOSIT_CONFIRMED_EVENT" as NodeEvent,
       data: params
     };
 
     await messagingService.send(counterpartyAddress, payload);
-    outgoing.emit(NODE_EVENTS.DEPOSIT_CONFIRMED_EVENT, payload);
+    outgoing.emit("DEPOSIT_CONFIRMED_EVENT", payload);
 
     const multisigBalance =
       params.tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS
