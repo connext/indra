@@ -84,6 +84,7 @@ export type SingleAssetTwoPartyIntermediaryAgreement = {
 
 export type StateChannelJSON = {
   readonly multisigAddress: string;
+  readonly proxyFactoryAddress: string;
   readonly userNeuteredExtendedKeys: string[];
   readonly proposedAppInstances: [string, AppInstanceProposal][];
   readonly appInstances: [string, AppInstanceJson][];

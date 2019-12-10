@@ -6,7 +6,6 @@ import { AppInstance, StateChannel } from "../../../../../src/models";
 import { getRandomExtendedPubKeys } from "../../../integration/random-signing-keys";
 import { generateRandomNetworkContext } from "../../../mocks";
 import { AppInstanceProposal } from "@connext/types";
-import { Proxy } from "../../../../contracts";
 
 describe("StateChannel::setupChannel", () => {
   const multisigAddress = getAddress(hexlify(randomBytes(20)));
@@ -19,6 +18,7 @@ describe("StateChannel::setupChannel", () => {
   beforeAll(() => {
     sc = StateChannel.setupChannel(
       networkContext.IdentityApp,
+      networkContext.ProxyFactory,
       multisigAddress,
       xpubs
     );

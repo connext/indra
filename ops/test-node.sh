@@ -58,6 +58,11 @@ trap cleanup EXIT
 
 docker network create --attachable $network 2> /dev/null || true
 
+# Damn I forget where I copy/pasted this witchcraft from, yikes.
+# It's supposed to find out whether we're calling this script from a shell & can print stuff
+# Or whether it's running in the background of another script and can't attach to a screen
+test -t 0 -a -t 1 -a -t 2 && interactive="--interactive"
+
 ########################################
 # Start dependencies
 
@@ -115,7 +120,7 @@ docker run \
   --env="INDRA_PORT=$node_port" \
   --env="LOG_LEVEL=$log_level" \
   --env="NODE_ENV=development" \
-  --interactive \
+  $interactive \
   --name="$node_host" \
   --network="$network" \
   --rm \

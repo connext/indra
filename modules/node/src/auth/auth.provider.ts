@@ -1,6 +1,5 @@
 import { IMessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { hexlify, randomBytes } from "ethers/utils";
 
 import { AuthProviderId, MessagingProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";

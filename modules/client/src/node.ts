@@ -4,7 +4,7 @@ import { Transaction } from "ethers/utils";
 import uuid = require("uuid");
 
 import { ChannelRouter } from "./channelRouter";
-import { Logger, NATS_TIMEOUT, stringify } from "./lib";
+import { Logger, NATS_ATTEMPTS, NATS_TIMEOUT, stringify } from "./lib";
 import {
   AppRegistry,
   CFCoreTypes,
@@ -23,6 +23,7 @@ import {
 
 // Include our access token when interacting with these subjects
 const guardedSubjects = ["channel", "lock", "transfer"];
+const sendFailed = "Failed to send message";
 
 export interface INodeApiClient {
   acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;
@@ -62,17 +63,17 @@ export class NodeApiClient implements INodeApiClient {
   public latestSwapRates: { [key: string]: string } = {};
   public log: Logger;
 
-  private _userPublicIdentifier: string | undefined;
-  private _nodePublicIdentifier: string | undefined;
-  private _channelRouter: ChannelRouter | undefined;
+  private innerUserPublicIdentifier: string | undefined;
+  private innerNodePublicIdentifier: string | undefined;
+  private innerChannelRouter: ChannelRouter | undefined;
   private token: Promise<string> | undefined;
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
     this.log = new Logger("NodeApiClient", opts.logLevel);
-    this._userPublicIdentifier = opts.userPublicIdentifier;
-    this._nodePublicIdentifier = opts.nodePublicIdentifier;
-    this._channelRouter = opts.channelRouter;
+    this.innerUserPublicIdentifier = opts.userPublicIdentifier;
+    this.innerNodePublicIdentifier = opts.nodePublicIdentifier;
+    this.innerChannelRouter = opts.channelRouter;
     if (this.channelRouter) {
       this.token = this.getAuthToken();
     }
@@ -81,27 +82,27 @@ export class NodeApiClient implements INodeApiClient {
   ////////////////////////////////////////
   // GETTERS/SETTERS
   get channelRouter(): ChannelRouter | undefined {
-    return this._channelRouter;
+    return this.innerChannelRouter;
   }
 
   set channelRouter(channelRouter: ChannelRouter) {
-    this._channelRouter = channelRouter;
+    this.innerChannelRouter = channelRouter;
   }
 
   get userPublicIdentifier(): string | undefined {
-    return this._userPublicIdentifier;
+    return this.innerUserPublicIdentifier;
   }
 
   set userPublicIdentifier(userXpub: string) {
-    this._userPublicIdentifier = userXpub;
+    this.innerUserPublicIdentifier = userXpub;
   }
 
   get nodePublicIdentifier(): string | undefined {
-    return this._nodePublicIdentifier;
+    return this.innerNodePublicIdentifier;
   }
 
   set nodePublicIdentifier(nodeXpub: string) {
-    this._nodePublicIdentifier = nodeXpub;
+    this.innerNodePublicIdentifier = nodeXpub;
   }
 
   ////////////////////////////////////////
@@ -301,6 +302,31 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   private async send(subject: string, data?: any): Promise<any | undefined> {
+    let error;
+    for (let attempt = 1; attempt <= NATS_ATTEMPTS; attempt += 1) {
+      const timeout = new Promise((resolve: any): any => setTimeout(resolve, NATS_TIMEOUT));
+      try {
+        return await this.sendAttempt(subject, data);
+      } catch (e) {
+        error = e;
+        if (e.message.startsWith(sendFailed)) {
+          this.log.warn(
+            `Attempt ${attempt}/${NATS_ATTEMPTS} to send ${subject} failed: ${e.message}`,
+          );
+          await this.messaging.disconnect();
+          await this.messaging.connect();
+          if (attempt + 1 <= NATS_ATTEMPTS) {
+            await timeout; // Wait at least a NATS_TIMEOUT before retrying
+          }
+        } else {
+          throw e;
+        }
+      }
+    }
+    throw error;
+  }
+
+  private async sendAttempt(subject: string, data?: any): Promise<any | undefined> {
     this.log.debug(
       `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : `without data`}`,
     );
@@ -312,7 +338,12 @@ export class NodeApiClient implements INodeApiClient {
       this.assertAuthToken();
       payload.token = await this.token;
     }
-    let msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
+    let msg;
+    try {
+      msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
+    } catch (e) {
+      throw new Error(`${sendFailed}: ${e.message}`);
+    }
     let error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     if (error && error.startsWith("Invalid token")) {
       this.log.info(`Auth error, token might have expired. Let's get a fresh token & try again.`);

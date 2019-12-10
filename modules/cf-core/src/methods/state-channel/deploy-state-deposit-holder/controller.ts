@@ -5,7 +5,7 @@ import {
   Provider,
   TransactionResponse
 } from "ethers/providers";
-import { bigNumberify, Interface } from "ethers/utils";
+import { Interface } from "ethers/utils";
 import log from "loglevel";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -17,11 +17,17 @@ import {
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { NetworkContext, Node } from "../../../types";
-import { prettyPrintObject, sleep } from "../../../utils";
+import {
+  getCreate2MultisigAddress,
+  prettyPrintObject,
+  sleep
+} from "../../../utils";
 import { NodeController } from "../../controller";
 import {
   CHANNEL_CREATION_FAILED,
-  NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT
+  NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT,
+  INCORRECT_MULTISIG_ADDRESS,
+  INVALID_FACTORY_ADDRESS
 } from "../../errors";
 
 // Estimate based on rinkeby transaction:
@@ -31,6 +37,31 @@ const CREATE_PROXY_AND_SETUP_GAS = 500_000;
 export default class DeployStateDepositHolderController extends NodeController {
   @jsonRpcMethod(Node.RpcMethodName.DEPLOY_STATE_DEPOSIT_HOLDER)
   public executeMethod = super.executeMethod;
+
+  protected async beforeExecution(
+    requestHandler: RequestHandler,
+    params: Node.DeployStateDepositHolderParams
+  ): Promise<void> {
+    const { store, provider, networkContext } = requestHandler;
+    const { multisigAddress } = params;
+
+    const channel = await store.getStateChannel(multisigAddress);
+
+    if (!channel.proxyFactoryAddress) {
+      throw Error(INVALID_FACTORY_ADDRESS(channel.proxyFactoryAddress));
+    }
+
+    const expectedMultisigAddress = await getCreate2MultisigAddress(
+      channel.userNeuteredExtendedKeys,
+      channel.proxyFactoryAddress,
+      networkContext.MinimumViableMultisig,
+      provider
+    );
+
+    if (expectedMultisigAddress !== channel.multisigAddress) {
+      throw Error(INCORRECT_MULTISIG_ADDRESS);
+    }
+  }
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
@@ -44,6 +75,18 @@ export default class DeployStateDepositHolderController extends NodeController {
     let tx = { hash: HashZero } as TransactionResponse;
 
     const channel = await store.getStateChannel(multisigAddress);
+
+    // make sure it is deployed to the right address
+    const expectedMultisigAddress = await getCreate2MultisigAddress(
+      channel.userNeuteredExtendedKeys,
+      channel.proxyFactoryAddress,
+      networkContext.MinimumViableMultisig,
+      provider
+    );
+
+    if (expectedMultisigAddress !== channel.multisigAddress) {
+      throw Error(INCORRECT_MULTISIG_ADDRESS);
+    }
 
     // Check if the contract has already been deployed on-chain
     if ((await provider.getCode(multisigAddress)) === "0x") {
@@ -65,8 +108,10 @@ async function sendMultisigDeployTx(
   networkContext: NetworkContext,
   retryCount: number = 1
 ): Promise<TransactionResponse> {
+  // make sure that the proxy factory used to deploy is the same as the one
+  // used when the channel was created
   const proxyFactory = new Contract(
-    networkContext.ProxyFactory,
+    stateChannel.proxyFactoryAddress,
     ProxyFactory.abi,
     signer
   );

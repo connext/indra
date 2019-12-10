@@ -25,10 +25,6 @@ import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server
 
 expect.extend({ toBeLt, toBeEq });
 
-const { CoinBalanceRefundApp } = global[
-  "networkContext"
-] as NetworkContextForTestSuite;
-
 describe("Node method follows spec - install balance refund", () => {
   let multisigAddress: string;
   let nodeA: Node;

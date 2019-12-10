@@ -26,6 +26,7 @@ describe("StateChannel::setState", () => {
 
     sc1 = StateChannel.setupChannel(
       networkContext.IdentityApp,
+      networkContext.ProxyFactory,
       multisigAddress,
       xpubs
     );

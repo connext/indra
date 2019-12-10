@@ -100,7 +100,8 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
     proxyFactory.once("ProxyCreation", async (proxyAddress: string) => {
       let stateChannel = StateChannel.setupChannel(
         network.IdentityApp,
-        proxyAddress,
+        proxyFactory.address,
+        proxyAddress, // used as multisigAddress
         xpubs,
         1
       ).setFreeBalance(

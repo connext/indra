@@ -44,22 +44,40 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 ########################################
 # Begin Phony Rules
-.PHONY: default all dev prod start start-prod stop restart restart-prod clean reset push-latest backup
+.PHONY: default all dev prod start start-prod stop restart restart-prod clean reset push-latest push-versioned backup
 
 default: dev
 all: dev prod
 dev: database node types client payment-bot indra-proxy ws-tcp-relay
 prod: database node-prod indra-proxy-prod ws-tcp-relay daicard-proxy
 
-start: dev
-	bash ops/start-dev.sh ganache
+start-headless: dev
+	INDRA_UI=headless bash ops/start-dev.sh
+
+start-daicard: dev
+	INDRA_UI=daicard bash ops/start-dev.sh
+
+start-dashboard: dev
+	INDRA_UI=dashboard bash ops/start-dev.sh
+
+start: start-daicard
 
 stop:
 	bash ops/stop.sh
 
-restart: dev
+restart-headless: dev
 	bash ops/stop.sh
-	bash ops/start-dev.sh ganache
+	INDRA_UI=headless bash ops/start-dev.sh
+
+restart-daicard: dev
+	bash ops/stop.sh
+	INDRA_UI=daicard bash ops/start-dev.sh
+
+restart-dashboard: dev
+	bash ops/stop.sh
+	INDRA_UI=dashboard bash ops/start-dev.sh
+
+restart: restart-daicard
 
 start-prod: prod
 	bash ops/start-prod.sh
@@ -103,7 +121,8 @@ reset: stop
 push-latest: prod
 	bash ops/push-images.sh latest database node proxy relay
 
-push-prod: prod
+push-prod: push-versioned
+push-versioned: prod
 	bash ops/push-images.sh $(version) database node proxy relay
 
 deployed-contracts: contracts

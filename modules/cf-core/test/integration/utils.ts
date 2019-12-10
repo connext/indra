@@ -694,10 +694,13 @@ export async function collateralizeChannel(
   node1: Node,
   node2: Node,
   amount: BigNumber = One,
-  tokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS
+  tokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+  collateralizeNode2: boolean = true
 ): Promise<void> {
   await deposit(node1, multisigAddress, amount, node2, tokenAddress);
-  await deposit(node2, multisigAddress, amount, node1, tokenAddress);
+  if (collateralizeNode2) {
+    await deposit(node2, multisigAddress, amount, node1, tokenAddress);
+  }
 }
 
 export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {

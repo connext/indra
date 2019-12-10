@@ -6,6 +6,7 @@ import {
   GetConfigResponse,
   PaymentProfile as PaymentProfileRes,
   RequestCollateralResponse,
+  StateChannelJSON,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { TransactionResponse } from "ethers/providers";
@@ -141,9 +142,8 @@ class ChannelMessaging extends AbstractMessagingProvider {
     return onchainTx;
   }
 
-  // TODO: TYPE
-  async getStatesForRestore(pubId: string): Promise<any> {
-    return await this.channelService.getChannelState(pubId);
+  async getStatesForRestore(pubId: string): Promise<StateChannelJSON> {
+    return await this.channelService.getStateChannel(pubId);
   }
 
   async setupSubscriptions(): Promise<void> {
