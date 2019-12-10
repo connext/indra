@@ -64,9 +64,6 @@ export default class ListenerService implements OnModuleInit {
   // TODO: move the business logic into the respective modules?
   getEventListeners(): CallbackStruct {
     return {
-      COUNTER_DEPOSIT_CONFIRMED: (data: DepositConfirmationMessage): void => {
-        logEvent(CFCoreTypes.EventName.COUNTER_DEPOSIT_CONFIRMED, data);
-      },
       CREATE_CHANNEL: async (data: CreateChannelMessage): Promise<void> => {
         logEvent(CFCoreTypes.EventName.CREATE_CHANNEL, data);
         this.channelService.makeAvailable(data);

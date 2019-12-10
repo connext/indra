@@ -40,9 +40,6 @@ export class ConnextListener extends EventEmitter {
   // TODO: add custom parsing functions here to convert event data
   // to something more usable?
   private defaultCallbacks: CallbackStruct = {
-    COUNTER_DEPOSIT_CONFIRMED: (msg: DepositConfirmationMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.COUNTER_DEPOSIT_CONFIRMED, msg.data);
-    },
     CREATE_CHANNEL: (msg: CreateChannelMessage): void => {
       this.emitAndLog(CFCoreTypes.EventName.CREATE_CHANNEL, msg.data);
     },
