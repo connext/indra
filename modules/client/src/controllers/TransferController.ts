@@ -128,7 +128,12 @@ export class TransferController extends AbstractController {
     };
 
     // note: intermediary is added in connext.ts as well
-    const { actionEncoding, appDefinitionAddress: appDefinition, stateEncoding, outcomeType } = appInfo;
+    const {
+      actionEncoding,
+      appDefinitionAddress: appDefinition,
+      stateEncoding,
+      outcomeType,
+    } = appInfo;
     const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {
         actionEncoding,
@@ -155,8 +160,14 @@ export class TransferController extends AbstractController {
         new Promise((res: any, rej: any): any => {
           boundReject = this.rejectInstallTransfer.bind(null, rej);
           boundResolve = this.resolveInstallTransfer.bind(null, res);
-          this.listener.on(CFCoreTypes.EventName.INSTALL_VIRTUAL, boundResolve);
-          this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
+          this.listener.on(
+            CFCoreTypes.EventNames.INSTALL_VIRTUAL_EVENT as CFCoreTypes.EventName,
+            boundResolve,
+          );
+          this.listener.on(
+            CFCoreTypes.EventNames.REJECT_INSTALL_VIRTUAL_EVENT as CFCoreTypes.EventName,
+            boundReject,
+          );
         }),
         delayAndThrow(
           CF_METHOD_TIMEOUT,
@@ -174,7 +185,13 @@ export class TransferController extends AbstractController {
   };
 
   private cleanupInstallListeners = (boundResolve: any, boundReject: any): void => {
-    this.listener.removeListener(CFCoreTypes.EventName.INSTALL_VIRTUAL, boundResolve);
-    this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
+    this.listener.removeListener(
+      CFCoreTypes.EventNames.INSTALL_VIRTUAL_EVENT as CFCoreTypes.EventName,
+      boundResolve,
+    );
+    this.listener.removeListener(
+      CFCoreTypes.EventNames.REJECT_INSTALL_VIRTUAL_EVENT as CFCoreTypes.EventName,
+      boundReject,
+    );
   };
 }

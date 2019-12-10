@@ -149,7 +149,7 @@ export class DepositController extends AbstractController {
           const { appInstanceId } = await this.connext.proposeInstallApp(params);
           appId = appInstanceId;
           this.log.warn(`waiting for proposal acceptance of ${appInstanceId}`);
-          this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
+          this.listener.on(CFCoreTypes.EventNames.REJECT_INSTALL_EVENT, boundReject);
         }),
         delayAndThrow(
           CF_METHOD_TIMEOUT,
@@ -185,24 +185,24 @@ export class DepositController extends AbstractController {
   ////// Listener registration/deregistration
   private registerListeners(): void {
     this.listener.registerCfListener(
-      CFCoreTypes.EventName.DEPOSIT_CONFIRMED,
+      CFCoreTypes.EventNames.DEPOSIT_CONFIRMED_EVENT as CFCoreTypes.EventName,
       this.depositConfirmedCallback,
     );
 
     this.listener.registerCfListener(
-      CFCoreTypes.EventName.DEPOSIT_FAILED,
+      CFCoreTypes.EventNames.DEPOSIT_FAILED_EVENT as CFCoreTypes.EventName,
       this.depositFailedCallback,
     );
   }
 
   private removeListeners(): void {
     this.listener.removeCfListener(
-      CFCoreTypes.EventName.DEPOSIT_CONFIRMED,
+      CFCoreTypes.EventNames.DEPOSIT_CONFIRMED_EVENT as CFCoreTypes.EventName,
       this.depositConfirmedCallback,
     );
 
     this.listener.removeCfListener(
-      CFCoreTypes.EventName.DEPOSIT_FAILED,
+      CFCoreTypes.EventNames.DEPOSIT_FAILED_EVENT as CFCoreTypes.EventName,
       this.depositFailedCallback,
     );
   }
@@ -211,6 +211,9 @@ export class DepositController extends AbstractController {
     this.connext.messaging.unsubscribe(
       `indra.node.${this.connext.nodePublicIdentifier}.install.${appId}`,
     );
-    this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
+    this.listener.removeListener(
+      CFCoreTypes.EventNames.REJECT_INSTALL_VIRTUAL_EVENT as CFCoreTypes.EventName,
+      boundReject,
+    );
   };
 }

@@ -176,7 +176,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
           30000,
         );
         channelRouter.once(
-          CFCoreTypes.EventName.CREATE_CHANNEL,
+          CFCoreTypes.EventNames.CREATE_CHANNEL_EVENT as CFCoreTypes.EventName,
           (data: CreateChannelMessage): void => {
             clearTimeout(timer);
             res(data.data);

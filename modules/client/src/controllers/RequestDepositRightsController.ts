@@ -46,9 +46,7 @@ export class RequestDepositRightsController extends AbstractController {
         bigNumberify(existingBalanceRefundApp.latestState["threshold"]).eq(multisigBalance) &&
         existingBalanceRefundApp.latestState["recipient"] === this.connext.freeBalanceAddress
       ) {
-        this.log.info(
-          `Balance refund app for ${assetId} is in the correct state, doing nothing`,
-        );
+        this.log.info(`Balance refund app for ${assetId} is in the correct state, doing nothing`);
         return {
           freeBalance: await this.connext.getFreeBalance(assetId),
           recipient: this.connext.freeBalanceAddress,
@@ -200,7 +198,10 @@ export class RequestDepositRightsController extends AbstractController {
           const { appInstanceId } = await this.connext.proposeInstallApp(params);
           appId = appInstanceId;
           this.log.info(`waiting for proposal acceptance of ${appInstanceId}`);
-          this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
+          this.listener.on(
+            CFCoreTypes.EventNames.REJECT_INSTALL_EVENT as CFCoreTypes.EventName,
+            boundReject,
+          );
         }),
         delayAndThrow(
           CF_METHOD_TIMEOUT,
@@ -228,6 +229,9 @@ export class RequestDepositRightsController extends AbstractController {
     this.connext.messaging.unsubscribe(
       `indra.node.${this.connext.nodePublicIdentifier}.install.${appId}`,
     );
-    this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
+    this.listener.removeListener(
+      CFCoreTypes.EventNames.REJECT_INSTALL_VIRTUAL_EVENT as CFCoreTypes.EventName,
+      boundReject,
+    );
   };
 }
