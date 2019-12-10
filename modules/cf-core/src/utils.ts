@@ -11,7 +11,6 @@ import {
   Signature,
   solidityKeccak256
 } from "ethers/utils";
-import memoize from "memoizee";
 
 import { JSON_STRINGIFY_SPACE } from "./constants";
 import { MinimumViableMultisig, ProxyFactory } from "./contracts";

@@ -49,6 +49,7 @@ describe("set state on free balance", () => {
 
     const stateChannel = StateChannel.setupChannel(
       network.IdentityApp,
+      network.ProxyFactory,
       AddressZero,
       xprvs.map(extendedPrvKeyToExtendedPubKey)
     ).setFreeBalance(

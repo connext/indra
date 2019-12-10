@@ -6,7 +6,7 @@ email="${EMAIL:-noreply@gmail.com}"
 eth_rpc_url="${ETH_RPC_URL:-http://ethprovider:8545}"
 messaging_url="${MESSAGING_URL:-http://relay:4223}"
 mode="${MODE:-dev}"
-ui_url="${UI_URL:-http://ui:3000}"
+ui_url="${UI_URL:-$messaging_url}"
 
 echo "domain=$domain email=$email eth=$eth_rpc_url messaging=$messaging_url ui=$ui_url mode=$mode"
 
@@ -35,7 +35,7 @@ while ! curl -s $messaging_url > /dev/null
 do sleep 2
 done
 
-if [[ "$MODE" == "dev" ]]
+if [[ "$mode" == "dev" ]]
 then
   echo "waiting for ${ui_url#*://}..."
   bash wait_for.sh -t 60 ${ui_url#*://} 2> /dev/null

@@ -2,7 +2,7 @@ import { MessagingServiceFactory } from "@connext/messaging";
 import uuid from "uuid";
 import { stringify } from "./utils";
 
-const API_TIMEOUT = 15000;
+const API_TIMEOUT = 30_000;
 
 export default class AdminMessaging {
   constructor(messagingUrl, token, logLevel = 5) {
@@ -26,7 +26,7 @@ export default class AdminMessaging {
   ///////////////////////////////////////
   ////// CHANNEL API METHODS
   async getChannelStatesWithNoFreeBalanceApp() {
-    return await this.send("get-no-free-balance")
+    return await this.send("get-no-free-balance");
   }
 
   async getStateChannelByUserPubId(userPublicIdentifier) {
@@ -38,33 +38,42 @@ export default class AdminMessaging {
   async getStateChannelByMultisig(multisigAddress) {
     return await this.send("get-state-channel-by-multisig", {
       multisigAddress,
-    })
+    });
   }
 
   async getAllChannelStates() {
-    return await this.send("get-all-channels")
+    return await this.send("get-all-channels");
+  }
+
+  async getChannelsIncorrectProxyFactoryAddress() {
+    return await this.send("get-channels-no-proxy-factory");
+  }
+
+  async fixChannelsIncorrectProxyFactoryAddress() {
+    // use longer timeout bc this function takes a long time
+    return await this.send("fix-proxy-factory-addresses", {}, 90_000);
   }
 
   ///////////////////////////////////////
   ////// TRANSFER API METHODS
   async getAllLinkedTransfers() {
-    return await this.send("get-all-linked-transfers")
+    return await this.send("get-all-linked-transfers");
   }
 
   async getLinkedTransferByPaymentId(paymentId) {
     return await this.send("get-linked-transfer-by-payment-id", {
-      paymentId
-    })
+      paymentId,
+    });
   }
 
   ///////////////////////////////////////
   ////// SEND REQUEST
-  async send(subject, data) {
+  async send(subject, data, timeout = API_TIMEOUT) {
     // assert connected
     if (!this.connected) {
       throw new Error(`Call messaging.connect before calling send`);
     }
-  
+
     // data is optional
     console.debug(
       `Sending request to admin.${subject} ${
@@ -78,7 +87,7 @@ export default class AdminMessaging {
       token: this.token,
     };
 
-    const msg = await this.service.request(`admin.${subject}`, API_TIMEOUT, payload);
+    const msg = await this.service.request(`admin.${subject}`, timeout, payload);
     const error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
 
     if (!msg.data) {
@@ -86,12 +95,12 @@ export default class AdminMessaging {
       return undefined;
     }
 
-    const { err, response, ...rest } = msg.data;
+    const { err, response } = msg.data;
     if (err || error) {
       throw new Error(`Error sending request. Message: ${stringify(msg)}`);
     }
 
     const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
-    return !response || isEmptyObj ? undefined : response
+    return !response || isEmptyObj ? undefined : response;
   }
 }

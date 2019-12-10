@@ -33,6 +33,7 @@ describe("ConditionalTransaction", () => {
   // State channel testing values
   let stateChannel = StateChannel.setupChannel(
     networkContext.IdentityApp,
+    networkContext.ProxyFactory,
     getAddress(hexlify(randomBytes(20))),
     [interaction.sender, interaction.receiver]
   );

@@ -2,13 +2,12 @@ import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
 import { Node } from "../../../types";
-import {
-  getFirstElementInListNotEqualTo
-} from "../../../utils";
+import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
   APP_ALREADY_UNINSTALLED,
-  NO_APP_INSTANCE_ID_TO_UNINSTALL
+  NO_APP_INSTANCE_ID_TO_UNINSTALL,
+  NO_NETWORK_PROVIDER_CREATE2
 } from "../../errors";
 
 import { uninstallVirtualAppInstanceFromChannel } from "./operation";
@@ -24,19 +23,35 @@ export default class UninstallVirtualController extends NodeController {
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { appInstanceId, intermediaryIdentifier } = params;
 
+    // safe to use network context proxy factory address directly here.
+    // the `getMultisigAddressWithCounterparty` function will default
+    // to using any existing multisig address for the provided
+    // owners before creating one
     const multisigAddressForStateChannelWithIntermediary = await store.getMultisigAddressWithCounterparty(
       [publicIdentifier, intermediaryIdentifier],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig,
+      networkContext.MinimumViableMultisig
     );
 
     const stateChannelWithResponding = await store.getChannelFromAppInstanceID(
       appInstanceId
     );
 
-    // because this is the initiators store, it may not have
-    // access to this multisig address between the proposedBy
-    // and the intermediary
+    if (!networkContext.provider) {
+      throw new Error(NO_NETWORK_PROVIDER_CREATE2);
+    }
+
+    // allow generation of create2 address here because the initiators
+    // store may not have access to the channel between the responder
+    // and the intermediary.
+
+    // NOTE: there are edge cases where this generated multisig address
+    // != the stored multisig address between the hub and the responder
+    // this will result in incorrect locknames being used, and potentially
+    // concurrency issues....
+    // the ideal solution would be to confirm the correct multisig address
+    // for this during install-virtual, and make sure its is included as a
+    // parameter, or as a part of the virtual app state.
     const multisigAddressBetweenHubAndResponding = await store.getMultisigAddressWithCounterparty(
       [
         stateChannelWithResponding.userNeuteredExtendedKeys.filter(
@@ -44,7 +59,7 @@ export default class UninstallVirtualController extends NodeController {
         )[0],
         intermediaryIdentifier
       ],
-      networkContext.ProxyFactory,
+      stateChannelWithResponding.proxyFactoryAddress,
       networkContext.MinimumViableMultisig,
       networkContext.provider
     );

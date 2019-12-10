@@ -9,7 +9,7 @@ export const APP_ALREADY_UNINSTALLED = (id: string): string =>
 export const CANNOT_DEPOSIT =
   "Cannot deposit while another deposit is occurring in the channel.";
 
-export const COIN_BALANCE_NOT_PROPOSED = 
+export const COIN_BALANCE_NOT_PROPOSED =
   "No coin balance refund app proposed in channel.";
 
 export const BALANCE_REFUND_APP_ALREADY_INSTALLED =
@@ -41,6 +41,15 @@ export const FAILED_TO_GET_ERC20_BALANCE = (
 
 export const IMPROPERLY_FORMATTED_STRUCT =
   "Improperly formatted ABIEncoderV2 struct";
+
+export const INCORRECT_MULTISIG_ADDRESS =
+  "Channel multisig address does not match expected";
+
+export const INVALID_FACTORY_ADDRESS = (address: string): string =>
+  `Channel factory address is invalid: ${address}`;
+
+export const NO_NETWORK_PROVIDER_CREATE2 =
+  "`getCreate2MultisigAddress` needs access to an eth provider within the network context";
 
 export const INSUFFICIENT_ERC20_FUNDS_TO_DEPOSIT = (
   address: string,

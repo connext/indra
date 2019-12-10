@@ -41,6 +41,11 @@ trap cleanup EXIT
 
 docker network create --attachable $network 2> /dev/null || true
 
+# Damn I forget where I copy/pasted this witchcraft from, yikes.
+# It's supposed to find out whether we're calling this script from a shell & can print stuff
+# Or whether it's running in the background of another script and can't attach to a screen
+test -t 0 -a -t 1 -a -t 2 && interactive="--interactive"
+
 ########################################
 # Start dependencies
 
@@ -70,7 +75,7 @@ docker run \
   --entrypoint="bash" \
   --env="ETHPROVIDER_URL=$ethprovider_url" \
   --env="SUGAR_DADDY=$eth_mnemonic" \
-  --interactive \
+  $interactive \
   --name="${project}_test_cf_core" \
   --network="$network" \
   --rm \

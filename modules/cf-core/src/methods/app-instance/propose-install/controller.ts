@@ -23,20 +23,25 @@ export default class ProposeInstallController extends NodeController {
   @jsonRpcMethod(Node.RpcMethodName.PROPOSE_INSTALL)
   public executeMethod: (
     requestHandler: RequestHandler,
-    params: Node.MethodParams,
+    params: Node.MethodParams
   ) => Promise<Node.MethodResult> = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.ProposeInstallParams,
+    params: Node.ProposeInstallParams
   ): Promise<string[]> {
     const { networkContext, publicIdentifier, store } = requestHandler;
     const { proposedToIdentifier } = params;
 
-    // TODO: no way to determine if this is a virtual or regular app being
+    // no way to determine if this is a virtual or regular app being
     // proposed. because it may be a virtual app, and the function defaults
     // to pulling from the store, assume it is okay to use a generated
     // multisig
+
+    // in practice, the only time it should *not* find the multisig
+    // address in the store is if its a virtual app being proposed between
+    // two new respondents. Unfortunately, we cannot affirm this before
+    // generating the queues
     const multisigAddress = await store.getMultisigAddressWithCounterparty(
       [publicIdentifier, proposedToIdentifier],
       networkContext.ProxyFactory,
@@ -49,7 +54,7 @@ export default class ProposeInstallController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: Node.ProposeInstallParams,
+    params: Node.ProposeInstallParams
   ): Promise<void> {
     const { networkContext, publicIdentifier, store } = requestHandler;
     const { initialState } = params;
@@ -63,15 +68,12 @@ export default class ProposeInstallController extends NodeController {
       initiatorDeposit,
       responderDeposit,
       initiatorDepositTokenAddress: initiatorDepositTokenAddressParam,
-      responderDepositTokenAddress: responderDepositTokenAddressParam,
+      responderDepositTokenAddress: responderDepositTokenAddressParam
     } = params;
 
     const myIdentifier = publicIdentifier;
 
-    // TODO: no way to determine if this is a virtual or regular app being
-    // proposed. because it may be a virtual app, and the function defaults
-    // to pulling from the store, assume it is okay to use a generated
-    // multisig
+    // see comment in `getRequiredLockNames`
     const multisigAddress = await store.getMultisigAddressWithCounterparty(
       [publicIdentifier, proposedToIdentifier],
       networkContext.ProxyFactory,
@@ -87,22 +89,29 @@ export default class ProposeInstallController extends NodeController {
 
     const stateChannel = await store.getOrCreateStateChannelBetweenVirtualAppParticipants(
       multisigAddress,
+      networkContext.ProxyFactory,
       myIdentifier,
-      proposedToIdentifier,
+      proposedToIdentifier
     );
 
+    // NOTE: will not fail if there is no free balance class. there is
+    // no free balance in the case of a channel between virtual
+    // participants
     assertSufficientFundsWithinFreeBalance(
       stateChannel,
       myIdentifier,
       initiatorDepositTokenAddress,
-      initiatorDeposit,
+      initiatorDeposit
     );
 
+    // NOTE: will not fail if there is no free balance class. there is
+    // no free balance in the case of a channel between virtual
+    // participants
     assertSufficientFundsWithinFreeBalance(
       stateChannel,
       proposedToIdentifier,
       responderDepositTokenAddress,
-      responderDeposit,
+      responderDeposit
     );
 
     params.initiatorDepositTokenAddress = initiatorDepositTokenAddress;
@@ -111,7 +120,7 @@ export default class ProposeInstallController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.ProposeInstallParams,
+    params: Node.ProposeInstallParams
   ): Promise<Node.ProposeInstallResult> {
     const {
       networkContext,
@@ -122,10 +131,7 @@ export default class ProposeInstallController extends NodeController {
 
     const { proposedToIdentifier } = params;
 
-    // TODO: no way to determine if this is a virtual or regular app being
-    // proposed. because it may be a virtual app, and the function defaults
-    // to pulling from the store, assume it is okay to use a generated
-    // multisig
+    // see comment in `getRequiredLockNames`
     const multisigAddress = await store.getMultisigAddressWithCounterparty(
       [publicIdentifier, proposedToIdentifier],
       networkContext.ProxyFactory,
@@ -147,7 +153,7 @@ export default class ProposeInstallController extends NodeController {
     return {
       appInstanceId: (
         await store.getStateChannel(multisigAddress)
-      ).mostRecentlyProposedAppInstance().identityHash,
+      ).mostRecentlyProposedAppInstance().identityHash
     };
   }
 }
@@ -156,13 +162,14 @@ function assertSufficientFundsWithinFreeBalance(
   channel: StateChannel,
   publicIdentifier: string,
   tokenAddress: string,
-  depositAmount: BigNumber,
+  depositAmount: BigNumber
 ): void {
   if (!channel.hasFreeBalance) return;
 
   const freeBalanceForToken =
-    channel.getFreeBalanceClass().getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0)) ||
-    Zero;
+    channel
+      .getFreeBalanceClass()
+      .getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0)) || Zero;
 
   if (freeBalanceForToken.lt(depositAmount)) {
     throw Error(
@@ -171,8 +178,8 @@ function assertSufficientFundsWithinFreeBalance(
         channel.multisigAddress,
         tokenAddress,
         freeBalanceForToken,
-        depositAmount,
-      ),
+        depositAmount
+      )
     );
   }
 }
