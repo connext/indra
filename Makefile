@@ -44,7 +44,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 ########################################
 # Begin Phony Rules
-.PHONY: default all dev prod start start-prod stop restart restart-prod clean reset push-latest backup
+.PHONY: default all dev prod start start-prod stop restart restart-prod clean reset push-latest push-versioned backup
 
 default: dev
 all: dev prod
@@ -121,7 +121,8 @@ reset: stop
 push-latest: prod
 	bash ops/push-images.sh latest database node proxy relay
 
-push-prod: prod
+push-prod: push-versioned
+push-versioned: prod
 	bash ops/push-images.sh $(version) database node proxy relay
 
 deployed-contracts: contracts
