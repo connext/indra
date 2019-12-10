@@ -85,11 +85,11 @@ describe("Node method follows spec when happening concurrently - install / unins
     it("install app with ETH then uninstall and install apps simultaneously from the same node", async done => {
       let completedActions = 0;
 
-      nodeB.once(NODE_EVENTS.PROPOSE_INSTALL, (msg: ProposeMessage) => {
+      nodeB.once(NODE_EVENTS.PROPOSE_INSTALL_EVENT, (msg: ProposeMessage) => {
         makeInstallCall(nodeB, msg.data.appInstanceId);
       });
 
-      nodeA.once(NODE_EVENTS.INSTALL, () => {
+      nodeA.once(NODE_EVENTS.INSTALL_EVENT, () => {
         completedActions += 1;
         if (completedActions === 2) {
           done();
@@ -97,7 +97,7 @@ describe("Node method follows spec when happening concurrently - install / unins
       });
 
       // note: if this is on nodeA, test fails with timeout
-      nodeC.once(NODE_EVENTS.UNINSTALL_VIRTUAL, () => {
+      nodeC.once(NODE_EVENTS.UNINSTALL_VIRTUAL_EVENT, () => {
         completedActions += 1;
         if (completedActions === 2) {
           done();
@@ -116,18 +116,18 @@ describe("Node method follows spec when happening concurrently - install / unins
     it("install app with ETH then uninstall virtual and install apps simultaneously from separate nodes", async done => {
       let completedActions = 0;
 
-      nodeB.once(NODE_EVENTS.PROPOSE_INSTALL, (msg: ProposeMessage) => {
+      nodeB.once(NODE_EVENTS.PROPOSE_INSTALL_EVENT, (msg: ProposeMessage) => {
         makeInstallCall(nodeB, msg.data.appInstanceId);
       });
 
-      nodeA.once(NODE_EVENTS.INSTALL, () => {
+      nodeA.once(NODE_EVENTS.INSTALL_EVENT, () => {
         completedActions += 1;
         if (completedActions === 2) {
           done();
         }
       });
 
-      nodeA.once(NODE_EVENTS.UNINSTALL_VIRTUAL, () => {
+      nodeA.once(NODE_EVENTS.UNINSTALL_VIRTUAL_EVENT, () => {
         completedActions += 1;
         if (completedActions === 2) {
           done();

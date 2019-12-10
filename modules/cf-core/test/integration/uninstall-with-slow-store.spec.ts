@@ -48,7 +48,7 @@ describe("Node method follows spec - uninstall", () => {
         initialState
       );
 
-      nodeB.once(NODE_EVENTS.UNINSTALL, async (msg: UninstallMessage) => {
+      nodeB.once(NODE_EVENTS.UNINSTALL_EVENT, async (msg: UninstallMessage) => {
         expect(msg.data.appInstanceId).toBe(appInstanceId);
 
         // FIXME: There is some timing issue with slow stores @snario noticed

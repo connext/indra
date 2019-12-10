@@ -48,11 +48,11 @@ describe("Node method follows spec - install", () => {
       it("install app with ETH", done => {
         let completedInstalls = 0;
 
-        nodeB.on(NODE_EVENTS.PROPOSE_INSTALL, (msg: ProposeMessage) => {
+        nodeB.on(NODE_EVENTS.PROPOSE_INSTALL_EVENT, (msg: ProposeMessage) => {
           makeInstallCall(nodeB, msg.data.appInstanceId);
         });
 
-        nodeA.on(NODE_EVENTS.INSTALL, () => {
+        nodeA.on(NODE_EVENTS.INSTALL_EVENT, () => {
           completedInstalls += 1;
           if (completedInstalls === 2) {
             done();

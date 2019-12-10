@@ -67,8 +67,8 @@ describe("Concurrently uninstalling virtual and installing virtual applications 
       if (completedEvents === 2) done();
     };
 
-    nodeA.once(NODE_EVENTS.INSTALL_VIRTUAL, registerEvent);
-    nodeC.once(NODE_EVENTS.UNINSTALL_VIRTUAL, registerEvent);
+    nodeA.once(NODE_EVENTS.INSTALL_VIRTUAL_EVENT, registerEvent);
+    nodeC.once(NODE_EVENTS.UNINSTALL_VIRTUAL_EVENT, registerEvent);
 
     nodeA.rpcRouter.dispatch(
       constructUninstallVirtualRpc(
@@ -88,8 +88,8 @@ describe("Concurrently uninstalling virtual and installing virtual applications 
       if (completedEvents === 2) done();
     };
 
-    nodeA.once(NODE_EVENTS.INSTALL_VIRTUAL, registerEvent);
-    nodeA.once(NODE_EVENTS.UNINSTALL_VIRTUAL, registerEvent);
+    nodeA.once(NODE_EVENTS.INSTALL_VIRTUAL_EVENT, registerEvent);
+    nodeA.once(NODE_EVENTS.UNINSTALL_VIRTUAL_EVENT, registerEvent);
 
     nodeC.rpcRouter.dispatch(
       constructUninstallVirtualRpc(

@@ -55,11 +55,11 @@ describe("Node method follows spec - uninstall virtual", () => {
         );
 
         nodeC.once(
-          NODE_EVENTS.UNINSTALL_VIRTUAL,
+          NODE_EVENTS.UNINSTALL_VIRTUAL_EVENT,
           async (msg: UninstallVirtualMessage) => {
             assertNodeMessage(msg, {
               from: nodeA.publicIdentifier,
-              type: NODE_EVENTS.UNINSTALL_VIRTUAL,
+              type: NODE_EVENTS.UNINSTALL_VIRTUAL_EVENT,
               data: {
                 intermediaryIdentifier: nodeB.publicIdentifier,
                 appInstanceId,

@@ -1,5 +1,5 @@
 import { RequestHandler } from "../../../request-handler";
-import { Node, NODE_EVENTS, RejectInstallVirtualMessage } from "../../../types";
+import { Node, NODE_EVENTS, RejectInstallVirtualMessage, NodeEvent } from "../../../types";
 
 export default async function rejectInstallVirtualController(
   requestHandler: RequestHandler,
@@ -17,7 +17,7 @@ export default async function rejectInstallVirtualController(
 
   const rejectInstallVirtualMsg: RejectInstallVirtualMessage = {
     from: publicIdentifier,
-    type: NODE_EVENTS.REJECT_INSTALL_VIRTUAL,
+    type: NODE_EVENTS.REJECT_INSTALL_VIRTUAL_EVENT as NodeEvent,
     data: {
       appInstanceId
     }

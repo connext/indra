@@ -6,7 +6,7 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { ERC20 } from "../../../contracts";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
-import { DepositConfirmationMessage, Node, NODE_EVENTS } from "../../../types";
+import { DepositConfirmationMessage, Node, NODE_EVENTS, NodeEvent } from "../../../types";
 import { NodeController } from "../../controller";
 import {
   CANNOT_DEPOSIT,
@@ -140,12 +140,12 @@ export default class DepositController extends NodeController {
 
     const payload: DepositConfirmationMessage = {
       from: publicIdentifier,
-      type: NODE_EVENTS.DEPOSIT_CONFIRMED,
+      type: NODE_EVENTS.DEPOSIT_CONFIRMED_EVENT as NodeEvent,
       data: params
     };
 
     await messagingService.send(counterpartyAddress, payload);
-    outgoing.emit(NODE_EVENTS.DEPOSIT_CONFIRMED, payload);
+    outgoing.emit(NODE_EVENTS.DEPOSIT_CONFIRMED_EVENT, payload);
 
     const multisigBalance =
       params.tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS

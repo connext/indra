@@ -31,7 +31,7 @@ describe("Node can create multisig, other owners get notified", () => {
 
     const expectedMsg = {
       from: nodeB.publicIdentifier,
-      type: NODE_EVENTS.CREATE_CHANNEL,
+      type: NODE_EVENTS.CREATE_CHANNEL_EVENT,
       data: {
         owners: [
           nodeB.freeBalanceAddress,
@@ -43,13 +43,13 @@ describe("Node can create multisig, other owners get notified", () => {
 
     let assertionCount = 0;
 
-    nodeA.once(NODE_EVENTS.CREATE_CHANNEL, async (msg: CreateChannelMessage) => {
+    nodeA.once(NODE_EVENTS.CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
       assertNodeMessage(msg, expectedMsg, ['data.multisigAddress']);
       assertionCount += 1;
       if (assertionCount === 2) done();
     });
 
-    nodeB.once(NODE_EVENTS.CREATE_CHANNEL, async (msg: CreateChannelMessage) => {
+    nodeB.once(NODE_EVENTS.CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
       assertNodeMessage(msg, {
         ...expectedMsg,
         data: {
@@ -90,7 +90,7 @@ describe("Node can create multisig, other owners get notified", () => {
       ]
 
       nodeA.on(
-        NODE_EVENTS.CREATE_CHANNEL,
+        NODE_EVENTS.CREATE_CHANNEL_EVENT,
         async (msg: CreateChannelMessage) => {
           if (msg.data.owners === ownersABPublicIdentifiers) {
             const openChannelsNodeA = await getChannelAddresses(nodeA);

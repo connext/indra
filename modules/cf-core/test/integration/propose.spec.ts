@@ -64,10 +64,10 @@ describe("Node method follows spec - propose install", () => {
           params,
         },
         from: nodeA.publicIdentifier,
-        type: NODE_EVENTS.PROPOSE_INSTALL,
+        type: NODE_EVENTS.PROPOSE_INSTALL_EVENT,
       };
 
-      nodeB.once(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
+      nodeB.once(NODE_EVENTS.PROPOSE_INSTALL_EVENT, async (msg: ProposeMessage) => {
         // make sure message has the right structure
         assertNodeMessage(msg, expectedMessageB, ["data.appInstanceId"]);
         // both nodes should have 1 app, they should be the same

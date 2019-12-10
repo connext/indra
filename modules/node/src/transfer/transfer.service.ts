@@ -214,7 +214,7 @@ export class TransferService {
       // TODO: expose remove listener
       await new Promise(async (resolve, reject) => {
         this.cfCoreService.cfCore.on(
-          NODE_EVENTS.DEPOSIT_CONFIRMED,
+          NODE_EVENTS.DEPOSIT_CONFIRMED_EVENT,
           async (msg: DepositConfirmationMessage) => {
             if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
               return;

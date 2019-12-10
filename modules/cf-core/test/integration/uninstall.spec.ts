@@ -24,7 +24,7 @@ const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 function assertUninstallMessage(senderId: string, appInstanceId: string, msg: UninstallMessage) {
   assertNodeMessage(msg, {
     from: senderId,
-    type: NODE_EVENTS.UNINSTALL,
+    type: NODE_EVENTS.UNINSTALL_EVENT,
     data: {
       appInstanceId
     },
@@ -77,7 +77,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         CONVENTION_FOR_ETH_TOKEN_ADDRESS
       );
 
-      nodeB.once(NODE_EVENTS.UNINSTALL, async (msg: UninstallMessage) => {
+      nodeB.once(NODE_EVENTS.UNINSTALL_EVENT, async (msg: UninstallMessage) => {
         assertUninstallMessage(nodeA.publicIdentifier, appInstanceId, msg);
 
         const balancesSeenByB = await getFreeBalanceState(
@@ -113,7 +113,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         CONVENTION_FOR_ETH_TOKEN_ADDRESS
       );
 
-      nodeB.once(NODE_EVENTS.UNINSTALL, async (msg: UninstallMessage) => {
+      nodeB.once(NODE_EVENTS.UNINSTALL_EVENT, async (msg: UninstallMessage) => {
         assertUninstallMessage(nodeA.publicIdentifier, appInstanceId, msg);
 
         const balancesSeenByB = await getFreeBalanceState(
@@ -149,7 +149,7 @@ describe("Node A and B install apps of different outcome types, then uninstall t
         CONVENTION_FOR_ETH_TOKEN_ADDRESS
       );
 
-      nodeB.once(NODE_EVENTS.UNINSTALL, async (msg: UninstallMessage) => {
+      nodeB.once(NODE_EVENTS.UNINSTALL_EVENT, async (msg: UninstallMessage) => {
         assertUninstallMessage(nodeA.publicIdentifier, appInstanceId, msg);
 
         const balancesSeenByB = await getFreeBalanceState(

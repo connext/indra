@@ -57,20 +57,20 @@ describe("Concurrently installing virtual and regular applications without issue
 
   it("can handle a virtual and regular concurrent TTT app install", async done => {
     let completedInstalls = 0;
-    nodeB.on(NODE_EVENTS.PROPOSE_INSTALL, (msg: ProposeMessage) => {
+    nodeB.on(NODE_EVENTS.PROPOSE_INSTALL_EVENT, (msg: ProposeMessage) => {
       makeInstallCall(nodeB, msg.data.appInstanceId);
     });
 
-    nodeC.on(NODE_EVENTS.PROPOSE_INSTALL, (msg: ProposeMessage) => {
+    nodeC.on(NODE_EVENTS.PROPOSE_INSTALL_EVENT, (msg: ProposeMessage) => {
       installTTTVirtual(nodeC, msg.data.appInstanceId, nodeB.publicIdentifier);
     });
 
-    nodeA.on(NODE_EVENTS.INSTALL, () => {
+    nodeA.on(NODE_EVENTS.INSTALL_EVENT, () => {
       completedInstalls += 1;
       if (completedInstalls === 2) done();
     });
 
-    nodeA.on(NODE_EVENTS.INSTALL_VIRTUAL, () => {
+    nodeA.on(NODE_EVENTS.INSTALL_VIRTUAL_EVENT, () => {
       completedInstalls += 1;
       if (completedInstalls === 2) done();
     });

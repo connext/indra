@@ -24,7 +24,8 @@ import {
   NODE_EVENTS,
   NodeMessageWrappedProtocolMessage,
   SolidityValueType,
-  WithdrawStartedMessage
+  WithdrawStartedMessage,
+  NodeEvent
 } from "../types";
 import { bigNumberifyJson } from "../utils";
 import { Store } from "../store";
@@ -130,7 +131,7 @@ async function getOutgoingEventDataFromProtocol(
       } = params as ProposeInstallProtocolParams;
       return {
         ...baseEvent,
-        type: NODE_EVENTS.PROPOSE_INSTALL,
+        type: NODE_EVENTS.PROPOSE_INSTALL_EVENT as NodeEvent,
         data: {
           params: {
             ...emittedParams,
@@ -144,7 +145,7 @@ async function getOutgoingEventDataFromProtocol(
     case Protocol.Install:
       return {
         ...baseEvent,
-        type: NODE_EVENTS.INSTALL,
+        type: NODE_EVENTS.INSTALL_EVENT as NodeEvent,
         data: {
           // TODO: It is weird that `params` is in the event data, we should
           // remove it, but after telling all consumers about this change
@@ -158,13 +159,13 @@ async function getOutgoingEventDataFromProtocol(
     case Protocol.Uninstall:
       return {
         ...baseEvent,
-        type: NODE_EVENTS.UNINSTALL,
+        type: NODE_EVENTS.UNINSTALL_EVENT as NodeEvent,
         data: getUninstallEventData(params as UninstallProtocolParams)
       };
     case Protocol.Setup:
       return {
         ...baseEvent,
-        type: NODE_EVENTS.CREATE_CHANNEL,
+        type: NODE_EVENTS.CREATE_CHANNEL_EVENT as NodeEvent,
         data: getSetupEventData(
           params as SetupProtocolParams,
           stateChannelsMap.get((params as SetupProtocolParams).multisigAddress)!
@@ -177,14 +178,14 @@ async function getOutgoingEventDataFromProtocol(
       // determine if the withdraw is finishing or if it is starting
       return {
         ...baseEvent,
-        type: NODE_EVENTS.WITHDRAWAL_STARTED,
+        type: NODE_EVENTS.WITHDRAWAL_STARTED_EVENT,
         data: getWithdrawEventData(params as WithdrawProtocolParams)
       } as WithdrawStartedMessage;
     case Protocol.TakeAction:
     case Protocol.Update:
       return {
         ...baseEvent,
-        type: NODE_EVENTS.UPDATE_STATE,
+        type: NODE_EVENTS.UPDATE_STATE_EVENT as NodeEvent,
         data: getStateUpdateEventData(
           params as UpdateProtocolParams,
           stateChannelsMap
@@ -225,7 +226,7 @@ async function getOutgoingEventDataFromProtocol(
       if (stateChannelsMap.has(virtualChannel)) {
         return {
           ...baseEvent,
-          type: NODE_EVENTS.INSTALL_VIRTUAL,
+          type: NODE_EVENTS.INSTALL_VIRTUAL_EVENT as NodeEvent,
           data: {
             // TODO: It is weird that `params` is in the event data, we should
             // remove it, but after telling all consumers about this change
@@ -241,7 +242,7 @@ async function getOutgoingEventDataFromProtocol(
     case Protocol.UninstallVirtualApp:
       return {
         ...baseEvent,
-        type: NODE_EVENTS.UNINSTALL_VIRTUAL,
+        type: NODE_EVENTS.UNINSTALL_VIRTUAL_EVENT as NodeEvent,
         data: getUninstallVirtualAppEventData(
           params as UninstallVirtualAppProtocolParams
         )

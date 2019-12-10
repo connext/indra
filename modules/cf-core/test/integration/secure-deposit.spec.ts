@@ -38,7 +38,7 @@ function confirmDepositMessages(
 ) {
   const startedMsg = {
     from: initiator.publicIdentifier,
-    type: NODE_EVENTS.DEPOSIT_STARTED,
+    type: NODE_EVENTS.DEPOSIT_STARTED_EVENT,
     data: {
       value: params.amount
     }
@@ -46,23 +46,23 @@ function confirmDepositMessages(
 
   const confirmMsg = {
     from: initiator.publicIdentifier,
-    type: NODE_EVENTS.DEPOSIT_CONFIRMED,
+    type: NODE_EVENTS.DEPOSIT_CONFIRMED_EVENT,
     data: params
   };
 
-  initiator.once(NODE_EVENTS.DEPOSIT_STARTED, (msg: DepositStartedMessage) => {
+  initiator.once(NODE_EVENTS.DEPOSIT_STARTED_EVENT, (msg: DepositStartedMessage) => {
     assertNodeMessage(msg, startedMsg, ["data.txHash"]);
   });
 
   initiator.once(
-    NODE_EVENTS.DEPOSIT_CONFIRMED,
+    NODE_EVENTS.DEPOSIT_CONFIRMED_EVENT,
     (msg: DepositConfirmationMessage) => {
       assertNodeMessage(msg, confirmMsg);
     }
   );
 
   responder.once(
-    NODE_EVENTS.DEPOSIT_CONFIRMED,
+    NODE_EVENTS.DEPOSIT_CONFIRMED_EVENT,
     (msg: DepositConfirmationMessage) => {
       assertNodeMessage(msg, confirmMsg);
     }
@@ -83,8 +83,8 @@ describe("Node method follows spec - deposit", () => {
 
     multisigAddress = await createChannel(nodeA, nodeB);
     expect(multisigAddress).toBeDefined();
-    nodeA.off(NODE_EVENTS.DEPOSIT_CONFIRMED);
-    nodeB.off(NODE_EVENTS.DEPOSIT_CONFIRMED);
+    nodeA.off(NODE_EVENTS.DEPOSIT_CONFIRMED_EVENT);
+    nodeB.off(NODE_EVENTS.DEPOSIT_CONFIRMED_EVENT);
   });
 
   it("has the right balance before an ERC20 deposit has been made", async () => {

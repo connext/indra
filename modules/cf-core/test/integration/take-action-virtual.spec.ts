@@ -28,13 +28,13 @@ const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 function confirmMessages(initiator: Node, responder: Node, expectedData: NodeTypes.UpdateStateEventData) {
   const expected = {
     from: initiator.publicIdentifier,
-    type: NODE_EVENTS.UPDATE_STATE,
+    type: NODE_EVENTS.UPDATE_STATE_EVENT,
     data: expectedData,
   };
-  // initiator.once(NODE_EVENTS.UPDATE_STATE, (msg: UpdateStateMessage) => {
+  // initiator.once(NODE_EVENTS.UPDATE_STATE_EVENT, (msg: UpdateStateMessage) => {
   //   assertNodeMessage(msg, expected);
   // });
-  responder.once(NODE_EVENTS.UPDATE_STATE, (msg: UpdateStateMessage) => {
+  responder.once(NODE_EVENTS.UPDATE_STATE_EVENT, (msg: UpdateStateMessage) => {
     assertNodeMessage(msg, expected);
   });
 }
@@ -83,7 +83,7 @@ describe("Node method follows spec - takeAction virtual", () => {
         };
 
         nodeC.once(
-          NODE_EVENTS.UPDATE_STATE,
+          NODE_EVENTS.UPDATE_STATE_EVENT,
           async () => {
             const req = constructGetStateRpc(appInstanceId);
 

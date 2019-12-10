@@ -55,7 +55,7 @@ describe("Node method follows spec - install", () => {
 
         let proposeInstallParams: ProposeInstallProtocolParams;
 
-        nodeB.on(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
+        nodeB.on(NODE_EVENTS.PROPOSE_INSTALL_EVENT, async (msg: ProposeMessage) => {
           [
             preInstallETHBalanceNodeA,
             preInstallETHBalanceNodeB
@@ -72,7 +72,7 @@ describe("Node method follows spec - install", () => {
         // FIXME: still no symmetric events -- nodeB will never emit an
         // `INSTALL` event
         // let installEvents = 0;
-        // nodeB.once(NODE_EVENTS.INSTALL, async () => {
+        // nodeB.once(NODE_EVENTS.INSTALL_EVENT, async () => {
         //   const proposedAppsB = await getProposedAppInstances(nodeB);
         //   expect(proposedAppsB.length).toEqual(0);
         //   installEvents += 1;
@@ -81,7 +81,7 @@ describe("Node method follows spec - install", () => {
         //   }
         // });
 
-        nodeA.on(NODE_EVENTS.INSTALL, async (msg: InstallMessage) => {
+        nodeA.on(NODE_EVENTS.INSTALL_EVENT, async (msg: InstallMessage) => {
           const [appInstanceNodeA] = await getInstalledAppInstances(nodeA);
           const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
           expect(appInstanceNodeA).toBeDefined();
@@ -152,7 +152,7 @@ describe("Node method follows spec - install", () => {
 
         let proposedParams: ProposeInstallProtocolParams;
 
-        nodeB.on(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
+        nodeB.on(NODE_EVENTS.PROPOSE_INSTALL_EVENT, async (msg: ProposeMessage) => {
           [
             preInstallERC20BalanceNodeA,
             preInstallERC20BalanceNodeB
@@ -166,7 +166,7 @@ describe("Node method follows spec - install", () => {
           makeInstallCall(nodeB, msg.data.appInstanceId);
         });
 
-        nodeA.on(NODE_EVENTS.INSTALL, async (msg: InstallMessage) => {
+        nodeA.on(NODE_EVENTS.INSTALL_EVENT, async (msg: InstallMessage) => {
           const [appInstanceNodeA] = await getInstalledAppInstances(nodeA);
           const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
           expect(appInstanceNodeA).toEqual(appInstanceNodeB);

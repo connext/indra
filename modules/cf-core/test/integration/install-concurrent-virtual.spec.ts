@@ -52,7 +52,7 @@ describe("Concurrently installing virtual applications with same intermediary", 
   it("can handle two TicTacToeApp proposals syncronously made", done => {
     let i = 0;
 
-    nodeA.on(NODE_EVENTS.INSTALL_VIRTUAL, () => {
+    nodeA.on(NODE_EVENTS.INSTALL_VIRTUAL_EVENT, () => {
       i += 1;
       if (i === 2) done();
     });
@@ -65,7 +65,7 @@ describe("Concurrently installing virtual applications with same intermediary", 
   it("can handle two TicTacToeApp proposals asyncronously made", async done => {
     let i = 0;
 
-    nodeA.on(NODE_EVENTS.INSTALL_VIRTUAL, () => {
+    nodeA.on(NODE_EVENTS.INSTALL_VIRTUAL_EVENT, () => {
       i += 1;
       if (i === 2) done();
     });

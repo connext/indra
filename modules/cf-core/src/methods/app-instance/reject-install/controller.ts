@@ -1,7 +1,7 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { Node, NODE_EVENTS, RejectProposalMessage } from "../../../types";
+import { Node, NODE_EVENTS, RejectProposalMessage, NodeEvent } from "../../../types";
 import { NodeController } from "../../controller";
 import rejectInstallVirtualController from "../reject-install-virtual/controller";
 
@@ -38,7 +38,7 @@ export default class RejectInstallController extends NodeController {
 
     const rejectProposalMsg: RejectProposalMessage = {
       from: publicIdentifier,
-      type: NODE_EVENTS.REJECT_INSTALL,
+      type: NODE_EVENTS.REJECT_INSTALL_EVENT as NodeEvent,
       data: {
         appInstanceId
       }
