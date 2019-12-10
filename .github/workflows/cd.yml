@@ -7,13 +7,7 @@ on:
       - staging
 
 jobs:
-  env-test:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - run: echo github.ref {{ github.ref }}
-
-  unit-tests:
+  test-units:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -21,7 +15,7 @@ jobs:
     - run: make test-cf
     - run: make test-node
 
-  bot-test:
+  test-bot:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -29,7 +23,7 @@ jobs:
     - run: make start-test
     - run: make test-bot
 
-  ui-test:
+  test-ui:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -41,8 +35,8 @@ jobs:
     env:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-    if: github.ref == 'staging'
-    needs: [unit-tests, bot-test, ui-test]
+    if: endsWith(github.ref, 'staging')
+    needs: [test-units, test-bot, test-ui]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -54,8 +48,8 @@ jobs:
     env:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-    if: github.ref == 'master'
-    needs: [unit-tests, bot-test, ui-test]
+    if: endsWith(github.ref, 'master')
+    needs: [test-units, test-bot, test-ui]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
