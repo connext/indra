@@ -11,13 +11,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - run: make clean
-    - run: make reset
-    - run: make dev
-    - run: make test-cf
-    - run: make test-node
-    - run: make prod
-    - run: make start-test
-    - run: make test-bot
-    - run: make test-ui
-    - run: make stop
+    - name: Pre-test cleanup
+      run: make clean && make reset
+
+    - name: Test env vars
+      run: env && echo "email: $INDRA_EMAIL"
+      env:
+        TEST: foobar
+        INDRA_EMAIL: ${{ secrets.INDRA_EMAIL }}
+
+    - name: Build for integration tests
+      run: make prod
+    - name: Start stack in preparation for integration tests
+      run: make start-test
+    - name: Run payment bot integration tests
+      run: make test-bot
+
+    - name: Run daicard UI integration tests
+      run: make test-ui
+
+    - name: Build for unit tests
+      run: make dev
+    - name: Run cf-core unit tests
+      run: make test-cf
+    - name: Run node unit tests
+      run: make test-node
+
+    - name: Post-test cleanup
+      run: make stop
+
+    - name: Push images
+      run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD && make push-latest
+      env:
+        DOCKER_USER: ${{ secrets.DOCKER_USER }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
