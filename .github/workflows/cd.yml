@@ -56,3 +56,81 @@ jobs:
     - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
     - name: push images
       run: make push-versioned
+
+  deploy-staging:
+    env:
+      INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
+      RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
+      STAGING_DOMAINNAME: staging.indra.connext.network
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+    if: endsWith(github.ref, 'staging')
+    needs: [test-units, test-bot, test-ui]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: echo $SSH_KEY > ~/.ssh/id_rsa
+    - name: deploy to staging
+      run: |
+        ssh ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
+          set -e
+          git clone https://github.com/ConnextProject/indra.git || true
+          cd indra
+          git checkout --force staging
+          git fetch
+          git reset --hard $GITHUB_SHA
+          export INDRA_MODE="staging"
+          export INDRA_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
+          export INDRA_DOMAINNAME="$STAGING_DOMAINNAME"
+          export INDRA_ADMIN_TOKEN="$INDRA_ADMIN_TOKEN"
+          make restart-prod
+          docker container prune -f
+          docker image ls -q | xargs docker image rm || true
+        EOF
+
+  deploy-prod:
+    env:
+      INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
+      MAINNET_DOMAINNAME: indra.connext.network
+      MAINNET_ETH_PROVIDER: ${{ secrets.MAINNET_ETH_PROVIDER }}
+      RINKEBY_DOMAINNAME: rinkeby.indra.connext.network
+      RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
+    if: endsWith(github.ref, 'master')
+    needs: [test-units, test-bot, test-ui]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: cat $SSH_KEY > ~/.ssh/id_rsa
+    - name: deploy to prod (rinkeby)
+      run: |
+        ssh ubuntu@$RINKEBY_DOMAINNAME "bash -s" <<EOF
+          set -e
+          git clone https://github.com/ConnextProject/indra.git || true
+          cd indra
+          git checkout --force staging
+          git fetch
+          git reset --hard $GITHUB_SHA
+          export INDRA_MODE="staging"
+          export INDRA_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
+          export INDRA_DOMAINNAME="$RINKEBY_DOMAINNAME"
+          export INDRA_ADMIN_TOKEN="$INDRA_ADMIN_TOKEN"
+          make restart-prod
+          docker container prune -f
+          docker image ls -q | xargs docker image rm || true
+        EOF
+    - name: deploy to prod (mainnet)
+      run: |
+        ssh ubuntu@$MAINNET_DOMAINNAME "bash -s" <<EOF
+          set -e
+          git clone https://github.com/ConnextProject/indra.git || true
+          cd indra
+          git checkout --force staging
+          git fetch
+          git reset --hard $GITHUB_SHA
+          export INDRA_MODE="staging"
+          export INDRA_ETH_PROVIDER=$MAINNET_ETH_PROVIDER
+          export INDRA_DOMAINNAME="$MAINNET_DOMAINNAME"
+          export INDRA_ADMIN_TOKEN="$INDRA_ADMIN_TOKEN"
+          make restart-prod
+          docker container prune -f
+          docker image ls -q | xargs docker image rm || true
+        EOF
