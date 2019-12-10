@@ -31,7 +31,7 @@ export {
 import { ProtocolMessage } from "./machine";
 
 export type NodeEvents = Node.EventName;
-export const NODE_EVENTS = Node.EventName;
+export const NODE_EVENTS = Node.EventNames;
 
 export interface NodeMessageWrappedProtocolMessage extends Node.NodeMessage {
   data: ProtocolMessage;
