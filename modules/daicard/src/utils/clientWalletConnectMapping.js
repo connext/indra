@@ -112,7 +112,7 @@ async function mapPayloadToClient(payload, channel) {
       walletConnector.approveRequest({ id: payload.id, result });
     }
   } catch (e) {
-    console.error(message);
+    console.error(e.message);
     walletConnector.rejectRequest({ id: payload.id, error: { message: e.message } });
   }
 }

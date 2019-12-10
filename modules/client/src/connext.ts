@@ -143,9 +143,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // create channel provider
   let xpub: string;
   let keyGen: (index: string) => Promise<string>;
-  let channelProvider: ChannelProvider | ChannelProvider;
+  let channelProvider: ChannelProvider;
 
-  if (!providedChannelProvider) {
+  if (providedChannelProvider) {
     channelProvider = providedChannelProvider;
     if (!channelProvider.config || !Object.keys(channelProvider.config)) {
       await channelProvider.enable();
