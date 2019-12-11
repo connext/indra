@@ -27,12 +27,13 @@ jobs:
         ssh-keyscan -t rsa $STAGING >> $SSH_DIR/known_hosts
         ssh-keygen -lf $KEY
     - name: ssh test 0
-      run: ssh -vvv -i $KEY -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING hostname
+      run: ssh -i $KEY -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING hostname
     - name: ssh test 1
       run: |
         ssh -vvv -i $KEY -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING "bash -s" <<EOF
           echo "we're in"
           hostname
+          exit
         EOF
     - name: ssh test 2
       run: |
