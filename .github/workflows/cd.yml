@@ -29,13 +29,6 @@ jobs:
         ssh-keyscan -t rsa $STAGING_DOMAINNAME >> $SSH_DIR/known_hosts
     - name: ssh test
       run: |
-        ssh -i $KEY -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
-          echo "we're in"
-          hostname
-          exit
-        EOF
-    - name: ssh test 2
-      run: |
         ssh -i $KEY ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
           set -e
           echo "we're in"
@@ -115,7 +108,7 @@ jobs:
     - name: setup ssh stuff
       run: |
         mkdir -p $SSH_DIR
-        rm -f $KEY
+        rm -f $KEY $SSH_DIR/known_hosts
         touch $KEY $SSH_DIR/known_hosts
         echo '-----BEGIN RSA PRIVATE KEY-----' >> $KEY
         echo $SSH_KEY >> $KEY
@@ -161,7 +154,7 @@ jobs:
     - name: setup ssh stuff
       run: |
         mkdir -p $SSH_DIR
-        rm -f $KEY
+        rm -f $KEY $SSH_DIR/known_hosts
         touch $KEY $SSH_DIR/known_hosts
         echo '-----BEGIN RSA PRIVATE KEY-----' >> $KEY
         echo $SSH_KEY >> $KEY
