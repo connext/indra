@@ -19,13 +19,14 @@ jobs:
     - name: setup ssh stuff
       run: |
         mkdir -p $SSH_DIR
-        touch $KEY
+        rm -f $KEY $SSH_DIR/known_hosts
+        touch $KEY $SSH_DIR/known_hosts
         echo '-----BEGIN RSA PRIVATE KEY-----' >> $KEY
         echo $SSH_KEY >> $KEY
         echo '-----END RSA PRIVATE KEY-----' >> $KEY
         chmod 400 $KEY
-        ssh-keyscan -t rsa $STAGING_DOMAINNAME >> $SSH_DIR/known_hosts
         ssh-keygen -lf $KEY
+        ssh-keyscan -t rsa $STAGING_DOMAINNAME >> $SSH_DIR/known_hosts
     - name: ssh test
       run: |
         ssh -i $KEY -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
