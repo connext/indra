@@ -7,56 +7,29 @@ import {
   TextField,
   Typography,
   withStyles,
+  styled,
 } from "@material-ui/core";
 import { Search as SearchIcon } from "@material-ui/icons";
 import PropTypes from "prop-types";
 import { bigNumberify } from "ethers/utils";
+import JSONTree from "react-json-tree";
 
-const styles = {
-  top: {
-    display: "flex",
-    flexWrap: "wrap",
-    flexDirection: "row",
-    width: "100%",
-    height: "100%",
-    justifyContent: "flex-start",
-    alignItems: "center",
-  },
-  card: {
-    marginTop: "15%",
-    display: "flex",
-    height: "320px",
-    width: "320px",
-    alignItems: "center",
-    justifyContent: "center",
-    margin: "0% 2% 0% 2%",
-    border: "3px solid #002868",
-    textDecoration: "none",
-    "&:hover": { backgroundColor: "rgba(0,40,104,0.2)" },
-  },
-  cardText: {
-    textAlign: "left",
-    fontStyle: "italic",
-    fontWeight: "700",
-    fontSize: "24px",
-    color: "#002868",
-    textDecoration: "none",
-  },
-  channelStateGrid: {},
-  icon: {
-    color: "#002868",
-  },
-  xPubEntry: {
-    width: "40%",
-    margin: "2% 5% 5% 1%",
-  },
-  error: {
-    color: "red",
-  },
-  errorWrap: {
-    width: "100%",
-  },
-};
+const RootGrid = styled(Grid)({
+  flexGrow: 1,
+  padding: "5%",
+});
+
+const ErrorTypography = styled(Typography)({
+  color: "red",
+});
+
+const CardTextTypography = styled(Typography)({
+  fontStyle: "italic",
+  fontWeight: "700",
+  fontSize: "24px",
+  color: "#002868",
+  textDecoration: "none",
+});
 
 const DebugChannel = ({ classes, messaging }) => {
   // const [messaging, setMessaging] = useState(props.messaging);
@@ -102,6 +75,7 @@ const DebugChannel = ({ classes, messaging }) => {
       setSearchError(`xPub (${xPubSearch}) not found`);
     }
   };
+
   const getStateChannelByMultisig = async () => {
     setLoading(true);
     try {
@@ -128,11 +102,11 @@ const DebugChannel = ({ classes, messaging }) => {
   };
 
   return (
-    <Grid className={classes.top} container>
-      <Grid className={classes.errorWrap}>
-        <Typography className={classes.error}>{searchError}</Typography>
+    <RootGrid container spacing={3}>
+      <Grid item className={classes.errorWrap} xs={12}>
+        <ErrorTypography>{searchError}</ErrorTypography>
       </Grid>
-      <Grid className={classes.xPubEntry}>
+      <Grid item xs={6}>
         <TextField
           fullWidth
           id="outlined"
@@ -151,34 +125,14 @@ const DebugChannel = ({ classes, messaging }) => {
                     await getChannelState();
                   }}
                 >
-                  {loading ? <CircularProgress color="blue" /> : <SearchIcon />}
+                  {loading ? <CircularProgress color="primary" /> : <SearchIcon />}
                 </Button>
               </InputAdornment>
             ),
           }}
         />
-
-        <Grid className={classes.channelStateGrid}>
-          <Typography className={classes.cardTextBold}>Free Balance: {freeBalance}</Typography>
-        </Grid>
-        {!!channelState &&
-          Object.entries(channelState).map(([k, v], i) => {
-            // if (Object.entries(v).length > 1) {
-            //   return(
-            //     Object.entries(channelState).map(([k2, v2], i) => {
-            //     <Typography className={classes.cardText}>{`${k}: ${}`}</Typography>})
-            //   );
-            // } else {
-            return (
-              <Grid>
-                <Typography className={classes.cardTextBold} key={k}>{`${k}: `}</Typography>
-                <pre>{`${JSON.stringify(v, null, 4)}`}</pre>
-              </Grid>
-            );
-            // }
-          })}
       </Grid>
-      <Grid className={classes.xPubEntry}>
+      <Grid item xs={6}>
         <TextField
           fullWidth
           id="outlined"
@@ -197,14 +151,34 @@ const DebugChannel = ({ classes, messaging }) => {
                     await getStateChannelByMultisig();
                   }}
                 >
-                  {loading ? <CircularProgress color="blue" /> : <SearchIcon />}
+                  {loading ? <CircularProgress color="primary" /> : <SearchIcon />}
                 </Button>
               </InputAdornment>
             ),
           }}
         />
-    </Grid>
-    </Grid>
+      </Grid>
+      <Grid item xs={12}>
+        <CardTextTypography>Free Balance: {freeBalance}</CardTextTypography>
+      </Grid>
+      {!!channelState && <JSONTree data={channelState} />
+      // Object.entries(channelState).map(([k, v], i) => {
+      //   // if (Object.entries(v).length > 1) {
+      //   //   return(
+      //   //     Object.entries(channelState).map(([k2, v2], i) => {
+      //   //     <Typography className={classes.cardText}>{`${k}: ${}`}</Typography>})
+      //   //   );
+      //   // } else {
+      //   return (
+      //     <Grid item xs={12}>
+      //       <CardTextTypography key={k}>{`${k}: `}</CardTextTypography>
+      //       <pre>{`${JSON.stringify(v, null, 4)}`}</pre>
+      //     </Grid>
+      //   );
+      //   // }
+      // })
+      }
+    </RootGrid>
   );
 };
 
