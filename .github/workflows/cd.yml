@@ -15,7 +15,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: mkdir -p $HOME/.ssh
-    - run: echo $SSH_KEY > $HOME/.ssh/id_rsa
+    - run: echo -n $SSH_KEY > $HOME/.ssh/id_rsa
     - run: chmod 400 $HOME/.ssh/id_rsa
     - run: ssh-keyscan $STAGING_DOMAINNAME >> $HOME/.ssh/known_hosts
     - name: deploy to staging
