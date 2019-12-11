@@ -21,7 +21,7 @@ jobs:
     - run: ssh-keyscan -t rsa $STAGING >> $SSH_DIR/known_hosts
     - name: deploy to staging
       run: |
-        ssh -i $SSH_DIR/id_rsa -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING "bash -s" <<EOF
+        ssh -vvv -i $SSH_DIR/id_rsa -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING "bash -s" <<EOF
           set -e
           echo we're in
           hostname
