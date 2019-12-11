@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, Grid, Typography, withStyles } from "@material-ui/core";
+import { Button, Grid, Typography, styled } from "@material-ui/core";
 import PropTypes from "prop-types";
 
 const TopGrid = styled(Grid)({

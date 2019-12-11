@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Grid, Typography, withStyles } from "@material-ui/core";
+import { Button, Grid, Typography, styled } from "@material-ui/core";
 import { Home as HomeIcon } from "@material-ui/icons";
 
 import { Switch, Route, Link } from "react-router-dom";
@@ -17,13 +17,7 @@ const TopGrid = styled(Grid)({
   width: "100%",
   height: "100%",
 })
-const TopGrid = styled(Grid)({
-  display: "flex",
-  flexWrap: "wrap",
-  flexDirection: "row",
-  width: "100%",
-  height: "100%",
-});
+
 
 const AppBar = styled(Grid)({
   width: "100%",
