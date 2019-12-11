@@ -30,6 +30,8 @@ import {
   CFCoreTypes,
   ChannelProviderConfig,
   ChannelState,
+  CheckDepositRightsParameters,
+  CheckDepositRightsResponse,
   ClientOptions,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
@@ -48,6 +50,9 @@ import {
   PaymentProfile,
   RequestCollateralResponse,
   RequestDepositRightsParameters,
+  RequestDepositRightsResponse,
+  RescindDepositRightsParameters,
+  RescindDepositRightsResponse,
   ResolveConditionParameters,
   ResolveConditionResponse,
   ResolveLinkedTransferResponse,
@@ -228,8 +233,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   log.debug("Registering subscriptions");
   await client.registerSubscriptions();
 
-  // check if there is a coin refund app installed
-  await client.uninstallCoinBalanceIfNeeded();
+  // check if there is a coin refund app installed for eth and tokens
+  await client.uninstallCoinBalanceIfNeeded(AddressZero);
+  await client.uninstallCoinBalanceIfNeeded(config.contractAddresses.Token);
 
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
   log.debug("Resubmitting active withdrawals");
@@ -480,8 +486,33 @@ export class ConnextClient implements IConnextClient {
     return await this.requestDepositRightsController.requestDepositRights(params);
   };
 
-  public rescindDepositRights = async (assetId: string): Promise<CFCoreTypes.DepositResult> => {
-    return await this.channelRouter.rescindDepositRights(assetId);
+  public rescindDepositRights = async (
+    params: RescindDepositRightsParameters,
+  ): Promise<RescindDepositRightsResponse> => {
+    return await this.channelRouter.rescindDepositRights(params);
+  };
+
+  public checkDepositRights = async (
+    params: CheckDepositRightsParameters,
+  ): Promise<CheckDepositRightsResponse> => {
+    const refundApp = await this.getBalanceRefundApp(params.assetId);
+    const multisigBalance =
+      !refundApp.latestState["tokenAddress"] &&
+      refundApp.latestState["tokenAddress"] !== AddressZero
+        ? await this.ethProvider.getBalance(this.multisigAddress)
+        : await new Contract(
+            refundApp.latestState["tokenAddress"],
+            tokenAbi,
+            this.ethProvider,
+          ).functions.balanceOf(this.multisigAddress);
+    return refundApp
+      ? {
+          assetId: refundApp.latestState["tokenAddress"],
+          multisigBalance: multisigBalance.toString(),
+          recipient: refundApp.latestState["recipient"],
+          threshold: refundApp.latestState["threshold"],
+        }
+      : undefined;
   };
 
   public swap = async (params: SwapParameters): Promise<CFCoreChannel> => {
@@ -949,34 +980,19 @@ export class ConnextClient implements IConnextClient {
     );
   };
 
-  public uninstallCoinBalanceIfNeeded = async (): Promise<void> => {
-    // check if there is a coin refund app installed
-    const coinRefund = (await this.getAppInstances()).filter((app: AppInstanceJson) => {
-      return app.appInterface.addr === this.config.contractAddresses.CoinBalanceRefundApp;
-    })[0];
+  public uninstallCoinBalanceIfNeeded = async (assetId: string = AddressZero): Promise<void> => {
+    const coinRefund = await this.getBalanceRefundApp(assetId);
     if (!coinRefund) {
       this.log.debug("No coin balance refund app found");
-      return;
+      return undefined;
     }
-
-    this.log.debug(
-      "Installed coin balance refund app found, checking if deposit has been executed",
-    );
-    // if the balance of the multisig is *higher* than the threshold, then a
-    // deposit has been executed.
-    // because only one deposit can be performed at once, assume that
-    // uninstalling will safely add the deposit to the free balance of the
-    // correct channel participant.
-
-    // NOTE: in the case of a transaction being stuck in the mempool due to a
-    // highly clogged chain, your channel will be **locked** because of this
-    // permanently installed application
 
     const latestState = coinRefund.latestState;
     const threshold = bigNumberify(latestState["threshold"]);
-    const isClientDeposit = latestState["recipient"] === this.freeBalanceAddress;
     const isTokenDeposit =
       latestState["tokenAddress"] && latestState["tokenAddress"] !== AddressZero;
+    const isClientDeposit = latestState["recipient"] === this.freeBalanceAddress;
+
     const multisigBalance = !isTokenDeposit
       ? await this.ethProvider.getBalance(this.multisigAddress)
       : await new Contract(
@@ -1012,9 +1028,14 @@ export class ConnextClient implements IConnextClient {
       // to send an uninstall request to the client
       if (isClientDeposit) {
         if (isTokenDeposit) {
-          new Contract(latestState["tokenAddress"], tokenAbi, this.ethProvider).once(
+          new Contract(assetId, tokenAbi, this.ethProvider).once(
             "Transfer",
-            async () => await uninstallRefund(),
+            async (sender: string, recipient: string, amount: BigNumber) => {
+              if (recipient === this.multisigAddress && amount.gt(0)) {
+                this.log.info(`Multisig transfer was for our channel, uninstalling refund app`);
+                await uninstallRefund();
+              }
+            },
           );
         } else {
           this.ethProvider.once(this.multisigAddress, async () => await uninstallRefund());

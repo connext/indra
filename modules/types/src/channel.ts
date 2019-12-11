@@ -21,7 +21,7 @@ export type PaymentProfile<T = string> = {
 export type PaymentProfileBigNumber = PaymentProfile<BigNumber>;
 
 // asset types
-export interface AssetAmount<T = string> {
+export type AssetAmount<T = string> = {
   amount: T;
   assetId: Address; // empty address if eth
 }

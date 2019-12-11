@@ -10,6 +10,8 @@ import {
   ChannelProviderConfig,
   makeChecksum,
   makeChecksumOrEthAddress,
+  RescindDepositRightsParameters,
+  RescindDepositRightsResponse,
   RpcConnection,
   RpcType,
   Store,
@@ -247,10 +249,12 @@ export class ChannelRouter {
     } as CFCoreTypes.UninstallParams);
   };
 
-  public rescindDepositRights = async (assetId: string): Promise<CFCoreTypes.DepositResult> => {
+  public rescindDepositRights = async (
+    params: RescindDepositRightsParameters,
+  ): Promise<RescindDepositRightsResponse> => {
     return await this._send(CFCoreTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS, {
       multisigAddress: this.multisigAddress,
-      tokenAddress: assetId,
+      tokenAddress: params.assetId,
     } as CFCoreTypes.RescindDepositRightsParams);
   };
 

@@ -10,6 +10,7 @@ import {
   CoinBalanceRefundAppStateBigNumber,
   RejectProposalMessage,
   RequestDepositRightsParameters,
+  RequestDepositRightsResponse,
   SupportedApplications,
 } from "../types";
 import { invalidAddress, validate } from "../validation";
@@ -19,7 +20,7 @@ import { AbstractController } from "./AbstractController";
 export class RequestDepositRightsController extends AbstractController {
   public requestDepositRights = async (
     params: RequestDepositRightsParameters,
-  ): Promise<CFCoreTypes.RequestDepositRightsResult> => {
+  ): Promise<RequestDepositRightsResponse> => {
     params.assetId = params.assetId || AddressZero;
     const { assetId } = params;
     validate(invalidAddress(assetId));
@@ -52,7 +53,7 @@ export class RequestDepositRightsController extends AbstractController {
         };
       }
       this.log.info(`Balance refund app is not in the correct state, uninstalling first`);
-      await this.connext.rescindDepositRights(assetId);
+      await this.connext.rescindDepositRights({ assetId });
       this.log.info(`Balance refund app uninstalled`);
     }
 

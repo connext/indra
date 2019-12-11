@@ -27,6 +27,21 @@ export type DepositParametersBigNumber = DepositParameters<BigNumber>;
 
 export type RequestDepositRightsParameters = Omit<DepositParameters, "amount">;
 
+export type RequestDepositRightsResponse = CFCoreTypes.RequestDepositRightsResult;
+
+export type CheckDepositRightsParameters = RequestDepositRightsParameters;
+
+export type CheckDepositRightsResponse<T = string> = {
+  assetId: Address;
+  multisigBalance: T;
+  recipient: Address;
+  threshold: T;
+};
+
+export type RescindDepositRightsParameters = RequestDepositRightsParameters;
+
+export type RescindDepositRightsResponse = CFCoreTypes.DepositResult;
+
 ////// Transfer types
 // TODO: would we ever want to pay people in the same app with multiple currencies?
 export type TransferParameters<T = string> = DepositParameters<T> & {
