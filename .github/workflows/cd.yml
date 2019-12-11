@@ -10,7 +10,7 @@ jobs:
   test-ssh:
     env:
       SSH_DIR: $HOME/.ssh
-      SSH_KEY: ${{ secrets.SSH_KEY }}
+      SSH_KEY: ${{ secrets.TEST_KEY }}
       STAGING: staging.indra.connext.network
     runs-on: ubuntu-latest
     steps:
@@ -19,6 +19,9 @@ jobs:
     - run: echo $SSH_KEY > $SSH_DIR/id_rsa
     - run: chmod 600 $SSH_DIR/id_rsa
     - run: ssh-keyscan -t rsa $STAGING >> $SSH_DIR/known_hosts
+    - run: cat $SSH_DIR/id_rsa
+    - run: echo ">>>`cat $SSH_DIR/id_rsa`<<<"
+    - run: ssh-keygen -lf $SSH_DIR/id_rsa
     - name: deploy to staging
       run: |
         ssh -vvv -i $SSH_DIR/id_rsa -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING "bash -s" <<EOF
