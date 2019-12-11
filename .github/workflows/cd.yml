@@ -15,6 +15,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
+    - name: executing remote ssh commands using ssh key
+      uses: appleboy/ssh-action@master
+      with:
+        host: staging.indra.connext.network
+        username: ubuntu
+        key: ${{ secrets.SSH_KEY }}
+        port: 22
+        script: hostname
     - run: mkdir -p $SSH_DIR
     - run: echo $SSH_KEY > $SSH_DIR/id_rsa
     - run: chmod 600 $SSH_DIR/id_rsa
