@@ -24,6 +24,7 @@ jobs:
         echo '-----END RSA PRIVATE KEY-----' >> $SSH_DIR/id_rsa
         chmod 400 $SSH_DIR/id_rsa
         ssh-keyscan -t rsa $STAGING >> $SSH_DIR/known_hosts
+        ssh-keygen -lf $SSH_DIR/id_rsa
     - name: deploy to staging
       run: |
         ssh -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING "bash -s" <<EOF
