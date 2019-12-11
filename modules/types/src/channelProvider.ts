@@ -26,3 +26,38 @@ export interface CFChannelProviderOptions {
 }
 
 export type RpcConnection = ChannelProvider | any;
+
+export type StorePair = {
+  path: string;
+  value: any;
+};
+
+// export interface IChannelProvider {
+//   connection: RpcConnection;
+//   wallet: Wallet | undefined;
+//   _config: ChannelProviderConfig;
+//   _multisigAddress: string | undefined;
+//   _signerAddress: string | undefined;
+//   store: Store | undefined;
+
+//   enable(): Promise<ChannelProviderConfig>;
+//   send(method: CFCoreTypes.RpcMethodName | NewRpcMethodName, params: any): Promise<any>;
+
+//   on(event: string, listener: (...args: any[]) => void): RpcConnection;
+
+//   once(event: string, listener: (...args: any[]) => void): RpcConnection;
+
+//   signMessage(message: string): Promise<string>;
+
+//   get(path: string): Promise<any>;
+
+//   set(pairs: StorePair[], allowDelete?: Boolean): Promise<void>;
+
+//   restore(): Promise<{ path: string; value: any }[]>;
+
+//   reset(): Promise<void>;
+
+//   restoreState(path: string): Promise<void>;
+
+//   _send(methodName: CFCoreTypes.RpcMethodName, parameters: RpcParameters): Promise<any>;
+// }

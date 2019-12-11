@@ -2,7 +2,7 @@ import { Wallet } from "ethers";
 import { arrayify } from "ethers/utils";
 import { RpcParameters } from "rpc-server";
 
-import { CFCore, withdrawalKey, xpubToAddress } from "./lib";
+import { CFCore, xpubToAddress } from "./lib";
 import {
   CFChannelProviderOptions,
   CFCoreTypes,
@@ -10,6 +10,7 @@ import {
   NewRpcMethodName,
   RpcConnection,
   Store,
+  StorePair,
 } from "./types";
 
 export const createCFChannelProvider = async ({
@@ -58,13 +59,12 @@ export class ChannelProvider {
   private _multisigAddress: string | undefined = undefined; // tslint:disable-line: variable-name
   private _signerAddress: string | undefined = undefined; // tslint:disable-line: variable-name
   private store: Store | undefined;
-  private approvedStorePaths: string[];
 
   constructor(
     connection: RpcConnection,
     config: ChannelProviderConfig,
-    store?: Store,
-    authKey?: any,
+    store: Store,
+    authKey: any,
   ) {
     this.store = store;
     this.wallet = authKey ? new Wallet(authKey) : null;
@@ -72,10 +72,6 @@ export class ChannelProvider {
     this._config = config;
     this._multisigAddress = config.multisigAddress;
     this._signerAddress = config.signerAddress;
-    this.approvedStorePaths = [
-      // allow the withdrawal setting to happen
-      withdrawalKey(this.config.userPublicIdentifier),
-    ];
   }
 
   public enable = async (): Promise<ChannelProviderConfig> => {
@@ -169,13 +165,7 @@ export class ChannelProvider {
     return await this.store.get(path);
   };
 
-  public set = async (
-    pairs: {
-      path: string;
-      value: any;
-    }[],
-    allowDelete?: Boolean,
-  ): Promise<void> => {
+  public set = async (pairs: StorePair[], allowDelete?: Boolean): Promise<void> => {
     if (!this.store) {
       throw new Error(
         `Should have a defined store ref when provider type is a counterfactual node.`,
@@ -184,7 +174,7 @@ export class ChannelProvider {
     return await this.store.set(pairs, allowDelete);
   };
 
-  public restore = async (): Promise<{ path: string; value: any }[]> => {
+  public restore = async (): Promise<StorePair[]> => {
     if (!this.store) {
       throw new Error(
         `Should have a defined store ref when provider type is a counterfactual node.`,
@@ -214,10 +204,10 @@ export class ChannelProvider {
   };
 
   // tslint:disable-next-line: function-name
-  private async _send(
+  private _send = async (
     methodName: CFCoreTypes.RpcMethodName,
     parameters: RpcParameters,
-  ): Promise<any> {
+  ): Promise<any> => {
     const ret = await this.connection.rpcRouter.dispatch({
       id: Date.now(),
       methodName,
@@ -225,5 +215,5 @@ export class ChannelProvider {
     });
     const result = ret.result.result;
     return result;
-  }
+  };
 }

@@ -86,6 +86,7 @@ export {
   SimpleTransferAppStateBigNumber,
   StateChannelJSON,
   Store,
+  StorePair,
   SupportedApplication,
   SupportedApplications,
   SupportedNetwork,

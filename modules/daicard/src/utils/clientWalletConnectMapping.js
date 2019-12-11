@@ -1,4 +1,3 @@
-import { CFCoreTypes } from "@connext/types";
 import WalletConnectBrowser from "@walletconnect/browser";
 
 export let walletConnector = null;
@@ -49,7 +48,10 @@ export function cleanWalletConnect() {
 
 export function displaySessionApproval(payload) {
   verifyFields(payload, ["chainId"]);
-  walletConnector.approveSession({ accounts: [], chainId: payload.chainId });
+  walletConnector.approveSession({
+    accounts: ["0x981674fC6A58c0F57ae2bF36885E745490137aCE"],
+    chainId: payload.chainId,
+  });
   //TODO: proc modal that approves the walletconnection from the wallet
 }
 

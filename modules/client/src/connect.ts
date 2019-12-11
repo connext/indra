@@ -79,7 +79,6 @@ export const setupServices = async (
 type KeyGen = (index: string) => Promise<string>;
 
 interface ChannelProviderOptions {
-  channelProvider?: ChannelProvider;
   keyGen?: KeyGen;
   mnemonic?: string;
   nodeUrl?: string;
@@ -100,10 +99,11 @@ export const setupChannelProvider = async (
   ethProvider: providers.JsonRpcProvider,
   log: Logger,
   logLevel: number,
-  channelProviderOptions: ChannelProviderOptions,
+  providedChannelProvider?: ChannelProvider,
+  channelProviderOptions?: ChannelProviderOptions,
 ): Promise<ChannelProviderSetup> => {
   // spread channelProviderOptions
-  const { store, mnemonic, channelProvider: providedChannelProvider } = channelProviderOptions;
+  const { store, mnemonic } = channelProviderOptions;
   let { nodeUrl, xpub, keyGen } = channelProviderOptions;
 
   // setup messaging and node api
@@ -223,8 +223,8 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     ethProvider,
     log,
     logLevel,
+    opts.channelProvider,
     {
-      channelProvider: opts.channelProvider,
       keyGen: opts.keyGen,
       mnemonic: opts.mnemonic,
       nodeUrl: opts.nodeUrl,
@@ -239,9 +239,12 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // create a token contract based on the provided token
   const token = new Contract(config.contractAddresses.Token, tokenAbi, ethProvider);
 
+  // create appRegistry
+  const appRegistry = await node.appRegistry();
+
   // create the new client
   const client = new ConnextClient({
-    appRegistry: await node.appRegistry(),
+    appRegistry,
     channelProvider,
     config,
     ethProvider,

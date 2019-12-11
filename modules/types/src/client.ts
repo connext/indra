@@ -10,7 +10,7 @@ import {
 import { ConnextEvent } from "./basic";
 import { AppInstanceJson, CFCoreTypes } from "./cf";
 import { CFCoreChannel, ChannelAppSequences, ChannelState, PaymentProfile } from "./channel";
-import { ChannelProvider, ChannelProviderConfig } from "./channelProvider";
+import { ChannelProvider, ChannelProviderConfig, StorePair } from "./channelProvider";
 import {
   ConditionalTransferParameters,
   ConditionalTransferResponse,
@@ -32,14 +32,8 @@ import {
 } from "./node";
 
 export interface Store extends CFCoreTypes.IStoreService {
-  set(
-    pairs: {
-      path: string;
-      value: any;
-    }[],
-    shouldBackup?: Boolean,
-  ): Promise<void>;
-  restore(): Promise<{ path: string; value: any }[]>;
+  set(pairs: StorePair[], shouldBackup?: Boolean): Promise<void>;
+  restore(): Promise<StorePair[]>;
 }
 
 // channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
