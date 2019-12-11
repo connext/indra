@@ -15,24 +15,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: Execute SSH commmands on remote server
-      uses: JimCronqvist/action-ssh@master
-      with:
-        hosts: 'staging.indra.connext.network'
-        privateKey: ${{ secrets.SSH_KEY }}
-        command: |
-          echo "we're in"
-          hostname
-    - name: executing remote ssh commands using ssh key
-      uses: appleboy/ssh-action@master
-      with:
-        host: staging.indra.connext.network
-        username: ubuntu
-        key: ${{ secrets.SSH_KEY }}
-        port: 22
-        script: hostname
     - run: mkdir -p $SSH_DIR
-    - run: echo $SSH_KEY > $SSH_DIR/id_rsa
+    - run: touch $SSH_DIR/id_rsa
+    - run: echo '-----BEGIN RSA PRIVATE KEY-----' >> $SSH_DIR/id_rsa
+    - run: echo $SSH_KEY >> $SSH_DIR/id_rsa
+    - run: echo '-----END RSA PRIVATE KEY-----' >> $SSH_DIR/id_rsa
     - run: chmod 600 $SSH_DIR/id_rsa
     - run: ssh-keyscan -t rsa $STAGING >> $SSH_DIR/known_hosts
     - run: cat $SSH_DIR/id_rsa
@@ -45,6 +32,14 @@ jobs:
           echo we're in
           hostname
         EOF
+    - name: executing remote ssh commands using ssh key
+      uses: appleboy/ssh-action@master
+      with:
+        host: staging.indra.connext.network
+        username: ubuntu
+        key: ${{ secrets.SSH_KEY }}
+        port: 22
+        script: hostname
 
 
   test-units:
