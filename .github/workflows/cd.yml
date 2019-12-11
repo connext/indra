@@ -17,10 +17,10 @@ jobs:
     - run: mkdir -p $HOME/.ssh
     - run: echo -n $SSH_KEY > $HOME/.ssh/id_rsa
     - run: chmod 400 $HOME/.ssh/id_rsa
-    - run: ssh-keyscan $STAGING_DOMAINNAME >> $HOME/.ssh/known_hosts
+    - run: ssh-keyscan -t rsa $STAGING_DOMAINNAME >> $HOME/.ssh/known_hosts
     - name: deploy to staging
       run: |
-        ssh ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
+        ssh -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
           set -e
           echo we're in
           hostname
