@@ -1,9 +1,8 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { Node, NODE_EVENTS, RejectProposalMessage } from "../../../types";
+import { Node, RejectProposalMessage, NodeEvent } from "../../../types";
 import { NodeController } from "../../controller";
-import rejectInstallVirtualController from "../reject-install-virtual/controller";
 
 export default class RejectInstallController extends NodeController {
   protected async getRequiredLockNames(
@@ -28,9 +27,6 @@ export default class RejectInstallController extends NodeController {
       appInstanceId
     );
 
-    if (appInstanceProposal.intermediaryIdentifier) {
-      return rejectInstallVirtualController(requestHandler, params);
-    }
 
     const stateChannel = await store.getChannelFromAppInstanceID(appInstanceId);
 
@@ -38,7 +34,7 @@ export default class RejectInstallController extends NodeController {
 
     const rejectProposalMsg: RejectProposalMessage = {
       from: publicIdentifier,
-      type: NODE_EVENTS.REJECT_INSTALL,
+      type: "REJECT_INSTALL_EVENT" as NodeEvent,
       data: {
         appInstanceId
       }

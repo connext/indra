@@ -104,24 +104,24 @@ export class WithdrawalController extends AbstractController {
   ////// Listener registration/deregistration
   private registerListeners(): void {
     this.listener.registerCfListener(
-      CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED,
+      CFCoreTypes.EventNames.WITHDRAWAL_CONFIRMED_EVENT as CFCoreTypes.EventName,
       this.withdrawConfirmedCallback,
     );
 
     this.listener.registerCfListener(
-      CFCoreTypes.EventName.WITHDRAWAL_FAILED,
+      CFCoreTypes.EventNames.WITHDRAWAL_FAILED_EVENT as CFCoreTypes.EventName,
       this.withdrawFailedCallback,
     );
   }
 
   private removeListeners(): void {
     this.listener.removeCfListener(
-      CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED,
+      CFCoreTypes.EventNames.WITHDRAWAL_CONFIRMED_EVENT as CFCoreTypes.EventName,
       this.withdrawConfirmedCallback,
     );
 
     this.listener.removeCfListener(
-      CFCoreTypes.EventName.WITHDRAWAL_FAILED,
+      CFCoreTypes.EventNames.WITHDRAWAL_FAILED_EVENT as CFCoreTypes.EventName,
       this.withdrawFailedCallback,
     );
   }

@@ -28,7 +28,6 @@ import {
 } from "./methods";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
-import { NODE_EVENTS } from "./types";
 
 const controllers = [
   /**
@@ -96,7 +95,6 @@ export const createRpcRouter = (requestHandler: RequestHandler) =>
   new RpcRouter({ controllers, requestHandler });
 
 export const eventNameToImplementation = {
-  [NODE_EVENTS.PROTOCOL_MESSAGE_EVENT]: handleReceivedProtocolMessage,
-  [NODE_EVENTS.REJECT_INSTALL]: handleRejectProposalMessage,
-  [NODE_EVENTS.REJECT_INSTALL_VIRTUAL]: handleRejectProposalMessage
+  ["PROTOCOL_MESSAGE_EVENT"]: handleReceivedProtocolMessage,
+  ["REJECT_INSTALL_EVENT"]: handleRejectProposalMessage,
 };

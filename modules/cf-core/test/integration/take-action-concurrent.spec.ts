@@ -53,11 +53,11 @@ describe("Node method follows spec - toke action", () => {
         parseEther("2") // We are depositing in 2 and use 1 for each concurrent app
       );
 
-      nodeB.on(NODE_EVENTS.PROPOSE_INSTALL, (msg: ProposeMessage) => {
+      nodeB.on("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
         makeInstallCall(nodeB, msg.data.appInstanceId);
       });
 
-      nodeA.on(NODE_EVENTS.INSTALL, (msg: InstallMessage) => {
+      nodeA.on("INSTALL_EVENT", (msg: InstallMessage) => {
         appIds.push(msg.data.params.appInstanceId);
       });
 
@@ -80,7 +80,7 @@ describe("Node method follows spec - toke action", () => {
 
       let appsTakenActionOn = 0;
 
-      nodeB.on(NODE_EVENTS.UPDATE_STATE, () => {
+      nodeB.on("UPDATE_STATE_EVENT", () => {
         appsTakenActionOn += 1;
         if (appsTakenActionOn === 2) done();
       });

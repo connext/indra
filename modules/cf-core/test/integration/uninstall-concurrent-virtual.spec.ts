@@ -59,7 +59,7 @@ describe("Concurrently uninstalling virtual and regular applications without iss
     let uninstalledApps = 0;
     const appIds: string[] = [];
 
-    nodeA.on(NODE_EVENTS.INSTALL_VIRTUAL, (msg: InstallVirtualMessage) => {
+    nodeA.on("INSTALL_VIRTUAL_EVENT", (msg: InstallVirtualMessage) => {
       expect(msg.data.params.appInstanceId).toBeTruthy();
       appIds.push(msg.data.params.appInstanceId);
     });
@@ -80,7 +80,7 @@ describe("Concurrently uninstalling virtual and regular applications without iss
 
     // NOTE: nodeA does not emit this event
     nodeC.on(
-      NODE_EVENTS.UNINSTALL_VIRTUAL,
+      "UNINSTALL_VIRTUAL_EVENT",
       async (msg: UninstallVirtualMessage) => {
         expect(appIds.includes(msg.data.appInstanceId)).toBe(true);
         uninstalledApps += 1;

@@ -44,12 +44,12 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
 
         let proposalParams: NodeTypes.ProposeInstallVirtualParams;
 
-        nodeA.on(NODE_EVENTS.REJECT_INSTALL_VIRTUAL, async () => {
+        nodeA.on("REJECT_INSTALL_EVENT", async () => {
           expect((await getProposedAppInstances(nodeA)).length).toEqual(0);
           done();
         });
 
-        nodeC.on(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
+        nodeC.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
           const { appInstanceId } = msg.data;
 
           const [proposedAppInstanceA] = await getProposedAppInstances(nodeA);

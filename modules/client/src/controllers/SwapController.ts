@@ -177,8 +177,14 @@ export class SwapController extends AbstractController {
       new Promise((res: any, rej: any): any => {
         boundReject = this.rejectInstallSwap.bind(null, rej);
         boundResolve = this.resolveInstallSwap.bind(null, res);
-        this.listener.on(CFCoreTypes.EventName.INSTALL, boundResolve);
-        this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
+        this.listener.on(
+          CFCoreTypes.EventNames.INSTALL_EVENT as CFCoreTypes.EventName,
+          boundResolve,
+        );
+        this.listener.on(
+          CFCoreTypes.EventNames.REJECT_INSTALL_EVENT as CFCoreTypes.EventName,
+          boundReject,
+        );
       }),
       delayAndThrow(
         CF_METHOD_TIMEOUT,
@@ -191,7 +197,13 @@ export class SwapController extends AbstractController {
   };
 
   private cleanupInstallListeners = (boundResolve: any, boundReject: any): void => {
-    this.listener.removeListener(CFCoreTypes.EventName.INSTALL, boundResolve);
-    this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
+    this.listener.removeListener(
+      CFCoreTypes.EventNames.INSTALL_EVENT as CFCoreTypes.EventName,
+      boundResolve,
+    );
+    this.listener.removeListener(
+      CFCoreTypes.EventNames.REJECT_INSTALL_EVENT as CFCoreTypes.EventName,
+      boundReject,
+    );
   };
 }

@@ -73,12 +73,18 @@ export class ChannelRouter {
 
   ///////////////////////////////////////////////
   ///// LISTENER METHODS
-  public on = (event: string, listener: (...args: any[]) => void): RpcConnection => {
+  public on = (
+    event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
+    listener: (...args: any[]) => void,
+  ): RpcConnection => {
     this.connection.on(event, listener);
     return this.connection;
   };
 
-  public once = (event: string, listener: (...args: any[]) => void): RpcConnection => {
+  public once = (
+    event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
+    listener: (...args: any[]) => void,
+  ): RpcConnection => {
     this.connection.once(event, listener);
     return this.connection;
   };
