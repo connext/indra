@@ -27,7 +27,6 @@ export default class RejectInstallController extends NodeController {
       appInstanceId
     );
 
-
     const stateChannel = await store.getChannelFromAppInstanceID(appInstanceId);
 
     await store.saveStateChannel(stateChannel.removeProposal(appInstanceId));
@@ -40,10 +39,13 @@ export default class RejectInstallController extends NodeController {
       }
     };
 
-    await messagingService.send(
-      appInstanceProposal.proposedByIdentifier,
-      rejectProposalMsg
-    );
+    const { proposedByIdentifier, proposedToIdentifier } = appInstanceProposal;
+    const counterparty =
+      publicIdentifier === proposedByIdentifier
+        ? proposedToIdentifier
+        : proposedByIdentifier;
+
+    await messagingService.send(counterparty, rejectProposalMsg);
 
     return {};
   }
