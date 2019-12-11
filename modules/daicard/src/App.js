@@ -1,5 +1,5 @@
 import * as connext from "@connext/client";
-import { CF_PATH } from "@connext/types";
+import { CF_PATH, ConnextClientStorePrefix } from "@connext/types";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -236,6 +236,14 @@ class App extends React.Component {
         });
       } else {
         store = storeFactory();
+      }
+
+      // If store has double prefixes, flush and restore
+      for (const k of Object.keys(localStorage)) {
+        if (k.includes(`${ConnextClientStorePrefix}:${ConnextClientStorePrefix}/`)) {
+          store && await store.reset();
+          window.location.reload();
+        }
       }
 
       const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
