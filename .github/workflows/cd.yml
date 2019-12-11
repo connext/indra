@@ -7,6 +7,41 @@ on:
       - staging
 
 jobs:
+  test-ssh:
+    env:
+      KEY: $HOME/.ssh/id_rsa
+      SSH_DIR: $HOME/.ssh
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      STAGING_DOMAINNAME: staging.indra.connext.network
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: setup ssh stuff
+      run: |
+        mkdir -p $SSH_DIR
+        touch $KEY
+        echo '-----BEGIN RSA PRIVATE KEY-----' >> $KEY
+        echo $SSH_KEY >> $KEY
+        echo '-----END RSA PRIVATE KEY-----' >> $KEY
+        chmod 400 $KEY
+        ssh-keyscan -t rsa $STAGING_DOMAINNAME >> $SSH_DIR/known_hosts
+        ssh-keygen -lf $KEY
+    - name: ssh test
+      run: |
+        ssh -i $KEY -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
+          echo "we're in"
+          hostname
+          exit
+        EOF
+    - name: ssh test 2
+      run: |
+        ssh -i $KEY ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
+          set -e
+          echo "we're in"
+          hostname
+          exit
+        EOF
+
   test-node:
     runs-on: ubuntu-latest
     steps:
@@ -47,8 +82,8 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-    - name: push images
-      run: make push-latest
+    - run: make prod
+    - run: make push-latest
 
   push-versioned:
     env:
@@ -60,8 +95,8 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-    - name: push images
-      run: make push-versioned
+    - run: make prod
+    - run: make push-versioned
 
   deploy-staging:
     env:
@@ -105,6 +140,7 @@ jobs:
           docker image ls -q | xargs docker image rm || true
           exit
         EOF
+
 
   deploy-prod:
     env:
