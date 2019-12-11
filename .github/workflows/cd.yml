@@ -7,13 +7,19 @@ on:
       - staging
 
 jobs:
-  test-units:
+  test-node:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make dev
+    - run: make test-node
+
+  test-cf:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
     - run: make dev
     - run: make test-cf
-    - run: make test-node
 
   test-bot:
     runs-on: ubuntu-latest
@@ -36,7 +42,7 @@ jobs:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     if: endsWith(github.ref, 'staging')
-    needs: [test-units, test-bot, test-ui]
+    needs: [test-node, test-cf, test-bot, test-ui]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -49,7 +55,7 @@ jobs:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     if: endsWith(github.ref, 'master')
-    needs: [test-units, test-bot, test-ui]
+    needs: [test-node, test-cf, test-bot, test-ui]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -60,15 +66,25 @@ jobs:
   deploy-staging:
     env:
       INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
+      KEY: $HOME/.ssh/id_rsa
       RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
-      STAGING_DOMAINNAME: staging.indra.connext.network
+      SSH_DIR: $HOME/.ssh
       SSH_KEY: ${{ secrets.SSH_KEY }}
+      STAGING_DOMAINNAME: staging.indra.connext.network
     if: endsWith(github.ref, 'staging')
-    needs: [test-units, test-bot, test-ui]
+    needs: [push-latest]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - run: echo $SSH_KEY > ~/.ssh/id_rsa
+    - name: setup ssh stuff
+      run: |
+        mkdir -p $SSH_DIR
+        touch $KEY
+        echo '-----BEGIN RSA PRIVATE KEY-----' >> $KEY
+        echo $SSH_KEY >> $KEY
+        echo '-----END RSA PRIVATE KEY-----' >> $KEY
+        chmod 400 $KEY
+        ssh-keyscan -t rsa $STAGING_DOMAINNAME >> $SSH_DIR/known_hosts
     - name: deploy to staging
       run: |
         ssh ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
@@ -90,16 +106,28 @@ jobs:
   deploy-prod:
     env:
       INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
+      KEY: $HOME/.ssh/id_rsa
       MAINNET_DOMAINNAME: indra.connext.network
       MAINNET_ETH_PROVIDER: ${{ secrets.MAINNET_ETH_PROVIDER }}
       RINKEBY_DOMAINNAME: rinkeby.indra.connext.network
       RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
+      SSH_DIR: $HOME/.ssh
+      SSH_KEY: ${{ secrets.SSH_KEY }}
     if: endsWith(github.ref, 'master')
-    needs: [test-units, test-bot, test-ui]
+    needs: [push-versioned]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - run: cat $SSH_KEY > ~/.ssh/id_rsa
+    - name: setup ssh stuff
+      run: |
+        mkdir -p $SSH_DIR
+        touch $KEY $SSH_DIR/known_hosts
+        echo '-----BEGIN RSA PRIVATE KEY-----' >> $KEY
+        echo $SSH_KEY >> $KEY
+        echo '-----END RSA PRIVATE KEY-----' >> $KEY
+        chmod 400 $KEY
+        ssh-keyscan -t rsa $RINKEBY_DOMAINNAME >> $SSH_DIR/known_hosts
+        ssh-keyscan -t rsa $MAINNET_DOMAINNAME >> $SSH_DIR/known_hosts
     - name: deploy to prod (rinkeby)
       run: |
         ssh ubuntu@$RINKEBY_DOMAINNAME "bash -s" <<EOF
