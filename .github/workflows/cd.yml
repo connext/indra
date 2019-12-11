@@ -26,21 +26,22 @@ jobs:
         chmod 400 $KEY
         ssh-keyscan -t rsa $STAGING >> $SSH_DIR/known_hosts
         ssh-keygen -lf $KEY
-    - name: deploy to staging
+    - name: ssh test 0
+      run: ssh -vvv -i $KEY -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING hostname
+    - name: ssh test 1
       run: |
         ssh -vvv -i $KEY -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING "bash -s" <<EOF
-          set -e
-          echo we're in
+          echo "we're in"
           hostname
         EOF
-    - name: deploy to staging
+    - name: ssh test 2
       run: |
         ssh -o StrictHostKeyChecking=no -A ubuntu@$STAGING "bash -s" <<EOF
           set -e
           echo we're in
           hostname
         EOF
-    - name: deploy to staging
+    - name: ssh test 3
       run: |
         ssh -o StrictHostKeyChecking=no ubuntu@$STAGING "bash -s" <<EOF
           set -e
@@ -48,14 +49,14 @@ jobs:
           hostname
         EOF
         EOF
-    - name: deploy to staging
+    - name: ssh test 4
       run: |
         ssh ubuntu@$STAGING "bash -s" <<EOF
           set -e
           echo we're in
           hostname
         EOF
-    - name: executing remote ssh commands using ssh key
+    - name: ssh test 5
       uses: appleboy/ssh-action@master
       with:
         host: staging.indra.connext.network
