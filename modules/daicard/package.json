@@ -12,8 +12,8 @@
     "format": "prettier --write \"src/**/*.js\""
 	},
 	"dependencies": {
-    "@connext/client": "1.3.4",
-    "@connext/types": "1.3.4",
+    "@connext/client": "1.3.5",
+    "@connext/types": "1.3.5",
 		"@material-ui/core": "4.7.1",
 		"@material-ui/icons": "4.5.1",
 		"@walletconnect/browser": "1.0.0-beta.39",
@@ -40,7 +40,7 @@
   	"xstate": "4.7.2"
 	},
 	"devDependencies": {
-		"@connext/types": "1.3.4",
+		"@connext/types": "1.3.5",
 		"bn.js": "5.0.0",
 		"chai-bn": "0.2.0"
 	},
