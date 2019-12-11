@@ -102,7 +102,7 @@ const DebugChannel = ({ classes, messaging }) => {
 
   return (
     <RootGrid container spacing={3}>
-      <Grid item className={classes.errorWrap} xs={12}>
+      <Grid item xs={12}>
         <ErrorTypography>{searchError}</ErrorTypography>
       </Grid>
       <Grid item xs={6}>
@@ -181,7 +181,4 @@ const DebugChannel = ({ classes, messaging }) => {
   );
 };
 
-DebugChannel.propTypes = {
-  classes: PropTypes.object.isRequired,
-};
 export default DebugChannel;

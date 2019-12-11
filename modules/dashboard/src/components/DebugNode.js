@@ -1,31 +1,31 @@
 import React, { useEffect, useState } from "react";
-import { Grid, Typography, withStyles } from "@material-ui/core";
+import { Grid, Typography, styled } from "@material-ui/core";
 import PropTypes from "prop-types";
 const axios = require("axios");
 
-const styles = {
-  top: {
-    display: "flex",
-    flexWrap: "wrap",
-    flexDirection: "column",
-    width: "100%",
-    height: "100%",
-    justifyContent: "flex-start",
-    alignItems: "flex-start",
-    marginTop: "2%",
-    marginLeft: "2%",
-  },
-  nodeInfo: {
-    justifyContent: "flex-start",
-    marginVertical: "5%",
-    flexDirection: "row",
-  },
-  cardText: {
-    textAlign: "left",
-    fontSize: "24px",
-    color: "#002868",
-  },
-};
+const TopGrid = styled(Grid)({
+  display: "flex",
+  flexWrap: "wrap",
+  flexDirection: "column",
+  width: "100%",
+  height: "100%",
+  justifyContent: "flex-start",
+  alignItems: "flex-start",
+  marginTop: "2%",
+  marginLeft: "2%",
+});
+
+const StatGrid = styled(Grid)({
+  justifyContent: "flex-start",
+  marginVertical: "5%",
+  flexDirection: "row",
+});
+
+const StatTypography = styled(Typography)({
+  textAlign: "left",
+  fontSize: "24px",
+  color: "#002868",
+});
 
 const address = {
   mainnet: "0xf3f722f6ca6026fb7cc9b63523bbc6a73d3aad39",
@@ -42,10 +42,12 @@ function DebugNode({ classes }) {
       const balances = await Promise.all(
         addressArr.map(
           async address =>
-            await axios.get("http://api.ethplorer.io/getAddressInfo/" + address + "?apiKey=freekey"),
+            await axios.get(
+              "http://api.ethplorer.io/getAddressInfo/" + address + "?apiKey=freekey",
+            ),
         ),
       );
-  
+
       var eth = {
         mainnet: balances[0].data.ETH.balance,
         staging: balances[1].data.ETH.balance,
@@ -62,54 +64,56 @@ function DebugNode({ classes }) {
           ? balances[2].data.tokens[0].balance / 1000000000000000000
           : 0,
       };
-  
-      console.log(dai);
+
       setEthBalances(eth);
       setDaiBalances(dai);
-  
+
       return { eth, dai };
     }
     getBalances(Object.values(address));
   }, []);
 
   return (
-    <Grid className={classes.top} container>
-      <Grid className={classes.nodeInfo}>
-        <a className={classes.cardText} href={`https://etherscan.io/address/${address.mainnet}`}>
-          Mainnet
-        </a>
-        <Typography>Eth Balance: {ethBalances ? ethBalances.mainnet : "loading..."}</Typography>
-        <Typography>Dai Balance: {daiBalances ? daiBalances.mainnet : "loading..."}</Typography>
-        <Typography>
+    <TopGrid container>
+      <StatGrid>
+        <a href={`https://etherscan.io/address/${address.mainnet}`}>Mainnet</a>
+        <StatTypography>
+          Eth Balance: {ethBalances ? ethBalances.mainnet : "loading..."}
+        </StatTypography>
+        <StatTypography>
+          Dai Balance: {daiBalances ? daiBalances.mainnet : "loading..."}
+        </StatTypography>
+        <StatTypography>
           Public Identifier:
           xpub6Di1bLRzeR8icvPKfZxir23fE54AhgWn6bxeuDD4yGWtgHK59LDQgojdyNqtjeg134svT126JzrKR9vjn1UWdUFzTHzNMER9QpS8UuQ9L8m
-        </Typography>
-      </Grid>
+        </StatTypography>
+      </StatGrid>
 
-      <Grid className={classes.nodeInfo}>
-        <a className={classes.cardText} href={`https://etherscan.io/address/${address.staging}`}>
-          Staging
-        </a>
-        <Typography>Eth Balance: {ethBalances ? ethBalances.staging : "loading..."}</Typography>
-        <Typography>Dai Balance: {daiBalances ? daiBalances.staging : "loading..."}</Typography>
-        <Typography>Public Identifier: ???</Typography>
-      </Grid>
-      <Grid className={classes.nodeInfo}>
-        <a className={classes.cardText} href={`https://etherscan.io/address/${address.rinkeby}`}>
-          Rinkeby
-        </a>
-        <Typography>Eth Balance: {ethBalances ? ethBalances.rinkeby : "loading..."}</Typography>
-        <Typography>Dai Balance: {daiBalances ? daiBalances.rinkeby : "loading..."}</Typography>
-        <Typography>
+      <StatGrid>
+        <a href={`https://etherscan.io/address/${address.staging}`}>Staging</a>
+        <StatTypography>
+          Eth Balance: {ethBalances ? ethBalances.staging : "loading..."}
+        </StatTypography>
+        <StatTypography>
+          Dai Balance: {daiBalances ? daiBalances.staging : "loading..."}
+        </StatTypography>
+        <StatTypography>Public Identifier: ???</StatTypography>
+      </StatGrid>
+      <StatGrid>
+        <a href={`https://etherscan.io/address/${address.rinkeby}`}>Rinkeby</a>
+        <StatTypography>
+          Eth Balance: {ethBalances ? ethBalances.rinkeby : "loading..."}
+        </StatTypography>
+        <StatTypography>
+          Dai Balance: {daiBalances ? daiBalances.rinkeby : "loading..."}
+        </StatTypography>
+        <StatTypography>
           Public Identifier:
           xpub6EUSTe4tBM9vQFvYf3jNHfHAVasAVndhVdn1jFv5vv3dBwjxtiDbQoPZiCUYhNH3EFeiYVeKSckn4YqVqG9NhBe9K8XFF3xa1m9Z3h7kyBW
-        </Typography>
-      </Grid>
-    </Grid>
+        </StatTypography>
+      </StatGrid>
+    </TopGrid>
   );
 }
 
-DebugNode.propTypes = {
-  classes: PropTypes.object.isRequired,
-};
-export default withStyles(styles)(DebugNode);
+export default DebugNode;

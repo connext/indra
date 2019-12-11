@@ -1,40 +1,30 @@
 import React, { useEffect, useState } from "react";
-import { Grid, Typography, withStyles, Button, CircularProgress } from "@material-ui/core";
+import { Grid, Typography, styled, Button, CircularProgress } from "@material-ui/core";
 import PropTypes from "prop-types";
 
-const styles = {
-  top: {
-    display: "flex",
-    flexWrap: "wrap",
-    flexDirection: "row",
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  card: {
-    marginTop: "15%",
-    display: "flex",
-    height: "320px",
-    width: "320px",
-    alignItems: "center",
-    justifyContent: "center",
-    margin: "0% 2% 0% 2%",
-    border: "3px solid #002868",
-    textDecoration: "none",
-    "&:hover": { backgroundColor: "rgba(0,40,104,0.2)" },
-  },
-  cardText: {
-    textAlign: "center",
-    width: "90%",
-    fontSize: "24px",
-    color: "#002868",
-    textDecoration: "none",
-  },
-  error: {
-    color: "red",
-  },
-};
+
+const TopGrid = styled(Grid)({
+  display: "flex",
+  flexWrap: "wrap",
+  flexDirection: "row",
+  width: "100%",
+  height: "100%",
+  justifyContent: "center",
+  alignItems: "center",
+})
+
+const StatTypography = styled(Typography)({
+  textAlign: "center",
+  width: "90%",
+  fontSize: "24px",
+  color: "#002868",
+  textDecoration: "none",
+})
+
+const ErrorTypography = styled(Typography)({
+  color: "red",
+})
+
 
 const address = {
   mainnet: "0xf3f722f6ca6026fb7cc9b63523bbc6a73d3aad39", //"0xF80fd6F5eF91230805508bB28d75248024E50F6F", //,
@@ -161,7 +151,7 @@ const StatsSummary = ({ classes, messaging }) => {
   };
 
   return (
-    <Grid className={classes.top} container>
+    <TopGrid  container>
       <Button
         onClick={async () => {
           await onRefresh();
@@ -170,38 +160,35 @@ const StatsSummary = ({ classes, messaging }) => {
         Refresh stats
       </Button>
       <Grid>
-        <Typography className={classes.error}>{searchError}</Typography>
+        <ErrorTypography >{searchError}</ErrorTypography>
       </Grid>
       {loading ? (
         <CircularProgress color="secondary" />
       ) : (
         <Grid container>
-          <Typography className={classes.cardText}>
+          <StatTypography>
             total channels: {allChannels ? allChannels.length : 0}
-          </Typography>
-          <Typography className={classes.cardText}>
+          </StatTypography>
+          <StatTypography >
             collateral ratio: {JSON.stringify(nodeTotal / channelTotal)}
-          </Typography>
-          <Typography className={classes.cardText}>
+          </StatTypography>
+          <StatTypography >
             TVL:payment volume:{" "}
             {nodeTotal && allTransfers && allTransfers.length > 0
               ? (nodeTotal/1000000000000000000) / allTransfers.length
               : 0}
-          </Typography>
+          </StatTypography>
 
-          <Typography className={classes.cardText}>
+          <StatTypography>
             total user balances: {JSON.stringify(channelTotal / 1000000000000000000)}
-          </Typography>
-          <Typography className={classes.cardText}>
+          </StatTypography>
+          <StatTypography >
             total node balances: {JSON.stringify(nodeTotal / 1000000000000000000)}
-          </Typography>
+          </StatTypography>
         </Grid>
       )}
-    </Grid>
+    </TopGrid>
   );
 };
 
-StatsSummary.propTypes = {
-  classes: PropTypes.object.isRequired,
-};
-export default withStyles(styles)(StatsSummary);
+export default StatsSummary;
