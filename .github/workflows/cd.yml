@@ -27,6 +27,7 @@ jobs:
         chmod 400 $KEY
         ssh-keygen -lf $KEY
         ssh-keyscan -t rsa $STAGING_DOMAINNAME >> $SSH_DIR/known_hosts
+        ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$STAGING_DOMAINNAME hostname
     - name: ssh test
       run: |
         ssh -i $KEY ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
@@ -116,6 +117,7 @@ jobs:
         chmod 400 $KEY
         ssh-keygen -lf $KEY
         ssh-keyscan -t rsa $STAGING_DOMAINNAME >> $SSH_DIR/known_hosts
+        ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$STAGING_DOMAINNAME hostname
     - name: deploy to staging
       run: |
         ssh -i $KEY ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
@@ -163,6 +165,8 @@ jobs:
         ssh-keygen -lf $KEY
         ssh-keyscan -t rsa $RINKEBY_DOMAINNAME >> $SSH_DIR/known_hosts
         ssh-keyscan -t rsa $MAINNET_DOMAINNAME >> $SSH_DIR/known_hosts
+        ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$RINKEBY_DOMAINNAME hostname
+        ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$MAINNET_DOMAINNAME hostname
     - name: deploy to prod (rinkeby)
       run: |
         ssh -i $KEY ubuntu@$RINKEBY_DOMAINNAME "bash -s" <<EOF
