@@ -45,12 +45,12 @@ export interface Store extends CFCoreTypes.IStoreService {
 // channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
 export interface ClientOptions {
   ethProviderUrl: string;
-  nodeUrl: string; // ws:// or nats:// urls are supported
+  nodeUrl?: string; // ws:// or nats:// urls are supported
   channelProvider?: ChannelProvider;
   keyGen?: (index: string) => Promise<string>;
   mnemonic?: string;
   xpub?: string;
-  store: Store;
+  store?: Store;
   logLevel?: number;
 }
 

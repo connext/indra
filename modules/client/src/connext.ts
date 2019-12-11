@@ -1,15 +1,15 @@
-import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
+import { IMessagingService } from "@connext/messaging";
 import { CF_PATH } from "@connext/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { BigNumber, bigNumberify, getAddress, Network, Transaction } from "ethers/utils";
-import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
+import { BigNumber, bigNumberify, Network, Transaction } from "ethers/utils";
+import { fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
-import { ChannelProvider } from "./channelProvider";
+import { ChannelProvider, createCFChannelProvider } from "./channelProvider";
 import { ConditionalTransferController } from "./controllers/ConditionalTransferController";
 import { DepositController } from "./controllers/DepositController";
 import { RequestDepositRightsController } from "./controllers/RequestDepositRightsController";
@@ -17,7 +17,7 @@ import { ResolveConditionController } from "./controllers/ResolveConditionContro
 import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
-import { CFCore, Logger, stringify, withdrawalKey, xpubToAddress } from "./lib";
+import { Logger, stringify, withdrawalKey, xpubToAddress } from "./lib";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import {
@@ -26,17 +26,14 @@ import {
   AppInstanceJson,
   AppRegistry,
   AppStateBigNumber,
-  CFChannelProviderOptions,
   CFCoreChannel,
   CFCoreTypes,
   ChannelProviderConfig,
   ChannelState,
-  ClientOptions,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
   ConnextClientStorePrefix,
   ConnextEvent,
-  CreateChannelMessage,
   CreateChannelResponse,
   DefaultApp,
   DepositParameters,
@@ -66,208 +63,6 @@ import { invalidAddress } from "./validation/addresses";
 import { falsy, notLessThanOrEqualTo, notPositive } from "./validation/bn";
 
 const MAX_WITHDRAWAL_RETRIES = 3;
-
-export const createCFChannelProvider = async ({
-  ethProvider,
-  keyGen,
-  lockService,
-  messaging,
-  networkContext,
-  nodeConfig,
-  nodeUrl,
-  store,
-  xpub,
-}: CFChannelProviderOptions): Promise<ChannelProvider> => {
-  const cfCore = await CFCore.create(
-    messaging as any,
-    store,
-    networkContext,
-    nodeConfig,
-    ethProvider,
-    lockService,
-    xpub,
-    keyGen,
-  );
-  const channelProviderConfig: ChannelProviderConfig = {
-    freeBalanceAddress: xpubToAddress(xpub),
-    nodeUrl,
-    signerAddress: xpubToAddress(xpub),
-    userPublicIdentifier: xpub,
-  };
-  const channelProvider = new ChannelProvider(
-    cfCore,
-    channelProviderConfig,
-    store,
-    await keyGen("0"),
-  );
-  return channelProvider;
-};
-
-export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
-  const {
-    logLevel,
-    ethProviderUrl,
-    mnemonic,
-    nodeUrl,
-    store,
-    channelProvider: providedChannelProvider,
-  } = opts;
-  const log = new Logger("ConnextConnect", logLevel);
-
-  // setup network information
-  const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
-  const network = await ethProvider.getNetwork();
-
-  // special case for ganache
-  if (network.chainId === 4447) {
-    network.name = "ganache";
-    // Enforce using provided signer, not via RPC
-    ethProvider.getSigner = (addressOrIndex?: string | number): any => {
-      throw { code: "UNSUPPORTED_OPERATION" };
-    };
-  }
-
-  log.debug(`Creating messaging service client (logLevel: ${logLevel})`);
-  const messagingFactory = new MessagingServiceFactory({
-    logLevel,
-    messagingUrl: nodeUrl,
-  });
-  const messaging = messagingFactory.createService("messaging");
-  await messaging.connect();
-
-  // create a new node api instance
-  const node: NodeApiClient = new NodeApiClient({ logLevel, messaging });
-  const config = await node.config();
-  log.debug(`Node provided config: ${stringify(config)}`);
-
-  // create channel provider
-  let xpub: string;
-  let keyGen: (index: string) => Promise<string>;
-  let channelProvider: ChannelProvider;
-
-  if (providedChannelProvider) {
-    channelProvider = providedChannelProvider;
-    if (!channelProvider.config || !Object.keys(channelProvider.config)) {
-      await channelProvider.enable();
-    }
-  } else if (mnemonic || (opts.xpub && opts.keyGen)) {
-    if (mnemonic) {
-      // Convert mnemonic into xpub + keyGen if provided
-      const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
-      xpub = hdNode.neuter().extendedKey;
-      keyGen = (index: string): Promise<string> =>
-        Promise.resolve(hdNode.derivePath(index).privateKey);
-    } else {
-      xpub = opts.xpub;
-      keyGen = opts.keyGen;
-    }
-    channelProvider = await createCFChannelProvider({
-      ethProvider,
-      keyGen,
-      lockService: { acquireLock: node.acquireLock.bind(node) },
-      messaging: messaging as any,
-      networkContext: config.contractAddresses,
-      nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
-      nodeUrl,
-      store,
-      xpub,
-    });
-  } else {
-    throw new Error(
-      `Client must be instantiated with xpub and keygen, or a channel provider if not using mnemonic`,
-    );
-  }
-
-  log.debug(`Using channel provider config: ${stringify(channelProvider.config)}`);
-
-  // set pubids + channel router
-  node.channelProvider = channelProvider;
-  node.userPublicIdentifier = channelProvider.config.userPublicIdentifier;
-  node.nodePublicIdentifier = config.nodePublicIdentifier;
-
-  const myChannel = await node.getChannel();
-  let multisigAddress: string;
-  if (!myChannel) {
-    log.debug("no channel detected, creating channel..");
-    const creationEventData: CFCoreTypes.CreateChannelResult = await new Promise(
-      async (res: any, rej: any): Promise<any> => {
-        const timer = setTimeout(
-          (): void => rej("Create channel event not fired within 30s"),
-          30000,
-        );
-        channelProvider.once(
-          CFCoreTypes.EventName.CREATE_CHANNEL,
-          (data: CreateChannelMessage): void => {
-            clearTimeout(timer);
-            res(data.data);
-          },
-        );
-
-        const creationData = await node.createChannel();
-        log.debug(`created channel, transaction: ${stringify(creationData)}`);
-      },
-    );
-    multisigAddress = creationEventData.multisigAddress;
-  } else {
-    multisigAddress = myChannel.multisigAddress;
-  }
-  log.debug(`multisigAddress: ${multisigAddress}`);
-
-  channelProvider.multisigAddress = multisigAddress;
-
-  // create a token contract based on the provided token
-  const token = new Contract(config.contractAddresses.Token, tokenAbi, ethProvider);
-
-  // create the new client
-  const client = new ConnextClient({
-    appRegistry: await node.appRegistry(),
-    channelProvider,
-    config,
-    ethProvider,
-    keyGen,
-    messaging,
-    multisigAddress,
-    network,
-    node,
-    store,
-    token,
-    ...opts, // use any provided opts by default
-  });
-
-  try {
-    await client.getFreeBalance();
-  } catch (e) {
-    if (e.message.includes(`StateChannel does not exist yet`)) {
-      log.debug(`Restoring client state: ${e}`);
-      await client.restoreState();
-    } else {
-      throw e;
-    }
-  }
-
-  log.debug("Registering subscriptions");
-  await client.registerSubscriptions();
-
-  // check if there is a coin refund app installed
-  await client.uninstallCoinBalanceIfNeeded();
-
-  // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
-  log.debug("Resubmitting active withdrawals");
-  await client.resubmitActiveWithdrawal();
-
-  // wait for wd verification to reclaim any pending async transfers
-  // since if the hub never submits you should not continue interacting
-  log.debug("Reclaiming pending async transfers");
-  // NOTE: Removing the following await results in a subtle race condition during bot tests.
-  //       Don't remove this await again unless you really know what you're doing & bot tests pass
-  // no need to await this if it needs collateral
-  // TODO: without await causes race conditions in bot, refactor to
-  // use events
-  await client.reclaimPendingAsyncTransfers();
-
-  log.debug("Done creating channel client");
-  return client;
-};
 
 export class ConnextClient implements IConnextClient {
   public appRegistry: AppRegistry;
@@ -314,7 +109,7 @@ export class ConnextClient implements IConnextClient {
     this.freeBalanceAddress = this.channelProvider.config.freeBalanceAddress;
     this.signerAddress = this.channelProvider.config.signerAddress;
     this.publicIdentifier = this.channelProvider.config.userPublicIdentifier;
-    this.multisigAddress = this.opts.multisigAddress;
+    this.multisigAddress = this.channelProvider.config.multisigAddress;
     this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
     this.log = new Logger("ConnextClient", opts.logLevel);
 
@@ -615,7 +410,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   ///////////////////////////////////
-  // PROVIDER/ROUTER METHODS
+  // PROVIDER METHODS
   public getState = async (): Promise<CFCoreTypes.GetStateResult> => {
     return await this.channelProvider.send(NewRpcMethodName.GET_STATE_CHANNEL as any, {
       multisigAddress: this.multisigAddress,

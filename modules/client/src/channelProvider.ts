@@ -2,14 +2,51 @@ import { Wallet } from "ethers";
 import { arrayify } from "ethers/utils";
 import { RpcParameters } from "rpc-server";
 
-import { withdrawalKey } from "./lib";
+import { CFCore, withdrawalKey, xpubToAddress } from "./lib";
 import {
+  CFChannelProviderOptions,
   CFCoreTypes,
   ChannelProviderConfig,
   NewRpcMethodName,
   RpcConnection,
   Store,
 } from "./types";
+
+export const createCFChannelProvider = async ({
+  ethProvider,
+  keyGen,
+  lockService,
+  messaging,
+  networkContext,
+  nodeConfig,
+  nodeUrl,
+  store,
+  xpub,
+}: CFChannelProviderOptions): Promise<ChannelProvider> => {
+  const cfCore = await CFCore.create(
+    messaging as any,
+    store,
+    networkContext,
+    nodeConfig,
+    ethProvider,
+    lockService,
+    xpub,
+    keyGen,
+  );
+  const channelProviderConfig: ChannelProviderConfig = {
+    freeBalanceAddress: xpubToAddress(xpub),
+    nodeUrl,
+    signerAddress: xpubToAddress(xpub),
+    userPublicIdentifier: xpub,
+  };
+  const channelProvider = new ChannelProvider(
+    cfCore,
+    channelProviderConfig,
+    store,
+    await keyGen("0"),
+  );
+  return channelProvider;
+};
 
 export class ChannelProvider {
   private connection: RpcConnection;
@@ -81,10 +118,12 @@ export class ChannelProvider {
   }
 
   get multisigAddress(): string | undefined {
-    return this._multisigAddress;
+    const multisigAddress = this._multisigAddress || this._config.multisigAddress;
+    return multisigAddress;
   }
 
   set multisigAddress(multisigAddress: string) {
+    this._config.multisigAddress = multisigAddress;
     this._multisigAddress = multisigAddress;
   }
 

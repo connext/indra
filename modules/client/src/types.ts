@@ -106,7 +106,6 @@ export type InternalClientOptions = ClientOptions & {
   config: GetConfigResponse;
   ethProvider: providers.JsonRpcProvider;
   messaging: IMessagingService;
-  multisigAddress: string;
   network: Network;
   node: NodeApiClient;
   token: Contract;

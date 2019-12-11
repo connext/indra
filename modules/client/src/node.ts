@@ -284,7 +284,7 @@ export class NodeApiClient implements INodeApiClient {
         const nonce = await this.send("auth.getNonce", {
           address: this.channelProvider.signerAddress,
         });
-        const sig = await this.channelProvider.send(NewRpcMethodName.NODE_AUTH, { message: nonce})
+        const sig = await this.channelProvider.send(NewRpcMethodName.NODE_AUTH, { message: nonce });
         const token = `${nonce}:${sig}`;
         return resolve(token);
       },
@@ -294,7 +294,7 @@ export class NodeApiClient implements INodeApiClient {
   private assertAuthToken(): void {
     if (!this.channelProvider) {
       throw new Error(
-        `Must have instantiated a channel router (ie a signing thing) before setting auth token`,
+        `Must have instantiated a channel provider (ie a signing thing) before setting auth token`,
       );
     }
     if (!this.token) {
