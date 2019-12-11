@@ -68,7 +68,7 @@ process.on("unhandledRejection", (e: any): any => {
     }
     const receipt = await tx.wait();
     console.log(`Deposit tx receipt: ${JSON.stringify(receipt)}`);
-    await client.rescindDepositRights(assetId);
+    await client.rescindDepositRights({ assetId });
     console.log(`Successfully deposited!`);
   }
 
