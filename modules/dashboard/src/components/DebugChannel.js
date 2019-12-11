@@ -6,7 +6,6 @@ import {
   InputAdornment,
   TextField,
   Typography,
-  withStyles,
   styled,
 } from "@material-ui/core";
 import { Search as SearchIcon } from "@material-ui/icons";
@@ -185,4 +184,4 @@ const DebugChannel = ({ classes, messaging }) => {
 DebugChannel.propTypes = {
   classes: PropTypes.object.isRequired,
 };
-export default withStyles(styles)(DebugChannel);
+export default DebugChannel;
