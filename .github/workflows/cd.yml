@@ -64,7 +64,7 @@ jobs:
       STAGING_DOMAINNAME: staging.indra.connext.network
       SSH_KEY: ${{ secrets.SSH_KEY }}
     if: endsWith(github.ref, 'staging')
-    needs: [test-units, test-bot, test-ui]
+    needs: [push-latest]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -96,7 +96,7 @@ jobs:
       RINKEBY_DOMAINNAME: rinkeby.indra.connext.network
       RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
     if: endsWith(github.ref, 'master')
-    needs: [test-units, test-bot, test-ui]
+    needs: [push-versioned]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
