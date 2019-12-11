@@ -30,32 +30,34 @@ jobs:
       run: ssh -i $KEY -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING hostname
     - name: ssh test 1
       run: |
-        ssh -vvv -i $KEY -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING "bash -s" <<EOF
+        ssh -i $KEY -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING "bash -s" <<EOF
           echo "we're in"
           hostname
           exit
         EOF
     - name: ssh test 2
       run: |
-        ssh -o StrictHostKeyChecking=no -A ubuntu@$STAGING "bash -s" <<EOF
+        ssh -i $KEY -o StrictHostKeyChecking=no -A ubuntu@$STAGING "bash -s" <<EOF
           set -e
           echo we're in
           hostname
+          exit
         EOF
     - name: ssh test 3
       run: |
-        ssh -o StrictHostKeyChecking=no ubuntu@$STAGING "bash -s" <<EOF
+        ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$STAGING "bash -s" <<EOF
           set -e
           echo we're in
           hostname
-        EOF
+          exit
         EOF
     - name: ssh test 4
       run: |
-        ssh ubuntu@$STAGING "bash -s" <<EOF
+        ssh -i $KEY ubuntu@$STAGING "bash -s" <<EOF
           set -e
           echo we're in
           hostname
+          exit
         EOF
     - name: ssh test 5
       uses: appleboy/ssh-action@master
