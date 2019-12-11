@@ -10,24 +10,45 @@ jobs:
   test-ssh:
     env:
       SSH_DIR: $HOME/.ssh
-      SSH_KEY: ${{ secrets.TEST_KEY }}
+      SSH_KEY: ${{ secrets.SSH_KEY }}
       STAGING: staging.indra.connext.network
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - run: mkdir -p $SSH_DIR
-    - run: touch $SSH_DIR/id_rsa
-    - run: echo '-----BEGIN RSA PRIVATE KEY-----' >> $SSH_DIR/id_rsa
-    - run: echo $SSH_KEY >> $SSH_DIR/id_rsa
-    - run: echo '-----END RSA PRIVATE KEY-----' >> $SSH_DIR/id_rsa
-    - run: chmod 600 $SSH_DIR/id_rsa
-    - run: ssh-keyscan -t rsa $STAGING >> $SSH_DIR/known_hosts
-    - run: cat $SSH_DIR/id_rsa
-    - run: echo ">>>`cat $SSH_DIR/id_rsa`<<<"
-    - run: ssh-keygen -lf $SSH_DIR/id_rsa
+    - name: setup ssh stuff
+      run: |
+        mkdir -p $SSH_DIR
+        touch $SSH_DIR/id_rsa
+        echo '-----BEGIN RSA PRIVATE KEY-----' >> $SSH_DIR/id_rsa
+        echo $SSH_KEY >> $SSH_DIR/id_rsa
+        echo '-----END RSA PRIVATE KEY-----' >> $SSH_DIR/id_rsa
+        chmod 400 $SSH_DIR/id_rsa
+        ssh-keyscan -t rsa $STAGING >> $SSH_DIR/known_hosts
     - name: deploy to staging
       run: |
-        ssh -vvv -i $SSH_DIR/id_rsa -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING "bash -s" <<EOF
+        ssh -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING "bash -s" <<EOF
+          set -e
+          echo we're in
+          hostname
+        EOF
+    - name: deploy to staging
+      run: |
+        ssh -o StrictHostKeyChecking=no -A ubuntu@$STAGING "bash -s" <<EOF
+          set -e
+          echo we're in
+          hostname
+        EOF
+    - name: deploy to staging
+      run: |
+        ssh -o StrictHostKeyChecking=no ubuntu@$STAGING "bash -s" <<EOF
+          set -e
+          echo we're in
+          hostname
+        EOF
+        EOF
+    - name: deploy to staging
+      run: |
+        ssh ubuntu@$STAGING "bash -s" <<EOF
           set -e
           echo we're in
           hostname
@@ -96,15 +117,23 @@ jobs:
     env:
       INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
       RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
-      STAGING_DOMAINNAME: staging.indra.connext.network
+      SSH_DIR: $HOME/.ssh
       SSH_KEY: ${{ secrets.SSH_KEY }}
+      STAGING_DOMAINNAME: staging.indra.connext.network
     if: endsWith(github.ref, 'staging')
     needs: [push-latest]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - run: mkdir -p ~/.ssh
-    - run: echo $SSH_KEY > ~/.ssh/id_rsa
+    - name: setup ssh stuff
+      run: |
+        mkdir -p $SSH_DIR
+        touch $SSH_DIR/id_rsa
+        echo '-----BEGIN RSA PRIVATE KEY-----' >> $SSH_DIR/id_rsa
+        echo $SSH_KEY >> $SSH_DIR/id_rsa
+        echo '-----END RSA PRIVATE KEY-----' >> $SSH_DIR/id_rsa
+        chmod 400 $SSH_DIR/id_rsa
+        ssh-keyscan -t rsa $STAGING_DOMAINNAME >> $SSH_DIR/known_hosts
     - name: deploy to staging
       run: |
         ssh ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
@@ -135,8 +164,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - run: mkdir -p ~/.ssh
-    - run: cat $SSH_KEY > ~/.ssh/id_rsa
+    - name: setup ssh stuff
+      run: |
+        mkdir -p $SSH_DIR
+        touch $SSH_DIR/id_rsa
+        echo '-----BEGIN RSA PRIVATE KEY-----' >> $SSH_DIR/id_rsa
+        echo $SSH_KEY >> $SSH_DIR/id_rsa
+        echo '-----END RSA PRIVATE KEY-----' >> $SSH_DIR/id_rsa
+        chmod 400 $SSH_DIR/id_rsa
+        ssh-keyscan -t rsa $STAGING_DOMAINNAME >> $SSH_DIR/known_hosts
     - name: deploy to prod (rinkeby)
       run: |
         ssh ubuntu@$RINKEBY_DOMAINNAME "bash -s" <<EOF
