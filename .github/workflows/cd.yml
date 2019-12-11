@@ -9,17 +9,21 @@ on:
 jobs:
   test-ssh:
     env:
+      SSH_DIR: $HOME/.ssh
       SSH_KEY: ${{ secrets.SSH_KEY }}
       STAGING_DOMAINNAME: staging.indra.connext.network
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - run: mkdir -p $HOME/.ssh
-    - run: echo -n $SSH_KEY > $HOME/.ssh/id_rsa
-    - run: chmod 400 $HOME/.ssh/id_rsa
-    - run: eval $(ssh-agent)
-    - run: ssh-add $HOME/.ssh/id_rsa
-    - run: ssh-keyscan -t rsa $STAGING_DOMAINNAME >> $HOME/.ssh/known_hosts
+    - name: Setup SSH Stuff
+      run: |
+        mkdir -p $SSH_DIR
+        echo $SSH_KEY > $SSH_DIR/id_rsa
+        chmod 400 $SSH_DIR/id_rsa
+        ssh-agent
+        eval $(ssh-agent)
+        ssh-add $SSH_DIR/id_rsa
+        ssh-keyscan -t rsa $STAGING_DOMAINNAME >> $SSH_DIR/known_hosts
     - name: deploy to staging
       run: |
         ssh -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
