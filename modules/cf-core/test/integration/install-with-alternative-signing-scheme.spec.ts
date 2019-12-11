@@ -89,7 +89,7 @@ describe("Uses a provided signing key generation function to sign channel state 
         let preInstallETHBalanceNodeB: BigNumber;
         let postInstallETHBalanceNodeB: BigNumber;
 
-        nodeB.on(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
+        nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
           [
             preInstallETHBalanceNodeA,
             preInstallETHBalanceNodeB
@@ -102,7 +102,7 @@ describe("Uses a provided signing key generation function to sign channel state 
           makeInstallCall(nodeB, msg.data.appInstanceId);
         });
 
-        nodeA.on(NODE_EVENTS.INSTALL, async () => {
+        nodeA.on("INSTALL_EVENT", async () => {
           const [appInstanceNodeA] = await getInstalledAppInstances(nodeA);
           const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
           expect(appInstanceNodeA).toBeDefined();

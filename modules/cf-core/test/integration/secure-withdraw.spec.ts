@@ -33,13 +33,13 @@ function confirmWithdrawalMessages(
 ) {
   // initiator messages
   initiator.once(
-    NODE_EVENTS.WITHDRAWAL_CONFIRMED,
+    "WITHDRAWAL_CONFIRMED_EVENT",
     (msg: WithdrawConfirmationMessage) => {
       assertNodeMessage(
         msg,
         {
           from: initiator.publicIdentifier,
-          type: NODE_EVENTS.WITHDRAWAL_CONFIRMED,
+          type: "WITHDRAWAL_CONFIRMED_EVENT",
           data: {
             txReceipt: {
               from: initiator.freeBalanceAddress,
@@ -67,15 +67,15 @@ function confirmWithdrawalMessages(
 
   const startedMsg = {
     from: initiator.publicIdentifier,
-    type: NODE_EVENTS.WITHDRAWAL_STARTED,
+    type: "WITHDRAWAL_STARTED_EVENT",
     data: { params }
   };
-  initiator.once(NODE_EVENTS.WITHDRAWAL_STARTED, (msg: any) => {
+  initiator.once("WITHDRAWAL_STARTED_EVENT", (msg: any) => {
     assertNodeMessage(msg, startedMsg, ["data.txHash"]);
   });
 
   responder.once(
-    NODE_EVENTS.WITHDRAWAL_STARTED,
+    "WITHDRAWAL_STARTED_EVENT",
     (msg: WithdrawStartedMessage) => {
       assertNodeMessage(msg, startedMsg);
     }
@@ -100,7 +100,7 @@ describe("Node method follows spec - withdraw", () => {
     const txHash = await deployStateDepositHolder(nodeA, multisigAddress);
     expect(txHash).toBeDefined();
 
-    nodeB.on(NODE_EVENTS.DEPOSIT_CONFIRMED, () => {});
+    nodeB.on("DEPOSIT_CONFIRMED_EVENT", () => {});
   });
 
   it("has the right balance for both parties after withdrawal", async () => {

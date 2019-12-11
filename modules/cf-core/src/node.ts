@@ -265,7 +265,10 @@ export class Node {
    * @param event
    * @param callback
    */
-  on(event: string, callback: (res: any) => void) {
+  on(
+    event: NodeTypes.EventName | NodeTypes.RpcMethodName,
+    callback: (res: any) => void
+  ) {
     this.rpcRouter.subscribe(event, async (res: any) => callback(res));
   }
 
@@ -276,7 +279,10 @@ export class Node {
    * @param event
    * @param [callback]
    */
-  off(event: string, callback?: (res: any) => void) {
+  off(
+    event: NodeTypes.EventName | NodeTypes.RpcMethodName,
+    callback?: (res: any) => void
+  ) {
     this.rpcRouter.unsubscribe(
       event,
       callback ? async (res: any) => callback(res) : undefined
@@ -291,7 +297,10 @@ export class Node {
    * @param event
    * @param [callback]
    */
-  once(event: string, callback: (res: any) => void) {
+  once(
+    event: NodeTypes.EventName | NodeTypes.RpcMethodName,
+    callback: (res: any) => void
+  ) {
     this.rpcRouter.subscribeOnce(event, async (res: any) => callback(res));
   }
 
@@ -300,7 +309,10 @@ export class Node {
    * @param event
    * @param req
    */
-  emit(event: string, req: NodeTypes.MethodRequest) {
+  emit(
+    event: NodeTypes.EventName | NodeTypes.RpcMethodName,
+    req: NodeTypes.MethodRequest
+  ) {
     this.rpcRouter.emit(event, req);
   }
 
