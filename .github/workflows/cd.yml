@@ -68,6 +68,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
+    - run: mkdir -p ~/.ssh
     - run: echo $SSH_KEY > ~/.ssh/id_rsa
     - name: deploy to staging
       run: |
@@ -99,6 +100,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
+    - run: mkdir -p ~/.ssh
     - run: cat $SSH_KEY > ~/.ssh/id_rsa
     - name: deploy to prod (rinkeby)
       run: |
