@@ -79,15 +79,17 @@ jobs:
     - name: setup ssh stuff
       run: |
         mkdir -p $SSH_DIR
-        touch $KEY
+        rm -f $KEY
+        touch $KEY $SSH_DIR/known_hosts
         echo '-----BEGIN RSA PRIVATE KEY-----' >> $KEY
         echo $SSH_KEY >> $KEY
         echo '-----END RSA PRIVATE KEY-----' >> $KEY
         chmod 400 $KEY
+        ssh-keygen -lf $KEY
         ssh-keyscan -t rsa $STAGING_DOMAINNAME >> $SSH_DIR/known_hosts
     - name: deploy to staging
       run: |
-        ssh ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
+        ssh -i $KEY ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
           set -e
           git clone https://github.com/ConnextProject/indra.git || true
           cd indra
@@ -101,6 +103,7 @@ jobs:
           make restart-prod
           docker container prune -f
           docker image ls -q | xargs docker image rm || true
+          exit
         EOF
 
   deploy-prod:
@@ -121,16 +124,18 @@ jobs:
     - name: setup ssh stuff
       run: |
         mkdir -p $SSH_DIR
+        rm -f $KEY
         touch $KEY $SSH_DIR/known_hosts
         echo '-----BEGIN RSA PRIVATE KEY-----' >> $KEY
         echo $SSH_KEY >> $KEY
         echo '-----END RSA PRIVATE KEY-----' >> $KEY
         chmod 400 $KEY
+        ssh-keygen -lf $KEY
         ssh-keyscan -t rsa $RINKEBY_DOMAINNAME >> $SSH_DIR/known_hosts
         ssh-keyscan -t rsa $MAINNET_DOMAINNAME >> $SSH_DIR/known_hosts
     - name: deploy to prod (rinkeby)
       run: |
-        ssh ubuntu@$RINKEBY_DOMAINNAME "bash -s" <<EOF
+        ssh -i $KEY ubuntu@$RINKEBY_DOMAINNAME "bash -s" <<EOF
           set -e
           git clone https://github.com/ConnextProject/indra.git || true
           cd indra
@@ -144,10 +149,11 @@ jobs:
           make restart-prod
           docker container prune -f
           docker image ls -q | xargs docker image rm || true
+          exit
         EOF
     - name: deploy to prod (mainnet)
       run: |
-        ssh ubuntu@$MAINNET_DOMAINNAME "bash -s" <<EOF
+        ssh -i $KEY ubuntu@$MAINNET_DOMAINNAME "bash -s" <<EOF
           set -e
           git clone https://github.com/ConnextProject/indra.git || true
           cd indra
@@ -161,4 +167,5 @@ jobs:
           make restart-prod
           docker container prune -f
           docker image ls -q | xargs docker image rm || true
+          exit
         EOF
