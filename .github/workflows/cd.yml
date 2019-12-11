@@ -39,7 +39,7 @@ jobs:
       run: |
         ssh -i $KEY -o StrictHostKeyChecking=no -A ubuntu@$STAGING "bash -s" <<EOF
           set -e
-          echo we're in
+          echo "we're in"
           hostname
           exit
         EOF
@@ -47,7 +47,7 @@ jobs:
       run: |
         ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$STAGING "bash -s" <<EOF
           set -e
-          echo we're in
+          echo "we're in"
           hostname
           exit
         EOF
@@ -55,7 +55,7 @@ jobs:
       run: |
         ssh -i $KEY ubuntu@$STAGING "bash -s" <<EOF
           set -e
-          echo we're in
+          echo "we're in"
           hostname
           exit
         EOF
