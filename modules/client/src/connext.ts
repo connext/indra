@@ -1,10 +1,10 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { CF_PATH } from "@connext/types";
+import { CF_PATH, LinkedTransferToRecipientParameters } from "@connext/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { BigNumber, bigNumberify, getAddress, Network, Transaction } from "ethers/utils";
+import { BigNumber, bigNumberify, hexlify, Network, randomBytes, Transaction } from "ethers/utils";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
@@ -519,8 +519,20 @@ export class ConnextClient implements IConnextClient {
     return await this.swapController.swap(params);
   };
 
-  public transfer = async (params: TransferParameters): Promise<CFCoreChannel> => {
-    return await this.transferController.transfer(params);
+  /**
+   * Transfer currently uses the conditionalTransfer "LINKED_TRANSFER_TO_RECIPIENT" so that
+   * async payments are the default transfer.
+   */
+  public transfer = async (params: TransferParameters): Promise<ConditionalTransferResponse> => {
+    return await this.conditionalTransferController.conditionalTransfer({
+      amount: params.amount,
+      assetId: params.assetId,
+      conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
+      meta: params.meta,
+      paymentId: hexlify(randomBytes(32)),
+      preImage: hexlify(randomBytes(32)),
+      recipient: params.recipient,
+    } as LinkedTransferToRecipientParameters);
   };
 
   public withdraw = async (params: WithdrawParameters): Promise<WithdrawalResponse> => {

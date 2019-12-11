@@ -83,7 +83,7 @@ export interface IConnextClient {
   // CORE CHANNEL METHODS
   deposit(params: DepositParameters): Promise<ChannelState>;
   swap(params: SwapParameters): Promise<CFCoreChannel>;
-  transfer(params: TransferParameters): Promise<CFCoreChannel>;
+  transfer(params: TransferParameters): Promise<ConditionalTransferResponse>;
   withdraw(params: WithdrawParameters): Promise<ChannelState>;
   resolveCondition(params: ResolveConditionParameters): Promise<ResolveConditionResponse>;
   conditionalTransfer(params: ConditionalTransferParameters): Promise<ConditionalTransferResponse>;
