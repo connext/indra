@@ -7,6 +7,25 @@ on:
       - staging
 
 jobs:
+  test-ssh:
+    env:
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      STAGING_DOMAINNAME: staging.indra.connext.network
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: mkdir -p $HOME/.ssh
+    - run: echo $SSH_KEY > $HOME/.ssh/id_rsa
+    - run: ssh-keyscan $STAGING_DOMAINNAME >> $HOME/.ssh/known_hosts
+    - name: deploy to staging
+      run: |
+        ssh ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
+          set -e
+          echo we're in
+          hostname
+        EOF
+
+
   test-units:
     runs-on: ubuntu-latest
     steps:
