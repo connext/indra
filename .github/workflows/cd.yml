@@ -9,6 +9,7 @@ on:
 jobs:
   test-ssh:
     env:
+      KEY: $HOME/.ssh/id_rsa
       SSH_DIR: $HOME/.ssh
       SSH_KEY: ${{ secrets.SSH_KEY }}
       STAGING: staging.indra.connext.network
@@ -18,16 +19,16 @@ jobs:
     - name: setup ssh stuff
       run: |
         mkdir -p $SSH_DIR
-        touch $SSH_DIR/id_rsa
-        echo '-----BEGIN RSA PRIVATE KEY-----' >> $SSH_DIR/id_rsa
-        echo $SSH_KEY >> $SSH_DIR/id_rsa
-        echo '-----END RSA PRIVATE KEY-----' >> $SSH_DIR/id_rsa
-        chmod 400 $SSH_DIR/id_rsa
+        touch $KEY
+        echo '-----BEGIN RSA PRIVATE KEY-----' >> $KEY
+        echo $SSH_KEY >> $KEY
+        echo '-----END RSA PRIVATE KEY-----' >> $KEY
+        chmod 400 $KEY
         ssh-keyscan -t rsa $STAGING >> $SSH_DIR/known_hosts
-        ssh-keygen -lf $SSH_DIR/id_rsa
+        ssh-keygen -lf $KEY
     - name: deploy to staging
       run: |
-        ssh -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING "bash -s" <<EOF
+        ssh -vvv -i $KEY -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING "bash -s" <<EOF
           set -e
           echo we're in
           hostname
