@@ -18,9 +18,6 @@ jobs:
     - run: mkdir -p $SSH_DIR
     - run: echo $SSH_KEY > $SSH_DIR/id_rsa
     - run: chmod 600 $SSH_DIR/id_rsa
-    - run: ssh-agent
-    - run: eval $(ssh-agent)
-    - run: ssh-add $SSH_DIR/id_rsa
     - run: ssh-keyscan -t rsa $STAGING >> $SSH_DIR/known_hosts
     - name: deploy to staging
       run: |
