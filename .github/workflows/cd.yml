@@ -7,68 +7,6 @@ on:
       - staging
 
 jobs:
-  test-ssh:
-    env:
-      KEY: $HOME/.ssh/id_rsa
-      SSH_DIR: $HOME/.ssh
-      SSH_KEY: ${{ secrets.SSH_KEY }}
-      STAGING: staging.indra.connext.network
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - name: setup ssh stuff
-      run: |
-        mkdir -p $SSH_DIR
-        touch $KEY
-        echo '-----BEGIN RSA PRIVATE KEY-----' >> $KEY
-        echo $SSH_KEY >> $KEY
-        echo '-----END RSA PRIVATE KEY-----' >> $KEY
-        chmod 400 $KEY
-        ssh-keyscan -t rsa $STAGING >> $SSH_DIR/known_hosts
-        ssh-keygen -lf $KEY
-    - name: ssh test 0
-      run: ssh -i $KEY -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING hostname
-    - name: ssh test 1
-      run: |
-        ssh -i $KEY -o StrictHostKeyChecking=no -A -tt ubuntu@$STAGING "bash -s" <<EOF
-          echo "we're in"
-          hostname
-          exit
-        EOF
-    - name: ssh test 2
-      run: |
-        ssh -i $KEY -o StrictHostKeyChecking=no -A ubuntu@$STAGING "bash -s" <<EOF
-          set -e
-          echo "we're in"
-          hostname
-          exit
-        EOF
-    - name: ssh test 3
-      run: |
-        ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$STAGING "bash -s" <<EOF
-          set -e
-          echo "we're in"
-          hostname
-          exit
-        EOF
-    - name: ssh test 4
-      run: |
-        ssh -i $KEY ubuntu@$STAGING "bash -s" <<EOF
-          set -e
-          echo "we're in"
-          hostname
-          exit
-        EOF
-    - name: ssh test 5
-      uses: appleboy/ssh-action@master
-      with:
-        host: staging.indra.connext.network
-        username: ubuntu
-        key: ${{ secrets.SSH_KEY }}
-        port: 22
-        script: hostname
-
-
   test-units:
     runs-on: ubuntu-latest
     steps:
@@ -122,6 +60,7 @@ jobs:
   deploy-staging:
     env:
       INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
+      KEY: $HOME/.ssh/id_rsa
       RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
       SSH_DIR: $HOME/.ssh
       SSH_KEY: ${{ secrets.SSH_KEY }}
@@ -134,11 +73,11 @@ jobs:
     - name: setup ssh stuff
       run: |
         mkdir -p $SSH_DIR
-        touch $SSH_DIR/id_rsa
-        echo '-----BEGIN RSA PRIVATE KEY-----' >> $SSH_DIR/id_rsa
-        echo $SSH_KEY >> $SSH_DIR/id_rsa
-        echo '-----END RSA PRIVATE KEY-----' >> $SSH_DIR/id_rsa
-        chmod 400 $SSH_DIR/id_rsa
+        touch $KEY
+        echo '-----BEGIN RSA PRIVATE KEY-----' >> $KEY
+        echo $SSH_KEY >> $KEY
+        echo '-----END RSA PRIVATE KEY-----' >> $KEY
+        chmod 400 $KEY
         ssh-keyscan -t rsa $STAGING_DOMAINNAME >> $SSH_DIR/known_hosts
     - name: deploy to staging
       run: |
@@ -161,10 +100,13 @@ jobs:
   deploy-prod:
     env:
       INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
+      KEY: $HOME/.ssh/id_rsa
       MAINNET_DOMAINNAME: indra.connext.network
       MAINNET_ETH_PROVIDER: ${{ secrets.MAINNET_ETH_PROVIDER }}
       RINKEBY_DOMAINNAME: rinkeby.indra.connext.network
       RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
+      SSH_DIR: $HOME/.ssh
+      SSH_KEY: ${{ secrets.SSH_KEY }}
     if: endsWith(github.ref, 'master')
     needs: [push-versioned]
     runs-on: ubuntu-latest
@@ -173,12 +115,13 @@ jobs:
     - name: setup ssh stuff
       run: |
         mkdir -p $SSH_DIR
-        touch $SSH_DIR/id_rsa
-        echo '-----BEGIN RSA PRIVATE KEY-----' >> $SSH_DIR/id_rsa
-        echo $SSH_KEY >> $SSH_DIR/id_rsa
-        echo '-----END RSA PRIVATE KEY-----' >> $SSH_DIR/id_rsa
-        chmod 400 $SSH_DIR/id_rsa
-        ssh-keyscan -t rsa $STAGING_DOMAINNAME >> $SSH_DIR/known_hosts
+        touch $KEY $SSH_DIR/known_hosts
+        echo '-----BEGIN RSA PRIVATE KEY-----' >> $KEY
+        echo $SSH_KEY >> $KEY
+        echo '-----END RSA PRIVATE KEY-----' >> $KEY
+        chmod 400 $KEY
+        ssh-keyscan -t rsa $RINKEBY_DOMAINNAME >> $SSH_DIR/known_hosts
+        ssh-keyscan -t rsa $MAINNET_DOMAINNAME >> $SSH_DIR/known_hosts
     - name: deploy to prod (rinkeby)
       run: |
         ssh ubuntu@$RINKEBY_DOMAINNAME "bash -s" <<EOF
