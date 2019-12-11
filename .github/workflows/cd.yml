@@ -17,6 +17,8 @@ jobs:
     - run: mkdir -p $HOME/.ssh
     - run: echo -n $SSH_KEY > $HOME/.ssh/id_rsa
     - run: chmod 400 $HOME/.ssh/id_rsa
+    - run: eval $(ssh-agent)
+    - run: ssh-add $HOME/.ssh/id_rsa
     - run: ssh-keyscan -t rsa $STAGING_DOMAINNAME >> $HOME/.ssh/known_hosts
     - name: deploy to staging
       run: |
