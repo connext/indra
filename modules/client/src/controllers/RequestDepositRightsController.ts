@@ -140,7 +140,10 @@ export class RequestDepositRightsController extends AbstractController {
           const { appInstanceId } = await this.connext.proposeInstallApp(params);
           appId = appInstanceId;
           this.log.info(`waiting for proposal acceptance of ${appInstanceId}`);
-          this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
+          this.listener.on(
+            CFCoreTypes.EventNames.REJECT_INSTALL_EVENT as CFCoreTypes.EventName,
+            boundReject,
+          );
         }),
         delayAndThrow(
           CF_METHOD_TIMEOUT,
@@ -168,6 +171,9 @@ export class RequestDepositRightsController extends AbstractController {
     this.connext.messaging.unsubscribe(
       `indra.node.${this.connext.nodePublicIdentifier}.install.${appId}`,
     );
-    this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
+    this.listener.removeListener(
+      CFCoreTypes.EventNames.REJECT_INSTALL_EVENT as CFCoreTypes.EventName,
+      boundReject,
+    );
   };
 }

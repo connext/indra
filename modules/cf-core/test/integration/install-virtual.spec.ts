@@ -47,7 +47,7 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
         await collateralizeChannel(multisigAddressBC, nodeB, nodeC);
 
         nodeA.once(
-          NODE_EVENTS.INSTALL_VIRTUAL,
+          "INSTALL_VIRTUAL_EVENT",
           async (msg: InstallVirtualMessage) => {
             const [virtualAppNodeA] = await getInstalledAppInstances(nodeA);
 
@@ -57,7 +57,7 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
 
             assertNodeMessage(msg, {
               from: nodeC.publicIdentifier,
-              type: NODE_EVENTS.INSTALL_VIRTUAL,
+              type: "INSTALL_VIRTUAL_EVENT",
               data: {
                 params: {
                   appInstanceId: virtualAppNodeA.identityHash
@@ -69,7 +69,7 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
           }
         );
 
-        nodeC.once(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
+        nodeC.once("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
           const { params: proposedParams } = await proposal;
           assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
           const {
@@ -126,7 +126,7 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
       );
 
       // proposal will not involve intermediary, install from nodeC
-      nodeC.once(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
+      nodeC.once("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
         const {
           data: { appInstanceId }
         } = msg;
@@ -155,10 +155,10 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
       await collateralizeChannel(multisigAddressBC, nodeB, nodeC);
 
       // verify nodeB receives event
-      nodeB.once(NODE_EVENTS.INSTALL_VIRTUAL, () => done());
+      nodeB.once("INSTALL_VIRTUAL_EVENT", () => done());
 
       // proposal will not involve intermediary, install from nodeC
-      nodeC.once(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
+      nodeC.once("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
         const {
           data: { appInstanceId }
         } = msg;

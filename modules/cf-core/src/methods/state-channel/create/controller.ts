@@ -1,7 +1,7 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { CreateChannelMessage, Node, NODE_EVENTS } from "../../../types";
+import { CreateChannelMessage, Node, NODE_EVENTS, NodeEvent } from "../../../types";
 import { NodeController } from "../../controller";
 import { xkeysToSortedKthAddresses } from "../../../machine";
 
@@ -14,7 +14,7 @@ import { xkeysToSortedKthAddresses } from "../../../machine";
  *
  * This then sends the details of this multisig to the peer with whom the multisig
  * is owned and the multisig's _address_ is sent as an event
- * to whoever subscribed to the `NODE_EVENTS.CREATE_CHANNEL` event on the Node.
+ * to whoever subscribed to the `"CREATE_CHANNEL_EVENT"` event on the Node.
  */
 export default class CreateChannelController extends NodeController {
   @jsonRpcMethod(Node.RpcMethodName.CREATE_CHANNEL)
@@ -77,7 +77,7 @@ export default class CreateChannelController extends NodeController {
 
     const msg: CreateChannelMessage = {
       from: publicIdentifier,
-      type: NODE_EVENTS.CREATE_CHANNEL,
+      type: "CREATE_CHANNEL_EVENT" as NodeEvent,
       data: {
         multisigAddress,
         owners: addressOwners,
@@ -85,6 +85,6 @@ export default class CreateChannelController extends NodeController {
       } as Node.CreateChannelResult
     };
 
-    outgoing.emit(NODE_EVENTS.CREATE_CHANNEL, msg);
+    outgoing.emit("CREATE_CHANNEL_EVENT", msg);
   }
 }

@@ -39,10 +39,10 @@ describe("Node method follows spec - rejectInstall", () => {
         expect(await getInstalledAppInstances(nodeB)).toEqual([]);
 
         let proposedAppId: string;
-        nodeA.on(NODE_EVENTS.REJECT_INSTALL, async (msg: RejectProposalMessage) => {
+        nodeA.on("REJECT_INSTALL_EVENT", async (msg: RejectProposalMessage) => {
           assertNodeMessage(msg, {
             from: nodeB.publicIdentifier,
-            type: NODE_EVENTS.REJECT_INSTALL,
+            type: "REJECT_INSTALL_EVENT",
             data: {
               appInstanceId: proposedAppId
             }
@@ -52,7 +52,7 @@ describe("Node method follows spec - rejectInstall", () => {
         });
 
         // node B then decides to reject the proposal
-        nodeB.on(NODE_EVENTS.PROPOSE_INSTALL, async (msg: ProposeMessage) => {
+        nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
           const rejectReq = constructRejectInstallRpc(msg.data.appInstanceId);
           expect((await getProposedAppInstances(nodeA)).length).toEqual(1);
           proposedAppId = msg.data.appInstanceId;
