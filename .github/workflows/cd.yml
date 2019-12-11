@@ -7,13 +7,19 @@ on:
       - staging
 
 jobs:
-  test-units:
+  test-node:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make dev
+    - run: make test-node
+
+  test-cf:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
     - run: make dev
     - run: make test-cf
-    - run: make test-node
 
   test-bot:
     runs-on: ubuntu-latest
@@ -36,7 +42,7 @@ jobs:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     if: endsWith(github.ref, 'staging')
-    needs: [test-units, test-bot, test-ui]
+    needs: [test-node, test-cf, test-bot, test-ui]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -49,7 +55,7 @@ jobs:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     if: endsWith(github.ref, 'master')
-    needs: [test-units, test-bot, test-ui]
+    needs: [test-node, test-cf, test-bot, test-ui]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
