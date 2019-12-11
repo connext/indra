@@ -15,6 +15,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
+    - name: Execute SSH commmands on remote server
+      uses: JimCronqvist/action-ssh@master
+      with:
+        hosts: 'staging.indra.connext.network'
+        privateKey: ${{ secrets.SSH_KEY }}
+        command: |
+          echo "we're in"
+          hostname
     - name: executing remote ssh commands using ssh key
       uses: appleboy/ssh-action@master
       with:
