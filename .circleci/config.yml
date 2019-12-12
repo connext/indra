@@ -122,25 +122,21 @@ workflows:
             branches:
               only:
                - master
-               - staging
       - test-ui:
           filters:
             branches:
               only:
                - master
-               - staging
       - test-bot:
           filters:
             branches:
               only:
                - master
-               - staging
       - test-cf:
           filters:
             branches:
               only:
                - master
-               - staging
 
       - push-prod-images:
           filters:
