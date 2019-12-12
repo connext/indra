@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Grid, Typography, styled, Button, CircularProgress } from "@material-ui/core";
-import PropTypes from "prop-types";
-
 
 const TopGrid = styled(Grid)({
   display: "flex",

@@ -9,7 +9,6 @@ import {
   styled,
 } from "@material-ui/core";
 import { Search as SearchIcon } from "@material-ui/icons";
-import PropTypes from "prop-types";
 import { bigNumberify } from "ethers/utils";
 import JSONTree from "react-json-tree";
 

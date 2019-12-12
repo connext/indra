@@ -3,7 +3,6 @@ import { Button, Grid, Typography, styled } from "@material-ui/core";
 import { Home as HomeIcon } from "@material-ui/icons";
 
 import { Switch, Route, Link } from "react-router-dom";
-import PropTypes from "prop-types";
 import StatsSummary from "./StatsSummary";
 import StatsGas from "./StatsGas";
 import StatsTransfers from "./StatsTransfers";

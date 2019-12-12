@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Grid, Typography, styled } from "@material-ui/core";
-import PropTypes from "prop-types";
 const axios = require("axios");
 
 const TopGrid = styled(Grid)({

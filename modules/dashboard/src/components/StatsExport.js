@@ -1,6 +1,5 @@
 import React from "react";
 import { Grid, Typography, styled } from "@material-ui/core";
-import PropTypes from "prop-types";
 
 const TopGrid = styled(Grid)({
   display: "flex",
@@ -18,10 +17,6 @@ const StatTypography = styled(Typography)({
   fontSize: "24px",
   color: "#002868",
   textDecoration: "none",
-})
-
-const ErrorTypography = styled(Typography)({
-  color: "red",
 })
 
 function StatsExport({ classes }) {

@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Button, Grid, Typography, styled } from "@material-ui/core";
-import PropTypes from "prop-types";
 
 const TopGrid = styled(Grid)({
   display: "flex",
@@ -20,12 +19,8 @@ const StatTypography = styled(Typography)({
   textDecoration: "none",
 });
 
-const ErrorTypography = styled(Typography)({
-  color: "red",
-});
-
 const StatsTransfers = props => {
-  const { classes, messaging } = props;
+  const { messaging } = props;
 
   const [allTransfers, setAllTransfers] = useState(null);
   const [averageTransfer, setAverageTransfer] = useState(0);
@@ -72,9 +67,6 @@ const StatsTransfers = props => {
         <StatTypography >
           average transfer size: {averageTransfer ? averageTransfer : 0}
         </StatTypography>
-        {/* <Typography className={classes.cardText}>
-            total transfers: {allTransfers ? JSON.stringify(allTransfers) : 0}
-      </Typography> */}
       </Grid>
     </TopGrid>
   );

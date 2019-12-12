@@ -1,7 +1,6 @@
 import React from "react";
 import { Button, Grid, Typography, styled } from "@material-ui/core";
 import { Switch, Route, Link } from "react-router-dom";
-import PropTypes from "prop-types";
 import DebugChannel from "./DebugChannel";
 import DebugNode from "./DebugNode";
 import Admin from "./Admin/Admin";
