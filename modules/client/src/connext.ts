@@ -165,7 +165,7 @@ export class ConnextClient implements IConnextClient {
    * NOTE: should probably take assetId into account
    */
   public getBalanceRefundApp = async (assetId: string = AddressZero): Promise<AppInstanceJson> => {
-    const apps = await this.getAppInstances();
+    const apps = await this.getAppInstances(this.multisigAddress);
     const filtered = apps.filter(
       (app: AppInstanceJson) =>
         app.appInterface.addr === this.config.contractAddresses.CoinBalanceRefundApp &&
@@ -485,13 +485,11 @@ export class ConnextClient implements IConnextClient {
     } as CFCoreTypes.DepositParams);
   };
 
-  // TODO: under what conditions will this fail?
-  public getAppInstances = async (): Promise<AppInstanceJson[]> => {
+  public getAppInstances = async (multisigAddress?: string): Promise<AppInstanceJson[]> => {
     // TODO
-    const { appInstances } = await await this.channelProvider.send(
-      CFCoreTypes.RpcMethodName.GET_APP_INSTANCES,
-      {} as CFCoreTypes.GetAppInstancesParams,
-    );
+    const { appInstances } = await await this.channelProvider.send((CFCoreTypes.RpcMethodName.GET_APP_INSTANCES, {
+      multisigAddress,
+    } as CFCoreTypes.GetAppInstancesParams);
     return appInstances;
   };
 
@@ -524,13 +522,14 @@ export class ConnextClient implements IConnextClient {
     }
   };
 
-  public getProposedAppInstances = async (): Promise<
+  public getProposedAppInstances = async (
+    multisigAddress?: string,
+  ): Promise<
     CFCoreTypes.GetProposedAppInstancesResult | undefined
   > => {
-    return await this.channelProvider.send(
-      CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
-      {} as CFCoreTypes.GetProposedAppInstancesParams,
-    );
+    return await this.channelProvider.send(CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES, {
+      multisigAddress,
+    } as CFCoreTypes.GetProposedAppInstancesParams);
   };
 
   public getProposedAppInstance = async (
@@ -965,7 +964,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   private appNotInstalled = async (appInstanceId: string): Promise<string | undefined> => {
-    const apps = await this.getAppInstances();
+    const apps = await this.getAppInstances(this.multisigAddress);
     const app = apps.filter((app: AppInstanceJson): boolean => app.identityHash === appInstanceId);
     if (!app || app.length === 0) {
       return (
@@ -983,7 +982,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   private appInstalled = async (appInstanceId: string): Promise<string | undefined> => {
-    const apps = await this.getAppInstances();
+    const apps = await this.getAppInstances(this.multisigAddress);
     const app = apps.filter((app: AppInstanceJson): boolean => app.identityHash === appInstanceId);
     if (app.length > 0) {
       return (

@@ -123,10 +123,12 @@ export interface IConnextClient {
     notifyCounterparty: boolean,
   ): Promise<CFCoreTypes.DepositResult>;
   getFreeBalance(assetId?: string): Promise<CFCoreTypes.GetFreeBalanceStateResult>;
-  getAppInstances(): Promise<AppInstanceJson[]>;
+  getAppInstances(multisigAddress?: string): Promise<AppInstanceJson[]>;
   getAppInstanceDetails(appInstanceId: string): Promise<CFCoreTypes.GetAppInstanceDetailsResult>;
   getAppState(appInstanceId: string): Promise<CFCoreTypes.GetStateResult>;
-  getProposedAppInstances(): Promise<CFCoreTypes.GetProposedAppInstancesResult | undefined>;
+  getProposedAppInstances(
+    multisigAddress?: string,
+  ): Promise<CFCoreTypes.GetProposedAppInstancesResult | undefined>;
   getProposedAppInstance(
     appInstanceId: string,
   ): Promise<CFCoreTypes.GetProposedAppInstanceResult | undefined>;
