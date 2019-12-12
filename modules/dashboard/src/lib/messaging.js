@@ -15,16 +15,18 @@ const guardedSubjects = ["channel", "lock", "transfer"];
 const sendFailed = "Failed to send message";
 
 export default class AdminMessaging {
-  constructor(messagingUrl, token, logLevel = 5) {
+  constructor(messagingUrl, adminToken, logLevel = 5) {
     const messagingFactory = new MessagingServiceFactory({
       logLevel,
       messagingUrl, // nodeUrl
     });
     this.messaging = messagingFactory.createService("messaging");
+    this.adminToken = adminToken;
     const mnemonic = localStorage.getItem("mnemonic");
     const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
     this.xpub = hdNode.neuter().extendedKey;
     this.signer = new Wallet(hdNode.derivePath("0"));
+    console.log(`adminToken: ${this.adminToken}`);
     console.log(`address: ${this.signer.address}`);
     console.log(`xpub: ${this.xpub}`);
   }
@@ -39,38 +41,38 @@ export default class AdminMessaging {
   ///////////////////////////////////////
   ////// CHANNEL API METHODS
   async getChannelStatesWithNoFreeBalanceApp() {
-    return await this.send("get-no-free-balance");
+    return await this.send("admin.get-no-free-balance");
   }
 
   async getStateChannelByUserPubId(userPublicIdentifier) {
-    return await this.send("get-state-channel-by-xpub", {
+    return await this.send("admin.get-state-channel-by-xpub", {
       userPublicIdentifier,
     });
   }
 
   async getStateChannelByMultisig(multisigAddress) {
-    return await this.send("get-state-channel-by-multisig", {
+    return await this.send("admin.get-state-channel-by-multisig", {
       multisigAddress,
     });
   }
 
   async getAllChannelStates() {
-    return await this.send("get-all-channels");
+    return await this.send("admin.get-all-channels");
   }
 
   async getChannelsIncorrectProxyFactoryAddress() {
-    return await this.send("get-channels-no-proxy-factory");
+    return await this.send("admin.get-channels-no-proxy-factory");
   }
 
   async fixChannelsIncorrectProxyFactoryAddress() {
     // use longer timeout bc this function takes a long time
-    return await this.send("fix-proxy-factory-addresses", {}, 90_000);
+    return await this.send("admin.fix-proxy-factory-addresses", {}, 90_000);
   }
 
   ///////////////////////////////////////
   ////// TRANSFER API METHODS
   async getAllLinkedTransfers() {
-    return await this.send("get-all-linked-transfers");
+    return await this.send("admin.get-all-linked-transfers");
   }
 
   async getLinkedTransferByPaymentId(paymentId) {
@@ -79,28 +81,21 @@ export default class AdminMessaging {
     });
   }
 
-  assertAuthToken(): void {
-    if (!this.signer) {
-      throw new Error(
-        `Must have instantiated a channel router (ie a signing thing) before setting auth token`,
-      );
-    }
-    if (!this.token) {
-      this.token = this.getAuthToken();
-    }
-  }
-
-  async getAuthToken() {
-    return new Promise(
-      async (resolve: any, reject: any): Promise<any> => {
+  async getToken(subject) {
+    if ("admin" === subject.split(".")[0]) {
+      return this.adminToken;
+    } else if (guardedSubjects.includes(subject.split(".")[0])) {
+      if (!this.signer) {
+        throw new Error(`Must have instantiated a signer before setting sig token`);
+      } else if (!this.sigToken) {
         const nonce = await this.send("auth.getNonce", {
           address: this.signer.address,
         });
         const sig = await this.signer.signMessage(arrayify(nonce));
-        const token = `${nonce}:${sig}`;
-        return resolve(token);
-      },
-    );
+        this.sigToken = `${nonce}:${sig}`;
+        return this.sigToken;
+      }
+    }
   }
 
   ///////////////////////////////////////
@@ -139,10 +134,7 @@ export default class AdminMessaging {
       ...data,
       id: uuid.v4(),
     };
-    if (guardedSubjects.includes(subject.split(".")[0])) {
-      this.assertAuthToken();
-      payload.token = await this.token;
-    }
+    payload.token = await this.getToken(subject);
     let msg;
     try {
       msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
@@ -152,8 +144,7 @@ export default class AdminMessaging {
     let error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     if (error && error.startsWith("Invalid token")) {
       console.log(`Auth error, token might have expired. Let's get a fresh token & try again.`);
-      this.token = this.getAuthToken();
-      payload.token = await this.token;
+      payload.token = await this.getToken(subject);
       msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
       error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     }

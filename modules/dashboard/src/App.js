@@ -9,7 +9,7 @@ import Stats from "./components/Stats";
 import DashboardMessaging from "./lib/messaging";
 
 const env = {
-  authToken: process.env.REACT_APP_INDRA_NATS_TOKEN || "foo",
+  adminToken: process.env.REACT_APP_INDRA_NATS_TOKEN || "foo",
   nodeUrl:
     process.env.REACT_APP_NODE_URL_OVERRIDE ||
     `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
@@ -17,7 +17,7 @@ const env = {
 };
 
 //env.nodeUrl = "wss://indra.connext.network/api/messaging";
-//env.authToken = "foo";
+env.adminToken = "foo";
 
 const App = () => {
   const [messaging, setMessaging] = useState(null);
@@ -32,7 +32,7 @@ const App = () => {
   useEffect(() => {
     (async () => {
       console.debug(`creating and connecting messaging service...`);
-      const messaging = new DashboardMessaging(env.nodeUrl, env.authToken, 5);
+      const messaging = new DashboardMessaging(env.nodeUrl, env.adminToken, 5);
       await messaging.connect();
       setMessaging(messaging);
       console.debug(`messaging set!`, messaging);

@@ -48,8 +48,7 @@ const StatsSummary = ({ classes, messaging }) => {
 
   const onRefresh = async () => {
     console.log("refreshing!");
-    const res = await messaging.getLinkedTransferByPaymentId(HashZero);
-    console.log(res);
+    await messaging.getLinkedTransferByPaymentId(HashZero);
     await getChannels();
     await getTransfers();
   };
@@ -58,7 +57,7 @@ const StatsSummary = ({ classes, messaging }) => {
     setLoading(true);
     try {
       const res = await messaging.getAllChannelStates();
-      console.log("Res", res);
+      console.log("res", res);
       let xPubsToSearch = [];
       for (let row of res) {
         xPubsToSearch.push(row.userPublicIdentifier);
@@ -134,7 +133,7 @@ const StatsSummary = ({ classes, messaging }) => {
   };
 
   const getTransfers = async () => {
-    const res = await messaging.getAllLinkedTransfers();
+    const res = await messaging.getAllLinkedTransfers() || [];
 
     let totalTransfers = [];
     if (res) {
