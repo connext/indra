@@ -82,7 +82,7 @@ export class WithdrawalController extends AbstractController {
     }
 
     return {
-      apps: await this.connext.getAppInstances(),
+      apps: await this.connext.getAppInstances(this.connext.multisigAddress),
       freeBalance: await this.connext.getFreeBalance(),
       transaction,
     };

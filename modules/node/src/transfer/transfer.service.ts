@@ -191,7 +191,7 @@ export class TransferService {
     const defaultApp = (await this.configService.getDefaultApps()).find(
       (app: DefaultApp) => app.name === SupportedApplications.SimpleLinkedTransferApp,
     );
-    const installedApps = await this.cfCoreService.getAppInstances();
+    const installedApps = await this.cfCoreService.getAppInstances(channel.multisigAddress);
     const senderApp = installedApps.find(
       (app: AppInstanceJson) =>
         app.appInterface.addr === defaultApp!.appDefinitionAddress &&

@@ -70,7 +70,10 @@ export class ChannelService {
     }
 
     // don't allow deposit if user's balance refund app is installed
-    const balanceRefundApp = await this.cfCoreService.getCoinBalanceRefundApp(assetId);
+    const balanceRefundApp = await this.cfCoreService.getCoinBalanceRefundApp(
+      multisigAddress,
+      assetId,
+    );
     if (
       balanceRefundApp &&
       balanceRefundApp.latestState["recipient"] === xpubToAddress(channel.userPublicIdentifier)

@@ -341,11 +341,13 @@ export class CFCoreService {
     return uninstallResponse.result.result as CFCoreTypes.DepositResult;
   }
 
-  async getAppInstances(): Promise<AppInstanceJson[]> {
+  async getAppInstances(multisigAddress?: string): Promise<AppInstanceJson[]> {
     const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: CFCoreTypes.RpcMethodName.GET_APP_INSTANCES,
-      parameters: {} as CFCoreTypes.GetAppInstancesParams,
+      parameters: {
+        multisigAddress,
+      } as CFCoreTypes.GetAppInstancesParams,
     });
 
     /*
@@ -357,9 +359,10 @@ export class CFCoreService {
   }
 
   async getCoinBalanceRefundApp(
+    multisigAddress: string,
     tokenAddress: string = AddressZero,
   ): Promise<AppInstanceJson | undefined> {
-    const appInstances = await this.getAppInstances();
+    const appInstances = await this.getAppInstances(multisigAddress);
     const contractAddresses = await this.configService.getContractAddresses();
     const coinBalanceRefundAppArray = appInstances.filter(
       (app: AppInstanceJson) =>
@@ -378,11 +381,11 @@ export class CFCoreService {
     return coinBalanceRefundAppArray[0];
   }
 
-  async getProposedAppInstances(): Promise<AppInstanceProposal[]> {
+  async getProposedAppInstances(multisigAddress?: string): Promise<AppInstanceProposal[]> {
     const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
-      parameters: {} as CFCoreTypes.GetAppInstancesParams,
+      parameters: { multisigAddress } as CFCoreTypes.GetAppInstancesParams,
     });
 
     logger.log(
