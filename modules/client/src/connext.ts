@@ -1,10 +1,10 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { CF_PATH } from "@connext/types";
+import { CF_PATH, LinkedTransferToRecipientParameters } from "@connext/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { BigNumber, bigNumberify, getAddress, Network, Transaction } from "ethers/utils";
+import { BigNumber, bigNumberify, hexlify, Network, randomBytes, Transaction } from "ethers/utils";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
@@ -30,6 +30,8 @@ import {
   CFCoreTypes,
   ChannelProviderConfig,
   ChannelState,
+  CheckDepositRightsParameters,
+  CheckDepositRightsResponse,
   ClientOptions,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
@@ -48,6 +50,9 @@ import {
   PaymentProfile,
   RequestCollateralResponse,
   RequestDepositRightsParameters,
+  RequestDepositRightsResponse,
+  RescindDepositRightsParameters,
+  RescindDepositRightsResponse,
   ResolveConditionParameters,
   ResolveConditionResponse,
   ResolveLinkedTransferResponse,
@@ -176,7 +181,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
           30000,
         );
         channelRouter.once(
-          CFCoreTypes.EventName.CREATE_CHANNEL,
+          CFCoreTypes.EventNames.CREATE_CHANNEL_EVENT as CFCoreTypes.EventName,
           (data: CreateChannelMessage): void => {
             clearTimeout(timer);
             res(data.data);
@@ -228,8 +233,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   log.debug("Registering subscriptions");
   await client.registerSubscriptions();
 
-  // check if there is a coin refund app installed
-  await client.uninstallCoinBalanceIfNeeded();
+  // check if there is a coin refund app installed for eth and tokens
+  await client.uninstallCoinBalanceIfNeeded(AddressZero);
+  await client.uninstallCoinBalanceIfNeeded(config.contractAddresses.Token);
 
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
   log.debug("Resubmitting active withdrawals");
@@ -480,16 +486,53 @@ export class ConnextClient implements IConnextClient {
     return await this.requestDepositRightsController.requestDepositRights(params);
   };
 
-  public rescindDepositRights = async (assetId: string): Promise<CFCoreTypes.DepositResult> => {
-    return await this.channelRouter.rescindDepositRights(assetId);
+  public rescindDepositRights = async (
+    params: RescindDepositRightsParameters,
+  ): Promise<RescindDepositRightsResponse> => {
+    return await this.channelRouter.rescindDepositRights(params);
+  };
+
+  public checkDepositRights = async (
+    params: CheckDepositRightsParameters,
+  ): Promise<CheckDepositRightsResponse> => {
+    const refundApp = await this.getBalanceRefundApp(params.assetId);
+    const multisigBalance =
+      !refundApp.latestState["tokenAddress"] &&
+      refundApp.latestState["tokenAddress"] !== AddressZero
+        ? await this.ethProvider.getBalance(this.multisigAddress)
+        : await new Contract(
+            refundApp.latestState["tokenAddress"],
+            tokenAbi,
+            this.ethProvider,
+          ).functions.balanceOf(this.multisigAddress);
+    return refundApp
+      ? {
+          assetId: refundApp.latestState["tokenAddress"],
+          multisigBalance: multisigBalance.toString(),
+          recipient: refundApp.latestState["recipient"],
+          threshold: refundApp.latestState["threshold"],
+        }
+      : undefined;
   };
 
   public swap = async (params: SwapParameters): Promise<CFCoreChannel> => {
     return await this.swapController.swap(params);
   };
 
-  public transfer = async (params: TransferParameters): Promise<CFCoreChannel> => {
-    return await this.transferController.transfer(params);
+  /**
+   * Transfer currently uses the conditionalTransfer "LINKED_TRANSFER_TO_RECIPIENT" so that
+   * async payments are the default transfer.
+   */
+  public transfer = async (params: TransferParameters): Promise<ConditionalTransferResponse> => {
+    return await this.conditionalTransferController.conditionalTransfer({
+      amount: params.amount,
+      assetId: params.assetId,
+      conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
+      meta: params.meta,
+      paymentId: hexlify(randomBytes(32)),
+      preImage: hexlify(randomBytes(32)),
+      recipient: params.recipient,
+    } as LinkedTransferToRecipientParameters);
   };
 
   public withdraw = async (params: WithdrawParameters): Promise<WithdrawalResponse> => {
@@ -595,21 +638,15 @@ export class ConnextClient implements IConnextClient {
   ///////////////////////////////////
   // EVENT METHODS
 
-  public on = (
-    event: ConnextEvent | CFCoreTypes.EventName,
-    callback: (...args: any[]) => void,
-  ): ConnextListener => {
+  public on = (event: ConnextEvent, callback: (...args: any[]) => void): ConnextListener => {
     return this.listener.on(event, callback);
   };
 
-  public once = (
-    event: ConnextEvent | CFCoreTypes.EventName,
-    callback: (...args: any[]) => void,
-  ): ConnextListener => {
+  public once = (event: ConnextEvent, callback: (...args: any[]) => void): ConnextListener => {
     return this.listener.once(event, callback);
   };
 
-  public emit = (event: ConnextEvent | CFCoreTypes.EventName, data: any): boolean => {
+  public emit = (event: ConnextEvent, data: any): boolean => {
     return this.listener.emit(event, data);
   };
 
@@ -943,34 +980,19 @@ export class ConnextClient implements IConnextClient {
     );
   };
 
-  public uninstallCoinBalanceIfNeeded = async (): Promise<void> => {
-    // check if there is a coin refund app installed
-    const coinRefund = (await this.getAppInstances()).filter(app => {
-      return app.appInterface.addr === this.config.contractAddresses.CoinBalanceRefundApp;
-    })[0];
+  public uninstallCoinBalanceIfNeeded = async (assetId: string = AddressZero): Promise<void> => {
+    const coinRefund = await this.getBalanceRefundApp(assetId);
     if (!coinRefund) {
       this.log.debug("No coin balance refund app found");
-      return;
+      return undefined;
     }
-
-    this.log.debug(
-      "Installed coin balance refund app found, checking if deposit has been executed",
-    );
-    // if the balance of the multisig is *higher* than the threshold, then a
-    // deposit has been executed.
-    // because only one deposit can be performed at once, assume that
-    // uninstalling will safely add the deposit to the free balance of the
-    // correct channel participant.
-
-    // NOTE: in the case of a transaction being stuck in the mempool due to a
-    // highly clogged chain, your channel will be **locked** because of this
-    // permanently installed application
 
     const latestState = coinRefund.latestState;
     const threshold = bigNumberify(latestState["threshold"]);
-    const isClientDeposit = latestState["recipient"] === this.freeBalanceAddress;
     const isTokenDeposit =
       latestState["tokenAddress"] && latestState["tokenAddress"] !== AddressZero;
+    const isClientDeposit = latestState["recipient"] === this.freeBalanceAddress;
+
     const multisigBalance = !isTokenDeposit
       ? await this.ethProvider.getBalance(this.multisigAddress)
       : await new Contract(
@@ -1006,9 +1028,14 @@ export class ConnextClient implements IConnextClient {
       // to send an uninstall request to the client
       if (isClientDeposit) {
         if (isTokenDeposit) {
-          new Contract(latestState["tokenAddress"], tokenAbi, this.ethProvider).once(
+          new Contract(assetId, tokenAbi, this.ethProvider).once(
             "Transfer",
-            async () => await uninstallRefund(),
+            async (sender: string, recipient: string, amount: BigNumber) => {
+              if (recipient === this.multisigAddress && amount.gt(0)) {
+                this.log.info(`Multisig transfer was for our channel, uninstalling refund app`);
+                await uninstallRefund();
+              }
+            },
           );
         } else {
           this.ethProvider.once(this.multisigAddress, async () => await uninstallRefund());

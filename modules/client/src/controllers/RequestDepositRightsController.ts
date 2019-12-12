@@ -10,16 +10,17 @@ import {
   CoinBalanceRefundAppStateBigNumber,
   RejectProposalMessage,
   RequestDepositRightsParameters,
+  RequestDepositRightsResponse,
   SupportedApplications,
 } from "../types";
-import { invalidAddress, notNegative, validate } from "../validation";
+import { invalidAddress, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
 export class RequestDepositRightsController extends AbstractController {
   public requestDepositRights = async (
     params: RequestDepositRightsParameters,
-  ): Promise<CFCoreTypes.RequestDepositRightsResult> => {
+  ): Promise<RequestDepositRightsResponse> => {
     params.assetId = params.assetId || AddressZero;
     const { assetId } = params;
     validate(invalidAddress(assetId));
@@ -38,17 +39,13 @@ export class RequestDepositRightsController extends AbstractController {
       throw new Error(`Cannot claim deposit rights while hub is depositing.`);
     }
 
-    // this.registerListeners(assetId);
-
     const existingBalanceRefundApp = await this.connext.getBalanceRefundApp(assetId);
     if (existingBalanceRefundApp) {
       if (
         bigNumberify(existingBalanceRefundApp.latestState["threshold"]).eq(multisigBalance) &&
         existingBalanceRefundApp.latestState["recipient"] === this.connext.freeBalanceAddress
       ) {
-        this.log.info(
-          `Balance refund app for ${assetId} is in the correct state, doing nothing`,
-        );
+        this.log.info(`Balance refund app for ${assetId} is in the correct state, doing nothing`);
         return {
           freeBalance: await this.connext.getFreeBalance(assetId),
           recipient: this.connext.freeBalanceAddress,
@@ -56,7 +53,7 @@ export class RequestDepositRightsController extends AbstractController {
         };
       }
       this.log.info(`Balance refund app is not in the correct state, uninstalling first`);
-      await this.connext.rescindDepositRights(assetId);
+      await this.connext.rescindDepositRights({ assetId });
       this.log.info(`Balance refund app uninstalled`);
     }
 
@@ -88,62 +85,6 @@ export class RequestDepositRightsController extends AbstractController {
 
   /////////////////////////////////
   ////// PRIVATE METHODS
-
-  private registerListeners = (assetId: string = AddressZero): void => {
-    if (assetId === AddressZero) {
-      // register listener for eth
-      // listener on ETH transfers to multisig to uninstall balance refund
-      // for eth
-      // FIXME: race condition? hub collateralizes with eth and rights
-      // are rescinded before client deposits?
-      this.ethProvider.on(this.connext.multisigAddress, async (balance: BigNumber) => {
-        this.log.info(`Got a transfer to multisig. balance: ${balance}`);
-        // reinstall balance refund app for ETH
-        if (balance.isZero()) {
-          this.log.info(`Multisig transfer has 0 balance, not uninstalling`);
-          return;
-        }
-        await this.connext.rescindDepositRights(AddressZero);
-        const freeBalance = await this.connext.getFreeBalance(AddressZero);
-        this.log.info(`updated FreeBalance: ${stringify(freeBalance)}`);
-      });
-    } else {
-      // listener on token transfers to multisig to uninstall balance refuns
-      // this is because in the case that the counterparty deposits in their
-      // channel, we want to minimize the amount of time the balance token
-      // refund app is installed on the client. this will allow the deposit to
-      // be shown immediately upon transfer
-      this.connext.token.on("Transfer", async (src: string, dst: string, wad: string) => {
-        if (getAddress(dst) !== this.connext.multisigAddress) {
-          // not our multisig
-          return;
-        }
-        this.log.info(`Got a transfer to multisig. src: ${src}, dst: ${dst}, wad: ${wad}`);
-        // uninstall balance refund app for token
-        if (getAddress(src) === xpubToAddress(this.connext.nodePublicIdentifier)) {
-          // transfer is from node, dont uninstall refund app
-          this.log.info(`Transfer from node, not uninstalling balance refund app`);
-          return;
-        }
-        this.log.info(`Uninstalling balance refund app`);
-        await this.connext.rescindDepositRights(this.connext.config.contractAddresses.Token);
-        const freeBalance = await this.connext.getFreeBalance(
-          this.connext.config.contractAddresses.Token,
-        );
-        this.log.info(`updated FreeBalance: ${stringify(freeBalance)}`);
-      });
-    }
-  };
-
-  private cleanupListeners = (assetId: string = AddressZero): void => {
-    if (assetId === AddressZero) {
-      this.log.info(`Removing all eth provider listeners for multisig`);
-      this.ethProvider.removeAllListeners(this.connext.multisigAddress);
-    } else {
-      this.log.info(`Removing all token transfer listeners`);
-      this.connext.token.removeAllListeners("Transfer");
-    }
-  };
 
   private proposeDepositInstall = async (assetId: string): Promise<string | undefined> => {
     let boundReject: (msg: RejectProposalMessage) => void;
@@ -200,7 +141,10 @@ export class RequestDepositRightsController extends AbstractController {
           const { appInstanceId } = await this.connext.proposeInstallApp(params);
           appId = appInstanceId;
           this.log.info(`waiting for proposal acceptance of ${appInstanceId}`);
-          this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
+          this.listener.on(
+            CFCoreTypes.EventNames.REJECT_INSTALL_EVENT as CFCoreTypes.EventName,
+            boundReject,
+          );
         }),
         delayAndThrow(
           CF_METHOD_TIMEOUT,
@@ -228,6 +172,9 @@ export class RequestDepositRightsController extends AbstractController {
     this.connext.messaging.unsubscribe(
       `indra.node.${this.connext.nodePublicIdentifier}.install.${appId}`,
     );
-    this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, boundReject);
+    this.listener.removeListener(
+      CFCoreTypes.EventNames.REJECT_INSTALL_EVENT as CFCoreTypes.EventName,
+      boundReject,
+    );
   };
 }

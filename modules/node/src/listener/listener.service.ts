@@ -35,7 +35,7 @@ import {
 const logger = new CLogger("ListenerService");
 
 type CallbackStruct = {
-  [index in keyof typeof CFCoreTypes.EventName]: (data: any) => Promise<any> | void;
+  [index in CFCoreTypes.EventName]: (data: any) => Promise<any> | void;
 };
 
 function logEvent(
@@ -64,39 +64,36 @@ export default class ListenerService implements OnModuleInit {
   // TODO: move the business logic into the respective modules?
   getEventListeners(): CallbackStruct {
     return {
-      COUNTER_DEPOSIT_CONFIRMED: (data: DepositConfirmationMessage): void => {
-        logEvent(CFCoreTypes.EventName.COUNTER_DEPOSIT_CONFIRMED, data);
-      },
-      CREATE_CHANNEL: async (data: CreateChannelMessage): Promise<void> => {
-        logEvent(CFCoreTypes.EventName.CREATE_CHANNEL, data);
+      CREATE_CHANNEL_EVENT: async (data: CreateChannelMessage): Promise<void> => {
+        logEvent("CREATE_CHANNEL_EVENT", data);
         this.channelService.makeAvailable(data);
       },
-      DEPOSIT_CONFIRMED: (data: DepositConfirmationMessage): void => {
-        logEvent(CFCoreTypes.EventName.DEPOSIT_CONFIRMED, data);
+      DEPOSIT_CONFIRMED_EVENT: (data: DepositConfirmationMessage): void => {
+        logEvent("DEPOSIT_CONFIRMED_EVENT", data);
 
         // if it's from us, clear the in flight collateralization
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
           this.channelService.clearCollateralizationInFlight(data.data.multisigAddress);
         }
       },
-      DEPOSIT_FAILED: (data: DepositFailedMessage): void => {
-        logEvent(CFCoreTypes.EventName.DEPOSIT_FAILED, data);
+      DEPOSIT_FAILED_EVENT: (data: DepositFailedMessage): void => {
+        logEvent("DEPOSIT_FAILED_EVENT", data);
       },
-      DEPOSIT_STARTED: (data: DepositStartedMessage): void => {
-        logEvent(CFCoreTypes.EventName.DEPOSIT_STARTED, data);
+      DEPOSIT_STARTED_EVENT: (data: DepositStartedMessage): void => {
+        logEvent("DEPOSIT_STARTED_EVENT", data);
       },
-      INSTALL: async (data: InstallMessage): Promise<void> => {
-        logEvent(CFCoreTypes.EventName.INSTALL, data);
+      INSTALL_EVENT: async (data: InstallMessage): Promise<void> => {
+        logEvent("INSTALL_EVENT", data);
       },
       // TODO: make cf return app instance id and app def?
-      INSTALL_VIRTUAL: async (data: InstallVirtualMessage): Promise<void> => {
-        logEvent(CFCoreTypes.EventName.INSTALL_VIRTUAL, data);
+      INSTALL_VIRTUAL_EVENT: async (data: InstallVirtualMessage): Promise<void> => {
+        logEvent("INSTALL_VIRTUAL_EVENT", data);
       },
-      PROPOSE_INSTALL: async (data: ProposeMessage): Promise<void> => {
+      PROPOSE_INSTALL_EVENT: async (data: ProposeMessage): Promise<void> => {
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
           logger.debug(`Recieved proposal from our own node. Doing nothing.`);
         }
-        logEvent(CFCoreTypes.EventName.PROPOSE_INSTALL, data);
+        logEvent("PROPOSE_INSTALL_EVENT", data);
 
         // TODO: better architecture
         // install if possible
@@ -147,10 +144,10 @@ export default class ListenerService implements OnModuleInit {
         }
       },
       PROTOCOL_MESSAGE_EVENT: (data: NodeMessageWrappedProtocolMessage): void => {
-        logEvent(CFCoreTypes.EventName.PROTOCOL_MESSAGE_EVENT, data);
+        logEvent("PROTOCOL_MESSAGE_EVENT", data);
       },
-      REJECT_INSTALL: async (data: RejectProposalMessage): Promise<void> => {
-        logEvent(CFCoreTypes.EventName.REJECT_INSTALL, data);
+      REJECT_INSTALL_EVENT: async (data: RejectProposalMessage): Promise<void> => {
+        logEvent("REJECT_INSTALL_EVENT", data);
 
         const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(
           data.data.appInstanceId,
@@ -162,26 +159,23 @@ export default class ListenerService implements OnModuleInit {
         transfer.status = LinkedTransferStatus.FAILED;
         await this.linkedTransferRepository.save(transfer);
       },
-      REJECT_INSTALL_VIRTUAL: (data: RejectInstallVirtualMessage): void => {
-        logEvent(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, data);
+      UNINSTALL_EVENT: (data: UninstallMessage): void => {
+        logEvent("UNINSTALL_EVENT", data);
       },
-      UNINSTALL: (data: UninstallMessage): void => {
-        logEvent(CFCoreTypes.EventName.UNINSTALL, data);
+      UNINSTALL_VIRTUAL_EVENT: async (data: UninstallVirtualMessage): Promise<void> => {
+        logEvent("UNINSTALL_VIRTUAL_EVENT", data);
       },
-      UNINSTALL_VIRTUAL: async (data: UninstallVirtualMessage): Promise<void> => {
-        logEvent(CFCoreTypes.EventName.UNINSTALL_VIRTUAL, data);
+      UPDATE_STATE_EVENT: (data: UpdateStateMessage): void => {
+        logEvent("UPDATE_STATE_EVENT", data);
       },
-      UPDATE_STATE: (data: UpdateStateMessage): void => {
-        logEvent(CFCoreTypes.EventName.UPDATE_STATE, data);
+      WITHDRAWAL_CONFIRMED_EVENT: (data: WithdrawConfirmationMessage): void => {
+        logEvent("WITHDRAWAL_CONFIRMED_EVENT", data);
       },
-      WITHDRAWAL_CONFIRMED: (data: WithdrawConfirmationMessage): void => {
-        logEvent(CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED, data);
+      WITHDRAWAL_FAILED_EVENT: (data: WithdrawFailedMessage): void => {
+        logEvent("WITHDRAWAL_FAILED_EVENT", data);
       },
-      WITHDRAWAL_FAILED: (data: WithdrawFailedMessage): void => {
-        logEvent(CFCoreTypes.EventName.WITHDRAWAL_FAILED, data);
-      },
-      WITHDRAWAL_STARTED: (data: WithdrawStartedMessage): void => {
-        logEvent(CFCoreTypes.EventName.WITHDRAWAL_STARTED, data);
+      WITHDRAWAL_STARTED_EVENT: (data: WithdrawStartedMessage): void => {
+        logEvent("WITHDRAWAL_STARTED_EVENT", data);
       },
     };
   }
@@ -190,7 +184,7 @@ export default class ListenerService implements OnModuleInit {
     Object.entries(this.getEventListeners()).forEach(
       ([event, callback]: [CFCoreTypes.EventName, () => any]): void => {
         this.cfCoreService.registerCfCoreListener(
-          CFCoreTypes.EventName[event],
+          CFCoreTypes.EventNames[event] as CFCoreTypes.EventName,
           callback,
           logger.cxt,
         );

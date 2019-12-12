@@ -41,7 +41,7 @@ describe("Node method follows spec - install balance refund", () => {
   });
 
   it("install app with ETH, sending ETH should increase free balance", async done => {
-    nodeB.on(NODE_EVENTS.INSTALL, async () => {
+    nodeB.on("INSTALL_EVENT", async () => {
       const [appInstanceNodeA] = await getInstalledAppInstances(nodeA);
       const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
       expect(appInstanceNodeA).toBeDefined();
@@ -93,7 +93,7 @@ describe("Node method follows spec - install balance refund", () => {
       "networkContext"
     ] as NetworkContextForTestSuite).DolphinCoin;
 
-    nodeB.on(NODE_EVENTS.INSTALL, async () => {
+    nodeB.on("INSTALL_EVENT", async () => {
       const [appInstanceNodeA] = await getInstalledAppInstances(nodeA);
       const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
       expect(appInstanceNodeA).toBeDefined();
@@ -139,7 +139,7 @@ describe("Node method follows spec - install balance refund", () => {
     ] as NetworkContextForTestSuite).DolphinCoin;
 
     let installedCount = 0;
-    nodeB.on(NODE_EVENTS.INSTALL, async () => {
+    nodeB.on("INSTALL_EVENT", async () => {
       installedCount += 1;
       const [appInstanceNodeA] = await getInstalledAppInstances(nodeA);
       const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
@@ -221,7 +221,7 @@ describe("Node method follows spec - install balance refund", () => {
     );
 
     await new Promise(async res => {
-      nodeB.once(NODE_EVENTS.PROPOSE_INSTALL, data => res(data));
+      nodeB.once("PROPOSE_INSTALL_EVENT", data => res(data));
       await nodeA.rpcRouter.dispatch({
         id: Date.now(),
         methodName: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
@@ -239,7 +239,7 @@ describe("Node method follows spec - install balance refund", () => {
     );
 
     await new Promise(async res => {
-      nodeB.once(NODE_EVENTS.PROPOSE_INSTALL, data => res(data));
+      nodeB.once("PROPOSE_INSTALL_EVENT", data => res(data));
       await nodeA.rpcRouter.dispatch({
         id: Date.now(),
         methodName: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
@@ -251,7 +251,7 @@ describe("Node method follows spec - install balance refund", () => {
   });
 
   it("install does not error if already installed", async done => {
-    nodeB.on(NODE_EVENTS.INSTALL, async () => {
+    nodeB.on("INSTALL_EVENT", async () => {
       const [appInstanceNodeA] = await getInstalledAppInstances(nodeA);
       const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
       expect(appInstanceNodeA).toBeDefined();
@@ -266,7 +266,7 @@ describe("Node method follows spec - install balance refund", () => {
   });
 
   it("can uninstall with no changes", async done => {
-    nodeB.on(NODE_EVENTS.INSTALL, async () => {
+    nodeB.on("INSTALL_EVENT", async () => {
       await rescindDepositRights(nodeB, multisigAddress);
       const appInstancesNodeA = await getInstalledAppInstances(nodeA);
       const appInstancesNodeB = await getInstalledAppInstances(nodeB);
