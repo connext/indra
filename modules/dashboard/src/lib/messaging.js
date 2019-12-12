@@ -1,6 +1,13 @@
 import { MessagingServiceFactory } from "@connext/messaging";
 import uuid from "uuid";
+import { Wallet } from "ethers";
+import { arrayify } from "ethers/utils";
+import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
+
 import { stringify } from "./utils";
+
+// TODO: import from connext/types
+const CF_PATH = "m/44'/60'/0'/25446";
 
 const NATS_ATTEMPTS = 90_000;
 const NATS_TIMEOUT = 5_000;
@@ -14,7 +21,12 @@ export default class AdminMessaging {
       messagingUrl, // nodeUrl
     });
     this.messaging = messagingFactory.createService("messaging");
-    this.token = token;
+    const mnemonic = localStorage.getItem("mnemonic");
+    const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
+    this.xpub = hdNode.neuter().extendedKey;
+    this.signer = new Wallet(hdNode.derivePath("0"));
+    console.log(`address: ${this.signer.address}`);
+    console.log(`xpub: ${this.xpub}`);
   }
 
   ///////////////////////////////////////
@@ -62,18 +74,29 @@ export default class AdminMessaging {
   }
 
   async getLinkedTransferByPaymentId(paymentId) {
-    return await this.send("get-linked-transfer-by-payment-id", {
+    return await this.send(`transfer.fetch-linked.${this.xpub}`, {
       paymentId,
     });
+  }
+
+  assertAuthToken(): void {
+    if (!this.signer) {
+      throw new Error(
+        `Must have instantiated a channel router (ie a signing thing) before setting auth token`,
+      );
+    }
+    if (!this.token) {
+      this.token = this.getAuthToken();
+    }
   }
 
   async getAuthToken() {
     return new Promise(
       async (resolve: any, reject: any): Promise<any> => {
         const nonce = await this.send("auth.getNonce", {
-          address: this.channelRouter.signerAddress,
+          address: this.signer.address,
         });
-        const sig = await this.channelRouter.signMessage(nonce);
+        const sig = await this.signer.signMessage(arrayify(nonce));
         const token = `${nonce}:${sig}`;
         return resolve(token);
       },

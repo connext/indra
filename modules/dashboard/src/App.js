@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
-import "./App.css";
+import { Wallet } from "ethers";
 import { BrowserRouter as Router, Route } from "react-router-dom";
+
+import "./App.css";
 import Home from "./components/Home";
 import Debug from "./components/Debug";
 import Stats from "./components/Stats";
@@ -14,8 +16,18 @@ const env = {
   urlPrefix: process.env.PUBLIC_URL || "",
 };
 
+//env.nodeUrl = "wss://indra.connext.network/api/messaging";
+//env.authToken = "foo";
+
 const App = () => {
   const [messaging, setMessaging] = useState(null);
+
+  // If no mnemonic, create one and save to local storage
+  let mnemonic = localStorage.getItem("mnemonic");
+  if (!mnemonic) {
+    mnemonic = Wallet.createRandom().mnemonic;
+    localStorage.setItem("mnemonic", mnemonic);
+  }
 
   useEffect(() => {
     (async () => {

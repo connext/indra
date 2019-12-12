@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Grid, Typography, styled, Button, CircularProgress } from "@material-ui/core";
+import { HashZero } from "ethers/constants";
 
 const TopGrid = styled(Grid)({
   display: "flex",
@@ -35,7 +36,7 @@ const StatsSummary = ({ classes, messaging }) => {
   const [channelTotal, setChannelTotal] = useState(0);
   const [nodeTotal, setNodeTotal] = useState(0);
   const [allTransfers, setAllTransfers] = useState(null);
-  const [, setAverageTransfer] = useState(0);
+  const [averageTransfer, setAverageTransfer] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState(null);
 
@@ -47,6 +48,8 @@ const StatsSummary = ({ classes, messaging }) => {
 
   const onRefresh = async () => {
     console.log("refreshing!");
+    const res = await messaging.getLinkedTransferByPaymentId(HashZero);
+    console.log(res);
     await getChannels();
     await getTransfers();
   };
@@ -179,6 +182,9 @@ const StatsSummary = ({ classes, messaging }) => {
 
           <StatTypography>
             total user balances: {JSON.stringify(channelTotal / 1000000000000000000)}
+          </StatTypography>
+          <StatTypography>
+            average transfer: {averageTransfer}
           </StatTypography>
           <StatTypography >
             total node balances: {JSON.stringify(nodeTotal / 1000000000000000000)}
