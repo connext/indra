@@ -14,7 +14,7 @@ export default class GetAppInstancesController extends NodeController {
   public executeMethod = super.executeMethod;
 
   protected async executeMethodImplementation(
-    requestHandler: RequestHandler,
+    requestHandler: RequestHandler
   ): Promise<Node.GetAppInstancesResult> {
     const { store } = requestHandler;
 
@@ -23,11 +23,13 @@ export default class GetAppInstancesController extends NodeController {
     const appInstances = Array.from(channels.values()).reduce(
       (acc: AppInstanceJson[], channel: StateChannel) => {
         acc.push(
-          ...Array.from(channel.appInstances.values()).map(appInstance => appInstance.toJson()),
+          ...Array.from(channel.appInstances.values()).map(appInstance =>
+            appInstance.toJson()
+          )
         );
         return acc;
       },
-      [],
+      []
     );
 
     return { appInstances };
