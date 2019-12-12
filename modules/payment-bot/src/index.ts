@@ -214,14 +214,14 @@ process.on("unhandledRejection", (e: any): any => {
     console.log(`Attempting to uninstall app ${config.uninstall}`);
     await client.uninstallApp(config.uninstall);
     console.log(`Successfully uninstalled ${config.uninstall}`);
-    console.log(`Installed apps: ${await client.getAppInstances()}`);
+    console.log(`Installed apps: ${await client.getAppInstances(client.multisigAddress)}`);
   }
 
   if (config.uninstallVirtual) {
     console.log(`Attempting to uninstall virtual app ${config.uninstallVirtual}`);
     await client.uninstallVirtualApp(config.uninstallVirtual);
     console.log(`Successfully uninstalled ${config.uninstallVirtual}`);
-    console.log(`Installed apps: ${await client.getAppInstances()}`);
+    console.log(`Installed apps: ${await client.getAppInstances(client.multisigAddress)}`);
   }
 
   if (config.restore) {
