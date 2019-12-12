@@ -219,6 +219,14 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     ...opts, // use any provided opts by default
   });
 
+  // 12/11/2019 restore client state if state channel has no
+  // proxy factory address
+  const { data: sc } = await client.getStateChannel();
+  if (!sc.proxyFactoryAddress) {
+    log.debug(`No proxy factory address found, restoring client state`);
+    await client.restoreState();
+  }
+
   try {
     await client.getFreeBalance();
   } catch (e) {
@@ -652,8 +660,8 @@ export class ConnextClient implements IConnextClient {
 
   ///////////////////////////////////
   // PROVIDER/ROUTER METHODS
-  public getState = async (): Promise<CFCoreTypes.GetStateResult> => {
-    return await this.channelRouter.getState(this.multisigAddress);
+  public getStateChannel = async (): Promise<CFCoreTypes.GetStateChannelResult> => {
+    return await this.channelRouter.getStateChannel();
   };
 
   public providerDeposit = async (
@@ -691,13 +699,11 @@ export class ConnextClient implements IConnextClient {
     );
   };
 
-  // TODO: under what conditions will this fail?
   public getAppInstances = async (): Promise<AppInstanceJson[]> => {
     // TODO
     return (await this.channelRouter.getAppInstances()).appInstances;
   };
 
-  // TODO: under what conditions will this fail?
   public getFreeBalance = async (
     assetId: string = AddressZero,
   ): Promise<CFCoreTypes.GetFreeBalanceStateResult> => {
@@ -897,18 +903,13 @@ export class ConnextClient implements IConnextClient {
   // NODE METHODS
 
   public verifyAppSequenceNumber = async (): Promise<any> => {
-    const { data: sc } = await this.channelRouter.getStateChannel();
-    let appSequenceNumber: number;
-    try {
-      appSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
-    } catch (e) {
-      if (e.message.includes("There are no installed AppInstances in this StateChannel")) {
-        appSequenceNumber = 0;
-      } else {
-        throw e;
-      }
-    }
-    return await this.node.verifyAppSequenceNumber(appSequenceNumber);
+    const { data: sc } = await this.getStateChannel();
+    const [appId, appJson] = sc.appInstances.reduce((prev, curr) => {
+      const [prevId, prevJson] = prev;
+      const [currId, currJson] = curr;
+      return currJson.appSeqNo > prevJson.appSeqNo ? curr : prev;
+    });
+    return await this.node.verifyAppSequenceNumber(appJson.appSeqNo);
   };
 
   public reclaimPendingAsyncTransfers = async (): Promise<void> => {
