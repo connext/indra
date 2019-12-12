@@ -21,63 +21,18 @@ import {
   Store,
 } from "./types";
 
+type KeyGen = (index: string) => Promise<string>;
+
 interface EthProviderSetup {
   ethProvider: providers.JsonRpcProvider;
   network: utils.Network;
 }
-
-export const setupEthProvider = async (ethProviderUrl: string): Promise<EthProviderSetup> => {
-  const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
-  const network = await ethProvider.getNetwork();
-
-  // special case for ganache
-  if (network.chainId === 4447) {
-    network.name = "ganache";
-    // Enforce using provided signer, not via RPC
-    ethProvider.getSigner = (addressOrIndex?: string | number): any => {
-      throw { code: "UNSUPPORTED_OPERATION" };
-    };
-  }
-
-  return { ethProvider, network };
-};
-
-export const createMessagingService = async (
-  nodeUrl: string,
-  logLevel: number,
-): Promise<IMessagingService> => {
-  const messagingFactory = new MessagingServiceFactory({
-    logLevel,
-    messagingUrl: nodeUrl,
-  });
-  const messaging = messagingFactory.createService("messaging");
-  await messaging.connect();
-  return messaging;
-};
 
 interface ServiceSetup {
   messaging: IMessagingService;
   node: NodeApiClient;
   config: GetConfigResponse;
 }
-
-export const setupServices = async (
-  nodeUrl: string,
-  log: Logger,
-  logLevel: number,
-): Promise<ServiceSetup> => {
-  // create a messaging service client
-  log.debug(`Creating messaging service client (logLevel: ${logLevel})`);
-  const messaging = await createMessagingService(nodeUrl, logLevel);
-
-  // create a new node api instance
-  const node = new NodeApiClient({ logLevel, messaging });
-  const config = await node.config();
-  log.debug(`Node provided config: ${stringify(config)}`);
-  return { messaging, node, config };
-};
-
-type KeyGen = (index: string) => Promise<string>;
 
 interface ChannelProviderOptions {
   keyGen?: KeyGen;
@@ -96,7 +51,52 @@ interface ChannelProviderSetup {
   store: Store;
 }
 
-export const setupChannelProvider = async (
+const setupEthProvider = async (ethProviderUrl: string): Promise<EthProviderSetup> => {
+  const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
+  const network = await ethProvider.getNetwork();
+
+  // special case for ganache
+  if (network.chainId === 4447) {
+    network.name = "ganache";
+    // Enforce using provided signer, not via RPC
+    ethProvider.getSigner = (addressOrIndex?: string | number): any => {
+      throw { code: "UNSUPPORTED_OPERATION" };
+    };
+  }
+
+  return { ethProvider, network };
+};
+
+const createMessagingService = async (
+  nodeUrl: string,
+  logLevel: number,
+): Promise<IMessagingService> => {
+  const messagingFactory = new MessagingServiceFactory({
+    logLevel,
+    messagingUrl: nodeUrl,
+  });
+  const messaging = messagingFactory.createService("messaging");
+  await messaging.connect();
+  return messaging;
+};
+
+const setupServices = async (
+  nodeUrl: string,
+  log: Logger,
+  logLevel: number,
+): Promise<ServiceSetup> => {
+  // create a messaging service client
+  log.debug(`Creating messaging service client (logLevel: ${logLevel})`);
+  const messaging = await createMessagingService(nodeUrl, logLevel);
+
+  // create a new node api instance
+  const node = new NodeApiClient({ logLevel, messaging });
+  const config = await node.config();
+  log.debug(`Node provided config: ${stringify(config)}`);
+  return { messaging, node, config };
+};
+
+const setupChannelProvider = async (
   ethProvider: providers.JsonRpcProvider,
   log: Logger,
   logLevel: number,
@@ -174,7 +174,7 @@ export const setupChannelProvider = async (
   return { node, messaging, channelProvider, config, keyGen, store };
 };
 
-export const setupMultisigAddress = async (
+const setupMultisigAddress = async (
   node: NodeApiClient,
   channelProvider: ChannelProvider,
   log: Logger,
