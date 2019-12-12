@@ -10,6 +10,8 @@ import {
   ChannelProviderConfig,
   makeChecksum,
   makeChecksumOrEthAddress,
+  RescindDepositRightsParameters,
+  RescindDepositRightsResponse,
   RpcConnection,
   RpcType,
   Store,
@@ -71,12 +73,18 @@ export class ChannelRouter {
 
   ///////////////////////////////////////////////
   ///// LISTENER METHODS
-  public on = (event: string, listener: (...args: any[]) => void): RpcConnection => {
+  public on = (
+    event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
+    listener: (...args: any[]) => void,
+  ): RpcConnection => {
     this.connection.on(event, listener);
     return this.connection;
   };
 
-  public once = (event: string, listener: (...args: any[]) => void): RpcConnection => {
+  public once = (
+    event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
+    listener: (...args: any[]) => void,
+  ): RpcConnection => {
     this.connection.once(event, listener);
     return this.connection;
   };
@@ -241,10 +249,12 @@ export class ChannelRouter {
     } as CFCoreTypes.UninstallParams);
   };
 
-  public rescindDepositRights = async (assetId: string): Promise<CFCoreTypes.DepositResult> => {
+  public rescindDepositRights = async (
+    params: RescindDepositRightsParameters,
+  ): Promise<RescindDepositRightsResponse> => {
     return await this._send(CFCoreTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS, {
       multisigAddress: this.multisigAddress,
-      tokenAddress: assetId,
+      tokenAddress: params.assetId,
     } as CFCoreTypes.RescindDepositRightsParams);
   };
 

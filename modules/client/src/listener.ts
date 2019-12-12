@@ -29,7 +29,7 @@ import { appProposalValidation } from "./validation/appProposals";
 
 // TODO: index of connext events only?
 type CallbackStruct = {
-  [index in keyof typeof CFCoreTypes.EventName]: (data: any) => Promise<any> | void;
+  [index in CFCoreTypes.EventName]: (data: any) => Promise<any> | void;
 };
 
 export class ConnextListener extends EventEmitter {
@@ -40,34 +40,31 @@ export class ConnextListener extends EventEmitter {
   // TODO: add custom parsing functions here to convert event data
   // to something more usable?
   private defaultCallbacks: CallbackStruct = {
-    COUNTER_DEPOSIT_CONFIRMED: (msg: DepositConfirmationMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.COUNTER_DEPOSIT_CONFIRMED, msg.data);
+    CREATE_CHANNEL_EVENT: (msg: CreateChannelMessage): void => {
+      this.emitAndLog("CREATE_CHANNEL_EVENT", msg.data);
     },
-    CREATE_CHANNEL: (msg: CreateChannelMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.CREATE_CHANNEL, msg.data);
+    DEPOSIT_CONFIRMED_EVENT: async (msg: DepositConfirmationMessage): Promise<void> => {
+      this.emitAndLog("DEPOSIT_CONFIRMED_EVENT", msg.data);
     },
-    DEPOSIT_CONFIRMED: async (msg: DepositConfirmationMessage): Promise<void> => {
-      this.emitAndLog(CFCoreTypes.EventName.DEPOSIT_CONFIRMED, msg.data);
+    DEPOSIT_FAILED_EVENT: (msg: DepositFailedMessage): void => {
+      this.emitAndLog("DEPOSIT_FAILED_EVENT", msg.data);
     },
-    DEPOSIT_FAILED: (msg: DepositFailedMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.DEPOSIT_FAILED, msg.data);
-    },
-    DEPOSIT_STARTED: (msg: DepositStartedMessage): void => {
+    DEPOSIT_STARTED_EVENT: (msg: DepositStartedMessage): void => {
       const { value, txHash } = msg.data;
       this.log.info(`deposit for ${value.toString()} started. hash: ${txHash}`);
-      this.emitAndLog(CFCoreTypes.EventName.DEPOSIT_STARTED, msg.data);
+      this.emitAndLog("DEPOSIT_STARTED_EVENT", msg.data);
     },
-    INSTALL: (msg: InstallMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.INSTALL, msg.data);
+    INSTALL_EVENT: (msg: InstallMessage): void => {
+      this.emitAndLog("INSTALL_EVENT", msg.data);
     },
     // TODO: make cf return app instance id and app def?
-    INSTALL_VIRTUAL: (msg: InstallVirtualMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.INSTALL_VIRTUAL, msg.data);
+    INSTALL_VIRTUAL_EVENT: (msg: InstallVirtualMessage): void => {
+      this.emitAndLog("INSTALL_VIRTUAL_EVENT", msg.data);
     },
-    PROPOSE_INSTALL: async (msg: ProposeMessage): Promise<void> => {
+    PROPOSE_INSTALL_EVENT: async (msg: ProposeMessage): Promise<void> => {
       // validate and automatically install for the known and supported
       // applications
-      this.emitAndLog(CFCoreTypes.EventName.PROPOSE_INSTALL, msg.data);
+      this.emitAndLog("PROPOSE_INSTALL_EVENT", msg.data);
       // check based on supported applications
       // matched app, take appropriate default actions
       const matchedResult = await this.matchAppInstance(msg);
@@ -105,36 +102,33 @@ export class ConnextListener extends EventEmitter {
       return;
     },
     PROTOCOL_MESSAGE_EVENT: (msg: NodeMessageWrappedProtocolMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.PROTOCOL_MESSAGE_EVENT, msg.data);
+      this.emitAndLog("PROTOCOL_MESSAGE_EVENT", msg.data);
     },
-    REJECT_INSTALL: (msg: RejectProposalMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.REJECT_INSTALL, msg.data);
+    REJECT_INSTALL_EVENT: (msg: RejectProposalMessage): void => {
+      this.emitAndLog("REJECT_INSTALL_EVENT", msg.data);
     },
-    REJECT_INSTALL_VIRTUAL: (msg: RejectInstallVirtualMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.REJECT_INSTALL_VIRTUAL, msg.data);
+    UNINSTALL_EVENT: (msg: UninstallMessage): void => {
+      this.emitAndLog("UNINSTALL_EVENT", msg.data);
     },
-    UNINSTALL: (msg: UninstallMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.UNINSTALL, msg.data);
+    UNINSTALL_VIRTUAL_EVENT: (msg: UninstallVirtualMessage): void => {
+      this.emitAndLog("UNINSTALL_VIRTUAL_EVENT", msg.data);
     },
-    UNINSTALL_VIRTUAL: (msg: UninstallVirtualMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.UNINSTALL_VIRTUAL, msg.data);
+    UPDATE_STATE_EVENT: (msg: UpdateStateMessage): void => {
+      this.emitAndLog("UPDATE_STATE_EVENT", msg.data);
     },
-    UPDATE_STATE: (msg: UpdateStateMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.UPDATE_STATE, msg.data);
+    WITHDRAWAL_CONFIRMED_EVENT: (msg: WithdrawConfirmationMessage): void => {
+      this.emitAndLog("WITHDRAWAL_CONFIRMED_EVENT", msg.data);
     },
-    WITHDRAWAL_CONFIRMED: (msg: WithdrawConfirmationMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED, msg.data);
+    WITHDRAWAL_FAILED_EVENT: (msg: WithdrawFailedMessage): void => {
+      this.emitAndLog("WITHDRAWAL_FAILED_EVENT", msg.data);
     },
-    WITHDRAWAL_FAILED: (msg: WithdrawFailedMessage): void => {
-      this.emitAndLog(CFCoreTypes.EventName.WITHDRAWAL_FAILED, msg.data);
-    },
-    WITHDRAWAL_STARTED: (msg: WithdrawStartedMessage): void => {
+    WITHDRAWAL_STARTED_EVENT: (msg: WithdrawStartedMessage): void => {
       const {
         params: { amount },
         txHash,
       } = msg.data;
       this.log.info(`withdrawal for ${amount.toString()} started. hash: ${txHash}`);
-      this.emitAndLog(CFCoreTypes.EventName.WITHDRAWAL_STARTED, msg.data);
+      this.emitAndLog("WITHDRAWAL_STARTED_EVENT", msg.data);
     },
   };
 
@@ -179,7 +173,7 @@ export class ConnextListener extends EventEmitter {
 
   public registerDefaultListeners = (): void => {
     Object.entries(this.defaultCallbacks).forEach(([event, callback]: any): any => {
-      this.channelRouter.on(CFCoreTypes.EventName[event], callback);
+      this.channelRouter.on(CFCoreTypes.EventNames[event], callback);
     });
 
     this.channelRouter.on(
@@ -209,7 +203,7 @@ export class ConnextListener extends EventEmitter {
 
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
     const protocol =
-      event === CFCoreTypes.EventName.PROTOCOL_MESSAGE_EVENT
+      event === CFCoreTypes.EventNames.PROTOCOL_MESSAGE_EVENT
         ? data.data
           ? data.data.protocol
           : data.protocol

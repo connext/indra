@@ -12,10 +12,14 @@ import { AppInstanceJson, CFCoreTypes } from "./cf";
 import { CFCoreChannel, ChannelAppSequences, ChannelState, PaymentProfile } from "./channel";
 import { ChannelProvider, ChannelProviderConfig } from "./channelProvider";
 import {
+  CheckDepositRightsParameters,
+  CheckDepositRightsResponse,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
   DepositParameters,
   RequestDepositRightsParameters,
+  RescindDepositRightsParameters,
+  RescindDepositRightsResponse,
   ResolveConditionParameters,
   ResolveConditionResponse,
   ResolveLinkedTransferResponse,
@@ -79,7 +83,7 @@ export interface IConnextClient {
   // CORE CHANNEL METHODS
   deposit(params: DepositParameters): Promise<ChannelState>;
   swap(params: SwapParameters): Promise<CFCoreChannel>;
-  transfer(params: TransferParameters): Promise<CFCoreChannel>;
+  transfer(params: TransferParameters): Promise<ConditionalTransferResponse>;
   withdraw(params: WithdrawParameters): Promise<ChannelState>;
   resolveCondition(params: ResolveConditionParameters): Promise<ResolveConditionResponse>;
   conditionalTransfer(params: ConditionalTransferParameters): Promise<ConditionalTransferResponse>;
@@ -88,7 +92,10 @@ export interface IConnextClient {
   requestDepositRights(
     params: RequestDepositRightsParameters,
   ): Promise<CFCoreTypes.RequestDepositRightsResult>;
-  rescindDepositRights(assetId: string): Promise<CFCoreTypes.DepositResult>;
+  rescindDepositRights(
+    params: RescindDepositRightsParameters,
+  ): Promise<RescindDepositRightsResponse>;
+  checkDepositRights(params: CheckDepositRightsParameters): Promise<CheckDepositRightsResponse>;
 
   ///////////////////////////////////
   // NODE EASY ACCESS METHODS

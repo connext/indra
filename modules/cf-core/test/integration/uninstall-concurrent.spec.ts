@@ -51,11 +51,11 @@ describe("Node method follows spec - uninstall", () => {
         parseEther("2") // We are depositing in 2 and use 1 for each concurrent app
       );
 
-      nodeB.on(NODE_EVENTS.PROPOSE_INSTALL, (msg: ProposeMessage) => {
+      nodeB.on("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
         makeInstallCall(nodeB, msg.data.appInstanceId);
       });
 
-      nodeA.on(NODE_EVENTS.INSTALL, (msg: InstallMessage) => {
+      nodeA.on("INSTALL_EVENT", (msg: InstallMessage) => {
         appIds.push(msg.data.params.appInstanceId);
       });
 
@@ -80,7 +80,7 @@ describe("Node method follows spec - uninstall", () => {
       nodeA.rpcRouter.dispatch(constructUninstallRpc(appIds[1]));
 
       // NOTE: nodeA does not ever emit this event
-      nodeB.on(NODE_EVENTS.UNINSTALL, (msg: UninstallMessage) => {
+      nodeB.on("UNINSTALL_EVENT", (msg: UninstallMessage) => {
         expect(appIds.includes(msg.data.appInstanceId)).toBe(true);
         uninstalledApps += 1;
         if (uninstalledApps === 2) done();

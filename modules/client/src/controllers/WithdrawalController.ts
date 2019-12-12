@@ -35,7 +35,7 @@ export class WithdrawalController extends AbstractController {
     let transaction: TransactionResponse | undefined;
     try {
       this.log.info(`Calling this.connext.rescindDepositRights before withdrawal for ${assetId}`);
-      await this.connext.rescindDepositRights(assetId);
+      await this.connext.rescindDepositRights({ assetId });
       if (!userSubmitted) {
         this.log.info(`Calling ${CFCoreTypes.RpcMethodName.WITHDRAW_COMMITMENT}`);
         const withdrawResponse = await this.connext.withdrawCommitment(amount, assetId, recipient);
@@ -104,24 +104,24 @@ export class WithdrawalController extends AbstractController {
   ////// Listener registration/deregistration
   private registerListeners(): void {
     this.listener.registerCfListener(
-      CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED,
+      CFCoreTypes.EventNames.WITHDRAWAL_CONFIRMED_EVENT as CFCoreTypes.EventName,
       this.withdrawConfirmedCallback,
     );
 
     this.listener.registerCfListener(
-      CFCoreTypes.EventName.WITHDRAWAL_FAILED,
+      CFCoreTypes.EventNames.WITHDRAWAL_FAILED_EVENT as CFCoreTypes.EventName,
       this.withdrawFailedCallback,
     );
   }
 
   private removeListeners(): void {
     this.listener.removeCfListener(
-      CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED,
+      CFCoreTypes.EventNames.WITHDRAWAL_CONFIRMED_EVENT as CFCoreTypes.EventName,
       this.withdrawConfirmedCallback,
     );
 
     this.listener.removeCfListener(
-      CFCoreTypes.EventName.WITHDRAWAL_FAILED,
+      CFCoreTypes.EventNames.WITHDRAWAL_FAILED_EVENT as CFCoreTypes.EventName,
       this.withdrawFailedCallback,
     );
   }

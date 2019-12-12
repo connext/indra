@@ -142,16 +142,6 @@ workflows:
                - master
                - staging
 
-      - push-latest-images:
-          filters:
-            branches:
-              only: staging
-          requires:
-            - test-node
-            - test-ui
-            - test-bot
-            - test-cf
-
       - push-prod-images:
           filters:
             branches:
@@ -161,10 +151,6 @@ workflows:
             - test-ui
             - test-bot
             - test-cf
-
-      - deploy-staging:
-          requires:
-            - push-latest-images
 
       - deploy-prod:
           requires:

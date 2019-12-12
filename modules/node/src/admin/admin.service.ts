@@ -312,6 +312,9 @@ export class AdminService {
       await fixProxyFactoryInCfCoreRecord(repoPath, correctProxy);
       fixedChannels.push(channel.multisigAddress);
     }
+    logger.log(
+      `Fixed ${fixedChannels.length} channels, ${stillBrokenChannels.length} still broken.`,
+    );
 
     return {
       fixedChannels,
