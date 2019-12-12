@@ -1,6 +1,5 @@
 import { jsonRpcMethod } from "rpc-server";
 
-import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { Node } from "../../../types";
 import { NodeController } from "../../controller";
@@ -11,10 +10,12 @@ export default class GetStateChannelController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: { multisigAddress: string }
-  ): Promise<{ data: StateChannel }> {
+    params: Node.GetStateChannelParams
+  ): Promise<Node.GetStateChannelResult> {
     return {
-      data: await requestHandler.store.getStateChannel(params.multisigAddress)
+      data: (
+        await requestHandler.store.getStateChannel(params.multisigAddress)
+      ).toJson()
     };
   }
 }
