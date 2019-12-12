@@ -9,8 +9,8 @@ import { stringify } from "./utils";
 // TODO: import from connext/types
 const CF_PATH = "m/44'/60'/0'/25446";
 
-const NATS_ATTEMPTS = 90_000;
-const NATS_TIMEOUT = 5_000;
+const NATS_ATTEMPTS = 2;
+const NATS_TIMEOUT = 90_000;
 const guardedSubjects = ["channel", "lock", "transfer"];
 const sendFailed = "Failed to send message";
 
