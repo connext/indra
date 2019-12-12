@@ -131,6 +131,9 @@ deployed-contracts: contracts
 	bash ops/deploy-contracts.sh ganache
 	touch $(flags)/$@
 
+build-report:
+	bash ops/build-report.sh
+
 dls:
 	@docker service ls
 	@echo "====="
