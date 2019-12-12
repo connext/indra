@@ -5,7 +5,7 @@ export const storeFactory = options => {
   const { pisaClient, wallet } = options || { pisaClient: null, wallet: null };
   return {
     get: path => {
-      const raw = localStorage.getItem(`${ConnextClientStorePrefix}:${path}`);
+      const raw = localStorage.getItem(`${path}`);
       if (raw) {
         try {
           return JSON.parse(raw);
@@ -21,11 +21,11 @@ export const storeFactory = options => {
           if (k.includes(`${path}/`)) {
             try {
               partialMatches[
-                k.replace(`${ConnextClientStorePrefix}:`, "").replace(`${path}/`, "")
+                k.replace(`${path}/`, "")
               ] = JSON.parse(localStorage.getItem(k));
             } catch {
               partialMatches[
-                k.replace(`${ConnextClientStorePrefix}:`, "").replace(`${path}/`, "")
+                k.replace(`${path}/`, "")
               ] = localStorage.getItem(k);
             }
           }
@@ -38,7 +38,7 @@ export const storeFactory = options => {
     set: async (pairs, shouldBackup) => {
       for (const pair of pairs) {
         localStorage.setItem(
-          `${ConnextClientStorePrefix}:${pair.path}`,
+          `${pair.path}`,
           typeof pair.value === "string" ? pair.value : JSON.stringify(pair.value),
         );
 
@@ -73,7 +73,7 @@ export const storeFactory = options => {
 
     reset: () => {
       // TODO: Should we also scrub legacy channel prefixes?
-      const channelPrefix = `${ConnextClientStorePrefix}:${ConnextClientStorePrefix}/`
+      const channelPrefix = `${ConnextClientStorePrefix}/`
       // get all keys in local storage that match prefix
       Object.entries(localStorage).forEach(([key, value]) => {
         if (key.includes(channelPrefix)) {
