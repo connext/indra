@@ -36,8 +36,10 @@ my_id=$(shell id -u):$(shell id -g)
 id=$(shell if [[ "`uname`" == "Darwin" ]]; then echo 0:0; else echo $(my_id); fi)
 docker_run=docker run --name=$(project)_builder --tty --rm --volume=$(cwd):/root $(project)_builder $(id)
 
-log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%s" > $(flags)/.timestamp
-log_finish=@echo "[Makefile] => Finished building $@ in $$((`date "+%s"` - `cat $(flags)/.timestamp`)) seconds";echo "=============";echo
+startTime=$(flags)/.startTime
+totalTime=$(flags)/.totalTime
+log_start=@echo "=============";echo "[Makefile] => Start building $@"; date "+%s" > $(startTime)
+log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(startTime); echo "[Makefile] => Finished building $@ in `cat $(totalTime)` seconds";echo "=============";echo
 
 # Env setup
 $(shell mkdir -p .makeflags $(node)/dist)
@@ -51,7 +53,7 @@ all: dev prod
 dev: database node types client payment-bot indra-proxy ws-tcp-relay
 prod: database node-prod indra-proxy-prod ws-tcp-relay daicard-proxy
 
-start-headless: dev
+start-headless: database node client payment-bot
 	INDRA_UI=headless bash ops/start-dev.sh
 
 start-daicard: dev
@@ -65,7 +67,7 @@ start: start-daicard
 stop:
 	bash ops/stop.sh
 
-restart-headless: dev
+restart-headless: database node client payment-bot
 	bash ops/stop.sh
 	INDRA_UI=headless bash ops/start-dev.sh
 
@@ -129,6 +131,9 @@ deployed-contracts: contracts
 	bash ops/deploy-contracts.sh ganache
 	touch $(flags)/$@
 
+build-report:
+	bash ops/build-report.sh
+
 dls:
 	@docker service ls
 	@echo "====="
@@ -176,105 +181,105 @@ watch-node: node-modules
 builder: ops/builder.dockerfile
 	$(log_start)
 	docker build --file ops/builder.dockerfile --build-arg SOLC_VERSION=$(solc_version) --tag $(project)_builder:latest .
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 cf-adjudicator-contracts: node-modules $(shell find $(cf-adjudicator-contracts)/contracts $(cf-adjudicator-contracts)/waffle.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/cf-adjudicator-contracts && npm run build"
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 cf-apps: node-modules cf-adjudicator-contracts $(shell find $(cf-apps)/contracts $(cf-apps)/waffle.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/cf-apps && npm run build"
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 cf-core: node-modules types cf-adjudicator-contracts cf-apps cf-funding-protocol-contracts $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/cf-core && npm run build:ts"
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 cf-funding-protocol-contracts: node-modules $(shell find $(cf-funding-protocol-contracts)/contracts $(cf-funding-protocol-contracts)/waffle.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/cf-funding-protocol-contracts && npm run build"
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 cf-types: node-modules $(shell find $(cf-types)/src $(cf-types)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/cf-types && npm run build"
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 client: cf-core contracts types messaging $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 contracts: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/contracts && npm run build"
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/daicard && npm run build"
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 dashboard-prod: node-modules client $(shell find $(dashboard)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/dashboard && npm run build"
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 daicard-proxy: $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/daicard.io/prod.dockerfile --tag daicard_proxy:latest .
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 database: node-modules $(shell find $(database) $(find_options))
 	$(log_start)
 	docker build --file $(database)/db.dockerfile --tag $(project)_database:latest $(database)
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 messaging: node-modules types $(shell find $(messaging)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/messaging && npm run build"
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build"
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 node-modules: builder package.json $(shell ls modules/**/package.json)
 	$(log_start)
 	$(docker_run) "lerna bootstrap --hoist"
 	$(docker_run) "cd node_modules/eccrypto && npm run install"
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 node-prod: node $(node)/ops/prod.dockerfile $(node)/ops/entry.sh
 	$(log_start)
 	docker build --file $(node)/ops/prod.dockerfile --tag $(project)_node:latest .
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 payment-bot: node-modules client types $(shell find $(bot)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/payment-bot && npm run build"
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/indra.connext.network/dev.dockerfile --tag $(project)_proxy:dev .
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 indra-proxy-prod: daicard-prod dashboard-prod ws-tcp-relay $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/indra.connext.network/prod.dockerfile --tag $(project)_proxy:latest .
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 types: node-modules cf-types $(shell find $(types)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/types && npm run build"
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ws-tcp-relay: ops/ws-tcp-relay.dockerfile
 	$(log_start)
 	docker build --file ops/ws-tcp-relay.dockerfile --tag $(project)_relay:latest .
-	$(log_finish) && touch $(flags)/$@
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
