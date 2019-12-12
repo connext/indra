@@ -137,11 +137,12 @@ export class ChannelRouter {
     } as CFCoreTypes.GetStateParams);
   };
 
-  public getAppInstances = async (): Promise<CFCoreTypes.GetAppInstancesResult> => {
-    return await this._send(
-      CFCoreTypes.RpcMethodName.GET_APP_INSTANCES,
-      {} as CFCoreTypes.GetAppInstancesParams,
-    );
+  public getAppInstances = async (
+    multisigAddress?: string,
+  ): Promise<CFCoreTypes.GetAppInstancesResult> => {
+    return await this._send(CFCoreTypes.RpcMethodName.GET_APP_INSTANCES, {
+      multisigAddress,
+    } as CFCoreTypes.GetAppInstancesParams);
   };
 
   public getFreeBalance = async (
@@ -154,13 +155,12 @@ export class ChannelRouter {
     } as CFCoreTypes.GetFreeBalanceStateParams);
   };
 
-  public getProposedAppInstances = async (): Promise<
-    CFCoreTypes.GetProposedAppInstancesResult | undefined
-  > => {
-    return await this._send(
-      CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
-      {} as CFCoreTypes.GetProposedAppInstancesParams,
-    );
+  public getProposedAppInstances = async (
+    multisigAddress?: string,
+  ): Promise<CFCoreTypes.GetProposedAppInstancesResult | undefined> => {
+    return await this._send(CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES, {
+      multisigAddress,
+    } as CFCoreTypes.GetProposedAppInstancesParams);
   };
 
   public getProposedAppInstance = async (

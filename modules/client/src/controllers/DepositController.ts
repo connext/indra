@@ -84,7 +84,7 @@ export class DepositController extends AbstractController {
 
     // TODO: fix types!
     return {
-      apps: await this.connext.getAppInstances(),
+      apps: await this.connext.getAppInstances(this.connext.multisigAddress),
       freeBalance: await this.connext.getFreeBalance(assetId),
     } as any;
   };
