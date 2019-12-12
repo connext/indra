@@ -1,20 +1,20 @@
 import { jsonRpcMethod } from "rpc-server";
 
+import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { Node } from "../../../types";
 import { NodeController } from "../../controller";
 
-export default class GetAllChannelAddressesController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.GET_CHANNEL_ADDRESSES)
+export default class GetStateChannelController extends NodeController {
+  @jsonRpcMethod(Node.RpcMethodName.GET_STATE_CHANNEL)
   public executeMethod = super.executeMethod;
 
   protected async executeMethodImplementation(
-    requestHandler: RequestHandler
-  ): Promise<Node.GetChannelAddressesResult> {
+    requestHandler: RequestHandler,
+    params: { multisigAddress: string }
+  ): Promise<{ data: StateChannel }> {
     return {
-      multisigAddresses: [
-        ...(await requestHandler.store.getStateChannelsMap()).keys()
-      ]
+      data: await requestHandler.store.getStateChannel(params.multisigAddress)
     };
   }
 }
