@@ -414,7 +414,6 @@ export class ConnextClient implements IConnextClient {
   public restoreState = async (): Promise<void> => {
     const path = `${ConnextClientStorePrefix}/${this.publicIdentifier}/channel/${this.multisigAddress}`;
     let state;
-    state.path = path;
     try {
       state = await this.channelProvider.send(NewRpcMethodName.RESTORE_STATE, { path });
       this.log.info(`Found state to restore from store's backup: ${stringify(state.path)}`);

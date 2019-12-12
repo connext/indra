@@ -157,7 +157,6 @@ export const setupChannelProvider = async (
       store,
       xpub,
     };
-    log.debug(`Creating CFChannelProvider with options: ${stringify(cfChannelProviderOptions)}`);
     channelProvider = await createCFChannelProvider(cfChannelProviderOptions);
   } else {
     throw new Error(
