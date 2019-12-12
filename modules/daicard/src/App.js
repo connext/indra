@@ -241,7 +241,7 @@ class App extends React.Component {
       // If store has double prefixes, flush and restore
       for (const k of Object.keys(localStorage)) {
         if (k.includes(`${ConnextClientStorePrefix}:${ConnextClientStorePrefix}/`)) {
-          store && await store.reset();
+          store && (await store.reset());
           window.location.reload();
         }
       }
@@ -307,7 +307,7 @@ class App extends React.Component {
 
     console.log(`Client created successfully!`);
     console.log(` - Public Identifier: ${channel.publicIdentifier}`);
-    console.log(` - Account multisig address: ${channel.opts.multisigAddress}`);
+    console.log(` - Account multisig address: ${channel.multisigAddress}`);
     console.log(` - CF Account address: ${channel.signerAddress}`);
     console.log(` - Free balance address: ${channel.freeBalanceAddress}`);
     console.log(` - Token address: ${token.address}`);
@@ -511,7 +511,7 @@ class App extends React.Component {
           assetId: token.address.toLowerCase(),
         };
         console.log(
-          `Depositing ${depositParams.amount} tokens into channel: ${channel.opts.multisigAddress}`,
+          `Depositing ${depositParams.amount} tokens into channel: ${channel.multisigAddress}`,
         );
         const result = await channel.deposit(depositParams);
         await this.refreshBalances();
@@ -538,7 +538,7 @@ class App extends React.Component {
       }
 
       const amount = minBN([balance.onChain.ether.wad.sub(minDeposit.wad), nowMaxDeposit]);
-      console.log(`Depositing ${amount} wei into channel: ${channel.opts.multisigAddress}`);
+      console.log(`Depositing ${amount} wei into channel: ${channel.multisigAddress}`);
       const result = await channel.deposit({ amount: amount.toString() });
       await this.refreshBalances();
       console.log(`Successfully deposited ether! Result: ${JSON.stringify(result, null, 2)}`);
@@ -762,11 +762,7 @@ class App extends React.Component {
             <Route
               path="/redeem"
               render={props => (
-                <RedeemCard
-                  {...props}
-                  channel={channel}
-                  tokenProfile={this.state.tokenProfile}
-                />
+                <RedeemCard {...props} channel={channel} tokenProfile={this.state.tokenProfile} />
               )}
             />
             <Route
@@ -785,21 +781,8 @@ class App extends React.Component {
                 />
               )}
             />
-            <Route
-              path="/support"
-              render={props => (
-                <SupportCard
-                  {...props}
-                  channel={channel}
-                />
-              )}
-            />
-            <Confirmations
-              machine={machine}
-              state={state}
-              network={network}
-              state={state}
-            />
+            <Route path="/support" render={props => <SupportCard {...props} channel={channel} />} />
+            <Confirmations machine={machine} state={state} network={network} state={state} />
           </Paper>
         </Grid>
       </Router>

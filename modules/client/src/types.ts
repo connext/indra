@@ -65,6 +65,7 @@ export {
   GetChannelResponse,
   GetConfigResponse,
   IConnextClient,
+  KeyGen,
   LinkedTransferParameters,
   LinkedTransferResponse,
   LinkedTransferToRecipientParameters,

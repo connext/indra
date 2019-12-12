@@ -32,6 +32,8 @@ export type StorePair = {
   value: any;
 };
 
+export type KeyGen = (index: string) => Promise<string>;
+
 // export interface IChannelProvider {
 //   connection: RpcConnection;
 //   wallet: Wallet | undefined;

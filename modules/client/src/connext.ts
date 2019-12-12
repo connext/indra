@@ -32,7 +32,6 @@ import {
   ChannelState,
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
-  ClientOptions,
   ConditionalTransferParameters,
   ConditionalTransferResponse,
   ConnextClientStorePrefix,
@@ -44,15 +43,14 @@ import {
   GetConfigResponse,
   IConnextClient,
   InternalClientOptions,
+  KeyGen,
   makeChecksum,
   makeChecksumOrEthAddress,
   NewRpcMethodName,
   PaymentProfile,
   RequestCollateralResponse,
   RequestDepositRightsParameters,
-  RequestDepositRightsResponse,
   RescindDepositRightsParameters,
-  RescindDepositRightsResponse,
   ResolveConditionParameters,
   ResolveConditionResponse,
   ResolveLinkedTransferResponse,
@@ -89,7 +87,7 @@ export class ConnextClient implements IConnextClient {
   public token: Contract;
 
   private opts: InternalClientOptions;
-  private keyGen: (index: string) => Promise<string>;
+  private keyGen: KeyGen;
 
   private depositController: DepositController;
   private transferController: TransferController;

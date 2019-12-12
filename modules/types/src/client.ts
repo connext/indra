@@ -10,7 +10,7 @@ import {
 import { ConnextEvent } from "./basic";
 import { AppInstanceJson, CFCoreTypes } from "./cf";
 import { CFCoreChannel, ChannelAppSequences, ChannelState, PaymentProfile } from "./channel";
-import { ChannelProvider, ChannelProviderConfig, StorePair } from "./channelProvider";
+import { ChannelProvider, ChannelProviderConfig, StorePair, KeyGen } from "./channelProvider";
 import {
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
@@ -45,7 +45,7 @@ export interface ClientOptions {
   ethProviderUrl: string;
   nodeUrl?: string; // ws:// or nats:// urls are supported
   channelProvider?: ChannelProvider;
-  keyGen?: (index: string) => Promise<string>;
+  keyGen?: KeyGen;
   mnemonic?: string;
   xpub?: string;
   store?: Store;

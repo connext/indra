@@ -18,10 +18,9 @@ import {
   CreateChannelMessage,
   GetConfigResponse,
   IConnextClient,
+  KeyGen,
   Store,
 } from "./types";
-
-type KeyGen = (index: string) => Promise<string>;
 
 interface EthProviderSetup {
   ethProvider: providers.JsonRpcProvider;
