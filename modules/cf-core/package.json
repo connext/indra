@@ -1,6 +1,6 @@
 {
   "name": "@connext/cf-core",
-  "version": "1.3.4",
+  "version": "1.3.7",
   "main": "dist/src/index.js",
   "iife": "dist/src/index.iife.js",
   "types": "dist/src/index.d.ts",
@@ -19,7 +19,7 @@
   "dependencies": {
     "@connext/cf-adjudicator-contracts": "0.4.1",
     "@connext/cf-funding-protocol-contracts": "0.4.1",
-    "@connext/types": "1.3.4",
+    "@connext/types": "1.3.7",
     "ethers": "4.0.40",
     "eventemitter3": "4.0.0",
     "loglevel": "1.6.6",

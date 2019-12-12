@@ -43,9 +43,9 @@ export const getOrCreateChannel = async (): Promise<IConnextClient> => {
   });
 
   client.on(
-    CFCoreTypes.EventName.UNINSTALL_VIRTUAL,
+    "UNINSTALL_VIRTUAL_EVENT",
     async (): Promise<void> => {
-      console.log(`Bot event caught: ${CFCoreTypes.EventName.UNINSTALL_VIRTUAL}`);
+      console.log(`Bot event caught: "UNINSTALL_VIRTUAL_EVENT"`);
       logEthFreeBalance(AddressZero, await client.getFreeBalance());
       logEthFreeBalance(
         client.config.contractAddresses.Token,
@@ -55,9 +55,9 @@ export const getOrCreateChannel = async (): Promise<IConnextClient> => {
   );
 
   client.on(
-    CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED,
+    "WITHDRAWAL_CONFIRMED_EVENT",
     async (): Promise<void> => {
-      console.log(`Bot event caught: ${CFCoreTypes.EventName.WITHDRAWAL_CONFIRMED}`);
+      console.log(`Bot event caught: "WITHDRAWAL_CONFIRMED_EVENT"`);
       logEthFreeBalance(AddressZero, await client.getFreeBalance());
       logEthFreeBalance(
         client.config.contractAddresses.Token,

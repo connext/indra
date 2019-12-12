@@ -25,7 +25,8 @@ import {
   Node,
   NODE_EVENTS,
   OutcomeType,
-  SolidityValueType
+  SolidityValueType,
+  NodeEvent
 } from "../../../types";
 import { prettyPrintObject } from "../../../utils";
 import { DEPOSIT_FAILED } from "../../errors";
@@ -140,26 +141,26 @@ export async function makeDeposit(
       errors.push(e.toString());
       const failMsg: DepositFailedMessage = {
         from: publicIdentifier,
-        type: NODE_EVENTS.DEPOSIT_FAILED,
+        type: NODE_EVENTS.DEPOSIT_FAILED_EVENT as NodeEvent,
         data: { errors, params }
       };
       if (e.toString().includes("reject") || e.toString().includes("denied")) {
-        outgoing.emit(NODE_EVENTS.DEPOSIT_FAILED, failMsg);
+        outgoing.emit(NODE_EVENTS.DEPOSIT_FAILED_EVENT, failMsg);
         throw Error(`${DEPOSIT_FAILED}: ${prettyPrintObject(e)}`);
       }
 
       retryCount -= 1;
 
       if (retryCount === 0) {
-        outgoing.emit(NODE_EVENTS.DEPOSIT_FAILED, failMsg);
+        outgoing.emit(NODE_EVENTS.DEPOSIT_FAILED_EVENT, failMsg);
         throw Error(`${DEPOSIT_FAILED}: ${prettyPrintObject(e)}`);
       }
     }
   }
 
-  outgoing.emit(NODE_EVENTS.DEPOSIT_STARTED, {
+  outgoing.emit("DEPOSIT_STARTED_EVENT", {
     from: publicIdentifier,
-    type: NODE_EVENTS.DEPOSIT_STARTED,
+    type: "DEPOSIT_STARTED_EVENT",
     data: {
       value: amount,
       txHash: txResponse!.hash

@@ -7,6 +7,36 @@ on:
       - staging
 
 jobs:
+  test-ssh:
+    env:
+      KEY: $HOME/.ssh/id_rsa
+      SSH_DIR: $HOME/.ssh
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      STAGING_DOMAINNAME: staging.indra.connext.network
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: setup ssh stuff
+      run: |
+        mkdir -p $SSH_DIR
+        rm -f $KEY $SSH_DIR/known_hosts
+        touch $KEY $SSH_DIR/known_hosts
+        echo '-----BEGIN RSA PRIVATE KEY-----' >> $KEY
+        echo $SSH_KEY >> $KEY
+        echo '-----END RSA PRIVATE KEY-----' >> $KEY
+        chmod 400 $KEY
+        ssh-keygen -lf $KEY
+        ssh-keyscan -t rsa $STAGING_DOMAINNAME >> $SSH_DIR/known_hosts
+        ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$STAGING_DOMAINNAME hostname
+    - name: ssh test
+      run: |
+        ssh -i $KEY ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
+          set -e
+          echo "we're in"
+          hostname
+          exit
+        EOF
+
   test-node:
     runs-on: ubuntu-latest
     steps:
@@ -47,8 +77,8 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-    - name: push images
-      run: make push-latest
+    - run: make prod
+    - run: make push-latest
 
   push-versioned:
     env:
@@ -60,8 +90,8 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-    - name: push images
-      run: make push-versioned
+    - run: make prod
+    - run: make push-versioned
 
   deploy-staging:
     env:
@@ -79,15 +109,18 @@ jobs:
     - name: setup ssh stuff
       run: |
         mkdir -p $SSH_DIR
-        touch $KEY
+        rm -f $KEY $SSH_DIR/known_hosts
+        touch $KEY $SSH_DIR/known_hosts
         echo '-----BEGIN RSA PRIVATE KEY-----' >> $KEY
         echo $SSH_KEY >> $KEY
         echo '-----END RSA PRIVATE KEY-----' >> $KEY
         chmod 400 $KEY
+        ssh-keygen -lf $KEY
         ssh-keyscan -t rsa $STAGING_DOMAINNAME >> $SSH_DIR/known_hosts
+        ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$STAGING_DOMAINNAME hostname
     - name: deploy to staging
       run: |
-        ssh ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
+        ssh -i $KEY ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
           set -e
           git clone https://github.com/ConnextProject/indra.git || true
           cd indra
@@ -101,7 +134,9 @@ jobs:
           make restart-prod
           docker container prune -f
           docker image ls -q | xargs docker image rm || true
+          exit
         EOF
+
 
   deploy-prod:
     env:
@@ -121,16 +156,20 @@ jobs:
     - name: setup ssh stuff
       run: |
         mkdir -p $SSH_DIR
+        rm -f $KEY $SSH_DIR/known_hosts
         touch $KEY $SSH_DIR/known_hosts
         echo '-----BEGIN RSA PRIVATE KEY-----' >> $KEY
         echo $SSH_KEY >> $KEY
         echo '-----END RSA PRIVATE KEY-----' >> $KEY
         chmod 400 $KEY
+        ssh-keygen -lf $KEY
         ssh-keyscan -t rsa $RINKEBY_DOMAINNAME >> $SSH_DIR/known_hosts
         ssh-keyscan -t rsa $MAINNET_DOMAINNAME >> $SSH_DIR/known_hosts
+        ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$RINKEBY_DOMAINNAME hostname
+        ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$MAINNET_DOMAINNAME hostname
     - name: deploy to prod (rinkeby)
       run: |
-        ssh ubuntu@$RINKEBY_DOMAINNAME "bash -s" <<EOF
+        ssh -i $KEY ubuntu@$RINKEBY_DOMAINNAME "bash -s" <<EOF
           set -e
           git clone https://github.com/ConnextProject/indra.git || true
           cd indra
@@ -144,10 +183,11 @@ jobs:
           make restart-prod
           docker container prune -f
           docker image ls -q | xargs docker image rm || true
+          exit
         EOF
     - name: deploy to prod (mainnet)
       run: |
-        ssh ubuntu@$MAINNET_DOMAINNAME "bash -s" <<EOF
+        ssh -i $KEY ubuntu@$MAINNET_DOMAINNAME "bash -s" <<EOF
           set -e
           git clone https://github.com/ConnextProject/indra.git || true
           cd indra
@@ -161,4 +201,5 @@ jobs:
           make restart-prod
           docker container prune -f
           docker image ls -q | xargs docker image rm || true
+          exit
         EOF

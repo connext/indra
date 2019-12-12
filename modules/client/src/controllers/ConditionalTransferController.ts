@@ -229,7 +229,7 @@ export class ConditionalTransferController extends AbstractController {
             `indra.node.${this.connext.nodePublicIdentifier}.install.${proposeRes.appInstanceId}`,
             boundResolve,
           );
-          this.listener.on(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
+          this.listener.on(CFCoreTypes.EventNames.REJECT_INSTALL_EVENT, boundReject);
         }),
         delayAndThrow(
           CF_METHOD_TIMEOUT,
@@ -280,7 +280,7 @@ export class ConditionalTransferController extends AbstractController {
     this.connext.messaging.unsubscribe(
       `indra.node.${this.connext.nodePublicIdentifier}.install.${appId}`,
     );
-    this.listener.removeListener(CFCoreTypes.EventName.REJECT_INSTALL, boundReject);
+    this.listener.removeListener(CFCoreTypes.EventNames.REJECT_INSTALL_EVENT, boundReject);
   };
 
   // add all executors/handlers here

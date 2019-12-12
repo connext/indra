@@ -2,6 +2,7 @@ import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import { CF_PATH } from "@connext/types";
 import "core-js/stable";
 import { Contract, providers, utils } from "ethers";
+import { AddressZero } from "ethers/constants";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
@@ -190,7 +191,7 @@ export const setupMultisigAddress = async (
           30000,
         );
         channelProvider.once(
-          CFCoreTypes.EventName.CREATE_CHANNEL,
+          CFCoreTypes.EventNames.CREATE_CHANNEL_EVENT as CFCoreTypes.EventName,
           (data: CreateChannelMessage): void => {
             clearTimeout(timer);
             res(data.data);
@@ -271,8 +272,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   log.debug("Registering subscriptions");
   await client.registerSubscriptions();
 
-  // check if there is a coin refund app installed
-  await client.uninstallCoinBalanceIfNeeded();
+  // check if there is a coin refund app installed for eth and tokens
+  await client.uninstallCoinBalanceIfNeeded(AddressZero);
+  await client.uninstallCoinBalanceIfNeeded(config.contractAddresses.Token);
 
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
   log.debug("Resubmitting active withdrawals");

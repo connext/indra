@@ -8,7 +8,7 @@ import { ProtocolRunner } from "./machine";
 import ProcessQueue from "./process-queue";
 import RpcRouter from "./rpc-router";
 import { Store } from "./store";
-import { NetworkContext, Node, NODE_EVENTS, NodeEvents } from "./types";
+import { NetworkContext, Node, NODE_EVENTS, NodeEvent } from "./types";
 import { prettyPrintObject } from "./utils";
 
 /**
@@ -103,12 +103,12 @@ export class RequestHandler {
    * @param event
    * @param msg
    */
-  public async callEvent(event: NodeEvents, msg: Node.NodeMessage) {
+  public async callEvent(event: NodeEvent, msg: Node.NodeMessage) {
     const controllerExecutionMethod = this.events.get(event);
     const controllerCount = this.router.eventListenerCount(event);
 
     if (!controllerExecutionMethod && controllerCount === 0) {
-      if (event === NODE_EVENTS.DEPOSIT_CONFIRMED) {
+      if (event === "DEPOSIT_CONFIRMED_EVENT") {
         log.info(
           `No event handler for counter depositing into channel: ${JSON.stringify(
             msg,
@@ -128,7 +128,7 @@ export class RequestHandler {
     this.router.emit(event, msg);
   }
 
-  public async isLegacyEvent(event: NodeEvents) {
+  public async isLegacyEvent(event: NodeEvent) {
     return this.events.has(event);
   }
 

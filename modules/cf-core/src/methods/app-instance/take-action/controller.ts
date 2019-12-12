@@ -95,7 +95,7 @@ export default class TakeActionController extends NodeController {
 
     const msg = {
       from: publicIdentifier,
-      type: NODE_EVENTS.UPDATE_STATE,
+      type: "UPDATE_STATE_EVENT",
       data: { appInstanceId, action, newState: appInstance.state }
     } as UpdateStateMessage;
 
