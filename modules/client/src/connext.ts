@@ -486,10 +486,12 @@ export class ConnextClient implements IConnextClient {
   };
 
   public getAppInstances = async (multisigAddress?: string): Promise<AppInstanceJson[]> => {
-    // TODO
-    const { appInstances } = await await this.channelProvider.send((CFCoreTypes.RpcMethodName.GET_APP_INSTANCES, {
-      multisigAddress,
-    } as CFCoreTypes.GetAppInstancesParams);
+    const { appInstances } = await this.channelProvider.send(
+      CFCoreTypes.RpcMethodName.GET_APP_INSTANCES,
+      {
+        multisigAddress,
+      } as CFCoreTypes.GetAppInstancesParams,
+    );
     return appInstances;
   };
 
@@ -524,9 +526,7 @@ export class ConnextClient implements IConnextClient {
 
   public getProposedAppInstances = async (
     multisigAddress?: string,
-  ): Promise<
-    CFCoreTypes.GetProposedAppInstancesResult | undefined
-  > => {
+  ): Promise<CFCoreTypes.GetProposedAppInstancesResult | undefined> => {
     return await this.channelProvider.send(CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES, {
       multisigAddress,
     } as CFCoreTypes.GetProposedAppInstancesParams);
