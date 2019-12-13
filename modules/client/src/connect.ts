@@ -54,8 +54,6 @@ const setupEthProvider = async (ethProviderUrl: string): Promise<EthProviderSetu
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
   const network = await ethProvider.getNetwork();
 
-  console.log("[setupEthProvider]", "ethProviderUrl", "=>", ethProviderUrl);
-
   // special case for ganache
   if (network.chainId === 4447) {
     network.name = "ganache";
@@ -65,8 +63,6 @@ const setupEthProvider = async (ethProviderUrl: string): Promise<EthProviderSetu
     };
   }
 
-  console.log("[setupEthProvider]", "network", "=>", network);
-
   return { ethProvider, network };
 };
 
@@ -74,14 +70,12 @@ const createMessagingService = async (
   nodeUrl: string,
   logLevel: number,
 ): Promise<IMessagingService> => {
-  console.log("[createMessagingService]", "nodeUrl", "=>", nodeUrl);
   const messagingFactory = new MessagingServiceFactory({
     logLevel,
     messagingUrl: nodeUrl,
   });
   const messaging = messagingFactory.createService("messaging");
   await messaging.connect();
-  console.log("[createMessagingService]", "messaging", "=>", messaging);
   return messaging;
 };
 
@@ -97,9 +91,7 @@ const setupServices = async (
 
   // create a new node api instance
   const node = new NodeApiClient({ logLevel, messaging, channelProvider });
-  console.log("[setupServices]", "node", "=>", node);
   const config = await node.config();
-  console.log("[setupServices]", "config", "=>", config);
   log.debug(`Node provided config: ${stringify(config)}`);
   return { messaging, node, config };
 };
@@ -124,12 +116,7 @@ const setupChannelProvider = async (
 ): Promise<ChannelProviderSetup> => {
   // spread channelProviderOptions
   const { store, mnemonic } = channelProviderOptions;
-  console.log("[setupChannelProvider]", "store", "=>", store);
-  console.log("[setupChannelProvider]", "mnemonic", "=>", mnemonic);
   let { nodeUrl, xpub, keyGen } = channelProviderOptions;
-  console.log("[setupChannelProvider]", "nodeUrl", "=>", nodeUrl);
-  console.log("[setupChannelProvider]", "xpub", "=>", xpub);
-  console.log("[setupChannelProvider]", "keyGen", "=>", keyGen);
 
   // setup messaging and node api
   let messaging: IMessagingService;
@@ -139,7 +126,6 @@ const setupChannelProvider = async (
   // setup channelProvider
   let channelProvider: ChannelProvider;
 
-  console.log("[setupChannelProvider]", "providedChannelProvider", "=>", providedChannelProvider);
   if (providedChannelProvider) {
     channelProvider = providedChannelProvider;
     if (!channelProvider.config || !Object.keys(channelProvider.config)) {
@@ -185,12 +171,6 @@ const setupChannelProvider = async (
       store,
       xpub,
     };
-    console.log(
-      "[setupChannelProvider]",
-      "cfChannelProviderOptions",
-      "=>",
-      cfChannelProviderOptions,
-    );
     channelProvider = await createCFChannelProvider(cfChannelProviderOptions);
 
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
@@ -213,7 +193,6 @@ const setupMultisigAddress = async (
   log: Logger,
 ): Promise<ChannelProvider> => {
   const myChannel = await node.getChannel();
-  console.log("[setupMultisigAddress]", "myChannel", "=>", myChannel);
 
   let multisigAddress: string;
   if (!myChannel) {
@@ -240,7 +219,6 @@ const setupMultisigAddress = async (
   } else {
     multisigAddress = myChannel.multisigAddress;
   }
-  console.log("[setupMultisigAddress]", "multisigAddress", "=>", multisigAddress);
   log.debug(`multisigAddress: ${multisigAddress}`);
 
   channelProvider.multisigAddress = multisigAddress;
@@ -249,18 +227,11 @@ const setupMultisigAddress = async (
 
 export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   const { logLevel, ethProviderUrl } = opts;
-  console.log("[connect]", "ethProviderUrl", "=>", ethProviderUrl);
   const log = new Logger("ConnextConnect", logLevel);
 
   // setup ethProvider + network information
   const { ethProvider, network } = await setupEthProvider(ethProviderUrl);
 
-  console.log("[connect]", "opts.channelProvider", "=>", opts.channelProvider);
-  console.log("[connect]", "opts.keyGen", "=>", opts.keyGen);
-  console.log("[connect]", "opts.mnemonic", "=>", opts.mnemonic);
-  console.log("[connect]", "opts.nodeUrl", "=>", opts.nodeUrl);
-  console.log("[connect]", "opts.store", "=>", opts.store);
-  console.log("[connect]", "opts.xpub", "=>", opts.xpub);
   // setup channelProvider + node + messaging
   const { node, messaging, channelProvider, config, keyGen, store } = await setupChannelProvider(
     ethProvider,
@@ -281,11 +252,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
 
   // create a token contract based on the provided token
   const token = new Contract(config.contractAddresses.Token, tokenAbi, ethProvider);
-  console.log("[connect]", "token", "=>", token);
 
   // create appRegistry
   const appRegistry = await node.appRegistry();
-  console.log("[connect]", "appRegistry", "=>", appRegistry);
 
   // create the new client
   const client = new ConnextClient({

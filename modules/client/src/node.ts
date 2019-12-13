@@ -69,23 +69,11 @@ export class NodeApiClient implements INodeApiClient {
   private _channelProvider: ChannelProvider | undefined; // tslint:disable-line:variable-name
 
   constructor(opts: NodeInitializationParameters) {
-    console.log("[NodeApiClient]", "opts.messaging", "=>", opts.messaging);
     this.messaging = opts.messaging;
-    console.log("[NodeApiClient]", "this.messaging", "=>", this.messaging);
-
     this.log = new Logger("NodeApiClient", opts.logLevel);
-
-    console.log("[NodeApiClient]", "opts.userPublicIdentifier", "=>", opts.userPublicIdentifier);
     this._userPublicIdentifier = opts.userPublicIdentifier;
-    console.log("[NodeApiClient]", "this._userPublicIdentifier", "=>", this._userPublicIdentifier);
-
-    console.log("[NodeApiClient]", "opts.nodePublicIdentifier", "=>", opts.nodePublicIdentifier);
     this._nodePublicIdentifier = opts.nodePublicIdentifier;
-    console.log("[NodeApiClient]", "this._nodePublicIdentifier", "=>", this._nodePublicIdentifier);
-
-    console.log("[NodeApiClient]", "opts.channelProvider", "=>", opts.channelProvider);
     this._channelProvider = opts.channelProvider;
-    console.log("[NodeApiClient]", "this._channelProvider", "=>", this._channelProvider);
   }
 
   ////////////////////////////////////////
@@ -292,28 +280,12 @@ export class NodeApiClient implements INodeApiClient {
         `Must have instantiated a channel provider (ie a signing thing) before setting auth token`,
       );
     }
-    return new Promise(
-      async (resolve: any, reject: any): Promise<any> => {
-        console.log(
-          "[NodeApiClient]",
-          "[getAuthToken]",
-          "this.channelProvider.signerAddress",
-          "=>",
-          this.channelProvider.signerAddress,
-        );
-
-        const nonce = await this.send("auth.getNonce", {
-          address: this.channelProvider.signerAddress,
-        });
-        console.log("[NodeApiClient]", "[getAuthToken]", "nonce", "=>", nonce);
-
-        const sig = await this.channelProvider.send(NewRpcMethodName.NODE_AUTH, { message: nonce });
-        console.log("[NodeApiClient]", "[getAuthToken]", "sig", "=>", sig);
-        const token = `${nonce}:${sig}`;
-        console.log("[NodeApiClient]", "[getAuthToken]", "token", "=>", token);
-        return resolve(token);
-      },
-    );
+    const nonce = await this.send("auth.getNonce", {
+      address: this.channelProvider.signerAddress,
+    });
+    const sig = await this.channelProvider.send(NewRpcMethodName.NODE_AUTH, { message: nonce });
+    const token = `${nonce}:${sig}`;
+    return token;
   }
 
   private async send(subject: string, data?: any): Promise<any | undefined> {
