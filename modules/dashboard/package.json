@@ -9,6 +9,7 @@
     "eject": "react-scripts eject"
   },
   "dependencies": {
+    "@connext/cf-funding-protocol-contracts": "0.4.1",
     "@connext/messaging": "1.3.8",
     "@connext/types": "1.3.8",
     "@material-ui/core": "4.7.1",
