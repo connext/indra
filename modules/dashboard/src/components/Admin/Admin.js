@@ -16,11 +16,7 @@ const RootGrid = styled(Grid)({
 
 /*
  * Notes re ProxyBytecode
- * @counterfactual/cf-funding-protocol-contracts@0.0.8  apparently doesn't have any bytecode..?
- * @counterfactual/cf-funding-protocol-contracts@0.0.10 that stupid expected build folder appeared
- * @counterfactual/contracts@0.1.8 added an extra contracts folder of nesting & changed format..?
- * @counterfactual/contracts@0.1.9 removed nested contracts folder
- * order of bytecodes in historicalData: cf-funding 0.0.1 - 0.0.13, "", contracts 0.0.3 - 0.1.13
+ * the first bytecode is "", this is important bc this signals that we should use the one from the factory
  */
 
 // NOTE: edit these to scan for factory address on page load (output in console.log)
@@ -35,6 +31,7 @@ const Admin = ({ messaging }) => {
     minimumViableMultisigAddress,
     ethProvider,
     isLegacy = false,
+    toxicBytecode,
   ) => {
     const proxyFactory = new Contract(proxyFactoryAddress, ProxyFactory.abi, ethProvider);
     // Calculates xpub -> address without the last "/<index>" part of the path
@@ -48,7 +45,7 @@ const Admin = ({ messaging }) => {
         .sort((a, b) => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
     const ownerAddresses = xkeysToSortedKthAddresses(owners);
     // console.log(`Got ownerAddresses: ${JSON.stringify(ownerAddresses)}`);
-    const proxyBytecode = await proxyFactory.functions.proxyCreationCode();
+    const proxyBytecode = toxicBytecode || await proxyFactory.functions.proxyCreationCode();
     return getAddress(
       solidityKeccak256(
         ["bytes1", "address", "uint256", "bytes32"],
@@ -82,27 +79,31 @@ const Admin = ({ messaging }) => {
     const provider = getDefaultProvider("homestead");
     for (const multisig of historicalData.MinimumViableMultisigAddresses) {
       for (const factory of historicalData.ProxyFactoryAddresses) {
-        let calculated = await legacyGetCreate2MultisigAddress(
-          owners,
-          factory,
-          multisig,
-          provider,
-          true
-        );
-        console.log(`LEGACY  factory ${factory} + multisig ${multisig} => ${calculated}`);
-        if (calculated === expectedMultisig) {
-          return [true, multisig, factory];
-        }
-        calculated = await legacyGetCreate2MultisigAddress(
-          owners,
-          factory,
-          multisig,
-          provider,
-          false
-        );
-        console.log(`CURRENT Factory ${factory} + multisig ${multisig} => ${calculated}`);
-        if (calculated === expectedMultisig) {
-          return [false, multisig, factory];
+        for (const bytecode of historicalData.proxyBytecode) {
+          for (const legacy of [true, false]) {
+            const bc = bytecode.substring(0,8) || `0x000000`;
+            let calculated = await legacyGetCreate2MultisigAddress(
+              owners,
+              factory,
+              multisig,
+              provider,
+              legacy,
+              bytecode
+            );
+            console.log(
+              `factory ${factory} + multisig ${multisig} + bytecode ${bc}... + legacy ${legacy}` +
+              ` => ${calculated}`,
+            );
+            if (calculated === expectedMultisig) {
+              console.log(`MATCH DETECTED`);
+              console.log(`calculated: ${calculated}`);
+              console.log(`legacy:     ${legacy}`);
+              console.log(`multisig:   ${multisig}`);
+              console.log(`factory:    ${factory}`);
+              console.log(`bytecode:   ${bytecode}`);
+              return [legacy, multisig, factory, bytecode];
+            }
+          }
         }
       }
     }
