@@ -44,8 +44,6 @@ type ConditionalExecutors = {
 };
 
 export class ConditionalTransferController extends AbstractController {
-  private appId: string;
-
   public conditionalTransfer = async (
     params: ConditionalTransferParameters,
   ): Promise<ConditionalTransferResponse> => {
@@ -218,13 +216,13 @@ export class ConditionalTransferController extends AbstractController {
 
     const proposeRes = await this.connext.proposeInstallApp(params);
     // set app instance id
-    this.appId = proposeRes.appInstanceId;
+    const appId = proposeRes.appInstanceId;
 
     try {
       const raceRes = await Promise.race([
         new Promise((res: () => any, rej: () => any): void => {
-          boundResolve = this.resolveInstallTransfer.bind(null, res);
-          boundReject = this.rejectInstallTransfer.bind(null, rej);
+          boundResolve = this.resolveInstallTransfer.bind(null, res, appId);
+          boundReject = this.rejectInstallTransfer.bind(null, rej, appId);
           this.connext.messaging.subscribe(
             `indra.node.${this.connext.nodePublicIdentifier}.install.${proposeRes.appInstanceId}`,
             boundResolve,
@@ -236,7 +234,7 @@ export class ConditionalTransferController extends AbstractController {
           `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
         ),
       ]);
-      this.log.info(`Installed app ${this.appId}`);
+      this.log.info(`Installed app ${appId}`);
       this.log.debug(`Installed app details: ${stringify(raceRes as object)}`);
       return proposeRes.appInstanceId;
     } catch (e) {
@@ -248,14 +246,18 @@ export class ConditionalTransferController extends AbstractController {
   };
 
   // TODO: fix type of data
-  private resolveInstallTransfer = (res: (value?: unknown) => void, message: any): any => {
+  private resolveInstallTransfer = (
+    res: (value?: unknown) => void,
+    appId: string,
+    message: any,
+  ): any => {
     // TODO: why is it sometimes data vs data.data?
     const appInstance = message.data.data ? message.data.data : message.data;
 
-    if (appInstance.identityHash !== this.appId) {
+    if (appInstance.identityHash !== appId) {
       // not our app
       this.log.info(
-        `Caught INSTALL event for different app ${stringify(message)}, expected ${this.appId}`,
+        `Caught INSTALL event for different app ${stringify(message)}, expected ${appId}`,
       );
       return;
     }
@@ -263,13 +265,13 @@ export class ConditionalTransferController extends AbstractController {
     return message;
   };
 
-  // TODO: fix types of data
   private rejectInstallTransfer = (
-    rej: (reason?: any) => void,
+    rej: (reason?: string) => void,
+    appId: string,
     msg: RejectInstallVirtualMessage,
   ): any => {
     // check app id
-    if (this.appId !== msg.data.appInstanceId) {
+    if (appId !== msg.data.appInstanceId) {
       return;
     }
 
