@@ -7,29 +7,25 @@ import { GetIncorrectProxyFactoryAddress, FixIncorrectProxyFactoryAddress } from
 import { fromExtendedKey } from "ethers/utils/hdnode";
 import MinimumViableMultisig from "@connext/cf-funding-protocol-contracts/build/MinimumViableMultisig.json";
 import ProxyFactory from "@connext/cf-funding-protocol-contracts/build/ProxyFactory.json";
+import historicalData from "./historicalData";
 
 const RootGrid = styled(Grid)({
   flexGrow: 1,
   padding: "5%",
 });
 
+/*
+ * Notes re ProxyBytecode
+ * @counterfactual/cf-funding-protocol-contracts@0.0.8  apparently doesn't have any bytecode..?
+ * @counterfactual/cf-funding-protocol-contracts@0.0.10 that stupid expected build folder appeared
+ * @counterfactual/contracts@0.1.8 added an extra contracts folder of nesting & changed format..?
+ * @counterfactual/contracts@0.1.9 removed nested contracts folder
+ * order of bytecodes in historicalData: cf-funding 0.0.1 - 0.0.13, "", contracts 0.0.3 - 0.1.13
+ */
+
 // NOTE: edit these to scan for factory address on page load (output in console.log)
 const expectedMultisig = "";
 const owners = [];
-
-const HISTORICAL_MINIMUM_VIABLE_MULTISIG_ADDRESSES = [
-  "0x1284958470279156ED4Bca6fA1c012f2208c5CeB",
-  "0x35a3C667e2274448e52F02C60e45d4662B6BCbC1",
-  "0x12194a21bca6Ec9504a85ed0a27c736b27980fFf",
-];
-const HISTORICAL_PROXY_FACTORY_ADDRESSES = [
-  "0x90Bf287B6870A99E32130CED0Da8b02302a8a4dE",
-  "0xA16d9511C743d6D6177A65892DC2Eafd417BfD7A",
-  "0xc756Bf6A685573C6879D4363401940f02B4E27a1",
-  "0x6CF0c4Ab3F1e66913c0983DC0bb1202d958ABb8f",
-  "0x711C655e08aaA9081e0BDc431920507CCD96b7a0",
-  "0xF9015aA98BeBaE3e43945c48dc3fB6c0a5281986",
-];
 
 const Admin = ({ messaging }) => {
 
@@ -84,8 +80,8 @@ const Admin = ({ messaging }) => {
     console.log(`Scanning for expected multisig: ${expectedMultisig}`);
     if (!owners || !expectedMultisig) return;
     const provider = getDefaultProvider("homestead");
-    for (const multisig of HISTORICAL_MINIMUM_VIABLE_MULTISIG_ADDRESSES) {
-      for (const factory of HISTORICAL_PROXY_FACTORY_ADDRESSES) {
+    for (const multisig of historicalData.MinimumViableMultisigAddresses) {
+      for (const factory of historicalData.ProxyFactoryAddresses) {
         let calculated = await legacyGetCreate2MultisigAddress(
           owners,
           factory,
