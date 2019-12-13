@@ -1,6 +1,6 @@
 import * as connext from "@connext/client";
 import { CF_PATH, ConnextClientStorePrefix } from "@connext/types";
-import WalletConnectChannelProvider from "@connext/wc-channel-provider";
+import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
