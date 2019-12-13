@@ -219,14 +219,6 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     ...opts, // use any provided opts by default
   });
 
-  // 12/11/2019 restore client state if state channel has no
-  // proxy factory address
-  const { data: sc } = await client.getStateChannel();
-  if (!sc.proxyFactoryAddress) {
-    log.debug(`No proxy factory address found, restoring client state`);
-    await client.restoreState();
-  }
-
   try {
     await client.getFreeBalance();
   } catch (e) {
@@ -236,6 +228,14 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     } else {
       throw e;
     }
+  }
+
+  // 12/11/2019 restore client state if state channel has no
+  // proxy factory address
+  const { data: sc } = await client.getStateChannel();
+  if (!sc.proxyFactoryAddress) {
+    log.debug(`No proxy factory address found, restoring client state`);
+    await client.restoreState();
   }
 
   log.debug("Registering subscriptions");
