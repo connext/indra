@@ -428,6 +428,7 @@ export class AdminService {
   ): Promise<string> {
     const proxyFactory = new Contract(proxyFactoryAddress, ProxyFactory.abi, ethProvider);
 
+    // Calculates xpub -> address without the last "/<index>" part of the path
     const xkeysToSortedKthAddresses = (xkeys: string[]): string[] =>
       xkeys
         .map((xkey: string): string => fromExtendedKey(xkey).address)
