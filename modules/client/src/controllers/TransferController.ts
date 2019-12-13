@@ -81,8 +81,10 @@ export class TransferController extends AbstractController {
     data: any,
   ): any => {
     if (appId !== data.params.appInstanceId) {
-      this.log.info(
-        `Caught INSTALL_VIRTUAL event for different app ${stringify(data)}, expected ${appId}`,
+      this.log.warn(
+        `Caught INSTALL_VIRTUAL event for different app ${stringify(
+          data,
+        )}, expected ${appId}. This should not happen.`,
       );
       return;
     }
@@ -97,6 +99,11 @@ export class TransferController extends AbstractController {
   ): void => {
     // check app id
     if (appId !== msg.data.appInstanceId) {
+      this.log.warn(
+        `Caught INSTALL_VIRTUAL event for different app ${stringify(
+          msg,
+        )}, expected ${appId}. This should not happen.`,
+      );
       return;
     }
 

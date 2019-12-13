@@ -256,8 +256,10 @@ export class ConditionalTransferController extends AbstractController {
 
     if (appInstance.identityHash !== appId) {
       // not our app
-      this.log.info(
-        `Caught INSTALL event for different app ${stringify(message)}, expected ${appId}`,
+      this.log.warn(
+        `Caught INSTALL event for different app ${stringify(
+          message,
+        )}, expected ${appId}. This should not happen.`,
       );
       return;
     }
@@ -272,6 +274,11 @@ export class ConditionalTransferController extends AbstractController {
   ): any => {
     // check app id
     if (appId !== msg.data.appInstanceId) {
+      this.log.warn(
+        `Caught INSTALL event for different app ${stringify(
+          msg,
+        )}, expected ${appId}. This should not happen.`,
+      );
       return;
     }
 

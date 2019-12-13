@@ -85,7 +85,9 @@ export class SwapController extends AbstractController {
   private resolveInstallSwap = (res: (value?: unknown) => void, appId: string, data: any): any => {
     if (appId !== data.params.appInstanceId) {
       this.log.warn(
-        `Attempting to resolve promise for ${appId}, but got event data from ${stringify(data)}`,
+        `Attempting to resolve promise for ${appId}, but got event data from ${stringify(
+          data,
+        )}. This should not happen.`,
       );
       return;
     }
@@ -103,6 +105,11 @@ export class SwapController extends AbstractController {
     }
 
     if (appId !== appInstanceId) {
+      this.log.warn(
+        `Attempting to reject promise for ${appId}, but got event data from ${stringify(
+          msg,
+        )}. This should not happen.`,
+      );
       return;
     }
 
