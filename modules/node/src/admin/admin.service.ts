@@ -1,6 +1,12 @@
 import { StateChannel } from "@connext/cf-core";
+import MinimumViableMultisig from "@connext/cf-funding-protocol-contracts/build/MinimumViableMultisig.json";
+import ProxyFactory from "@connext/cf-funding-protocol-contracts/build/ProxyFactory.json";
 import { ConnextNodeStorePrefix, StateChannelJSON } from "@connext/types";
 import { Injectable } from "@nestjs/common";
+import { Contract } from "ethers";
+import { Provider } from "ethers/providers";
+import { getAddress, Interface, keccak256, solidityKeccak256 } from "ethers/utils";
+import { fromExtendedKey, HDNode } from "ethers/utils/hdnode";
 
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -390,7 +396,72 @@ export class AdminService {
         correctProxyFactoryAddress = addr;
         break;
       }
+      const preKeygenMultisig = await this.legacyGetCreate2MultisigAddress(
+        stateChannel.userNeuteredExtendedKeys,
+        addr,
+        minimumViableMultisigAddress,
+        ethProvider,
+      );
+      if (preKeygenMultisig === stateChannel.multisigAddress) {
+        console.warn(
+          `Found pre-keygen factory for ${stateChannel.multisigAddress}: ${preKeygenMultisig}`,
+        );
+        break;
+      }
     }
     return correctProxyFactoryAddress;
+  }
+
+  /**
+   * 12/13/2019
+   *
+   * Modified version of the getCreate2MultisigAddress util from cf-core.
+   * This one has a modified xpub -> address process.
+   * Hopefully this'll help us identify & eventually recover funds from
+   * channels that were deposited into before the keyGen change.
+   */
+  async legacyGetCreate2MultisigAddress(
+    owners: string[],
+    proxyFactoryAddress: string,
+    minimumViableMultisigAddress: string,
+    ethProvider: Provider,
+  ): Promise<string> {
+    const proxyFactory = new Contract(proxyFactoryAddress, ProxyFactory.abi, ethProvider);
+
+    const xkeyKthAddress = (xkey: string, k?: number | string): string =>
+      k ? fromExtendedKey(xkey).derivePath(k.toString()).address : fromExtendedKey(xkey).address;
+
+    const sortAddresses = (addrs: string[]): string[] =>
+      addrs.sort((a: string, b: string): number => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
+
+    const xkeysToSortedKthAddresses = (xkeys: string[], k?: number | string): string[] =>
+      sortAddresses(xkeys.map((xkey: string): string => xkeyKthAddress(xkey, k)));
+
+    const proxyBytecode = await proxyFactory.functions.proxyCreationCode();
+    return getAddress(
+      solidityKeccak256(
+        ["bytes1", "address", "uint256", "bytes32"],
+        [
+          "0xff",
+          proxyFactoryAddress,
+          solidityKeccak256(
+            ["bytes32", "uint256"],
+            [
+              keccak256(
+                // see encoding notes
+                new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+                  xkeysToSortedKthAddresses(owners),
+                ]),
+              ),
+              0,
+            ],
+          ),
+          solidityKeccak256(
+            ["bytes", "uint256"],
+            [`0x${proxyBytecode.replace("0x", "")}`, minimumViableMultisigAddress],
+          ),
+        ],
+      ).slice(-40),
+    );
   }
 }
