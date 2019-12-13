@@ -49,6 +49,12 @@ export class LockService {
                 } else {
                   logger.debug(`Failed to release the lock due to expired ttl: ${e}; `);
                   if (retVal) resolve(retVal);
+
+                  logger.error(
+                    `No return value found from task with lockName: ${lockName}, and failed to release due to expired ttl: ${e.message}`,
+                    e.stack,
+                  );
+                  reject(e);
                 }
               });
           }
