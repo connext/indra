@@ -5,7 +5,6 @@ import { fromExtendedKey } from "ethers/utils/hdnode";
 import { delayAndThrow, stringify } from "../lib";
 import { xpubToAddress } from "../lib/cfCore";
 import { CF_METHOD_TIMEOUT } from "../lib/constants";
-
 import {
   CFCoreChannel,
   CFCoreTypes,
@@ -29,8 +28,6 @@ export const calculateExchange = (amount: BigNumber, swapRate: string): BigNumbe
 };
 
 export class SwapController extends AbstractController {
-  private appId: string;
-
   public async swap(params: SwapParameters): Promise<CFCoreChannel> {
     // convert params + validate
     const { amount, toAssetId, fromAssetId, swapRate } = convert.SwapParameters(
@@ -55,12 +52,12 @@ export class SwapController extends AbstractController {
     const appInfo = this.connext.getRegisteredAppDetails("SimpleTwoPartySwapApp");
 
     // install the swap app
-    await this.swapAppInstall(amount, toAssetId, fromAssetId, swapRate, appInfo);
+    const appId = await this.swapAppInstall(amount, toAssetId, fromAssetId, swapRate, appInfo);
 
-    this.log.info(`Swap app installed! Uninstalling ${this.appId} without updating state.`);
+    this.log.info(`Swap app installed! Uninstalling without updating state.`);
 
     // if app installed, that means swap was accepted now uninstall
-    await this.connext.uninstallApp(this.appId);
+    await this.connext.uninstallApp(appId);
 
     // Sanity check to ensure swap was executed correctly
     const postSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
@@ -85,24 +82,34 @@ export class SwapController extends AbstractController {
   /////////////////////////////////
   ////// PRIVATE METHODS
   // TODO: fix type of data
-  private resolveInstallSwap = (res: (value?: unknown) => void, data: any): any => {
-    if (this.appId !== data.params.appInstanceId) {
+  private resolveInstallSwap = (res: (value?: unknown) => void, appId: string, data: any): any => {
+    if (appId !== data.params.appInstanceId) {
+      this.log.warn(
+        `Attempting to resolve promise for ${appId}, but got event data from ${stringify(
+          data,
+        )}. This should not happen.`,
+      );
       return;
     }
     res(data);
     return data;
   };
 
-  private rejectInstallSwap = (rej: any, msg: any): any => {
+  private rejectInstallSwap = (rej: (value?: string) => void, appId: string, msg: any): any => {
     // check app id
-    const appId = msg.appInstanceId || msg.data.appInstanceId;
+    const appInstanceId = msg.appInstanceId || msg.data.appInstanceId;
     if (msg.data) {
       this.log.warn(
         `This should not have this structure when emitted, strange. msg: ${stringify(msg)}`,
       );
     }
 
-    if (this.appId !== appId) {
+    if (appId !== appInstanceId) {
+      this.log.warn(
+        `Attempting to reject promise for ${appId}, but got event data from ${stringify(
+          msg,
+        )}. This should not happen.`,
+      );
       return;
     }
 
@@ -117,7 +124,7 @@ export class SwapController extends AbstractController {
     fromAssetId: string,
     swapRate: string,
     appInfo: DefaultApp,
-  ): Promise<any> => {
+  ): Promise<string> => {
     let boundResolve;
     let boundReject;
 
@@ -171,12 +178,12 @@ export class SwapController extends AbstractController {
     const res = await this.connext.proposeInstallApp(params);
 
     // set app instance id
-    this.appId = res.appInstanceId;
+    this.log.warn(`Successfully proposed appId: ${res.appInstanceId}`);
 
     await Promise.race([
-      new Promise((res: any, rej: any): any => {
-        boundReject = this.rejectInstallSwap.bind(null, rej);
-        boundResolve = this.resolveInstallSwap.bind(null, res);
+      new Promise((resolve: (value?: unknown) => void, reject: (value?: string) => void): void => {
+        boundReject = this.rejectInstallSwap.bind(null, reject, res.appInstanceId);
+        boundResolve = this.resolveInstallSwap.bind(null, resolve, res.appInstanceId);
         this.listener.on(
           CFCoreTypes.EventNames.INSTALL_EVENT as CFCoreTypes.EventName,
           boundResolve,

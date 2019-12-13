@@ -7,10 +7,14 @@ import { NodeController } from "../../controller";
 export default class GetProposedAppInstancesController extends NodeController {
   @jsonRpcMethod(Node.RpcMethodName.GET_PROPOSED_APP_INSTANCES)
   protected async executeMethodImplementation(
-    requestHandler: RequestHandler
+    requestHandler: RequestHandler,
+    params: Node.GetProposedAppInstancesParams
   ): Promise<Node.GetProposedAppInstancesResult> {
+    const { store } = requestHandler;
+    const { multisigAddress } = params;
+
     return {
-      appInstances: await requestHandler.store.getProposedAppInstances()
+      appInstances: await store.getProposedAppInstances(multisigAddress)
     };
   }
 }

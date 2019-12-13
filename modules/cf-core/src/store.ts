@@ -1,4 +1,4 @@
-import { StateChannelJSON } from "@connext/types";
+import { StateChannelJSON, AppInstanceJson } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import { solidityKeccak256 } from "ethers/utils";
 
@@ -162,11 +162,35 @@ export class Store {
   /**
    * Returns a list of proposed `AppInstanceProposals`s.
    */
-  public async getProposedAppInstances(): Promise<AppInstanceProposal[]> {
-    return [...(await this.getStateChannelsMap()).values()].reduce(
+  public async getProposedAppInstances(
+    multisigAddress?: string
+  ): Promise<AppInstanceProposal[]> {
+    const chanArray = multisigAddress
+      ? [await this.getStateChannel(multisigAddress)]
+      : [...(await this.getStateChannelsMap()).values()];
+    return chanArray.reduce(
       (lst, sc) => [...lst, ...sc.proposedAppInstances.values()],
       [] as AppInstanceProposal[]
     );
+  }
+
+  /**
+   * Returns a list of proposed `AppInstanceJson`s.
+   */
+  public async getAppInstances(
+    multisigAddress?: string
+  ): Promise<AppInstanceJson[]> {
+    const chanArray = multisigAddress
+      ? [await this.getStateChannel(multisigAddress)]
+      : [...(await this.getStateChannelsMap()).values()];
+    return chanArray.reduce((acc: AppInstanceJson[], channel: StateChannel) => {
+      acc.push(
+        ...Array.from(channel.appInstances.values()).map(appInstance =>
+          appInstance.toJson()
+        )
+      );
+      return acc;
+    }, []);
   }
 
   /**

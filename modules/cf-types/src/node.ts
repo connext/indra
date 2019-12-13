@@ -202,7 +202,9 @@ export namespace Node {
     address: string;
   };
 
-  export type GetAppInstancesParams = {};
+  export type GetAppInstancesParams = {
+    multisigAddress?: string;
+  };
 
   export type GetAppInstancesResult = {
     appInstances: AppInstanceJson[];
@@ -233,7 +235,9 @@ export namespace Node {
     };
   };
 
-  export type GetProposedAppInstancesParams = {};
+  export type GetProposedAppInstancesParams = {
+    multisigAddress?: string;
+  };
 
   export type GetProposedAppInstancesResult = {
     appInstances: AppInstanceProposal[];
