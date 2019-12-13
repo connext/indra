@@ -141,6 +141,49 @@ describe("Daicard", () => {
       });
     });
   });
+
+  describe("Deposit Again", () => {
+    it(`Should accept an Eth deposit to displayed address a second time`, () => {
+      my.deposit(depositEth);
+    });
+    it(`Should accept a token deposit to displayed address a second time`, () => {
+      my.depositToken(depositToken);
+    });
+  });
+
+  describe("Withdraw Again", () => {
+    it(`Should withdraw eth to a valid address a second time`, () => {
+      my.deposit(depositEth).then(tokensDeposited => {
+        my.getOnchainEtherBalance().then(balanceBefore => {
+          my.cashoutEther();
+          cy.resolve(my.getOnchainEtherBalance).should(balanceAfter => {
+            expect(new BN(balanceAfter)).to.be.a.bignumber.greaterThan(new BN(balanceBefore));
+          });
+        });
+      });
+    });
+
+    it(`Should withdraw tokens to a valid address a second time`, () => {
+      my.deposit(depositEth).then(tokensDeposited => {
+        my.getOnchainTokenBalance().then(balanceBefore => {
+          my.cashoutToken();
+          cy.resolve(my.getOnchainTokenBalance).should(balanceAfter => {
+            expect(new BN(balanceAfter)).to.be.a.bignumber.greaterThan(new BN(balanceBefore));
+          });
+        });
+      });
+    });
+
+    it(`Should not withdraw to an invalid address a second time`, () => {
+      my.deposit(depositEth).then(tokensDeposited => {
+        my.goToCashout();
+        cy.get('input[type="text"]')
+          .clear()
+          .type("0xabc123");
+        cy.contains("p", /invalid/i).should("exist");
+      });
+    });
+  });
 });
 
 // describe('Dashboard', () => {
