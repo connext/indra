@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { Wallet } from "ethers";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 
 import "./App.css";
@@ -55,7 +54,7 @@ const env = {
   urlPrefix: process.env.PUBLIC_URL || "",
 };
 
-//env.nodeUrl = "wss://indra.connext.network/api/messaging";
+// env.nodeUrl = "wss://indra.connext.network/api/messaging";
 // env.adminToken = "foo";
 
 const App = () => {
