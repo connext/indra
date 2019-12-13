@@ -21,7 +21,7 @@ export default class CreateChannelController extends NodeController {
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(): Promise<string[]> {
-    return [Node.RpcMethodName.CREATE_CHANNEL];
+    return [`${Node.RpcMethodName.CREATE_CHANNEL}:${Date.now().toString()}`];
   }
 
   protected async executeMethodImplementation(
