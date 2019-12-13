@@ -362,7 +362,7 @@ export class ConnextClient implements IConnextClient {
    * NOTE: should probably take assetId into account
    */
   public getBalanceRefundApp = async (assetId: string = AddressZero): Promise<AppInstanceJson> => {
-    const apps = await this.getAppInstances();
+    const apps = await this.getAppInstances(this.multisigAddress);
     const filtered = apps.filter(
       (app: AppInstanceJson) =>
         app.appInterface.addr === this.config.contractAddresses.CoinBalanceRefundApp &&
@@ -699,9 +699,9 @@ export class ConnextClient implements IConnextClient {
     );
   };
 
-  public getAppInstances = async (): Promise<AppInstanceJson[]> => {
+  public getAppInstances = async (multisigAddress?: string): Promise<AppInstanceJson[]> => {
     // TODO
-    return (await this.channelRouter.getAppInstances()).appInstances;
+    return (await this.channelRouter.getAppInstances(multisigAddress)).appInstances;
   };
 
   public getFreeBalance = async (
@@ -729,10 +729,10 @@ export class ConnextClient implements IConnextClient {
     }
   };
 
-  public getProposedAppInstances = async (): Promise<
-    CFCoreTypes.GetProposedAppInstancesResult | undefined
-  > => {
-    return await this.channelRouter.getProposedAppInstances();
+  public getProposedAppInstances = async (
+    multisigAddress?: string,
+  ): Promise<CFCoreTypes.GetProposedAppInstancesResult | undefined> => {
+    return await this.channelRouter.getProposedAppInstances(multisigAddress);
   };
 
   public getProposedAppInstance = async (
@@ -1118,7 +1118,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   private appNotInstalled = async (appInstanceId: string): Promise<string | undefined> => {
-    const apps = await this.getAppInstances();
+    const apps = await this.getAppInstances(this.multisigAddress);
     const app = apps.filter((app: AppInstanceJson): boolean => app.identityHash === appInstanceId);
     if (!app || app.length === 0) {
       return (
@@ -1136,7 +1136,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   private appInstalled = async (appInstanceId: string): Promise<string | undefined> => {
-    const apps = await this.getAppInstances();
+    const apps = await this.getAppInstances(this.multisigAddress);
     const app = apps.filter((app: AppInstanceJson): boolean => app.identityHash === appInstanceId);
     if (app.length > 0) {
       return (

@@ -18,8 +18,6 @@ import { invalidAddress, invalidXpub, notLessThanOrEqualTo, validate } from "../
 import { AbstractController } from "./AbstractController";
 
 export class TransferController extends AbstractController {
-  private appId: string;
-
   public transfer = async (params: TransferParameters): Promise<CFCoreChannel> => {
     this.log.info(`Transfer called with parameters: ${stringify(params)}`);
 
@@ -77,13 +75,17 @@ export class TransferController extends AbstractController {
   /////////////////////////////////
   ////// PRIVATE METHODS
   // TODO: fix type of data
-  private resolveInstallTransfer = (res: (value?: unknown) => void, data: any): any => {
-    if (this.appId !== data.params.appInstanceId) {
-      this.log.info(
-        `Caught INSTALL_VIRTUAL event for different app ${stringify(data)}, expected ${this.appId}`,
+  private resolveInstallTransfer = (
+    res: (value?: unknown) => void,
+    appId: string,
+    data: any,
+  ): any => {
+    if (appId !== data.params.appInstanceId) {
+      this.log.warn(
+        `Caught INSTALL_VIRTUAL event for different app ${stringify(
+          data,
+        )}, expected ${appId}. This should not happen.`,
       );
-      // TODO: do we need to recreate the handler here?
-      res();
       return;
     }
     res(data);
@@ -92,10 +94,16 @@ export class TransferController extends AbstractController {
 
   private rejectInstallTransfer = (
     rej: (reason?: string) => void,
+    appId: string,
     msg: RejectInstallVirtualMessage,
   ): void => {
     // check app id
-    if (this.appId !== msg.data.appInstanceId) {
+    if (appId !== msg.data.appInstanceId) {
+      this.log.warn(
+        `Caught INSTALL_VIRTUAL event for different app ${stringify(
+          msg,
+        )}, expected ${appId}. This should not happen.`,
+      );
       return;
     }
 
@@ -153,13 +161,13 @@ export class TransferController extends AbstractController {
     };
 
     const res = await this.connext.proposeInstallApp(params);
-    this.appId = res.appInstanceId;
+    const appId = res.appInstanceId;
 
     try {
       await Promise.race([
         new Promise((res: any, rej: any): any => {
-          boundReject = this.rejectInstallTransfer.bind(null, rej);
-          boundResolve = this.resolveInstallTransfer.bind(null, res);
+          boundReject = this.rejectInstallTransfer.bind(null, rej, appId);
+          boundResolve = this.resolveInstallTransfer.bind(null, res, appId);
           this.listener.on(
             CFCoreTypes.EventNames.INSTALL_VIRTUAL_EVENT as CFCoreTypes.EventName,
             boundResolve,

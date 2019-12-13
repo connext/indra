@@ -1,8 +1,7 @@
 import { jsonRpcMethod } from "rpc-server";
 
-import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
-import { AppInstanceJson, Node } from "../../../types";
+import { Node } from "../../../types";
 import { NodeController } from "../../controller";
 
 /**
@@ -14,9 +13,11 @@ export default class GetAppInstancesController extends NodeController {
   public executeMethod = super.executeMethod;
 
   protected async executeMethodImplementation(
-    requestHandler: RequestHandler
+    requestHandler: RequestHandler,
+    params: Node.GetAppInstancesParams
   ): Promise<Node.GetAppInstancesResult> {
     const { store } = requestHandler;
+    const { multisigAddress } = params;
 
     const channels = await store.getStateChannelsMap();
 
@@ -31,7 +32,9 @@ export default class GetAppInstancesController extends NodeController {
       },
       []
     );
-
-    return { appInstances };
+    
+    return {
+      appInstances: await store.getAppInstances(multisigAddress)
+    };
   }
 }
