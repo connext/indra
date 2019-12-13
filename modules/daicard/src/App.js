@@ -1,5 +1,6 @@
 import * as connext from "@connext/client";
 import { CF_PATH, ConnextClientStorePrefix } from "@connext/types";
+import WalletConnectChannelProvider from "@connext/wc-channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -10,7 +11,6 @@ import { PisaClient } from "pisa-client";
 import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import tokenArtifacts from "openzeppelin-solidity/build/contracts/ERC20Mintable.json";
-import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { interpret } from "xstate";
 
 import "./App.css";
@@ -270,10 +270,7 @@ class App extends React.Component {
     } else if (useWalletConnext) {
       let rpc = {};
       rpc[network.chainId] = urls.ethProviderUrl;
-      const channelProvider = new WalletConnectChannelProvider({
-        rpc,
-        chainId: network.chainId,
-      });
+      const channelProvider = new WalletConnectChannelProvider();
       console.log(`Using WalletConnect with provider: ${JSON.stringify(channelProvider, null, 2)}`);
       // register channel provider listener for logging
       channelProvider.on("error", data => {

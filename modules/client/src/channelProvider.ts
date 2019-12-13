@@ -51,14 +51,15 @@ export const createCFChannelProvider = async ({
 
 export class ChannelProvider {
   private connection: RpcConnection;
+  private store: Store;
 
   // TODO: replace this when signing keys are added!
+  private wallet: Wallet;
+
   // shouldnt really ever be used
-  private wallet: Wallet | undefined;
   private _config: ChannelProviderConfig; // tslint:disable-line:variable-name
   private _multisigAddress: string | undefined = undefined; // tslint:disable-line:variable-name
   private _signerAddress: string | undefined = undefined; // tslint:disable-line:variable-name
-  private store: Store | undefined;
 
   constructor(
     connection: RpcConnection,
@@ -145,10 +146,6 @@ export class ChannelProvider {
   ///////////////////////////////////////////////
   ///// SIGNING METHODS
   public signMessage = async (message: string): Promise<string> => {
-    if (!this.wallet) {
-      throw new Error(`Cannot sign without a wallet when using smart client`);
-    }
-    // will have a mnemonic, sign with wallet
     return await this.wallet.signMessage(arrayify(message));
   };
 
@@ -156,38 +153,18 @@ export class ChannelProvider {
   ///// STORE METHODS
 
   public get = async (path: string): Promise<any> => {
-    if (!this.store) {
-      throw new Error(
-        `Should have a defined store ref when provider type is a counterfactual node.`,
-      );
-    }
     return await this.store.get(path);
   };
 
   public set = async (pairs: StorePair[], allowDelete?: Boolean): Promise<void> => {
-    if (!this.store) {
-      throw new Error(
-        `Should have a defined store ref when provider type is a counterfactual node.`,
-      );
-    }
     return await this.store.set(pairs, allowDelete);
   };
 
   public restore = async (): Promise<StorePair[]> => {
-    if (!this.store) {
-      throw new Error(
-        `Should have a defined store ref when provider type is a counterfactual node.`,
-      );
-    }
     return await this.store.restore();
   };
 
   public reset = async (): Promise<void> => {
-    if (!this.store) {
-      throw new Error(
-        `Should have a defined store ref when provider type is a counterfactual node.`,
-      );
-    }
     return await this.store.reset();
   };
 
@@ -202,7 +179,10 @@ export class ChannelProvider {
     return state;
   };
 
-  // tslint:disable-next-line:function-name
+  ///////////////////////////////////////////////
+  ///// PRIVATE METHODS
+
+  // tslint:disable-next-line:variable-name
   private _send = async (
     methodName: CFCoreTypes.RpcMethodName,
     parameters: RpcParameters,
