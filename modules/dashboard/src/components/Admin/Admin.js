@@ -13,10 +13,15 @@ const RootGrid = styled(Grid)({
   padding: "5%",
 });
 
-const owners = [];
+// NOTE: edit these to scan for factory address on page load (output in console.log)
 const expectedMultisig = "";
+const owners = [];
 
-const MINIMUM_VIABLE_MULTISIG_ADDRESS = "0x12194a21bca6Ec9504a85ed0a27c736b27980fFf";
+const HISTORICAL_MINIMUM_VIABLE_MULTISIG_ADDRESSES = [
+  "0x1284958470279156ED4Bca6fA1c012f2208c5CeB",
+  "0x35a3C667e2274448e52F02C60e45d4662B6BCbC1",
+  "0x12194a21bca6Ec9504a85ed0a27c736b27980fFf",
+];
 const HISTORICAL_PROXY_FACTORY_ADDRESSES = [
   "0x90Bf287B6870A99E32130CED0Da8b02302a8a4dE",
   "0xA16d9511C743d6D6177A65892DC2Eafd417BfD7A",
@@ -33,13 +38,20 @@ const Admin = ({ messaging }) => {
     proxyFactoryAddress,
     minimumViableMultisigAddress,
     ethProvider,
+    isLegacy = false,
   ) => {
     const proxyFactory = new Contract(proxyFactoryAddress, ProxyFactory.abi, ethProvider);
     // Calculates xpub -> address without the last "/<index>" part of the path
     const xkeysToSortedKthAddresses = (xkeys) =>
       xkeys
-        .map((xkey) => fromExtendedKey(xkey).address)
+        .map((xkey) =>
+          isLegacy
+            ? fromExtendedKey(xkey).address
+            : fromExtendedKey(xkey).derivePath("0").address
+        )
         .sort((a, b) => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
+    const ownerAddresses = xkeysToSortedKthAddresses(owners);
+    // console.log(`Got ownerAddresses: ${JSON.stringify(ownerAddresses)}`);
     const proxyBytecode = await proxyFactory.functions.proxyCreationCode();
     return getAddress(
       solidityKeccak256(
@@ -53,7 +65,7 @@ const Admin = ({ messaging }) => {
               keccak256(
                 // see encoding notes
                 new Interface(MinimumViableMultisig.abi).functions.setup.encode([
-                  xkeysToSortedKthAddresses(owners),
+                  ownerAddresses,
                 ]),
               ),
               0,
@@ -69,21 +81,36 @@ const Admin = ({ messaging }) => {
   }
 
   const scanForFactory = async (owners, expectedMultisig) => {
+    console.log(`Scanning for expected multisig: ${expectedMultisig}`);
     if (!owners || !expectedMultisig) return;
     const provider = getDefaultProvider("homestead");
-    for (const factory of HISTORICAL_PROXY_FACTORY_ADDRESSES) {
-      const multisig = await legacyGetCreate2MultisigAddress(
-        owners,
-        factory,
-        MINIMUM_VIABLE_MULTISIG_ADDRESS,
-        provider
-      );
-      console.log(`Comparing expected ${expectedMultisig} to calculated ${multisig}`);
-      if (multisig === expectedMultisig) {
-        return multisig;
+    for (const multisig of HISTORICAL_MINIMUM_VIABLE_MULTISIG_ADDRESSES) {
+      for (const factory of HISTORICAL_PROXY_FACTORY_ADDRESSES) {
+        let calculated = await legacyGetCreate2MultisigAddress(
+          owners,
+          factory,
+          multisig,
+          provider,
+          true
+        );
+        console.log(`LEGACY  factory ${factory} + multisig ${multisig} => ${calculated}`);
+        if (calculated === expectedMultisig) {
+          return [true, multisig, factory];
+        }
+        calculated = await legacyGetCreate2MultisigAddress(
+          owners,
+          factory,
+          multisig,
+          provider,
+          false
+        );
+        console.log(`CURRENT Factory ${factory} + multisig ${multisig} => ${calculated}`);
+        if (calculated === expectedMultisig) {
+          return [false, multisig, factory];
+        }
       }
     }
-    return "oh no none match:("
+    return "oh no none match :("
   }
 
   useEffect(() => {
