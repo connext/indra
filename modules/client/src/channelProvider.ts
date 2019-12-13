@@ -55,9 +55,9 @@ export class ChannelProvider {
   // TODO: replace this when signing keys are added!
   // shouldnt really ever be used
   private wallet: Wallet | undefined;
-  private _config: ChannelProviderConfig; // tslint:disable-line: variable-name
-  private _multisigAddress: string | undefined = undefined; // tslint:disable-line: variable-name
-  private _signerAddress: string | undefined = undefined; // tslint:disable-line: variable-name
+  private _config: ChannelProviderConfig; // tslint:disable-line:variable-name
+  private _multisigAddress: string | undefined = undefined; // tslint:disable-line:variable-name
+  private _signerAddress: string | undefined = undefined; // tslint:disable-line:variable-name
   private store: Store | undefined;
 
   constructor(
@@ -67,14 +67,21 @@ export class ChannelProvider {
     authKey: any,
   ) {
     this.store = store;
+    console.log("[ChannelProvider]", "this.store", "=>", this.store);
     this.wallet = authKey ? new Wallet(authKey) : null;
+    console.log("[ChannelProvider]", "this.wallet", "=>", this.wallet);
     this.connection = connection;
+    console.log("[ChannelProvider]", "this.connection", "=>", this.connection);
     this._config = config;
+    console.log("[ChannelProvider]", "this._config", "=>", this._config);
     this._multisigAddress = config.multisigAddress;
+    console.log("[ChannelProvider]", "this._multisigAddress", "=>", this._multisigAddress);
     this._signerAddress = config.signerAddress;
+    console.log("[ChannelProvider]", "this._signerAddress", "=>", this._signerAddress);
   }
 
   public enable = async (): Promise<ChannelProviderConfig> => {
+    console.log("[ChannelProvider]", "[enable]", "this.config", "=>", this.config);
     return this.config;
   };
 
@@ -83,6 +90,8 @@ export class ChannelProvider {
     params: any = {},
   ): Promise<any> => {
     let result;
+    console.log("[ChannelProvider]", "[send]", "method", "=>", method);
+    console.log("[ChannelProvider]", "[send]", "params", "=>", params);
     switch (method) {
       case NewRpcMethodName.STORE_SET:
         result = await this.set(params.pairs);
@@ -103,31 +112,54 @@ export class ChannelProvider {
         result = await this._send(method as CFCoreTypes.RpcMethodName, params);
         break;
     }
-
+    console.log("[ChannelProvider]", "[send]", "result", "=>", result);
     return result;
   };
 
   ///////////////////////////////////////////////
   ///// GETTERS / SETTERS
   get config(): ChannelProviderConfig {
+    console.log("[ChannelProvider]", "[get config()]", "this._config", "=>", this._config);
     return this._config;
   }
 
   get multisigAddress(): string | undefined {
     const multisigAddress = this._multisigAddress || this._config.multisigAddress;
+    console.log(
+      "[ChannelProvider]",
+      "[get multisigAddress()]",
+      "multisigAddress",
+      "=>",
+      multisigAddress,
+    );
     return multisigAddress;
   }
 
   set multisigAddress(multisigAddress: string) {
+    console.log(
+      "[ChannelProvider]",
+      "[set multisigAddress()]",
+      "multisigAddress",
+      "=>",
+      multisigAddress,
+    );
     this._config.multisigAddress = multisigAddress;
     this._multisigAddress = multisigAddress;
   }
 
   get signerAddress(): string | undefined {
+    console.log(
+      "[ChannelProvider]",
+      "[get signerAddress()]",
+      "this._signerAddress",
+      "=>",
+      this._signerAddress,
+    );
     return this._signerAddress;
   }
 
   set signerAddress(signerAddress: string) {
+    console.log("[ChannelProvider]", "[set signerAddress()]", "signerAddress", "=>", signerAddress);
     this._signerAddress = signerAddress;
   }
 
@@ -203,7 +235,7 @@ export class ChannelProvider {
     return state;
   };
 
-  // tslint:disable-next-line: function-name
+  // tslint:disable-next-line:function-name
   private _send = async (
     methodName: CFCoreTypes.RpcMethodName,
     parameters: RpcParameters,

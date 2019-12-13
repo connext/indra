@@ -64,46 +64,54 @@ export class NodeApiClient implements INodeApiClient {
   public latestSwapRates: { [key: string]: string } = {};
   public log: Logger;
 
-  private innerUserPublicIdentifier: string | undefined;
-  private innerNodePublicIdentifier: string | undefined;
-  private innerChannelProvider: ChannelProvider | undefined;
-  private token: Promise<string> | undefined;
+  private _userPublicIdentifier: string | undefined; // tslint:disable-line:variable-name
+  private _nodePublicIdentifier: string | undefined; // tslint:disable-line:variable-name
+  private _channelProvider: ChannelProvider | undefined; // tslint:disable-line:variable-name
 
   constructor(opts: NodeInitializationParameters) {
+    console.log("[NodeApiClient]", "opts.messaging", "=>", opts.messaging);
     this.messaging = opts.messaging;
+    console.log("[NodeApiClient]", "this.messaging", "=>", this.messaging);
+
     this.log = new Logger("NodeApiClient", opts.logLevel);
-    this.innerUserPublicIdentifier = opts.userPublicIdentifier;
-    this.innerNodePublicIdentifier = opts.nodePublicIdentifier;
-    this.innerChannelProvider = opts.channelProvider;
-    if (this.channelProvider) {
-      this.token = this.getAuthToken();
-    }
+
+    console.log("[NodeApiClient]", "opts.userPublicIdentifier", "=>", opts.userPublicIdentifier);
+    this._userPublicIdentifier = opts.userPublicIdentifier;
+    console.log("[NodeApiClient]", "this._userPublicIdentifier", "=>", this._userPublicIdentifier);
+
+    console.log("[NodeApiClient]", "opts.nodePublicIdentifier", "=>", opts.nodePublicIdentifier);
+    this._nodePublicIdentifier = opts.nodePublicIdentifier;
+    console.log("[NodeApiClient]", "this._nodePublicIdentifier", "=>", this._nodePublicIdentifier);
+
+    console.log("[NodeApiClient]", "opts.channelProvider", "=>", opts.channelProvider);
+    this._channelProvider = opts.channelProvider;
+    console.log("[NodeApiClient]", "this._channelProvider", "=>", this._channelProvider);
   }
 
   ////////////////////////////////////////
   // GETTERS/SETTERS
   get channelProvider(): ChannelProvider | undefined {
-    return this.innerChannelProvider;
+    return this._channelProvider;
   }
 
   set channelProvider(channelProvider: ChannelProvider) {
-    this.innerChannelProvider = channelProvider;
+    this._channelProvider = channelProvider;
   }
 
   get userPublicIdentifier(): string | undefined {
-    return this.innerUserPublicIdentifier;
+    return this._userPublicIdentifier;
   }
 
   set userPublicIdentifier(userXpub: string) {
-    this.innerUserPublicIdentifier = userXpub;
+    this._userPublicIdentifier = userXpub;
   }
 
   get nodePublicIdentifier(): string | undefined {
-    return this.innerNodePublicIdentifier;
+    return this._nodePublicIdentifier;
   }
 
   set nodePublicIdentifier(nodeXpub: string) {
-    this.innerNodePublicIdentifier = nodeXpub;
+    this._nodePublicIdentifier = nodeXpub;
   }
 
   ////////////////////////////////////////
@@ -279,27 +287,33 @@ export class NodeApiClient implements INodeApiClient {
   // PRIVATE
 
   private async getAuthToken(): Promise<string> {
-    return new Promise(
-      async (resolve: any, reject: any): Promise<any> => {
-        const nonce = await this.send("auth.getNonce", {
-          address: this.channelProvider.signerAddress,
-        });
-        const sig = await this.channelProvider.send(NewRpcMethodName.NODE_AUTH, { message: nonce });
-        const token = `${nonce}:${sig}`;
-        return resolve(token);
-      },
-    );
-  }
-
-  private assertAuthToken(): void {
     if (!this.channelProvider) {
       throw new Error(
         `Must have instantiated a channel provider (ie a signing thing) before setting auth token`,
       );
     }
-    if (!this.token) {
-      this.token = this.getAuthToken();
-    }
+    return new Promise(
+      async (resolve: any, reject: any): Promise<any> => {
+        console.log(
+          "[NodeApiClient]",
+          "[getAuthToken]",
+          "this.channelProvider.signerAddress",
+          "=>",
+          this.channelProvider.signerAddress,
+        );
+
+        const nonce = await this.send("auth.getNonce", {
+          address: this.channelProvider.signerAddress,
+        });
+        console.log("[NodeApiClient]", "[getAuthToken]", "nonce", "=>", nonce);
+
+        const sig = await this.channelProvider.send(NewRpcMethodName.NODE_AUTH, { message: nonce });
+        console.log("[NodeApiClient]", "[getAuthToken]", "sig", "=>", sig);
+        const token = `${nonce}:${sig}`;
+        console.log("[NodeApiClient]", "[getAuthToken]", "token", "=>", token);
+        return resolve(token);
+      },
+    );
   }
 
   private async send(subject: string, data?: any): Promise<any | undefined> {
@@ -336,8 +350,7 @@ export class NodeApiClient implements INodeApiClient {
       id: uuid.v4(),
     };
     if (guardedSubjects.includes(subject.split(".")[0])) {
-      this.assertAuthToken();
-      payload.token = await this.token;
+      payload.token = await this.getAuthToken();
     }
     let msg;
     try {
@@ -348,8 +361,7 @@ export class NodeApiClient implements INodeApiClient {
     let error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     if (error && error.startsWith("Invalid token")) {
       this.log.info(`Auth error, token might have expired. Let's get a fresh token & try again.`);
-      this.token = this.getAuthToken();
-      payload.token = await this.token;
+      payload.token = await this.getAuthToken();
       msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
       error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     }

@@ -110,11 +110,22 @@ export class ConnextClient implements IConnextClient {
     this.token = opts.token;
     this.store = opts.store;
 
+    console.log(
+      "[ConnextClient]",
+      "this.channelProvider.config",
+      "=>",
+      this.channelProvider.config,
+    );
     this.freeBalanceAddress = this.channelProvider.config.freeBalanceAddress;
+    console.log("[ConnextClient]", "this.freeBalanceAddress", "=>", this.freeBalanceAddress);
     this.signerAddress = this.channelProvider.config.signerAddress;
+    console.log("[ConnextClient]", "this.signerAddress", "=>", this.signerAddress);
     this.publicIdentifier = this.channelProvider.config.userPublicIdentifier;
+    console.log("[ConnextClient]", "this.publicIdentifier", "=>", this.publicIdentifier);
     this.multisigAddress = this.channelProvider.config.multisigAddress;
+    console.log("[ConnextClient]", "this.multisigAddress", "=>", this.multisigAddress);
     this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
+    console.log("[ConnextClient]", "this.nodePublicIdentifier", "=>", this.nodePublicIdentifier);
     this.log = new Logger("ConnextClient", opts.logLevel);
 
     // establish listeners

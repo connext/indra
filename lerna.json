@@ -1,6 +1,7 @@
 {
   "packages": [
-    "modules/*"
+    "modules/*",
+    "walletconnect-monorepo/packages/*"
   ],
   "version": "0.0.0"
 }
