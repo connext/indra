@@ -428,14 +428,10 @@ export class AdminService {
   ): Promise<string> {
     const proxyFactory = new Contract(proxyFactoryAddress, ProxyFactory.abi, ethProvider);
 
-    const xkeyKthAddress = (xkey: string, k?: number | string): string =>
-      k ? fromExtendedKey(xkey).derivePath(k.toString()).address : fromExtendedKey(xkey).address;
-
-    const sortAddresses = (addrs: string[]): string[] =>
-      addrs.sort((a: string, b: string): number => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
-
-    const xkeysToSortedKthAddresses = (xkeys: string[], k?: number | string): string[] =>
-      sortAddresses(xkeys.map((xkey: string): string => xkeyKthAddress(xkey, k)));
+    const xkeysToSortedKthAddresses = (xkeys: string[]): string[] =>
+      xkeys
+        .map((xkey: string): string => fromExtendedKey(xkey).address)
+        .sort((a: string, b: string): number => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
 
     const proxyBytecode = await proxyFactory.functions.proxyCreationCode();
     return getAddress(
