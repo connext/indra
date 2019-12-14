@@ -141,6 +141,40 @@ describe("Daicard", () => {
       });
     });
   });
+
+  describe("Withdraw then Deposit then Withdraw", () => {
+    it(`Should withdraw eth to a valid address a second time`, () => {
+      my.deposit(depositEth).then(tokensDeposited => {
+        my.getOnchainEtherBalance().then(balanceBefore => {
+          my.cashoutEther();
+          my.deposit(depositEth).then(tokensDeposited => {
+            my.getOnchainEtherBalance().then(balanceBefore => {
+              my.cashoutEther();
+              cy.resolve(my.getOnchainEtherBalance).should(balanceAfter => {
+                expect(new BN(balanceAfter)).to.be.a.bignumber.greaterThan(new BN(balanceBefore));
+              });
+            });
+          });
+        });
+      });
+    });
+
+    it(`Should withdraw tokens to a valid address a second time`, () => {
+      my.deposit(depositToken).then(tokensDeposited => {
+        my.getOnchainTokenBalance().then(balanceBefore => {
+          my.cashoutToken()
+          my.deposit(depositEth).then(tokensDeposited => {
+            my.getOnchainTokenBalance().then(balanceBefore => {
+              my.cashoutToken();
+              cy.resolve(my.getOnchainTokenBalance).should(balanceAfter => {
+                expect(new BN(balanceAfter)).to.be.a.bignumber.greaterThan(new BN(balanceBefore));
+              });
+            });
+          });
+        });
+      });
+    });
+  });
 });
 
 // describe('Dashboard', () => {
