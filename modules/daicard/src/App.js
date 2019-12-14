@@ -62,6 +62,9 @@ const urls = {
       : undefined,
 };
 
+// LogLevel for testing ChannelProvider
+const LOG_LEVEL = 5;
+
 // Constants for channel max/min - this is also enforced on the hub
 const WITHDRAW_ESTIMATED_GAS = toBN("300000");
 const DEPOSIT_ESTIMATED_GAS = toBN("25000");
@@ -168,7 +171,7 @@ class App extends React.Component {
     return wc === "true";
   };
 
-  initWalletConnext = () => {
+  initWalletConnext = chainId => {
     // item set when you scan a wallet connect QR
     // if a wc qr code has been scanned before, make
     // sure to init the mapping and create new wc
@@ -177,7 +180,7 @@ class App extends React.Component {
     const { channel } = this.state;
     if (!channel) return;
     if (!uri) return;
-    initWalletConnect(uri, channel);
+    initWalletConnect(uri, channel, chainId);
   };
 
   // Channel doesn't get set up until after provider is set
@@ -255,7 +258,7 @@ class App extends React.Component {
       channel = await connext.connect({
         ethProviderUrl: urls.ethProviderUrl,
         keyGen,
-        logLevel: 5,
+        logLevel: LOG_LEVEL,
         nodeUrl: urls.nodeUrl,
         store,
         xpub,
@@ -273,6 +276,10 @@ class App extends React.Component {
       const channelProvider = new WalletConnectChannelProvider();
       console.log(`Using WalletConnect with provider: ${JSON.stringify(channelProvider, null, 2)}`);
       // register channel provider listener for logging
+      await channelProvider.enable();
+      console.log(
+        `ChannelProvider Enabled - config: ${JSON.stringify(channelProvider.config, null, 2)}`,
+      );
       channelProvider.on("error", data => {
         console.error(`Channel provider error: ${JSON.stringify(data, null, 2)}`);
       });
@@ -284,7 +291,7 @@ class App extends React.Component {
       });
       channel = await connext.connect({
         ethProviderUrl: urls.ethProviderUrl,
-        logLevel: 4,
+        logLevel: LOG_LEVEL,
         channelProvider,
       });
     } else {
@@ -353,7 +360,7 @@ class App extends React.Component {
     } else {
       machine.send("READY");
     }
-    this.initWalletConnext();
+    this.initWalletConnext(network.chainId);
     await this.startPoller();
   }
 

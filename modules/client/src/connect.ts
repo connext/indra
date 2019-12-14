@@ -1,5 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { CF_PATH } from "@connext/types";
+import { CF_PATH, ChannelProviderConfig } from "@connext/types";
 import "core-js/stable";
 import { Contract, providers, utils } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -22,169 +22,19 @@ import {
   Store,
 } from "./types";
 
-interface EthProviderSetup {
-  ethProvider: providers.JsonRpcProvider;
-  network: utils.Network;
-}
-
-interface ServiceSetup {
-  messaging: IMessagingService;
-  node: NodeApiClient;
-  config: GetConfigResponse;
-}
-
-interface ChannelProviderOptions {
-  keyGen?: KeyGen;
-  mnemonic?: string;
-  nodeUrl?: string;
-  store?: Store;
-  xpub?: string;
-}
-
-interface ChannelProviderSetup {
-  node: NodeApiClient;
-  messaging: IMessagingService;
-  channelProvider: ChannelProvider;
-  config: GetConfigResponse;
-  keyGen: KeyGen;
-  store: Store;
-}
-
-const setupEthProvider = async (ethProviderUrl: string): Promise<EthProviderSetup> => {
-  const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
-  const network = await ethProvider.getNetwork();
-
-  // special case for ganache
-  if (network.chainId === 4447) {
-    network.name = "ganache";
-    // Enforce using provided signer, not via RPC
-    ethProvider.getSigner = (addressOrIndex?: string | number): any => {
-      throw { code: "UNSUPPORTED_OPERATION" };
-    };
-  }
-
-  return { ethProvider, network };
+const exists = (obj: any): boolean => {
+  return !!obj && !!Object.keys(obj).length;
 };
 
 const createMessagingService = async (
-  nodeUrl: string,
+  messagingUrl: string,
   logLevel: number,
 ): Promise<IMessagingService> => {
-  const messagingFactory = new MessagingServiceFactory({
-    logLevel,
-    messagingUrl: nodeUrl,
-  });
+  // create a messaging service client
+  const messagingFactory = new MessagingServiceFactory({ logLevel, messagingUrl });
   const messaging = messagingFactory.createService("messaging");
   await messaging.connect();
   return messaging;
-};
-
-const setupServices = async (
-  nodeUrl: string,
-  log: Logger,
-  logLevel: number,
-  channelProvider?: ChannelProvider,
-): Promise<ServiceSetup> => {
-  // create a messaging service client
-  log.debug(`Creating messaging service client (logLevel: ${logLevel})`);
-  const messaging = await createMessagingService(nodeUrl, logLevel);
-
-  // create a new node api instance
-  const node = new NodeApiClient({ logLevel, messaging, channelProvider });
-  const config = await node.config();
-  log.debug(`Node provided config: ${stringify(config)}`);
-  return { messaging, node, config };
-};
-
-const assignChannelProviderToNodeApi = (
-  node: NodeApiClient,
-  config: GetConfigResponse,
-  channelProvider: ChannelProvider,
-): NodeApiClient => {
-  node.channelProvider = channelProvider;
-  node.userPublicIdentifier = channelProvider.config.userPublicIdentifier;
-  node.nodePublicIdentifier = config.nodePublicIdentifier;
-  return node;
-};
-
-const setupChannelProvider = async (
-  ethProvider: providers.JsonRpcProvider,
-  log: Logger,
-  logLevel: number,
-  providedChannelProvider?: ChannelProvider,
-  channelProviderOptions?: ChannelProviderOptions,
-): Promise<ChannelProviderSetup> => {
-  // spread channelProviderOptions
-  const { store, mnemonic } = channelProviderOptions;
-  let { nodeUrl, xpub, keyGen } = channelProviderOptions;
-
-  // setup messaging and node api
-  let messaging: IMessagingService;
-  let node: NodeApiClient;
-  let config: GetConfigResponse;
-
-  // setup channelProvider
-  let channelProvider: ChannelProvider;
-
-  if (providedChannelProvider) {
-    channelProvider = providedChannelProvider;
-    if (!channelProvider.config || !Object.keys(channelProvider.config)) {
-      await channelProvider.enable();
-    }
-    log.debug(`Using provided channelProvider config: ${stringify(channelProvider.config)}`);
-    nodeUrl = channelProvider.config.nodeUrl;
-
-    const services = await setupServices(nodeUrl, log, logLevel, channelProvider);
-
-    messaging = services.messaging;
-    node = services.node;
-    config = services.config;
-
-    // set pubids + channelProvider
-    assignChannelProviderToNodeApi(node, config, channelProvider);
-  } else if (mnemonic || (xpub && keyGen)) {
-    if (!store) {
-      throw new Error("Client must be instantiated with store if not using a channelProvider");
-    }
-    if (mnemonic) {
-      // Convert mnemonic into xpub + keyGen if provided
-      const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
-      xpub = hdNode.neuter().extendedKey;
-      keyGen = (index: string): Promise<string> =>
-        Promise.resolve(hdNode.derivePath(index).privateKey);
-    }
-
-    const services = await setupServices(nodeUrl, log, logLevel);
-
-    messaging = services.messaging;
-    node = services.node;
-    config = services.config;
-
-    const cfChannelProviderOptions = {
-      ethProvider,
-      keyGen,
-      lockService: { acquireLock: node.acquireLock.bind(node) },
-      messaging: messaging as any,
-      networkContext: config.contractAddresses,
-      nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
-      nodeUrl,
-      store,
-      xpub,
-    };
-    channelProvider = await createCFChannelProvider(cfChannelProviderOptions);
-
-    log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
-
-    // set pubids + channelProvider
-    assignChannelProviderToNodeApi(node, config, channelProvider);
-  } else {
-    throw new Error(
-      // tslint:disable-next-line:max-line-length
-      `Client must be instantiated with xpub and keyGen, or a channelProvider if not using mnemonic`,
-    );
-  }
-
-  return { node, messaging, channelProvider, config, keyGen, store };
 };
 
 const setupMultisigAddress = async (
@@ -226,26 +76,120 @@ const setupMultisigAddress = async (
 };
 
 export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
-  const { logLevel, ethProviderUrl } = opts;
+  const {
+    logLevel,
+    ethProviderUrl,
+    nodeUrl,
+    store,
+    mnemonic,
+    channelProvider: providedChannelProvider,
+  } = opts;
+  let { xpub, keyGen } = opts;
+
   const log = new Logger("ConnextConnect", logLevel);
 
   // setup ethProvider + network information
-  const { ethProvider, network } = await setupEthProvider(ethProviderUrl);
+  log.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
+  const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
+  const network = await ethProvider.getNetwork();
 
-  // setup channelProvider + node + messaging
-  const { node, messaging, channelProvider, config, keyGen, store } = await setupChannelProvider(
-    ethProvider,
-    log,
-    logLevel,
-    opts.channelProvider,
-    {
-      keyGen: opts.keyGen,
-      mnemonic: opts.mnemonic,
-      nodeUrl: opts.nodeUrl,
-      store: opts.store,
-      xpub: opts.xpub,
-    },
-  );
+  // special case for ganache
+  if (network.chainId === 4447) {
+    network.name = "ganache";
+    // Enforce using provided signer, not via RPC
+    ethProvider.getSigner = (addressOrIndex?: string | number): any => {
+      throw { code: "UNSUPPORTED_OPERATION" };
+    };
+  }
+
+  // setup messaging and node api
+  let messaging: IMessagingService;
+  let node: NodeApiClient;
+  let config: GetConfigResponse;
+
+  // setup channelProvider
+  let channelProvider: ChannelProvider;
+  let channelProviderConfig: ChannelProviderConfig;
+
+  if (providedChannelProvider) {
+    channelProvider = providedChannelProvider;
+    channelProviderConfig = channelProvider.config;
+    if (!exists(channelProviderConfig)) {
+      channelProviderConfig = await channelProvider.enable();
+    }
+    log.debug(`Using channelProviderConfig: ${stringify(channelProviderConfig)}`);
+
+    const messagingUrl = channelProvider.config.nodeUrl;
+    log.debug(`Creating messaging service client - messagingUrl: ${messagingUrl}`);
+    messaging = await createMessagingService(messagingUrl, logLevel);
+
+    // create a new node api instance
+    node = new NodeApiClient({ logLevel, messaging, channelProvider });
+    config = await node.config();
+    log.debug(`Node provided config: ${stringify(config)}`);
+
+    // set pubids + channelProvider
+    node.channelProvider = channelProvider;
+    node.userPublicIdentifier = channelProvider.config.userPublicIdentifier;
+    node.nodePublicIdentifier = config.nodePublicIdentifier;
+  } else if (mnemonic || (xpub && keyGen)) {
+    if (!store) {
+      throw new Error("Client must be instantiated with store if not using a channelProvider");
+    }
+
+    if (!nodeUrl) {
+      throw new Error("Client must be instantiated with nodeUrl if not using a channelProvider");
+    }
+
+    if (mnemonic) {
+      log.debug(`Creating channelProvider with mnemonic: ${mnemonic}`);
+      // Convert mnemonic into xpub + keyGen if provided
+      const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
+      xpub = hdNode.neuter().extendedKey;
+      keyGen = (index: string): Promise<string> =>
+        Promise.resolve(hdNode.derivePath(index).privateKey);
+    } else {
+      log.debug(`Creating channelProvider with xpub: ${xpub}`);
+      log.debug(`Creating channelProvider with keyGen: ${keyGen}`);
+    }
+
+    const messagingUrl = nodeUrl;
+    log.debug(`Creating messaging service client - messagingUrl: ${messagingUrl}`);
+    messaging = await createMessagingService(messagingUrl, logLevel);
+
+    // create a new node api instance
+    node = new NodeApiClient({ logLevel, messaging, channelProvider });
+    config = await node.config();
+    log.debug(`Node provided config: ${stringify(config)}`);
+
+    const cfChannelProviderOptions = {
+      ethProvider,
+      keyGen,
+      lockService: { acquireLock: node.acquireLock.bind(node) },
+      messaging: messaging as any,
+      networkContext: config.contractAddresses,
+      nodeConfig: { STORE_KEY_PREFIX: ConnextClientStorePrefix },
+      nodeUrl,
+      store,
+      xpub,
+    };
+
+    log.debug(`Using cfChannelProviderOptions: ${stringify(cfChannelProviderOptions)}`);
+    channelProvider = await createCFChannelProvider(cfChannelProviderOptions);
+    channelProviderConfig = channelProvider.config;
+
+    log.debug(`Using channelProviderConfig: ${stringify(channelProviderConfig)}`);
+
+    // set pubids + channelProvider
+    node.channelProvider = channelProvider;
+    node.userPublicIdentifier = channelProviderConfig.userPublicIdentifier;
+    node.nodePublicIdentifier = config.nodePublicIdentifier;
+  } else {
+    throw new Error(
+      // tslint:disable-next-line:max-line-length
+      `Client must be instantiated with xpub and keyGen, or a channelProvider if not using mnemonic`,
+    );
+  }
 
   // setup multisigAddress + assign to channelProvider
   await setupMultisigAddress(node, channelProvider, log);

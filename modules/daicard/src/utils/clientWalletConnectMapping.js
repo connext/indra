@@ -2,18 +2,18 @@ import WalletConnectBrowser from "@walletconnect/browser";
 
 export let walletConnector = null;
 
-export function initWalletConnect(uri, client) {
+export function initWalletConnect(uri, client, chainId) {
   walletConnector = new WalletConnectBrowser({ uri });
 
-  registerWalletConnectListeners(client);
+  registerWalletConnectListeners(client, chainId);
 }
 
-export function registerWalletConnectListeners(client) {
+export function registerWalletConnectListeners(client, chainId) {
   walletConnector.on("session_request", (error, payload) => {
     if (error) {
       throw error;
     }
-    displaySessionApproval(payload.params[0]);
+    displaySessionApproval(payload.params[0], chainId);
   });
 
   // Subscribe to call requests
@@ -46,13 +46,9 @@ export function cleanWalletConnect() {
   localStorage.removeItem(`wcUri`);
 }
 
-export function displaySessionApproval(payload) {
-  verifyFields(payload, ["chainId"]);
-  walletConnector.approveSession({
-    accounts: ["0x981674fC6A58c0F57ae2bF36885E745490137aCE"],
-    chainId: payload.chainId,
-  });
+export function displaySessionApproval(session, chainId) {
   //TODO: proc modal that approves the walletconnection from the wallet
+  walletConnector.approveSession({ accounts: [], chainId });
 }
 
 function verifyFields(params, keys) {
