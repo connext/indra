@@ -109,19 +109,16 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
 
   // setup channelProvider
   let channelProvider: ChannelProvider;
-  let channelProviderConfig: ChannelProviderConfig;
 
   if (providedChannelProvider) {
     channelProvider = providedChannelProvider;
-    channelProviderConfig = channelProvider.config;
-    if (!exists(channelProviderConfig)) {
-      channelProviderConfig = await channelProvider.enable();
+    if (!exists(channelProvider.config)) {
+      await channelProvider.enable();
     }
-    log.debug(`Using channelProviderConfig: ${stringify(channelProviderConfig)}`);
+    log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
-    const messagingUrl = channelProvider.config.nodeUrl;
-    log.debug(`Creating messaging service client - messagingUrl: ${messagingUrl}`);
-    messaging = await createMessagingService(messagingUrl, logLevel);
+    log.debug(`Creating messaging service client ${channelProvider.config.nodeUrl}`);
+    messaging = await createMessagingService(channelProvider.config.nodeUrl, logLevel);
 
     // create a new node api instance
     node = new NodeApiClient({ logLevel, messaging, channelProvider });
@@ -153,9 +150,8 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
       log.debug(`Creating channelProvider with keyGen: ${keyGen}`);
     }
 
-    const messagingUrl = nodeUrl;
-    log.debug(`Creating messaging service client - messagingUrl: ${messagingUrl}`);
-    messaging = await createMessagingService(messagingUrl, logLevel);
+    log.debug(`Creating messaging service client ${nodeUrl}`);
+    messaging = await createMessagingService(nodeUrl, logLevel);
 
     // create a new node api instance
     node = new NodeApiClient({ logLevel, messaging, channelProvider });
@@ -176,13 +172,12 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
 
     log.debug(`Using cfChannelProviderOptions: ${stringify(cfChannelProviderOptions)}`);
     channelProvider = await createCFChannelProvider(cfChannelProviderOptions);
-    channelProviderConfig = channelProvider.config;
 
-    log.debug(`Using channelProviderConfig: ${stringify(channelProviderConfig)}`);
+    log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
     // set pubids + channelProvider
     node.channelProvider = channelProvider;
-    node.userPublicIdentifier = channelProviderConfig.userPublicIdentifier;
+    node.userPublicIdentifier = channelProvider.config.userPublicIdentifier;
     node.nodePublicIdentifier = config.nodePublicIdentifier;
   } else {
     throw new Error(
