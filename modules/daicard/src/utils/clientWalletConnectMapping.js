@@ -51,25 +51,6 @@ export function displaySessionApproval(session, chainId) {
   walletConnector.approveSession({ accounts: [], chainId });
 }
 
-function verifyFields(params, keys) {
-  if (keys.length <= 0 || keys.filter(k => typeof k !== "string").length !== 0) {
-    throw new Error(`[verifyFields] Must provide an array of fields to check`);
-  }
-  if (typeof params !== "object") {
-    throw new Error(`[verifyFields] Must provide a params object`);
-  }
-
-  const naStr = keys.filter(k => !!!params[k]);
-  if (naStr.length !== 0) {
-    throw new Error(
-      `[verifyFields] Params missing needed keys. Params: ${prettyPrint(
-        params,
-      )}, keys: ${prettyPrint(keys)}`,
-    );
-  }
-  return;
-}
-
 function prettyPrint(obj) {
   return JSON.stringify(obj, null, 2);
 }
