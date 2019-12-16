@@ -89,8 +89,7 @@ export class ResolveConditionController extends AbstractController {
     try {
       await this.node.resolveLinkedTransfer(paymentId, preImage);
     } catch (e) {
-      this.log.error(`Failed to resolve linked transfer ${paymentId}: ${e.message}`);
-      e.stack && this.log.error(e.stack);
+      this.log.error(`Failed to resolve linked transfer ${paymentId}: ${e.stack || e.message}`);
       this.connext.emit("RECIEVE_TRANSFER_FAILED_EVENT", { paymentId });
       throw e;
     }
