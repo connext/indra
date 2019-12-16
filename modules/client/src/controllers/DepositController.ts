@@ -77,7 +77,8 @@ export class DepositController extends AbstractController {
 
       this.log.info("Deposited!");
     } catch (e) {
-      this.log.error(`Failed to deposit...`);
+      this.log.error(`Failed to deposit: ${e.message}`);
+      e.stack && this.log.error(e.stack);
       this.removeListeners();
       throw e;
     }
@@ -159,7 +160,8 @@ export class DepositController extends AbstractController {
       this.log.info(`App was proposed successfully!: ${appId}`);
       return undefined;
     } catch (e) {
-      this.log.error(`Error installing app: ${e.toString()}`);
+      this.log.error(`Error installing app: ${e.message}`);
+      e.stack && this.log.error(e.stack);
       return e.message();
     } finally {
       this.cleanupInstallListeners(appId, boundReject);

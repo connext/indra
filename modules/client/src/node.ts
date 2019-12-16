@@ -119,8 +119,8 @@ export class NodeApiClient implements INodeApiClient {
     try {
       retVal = await callback();
     } catch (e) {
-      this.log.error("Failed to execute callback while lock is held");
-      this.log.error(e);
+      this.log.error(`Failed to execute callback while lock is held: ${e.message}`);
+      e.stack && this.log.error(e.stack);
     } finally {
       await this.send(`lock.release.${lockName}`, { lockValue });
       this.log.debug(`Released lock at ${Date.now()} for ${lockName}`);

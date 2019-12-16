@@ -223,9 +223,12 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     await client.getFreeBalance();
   } catch (e) {
     if (e.message.includes(`StateChannel does not exist yet`)) {
-      log.debug(`Restoring client state: ${e}`);
+      log.debug(`Restoring client state: ${e.message}`);
+      e.stack && log.error(e.stack);
       await client.restoreState();
     } else {
+      log.error(`Failed to get free balance: ${e.message}`);
+      e.stack && log.error(e.stack);
       throw e;
     }
   }

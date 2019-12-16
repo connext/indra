@@ -238,7 +238,8 @@ export class ConditionalTransferController extends AbstractController {
       this.log.debug(`Installed app details: ${stringify(raceRes as object)}`);
       return proposeRes.appInstanceId;
     } catch (e) {
-      this.log.error(`Error installing app: ${e.toString()}`);
+      this.log.error(`Error installing app: ${e.message}`);
+      e.stack && this.log.error(e.stack);
       return undefined;
     } finally {
       this.cleanupInstallListeners(boundReject, proposeRes.appInstanceId);
