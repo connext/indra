@@ -1,7 +1,7 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { CF_PATH, ChannelProviderConfig } from "@connext/types";
+import { CF_PATH } from "@connext/types";
 import "core-js/stable";
-import { Contract, providers, utils } from "ethers";
+import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
@@ -18,8 +18,6 @@ import {
   CreateChannelMessage,
   GetConfigResponse,
   IConnextClient,
-  KeyGen,
-  Store,
 } from "./types";
 
 const exists = (obj: any): boolean => {
@@ -214,9 +212,10 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     await client.getFreeBalance();
   } catch (e) {
     if (e.message.includes(`StateChannel does not exist yet`)) {
-      log.debug(`Restoring client state: ${e}`);
+      log.debug(`Restoring client state: ${e.stack || e.message}`);
       await client.restoreState();
     } else {
+      log.error(`Failed to get free balance: ${e.stack || e.message}`);
       throw e;
     }
   }

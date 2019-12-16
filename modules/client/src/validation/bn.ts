@@ -22,7 +22,7 @@ export function notBigNumberish(value: any): string | undefined {
   try {
     utils.bigNumberify(value);
   } catch (e) {
-    return `Value ${stringify(value)} is not bignumberish}`;
+    return `Value ${stringify(value)} is not bignumberish: ${e.message}`;
   }
   return undefined;
 }
