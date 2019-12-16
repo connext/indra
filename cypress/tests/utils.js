@@ -278,7 +278,7 @@ my.depositToken = value => {
           return cy.wrap(
             wallet.sendTransaction({
               to: address,
-              value: eth.utils.parseEther(value),
+              value: eth.utils.parseEther(gasMoney),
             }),
           );
         })

@@ -10,8 +10,8 @@ $cypress install
 ########################################
 ## Start the UI e2e watcher if in watch mode
 
-# If there's no daicard service (webpack dev server) then we're running in prod mode
-if [[ -z "`docker service ls | grep ${project}_daicard`" ]]
+# If there's no ui service (webpack dev server) then we're running in prod mode
+if [[ -z "`docker service ls | grep ${project}_ui`" ]]
 then env="--env publicUrl=https://localhost"
 fi
 

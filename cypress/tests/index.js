@@ -12,16 +12,16 @@ describe("Daicard", () => {
   });
 
   describe("Deposit", () => {
-    it(`Should accept an Eth deposit to displayed address`, () => {
+    it(`should accept an Eth deposit to displayed address`, () => {
       my.deposit(depositEth);
     });
-    it(`Should accept a token deposit to displayed address`, () => {
+    it(`should accept a token deposit to displayed address`, () => {
       my.depositToken(depositToken);
     });
   });
 
   describe("Send", done => {
-    it(`Should send a payment when a link payment is opened in another card`, () => {
+    it(`should send a payment when a link payment is opened in another card`, () => {
       my.getMnemonic().then(recipientMnemonic => {
         my.burnCard();
         my.deposit(depositEth).then(tokensDeposited => {
@@ -39,7 +39,7 @@ describe("Daicard", () => {
       });
     });
 
-    it(`Should display feedback if input is invalid`, () => {
+    it(`should display feedback if input is invalid`, () => {
       my.deposit(depositEth).then(tokensDeposited => {
         my.goToSend();
         // No zero payments
@@ -60,7 +60,7 @@ describe("Daicard", () => {
       });
     });
 
-    it(`Should transfer tokens to an unopen daicard`, () => {
+    it(`should transfer tokens to an unopen daicard`, () => {
       my.getAccount().then(recipient => {
         my.burnCard();
         my.deposit(depositEth).then(tokensDeposited => {
@@ -73,7 +73,7 @@ describe("Daicard", () => {
   });
 
   describe("Request", () => {
-    it(`Should properly populate the send page when opening a request link`, () => {
+    it(`should properly populate the send page when opening a request link`, () => {
       my.getXpub().then(xpub => {
         my.goToRequest();
         cy.get('input[type="number"]')
@@ -93,7 +93,7 @@ describe("Daicard", () => {
   });
 
   describe("Settings", () => {
-    it(`Should restore the same address & balance after importing a mnemoic`, () => {
+    it(`should restore the same address & balance after importing a mnemoic`, () => {
       my.getAccount().then(account => {
         my.deposit(depositEth).then(tokenDeposited => {
           my.burnCard();
@@ -109,7 +109,7 @@ describe("Daicard", () => {
   });
 
   describe("Withdraw", () => {
-    it(`Should withdraw eth to a valid address`, () => {
+    it(`should withdraw eth to a valid address`, () => {
       my.deposit(depositEth).then(tokensDeposited => {
         my.getOnchainEtherBalance().then(balanceBefore => {
           my.cashoutEther();
@@ -120,7 +120,7 @@ describe("Daicard", () => {
       });
     });
 
-    it(`Should withdraw tokens to a valid address`, () => {
+    it(`should withdraw tokens to a valid address`, () => {
       my.deposit(depositEth).then(tokensDeposited => {
         my.getOnchainTokenBalance().then(balanceBefore => {
           my.cashoutToken();
@@ -131,7 +131,7 @@ describe("Daicard", () => {
       });
     });
 
-    it(`Should not withdraw to an invalid address`, () => {
+    it(`should not withdraw to an invalid address`, () => {
       my.deposit(depositEth).then(tokensDeposited => {
         my.goToCashout();
         cy.get('input[type="text"]')
@@ -143,7 +143,7 @@ describe("Daicard", () => {
   });
 
   describe("Withdraw then Deposit then Withdraw", () => {
-    it(`Should withdraw eth to a valid address a second time`, () => {
+    it(`should withdraw eth to a valid address the second time`, () => {
       my.deposit(depositEth).then(tokensDeposited => {
         my.getOnchainEtherBalance().then(balanceBefore => {
           my.cashoutEther();
@@ -159,11 +159,11 @@ describe("Daicard", () => {
       });
     });
 
-    it(`Should withdraw tokens to a valid address a second time`, () => {
-      my.deposit(depositToken).then(tokensDeposited => {
+    it(`should withdraw tokens to a valid address the second time`, () => {
+      my.depositToken(depositToken).then(tokensDeposited => {
         my.getOnchainTokenBalance().then(balanceBefore => {
           my.cashoutToken()
-          my.deposit(depositEth).then(tokensDeposited => {
+          my.depositToken(depositToken).then(tokensDeposited => {
             my.getOnchainTokenBalance().then(balanceBefore => {
               my.cashoutToken();
               cy.resolve(my.getOnchainTokenBalance).should(balanceAfter => {
@@ -182,7 +182,7 @@ describe("Daicard", () => {
 //     cy.visit(Cypress.env('publicUrl'))
 //   })
 //   describe('Debug', () => {
-//     it(`Should navigate to debug screen`, () => {
+//     it(`should navigate to debug screen`, () => {
 //       my.goToDashboard()
 //       my.goToDebug()
 //       my.goToDebugChannel()
