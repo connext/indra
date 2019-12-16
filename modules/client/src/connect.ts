@@ -152,7 +152,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     messaging = await createMessagingService(nodeUrl, logLevel);
 
     // create a new node api instance
-    node = new NodeApiClient({ logLevel, messaging, channelProvider });
+    node = new NodeApiClient({ logLevel, messaging });
     config = await node.config();
     log.debug(`Node provided config: ${stringify(config)}`);
 
