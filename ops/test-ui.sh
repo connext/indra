@@ -3,6 +3,7 @@ set -e
 
 project="indra"
 cypress="node_modules/.bin/cypress"
+ui="${1:-daicard}"
 
 # Make sure cypress is installed while we wait for the recipient bot to do it's thing
 $cypress install
@@ -25,4 +26,4 @@ fi
 ## Start the UI e2e tests if in standalone test mode
 
 export ELECTRON_ENABLE_LOGGING=true
-nice $cypress run $env --spec cypress/tests/index.js
+nice $cypress run $env --spec cypress/tests/$ui.js

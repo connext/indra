@@ -176,16 +176,3 @@ describe("Daicard", () => {
     });
   });
 });
-
-// describe('Dashboard', () => {
-//   beforeEach(() => {
-//     cy.visit(Cypress.env('publicUrl'))
-//   })
-//   describe('Debug', () => {
-//     it(`should navigate to debug screen`, () => {
-//       my.goToDashboard()
-//       my.goToDebug()
-//       my.goToDebugChannel()
-//     })
-//   })
-// })
