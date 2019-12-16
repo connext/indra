@@ -21,7 +21,7 @@ import {
 
 // TODO: maybe a better name? since it's a little smarter than just a plain install
 export default class RequestDepositRightsController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.REQUEST_DEPOSIT_RIGHTS)
+  @jsonRpcMethod(Node.RpcMethodNames.chan_requestDepositRights)
   public executeMethod: (
     requestHandler: RequestHandler,
     params: Node.MethodParams

@@ -26,7 +26,7 @@ import {
 import { getCreate2MultisigAddress } from "../../../utils";
 
 export default class DepositController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.DEPOSIT)
+  @jsonRpcMethod(Node.RpcMethodNames.chan_deposit)
   public executeMethod: (
     requestHandler: RequestHandler,
     params: Node.MethodParams

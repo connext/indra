@@ -35,7 +35,7 @@ import {
 const CREATE_PROXY_AND_SETUP_GAS = 500_000;
 
 export default class DeployStateDepositHolderController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.DEPLOY_STATE_DEPOSIT_HOLDER)
+  @jsonRpcMethod(Node.RpcMethodNames.chan_deployStateDepositHolder)
   public executeMethod = super.executeMethod;
 
   protected async beforeExecution(

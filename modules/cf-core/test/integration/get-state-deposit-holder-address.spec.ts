@@ -24,7 +24,7 @@ describe("Node method follows spec - getStateDepositHolderAddress", () => {
     } = await nodeA.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
-        method: NodeTypes.RpcMethodName.GET_STATE_DEPOSIT_HOLDER_ADDRESS,
+        method: NodeTypes.RpcMethodNames.chan_getStateDepositHolderAddress,
         params: { owners },
         jsonrpc: "2.0"
       })

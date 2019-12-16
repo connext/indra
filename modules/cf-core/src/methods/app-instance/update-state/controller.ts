@@ -18,7 +18,7 @@ import {
 } from "../../errors";
 
 export default class UpdateStateController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.UPDATE_STATE)
+  @jsonRpcMethod(Node.RpcMethodNames.chan_updateState)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(

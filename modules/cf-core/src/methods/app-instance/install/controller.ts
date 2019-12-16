@@ -13,7 +13,7 @@ import { install } from "./operation";
  * @param params
  */
 export default class InstallController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.INSTALL)
+  @jsonRpcMethod(Node.RpcMethodNames.chan_install)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(

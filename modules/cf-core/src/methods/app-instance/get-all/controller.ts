@@ -9,7 +9,7 @@ import { NodeController } from "../../controller";
  * this Node.
  */
 export default class GetAppInstancesController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.GET_APP_INSTANCES)
+  @jsonRpcMethod(Node.RpcMethodNames.chan_getAppInstances)
   public executeMethod = super.executeMethod;
 
   protected async executeMethodImplementation(

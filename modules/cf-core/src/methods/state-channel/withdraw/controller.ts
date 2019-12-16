@@ -18,7 +18,7 @@ import {
 import { runWithdrawProtocol } from "./operation";
 
 export default class WithdrawController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.WITHDRAW)
+  @jsonRpcMethod(Node.RpcMethodNames.chan_withdraw)
   public executeMethod = super.executeMethod;
 
   public static async getRequiredLockNames(
