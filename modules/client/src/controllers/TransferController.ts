@@ -185,7 +185,7 @@ export class TransferController extends AbstractController {
       this.log.info(`App was installed successfully!: ${stringify(res)}`);
       return res.appInstanceId;
     } catch (e) {
-      this.log.error(`Error installing app: ${e.toString()}`);
+      this.log.error(`Error installing app: ${e.stack || e.message}`);
       return undefined;
     } finally {
       this.cleanupInstallListeners(boundResolve, boundReject);
