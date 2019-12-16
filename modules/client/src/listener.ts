@@ -165,9 +165,8 @@ export class ConnextListener extends EventEmitter {
       return true;
     } catch (e) {
       this.log.error(
-        `Error trying to remove registered listener from event ${event}: ${e.message}`,
+        `Error trying to remove registered listener from event ${event}: ${e.stack || e.message}`,
       );
-      e.stack && this.log.error(e.stack);
       return false;
     }
   };
