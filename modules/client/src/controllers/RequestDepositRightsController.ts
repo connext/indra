@@ -154,7 +154,7 @@ export class RequestDepositRightsController extends AbstractController {
       this.log.info(`App was proposed successfully!: ${appId}`);
       return undefined;
     } catch (e) {
-      this.log.error(`Error installing app: ${e.toString()}`);
+      this.log.error(`Error installing app: ${e.stack || e.message}`);
       return e.message;
     } finally {
       this.cleanupInstallListeners(appId, boundReject);
