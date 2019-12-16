@@ -76,7 +76,7 @@ export class WithdrawalController extends AbstractController {
 
       this.log.info("Withdrawn!");
     } catch (e) {
-      this.log.error(`Failed to withdraw... ${stringify(e)}`);
+      this.log.error(`Failed to withdraw: ${e.stack || e.message}`);
       this.removeListeners();
       throw new Error(e);
     }

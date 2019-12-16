@@ -154,9 +154,14 @@ test-cf: cf-core
 watch-cf: cf-core
 	bash ops/test-cf.sh --watch
 
-test-ui: payment-bot
-	bash ops/test-ui.sh
+test-daicard:
+	bash ops/test-ui.sh daicard
 
+# ensure you've run "make start-dashboard" first & not just "make start"
+test-dashboard:
+	bash ops/test-ui.sh dashboard
+
+# You can interactively select daicard or dashboard tests after running below
 watch-ui: node-modules
 	bash ops/test-ui.sh --watch
 

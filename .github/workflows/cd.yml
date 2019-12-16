@@ -62,21 +62,21 @@ jobs:
     - run: make start-test
     - run: make test-bot
 
-  test-ui:
+  test-daicard:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
     - run: make prod
     - run: make build-report
     - run: make start-test
-    - run: make test-ui
+    - run: make test-daicard
 
   push-latest:
     env:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     if: endsWith(github.ref, 'staging')
-    needs: [test-node, test-cf, test-bot, test-ui]
+    needs: [test-node, test-cf, test-bot, test-daicard]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -90,7 +90,7 @@ jobs:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     if: endsWith(github.ref, 'master')
-    needs: [test-node, test-cf, test-bot, test-ui]
+    needs: [test-node, test-cf, test-bot, test-daicard]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
