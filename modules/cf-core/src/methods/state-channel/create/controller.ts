@@ -1,7 +1,7 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { CreateChannelMessage, Node, NODE_EVENTS, NodeEvent } from "../../../types";
+import { CreateChannelMessage, Node, NodeEvent } from "../../../types";
 import { NodeController } from "../../controller";
 import { xkeysToSortedKthAddresses } from "../../../machine";
 
@@ -20,8 +20,13 @@ export default class CreateChannelController extends NodeController {
   @jsonRpcMethod(Node.RpcMethodName.CREATE_CHANNEL)
   public executeMethod = super.executeMethod;
 
-  protected async getRequiredLockNames(): Promise<string[]> {
-    return [`${Node.RpcMethodName.CREATE_CHANNEL}:${Date.now().toString()}`];
+  protected async getRequiredLockNames(
+    requestHandler: RequestHandler,
+    params: Node.CreateChannelParams
+  ): Promise<string[]> {
+    return [
+      `${Node.RpcMethodName.CREATE_CHANNEL}:${params.owners.sort().toString()}`
+    ];
   }
 
   protected async executeMethodImplementation(
