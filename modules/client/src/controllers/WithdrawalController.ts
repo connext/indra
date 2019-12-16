@@ -37,7 +37,7 @@ export class WithdrawalController extends AbstractController {
       this.log.info(`Calling this.connext.rescindDepositRights before withdrawal for ${assetId}`);
       await this.connext.rescindDepositRights({ assetId });
       if (!userSubmitted) {
-        this.log.info(`Calling ${CFCoreTypes.RpcMethodNames.WITHDRAW_COMMITMENT}`);
+        this.log.info(`Calling ${CFCoreTypes.RpcMethodNames.chan_withdrawCommitment}`);
         const withdrawResponse = await this.connext.withdrawCommitment(amount, assetId, recipient);
         this.log.info(`Withdraw Response: ${stringify(withdrawResponse)}`);
         const minTx: CFCoreTypes.MinimalTransaction = withdrawResponse.transaction;
@@ -55,7 +55,7 @@ export class WithdrawalController extends AbstractController {
 
         this.log.info(`Node Withdraw Response: ${stringify(transaction)}`);
       } else {
-        this.log.info(`Calling ${CFCoreTypes.RpcMethodName.WITHDRAW}`);
+        this.log.info(`Calling ${CFCoreTypes.RpcMethodNames.chan_withdraw}`);
         // user submitting the withdrawal
         const withdrawResponse = await this.connext.providerWithdraw(
           assetId,

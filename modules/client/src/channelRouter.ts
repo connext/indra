@@ -117,12 +117,15 @@ export class ChannelRouter {
     multisigAddress: string,
     notifyCounterparty: boolean = false,
   ): Promise<CFCoreTypes.DepositResult> => {
-    return await this._send(CFCoreTypes.RpcMethodName.DEPOSIT, {
-      amount,
-      multisigAddress,
-      notifyCounterparty,
-      tokenAddress: makeChecksum(assetId),
-    } as CFCoreTypes.DepositParams);
+    return await this._send(
+      CFCoreTypes.RpcMethodNames.chan_deposit as CFCoreTypes.RpcMethodName,
+      {
+        amount,
+        multisigAddress,
+        notifyCounterparty,
+        tokenAddress: makeChecksum(assetId),
+      } as CFCoreTypes.DepositParams,
+    );
   };
 
   public getStateChannel = async (): Promise<{ data: any }> => {
@@ -132,69 +135,93 @@ export class ChannelRouter {
   };
 
   public getState = async (appInstanceId: string): Promise<CFCoreTypes.GetStateResult> => {
-    return await this._send(CFCoreTypes.RpcMethodName.GET_STATE, {
-      appInstanceId,
-    } as CFCoreTypes.GetStateParams);
+    return await this._send(
+      CFCoreTypes.RpcMethodNames.chan_getState as CFCoreTypes.RpcMethodName,
+      {
+        appInstanceId,
+      } as CFCoreTypes.GetStateParams,
+    );
   };
 
   public getAppInstances = async (
     multisigAddress?: string,
   ): Promise<CFCoreTypes.GetAppInstancesResult> => {
-    return await this._send(CFCoreTypes.RpcMethodName.GET_APP_INSTANCES, {
-      multisigAddress,
-    } as CFCoreTypes.GetAppInstancesParams);
+    return await this._send(
+      CFCoreTypes.RpcMethodNames.chan_getAppInstances as CFCoreTypes.RpcMethodName,
+      {
+        multisigAddress,
+      } as CFCoreTypes.GetAppInstancesParams,
+    );
   };
 
   public getFreeBalance = async (
     assetId: string,
     multisigAddress: string,
   ): Promise<CFCoreTypes.GetFreeBalanceStateResult> => {
-    return await this._send(CFCoreTypes.RpcMethodName.GET_FREE_BALANCE_STATE, {
-      multisigAddress,
-      tokenAddress: makeChecksum(assetId),
-    } as CFCoreTypes.GetFreeBalanceStateParams);
+    return await this._send(
+      CFCoreTypes.RpcMethodNames.chan_getFreeBalanceState as CFCoreTypes.RpcMethodName,
+      {
+        multisigAddress,
+        tokenAddress: makeChecksum(assetId),
+      } as CFCoreTypes.GetFreeBalanceStateParams,
+    );
   };
 
   public getProposedAppInstances = async (
     multisigAddress?: string,
   ): Promise<CFCoreTypes.GetProposedAppInstancesResult | undefined> => {
-    return await this._send(CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES, {
-      multisigAddress,
-    } as CFCoreTypes.GetProposedAppInstancesParams);
+    return await this._send(
+      CFCoreTypes.RpcMethodNames.chan_getProposedAppInstances as CFCoreTypes.RpcMethodName,
+      {
+        multisigAddress,
+      } as CFCoreTypes.GetProposedAppInstancesParams,
+    );
   };
 
   public getProposedAppInstance = async (
     appInstanceId: string,
   ): Promise<CFCoreTypes.GetProposedAppInstanceResult | undefined> => {
-    return await this._send(CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES, {
-      appInstanceId,
-    } as CFCoreTypes.GetProposedAppInstanceParams);
+    return await this._send(
+      CFCoreTypes.RpcMethodNames.chan_getProposedAppInstances as CFCoreTypes.RpcMethodName,
+      {
+        appInstanceId,
+      } as CFCoreTypes.GetProposedAppInstanceParams,
+    );
   };
 
   public getAppInstanceDetails = async (
     appInstanceId: string,
   ): Promise<CFCoreTypes.GetAppInstanceDetailsResult | undefined> => {
-    return await this._send(CFCoreTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS, {
-      appInstanceId,
-    } as CFCoreTypes.GetAppInstanceDetailsParams);
+    return await this._send(
+      CFCoreTypes.RpcMethodNames.chan_getAppInstance as CFCoreTypes.RpcMethodName,
+      {
+        appInstanceId,
+      } as CFCoreTypes.GetAppInstanceDetailsParams,
+    );
   };
 
   public getAppState = async (
     appInstanceId: string,
   ): Promise<CFCoreTypes.GetStateResult | undefined> => {
-    return await this._send(CFCoreTypes.RpcMethodName.GET_STATE, {
-      appInstanceId,
-    } as CFCoreTypes.GetStateParams);
+    return await this._send(
+      CFCoreTypes.RpcMethodNames.chan_getState as CFCoreTypes.RpcMethodName,
+      {
+        appInstanceId,
+      } as CFCoreTypes.GetStateParams,
+    );
   };
 
   public takeAction = async (
     appInstanceId: string,
     action: AppActionBigNumber,
   ): Promise<CFCoreTypes.TakeActionResult> => {
-    return await this._send(CFCoreTypes.RpcMethodName.TAKE_ACTION, {
-      action,
-      appInstanceId,
-    } as CFCoreTypes.TakeActionParams);
+    return await this._send(
+      CFCoreTypes.RpcMethodNames.chan_takeAction as CFCoreTypes.RpcMethodName,
+      {
+        action,
+        appInstanceId,
+      } as CFCoreTypes.TakeActionParams,
+    );
   };
 
   public updateState = async (
@@ -203,17 +230,20 @@ export class ChannelRouter {
     // cast to any bc no supported apps use
     // the update state method
   ): Promise<CFCoreTypes.UpdateStateResult> => {
-    return await this._send(CFCoreTypes.RpcMethodName.UPDATE_STATE, {
-      appInstanceId,
-      newState,
-    } as CFCoreTypes.UpdateStateParams);
+    return await this._send(
+      CFCoreTypes.RpcMethodNames.chan_updateState as CFCoreTypes.RpcMethodName,
+      {
+        appInstanceId,
+        newState,
+      } as CFCoreTypes.UpdateStateParams,
+    );
   };
 
   public proposeInstallApp = async (
     params: CFCoreTypes.ProposeInstallParams, // TODO THIS HAS TO CHANGE
   ): Promise<CFCoreTypes.ProposeInstallResult> => {
     return await this._send(
-      CFCoreTypes.RpcMethodName.PROPOSE_INSTALL,
+      CFCoreTypes.RpcMethodNames.chan_proposeInstall as CFCoreTypes.RpcMethodName,
       params as CFCoreTypes.ProposeInstallParams,
     );
   };
@@ -222,54 +252,75 @@ export class ChannelRouter {
     appInstanceId: string,
     intermediaryIdentifier: string,
   ): Promise<CFCoreTypes.InstallVirtualResult> => {
-    return await this._send(CFCoreTypes.RpcMethodName.INSTALL_VIRTUAL, {
-      appInstanceId,
-      intermediaryIdentifier,
-    } as CFCoreTypes.InstallVirtualParams);
+    return await this._send(
+      CFCoreTypes.RpcMethodNames.chan_installVirtual as CFCoreTypes.RpcMethodName,
+      {
+        appInstanceId,
+        intermediaryIdentifier,
+      } as CFCoreTypes.InstallVirtualParams,
+    );
   };
 
   public installApp = async (appInstanceId: string): Promise<CFCoreTypes.InstallResult> => {
-    return await this._send(CFCoreTypes.RpcMethodName.INSTALL, {
-      appInstanceId,
-    } as CFCoreTypes.InstallParams);
+    return await this._send(
+      CFCoreTypes.RpcMethodNames.chan_install as CFCoreTypes.RpcMethodName,
+      {
+        appInstanceId,
+      } as CFCoreTypes.InstallParams,
+    );
   };
 
   public requestDepositRights = async (
     assetId: string,
   ): Promise<CFCoreTypes.RequestDepositRightsResult> => {
-    return await this._send(CFCoreTypes.RpcMethodName.REQUEST_DEPOSIT_RIGHTS, {
-      multisigAddress: this.multisigAddress,
-      tokenAddress: assetId,
-    } as CFCoreTypes.RequestDepositRightsParams);
+    return await this._send(
+      CFCoreTypes.RpcMethodNames.chan_requestDepositRights as CFCoreTypes.RpcMethodName,
+      {
+        multisigAddress: this.multisigAddress,
+        tokenAddress: assetId,
+      } as CFCoreTypes.RequestDepositRightsParams,
+    );
   };
 
   public uninstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
-    return await this._send(CFCoreTypes.RpcMethodName.UNINSTALL, {
-      appInstanceId,
-    } as CFCoreTypes.UninstallParams);
+    return await this._send(
+      CFCoreTypes.RpcMethodNames.chan_uninstall as CFCoreTypes.RpcMethodName,
+      {
+        appInstanceId,
+      } as CFCoreTypes.UninstallParams,
+    );
   };
 
   public rescindDepositRights = async (
     params: RescindDepositRightsParameters,
   ): Promise<RescindDepositRightsResponse> => {
-    return await this._send(CFCoreTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS, {
-      multisigAddress: this.multisigAddress,
-      tokenAddress: params.assetId,
-    } as CFCoreTypes.RescindDepositRightsParams);
+    return await this._send(
+      CFCoreTypes.RpcMethodNames.chan_rescindDepositRights as CFCoreTypes.RpcMethodName,
+      {
+        multisigAddress: this.multisigAddress,
+        tokenAddress: params.assetId,
+      } as CFCoreTypes.RescindDepositRightsParams,
+    );
   };
 
   public uninstallVirtualApp = async (
     appInstanceId: string,
     intermediary: string, // should be string array
   ): Promise<CFCoreTypes.UninstallVirtualResult> => {
-    return await this._send(CFCoreTypes.RpcMethodName.UNINSTALL_VIRTUAL, {
-      appInstanceId,
-      intermediaryIdentifier: intermediary,
-    } as CFCoreTypes.UninstallVirtualParams);
+    return await this._send(
+      CFCoreTypes.RpcMethodNames.chan_uninstallVirtual as CFCoreTypes.RpcMethodName,
+      {
+        appInstanceId,
+        intermediaryIdentifier: intermediary,
+      } as CFCoreTypes.UninstallVirtualParams,
+    );
   };
 
   public rejectInstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
-    return await this._send(CFCoreTypes.RpcMethodName.REJECT_INSTALL, { appInstanceId });
+    return await this._send(
+      CFCoreTypes.RpcMethodNames.chan_rejectInstall as CFCoreTypes.RpcMethodName,
+      { appInstanceId },
+    );
   };
 
   public withdraw = async (
@@ -277,12 +328,15 @@ export class ChannelRouter {
     assetId: string, // optional in cf
     recipient: string, // optional in cf
   ): Promise<CFCoreTypes.WithdrawResult> => {
-    return await this._send(CFCoreTypes.RpcMethodName.WITHDRAW, {
-      amount,
-      multisigAddress: this.multisigAddress,
-      recipient,
-      tokenAddress: makeChecksum(assetId),
-    } as CFCoreTypes.WithdrawParams);
+    return await this._send(
+      CFCoreTypes.RpcMethodNames.chan_withdraw as CFCoreTypes.RpcMethodName,
+      {
+        amount,
+        multisigAddress: this.multisigAddress,
+        recipient,
+        tokenAddress: makeChecksum(assetId),
+      } as CFCoreTypes.WithdrawParams,
+    );
   };
 
   public withdrawCommitment = async (
@@ -290,12 +344,15 @@ export class ChannelRouter {
     assetId?: string,
     recipient?: string,
   ): Promise<CFCoreTypes.WithdrawCommitmentResult> => {
-    return await this._send(CFCoreTypes.RpcMethodName.WITHDRAW_COMMITMENT, {
-      amount,
-      multisigAddress: this.multisigAddress,
-      recipient,
-      tokenAddress: makeChecksumOrEthAddress(assetId),
-    } as CFCoreTypes.WithdrawCommitmentParams);
+    return await this._send(
+      CFCoreTypes.RpcMethodNames.chan_withdrawCommitment as CFCoreTypes.RpcMethodName,
+      {
+        amount,
+        multisigAddress: this.multisigAddress,
+        recipient,
+        tokenAddress: makeChecksumOrEthAddress(assetId),
+      } as CFCoreTypes.WithdrawCommitmentParams,
+    );
   };
 
   ///////////////////////////////////////////////
