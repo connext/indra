@@ -177,7 +177,7 @@ export class ConnextListener extends EventEmitter {
     });
 
     this.channelRouter.on(
-      CFCoreTypes.RpcMethodName.INSTALL,
+      CFCoreTypes.RpcMethodNames.chan_install as CFCoreTypes.RpcMethodName,
       async (msg: any): Promise<void> => {
         const {
           result: {
@@ -191,9 +191,9 @@ export class ConnextListener extends EventEmitter {
       },
     );
 
-    this.channelRouter.on(CFCoreTypes.RpcMethodName.UNINSTALL, (data: any): any => {
+    this.channelRouter.on(CFCoreTypes.RpcMethodNames.chan_uninstall as CFCoreTypes.RpcMethodName, (data: any): any => {
       const result = data.result.result;
-      this.log.debug(`Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${stringify(result)}`);
+      this.log.debug(`Emitting CFCoreTypes.RpcMethodNames.chan_uninstall event: ${stringify(result)}`);
       this.connext.messaging.publish(
         `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
         stringify(result),
