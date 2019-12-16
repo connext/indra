@@ -156,7 +156,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     config = await node.config();
     log.debug(`Node provided config: ${stringify(config)}`);
 
-    const cfChannelProviderOptions = {
+    channelProvider = await createCFChannelProvider({
       ethProvider,
       keyGen,
       lockService: { acquireLock: node.acquireLock.bind(node) },
@@ -166,10 +166,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
       nodeUrl,
       store,
       xpub,
-    };
-
-    log.debug(`Using cfChannelProviderOptions: ${stringify(cfChannelProviderOptions)}`);
-    channelProvider = await createCFChannelProvider(cfChannelProviderOptions);
+    });
 
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
