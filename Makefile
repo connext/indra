@@ -154,11 +154,11 @@ test-cf: cf-core
 watch-cf: cf-core
 	bash ops/test-cf.sh --watch
 
-test-daicard: payment-bot
+test-daicard:
 	bash ops/test-ui.sh daicard
 
 # ensure you've run "make start-dashboard" first & not just "make start"
-test-dashboard: payment-bot
+test-dashboard:
 	bash ops/test-ui.sh dashboard
 
 # You can interactively select daicard or dashboard tests after running below
