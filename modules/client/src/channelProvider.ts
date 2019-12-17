@@ -114,8 +114,7 @@ export class ChannelProvider {
   }
 
   get multisigAddress(): string | undefined {
-    const multisigAddress = this._multisigAddress || this._config.multisigAddress;
-    return multisigAddress;
+    return this._multisigAddress || this.config.multisigAddress;
   }
 
   set multisigAddress(multisigAddress: string) {
@@ -123,11 +122,12 @@ export class ChannelProvider {
     this._multisigAddress = multisigAddress;
   }
 
-  get signerAddress(): string | undefined {
-    return this._signerAddress;
+  get signerAddress(): string {
+    return this._signerAddress || this.config.signerAddress;
   }
 
   set signerAddress(signerAddress: string) {
+    this._config.signerAddress = signerAddress;
     this._signerAddress = signerAddress;
   }
 
