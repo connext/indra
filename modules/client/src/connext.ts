@@ -1,5 +1,10 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { AppInstanceProposal, CF_PATH, LinkedTransferToRecipientParameters } from "@connext/types";
+import {
+  AppInstanceProposal,
+  CF_PATH,
+  LinkedTransferToRecipientParameters,
+  RpcType,
+} from "@connext/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
 import { Contract, providers } from "ethers";
@@ -86,6 +91,7 @@ export class ConnextClient implements IConnextClient {
   public store: Store;
   public token: Contract;
 
+  private rpcType: RpcType;
   private opts: InternalClientOptions;
   private keyGen: KeyGen;
 
@@ -109,6 +115,7 @@ export class ConnextClient implements IConnextClient {
     this.node = opts.node;
     this.token = opts.token;
     this.store = opts.store;
+    this.rpcType = opts.rpcType;
 
     this.freeBalanceAddress = this.channelProvider.config.freeBalanceAddress;
     this.signerAddress = this.channelProvider.config.signerAddress;
@@ -185,6 +192,10 @@ export class ConnextClient implements IConnextClient {
   // Unsorted methods pulled from the old abstract wrapper class
 
   public restart = async (): Promise<void> => {
+    if (this.rpcType === "InjectedProvider") {
+      this.log.warn(`Cannot reset with an injected provider.`);
+      return;
+    }
     // Create a fresh channelProvider & start using that.
     // End goal is to use this to restart the cfNode after restoring state
     const channelProvider = await createCFChannelProvider({
