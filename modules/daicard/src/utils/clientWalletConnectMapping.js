@@ -1,4 +1,4 @@
-import { CFCoreTypes } from "@connext/types";
+import { ChannelProviderRpcMethods } from "@connext/types";
 import WalletConnectBrowser from "@walletconnect/browser";
 
 export let walletConnector = null;
@@ -93,77 +93,77 @@ async function mapPayloadToClient(payload, channel) {
   let result;
   try {
     switch (method) {
-      case "chan_store_set":
+      case ChannelProviderRpcMethods.chan_storeSet:
         verifyFields(params, ["pairs"]);
         const { pairs } = params;
         result = await channel.channelRouter.set(pairs);
         break;
 
-      case "chan_store_get":
+      case ChannelProviderRpcMethods.chan_storeGet:
         verifyFields(params, ["path"]);
         const { path } = params;
         result = await channel.channelRouter.get(path);
         break;
 
-      case "chan_node_auth":
+      case ChannelProviderRpcMethods.chan_nodeAuth:
         verifyFields(params, ["message"]);
         const { message } = params;
         result = await channel.channelRouter.signMessage(message);
         break;
 
-      case "chan_config":
+      case ChannelProviderRpcMethods.chan_config:
         result = await channel.channelProviderConfig(params);
         break;
 
-      case CFCoreTypes.RpcMethodName.DEPOSIT:
+      case ChannelProviderRpcMethods.chan_deposit:
         result = await channel.providerDeposit(params);
         break;
-      case CFCoreTypes.RpcMethodName.GET_STATE:
+      case ChannelProviderRpcMethods.chan_getState:
         result = await channel.getState(params);
         break;
-      case CFCoreTypes.RpcMethodName.GET_APP_INSTANCES:
+      case ChannelProviderRpcMethods.chan_getAppInstances:
         result = await channel.getAppInstances(params);
         break;
-      case CFCoreTypes.RpcMethodName.GET_FREE_BALANCE_STATE:
+      case ChannelProviderRpcMethods.chan_getFreeBalanceState:
         verifyFields(params, ["tokenAddress", "multisigAddress"]);
         const { tokenAddress } = params;
         result = await channel.getFreeBalance(tokenAddress);
         break;
 
-      case CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES:
+      case ChannelProviderRpcMethods.chan_getProposedAppInstances:
         result = await channel.getProposedAppInstances(params);
         break;
-      case CFCoreTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS:
+      case ChannelProviderRpcMethods.chan_getAppInstance:
         result = await channel.getAppInstanceDetails(params);
         break;
-      case CFCoreTypes.RpcMethodName.TAKE_ACTION:
+      case ChannelProviderRpcMethods.chan_takeAction:
         result = await channel.takeAction(params);
         break;
-      case CFCoreTypes.RpcMethodName.UPDATE_STATE:
+      case ChannelProviderRpcMethods.chan_updateState:
         result = await channel.updateState(params);
         break;
-      case CFCoreTypes.RpcMethodName.PROPOSE_INSTALL:
+      case ChannelProviderRpcMethods.chan_proposeInstall:
         result = await channel.proposeInstallApp(params);
         break;
-      case CFCoreTypes.RpcMethodName.INSTALL_VIRTUAL:
+      case ChannelProviderRpcMethods.chan_installVirtual:
         result = await channel.installVirtualApp(params);
         break;
-      case CFCoreTypes.RpcMethodName.INSTALL:
+      case ChannelProviderRpcMethods.chan_install:
         result = await channel.installApp(params);
         break;
-      case CFCoreTypes.RpcMethodName.UNINSTALL:
+      case ChannelProviderRpcMethods.chan_uninstall:
         result = await channel.uninstallApp(params);
         break;
-      case CFCoreTypes.RpcMethodName.UNINSTALL_VIRTUAL:
+      case ChannelProviderRpcMethods.chan_uninstallVirtual:
         result = await channel.uninstallVirtualApp(params);
         break;
-      case CFCoreTypes.RpcMethodName.REJECT_INSTALL:
+      case ChannelProviderRpcMethods.chan_rejectInstall:
         result = await channel.rejectInstallApp(params);
         break;
-      case CFCoreTypes.RpcMethodName.WITHDRAW:
+      case ChannelProviderRpcMethods.chan_withdraw:
         result = await channel.providerWithdraw(params);
         break;
-      case CFCoreTypes.RpcMethodName.WITHDRAW_COMMITMENT:
+      case ChannelProviderRpcMethods.chan_withdrawCommitment:
         result = await channel.withdrawCommitment(params);
         break;
       default:

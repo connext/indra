@@ -88,7 +88,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
       freeBalanceAddress: xpubToAddress(xpub),
       nodeUrl,
       signerAddress: xpubToAddress(xpub),
-      type: RpcType.CounterfactualNode,
+      type: "CounterfactualNode",
       userPublicIdentifier: xpub,
     };
   } else if (channelProvider) {
@@ -96,7 +96,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     await channelProvider.enable();
     channelProviderConfig = {
       ...channelProvider.config,
-      type: RpcType.ChannelProvider,
+      type: "ChannelProvider",
     };
   } else if (opts.xpub && opts.keyGen) {
     xpub = opts.xpub;
@@ -105,7 +105,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
       freeBalanceAddress: xpubToAddress(xpub),
       nodeUrl,
       signerAddress: xpubToAddress(xpub),
-      type: RpcType.CounterfactualNode,
+      type: "CounterfactualNode",
       userPublicIdentifier: xpub,
     };
   } else {
@@ -144,10 +144,10 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
 
   let channelRouter: ChannelRouter;
   switch (channelProviderConfig.type) {
-    case RpcType.ChannelProvider:
+    case "ChannelProvider":
       channelRouter = new ChannelRouter(channelProvider!, channelProviderConfig);
       break;
-    case RpcType.CounterfactualNode:
+    case "CounterfactualNode":
       const cfCore = await CFCore.create(
         messaging as any,
         store,
@@ -387,10 +387,10 @@ export class ConnextClient implements IConnextClient {
     // End goal is to use this to restart the cfNode after restoring state
     let channelRouter: ChannelRouter;
     switch (this.routerType) {
-      case RpcType.ChannelProvider:
+      case "ChannelProvider":
         channelRouter = new ChannelRouter(this.opts.channelProvider!, this.channelRouter.config);
         break;
-      case RpcType.CounterfactualNode:
+      case "CounterfactualNode":
         const cfCore = await CFCore.create(
           this.messaging as any,
           this.store,
@@ -621,7 +621,7 @@ export class ConnextClient implements IConnextClient {
   // Restore State
 
   public restoreState = async (): Promise<void> => {
-    if (!this.store || this.routerType === RpcType.ChannelProvider) {
+    if (!this.store || this.routerType === "ChannelProvider") {
       throw new Error(`Cannot restore state with channel provider`);
     }
     this.channelRouter.reset();

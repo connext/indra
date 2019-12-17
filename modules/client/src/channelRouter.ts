@@ -94,14 +94,14 @@ export class ChannelRouter {
   ///// SIGNING METHODS
   public signMessage = async (message: string): Promise<string> => {
     switch (this.type) {
-      case RpcType.CounterfactualNode:
+      case "CounterfactualNode":
         if (!this.wallet) {
           throw new Error(`Cannot sign without a wallet when using smart client`);
         }
         // will have a mnemonic, sign with wallet
         return await this.wallet.signMessage(arrayify(message));
 
-      case RpcType.ChannelProvider:
+      case "ChannelProvider":
         return await this._send("chan_node_auth" as any, { message });
 
       default:
@@ -365,7 +365,7 @@ export class ChannelRouter {
   public get = async (path: string): Promise<any> => {
     this.isApprovedGetSetPath(path);
     switch (this.type) {
-      case RpcType.CounterfactualNode:
+      case "CounterfactualNode":
         if (!this.store) {
           throw new Error(
             `Should have a defined store ref when provider type is a counterfactual node.`,
@@ -373,7 +373,7 @@ export class ChannelRouter {
         }
         return await this.store.get(path);
 
-      case RpcType.ChannelProvider:
+      case "ChannelProvider":
         // route the store get call through the connection
         return await this.connection._send("chan_store_get", {
           path,
@@ -396,7 +396,7 @@ export class ChannelRouter {
       this.isApprovedGetSetPath(path);
     });
     switch (this.type) {
-      case RpcType.CounterfactualNode:
+      case "CounterfactualNode":
         if (!this.store) {
           throw new Error(
             `Should have a defined store ref when provider type is a counterfactual node.`,
@@ -404,7 +404,7 @@ export class ChannelRouter {
         }
         return await this.store.set(pairs, allowDelete);
 
-      case RpcType.ChannelProvider:
+      case "ChannelProvider":
         // route the store get call through the connection
         return await this.connection._send("chan_store_set", {
           allowDelete,
@@ -418,7 +418,7 @@ export class ChannelRouter {
 
   public restore = async (): Promise<{ path: string; value: any }[]> => {
     switch (this.type) {
-      case RpcType.CounterfactualNode:
+      case "CounterfactualNode":
         if (!this.store) {
           throw new Error(
             `Should have a defined store ref when provider type is a counterfactual node.`,
@@ -426,7 +426,7 @@ export class ChannelRouter {
         }
         return await this.store.restore();
 
-      case RpcType.ChannelProvider:
+      case "ChannelProvider":
         // do not allow channel provider types to restore state
         // TODO: can we route to the smart client here?
         throw new Error(
@@ -439,7 +439,7 @@ export class ChannelRouter {
 
   public reset = async (): Promise<void> => {
     switch (this.type) {
-      case RpcType.CounterfactualNode:
+      case "CounterfactualNode":
         if (!this.store) {
           throw new Error(
             `Should have a defined store ref when provider type is a counterfactual node.`,
@@ -447,7 +447,7 @@ export class ChannelRouter {
         }
         return await this.store.reset();
 
-      case RpcType.ChannelProvider:
+      case "ChannelProvider":
         // do not allow channel provider types to reset store
         throw new Error(
           `Cannot restore store with channel provider instantiation. Please contact original wallet provider.`,
@@ -462,7 +462,7 @@ export class ChannelRouter {
 
   private isApprovedGetSetPath(path: string): void {
     // if it is a smart client, all paths are approved
-    if (this.type === RpcType.CounterfactualNode) {
+    if (this.type === "CounterfactualNode") {
       return;
     }
 
@@ -479,7 +479,7 @@ export class ChannelRouter {
   ): Promise<any> {
     let result: any;
     switch (this.type) {
-      case RpcType.CounterfactualNode:
+      case "CounterfactualNode":
         const ret = await this.connection.rpcRouter.dispatch({
           id: Date.now(),
           methodName,
@@ -491,7 +491,7 @@ export class ChannelRouter {
         result = ret.result.result;
         break;
 
-      case RpcType.ChannelProvider:
+      case "ChannelProvider":
         result = await this.connection._send(methodName, parameters);
         break;
 
