@@ -26,8 +26,8 @@ export interface CFChannelProviderOptions {
 }
 
 export const RpcTypes = {
-  ChannelProvider: "ChannelProvider",
-  CounterfactualNode: "CounterfactualNode",
+  CounterfactualProvider: "CounterfactualProvider",
+  InjectedProvider: "InjectedProvider",
 };
 export type RpcType = keyof typeof RpcTypes;
 
