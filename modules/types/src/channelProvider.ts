@@ -1,3 +1,5 @@
+import { CFCoreTypes } from "./cf";
+
 export type ChannelProvider = any;
 
 export type ChannelProviderConfig = {
@@ -11,10 +13,20 @@ export type ChannelProviderConfig = {
   userPublicIdentifier: string;
 };
 
-export enum RpcType {
-  ChannelProvider = "ChannelProvider",
-  CounterfactualNode = "CounterfactualNode", // rename?
-}
+export const RpcTypes = {
+  ChannelProvider: "ChannelProvider",
+  CounterfactualNode: "CounterfactualNode",
+};
+export type RpcType = keyof typeof RpcTypes;
 
 // TODO: replace any w interface of cfCore (using implementation directly -> circular dependency)
 export type RpcConnection = ChannelProvider | any;
+
+export const ChannelProviderRpcMethods = {
+  ...CFCoreTypes.RpcMethodNames,
+  chan_config: "chan_config",
+  chan_nodeAuth: "chan_nodeAuth",
+  chan_storeGet: "chan_storeGet",
+  chan_storeSet: "chan_storeSet",
+};
+export type ChannelProviderRpcMethod = keyof typeof ChannelProviderRpcMethods;
