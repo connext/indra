@@ -1,13 +1,13 @@
 import Queue, { Task } from "p-queue";
 
 import { addToManyQueues } from "./methods/queued-execution";
-import { Node } from "./types";
+import { CFCoreTypes } from "./types";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 
 class QueueWithLockingServiceConnection extends Queue {
   constructor(
     private readonly lockName,
-    private readonly lockingService: Node.ILockService,
+    private readonly lockingService: CFCoreTypes.ILockService,
     ...args: any[]
   ) {
     super(...args);
@@ -33,7 +33,7 @@ export default class ProcessQueue {
     QueueWithLockingServiceConnection | Queue
   > = new Map<string, QueueWithLockingServiceConnection | Queue>();
 
-  constructor(private readonly lockingService?: Node.ILockService) {}
+  constructor(private readonly lockingService?: CFCoreTypes.ILockService) {}
 
   addTask(lockNames: string[], task: Task<any>) {
     return addToManyQueues(

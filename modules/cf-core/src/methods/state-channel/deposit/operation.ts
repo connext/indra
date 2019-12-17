@@ -22,7 +22,7 @@ import {
   coinBalanceRefundStateEncoding,
   DepositFailedMessage,
   NetworkContext,
-  Node,
+  CFCoreTypes,
   NODE_EVENTS,
   OutcomeType,
   SolidityValueType,
@@ -40,7 +40,7 @@ interface DepositContext {
 
 export async function installBalanceRefundApp(
   requestHandler: RequestHandler,
-  params: Node.DepositParams
+  params: CFCoreTypes.DepositParams
 ) {
   const {
     publicIdentifier,
@@ -102,7 +102,7 @@ export async function installBalanceRefundApp(
 
 export async function makeDeposit(
   requestHandler: RequestHandler,
-  params: Node.DepositParams
+  params: CFCoreTypes.DepositParams
 ): Promise<void> {
   const { multisigAddress, amount, tokenAddress } = params;
   const {
@@ -172,7 +172,7 @@ export async function makeDeposit(
 
 export async function uninstallBalanceRefundApp(
   requestHandler: RequestHandler,
-  params: Node.DepositParams,
+  params: CFCoreTypes.DepositParams,
   blockNumberToUseIfNecessary?: number
 ) {
   const {
@@ -224,7 +224,7 @@ export async function uninstallBalanceRefundApp(
 }
 
 async function getDepositContext(
-  params: Node.DepositParams,
+  params: CFCoreTypes.DepositParams,
   publicIdentifier: string,
   provider: BaseProvider,
   networkContext: NetworkContext,

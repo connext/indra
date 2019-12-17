@@ -1,4 +1,4 @@
-import { Node as NodeTypes } from "@connext/types";
+import { CFCoreTypes } from "@connext/types";
 
 import { jsonRpcDeserialize, Node } from "../../src";
 
@@ -24,7 +24,7 @@ describe("Node method follows spec - getStateDepositHolderAddress", () => {
     } = await nodeA.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
-        method: NodeTypes.RpcMethodNames.chan_getStateDepositHolderAddress,
+        method: CFCoreTypes.RpcMethodNames.chan_getStateDepositHolderAddress,
         params: { owners },
         jsonrpc: "2.0"
       })

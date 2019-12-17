@@ -5,7 +5,7 @@ import { Protocol, ProtocolRunner } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { Store } from "../../../store";
-import { Node, NODE_EVENTS, SolidityValueType, UpdateStateMessage } from "../../../types";
+import { CFCoreTypes, NODE_EVENTS, SolidityValueType, UpdateStateMessage } from "../../../types";
 import {
   getFirstElementInListNotEqualTo,
   prettyPrintObject
@@ -19,13 +19,13 @@ import {
 } from "../../errors";
 
 export default class TakeActionController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodNames.chan_takeAction)
+  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_takeAction)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
     // @ts-ignore
     requestHandler: RequestHandler,
-    params: Node.TakeActionParams
+    params: CFCoreTypes.TakeActionParams
   ): Promise<string[]> {
     const multisigAddress = await requestHandler.store.getMultisigAddressFromAppInstance(
       params.appInstanceId
@@ -35,7 +35,7 @@ export default class TakeActionController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: Node.TakeActionParams
+    params: CFCoreTypes.TakeActionParams
   ): Promise<void> {
     const { store } = requestHandler;
     const { appInstanceId, action } = params;
@@ -58,8 +58,8 @@ export default class TakeActionController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.TakeActionParams
-  ): Promise<Node.TakeActionResult> {
+    params: CFCoreTypes.TakeActionParams
+  ): Promise<CFCoreTypes.TakeActionResult> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
     const { appInstanceId, action } = params;
 
@@ -86,7 +86,7 @@ export default class TakeActionController extends NodeController {
 
   protected async afterExecution(
     requestHandler: RequestHandler,
-    params: Node.TakeActionParams
+    params: CFCoreTypes.TakeActionParams
   ): Promise<void> {
     const { store, router, publicIdentifier } = requestHandler;
     const { appInstanceId, action } = params;

@@ -72,7 +72,7 @@ export {
   LinkedTransferToRecipientResponse,
   makeChecksum,
   makeChecksumOrEthAddress,
-  Node as CFCoreTypes,
+  CFCoreTypes,
   PaymentProfile,
   RequestCollateralResponse,
   ResolveConditionParameters,

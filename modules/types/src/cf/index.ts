@@ -25,7 +25,7 @@ import {
   twoPartyFixedOutcomeInterpreterParamsEncoding,
   virtualAppAgreementEncoding
 } from "./data-types";
-import { IRpcNodeProvider, Node } from "./node";
+import { IRpcNodeProvider, CFCoreTypes } from "./node";
 import {
   ABIEncoding,
   Address,
@@ -89,7 +89,7 @@ export {
   SolidityValueType,
   StateChannelJSON,
   IRpcNodeProvider,
-  Node as CFCoreTypes,
+  CFCoreTypes,
   SignedStateHashUpdate,
   OutcomeType,
   SingleAssetTwoPartyCoinTransferInterpreterParams,

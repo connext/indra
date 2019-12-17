@@ -4,7 +4,7 @@ import { jsonRpcMethod } from "rpc-server";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { xkeyKthAddress } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
-import { Node, NODE_EVENTS } from "../../../types";
+import { CFCoreTypes, NODE_EVENTS } from "../../../types";
 import { prettyPrintObject, getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
@@ -18,12 +18,12 @@ import {
 import { runWithdrawProtocol } from "./operation";
 
 export default class WithdrawController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodNames.chan_withdraw)
+  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_withdraw)
   public executeMethod = super.executeMethod;
 
   public static async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.WithdrawParams
+    params: CFCoreTypes.WithdrawParams
   ): Promise<string[]> {
     const { store, publicIdentifier, networkContext } = requestHandler;
 
@@ -62,7 +62,7 @@ export default class WithdrawController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: Node.WithdrawParams
+    params: CFCoreTypes.WithdrawParams
   ): Promise<void> {
     const { store, provider, networkContext } = requestHandler;
     const { multisigAddress } = params;
@@ -87,8 +87,8 @@ export default class WithdrawController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.WithdrawParams
-  ): Promise<Node.WithdrawResult> {
+    params: CFCoreTypes.WithdrawParams
+  ): Promise<CFCoreTypes.WithdrawResult> {
     const {
       store,
       provider,

@@ -19,7 +19,7 @@ import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
 import {
   NetworkContext,
-  Node as NodeTypes,
+  CFCoreTypes,
   NODE_EVENTS,
   NodeMessageWrappedProtocolMessage
 } from "./types";
@@ -57,14 +57,14 @@ export class Node {
   public rpcRouter!: RpcRouter;
 
   static async create(
-    messagingService: NodeTypes.IMessagingService,
-    storeService: NodeTypes.IStoreService,
+    messagingService: CFCoreTypes.IMessagingService,
+    storeService: CFCoreTypes.IStoreService,
     networkContext: NetworkContext,
     nodeConfig: NodeConfig,
     provider: BaseProvider,
-    lockService?: NodeTypes.ILockService,
+    lockService?: CFCoreTypes.ILockService,
     publicExtendedKey?: string,
-    privateKeyGenerator?: NodeTypes.IPrivateKeyGenerator,
+    privateKeyGenerator?: CFCoreTypes.IPrivateKeyGenerator,
     blocksNeededForConfirmation?: number
   ): Promise<Node> {
     const [
@@ -94,13 +94,13 @@ export class Node {
   private constructor(
     private readonly publicExtendedKey: string,
     private readonly privateKeyGetter: PrivateKeysGetter,
-    private readonly messagingService: NodeTypes.IMessagingService,
-    private readonly storeService: NodeTypes.IStoreService,
+    private readonly messagingService: CFCoreTypes.IMessagingService,
+    private readonly storeService: CFCoreTypes.IStoreService,
     private readonly nodeConfig: NodeConfig,
     private readonly provider: BaseProvider,
     public readonly networkContext: NetworkContext,
     public readonly blocksNeededForConfirmation: number = REASONABLE_NUM_BLOCKS_TO_WAIT,
-    private readonly lockService?: NodeTypes.ILockService
+    private readonly lockService?: CFCoreTypes.ILockService
   ) {
     this.networkContext.provider = this.provider;
     this.incoming = new EventEmitter();
@@ -266,7 +266,7 @@ export class Node {
    * @param callback
    */
   on(
-    event: NodeTypes.EventName | NodeTypes.RpcMethodName,
+    event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
     callback: (res: any) => void
   ) {
     this.rpcRouter.subscribe(event, async (res: any) => callback(res));
@@ -280,7 +280,7 @@ export class Node {
    * @param [callback]
    */
   off(
-    event: NodeTypes.EventName | NodeTypes.RpcMethodName,
+    event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
     callback?: (res: any) => void
   ) {
     this.rpcRouter.unsubscribe(
@@ -298,7 +298,7 @@ export class Node {
    * @param [callback]
    */
   once(
-    event: NodeTypes.EventName | NodeTypes.RpcMethodName,
+    event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
     callback: (res: any) => void
   ) {
     this.rpcRouter.subscribeOnce(event, async (res: any) => callback(res));
@@ -310,8 +310,8 @@ export class Node {
    * @param req
    */
   emit(
-    event: NodeTypes.EventName | NodeTypes.RpcMethodName,
-    req: NodeTypes.MethodRequest
+    event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
+    req: CFCoreTypes.MethodRequest
   ) {
     this.rpcRouter.emit(event, req);
   }
@@ -322,9 +322,9 @@ export class Node {
    * @param req
    */
   async call(
-    method: NodeTypes.MethodName,
-    req: NodeTypes.MethodRequest
-  ): Promise<NodeTypes.MethodResponse> {
+    method: CFCoreTypes.MethodName,
+    req: CFCoreTypes.MethodRequest
+  ): Promise<CFCoreTypes.MethodResponse> {
     return this.requestHandler.callMethod(method, req);
   }
 
@@ -337,7 +337,7 @@ export class Node {
   private registerMessagingConnection() {
     this.messagingService.onReceive(
       this.publicIdentifier,
-      async (msg: NodeTypes.NodeMessage) => {
+      async (msg: CFCoreTypes.NodeMessage) => {
         await this.handleReceivedMessage(msg);
         this.rpcRouter.emit(msg.type, msg, "outgoing");
       }
@@ -360,12 +360,12 @@ export class Node {
    *     _does have_ an _ioSendDeferral_, in which case the message is dispatched
    *     solely to the deffered promise's resolve callback.
    */
-  private async handleReceivedMessage(msg: NodeTypes.NodeMessage) {
+  private async handleReceivedMessage(msg: CFCoreTypes.NodeMessage) {
     if (!Object.values(NODE_EVENTS).includes(msg.type)) {
       console.error(`Received message with unknown event type: ${msg.type}`);
     }
 
-    const isProtocolMessage = (msg: NodeTypes.NodeMessage) =>
+    const isProtocolMessage = (msg: CFCoreTypes.NodeMessage) =>
       msg.type === NODE_EVENTS.PROTOCOL_MESSAGE_EVENT;
 
     const isExpectingResponse = (msg: NodeMessageWrappedProtocolMessage) =>

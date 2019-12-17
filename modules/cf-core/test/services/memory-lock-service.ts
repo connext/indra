@@ -1,8 +1,8 @@
-import { Node } from "@connext/types";
+import { CFCoreTypes } from "@connext/types";
 
 import { Lock } from "./lock";
 
-export class MemoryLockService implements Node.ILockService {
+export class MemoryLockService implements CFCoreTypes.ILockService {
   public readonly locks: Map<string, Lock> = new Map<string, Lock>();
 
   async acquireLock(

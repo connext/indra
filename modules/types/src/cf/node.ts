@@ -32,7 +32,7 @@ export interface IRpcNodeProvider {
   sendMessage(message: Rpc): any;
 }
 
-export namespace Node {
+export namespace CFCoreTypes {
   /**
    * The message type for Nodes to communicate with each other.
    */
@@ -58,8 +58,8 @@ export namespace Node {
   }
 
   export interface IMessagingService {
-    send(to: string, msg: Node.NodeMessage): Promise<void>;
-    onReceive(address: string, callback: (msg: Node.NodeMessage) => void): any;
+    send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void>;
+    onReceive(address: string, callback: (msg: CFCoreTypes.NodeMessage) => void): any;
   }
 
   /**
