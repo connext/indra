@@ -279,8 +279,10 @@ export class NodeApiClient implements INodeApiClient {
         `Must have instantiated a channel provider (ie a signing thing) before setting auth token`,
       );
     }
+    // TODO: fix the channel provider in wallet connect to return a
+    // signer address
     const nonce = await this.send("auth.getNonce", {
-      address: this.channelProvider.signerAddress,
+      address: this.channelProvider.signerAddress || this.channelProvider.config.signerAddress,
     });
     const sig = await this.channelProvider.send(NewRpcMethodName.NODE_AUTH, { message: nonce });
     const token = `${nonce}:${sig}`;
