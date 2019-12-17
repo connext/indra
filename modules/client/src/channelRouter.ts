@@ -130,9 +130,12 @@ export class ChannelRouter {
   };
 
   public getStateChannel = async (): Promise<{ data: StateChannelJSON }> => {
-    return await this._send(CFCoreTypes.RpcMethodName.GET_STATE_CHANNEL, {
-      multisigAddress: this.multisigAddress,
-    });
+    return await this._send(
+      CFCoreTypes.RpcMethodNames.chan_getStateChannel as CFCoreTypes.RpcMethodName,
+      {
+        multisigAddress: this.multisigAddress,
+      },
+    );
   };
 
   public getState = async (appInstanceId: string): Promise<CFCoreTypes.GetStateResult> => {
