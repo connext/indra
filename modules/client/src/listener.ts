@@ -1,7 +1,7 @@
 import { bigNumberify } from "ethers/utils";
 import { EventEmitter } from "events";
 
-import { ChannelRouter } from "./channelRouter";
+import { ChannelProvider } from "./channelProvider";
 import { ConnextClient } from "./connext";
 import { Logger, stringify } from "./lib";
 import {
@@ -34,7 +34,7 @@ type CallbackStruct = {
 
 export class ConnextListener extends EventEmitter {
   private log: Logger;
-  private channelRouter: ChannelRouter;
+  private channelProvider: ChannelProvider;
   private connext: ConnextClient;
 
   // TODO: add custom parsing functions here to convert event data
@@ -132,9 +132,9 @@ export class ConnextListener extends EventEmitter {
     },
   };
 
-  constructor(channelRouter: ChannelRouter, connext: ConnextClient) {
+  constructor(channelProvider: ChannelProvider, connext: ConnextClient) {
     super();
-    this.channelRouter = channelRouter;
+    this.channelProvider = channelProvider;
     this.connext = connext;
     this.log = new Logger("ConnextListener", connext.log.logLevel);
   }
@@ -149,7 +149,7 @@ export class ConnextListener extends EventEmitter {
   public registerCfListener = (event: CFCoreTypes.EventName, cb: Function): void => {
     // replace with new fn
     this.log.debug(`Registering listener for ${event}`);
-    this.channelRouter.on(
+    this.channelProvider.on(
       event,
       async (res: any): Promise<void> => {
         await cb(res);
@@ -173,11 +173,11 @@ export class ConnextListener extends EventEmitter {
 
   public registerDefaultListeners = (): void => {
     Object.entries(this.defaultCallbacks).forEach(([event, callback]: any): any => {
-      this.channelRouter.on(CFCoreTypes.EventNames[event], callback);
+      this.channelProvider.on(CFCoreTypes.EventNames[event], callback);
     });
 
-    this.channelRouter.on(
-      CFCoreTypes.RpcMethodNames.chan_install as CFCoreTypes.RpcMethodName,
+    this.channelProvider.on(
+      CFCoreTypes.RpcMethodName.INSTALL,
       async (msg: any): Promise<void> => {
         const {
           result: {
@@ -191,14 +191,19 @@ export class ConnextListener extends EventEmitter {
       },
     );
 
-    this.channelRouter.on(CFCoreTypes.RpcMethodNames.chan_uninstall as CFCoreTypes.RpcMethodName, (data: any): any => {
-      const result = data.result.result;
-      this.log.debug(`Emitting CFCoreTypes.RpcMethodNames.chan_uninstall event: ${stringify(result)}`);
-      this.connext.messaging.publish(
-        `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
-        stringify(result),
-      );
-    });
+    this.channelProvider.on(
+      CFCoreTypes.RpcMethodNames.chan_uninstall as CFCoreTypes.RpcMethodName,
+      (data: any): any => {
+        const result = data.result.result;
+        this.log.debug(
+          `Emitting CFCoreTypes.RpcMethodNames.chan_uninstall event: ${stringify(result)}`,
+        );
+        this.connext.messaging.publish(
+          `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
+          stringify(result),
+        );
+      },
+    );
   };
 
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {

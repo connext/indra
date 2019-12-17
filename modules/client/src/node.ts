@@ -3,7 +3,7 @@ import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
 import uuid = require("uuid");
 
-import { ChannelRouter } from "./channelRouter";
+import { ChannelProvider } from "./channelProvider";
 import { Logger, NATS_ATTEMPTS, NATS_TIMEOUT, stringify } from "./lib";
 import {
   AppRegistry,
@@ -13,6 +13,7 @@ import {
   GetChannelResponse,
   GetConfigResponse,
   makeChecksumOrEthAddress,
+  NewRpcMethodName,
   NodeInitializationParameters,
   PaymentProfile,
   RequestCollateralResponse,
@@ -63,46 +64,42 @@ export class NodeApiClient implements INodeApiClient {
   public latestSwapRates: { [key: string]: string } = {};
   public log: Logger;
 
-  private innerUserPublicIdentifier: string | undefined;
-  private innerNodePublicIdentifier: string | undefined;
-  private innerChannelRouter: ChannelRouter | undefined;
-  private token: Promise<string> | undefined;
+  private _userPublicIdentifier: string | undefined; // tslint:disable-line:variable-name
+  private _nodePublicIdentifier: string | undefined; // tslint:disable-line:variable-name
+  private _channelProvider: ChannelProvider | undefined; // tslint:disable-line:variable-name
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
     this.log = new Logger("NodeApiClient", opts.logLevel);
-    this.innerUserPublicIdentifier = opts.userPublicIdentifier;
-    this.innerNodePublicIdentifier = opts.nodePublicIdentifier;
-    this.innerChannelRouter = opts.channelRouter;
-    if (this.channelRouter) {
-      this.token = this.getAuthToken();
-    }
+    this._userPublicIdentifier = opts.userPublicIdentifier;
+    this._nodePublicIdentifier = opts.nodePublicIdentifier;
+    this._channelProvider = opts.channelProvider;
   }
 
   ////////////////////////////////////////
   // GETTERS/SETTERS
-  get channelRouter(): ChannelRouter | undefined {
-    return this.innerChannelRouter;
+  get channelProvider(): ChannelProvider | undefined {
+    return this._channelProvider;
   }
 
-  set channelRouter(channelRouter: ChannelRouter) {
-    this.innerChannelRouter = channelRouter;
+  set channelProvider(channelProvider: ChannelProvider) {
+    this._channelProvider = channelProvider;
   }
 
   get userPublicIdentifier(): string | undefined {
-    return this.innerUserPublicIdentifier;
+    return this._userPublicIdentifier;
   }
 
   set userPublicIdentifier(userXpub: string) {
-    this.innerUserPublicIdentifier = userXpub;
+    this._userPublicIdentifier = userXpub;
   }
 
   get nodePublicIdentifier(): string | undefined {
-    return this.innerNodePublicIdentifier;
+    return this._nodePublicIdentifier;
   }
 
   set nodePublicIdentifier(nodeXpub: string) {
-    this.innerNodePublicIdentifier = nodeXpub;
+    this._nodePublicIdentifier = nodeXpub;
   }
 
   ////////////////////////////////////////
@@ -277,27 +274,17 @@ export class NodeApiClient implements INodeApiClient {
   // PRIVATE
 
   private async getAuthToken(): Promise<string> {
-    return new Promise(
-      async (resolve: any, reject: any): Promise<any> => {
-        const nonce = await this.send("auth.getNonce", {
-          address: this.channelRouter.signerAddress,
-        });
-        const sig = await this.channelRouter.signMessage(nonce);
-        const token = `${nonce}:${sig}`;
-        return resolve(token);
-      },
-    );
-  }
-
-  private assertAuthToken(): void {
-    if (!this.channelRouter) {
+    if (!this.channelProvider) {
       throw new Error(
-        `Must have instantiated a channel router (ie a signing thing) before setting auth token`,
+        `Must have instantiated a channel provider (ie a signing thing) before setting auth token`,
       );
     }
-    if (!this.token) {
-      this.token = this.getAuthToken();
-    }
+    const nonce = await this.send("auth.getNonce", {
+      address: this.channelProvider.signerAddress,
+    });
+    const sig = await this.channelProvider.send(NewRpcMethodName.NODE_AUTH, { message: nonce });
+    const token = `${nonce}:${sig}`;
+    return token;
   }
 
   private async send(subject: string, data?: any): Promise<any | undefined> {
@@ -334,8 +321,7 @@ export class NodeApiClient implements INodeApiClient {
       id: uuid.v4(),
     };
     if (guardedSubjects.includes(subject.split(".")[0])) {
-      this.assertAuthToken();
-      payload.token = await this.token;
+      payload.token = await this.getAuthToken();
     }
     let msg;
     try {
@@ -346,8 +332,7 @@ export class NodeApiClient implements INodeApiClient {
     let error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     if (error && error.startsWith("Invalid token")) {
       this.log.info(`Auth error, token might have expired. Let's get a fresh token & try again.`);
-      this.token = this.getAuthToken();
-      payload.token = await this.token;
+      payload.token = await this.getAuthToken();
       msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
       error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     }
