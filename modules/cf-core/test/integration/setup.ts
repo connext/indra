@@ -9,7 +9,7 @@ import { parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 import { v4 as generateUUID } from "uuid";
 
-import { EXTENDED_PRIVATE_KEY_PATH, Node } from "../../src";
+import { Node } from "../../src";
 import { computeRandomExtendedPrvKey } from "../../src/machine/xkeys";
 import MemoryLockService from "../services/memory-lock-service";
 import { MemoryMessagingService } from "../services/memory-messaging-service";
