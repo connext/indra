@@ -287,10 +287,13 @@ export class ConnextClient implements IConnextClient {
   public rescindDepositRights = async (
     params: RescindDepositRightsParameters,
   ): Promise<CFCoreTypes.DepositResult> => {
-    return await this.channelProvider.send(CFCoreTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS, {
-      multisigAddress: this.multisigAddress,
-      tokenAddress: params.assetId,
-    } as CFCoreTypes.RescindDepositRightsParams);
+    return await this.channelProvider.send(
+      CFCoreTypes.RpcMethodNames.chan_rescindDepositRights as CFCoreTypes.RpcMethodName,
+      {
+        multisigAddress: this.multisigAddress,
+        tokenAddress: params.assetId,
+      } as CFCoreTypes.RescindDepositRightsParams,
+    );
   };
 
   public checkDepositRights = async (
@@ -480,17 +483,20 @@ export class ConnextClient implements IConnextClient {
       this.log.error(err);
       throw new Error(err);
     }
-    return await this.channelProvider.send(CFCoreTypes.RpcMethodName.DEPOSIT, {
-      amount,
-      multisigAddress: this.multisigAddress,
-      notifyCounterparty,
-      tokenAddress: makeChecksum(assetId),
-    } as CFCoreTypes.DepositParams);
+    return await this.channelProvider.send(
+      CFCoreTypes.RpcMethodNames.chan_deposit as CFCoreTypes.RpcMethodName,
+      {
+        amount,
+        multisigAddress: this.multisigAddress,
+        notifyCounterparty,
+        tokenAddress: makeChecksum(assetId),
+      } as CFCoreTypes.DepositParams,
+    );
   };
 
   public getAppInstances = async (multisigAddress?: string): Promise<AppInstanceJson[]> => {
     const { appInstances } = await this.channelProvider.send(
-      CFCoreTypes.RpcMethodName.GET_APP_INSTANCES,
+      CFCoreTypes.RpcMethodNames.chan_getAppInstances as CFCoreTypes.RpcMethodName,
       {
         multisigAddress,
       } as CFCoreTypes.GetAppInstancesParams,
@@ -506,10 +512,13 @@ export class ConnextClient implements IConnextClient {
     }
     const normalizedAssetId = makeChecksum(assetId);
     try {
-      return await this.channelProvider.send(CFCoreTypes.RpcMethodName.GET_FREE_BALANCE_STATE, {
-        multisigAddress: this.multisigAddress,
-        tokenAddress: makeChecksum(assetId),
-      } as CFCoreTypes.GetFreeBalanceStateParams);
+      return await this.channelProvider.send(
+        CFCoreTypes.RpcMethodNames.chan_getFreeBalanceState as CFCoreTypes.RpcMethodName,
+        {
+          multisigAddress: this.multisigAddress,
+          tokenAddress: makeChecksum(assetId),
+        } as CFCoreTypes.GetFreeBalanceStateParams,
+      );
     } catch (e) {
       const error = `No free balance exists for the specified token: ${normalizedAssetId}`;
       if (e.message.includes(error)) {
@@ -529,17 +538,23 @@ export class ConnextClient implements IConnextClient {
   public getProposedAppInstances = async (
     multisigAddress?: string,
   ): Promise<CFCoreTypes.GetProposedAppInstancesResult | undefined> => {
-    return await this.channelProvider.send(CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES, {
-      multisigAddress,
-    } as CFCoreTypes.GetProposedAppInstancesParams);
+    return await this.channelProvider.send(
+      CFCoreTypes.RpcMethodNames.chan_getProposedAppInstances as CFCoreTypes.RpcMethodName,
+      {
+        multisigAddress,
+      } as CFCoreTypes.GetProposedAppInstancesParams,
+    );
   };
 
   public getProposedAppInstance = async (
     appInstanceId: string,
   ): Promise<CFCoreTypes.GetProposedAppInstanceResult | undefined> => {
-    return await this.channelProvider.send(CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES, {
-      appInstanceId,
-    } as CFCoreTypes.GetProposedAppInstanceParams);
+    return await this.channelProvider.send(
+      CFCoreTypes.RpcMethodNames.chan_getProposedAppInstances as CFCoreTypes.RpcMethodName,
+      {
+        appInstanceId,
+      } as CFCoreTypes.GetProposedAppInstanceParams,
+    );
   };
 
   public getAppInstanceDetails = async (
@@ -550,9 +565,12 @@ export class ConnextClient implements IConnextClient {
       this.log.warn(err);
       return undefined;
     }
-    return await this.channelProvider.send(CFCoreTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS, {
-      appInstanceId,
-    } as CFCoreTypes.GetAppInstanceDetailsParams);
+    return await this.channelProvider.send(
+      CFCoreTypes.RpcMethodNames.chan_getAppInstance as CFCoreTypes.RpcMethodName,
+      {
+        appInstanceId,
+      } as CFCoreTypes.GetAppInstanceDetailsParams,
+    );
   };
 
   public getAppState = async (
@@ -564,9 +582,12 @@ export class ConnextClient implements IConnextClient {
       this.log.warn(err);
       return undefined;
     }
-    return await this.channelProvider.send(CFCoreTypes.RpcMethodName.GET_STATE, {
-      appInstanceId,
-    } as CFCoreTypes.GetStateParams);
+    return await this.channelProvider.send(
+      CFCoreTypes.RpcMethodNames.chan_getState as CFCoreTypes.RpcMethodName,
+      {
+        appInstanceId,
+      } as CFCoreTypes.GetStateParams,
+    );
   };
 
   public takeAction = async (
@@ -585,10 +606,13 @@ export class ConnextClient implements IConnextClient {
     if ((state.state as any).finalized) {
       throw new Error("Cannot take action on an app with a finalized state.");
     }
-    return await this.channelProvider.send(CFCoreTypes.RpcMethodName.TAKE_ACTION, {
-      action,
-      appInstanceId,
-    } as CFCoreTypes.TakeActionParams);
+    return await this.channelProvider.send(
+      CFCoreTypes.RpcMethodNames.chan_takeAction as CFCoreTypes.RpcMethodName,
+      {
+        action,
+        appInstanceId,
+      } as CFCoreTypes.TakeActionParams,
+    );
   };
 
   public updateState = async (
@@ -608,17 +632,20 @@ export class ConnextClient implements IConnextClient {
     if ((state.state as any).finalized) {
       throw new Error("Cannot take action on an app with a finalized state.");
     }
-    return await this.channelProvider.send(CFCoreTypes.RpcMethodName.UPDATE_STATE, {
-      appInstanceId,
-      newState,
-    } as CFCoreTypes.UpdateStateParams);
+    return await this.channelProvider.send(
+      CFCoreTypes.RpcMethodNames.chan_updateState as CFCoreTypes.RpcMethodName,
+      {
+        appInstanceId,
+        newState,
+      } as CFCoreTypes.UpdateStateParams,
+    );
   };
 
   public proposeInstallApp = async (
     params: CFCoreTypes.ProposeInstallParams,
   ): Promise<CFCoreTypes.ProposeInstallResult> => {
     return await this.channelProvider.send(
-      CFCoreTypes.RpcMethodName.PROPOSE_INSTALL,
+      CFCoreTypes.RpcMethodNames.chan_proposeInstall as CFCoreTypes.RpcMethodName,
       params as CFCoreTypes.ProposeInstallParams,
     );
   };
@@ -631,10 +658,13 @@ export class ConnextClient implements IConnextClient {
     if (alreadyInstalled) {
       throw new Error(alreadyInstalled);
     }
-    return await this.channelProvider.send(CFCoreTypes.RpcMethodName.INSTALL_VIRTUAL, {
-      appInstanceId,
-      intermediaryIdentifier: this.nodePublicIdentifier,
-    } as CFCoreTypes.InstallVirtualParams);
+    return await this.channelProvider.send(
+      CFCoreTypes.RpcMethodNames.chan_installVirtual as CFCoreTypes.RpcMethodName,
+      {
+        appInstanceId,
+        intermediaryIdentifier: this.nodePublicIdentifier,
+      } as CFCoreTypes.InstallVirtualParams,
+    );
   };
 
   public installApp = async (appInstanceId: string): Promise<CFCoreTypes.InstallResult> => {
@@ -643,9 +673,12 @@ export class ConnextClient implements IConnextClient {
     if (alreadyInstalled) {
       throw new Error(alreadyInstalled);
     }
-    return await this.channelProvider.send(CFCoreTypes.RpcMethodName.INSTALL, {
-      appInstanceId,
-    } as CFCoreTypes.InstallParams);
+    return await this.channelProvider.send(
+      CFCoreTypes.RpcMethodNames.chan_install as CFCoreTypes.RpcMethodName,
+      {
+        appInstanceId,
+      } as CFCoreTypes.InstallParams,
+    );
   };
 
   public uninstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
@@ -655,9 +688,12 @@ export class ConnextClient implements IConnextClient {
       this.log.error(err);
       throw new Error(err);
     }
-    return await this.channelProvider.send(CFCoreTypes.RpcMethodName.UNINSTALL, {
-      appInstanceId,
-    } as CFCoreTypes.UninstallParams);
+    return await this.channelProvider.send(
+      CFCoreTypes.RpcMethodNames.chan_uninstall as CFCoreTypes.RpcMethodName,
+      {
+        appInstanceId,
+      } as CFCoreTypes.UninstallParams,
+    );
   };
 
   public uninstallVirtualApp = async (
@@ -670,16 +706,22 @@ export class ConnextClient implements IConnextClient {
       throw new Error(err);
     }
 
-    return await this.channelProvider.send(CFCoreTypes.RpcMethodName.UNINSTALL_VIRTUAL, {
-      appInstanceId,
-      intermediaryIdentifier: this.nodePublicIdentifier,
-    } as CFCoreTypes.UninstallVirtualParams);
+    return await this.channelProvider.send(
+      CFCoreTypes.RpcMethodNames.chan_uninstallVirtual as CFCoreTypes.RpcMethodName,
+      {
+        appInstanceId,
+        intermediaryIdentifier: this.nodePublicIdentifier,
+      } as CFCoreTypes.UninstallVirtualParams,
+    );
   };
 
   public rejectInstallApp = async (appInstanceId: string): Promise<CFCoreTypes.UninstallResult> => {
-    return await this.channelProvider.send(CFCoreTypes.RpcMethodName.REJECT_INSTALL, {
-      appInstanceId,
-    });
+    return await this.channelProvider.send(
+      CFCoreTypes.RpcMethodNames.chan_rejectInstall as CFCoreTypes.RpcMethodName,
+      {
+        appInstanceId,
+      },
+    );
   };
 
   public providerWithdraw = async (
@@ -699,12 +741,15 @@ export class ConnextClient implements IConnextClient {
       throw new Error(err);
     }
 
-    return await this.channelProvider.send(CFCoreTypes.RpcMethodName.WITHDRAW, {
-      amount,
-      multisigAddress: this.multisigAddress,
-      recipient,
-      tokenAddress: makeChecksum(assetId),
-    } as CFCoreTypes.WithdrawParams);
+    return await this.channelProvider.send(
+      CFCoreTypes.RpcMethodNames.chan_withdraw as CFCoreTypes.RpcMethodName,
+      {
+        amount,
+        multisigAddress: this.multisigAddress,
+        recipient,
+        tokenAddress: makeChecksum(assetId),
+      } as CFCoreTypes.WithdrawParams,
+    );
   };
 
   public withdrawCommitment = async (
@@ -723,12 +768,15 @@ export class ConnextClient implements IConnextClient {
       this.log.error(err);
       throw new Error(err);
     }
-    return await this.channelProvider.send(CFCoreTypes.RpcMethodName.WITHDRAW_COMMITMENT, {
-      amount,
-      multisigAddress: this.multisigAddress,
-      recipient,
-      tokenAddress: makeChecksumOrEthAddress(assetId),
-    } as CFCoreTypes.WithdrawCommitmentParams);
+    return await this.channelProvider.send(
+      CFCoreTypes.RpcMethodNames.chan_withdrawCommitment as CFCoreTypes.RpcMethodName,
+      {
+        amount,
+        multisigAddress: this.multisigAddress,
+        recipient,
+        tokenAddress: makeChecksumOrEthAddress(assetId),
+      } as CFCoreTypes.WithdrawCommitmentParams,
+    );
   };
 
   ///////////////////////////////////

@@ -10,7 +10,7 @@ import {
 import { ConnextEvent } from "./basic";
 import { AppInstanceJson, CFCoreTypes } from "./cf";
 import { CFCoreChannel, ChannelAppSequences, ChannelState, PaymentProfile } from "./channel";
-import { ChannelProvider, ChannelProviderConfig, StorePair, KeyGen } from "./channelProvider";
+import { ChannelProvider, ChannelProviderConfig, KeyGen, StorePair } from "./channelProvider";
 import {
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
@@ -117,7 +117,7 @@ export interface IConnextClient {
 
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
-  getStateChannel(): Promise<CFCoreTypes.GetStateChannelResult>;
+  getState(): Promise<CFCoreTypes.GetStateResult>;
   providerDeposit(
     amount: BigNumber,
     assetId: string,

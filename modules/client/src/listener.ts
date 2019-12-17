@@ -177,7 +177,7 @@ export class ConnextListener extends EventEmitter {
     });
 
     this.channelProvider.on(
-      CFCoreTypes.RpcMethodName.INSTALL,
+      CFCoreTypes.RpcMethodNames.chan_install as CFCoreTypes.RpcMethodName,
       async (msg: any): Promise<void> => {
         const {
           result: {

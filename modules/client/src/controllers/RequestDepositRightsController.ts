@@ -63,7 +63,7 @@ export class RequestDepositRightsController extends AbstractController {
       throw new Error(err);
     }
     const requestDepositRightsResponse = await this.channelProvider.send(
-      CFCoreTypes.RpcMethodName.REQUEST_DEPOSIT_RIGHTS,
+      CFCoreTypes.RpcMethodNames.chan_requestDepositRights as CFCoreTypes.RpcMethodName,
       {
         multisigAddress: this.channelProvider.multisigAddress,
         tokenAddress: assetId,
@@ -132,23 +132,25 @@ export class RequestDepositRightsController extends AbstractController {
     let appId: string;
     try {
       await Promise.race([
-        new Promise(async (res: any, rej: any) => {
-          boundReject = this.rejectInstallCoinBalance.bind(null, rej);
-          this.log.info(
-            `subscribing to indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
-          );
-          await this.connext.messaging.subscribe(
-            `indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
-            res,
-          );
-          const { appInstanceId } = await this.connext.proposeInstallApp(params);
-          appId = appInstanceId;
-          this.log.info(`waiting for proposal acceptance of ${appInstanceId}`);
-          this.listener.on(
-            CFCoreTypes.EventNames.REJECT_INSTALL_EVENT as CFCoreTypes.EventName,
-            boundReject,
-          );
-        }),
+        new Promise(
+          async (res: any, rej: any): Promise<any> => {
+            boundReject = this.rejectInstallCoinBalance.bind(null, rej);
+            this.log.info(
+              `subscribing to indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
+            );
+            await this.connext.messaging.subscribe(
+              `indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
+              res,
+            );
+            const { appInstanceId } = await this.connext.proposeInstallApp(params);
+            appId = appInstanceId;
+            this.log.info(`waiting for proposal acceptance of ${appInstanceId}`);
+            this.listener.on(
+              CFCoreTypes.EventNames.REJECT_INSTALL_EVENT as CFCoreTypes.EventName,
+              boundReject,
+            );
+          },
+        ),
         delayAndThrow(
           CF_METHOD_TIMEOUT,
           `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
