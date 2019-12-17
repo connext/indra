@@ -273,7 +273,7 @@ class App extends React.Component {
     } else if (useWalletConnext) {
       let rpc = {};
       rpc[network.chainId] = urls.ethProviderUrl;
-      const channelProvider = new WalletConnectChannelProvider();
+      const channelProvider = new WalletConnectChannelProvider({ rpc: urls.ethProviderUrl });
       console.log(`Using WalletConnect with provider: ${JSON.stringify(channelProvider, null, 2)}`);
       // register channel provider listener for logging
       await channelProvider.enable();
