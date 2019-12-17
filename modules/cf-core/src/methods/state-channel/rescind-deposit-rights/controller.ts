@@ -11,7 +11,7 @@ import { BigNumber } from "ethers/utils";
 import { Contract } from "ethers";
 
 export default class RescindDepositRightsController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.RESCIND_DEPOSIT_RIGHTS)
+  @jsonRpcMethod(Node.RpcMethodNames.chan_rescindDepositRights)
   public executeMethod: (
     requestHandler: RequestHandler,
     params: Node.MethodParams

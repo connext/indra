@@ -6,7 +6,7 @@ import { Node } from "../../../types";
 import { NodeController } from "../../controller";
 
 export default class GetFreeBalanceController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.GET_FREE_BALANCE_STATE)
+  @jsonRpcMethod(Node.RpcMethodNames.chan_getFreeBalanceState)
   public executeMethod = super.executeMethod;
 
   protected async executeMethodImplementation(

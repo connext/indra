@@ -11,7 +11,7 @@ import { NO_APP_INSTANCE_ID_FOR_GET_STATE } from "../../errors";
  * @param params
  */
 export default class GetStateController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.GET_STATE)
+  @jsonRpcMethod(Node.RpcMethodNames.chan_getState)
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: Node.GetStateParams,

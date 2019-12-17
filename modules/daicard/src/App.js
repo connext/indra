@@ -1,5 +1,6 @@
 import * as connext from "@connext/client";
 import { CF_PATH, ConnextClientStorePrefix } from "@connext/types";
+import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
@@ -10,7 +11,6 @@ import { PisaClient } from "pisa-client";
 import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import tokenArtifacts from "openzeppelin-solidity/build/contracts/ERC20Mintable.json";
-import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { interpret } from "xstate";
 
 import "./App.css";
@@ -61,6 +61,9 @@ const urls = {
       ? "https://connext-rinkeby.pisa.watch"
       : undefined,
 };
+
+// LogLevel for testing ChannelProvider
+const LOG_LEVEL = 5;
 
 // Constants for channel max/min - this is also enforced on the hub
 const WITHDRAW_ESTIMATED_GAS = toBN("300000");
@@ -168,7 +171,7 @@ class App extends React.Component {
     return wc === "true";
   };
 
-  initWalletConnext = () => {
+  initWalletConnext = chainId => {
     // item set when you scan a wallet connect QR
     // if a wc qr code has been scanned before, make
     // sure to init the mapping and create new wc
@@ -177,7 +180,7 @@ class App extends React.Component {
     const { channel } = this.state;
     if (!channel) return;
     if (!uri) return;
-    initWalletConnect(uri, channel);
+    initWalletConnect(uri, channel, chainId);
   };
 
   // Channel doesn't get set up until after provider is set
@@ -241,7 +244,7 @@ class App extends React.Component {
       // If store has double prefixes, flush and restore
       for (const k of Object.keys(localStorage)) {
         if (k.includes(`${ConnextClientStorePrefix}:${ConnextClientStorePrefix}/`)) {
-          store && await store.reset();
+          store && (await store.reset());
           window.location.reload();
         }
       }
@@ -255,7 +258,7 @@ class App extends React.Component {
       channel = await connext.connect({
         ethProviderUrl: urls.ethProviderUrl,
         keyGen,
-        logLevel: 5,
+        logLevel: LOG_LEVEL,
         nodeUrl: urls.nodeUrl,
         store,
         xpub,
@@ -270,12 +273,13 @@ class App extends React.Component {
     } else if (useWalletConnext) {
       let rpc = {};
       rpc[network.chainId] = urls.ethProviderUrl;
-      const channelProvider = new WalletConnectChannelProvider({
-        rpc,
-        chainId: network.chainId,
-      });
+      const channelProvider = new WalletConnectChannelProvider();
       console.log(`Using WalletConnect with provider: ${JSON.stringify(channelProvider, null, 2)}`);
       // register channel provider listener for logging
+      await channelProvider.enable();
+      console.log(
+        `ChannelProvider Enabled - config: ${JSON.stringify(channelProvider.config, null, 2)}`,
+      );
       channelProvider.on("error", data => {
         console.error(`Channel provider error: ${JSON.stringify(data, null, 2)}`);
       });
@@ -287,7 +291,7 @@ class App extends React.Component {
       });
       channel = await connext.connect({
         ethProviderUrl: urls.ethProviderUrl,
-        logLevel: 4,
+        logLevel: LOG_LEVEL,
         channelProvider,
       });
     } else {
@@ -307,7 +311,7 @@ class App extends React.Component {
 
     console.log(`Client created successfully!`);
     console.log(` - Public Identifier: ${channel.publicIdentifier}`);
-    console.log(` - Account multisig address: ${channel.opts.multisigAddress}`);
+    console.log(` - Account multisig address: ${channel.multisigAddress}`);
     console.log(` - CF Account address: ${channel.signerAddress}`);
     console.log(` - Free balance address: ${channel.freeBalanceAddress}`);
     console.log(` - Token address: ${token.address}`);
@@ -356,7 +360,7 @@ class App extends React.Component {
     } else {
       machine.send("READY");
     }
-    this.initWalletConnext();
+    this.initWalletConnext(network.chainId);
     await this.startPoller();
   }
 
@@ -511,7 +515,7 @@ class App extends React.Component {
           assetId: token.address.toLowerCase(),
         };
         console.log(
-          `Depositing ${depositParams.amount} tokens into channel: ${channel.opts.multisigAddress}`,
+          `Depositing ${depositParams.amount} tokens into channel: ${channel.multisigAddress}`,
         );
         const result = await channel.deposit(depositParams);
         await this.refreshBalances();
@@ -538,7 +542,7 @@ class App extends React.Component {
       }
 
       const amount = minBN([balance.onChain.ether.wad.sub(minDeposit.wad), nowMaxDeposit]);
-      console.log(`Depositing ${amount} wei into channel: ${channel.opts.multisigAddress}`);
+      console.log(`Depositing ${amount} wei into channel: ${channel.multisigAddress}`);
       const result = await channel.deposit({ amount: amount.toString() });
       await this.refreshBalances();
       console.log(`Successfully deposited ether! Result: ${JSON.stringify(result, null, 2)}`);
@@ -762,11 +766,7 @@ class App extends React.Component {
             <Route
               path="/redeem"
               render={props => (
-                <RedeemCard
-                  {...props}
-                  channel={channel}
-                  tokenProfile={this.state.tokenProfile}
-                />
+                <RedeemCard {...props} channel={channel} tokenProfile={this.state.tokenProfile} />
               )}
             />
             <Route
@@ -785,21 +785,8 @@ class App extends React.Component {
                 />
               )}
             />
-            <Route
-              path="/support"
-              render={props => (
-                <SupportCard
-                  {...props}
-                  channel={channel}
-                />
-              )}
-            />
-            <Confirmations
-              machine={machine}
-              state={state}
-              network={network}
-              state={state}
-            />
+            <Route path="/support" render={props => <SupportCard {...props} channel={channel} />} />
+            <Confirmations machine={machine} state={state} network={network} state={state} />
           </Paper>
         </Grid>
       </Router>

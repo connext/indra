@@ -7,7 +7,7 @@ import { NodeController } from "../../controller";
 import { NO_NETWORK_PROVIDER_CREATE2 } from "../../errors";
 
 export default class GetStateDepositHolderAddressController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.GET_STATE_DEPOSIT_HOLDER_ADDRESS)
+  @jsonRpcMethod(Node.RpcMethodNames.chan_getStateDepositHolderAddress)
   public executeMethod = super.executeMethod;
 
   protected async executeMethodImplementation(

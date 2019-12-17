@@ -25,7 +25,7 @@ export {
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
-  virtualAppAgreementEncoding,
+  virtualAppAgreementEncoding
 } from "@connext/types";
 
 import { ProtocolMessage } from "./machine";
@@ -75,7 +75,7 @@ export interface UninstallVirtualMessage extends Node.NodeMessage {
 }
 
 export interface WithdrawStartedMessage extends Node.NodeMessage {
-  data: { 
+  data: {
     params: Node.WithdrawParams;
     txHash?: string; // not included in responder events
   };

@@ -89,32 +89,34 @@ export namespace Node {
     GET_PROPOSED_APP_INSTANCE = "getProposedAppInstance"
   }
 
-  export enum RpcMethodName {
-    CREATE_CHANNEL = "chan_create",
-    DEPOSIT = "chan_deposit",
-    DEPLOY_STATE_DEPOSIT_HOLDER = "chan_deployStateDepositHolder",
-    GET_CHANNEL_ADDRESSES = "chan_getChannelAddresses",
-    GET_APP_INSTANCE_DETAILS = "chan_getAppInstance",
-    GET_APP_INSTANCES = "chan_getAppInstances",
-    GET_STATE_DEPOSIT_HOLDER_ADDRESS = "chan_getStateDepositHolderAddress",
-    GET_FREE_BALANCE_STATE = "chan_getFreeBalanceState",
-    GET_TOKEN_INDEXED_FREE_BALANCE_STATES = "chan_getTokenIndexedFreeBalanceStates",
-    GET_PROPOSED_APP_INSTANCES = "chan_getProposedAppInstances",
-    GET_STATE = "chan_getState",
-    GET_STATE_CHANNEL = "chan_getStateChannel",
-    INSTALL = "chan_install",
-    REQUEST_DEPOSIT_RIGHTS = "chan_requestDepositRights",
-    INSTALL_VIRTUAL = "chan_installVirtual",
-    PROPOSE_INSTALL = "chan_proposeInstall",
-    REJECT_INSTALL = "chan_rejectInstall",
-    UPDATE_STATE = "chan_updateState",
-    TAKE_ACTION = "chan_takeAction",
-    UNINSTALL = "chan_uninstall",
-    UNINSTALL_VIRTUAL = "chan_uninstallVirtual",
-    RESCIND_DEPOSIT_RIGHTS = "chan_rescindDepositRights",
-    WITHDRAW = "chan_withdraw",
-    WITHDRAW_COMMITMENT = "chan_withdrawCommitment"
-  }
+  export const RpcMethodNames = {
+    chan_create: "chan_create",
+    chan_deposit: "chan_deposit",
+    chan_deployStateDepositHolder: "chan_deployStateDepositHolder",
+    chan_getChannelAddresses: "chan_getChannelAddresses",
+    chan_getAppInstance: "chan_getAppInstance",
+    chan_getAppInstances: "chan_getAppInstances",
+    chan_getStateDepositHolderAddress: "chan_getStateDepositHolderAddress",
+    chan_getFreeBalanceState: "chan_getFreeBalanceState",
+    chan_getTokenIndexedFreeBalanceStates:
+      "chan_getTokenIndexedFreeBalanceStates",
+    chan_getProposedAppInstances: "chan_getProposedAppInstances",
+    chan_getState: "chan_getState",
+    chan_getStateChannel: "chan_getStateChannel",
+    chan_install: "chan_install",
+    chan_requestDepositRights: "chan_requestDepositRights",
+    chan_installVirtual: "chan_installVirtual",
+    chan_proposeInstall: "chan_proposeInstall",
+    chan_rejectInstall: "chan_rejectInstall",
+    chan_updateState: "chan_updateState",
+    chan_takeAction: "chan_takeAction",
+    chan_uninstall: "chan_uninstall",
+    chan_uninstallVirtual: "chan_uninstallVirtual",
+    chan_rescindDepositRights: "chan_rescindDepositRights",
+    chan_withdraw: "chan_withdraw",
+    chan_withdrawCommitment: "chan_withdrawCommitment"
+  };
+  export type RpcMethodName = keyof typeof RpcMethodNames;
 
   // SOURCE: https://github.com/counterfactual/monorepo/blob/master/packages/cf.js/API_REFERENCE.md#events
   export const EventNames = {

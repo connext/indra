@@ -14,7 +14,7 @@ export default class RejectInstallController extends NodeController {
     return [appInstanceId];
   }
 
-  @jsonRpcMethod(Node.RpcMethodName.REJECT_INSTALL)
+  @jsonRpcMethod(Node.RpcMethodNames.chan_rejectInstall)
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: Node.RejectInstallParams

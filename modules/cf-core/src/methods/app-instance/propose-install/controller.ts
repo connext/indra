@@ -20,7 +20,7 @@ import {
  * @returns The AppInstanceId for the proposed AppInstance
  */
 export default class ProposeInstallController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.PROPOSE_INSTALL)
+  @jsonRpcMethod(Node.RpcMethodNames.chan_proposeInstall)
   public executeMethod: (
     requestHandler: RequestHandler,
     params: Node.MethodParams

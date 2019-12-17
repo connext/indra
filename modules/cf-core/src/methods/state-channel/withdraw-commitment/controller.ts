@@ -15,7 +15,7 @@ import {
 // Note: This can't extend `WithdrawController` because the `methodName` static
 // members of each class are incompatible.
 export default class WithdrawCommitmentController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.WITHDRAW_COMMITMENT)
+  @jsonRpcMethod(Node.RpcMethodNames.chan_withdrawCommitment)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(

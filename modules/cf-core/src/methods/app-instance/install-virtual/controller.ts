@@ -7,7 +7,7 @@ import { NodeController } from "../../controller";
 import { installVirtual } from "./operation";
 
 export default class InstallVirtualController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.INSTALL_VIRTUAL)
+  @jsonRpcMethod(Node.RpcMethodNames.chan_installVirtual)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(

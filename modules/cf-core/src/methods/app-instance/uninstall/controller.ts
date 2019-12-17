@@ -13,7 +13,7 @@ import {
 import { uninstallAppInstanceFromChannel } from "./operation";
 
 export default class UninstallController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.UNINSTALL)
+  @jsonRpcMethod(Node.RpcMethodNames.chan_uninstall)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(

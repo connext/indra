@@ -224,7 +224,7 @@ describe("Node method follows spec - install balance refund", () => {
       nodeB.once("PROPOSE_INSTALL_EVENT", data => res(data));
       await nodeA.rpcRouter.dispatch({
         id: Date.now(),
-        methodName: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
+        methodName: NodeTypes.RpcMethodNames.chan_proposeInstall,
         parameters
       });
     });
@@ -242,7 +242,7 @@ describe("Node method follows spec - install balance refund", () => {
       nodeB.once("PROPOSE_INSTALL_EVENT", data => res(data));
       await nodeA.rpcRouter.dispatch({
         id: Date.now(),
-        methodName: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
+        methodName: NodeTypes.RpcMethodNames.chan_proposeInstall,
         parameters
       });
     });

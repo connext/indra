@@ -17,16 +17,14 @@ import { xkeysToSortedKthAddresses } from "../../../machine";
  * to whoever subscribed to the `"CREATE_CHANNEL_EVENT"` event on the Node.
  */
 export default class CreateChannelController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.CREATE_CHANNEL)
+  @jsonRpcMethod(Node.RpcMethodNames.chan_create)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
     params: Node.CreateChannelParams
   ): Promise<string[]> {
-    return [
-      `${Node.RpcMethodName.CREATE_CHANNEL}:${params.owners.sort().toString()}`
-    ];
+    return [`${Node.RpcMethodNames.chan_create}:${params.owners.sort().toString()}`];
   }
 
   protected async executeMethodImplementation(

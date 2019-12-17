@@ -19,7 +19,7 @@ import {
 } from "../../errors";
 
 export default class TakeActionController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.TAKE_ACTION)
+  @jsonRpcMethod(Node.RpcMethodNames.chan_takeAction)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(

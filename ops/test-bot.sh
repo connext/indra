@@ -33,12 +33,14 @@ function checkInstalledApps {
   recipientStore=modules/payment-bot/.payment-bot-db/1.json
   senderApps=0
   recipientApps=0
+  set +o pipefail
   if [[ -f "$senderStore" ]]
   then senderApps="`cat $senderStore | grep channel | cut -d ":" -f3- | tr -d '\\\' | cut -c 3- | rev | cut -c 3- | rev | jq '.appInstances | length'`"
   fi
   if [[ -f "$recipientStore" ]]
   then recipientApps="`cat $recipientStore | grep channel | cut -d ":" -f3- | tr -d '\\\' | cut -c 3- | rev | cut -c 3- | rev | jq '.appInstances | length'`"
   fi
+  set -o pipefail
   if [[ ("$senderApps" != "0" && "$senderApps" != "") || ("$recipientApps" != "0" && "$recipientApps" != "") ]]
   then 
     echo -e "$divider";echo "Installed apps:"

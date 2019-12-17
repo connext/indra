@@ -5,7 +5,7 @@ import { Node } from "../../../types";
 import { NodeController } from "../../controller";
 
 export default class GetProposedAppInstancesController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.GET_PROPOSED_APP_INSTANCES)
+  @jsonRpcMethod(Node.RpcMethodNames.chan_getProposedAppInstances)
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
     params: Node.GetProposedAppInstancesParams
