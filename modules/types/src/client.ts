@@ -123,6 +123,7 @@ export interface IConnextClient {
 
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
+  getStateChannel(): Promise<CFCoreTypes.GetStateChannelResult>;
   providerDeposit(
     amount: BigNumber,
     assetId: string,
