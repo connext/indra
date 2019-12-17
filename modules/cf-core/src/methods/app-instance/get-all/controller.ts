@@ -1,8 +1,9 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { Node } from "../../../types";
+import { Node, AppInstanceJson } from "../../../types";
 import { NodeController } from "../../controller";
+import { StateChannel } from "../../../models";
 
 /**
  * Gets all installed appInstances across all of the channels open on
@@ -18,6 +19,20 @@ export default class GetAppInstancesController extends NodeController {
   ): Promise<Node.GetAppInstancesResult> {
     const { store } = requestHandler;
     const { multisigAddress } = params;
+
+    const channels = await store.getStateChannelsMap();
+
+    const appInstances = Array.from(channels.values()).reduce(
+      (acc: AppInstanceJson[], channel: StateChannel) => {
+        acc.push(
+          ...Array.from(channel.appInstances.values()).map(appInstance =>
+            appInstance.toJson()
+          )
+        );
+        return acc;
+      },
+      []
+    );
 
     return {
       appInstances: await store.getAppInstances(multisigAddress)

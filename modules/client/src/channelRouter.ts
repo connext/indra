@@ -16,6 +16,7 @@ import {
   RpcType,
   Store,
 } from "./types";
+import { StateChannelJSON } from "@connext/types";
 
 export class ChannelRouter {
   private type: RpcType;
@@ -128,8 +129,8 @@ export class ChannelRouter {
     );
   };
 
-  public getStateChannel = async (): Promise<{ data: any }> => {
-    return await this._send("chan_getStateChannel" as any, {
+  public getStateChannel = async (): Promise<{ data: StateChannelJSON }> => {
+    return await this._send(CFCoreTypes.RpcMethodName.GET_STATE_CHANNEL, {
       multisigAddress: this.multisigAddress,
     });
   };

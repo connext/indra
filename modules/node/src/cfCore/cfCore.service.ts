@@ -5,6 +5,7 @@ import {
   ConnextNodeStorePrefix,
   SupportedApplication,
   SupportedNetwork,
+  StateChannelJSON,
 } from "@connext/types";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
@@ -73,7 +74,7 @@ export class CFCoreService {
     }
   }
 
-  async getStateChannel(multisigAddress: string): Promise<{ data: StateChannel }> {
+  async getStateChannel(multisigAddress: string): Promise<{ data: StateChannelJSON }> {
     const params = {
       id: Date.now(),
       methodName: CFCoreTypes.RpcMethodNames.chan_getStateChannel,

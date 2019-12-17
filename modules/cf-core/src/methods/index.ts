@@ -18,9 +18,9 @@ import GetProposedAppInstanceController from "./proposed-app-instance/get/contro
 import CreateChannelController from "./state-channel/create/controller";
 import DeployStateDepositController from "./state-channel/deploy-state-deposit-holder/controller";
 import DepositController from "./state-channel/deposit/controller";
-import GetAllChannelAddressesController from "./state-channel/get-all/controller";
-import GetStateDepositHolderAddressController from "./state-channel/get-state-deposit-holder-address/controller";
 import GetStateChannelController from "./state-channel/get/controller";
+import GetStateDepositHolderAddressController from "./state-channel/get-state-deposit-holder-address/controller";
+import GetAllChannelAddressesController from "./state-channel/get-all-addresses/controller";
 import WithdrawCommitmentController from "./state-channel/withdraw-commitment/controller";
 import WithdrawController from "./state-channel/withdraw/controller";
 

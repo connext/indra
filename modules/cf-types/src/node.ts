@@ -1,7 +1,7 @@
 import { BigNumber, BigNumberish } from "ethers/utils";
 import { JsonRpcNotification, JsonRpcResponse, Rpc } from "rpc-server";
 
-import { OutcomeType } from ".";
+import { OutcomeType, StateChannelJSON } from ".";
 import {
   AppABIEncodings,
   AppInstanceJson,
@@ -258,6 +258,14 @@ export namespace Node {
 
   export type GetStateResult = {
     state: SolidityValueType;
+  };
+
+  export type GetStateChannelParams = {
+    multisigAddress: string;
+  };
+
+  export type GetStateChannelResult = {
+    data: StateChannelJSON;
   };
 
   export type InstallParams = {
