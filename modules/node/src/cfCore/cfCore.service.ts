@@ -5,6 +5,7 @@ import {
   ConnextNodeStorePrefix,
   SupportedApplication,
   SupportedNetwork,
+  StateChannelJSON,
 } from "@connext/types";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
@@ -50,7 +51,7 @@ export class CFCoreService {
     try {
       const freeBalance = await this.cfCore.rpcRouter.dispatch({
         id: Date.now(),
-        methodName: CFCoreTypes.RpcMethodName.GET_FREE_BALANCE_STATE,
+        methodName: CFCoreTypes.RpcMethodNames.chan_getFreeBalanceState,
         parameters: {
           multisigAddress,
           tokenAddress: assetId,
@@ -73,10 +74,10 @@ export class CFCoreService {
     }
   }
 
-  async getStateChannel(multisigAddress: string): Promise<{ data: StateChannel }> {
+  async getStateChannel(multisigAddress: string): Promise<{ data: StateChannelJSON }> {
     const params = {
       id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.GET_STATE_CHANNEL,
+      methodName: CFCoreTypes.RpcMethodNames.chan_getStateChannel,
       parameters: {
         multisigAddress,
       },
@@ -90,7 +91,7 @@ export class CFCoreService {
   ): Promise<CFCoreTypes.CreateChannelResult> {
     const params = {
       id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.CREATE_CHANNEL,
+      methodName: CFCoreTypes.RpcMethodNames.chan_create,
       parameters: {
         owners: [this.cfCore.publicIdentifier, counterpartyPublicIdentifier],
       } as CFCoreTypes.CreateChannelParams,
@@ -106,7 +107,7 @@ export class CFCoreService {
   ): Promise<CFCoreTypes.DeployStateDepositHolderResult> {
     const params = {
       id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.DEPLOY_STATE_DEPOSIT_HOLDER,
+      methodName: CFCoreTypes.RpcMethodNames.chan_deployStateDepositHolder,
       parameters: {
         multisigAddress,
       } as CFCoreTypes.DeployStateDepositHolderParams,
@@ -125,7 +126,7 @@ export class CFCoreService {
     assetId: string = AddressZero,
   ): Promise<CFCoreTypes.DepositResult> {
     logger.debug(
-      `Calling ${CFCoreTypes.RpcMethodName.DEPOSIT} with params: ${stringify({
+      `Calling ${CFCoreTypes.RpcMethodNames.chan_deposit} with params: ${stringify({
         amount,
         multisigAddress,
         tokenAddress: assetId,
@@ -133,7 +134,7 @@ export class CFCoreService {
     );
     const depositRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.DEPOSIT,
+      methodName: CFCoreTypes.RpcMethodNames.chan_deposit,
       parameters: {
         amount,
         multisigAddress,
@@ -154,11 +155,11 @@ export class CFCoreService {
     params: CFCoreTypes.ProposeInstallParams,
   ): Promise<CFCoreTypes.ProposeInstallResult> {
     logger.debug(
-      `Calling ${CFCoreTypes.RpcMethodName.PROPOSE_INSTALL} with params: ${stringify(params)}`,
+      `Calling ${CFCoreTypes.RpcMethodNames.chan_proposeInstall} with params: ${stringify(params)}`,
     );
     const proposeRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.PROPOSE_INSTALL,
+      methodName: CFCoreTypes.RpcMethodNames.chan_proposeInstall,
       parameters: params,
     });
     logger.debug(`proposeInstallApp called with result ${stringify(proposeRes.result.result)}`);
@@ -259,7 +260,7 @@ export class CFCoreService {
   async installApp(appInstanceId: string): Promise<CFCoreTypes.InstallResult> {
     const installRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.INSTALL,
+      methodName: CFCoreTypes.RpcMethodNames.chan_install,
       parameters: {
         appInstanceId,
       } as CFCoreTypes.InstallParams,
@@ -271,7 +272,7 @@ export class CFCoreService {
   async rejectInstallApp(appInstanceId: string): Promise<CFCoreTypes.RejectInstallResult> {
     const rejectRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.REJECT_INSTALL,
+      methodName: CFCoreTypes.RpcMethodNames.chan_rejectInstall,
       parameters: {
         appInstanceId,
       } as CFCoreTypes.RejectInstallParams,
@@ -296,7 +297,7 @@ export class CFCoreService {
     }
     const actionResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.TAKE_ACTION,
+      methodName: CFCoreTypes.RpcMethodNames.chan_takeAction,
       parameters: {
         action,
         appInstanceId,
@@ -313,7 +314,7 @@ export class CFCoreService {
     logger.log(`Calling uninstallApp for appInstanceId ${appInstanceId}`);
     const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.UNINSTALL,
+      methodName: CFCoreTypes.RpcMethodNames.chan_uninstall,
       parameters: {
         appInstanceId,
       },
@@ -331,7 +332,7 @@ export class CFCoreService {
     logger.log(`Calling rescindDepositRights`);
     const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.RESCIND_DEPOSIT_RIGHTS,
+      methodName: CFCoreTypes.RpcMethodNames.chan_rescindDepositRights,
       parameters: { multisigAddress, tokenAddress } as CFCoreTypes.RescindDepositRightsParams,
     });
 
@@ -344,7 +345,7 @@ export class CFCoreService {
   async getAppInstances(multisigAddress?: string): Promise<AppInstanceJson[]> {
     const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.GET_APP_INSTANCES,
+      methodName: CFCoreTypes.RpcMethodNames.chan_getAppInstances,
       parameters: {
         multisigAddress,
       } as CFCoreTypes.GetAppInstancesParams,
@@ -384,7 +385,7 @@ export class CFCoreService {
   async getProposedAppInstances(multisigAddress?: string): Promise<AppInstanceProposal[]> {
     const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.GET_PROPOSED_APP_INSTANCES,
+      methodName: CFCoreTypes.RpcMethodNames.chan_getProposedAppInstances,
       parameters: { multisigAddress } as CFCoreTypes.GetAppInstancesParams,
     });
 
@@ -399,7 +400,7 @@ export class CFCoreService {
     try {
       const appInstanceResponse = await this.cfCore.rpcRouter.dispatch({
         id: Date.now(),
-        methodName: CFCoreTypes.RpcMethodName.GET_APP_INSTANCE_DETAILS,
+        methodName: CFCoreTypes.RpcMethodNames.chan_getAppInstance,
         parameters: { appInstanceId } as CFCoreTypes.GetAppInstanceDetailsParams,
       });
       appInstance = appInstanceResponse.result.result.appInstance;
@@ -424,7 +425,7 @@ export class CFCoreService {
     }
     const stateResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: CFCoreTypes.RpcMethodName.GET_STATE,
+      methodName: CFCoreTypes.RpcMethodNames.chan_getState,
       parameters: {
         appInstanceId,
       } as CFCoreTypes.GetStateParams,

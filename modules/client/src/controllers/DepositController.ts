@@ -53,7 +53,7 @@ export class DepositController extends AbstractController {
     this.log.info("Registered!");
 
     try {
-      this.log.info(`Calling ${CFCoreTypes.RpcMethodName.DEPOSIT}`);
+      this.log.info(`Calling ${CFCoreTypes.RpcMethodNames.chan_deposit}`);
       await this.connext.rescindDepositRights({ assetId });
       // propose the app install
       const err = await this.proposeDepositInstall(assetId);

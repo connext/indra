@@ -6,7 +6,7 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { ERC20 } from "../../../contracts";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
-import { DepositConfirmationMessage, Node, NODE_EVENTS, NodeEvent } from "../../../types";
+import { DepositConfirmationMessage, CFCoreTypes, NODE_EVENTS, NodeEvent } from "../../../types";
 import { NodeController } from "../../controller";
 import {
   CANNOT_DEPOSIT,
@@ -26,22 +26,22 @@ import {
 import { getCreate2MultisigAddress } from "../../../utils";
 
 export default class DepositController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.DEPOSIT)
+  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_deposit)
   public executeMethod: (
     requestHandler: RequestHandler,
-    params: Node.MethodParams
-  ) => Promise<Node.MethodResult> = super.executeMethod;
+    params: CFCoreTypes.MethodParams
+  ) => Promise<CFCoreTypes.MethodResult> = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.DepositParams
+    params: CFCoreTypes.DepositParams
   ): Promise<string[]> {
     return [params.multisigAddress];
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: Node.DepositParams
+    params: CFCoreTypes.DepositParams
   ): Promise<void> {
     const { store, provider, networkContext } = requestHandler;
     const { multisigAddress, amount, tokenAddress: tokenAddressParam } = params;
@@ -116,8 +116,8 @@ export default class DepositController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.DepositParams
-  ): Promise<Node.DepositResult> {
+    params: CFCoreTypes.DepositParams
+  ): Promise<CFCoreTypes.DepositResult> {
     const { outgoing, provider } = requestHandler;
     const { multisigAddress, tokenAddress } = params;
 

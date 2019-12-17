@@ -163,7 +163,7 @@ describe("Daicard", () => {
       my.depositToken(depositToken).then(tokensDeposited => {
         my.getOnchainTokenBalance().then(balanceBefore => {
           my.cashoutToken()
-          my.depositToken(`${depositToken}1`).then(tokensDeposited => {
+          my.depositToken(`${depositToken}.1`).then(tokensDeposited => {
             my.getOnchainTokenBalance().then(balanceBefore => {
               my.cashoutToken();
               cy.resolve(my.getOnchainTokenBalance).should(balanceAfter => {

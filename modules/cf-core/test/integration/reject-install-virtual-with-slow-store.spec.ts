@@ -1,4 +1,4 @@
-import { Node as NodeTypes } from "@connext/types";
+import { CFCoreTypes } from "@connext/types";
 
 import { Node } from "../../src";
 import { NODE_EVENTS, ProposeMessage } from "../../src/types";
@@ -42,7 +42,7 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
         await createChannel(nodeA, nodeB);
         await createChannel(nodeB, nodeC);
 
-        let proposalParams: NodeTypes.ProposeInstallVirtualParams;
+        let proposalParams: CFCoreTypes.ProposeInstallVirtualParams;
 
         nodeA.on("REJECT_INSTALL_EVENT", async () => {
           expect((await getProposedAppInstances(nodeA)).length).toEqual(0);

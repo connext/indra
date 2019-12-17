@@ -21,7 +21,7 @@ import {
   assertNodeMessage
 } from "./utils";
 import { WithdrawConfirmationMessage } from "../../src/types";
-import { Node as NodeTypes } from "@connext/types";
+import { CFCoreTypes } from "@connext/types";
 
 expect.extend({ toBeEq, toBeLt });
 
@@ -29,7 +29,7 @@ expect.extend({ toBeEq, toBeLt });
 function confirmWithdrawalMessages(
   initiator: Node,
   responder: Node,
-  params: NodeTypes.WithdrawParams
+  params: CFCoreTypes.WithdrawParams
 ) {
   // initiator messages
   initiator.once(
@@ -128,7 +128,7 @@ describe("Node method follows spec - withdraw", () => {
     confirmWithdrawalMessages(
       nodeA,
       nodeB,
-      withdrawReq.parameters as NodeTypes.WithdrawParams
+      withdrawReq.parameters as CFCoreTypes.WithdrawParams
     );
 
     const {
@@ -191,7 +191,7 @@ describe("Node method follows spec - withdraw", () => {
     confirmWithdrawalMessages(
       nodeA,
       nodeB,
-      withdrawReq.parameters as NodeTypes.WithdrawParams
+      withdrawReq.parameters as CFCoreTypes.WithdrawParams
     );
 
     await nodeA.rpcRouter.dispatch(withdrawReq);
@@ -240,7 +240,7 @@ describe("Node method follows spec - withdraw", () => {
     confirmWithdrawalMessages(
       nodeA,
       nodeB,
-      withdrawCommitmentReq.parameters as NodeTypes.WithdrawParams
+      withdrawCommitmentReq.parameters as CFCoreTypes.WithdrawParams
     );
 
     const {

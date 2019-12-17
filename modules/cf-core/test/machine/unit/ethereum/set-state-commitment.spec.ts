@@ -1,4 +1,4 @@
-import { Node } from "@connext/types";
+import { CFCoreTypes } from "@connext/types";
 import {
   bigNumberify,
   Interface,
@@ -20,7 +20,7 @@ import { generateRandomNetworkContext } from "../../mocks";
  */
 describe("Set State Commitment", () => {
   let commitment: SetStateCommitment;
-  let tx: Node.MinimalTransaction;
+  let tx: CFCoreTypes.MinimalTransaction;
 
   const networkContext = generateRandomNetworkContext();
 

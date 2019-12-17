@@ -1,6 +1,6 @@
 import { Signature } from "ethers/utils";
 
-import { Node } from "../types";
+import { CFCoreTypes } from "../types";
 
 export abstract class EthereumCommitment {
   // todo(xuanji): EthereumCommitment was designed under the assumption that
@@ -14,7 +14,7 @@ export abstract class EthereumCommitment {
   public abstract getSignedTransaction(
     signatures: Signature[],
     intermediarySignature?: Signature,
-  ): Node.MinimalTransaction;
+  ): CFCoreTypes.MinimalTransaction;
 }
 
 export enum MultisigOperation {
@@ -27,6 +27,6 @@ export enum MultisigOperation {
   Create = 2,
 }
 
-export type MultisigTransaction = Node.MinimalTransaction & {
+export type MultisigTransaction = CFCoreTypes.MinimalTransaction & {
   operation: MultisigOperation;
 };

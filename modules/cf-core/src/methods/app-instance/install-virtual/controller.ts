@@ -1,18 +1,18 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { Node } from "../../../types";
+import { CFCoreTypes } from "../../../types";
 import { NodeController } from "../../controller";
 
 import { installVirtual } from "./operation";
 
 export default class InstallVirtualController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.INSTALL_VIRTUAL)
+  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_installVirtual)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.InstallVirtualParams
+    params: CFCoreTypes.InstallVirtualParams
   ) {
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { appInstanceId, intermediaryIdentifier } = params;
@@ -71,7 +71,7 @@ export default class InstallVirtualController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: Node.InstallVirtualParams
+    params: CFCoreTypes.InstallVirtualParams
   ) {
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { intermediaryIdentifier } = params;
@@ -108,8 +108,8 @@ export default class InstallVirtualController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.InstallVirtualParams
-  ): Promise<Node.InstallVirtualResult> {
+    params: CFCoreTypes.InstallVirtualParams
+  ): Promise<CFCoreTypes.InstallVirtualResult> {
     const { store, protocolRunner } = requestHandler;
 
     const { appInstanceId } = params;

@@ -4,22 +4,22 @@ import { jsonRpcMethod } from "rpc-server";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { ERC20 } from "../../../contracts";
 import { RequestHandler } from "../../../request-handler";
-import { Node } from "../../../types";
+import { CFCoreTypes } from "../../../types";
 import { NodeController } from "../../controller";
 import { uninstallBalanceRefundApp } from "../deposit/operation";
 import { BigNumber } from "ethers/utils";
 import { Contract } from "ethers";
 
 export default class RescindDepositRightsController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.RESCIND_DEPOSIT_RIGHTS)
+  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_rescindDepositRights)
   public executeMethod: (
     requestHandler: RequestHandler,
-    params: Node.MethodParams
-  ) => Promise<Node.MethodResult> = super.executeMethod;
+    params: CFCoreTypes.MethodParams
+  ) => Promise<CFCoreTypes.MethodResult> = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.RescindDepositRightsParams
+    params: CFCoreTypes.RescindDepositRightsParams
   ): Promise<string[]> {
     return [params.multisigAddress];
   }
@@ -28,8 +28,8 @@ export default class RescindDepositRightsController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.RescindDepositRightsParams
-  ): Promise<Node.DepositResult> {
+    params: CFCoreTypes.RescindDepositRightsParams
+  ): Promise<CFCoreTypes.DepositResult> {
     const { provider, store, networkContext } = requestHandler;
     const { multisigAddress } = params;
     const tokenAddress =

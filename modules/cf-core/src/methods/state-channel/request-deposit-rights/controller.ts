@@ -7,7 +7,7 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { ERC20 } from "../../../contracts";
 import { xkeyKthAddress } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
-import { Node } from "../../../types";
+import { CFCoreTypes } from "../../../types";
 import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
@@ -21,22 +21,22 @@ import {
 
 // TODO: maybe a better name? since it's a little smarter than just a plain install
 export default class RequestDepositRightsController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.REQUEST_DEPOSIT_RIGHTS)
+  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_requestDepositRights)
   public executeMethod: (
     requestHandler: RequestHandler,
-    params: Node.MethodParams
-  ) => Promise<Node.MethodResult> = super.executeMethod;
+    params: CFCoreTypes.MethodParams
+  ) => Promise<CFCoreTypes.MethodResult> = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.RequestDepositRightsParams
+    params: CFCoreTypes.RequestDepositRightsParams
   ): Promise<string[]> {
     return [params.multisigAddress];
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: Node.RequestDepositRightsParams
+    params: CFCoreTypes.RequestDepositRightsParams
   ): Promise<void> {
     const { store, provider, networkContext } = requestHandler;
     const { multisigAddress } = params;
@@ -61,8 +61,8 @@ export default class RequestDepositRightsController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.RequestDepositRightsParams
-  ): Promise<Node.RequestDepositRightsResult> {
+    params: CFCoreTypes.RequestDepositRightsParams
+  ): Promise<CFCoreTypes.RequestDepositRightsResult> {
     const {
       provider,
       store,

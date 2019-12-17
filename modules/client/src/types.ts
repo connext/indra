@@ -2,15 +2,15 @@ import { IMessagingService } from "@connext/messaging";
 import {
   AppRegistry,
   BigNumber as connextBN,
-  ChannelProvider,
   ClientOptions,
   GetConfigResponse,
+  NetworkContext,
   Store,
 } from "@connext/types";
 import { Contract, providers } from "ethers";
 import { Network } from "ethers/utils";
 
-import { ChannelRouter } from "./channelRouter";
+import { ChannelProvider } from "./channelProvider";
 import { NodeApiClient } from "./node";
 
 export {
@@ -42,7 +42,9 @@ export {
   AppRegistry,
   AppStateBigNumber,
   CFCoreChannel,
+  CFChannelProviderOptions,
   ChannelAppSequences,
+  ChannelProvider,
   ChannelProviderConfig,
   ChannelState,
   CheckDepositRightsParameters,
@@ -63,13 +65,14 @@ export {
   GetChannelResponse,
   GetConfigResponse,
   IConnextClient,
+  KeyGen,
   LinkedTransferParameters,
   LinkedTransferResponse,
   LinkedTransferToRecipientParameters,
   LinkedTransferToRecipientResponse,
   makeChecksum,
   makeChecksumOrEthAddress,
-  Node as CFCoreTypes,
+  CFCoreTypes,
   PaymentProfile,
   RequestCollateralResponse,
   ResolveConditionParameters,
@@ -81,7 +84,6 @@ export {
   RescindDepositRightsParameters,
   RescindDepositRightsResponse,
   RpcConnection,
-  RpcType,
   SimpleLinkedTransferAppState,
   SimpleLinkedTransferAppStateBigNumber,
   SimpleSwapAppState,
@@ -90,6 +92,7 @@ export {
   SimpleTransferAppStateBigNumber,
   StateChannelJSON,
   Store,
+  StorePair,
   SupportedApplication,
   SupportedApplications,
   SupportedNetwork,
@@ -106,12 +109,10 @@ export const BigNumber = connextBN;
 
 export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
-  channelRouter: ChannelRouter;
-  channelProvider?: ChannelProvider;
+  channelProvider: ChannelProvider;
   config: GetConfigResponse;
   ethProvider: providers.JsonRpcProvider;
   messaging: IMessagingService;
-  multisigAddress: string;
   network: Network;
   node: NodeApiClient;
   token: Contract;
@@ -123,5 +124,14 @@ export interface NodeInitializationParameters {
   logLevel?: number;
   userPublicIdentifier?: string;
   nodePublicIdentifier?: string;
-  channelRouter?: ChannelRouter;
+  channelProvider?: ChannelProvider;
+}
+
+export enum NewRpcMethodName {
+  STORE_SET = "chan_storeSet",
+  STORE_GET = "chan_storeGet",
+  NODE_AUTH = "chan_nodeAuth",
+  CONFIG = "chan_config",
+  RESTORE_STATE = "chan_restoreState",
+  GET_STATE_CHANNEL = "chan_getStateChannel",
 }

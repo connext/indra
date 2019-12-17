@@ -2,7 +2,7 @@ import { jsonRpcMethod } from "rpc-server";
 
 import { xkeyKthAddress } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
-import { Node } from "../../../types";
+import { CFCoreTypes } from "../../../types";
 import { NodeController } from "../../controller";
 import WithdrawController from "../withdraw/controller";
 import { runWithdrawProtocol } from "../withdraw/operation";
@@ -15,19 +15,19 @@ import {
 // Note: This can't extend `WithdrawController` because the `methodName` static
 // members of each class are incompatible.
 export default class WithdrawCommitmentController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.WITHDRAW_COMMITMENT)
+  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_withdrawCommitment)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.WithdrawCommitmentParams
+    params: CFCoreTypes.WithdrawCommitmentParams
   ): Promise<string[]> {
     return WithdrawController.getRequiredLockNames(requestHandler, params);
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: Node.WithdrawCommitmentParams
+    params: CFCoreTypes.WithdrawCommitmentParams
   ): Promise<void> {
     const { store, provider, networkContext } = requestHandler;
     const { multisigAddress } = params;
@@ -52,8 +52,8 @@ export default class WithdrawCommitmentController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.WithdrawCommitmentParams
-  ): Promise<Node.WithdrawCommitmentResult> {
+    params: CFCoreTypes.WithdrawCommitmentParams
+  ): Promise<CFCoreTypes.WithdrawCommitmentResult> {
     const { store, publicIdentifier } = requestHandler;
 
     const { multisigAddress, recipient } = params;

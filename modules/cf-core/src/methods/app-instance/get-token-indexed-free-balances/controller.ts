@@ -1,17 +1,17 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { Node } from "../../../types";
+import { CFCoreTypes } from "../../../types";
 import { NodeController } from "../../controller";
 
 export default class GetTokenIndexedFreeBalancesController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.GET_TOKEN_INDEXED_FREE_BALANCE_STATES)
+  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_getTokenIndexedFreeBalanceStates)
   public executeMethod = super.executeMethod;
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.GetTokenIndexedFreeBalanceStatesParams,
-  ): Promise<Node.GetTokenIndexedFreeBalanceStatesResult> {
+    params: CFCoreTypes.GetTokenIndexedFreeBalanceStatesParams,
+  ): Promise<CFCoreTypes.GetTokenIndexedFreeBalanceStatesResult> {
     const { store } = requestHandler;
     const { multisigAddress } = params;
 

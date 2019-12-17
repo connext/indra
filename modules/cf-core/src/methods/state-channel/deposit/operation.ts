@@ -22,13 +22,12 @@ import {
   coinBalanceRefundStateEncoding,
   DepositFailedMessage,
   NetworkContext,
-  Node,
+  CFCoreTypes,
   NODE_EVENTS,
   OutcomeType,
   SolidityValueType,
   NodeEvent
 } from "../../../types";
-import { prettyPrintObject } from "../../../utils";
 import { DEPOSIT_FAILED } from "../../errors";
 
 const DEPOSIT_RETRY_COUNT = 3;
@@ -40,7 +39,7 @@ interface DepositContext {
 
 export async function installBalanceRefundApp(
   requestHandler: RequestHandler,
-  params: Node.DepositParams
+  params: CFCoreTypes.DepositParams
 ) {
   const {
     publicIdentifier,
@@ -102,7 +101,7 @@ export async function installBalanceRefundApp(
 
 export async function makeDeposit(
   requestHandler: RequestHandler,
-  params: Node.DepositParams
+  params: CFCoreTypes.DepositParams
 ): Promise<void> {
   const { multisigAddress, amount, tokenAddress } = params;
   const {
@@ -146,14 +145,14 @@ export async function makeDeposit(
       };
       if (e.toString().includes("reject") || e.toString().includes("denied")) {
         outgoing.emit(NODE_EVENTS.DEPOSIT_FAILED_EVENT, failMsg);
-        throw Error(`${DEPOSIT_FAILED}: ${prettyPrintObject(e)}`);
+        throw Error(`${DEPOSIT_FAILED}: ${e.message}`);
       }
 
       retryCount -= 1;
 
       if (retryCount === 0) {
         outgoing.emit(NODE_EVENTS.DEPOSIT_FAILED_EVENT, failMsg);
-        throw Error(`${DEPOSIT_FAILED}: ${prettyPrintObject(e)}`);
+        throw Error(`${DEPOSIT_FAILED}: ${e.message}`);
       }
     }
   }
@@ -172,7 +171,7 @@ export async function makeDeposit(
 
 export async function uninstallBalanceRefundApp(
   requestHandler: RequestHandler,
-  params: Node.DepositParams,
+  params: CFCoreTypes.DepositParams,
   blockNumberToUseIfNecessary?: number
 ) {
   const {
@@ -224,7 +223,7 @@ export async function uninstallBalanceRefundApp(
 }
 
 async function getDepositContext(
-  params: Node.DepositParams,
+  params: CFCoreTypes.DepositParams,
   publicIdentifier: string,
   provider: BaseProvider,
   networkContext: NetworkContext,

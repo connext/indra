@@ -1,4 +1,4 @@
-import { Node as NodeTypes } from "@connext/types";
+import { CFCoreTypes } from "@connext/types";
 import { One, Zero } from "ethers/constants";
 
 import {
@@ -25,7 +25,7 @@ jest.setTimeout(15000);
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
 // NOTE: no initiator events
-function confirmMessages(initiator: Node, responder: Node, expectedData: NodeTypes.UpdateStateEventData) {
+function confirmMessages(initiator: Node, responder: Node, expectedData: CFCoreTypes.UpdateStateEventData) {
   const expected = {
     from: initiator.publicIdentifier,
     type: "UPDATE_STATE_EVENT",

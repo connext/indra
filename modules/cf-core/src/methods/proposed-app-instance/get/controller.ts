@@ -1,14 +1,14 @@
 import { RequestHandler } from "../../../request-handler";
-import { Node } from "../../../types";
+import { CFCoreTypes } from "../../../types";
 import { NodeController } from "../../controller";
 
 export default class GetProposedAppInstanceController extends NodeController {
-  public static readonly methodName = Node.MethodName.GET_PROPOSED_APP_INSTANCE;
+  public static readonly methodName = CFCoreTypes.MethodName.GET_PROPOSED_APP_INSTANCE;
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.GetProposedAppInstanceParams
-  ): Promise<Node.GetProposedAppInstanceResult> {
+    params: CFCoreTypes.GetProposedAppInstanceParams
+  ): Promise<CFCoreTypes.GetProposedAppInstanceResult> {
     return {
       appInstance: await requestHandler.store.getAppInstanceProposal(
         params.appInstanceId

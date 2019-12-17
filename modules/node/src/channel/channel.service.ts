@@ -273,17 +273,19 @@ export class ChannelService {
     userSequenceNumber: number,
   ): Promise<ChannelAppSequences> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
-    const sc = (await this.cfCoreService.getStateChannel(channel.multisigAddress)).data;
-    let nodeSequenceNumber;
-    try {
-      nodeSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
-    } catch (e) {
-      if (e.message.indexOf("There are no installed AppInstances in this StateChannel") !== -1) {
-        nodeSequenceNumber = 0;
-      } else {
-        throw e;
-      }
+    if (!channel) {
+      throw new Error(
+        // tslint:disable-next-line: max-line-length
+        `Could not find channel associated with: ${userPublicIdentifier} in verifyAppSequenceNumber`,
+      );
     }
+    const sc = (await this.cfCoreService.getStateChannel(channel.multisigAddress)).data;
+    const [appId, appJson] = sc.appInstances.reduce((prev, curr) => {
+      const [prevId, prevJson] = prev;
+      const [currId, currJson] = curr;
+      return currJson.appSeqNo > prevJson.appSeqNo ? curr : prev;
+    });
+    const nodeSequenceNumber = appJson.appSeqNo;
     if (nodeSequenceNumber !== userSequenceNumber) {
       logger.warn(
         `Node app sequence number (${nodeSequenceNumber}) ` +
@@ -342,7 +344,7 @@ export class ChannelService {
     }
     const { data: state } = await this.cfCoreService.getStateChannel(channel.multisigAddress);
 
-    return state.toJson();
+    return state;
   }
 
   async getStateChannelByMultisig(multisigAddress: string): Promise<StateChannelJSON> {
@@ -352,7 +354,7 @@ export class ChannelService {
     }
     const { data: state } = await this.cfCoreService.getStateChannel(multisigAddress);
 
-    return state.toJson();
+    return state;
   }
 
   async getAllChannels(): Promise<Channel[]> {

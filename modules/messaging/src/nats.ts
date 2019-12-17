@@ -1,4 +1,4 @@
-import { Node } from "@connext/types";
+import { CFCoreTypes } from "@connext/types";
 import * as nats from "ts-nats";
 
 import { Logger } from "./logger";
@@ -32,9 +32,9 @@ export class NatsMessagingService implements IMessagingService {
   }
 
   ////////////////////////////////////////
-  // Node.IMessagingService Methods
+  // CFCoreTypes.IMessagingService Methods
 
-  async onReceive(subject: string, callback: (msg: Node.NodeMessage) => void): Promise<void> {
+  async onReceive(subject: string, callback: (msg: CFCoreTypes.NodeMessage) => void): Promise<void> {
     this.assertConnected();
     this.subscriptions[subject] = await this.connection!.subscribe(
       this.prependKey(`${subject}.>`),
@@ -44,13 +44,13 @@ export class NatsMessagingService implements IMessagingService {
         } else {
           const data = typeof msg.data === "string" ? JSON.parse(msg).data : msg.data;
           this.log.debug(`Received message for ${subject}: ${JSON.stringify(data)}`);
-          callback(data as Node.NodeMessage);
+          callback(data as CFCoreTypes.NodeMessage);
         }
       },
     );
   }
 
-  async send(to: string, msg: Node.NodeMessage): Promise<void> {
+  async send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void> {
     this.assertConnected();
     this.log.debug(`Sending message to ${to}: ${JSON.stringify(msg)}`);
     this.connection!.publish(this.prependKey(`${to}.${msg.from}`), msg);
@@ -73,7 +73,7 @@ export class NatsMessagingService implements IMessagingService {
     return response;
   }
 
-  async subscribe(subject: string, callback: (msg: Node.NodeMessage) => void): Promise<void> {
+  async subscribe(subject: string, callback: (msg: CFCoreTypes.NodeMessage) => void): Promise<void> {
     this.assertConnected();
     this.subscriptions[subject] = await this.connection!.subscribe(
       subject,
@@ -83,7 +83,7 @@ export class NatsMessagingService implements IMessagingService {
         } else {
           const data = typeof msg === "string" ? JSON.parse(msg) : msg;
           this.log.debug(`Subscription for ${subject}: ${JSON.stringify(data)}`);
-          callback(data as Node.NodeMessage);
+          callback(data as CFCoreTypes.NodeMessage);
         }
       },
     );

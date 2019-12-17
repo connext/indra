@@ -10,7 +10,7 @@ import {
 import { ConnextEvent } from "./basic";
 import { AppInstanceJson, CFCoreTypes } from "./cf";
 import { CFCoreChannel, ChannelAppSequences, ChannelState, PaymentProfile } from "./channel";
-import { ChannelProvider, ChannelProviderConfig } from "./channelProvider";
+import { ChannelProvider, ChannelProviderConfig, KeyGen, StorePair } from "./channelProvider";
 import {
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
@@ -36,25 +36,19 @@ import {
 } from "./node";
 
 export interface Store extends CFCoreTypes.IStoreService {
-  set(
-    pairs: {
-      path: string;
-      value: any;
-    }[],
-    shouldBackup?: Boolean,
-  ): Promise<void>;
-  restore(): Promise<{ path: string; value: any }[]>;
+  set(pairs: StorePair[], shouldBackup?: Boolean): Promise<void>;
+  restore(): Promise<StorePair[]>;
 }
 
 // channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
 export interface ClientOptions {
   ethProviderUrl: string;
-  nodeUrl: string; // ws:// or nats:// urls are supported
+  nodeUrl?: string; // ws:// or nats:// urls are supported
   channelProvider?: ChannelProvider;
-  keyGen?: (index: string) => Promise<string>;
+  keyGen?: KeyGen;
   mnemonic?: string;
   xpub?: string;
-  store: Store;
+  store?: Store;
   logLevel?: number;
 }
 
@@ -123,6 +117,7 @@ export interface IConnextClient {
 
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
+  getState(): Promise<CFCoreTypes.GetStateResult>;
   providerDeposit(
     amount: BigNumber,
     assetId: string,

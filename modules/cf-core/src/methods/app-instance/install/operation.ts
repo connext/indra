@@ -3,13 +3,13 @@ import { bigNumberify } from "ethers/utils";
 import { Protocol, ProtocolRunner } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { Store } from "../../../store";
-import { AppInstanceProposal, Node } from "../../../types";
+import { AppInstanceProposal, CFCoreTypes } from "../../../types";
 import { NO_APP_INSTANCE_ID_TO_INSTALL } from "../../errors";
 
 export async function install(
   store: Store,
   protocolRunner: ProtocolRunner,
-  params: Node.InstallParams
+  params: CFCoreTypes.InstallParams
 ): Promise<AppInstanceProposal> {
   const { appInstanceId } = params;
 

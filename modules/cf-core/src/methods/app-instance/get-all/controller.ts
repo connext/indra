@@ -1,21 +1,23 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { Node } from "../../../types";
+import { CFCoreTypes, AppInstanceJson } from "../../../types";
 import { NodeController } from "../../controller";
+import { StateChannel } from "../../../models";
+import { prettyPrintObject } from "../../../utils";
 
 /**
  * Gets all installed appInstances across all of the channels open on
  * this Node.
  */
 export default class GetAppInstancesController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.GET_APP_INSTANCES)
+  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_getAppInstances)
   public executeMethod = super.executeMethod;
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.GetAppInstancesParams
-  ): Promise<Node.GetAppInstancesResult> {
+    params: CFCoreTypes.GetAppInstancesParams
+  ): Promise<CFCoreTypes.GetAppInstancesResult> {
     const { store } = requestHandler;
     const { multisigAddress } = params;
 

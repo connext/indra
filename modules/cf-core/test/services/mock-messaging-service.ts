@@ -1,6 +1,6 @@
-import { Node } from "@connext/types";
+import { CFCoreTypes } from "@connext/types";
 
-class MockMessagingService implements Node.IMessagingService {
+class MockMessagingService implements CFCoreTypes.IMessagingService {
   async send() {}
   onReceive() {}
 }
