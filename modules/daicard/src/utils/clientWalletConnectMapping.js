@@ -118,12 +118,20 @@ async function mapPayloadToClient(payload, channel) {
       case ChannelProviderRpcMethods.chan_deposit:
         result = await channel.providerDeposit(params);
         break;
+      
       case ChannelProviderRpcMethods.chan_getState:
         result = await channel.getState(params);
         break;
-      case ChannelProviderRpcMethods.chan_getAppInstances:
-        result = await channel.getAppInstances(params);
+
+      case ChannelProviderRpcMethods.chan_getStateChannel:
+        result = await channel.getStateChannel();
         break;
+      
+      case ChannelProviderRpcMethods.chan_getAppInstances:
+        const { multisigAddress } = params;
+        result = await channel.getAppInstances(multisigAddress);
+        break;
+    
       case ChannelProviderRpcMethods.chan_getFreeBalanceState:
         verifyFields(params, ["tokenAddress", "multisigAddress"]);
         const { tokenAddress } = params;
@@ -177,7 +185,7 @@ async function mapPayloadToClient(payload, channel) {
         break;
     }
   } catch (e) {
-    console.error(`Wallet connect error: ${JSON.stringify(e, null, 2)}`);
+    console.error(`Wallet connect error: ${JSON.stringify(e.stack, null, 2)}`);
   }
   walletConnector.approveRequest({ id, result });
 }
