@@ -1,3 +1,8 @@
+import {
+  ChannelProviderRpcMethod,
+  ChannelProviderRpcMethods,
+  StateChannelJSON,
+} from "@connext/types";
 import { Wallet } from "ethers";
 import { arrayify, BigNumber } from "ethers/utils";
 import { RpcParameters } from "rpc-server";
@@ -16,7 +21,6 @@ import {
   RpcType,
   Store,
 } from "./types";
-import { StateChannelJSON } from "@connext/types";
 
 export class ChannelRouter {
   private type: RpcType;
@@ -102,7 +106,10 @@ export class ChannelRouter {
         return await this.wallet.signMessage(arrayify(message));
 
       case "ChannelProvider":
-        return await this._send("chan_node_auth" as any, { message });
+        return await this._send(
+          ChannelProviderRpcMethods.chan_nodeAuth as ChannelProviderRpcMethod,
+          { message },
+        );
 
       default:
         throw new Error(`Unrecognized RpcType: ${this.type}. (How'd you even get this far tho...)`);
@@ -474,7 +481,7 @@ export class ChannelRouter {
 
   // tslint:disable-next-line: function-name
   private async _send(
-    methodName: CFCoreTypes.RpcMethodName,
+    methodName: ChannelProviderRpcMethod,
     parameters: RpcParameters,
   ): Promise<any> {
     let result: any;
