@@ -1,17 +1,35 @@
 import { BigNumber, BigNumberish } from "ethers/utils";
-import { JsonRpcNotification, JsonRpcResponse, Rpc } from "rpc-server";
 
-import { OutcomeType, StateChannelJSON } from ".";
-import {
-  AppABIEncodings,
-  AppInstanceJson,
-  AppInstanceProposal
-} from "./data-types";
+import { AppABIEncodings, AppInstanceJson, AppInstanceProposal, OutcomeType, StateChannelJSON } from "./data-types";
 import { SolidityValueType } from "./simple-types";
 
+type JsonRpcProtocolV2 = {
+  jsonrpc: "2.0";
+};
+
+type RpcParameters =
+  | {
+      [key: string]: any;
+    }
+  | any[];
+
+export type JsonRpcNotification = JsonRpcProtocolV2 & {
+  result: any;
+};
+
+export type JsonRpcResponse = JsonRpcNotification & {
+  id: number;
+};
+
+export type Rpc = {
+  methodName: string;
+  parameters: RpcParameters;
+  id?: number;
+};
+
 export interface IRpcNodeProvider {
-  onMessage(callback: (message: JsonRpcResponse | JsonRpcNotification) => void);
-  sendMessage(message: Rpc);
+  onMessage(callback: (message: JsonRpcResponse | JsonRpcNotification) => void): any;
+  sendMessage(message: Rpc): any;
 }
 
 export namespace Node {
@@ -41,7 +59,7 @@ export namespace Node {
 
   export interface IMessagingService {
     send(to: string, msg: Node.NodeMessage): Promise<void>;
-    onReceive(address: string, callback: (msg: Node.NodeMessage) => void);
+    onReceive(address: string, callback: (msg: Node.NodeMessage) => void): any;
   }
 
   /**
@@ -57,10 +75,7 @@ export namespace Node {
    */
   export interface IStoreService {
     get(path: string): Promise<any>;
-    set(
-      pairs: { path: string; value: any }[],
-      allowDelete?: Boolean
-    ): Promise<void>;
+    set(pairs: { path: string; value: any }[], allowDelete?: Boolean): Promise<void>;
     reset?(): Promise<void>;
   }
 

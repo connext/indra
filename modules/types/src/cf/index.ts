@@ -89,7 +89,7 @@ export {
   SolidityValueType,
   StateChannelJSON,
   IRpcNodeProvider,
-  Node,
+  Node as CFCoreTypes,
   SignedStateHashUpdate,
   OutcomeType,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
