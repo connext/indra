@@ -26,6 +26,6 @@ export {
 export {
   AppInstanceJson,
   AppInstanceProposal,
-  Node as CFCoreTypes,
+  CFCoreTypes,
   OutcomeType,
 } from "@connext/types";

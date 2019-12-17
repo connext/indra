@@ -10,7 +10,7 @@ import { ChallengeRegistry } from "../contracts";
 import {
   AppIdentity,
   NetworkContext,
-  Node,
+  CFCoreTypes,
   SignedStateHashUpdate
 } from "../types";
 import { sortSignaturesBySignerAddress } from "../utils";
@@ -46,7 +46,7 @@ export class SetStateCommitment extends EthereumCommitment {
     );
   }
 
-  public getSignedTransaction(sigs: Signature[]): Node.MinimalTransaction {
+  public getSignedTransaction(sigs: Signature[]): CFCoreTypes.MinimalTransaction {
     return {
       to: this.networkContext.ChallengeRegistry,
       value: 0,

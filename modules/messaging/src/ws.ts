@@ -1,4 +1,4 @@
-import { Node } from "@connext/types";
+import { CFCoreTypes } from "@connext/types";
 import * as wsNats from "websocket-nats";
 
 import { Logger } from "./logger";
@@ -27,21 +27,21 @@ export class WsMessagingService implements IMessagingService {
   }
 
   ////////////////////////////////////////
-  // Node.IMessagingService Methods
+  // CFCoreTypes.IMessagingService Methods
 
-  async onReceive(subject: string, callback: (msg: Node.NodeMessage) => void): Promise<void> {
+  async onReceive(subject: string, callback: (msg: CFCoreTypes.NodeMessage) => void): Promise<void> {
     this.assertConnected();
     this.subscriptions[subject] = this.connection.subscribe(
       this.prependKey(`${subject}.>`),
       (msg: any): void => {
         const data = typeof msg === "string" ? JSON.parse(msg) : msg;
         this.log.debug(`Received message for ${subject}: ${JSON.stringify(data)}`);
-        callback(data as Node.NodeMessage);
+        callback(data as CFCoreTypes.NodeMessage);
       },
     );
   }
 
-  async send(to: string, msg: Node.NodeMessage): Promise<void> {
+  async send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void> {
     this.assertConnected();
     this.log.debug(`Sending message to ${to}: ${JSON.stringify(msg)}`);
     await this.connection.publish(this.prependKey(`${to}.${msg.from}`), JSON.stringify(msg));
@@ -72,12 +72,12 @@ export class WsMessagingService implements IMessagingService {
     });
   }
 
-  async subscribe(subject: string, callback: (msg: Node.NodeMessage) => void): Promise<void> {
+  async subscribe(subject: string, callback: (msg: CFCoreTypes.NodeMessage) => void): Promise<void> {
     this.assertConnected();
     this.subscriptions[subject] = this.connection.subscribe(subject, (msg: any): void => {
       const data = typeof msg === "string" ? JSON.parse(msg) : msg;
       this.log.debug(`Subscription for ${subject}: ${JSON.stringify(data)}`);
-      callback(data as Node.NodeMessage);
+      callback(data as CFCoreTypes.NodeMessage);
     });
   }
 

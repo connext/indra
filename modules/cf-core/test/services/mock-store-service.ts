@@ -1,6 +1,6 @@
-import { Node } from "@connext/types";
+import { CFCoreTypes } from "@connext/types";
 
-class MockStoreService implements Node.IStoreService {
+class MockStoreService implements CFCoreTypes.IStoreService {
   get() {
     return Promise.resolve(true);
   }

@@ -1,7 +1,7 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { CreateChannelMessage, Node, NodeEvent } from "../../../types";
+import { CreateChannelMessage, CFCoreTypes, NodeEvent } from "../../../types";
 import { NodeController } from "../../controller";
 import { xkeysToSortedKthAddresses } from "../../../machine";
 
@@ -17,20 +17,20 @@ import { xkeysToSortedKthAddresses } from "../../../machine";
  * to whoever subscribed to the `"CREATE_CHANNEL_EVENT"` event on the Node.
  */
 export default class CreateChannelController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodNames.chan_create)
+  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_create)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.CreateChannelParams
+    params: CFCoreTypes.CreateChannelParams
   ): Promise<string[]> {
-    return [`${Node.RpcMethodNames.chan_create}:${params.owners.sort().toString()}`];
+    return [`${CFCoreTypes.RpcMethodNames.chan_create}:${params.owners.sort().toString()}`];
   }
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.CreateChannelParams
-  ): Promise<Node.CreateChannelTransactionResult> {
+    params: CFCoreTypes.CreateChannelParams
+  ): Promise<CFCoreTypes.CreateChannelTransactionResult> {
     const { owners } = params;
     const { networkContext, store } = requestHandler;
 
@@ -57,7 +57,7 @@ export default class CreateChannelController extends NodeController {
   private async setupAndCreateChannel(
     multisigAddress: string,
     requestHandler: RequestHandler,
-    params: Node.CreateChannelParams
+    params: CFCoreTypes.CreateChannelParams
   ) {
     const { owners } = params;
     const {
@@ -85,7 +85,7 @@ export default class CreateChannelController extends NodeController {
         multisigAddress,
         owners: addressOwners,
         counterpartyXpub: responderXpub
-      } as Node.CreateChannelResult
+      } as CFCoreTypes.CreateChannelResult
     };
 
     outgoing.emit("CREATE_CHANNEL_EVENT", msg);

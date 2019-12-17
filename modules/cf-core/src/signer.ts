@@ -2,13 +2,12 @@ import { fromExtendedKey, HDNode } from "ethers/utils/hdnode";
 
 import { CF_PATH } from "./constants";
 import { computeRandomExtendedPrvKey } from "./machine/xkeys";
-import { Node } from "./types";
-import { prettyPrintObject } from "./utils";
+import { CFCoreTypes } from "./types";
 
 export const EXTENDED_PRIVATE_KEY_PATH = "EXTENDED_PRIVATE_KEY";
 
 export async function getHDNode(
-  storeService: Node.IStoreService
+  storeService: CFCoreTypes.IStoreService
 ): Promise<HDNode> {
   let xprv = await storeService.get(EXTENDED_PRIVATE_KEY_PATH);
 
@@ -20,6 +19,6 @@ export async function getHDNode(
   try {
     return fromExtendedKey(xprv).derivePath(CF_PATH);
   } catch (e) {
-    throw Error(`Invalid extended key supplied: ${prettyPrintObject(e)}`);
+    throw Error(`Invalid extended key supplied: ${e.message}`);
   }
 }

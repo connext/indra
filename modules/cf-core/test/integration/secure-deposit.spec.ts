@@ -24,7 +24,7 @@ import {
   assertNodeMessage,
   deposit
 } from "./utils";
-import { Node as NodeTypes } from "@connext/types";
+import { CFCoreTypes } from "@connext/types";
 
 expect.extend({ toBeEq });
 
@@ -34,7 +34,7 @@ log.setLevel(log.levels.SILENT);
 function confirmDepositMessages(
   initiator: Node,
   responder: Node,
-  params: NodeTypes.DepositParams
+  params: CFCoreTypes.DepositParams
 ) {
   const startedMsg = {
     from: initiator.publicIdentifier,

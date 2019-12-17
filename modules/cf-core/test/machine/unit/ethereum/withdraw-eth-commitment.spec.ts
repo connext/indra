@@ -1,4 +1,4 @@
-import { Node } from "@connext/types";
+import { CFCoreTypes } from "@connext/types";
 import { bigNumberify, getAddress, hexlify, randomBytes } from "ethers/utils";
 
 import { WithdrawETHCommitment } from "../../../../src/ethereum";
@@ -10,7 +10,7 @@ import { WithdrawETHCommitment } from "../../../../src/ethereum";
  */
 describe("Withdraw ETH Commitment", () => {
   let commitment: WithdrawETHCommitment;
-  let tx: Node.MinimalTransaction;
+  let tx: CFCoreTypes.MinimalTransaction;
 
   const multisigAddress = getAddress(hexlify(randomBytes(20)));
   const multisigOwners = [

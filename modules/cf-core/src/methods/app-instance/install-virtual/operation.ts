@@ -2,13 +2,13 @@ import { bigNumberify } from "ethers/utils";
 
 import { Protocol, ProtocolRunner } from "../../../machine";
 import { Store } from "../../../store";
-import { AppInstanceProposal, Node } from "../../../types";
+import { AppInstanceProposal, CFCoreTypes } from "../../../types";
 import { NO_APP_INSTANCE_ID_TO_INSTALL, VIRTUAL_APP_INSTALLATION_FAIL } from "../../errors";
 
 export async function installVirtual(
   store: Store,
   protocolRunner: ProtocolRunner,
-  params: Node.InstallVirtualParams,
+  params: CFCoreTypes.InstallVirtualParams,
 ): Promise<AppInstanceProposal> {
   const { appInstanceId, intermediaryIdentifier } = params;
 

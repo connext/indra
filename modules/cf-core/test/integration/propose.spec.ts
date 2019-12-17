@@ -1,4 +1,4 @@
-import { Node as NodeTypes } from "@connext/types";
+import { CFCoreTypes } from "@connext/types";
 
 import { Node, NODE_EVENTS, ProposeMessage } from "../../src";
 import { NetworkContextForTestSuite } from "../contracts";
@@ -54,7 +54,7 @@ describe("Node method follows spec - propose install", () => {
     it("propose install an app with eth and a meta", async (done: jest.DoneCallback) => {
       const rpc = makeProposeCall(nodeB, TicTacToeApp);
       const params = {
-        ...(rpc.parameters as NodeTypes.ProposeInstallParams),
+        ...(rpc.parameters as CFCoreTypes.ProposeInstallParams),
         meta: {
           info: "Provided meta",
         },

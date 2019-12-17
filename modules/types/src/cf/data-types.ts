@@ -1,7 +1,8 @@
 // https://github.com/counterfactual/monorepo/blob/master/packages/cf.js/API_REFERENCE.md#data-types
 import { BigNumber } from "ethers/utils";
 
-import { AppInterface, SolidityValueType } from ".";
+import { AppInterface } from "./app-instance";
+import { SolidityValueType } from "./simple-types";
 
 // Derived from:
 // cf-funding-protocol/contracts/interpreters/TwoPartyFixedOutcomeInterpreter.sol#L10

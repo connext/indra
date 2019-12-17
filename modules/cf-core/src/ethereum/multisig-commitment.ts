@@ -7,7 +7,7 @@ import {
 } from "ethers/utils";
 
 import { MinimumViableMultisig } from "../contracts";
-import { Node } from "../types";
+import { CFCoreTypes } from "../types";
 import { sortSignaturesBySignerAddress } from "../utils";
 
 import { EthereumCommitment, MultisigTransaction } from "./types";
@@ -23,7 +23,7 @@ export abstract class MultisigCommitment extends EthereumCommitment {
 
   abstract getTransactionDetails(): MultisigTransaction;
 
-  public getSignedTransaction(sigs: Signature[]): Node.MinimalTransaction {
+  public getSignedTransaction(sigs: Signature[]): CFCoreTypes.MinimalTransaction {
     const multisigInput = this.getTransactionDetails();
 
     const signaturesList = sortSignaturesBySignerAddress(

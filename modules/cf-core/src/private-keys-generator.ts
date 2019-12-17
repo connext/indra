@@ -5,7 +5,7 @@ import log from "loglevel";
 import { Memoize } from "typescript-memoize";
 
 import { CF_PATH } from "./constants";
-import { Node } from "./types";
+import { CFCoreTypes } from "./types";
 
 export const EXTENDED_PRIVATE_KEY_PATH = "EXTENDED_PRIVATE_KEY";
 
@@ -14,7 +14,7 @@ export class PrivateKeysGetter {
   private readonly privateKeys: Set<string> = new Set();
 
   constructor(
-    private readonly privateKeyGenerator: Node.IPrivateKeyGenerator
+    private readonly privateKeyGenerator: CFCoreTypes.IPrivateKeyGenerator
   ) {}
 
   @Memoize()
@@ -66,8 +66,8 @@ export class PrivateKeysGetter {
 }
 
 export async function getPrivateKeysGeneratorAndXPubOrThrow(
-  storeService: Node.IStoreService,
-  privateKeyGenerator?: Node.IPrivateKeyGenerator,
+  storeService: CFCoreTypes.IStoreService,
+  privateKeyGenerator?: CFCoreTypes.IPrivateKeyGenerator,
   publicExtendedKey?: string
 ): Promise<[PrivateKeysGetter, string]> {
   if (publicExtendedKey && !privateKeyGenerator) {
@@ -117,7 +117,7 @@ export async function getPrivateKeysGeneratorAndXPubOrThrow(
 // "Counterfactual" derivation path.
 export function generatePrivateKeyGeneratorAndXPubPair(
   extendedPrvKey: string
-): [Node.IPrivateKeyGenerator, string] {
+): [CFCoreTypes.IPrivateKeyGenerator, string] {
   const hdNode = fromExtendedKey(extendedPrvKey).derivePath(CF_PATH);
 
   return [

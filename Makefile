@@ -18,7 +18,6 @@ cf-adjudicator-contracts=$(cwd)/modules/cf-adjudicator-contracts
 cf-apps=$(cwd)/modules/cf-apps
 cf-funding-protocol-contracts=$(cwd)/modules/cf-funding-protocol-contracts
 cf-core=$(cwd)/modules/cf-core
-cf-types=$(cwd)/modules/cf-types
 client=$(cwd)/modules/client
 contracts=$(cwd)/modules/contracts
 daicard=$(cwd)/modules/daicard
@@ -208,11 +207,6 @@ cf-funding-protocol-contracts: node-modules $(shell find $(cf-funding-protocol-c
 	$(docker_run) "cd modules/cf-funding-protocol-contracts && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-cf-types: node-modules $(shell find $(cf-types)/src $(cf-types)/tsconfig.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/cf-types && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
 client: cf-core contracts types messaging $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
@@ -279,7 +273,7 @@ indra-proxy-prod: daicard-prod dashboard-prod ws-tcp-relay $(shell find $(proxy)
 	docker build --file $(proxy)/indra.connext.network/prod.dockerfile --tag $(project)_proxy:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-types: node-modules cf-types $(shell find $(types)/src $(find_options))
+types: node-modules $(shell find $(types)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/types && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
