@@ -6,6 +6,7 @@ import {
   GetConfigResponse,
   NetworkContext,
   Store,
+  RpcType,
 } from "@connext/types";
 import { Contract, providers } from "ethers";
 import { Network } from "ethers/utils";
@@ -115,8 +116,9 @@ export type InternalClientOptions = ClientOptions & {
   messaging: IMessagingService;
   network: Network;
   node: NodeApiClient;
-  token: Contract;
+  rpcType: RpcType;
   store: Store;
+  token: Contract;
 };
 
 export interface NodeInitializationParameters {
