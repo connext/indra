@@ -1,5 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { CF_PATH, LinkedTransferToRecipientParameters } from "@connext/types";
+import { CF_PATH, LinkedTransferToRecipientParameters, AppInstanceProposal } from "@connext/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
 import { Contract, providers } from "ethers";
@@ -50,7 +50,6 @@ import {
   PaymentProfile,
   RequestCollateralResponse,
   RequestDepositRightsParameters,
-  RequestDepositRightsResponse,
   RescindDepositRightsParameters,
   RescindDepositRightsResponse,
   ResolveConditionParameters,
@@ -223,11 +222,20 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     await client.getFreeBalance();
   } catch (e) {
     if (e.message.includes(`StateChannel does not exist yet`)) {
-      log.debug(`Restoring client state: ${e}`);
+      log.debug(`Restoring client state: ${e.stack || e.message}`);
       await client.restoreState();
     } else {
+      log.error(`Failed to get free balance: ${e.stack || e.message}`);
       throw e;
     }
+  }
+
+  // 12/11/2019 restore client state if state channel has no
+  // proxy factory address
+  const { data: sc } = await client.getStateChannel();
+  if (!sc.proxyFactoryAddress) {
+    log.debug(`No proxy factory address found, restoring client state`);
+    await client.restoreState();
   }
 
   log.debug("Registering subscriptions");
@@ -236,6 +244,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // check if there is a coin refund app installed for eth and tokens
   await client.uninstallCoinBalanceIfNeeded(AddressZero);
   await client.uninstallCoinBalanceIfNeeded(config.contractAddresses.Token);
+
+  // cleanup any hanging registry apps
+  await client.cleanupRegistryApps();
 
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
   log.debug("Resubmitting active withdrawals");
@@ -652,8 +663,8 @@ export class ConnextClient implements IConnextClient {
 
   ///////////////////////////////////
   // PROVIDER/ROUTER METHODS
-  public getState = async (): Promise<CFCoreTypes.GetStateResult> => {
-    return await this.channelRouter.getState(this.multisigAddress);
+  public getStateChannel = async (): Promise<CFCoreTypes.GetStateChannelResult> => {
+    return await this.channelRouter.getStateChannel();
   };
 
   public providerDeposit = async (
@@ -696,7 +707,6 @@ export class ConnextClient implements IConnextClient {
     return (await this.channelRouter.getAppInstances(multisigAddress)).appInstances;
   };
 
-  // TODO: under what conditions will this fail?
   public getFreeBalance = async (
     assetId: string = AddressZero,
   ): Promise<CFCoreTypes.GetFreeBalanceStateResult> => {
@@ -896,18 +906,13 @@ export class ConnextClient implements IConnextClient {
   // NODE METHODS
 
   public verifyAppSequenceNumber = async (): Promise<any> => {
-    const { data: sc } = await this.channelRouter.getStateChannel();
-    let appSequenceNumber: number;
-    try {
-      appSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
-    } catch (e) {
-      if (e.message.includes("There are no installed AppInstances in this StateChannel")) {
-        appSequenceNumber = 0;
-      } else {
-        throw e;
-      }
-    }
-    return await this.node.verifyAppSequenceNumber(appSequenceNumber);
+    const { data: sc } = await this.getStateChannel();
+    const [appId, appJson] = sc.appInstances.reduce((prev, curr) => {
+      const [prevId, prevJson] = prev;
+      const [currId, currJson] = curr;
+      return currJson.appSeqNo > prevJson.appSeqNo ? curr : prev;
+    });
+    return await this.node.verifyAppSequenceNumber(appJson.appSeqNo);
   };
 
   public reclaimPendingAsyncTransfers = async (): Promise<void> => {
@@ -977,6 +982,67 @@ export class ConnextClient implements IConnextClient {
       bigNumberify(givenTransaction.value).eq(expected.value) &&
       givenTransaction.data === expected.data
     );
+  };
+
+  /**
+   * NOTE: this function should *only* be called on `connect()`, and is
+   * designed to cleanup channel state in the event of the client going
+   * offline and not completing protocols.
+   *
+   * This function will *only* handle registered applications, or applications
+   * who's desired functionality is well understood. The apps will be handled
+   * as follows:
+   * - proposed swaps: install will be rejected, removing them from the proposed
+   *   app instances and preventing stale swaps from being installed.
+   * - installed swaps: will be automatically uninstalled, thereby executing the
+   *   swap as soon as the client is able.
+   * - proposed linked transfer apps: reject install
+   * - installed linked transfer: leave installed for the hub to uninstall
+   */
+  public cleanupRegistryApps = async (): Promise<void> => {
+    const swapAppRegistryInfo = this.appRegistry.filter(
+      (app: DefaultApp) => app.name === "SimpleTwoPartySwapApp",
+    )[0];
+    const linkedRegistryInfo = this.appRegistry.filter(
+      (app: DefaultApp) => app.name === "SimpleLinkedTransferApp",
+    )[0];
+
+    await this.removeHangingProposalsByDefinition([
+      swapAppRegistryInfo.appDefinitionAddress,
+      linkedRegistryInfo.appDefinitionAddress,
+    ]);
+
+    // deal with any swap apps that are installed
+    await this.uninstallAllAppsByDefintion([swapAppRegistryInfo.appDefinitionAddress]);
+  };
+
+  /**
+   * Removes all proposals of a give app definition type
+   */
+  public removeHangingProposalsByDefinition = async (appDefinitions: string[]): Promise<void> => {
+    // first get all proposed apps
+    const { appInstances: proposed } = await this.getProposedAppInstances();
+
+    // deal with any proposed swap or linked transfer apps
+    const hangingProposals = proposed.filter((proposal: AppInstanceProposal) =>
+      appDefinitions.includes(proposal.appDefinition),
+    );
+    // remove from `proposedAppInstances`
+    for (const hanging of hangingProposals) {
+      await this.rejectInstallApp(hanging.identityHash);
+    }
+  };
+
+  /**
+   * Removes all apps of a given app definition type
+   */
+  public uninstallAllAppsByDefintion = async (appDefinitions: string[]): Promise<void> => {
+    const apps = (await this.getAppInstances()).filter((app: AppInstanceJson) =>
+      appDefinitions.includes(app.appInterface.addr),
+    );
+    for (const app of apps) {
+      await this.uninstallApp(app.identityHash);
+    }
   };
 
   public uninstallCoinBalanceIfNeeded = async (assetId: string = AddressZero): Promise<void> => {

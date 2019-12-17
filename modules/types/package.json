@@ -1,6 +1,6 @@
 {
   "name": "@connext/types",
-  "version": "1.3.10",
+  "version": "1.3.14",
   "description": "TypeScript typings for common Connext types",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -14,7 +14,7 @@
     "test": "./node_modules/.bin/jest"
   },
   "dependencies": {
-    "@connext/cf-types": "1.3.10",
+    "@connext/cf-types": "1.3.14",
     "ethers": "4.0.40"
   },
   "devDependencies": {
