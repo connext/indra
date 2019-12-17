@@ -364,7 +364,9 @@ export class ConnextClient implements IConnextClient {
    *
    * NOTE: should probably take assetId into account
    */
-  public getBalanceRefundApp = async (assetId: string = AddressZero): Promise<AppInstanceJson> => {
+  public getBalanceRefundApp = async (
+    assetId: string = AddressZero,
+  ): Promise<AppInstanceJson | undefined> => {
     const apps = await this.getAppInstances(this.multisigAddress);
     const filtered = apps.filter(
       (app: AppInstanceJson) =>
@@ -703,7 +705,6 @@ export class ConnextClient implements IConnextClient {
   };
 
   public getAppInstances = async (multisigAddress?: string): Promise<AppInstanceJson[]> => {
-    // TODO
     return (await this.channelRouter.getAppInstances(multisigAddress)).appInstances;
   };
 
