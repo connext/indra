@@ -39,6 +39,13 @@ my.goBack = () => cy.contains("button", /^back$/i).click();
 my.goNextIntro = () => cy.contains("button", /^next$/i).click();
 my.goCloseIntro = () => cy.contains("button", /^got it!$/i).click();
 
+my.activateWalletConnext = () => {
+  my.goToSettings();
+  cy.contains("button", /walletconnext/i).click();
+  my.isStarting();
+  my.doneStarting();
+}
+
 my.closeIntroModal = () => {
   my.isStarting();
   my.doneStarting();
