@@ -15,7 +15,7 @@ import {
 } from "./methods/errors";
 import { AppInstance, AppInstanceProposal, StateChannel } from "./models";
 import { CFCoreTypes, SolidityValueType } from "./types";
-import { getCreate2MultisigAddress, prettyPrintObject } from "./utils";
+import { getCreate2MultisigAddress } from "./utils";
 
 /**
  * A simple ORM around StateChannels and AppInstances stored using the
@@ -301,7 +301,7 @@ export class Store {
         return stateChannel;
       }
 
-      throw Error(prettyPrintObject(e));
+      throw Error(e);
     }
   }
 }

@@ -28,7 +28,6 @@ import {
   SolidityValueType,
   NodeEvent
 } from "../../../types";
-import { prettyPrintObject } from "../../../utils";
 import { DEPOSIT_FAILED } from "../../errors";
 
 const DEPOSIT_RETRY_COUNT = 3;
@@ -146,14 +145,14 @@ export async function makeDeposit(
       };
       if (e.toString().includes("reject") || e.toString().includes("denied")) {
         outgoing.emit(NODE_EVENTS.DEPOSIT_FAILED_EVENT, failMsg);
-        throw Error(`${DEPOSIT_FAILED}: ${prettyPrintObject(e)}`);
+        throw Error(`${DEPOSIT_FAILED}: ${e.message}`);
       }
 
       retryCount -= 1;
 
       if (retryCount === 0) {
         outgoing.emit(NODE_EVENTS.DEPOSIT_FAILED_EVENT, failMsg);
-        throw Error(`${DEPOSIT_FAILED}: ${prettyPrintObject(e)}`);
+        throw Error(`${DEPOSIT_FAILED}: ${e.message}`);
       }
     }
   }

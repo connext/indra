@@ -6,15 +6,12 @@ import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { Store } from "../../../store";
 import { CFCoreTypes, SolidityValueType } from "../../../types";
-import {
-  getFirstElementInListNotEqualTo,
-  prettyPrintObject,
-} from "../../../utils";
+import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
   IMPROPERLY_FORMATTED_STRUCT,
   NO_APP_INSTANCE_FOR_TAKE_ACTION,
-  STATE_OBJECT_NOT_ENCODABLE,
+  STATE_OBJECT_NOT_ENCODABLE
 } from "../../errors";
 
 export default class UpdateStateController extends NodeController {
@@ -46,7 +43,7 @@ export default class UpdateStateController extends NodeController {
       appInstance.encodeState(newState);
     } catch (e) {
       if (e.code === INVALID_ARGUMENT) {
-        throw Error(`${IMPROPERLY_FORMATTED_STRUCT}: ${prettyPrintObject(e)}`);
+        throw Error(`${IMPROPERLY_FORMATTED_STRUCT}: ${e.message}`);
       }
       throw Error(STATE_OBJECT_NOT_ENCODABLE);
     }

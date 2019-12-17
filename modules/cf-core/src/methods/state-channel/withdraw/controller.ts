@@ -5,7 +5,7 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { xkeyKthAddress } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
 import { CFCoreTypes, NODE_EVENTS } from "../../../types";
-import { prettyPrintObject, getCreate2MultisigAddress } from "../../../utils";
+import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
   CANNOT_WITHDRAW,
@@ -149,7 +149,7 @@ export default class WithdrawController extends NodeController {
         type: NODE_EVENTS.WITHDRAWAL_FAILED_EVENT,
         data: e.toString()
       });
-      throw Error(`${WITHDRAWAL_FAILED}: ${prettyPrintObject(e)}`);
+      throw Error(`${WITHDRAWAL_FAILED}: ${e.message}`);
     }
 
     return {

@@ -19,7 +19,7 @@ import {
   twoPartyFixedOutcomeInterpreterParamsEncoding,
   virtualAppAgreementEncoding,
 } from "../types";
-import { bigNumberifyJson, prettyPrintObject } from "../utils";
+import { bigNumberifyJson } from "../utils";
 
 /**
  * Representation of an AppInstance.
@@ -284,7 +284,7 @@ export class AppInstance {
           - appInstanceIdentityHash = ${this.identityHash}
           - newState = ${newState}
           - encodingExpected = ${this.appInterface.stateEncoding}
-          Error: ${prettyPrintObject(e)}`
+          Error: ${e.message}`
       );
     }
 

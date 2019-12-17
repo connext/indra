@@ -6,10 +6,7 @@ import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { Store } from "../../../store";
 import { CFCoreTypes, NODE_EVENTS, SolidityValueType, UpdateStateMessage } from "../../../types";
-import {
-  getFirstElementInListNotEqualTo,
-  prettyPrintObject
-} from "../../../utils";
+import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
   IMPROPERLY_FORMATTED_STRUCT,
@@ -50,7 +47,7 @@ export default class TakeActionController extends NodeController {
       appInstance.encodeAction(action);
     } catch (e) {
       if (e.code === INVALID_ARGUMENT) {
-        throw Error(`${IMPROPERLY_FORMATTED_STRUCT}: ${prettyPrintObject(e)}`);
+        throw Error(`${IMPROPERLY_FORMATTED_STRUCT}: ${e.message}`);
       }
       throw Error(STATE_OBJECT_NOT_ENCODABLE);
     }
@@ -132,9 +129,9 @@ async function runTakeActionProtocol(
   } catch (e) {
     if (e.toString().indexOf("VM Exception") !== -1) {
       // TODO: Fetch the revert reason
-      throw Error(`${INVALID_ACTION}: ${prettyPrintObject(e)}`);
+      throw Error(`${INVALID_ACTION}: ${e.message}`);
     }
-    throw Error(`Couldn't run TakeAction protocol: ${prettyPrintObject(e)}`);
+    throw Error(`Couldn't run TakeAction protocol: ${e.message}`);
   }
 
   return {};
