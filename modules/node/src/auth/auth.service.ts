@@ -31,7 +31,7 @@ export class AuthService {
 
   async getNonce(address: string): Promise<string> {
     if (!isValidHex(address, 20)) {
-      return JSON.stringify({ err: "Invalid address" });
+      return JSON.stringify({ err: `Invalid address: ${address}` });
     }
     const nonce = hexlify(randomBytes(nonceLen));
     const expiry = Date.now() + nonceTTL;
