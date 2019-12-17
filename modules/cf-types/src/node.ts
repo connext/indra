@@ -98,7 +98,8 @@ export namespace Node {
     chan_getAppInstances: "chan_getAppInstances",
     chan_getStateDepositHolderAddress: "chan_getStateDepositHolderAddress",
     chan_getFreeBalanceState: "chan_getFreeBalanceState",
-    chan_getTokenIndexedFreeBalanceStates: "chan_getTokenIndexedFreeBalanceStates",
+    chan_getTokenIndexedFreeBalanceStates:
+      "chan_getTokenIndexedFreeBalanceStates",
     chan_getProposedAppInstances: "chan_getProposedAppInstances",
     chan_getState: "chan_getState",
     chan_getStateChannel: "chan_getStateChannel",
