@@ -43,7 +43,7 @@ import {
   DepositStartedMessage,
   EventEmittedMessage
 } from "../../src/types";
-import { deBigNumberifyJson } from "../../src/utils";
+import { deBigNumberifyJson, bigNumberifyJson } from "../../src/utils";
 import { ProposeInstallProtocolParams } from "../../src/machine/types";
 
 interface AppContext {
@@ -882,15 +882,16 @@ export async function confirmAppInstanceInstallation(
   proposedParams: ProposeInstallProtocolParams,
   appInstance: AppInstanceJson
 ) {
-  expect(appInstance.appInterface.addr).toEqual(proposedParams.appDefinition);
+  const params = bigNumberifyJson(proposedParams);
+  expect(appInstance.appInterface.addr).toEqual(params.appDefinition);
   expect(appInstance.appInterface.stateEncoding).toEqual(
-    proposedParams.abiEncodings.stateEncoding
+    params.abiEncodings.stateEncoding
   );
   expect(appInstance.appInterface.actionEncoding).toEqual(
-    proposedParams.abiEncodings.actionEncoding
+    params.abiEncodings.actionEncoding
   );
-  expect(appInstance.defaultTimeout).toEqual(proposedParams.timeout.toNumber());
-  expect(appInstance.latestState).toEqual(proposedParams.initialState);
+  expect(appInstance.defaultTimeout).toEqual(params.timeout.toNumber());
+  expect(appInstance.latestState).toEqual(params.initialState);
 }
 
 export async function getState(
