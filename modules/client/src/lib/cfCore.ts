@@ -1,4 +1,6 @@
 export {
+  bigNumberifyJson,
+  deBigNumberifyJson,
   Node as CFCore,
   sortAddresses,
   xkeyKthAddress as xpubToAddress,
