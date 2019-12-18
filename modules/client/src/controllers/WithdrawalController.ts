@@ -1,5 +1,5 @@
 import { TransactionResponse } from "ethers/providers";
-import { getAddress } from "ethers/utils";
+import { getAddress, bigNumberify } from "ethers/utils";
 
 import { stringify, withdrawalKey } from "../lib";
 import { BigNumber, CFCoreTypes, convert, WithdrawalResponse, WithdrawParameters } from "../types";
@@ -42,12 +42,11 @@ export class WithdrawalController extends AbstractController {
         this.log.info(`Withdraw Response: ${stringify(withdrawResponse)}`);
         const minTx: CFCoreTypes.MinimalTransaction = withdrawResponse.transaction;
         // set the withdrawal tx in the store
-        await this.connext.store.set([
-          {
-            path: withdrawalKey(this.connext.publicIdentifier),
-            value: { tx: minTx, retry: 0 },
-          },
-        ]);
+        await this.connext.channelProvider.send("chan_storeSet", {
+          pairs: [
+            { path: withdrawalKey(this.connext.publicIdentifier), value: { tx: minTx, retry: 0 } },
+          ],
+        });
 
         transaction = await this.node.withdraw(minTx);
 
@@ -67,7 +66,8 @@ export class WithdrawalController extends AbstractController {
       }
       const postWithdrawBalances = await this.connext.getFreeBalance(assetId);
 
-      const expectedFreeBal = preWithdrawBalances[myFreeBalanceAddress].sub(amount);
+      console.log(`***** preWithdrawBalances: ${stringify(preWithdrawBalances)}`);
+      const expectedFreeBal = bigNumberify(preWithdrawBalances[myFreeBalanceAddress]).sub(amount);
 
       // sanity check the free balance decrease
       if (postWithdrawBalances && !postWithdrawBalances[myFreeBalanceAddress].eq(expectedFreeBal)) {
