@@ -1,6 +1,6 @@
 import { CFCoreTypes } from "@connext/types";
 
-import { Node, NODE_EVENTS, ProposeMessage } from "../../src";
+import { Node, ProposeMessage, deBigNumberifyJson } from "../../src";
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
@@ -79,7 +79,7 @@ describe("Node method follows spec - propose install", () => {
 
       await nodeA.rpcRouter.dispatch({
         ...rpc,
-        parameters: params,
+        parameters: deBigNumberifyJson(params)
       });
     });
   });

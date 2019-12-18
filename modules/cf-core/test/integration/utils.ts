@@ -455,11 +455,11 @@ export function constructDepositRpc(
   return {
     id: Date.now(),
     methodName: CFCoreTypes.RpcMethodNames.chan_deposit,
-    parameters: {
+    parameters: deBigNumberifyJson({
       multisigAddress,
       amount,
       tokenAddress
-    } as CFCoreTypes.DepositParams
+    })
   };
 }
 
@@ -491,12 +491,12 @@ export function constructWithdrawRpc(
   return {
     id: Date.now(),
     methodName: CFCoreTypes.RpcMethodNames.chan_withdraw,
-    parameters: {
+    parameters: deBigNumberifyJson({
       tokenAddress,
       multisigAddress,
       amount,
       recipient
-    } as CFCoreTypes.WithdrawParams
+    }) as CFCoreTypes.WithdrawParams
   };
 }
 
@@ -534,7 +534,7 @@ export function constructAppProposalRpc(
   return {
     id: Date.now(),
     methodName: CFCoreTypes.RpcMethodNames.chan_proposeInstall,
-    parameters: {
+    parameters: deBigNumberifyJson({
       proposedToIdentifier,
       initiatorDeposit,
       initiatorDepositTokenAddress,
@@ -545,7 +545,7 @@ export function constructAppProposalRpc(
       abiEncodings,
       outcomeType,
       timeout: One
-    } as CFCoreTypes.ProposeInstallParams
+    } as CFCoreTypes.ProposeInstallParams)
   };
 }
 
@@ -645,10 +645,10 @@ export function constructTakeActionRpc(
   action: any
 ): Rpc {
   return {
-    parameters: {
+    parameters: deBigNumberifyJson({
       appInstanceId,
       action
-    } as CFCoreTypes.TakeActionParams,
+    } as CFCoreTypes.TakeActionParams),
     id: Date.now(),
     methodName: CFCoreTypes.RpcMethodNames.chan_takeAction
   };
