@@ -221,8 +221,18 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     }
   }
 
+  // 12/11/2019 make sure state is restored if there is no state channel
+  const { data: sc } = await client.getStateChannel();
+  if (!sc.proxyFactoryAddress) {
+    log.debug(`No proxy factory address found, restoring client state`);
+    await client.restoreState();
+  }
+
   log.debug("Registering subscriptions");
   await client.registerSubscriptions();
+
+  // cleanup any hanging registry apps
+  await client.cleanupRegistryApps();
 
   // check if there is a coin refund app installed for eth and tokens
   await client.uninstallCoinBalanceIfNeeded(AddressZero);
