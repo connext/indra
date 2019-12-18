@@ -34,14 +34,20 @@ export type RpcType = keyof typeof RpcTypes;
 // TODO: replace any w interface of cfCore (using implementation directly -> circular dependency)
 export type RpcConnection = ChannelProvider | any;
 
-export const ChannelProviderRpcMethods = {
-  ...CFCoreTypes.RpcMethodNames,
+export const ConnextRpcMethods = {
   chan_config: "chan_config",
   chan_nodeAuth: "chan_nodeAuth",
+  chan_restoreState: "chan_restoreState",
   chan_storeGet: "chan_storeGet",
   chan_storeSet: "chan_storeSet",
 };
-export type ChannelProviderRpcMethod = keyof typeof ChannelProviderRpcMethods;
+export type ConnextRpcMethod = keyof typeof ConnextRpcMethods;
+
+export const ChannelProviderRpcMethods = {
+  ...CFCoreTypes.RpcMethodNames,
+  ...ConnextRpcMethods,
+};
+export type ChannelProviderRpcMethod = ConnextRpcMethod | CFCoreTypes.RpcMethodName;
 
 export type StorePair = {
   path: string;

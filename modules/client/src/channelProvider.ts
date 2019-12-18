@@ -7,7 +7,7 @@ import {
   CFChannelProviderOptions,
   CFCoreTypes,
   ChannelProviderConfig,
-  NewRpcMethodName,
+  ChannelProviderRpcMethod,
   RpcConnection,
   Store,
   StorePair,
@@ -79,29 +79,26 @@ export class ChannelProvider {
     return this.config;
   };
 
-  public send = async (
-    method: CFCoreTypes.RpcMethodName | NewRpcMethodName,
-    params: any = {},
-  ): Promise<any> => {
+  public send = async (method: ChannelProviderRpcMethod, params: any = {}): Promise<any> => {
     let result;
     switch (method) {
-      case NewRpcMethodName.STORE_SET:
+      case "chan_storeSet":
         result = await this.set(params.pairs);
         break;
-      case NewRpcMethodName.STORE_GET:
+      case "chan_storeGet":
         result = await this.get(params.path);
         break;
-      case NewRpcMethodName.NODE_AUTH:
+      case "chan_nodeAuth":
         result = await this.signMessage(params.message);
         break;
-      case NewRpcMethodName.CONFIG:
+      case "chan_config":
         result = this.config;
         break;
-      case NewRpcMethodName.RESTORE_STATE:
+      case "chan_restoreState":
         result = await this.restoreState(params.path);
         break;
       default:
-        result = await this._send(method as CFCoreTypes.RpcMethodName, params);
+        result = await this._send(method, params);
         break;
     }
     return result;
