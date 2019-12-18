@@ -1,5 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { CF_PATH, RpcType } from "@connext/types";
+import { CF_PATH } from "@connext/types";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -107,7 +107,6 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
 
   // setup channelProvider
   let channelProvider: ChannelProvider;
-  let rpcType: RpcType;
 
   if (providedChannelProvider) {
     channelProvider = providedChannelProvider;
@@ -128,7 +127,6 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     node.channelProvider = channelProvider;
     node.userPublicIdentifier = channelProvider.config.userPublicIdentifier;
     node.nodePublicIdentifier = config.nodePublicIdentifier;
-    rpcType = "InjectedProvider";
   } else if (mnemonic || (xpub && keyGen)) {
     if (!store) {
       throw new Error("Client must be instantiated with store if not using a channelProvider");
@@ -169,7 +167,6 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
       store,
       xpub,
     });
-    rpcType = "CounterfactualProvider";
 
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
@@ -203,7 +200,6 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     messaging,
     network,
     node,
-    rpcType,
     store,
     token,
     ...opts, // use any provided opts by default
