@@ -106,6 +106,10 @@ export class ChannelProvider {
 
   ///////////////////////////////////////////////
   ///// GETTERS / SETTERS
+  get isSigner(): boolean {
+    return true;
+  }
+
   get config(): ChannelProviderConfig {
     return this._config;
   }

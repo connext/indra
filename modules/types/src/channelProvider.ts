@@ -25,12 +25,6 @@ export interface CFChannelProviderOptions {
   store: Store;
 }
 
-export const RpcTypes = {
-  CounterfactualProvider: "CounterfactualProvider",
-  InjectedProvider: "InjectedProvider",
-};
-export type RpcType = keyof typeof RpcTypes;
-
 // TODO: replace any w interface of cfCore (using implementation directly -> circular dependency)
 export type RpcConnection = ChannelProvider | any;
 

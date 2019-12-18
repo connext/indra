@@ -1,10 +1,5 @@
 import { IMessagingService } from "@connext/messaging";
-import {
-  AppInstanceProposal,
-  CF_PATH,
-  LinkedTransferToRecipientParameters,
-  RpcType,
-} from "@connext/types";
+import { AppInstanceProposal, CF_PATH, LinkedTransferToRecipientParameters } from "@connext/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
 import { Contract, providers } from "ethers";
@@ -90,7 +85,6 @@ export class ConnextClient implements IConnextClient {
   public store: Store;
   public token: Contract;
 
-  private rpcType: RpcType;
   private opts: InternalClientOptions;
   private keyGen: KeyGen;
 
@@ -114,7 +108,6 @@ export class ConnextClient implements IConnextClient {
     this.node = opts.node;
     this.token = opts.token;
     this.store = opts.store;
-    this.rpcType = opts.rpcType;
 
     this.freeBalanceAddress = this.channelProvider.config.freeBalanceAddress;
     this.signerAddress = this.channelProvider.config.signerAddress;
@@ -191,7 +184,7 @@ export class ConnextClient implements IConnextClient {
   // Unsorted methods pulled from the old abstract wrapper class
 
   public restart = async (): Promise<void> => {
-    if (this.rpcType === "InjectedProvider") {
+    if (!this.channelProvider.isSigner) {
       this.log.warn(`Cannot restart with an injected provider.`);
       return;
     }

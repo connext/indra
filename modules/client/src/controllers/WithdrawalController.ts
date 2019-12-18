@@ -65,6 +65,8 @@ export class WithdrawalController extends AbstractController {
         transaction = await this.ethProvider.getTransaction(withdrawResponse.txHash);
       }
       const postWithdrawBalances = await this.connext.getFreeBalance(assetId);
+
+      this.log.info(`Pre-Withdraw Balances: ${stringify(preWithdrawBalances)}`);
       const expectedFreeBal = bigNumberify(preWithdrawBalances[myFreeBalanceAddress]).sub(amount);
 
       // sanity check the free balance decrease
