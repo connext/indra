@@ -178,7 +178,7 @@ export class SwapController extends AbstractController {
     const res = await this.connext.proposeInstallApp(params);
 
     // set app instance id
-    this.log.warn(`Successfully proposed appId: ${res.appInstanceId}`);
+    this.log.debug(`Successfully proposed appId: ${res.appInstanceId}`);
 
     await Promise.race([
       new Promise((resolve: (value?: unknown) => void, reject: (value?: string) => void): void => {

@@ -2,12 +2,12 @@ import { Wallet } from "ethers";
 import { arrayify } from "ethers/utils";
 import { RpcParameters } from "rpc-server";
 
-import { CFCore, xpubToAddress } from "./lib";
+import { CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
 import {
   CFChannelProviderOptions,
   CFCoreTypes,
   ChannelProviderConfig,
-  NewRpcMethodName,
+  ChannelProviderRpcMethod,
   RpcConnection,
   Store,
   StorePair,
@@ -79,29 +79,26 @@ export class ChannelProvider {
     return this.config;
   };
 
-  public send = async (
-    method: CFCoreTypes.RpcMethodName | NewRpcMethodName,
-    params: any = {},
-  ): Promise<any> => {
+  public send = async (method: ChannelProviderRpcMethod, params: any = {}): Promise<any> => {
     let result;
     switch (method) {
-      case NewRpcMethodName.STORE_SET:
+      case "chan_storeSet":
         result = await this.set(params.pairs);
         break;
-      case NewRpcMethodName.STORE_GET:
+      case "chan_storeGet":
         result = await this.get(params.path);
         break;
-      case NewRpcMethodName.NODE_AUTH:
+      case "chan_nodeAuth":
         result = await this.signMessage(params.message);
         break;
-      case NewRpcMethodName.CONFIG:
+      case "chan_config":
         result = this.config;
         break;
-      case NewRpcMethodName.RESTORE_STATE:
+      case "chan_restoreState":
         result = await this.restoreState(params.path);
         break;
       default:
-        result = await this._send(method as CFCoreTypes.RpcMethodName, params);
+        result = await this._send(method, params);
         break;
     }
     return result;
@@ -109,13 +106,16 @@ export class ChannelProvider {
 
   ///////////////////////////////////////////////
   ///// GETTERS / SETTERS
+  get isSigner(): boolean {
+    return true;
+  }
+
   get config(): ChannelProviderConfig {
     return this._config;
   }
 
   get multisigAddress(): string | undefined {
-    const multisigAddress = this._multisigAddress || this._config.multisigAddress;
-    return multisigAddress;
+    return this._multisigAddress || this.config.multisigAddress;
   }
 
   set multisigAddress(multisigAddress: string) {
@@ -123,11 +123,12 @@ export class ChannelProvider {
     this._multisigAddress = multisigAddress;
   }
 
-  get signerAddress(): string | undefined {
-    return this._signerAddress;
+  get signerAddress(): string {
+    return this._signerAddress || this.config.signerAddress;
   }
 
   set signerAddress(signerAddress: string) {
+    this._config.signerAddress = signerAddress;
     this._signerAddress = signerAddress;
   }
 
@@ -190,7 +191,7 @@ export class ChannelProvider {
     const ret = await this.connection.rpcRouter.dispatch({
       id: Date.now(),
       methodName,
-      parameters,
+      parameters: deBigNumberifyJson(parameters),
     });
     const result = ret.result.result;
     return result;

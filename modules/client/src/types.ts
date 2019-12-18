@@ -4,7 +4,6 @@ import {
   BigNumber as connextBN,
   ClientOptions,
   GetConfigResponse,
-  NetworkContext,
   Store,
 } from "@connext/types";
 import { Contract, providers } from "ethers";
@@ -46,6 +45,8 @@ export {
   ChannelAppSequences,
   ChannelProvider,
   ChannelProviderConfig,
+  ChannelProviderRpcMethod,
+  ChannelProviderRpcMethods,
   ChannelState,
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
@@ -58,6 +59,7 @@ export {
   ConnextClientStorePrefix,
   ConnextEvent,
   ConnextEvents,
+  ConnextRpcMethod,
   convert,
   CreateChannelResponse,
   DefaultApp,
@@ -115,8 +117,8 @@ export type InternalClientOptions = ClientOptions & {
   messaging: IMessagingService;
   network: Network;
   node: NodeApiClient;
-  token: Contract;
   store: Store;
+  token: Contract;
 };
 
 export interface NodeInitializationParameters {
@@ -125,13 +127,4 @@ export interface NodeInitializationParameters {
   userPublicIdentifier?: string;
   nodePublicIdentifier?: string;
   channelProvider?: ChannelProvider;
-}
-
-export enum NewRpcMethodName {
-  STORE_SET = "chan_storeSet",
-  STORE_GET = "chan_storeGet",
-  NODE_AUTH = "chan_nodeAuth",
-  CONFIG = "chan_config",
-  RESTORE_STATE = "chan_restoreState",
-  GET_STATE_CHANNEL = "chan_getStateChannel",
 }

@@ -11,6 +11,12 @@ describe("Daicard", () => {
     my.closeIntroModal();
   });
 
+  describe("WalletConnext", () => {
+    it(`should open a modal when activated`, () => {
+      my.activateWalletConnext();
+    });
+  });
+
   describe("Deposit", () => {
     it(`should accept an Eth deposit to displayed address`, () => {
       my.deposit(depositEth);

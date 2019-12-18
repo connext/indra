@@ -9,7 +9,7 @@ import ProcessQueue from "./process-queue";
 import RpcRouter from "./rpc-router";
 import { Store } from "./store";
 import { NetworkContext, CFCoreTypes, NODE_EVENTS, NodeEvent } from "./types";
-import { prettyPrintObject } from "./utils";
+import { bigNumberifyJson } from "./utils";
 
 /**
  * This class registers handlers for requests to get or set some information
@@ -76,7 +76,10 @@ export class RequestHandler {
         const res: CFCoreTypes.MethodResponse = {
           type: req.type,
           requestId: req.requestId,
-          result: await this.methods.get(methodName)(this, req.params)
+          result: await this.methods.get(methodName)(
+            this,
+            bigNumberifyJson(req.params)
+          )
         };
 
         // @ts-ignore
