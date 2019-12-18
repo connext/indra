@@ -24,6 +24,8 @@ my.xpubRegex = /^xpub[a-zA-Z0-9]{107}/i;
 my.isStarting = () => cy.contains("span", /starting/i).should("exist");
 my.doneStarting = () => cy.contains("span", /starting/i).should("not.exist");
 
+my.isWalletConnecting = () => cy.contains(/walletconnect/i).should("exist");
+
 //Dashboard
 my.goToDebug = () => cy.get(`a[href="/debug"]`).click()
 my.goToDebugChannel = () => cy.get(`a[href="/dashboard/debug/channel"]`).click()
@@ -43,7 +45,9 @@ my.activateWalletConnext = () => {
   my.goToSettings();
   cy.contains("button", /walletconnext/i).click();
   my.isStarting();
-  my.doneStarting();
+  my.isWalletConnecting();
+  // TODO: make this actually activate wallet connect
+  // my.doneStarting();
 }
 
 my.closeIntroModal = () => {
