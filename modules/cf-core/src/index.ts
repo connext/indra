@@ -28,4 +28,8 @@ export {
   WithdrawFailedMessage,
   WithdrawStartedMessage
 } from "./types";
-export { getCreate2MultisigAddress } from "./utils";
+export {
+  getCreate2MultisigAddress,
+  bigNumberifyJson,
+  deBigNumberifyJson
+} from "./utils";

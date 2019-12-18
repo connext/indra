@@ -156,11 +156,11 @@ class App extends React.Component {
   // ************************************************* //
 
   setWalletConnext = useWalletConnext => {
-    if (useWalletConnext) {
-      localStorage.setItem("useWalletConnext", true);
-    } else {
-      localStorage.setItem("useWalletConnext", false);
-    }
+    // clear any pre-existing sessions
+    localStorage.removeItem("wcUri")
+    localStorage.removeItem("walletconnect")
+    // set wallet connext
+    localStorage.setItem("useWalletConnext", !!useWalletConnext)
     this.setState({ useWalletConnext });
     window.location.reload();
   };
@@ -271,15 +271,13 @@ class App extends React.Component {
         })`,
       );
     } else if (useWalletConnext) {
-      let rpc = {};
-      rpc[network.chainId] = urls.ethProviderUrl;
       const channelProvider = new WalletConnectChannelProvider();
       console.log(`Using WalletConnect with provider: ${JSON.stringify(channelProvider, null, 2)}`);
-      // register channel provider listener for logging
-      await channelProvider.enable();
-      console.log(
-        `ChannelProvider Enabled - config: ${JSON.stringify(channelProvider.config, null, 2)}`,
+      await channelProvider.enable();	
+      console.log(	
+        `ChannelProvider Enabled - config: ${JSON.stringify(channelProvider.config, null, 2)}`,	
       );
+      // register channel provider listener for logging
       channelProvider.on("error", data => {
         console.error(`Channel provider error: ${JSON.stringify(data, null, 2)}`);
       });

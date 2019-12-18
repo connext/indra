@@ -7,6 +7,7 @@ import {
 } from "rpc-server";
 
 import { RequestHandler } from "./request-handler";
+import { bigNumberifyJson } from "./utils";
 
 type AsyncCallback = (...args: any) => Promise<any>;
 
@@ -17,7 +18,7 @@ export default class RpcRouter extends Router {
     controllers,
     requestHandler
   }: {
-    controllers: (typeof Controller)[];
+    controllers: typeof Controller[];
     requestHandler: RequestHandler;
   }) {
     super({ controllers });
@@ -38,7 +39,7 @@ export default class RpcRouter extends Router {
       {
         result: await new controller.type()[controller.callback](
           this.requestHandler,
-          rpc.parameters
+          bigNumberifyJson(rpc.parameters)
         ),
         type: rpc.methodName
       },
