@@ -271,11 +271,10 @@ class App extends React.Component {
         })`,
       );
     } else if (useWalletConnext) {
-      const rpc = {
-        [network.chainId]: urls.ethProviderUrl
-      }
       const channelProvider = new WalletConnectChannelProvider({
-        rpc,
+        rpc: {
+          [network.chainId]: urls.ethProviderUrl
+        },
         chainId: network.chainId,
       });
       console.log(`Using WalletConnect with provider: ${JSON.stringify(channelProvider, null, 2)}`);
