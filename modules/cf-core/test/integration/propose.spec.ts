@@ -11,7 +11,7 @@ import {
   createChannel,
   getAppInstanceProposal,
   getProposedAppInstances,
-  makeProposeCall,
+  makeProposeCall
 } from "./utils";
 
 expect.extend({ toBeLt });
@@ -21,7 +21,7 @@ const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 async function assertEqualProposedApps(
   nodeA: Node,
   nodeB: Node,
-  expectedAppIds: string[],
+  expectedAppIds: string[]
 ): Promise<void> {
   const proposedA = await getProposedAppInstances(nodeA);
   const proposedB = await getProposedAppInstances(nodeB);
@@ -56,15 +56,15 @@ describe("Node method follows spec - propose install", () => {
       const params = {
         ...(rpc.parameters as CFCoreTypes.ProposeInstallParams),
         meta: {
-          info: "Provided meta",
-        },
+          info: "Provided meta"
+        }
       };
       const expectedMessageB = {
         data: {
-          params,
+          params
         },
         from: nodeA.publicIdentifier,
-        type: "PROPOSE_INSTALL_EVENT",
+        type: "PROPOSE_INSTALL_EVENT"
       };
 
       nodeB.once("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
