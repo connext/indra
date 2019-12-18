@@ -156,11 +156,11 @@ class App extends React.Component {
   // ************************************************* //
 
   setWalletConnext = useWalletConnext => {
-    if (useWalletConnext) {
-      localStorage.setItem("useWalletConnext", true);
-    } else {
-      localStorage.setItem("useWalletConnext", false);
-    }
+    // clear any pre-existing sessions
+    localStorage.removeItem("wcUri")
+    localStorage.removeItem("walletconnect")
+    // set wallet connext
+    localStorage.setItem("useWalletConnext", !!useWalletConnext)
     this.setState({ useWalletConnext });
     window.location.reload();
   };
