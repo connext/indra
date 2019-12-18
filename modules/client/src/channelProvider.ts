@@ -2,7 +2,7 @@ import { Wallet } from "ethers";
 import { arrayify } from "ethers/utils";
 import { RpcParameters } from "rpc-server";
 
-import { CFCore, xpubToAddress } from "./lib";
+import { CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
 import {
   CFChannelProviderOptions,
   CFCoreTypes,
@@ -187,7 +187,7 @@ export class ChannelProvider {
     const ret = await this.connection.rpcRouter.dispatch({
       id: Date.now(),
       methodName,
-      parameters,
+      parameters: deBigNumberifyJson(parameters),
     });
     const result = ret.result.result;
     return result;
