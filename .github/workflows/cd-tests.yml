@@ -18,10 +18,8 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ./.npm
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        key: npm-${{ hashFiles('**/package-lock.json') }}
     - run: make pull
-    - run: make node-modules
-    - run: ls -al
     - run: make all
     - run: make build-report
     - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
@@ -35,7 +33,7 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ~/.npm # npm cache files are stored in `~/.npm` on Linux/macOS
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        key: npm-${{ hashFiles('**/package-lock.json') }}
     - run: make node
     - run: make test-node
 
@@ -47,7 +45,7 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ~/.npm # npm cache files are stored in `~/.npm` on Linux/macOS
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        key: npm-${{ hashFiles('**/package-lock.json') }}
     - run: make cf-core
     - run: make test-cf
 
@@ -56,6 +54,7 @@ jobs:
     needs: [build]
     steps:
     - uses: actions/checkout@v1
+    - run: make pull
     - run: make start-cd
     - run: make test-bot
 
@@ -64,6 +63,7 @@ jobs:
     needs: [build]
     steps:
     - uses: actions/checkout@v1
+    - run: make pull
     - run: make start-cd
     - run: make test-bot-farm
 

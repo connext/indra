@@ -126,7 +126,7 @@ elif [[ "$chainId" == "4" ]]
 then eth_network_name="rinkeby"
 elif [[ "$chainId" == "42" ]]
 then eth_network_name="kovan"
-elif [[ "$chainId" == "$ganache_chain_id" && "$INDRA_MODE" == "cd" ]]
+elif [[ "$chainId" == "$ganache_chain_id" ]]
 then
   eth_network_name="ganache"
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"

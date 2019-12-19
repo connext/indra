@@ -54,6 +54,8 @@ all: dev prod
 dev: database node types client payment-bot indra-proxy ws-tcp-relay
 prod: database node-prod indra-proxy-prod ws-tcp-relay daicard-proxy ssh-action
 
+start: start-daicard
+
 start-headless: database node client payment-bot
 	INDRA_UI=headless bash ops/start-dev.sh
 
@@ -66,7 +68,11 @@ start-dashboard: dev
 start-cd: deployed-contracts
 	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=cd bash ops/start-prod.sh
 
-start: start-daicard
+start-staging: deployed-contracts
+	INDRA_ETH_PROVIDER=http://localhost:8545 bash ops/start-prod.sh
+
+start-prod: prod
+	bash ops/start-prod.sh
 
 stop:
 	bash ops/stop.sh
@@ -84,9 +90,6 @@ restart-dashboard: dev
 	INDRA_UI=dashboard bash ops/start-dev.sh
 
 restart: restart-daicard
-
-start-prod: prod
-	bash ops/start-prod.sh
 
 restart-prod:
 	bash ops/stop.sh

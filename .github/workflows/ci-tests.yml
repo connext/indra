@@ -11,16 +11,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - run: make dev
-    - run: make build-report
+    - name: Cache node modules
+      uses: actions/cache@v1
+      with:
+        path: ./.npm
+        key: npm-${{ hashFiles('**/package-lock.json') }}
+    - run: make cf-core
     - run: make test-cf
 
   test-bot:
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v1
-    - run: make clean && make reset
     - run: make start-headless
-    - run: make build-report
     - run: make test-bot
-    - run: make stop
+
+  test-bot:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Cache node modules
+      uses: actions/cache@v1
+      with:
+        path: ./.npm
+        key: npm-${{ hashFiles('**/package-lock.json') }}
+    - run: make start-headless
+    - run: make test-bot
