@@ -15,7 +15,8 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ./.npm
-        key: npm
+        key: npm-${{ hashFiles('./package-lock.json') }}
+        restore-keys: npm-
     - run: make cf-core
     - run: make test-cf
 
@@ -25,6 +26,7 @@ jobs:
     - uses: actions/checkout@v1
     - run: make clean && make reset
     - run: make start-headless
+    - run: make build-report
     - run: make test-bot
 
   test-bot-github:
@@ -35,6 +37,8 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ./.npm
-        key: npm
+        key: npm-${{ hashFiles('./package-lock.json') }}
+        restore-keys: npm-
     - run: make start-headless
+    - run: make build-report
     - run: make test-bot
