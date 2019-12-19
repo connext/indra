@@ -1,11 +1,11 @@
-import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
+import { IMessagingService } from "@connext/messaging";
 import { AppInstanceProposal, CF_PATH, LinkedTransferToRecipientParameters } from "@connext/types";
 import "core-js/stable";
 import EthCrypto from "eth-crypto";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { BigNumber, bigNumberify, hexlify, Network, randomBytes, Transaction } from "ethers/utils";
-import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
+import { fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
@@ -46,7 +46,6 @@ import {
   KeyGen,
   makeChecksum,
   makeChecksumOrEthAddress,
-  NewRpcMethodName,
   PaymentProfile,
   RequestCollateralResponse,
   RequestDepositRightsParameters,
@@ -185,6 +184,10 @@ export class ConnextClient implements IConnextClient {
   // Unsorted methods pulled from the old abstract wrapper class
 
   public restart = async (): Promise<void> => {
+    if (!this.channelProvider.isSigner) {
+      this.log.warn(`Cannot restart with an injected provider.`);
+      return;
+    }
     // Create a fresh channelProvider & start using that.
     // End goal is to use this to restart the cfNode after restoring state
     const channelProvider = await createCFChannelProvider({
@@ -359,7 +362,7 @@ export class ConnextClient implements IConnextClient {
     { retry: number; tx: CFCoreTypes.MinimalTransaction } | undefined
   > => {
     const path = withdrawalKey(this.publicIdentifier);
-    const value = await this.channelProvider.send(NewRpcMethodName.STORE_GET, { path });
+    const value = await this.channelProvider.send("chan_storeGet", { path });
 
     if (!value || value === "undefined") {
       return undefined;
@@ -390,7 +393,7 @@ export class ConnextClient implements IConnextClient {
           async (blockNumber: number): Promise<void> => {
             const found = await this.checkForUserWithdrawal(blockNumber);
             if (found) {
-              await this.channelProvider.send(NewRpcMethodName.STORE_SET, {
+              await this.channelProvider.send("chan_storeSet", {
                 pairs: [{ path: withdrawalKey(this.publicIdentifier), value: undefined }],
               });
               this.ethProvider.removeAllListeners("block");
@@ -418,7 +421,7 @@ export class ConnextClient implements IConnextClient {
     const path = `${ConnextClientStorePrefix}/${this.publicIdentifier}/channel/${this.multisigAddress}`;
     let state;
     try {
-      state = await this.channelProvider.send(NewRpcMethodName.RESTORE_STATE, { path });
+      state = await this.channelProvider.send("chan_restoreState", { path });
       this.log.info(`Found state to restore from store's backup: ${stringify(state.path)}`);
     } catch (e) {
       state = await this.node.restoreState(this.publicIdentifier);
@@ -427,7 +430,7 @@ export class ConnextClient implements IConnextClient {
       }
       this.log.info(`Found state to restore from node: ${stringify(state)}`);
     }
-    await this.channelProvider.send(NewRpcMethodName.STORE_SET, {
+    await this.channelProvider.send("chan_storeSet", {
       pairs: [{ path, value: state }],
     });
     await this.restart();
@@ -451,10 +454,13 @@ export class ConnextClient implements IConnextClient {
   ///////////////////////////////////
   // PROVIDER/ROUTER METHODS
 
-  public getState = async (): Promise<CFCoreTypes.GetStateResult> => {
-    return await this.channelProvider.send(NewRpcMethodName.GET_STATE_CHANNEL as any, {
-      multisigAddress: this.multisigAddress,
-    });
+  public getStateChannel = async (): Promise<CFCoreTypes.GetStateChannelResult> => {
+    return await this.channelProvider.send(
+      CFCoreTypes.RpcMethodNames.chan_getStateChannel as CFCoreTypes.RpcMethodName,
+      {
+        multisigAddress: this.multisigAddress,
+      },
+    );
   };
 
   public providerDeposit = async (
@@ -783,12 +789,9 @@ export class ConnextClient implements IConnextClient {
   // NODE METHODS
 
   public verifyAppSequenceNumber = async (): Promise<any> => {
-    const { data: sc } = await this.channelProvider.send(
-      NewRpcMethodName.GET_STATE_CHANNEL as any,
-      {
-        multisigAddress: this.multisigAddress,
-      },
-    );
+    const { data: sc } = await this.channelProvider.send("chan_getStateChannel" as any, {
+      multisigAddress: this.multisigAddress,
+    });
     let appSequenceNumber: number;
     try {
       appSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
@@ -1003,7 +1006,7 @@ export class ConnextClient implements IConnextClient {
 
   public resubmitActiveWithdrawal = async (): Promise<void> => {
     const path = withdrawalKey(this.publicIdentifier);
-    const withdrawal = await this.channelProvider.send(NewRpcMethodName.STORE_GET, { path });
+    const withdrawal = await this.channelProvider.send("chan_storeGet", { path });
 
     if (!withdrawal || withdrawal === "undefined") {
       // No active withdrawal, nothing to do
@@ -1027,7 +1030,7 @@ export class ConnextClient implements IConnextClient {
     if (this.matchTx(tx, withdrawal.tx)) {
       // the withdrawal in our store matches latest submitted tx,
       // clear value in store and return
-      await this.channelProvider.send(NewRpcMethodName.STORE_SET, {
+      await this.channelProvider.send("chan_storeSet", {
         pairs: [
           {
             path: withdrawalKey(this.publicIdentifier),
@@ -1054,7 +1057,7 @@ export class ConnextClient implements IConnextClient {
     let { retry } = val;
     const { tx } = val;
     retry += 1;
-    await this.channelProvider.send(NewRpcMethodName.STORE_SET, {
+    await this.channelProvider.send("chan_storeSet", {
       pairs: [
         {
           path: withdrawalKey(this.publicIdentifier),

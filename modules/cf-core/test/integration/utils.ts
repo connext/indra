@@ -43,7 +43,7 @@ import {
   DepositStartedMessage,
   EventEmittedMessage
 } from "../../src/types";
-import { deBigNumberifyJson } from "../../src/utils";
+import { deBigNumberifyJson, bigNumberifyJson } from "../../src/utils";
 import { ProposeInstallProtocolParams } from "../../src/machine/types";
 
 interface AppContext {
@@ -455,11 +455,11 @@ export function constructDepositRpc(
   return {
     id: Date.now(),
     methodName: CFCoreTypes.RpcMethodNames.chan_deposit,
-    parameters: {
+    parameters: deBigNumberifyJson({
       multisigAddress,
       amount,
       tokenAddress
-    } as CFCoreTypes.DepositParams
+    })
   };
 }
 
@@ -491,12 +491,12 @@ export function constructWithdrawRpc(
   return {
     id: Date.now(),
     methodName: CFCoreTypes.RpcMethodNames.chan_withdraw,
-    parameters: {
+    parameters: deBigNumberifyJson({
       tokenAddress,
       multisigAddress,
       amount,
       recipient
-    } as CFCoreTypes.WithdrawParams
+    }) as CFCoreTypes.WithdrawParams
   };
 }
 
@@ -534,7 +534,7 @@ export function constructAppProposalRpc(
   return {
     id: Date.now(),
     methodName: CFCoreTypes.RpcMethodNames.chan_proposeInstall,
-    parameters: {
+    parameters: deBigNumberifyJson({
       proposedToIdentifier,
       initiatorDeposit,
       initiatorDepositTokenAddress,
@@ -545,7 +545,7 @@ export function constructAppProposalRpc(
       abiEncodings,
       outcomeType,
       timeout: One
-    } as CFCoreTypes.ProposeInstallParams
+    } as CFCoreTypes.ProposeInstallParams)
   };
 }
 
@@ -645,10 +645,10 @@ export function constructTakeActionRpc(
   action: any
 ): Rpc {
   return {
-    parameters: {
+    parameters: deBigNumberifyJson({
       appInstanceId,
       action
-    } as CFCoreTypes.TakeActionParams,
+    } as CFCoreTypes.TakeActionParams),
     id: Date.now(),
     methodName: CFCoreTypes.RpcMethodNames.chan_takeAction
   };
@@ -882,15 +882,16 @@ export async function confirmAppInstanceInstallation(
   proposedParams: ProposeInstallProtocolParams,
   appInstance: AppInstanceJson
 ) {
-  expect(appInstance.appInterface.addr).toEqual(proposedParams.appDefinition);
+  const params = bigNumberifyJson(proposedParams);
+  expect(appInstance.appInterface.addr).toEqual(params.appDefinition);
   expect(appInstance.appInterface.stateEncoding).toEqual(
-    proposedParams.abiEncodings.stateEncoding
+    params.abiEncodings.stateEncoding
   );
   expect(appInstance.appInterface.actionEncoding).toEqual(
-    proposedParams.abiEncodings.actionEncoding
+    params.abiEncodings.actionEncoding
   );
-  expect(appInstance.defaultTimeout).toEqual(proposedParams.timeout.toNumber());
-  expect(appInstance.latestState).toEqual(proposedParams.initialState);
+  expect(appInstance.defaultTimeout).toEqual(params.timeout.toNumber());
+  expect(appInstance.latestState).toEqual(params.initialState);
 }
 
 export async function getState(

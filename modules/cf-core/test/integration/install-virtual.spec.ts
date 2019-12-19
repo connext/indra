@@ -1,9 +1,9 @@
-import { Node, VIRTUAL_APP_INSTALLATION_FAIL } from "../../src";
 import {
-  NODE_EVENTS,
-  ProposeMessage,
-  InstallVirtualMessage
-} from "../../src/types";
+  Node,
+  VIRTUAL_APP_INSTALLATION_FAIL,
+  bigNumberifyJson
+} from "../../src";
+import { ProposeMessage, InstallVirtualMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 
 import { setup, SetupContext } from "./setup";
@@ -142,7 +142,7 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
 
       // try to install a virtual app with insufficient collateral
       const { params } = await makeVirtualProposal(nodeA, nodeC, TicTacToeApp);
-      expect(params.initiatorDeposit.gt(Zero)).toBeTruthy();
+      expect(bigNumberifyJson(params.initiatorDeposit).gt(Zero)).toBeTruthy();
 
       const [proposedAppNodeA] = await getProposedAppInstances(nodeA);
 
@@ -167,7 +167,7 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
 
       // try to install a virtual app with insufficient collateral
       const { params } = await makeVirtualProposal(nodeA, nodeC, TicTacToeApp);
-      expect(params.initiatorDeposit.gt(Zero)).toBeTruthy();
+      expect(bigNumberifyJson(params.initiatorDeposit).gt(Zero)).toBeTruthy();
 
       const [proposedAppNodeA] = await getProposedAppInstances(nodeA);
 
