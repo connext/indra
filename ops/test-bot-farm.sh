@@ -17,6 +17,10 @@ eth_rpc="${ETH_RPC_URL:-http://localhost:8545}"
 sugar_daddy="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 divider="\n########################################"
 
+if [[ ! -d "./node_modules/ethers" || ! -d "./node_modules/openzeppelin-solidity" ]]
+then npm i --no-save ethers openzeppelin-solidity
+fi
+
 ########################################
 ## Helper Functions
 

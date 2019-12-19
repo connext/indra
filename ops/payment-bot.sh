@@ -79,7 +79,7 @@ docker run \
   --user="`id -u`:`id -g`" \
   --volume="`pwd`:/root" \
   --workdir="/root" \
-  ${project}_builder -c '
+  ${project}_ethprovider -c '
     set -e
     cd modules/payment-bot
     mkdir -p ${DB_FILENAME%/*}
