@@ -56,7 +56,7 @@ jobs:
     needs: [build]
     steps:
     - uses: actions/checkout@v1
-    - run: make start-test
+    - run: make start-cd
     - run: make test-bot
 
   test-bot-farm:
@@ -64,7 +64,7 @@ jobs:
     needs: [build]
     steps:
     - uses: actions/checkout@v1
-    - run: make start-test
+    - run: make start-cd
     - run: make test-bot-farm
 
   test-daicard:
@@ -72,5 +72,5 @@ jobs:
     needs: [build]
     steps:
     - uses: actions/checkout@v1
-    - run: make start-test
+    - run: make start-cd
     - run: make test-daicard

@@ -74,50 +74,6 @@ pg_password_file="/run/secrets/$db_secret"
 pg_port="5432"
 pg_user="$project"
 
-########################################
-## Ethereum Config
-
-if [[ -z "$INDRA_ETH_PROVIDER" ]]
-then echo "An env var called INDRA_ETH_PROVIDER is required" && exit 1
-elif [[ "$INDRA_ETH_PROVIDER" =~ .*://localhost:.* ]]
-then chainId="$ganache_chain_id"
-else chainId="`curl -q -k -s -H "Content-Type: application/json" -X POST --data '{"id":1,"jsonrpc":"2.0","method":"net_version","params":[]}' $INDRA_ETH_PROVIDER | jq .result | tr -d '"'`"
-fi
-
-echo "eth provider: $INDRA_ETH_PROVIDER w chainId: $chainId"
-
-if [[ "$chainId" == "1" ]]
-then eth_network_name="mainnet"
-elif [[ "$chainId" == "4" ]]
-then eth_network_name="rinkeby"
-elif [[ "$chainId" == "42" ]]
-then eth_network_name="kovan"
-elif [[ "$chainId" == "$ganache_chain_id" && "$INDRA_MODE" == "cd" ]]
-then
-  eth_network_name="ganache"
-  eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-  eth_mnemonic_name="${project}_mnemonic_$eth_network_name"
-  new_secret "$eth_mnemonic_name" "$eth_mnemonic"
-  eth_volume="chain_dev:"
-  ethprovider_image="trufflesuite/ganache-cli:v6.4.5"
-  pull_if_unavailable "$ethprovider_image"
-  number_of_services=$(( $number_of_services + 1 ))
-  ethprovider_service="
-  ethprovider:
-    command: [\"--db=/data\", \"--mnemonic=$eth_mnemonic\", \"--networkId=$ganache_chain_id\"]
-    image: $ethprovider_image
-    ports:
-      - 8545:8545
-    volumes:
-      - $eth_volume/data
-  "
-  INDRA_ETH_PROVIDER="http://ethprovider:8545"
-else echo "Eth network \"$chainId\" is not supported for $INDRA_MODE-mode deployments" && exit 1
-fi
-
-eth_mnemonic_name="${project}_mnemonic_$eth_network_name"
-eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
-
 redis_url="redis://redis:6379"
 
 ########################################
@@ -151,6 +107,51 @@ pull_if_unavailable "$node_image"
 pull_if_unavailable "$proxy_image"
 pull_if_unavailable "$redis_image"
 pull_if_unavailable "$relay_image"
+
+########################################
+## Ethereum Config
+
+if [[ -z "$INDRA_ETH_PROVIDER" ]]
+then echo "An env var called INDRA_ETH_PROVIDER is required" && exit 1
+elif [[ "$INDRA_ETH_PROVIDER" =~ .*://localhost:.* ]]
+then chainId="$ganache_chain_id"
+else chainId="`curl -q -k -s -H "Content-Type: application/json" -X POST --data '{"id":1,"jsonrpc":"2.0","method":"net_version","params":[]}' $INDRA_ETH_PROVIDER | jq .result | tr -d '"'`"
+fi
+
+echo "eth provider: $INDRA_ETH_PROVIDER w chainId: $chainId"
+
+if [[ "$chainId" == "1" ]]
+then eth_network_name="mainnet"
+elif [[ "$chainId" == "4" ]]
+then eth_network_name="rinkeby"
+elif [[ "$chainId" == "42" ]]
+then eth_network_name="kovan"
+elif [[ "$chainId" == "$ganache_chain_id" && "$INDRA_MODE" == "cd" ]]
+then
+  eth_network_name="ganache"
+  eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+  eth_mnemonic_name="${project}_mnemonic_$eth_network_name"
+  new_secret "$eth_mnemonic_name" "$eth_mnemonic"
+  eth_volume="chain_dev:"
+  ethprovider_image="$registry/${project}_ethprovider:$version"
+  pull_if_unavailable "$ethprovider_image"
+  number_of_services=$(( $number_of_services + 1 ))
+  ethprovider_service="
+  ethprovider:
+    command: [\"--db=/data\", \"--mnemonic=$eth_mnemonic\", \"--networkId=$ganache_chain_id\"]
+    image: $ethprovider_image
+    ports:
+      - 8545:8545
+    volumes:
+      - $eth_volume/data
+  "
+  INDRA_ETH_PROVIDER="http://ethprovider:8545"
+else echo "Eth network \"$chainId\" is not supported for $INDRA_MODE-mode deployments" && exit 1
+fi
+
+eth_mnemonic_name="${project}_mnemonic_$eth_network_name"
+eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+
 
 ########################################
 ## Deploy according to configuration
