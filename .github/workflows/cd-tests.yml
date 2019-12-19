@@ -18,7 +18,7 @@ jobs:
       uses: actions/cache@v1
       with:
         path: ./.npm
-        key: npm-${{ hashFiles('**/package-lock.json') }}
+        key: npm
     - run: make pull
     - run: make node-modules
     - run: pwd
