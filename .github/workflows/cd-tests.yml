@@ -7,6 +7,13 @@ on:
       - staging
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make node-modules
+    - run: make all
+
   test-node:
     runs-on: ubuntu-latest
     steps:
@@ -49,3 +56,23 @@ jobs:
     - run: make build-report
     - run: make start-test
     - run: make test-daicard
+
+  test-ssh:
+    env:
+      KEY: $HOME/.ssh/id_rsa
+      SSH_DIR: $HOME/.ssh
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      STAGING_DOMAINNAME: staging.indra.connext.network
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: ops/ssh-action/
+    - name: ssh test
+      uses: actions/ssh-action
+      with:
+        HOST: ubuntu@staging.indra.connext.network:22
+        SSH_KEY: ${{ secrets.SSH_KEY }}
+        CMD: '
+          echo "we are in"
+          hostname
+        '
