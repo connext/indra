@@ -75,7 +75,7 @@ function StatsExport({ classes, messaging }) {
     link.click();
   }
 
-  async function getDataAndDownload(){
+  async function getTransferDataAndDownload(){
       if (!messaging) {
         return;
       }
@@ -84,9 +84,21 @@ function StatsExport({ classes, messaging }) {
         downloadCSV({ data: res, filename: "transfer-data.csv" })
       }
   }
+
+  async function getChannelDataAndDownload(){
+    if (!messaging) {
+      return;
+    }
+    const res = await messaging.getAllChannelStates();
+    if(res){
+      downloadCSV({ data: res, filename: "transfer-data.csv" })
+    }
+}
+
   return (
     <TopGrid container>
-      <Button onClick={getDataAndDownload}>Download CSV</Button>
+      <Button onClick={getTransferDataAndDownload}>Download CSV of Transfers</Button>
+      <Button onClick={getChannelDataAndDownload}>Download CSV of Channels</Button>
     </TopGrid>
   );
 }
