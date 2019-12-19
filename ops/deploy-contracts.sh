@@ -4,6 +4,7 @@ set -e
 project="indra"
 name=${project}_contract_deployer
 cwd="`pwd`"
+log="$cwd/ops/ethprovider/ganache.log"
 
 ########################################
 # Setup env vars
@@ -63,6 +64,8 @@ then
   fi
 fi
 
+touch $log
+
 ########################################
 # Remove this deployer service when we're done
 
@@ -96,8 +99,8 @@ id="`
     --env="ETH_PROVIDER=$ETH_PROVIDER" \
     --env="INFURA_KEY=$INFURA_KEY" \
     --mount="type=volume,source=${project}_chain_dev,target=/data" \
-    --mount="type=volume,source=`pwd`/ops/ganache.logs,target=/root/ganache.logs" \
-    --mount="type=volume,source=`pwd`/address-book.json,target=/root/address-book.json" \
+    --mount="type=bind,source=$log,target=/root/ganache.log" \
+    --mount="type=bind,source=$cwd/address-book.json,target=/root/address-book.json" \
     --restart-condition="none" \
     $SECRET_ENV \
     ${project}_ethprovider

@@ -67,7 +67,6 @@ const getSavedData = (contractName, property) => {
 // Write addressBook to disk
 const saveAddressBook = (addressBook) => {
   try {
-    fs.unlinkSync(addressBookPath)
     fs.writeFileSync(addressBookPath, JSON.stringify(addressBook,null,2))
   } catch (e) {
     console.log(`Error saving artifacts: ${e}`)

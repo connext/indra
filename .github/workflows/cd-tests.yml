@@ -19,7 +19,9 @@ jobs:
       with:
         path: ~/.npm # npm cache files are stored in `~/.npm` on Linux/macOS
         key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+    - run: make pull
     - run: make node-modules
+    - run: ls -al
     - run: make prod
     - run: make build-report
     - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
