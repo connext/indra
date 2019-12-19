@@ -64,9 +64,6 @@ jobs:
     - name: ssh test
       uses: ./ops/ssh-action/
       with:
-        HOST: ubuntu@staging.indra.connext.network:22
+        HOST: ubuntu@staging.indra.connext.network
         SSH_KEY: ${{ secrets.SSH_KEY }}
-        CMD: '
-          echo "we are in";
-          hostname;
-        '
+        CMD: 'echo "Successfully connected to `hostname`";'
