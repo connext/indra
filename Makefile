@@ -296,7 +296,7 @@ indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
 
 indra-proxy-prod: daicard-prod dashboard-prod ws-tcp-relay $(shell find $(proxy) $(find_options))
 	$(log_start)
-	docker build --file $(proxy)/indra.connext.network/prod.dockerfile --tag $(project)_proxy:latest .
+	docker build --file $(proxy)/indra.connext.network/prod.dockerfile --cache-from="$(cache_from)" --tag $(project)_proxy:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 types: node-modules $(shell find $(types)/src $(find_options))
@@ -306,5 +306,5 @@ types: node-modules $(shell find $(types)/src $(find_options))
 
 ws-tcp-relay: ops/ws-tcp-relay.dockerfile
 	$(log_start)
-	docker build --file ops/ws-tcp-relay.dockerfile --tag $(project)_relay:latest .
+	docker build --file ops/ws-tcp-relay.dockerfile --cache-from="$(cache_from)" --tag $(project)_relay:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
