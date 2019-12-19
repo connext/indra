@@ -138,8 +138,10 @@ then
   number_of_services=$(( $number_of_services + 1 ))
   ethprovider_service="
   ethprovider:
-    command: [\"--db=/data\", \"--mnemonic=$eth_mnemonic\", \"--networkId=$ganache_chain_id\"]
     image: $ethprovider_image
+    command: \"start\"
+    environment:
+      ETH_MNEMONIC: $eth_mnemonic
     ports:
       - 8545:8545
     volumes:
