@@ -21,14 +21,23 @@ jobs:
         key: npm-${{ hashFiles('package-lock.json') }}
         restore-keys: npm-
     - run: make pull
-    - run: make node-modules
-    - run: pwd
-    - run: ls -al
-    - run: du -hs .npm node_modules
     - run: make all
     - run: make build-report
     - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
     - run: make push-commit
+
+  build-no-pull:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Cache node modules
+      uses: actions/cache@v1
+      with:
+        path: .npm
+        key: npm-${{ hashFiles('package-lock.json') }}
+        restore-keys: npm-
+    - run: make all
+    - run: make build-report
 
   test-node:
     runs-on: ubuntu-latest
