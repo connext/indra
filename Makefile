@@ -134,11 +134,11 @@ push-release: prod
 	bash ops/push-images.sh $(version) database node proxy relay
 
 pull:
-	docker pull connextproject/indra_database:latest
-	docker pull connextproject/indra_ethprovider:latest
-	docker pull connextproject/indra_node:latest
-	docker pull connextproject/indra_proxy:latest
-	docker pull connextproject/indra_relay:latest
+	docker pull connextproject/indra_database:latest || true
+	docker pull connextproject/indra_ethprovider:latest || true
+	docker pull connextproject/indra_node:latest || true
+	docker pull connextproject/indra_proxy:latest || true
+	docker pull connextproject/indra_relay:latest || true
 
 deployed-contracts: ethprovider
 	bash ops/deploy-contracts.sh ganache
