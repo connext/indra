@@ -50,7 +50,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev prod
-dev: database ethprovider node types client payment-bot indra-proxy ws-tcp-relay
+dev: database ethprovider node client payment-bot indra-proxy ws-tcp-relay
 prod: database node-prod indra-proxy-prod ws-tcp-relay daicard-proxy
 
 start: start-daicard
@@ -182,7 +182,7 @@ test-dashboard:
 watch-ui: node-modules
 	bash ops/test-ui.sh --watch
 
-test-bot: payment-bot
+test-bot:
 	bash ops/test-bot.sh
 
 test-bot-farm:

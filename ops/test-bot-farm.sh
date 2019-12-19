@@ -1,5 +1,5 @@
 #!/user/bin/env bash
-set -e
+set -e -o pipefail
 
 # Turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
@@ -26,7 +26,7 @@ function cleanup {
   echo "Shutting down recipient bots: $botIds"
   if [[ -n "$botIds" ]]
   then echo "$botIds" | xargs docker container stop
-  else echo "nvmd none are running" && exit 0
+  else echo "nvmd none are running"
   fi
 }
 trap cleanup EXIT SIGINT
