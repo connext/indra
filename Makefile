@@ -27,6 +27,7 @@ messaging=$(cwd)/modules/messaging
 node=$(cwd)/modules/node
 proxy=$(cwd)/modules/proxy
 types=$(cwd)/modules/types
+ssh-action=$(cwd)/ops/ssh-action
 
 # Setup docker run time
 # If on Linux, give the container our uid & gid so we know what to reset permissions to
@@ -50,7 +51,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 default: dev
 all: dev prod
 dev: database node types client payment-bot indra-proxy ws-tcp-relay
-prod: database node-prod indra-proxy-prod ws-tcp-relay daicard-proxy
+prod: database node-prod indra-proxy-prod ws-tcp-relay daicard-proxy ssh-action
 
 start-headless: database node client payment-bot
 	INDRA_UI=headless bash ops/start-dev.sh
@@ -271,6 +272,11 @@ indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
 indra-proxy-prod: daicard-prod dashboard-prod ws-tcp-relay $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/indra.connext.network/prod.dockerfile --tag $(project)_proxy:latest .
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+ssh-action: $(shell find $(ssh-action) $(find_options))
+	$(log_start)
+	docker build --file $(ssh-action)/Dockerfile --tag $(project)_ssh_action $(ssh-action)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 types: node-modules $(shell find $(types)/src $(find_options))
