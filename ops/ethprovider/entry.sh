@@ -14,7 +14,9 @@ then
     --mnemonic="$ETH_MNEMONIC" \
     --networkId="4447" \
     --port="8545"
-else
+elif [[ "$1" == "deploy" ]]
+then
+  echo "Deploying contracts.."
   if [[ "$ETH_NETWORK" == "ganache" ]]
   then
     echo "Starting Ganache.."
@@ -31,4 +33,6 @@ else
   fi
   touch address-book.json
   node migrate-contracts.js
+else
+  echo "Exiting. No command given, expected: start or deploy"
 fi

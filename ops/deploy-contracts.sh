@@ -103,7 +103,7 @@ id="`
     --mount="type=bind,source=$cwd/address-book.json,target=/root/address-book.json" \
     --restart-condition="none" \
     $SECRET_ENV \
-    ${project}_ethprovider
+    ${project}_ethprovider deploy
 `"
 
 echo "Success! Deployer service started with id: $id"
