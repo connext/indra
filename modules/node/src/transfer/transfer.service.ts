@@ -217,10 +217,14 @@ export class TransferService {
           "DEPOSIT_CONFIRMED_EVENT",
           async (msg: DepositConfirmationMessage) => {
             if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
-              return;
+              reject(
+                `Deposit event from field: ${msg.from}, did not match public identifier: ${this.cfCoreService.cfCore.publicIdentifier}`,
+              );
             }
             if (msg.data.multisigAddress !== channel.multisigAddress) {
-              return;
+              reject(
+                `Deposit event multisigAddress: ${msg.data.multisigAddress}, did not match channel multisig address: ${channel.multisigAddress}`,
+              );
             }
             // make sure free balance is appropriate
             const fb = await this.cfCoreService.getFreeBalance(
@@ -229,8 +233,9 @@ export class TransferService {
               assetId,
             );
             if (fb[freeBalanceAddr].lt(amountBN)) {
-              // wait for resolve
-              return;
+              reject(
+                `Free balance associated with ${freeBalanceAddr} is less than transfer amount: ${amountBN}`,
+              );
             }
             resolve();
           },
