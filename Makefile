@@ -17,18 +17,19 @@ cwd=$(shell pwd)
 bot=$(cwd)/modules/payment-bot
 cf-adjudicator-contracts=$(cwd)/modules/cf-adjudicator-contracts
 cf-apps=$(cwd)/modules/cf-apps
-cf-funding-protocol-contracts=$(cwd)/modules/cf-funding-protocol-contracts
 cf-core=$(cwd)/modules/cf-core
+cf-funding-protocol-contracts=$(cwd)/modules/cf-funding-protocol-contracts
 client=$(cwd)/modules/client
 contracts=$(cwd)/modules/contracts
 daicard=$(cwd)/modules/daicard
 dashboard=$(cwd)/modules/dashboard
 database=$(cwd)/modules/database
+ethprovider=$(cwd)/ops/ethprovider
 messaging=$(cwd)/modules/messaging
 node=$(cwd)/modules/node
 proxy=$(cwd)/modules/proxy
-types=$(cwd)/modules/types
 ssh-action=$(cwd)/ops/ssh-action
+types=$(cwd)/modules/types
 
 # Setup docker run time
 # If on Linux, give the container our uid & gid so we know what to reset permissions to
@@ -125,15 +126,22 @@ reset: stop
 	rm -rf $(flags)/deployed-contracts
 
 push-commit: prod
-	bash ops/push-images.sh $(commit) database node proxy relay
+	bash ops/push-images.sh $(commit) builder database node proxy relay
 
 push-latest: prod
-	bash ops/push-images.sh latest database node proxy relay
+	bash ops/push-images.sh latest builder database node proxy relay
 
 push-release: prod
 	bash ops/push-images.sh $(version) database node proxy relay
 
-deployed-contracts: contracts cf-adjudicator-contracts cf-funding-protocol-contracts cf-apps
+pull:
+	docker pull connextproject/indra_database:latest
+	docker pull connextproject/indra_ethprovider:latest
+	docker pull connextproject/indra_node:latest
+	docker pull connextproject/indra_proxy:latest
+	docker pull connextproject/indra_relay:latest
+
+deployed-contracts: ethprovider
 	bash ops/deploy-contracts.sh ganache
 	touch $(flags)/$@
 
@@ -239,6 +247,11 @@ daicard-proxy: $(shell find $(proxy) $(find_options))
 database: node-modules $(shell find $(database) $(find_options))
 	$(log_start)
 	docker build --file $(database)/db.dockerfile --tag $(project)_database:latest $(database)
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+ethprovider: contracts cf-adjudicator-contracts cf-funding-protocol-contracts cf-apps $(shell find $(ethprovider) $(find_options))
+	$(log_start)
+	docker build --file $(ethprovider)/Dockerfile --tag $(project)_ethprovider:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 messaging: node-modules types $(shell find $(messaging)/src $(find_options))
