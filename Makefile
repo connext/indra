@@ -141,6 +141,11 @@ pull:
 	docker pull connextproject/indra_node:latest || true
 	docker pull connextproject/indra_proxy:latest || true
 	docker pull connextproject/indra_relay:latest || true
+	docker pull connextproject/indra_database:$(commit) || true
+	docker pull connextproject/indra_ethprovider:$(commit) || true
+	docker pull connextproject/indra_node:$(commit) || true
+	docker pull connextproject/indra_proxy:$(commit) || true
+	docker pull connextproject/indra_relay:$(commit) || true
 
 deployed-contracts: ethprovider
 	bash ops/deploy-contracts.sh ganache
