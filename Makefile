@@ -64,7 +64,7 @@ start-daicard: dev
 start-dashboard: dev
 	INDRA_UI=dashboard bash ops/start-dev.sh
 
-start-cd: deployed-contracts
+start-cd:
 	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=cd bash ops/start-prod.sh
 
 start-staging: deployed-contracts

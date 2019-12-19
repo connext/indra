@@ -148,6 +148,7 @@ then
       - $eth_volume/data
   "
   INDRA_ETH_PROVIDER="http://ethprovider:8545"
+  bash ops/deploy-contracts.sh ganache
 else echo "Eth network \"$chainId\" is not supported for $INDRA_MODE-mode deployments" && exit 1
 fi
 
