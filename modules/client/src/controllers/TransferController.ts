@@ -77,6 +77,7 @@ export class TransferController extends AbstractController {
   // TODO: fix type of data
   private resolveInstallTransfer = (
     res: (value?: unknown) => void,
+    rej: (value?: unknown) => void,
     appId: string,
     data: any,
   ): any => {
@@ -86,7 +87,11 @@ export class TransferController extends AbstractController {
           data,
         )}, expected ${appId}. This should not happen.`,
       );
-      return;
+      return rej(
+        `Caught INSTALL_VIRTUAL event for different app ${stringify(
+          data,
+        )}, expected ${appId}. This should not happen.`,
+      );
     }
     res(data);
     return data;
@@ -104,7 +109,11 @@ export class TransferController extends AbstractController {
           msg,
         )}, expected ${appId}. This should not happen.`,
       );
-      return;
+      return rej(
+        `Caught INSTALL_VIRTUAL event for different app ${stringify(
+          msg,
+        )}, expected ${appId}. This should not happen.`,
+      );
     }
 
     return rej(`Install virtual failed. Event data: ${stringify(msg)}`);
@@ -167,7 +176,7 @@ export class TransferController extends AbstractController {
       await Promise.race([
         new Promise((res: any, rej: any): any => {
           boundReject = this.rejectInstallTransfer.bind(null, rej, appId);
-          boundResolve = this.resolveInstallTransfer.bind(null, res, appId);
+          boundResolve = this.resolveInstallTransfer.bind(null, res, rej, appId);
           this.listener.on(
             CFCoreTypes.EventNames.INSTALL_VIRTUAL_EVENT as CFCoreTypes.EventName,
             boundResolve,
