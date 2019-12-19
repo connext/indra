@@ -125,10 +125,10 @@ reset: stop
 	rm -rf $(flags)/deployed-contracts
 
 push-commit: prod
-	bash ops/push-images.sh $(commit) builder database node proxy relay
+	bash ops/push-images.sh $(commit) database ethprovider node proxy relay
 
 push-latest: prod
-	bash ops/push-images.sh latest builder database node proxy relay
+	bash ops/push-images.sh latest database ethprovider node proxy relay
 
 push-release: prod
 	bash ops/push-images.sh $(version) database node proxy relay
