@@ -57,6 +57,8 @@ then
   mnemonic="roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult"
 fi
 
+bash ops/wait-for.sh ${ETH_RPC_URL#*://} 2> /dev/null
+
 ########################################
 ## Launch payment bot
 

@@ -25,6 +25,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make clean && make reset
+    - run: make node-modules
     - run: make start-headless
     - run: make build-report
     - run: make test-bot
@@ -39,6 +40,16 @@ jobs:
         path: .npm
         key: npm-${{ hashFiles('package-lock.json') }}
         restore-keys: npm-
+    - run: make node-modules
+    - run: make start-headless
+    - run: make build-report
+    - run: make test-bot
+
+  test-bot-github-nocache:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make node-modules
     - run: make start-headless
     - run: make build-report
     - run: make test-bot
