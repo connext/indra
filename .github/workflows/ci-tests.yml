@@ -20,17 +20,7 @@ jobs:
     - run: make cf-core
     - run: make test-cf
 
-  test-bot-self:
-    runs-on: self-hosted
-    steps:
-    - uses: actions/checkout@v1
-    - run: make clean && make reset
-    - run: make node-modules
-    - run: make start-headless
-    - run: make build-report
-    - run: make test-bot
-
-  test-bot-github:
+  test-bot:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -40,15 +30,6 @@ jobs:
         path: .npm
         key: npm-${{ hashFiles('package-lock.json') }}
         restore-keys: npm-
-    - run: make node-modules
-    - run: make start-headless
-    - run: make build-report
-    - run: make test-bot
-
-  test-bot-github-nocache:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
     - run: make node-modules
     - run: make start-headless
     - run: make build-report
