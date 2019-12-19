@@ -30,6 +30,7 @@ jobs:
         path: .npm
         key: npm-${{ hashFiles('package-lock.json') }}
         restore-keys: npm-
+    - run: make pull
     - run: make database ethprovider node client payment-bot
     - run: make start-headless
     - run: make build-report
@@ -45,6 +46,7 @@ jobs:
         path: .npm
         key: npm-${{ hashFiles('package-lock.json') }}
         restore-keys: npm-
+    - run: make pull
     - run: make
     - run: make start-headless
     - run: make build-report
