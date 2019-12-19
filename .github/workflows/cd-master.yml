@@ -51,33 +51,23 @@ jobs:
 
   test-ssh:
     env:
-      KEY: $HOME/.ssh/id_rsa
-      SSH_DIR: $HOME/.ssh
-      SSH_KEY: ${{ secrets.SSH_KEY }}
-      STAGING_DOMAINNAME: staging.indra.connext.network
+      RINKEBY_DOMAINNAME: rinkeby.indra.connext.network
+      MAINNET_DOMAINNAME: indra.connext.network
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: setup ssh stuff
-      run: |
-        mkdir -p $SSH_DIR
-        rm -f $KEY $SSH_DIR/known_hosts
-        touch $KEY $SSH_DIR/known_hosts
-        echo '-----BEGIN RSA PRIVATE KEY-----' >> $KEY
-        echo $SSH_KEY >> $KEY
-        echo '-----END RSA PRIVATE KEY-----' >> $KEY
-        chmod 400 $KEY
-        ssh-keygen -lf $KEY
-        ssh-keyscan -t rsa $STAGING_DOMAINNAME >> $SSH_DIR/known_hosts
-        ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$STAGING_DOMAINNAME hostname
-    - name: ssh test
-      run: |
-        ssh -i $KEY ubuntu@$STAGING_DOMAINNAME "bash -s" <<EOF
-          set -e
-          echo "we're in"
-          hostname
-          exit
-        EOF
+    - name: test connection to rinkeby
+      uses: ./ops/ssh-action/
+      with:
+        HOST: ubuntu@rinkeby.indra.connext.network
+        SSH_KEY: ${{ secrets.SSH_KEY }}
+        CMD: "echo Successfully connected to `hostname`;"
+    - name: test connection to mainnet
+      uses: ./ops/ssh-action/
+      with:
+        HOST: ubuntu@indra.connext.network
+        SSH_KEY: ${{ secrets.SSH_KEY }}
+        CMD: "echo Successfully connected to `hostname`;"
 
   push:
     env:
@@ -92,67 +82,54 @@ jobs:
     - run: make build-report
     - run: make push-versioned
 
-  deploy:
+  deploy-rinkeby:
     env:
       INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
-      KEY: $HOME/.ssh/id_rsa
-      MAINNET_DOMAINNAME: indra.connext.network
-      MAINNET_ETH_PROVIDER: ${{ secrets.MAINNET_ETH_PROVIDER }}
       RINKEBY_DOMAINNAME: rinkeby.indra.connext.network
       RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
-      SSH_DIR: $HOME/.ssh
-      SSH_KEY: ${{ secrets.SSH_KEY }}
-    needs: [push]
+    needs: [push, test-ssh]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: setup ssh stuff
-      run: |
-        mkdir -p $SSH_DIR
-        rm -f $KEY $SSH_DIR/known_hosts
-        touch $KEY $SSH_DIR/known_hosts
-        echo '-----BEGIN RSA PRIVATE KEY-----' >> $KEY
-        echo $SSH_KEY >> $KEY
-        echo '-----END RSA PRIVATE KEY-----' >> $KEY
-        chmod 400 $KEY
-        ssh-keygen -lf $KEY
-        ssh-keyscan -t rsa $RINKEBY_DOMAINNAME >> $SSH_DIR/known_hosts
-        ssh-keyscan -t rsa $MAINNET_DOMAINNAME >> $SSH_DIR/known_hosts
-        ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$RINKEBY_DOMAINNAME hostname
-        ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$MAINNET_DOMAINNAME hostname
-    - name: deploy to prod (rinkeby)
-      run: |
-        ssh -i $KEY ubuntu@$RINKEBY_DOMAINNAME "bash -s" <<EOF
-          set -e
-          git clone https://github.com/ConnextProject/indra.git || true
-          cd indra
-          git checkout --force staging
-          git fetch
+    - name: deploy to rinkeby
+      uses: ./ops/ssh-action/
+      with:
+        HOST: ubuntu@$RINKEBY_DOMAINNAME
+        SSH_KEY: ${{ secrets.SSH_KEY }}
+        CMD: "
+          git checkout --force master
           git reset --hard $GITHUB_SHA
-          export INDRA_MODE="staging"
+          export INDRA_MODE=prod
           export INDRA_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
-          export INDRA_DOMAINNAME="$RINKEBY_DOMAINNAME"
-          export INDRA_ADMIN_TOKEN="$INDRA_ADMIN_TOKEN"
+          export INDRA_DOMAINNAME=$RINKEBY_DOMAINNAME
+          export INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN
           make restart-prod
           docker container prune -f
           docker image ls -q | xargs docker image rm || true
-          exit
-        EOF
+        "
+
+  deploy-mainnet:
+    env:
+      INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
+      MAINNET_DOMAINNAME: indra.connext.network
+      MAINNET_ETH_PROVIDER: ${{ secrets.MAINNET_ETH_PROVIDER }}
+    needs: [push, test-ssh]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
     - name: deploy to prod (mainnet)
-      run: |
-        ssh -i $KEY ubuntu@$MAINNET_DOMAINNAME "bash -s" <<EOF
-          set -e
-          git clone https://github.com/ConnextProject/indra.git || true
-          cd indra
-          git checkout --force staging
-          git fetch
+      uses: ./ops/ssh-action/
+      with:
+        HOST: ubuntu@$MAINNET_DOMAINNAME
+        SSH_KEY: ${{ secrets.SSH_KEY }}
+        CMD: "
+          git checkout --force master
           git reset --hard $GITHUB_SHA
-          export INDRA_MODE="staging"
+          export INDRA_MODE=prod
           export INDRA_ETH_PROVIDER=$MAINNET_ETH_PROVIDER
-          export INDRA_DOMAINNAME="$MAINNET_DOMAINNAME"
-          export INDRA_ADMIN_TOKEN="$INDRA_ADMIN_TOKEN"
+          export INDRA_DOMAINNAME=$MAINNET_DOMAINNAME
+          export INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN
           make restart-prod
           docker container prune -f
           docker image ls -q | xargs docker image rm || true
-          exit
-        EOF
+        "

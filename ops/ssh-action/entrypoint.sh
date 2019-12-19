@@ -24,11 +24,16 @@ echo $SSH_KEY | sed "s/$KEY_HEADER//" | sed "s/$KEY_FOOTER//" | tr -d '\n ' >> $
 echo >> $KEY_FILE
 echo $KEY_FOOTER >> $KEY_FILE
 chmod 400 $KEY_FILE
+
 echo "Loaded ssh key with fingerprint:"
 ssh-keygen -lf $KEY_FILE
 
 exec ssh -i $KEY_FILE -o StrictHostKeyChecking=no $HOST "bash -s" <<EOF
   set -e
+  # Run CMD in an up-to-date indra repo
+  git clone https://github.com/ConnextProject/indra.git || true
+  cd indra
+  git fetch --all --prune --tags
   $CMD
   exit
 EOF
