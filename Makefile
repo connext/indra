@@ -9,6 +9,7 @@ SHELL=/bin/bash
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
 
 version=$(shell cat package.json | grep '"version":' | awk -F '"' '{print $$4}')
+commit=$(shell git rev-parse HEAD | head -c 8)
 solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
 # Get absolute paths to important dirs
@@ -61,6 +62,9 @@ start-daicard: dev
 
 start-dashboard: dev
 	INDRA_UI=dashboard bash ops/start-dev.sh
+
+start-cd: deployed-contracts
+	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=cd bash ops/start-prod.sh
 
 start: start-daicard
 
@@ -120,14 +124,16 @@ reset: stop
 	rm -rf $(bot)/.payment-bot-db/*
 	rm -rf $(flags)/deployed-contracts
 
+push-commit: prod
+	bash ops/push-images.sh $(commit) database node proxy relay
+
 push-latest: prod
 	bash ops/push-images.sh latest database node proxy relay
 
-push-prod: push-versioned
-push-versioned: prod
+push-release: prod
 	bash ops/push-images.sh $(version) database node proxy relay
 
-deployed-contracts: contracts
+deployed-contracts: contracts cf-adjudicator-contracts cf-funding-protocol-contracts cf-apps
 	bash ops/deploy-contracts.sh ganache
 	touch $(flags)/$@
 
@@ -144,9 +150,6 @@ dls:
 
 test: test-node
 watch: watch-node
-
-start-test: prod deployed-contracts
-	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test bash ops/start-prod.sh
 
 test-cf: cf-core
 	bash ops/test-cf.sh

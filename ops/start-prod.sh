@@ -4,7 +4,6 @@ set -e
 # turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
 
-registry="docker.io/connextproject"
 
 ####################
 # External Env Vars
@@ -15,7 +14,7 @@ INDRA_DOMAINNAME="${INDRA_DOMAINNAME:-localhost}"
 INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl certs expire
 INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER}"
 INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
-INDRA_MODE="${INDRA_MODE:-staging}" # set to "prod" to use versioned docker images
+INDRA_MODE="${INDRA_MODE:-staging}" # One of: cd, staging, prod
 INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-cxt1234}" # pass this in through CI
 
 ####################
@@ -58,7 +57,7 @@ function pull_if_unavailable {
 ########################################
 ## Database Conig
 
-if [[ "$INDRA_MODE" == "test" ]]
+if [[ "$INDRA_MODE" == "cd" ]]
 then
   db_volume="database_test_`date +%y%m%d_%H%M%S`"
   db_secret="${project}_database_test"
@@ -94,7 +93,7 @@ elif [[ "$chainId" == "4" ]]
 then eth_network_name="rinkeby"
 elif [[ "$chainId" == "42" ]]
 then eth_network_name="kovan"
-elif [[ "$chainId" == "$ganache_chain_id" && "$INDRA_MODE" == "test" ]]
+elif [[ "$chainId" == "$ganache_chain_id" && "$INDRA_MODE" == "cd" ]]
 then
   eth_network_name="ganache"
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
@@ -120,38 +119,39 @@ fi
 eth_mnemonic_name="${project}_mnemonic_$eth_network_name"
 eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
 
+redis_url="redis://redis:6379"
+
 ########################################
 ## Docker Image Config
 
-redis_url="redis://redis:6379"
+registry="docker.io/connextproject"
 
-database_image="postgres:9-alpine"
-nats_image="nats:2.0.0-linux"
-redis_image="redis:5-alpine"
-pull_if_unavailable "$database_image"
-pull_if_unavailable "$nats_image"
-pull_if_unavailable "$redis_image"
-if [[ "$INDRA_DOMAINNAME" != "localhost" ]]
-then
-  if [[ "$INDRA_MODE" == "prod" ]]
-  then version="`cat package.json | jq .version | tr -d '"'`"
-  elif [[ "$INDRA_MODE" == "staging" ]]
-  then version="latest"
-  else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" && exit 1
-  fi
-  database_image="$registry/${project}_database:$version"
-  node_image="$registry/${project}_node:$version"
-  proxy_image="$registry/${project}_proxy:$version"
-  relay_image="$registry/${project}_relay:$version"
-  pull_if_unavailable "$database_image"
-  pull_if_unavailable "$node_image"
-  pull_if_unavailable "$proxy_image"
-  pull_if_unavailable "$relay_image"
-else # local/testing mode, don't use images from registry
-  node_image="${project}_node:latest"
-  proxy_image="${project}_proxy:latest"
-  relay_image="${project}_relay:latest"
+if [[ "$INDRA_MODE" == "cd" ]]
+then version="`git rev-parse HEAD | head -c 8`"
+elif [[ "$INDRA_MODE" == "staging" ]]
+then version="latest"
+elif [[ "$INDRA_MODE" == "prod" ]]
+then version="`cat package.json | jq .version | tr -d '"'`"
+else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" && exit 1
 fi
+
+database_image="$registry/${project}_database:$version"
+database_image="postgres:9-alpine"
+logdna_image="logdna/logspout:1.2.0"
+nats_image="nats:2.0.0-linux"
+node_image="$registry/${project}_node:$version"
+proxy_image="$registry/${project}_proxy:$version"
+redis_image="redis:5-alpine"
+relay_image="$registry/${project}_relay:$version"
+
+pull_if_unavailable "$database_image"
+pull_if_unavailable "$database_image"
+pull_if_unavailable "$logdna_image"
+pull_if_unavailable "$nats_image"
+pull_if_unavailable "$node_image"
+pull_if_unavailable "$proxy_image"
+pull_if_unavailable "$redis_image"
+pull_if_unavailable "$relay_image"
 
 ########################################
 ## Deploy according to configuration
@@ -264,7 +264,7 @@ services:
       - "6379:6379"
 
   logdna:
-    image: logdna/logspout:latest
+    image: $logdna_image
     environment:
       LOGDNA_KEY: $INDRA_LOGDNA_KEY
     volumes:

@@ -12,48 +12,45 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make node-modules
-    - run: make all
+    - run: make prod
+    - run: make build-report
+    - run: make push-commit
 
   test-node:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - run: make dev
-    - run: make build-report
+    - run: make node
     - run: make test-node
 
   test-cf:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - run: make dev
-    - run: make build-report
+    - run: make cf-core
     - run: make test-cf
 
   test-bot:
     runs-on: ubuntu-latest
+    needs: [build]
     steps:
     - uses: actions/checkout@v1
-    - run: make prod
-    - run: make build-report
     - run: make start-test
     - run: make test-bot
 
   test-bot-farm:
     runs-on: ubuntu-latest
+    needs: [build]
     steps:
     - uses: actions/checkout@v1
-    - run: make prod
-    - run: make build-report
     - run: make start-test
     - run: make test-bot-farm
 
   test-daicard:
     runs-on: ubuntu-latest
+    needs: [build]
     steps:
     - uses: actions/checkout@v1
-    - run: make prod
-    - run: make build-report
     - run: make start-test
     - run: make test-daicard
 

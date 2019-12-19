@@ -80,7 +80,7 @@ jobs:
     - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
     - run: make prod
     - run: make build-report
-    - run: make push-versioned
+    - run: make push-release
 
   deploy-rinkeby:
     env:
