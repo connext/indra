@@ -8,6 +8,9 @@ on:
 
 jobs:
   build:
+    env:
+      DOCKER_USER: ${{ secrets.DOCKER_USER }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -16,14 +19,21 @@ jobs:
       with:
         path: ~/.npm # npm cache files are stored in `~/.npm` on Linux/macOS
         key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+    - run: make node-modules
     - run: make prod
     - run: make build-report
+    - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
     - run: make push-commit
 
   test-node:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
+    - name: Cache node modules
+      uses: actions/cache@v1
+      with:
+        path: ~/.npm # npm cache files are stored in `~/.npm` on Linux/macOS
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
     - run: make node
     - run: make test-node
 
@@ -31,6 +41,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
+    - name: Cache node modules
+      uses: actions/cache@v1
+      with:
+        path: ~/.npm # npm cache files are stored in `~/.npm` on Linux/macOS
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
     - run: make cf-core
     - run: make test-cf
 
