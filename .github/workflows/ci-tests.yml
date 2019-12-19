@@ -1,4 +1,4 @@
-name: CI
+name: CI Tests
 
 on:
   push:
@@ -7,7 +7,15 @@ on:
       - staging
 
 jobs:
-  quick-test:
+  test-cf:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make dev
+    - run: make build-report
+    - run: make test-cf
+
+  test-bot:
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v1

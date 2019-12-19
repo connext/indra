@@ -1,0 +1,51 @@
+name: CD Tests
+
+on:
+  push:
+    branches-ignore:
+      - master
+      - staging
+
+jobs:
+  test-node:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make dev
+    - run: make build-report
+    - run: make test-node
+
+  test-cf:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make dev
+    - run: make build-report
+    - run: make test-cf
+
+  test-bot:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make prod
+    - run: make build-report
+    - run: make start-test
+    - run: make test-bot
+
+  test-bot-farm:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make prod
+    - run: make build-report
+    - run: make start-test
+    - run: make test-bot-farm
+
+  test-daicard:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make prod
+    - run: make build-report
+    - run: make start-test
+    - run: make test-daicard
