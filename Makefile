@@ -55,7 +55,7 @@ prod: database node-prod indra-proxy-prod ws-tcp-relay daicard-proxy
 
 start: start-daicard
 
-start-headless: database node client payment-bot
+start-headless: database ethprovider node client payment-bot
 	INDRA_UI=headless bash ops/start-dev.sh
 
 start-daicard: dev
