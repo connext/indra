@@ -91,7 +91,7 @@ function StatsExport({ classes, messaging }) {
     }
     const res = await messaging.getAllChannelStates();
     if(res){
-      downloadCSV({ data: res, filename: "transfer-data.csv" })
+      downloadCSV({ data: res, filename: "channel-data.csv" })
     }
 }
 
