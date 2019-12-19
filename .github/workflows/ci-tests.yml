@@ -19,14 +19,14 @@ jobs:
     - run: make cf-core
     - run: make test-cf
 
-  test-bot:
+  test-bot-self:
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v1
     - run: make start-headless
     - run: make test-bot
 
-  test-bot:
+  test-bot-github:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
