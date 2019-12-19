@@ -90,8 +90,8 @@ then version="`cat package.json | jq .version | tr -d '"'`"
 else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" && exit 1
 fi
 
+ethprovider_image="$registry/${project}_ethprovider:$version"
 database_image="$registry/${project}_database:$version"
-database_image="postgres:9-alpine"
 logdna_image="logdna/logspout:1.2.0"
 nats_image="nats:2.0.0-linux"
 node_image="$registry/${project}_node:$version"
@@ -99,7 +99,6 @@ proxy_image="$registry/${project}_proxy:$version"
 redis_image="redis:5-alpine"
 relay_image="$registry/${project}_relay:$version"
 
-pull_if_unavailable "$database_image"
 pull_if_unavailable "$database_image"
 pull_if_unavailable "$logdna_image"
 pull_if_unavailable "$nats_image"
@@ -133,8 +132,6 @@ then
   eth_mnemonic_name="${project}_mnemonic_$eth_network_name"
   new_secret "$eth_mnemonic_name" "$eth_mnemonic"
   eth_volume="chain_dev:"
-  ethprovider_image="$registry/${project}_ethprovider:$version"
-  pull_if_unavailable "$ethprovider_image"
   number_of_services=$(( $number_of_services + 1 ))
   ethprovider_service="
   ethprovider:
@@ -148,7 +145,8 @@ then
       - $eth_volume/data
   "
   INDRA_ETH_PROVIDER="http://ethprovider:8545"
-  bash ops/deploy-contracts.sh ganache
+  pull_if_unavailable "$ethprovider_image"
+  bash ops/deploy-contracts.sh ganache $version
 else echo "Eth network \"$chainId\" is not supported for $INDRA_MODE-mode deployments" && exit 1
 fi
 

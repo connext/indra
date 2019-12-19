@@ -1,20 +1,21 @@
 #!/bin/bash
 set -e
 
-project="indra"
-name=${project}_contract_deployer
+ETH_NETWORK="${1:-ganache}"
+version="${2:-latest}"
+
 cwd="`pwd`"
+project="indra"
+registry="connextproject"
+
+name=${project}_contract_deployer
 log="$cwd/ops/ethprovider/ganache.log"
+image="${project}_ethprovider:$version"
 
 ########################################
 # Setup env vars
 
 INFURA_KEY=$INFURA_KEY
-
-if [[ -n "$1" ]]
-then ETH_NETWORK="$1"
-else ETH_NETWORK="${ETH_NETWORK:-ganache}"
-fi
 
 if [[ "$ETH_NETWORK" == "ganache" ]]
 then ETH_PROVIDER="http://localhost:8545"
@@ -88,7 +89,16 @@ then SECRET_ENV="--env=ETH_MNEMONIC_FILE=/run/secrets/$ETH_MNEMONIC_FILE --secre
 fi
 
 echo
-echo "Deploying contract deployer..."
+echo "Deploying contract deployer (image: $image)..."
+
+if [[ "`docker image ls -q $image`" == "" ]]
+then
+  echo "Image $image does not exist locally, trying $registry/$image"
+  image=$registry/$image
+  if [[ "`docker image ls -q $image`" == "" ]]
+  then docker pull $image || (echo "Image does not exist" && exit 1)
+  fi
+fi
 
 id="`
   docker service create \
@@ -103,7 +113,7 @@ id="`
     --mount="type=bind,source=$cwd/address-book.json,target=/root/address-book.json" \
     --restart-condition="none" \
     $SECRET_ENV \
-    ${project}_ethprovider deploy
+    $image deploy 2> /dev/null
 `"
 
 echo "Success! Deployer service started with id: $id"
