@@ -42,6 +42,8 @@ done
 # Or whether it's running in the background of another script and can't attach to a screen
 test -t 0 -a -t 1 -a -t 2 && interactive="--interactive"
 
+mkdir -p modules/payment-bot/.payment-bot-db
+
 ########################################
 ## Launch payment bot
 
@@ -56,5 +58,5 @@ docker run \
   --name="${project}_payment_bot_$identifier" \
   --rm \
   --tty \
-  --volume="$cwd/modules/payment-bot:/root/modules/payment-bot" \
+  --volume="$cwd/modules/payment-bot/.payment-bot-db:/root/modules/payment-bot/.payment-bot-db" \
   ${project}_bot "`id -u`:`id -g`" $args

@@ -43,4 +43,4 @@ fi
 mkdir -p ${DB_FILENAME%/*}
 touch $DB_FILENAME
 node dist/index.js "$args"
-chown -R $user $DB_FILENAME || true
+chown -R $user . || true
