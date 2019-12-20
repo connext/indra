@@ -28,7 +28,6 @@ import {
   CFCoreChannel,
   CFCoreTypes,
   ChannelProviderConfig,
-  ChannelProviderType,
   ChannelState,
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,

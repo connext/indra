@@ -47,7 +47,6 @@ export {
   ChannelProviderConfig,
   ChannelProviderRpcMethod,
   ChannelProviderRpcMethods,
-  ChannelProviderType,
   ChannelState,
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,

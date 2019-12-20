@@ -107,7 +107,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
 
   // setup channelProvider
   let channelProvider: ChannelProvider;
-  let providerType: ChannelProviderType;
+  let isInjected = false;
 
   if (providedChannelProvider) {
     channelProvider = providedChannelProvider;
@@ -129,7 +129,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     node.userPublicIdentifier = channelProvider.config.userPublicIdentifier;
     node.nodePublicIdentifier = config.nodePublicIdentifier;
 
-    providerType = "Injected";
+    isInjected = true;
   } else if (mnemonic || (xpub && keyGen)) {
     if (!store) {
       throw new Error("Client must be instantiated with store if not using a channelProvider");
@@ -170,7 +170,6 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
       store,
       xpub,
     });
-    providerType = "Counterfactual";
 
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
@@ -209,8 +208,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     ...opts, // use any provided opts by default
   });
 
-  // return before any cleanup using the assumption that all injected
-  if (providerType === "Injected") {
+  // return before any cleanup using the assumption that all injected clients
+  // have an online client that it can access that has don the cleanup
+  if (isInjected) {
     return client;
   }
 
