@@ -21,8 +21,7 @@ export class RequestDepositRightsController extends AbstractController {
   public requestDepositRights = async (
     params: RequestDepositRightsParameters,
   ): Promise<RequestDepositRightsResponse> => {
-    params.assetId = params.assetId || AddressZero;
-    const { assetId } = params;
+    const assetId = params.assetId || AddressZero;
     validate(invalidAddress(assetId));
 
     let multisigBalance: BigNumber;
