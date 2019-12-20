@@ -57,4 +57,4 @@ docker run \
   --rm \
   --tty \
   --volume="$cwd/modules/payment-bot:/root/modules/payment-bot" \
-  ${project}_bot $args
+  ${project}_bot "`id -u`:`id -g`" $args
