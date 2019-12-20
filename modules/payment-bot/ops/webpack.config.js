@@ -13,7 +13,7 @@ module.exports = {
     symlinks: false
   },
 
-  entry: path.join(__dirname, '../src'),
+  entry: path.join(__dirname, '../src/index.ts'),
 
   output: {
     path: path.join(__dirname, '../dist'),
