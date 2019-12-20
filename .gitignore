@@ -4,7 +4,7 @@
 .jest.cache
 .node-gyp
 .npm
-.payment-bot-db
+.bot-store
 modules/**/.cache
 modules/**/.config
 modules/**/.node-gyp

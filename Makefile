@@ -287,9 +287,9 @@ node-prod: node $(node)/ops/prod.dockerfile $(node)/ops/entry.sh
 	docker build --file $(node)/ops/prod.dockerfile $(cache_from) --tag $(project)_node:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-payment-bot-js: node-modules client types $(shell find $(bot)/src $(find_options))
+payment-bot-js: node-modules client types $(shell find $(bot)/src $(bot)/ops $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/payment-bot && npm run build"
+	$(docker_run) "cd modules/payment-bot && npm run build-bundle"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 payment-bot: payment-bot-js $(shell find $(bot)/ops $(find_options))
