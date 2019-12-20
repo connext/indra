@@ -43,6 +43,8 @@ postgres_user="$project"
 
 nats_host="${project}_nats_$suffix"
 
+redis_host="${project}_redis_$suffix"
+
 node_port="8080"
 node_host="${project}_$suffix"
 
@@ -100,6 +102,14 @@ docker run \
   --rm \
   nats:2.0.0-linux
 
+echo "Starting $redis_host.."
+docker run \
+  --detach \
+  --name="$redis_host" \
+  --network="$network" \
+  --rm \
+  redis:5-alpine
+
 ########################################
 # Run Tests
 
@@ -109,6 +119,7 @@ docker run \
   --env="INDRA_ETH_CONTRACT_ADDRESSES=$eth_contract_addresses" \
   --env="INDRA_ETH_MNEMONIC=$eth_mnemonic" \
   --env="INDRA_ETH_RPC_URL=$eth_rpc_url" \
+  --env="INDRA_LOG_LEVEL=$log_level" \
   --env="INDRA_NATS_CLUSTER_ID=" \
   --env="INDRA_NATS_SERVERS=nats://$nats_host:4222" \
   --env="INDRA_NATS_TOKEN" \
@@ -118,7 +129,7 @@ docker run \
   --env="INDRA_PG_PORT=$postgres_port" \
   --env="INDRA_PG_USERNAME=$postgres_user" \
   --env="INDRA_PORT=$node_port" \
-  --env="LOG_LEVEL=$log_level" \
+  --env="INDRA_REDIS_URL=redis://$redis_url:6379" \
   --env="NODE_ENV=development" \
   $interactive \
   --name="$node_host" \
