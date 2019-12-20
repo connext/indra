@@ -145,13 +145,13 @@ export class SwapController extends AbstractController {
         [
           {
             amount,
-            to: fromExtendedKey(this.connext.publicIdentifier).derivePath("0").address,
+            to: this.connext.freeBalanceAddress,
           },
         ],
         [
           {
             amount: swappedAmount,
-            to: fromExtendedKey(this.connext.nodePublicIdentifier).derivePath("0").address,
+            to: xpubToAddress(this.connext.nodePublicIdentifier),
           },
         ],
       ],
