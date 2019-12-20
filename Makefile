@@ -285,9 +285,14 @@ node-prod: node $(node)/ops/prod.dockerfile $(node)/ops/entry.sh
 	docker build --file $(node)/ops/prod.dockerfile --cache-from="$(cache_from)" --tag $(project)_node:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-payment-bot: node-modules client types $(shell find $(bot)/src $(find_options))
+payment-bot-js: node-modules client types $(shell find $(bot)/src $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/payment-bot && npm run build"
+	$(docker_run) "cd $(bot) && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+payment-bot: payment-bot-js $(shell find $(bot)/ops $(find_options))
+	$(log_start)
+	docker build --file $(bot)/ops/Dockerfile --cache-from="$(cache_from)" --tag $(project)_bot:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
