@@ -87,7 +87,6 @@ export class ConnextClient implements IConnextClient {
 
   private opts: InternalClientOptions;
   private keyGen: KeyGen;
-  private providerType: ChannelProviderType;
 
   private depositController: DepositController;
   private swapController: SwapController;
@@ -118,7 +117,6 @@ export class ConnextClient implements IConnextClient {
 
     // establish listeners
     this.listener = new ConnextListener(opts.channelProvider, this);
-    this.providerType = opts.providerType;
 
     // instantiate controllers with log and cf
     this.depositController = new DepositController("DepositController", this);

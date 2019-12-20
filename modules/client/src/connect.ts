@@ -204,7 +204,6 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     messaging,
     network,
     node,
-    providerType,
     store,
     token,
     ...opts, // use any provided opts by default
