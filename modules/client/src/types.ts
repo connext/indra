@@ -118,7 +118,6 @@ export type InternalClientOptions = ClientOptions & {
   messaging: IMessagingService;
   network: Network;
   node: NodeApiClient;
-  providerType: ChannelProviderType;
   store: Store;
   token: Contract;
 };
