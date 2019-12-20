@@ -47,6 +47,7 @@ export {
   ChannelProviderConfig,
   ChannelProviderRpcMethod,
   ChannelProviderRpcMethods,
+  ChannelProviderType,
   ChannelState,
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
@@ -117,6 +118,7 @@ export type InternalClientOptions = ClientOptions & {
   messaging: IMessagingService;
   network: Network;
   node: NodeApiClient;
+  providerType: ChannelProviderType;
   store: Store;
   token: Contract;
 };
