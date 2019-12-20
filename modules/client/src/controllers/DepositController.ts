@@ -26,15 +26,14 @@ export class DepositController extends AbstractController {
     const { assetId, amount } = convert.Deposit("bignumber", params);
 
     // check asset balance of address
-    const depositAddr = xpubToAddress(this.connext.publicIdentifier);
     let bal: BigNumber;
     if (assetId === AddressZero) {
-      bal = await this.ethProvider.getBalance(depositAddr);
+      bal = await this.ethProvider.getBalance(myFreeBalanceAddress);
     } else {
       // get token balance
       const token = new Contract(assetId, tokenAbi, this.ethProvider);
       // TODO: correct? how can i use allowance?
-      bal = await token.balanceOf(depositAddr);
+      bal = await token.balanceOf(myFreeBalanceAddress);
     }
     validate(
       invalidAddress(assetId),
@@ -46,11 +45,6 @@ export class DepositController extends AbstractController {
     const preDepositBalances = await this.connext.getFreeBalance(assetId);
 
     this.log.info(`\nDepositing ${amount} of ${assetId} into ${this.connext.multisigAddress}\n`);
-
-    // register listeners
-    this.log.info("Registering listeners........");
-    this.registerListeners();
-    this.log.info("Registered!");
 
     try {
       this.log.info(`Calling ${CFCoreTypes.RpcMethodNames.chan_deposit}`);
@@ -78,7 +72,6 @@ export class DepositController extends AbstractController {
       this.log.info("Deposited!");
     } catch (e) {
       this.log.error(`Failed to deposit: ${e.stack || e.message}`);
-      this.removeListeners();
       throw e;
     }
 
@@ -167,13 +160,6 @@ export class DepositController extends AbstractController {
   };
 
   ////// Listener callbacks
-  private depositConfirmedCallback = (data: any): void => {
-    this.removeListeners();
-  };
-
-  private depositFailedCallback = (data: any): void => {
-    this.removeListeners();
-  };
 
   private rejectInstallCoinBalance = (
     rej: (reason?: string) => void,
@@ -183,30 +169,6 @@ export class DepositController extends AbstractController {
   };
 
   ////// Listener registration/deregistration
-  private registerListeners(): void {
-    this.listener.registerCfListener(
-      CFCoreTypes.EventNames.DEPOSIT_CONFIRMED_EVENT as CFCoreTypes.EventName,
-      this.depositConfirmedCallback,
-    );
-
-    this.listener.registerCfListener(
-      CFCoreTypes.EventNames.DEPOSIT_FAILED_EVENT as CFCoreTypes.EventName,
-      this.depositFailedCallback,
-    );
-  }
-
-  private removeListeners(): void {
-    this.listener.removeCfListener(
-      CFCoreTypes.EventNames.DEPOSIT_CONFIRMED_EVENT as CFCoreTypes.EventName,
-      this.depositConfirmedCallback,
-    );
-
-    this.listener.removeCfListener(
-      CFCoreTypes.EventNames.DEPOSIT_FAILED_EVENT as CFCoreTypes.EventName,
-      this.depositFailedCallback,
-    );
-  }
-
   private cleanupInstallListeners = (appId: string, boundReject: any): void => {
     this.connext.messaging.unsubscribe(
       `indra.node.${this.connext.nodePublicIdentifier}.install.${appId}`,
