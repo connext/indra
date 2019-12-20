@@ -107,6 +107,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
 
   // setup channelProvider
   let channelProvider: ChannelProvider;
+  let providerType: ChannelProviderType;
 
   if (providedChannelProvider) {
     channelProvider = providedChannelProvider;
@@ -127,6 +128,8 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     node.channelProvider = channelProvider;
     node.userPublicIdentifier = channelProvider.config.userPublicIdentifier;
     node.nodePublicIdentifier = config.nodePublicIdentifier;
+
+    providerType = "Injected";
   } else if (mnemonic || (xpub && keyGen)) {
     if (!store) {
       throw new Error("Client must be instantiated with store if not using a channelProvider");
@@ -167,6 +170,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
       store,
       xpub,
     });
+    providerType = "Counterfactual";
 
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
@@ -200,10 +204,16 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     messaging,
     network,
     node,
+    providerType,
     store,
     token,
     ...opts, // use any provided opts by default
   });
+
+  // return before any cleanup using the assumption that all injected
+  if (providerType === "Injected") {
+    return client;
+  }
 
   try {
     await client.getFreeBalance();
