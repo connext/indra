@@ -15,7 +15,6 @@ import { DepositController } from "./controllers/DepositController";
 import { RequestDepositRightsController } from "./controllers/RequestDepositRightsController";
 import { ResolveConditionController } from "./controllers/ResolveConditionController";
 import { SwapController } from "./controllers/SwapController";
-import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger, stringify, withdrawalKey, xpubToAddress } from "./lib";
 import { ConnextListener } from "./listener";
@@ -29,6 +28,7 @@ import {
   CFCoreChannel,
   CFCoreTypes,
   ChannelProviderConfig,
+  ChannelProviderType,
   ChannelState,
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
@@ -87,9 +87,9 @@ export class ConnextClient implements IConnextClient {
 
   private opts: InternalClientOptions;
   private keyGen: KeyGen;
+  private providerType: ChannelProviderType;
 
   private depositController: DepositController;
-  private transferController: TransferController;
   private swapController: SwapController;
   private withdrawalController: WithdrawalController;
   private conditionalTransferController: ConditionalTransferController;
@@ -118,10 +118,10 @@ export class ConnextClient implements IConnextClient {
 
     // establish listeners
     this.listener = new ConnextListener(opts.channelProvider, this);
+    this.providerType = opts.providerType;
 
     // instantiate controllers with log and cf
     this.depositController = new DepositController("DepositController", this);
-    this.transferController = new TransferController("TransferController", this);
     this.swapController = new SwapController("SwapController", this);
     this.withdrawalController = new WithdrawalController("WithdrawalController", this);
     this.resolveConditionController = new ResolveConditionController(
