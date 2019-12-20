@@ -54,6 +54,6 @@ then
     ./src/main.ts
 else
   echo "Starting indra node in prod-mode"
-  exec node dist/src/main.js
+  exec node --no-deprecation dist/src/main.js
 fi
 

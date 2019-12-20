@@ -15,6 +15,8 @@ solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}'
 # Pool of images to pull cached layers from during docker build steps
 cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database:latest,$(project)_ethprovider:$(commit),$(project)_ethprovider:latest,$(project)_node:$(commit),$(project)_node:latest,$(project)_proxy:$(commit),$(project)_proxy:latest,$(project)_relay:$(commit),$(project)_relay:latest,$(project)_bot:$(commit),$(project)_bot:latest,$(project)_builder:latest"; else echo ""; fi)
 
+prodOrCd=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "cd"; else echo "prod"; fi)
+
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
 bot=$(cwd)/modules/payment-bot
@@ -55,7 +57,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 default: dev
 all: dev prod
 dev: database ethprovider node client payment-bot indra-proxy ws-tcp-relay
-prod: database node-prod indra-proxy-prod ws-tcp-relay daicard-proxy
+prod: database node-$(prodOrCd) indra-proxy-prod ws-tcp-relay daicard-proxy
 
 start: start-daicard
 
@@ -274,6 +276,12 @@ messaging: node-modules types $(shell find $(messaging)/src $(find_options))
 node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+node-cd: node $(shell find $(node)/ops $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/node && npm run build-bundle"
+	docker build --file $(node)/ops/cd.dockerfile $(cache_from) --tag $(project)_node:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 node-modules: builder package.json $(shell ls modules/**/package.json)
