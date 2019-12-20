@@ -31,6 +31,7 @@ ethprovider=$(cwd)/ops/ethprovider
 messaging=$(cwd)/modules/messaging
 node=$(cwd)/modules/node
 proxy=$(cwd)/modules/proxy
+ssh-action=$(cwd)/ops/ssh-action
 types=$(cwd)/modules/types
 
 # Setup docker run time
@@ -297,6 +298,11 @@ indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
 indra-proxy-prod: daicard-prod dashboard-prod ws-tcp-relay $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/indra.connext.network/prod.dockerfile --cache-from="$(cache_from)" --tag $(project)_proxy:latest .
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+ssh-action: $(shell find $(ssh-action) $(find_options))
+	$(log_start)
+	docker build --file $(ssh-action)/Dockerfile --tag $(project)_ssh_action $(ssh-action)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 types: node-modules $(shell find $(types)/src $(find_options))
