@@ -1,35 +1,63 @@
-import { INestApplication } from "@nestjs/common";
+import * as connext from "@connext/client";
+import { ClientOptions, IConnextClient } from "@connext/types";
+import { INestApplication, INestMicroservice } from "@nestjs/common";
+import { Transport } from "@nestjs/microservices";
 import { Test } from "@nestjs/testing";
 
 import { AppModule } from "../../../app.module";
-import { DatabaseModule } from "../../../database/database.module";
-import { TypeOrmConfigService as MemoryDatabaseService } from "../../database.module";
 import { ConfigService } from "../../../config/config.service";
-import { TypeOrmConfigService } from "../../../database/database.service";
-
-process.env["INDRA_NATS_SERVERS"] = "nats://localhost:4222";
+import { MemoryStoreServiceFactory } from "../../store";
 
 describe("Deposits", () => {
   let app: INestApplication;
+  let micro: INestMicroservice;
+
+  let clientA: IConnextClient;
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
       imports: [AppModule],
-    })
-      .overrideProvider(TypeOrmConfigService)
-      .useClass(MemoryDatabaseService)
-      .compile();
+    }).compile();
 
     app = module.createNestApplication();
-    const config = app.get(ConfigService);
     await app.init();
-    console.log("config: ", config.getMessagingConfig());
-    console.log("app: ", app);
+
+    const config = app.get(ConfigService);
+    const messagingUrl = config.getMessagingConfig().messagingUrl;
+    micro = module.createNestMicroservice({
+      options: {
+        servers: typeof messagingUrl === "string" ? [messagingUrl] : messagingUrl,
+      },
+      transport: Transport.NATS,
+    });
+    await micro.init();
   });
 
-  it(`should deposit ETH in the happy case.`, () => {
-    expect(true).toBe(true);
-  });
+  test(`should deposit ETH in the happy case.`, async () => {
+    const config = app.get(ConfigService);
+    const messagingUrl = config.getMessagingConfig().messagingUrl;
+    // client setup
+    const storeServiceFactory = new MemoryStoreServiceFactory();
+
+    const nodeUrl = typeof messagingUrl === "string" ? messagingUrl : messagingUrl[0]
+
+    // client A
+    const clientAStore = storeServiceFactory.createStoreService();
+    const clientAOpts: ClientOptions = {
+      ethProviderUrl: config.getEthRpcUrl(),
+      logLevel: 4,
+      mnemonic:
+        "humble sense shrug young vehicle assault destroy cook property average silent travel",
+      nodeUrl,
+      store: clientAStore,
+    };
+    clientA = await connext.connect(clientAOpts);
+    await clientA.isAvailable();
+
+    console.log('clientA: ', clientA);
+    // console.log('clientA.publicIdentifier: ', clientA.publicIdentifier);
+    expect(clientA.freeBalanceAddress).toBeTruthy();
+  }, 90000);
 
   afterAll(async () => {
     await app.close();
