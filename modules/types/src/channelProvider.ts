@@ -28,6 +28,12 @@ export interface CFChannelProviderOptions {
 // TODO: replace any w interface of cfCore (using implementation directly -> circular dependency)
 export type RpcConnection = ChannelProvider | any;
 
+export const ChannelProviderTypes = {
+  Counterfactual: "Counterfactual",
+  Injected: "Injected",
+}
+export type ChannelProviderType = keyof typeof ChannelProviderTypes;
+
 export const ConnextRpcMethods = {
   chan_config: "chan_config",
   chan_nodeAuth: "chan_nodeAuth",
