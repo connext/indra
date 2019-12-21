@@ -1,12 +1,12 @@
 import {
   AllowedSwap,
+  AppInstanceJson,
   CoinTransfer,
   CoinTransferBigNumber,
+  DefaultApp,
   SimpleLinkedTransferAppStateBigNumber,
   SimpleTransferAppStateBigNumber,
   SupportedApplications,
-  AppInstanceJson,
-  DefaultApp,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
@@ -16,8 +16,9 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
-import { LinkedTransferRepository } from "../transfer/transfer.repository";
 import { SwapRateService } from "../swapRate/swapRate.service";
+import { LinkedTransferStatus } from "../transfer/transfer.entity";
+import { LinkedTransferRepository } from "../transfer/transfer.repository";
 import { TransferService } from "../transfer/transfer.service";
 import {
   bigNumberifyObj,
@@ -31,7 +32,6 @@ import { CFCoreTypes, ProposeMessage } from "../util/cfCore";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
-import { LinkedTransferStatus } from "../transfer/transfer.entity";
 
 const logger = new CLogger("AppRegistryService");
 
