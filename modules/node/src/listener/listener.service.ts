@@ -1,6 +1,11 @@
-import { SimpleLinkedTransferAppStateBigNumber, SupportedApplications } from "@connext/types";
+import {
+  SimpleLinkedTransferAppState,
+  SimpleLinkedTransferAppStateBigNumber,
+  SupportedApplications,
+} from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
+import { Zero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
 
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
@@ -22,7 +27,6 @@ import {
   InstallVirtualMessage,
   NodeMessageWrappedProtocolMessage,
   ProposeMessage,
-  RejectInstallVirtualMessage,
   RejectProposalMessage,
   UninstallMessage,
   UninstallVirtualMessage,
@@ -92,34 +96,56 @@ export default class ListenerService implements OnModuleInit {
       PROPOSE_INSTALL_EVENT: async (data: ProposeMessage): Promise<void> => {
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
           logger.debug(`Recieved proposal from our own node. Doing nothing.`);
+          return;
         }
         logEvent("PROPOSE_INSTALL_EVENT", data);
 
         // TODO: better architecture
         // install if possible
-        const allowedOrRejected = await this.appRegistryService.allowOrReject(data);
+        let allowedOrRejected;
+        try {
+          allowedOrRejected = await this.appRegistryService.allowOrReject(data);
+        } catch (e) {
+          if (e.message.includes(`Node has insufficient balance`)) {
+            // try to deposit and reinstall the app
+            await this.addCollateral(data);
+            allowedOrRejected = await this.appRegistryService.allowOrReject(data);
+          }
+        }
         if (!allowedOrRejected) {
           logger.log(`No data from appRegistryService.allowOrReject, nothing was installed.`);
           return;
         }
 
-        const proposedAppParams = data.data;
+        const proposedAppParams = data.data.params;
+        const appInstanceId = data.data.appInstanceId;
         const initiatorXpub = data.from;
 
         // post-install tasks
         switch (allowedOrRejected.name) {
           case SupportedApplications.SimpleLinkedTransferApp:
             logger.debug(`Saving linked transfer`);
-            const initialState = proposedAppParams.params
-              .initialState as SimpleLinkedTransferAppStateBigNumber;
+            // tslint:disable-next-line: max-line-length
+            const initialState = proposedAppParams.initialState as SimpleLinkedTransferAppStateBigNumber;
+
+            const isResolving = proposedAppParams.responderDeposit.gt(Zero);
+            if (isResolving) {
+              const transfer = await this.transferService.getLinkedTransferByPaymentId(
+                initialState.paymentId,
+              );
+              transfer.receiverAppInstanceId = appInstanceId;
+              await this.linkedTransferRepository.save(transfer);
+              logger.debug(`Updated transfer with receiver appId!`);
+              return;
+            }
             await this.transferService.saveLinkedTransfer(
               initiatorXpub,
-              proposedAppParams.params.initiatorDepositTokenAddress,
-              bigNumberify(proposedAppParams.params.initiatorDeposit),
-              proposedAppParams.appInstanceId,
+              proposedAppParams.initiatorDepositTokenAddress,
+              bigNumberify(proposedAppParams.initiatorDeposit),
+              appInstanceId,
               initialState.linkedHash,
               initialState.paymentId,
-              proposedAppParams.params.meta,
+              proposedAppParams.meta,
             );
             logger.debug(`Linked transfer saved!`);
             break;
@@ -162,11 +188,27 @@ export default class ListenerService implements OnModuleInit {
       UNINSTALL_EVENT: (data: UninstallMessage): void => {
         logEvent("UNINSTALL_EVENT", data);
       },
-      UNINSTALL_VIRTUAL_EVENT: async (data: UninstallVirtualMessage): Promise<void> => {
+      UNINSTALL_VIRTUAL_EVENT: (data: UninstallVirtualMessage): void => {
         logEvent("UNINSTALL_VIRTUAL_EVENT", data);
       },
-      UPDATE_STATE_EVENT: (data: UpdateStateMessage): void => {
+      UPDATE_STATE_EVENT: async (data: UpdateStateMessage): Promise<void> => {
+        // if this is for a recipient of a transfer
         logEvent("UPDATE_STATE_EVENT", data);
+        let transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(
+          data.data.appInstanceId,
+        );
+        if (!transfer) {
+          logger.debug(`Could not find transfer for update state event`);
+          return;
+        }
+        // update transfer
+        const { newState } = data.data;
+        transfer.preImage = (newState as SimpleLinkedTransferAppState).preImage;
+        transfer = await this.linkedTransferRepository.markAsRedeemed(
+          transfer,
+          await this.channelRepository.findByUserPublicIdentifier(data.from),
+        );
+        logger.debug(`Marked transfer as redeemed with preImage: ${transfer.preImage}`);
       },
       WITHDRAWAL_CONFIRMED_EVENT: (data: WithdrawConfirmationMessage): void => {
         logEvent("WITHDRAWAL_CONFIRMED_EVENT", data);
@@ -229,5 +271,47 @@ export default class ListenerService implements OnModuleInit {
       },
       logger.cxt,
     );
+  }
+
+  private async addCollateral(data: ProposeMessage): Promise<void> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(data.from);
+    const { responderDeposit, responderDepositTokenAddress } = data.data.params;
+    const paymentAmt = bigNumberify(responderDeposit);
+    await new Promise(async (resolve, reject) => {
+      this.cfCoreService.cfCore.on(
+        "DEPOSIT_CONFIRMED_EVENT",
+        async (msg: DepositConfirmationMessage) => {
+          if (msg.data.multisigAddress !== channel.multisigAddress) {
+            return;
+          }
+          // make sure free balance is appropriate
+          const fb = await this.cfCoreService.getFreeBalance(
+            data.from,
+            channel.multisigAddress,
+            responderDepositTokenAddress,
+          );
+          if (fb[this.cfCoreService.cfCore.freeBalanceAddress].lt(paymentAmt)) {
+            // wait for resolve
+            return;
+          }
+          resolve();
+        },
+      );
+      this.cfCoreService.cfCore.on("DEPOSIT_FAILED_EVENT", (msg: DepositFailedMessage) => {
+        if (msg.data.params.multisigAddress !== channel.multisigAddress) {
+          return;
+        }
+        reject(`Collateral could not be added to channel, deposit has failed.`);
+      });
+      try {
+        await this.channelService.requestCollateral(
+          data.from,
+          responderDepositTokenAddress,
+          paymentAmt,
+        );
+      } catch (e) {
+        reject(e);
+      }
+    });
   }
 }
