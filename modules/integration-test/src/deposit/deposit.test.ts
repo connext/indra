@@ -2,11 +2,16 @@ import { connect } from "@connext/client";
 import { ClientOptions, IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 
+import { clearDb } from "../util/db";
 import { MemoryStoreServiceFactory } from "../util/store";
 
 describe("Deposits", () => {
   let clientA: IConnextClient;
   beforeAll(async () => {
+    // TODO: clearDb doesnt work between test runs because it deletes necessary things
+    // such as app registry. need to snapshot the db instead.
+    // await clearDb();
+
     const storeServiceFactory = new MemoryStoreServiceFactory();
 
     // client A
