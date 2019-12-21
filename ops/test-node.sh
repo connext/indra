@@ -54,6 +54,7 @@ function cleanup {
   docker container stop $ethprovider_host 2> /dev/null || true
   docker container stop $postgres_host 2> /dev/null || true
   docker container stop $nats_host 2> /dev/null || true
+  docker container stop $redis_host 2> /dev/null || true
   docker container stop $node_host 2> /dev/null || true
 }
 trap cleanup EXIT
@@ -129,7 +130,7 @@ docker run \
   --env="INDRA_PG_PORT=$postgres_port" \
   --env="INDRA_PG_USERNAME=$postgres_user" \
   --env="INDRA_PORT=$node_port" \
-  --env="INDRA_REDIS_URL=redis://$redis_url:6379" \
+  --env="INDRA_REDIS_URL=redis://$redis_host:6379" \
   --env="NODE_ENV=development" \
   $interactive \
   --name="$node_host" \
@@ -146,6 +147,8 @@ docker run \
     bash ops/wait-for.sh -t 60 $INDRA_PG_HOST:$INDRA_PG_PORT 2> /dev/null
     echo "Waiting for ${INDRA_NATS_SERVERS#*://}..."
     bash ops/wait-for.sh -t 60 ${INDRA_NATS_SERVERS#*://} 2> /dev/null
+    echo "Waiting for $redis_host:6379..."
+    bash ops/wait-for.sh -t 60 $redis_host:6379 2> /dev/null
     echo
 
     cd modules/node
