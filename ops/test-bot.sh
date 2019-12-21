@@ -107,7 +107,7 @@ bash ops/payment-bot.sh -i 2 -a -l 0.01 -p "$paymentId1" -h "$preImage1" -m "$mn
 sleep 10
 
 echo -e "$divider";echo "Redeeming link payment"
-bash ops/payment-bot.sh -i 1 -a -y 0.01 -p "$paymentId1" -h "$preImage1" -m "$mnemonic1" | tee -a $recipientLog
+bash ops/payment-bot.sh -i 1 -a -y 0.01 -p "$paymentId1" -h "$preImage1" -m "$mnemonic1" -l 0.01 | tee -a $recipientLog
 
 echo -e "$divider";echo "Giving the sender a few seconds to finish uninstalling.."
 sleep 2
