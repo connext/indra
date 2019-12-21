@@ -151,16 +151,13 @@ export abstract class AbstractController {
     this.connext.messaging.unsubscribe(
       `indra.node.${this.connext.nodePublicIdentifier}.install.${appId}`,
     );
-    this.listener.removeCfListener(CFCoreTypes.EventNames.REJECT_INSTALL_EVENT, boundReject);
+    this.listener.removeCfListener("REJECT_INSTALL_EVENT", boundReject);
   };
 
   private cleanupProposalListeners = (boundReject: any): void => {
     this.connext.messaging.unsubscribe(
       `indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
     );
-    this.listener.removeCfListener(
-      CFCoreTypes.EventNames.REJECT_INSTALL_EVENT as CFCoreTypes.EventName,
-      boundReject,
-    );
+    this.listener.removeCfListener("REJECT_INSTALL_EVENT" as CFCoreTypes.EventName, boundReject);
   };
 }

@@ -15,6 +15,8 @@ import { BigNumber, bigNumberify, formatEther } from "ethers/utils";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
+import { ConfigService } from "../config/config.service";
+import { LinkedTransferRepository } from "../transfer/transfer.repository";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { TransferService } from "../transfer/transfer.service";
 import {
@@ -29,7 +31,7 @@ import { CFCoreTypes, ProposeMessage } from "../util/cfCore";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
-import { LinkedTransferStatus } from "src/transfer/transfer.entity";
+import { LinkedTransferStatus } from "../transfer/transfer.entity";
 
 const logger = new CLogger("AppRegistryService");
 
@@ -44,6 +46,8 @@ export class AppRegistryService {
     private readonly transferService: TransferService,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
+    private readonly configService: ConfigService,
+    private readonly linkedTransferRepository: LinkedTransferRepository,
   ) {}
 
   /**
