@@ -176,7 +176,7 @@ test-contracts: contracts
 test-node: node
 	bash ops/test-node.sh --runInBand --forceExit
 
-watch-node: node-modules
+watch-node: node
 	bash ops/test-node.sh --watch
 
 ########################################
