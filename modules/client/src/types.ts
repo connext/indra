@@ -80,6 +80,7 @@ export {
   ResolveConditionParameters,
   ResolveConditionResponse,
   ResolveLinkedTransferParameters,
+  ResolveLinkedTransferToRecipientParameters,
   ResolveLinkedTransferResponse,
   RequestDepositRightsParameters,
   RequestDepositRightsResponse,
