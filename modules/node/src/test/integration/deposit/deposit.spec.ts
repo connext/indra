@@ -42,7 +42,7 @@ describe("Deposits", () => {
     const wallet = config.getEthWallet();
     const mnemonic = config.getMnemonic();
     await deployContracts(wallet, mnemonic);
-  }, 90000);
+  }, 90_000);
 
   test(`should deposit ETH in the happy case.`, async () => {
     const config = app.get(ConfigService);
@@ -69,7 +69,7 @@ describe("Deposits", () => {
     console.log("clientA: ", clientA);
     // console.log('clientA.publicIdentifier: ', clientA.publicIdentifier);
     expect(clientA.freeBalanceAddress).toBeTruthy();
-  }, 90000);
+  }, 180_000);
 
   afterAll(async () => {
     await app.close();
