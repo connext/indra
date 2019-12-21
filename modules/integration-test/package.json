@@ -1,0 +1,22 @@
+{
+  "name": "@connext/integration-test",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --detectOpenHandles"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@connext/client": "^1.4.1",
+    "@types/jest": "^24.0.24",
+    "ethers": "^4.0.41",
+    "jest": "^24.9.0",
+    "ts-jest": "^24.2.0",
+    "typescript": "^3.7.4"
+  },
+  "dependencies": {
+    "@connext/types": "^1.4.1"
+  }
+}
