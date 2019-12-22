@@ -77,7 +77,7 @@ describe("Deposits", () => {
     );
   });
 
-  test.only("client should not be able to deposit with negative amount", async () => {
+  test("client should not be able to deposit with negative amount", async () => {
     await expect(clientA.deposit({ amount: "-1", assetId: AddressZero })).rejects.toThrowError(
       "is not greater than or equal to 0",
     );
