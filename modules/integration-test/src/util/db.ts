@@ -12,7 +12,6 @@ client.connect();
 
 export const clearDb = async (): Promise<void> => {
   console.log(`Clearing database`);
-  await client.query("truncate table app_registry cascade;");
   await client.query("truncate table channel cascade;");
   await client.query("truncate table channel_payment_profiles_payment_profile cascade;");
   await client.query("truncate table linked_transfer cascade;");
