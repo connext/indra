@@ -25,13 +25,16 @@ import {
   twoPartyFixedOutcomeInterpreterParamsEncoding,
   virtualAppAgreementEncoding
 } from "./data-types";
-import { IRpcNodeProvider, Node } from "./node";
+import { IRpcNodeProvider, CFCoreTypes } from "./node";
 import {
   ABIEncoding,
   Address,
   ContractABI,
   SolidityValueType
 } from "./simple-types";
+
+// 25446 is 0x6366... or "cf" in ascii, for "Counterfactual".
+export const CF_PATH = "m/44'/60'/0'/25446";
 
 export interface NetworkContext {
   ChallengeRegistry: string;
@@ -89,7 +92,7 @@ export {
   SolidityValueType,
   StateChannelJSON,
   IRpcNodeProvider,
-  Node,
+  CFCoreTypes,
   SignedStateHashUpdate,
   OutcomeType,
   SingleAssetTwoPartyCoinTransferInterpreterParams,

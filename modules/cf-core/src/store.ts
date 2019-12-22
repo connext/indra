@@ -14,8 +14,8 @@ import {
   NO_MULTISIG_FOR_COUNTERPARTIES
 } from "./methods/errors";
 import { AppInstance, AppInstanceProposal, StateChannel } from "./models";
-import { Node, SolidityValueType } from "./types";
-import { getCreate2MultisigAddress, prettyPrintObject } from "./utils";
+import { CFCoreTypes, SolidityValueType } from "./types";
+import { getCreate2MultisigAddress } from "./utils";
 
 /**
  * A simple ORM around StateChannels and AppInstances stored using the
@@ -23,7 +23,7 @@ import { getCreate2MultisigAddress, prettyPrintObject } from "./utils";
  */
 export class Store {
   constructor(
-    private readonly storeService: Node.IStoreService,
+    private readonly storeService: CFCoreTypes.IStoreService,
     private readonly storeKeyPrefix: string
   ) {}
 
@@ -233,7 +233,7 @@ export class Store {
 
   public async getWithdrawalCommitment(
     multisigAddress: string
-  ): Promise<Node.MinimalTransaction> {
+  ): Promise<CFCoreTypes.MinimalTransaction> {
     return this.storeService.get(
       [this.storeKeyPrefix, DB_NAMESPACE_WITHDRAWALS, multisigAddress].join("/")
     );
@@ -241,7 +241,7 @@ export class Store {
 
   public async storeWithdrawalCommitment(
     multisigAddress: string,
-    commitment: Node.MinimalTransaction
+    commitment: CFCoreTypes.MinimalTransaction
   ) {
     return this.storeService.set([
       {
@@ -255,7 +255,7 @@ export class Store {
     ]);
   }
 
-  public async setCommitment(args: any[], commitment: Node.MinimalTransaction) {
+  public async setCommitment(args: any[], commitment: CFCoreTypes.MinimalTransaction) {
     return this.storeService.set([
       {
         path: [
@@ -301,7 +301,7 @@ export class Store {
         return stateChannel;
       }
 
-      throw Error(prettyPrintObject(e));
+      throw Error(e);
     }
   }
 }

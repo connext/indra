@@ -2,7 +2,7 @@ import { jsonRpcMethod } from "rpc-server";
 
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
-import { Node } from "../../../types";
+import { CFCoreTypes } from "../../../types";
 import { NodeController } from "../../controller";
 
 import { install } from "./operation";
@@ -13,12 +13,12 @@ import { install } from "./operation";
  * @param params
  */
 export default class InstallController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.INSTALL)
+  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_install)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.InstallParams,
+    params: CFCoreTypes.InstallParams,
   ): Promise<string[]> {
     const { store } = requestHandler;
     const { appInstanceId } = params;
@@ -30,8 +30,8 @@ export default class InstallController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.InstallParams,
-  ): Promise<Node.InstallResult> {
+    params: CFCoreTypes.InstallParams,
+  ): Promise<CFCoreTypes.InstallResult> {
     const { store, protocolRunner } = requestHandler;
 
     const appInstanceProposal = await install(store, protocolRunner, params);

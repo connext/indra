@@ -1,7 +1,7 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { Node } from "../../../types";
+import { CFCoreTypes } from "../../../types";
 import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
@@ -13,12 +13,12 @@ import {
 import { uninstallVirtualAppInstanceFromChannel } from "./operation";
 
 export default class UninstallVirtualController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.UNINSTALL_VIRTUAL)
+  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_uninstallVirtual)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.UninstallVirtualParams
+    params: CFCoreTypes.UninstallVirtualParams
   ): Promise<string[]> {
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { appInstanceId, intermediaryIdentifier } = params;
@@ -75,7 +75,7 @@ export default class UninstallVirtualController extends NodeController {
   protected async beforeExecution(
     // @ts-ignore
     requestHandler: RequestHandler,
-    params: Node.UninstallVirtualParams
+    params: CFCoreTypes.UninstallVirtualParams
   ) {
     const { appInstanceId } = params;
 
@@ -86,8 +86,8 @@ export default class UninstallVirtualController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.UninstallVirtualParams
-  ): Promise<Node.UninstallVirtualResult> {
+    params: CFCoreTypes.UninstallVirtualParams
+  ): Promise<CFCoreTypes.UninstallVirtualResult> {
     const {
       store,
       protocolRunner,

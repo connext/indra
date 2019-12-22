@@ -8,8 +8,8 @@ import { ProtocolRunner } from "./machine";
 import ProcessQueue from "./process-queue";
 import RpcRouter from "./rpc-router";
 import { Store } from "./store";
-import { NetworkContext, Node, NODE_EVENTS, NodeEvent } from "./types";
-import { prettyPrintObject } from "./utils";
+import { NetworkContext, CFCoreTypes, NODE_EVENTS, NodeEvent } from "./types";
+import { bigNumberifyJson } from "./utils";
 
 /**
  * This class registers handlers for requests to get or set some information
@@ -26,8 +26,8 @@ export class RequestHandler {
     readonly publicIdentifier: string,
     readonly incoming: EventEmitter,
     readonly outgoing: EventEmitter,
-    readonly storeService: Node.IStoreService,
-    readonly messagingService: Node.IMessagingService,
+    readonly storeService: CFCoreTypes.IStoreService,
+    readonly messagingService: CFCoreTypes.IMessagingService,
     readonly protocolRunner: ProtocolRunner,
     readonly networkContext: NetworkContext,
     readonly provider: BaseProvider,
@@ -52,9 +52,9 @@ export class RequestHandler {
    * @param req
    */
   public async callMethod(
-    method: Node.MethodName,
-    req: Node.MethodRequest
-  ): Promise<Node.MethodResponse> {
+    method: CFCoreTypes.MethodName,
+    req: CFCoreTypes.MethodRequest
+  ): Promise<CFCoreTypes.MethodResponse> {
     const result = {
       type: req.type,
       requestId: req.requestId,
@@ -72,11 +72,14 @@ export class RequestHandler {
     for (const methodName in methodNameToImplementation) {
       this.methods.set(methodName, methodNameToImplementation[methodName]);
 
-      this.incoming.on(methodName, async (req: Node.MethodRequest) => {
-        const res: Node.MethodResponse = {
+      this.incoming.on(methodName, async (req: CFCoreTypes.MethodRequest) => {
+        const res: CFCoreTypes.MethodResponse = {
           type: req.type,
           requestId: req.requestId,
-          result: await this.methods.get(methodName)(this, req.params)
+          result: await this.methods.get(methodName)(
+            this,
+            bigNumberifyJson(req.params)
+          )
         };
 
         // @ts-ignore
@@ -103,7 +106,7 @@ export class RequestHandler {
    * @param event
    * @param msg
    */
-  public async callEvent(event: NodeEvent, msg: Node.NodeMessage) {
+  public async callEvent(event: NodeEvent, msg: CFCoreTypes.NodeMessage) {
     const controllerExecutionMethod = this.events.get(event);
     const controllerCount = this.router.eventListenerCount(event);
 

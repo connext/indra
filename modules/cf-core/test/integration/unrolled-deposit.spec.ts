@@ -5,7 +5,7 @@ import { Node } from "../../src";
 import {
   CoinBalanceRefundState,
   NODE_EVENTS,
-  Node as NodeTypes,
+  CFCoreTypes,
 } from "../../src/types";
 import { toBeLt, toBeEq } from "../machine/integration/bignumber-jest-matcher";
 
@@ -224,7 +224,7 @@ describe("Node method follows spec - install balance refund", () => {
       nodeB.once("PROPOSE_INSTALL_EVENT", data => res(data));
       await nodeA.rpcRouter.dispatch({
         id: Date.now(),
-        methodName: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
+        methodName: CFCoreTypes.RpcMethodNames.chan_proposeInstall,
         parameters
       });
     });
@@ -242,7 +242,7 @@ describe("Node method follows spec - install balance refund", () => {
       nodeB.once("PROPOSE_INSTALL_EVENT", data => res(data));
       await nodeA.rpcRouter.dispatch({
         id: Date.now(),
-        methodName: NodeTypes.RpcMethodName.PROPOSE_INSTALL,
+        methodName: CFCoreTypes.RpcMethodNames.chan_proposeInstall,
         parameters
       });
     });

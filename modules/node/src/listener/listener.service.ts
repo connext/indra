@@ -192,7 +192,7 @@ export default class ListenerService implements OnModuleInit {
     );
 
     this.cfCoreService.registerCfCoreListener(
-      CFCoreTypes.RpcMethodName.INSTALL as any,
+      CFCoreTypes.RpcMethodNames.chan_install as any,
       (data: any) => {
         const appInstance = data.result.result.appInstance;
         logger.debug(
@@ -211,7 +211,7 @@ export default class ListenerService implements OnModuleInit {
     );
 
     this.cfCoreService.registerCfCoreListener(
-      CFCoreTypes.RpcMethodName.UNINSTALL as any,
+      CFCoreTypes.RpcMethodNames.chan_uninstall as any,
       (data: any) => {
         logger.debug(
           `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(

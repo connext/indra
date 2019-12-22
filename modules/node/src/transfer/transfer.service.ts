@@ -282,7 +282,7 @@ export class TransferService {
 
     // add preimage to database to allow unlock from a listener
     transfer.receiverAppInstanceId = receiverAppInstallRes.appInstanceId;
-    transfer.preImage = mkHash("0x0");
+    transfer.preImage = preImage;
     transfer.paymentId = paymentId;
     await this.linkedTransferRepository.save(transfer);
 

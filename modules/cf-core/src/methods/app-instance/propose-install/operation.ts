@@ -2,7 +2,7 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { appIdentityToHash } from "../../../machine";
 import { AppInstanceProposal } from "../../../models";
 import { Store } from "../../../store";
-import { NetworkContext, Node } from "../../../types";
+import { NetworkContext, CFCoreTypes } from "../../../types";
 import { NO_NETWORK_PROVIDER_CREATE2 } from "../../errors";
 
 /**
@@ -16,7 +16,7 @@ export async function createProposedAppInstance(
   myIdentifier: string,
   store: Store,
   networkContext: NetworkContext,
-  params: Node.ProposeInstallParams
+  params: CFCoreTypes.ProposeInstallParams
 ): Promise<string> {
   const {
     abiEncodings,

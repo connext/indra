@@ -11,6 +11,12 @@ describe("Daicard", () => {
     my.closeIntroModal();
   });
 
+  describe("WalletConnext", () => {
+    it(`should open a modal when activated`, () => {
+      my.activateWalletConnext();
+    });
+  });
+
   describe("Deposit", () => {
     it(`should accept an Eth deposit to displayed address`, () => {
       my.deposit(depositEth);
@@ -163,7 +169,7 @@ describe("Daicard", () => {
       my.depositToken(depositToken).then(tokensDeposited => {
         my.getOnchainTokenBalance().then(balanceBefore => {
           my.cashoutToken()
-          my.depositToken(`${depositToken}1`).then(tokensDeposited => {
+          my.depositToken(`${depositToken}.1`).then(tokensDeposited => {
             my.getOnchainTokenBalance().then(balanceBefore => {
               my.cashoutToken();
               cy.resolve(my.getOnchainTokenBalance).should(balanceAfter => {

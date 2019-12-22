@@ -16,7 +16,7 @@ import {
 } from "../../../machine/xkeys";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
-import { NetworkContext, Node } from "../../../types";
+import { NetworkContext, CFCoreTypes } from "../../../types";
 import {
   getCreate2MultisigAddress,
   prettyPrintObject,
@@ -35,12 +35,12 @@ import {
 const CREATE_PROXY_AND_SETUP_GAS = 500_000;
 
 export default class DeployStateDepositHolderController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.DEPLOY_STATE_DEPOSIT_HOLDER)
+  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_deployStateDepositHolder)
   public executeMethod = super.executeMethod;
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: Node.DeployStateDepositHolderParams
+    params: CFCoreTypes.DeployStateDepositHolderParams
   ): Promise<void> {
     const { store, provider, networkContext } = requestHandler;
     const { multisigAddress } = params;
@@ -65,8 +65,8 @@ export default class DeployStateDepositHolderController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.DeployStateDepositHolderParams
-  ): Promise<Node.DeployStateDepositHolderResult> {
+    params: CFCoreTypes.DeployStateDepositHolderParams
+  ): Promise<CFCoreTypes.DeployStateDepositHolderResult> {
     const { multisigAddress, retryCount } = params;
     const { networkContext, store, provider, wallet } = requestHandler;
 

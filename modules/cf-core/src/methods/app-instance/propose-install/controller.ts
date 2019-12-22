@@ -6,7 +6,7 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { Protocol, xkeyKthAddress } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
-import { Node } from "../../../types";
+import { CFCoreTypes } from "../../../types";
 import { NodeController } from "../../controller";
 import {
   INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET,
@@ -20,15 +20,15 @@ import {
  * @returns The AppInstanceId for the proposed AppInstance
  */
 export default class ProposeInstallController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.PROPOSE_INSTALL)
+  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_proposeInstall)
   public executeMethod: (
     requestHandler: RequestHandler,
-    params: Node.MethodParams
-  ) => Promise<Node.MethodResult> = super.executeMethod;
+    params: CFCoreTypes.MethodParams
+  ) => Promise<CFCoreTypes.MethodResult> = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.ProposeInstallParams
+    params: CFCoreTypes.ProposeInstallParams
   ): Promise<string[]> {
     const { networkContext, publicIdentifier, store } = requestHandler;
     const { proposedToIdentifier } = params;
@@ -54,7 +54,7 @@ export default class ProposeInstallController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: Node.ProposeInstallParams
+    params: CFCoreTypes.ProposeInstallParams
   ): Promise<void> {
     const { networkContext, publicIdentifier, store } = requestHandler;
     const { initialState } = params;
@@ -120,8 +120,8 @@ export default class ProposeInstallController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.ProposeInstallParams
-  ): Promise<Node.ProposeInstallResult> {
+    params: CFCoreTypes.ProposeInstallParams
+  ): Promise<CFCoreTypes.ProposeInstallResult> {
     const {
       networkContext,
       protocolRunner,

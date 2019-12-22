@@ -1,7 +1,7 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { Node } from "../../../types";
+import { CFCoreTypes } from "../../../types";
 import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
@@ -13,12 +13,12 @@ import {
 import { uninstallAppInstanceFromChannel } from "./operation";
 
 export default class UninstallController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.UNINSTALL)
+  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_uninstall)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: Node.UninstallVirtualParams
+    params: CFCoreTypes.UninstallVirtualParams
   ): Promise<string[]> {
     const { store } = requestHandler;
     const { appInstanceId } = params;
@@ -35,7 +35,7 @@ export default class UninstallController extends NodeController {
   protected async beforeExecution(
     // @ts-ignore
     requestHandler: RequestHandler,
-    params: Node.UninstallParams
+    params: CFCoreTypes.UninstallParams
   ) {
     const { appInstanceId } = params;
 
@@ -46,8 +46,8 @@ export default class UninstallController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.UninstallParams
-  ): Promise<Node.UninstallResult> {
+    params: CFCoreTypes.UninstallParams
+  ): Promise<CFCoreTypes.UninstallResult> {
     const { store, protocolRunner, publicIdentifier } = requestHandler;
     const { appInstanceId } = params;
 

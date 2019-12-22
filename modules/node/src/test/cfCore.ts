@@ -24,11 +24,11 @@ export const mockCFCoreProvider = {
     dispatch: (param: any): JsonRpcResponse | undefined => {
       logger.log(`Called mocked router.dispatch with params: ${JSON.stringify(param)}`);
       switch (param.methodName) {
-        case CFCoreTypes.RpcMethodName.CREATE_CHANNEL:
+        case CFCoreTypes.RpcMethodNames.chan_create:
           return createMockJsonRpcResponse({
             multisigAddress: mockStateDepositHolderAddress,
           } as CFCoreTypes.CreateChannelResult);
-        case CFCoreTypes.RpcMethodName.GET_STATE_DEPOSIT_HOLDER_ADDRESS:
+        case CFCoreTypes.RpcMethodNames.chan_getStateDepositHolderAddress:
           return createMockJsonRpcResponse({
             address: mockStateDepositHolderAddress,
           } as CFCoreTypes.GetStateDepositHolderAddressResult);

@@ -1,10 +1,6 @@
 name: CD
 
-on:
-  push:
-    branches:
-      - master
-      - staging
+on: [push]
 
 jobs:
   test-ssh:
@@ -75,7 +71,7 @@ jobs:
     env:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-    if: endsWith(github.ref, 'staging')
+    if: endsWith(github.ref, '/staging')
     needs: [test-node, test-cf, test-bot, test-daicard]
     runs-on: ubuntu-latest
     steps:
@@ -89,7 +85,7 @@ jobs:
     env:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-    if: endsWith(github.ref, 'master')
+    if: endsWith(github.ref, '/master')
     needs: [test-node, test-cf, test-bot, test-daicard]
     runs-on: ubuntu-latest
     steps:
@@ -107,7 +103,7 @@ jobs:
       SSH_DIR: $HOME/.ssh
       SSH_KEY: ${{ secrets.SSH_KEY }}
       STAGING_DOMAINNAME: staging.indra.connext.network
-    if: endsWith(github.ref, 'staging')
+    if: endsWith(github.ref, '/staging')
     needs: [push-latest]
     runs-on: ubuntu-latest
     steps:
@@ -154,7 +150,7 @@ jobs:
       RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
       SSH_DIR: $HOME/.ssh
       SSH_KEY: ${{ secrets.SSH_KEY }}
-    if: endsWith(github.ref, 'master')
+    if: endsWith(github.ref, '/master')
     needs: [push-versioned]
     runs-on: ubuntu-latest
     steps:

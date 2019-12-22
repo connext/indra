@@ -5,33 +5,30 @@ import { Protocol, ProtocolRunner } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { Store } from "../../../store";
-import { Node, SolidityValueType } from "../../../types";
-import {
-  getFirstElementInListNotEqualTo,
-  prettyPrintObject,
-} from "../../../utils";
+import { CFCoreTypes, SolidityValueType } from "../../../types";
+import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
   IMPROPERLY_FORMATTED_STRUCT,
   NO_APP_INSTANCE_FOR_TAKE_ACTION,
-  STATE_OBJECT_NOT_ENCODABLE,
+  STATE_OBJECT_NOT_ENCODABLE
 } from "../../errors";
 
 export default class UpdateStateController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.UPDATE_STATE)
+  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_updateState)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
     // @ts-ignore
     requestHandler: RequestHandler,
-    params: Node.UpdateStateParams
+    params: CFCoreTypes.UpdateStateParams
   ): Promise<string[]> {
     return [params.appInstanceId];
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: Node.UpdateStateParams
+    params: CFCoreTypes.UpdateStateParams
   ): Promise<void> {
     const { store } = requestHandler;
     const { appInstanceId, newState } = params;
@@ -46,7 +43,7 @@ export default class UpdateStateController extends NodeController {
       appInstance.encodeState(newState);
     } catch (e) {
       if (e.code === INVALID_ARGUMENT) {
-        throw Error(`${IMPROPERLY_FORMATTED_STRUCT}: ${prettyPrintObject(e)}`);
+        throw Error(`${IMPROPERLY_FORMATTED_STRUCT}: ${e.message}`);
       }
       throw Error(STATE_OBJECT_NOT_ENCODABLE);
     }
@@ -54,8 +51,8 @@ export default class UpdateStateController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.UpdateStateParams
-  ): Promise<Node.UpdateStateResult> {
+    params: CFCoreTypes.UpdateStateParams
+  ): Promise<CFCoreTypes.UpdateStateResult> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
     const { appInstanceId, newState } = params;
 

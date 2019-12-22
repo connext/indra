@@ -1,19 +1,19 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { Node } from "../../../types";
+import { CFCoreTypes } from "../../../types";
 import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
 import { NO_NETWORK_PROVIDER_CREATE2 } from "../../errors";
 
 export default class GetStateDepositHolderAddressController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.GET_STATE_DEPOSIT_HOLDER_ADDRESS)
+  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_getStateDepositHolderAddress)
   public executeMethod = super.executeMethod;
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.GetStateDepositHolderAddressParams
-  ): Promise<Node.GetStateDepositHolderAddressResult> {
+    params: CFCoreTypes.GetStateDepositHolderAddressParams
+  ): Promise<CFCoreTypes.GetStateDepositHolderAddressResult> {
     const { owners } = params;
     const { networkContext, store } = requestHandler;
     if (!networkContext.provider) {

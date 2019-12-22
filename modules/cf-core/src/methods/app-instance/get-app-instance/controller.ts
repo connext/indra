@@ -1,7 +1,7 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { Node } from "../../../types";
+import { CFCoreTypes } from "../../../types";
 import { NodeController } from "../../controller";
 import { NO_APP_INSTANCE_ID_TO_GET_DETAILS } from "../../errors";
 
@@ -11,11 +11,11 @@ import { NO_APP_INSTANCE_ID_TO_GET_DETAILS } from "../../errors";
  * @param params
  */
 export default class GetAppInstanceDetailsController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.GET_APP_INSTANCE_DETAILS)
+  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_getAppInstance)
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.GetAppInstanceDetailsParams,
-  ): Promise<Node.GetAppInstanceDetailsResult> {
+    params: CFCoreTypes.GetAppInstanceDetailsParams,
+  ): Promise<CFCoreTypes.GetAppInstanceDetailsResult> {
     const { store } = requestHandler;
     const { appInstanceId } = params;
 

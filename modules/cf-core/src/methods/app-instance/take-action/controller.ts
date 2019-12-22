@@ -5,11 +5,8 @@ import { Protocol, ProtocolRunner } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { Store } from "../../../store";
-import { Node, NODE_EVENTS, SolidityValueType, UpdateStateMessage } from "../../../types";
-import {
-  getFirstElementInListNotEqualTo,
-  prettyPrintObject
-} from "../../../utils";
+import { CFCoreTypes, NODE_EVENTS, SolidityValueType, UpdateStateMessage } from "../../../types";
+import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
   IMPROPERLY_FORMATTED_STRUCT,
@@ -19,13 +16,13 @@ import {
 } from "../../errors";
 
 export default class TakeActionController extends NodeController {
-  @jsonRpcMethod(Node.RpcMethodName.TAKE_ACTION)
+  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_takeAction)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
     // @ts-ignore
     requestHandler: RequestHandler,
-    params: Node.TakeActionParams
+    params: CFCoreTypes.TakeActionParams
   ): Promise<string[]> {
     const multisigAddress = await requestHandler.store.getMultisigAddressFromAppInstance(
       params.appInstanceId
@@ -35,7 +32,7 @@ export default class TakeActionController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: Node.TakeActionParams
+    params: CFCoreTypes.TakeActionParams
   ): Promise<void> {
     const { store } = requestHandler;
     const { appInstanceId, action } = params;
@@ -50,7 +47,7 @@ export default class TakeActionController extends NodeController {
       appInstance.encodeAction(action);
     } catch (e) {
       if (e.code === INVALID_ARGUMENT) {
-        throw Error(`${IMPROPERLY_FORMATTED_STRUCT}: ${prettyPrintObject(e)}`);
+        throw Error(`${IMPROPERLY_FORMATTED_STRUCT}: ${e.message}`);
       }
       throw Error(STATE_OBJECT_NOT_ENCODABLE);
     }
@@ -58,8 +55,8 @@ export default class TakeActionController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: Node.TakeActionParams
-  ): Promise<Node.TakeActionResult> {
+    params: CFCoreTypes.TakeActionParams
+  ): Promise<CFCoreTypes.TakeActionResult> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
     const { appInstanceId, action } = params;
 
@@ -86,7 +83,7 @@ export default class TakeActionController extends NodeController {
 
   protected async afterExecution(
     requestHandler: RequestHandler,
-    params: Node.TakeActionParams
+    params: CFCoreTypes.TakeActionParams
   ): Promise<void> {
     const { store, router, publicIdentifier } = requestHandler;
     const { appInstanceId, action } = params;
@@ -132,9 +129,9 @@ async function runTakeActionProtocol(
   } catch (e) {
     if (e.toString().indexOf("VM Exception") !== -1) {
       // TODO: Fetch the revert reason
-      throw Error(`${INVALID_ACTION}: ${prettyPrintObject(e)}`);
+      throw Error(`${INVALID_ACTION}: ${e.message}`);
     }
-    throw Error(`Couldn't run TakeAction protocol: ${prettyPrintObject(e)}`);
+    throw Error(`Couldn't run TakeAction protocol: ${e.message}`);
   }
 
   return {};

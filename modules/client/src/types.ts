@@ -2,7 +2,6 @@ import { IMessagingService } from "@connext/messaging";
 import {
   AppRegistry,
   BigNumber as connextBN,
-  ChannelProvider,
   ClientOptions,
   GetConfigResponse,
   Store,
@@ -10,7 +9,7 @@ import {
 import { Contract, providers } from "ethers";
 import { Network } from "ethers/utils";
 
-import { ChannelRouter } from "./channelRouter";
+import { ChannelProvider } from "./channelProvider";
 import { NodeApiClient } from "./node";
 
 export {
@@ -42,8 +41,12 @@ export {
   AppRegistry,
   AppStateBigNumber,
   CFCoreChannel,
+  CFChannelProviderOptions,
   ChannelAppSequences,
+  ChannelProvider,
   ChannelProviderConfig,
+  ChannelProviderRpcMethod,
+  ChannelProviderRpcMethods,
   ChannelState,
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
@@ -56,6 +59,7 @@ export {
   ConnextClientStorePrefix,
   ConnextEvent,
   ConnextEvents,
+  ConnextRpcMethod,
   convert,
   CreateChannelResponse,
   DefaultApp,
@@ -63,13 +67,14 @@ export {
   GetChannelResponse,
   GetConfigResponse,
   IConnextClient,
+  KeyGen,
   LinkedTransferParameters,
   LinkedTransferResponse,
   LinkedTransferToRecipientParameters,
   LinkedTransferToRecipientResponse,
   makeChecksum,
   makeChecksumOrEthAddress,
-  Node as CFCoreTypes,
+  CFCoreTypes,
   PaymentProfile,
   RequestCollateralResponse,
   ResolveConditionParameters,
@@ -81,7 +86,6 @@ export {
   RescindDepositRightsParameters,
   RescindDepositRightsResponse,
   RpcConnection,
-  RpcType,
   SimpleLinkedTransferAppState,
   SimpleLinkedTransferAppStateBigNumber,
   SimpleSwapAppState,
@@ -90,6 +94,7 @@ export {
   SimpleTransferAppStateBigNumber,
   StateChannelJSON,
   Store,
+  StorePair,
   SupportedApplication,
   SupportedApplications,
   SupportedNetwork,
@@ -106,16 +111,14 @@ export const BigNumber = connextBN;
 
 export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
-  channelRouter: ChannelRouter;
-  channelProvider?: ChannelProvider;
+  channelProvider: ChannelProvider;
   config: GetConfigResponse;
   ethProvider: providers.JsonRpcProvider;
   messaging: IMessagingService;
-  multisigAddress: string;
   network: Network;
   node: NodeApiClient;
-  token: Contract;
   store: Store;
+  token: Contract;
 };
 
 export interface NodeInitializationParameters {
@@ -123,5 +126,5 @@ export interface NodeInitializationParameters {
   logLevel?: number;
   userPublicIdentifier?: string;
   nodePublicIdentifier?: string;
-  channelRouter?: ChannelRouter;
+  channelProvider?: ChannelProvider;
 }
