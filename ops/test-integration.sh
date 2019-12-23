@@ -61,7 +61,9 @@ function cleanup {
 }
 trap cleanup EXIT
 
-docker network create --attachable $network 2> /dev/null || true
+if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
+then $NETWORK_ENV="--network="$project""
+fi
 
 # Damn I forget where I copy/pasted this witchcraft from, yikes.
 # It's supposed to find out whether we're calling this script from a shell & can print stuff
@@ -78,7 +80,7 @@ id="`
 docker service create \
   --detach \
   --name="$test_runner_host" \
-  --network="$project" \
+  $NETWORK_ENV \
   --env="INDRA_CLIENT_LOG_LEVEL=$log_level" \
   --env="INDRA_ETH_RPC_URL=$eth_rpc_url" \
   --env="INDRA_NATS_CLUSTER_ID=" \
