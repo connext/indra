@@ -15,8 +15,6 @@ solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}'
 # Pool of images to pull cached layers from during docker build steps
 cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database:latest,$(project)_ethprovider:$(commit),$(project)_ethprovider:latest,$(project)_node:$(commit),$(project)_node:latest,$(project)_proxy:$(commit),$(project)_proxy:latest,$(project)_relay:$(commit),$(project)_relay:latest,$(project)_bot:$(commit),$(project)_bot:latest,$(project)_builder:latest"; else echo ""; fi)
 
-prodOrCd=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "cd"; else echo "prod"; fi)
-
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
 bot=$(cwd)/modules/payment-bot
@@ -55,9 +53,10 @@ $(shell mkdir -p .makeflags $(node)/dist)
 # Begin Phony Rules
 
 default: dev
-all: dev prod
-dev: database ethprovider node client payment-bot indra-proxy ws-tcp-relay
-prod: database node-$(prodOrCd) indra-proxy-prod ws-tcp-relay daicard-proxy
+all: dev staging release
+dev: database ethprovider node client payment-bot-staging indra-proxy ws-tcp-relay
+staging: database node-staging indra-proxy-prod ws-tcp-relay daicard-proxy payment-bot-staging
+release: database node-release indra-proxy-prod ws-tcp-relay daicard-proxy payment-bot-release
 
 start: start-daicard
 
@@ -275,21 +274,20 @@ node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrati
 	$(docker_run) "cd modules/node && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-node-cd: node $(shell find $(node)/ops $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/node && npm run build-bundle"
-	docker build --file $(node)/ops/cd.dockerfile $(cache_from) --tag $(project)_node:latest .
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
 node-modules: builder package.json $(shell ls modules/**/package.json)
 	$(log_start)
 	$(docker_run) "lerna bootstrap --hoist"
 	$(docker_run) "cd node_modules/eccrypto && npm run install"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-node-prod: node $(node)/ops/prod.dockerfile $(node)/ops/entry.sh
+node-release: node $(node)/ops/release.dockerfile $(node)/ops/entry.sh
 	$(log_start)
-	docker build --file $(node)/ops/prod.dockerfile $(cache_from) --tag $(project)_node:latest .
+	docker build --file $(node)/ops/release.dockerfile $(cache_from) --tag $(project)_node:latest .
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+node-staging: node $(node)/ops/staging.dockerfile $(node)/ops/entry.sh
+	$(log_start)
+	docker build --file $(node)/ops/staging.dockerfile $(cache_from) --tag $(project)_node:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 payment-bot-js: node-modules client types $(shell find $(bot)/src $(bot)/ops $(find_options))
@@ -297,9 +295,14 @@ payment-bot-js: node-modules client types $(shell find $(bot)/src $(bot)/ops $(f
 	$(docker_run) "cd modules/payment-bot && npm run build-bundle"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-payment-bot: payment-bot-js $(shell find $(bot)/ops $(find_options))
+payment-bot-release: payment-bot-js $(shell find $(bot)/ops $(find_options))
 	$(log_start)
-	docker build --file $(bot)/ops/Dockerfile $(cache_from) --tag $(project)_bot:latest .
+	docker build --file $(bot)/ops/release.dockerfile $(cache_from) --tag $(project)_bot:latest .
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+payment-bot-staging: payment-bot-js $(shell find $(bot)/ops $(find_options))
+	$(log_start)
+	docker build --file $(bot)/ops/staging.dockerfile $(cache_from) --tag $(project)_bot:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))

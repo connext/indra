@@ -20,7 +20,7 @@ jobs:
         key: npm-${{ hashFiles('package-lock.json') }}
         restore-keys: npm-
     - run: make pull
-    - run: make all
+    - run: make staging
     - run: make build-report
     - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
     - run: make push-commit
