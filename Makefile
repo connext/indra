@@ -218,12 +218,13 @@ ethprovider: contracts cf-adjudicator-contracts cf-funding-protocol-contracts cf
 
 node-release: node $(node)/ops/release.dockerfile $(node)/ops/entry.sh
 	$(log_start)
-	docker build --file $(node)/ops/release.dockerfile $(cache_from) --tag $(project)_node:latest .
+	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-node-staging: node-bundle $(node)/ops/staging.dockerfile $(node)/ops/entry.sh
+node-staging: node $(node)/ops/staging.dockerfile $(node)/ops/entry.sh
 	$(log_start)
-	docker build --file $(node)/ops/staging.dockerfile $(cache_from) --tag $(project)_node:latest .
+	$(docker_run) "cd modules/node && npm run build-bundle"
+	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 payment-bot-release: payment-bot-js $(shell find $(bot)/ops $(find_options))
@@ -310,11 +311,6 @@ messaging: node-modules types $(shell find $(messaging)/src $(find_options))
 node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-node-bundle: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/node && npm run build-bundle"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 payment-bot-js: node-modules client types $(shell find $(bot)/src $(bot)/ops $(find_options))
