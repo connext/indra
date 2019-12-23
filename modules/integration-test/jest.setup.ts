@@ -20,12 +20,4 @@ expect.extend({
   },
 });
 
-declare global {
-  namespace jest {
-    interface Matchers<R, T> {
-      toBeBigNumberEq(equalTo: BigNumberish): R;
-    }
-  }
-}
-
 jest.setTimeout(30_000);

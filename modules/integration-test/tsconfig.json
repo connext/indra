@@ -6,7 +6,8 @@
     "outDir": "dist/",
     "typeRoots": [
       "./node_modules/@types",
-      "./node_modules/@counterfactual/typescript-typings/types"
+      "./node_modules/@counterfactual/typescript-typings/types",
+      "./src/typings"
     ]
   },
   "include": ["src/**/*.ts"]
