@@ -50,7 +50,7 @@ log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(st
 $(shell mkdir -p .makeflags $(node)/dist)
 
 ########################################
-# Begin Phony Rules
+# Alias & Control Shortcuts
 
 default: dev
 all: dev staging release
@@ -161,7 +161,7 @@ dls:
 	@docker container ls -a
 
 ########################################
-# Begin Test Rules
+# Test Runner Shortcuts
 
 test: test-node
 watch: watch-node
@@ -223,7 +223,6 @@ node-release: node $(node)/ops/release.dockerfile $(node)/ops/entry.sh
 
 node-staging: node-bundle $(node)/ops/staging.dockerfile $(node)/ops/entry.sh
 	$(log_start)
-	$(docker_run) "cd modules/node && npm run build-bundle"
 	docker build --file $(node)/ops/staging.dockerfile $(cache_from) --tag $(project)_node:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
@@ -333,7 +332,7 @@ types: node-modules $(shell find $(types)/src $(find_options))
 
 node-modules: builder package.json $(shell ls modules/**/package.json)
 	$(log_start)
-	$(docker_run) "lerna bootstrap --hoist"
+	$(docker_run) "lerna bootstrap --hoist --no-progress"
 	$(docker_run) "cd node_modules/eccrypto && npm run install"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
