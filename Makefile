@@ -54,13 +54,13 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev staging release
-dev: database ethprovider node-js client payment-bot-staging indra-proxy ws-tcp-relay
+dev: database ethprovider node client payment-bot-staging indra-proxy ws-tcp-relay
 staging: daicard-proxy database indra-proxy-prod node-staging payment-bot-staging ws-tcp-relay ethprovider
 release: daicard-proxy database indra-proxy-prod node-release payment-bot-release ws-tcp-relay
 
 start: start-daicard
 
-start-headless: database ethprovider node-js client payment-bot
+start-headless: database ethprovider node client payment-bot
 	INDRA_UI=headless bash ops/start-dev.sh
 
 start-daicard: dev
@@ -78,7 +78,7 @@ start-prod: prod
 stop:
 	bash ops/stop.sh
 
-restart-headless: database node-js client payment-bot
+restart-headless: database node client payment-bot
 	bash ops/stop.sh
 	INDRA_UI=headless bash ops/start-dev.sh
 
@@ -192,59 +192,14 @@ test-bot-farm:
 test-contracts: contracts
 	bash ops/test-contracts.sh
 
-test-node: node-js
+test-node: node
 	bash ops/test-node.sh --runInBand --forceExit
 
 watch-node: node-modules
 	bash ops/test-node.sh --watch
 
 ########################################
-# Begin Real Rules
-
-builder: ops/builder.dockerfile
-	$(log_start)
-	docker build --file ops/builder.dockerfile --build-arg SOLC_VERSION=$(solc_version) $(cache_from) --tag $(project)_builder:latest .
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-cf-adjudicator-contracts: node-modules $(shell find $(cf-adjudicator-contracts)/contracts $(cf-adjudicator-contracts)/waffle.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/cf-adjudicator-contracts && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-cf-apps: node-modules cf-adjudicator-contracts $(shell find $(cf-apps)/contracts $(cf-apps)/waffle.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/cf-apps && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-cf-core: node-modules types cf-adjudicator-contracts cf-apps cf-funding-protocol-contracts $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/cf-core && npm run build:ts"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-cf-funding-protocol-contracts: node-modules $(shell find $(cf-funding-protocol-contracts)/contracts $(cf-funding-protocol-contracts)/waffle.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/cf-funding-protocol-contracts && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-client: cf-core contracts types messaging $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/client && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-contracts: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/contracts && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/daicard && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-dashboard-prod: node-modules client $(shell find $(dashboard)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/dashboard && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+# Docker Images
 
 daicard-proxy: $(shell find $(proxy) $(find_options))
 	$(log_start)
@@ -261,28 +216,7 @@ ethprovider: contracts cf-adjudicator-contracts cf-funding-protocol-contracts cf
 	docker build --file $(ethprovider)/Dockerfile $(cache_from) --tag $(project)_ethprovider:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-messaging: node-modules types $(shell find $(messaging)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/messaging && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-node-js: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/node && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-node-bundle: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/node && npm run build-bundle"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-node-modules: builder package.json $(shell ls modules/**/package.json)
-	$(log_start)
-	$(docker_run) "lerna bootstrap --hoist"
-	$(docker_run) "cd node_modules/eccrypto && npm run install"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-node-release: node-js $(node)/ops/release.dockerfile $(node)/ops/entry.sh
+node-release: node $(node)/ops/release.dockerfile $(node)/ops/entry.sh
 	$(log_start)
 	docker build --file $(node)/ops/release.dockerfile $(cache_from) --tag $(project)_node:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
@@ -291,11 +225,6 @@ node-staging: node-bundle $(node)/ops/staging.dockerfile $(node)/ops/entry.sh
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build-bundle"
 	docker build --file $(node)/ops/staging.dockerfile $(cache_from) --tag $(project)_node:latest .
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-payment-bot-js: node-modules client types $(shell find $(bot)/src $(bot)/ops $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/payment-bot && npm run build-bundle"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 payment-bot-release: payment-bot-js $(shell find $(bot)/ops $(find_options))
@@ -323,12 +252,92 @@ ssh-action: $(shell find $(ssh-action) $(find_options))
 	docker build --file $(ssh-action)/Dockerfile --tag $(project)_ssh_action $(ssh-action)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
+ws-tcp-relay: ops/ws-tcp-relay.dockerfile
+	$(log_start)
+	docker build --file ops/ws-tcp-relay.dockerfile $(cache_from) --tag $(project)_relay:latest .
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+########################################
+# Contracts
+
+cf-adjudicator-contracts: node-modules $(shell find $(cf-adjudicator-contracts)/contracts $(cf-adjudicator-contracts)/waffle.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/cf-adjudicator-contracts && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+cf-apps: node-modules cf-adjudicator-contracts $(shell find $(cf-apps)/contracts $(cf-apps)/waffle.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/cf-apps && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+cf-core: node-modules types cf-adjudicator-contracts cf-apps cf-funding-protocol-contracts $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/cf-core && npm run build:ts"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+cf-funding-protocol-contracts: node-modules $(shell find $(cf-funding-protocol-contracts)/contracts $(cf-funding-protocol-contracts)/waffle.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/cf-funding-protocol-contracts && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+contracts: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/contracts && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+########################################
+# JS & bundles
+
+client: cf-core contracts types messaging $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/client && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/daicard && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+dashboard-prod: node-modules client $(shell find $(dashboard)/src $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/dashboard && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+messaging: node-modules types $(shell find $(messaging)/src $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/messaging && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/node && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+node-bundle: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/node && npm run build-bundle"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+payment-bot-js: node-modules client types $(shell find $(bot)/src $(bot)/ops $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/payment-bot && npm run build-bundle"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
 types: node-modules $(shell find $(types)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/types && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-ws-tcp-relay: ops/ws-tcp-relay.dockerfile
+########################################
+# Common Prerequisites
+
+node-modules: builder package.json $(shell ls modules/**/package.json)
 	$(log_start)
-	docker build --file ops/ws-tcp-relay.dockerfile $(cache_from) --tag $(project)_relay:latest .
+	$(docker_run) "lerna bootstrap --hoist"
+	$(docker_run) "cd node_modules/eccrypto && npm run install"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+builder: ops/builder.dockerfile
+	$(log_start)
+	docker build --file ops/builder.dockerfile --build-arg SOLC_VERSION=$(solc_version) $(cache_from) --tag $(project)_builder:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
