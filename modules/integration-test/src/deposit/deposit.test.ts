@@ -6,36 +6,36 @@ import { BigNumber, BigNumberish } from "ethers/utils";
 import { createClient } from "../util/client";
 import { FUNDED_MNEMONICS } from "../util/constants";
 import { clearDb } from "../util/db";
-import { takeEVMSnapshot, revertEVMSnapshot } from "../util/ethprovider";
+import { revertEVMSnapshot, takeEVMSnapshot } from "../util/ethprovider";
 
 // TODO: why doesn't this work in the setup config
-expect.extend({
-  toBeBigNumberEq(
-    received: BigNumber,
-    equalTo: BigNumberish,
-  ): { message: () => string; pass: boolean } {
-    const pass = received.eq(equalTo);
-    if (pass) {
-      return {
-        message: (): string =>
-          `expected ${received.toString()} not to be equal to ${equalTo.toString()}`,
-        pass: true,
-      };
-    }
-    return {
-      message: (): string => `expected ${received.toString()} to be equal to ${equalTo.toString()}`,
-      pass: false,
-    };
-  },
-});
+// expect.extend({
+//   toBeBigNumberEq(
+//     received: BigNumber,
+//     equalTo: BigNumberish,
+//   ): { message: () => string; pass: boolean } {
+//     const pass = received.eq(equalTo);
+//     if (pass) {
+//       return {
+//         message: (): string =>
+//           `expected ${received.toString()} not to be equal to ${equalTo.toString()}`,
+//         pass: true,
+//       };
+//     }
+//     return {
+//       message: (): string => `expected ${received.toString()} to be equal to ${equalTo.toString()}`,
+//       pass: false,
+//     };
+//   },
+// });
 
-declare global {
-  namespace jest {
-    interface Matchers<R, T> {
-      toBeBigNumberEq(equalTo: BigNumberish): R;
-    }
-  }
-}
+// declare global {
+//   namespace jest {
+//     interface Matchers<R, T> {
+//       toBeBigNumberEq(equalTo: BigNumberish): R;
+//     }
+//   }
+// }
 // END TODO
 
 describe("Deposits", () => {
