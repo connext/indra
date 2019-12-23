@@ -14,7 +14,7 @@ export const createClient = async (
     ethProviderUrl: process.env.INDRA_ETH_RPC_URL!,
     logLevel: parseInt(process.env.INDRA_CLIENT_LOG_LEVEL!, 10),
     mnemonic,
-    nodeUrl: process.env.INDRA_NATS_SERVERS,
+    nodeUrl: process.env.INDRA_NODE_URL,
     store: clientStore,
   };
   const client = await connect(clientOpts);
