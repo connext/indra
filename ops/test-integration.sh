@@ -52,7 +52,7 @@ test_runner_host="${project}_$suffix"
 # Kill the service when this script exits
 function cleanup {
   echo
-  echo "Contract deployment complete, removing service:"
+  echo "Integration testing complete, removing service:"
   docker service remove $test_runner_host 2> /dev/null || true
   if [[ -n "$logs_pid" ]]
   then kill $logs_pid
