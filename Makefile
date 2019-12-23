@@ -216,12 +216,12 @@ ethprovider: contracts cf-adjudicator-contracts cf-funding-protocol-contracts cf
 	docker build --file $(ethprovider)/Dockerfile $(cache_from) --tag $(project)_ethprovider:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-node-release: node $(node)/ops/release.dockerfile $(node)/ops/entry.sh
+node-release: node $(node)/ops/Dockerfile $(node)/ops/entry.sh
 	$(log_start)
 	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-node-staging: node $(node)/ops/staging.dockerfile $(node)/ops/entry.sh
+node-staging: node $(node)/ops/Dockerfile $(node)/ops/entry.sh
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build-bundle"
 	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node:latest .
