@@ -37,7 +37,7 @@ fi
 
 eth_network="ganache"
 
-eth_rpc_url="http://$ethprovider_host:8545"
+eth_rpc_url="http://${project}_ethprovider:8545"
 
 postgres_db="${project}"
 postgres_host="${project}_database"
@@ -49,10 +49,15 @@ nats_host="${project}_nats"
 
 test_runner_host="${project}_$suffix"
 
-# Kill the dependency containers when this script exits
+# Kill the service when this script exits
 function cleanup {
-  echo;echo "Tests finished, stopping test containers.."
-  docker container stop $test_runner_host 2> /dev/null || true
+  echo
+  echo "Contract deployment complete, removing service:"
+  docker service remove $test_runner_host 2> /dev/null || true
+  if [[ -n "$logs_pid" ]]
+  then kill $logs_pid
+  fi
+  echo "Done!"
 }
 trap cleanup EXIT
 
