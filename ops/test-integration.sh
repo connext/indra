@@ -37,17 +37,15 @@ fi
 
 eth_network="ganache"
 
-eth_rpc_url="http://${project}_ethprovider:8545"
+test_runner_host="${project}_$suffix"
 
+NODE_URL="${NODE_URL:-nats://172.17.0.1:4222}"
+ETH_RPC_URL="${ETH_RPC_URL:-http://172.17.0.1:8545}"
+POSTGRES_HOST="${POSTGRES_HOST:-172.17.0.1}"
 postgres_db="${project}"
-postgres_host="${project}_database"
 postgres_password="$project"
 postgres_port="5432"
 postgres_user="$project"
-
-nats_host="${project}_nats"
-
-test_runner_host="${project}_$suffix"
 
 # Kill the service when this script exits
 function cleanup {
@@ -82,12 +80,10 @@ docker service create \
   --name="$test_runner_host" \
   $NETWORK_ENV \
   --env="INDRA_CLIENT_LOG_LEVEL=$log_level" \
-  --env="INDRA_ETH_RPC_URL=$eth_rpc_url" \
-  --env="INDRA_NATS_CLUSTER_ID=" \
-  --env="INDRA_NATS_SERVERS=nats://$nats_host:4222" \
-  --env="INDRA_NATS_TOKEN" \
+  --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
+  --env="INDRA_NODE_URL=$NODE_URL" \
   --env="INDRA_PG_DATABASE=$postgres_db" \
-  --env="INDRA_PG_HOST=$postgres_host" \
+  --env="INDRA_PG_HOST=$POSTGRES_HOST" \
   --env="INDRA_PG_PASSWORD=$postgres_password" \
   --env="INDRA_PG_PORT=$postgres_port" \
   --env="INDRA_PG_USERNAME=$postgres_user" \
