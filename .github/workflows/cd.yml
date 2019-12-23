@@ -67,6 +67,15 @@ jobs:
     - run: make start-test
     - run: make test-daicard
 
+  test-integration:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make prod
+    - run: make build-report
+    - run: make start-test
+    - run: make test-integration
+
   push-latest:
     env:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
