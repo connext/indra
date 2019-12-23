@@ -20,7 +20,7 @@ jobs:
         key: npm-${{ hashFiles('package-lock.json') }}
         restore-keys: npm-
     - run: make pull
-    - run: make all
+    - run: make release
     - run: make build-report
     - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
     - run: make push-commit
@@ -65,7 +65,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make pull
-    - run: make start-cd
+    - run: make start-test
     - run: make test-bot
 
   test-bot-farm:
@@ -74,7 +74,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make pull
-    - run: make start-cd
+    - run: make start-test
     - run: make test-bot-farm
 
   test-daicard:
@@ -83,7 +83,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make pull
-    - run: make start-cd
+    - run: make start-test
     - run: make test-daicard
 
   push:
@@ -115,7 +115,7 @@ jobs:
         CMD: "
           git checkout --force master
           git reset --hard $GITHUB_SHA
-          export INDRA_MODE=prod
+          export INDRA_MODE=release
           export INDRA_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
           export INDRA_DOMAINNAME=$RINKEBY_DOMAINNAME
           export INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN
@@ -141,7 +141,7 @@ jobs:
         CMD: "
           git checkout --force master
           git reset --hard $GITHUB_SHA
-          export INDRA_MODE=prod
+          export INDRA_MODE=release
           export INDRA_ETH_PROVIDER=$MAINNET_ETH_PROVIDER
           export INDRA_DOMAINNAME=$MAINNET_DOMAINNAME
           export INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN

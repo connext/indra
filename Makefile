@@ -69,11 +69,8 @@ start-daicard: dev
 start-dashboard: dev
 	INDRA_UI=dashboard bash ops/start-dev.sh
 
-start-cd:
-	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=cd bash ops/start-prod.sh
-
-start-staging: deployed-contracts
-	INDRA_ETH_PROVIDER=http://localhost:8545 bash ops/start-prod.sh
+start-test:
+	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test bash ops/start-prod.sh
 
 start-prod: prod
 	bash ops/start-prod.sh
@@ -131,7 +128,7 @@ reset: stop
 	rm -rf $(bot)/.payment-bot-db/*
 	rm -rf $(flags)/deployed-contracts
 
-push-commit:
+push-commit: staging
 	bash ops/push-images.sh commit bot database ethprovider node proxy relay
 
 push-release:

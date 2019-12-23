@@ -13,7 +13,7 @@ INDRA_DOMAINNAME="${INDRA_DOMAINNAME:-localhost}"
 INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl certs expire
 INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER}"
 INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
-INDRA_MODE="${INDRA_MODE:-staging}" # One of: cd, staging, prod
+INDRA_MODE="${INDRA_MODE:-staging}" # One of: release, staging, test
 INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-cxt1234}" # pass this in through CI
 
 ####################
@@ -56,7 +56,7 @@ function pull_if_unavailable {
 ########################################
 ## Database Conig
 
-if [[ "$INDRA_MODE" == "cd" ]]
+if [[ "$INDRA_MODE" == "test" ]]
 then
   db_volume="database_test_`date +%y%m%d_%H%M%S`"
   db_secret="${project}_database_test"
@@ -81,7 +81,7 @@ redis_url="redis://redis:6379"
 
 registry="docker.io/connextproject"
 
-if [[ "$INDRA_MODE" == "cd" || "$INDRA_MODE" == "staging" ]]
+if [[ "$INDRA_MODE" == "test" || "$INDRA_MODE" == "staging" ]]
 then version="`git rev-parse HEAD | head -c 8`"
 elif [[ "$INDRA_MODE" == "prod" ]]
 then version="`cat package.json | jq .version | tr -d '"'`"

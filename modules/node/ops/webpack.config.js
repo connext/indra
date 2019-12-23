@@ -19,8 +19,8 @@ module.exports = {
   entry: path.join(__dirname, '../src/main.ts'),
 
   output: {
-    path: path.join(__dirname, '../dist'),
-    filename: 'bundle.js',
+    path: path.join(__dirname, '../dist/src'),
+    filename: 'main.js',
   },
 
   module: {

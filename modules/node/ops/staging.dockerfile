@@ -16,4 +16,3 @@ RUN true
 COPY modules/node/dist dist
 
 ENTRYPOINT ["bash", "ops/entry.sh"]
-
