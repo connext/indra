@@ -5,8 +5,8 @@ organization="connextproject"
 project="indra"
 registry_url="https://index.docker.io/v1/repositories/$organization"
 
-commit=`shell git rev-parse HEAD | head -c 8`
-release=`shell cat package.json | grep '"version":' | awk -F '"' '{print $$4}'`
+commit=`git rev-parse HEAD | head -c 8`
+release=`cat package.json | grep '"version":' | awk -F '"' '{print $$4}'`
 
 version="$1" # one of "commit" or "release"
 shift
