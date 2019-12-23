@@ -54,13 +54,13 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev staging release
-dev: database ethprovider node client payment-bot-staging indra-proxy ws-tcp-relay
-staging: database node-staging indra-proxy-prod ws-tcp-relay daicard-proxy payment-bot-staging
-release: database node-release indra-proxy-prod ws-tcp-relay daicard-proxy payment-bot-release
+dev: database ethprovider node-js client payment-bot-staging indra-proxy ws-tcp-relay
+staging: daicard-proxy database indra-proxy-prod node-staging payment-bot-staging ws-tcp-relay ethprovider
+release: daicard-proxy database indra-proxy-prod node-release payment-bot-release ws-tcp-relay
 
 start: start-daicard
 
-start-headless: database ethprovider node client payment-bot
+start-headless: database ethprovider node-js client payment-bot
 	INDRA_UI=headless bash ops/start-dev.sh
 
 start-daicard: dev
@@ -78,7 +78,7 @@ start-prod: prod
 stop:
 	bash ops/stop.sh
 
-restart-headless: database node client payment-bot
+restart-headless: database node-js client payment-bot
 	bash ops/stop.sh
 	INDRA_UI=headless bash ops/start-dev.sh
 
@@ -192,7 +192,7 @@ test-bot-farm:
 test-contracts: contracts
 	bash ops/test-contracts.sh
 
-test-node: node
+test-node: node-js
 	bash ops/test-node.sh --runInBand --forceExit
 
 watch-node: node-modules
@@ -266,9 +266,14 @@ messaging: node-modules types $(shell find $(messaging)/src $(find_options))
 	$(docker_run) "cd modules/messaging && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
+node-js: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+node-bundle: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/node && npm run build-bundle"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 node-modules: builder package.json $(shell ls modules/**/package.json)
@@ -277,13 +282,14 @@ node-modules: builder package.json $(shell ls modules/**/package.json)
 	$(docker_run) "cd node_modules/eccrypto && npm run install"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-node-release: node $(node)/ops/release.dockerfile $(node)/ops/entry.sh
+node-release: node-js $(node)/ops/release.dockerfile $(node)/ops/entry.sh
 	$(log_start)
 	docker build --file $(node)/ops/release.dockerfile $(cache_from) --tag $(project)_node:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-node-staging: node $(node)/ops/staging.dockerfile $(node)/ops/entry.sh
+node-staging: node-bundle $(node)/ops/staging.dockerfile $(node)/ops/entry.sh
 	$(log_start)
+	$(docker_run) "cd modules/node && npm run build-bundle"
 	docker build --file $(node)/ops/staging.dockerfile $(cache_from) --tag $(project)_node:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 

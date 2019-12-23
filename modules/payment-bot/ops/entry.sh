@@ -7,7 +7,7 @@ user="$1"
 shift
 args="$@"
 
-echo "Starting payment bot with args: $args"
+#echo "Starting payment bot with args: $args"
 
 identifier=1
 while [ "$1" != "" ]; do
@@ -34,9 +34,9 @@ export PISA_URL="${PISA_URL:-http://172.17.0.1:5487}"
 export WEBDIS_URL="${REDIS_URL:-redis://172.17.0.1:6379}"
 export MNEMONIC="${MNEMONIC:-$mnemonic}"
 
-echo "Waiting for ethprovider (${ETH_RPC_URL#*://}) to wake up.."
+#echo "Waiting for ethprovider (${ETH_RPC_URL#*://}) to wake up.."
 bash wait-for.sh ${ETH_RPC_URL#*://} 2> /dev/null
-echo "Good morning"
+#echo "Good morning"
 
 mkdir -p ${DB_FILENAME%/*}
 touch $DB_FILENAME
