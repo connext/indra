@@ -1,23 +1,23 @@
-import { Client } from "pg";
+import { Client as DBClient } from "pg";
 
-const client = new Client({
-  database: "indra",
-  host: "localhost",
-  password: "indra",
-  port: 5432,
-  user: "indra",
+const dbClient = new DBClient({
+  database: process.env.INDRA_PG_DATABASE,
+  host: process.env.INDRA_PG_HOST,
+  password: process.env.INDRA_PG_PASSWORD,
+  port: parseInt(process.env.INDRA_PG_PORT!, 10),
+  user: process.env.INDRA_PG_USERNAME,
 });
 
-client.connect();
+dbClient.connect();
 
 export const clearDb = async (): Promise<void> => {
   console.log(`Clearing database`);
-  await client.query("truncate table channel cascade;");
-  await client.query("truncate table channel_payment_profiles_payment_profile cascade;");
-  await client.query("truncate table linked_transfer cascade;");
-  await client.query("truncate table node_records cascade;");
-  await client.query("truncate table onchain_transaction cascade;");
-  await client.query("truncate table payment_profile cascade;");
-  await client.query("truncate table peer_to_peer_transfer cascade;");
+  await dbClient.query("truncate table channel cascade;");
+  await dbClient.query("truncate table channel_payment_profiles_payment_profile cascade;");
+  await dbClient.query("truncate table linked_transfer cascade;");
+  await dbClient.query("truncate table node_records cascade;");
+  await dbClient.query("truncate table onchain_transaction cascade;");
+  await dbClient.query("truncate table payment_profile cascade;");
+  await dbClient.query("truncate table peer_to_peer_transfer cascade;");
   console.log(`Cleared database`);
 };

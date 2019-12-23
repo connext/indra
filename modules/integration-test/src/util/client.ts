@@ -11,10 +11,10 @@ export const createClient = async (
 
   const clientStore = storeServiceFactory.createStoreService();
   const clientOpts: ClientOptions = {
-    ethProviderUrl: "http://localhost:8545",
-    logLevel: 4,
+    ethProviderUrl: process.env.INDRA_ETH_RPC_URL!,
+    logLevel: parseInt(process.env.INDRA_CLIENT_LOG_LEVEL!, 10),
     mnemonic,
-    nodeUrl: "nats://localhost:4222",
+    nodeUrl: process.env.INDRA_NATS_SERVERS,
     store: clientStore,
   };
   const client = await connect(clientOpts);

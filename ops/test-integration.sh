@@ -65,9 +65,14 @@ test -t 0 -a -t 1 -a -t 2 && interactive="--interactive"
 ########################################
 # Run Tests
 
-echo "Starting $node_host.."
-docker run \
-  --entrypoint="bash" \
+echo
+echo "Deploying integration tester..."
+
+id="`
+docker service create \
+  --detach \
+  --name="$test_runner_host" \
+  --env="INDRA_CLIENT_LOG_LEVEL=$log_level" \
   --env="INDRA_ETH_RPC_URL=$eth_rpc_url" \
   --env="INDRA_NATS_CLUSTER_ID=" \
   --env="INDRA_NATS_SERVERS=nats://$nats_host:4222" \
@@ -78,12 +83,9 @@ docker run \
   --env="INDRA_PG_PORT=$postgres_port" \
   --env="INDRA_PG_USERNAME=$postgres_user" \
   --env="NODE_ENV=development" \
-  $interactive \
-  --name="$node_host" \
-  --network="$network" \
-  --rm \
-  --tty \
-  --volume="`pwd`:/root" \
+  --mount="type=bind,source=$cwd,target=/root" \
+  --restart-condition="none" \
+  --entrypoint "bash" \
   ${project}_builder -c '
     echo "Integration Tester Container launched!";echo
     echo
@@ -97,5 +99,15 @@ docker run \
     trap finish SIGTERM SIGINT
 
     '"$command"'
+  ' 2> /dev/null
+`"
+echo "Success! Deployer service started with id: $id"
+echo
 
-  '
+docker service logs --raw --follow $test_runner_host &
+logs_pid=$!
+
+# Wait for the deployer to exit..
+while [[ -z "`docker container ls -a | grep "$test_runner_host" | grep "Exited"`" ]]
+do sleep 1
+done
