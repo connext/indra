@@ -132,10 +132,10 @@ reset: stop
 	rm -rf $(bot)/.payment-bot-db/*
 	rm -rf $(flags)/deployed-contracts
 
-push-commit: prod
+push-commit:
 	bash ops/push-images.sh commit bot database ethprovider node proxy relay
 
-push-release: prod
+push-release:
 	bash ops/push-images.sh release database node proxy relay
 
 pull:

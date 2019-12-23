@@ -6,48 +6,38 @@ on:
       - master
 
 jobs:
+  build:
+    env:
+      DOCKER_USER: ${{ secrets.DOCKER_USER }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Cache node modules
+      uses: actions/cache@v1
+      with:
+        path: .npm
+        key: npm-${{ hashFiles('package-lock.json') }}
+        restore-keys: npm-
+    - run: make pull
+    - run: make all
+    - run: make build-report
+    - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+    - run: make push-commit
+
   test-node:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - run: make dev
-    - run: make build-report
+    - run: make node
     - run: make test-node
 
   test-cf:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - run: make dev
-    - run: make build-report
+    - run: make cf-core
     - run: make test-cf
-
-  test-bot:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - run: make prod
-    - run: make build-report
-    - run: make start-test
-    - run: make test-bot
-
-  test-bot-farm:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - run: make prod
-    - run: make build-report
-    - run: make start-test
-    - run: make test-bot-farm
-
-  test-daicard:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - run: make prod
-    - run: make build-report
-    - run: make start-test
-    - run: make test-daicard
 
   test-ssh:
     env:
@@ -69,6 +59,33 @@ jobs:
         SSH_KEY: ${{ secrets.SSH_KEY }}
         CMD: "echo Successfully connected to `hostname`;"
 
+  test-bot:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+    - uses: actions/checkout@v1
+    - run: make pull
+    - run: make start-cd
+    - run: make test-bot
+
+  test-bot-farm:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+    - uses: actions/checkout@v1
+    - run: make pull
+    - run: make start-cd
+    - run: make test-bot-farm
+
+  test-daicard:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+    - uses: actions/checkout@v1
+    - run: make pull
+    - run: make start-cd
+    - run: make test-daicard
+
   push:
     env:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
@@ -78,8 +95,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-    - run: make prod
-    - run: make build-report
+    - run: make pull
     - run: make push-release
 
   deploy-rinkeby:
