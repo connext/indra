@@ -2,14 +2,15 @@
 set -e
 
 test_command='
-  jest --config jest.config.json '"$@"'
+  jest --config jest.config.js '"$@"'
 '
 
 watch_command='
-  exec jest --config jest.config.json --watch '"$@"'
+  exec jest --config jest.config.js --watch '"$@"'
 '
 
 project="indra"
+cwd="`pwd`"
 
 if [[ "$1" == "--watch" ]]
 then
@@ -72,6 +73,7 @@ id="`
 docker service create \
   --detach \
   --name="$test_runner_host" \
+  --network="$project" \
   --env="INDRA_CLIENT_LOG_LEVEL=$log_level" \
   --env="INDRA_ETH_RPC_URL=$eth_rpc_url" \
   --env="INDRA_NATS_CLUSTER_ID=" \
@@ -90,7 +92,7 @@ docker service create \
     echo "Integration Tester Container launched!";echo
     echo
 
-    cd modules/integration_test
+    cd modules/integration-test
     export PATH=./node_modules/.bin:$PATH
 
     function finish {
@@ -99,7 +101,7 @@ docker service create \
     trap finish SIGTERM SIGINT
 
     '"$command"'
-  ' 2> /dev/null
+  '
 `"
 echo "Success! Deployer service started with id: $id"
 echo
