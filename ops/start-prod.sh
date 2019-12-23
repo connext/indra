@@ -81,10 +81,8 @@ redis_url="redis://redis:6379"
 
 registry="docker.io/connextproject"
 
-if [[ "$INDRA_MODE" == "cd" ]]
+if [[ "$INDRA_MODE" == "cd" || "$INDRA_MODE" == "staging" ]]
 then version="`git rev-parse HEAD | head -c 8`"
-elif [[ "$INDRA_MODE" == "staging" ]]
-then version="latest"
 elif [[ "$INDRA_MODE" == "prod" ]]
 then version="`cat package.json | jq .version | tr -d '"'`"
 else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" && exit 1

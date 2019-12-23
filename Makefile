@@ -133,13 +133,10 @@ reset: stop
 	rm -rf $(flags)/deployed-contracts
 
 push-commit: prod
-	bash ops/push-images.sh $(commit) bot database ethprovider node proxy relay
-
-push-latest: prod
-	bash ops/push-images.sh latest bot database ethprovider node proxy relay
+	bash ops/push-images.sh commit bot database ethprovider node proxy relay
 
 push-release: prod
-	bash ops/push-images.sh $(version) database node proxy relay
+	bash ops/push-images.sh release database node proxy relay
 
 pull:
 	docker pull $(registry)/$(project)_bot:$(commit) && docker tag $(registry)/$(project)_bot:$(commit) $(project)_bot:$(commit) || true
