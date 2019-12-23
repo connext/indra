@@ -60,7 +60,7 @@ release: daicard-proxy database indra-proxy-prod node-release payment-bot-releas
 
 start: start-daicard
 
-start-headless: database ethprovider node client payment-bot
+start-headless: dev
 	INDRA_UI=headless bash ops/start-dev.sh
 
 start-daicard: dev
@@ -78,7 +78,7 @@ start-prod: prod
 stop:
 	bash ops/stop.sh
 
-restart-headless: database node client payment-bot
+restart-headless: dev
 	bash ops/stop.sh
 	INDRA_UI=headless bash ops/start-dev.sh
 
