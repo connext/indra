@@ -18,7 +18,7 @@ import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.en
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { LinkedTransfer, PeerToPeerTransfer, Transfer } from "../transfer/transfer.entity";
 
-const entities = [
+export const entities = [
   AppRegistry,
   Channel,
   CFCoreRecord,
@@ -29,7 +29,7 @@ const entities = [
   Transfer,
 ];
 
-const migrations = [
+export const migrations = [
   InitNodeRecords1567158660577,
   InitHubTables1567158805166,
   AddCollateralizationInFlight1567601573372,

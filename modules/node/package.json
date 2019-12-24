@@ -45,6 +45,7 @@
     "uuid": "3.3.3"
   },
   "devDependencies": {
+    "@connext/client": "1.4.1",
     "@nestjs/testing": "6.5.3",
     "@types/express": "4.17.2",
     "@types/jest": "24.0.23",

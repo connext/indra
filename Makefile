@@ -166,6 +166,12 @@ dls:
 test: test-node
 watch: watch-node
 
+test-integration:
+	bash ops/test-integration.sh
+
+watch-integration:
+	bash ops/test-integration.sh --watch
+
 test-cf: cf-core
 	bash ops/test-cf.sh
 
