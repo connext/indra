@@ -50,7 +50,7 @@ jobs:
       with:
         HOST: ubuntu@${{ env.STAGING_DOMAINNAME }}
         SSH_KEY: ${{ secrets.SSH_KEY }}
-        CMD: "echo Successfully connected to `hostname`;"
+        CMD: "echo Successfully connected to $STAGING_DOMAINNAME: `hostname`;"
 
   test-bot:
     runs-on: ubuntu-latest

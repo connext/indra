@@ -29,10 +29,10 @@ chmod 400 $KEY_FILE
 subbed_cmd=$CMD
 for var in `env`;
 do
-  key="${var%=*}"
-  value="${var#*=}"
-  echo "$key -> $value"
-  subbed_cmd="`echo $subbed_cmd | sed 's|'"$key"'|'"$value"'|g'`"
+  if [[ "$var" == *"|"* ]]
+  then echo "Warning, env var ${var%=*} contains a | character, skipping" && continue
+  fi
+  subbed_cmd="`echo $subbed_cmd | sed 's|'"${var%=*}"'|'"${var#*=}"'|g'`"
 done
 
 echo "Loaded ssh key with fingerprint:"

@@ -51,13 +51,13 @@ jobs:
       with:
         HOST: ubuntu@${{ env.RINKEBY_DOMAINNAME }}
         SSH_KEY: ${{ secrets.SSH_KEY }}
-        CMD: "echo Successfully connected to `hostname`;"
+        CMD: "echo Successfully connected to $RINKEBY_DOMAINNAME: `hostname`;"
     - name: test connection to mainnet
       uses: ./ops/ssh-action/
       with:
         HOST: ubuntu@${{ env.MAINNET_DOMAINNAME }}
         SSH_KEY: ${{ secrets.SSH_KEY }}
-        CMD: "echo Successfully connected to `hostname`;"
+        CMD: "echo Successfully connected to $MAINNET_DOMAINNAME: `hostname`;"
 
   test-bot:
     runs-on: ubuntu-latest
