@@ -99,7 +99,7 @@ jobs:
     env:
       DOCKER_USER: ${{ secrets.DOCKER_USER }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-    needs: [test-node, test-cf, test-bot, test-bot-farm, test-daicard, test-integration, test-ssh]
+    needs: [test-node, test-cf, test-bot, test-bot-farm, test-daicard, test-ssh]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
