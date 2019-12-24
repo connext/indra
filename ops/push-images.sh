@@ -27,11 +27,7 @@ function safePush {
     echo "Image $organization/$image:$version already exists on docker hub, Aborting push"
     return
   else
-    # latest -> commit -> release (we shouldn't ever use latest image to directly tag release)
-    if [[ "$version" == "$commit" ]]
-    then docker tag $image:latest $organization/$image:$version
-    else docker tag $image:$commit $organization/$image:$version
-    fi
+    docker tag $image:$commit $organization/$image:$version
     docker push $organization/$image:$version
     # latest images are used as cache for build steps, keep them up-to-date
     docker tag $organization/$image:$version $organization/$image:latest

@@ -38,6 +38,8 @@ done
 echo "Loaded ssh key with fingerprint:"
 ssh-keygen -lf $KEY_FILE
 
+echo "Running subbed command: $subbed_cmd"
+
 exec ssh -i $KEY_FILE -o StrictHostKeyChecking=no $HOST "bash -s" <<EOF
   set -e;
   # Run CMD in an up-to-date indra repo
