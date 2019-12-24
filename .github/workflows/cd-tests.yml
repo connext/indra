@@ -40,14 +40,14 @@ jobs:
     - run: make cf-core
     - run: make test-cf
 
-  test-integration:
-    runs-on: ubuntu-latest
-    needs: [build]
-    steps:
-    - uses: actions/checkout@v1
-    - run: make pull
-    - run: make start-test
-    - run: make test-integration
+  # test-integration:
+  #   runs-on: ubuntu-latest
+  #   needs: [build]
+  #   steps:
+  #   - uses: actions/checkout@v1
+  #   - run: make pull
+  #   - run: make start-test
+  #   - run: make test-integration
 
   test-bot:
     runs-on: ubuntu-latest
