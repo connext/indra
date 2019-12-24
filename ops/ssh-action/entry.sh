@@ -29,11 +29,11 @@ echo "Loaded ssh key with fingerprint:"
 ssh-keygen -lf $KEY_FILE
 
 exec ssh -i $KEY_FILE -o StrictHostKeyChecking=no $HOST "bash -s" <<EOF
-  set -e
+  set -e;
   # Run CMD in an up-to-date indra repo
-  git clone https://github.com/ConnextProject/indra.git || true
-  cd indra
-  git fetch --all --prune --tags
+  git clone https://github.com/ConnextProject/indra.git || true;
+  cd indra;
+  git fetch --all --prune --tags;
   $CMD
-  exit
+  exit;
 EOF

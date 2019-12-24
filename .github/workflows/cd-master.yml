@@ -113,15 +113,15 @@ jobs:
         HOST: ubuntu@${{ env.RINKEBY_DOMAINNAME }}
         SSH_KEY: ${{ secrets.SSH_KEY }}
         CMD: "
-          git checkout --force master
-          git reset --hard $GITHUB_SHA
-          export INDRA_MODE=release
-          export INDRA_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER
-          export INDRA_DOMAINNAME=$RINKEBY_DOMAINNAME
-          export INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN
-          make restart-prod
-          docker container prune -f
-          docker image ls -q | xargs docker image rm || true
+          git checkout --force master;
+          git reset --hard $GITHUB_SHA;
+          export INDRA_MODE=release;
+          export INDRA_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER;
+          export INDRA_DOMAINNAME=$RINKEBY_DOMAINNAME;
+          export INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN;
+          make restart-prod;
+          docker container prune -f;
+          docker image ls -q | xargs docker image rm || true;
         "
 
   deploy-mainnet:
@@ -139,13 +139,13 @@ jobs:
         HOST: ubuntu@${{ env.MAINNET_DOMAINNAME }}
         SSH_KEY: ${{ secrets.SSH_KEY }}
         CMD: "
-          git checkout --force master
-          git reset --hard $GITHUB_SHA
-          export INDRA_MODE=release
-          export INDRA_ETH_PROVIDER=$MAINNET_ETH_PROVIDER
-          export INDRA_DOMAINNAME=$MAINNET_DOMAINNAME
-          export INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN
-          make restart-prod
-          docker container prune -f
-          docker image ls -q | xargs docker image rm || true
+          git checkout --force master;
+          git reset --hard $GITHUB_SHA;
+          export INDRA_MODE=release;
+          export INDRA_ETH_PROVIDER=$MAINNET_ETH_PROVIDER;
+          export INDRA_DOMAINNAME=$MAINNET_DOMAINNAME;
+          export INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN;
+          make restart-prod;
+          docker container prune -f;
+          docker image ls -q | xargs docker image rm || true;
         "
