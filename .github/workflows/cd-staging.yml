@@ -50,7 +50,7 @@ jobs:
       with:
         HOST: ubuntu@${{ env.STAGING_DOMAINNAME }}
         SSH_KEY: ${{ secrets.SSH_KEY }}
-        CMD: "echo Successfully connected to $STAGING_DOMAINNAME: `hostname`;"
+        CMD: 'echo Successfully connected to $STAGING_DOMAINNAME: `hostname`;'
 
   test-bot:
     runs-on: ubuntu-latest
@@ -92,13 +92,13 @@ jobs:
       with:
         HOST: ubuntu@${{ env.STAGING_DOMAINNAME }}
         SSH_KEY: ${{ secrets.SSH_KEY }}
-        CMD: "
+        CMD: '
           git checkout --force staging;
           git reset --hard $GITHUB_SHA;
-          export INDRA_MODE=staging;
-          export INDRA_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER;
-          export INDRA_DOMAINNAME=$STAGING_DOMAINNAME;
+          export INDRA_MODE="staging";
+          export INDRA_ETH_PROVIDER="$RINKEBY_ETH_PROVIDER";
+          export INDRA_DOMAINNAME="$STAGING_DOMAINNAME";
           make restart-prod;
           docker container prune -f;
           docker image ls -q | xargs docker image rm || true;
-        "
+        '
