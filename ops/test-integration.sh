@@ -60,7 +60,7 @@ function cleanup {
 trap cleanup EXIT
 
 if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
-then $NETWORK_ENV="--network="$project""
+then NETWORK_ENV="--network=$project"
 fi
 
 # Damn I forget where I copy/pasted this witchcraft from, yikes.
