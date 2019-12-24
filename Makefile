@@ -56,7 +56,7 @@ default: dev
 all: dev staging release
 dev: database ethprovider node client payment-bot-staging indra-proxy ws-tcp-relay
 staging: daicard-proxy database indra-proxy-prod node-staging payment-bot-staging ws-tcp-relay ethprovider
-release: daicard-proxy database indra-proxy-prod node-release payment-bot-release ws-tcp-relay
+release: daicard-proxy database indra-proxy-prod node-release payment-bot-release ws-tcp-relay ethprovider
 
 start: start-daicard
 
