@@ -61,6 +61,9 @@ then
   db_volume="database_test_`date +%y%m%d_%H%M%S`"
   db_secret="${project}_database_test"
   new_secret "$db_secret" "$project"
+  db_port='ports:
+      - "5432:5432"
+  '
 else
   db_volume="database"
   db_secret="${project}_database"
@@ -243,6 +246,7 @@ services:
     volumes:
       - $db_volume:/var/lib/postgresql/data
       - `pwd`/modules/database/snapshots:/root/snapshots
+    $db_port
 
   nats:
     image: $nats_image

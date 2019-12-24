@@ -2,7 +2,7 @@
 set -e
 
 test_command='
-  jest --config jest.config.js '"$@"'
+  jest --config jest.config.js --forceExit '"$@"'
 '
 
 watch_command='
