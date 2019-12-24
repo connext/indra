@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc --project tsconfig.json",
+    "build-bundle": "webpack --config ops/webpack.config.js",
     "start:bot1": "env-cmd -e devbot1 ts-node src/",
     "start:bot2": "env-cmd -e devbot2 ts-node src/"
   },
@@ -12,6 +13,7 @@
   "license": "MIT",
   "dependencies": {
     "@connext/client": "1.4.1",
+    "@connext/types": "1.4.1",
     "commander": "4.0.1",
     "dotenv": "8.2.0",
     "ethers": "4.0.40",
@@ -20,10 +22,12 @@
     "uuid": "3.3.3"
   },
   "devDependencies": {
-    "@connext/types": "1.4.1",
     "@types/node-fetch": "2.5.4",
     "env-cmd": "10.0.1",
+    "ts-loader": "6.2.1",
     "ts-node": "8.5.4",
-    "typescript": "3.5.3"
+    "typescript": "3.5.3",
+    "webpack": "4.41.0",
+    "webpack-cli": "3.3.10"
   }
 }
