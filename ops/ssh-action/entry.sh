@@ -33,6 +33,7 @@ do
   then echo "Warning, env var ${var%=*} contains a | character, skipping" && continue
   fi
   subbed_cmd="`echo $subbed_cmd | sed 's|$'"${var%=*}"'|'"${var#*=}"'|g'`"
+  echo "=== New subbed CMD "${var%=*}": $subbed_cmd"
 done
 
 echo "Loaded ssh key with fingerprint:"
