@@ -59,10 +59,6 @@ function cleanup {
 }
 trap cleanup EXIT
 
-if [[ -z "`docker network ls -f name=$project | grep -w $project`" ]]
-then $NETWORK_ENV="--network="$project""
-fi
-
 # Damn I forget where I copy/pasted this witchcraft from, yikes.
 # It's supposed to find out whether we're calling this script from a shell & can print stuff
 # Or whether it's running in the background of another script and can't attach to a screen
@@ -78,7 +74,6 @@ id="`
 docker service create \
   --detach \
   --name="$test_runner_host" \
-  $NETWORK_ENV \
   --env="INDRA_CLIENT_LOG_LEVEL=$log_level" \
   --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
   --env="INDRA_NODE_URL=$NODE_URL" \
