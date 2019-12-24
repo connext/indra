@@ -49,13 +49,13 @@ jobs:
     - name: test connection to rinkeby
       uses: ./ops/ssh-action/
       with:
-        HOST: ubuntu@rinkeby.indra.connext.network
+        HOST: ubuntu@${{ env.RINKEBY_DOMAINNAME }}
         SSH_KEY: ${{ secrets.SSH_KEY }}
         CMD: "echo Successfully connected to `hostname`;"
     - name: test connection to mainnet
       uses: ./ops/ssh-action/
       with:
-        HOST: ubuntu@indra.connext.network
+        HOST: ubuntu@${{ env.MAINNET_DOMAINNAME }}
         SSH_KEY: ${{ secrets.SSH_KEY }}
         CMD: "echo Successfully connected to `hostname`;"
 
@@ -110,7 +110,7 @@ jobs:
     - name: deploy to rinkeby
       uses: ./ops/ssh-action/
       with:
-        HOST: ubuntu@$RINKEBY_DOMAINNAME
+        HOST: ubuntu@${{ env.RINKEBY_DOMAINNAME }}
         SSH_KEY: ${{ secrets.SSH_KEY }}
         CMD: "
           git checkout --force master
@@ -136,7 +136,7 @@ jobs:
     - name: deploy to prod (mainnet)
       uses: ./ops/ssh-action/
       with:
-        HOST: ubuntu@$MAINNET_DOMAINNAME
+        HOST: ubuntu@${{ env.MAINNET_DOMAINNAME }}
         SSH_KEY: ${{ secrets.SSH_KEY }}
         CMD: "
           git checkout --force master
