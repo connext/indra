@@ -48,7 +48,7 @@ jobs:
     - name: test connection to staging
       uses: ./ops/ssh-action/
       with:
-        HOST: ubuntu@$STAGING_DOMAINNAME
+        HOST: ubuntu@${{ env.STAGING_DOMAINNAME }}
         SSH_KEY: ${{ secrets.SSH_KEY }}
         CMD: "echo Successfully connected to `hostname`;"
 
@@ -90,7 +90,7 @@ jobs:
     - name: deploy to staging
       uses: ./ops/ssh-action/
       with:
-        HOST: ubuntu@$STAGING_DOMAINNAME
+        HOST: ubuntu@${{ env.STAGING_DOMAINNAME }}
         SSH_KEY: ${{ secrets.SSH_KEY }}
         CMD: "
           git checkout --force staging
