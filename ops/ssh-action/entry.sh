@@ -32,7 +32,7 @@ do
   key="${var%=*}"
   value="${var#*=}"
   echo "$key -> $value"
-  subbed_cmd="`echo $subbed_cmd | sed 's/'"$key"'/'"$value"'/g'`"
+  subbed_cmd="`echo $subbed_cmd | sed 's|'"$key"'|'"$value"'|g'`"
 done
 
 echo "Loaded ssh key with fingerprint:"
