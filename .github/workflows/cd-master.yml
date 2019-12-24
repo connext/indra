@@ -142,7 +142,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
-    - name: deploy to prod (mainnet)
+    - name: deploy to mainnet
       uses: ./ops/ssh-action/
       with:
         HOST: ubuntu@${{ env.MAINNET_DOMAINNAME }}
