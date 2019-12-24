@@ -32,7 +32,7 @@ do
   if [[ "$var" == *"|"* ]]
   then echo "Warning, env var ${var%=*} contains a | character, skipping" && continue
   fi
-  subbed_cmd="`echo $subbed_cmd | sed 's|'"${var%=*}"'|'"${var#*=}"'|g'`"
+  subbed_cmd="`echo $subbed_cmd | sed 's|$'"${var%=*}"'|'"${var#*=}"'|g'`"
 done
 
 echo "Loaded ssh key with fingerprint:"
