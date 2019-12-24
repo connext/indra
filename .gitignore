@@ -4,7 +4,7 @@
 .jest.cache
 .node-gyp
 .npm
-.payment-bot-db
+.bot-store
 modules/**/.cache
 modules/**/.config
 modules/**/.node-gyp
@@ -25,6 +25,7 @@ package.json.lerna_backup
 yarn-debug.log*
 yarn-error.log*
 ops/*.log
+ops/**/*.log
 .deploy-indra.patch
 .state-before.json
 .*.log

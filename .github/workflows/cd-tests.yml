@@ -1,0 +1,76 @@
+name: CD Tests
+
+on:
+  push:
+    branches-ignore:
+      - master
+      - staging
+
+jobs:
+  build:
+    env:
+      DOCKER_USER: ${{ secrets.DOCKER_USER }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Cache node modules
+      uses: actions/cache@v1
+      with:
+        path: .npm
+        key: npm-${{ hashFiles('package-lock.json') }}
+        restore-keys: npm-
+    - run: make pull
+    - run: make staging
+    - run: make build-report
+    - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+    - run: make push-commit
+
+  test-node:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make node
+    - run: make test-node
+
+  test-cf:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make cf-core
+    - run: make test-cf
+
+  test-integration:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make pull
+    - run: make start-test
+    - run: make test-integration
+
+  test-bot:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+    - uses: actions/checkout@v1
+    - run: make pull
+    - run: make start-test
+    - run: make test-bot
+
+  test-bot-farm:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+    - uses: actions/checkout@v1
+    - run: make pull
+    - run: make start-test
+    - run: make test-bot-farm
+
+  test-daicard:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+    - uses: actions/checkout@v1
+    - run: make pull
+    - run: make start-test
+    - run: make test-daicard
