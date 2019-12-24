@@ -25,6 +25,16 @@ echo >> $KEY_FILE
 echo $KEY_FOOTER >> $KEY_FILE
 chmod 400 $KEY_FILE
 
+# Manually substitute env var values into CMD
+subbed_cmd=$CMD
+for var in `env`;
+do
+  if [[ "$var" == *"|"* ]]
+  then echo "Warning, env var ${var%=*} contains a | character, skipping" && continue
+  fi
+  subbed_cmd="`echo $subbed_cmd | sed 's|$'"${var%=*}"'|'"${var#*=}"'|g'`"
+done
+
 echo "Loaded ssh key with fingerprint:"
 ssh-keygen -lf $KEY_FILE
 
@@ -34,6 +44,6 @@ exec ssh -i $KEY_FILE -o StrictHostKeyChecking=no $HOST "bash -s" <<EOF
   git clone https://github.com/ConnextProject/indra.git || true;
   cd indra;
   git fetch --all --prune --tags;
-  $CMD
+  $subbed_cmd
   exit;
 EOF
