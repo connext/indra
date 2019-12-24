@@ -1,5 +1,5 @@
 project=indra
-registry=docker.io/connextproject
+registry=connextproject
 
 # Specify make-specific variables (VPATH = prerequisite search path)
 flags=.makeflags
@@ -9,23 +9,29 @@ SHELL=/bin/bash
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
 
 version=$(shell cat package.json | grep '"version":' | awk -F '"' '{print $$4}')
+commit=$(shell git rev-parse HEAD | head -c 8)
 solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}')
+
+# Pool of images to pull cached layers from during docker build steps
+cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database:latest,$(project)_ethprovider:$(commit),$(project)_ethprovider:latest,$(project)_node:$(commit),$(project)_node:latest,$(project)_proxy:$(commit),$(project)_proxy:latest,$(project)_relay:$(commit),$(project)_relay:latest,$(project)_bot:$(commit),$(project)_bot:latest,$(project)_builder:latest"; else echo ""; fi)
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
 bot=$(cwd)/modules/payment-bot
 cf-adjudicator-contracts=$(cwd)/modules/cf-adjudicator-contracts
 cf-apps=$(cwd)/modules/cf-apps
-cf-funding-protocol-contracts=$(cwd)/modules/cf-funding-protocol-contracts
 cf-core=$(cwd)/modules/cf-core
+cf-funding-protocol-contracts=$(cwd)/modules/cf-funding-protocol-contracts
 client=$(cwd)/modules/client
 contracts=$(cwd)/modules/contracts
 daicard=$(cwd)/modules/daicard
 dashboard=$(cwd)/modules/dashboard
 database=$(cwd)/modules/database
+ethprovider=$(cwd)/ops/ethprovider
 messaging=$(cwd)/modules/messaging
 node=$(cwd)/modules/node
 proxy=$(cwd)/modules/proxy
+ssh-action=$(cwd)/ops/ssh-action
 types=$(cwd)/modules/types
 
 # Setup docker run time
@@ -44,15 +50,17 @@ log_finish=@echo $$((`date "+%s"` - `cat $(startTime)`)) > $(totalTime); rm $(st
 $(shell mkdir -p .makeflags $(node)/dist)
 
 ########################################
-# Begin Phony Rules
-.PHONY: default all dev prod start start-prod stop restart restart-prod clean reset push-latest push-versioned backup
+# Alias & Control Shortcuts
 
 default: dev
-all: dev prod
-dev: database node types client payment-bot indra-proxy ws-tcp-relay
-prod: database node-prod indra-proxy-prod ws-tcp-relay daicard-proxy
+all: dev staging release
+dev: database ethprovider node client payment-bot-staging indra-proxy ws-tcp-relay
+staging: daicard-proxy database indra-proxy-prod node-staging payment-bot-staging ws-tcp-relay ethprovider
+release: daicard-proxy database indra-proxy-prod node-release payment-bot-release ws-tcp-relay
 
-start-headless: database node client payment-bot
+start: start-daicard
+
+start-headless: dev
 	INDRA_UI=headless bash ops/start-dev.sh
 
 start-daicard: dev
@@ -61,12 +69,16 @@ start-daicard: dev
 start-dashboard: dev
 	INDRA_UI=dashboard bash ops/start-dev.sh
 
-start: start-daicard
+start-test:
+	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test bash ops/start-prod.sh
+
+start-prod: prod
+	bash ops/start-prod.sh
 
 stop:
 	bash ops/stop.sh
 
-restart-headless: database node client payment-bot
+restart-headless: dev
 	bash ops/stop.sh
 	INDRA_UI=headless bash ops/start-dev.sh
 
@@ -79,9 +91,6 @@ restart-dashboard: dev
 	INDRA_UI=dashboard bash ops/start-dev.sh
 
 restart: restart-daicard
-
-start-prod: prod
-	bash ops/start-prod.sh
 
 restart-prod:
 	bash ops/stop.sh
@@ -119,14 +128,27 @@ reset: stop
 	rm -rf $(bot)/.payment-bot-db/*
 	rm -rf $(flags)/deployed-contracts
 
-push-latest: prod
-	bash ops/push-images.sh latest database node proxy relay
+push-commit: staging
+	bash ops/push-images.sh commit bot database ethprovider node proxy relay
 
-push-prod: push-versioned
-push-versioned: prod
-	bash ops/push-images.sh $(version) database node proxy relay
+push-release:
+	bash ops/push-images.sh release database node proxy relay
 
-deployed-contracts: contracts
+pull:
+	docker pull $(registry)/$(project)_bot:$(commit) && docker tag $(registry)/$(project)_bot:$(commit) $(project)_bot:$(commit) || true
+	docker pull $(registry)/$(project)_database:$(commit) && docker tag $(registry)/$(project)_database:$(commit) $(project)_database:$(commit) || true
+	docker pull $(registry)/$(project)_ethprovider:$(commit) && docker tag $(registry)/$(project)_ethprovider:$(commit) $(project)_ethprovider:$(commit) || true
+	docker pull $(registry)/$(project)_node:$(commit) && docker tag $(registry)/$(project)_node:$(commit) $(project)_node:$(commit) || true
+	docker pull $(registry)/$(project)_proxy:$(commit) && docker tag $(registry)/$(project)_proxy:$(commit) $(project)_proxy:$(commit) || true
+	docker pull $(registry)/$(project)_relay:$(commit) && docker tag $(registry)/$(project)_relay:$(commit) $(project)_database:$(commit) || true
+	docker pull $(registry)/$(project)_bot:latest && docker tag $(registry)/$(project)_bot:latest $(project)_bot:latest || true
+	docker pull $(registry)/$(project)_database:latest && docker tag $(registry)/$(project)_database:latest $(project)_database:latest || true
+	docker pull $(registry)/$(project)_ethprovider:latest && docker tag $(registry)/$(project)_ethprovider:latest $(project)_ethprovider:latest || true
+	docker pull $(registry)/$(project)_node:latest && docker tag $(registry)/$(project)_node:latest $(project)_node:latest || true
+	docker pull $(registry)/$(project)_proxy:latest && docker tag $(registry)/$(project)_proxy:latest $(project)_proxy:latest || true
+	docker pull $(registry)/$(project)_relay:latest && docker tag $(registry)/$(project)_relay:latest $(project)_relay:latest || true
+
+deployed-contracts: ethprovider
 	bash ops/deploy-contracts.sh ganache
 	touch $(flags)/$@
 
@@ -139,13 +161,10 @@ dls:
 	@docker container ls -a
 
 ########################################
-# Begin Test Rules
+# Test Runner Shortcuts
 
 test: test-node
 watch: watch-node
-
-start-test: prod deployed-contracts
-	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test bash ops/start-prod.sh
 
 test-cf: cf-core
 	bash ops/test-cf.sh
@@ -164,7 +183,7 @@ test-dashboard:
 watch-ui: node-modules
 	bash ops/test-ui.sh --watch
 
-test-bot: payment-bot
+test-bot:
 	bash ops/test-bot.sh
 
 test-bot-farm:
@@ -180,12 +199,66 @@ watch-node: node-modules
 	bash ops/test-node.sh --watch
 
 ########################################
-# Begin Real Rules
+# Docker Images
 
-builder: ops/builder.dockerfile
+daicard-proxy: $(shell find $(proxy) $(find_options))
 	$(log_start)
-	docker build --file ops/builder.dockerfile --build-arg SOLC_VERSION=$(solc_version) --tag $(project)_builder:latest .
+	docker build --file $(proxy)/daicard.io/prod.dockerfile $(cache_from) --tag daicard_proxy:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+database: node-modules $(shell find $(database) $(find_options))
+	$(log_start)
+	docker build --file $(database)/db.dockerfile $(cache_from) --tag $(project)_database:latest $(database)
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+ethprovider: contracts cf-adjudicator-contracts cf-funding-protocol-contracts cf-apps $(shell find $(ethprovider) $(find_options))
+	$(log_start)
+	docker build --file $(ethprovider)/Dockerfile $(cache_from) --tag $(project)_ethprovider:latest .
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+node-release: node $(node)/ops/Dockerfile $(node)/ops/entry.sh
+	$(log_start)
+	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node:latest .
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+node-staging: node $(node)/ops/Dockerfile $(node)/ops/entry.sh
+	$(log_start)
+	$(docker_run) "cd modules/node && npm run build-bundle"
+	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node:latest .
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+payment-bot-release: payment-bot-js $(shell find $(bot)/ops $(find_options))
+	$(log_start)
+	docker build --file $(bot)/ops/release.dockerfile $(cache_from) --tag $(project)_bot:latest .
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+payment-bot-staging: payment-bot-js $(shell find $(bot)/ops $(find_options))
+	$(log_start)
+	docker build --file $(bot)/ops/staging.dockerfile $(cache_from) --tag $(project)_bot:latest .
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
+	$(log_start)
+	docker build --file $(proxy)/indra.connext.network/dev.dockerfile $(cache_from) --tag $(project)_proxy:dev .
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+indra-proxy-prod: daicard-prod dashboard-prod ws-tcp-relay $(shell find $(proxy) $(find_options))
+	$(log_start)
+	docker build --file $(proxy)/indra.connext.network/prod.dockerfile $(cache_from) --tag $(project)_proxy:latest .
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+ssh-action: $(shell find $(ssh-action) $(find_options))
+	$(log_start)
+	docker build --file $(ssh-action)/Dockerfile --tag $(project)_ssh_action $(ssh-action)
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+ws-tcp-relay: ops/ws-tcp-relay.dockerfile
+	$(log_start)
+	docker build --file ops/ws-tcp-relay.dockerfile $(cache_from) --tag $(project)_relay:latest .
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+########################################
+# Contracts
 
 cf-adjudicator-contracts: node-modules $(shell find $(cf-adjudicator-contracts)/contracts $(cf-adjudicator-contracts)/waffle.json $(find_options))
 	$(log_start)
@@ -207,14 +280,17 @@ cf-funding-protocol-contracts: node-modules $(shell find $(cf-funding-protocol-c
 	$(docker_run) "cd modules/cf-funding-protocol-contracts && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-client: cf-core contracts types messaging $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/client && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
 contracts: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/contracts && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+########################################
+# JS & bundles
+
+client: cf-core contracts types messaging $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))
@@ -227,16 +303,6 @@ dashboard-prod: node-modules client $(shell find $(dashboard)/src $(find_options
 	$(docker_run) "cd modules/dashboard && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-daicard-proxy: $(shell find $(proxy) $(find_options))
-	$(log_start)
-	docker build --file $(proxy)/daicard.io/prod.dockerfile --tag daicard_proxy:latest .
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-database: node-modules $(shell find $(database) $(find_options))
-	$(log_start)
-	docker build --file $(database)/db.dockerfile --tag $(project)_database:latest $(database)
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
 messaging: node-modules types $(shell find $(messaging)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/messaging && npm run build"
@@ -247,30 +313,9 @@ node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrati
 	$(docker_run) "cd modules/node && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-node-modules: builder package.json $(shell ls modules/**/package.json)
+payment-bot-js: node-modules client types $(shell find $(bot)/src $(bot)/ops $(find_options))
 	$(log_start)
-	$(docker_run) "lerna bootstrap --hoist"
-	$(docker_run) "cd node_modules/eccrypto && npm run install"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-node-prod: node $(node)/ops/prod.dockerfile $(node)/ops/entry.sh
-	$(log_start)
-	docker build --file $(node)/ops/prod.dockerfile --tag $(project)_node:latest .
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-payment-bot: node-modules client types $(shell find $(bot)/src $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/payment-bot && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
-	$(log_start)
-	docker build --file $(proxy)/indra.connext.network/dev.dockerfile --tag $(project)_proxy:dev .
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-indra-proxy-prod: daicard-prod dashboard-prod ws-tcp-relay $(shell find $(proxy) $(find_options))
-	$(log_start)
-	docker build --file $(proxy)/indra.connext.network/prod.dockerfile --tag $(project)_proxy:latest .
+	$(docker_run) "cd modules/payment-bot && npm run build-bundle"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 types: node-modules $(shell find $(types)/src $(find_options))
@@ -278,7 +323,16 @@ types: node-modules $(shell find $(types)/src $(find_options))
 	$(docker_run) "cd modules/types && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-ws-tcp-relay: ops/ws-tcp-relay.dockerfile
+########################################
+# Common Prerequisites
+
+node-modules: builder package.json $(shell ls modules/**/package.json)
 	$(log_start)
-	docker build --file ops/ws-tcp-relay.dockerfile --tag $(project)_relay:latest .
+	$(docker_run) "lerna bootstrap --hoist --no-progress"
+	$(docker_run) "cd node_modules/eccrypto && npm run install"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+builder: ops/builder.dockerfile
+	$(log_start)
+	docker build --file ops/builder.dockerfile --build-arg SOLC_VERSION=$(solc_version) $(cache_from) --tag $(project)_builder:latest .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
