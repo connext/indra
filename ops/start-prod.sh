@@ -90,7 +90,7 @@ then
   registry=""
 elif [[ "$INDRA_MODE" == "staging" ]]
 then version="`git rev-parse HEAD | head -c 8`"
-elif [[ "$INDRA_MODE" == "prod" ]]
+elif [[ "$INDRA_MODE" == "release" ]]
 then version="`cat package.json | jq .version | tr -d '"'`"
 else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" && exit 1
 fi
