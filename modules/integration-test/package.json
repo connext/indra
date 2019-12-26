@@ -9,16 +9,16 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@connext/cf-core": "^1.4.1",
-    "@connext/client": "^1.4.1",
-    "@connext/types": "^1.4.1",
-    "@types/jest": "^24.0.24",
-    "dotenv": "^8.2.0",
-    "ethers": "^4.0.41",
-    "jest": "^24.9.0",
-    "pg": "^7.15.1",
-    "ts-jest": "^24.2.0",
-    "typescript": "^3.7.4"
+    "@connext/cf-core": "1.4.1",
+    "@connext/client": "1.4.1",
+    "@connext/types": "1.4.1",
+    "@types/jest": "24.0.24",
+    "dotenv": "8.2.0",
+    "ethers": "4.0.41",
+    "jest": "24.9.0",
+    "pg": "7.14.0",
+    "ts-jest": "24.2.0",
+    "typescript": "3.5.3"
   },
   "dependencies": {}
 }

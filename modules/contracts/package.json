@@ -20,7 +20,7 @@
     "dotenv": "8.2.0",
     "eth-gas-reporter": "0.2.14",
     "ethereum-waffle": "2.1.0",
-    "ethers": "4.0.40",
+    "ethers": "4.0.41",
     "openzeppelin-solidity": "2.3.0",
     "truffle": "5.1.2",
     "truffle-hdwallet-provider": "1.0.17",
