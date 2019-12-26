@@ -15,8 +15,7 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
-import { mkHash } from "../test";
-import { CLogger, createLinkedHash, xpubToAddress } from "../util";
+import { CLogger, createLinkedHash, mkHash, xpubToAddress } from "../util";
 import { AppInstanceJson } from "../util/cfCore";
 
 import {
@@ -287,7 +286,7 @@ export class TransferService {
 
     // add preimage to database to allow unlock from a listener
     transfer.receiverAppInstanceId = receiverAppInstallRes.appInstanceId;
-    transfer.preImage = mkHash("0x0");
+    transfer.preImage = preImage;
     transfer.paymentId = paymentId;
     await this.linkedTransferRepository.save(transfer);
 
