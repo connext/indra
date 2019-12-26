@@ -58,4 +58,32 @@ describe("Deposits", () => {
       "is not greater than or equal to 0",
     );
   });
+
+  test("client should not be able to deposit with value it doesn't have", async () => {});
+
+  test("client has already requested deposit rights before calling deposit", async () => {});
+
+  test("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => {});
+
+  test("client tries to deposit while node already has deposit rights and has sent tx to chain (not confirmed onchain)", async () => {});
+
+  test("client deposits a different amount onchain than passed into the deposit fn", async () => {});
+
+  test("client proposes deposit but no response from node (node doesn't receive NATS message)", async () => {});
+
+  test("client proposes deposit but no response from node (node receives NATS message after timeout expired)", async () => {});
+
+  test("client goes offline after proposing deposit and then comes back online after timeout is over", async () => {});
+
+  test("client proposes deposit then deletes its store", async () => {});
+
+  test("client proposes deposit but never sends tx to chain", async () => {});
+
+  test("client proposes deposit, sends tx to chain, but deposit takes a long time to confirm", async () => {});
+
+  test("client proposes deposit, sends tx to chain, but deposit fails onchain", async () => {});
+
+  test("client bypasses proposeDeposit flow and calls providerDeposit directly", async () => {});
+
+  test("client deposits, withdraws, then successfully deposits again", async () => {});
 });
