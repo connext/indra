@@ -8,9 +8,11 @@ import {
 } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
+import { AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { getAddress, Network as EthNetwork } from "ethers/utils";
+import { getAddress, Network as EthNetwork, parseEther } from "ethers/utils";
 
+import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { OutcomeType } from "../util/cfCore";
 
 type PostgresConfig = {
@@ -160,6 +162,32 @@ export class ConfigService implements OnModuleInit {
 
   getRedisUrl(): string {
     return this.get("INDRA_REDIS_URL");
+  }
+
+  async getDefaultPaymentProfile(
+    assetId: string = AddressZero,
+  ): Promise<PaymentProfile | undefined> {
+    const tokenAddress = await this.getTokenAddress();
+    switch (assetId) {
+      case AddressZero:
+        return {
+          amountToCollateralize: parseEther("0.1"),
+          assetId: AddressZero,
+          channels: [],
+          id: 0,
+          minimumMaintainedCollateral: parseEther("0.05"),
+        };
+      case tokenAddress:
+        return {
+          amountToCollateralize: parseEther("10"),
+          assetId: AddressZero,
+          channels: [],
+          id: 0,
+          minimumMaintainedCollateral: parseEther("5"),
+        };
+      default:
+        return undefined;
+    }
   }
 
   onModuleInit(): void {
