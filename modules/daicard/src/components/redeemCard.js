@@ -42,7 +42,7 @@ const style = withStyles(theme => ({
   },
 }));
 
-export const RedeemCard = style(({ channel, classes, history, location, tokenProfile }) => {
+export const RedeemCard = style(({ channel, classes, history, location, token }) => {
   const [paymentId, setPaymentId] = useState("");
   const [secret, setSecret] = useState("");
   const [link, setLink] = useState({
@@ -56,7 +56,7 @@ export const RedeemCard = style(({ channel, classes, history, location, tokenPro
   const validateLink = useCallback(async () => {
     takeAction(`CHECK`);
     setMessage(`Verifying info...`);
-    if (!channel || !tokenProfile) {
+    if (!channel || !token) {
       setMessage(`Channel isn't ready yet..`);
       return;
     }
@@ -77,7 +77,7 @@ export const RedeemCard = style(({ channel, classes, history, location, tokenPro
       setMessage(`Payment has already been redeemed...`);
       return;
     }
-    if (info.assetId !== tokenProfile.assetId) {
+    if (info.assetId !== token.address) {
       takeAction(`INVALIDATE`);
       setMessage(`Only link payments for DAI are supported`);
       return;
@@ -94,7 +94,7 @@ export const RedeemCard = style(({ channel, classes, history, location, tokenPro
       status: info.status,
       assetId: info.assetId,
     });
-  }, [channel, paymentId, secret, takeAction, tokenProfile]);
+  }, [channel, paymentId, secret, takeAction, token]);
 
   useEffect(() => {
     (async () => {
@@ -116,7 +116,7 @@ export const RedeemCard = style(({ channel, classes, history, location, tokenPro
       // update the profile, the hub will collateralize the
       // correct amount anyway from the listeners
       // Request token collateral if we don't have any yet
-      let freeTokenBalance = await channel.getFreeBalance(tokenProfile.assetId);
+      let freeTokenBalance = await channel.getFreeBalance(token.address);
       hubFreeBalanceAddress = Object.keys(freeTokenBalance).find(
         addr => addr.toLowerCase() !== channel.freeBalanceAddress.toLowerCase(),
       );
@@ -124,13 +124,7 @@ export const RedeemCard = style(({ channel, classes, history, location, tokenPro
       if (freeTokenBalance[hubFreeBalanceAddress].lt(link.amount.wad)) {
         takeAction(`COLLATERALIZE`);
         setMessage(`Requesting ${link.amount.format()} of collateral`);
-        const collateralNeeded = link.amount.wad.sub(freeTokenBalance[hubFreeBalanceAddress]);
-        await channel.addPaymentProfile({
-          amountToCollateralize: collateralNeeded.toString(),
-          minimumMaintainedCollateral: link.amount.wad.toString(),
-          assetId: tokenProfile.assetId,
-        });
-        await channel.requestCollateral(tokenProfile.assetId);
+        await channel.requestCollateral(token.address);
       }
     } catch (e) {
       takeAction("ERROR");
@@ -138,7 +132,7 @@ export const RedeemCard = style(({ channel, classes, history, location, tokenPro
     }
 
     try {
-      const freeTokenBalance = await channel.getFreeBalance(tokenProfile.assetId);
+      const freeTokenBalance = await channel.getFreeBalance(token.address);
       console.log(
         `Hub has collateralized us with ${formatEther(
           freeTokenBalance[hubFreeBalanceAddress],
