@@ -59,7 +59,7 @@ describe("Deposits", () => {
     );
   });
 
-  test.only("client should not be able to propose deposit with value it doesn't have", async () => {
+  test("client should not be able to propose deposit with value it doesn't have", async () => {
     const tokenAddress = clientA.config.contractAddresses.Token;
 
     await expect(
@@ -70,9 +70,20 @@ describe("Deposits", () => {
     ).rejects.toThrowError("is not less than or equal to");
   });
 
-  test("client has already requested deposit rights before calling deposit", async () => { });
+  test.only("client has already requested deposit rights before calling deposit", async () => {
+    await clientA.requestDepositRights({ assetId: clientA.config.contractAddresses.Token });
 
-  test("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => { });
+    await clientA.deposit({ amount: "1", assetId: clientA.config.contractAddresses.Token });
+    const freeBalance = await clientA.getFreeBalance(clientA.config.contractAddresses.Token);
+
+    const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
+    expect(freeBalance[clientA.freeBalanceAddress]).toBeBigNumberEq(1);
+    expect(freeBalance[nodeFreeBalanceAddress]).toBeBigNumberEq(0);
+    //TODO: is there any way to test to make sure deposit rights were rescinded as part of the .deposit call?
+  });
+
+  test("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => {
+  });
 
   test("client tries to deposit while node already has deposit rights and has sent tx to chain (not confirmed onchain)", async () => { });
 
