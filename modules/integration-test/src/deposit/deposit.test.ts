@@ -5,7 +5,7 @@ import { AddressZero } from "ethers/constants";
 import { createClient } from "../util/client";
 import { FUNDED_MNEMONICS } from "../util/constants";
 import { clearDb } from "../util/db";
-import { revertEVMSnapshot, takeEVMSnapshot } from "../util/ethprovider";
+import { getOnchainBalance, revertEVMSnapshot, takeEVMSnapshot } from "../util/ethprovider";
 
 describe("Deposits", () => {
   let clientA: IConnextClient;
@@ -21,7 +21,7 @@ describe("Deposits", () => {
     await revertEVMSnapshot(snapshot);
   });
 
-  test("happy case: client should deposit ETH", async () => {
+  test.skip("happy case: client should deposit ETH", async () => {
     await clientA.deposit({ amount: "1", assetId: AddressZero });
     const freeBalance = await clientA.getFreeBalance(AddressZero);
 
@@ -59,31 +59,40 @@ describe("Deposits", () => {
     );
   });
 
-  test("client should not be able to deposit with value it doesn't have", async () => {});
+  test.only("client should not be able to propose deposit with value it doesn't have", async () => {
+    const tokenAddress = clientA.config.contractAddresses.Token;
 
-  test("client has already requested deposit rights before calling deposit", async () => {});
+    await expect(
+      clientA.deposit({
+        amount: (await getOnchainBalance(clientA.freeBalanceAddress, tokenAddress)) + 1,
+        assetId: clientA.config.contractAddresses.Token,
+      }),
+    ).rejects.toThrowError("is not less than or equal to");
+  });
 
-  test("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => {});
+  test("client has already requested deposit rights before calling deposit", async () => { });
 
-  test("client tries to deposit while node already has deposit rights and has sent tx to chain (not confirmed onchain)", async () => {});
+  test("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => { });
 
-  test("client deposits a different amount onchain than passed into the deposit fn", async () => {});
+  test("client tries to deposit while node already has deposit rights and has sent tx to chain (not confirmed onchain)", async () => { });
 
-  test("client proposes deposit but no response from node (node doesn't receive NATS message)", async () => {});
+  test("client deposits a different amount onchain than passed into the deposit fn", async () => { });
 
-  test("client proposes deposit but no response from node (node receives NATS message after timeout expired)", async () => {});
+  test("client proposes deposit but no response from node (node doesn't receive NATS message)", async () => { });
 
-  test("client goes offline after proposing deposit and then comes back online after timeout is over", async () => {});
+  test("client proposes deposit but no response from node (node receives NATS message after timeout expired)", async () => { });
 
-  test("client proposes deposit then deletes its store", async () => {});
+  test("client goes offline after proposing deposit and then comes back online after timeout is over", async () => { });
 
-  test("client proposes deposit but never sends tx to chain", async () => {});
+  test("client proposes deposit then deletes its store", async () => { });
 
-  test("client proposes deposit, sends tx to chain, but deposit takes a long time to confirm", async () => {});
+  test("client proposes deposit but never sends tx to chain", async () => { });
 
-  test("client proposes deposit, sends tx to chain, but deposit fails onchain", async () => {});
+  test("client proposes deposit, sends tx to chain, but deposit takes a long time to confirm", async () => { });
 
-  test("client bypasses proposeDeposit flow and calls providerDeposit directly", async () => {});
+  test("client proposes deposit, sends tx to chain, but deposit fails onchain", async () => { });
 
-  test("client deposits, withdraws, then successfully deposits again", async () => {});
+  test("client bypasses proposeDeposit flow and calls providerDeposit directly", async () => { });
+
+  test("client deposits, withdraws, then successfully deposits again", async () => { });
 });
