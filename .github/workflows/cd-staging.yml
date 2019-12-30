@@ -1,0 +1,113 @@
+name: CD Staging
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  build:
+    env:
+      DOCKER_USER: ${{ secrets.DOCKER_USER }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Cache node modules
+      uses: actions/cache@v1
+      with:
+        path: .npm
+        key: npm-${{ hashFiles('package-lock.json') }}
+        restore-keys: npm-
+    - run: make pull
+    - run: make staging
+    - run: make build-report
+    - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+    - run: make push-commit
+
+  test-node:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make node
+    - run: make test-node
+
+  test-cf:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make cf-core
+    - run: make test-cf
+
+  test-ssh:
+    env:
+      STAGING_DOMAINNAME: staging.indra.connext.network
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: test connection to staging
+      uses: ./ops/ssh-action/
+      with:
+        HOST: ubuntu@${{ env.STAGING_DOMAINNAME }}
+        SSH_KEY: ${{ secrets.SSH_KEY }}
+        CMD: 'echo Successfully connected to $STAGING_DOMAINNAME: `hostname`;'
+
+  # test-integration:
+  #   runs-on: ubuntu-latest
+  #   needs: [build]
+  #   steps:
+  #   - uses: actions/checkout@v1
+  #   - run: make pull
+  #   - run: make start-test
+  #   - run: make test-integration
+
+  test-bot:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+    - uses: actions/checkout@v1
+    - run: make pull
+    - run: make start-test
+    - run: make test-bot
+
+  test-bot-farm:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+    - uses: actions/checkout@v1
+    - run: make pull
+    - run: make start-test
+    - run: make test-bot-farm
+
+  test-daicard:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+    - uses: actions/checkout@v1
+    - run: make pull
+    - run: make start-test
+    - run: make test-daicard
+
+  deploy-staging:
+    env:
+      RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
+      STAGING_DOMAINNAME: staging.indra.connext.network
+    needs: [test-node, test-cf, test-bot, test-bot-farm, test-daicard, test-ssh]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: deploy to staging
+      uses: ./ops/ssh-action/
+      with:
+        HOST: ubuntu@${{ env.STAGING_DOMAINNAME }}
+        SSH_KEY: ${{ secrets.SSH_KEY }}
+        CMD: '
+          git checkout --force staging;
+          git reset --hard $GITHUB_SHA;
+          export INDRA_MODE="staging";
+          export INDRA_ETH_PROVIDER="$RINKEBY_ETH_PROVIDER";
+          export INDRA_DOMAINNAME="$STAGING_DOMAINNAME";
+          make restart-prod;
+          docker container prune -f;
+          docker image ls -q | xargs docker image rm || true;
+        '
