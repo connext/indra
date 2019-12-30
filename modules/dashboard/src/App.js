@@ -54,7 +54,7 @@ const env = {
   urlPrefix: process.env.PUBLIC_URL || "",
 };
 
-// env.nodeUrl = "wss://indra.connext.network/api/messaging";
+env.nodeUrl = "wss://indra.connext.network/api/messaging";
 // env.adminToken = "foo";
 
 const App = () => {
@@ -90,6 +90,7 @@ const App = () => {
       return;
     }
     try {
+      console.log(env.nodeUrl)
       const messaging = new DashboardMessaging(env.nodeUrl, token, 5);
       await messaging.connect();
       setMessaging(messaging);

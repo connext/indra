@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Button, Grid, Typography, styled } from "@material-ui/core";
+import { WeiPerEther } from "ethers/constants";
+
 
 const TopGrid = styled(Grid)({
   display: "flex",
@@ -57,10 +59,9 @@ const StatsTransfers = props => {
 
     if (res) {
       for (let transfer of res) {
-        console.log(transfer);
         totalTransfers.push(parseInt(transfer.amount._hex, 16));
-        var createdDate = new Date(transfer.createdAt);
-        var hourDifference = (Date.now() - createdDate.getTime()) / 3600000;
+        const createdDate = new Date(transfer.createdAt);
+        const hourDifference = (Date.now() - createdDate.getTime()) / 3600000;
 
         if (hourDifference <= 24) {
           pastDayTotal++;
@@ -87,10 +88,10 @@ const StatsTransfers = props => {
         return a + b;
       }, 0);
     }
-    var averageTransfer = totalTransfersReduced / res.length / 1000000000000000000;
-    var averageTransferDay = pastDayReduced / pastDayAvg.length / 1000000000000000000;
-    var averageTransferWeek = pastWeekReduced / pastWeekAvg.length / 1000000000000000000;
-    var averageTransferMonth = pastMonthReduced / pastMonthAvg.length / 1000000000000000000;
+    var averageTransfer = totalTransfersReduced / res.length / WeiPerEther;
+    var averageTransferDay = pastDayReduced / pastDayAvg.length / WeiPerEther;
+    var averageTransferWeek = pastWeekReduced / pastWeekAvg.length / WeiPerEther;
+    var averageTransferMonth = pastMonthReduced / pastMonthAvg.length / WeiPerEther;
 
     var transferDateWindows = {
       pastDayTotal: pastDayTotal,
