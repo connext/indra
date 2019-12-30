@@ -9,7 +9,8 @@ import "regenerator-runtime/runtime";
 
 import { ChannelProvider, createCFChannelProvider } from "./channelProvider";
 import { ConnextClient } from "./connext";
-import { Logger, stringify, delayAndThrow } from "./lib";
+import { delayAndThrow, Logger, stringify } from "./lib";
+import { defaultMessageCipher } from "./messageCipher";
 import { NodeApiClient } from "./node";
 import {
   CFCoreTypes,
@@ -81,6 +82,8 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     channelProvider: providedChannelProvider,
   } = opts;
   let { xpub, keyGen } = opts;
+
+  const messageCipher = opts.messageCipher || defaultMessageCipher;
 
   const log = new Logger("ConnextConnect", logLevel);
 
@@ -195,6 +198,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     config,
     ethProvider,
     keyGen,
+    messageCipher,
     messaging,
     network,
     node,

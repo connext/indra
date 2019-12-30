@@ -40,6 +40,20 @@ export interface Store extends CFCoreTypes.IStoreService {
   restore(): Promise<StorePair[]>;
 }
 
+export type Encrypted = {
+  iv: string;
+  ephemPublicKey: string;
+  ciphertext: string;
+  mac: string;
+};
+
+export interface MessageCipher {
+  parse: (encrypted: string) => Encrypted;
+  stringify: (encrypted: Encrypted) => string;
+  encrypt: (publicKey: string, message: string) => Promise<Encrypted>;
+  decryptWithPrivateKey: (privateKey: string, encrypted: Encrypted) => Promise<string>;
+}
+
 // channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
 export interface ClientOptions {
   ethProviderUrl: string;
@@ -50,6 +64,7 @@ export interface ClientOptions {
   xpub?: string;
   store?: Store;
   logLevel?: number;
+  messageCipher?: MessageCipher;
 }
 
 export interface IConnextClient {

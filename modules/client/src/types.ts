@@ -64,6 +64,7 @@ export {
   CreateChannelResponse,
   DefaultApp,
   DepositParameters,
+  Encrypted,
   GetChannelResponse,
   GetConfigResponse,
   IConnextClient,
@@ -75,6 +76,7 @@ export {
   makeChecksum,
   makeChecksumOrEthAddress,
   CFCoreTypes,
+  MessageCipher,
   PaymentProfile,
   RequestCollateralResponse,
   ResolveConditionParameters,
@@ -119,6 +121,7 @@ export type InternalClientOptions = ClientOptions & {
   node: NodeApiClient;
   store: Store;
   token: Contract;
+  messageCipher: MessageCipher;
 };
 
 export interface NodeInitializationParameters {
