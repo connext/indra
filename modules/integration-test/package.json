@@ -4,11 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build-bundle": "webpack --config ops/webpack.config.js",
     "test": "jest --detectOpenHandles"
   },
   "author": "",
   "license": "ISC",
-  "devDependencies": {
+  "dependencies": {
     "@connext/cf-core": "1.4.1",
     "@connext/client": "1.4.1",
     "@connext/types": "1.4.1",
@@ -18,7 +19,15 @@
     "jest": "24.9.0",
     "pg": "7.17.0",
     "ts-jest": "24.2.0",
-    "typescript": "3.5.3"
+    "typescript": "3.5.3",
+    "webpack": "4.41.5",
+    "webpack-cli": "3.3.10"
   },
-  "dependencies": {}
+  "devDependencies": {
+    "@types/jest": "24.0.25",
+    "@types/mocha": "5.2.7",
+    "babel-loader": "8.0.6",
+    "jest-webpack": "0.5.1",
+    "ts-loader": "6.2.1"
+  }
 }
