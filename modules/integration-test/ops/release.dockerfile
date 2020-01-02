@@ -11,7 +11,15 @@ RUN npm install > /dev/null 2>&1
 # https://github.com/moby/moby/issues/37965#issuecomment-426853382
 COPY ops/wait-for.sh wait-for.sh
 RUN true
-COPY modules/integration-test/dist dist
+COPY modules/integration-test/jest.config.js jest.config.js
+RUN true
+COPY modules/integration-test/jest.setup.ts jest.setup.ts
+RUN true
+COPY tsconfig.json /tsconfig.json
+RUN true
+COPY modules/integration-test/tsconfig.json tsconfig.json
+RUN true
+COPY modules/integration-test/src src
 
 ENV PATH="./node_modules/.bin:${PATH}"
 ENTRYPOINT ["jest"]
