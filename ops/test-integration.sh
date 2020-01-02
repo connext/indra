@@ -2,11 +2,11 @@
 set -e
 
 test_command='
-  ./node_modules/.bin/jest --config jest.config.js --forceExit '"$@"'
+  jest --config jest.config.js --forceExit '"$@"'
 '
 
 watch_command='
-  exec ./node_modules/.bin/jest --config jest.config.js --watch '"$@"'
+  exec jest --config jest.config.js --watch '"$@"'
 '
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -89,14 +89,10 @@ docker run \
   --network="$network" \
   --rm \
   --tty \
-  --volume="$cwd:/root" \
-  ${project}_bot -c '
+  ${project}_test_runner -c '
+    set -e
     echo "Integration Tester Container launched!";echo
     echo
-
-    cd modules/integration-test
-    export PATH=./node_modules/.bin:$PATH
-    ls ./node_modules/.bin
 
     function finish {
       echo && echo "Integration tester container exiting.." && exit

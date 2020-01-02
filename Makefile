@@ -33,6 +33,7 @@ messaging=$(cwd)/modules/messaging
 node=$(cwd)/modules/node
 proxy=$(cwd)/modules/proxy
 ssh-action=$(cwd)/ops/ssh-action
+tests=$(cwd)/modules/integration-test
 types=$(cwd)/modules/types
 
 # Setup docker run time
@@ -55,9 +56,9 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev staging release
-dev: database ethprovider node client payment-bot-staging indra-proxy ws-tcp-relay
-staging: daicard-proxy database indra-proxy-prod node-staging payment-bot-staging ws-tcp-relay ethprovider
-release: daicard-proxy database indra-proxy-prod node-release payment-bot-release ws-tcp-relay ethprovider
+dev: database ethprovider node client payment-bot-staging indra-proxy test-runner ws-tcp-relay
+staging: daicard-proxy database ethprovider indra-proxy-prod node-staging payment-bot-staging test-runner ws-tcp-relay
+release: daicard-proxy database ethprovider indra-proxy-prod node-release payment-bot-release test-runner ws-tcp-relay
 
 start: start-daicard
 
@@ -266,6 +267,12 @@ indra-proxy-prod: daicard-prod dashboard-prod ws-tcp-relay $(shell find $(proxy)
 ssh-action: $(shell find $(ssh-action) $(find_options))
 	$(log_start)
 	docker build --file $(ssh-action)/Dockerfile --tag $(project)_ssh_action $(ssh-action)
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+test-runner: client $(shell find $(tests)/ops $(find_options))
+	$(log_start)
+	docker build --file $(tests)/ops/release.dockerfile $(cache_from) --tag $(project)_test_runner:latest .
+	docker tag $(project)_test_runner:latest $(project)_test_runner:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ws-tcp-relay: ops/ws-tcp-relay.dockerfile
