@@ -53,9 +53,6 @@ $(shell mkdir -p .makeflags $(node)/dist)
 ########################################
 # Alias & Control Shortcuts
 
-debug:
-	echo $(dir) $(project)
-
 default: dev
 all: dev staging release
 dev: database ethprovider node client payment-bot-staging indra-proxy ws-tcp-relay
