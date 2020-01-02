@@ -90,7 +90,7 @@ docker run \
   --rm \
   --tty \
   --volume="$cwd:/root" \
-  ${project}_builder -c '
+  ${project}_bot -c '
     echo "Integration Tester Container launched!";echo
     echo
 
