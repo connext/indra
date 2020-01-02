@@ -9,7 +9,8 @@ watch_command='
   exec jest --config jest.config.js --watch '"$@"'
 '
 
-project="indra"
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+project="`cat $dir/../package.json | jq .name | tr -d '"'`"
 cwd="`pwd`"
 
 if [[ "$1" == "--watch" ]]

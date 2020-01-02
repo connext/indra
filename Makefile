@@ -1,4 +1,5 @@
-project=indra
+dir="$(shell cd "$(shell dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+project="`cat $(dir)/package.json | jq .name | tr -d '"'`"
 registry=connextproject
 
 # Specify make-specific variables (VPATH = prerequisite search path)
@@ -51,6 +52,9 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 ########################################
 # Alias & Control Shortcuts
+
+debug:
+	echo $(dir) $(project)
 
 default: dev
 all: dev staging release
