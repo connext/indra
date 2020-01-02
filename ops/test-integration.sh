@@ -65,16 +65,16 @@ trap cleanup EXIT
 # Or whether it's running in the background of another script and can't attach to a screen
 test -t 0 -a -t 1 -a -t 2 && interactive="--interactive"
 
+docker network create --attachable $network 2> /dev/null || true
+
 ########################################
 # Run Tests
 
 echo
 echo "Deploying integration tester..."
 
-id="`
-docker service create \
-  --detach \
-  --name="$test_runner_host" \
+docker run \
+  --entrypoint "bash" \
   --env="INDRA_CLIENT_LOG_LEVEL=$log_level" \
   --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
   --env="INDRA_NODE_URL=$NODE_URL" \
@@ -84,9 +84,12 @@ docker service create \
   --env="INDRA_PG_PORT=$postgres_port" \
   --env="INDRA_PG_USERNAME=$postgres_user" \
   --env="NODE_ENV=development" \
-  --mount="type=bind,source=$cwd,target=/root" \
-  --restart-condition="none" \
-  --entrypoint "bash" \
+  $interactive \
+  --name="$test_runner_host" \
+  --network="$network" \
+  --rm \
+  --tty \
+  --volume="$cwd:/root" \
   ${project}_builder -c '
     echo "Integration Tester Container launched!";echo
     echo
@@ -101,14 +104,3 @@ docker service create \
 
     '"$command"'
   '
-`"
-echo "Success! Deployer service started with id: $id"
-echo
-
-docker service logs --raw --follow $test_runner_host &
-logs_pid=$!
-
-# Wait for the deployer to exit..
-while [[ -z "`docker container ls -a | grep "$test_runner_host" | grep "Exited"`" ]]
-do sleep 1
-done
