@@ -131,10 +131,10 @@ reset: stop
 	rm -rf $(flags)/deployed-contracts
 
 push-commit:
-	bash ops/push-images.sh commit bot database ethprovider node proxy relay
+	bash ops/push-images.sh commit bot database ethprovider node proxy relay test_runner
 
 push-release:
-	bash ops/push-images.sh release database node proxy relay
+	bash ops/push-images.sh release database node proxy relay test_runner
 
 pull:
 	docker pull $(registry)/$(project)_bot:$(commit) && docker tag $(registry)/$(project)_bot:$(commit) $(project)_bot:$(commit) || true
@@ -143,12 +143,14 @@ pull:
 	docker pull $(registry)/$(project)_node:$(commit) && docker tag $(registry)/$(project)_node:$(commit) $(project)_node:$(commit) || true
 	docker pull $(registry)/$(project)_proxy:$(commit) && docker tag $(registry)/$(project)_proxy:$(commit) $(project)_proxy:$(commit) || true
 	docker pull $(registry)/$(project)_relay:$(commit) && docker tag $(registry)/$(project)_relay:$(commit) $(project)_relay:$(commit) || true
+	docker pull $(registry)/$(project)_test_runner:$(commit) && docker tag $(registry)/$(project)_test_runner:$(commit) $(project)_test_runner:$(commit) || true
 	docker pull $(registry)/$(project)_bot:latest && docker tag $(registry)/$(project)_bot:latest $(project)_bot:latest || true
 	docker pull $(registry)/$(project)_database:latest && docker tag $(registry)/$(project)_database:latest $(project)_database:latest || true
 	docker pull $(registry)/$(project)_ethprovider:latest && docker tag $(registry)/$(project)_ethprovider:latest $(project)_ethprovider:latest || true
 	docker pull $(registry)/$(project)_node:latest && docker tag $(registry)/$(project)_node:latest $(project)_node:latest || true
 	docker pull $(registry)/$(project)_proxy:latest && docker tag $(registry)/$(project)_proxy:latest $(project)_proxy:latest || true
 	docker pull $(registry)/$(project)_relay:latest && docker tag $(registry)/$(project)_relay:latest $(project)_relay:latest || true
+	docker pull $(registry)/$(project)_test_runner:latest && docker tag $(registry)/$(project)_test_runner:latest $(project)_test_runner:latest || true
 
 deployed-contracts: ethprovider
 	bash ops/deploy-contracts.sh ganache
