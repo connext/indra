@@ -49,7 +49,7 @@ pg_user="$project"
 builder_image="${project}_builder"
 ui_image="$builder_image"
 database_image="postgres:9-alpine"
-ethprovider_image="trufflesuite/ganache-cli:v6.4.5"
+ethprovider_image="${project}_ethprovider"
 nats_image="nats:2.0.0-linux"
 node_image="$builder_image"
 proxy_image="${project}_proxy:dev"
@@ -197,7 +197,9 @@ services:
 
   ethprovider:
     image: $ethprovider_image
-    command: ["--db=/data", "--mnemonic=$eth_mnemonic", "--networkId=4447", "-b 15"]
+    command: "start"
+    environment:
+      ETH_MNEMONIC: $eth_mnemonic
     networks:
       - $project
     ports:

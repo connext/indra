@@ -1,12 +1,13 @@
 {
   "name": "indra-node",
-	"version": "2.3.17",
+	"version": "2.3.19",
   "description": "",
   "author": "",
   "license": "MIT",
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "build-bundle": "webpack --config ops/webpack.config.js",
     "format": "prettier --write \"src/**/*.ts\"",
     "start": "ts-node -r tsconfig-paths/register src/main.ts",
     "start:dev": "concurrently --handle-input \"wait-on dist/main.js && nodemon\" \"tsc -w -p tsconfig.json\" ",
@@ -44,6 +45,7 @@
     "uuid": "3.3.3"
   },
   "devDependencies": {
+    "@connext/client": "1.4.1",
     "@nestjs/testing": "6.5.3",
     "@types/express": "4.17.2",
     "@types/jest": "24.0.23",
@@ -57,6 +59,8 @@
     "ts-node": "8.5.4",
     "tsconfig-paths": "3.9.0",
     "typescript": "3.5.3",
-    "wait-on": "3.3.0"
+    "wait-on": "3.3.0",
+    "webpack": "4.41.0",
+    "webpack-cli": "3.3.10"
   }
 }

@@ -4,7 +4,6 @@
 .makeflags
 .node-gyp
 .npm
-counterfactual
 modules/**/.cache
 modules/**/.config
 modules/**/.git

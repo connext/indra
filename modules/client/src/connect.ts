@@ -9,7 +9,7 @@ import "regenerator-runtime/runtime";
 
 import { ChannelProvider, createCFChannelProvider } from "./channelProvider";
 import { ConnextClient } from "./connext";
-import { Logger, stringify } from "./lib";
+import { Logger, stringify, delayAndThrow } from "./lib";
 import { NodeApiClient } from "./node";
 import {
   CFCoreTypes,
@@ -45,25 +45,23 @@ const setupMultisigAddress = async (
   let multisigAddress: string;
   if (!myChannel) {
     log.debug("no channel detected, creating channel..");
-    const creationEventData: CFCoreTypes.CreateChannelResult = await new Promise(
-      async (res: any, rej: any): Promise<any> => {
-        const timer = setTimeout(
-          (): void => rej("Create channel event not fired within 30s"),
-          30000,
-        );
-        channelProvider.once(
-          CFCoreTypes.EventNames.CREATE_CHANNEL_EVENT as CFCoreTypes.EventName,
-          (data: CreateChannelMessage): void => {
-            clearTimeout(timer);
-            res(data.data);
-          },
-        );
+    const creationEventData: CFCoreTypes.CreateChannelResult | {} = await Promise.race([
+      new Promise(
+        async (res: any): Promise<any> => {
+          channelProvider.once(
+            CFCoreTypes.EventNames.CREATE_CHANNEL_EVENT as CFCoreTypes.EventName,
+            (data: CreateChannelMessage): void => {
+              res(data.data);
+            },
+          );
 
-        const creationData = await node.createChannel();
-        log.debug(`created channel, transaction: ${stringify(creationData)}`);
-      },
-    );
-    multisigAddress = creationEventData.multisigAddress;
+          const creationData = await node.createChannel();
+          log.debug(`created channel, transaction: ${stringify(creationData)}`);
+        },
+      ),
+      delayAndThrow(30_000, "Create channel event not fired within 30s"),
+    ]);
+    multisigAddress = (creationEventData as CFCoreTypes.CreateChannelResult).multisigAddress;
   } else {
     multisigAddress = myChannel.multisigAddress;
   }
