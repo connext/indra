@@ -9,12 +9,16 @@ type Encrypted = {
 };
 
 export function removeTrailing0x(str: string): string {
-  if (str.startsWith("0x")) return str.substring(2);
+  if (str.startsWith("0x")) {
+    return str.substring(2);
+  }
   return str;
 }
 
 export function addTrailing0x(str: string): string {
-  if (!str.startsWith("0x")) return `0x${str}`;
+  if (!str.startsWith("0x")) {
+    return `0x${str}`;
+  }
   return str;
 }
 
@@ -43,7 +47,9 @@ export function decompress(startsWith02Or03: string): string {
 }
 
 export function stringify(cipher: Encrypted): string {
-  if (typeof cipher === "string") return cipher;
+  if (typeof cipher === "string") {
+    return cipher;
+  }
 
   // use compressed key because it's smaller
   const compressedKey = compress(cipher.ephemPublicKey);
@@ -59,7 +65,9 @@ export function stringify(cipher: Encrypted): string {
 }
 
 export function parse(str: string): Encrypted {
-  if (typeof str !== "string") return str;
+  if (typeof str !== "string") {
+    return str;
+  }
 
   const buf = Buffer.from(str, "hex");
 
@@ -96,7 +104,7 @@ export async function encryptWithPublicKey(publicKey: string, message: string): 
 
 export async function decryptWithPrivateKey(
   privateKey: string,
-  encrypted: string | Encrypted,
+  encrypted: Encrypted,
 ): Promise<string> {
   if (typeof encrypted === "string") {
     encrypted = parse(encrypted); // tslint:ignore-line:no-parameter-reassignment
@@ -112,7 +120,7 @@ export async function decryptWithPrivateKey(
     mac: Buffer.from(encrypted.mac, "hex"),
   };
 
-  const decryptedBuffer = decrypt(Buffer.from(twoStripped, "hex"), encryptedBuffer);
+  const decryptedBuffer = await decrypt(Buffer.from(twoStripped, "hex"), encryptedBuffer);
 
   return decryptedBuffer.toString();
 }
