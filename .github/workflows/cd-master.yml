@@ -23,7 +23,7 @@ jobs:
     - run: make release
     - run: make build-report
     - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-    - run: make push-commit
+    - run: make push-release
 
   test-node:
     runs-on: ubuntu-latest
@@ -51,13 +51,13 @@ jobs:
       with:
         HOST: ubuntu@${{ env.RINKEBY_DOMAINNAME }}
         SSH_KEY: ${{ secrets.SSH_KEY }}
-        CMD: "echo Successfully connected to $RINKEBY_DOMAINNAME: `hostname`;"
+        CMD: 'echo "Successfully connected to $RINKEBY_DOMAINNAME: `hostname`";'
     - name: test connection to mainnet
       uses: ./ops/ssh-action/
       with:
         HOST: ubuntu@${{ env.MAINNET_DOMAINNAME }}
         SSH_KEY: ${{ secrets.SSH_KEY }}
-        CMD: "echo Successfully connected to $MAINNET_DOMAINNAME: `hostname`;"
+        CMD: 'echo "Successfully connected to $MAINNET_DOMAINNAME: `hostname`";'
 
   # test-integration:
   #   runs-on: ubuntu-latest
@@ -95,18 +95,6 @@ jobs:
     - run: make start-test
     - run: make test-daicard
 
-  push:
-    env:
-      DOCKER_USER: ${{ secrets.DOCKER_USER }}
-      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-    needs: [test-node, test-cf, test-bot, test-bot-farm, test-daicard, test-ssh]
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-    - run: make pull
-    - run: make push-release
-
   deploy-rinkeby:
     env:
       INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
@@ -121,17 +109,17 @@ jobs:
       with:
         HOST: ubuntu@${{ env.RINKEBY_DOMAINNAME }}
         SSH_KEY: ${{ secrets.SSH_KEY }}
-        CMD: "
+        CMD: '
           git checkout --force master;
           git reset --hard $GITHUB_SHA;
-          export INDRA_MODE=release;
-          export INDRA_ETH_PROVIDER=$RINKEBY_ETH_PROVIDER;
-          export INDRA_DOMAINNAME=$RINKEBY_DOMAINNAME;
-          export INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN;
+          export INDRA_MODE="release";
+          export INDRA_ETH_PROVIDER="$RINKEBY_ETH_PROVIDER";
+          export INDRA_DOMAINNAME="$RINKEBY_DOMAINNAME";
+          export INDRA_ADMIN_TOKEN="$INDRA_ADMIN_TOKEN";
           make restart-prod;
           docker container prune -f;
           docker image ls -q | xargs docker image rm || true;
-        "
+        '
 
   deploy-mainnet:
     env:
@@ -147,14 +135,14 @@ jobs:
       with:
         HOST: ubuntu@${{ env.MAINNET_DOMAINNAME }}
         SSH_KEY: ${{ secrets.SSH_KEY }}
-        CMD: "
+        CMD: '
           git checkout --force master;
           git reset --hard $GITHUB_SHA;
-          export INDRA_MODE=release;
-          export INDRA_ETH_PROVIDER=$MAINNET_ETH_PROVIDER;
-          export INDRA_DOMAINNAME=$MAINNET_DOMAINNAME;
-          export INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN;
+          export INDRA_MODE="release";
+          export INDRA_ETH_PROVIDER="$MAINNET_ETH_PROVIDER";
+          export INDRA_DOMAINNAME="$MAINNET_DOMAINNAME";
+          export INDRA_ADMIN_TOKEN="$INDRA_ADMIN_TOKEN";
           make restart-prod;
           docker container prune -f;
           docker image ls -q | xargs docker image rm || true;
-        "
+        '

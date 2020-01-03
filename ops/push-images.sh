@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 set -e
 
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+project="`cat $dir/../package.json | jq .name | tr -d '"'`"
 organization="connextproject"
-project="indra"
 registry_url="https://index.docker.io/v1/repositories/$organization"
 
 commit=`git rev-parse HEAD | head -c 8`
-release=`cat package.json | grep '"version":' | awk -F '"' '{print $$4}'`
+release=`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`
 
 version="$1" # one of "commit" or "release"
 shift

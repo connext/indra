@@ -4,8 +4,9 @@ set -e
 ETH_NETWORK="${1:-ganache}"
 version="${2:-latest}"
 
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+project="`cat $dir/../package.json | jq .name | tr -d '"'`"
 cwd="`pwd`"
-project="indra"
 registry="connextproject"
 
 name=${project}_contract_deployer

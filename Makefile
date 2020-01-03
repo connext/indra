@@ -1,4 +1,5 @@
-project=indra
+dir="$(shell cd "$(shell dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+project="`cat $(dir)/package.json | jq .name | tr -d '"'`"
 registry=connextproject
 
 # Specify make-specific variables (VPATH = prerequisite search path)
@@ -32,6 +33,7 @@ messaging=$(cwd)/modules/messaging
 node=$(cwd)/modules/node
 proxy=$(cwd)/modules/proxy
 ssh-action=$(cwd)/ops/ssh-action
+tests=$(cwd)/modules/integration-test
 types=$(cwd)/modules/types
 
 # Setup docker run time
@@ -54,9 +56,9 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev staging release
-dev: database ethprovider node client payment-bot-staging indra-proxy ws-tcp-relay
-staging: daicard-proxy database indra-proxy-prod node-staging payment-bot-staging ws-tcp-relay ethprovider
-release: daicard-proxy database indra-proxy-prod node-release payment-bot-release ws-tcp-relay
+dev: database ethprovider node client payment-bot-staging indra-proxy test-runner ws-tcp-relay
+staging: daicard-proxy database ethprovider indra-proxy-prod node-staging payment-bot-staging test-runner ws-tcp-relay
+release: daicard-proxy database ethprovider indra-proxy-prod node-release payment-bot-release test-runner ws-tcp-relay
 
 start: start-daicard
 
@@ -129,10 +131,10 @@ reset: stop
 	rm -rf $(flags)/deployed-contracts
 
 push-commit:
-	bash ops/push-images.sh commit bot database ethprovider node proxy relay
+	bash ops/push-images.sh commit bot database ethprovider node proxy relay test_runner
 
 push-release:
-	bash ops/push-images.sh release database node proxy relay
+	bash ops/push-images.sh release database node proxy relay test_runner
 
 pull:
 	docker pull $(registry)/$(project)_bot:$(commit) && docker tag $(registry)/$(project)_bot:$(commit) $(project)_bot:$(commit) || true
@@ -141,12 +143,14 @@ pull:
 	docker pull $(registry)/$(project)_node:$(commit) && docker tag $(registry)/$(project)_node:$(commit) $(project)_node:$(commit) || true
 	docker pull $(registry)/$(project)_proxy:$(commit) && docker tag $(registry)/$(project)_proxy:$(commit) $(project)_proxy:$(commit) || true
 	docker pull $(registry)/$(project)_relay:$(commit) && docker tag $(registry)/$(project)_relay:$(commit) $(project)_relay:$(commit) || true
+	docker pull $(registry)/$(project)_test_runner:$(commit) && docker tag $(registry)/$(project)_test_runner:$(commit) $(project)_test_runner:$(commit) || true
 	docker pull $(registry)/$(project)_bot:latest && docker tag $(registry)/$(project)_bot:latest $(project)_bot:latest || true
 	docker pull $(registry)/$(project)_database:latest && docker tag $(registry)/$(project)_database:latest $(project)_database:latest || true
 	docker pull $(registry)/$(project)_ethprovider:latest && docker tag $(registry)/$(project)_ethprovider:latest $(project)_ethprovider:latest || true
 	docker pull $(registry)/$(project)_node:latest && docker tag $(registry)/$(project)_node:latest $(project)_node:latest || true
 	docker pull $(registry)/$(project)_proxy:latest && docker tag $(registry)/$(project)_proxy:latest $(project)_proxy:latest || true
 	docker pull $(registry)/$(project)_relay:latest && docker tag $(registry)/$(project)_relay:latest $(project)_relay:latest || true
+	docker pull $(registry)/$(project)_test_runner:latest && docker tag $(registry)/$(project)_test_runner:latest $(project)_test_runner:latest || true
 
 deployed-contracts: ethprovider
 	bash ops/deploy-contracts.sh ganache
@@ -265,6 +269,12 @@ indra-proxy-prod: daicard-prod dashboard-prod ws-tcp-relay $(shell find $(proxy)
 ssh-action: $(shell find $(ssh-action) $(find_options))
 	$(log_start)
 	docker build --file $(ssh-action)/Dockerfile --tag $(project)_ssh_action $(ssh-action)
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+test-runner: client $(shell find $(tests)/ops $(find_options))
+	$(log_start)
+	docker build --file $(tests)/ops/release.dockerfile $(cache_from) --tag $(project)_test_runner:latest .
+	docker tag $(project)_test_runner:latest $(project)_test_runner:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ws-tcp-relay: ops/ws-tcp-relay.dockerfile
