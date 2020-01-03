@@ -13,7 +13,7 @@ COPY ops/wait-for.sh wait-for.sh
 RUN true
 COPY modules/integration-test/jest.config.js jest.config.js
 RUN true
-COPY modules/integration-test/jest.setup.ts jest.setup.ts
+COPY modules/integration-test/jest.setup.js jest.setup.js
 RUN true
 COPY tsconfig.json /tsconfig.json
 RUN true
