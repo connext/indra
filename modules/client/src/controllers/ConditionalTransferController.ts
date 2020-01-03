@@ -1,7 +1,7 @@
-import EthCrypto from "eth-crypto";
 import { HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
+import * as EthCrypto from "../eth-crypto";
 import {
   CF_METHOD_TIMEOUT,
   createLinkedHash,
@@ -90,7 +90,7 @@ export class ConditionalTransferController extends AbstractController {
       recipientPublicKey.slice(2), // remove 0x
       preImage,
     );
-    const encryptedPreImage = EthCrypto.cipher.stringify(encryptedPreImageCipher);
+    const encryptedPreImage = EthCrypto.stringify(encryptedPreImageCipher);
     await this.connext.setRecipientAndEncryptedPreImageForLinkedTransfer(
       recipient,
       encryptedPreImage,
