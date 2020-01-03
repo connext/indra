@@ -139,7 +139,7 @@ export class DepositController extends AbstractController {
       await Promise.race([
         new Promise(async (res: any, rej: any) => {
           boundReject = this.rejectInstallCoinBalance.bind(null, rej);
-          this.log.warn(
+          this.log.info(
             `subscribing to indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
           );
           await this.connext.messaging.subscribe(
@@ -148,7 +148,7 @@ export class DepositController extends AbstractController {
           );
           const { appInstanceId } = await this.connext.proposeInstallApp(params);
           appId = appInstanceId;
-          this.log.warn(`waiting for proposal acceptance of ${appInstanceId}`);
+          this.log.info(`waiting for proposal acceptance of ${appInstanceId}`);
           this.listener.on(CFCoreTypes.EventNames.REJECT_INSTALL_EVENT, boundReject);
         }),
         delayAndThrow(
@@ -209,7 +209,7 @@ export class DepositController extends AbstractController {
 
   private cleanupInstallListeners = (appId: string, boundReject: any): void => {
     this.connext.messaging.unsubscribe(
-      `indra.node.${this.connext.nodePublicIdentifier}.install.${appId}`,
+      `indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
     );
     this.listener.removeListener(
       CFCoreTypes.EventNames.REJECT_INSTALL_EVENT as CFCoreTypes.EventName,
