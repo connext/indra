@@ -9,7 +9,8 @@ watch_command='
   exec jest --config jest.config.js --watch '"$@"'
 '
 
-project="indra"
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+project="`cat $dir/../package.json | jq .name | tr -d '"'`"
 cwd="`pwd`"
 
 if [[ "$1" == "--watch" ]]
@@ -64,16 +65,16 @@ trap cleanup EXIT
 # Or whether it's running in the background of another script and can't attach to a screen
 test -t 0 -a -t 1 -a -t 2 && interactive="--interactive"
 
+docker network create --attachable $network 2> /dev/null || true
+
 ########################################
 # Run Tests
 
 echo
 echo "Deploying integration tester..."
 
-id="`
-docker service create \
-  --detach \
-  --name="$test_runner_host" \
+docker run \
+  --entrypoint "bash" \
   --env="INDRA_CLIENT_LOG_LEVEL=$log_level" \
   --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
   --env="INDRA_NODE_URL=$NODE_URL" \
@@ -83,15 +84,15 @@ docker service create \
   --env="INDRA_PG_PORT=$postgres_port" \
   --env="INDRA_PG_USERNAME=$postgres_user" \
   --env="NODE_ENV=development" \
-  --mount="type=bind,source=$cwd,target=/root" \
-  --restart-condition="none" \
-  --entrypoint "bash" \
-  ${project}_builder -c '
+  $interactive \
+  --name="$test_runner_host" \
+  --network="$network" \
+  --rm \
+  --tty \
+  ${project}_test_runner -c '
+    set -e
     echo "Integration Tester Container launched!";echo
     echo
-
-    cd modules/integration-test
-    export PATH=./node_modules/.bin:$PATH
 
     function finish {
       echo && echo "Integration tester container exiting.." && exit
@@ -100,14 +101,3 @@ docker service create \
 
     '"$command"'
   '
-`"
-echo "Success! Deployer service started with id: $id"
-echo
-
-docker service logs --raw --follow $test_runner_host &
-logs_pid=$!
-
-# Wait for the deployer to exit..
-while [[ -z "`docker container ls -a | grep "$test_runner_host" | grep "Exited"`" ]]
-do sleep 1
-done
