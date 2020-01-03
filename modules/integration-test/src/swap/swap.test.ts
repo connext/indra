@@ -1,6 +1,6 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient, SwapParameters } from "@connext/types";
-import { AddressZero, Zero } from "ethers/constants";
+import { AddressZero, Zero, One } from "ethers/constants";
 import { bigNumberify, parseEther } from "ethers/utils";
 
 import { createClient } from "../util/client";
@@ -51,7 +51,7 @@ describe("Swaps", () => {
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
 
-    const swapAmountEth = parseEther("0.01").toString();
+    const swapAmountEth = One.toString();
     const swapParams: SwapParameters = {
       amount: swapAmountEth,
       fromAssetId: AddressZero,
