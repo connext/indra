@@ -22,7 +22,11 @@ export default class AdminMessaging {
     });
     this.messaging = messagingFactory.createService("messaging");
     this.adminToken = adminToken;
-    const mnemonic = localStorage.getItem("mnemonic");
+    let mnemonic = localStorage.getItem("mnemonic");
+    if (!mnemonic) {
+      mnemonic = Wallet.createRandom().mnemonic;
+      localStorage.setItem("mnemonic", mnemonic);
+    }
     const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
     this.xpub = hdNode.neuter().extendedKey;
     this.signer = new Wallet(hdNode.derivePath("0"));
