@@ -12,13 +12,13 @@
     "@connext/cf-funding-protocol-contracts": "0.4.1",
     "@connext/messaging": "1.4.1",
     "@connext/types": "1.4.1",
-    "@material-ui/core": "4.7.1",
+    "@material-ui/core": "4.8.2",
     "@material-ui/icons": "4.5.1",
     "react": "16.12.0",
     "react-dom": "16.12.0",
     "react-json-tree": "^0.11.2",
     "react-router-dom": "5.1.2",
-    "react-scripts": "3.2.0"
+    "react-scripts": "3.3.0"
   },
   "browserslist": {
     "production": [
