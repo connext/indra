@@ -5,9 +5,7 @@
     "module": "ESNext",
     "outDir": "dist/",
     "typeRoots": [
-      "./node_modules/@types",
-      "./node_modules/@counterfactual/typescript-typings/types",
-      "./src/typings"
+      "./node_modules/@types"
     ]
   },
   "include": ["src/**/*.ts"]

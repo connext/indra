@@ -19,12 +19,13 @@ INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-cxt1234}" # pass this in through CI
 ####################
 # Internal Config
 
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+project="`cat $dir/../package.json | jq .name | tr -d '"'`"
 ganache_chain_id="4447"
 log_level="3" # set to 5 for all logs or to 0 for none
 nats_port="4222"
 node_port="8080"
 number_of_services="7" # NOTE: Gotta update this manually when adding/removing services :(
-project="indra"
 
 ####################
 # Helper Functions
