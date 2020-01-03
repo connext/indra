@@ -257,7 +257,7 @@ payment-bot-staging: payment-bot-js $(shell find $(bot)/ops $(find_options))
 indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/indra.connext.network/dev.dockerfile $(cache_from) --tag $(project)_proxy:dev .
-	docker tag $(project)_proxy:latest $(project)_proxy:$(commit)
+	docker tag $(project)_proxy:dev $(project)_proxy:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 indra-proxy-prod: daicard-prod dashboard-prod ws-tcp-relay $(shell find $(proxy) $(find_options))
