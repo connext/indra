@@ -1,12 +1,16 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient, SwapParameters } from "@connext/types";
 import { AddressZero, Zero, One } from "ethers/constants";
-import { bigNumberify, parseEther } from "ethers/utils";
+import { bigNumberify, parseEther, BigNumber, formatEther } from "ethers/utils";
 
 import { createClient } from "../util/client";
 import { FUNDED_MNEMONICS } from "../util/constants";
 import { clearDb } from "../util/db";
 import { revertEVMSnapshot, takeEVMSnapshot } from "../util/ethprovider";
+
+export const calculateExchange = (amount: BigNumber, swapRate: string): BigNumber => {
+  return bigNumberify(formatEther(amount.mul(parseEther(swapRate))).replace(/\.[0-9]*$/, ""));
+};
 
 describe("Swaps", () => {
   let clientA: IConnextClient;
@@ -51,9 +55,9 @@ describe("Swaps", () => {
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
 
-    const swapAmountEth = One.toString();
+    const swapAmountEth = One;
     const swapParams: SwapParameters = {
-      amount: swapAmountEth,
+      amount: swapAmountEth.toString(),
       fromAssetId: AddressZero,
       swapRate,
       toAssetId: tokenAddress,
@@ -74,7 +78,7 @@ describe("Swaps", () => {
     );
     expect(postSwapFreeBalanceEthNode).toBeBigNumberEq(swapAmountEth);
 
-    const expectedTokenSwapAmount = bigNumberify(swapAmountEth).mul(swapRate);
+    const expectedTokenSwapAmount = calculateExchange(swapAmountEth, swapRate);
     expect(postSwapFreeBalanceTokenClient).toBeBigNumberEq(expectedTokenSwapAmount);
     expect(postSwapFreeBalanceTokenNode).toBeBigNumberEq(
       preSwapFreeBalanceTokenNode.sub(expectedTokenSwapAmount.toString()),
