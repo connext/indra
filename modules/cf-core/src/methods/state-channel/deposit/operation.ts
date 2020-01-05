@@ -113,15 +113,7 @@ export async function makeDeposit(
 
   const signer = await requestHandler.getSigner();
   const signerAddress = await signer.getAddress();
-  const nonce = await provider.getTransactionCount(signerAddress);
-
-  const tx: TransactionRequest = {
-    to: multisigAddress,
-    value: bigNumberify(amount),
-    nonce,
-    gasLimit: 30000,
-    gasPrice: await provider.getGasPrice()
-  };
+  let nonce = await provider.getTransactionCount(signerAddress);
 
   let txResponse: TransactionResponse;
 
@@ -130,12 +122,22 @@ export async function makeDeposit(
   while (retryCount > 0) {
     try {
       if (tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
+        const tx: TransactionRequest = {
+          to: multisigAddress,
+          value: bigNumberify(amount),
+          gasLimit: 30000,
+          gasPrice: await provider.getGasPrice()
+        };
+
         txResponse = await signer.sendTransaction(tx);
       } else {
         const erc20Contract = new Contract(tokenAddress!, ERC20.abi, signer);
         txResponse = await erc20Contract.functions.transfer(
           multisigAddress,
-          bigNumberify(amount)
+          bigNumberify(amount),
+          {
+            nonce
+          }
         );
       }
       break;
