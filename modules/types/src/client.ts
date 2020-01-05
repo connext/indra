@@ -61,6 +61,7 @@ export interface IConnextClient {
   multisigAddress: string;
   nodePublicIdentifier: string;
   publicIdentifier: string;
+  signerAddress: string;
 
   ////////////////////////////////////////
   // Methods
