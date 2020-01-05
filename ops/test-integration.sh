@@ -2,11 +2,11 @@
 set -e
 
 test_command='
-  jest --config jest.config.js --forceExit '"$@"'
+  jest --config jest.config.js --runInBand --forceExit '"$@"'
 '
 
 watch_command='
-  exec jest --config jest.config.js --watch '"$@"'
+  exec jest --config jest.config.js --runInBand --watch '"$@"'
 '
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
