@@ -22,7 +22,7 @@ describe("Collateral", () => {
     await revertEVMSnapshot(snapshot);
   });
 
-  test.only("happy case: node should collateralize ETH", async () => {
+  test("happy case: node should collateralize ETH", async () => {
     await clientA.requestCollateral(AddressZero);
     const freeBalance = await clientA.getFreeBalance(AddressZero);
 
@@ -39,6 +39,6 @@ describe("Collateral", () => {
 
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
     expect(freeBalance[clientA.freeBalanceAddress]).toBeBigNumberEq(0);
-    expect(freeBalance[nodeFreeBalanceAddress]).toBeBigNumberEq(1);
+    expect(freeBalance[nodeFreeBalanceAddress]).toBeBigNumberEq(parseEther("10"));
   });
 });
