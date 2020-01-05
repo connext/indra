@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jest --detectOpenHandles --config jest.config.js"
+    "test": "jest --detectOpenHandles --runInBand --config jest.config.js"
   },
   "author": "",
   "license": "ISC",
