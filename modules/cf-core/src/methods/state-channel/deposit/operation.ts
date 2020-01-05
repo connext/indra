@@ -113,7 +113,6 @@ export async function makeDeposit(
 
   const signer = await requestHandler.getSigner();
   const signerAddress = await signer.getAddress();
-  let nonce = await provider.getTransactionCount(signerAddress);
 
   let txResponse: TransactionResponse;
 
@@ -126,7 +125,8 @@ export async function makeDeposit(
           to: multisigAddress,
           value: bigNumberify(amount),
           gasLimit: 30000,
-          gasPrice: await provider.getGasPrice()
+          gasPrice: await provider.getGasPrice(),
+          nonce: provider.getTransactionCount(signerAddress, "pending"),
         };
 
         txResponse = await signer.sendTransaction(tx);
@@ -136,7 +136,7 @@ export async function makeDeposit(
           multisigAddress,
           bigNumberify(amount),
           {
-            nonce
+            nonce: provider.getTransactionCount(signerAddress, "pending"),
           }
         );
       }
