@@ -20,18 +20,12 @@ describe("Swaps", () => {
   let nodePublicIdentifier: string;
 
   beforeEach(async () => {
-    await clearDb();
-    clientA = await createClient(FUNDED_MNEMONICS[0]);
-    snapshot = await takeEVMSnapshot();
+    clientA = await createClient();
 
     tokenAddress = clientA.config.contractAddresses.Token;
     nodePublicIdentifier = clientA.config.nodePublicIdentifier;
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
   }, 90_000);
-
-  afterEach(async () => {
-    await revertEVMSnapshot(snapshot);
-  });
 
   test("happy case: client swaps eth for tokens successfully", async () => {
     // client deposit and request node collateral

@@ -4,23 +4,14 @@ import { AddressZero } from "ethers/constants";
 
 import { createClient } from "../util/client";
 import { FUNDED_MNEMONICS } from "../util/constants";
-import { clearDb } from "../util/db";
-import { revertEVMSnapshot, takeEVMSnapshot } from "../util/ethprovider";
 import { parseEther } from "ethers/utils";
 
 describe("Collateral", () => {
   let clientA: IConnextClient;
-  let snapshot: string;
 
   beforeEach(async () => {
-    await clearDb();
-    clientA = await createClient(FUNDED_MNEMONICS[0]);
-    snapshot = await takeEVMSnapshot();
+    clientA = await createClient();
   }, 90_000);
-
-  afterEach(async () => {
-    await revertEVMSnapshot(snapshot);
-  });
 
   test("happy case: node should collateralize ETH", async () => {
     await clientA.requestCollateral(AddressZero);
