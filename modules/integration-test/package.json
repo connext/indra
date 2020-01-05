@@ -15,6 +15,7 @@
     "@types/jest": "24.0.25",
     "dotenv": "8.2.0",
     "ethers": "4.0.41",
+    "human-standard-token-abi": "2.0.0",
     "jest": "24.9.0",
     "pg": "7.17.0",
     "ts-jest": "24.2.0",
