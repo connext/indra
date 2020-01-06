@@ -2,9 +2,7 @@ require('dotenv').config()
 
 module.exports = {
   preset: 'ts-jest',
+  setupFilesAfterEnv: ['./src/setup.ts'],
   testEnvironment: 'node',
-  setupFilesAfterEnv: ['./jest.setup.js'],
-  transform: {
-    '^.+\\.tsx?$': 'ts-jest',
-  },
+  transform: { '^.+\\.tsx?$': 'ts-jest', },
 };
