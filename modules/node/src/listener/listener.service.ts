@@ -194,15 +194,15 @@ export default class ListenerService implements OnModuleInit {
       UPDATE_STATE_EVENT: async (data: UpdateStateMessage): Promise<void> => {
         // if this is for a recipient of a transfer
         logEvent("UPDATE_STATE_EVENT", data);
-        let transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(
-          data.data.appInstanceId,
+        const { newState } = data.data;
+        let transfer = await this.linkedTransferRepository.findByLinkedHash(
+          (newState as SimpleLinkedTransferAppState).linkedHash,
         );
         if (!transfer) {
           logger.debug(`Could not find transfer for update state event`);
           return;
         }
         // update transfer
-        const { newState } = data.data;
         transfer.preImage = (newState as SimpleLinkedTransferAppState).preImage;
         transfer = await this.linkedTransferRepository.markAsRedeemed(
           transfer,

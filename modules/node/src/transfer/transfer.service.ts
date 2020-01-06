@@ -159,9 +159,10 @@ export class TransferService {
   async resolveLinkedTransfer(
     userPubId: string,
     paymentId: string,
-    preImage: string,
+    linkedHash: string,
+    meta: object,
   ): Promise<ResolveLinkedTransferResponse> {
-    logger.debug(`resolveLinkedTransfer(${userPubId}, ${paymentId}, ${preImage})`);
+    logger.debug(`resolveLinkedTransfer(${userPubId}, ${paymentId}, ${linkedHash})`);
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
     if (!channel) {
       throw new Error(`No channel exists for userPubId ${userPubId}`);
@@ -176,15 +177,17 @@ export class TransferService {
     const { assetId, amount } = transfer;
     const amountBN = bigNumberify(amount);
 
-    const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);
     if (linkedHash !== transfer.linkedHash) {
       throw new Error(`No transfer exists for linkedHash ${linkedHash}`);
     }
-    if (transfer.status === LinkedTransferStatus.REDEEMED) {
-      throw new Error(`Transfer with linkedHash ${linkedHash} has already been redeemed`);
+
+    if (transfer.status !== LinkedTransferStatus.PENDING) {
+      throw new Error(
+        `Transfer with paymentId ${paymentId} cannot be redeemed with status: ${transfer.status}`,
+      );
     }
 
-    logger.debug(`Found linked transfer in our database, attempting to resolve...`);
+    logger.debug(`Found linked transfer in our database, attempting to install...`);
 
     // check that linked transfer app has been installed from sender
     const defaultApp = (await this.configService.getDefaultApps()).find(
@@ -245,8 +248,6 @@ export class TransferService {
       this.channelService.requestCollateral(userPubId, assetId, amountBN);
     }
 
-    const preTransferBal = freeBal[this.cfCoreService.cfCore.freeBalanceAddress];
-
     const initialState: SimpleLinkedTransferAppStateBigNumber = {
       amount: amountBN,
       assetId,
@@ -273,6 +274,7 @@ export class TransferService {
       Zero,
       transfer.assetId,
       SupportedApplications.SimpleLinkedTransferApp as SupportedApplication,
+      meta,
     );
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {
@@ -281,46 +283,11 @@ export class TransferService {
 
     // add preimage to database to allow unlock from a listener
     transfer.receiverAppInstanceId = receiverAppInstallRes.appInstanceId;
-    transfer.preImage = preImage;
     transfer.paymentId = paymentId;
     await this.linkedTransferRepository.save(transfer);
 
-    await this.cfCoreService.takeAction(receiverAppInstallRes.appInstanceId, { preImage });
-    await this.cfCoreService.uninstallApp(receiverAppInstallRes.appInstanceId);
-
-    // pre - post = amount
-    // sanity check, free balance decreased by payment amount
-    const postTransferBal = await this.cfCoreService.getFreeBalance(
-      userPubId,
-      channel.multisigAddress,
-      assetId,
-    );
-
-    const diff = preTransferBal.sub(postTransferBal[this.cfCoreService.cfCore.freeBalanceAddress]);
-
-    if (!diff.eq(amountBN)) {
-      logger.warn(`Got an unexpected difference of free balances before and after uninstalling`);
-      logger.warn(
-        `preTransferBal: ${preTransferBal.toString()}, postTransferBalance: ${postTransferBal[
-          this.cfCoreService.cfCore.freeBalanceAddress
-        ].toString()}, expected ${amount}`,
-      );
-    } else {
-      logger.log(`Balances look okay, consider removing check in transfer.service line 289`);
-    }
-
-    this.linkedTransferRepository.markAsRedeemed(transfer, channel);
-
-    // uninstall sender app
-    // dont await so caller isnt blocked by this
-    // TODO: if sender is offline, this will fail
-    this.cfCoreService
-      .takeAction(senderApp.identityHash, { preImage })
-      .then(() => this.cfCoreService.uninstallApp(senderApp.identityHash))
-      .then(() => this.linkedTransferRepository.markAsReclaimed(transfer))
-      .catch((e: any): void => logger.error(e.message, e.stack));
-
     return {
+      appId: receiverAppInstallRes.appInstanceId,
       freeBalance: await this.cfCoreService.getFreeBalance(
         userPubId,
         channel.multisigAddress,

@@ -96,6 +96,7 @@ export type ResolveConditionParameters<T = string> =
   | ResolveLinkedTransferToRecipientParameters<T>;
 
 export type ResolveLinkedTransferResponse = {
+  appId: string;
   freeBalance: CFCoreTypes.GetFreeBalanceStateResult;
   paymentId: string;
 };
