@@ -1,24 +1,27 @@
 const path = require('path');
-const webpack = require('webpack');
+const nodeExternals = require('webpack-node-externals');
 
 module.exports = {
   mode: "development",
   target: 'node',
-  externals: {
-    eccrypto: 'commonjs eccrypto',
-    pg: 'commonjs pg'
-  },
+  externals: [nodeExternals({
+    modulesDir: path.resolve(__dirname, '../../../node_modules'),
+    whitelist: /@connext\/.*/,
+  })],
 
   resolve: {
-    extensions: [ '.js', '.ts', '.json' ],
+    extensions: ['.js', '.ts', '.json'],
     symlinks: false
   },
 
-  entry: path.join(__dirname, '../src/index.ts'),
+  entry: {
+    tests: path.join(__dirname, '../src/index.ts'),
+    setup: path.join(__dirname, '../src/setup.ts'),
+  },
 
   output: {
     path: path.join(__dirname, '../dist'),
-    filename: 'index.js',
+    filename: '[name].bundle.js',
   },
 
   module: {
@@ -46,6 +49,5 @@ module.exports = {
     ],
   },
 
-  plugins: []
   // stats: { warnings: false, },
 };

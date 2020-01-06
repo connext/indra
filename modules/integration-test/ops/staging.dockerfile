@@ -5,21 +5,20 @@ RUN apk add --update --no-cache bash curl g++ gcc git jq make python
 RUN npm config set unsafe-perm true
 RUN npm install -g npm@6.12.0
 
-# TODO: use local version of connext/client instead of one from npm registry
 COPY modules/integration-test/package.json package.json
-RUN npm install > /dev/null 2>&1
+RUN npm install --only=production > /dev/null 2>&1
 
 # https://github.com/moby/moby/issues/37965#issuecomment-426853382
 COPY ops/wait-for.sh wait-for.sh
 RUN true
-COPY modules/integration-test/src src
-RUN true
-COPY modules/integration-test/jest.config.js jest.config.js
-RUN true
-COPY modules/integration-test/jest.setup.ts jest.setup.ts
-RUN true
 COPY modules/integration-test/tsconfig.json tsconfig.json
+RUN true
+COPY modules/integration-test/jest.cd.js jest.config.js
+RUN true
+COPY modules/integration-test/ops/entry.sh entry.sh
+RUN true
+COPY modules/integration-test/dist dist
 
 ENV PATH="./node_modules/.bin:${PATH}"
-ENTRYPOINT ["jest"]
+ENTRYPOINT ["bash", "entry.sh"]
 
