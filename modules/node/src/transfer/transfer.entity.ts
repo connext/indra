@@ -64,7 +64,6 @@ export class PeerToPeerTransfer {
 
 export enum LinkedTransferStatus {
   PENDING = "PENDING",
-  CREATED = "CREATED",
   REDEEMED = "REDEEMED",
   FAILED = "FAILED",
   RECLAIMED = "RECLAIMED",
