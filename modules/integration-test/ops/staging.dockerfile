@@ -15,8 +15,9 @@ COPY modules/integration-test/jest.cd.js jest.config.js
 RUN true
 COPY modules/integration-test/ops/entry.sh entry.sh
 RUN true
+COPY modules/integration-test/dist/setup.staging.bundle.js dist/setup.bundle.js
+RUN true
 COPY modules/integration-test/dist/tests.staging.bundle.js dist/test.bundle.js
 
 ENV PATH="./node_modules/.bin:${PATH}"
 ENTRYPOINT ["bash", "entry.sh"]
-
