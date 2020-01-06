@@ -21,7 +21,8 @@ docker swarm init 2> /dev/null || true
 ########################################
 ## Setup env vars
 
-project="indra"
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+project="`cat $dir/../package.json | jq .name | tr -d '"'`"
 cwd="`pwd`"
 args="$@"
 identifier=1

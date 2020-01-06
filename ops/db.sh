@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-project="indra"
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+project="`cat $dir/../package.json | jq .name | tr -d '"'`"
 
 username=$project
 database=$project

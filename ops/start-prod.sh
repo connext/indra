@@ -19,12 +19,13 @@ INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-cxt1234}" # pass this in through CI
 ####################
 # Internal Config
 
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+project="`cat $dir/../package.json | jq .name | tr -d '"'`"
 ganache_chain_id="4447"
 log_level="3" # set to 5 for all logs or to 0 for none
 nats_port="4222"
 node_port="8080"
 number_of_services="7" # NOTE: Gotta update this manually when adding/removing services :(
-project="indra"
 
 ####################
 # Helper Functions
@@ -61,6 +62,9 @@ then
   db_volume="database_test_`date +%y%m%d_%H%M%S`"
   db_secret="${project}_database_test"
   new_secret "$db_secret" "$project"
+  db_port='ports:
+      - "5432:5432"
+  '
 else
   db_volume="database"
   db_secret="${project}_database"
@@ -79,23 +83,27 @@ redis_url="redis://redis:6379"
 ########################################
 ## Docker Image Config
 
-registry="docker.io/connextproject"
+registry="docker.io/connextproject/"
 
-if [[ "$INDRA_MODE" == "test" || "$INDRA_MODE" == "staging" ]]
+if [[ "$INDRA_MODE" == "test" ]]
+then
+  version="`git rev-parse HEAD | head -c 8`"
+  registry=""
+elif [[ "$INDRA_MODE" == "staging" ]]
 then version="`git rev-parse HEAD | head -c 8`"
 elif [[ "$INDRA_MODE" == "release" ]]
 then version="`cat package.json | jq .version | tr -d '"'`"
 else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" && exit 1
 fi
 
-ethprovider_image="$registry/${project}_ethprovider:$version"
-database_image="$registry/${project}_database:$version"
+ethprovider_image="$registry${project}_ethprovider:$version"
+database_image="$registry${project}_database:$version"
 logdna_image="logdna/logspout:1.2.0"
 nats_image="nats:2.0.0-linux"
-node_image="$registry/${project}_node:$version"
-proxy_image="$registry/${project}_proxy:$version"
+node_image="$registry${project}_node:$version"
+proxy_image="$registry${project}_proxy:$version"
 redis_image="redis:5-alpine"
-relay_image="$registry/${project}_relay:$version"
+relay_image="$registry${project}_relay:$version"
 
 pull_if_unavailable "$database_image"
 pull_if_unavailable "$logdna_image"
@@ -239,6 +247,7 @@ services:
     volumes:
       - $db_volume:/var/lib/postgresql/data
       - `pwd`/modules/database/snapshots:/root/snapshots
+    $db_port
 
   nats:
     image: $nats_image

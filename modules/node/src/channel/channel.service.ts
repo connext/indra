@@ -237,29 +237,34 @@ export class ChannelService {
    * @param creationData event data
    */
   async makeAvailable(creationData: CreateChannelMessage): Promise<void> {
-    const existing = await this.channelRepository.findByMultisigAddress(
+    let existing = await this.channelRepository.findByMultisigAddress(
       creationData.data.multisigAddress,
     );
     if (existing) {
       if (
-        !creationData.data.owners.includes(existing.nodePublicIdentifier) ||
-        !creationData.data.owners.includes(existing.userPublicIdentifier)
+        !creationData.data.owners.includes(xpubToAddress(existing.nodePublicIdentifier)) ||
+        !creationData.data.owners.includes(xpubToAddress(existing.userPublicIdentifier))
       ) {
         throw new Error(
           `Channel has already been created with different owners! ${stringify(
             existing,
-          )}. Event data: ${creationData}`,
+          )}. Event data: ${stringify(creationData)}`,
         );
       }
-      logger.log(`Channel already exists in database`);
+      if (existing.available) {
+        logger.log(`Channel is already available, doing nothing`);
+        return;
+      }
+      logger.log(`Channel already exists in database, marking as available`);
+    } else {
+      logger.log(`Creating new channel from data ${stringify(creationData)}`);
+      existing = new Channel();
+      existing.userPublicIdentifier = creationData.data.counterpartyXpub;
+      existing.nodePublicIdentifier = this.cfCoreService.cfCore.publicIdentifier;
+      existing.multisigAddress = creationData.data.multisigAddress;
     }
-    logger.log(`Creating new channel from data ${stringify(creationData)}`);
-    const channel = new Channel();
-    channel.userPublicIdentifier = creationData.data.counterpartyXpub;
-    channel.nodePublicIdentifier = this.cfCoreService.cfCore.publicIdentifier;
-    channel.multisigAddress = creationData.data.multisigAddress;
-    channel.available = true;
-    await this.channelRepository.save(channel);
+    existing.available = true;
+    await this.channelRepository.save(existing);
   }
 
   /**
