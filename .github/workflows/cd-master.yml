@@ -23,7 +23,7 @@ jobs:
     - run: make release
     - run: make build-report
     - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-    - run: make push-commit
+    - run: make push-release
 
   test-node:
     runs-on: ubuntu-latest
@@ -94,18 +94,6 @@ jobs:
     - run: make pull
     - run: make start-test
     - run: make test-daicard
-
-  push:
-    env:
-      DOCKER_USER: ${{ secrets.DOCKER_USER }}
-      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-    needs: [test-node, test-cf, test-bot, test-bot-farm, test-daicard, test-ssh]
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
-    - run: make pull
-    - run: make push-release
 
   deploy-rinkeby:
     env:
