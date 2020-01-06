@@ -42,7 +42,7 @@ echo "Running subbed command: $subbed_cmd"
 
 exec ssh -i $KEY_FILE -o StrictHostKeyChecking=no $HOST "bash -s" <<EOF
   set -e;
-  # Run CMD in an up-to-date indra repo
+  # Run CMD in an up-to-date repo
   git clone https://github.com/ConnextProject/indra.git || true;
   cd indra;
   git fetch --all --prune --tags;
