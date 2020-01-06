@@ -1,5 +1,5 @@
-dir="$(shell cd "$(shell dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $(dir)/package.json | jq .name | tr -d '"'`"
+dir=$(shell cd "$(shell dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )
+project=$(shell cat $(dir)/package.json | jq .name | tr -d '"')
 registry=connextproject
 
 # Specify make-specific variables (VPATH = prerequisite search path)
