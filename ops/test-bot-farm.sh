@@ -1,5 +1,5 @@
 #!/user/bin/env bash
-set -e
+set -e -o pipefail
 
 # Turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
@@ -7,7 +7,8 @@ docker swarm init 2> /dev/null || true
 ########################################
 ## Env and variable setup
 
-project="indra"
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+project="`cat $dir/../package.json | jq .name | tr -d '"'`"
 tokenAddress="`cat address-book.json | jq '.["4447"].Token.address' | tr -d '"'`"
 numBots=${NUMBER_BOTS:-3};
 botsFile="bots.json"
@@ -16,6 +17,10 @@ linksFile="links.json"
 eth_rpc="${ETH_RPC_URL:-http://localhost:8545}"
 sugar_daddy="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 divider="\n########################################"
+
+if [[ ! -d "./node_modules/ethers" || ! -d "./node_modules/openzeppelin-solidity" ]]
+then npm i --no-save ethers openzeppelin-solidity
+fi
 
 ########################################
 ## Helper Functions
@@ -26,7 +31,7 @@ function cleanup {
   echo "Shutting down recipient bots: $botIds"
   if [[ -n "$botIds" ]]
   then echo "$botIds" | xargs docker container stop
-  else echo "nvmd none are running" && exit 0
+  else echo "nvmd none are running"
   fi
 }
 trap cleanup EXIT SIGINT

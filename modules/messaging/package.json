@@ -19,8 +19,8 @@
     "websocket-nats": "0.3.3"
   },
   "devDependencies": {
-    "rollup": "1.27.8",
-    "rollup-plugin-typescript2": "0.25.2",
+    "rollup": "1.27.14",
+    "rollup-plugin-typescript2": "0.25.3",
     "typescript": "3.5.3"
   }
 }
