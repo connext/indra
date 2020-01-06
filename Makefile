@@ -33,7 +33,7 @@ messaging=$(cwd)/modules/messaging
 node=$(cwd)/modules/node
 proxy=$(cwd)/modules/proxy
 ssh-action=$(cwd)/ops/ssh-action
-tests=$(cwd)/modules/integration-test
+tests=$(cwd)/modules/test-runner
 types=$(cwd)/modules/types
 
 # Setup docker run time
@@ -273,13 +273,13 @@ ssh-action: $(shell find $(ssh-action) $(find_options))
 
 test-runner-release: $(shell find $(tests)/ops $(find_options))
 	$(log_start)
-	$(docker_run) "export MODE=release; cd modules/integration-test && npm run build-bundle"
+	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build-bundle"
 	docker build --file $(tests)/ops/release.dockerfile $(cache_from) --tag $(project)_test_runner:$(version) .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 test-runner-staging: $(shell find $(tests)/ops $(find_options))
 	$(log_start)
-	$(docker_run) "export MODE=staging; cd modules/integration-test && npm run build-bundle"
+	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build-bundle"
 	docker build --file $(tests)/ops/staging.dockerfile $(cache_from) --tag $(project)_test_runner:latest .
 	docker tag $(project)_test_runner:latest $(project)_test_runner:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@

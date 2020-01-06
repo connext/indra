@@ -5,19 +5,19 @@ RUN apk add --update --no-cache bash curl g++ gcc git jq make python
 RUN npm config set unsafe-perm true
 RUN npm install -g npm@6.12.0
 
-COPY modules/integration-test/package.json package.json
+COPY modules/test-runner/package.json package.json
 RUN npm install --only=production > /dev/null 2>&1
 
 # https://github.com/moby/moby/issues/37965#issuecomment-426853382
 COPY ops/wait-for.sh wait-for.sh
 RUN true
-COPY modules/integration-test/jest.cd.js jest.config.js
+COPY modules/test-runner/jest.cd.js jest.config.js
 RUN true
-COPY modules/integration-test/ops/entry.sh entry.sh
+COPY modules/test-runner/ops/entry.sh entry.sh
 RUN true
-COPY modules/integration-test/dist/setup.staging.bundle.js dist/setup.bundle.js
+COPY modules/test-runner/dist/setup.staging.bundle.js dist/setup.bundle.js
 RUN true
-COPY modules/integration-test/dist/tests.staging.bundle.js dist/test.bundle.js
+COPY modules/test-runner/dist/tests.staging.bundle.js dist/test.bundle.js
 
 ENV PATH="./node_modules/.bin:${PATH}"
 ENTRYPOINT ["bash", "entry.sh"]
