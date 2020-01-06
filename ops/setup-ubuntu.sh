@@ -1,9 +1,11 @@
 #!/bin/bash
 set -e
 
-project="indra"
 hostname="$1"
 network="${2:-rinkeby}"
+
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+project="`cat $dir/../package.json | jq .name | tr -d '"'`"
 user="ubuntu"
 key_name="${project}_mnemonic_$network" # name of docker secret to store mnemonic in
 pubkey="$HOME/.ssh/circleci.pub"

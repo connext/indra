@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 set -e
 
-project="indra"
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+project="`cat $dir/../package.json | jq .name | tr -d '"'`"
 cypress="node_modules/.bin/cypress"
 ui="${1:-daicard}"
 
-# Make sure cypress is installed while we wait for the recipient bot to do it's thing
+# Make sure bare minimum dependencies are installed
+if [[ ! -f "$cypress" || ! -d "./node_modules/ethers" ]]
+then npm i --no-save bn.js cypress ethers openzeppelin-solidity
+fi
 $cypress install
 
 ########################################

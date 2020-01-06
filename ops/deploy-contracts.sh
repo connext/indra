@@ -1,19 +1,22 @@
 #!/bin/bash
 set -e
 
-project="indra"
-name=${project}_contract_deployer
+ETH_NETWORK="${1:-ganache}"
+version="${2:-latest}"
+
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+project="`cat $dir/../package.json | jq .name | tr -d '"'`"
 cwd="`pwd`"
+registry="connextproject"
+
+name=${project}_contract_deployer
+log="$cwd/ops/ethprovider/ganache.log"
+image="${project}_ethprovider:$version"
 
 ########################################
 # Setup env vars
 
 INFURA_KEY=$INFURA_KEY
-
-if [[ -n "$1" ]]
-then ETH_NETWORK="$1"
-else ETH_NETWORK="${ETH_NETWORK:-ganache}"
-fi
 
 if [[ "$ETH_NETWORK" == "ganache" ]]
 then ETH_PROVIDER="http://localhost:8545"
@@ -63,6 +66,8 @@ then
   fi
 fi
 
+touch $log
+
 ########################################
 # Remove this deployer service when we're done
 
@@ -84,44 +89,34 @@ if [[ "$ETH_NETWORK" != "ganache" ]]
 then SECRET_ENV="--env=ETH_MNEMONIC_FILE=/run/secrets/$ETH_MNEMONIC_FILE --secret=$ETH_MNEMONIC_FILE"
 fi
 
-# Ensure contract artifacts are up-to-date first
-make contracts
-
 echo
-echo "Deploying contract deployer..."
+echo "Deploying contract deployer (image: $image)..."
+
+if [[ "`docker image ls -q $image`" == "" ]]
+then
+  echo "Image $image does not exist locally, trying $registry/$image"
+  image=$registry/$image
+  if [[ "`docker image ls -q $image`" == "" ]]
+  then docker pull $image || (echo "Image does not exist" && exit 1)
+  fi
+fi
 
 id="`
-docker service create \
-  --detach \
-  --name="$name" \
-  --env="ETH_MNEMONIC=$ETH_MNEMONIC" \
-  --env="ETH_NETWORK=$ETH_NETWORK" \
-  --env="ETH_PROVIDER=$ETH_PROVIDER" \
-  --env="INFURA_KEY=$INFURA_KEY" \
-  --mount="type=volume,source=${project}_chain_dev,target=/data" \
-  --mount="type=bind,source=$cwd,target=/root" \
-  --restart-condition="none" \
-  $SECRET_ENV \
-  --entrypoint "bash" \
-  ${project}_builder -c '
-    if [[ "$ETH_NETWORK" == "ganache" ]]
-    then
-      echo "Starting Ganache.."
-      mkdir -p /data
-      ./node_modules/.bin/ganache-cli \
-        --db="/data" \
-        --gasPrice="10000000000" \
-        --host="0.0.0.0" \
-        --mnemonic="$ETH_MNEMONIC" \
-        --networkId="4447" \
-        --port="8545" \
-         > ops/ganache.log &
-      bash /ops/wait-for.sh localhost:8545 2> /dev/null
-    fi
-    touch address-book.json
-    node ops/migrate-contracts.js
-  ' 2> /dev/null
+  docker service create \
+    --detach \
+    --name="$name" \
+    --env="ETH_MNEMONIC=$ETH_MNEMONIC" \
+    --env="ETH_NETWORK=$ETH_NETWORK" \
+    --env="ETH_PROVIDER=$ETH_PROVIDER" \
+    --env="INFURA_KEY=$INFURA_KEY" \
+    --mount="type=volume,source=${project}_chain_dev,target=/data" \
+    --mount="type=bind,source=$log,target=/root/ganache.log" \
+    --mount="type=bind,source=$cwd/address-book.json,target=/root/address-book.json" \
+    --restart-condition="none" \
+    $SECRET_ENV \
+    $image deploy 2> /dev/null
 `"
+
 echo "Success! Deployer service started with id: $id"
 echo
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-project="indra"
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+project="`cat $dir/../package.json | jq .name | tr -d '"'`"
 
 docker container stop ${project}_builder 2> /dev/null || true
 docker stack rm $project 2> /dev/null || true
