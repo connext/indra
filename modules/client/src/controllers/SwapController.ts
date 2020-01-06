@@ -124,11 +124,11 @@ export class SwapController extends AbstractController {
       },
       appDefinition,
       initialState,
-      initiatorDeposit: amount, // TODO will this work?
+      initiatorDeposit: amount,
       initiatorDepositTokenAddress: fromAssetId,
       outcomeType: appInfo.outcomeType,
       proposedToIdentifier: this.connext.nodePublicIdentifier,
-      responderDeposit: swappedAmount, // TODO will this work? ERC20 context?
+      responderDeposit: swappedAmount,
       responderDepositTokenAddress: toAssetId,
       timeout: Zero,
     };
