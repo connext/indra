@@ -1,12 +1,18 @@
 const path = require('path');
 const nodeExternals = require('webpack-node-externals');
 
+const mode = process.env.MODE === "release" ? "release" : "staging";
+
+const whitelist = mode === "release" ? '' : /@connext\/.*/;
+
+console.log(`Building ${mode}-mode integration bundle`);
+
 module.exports = {
   mode: "development",
   target: 'node',
   externals: [nodeExternals({
     modulesDir: path.resolve(__dirname, '../../../node_modules'),
-    whitelist: /@connext\/.*/,
+    whitelist,
   })],
 
   resolve: {
@@ -21,7 +27,7 @@ module.exports = {
 
   output: {
     path: path.join(__dirname, '../dist'),
-    filename: '[name].bundle.js',
+    filename: `[name].${mode}.bundle.js`,
   },
 
   module: {

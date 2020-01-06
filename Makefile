@@ -271,13 +271,15 @@ ssh-action: $(shell find $(ssh-action) $(find_options))
 	docker build --file $(ssh-action)/Dockerfile --tag $(project)_ssh_action $(ssh-action)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-test-runner-release: test-runner-js $(shell find $(tests)/ops $(find_options))
+test-runner-release: $(shell find $(tests)/ops $(find_options))
 	$(log_start)
+	$(docker_run) "export MODE=release; cd modules/integration-test && npm run build-bundle"
 	docker build --file $(tests)/ops/release.dockerfile $(cache_from) --tag $(project)_test_runner:$(version) .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-test-runner-staging: test-runner-js $(shell find $(tests)/ops $(find_options))
+test-runner-staging: $(shell find $(tests)/ops $(find_options))
 	$(log_start)
+	$(docker_run) "export MODE=staging; cd modules/integration-test && npm run build-bundle"
 	docker build --file $(tests)/ops/staging.dockerfile $(cache_from) --tag $(project)_test_runner:latest .
 	docker tag $(project)_test_runner:latest $(project)_test_runner:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
@@ -347,11 +349,6 @@ node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrati
 payment-bot-js: node-modules client types $(shell find $(bot)/src $(bot)/ops $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/payment-bot && npm run build-bundle"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-test-runner-js: node-modules client types $(shell find $(tests)/src $(tests)/ops $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/integration-test && npm run build-bundle"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 types: node-modules $(shell find $(types)/src $(find_options))

@@ -11,17 +11,11 @@ RUN npm install --only=production > /dev/null 2>&1
 # https://github.com/moby/moby/issues/37965#issuecomment-426853382
 COPY ops/wait-for.sh wait-for.sh
 RUN true
-COPY modules/integration-test/jest.config.js jest.config.js
+COPY modules/integration-test/jest.cd.js jest.config.js
 RUN true
-COPY modules/integration-test/jest.setup.ts jest.setup.ts
+COPY modules/integration-test/ops/entry.sh entry.sh
 RUN true
-COPY tsconfig.json /tsconfig.json
-RUN true
-COPY modules/integration-test/tsconfig.json tsconfig.json
-RUN true
-COPY modules/integration-test/src src
-RUN true
-COPY modules/integration-test/dist dist
+COPY modules/integration-test/dist/tests.release.bundle.js dist/test.bundle.js
 
 ENV PATH="./node_modules/.bin:${PATH}"
 ENTRYPOINT ["jest"]
