@@ -46,6 +46,10 @@ export class DepositController extends AbstractController {
 
     this.log.info(`\nDepositing ${amount} of ${assetId} into ${this.connext.multisigAddress}\n`);
 
+    // propose coin balance refund app
+    const appId = await this.proposeDepositInstall(assetId);
+    this.log.debug(`Coin balance refund app proposed with id: ${appId}`);
+
     try {
       this.log.info(`Calling ${CFCoreTypes.RpcMethodNames.chan_deposit}`);
       await this.connext.rescindDepositRights({ assetId });
@@ -79,7 +83,7 @@ export class DepositController extends AbstractController {
   /////////////////////////////////
   ////// PRIVATE METHODS
 
-  private proposeDepositInstall = async (assetId: string): Promise<string | undefined> => {
+  private proposeDepositInstall = async (assetId: string): Promise<string> => {
     const threshold =
       assetId === AddressZero
         ? await this.ethProvider.getBalance(this.connext.multisigAddress)
