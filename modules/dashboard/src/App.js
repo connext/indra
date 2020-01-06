@@ -90,6 +90,7 @@ const App = () => {
       return;
     }
     try {
+      console.log(env.nodeUrl)
       const messaging = new DashboardMessaging(env.nodeUrl, token, 5);
       await messaging.connect();
       setMessaging(messaging);
