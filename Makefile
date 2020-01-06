@@ -1,5 +1,5 @@
-dir="$(shell cd "$(shell dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $(dir)/package.json | jq .name | tr -d '"'`"
+dir=$(shell cd "$(shell dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )
+project=$(shell cat $(dir)/package.json | jq .name | tr -d '"')
 registry=connextproject
 
 # Specify make-specific variables (VPATH = prerequisite search path)
@@ -9,7 +9,6 @@ SHELL=/bin/bash
 
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
 
-version=$(shell cat package.json | grep '"version":' | awk -F '"' '{print $$4}')
 commit=$(shell git rev-parse HEAD | head -c 8)
 solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
@@ -33,7 +32,7 @@ messaging=$(cwd)/modules/messaging
 node=$(cwd)/modules/node
 proxy=$(cwd)/modules/proxy
 ssh-action=$(cwd)/ops/ssh-action
-tests=$(cwd)/modules/integration-test
+tests=$(cwd)/modules/test-runner
 types=$(cwd)/modules/types
 
 # Setup docker run time
@@ -56,9 +55,9 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev staging release
-dev: database ethprovider node client payment-bot-staging indra-proxy test-runner ws-tcp-relay
-staging: daicard-proxy database ethprovider indra-proxy-prod node-staging payment-bot-staging test-runner ws-tcp-relay
-release: daicard-proxy database ethprovider indra-proxy-prod node-release payment-bot-release test-runner ws-tcp-relay
+dev: database ethprovider node client payment-bot-staging indra-proxy test-runner-staging ws-tcp-relay
+staging: daicard-proxy database ethprovider indra-proxy-prod node-staging payment-bot-staging test-runner-staging ws-tcp-relay
+release: daicard-proxy database ethprovider indra-proxy-prod node-release payment-bot-release test-runner-release ws-tcp-relay
 
 start: start-daicard
 
@@ -271,9 +270,16 @@ ssh-action: $(shell find $(ssh-action) $(find_options))
 	docker build --file $(ssh-action)/Dockerfile --tag $(project)_ssh_action $(ssh-action)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-test-runner: client $(shell find $(tests)/ops $(find_options))
+test-runner-release: $(shell find $(tests)/ops $(find_options))
 	$(log_start)
-	docker build --file $(tests)/ops/release.dockerfile $(cache_from) --tag $(project)_test_runner:latest .
+	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build-bundle"
+	docker build --file $(tests)/ops/release.dockerfile $(cache_from) --tag $(project)_test_runner:$(commit) .
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+test-runner-staging: $(shell find $(tests)/ops $(find_options))
+	$(log_start)
+	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build-bundle"
+	docker build --file $(tests)/ops/staging.dockerfile $(cache_from) --tag $(project)_test_runner:latest .
 	docker tag $(project)_test_runner:latest $(project)_test_runner:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
