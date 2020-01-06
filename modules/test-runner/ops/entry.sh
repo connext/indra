@@ -5,6 +5,7 @@ project="indra"
 
 export INDRA_CLIENT_LOG_LEVEL="${INDRA_CLIENT_LOG_LEVEL:-3}"
 export INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://172.17.0.1:8545}"
+export INDRA_ETH_MNEMONIC="${INDRA_ETH_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
 export INDRA_NODE_URL="${INDRA_NODE_URL:-nats://172.17.0.1:4222}"
 export INDRA_PG_DATABASE="${INDRA_PG_DATABASE:-$project}"
 export INDRA_PG_HOST="${INDRA_PG_HOST:-172.17.0.1}"
