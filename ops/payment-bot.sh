@@ -38,7 +38,7 @@ while [ "$1" != "" ]; do
     shift
 done
 
-commit=$(shell git rev-parse HEAD | head -c 8)
+commit="`git rev-parse HEAD | head -c 8`"
 if [[ -n "`docker image ls -q ${project}_bot:$commit`" ]]
 then version=$commit
 else version=latest
