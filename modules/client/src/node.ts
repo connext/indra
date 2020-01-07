@@ -188,7 +188,7 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async fetchLinkedTransfer(paymentId: string): Promise<any> {
-    return await this.send(`transfer.fetch-linked.${this.userPublicIdentifier}`, {
+    return await this.send(`transfer.get-linked.${this.userPublicIdentifier}`, {
       paymentId,
     });
   }
@@ -279,9 +279,6 @@ export class NodeApiClient implements INodeApiClient {
         `Must have instantiated a channel provider (ie a signing thing) before setting auth token`,
       );
     }
-    // TODO: merge:
-    // https://github.com/WalletConnect/walletconnect-monorepo/pull/210
-    // and publish / update package
     const nonce = await this.send("auth.getNonce", {
       address: this.channelProvider.signerAddress,
     });

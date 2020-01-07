@@ -76,7 +76,7 @@ export default class AdminMessaging {
   }
 
   async getLinkedTransferByPaymentId(paymentId) {
-    return await this.send(`transfer.fetch-linked.${this.xpub}`, {
+    return await this.send(`transfer.get-linked.${this.xpub}`, {
       paymentId,
     });
   }

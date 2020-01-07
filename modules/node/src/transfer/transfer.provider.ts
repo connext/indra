@@ -80,9 +80,8 @@ export class TransferMessaging extends AbstractMessagingProvider {
   }
 
   async setupSubscriptions(): Promise<void> {
-    // TODO: rename to "get" when in branch to publish new client
     await super.connectRequestReponse(
-      "transfer.fetch-linked.>",
+      "transfer.get-linked.>",
       this.authService.useVerifiedPublicIdentifier(this.getLinkedTransferByPaymentId.bind(this)),
     );
     await super.connectRequestReponse(
