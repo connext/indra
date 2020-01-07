@@ -16,8 +16,8 @@ import { ResolveConditionController } from "./controllers/ResolveConditionContro
 import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
-import * as EthCrypto from "./eth-crypto";
 import { Logger, stringify, withdrawalKey, xpubToAddress } from "./lib";
+import { decryptWithPrivateKey } from "./lib/crypto";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import {
@@ -831,9 +831,7 @@ export class ConnextClient implements IConnextClient {
       throw new Error(`No way to decode transfer, this should never happen!`);
     }
 
-    const cipher = EthCrypto.parse(encryptedPreImage);
-
-    const preImage = await EthCrypto.decryptWithPrivateKey(privateKey, cipher);
+    const preImage = await decryptWithPrivateKey(privateKey, encryptedPreImage);
     this.log.debug(`Decrypted message and recovered preImage: ${preImage}`);
     const response = await this.resolveCondition({
       conditionType: "LINKED_TRANSFER_TO_RECIPIENT",

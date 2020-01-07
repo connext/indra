@@ -1,7 +1,6 @@
 import { HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import * as EthCrypto from "../eth-crypto";
 import {
   CF_METHOD_TIMEOUT,
   createLinkedHash,
@@ -9,6 +8,7 @@ import {
   stringify,
   xpubToAddress,
 } from "../lib";
+import { encryptWithPublicKey } from "../lib/crypto";
 import {
   BigNumber,
   CFCoreTypes,
@@ -86,11 +86,10 @@ export class ConditionalTransferController extends AbstractController {
     // set recipient and encrypted pre-image on linked transfer
     // TODO: use app path instead?
     const recipientPublicKey = fromExtendedKey(recipient).derivePath("0").publicKey;
-    const encryptedPreImageCipher = await EthCrypto.encryptWithPublicKey(
+    const encryptedPreImage = await encryptWithPublicKey(
       recipientPublicKey.slice(2), // remove 0x
       preImage,
     );
-    const encryptedPreImage = EthCrypto.stringify(encryptedPreImageCipher);
     await this.connext.setRecipientAndEncryptedPreImageForLinkedTransfer(
       recipient,
       encryptedPreImage,
