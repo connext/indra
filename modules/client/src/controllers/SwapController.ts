@@ -78,6 +78,7 @@ export class SwapController extends AbstractController {
 
   /////////////////////////////////
   ////// PRIVATE METHODS
+
   // TODO: fix for virtual exchanges!
   private swapAppInstall = async (
     amount: BigNumber,
