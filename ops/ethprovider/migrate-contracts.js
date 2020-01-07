@@ -219,6 +219,11 @@ const sendGift = async (address, token) => {
   }
 
   ////////////////////////////////////////
+  // Take a snapshot of this state
+  const snapshotId = await provider.send("evm_snapshot", [])
+  console.log(`Took an EVM snapshot, id: ${snapshotId}`);
+
+  ////////////////////////////////////////
   // Print summary
 
   console.log(`\nAll done!`)
