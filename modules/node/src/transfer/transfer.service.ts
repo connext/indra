@@ -104,8 +104,13 @@ export class TransferService {
   }
 
   // @hunter -- this should be pulling from the transfer view right?
+  // HH - I'm not sure? I have a good handle on db structure but not how the system typically interacts with it
   async getLinkedTransferByPaymentId(paymentId: string): Promise<LinkedTransfer | undefined> {
     return await this.linkedTransferRepository.findByPaymentId(paymentId);
+  }
+
+  async getLinkedTransfersByUserPublicIdentifier(publicIdentifier: string): Promise<LinkedTransfer[]> {
+    return await this.linkedTransferRepository.findAllByRecipient(publicIdentifier);
   }
 
   // @hunter -- this should be pulling from the transfer view right?

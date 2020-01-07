@@ -32,6 +32,12 @@ export class LinkedTransferRepository extends Repository<LinkedTransfer> {
     });
   }
 
+  async findAllByRecipient(recipientPublicIdentifier: string): Promise<LinkedTransfer[]> {
+    return await this.find({
+      where: { recipientPublicIdentifier },
+    });
+  }
+
   async findAll(): Promise<LinkedTransfer[]> {
     return await this.find();
   }

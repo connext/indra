@@ -19,6 +19,17 @@ export class TransferMessaging extends AbstractMessagingProvider {
     private readonly authService: AuthService,
   ) {
     super(messaging);
+  } 
+
+
+  async getLinkedTransfersByUserPublicIdentifier(
+    data: { publicIdentifier: string },
+  ): Promise<LinkedTransfer[]> {
+    if (!data.publicIdentifier) {
+      throw new RpcException(`Incorrect data received. Data: ${data}`);
+    }
+    logger.log(`Got fetch link request for: ${data.publicIdentifier}`);
+    return await this.transferService.getLinkedTransfersByUserPublicIdentifier(data.publicIdentifier);
   }
 
   async getLinkedTransferByPaymentId(

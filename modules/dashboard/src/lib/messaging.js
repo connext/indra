@@ -79,6 +79,12 @@ export default class AdminMessaging {
     });
   }
 
+  async getLinkedTransfersByUserPublicIdentifier(publicIdentifier) {
+    return await this.send("admin.get-linked-transfers-by-recipient-xpub", {
+      publicIdentifier,
+    });
+  }
+
   async getToken(subject) {
     if ("admin" === subject.split(".")[0]) {
       return this.adminToken;

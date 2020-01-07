@@ -68,6 +68,16 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getAllLinkedTransfers();
   }
 
+  async getLinkedTransfersByUserPublicIdentifier(data: {
+    publicIdentifier: string;
+  }): Promise<LinkedTransfer[]> {
+    const { publicIdentifier } = data;
+    if (!publicIdentifier) {
+      throw new RpcException(`No public identifier supplied: ${stringify(data)}`);
+    }
+    return await this.adminService.getLinkedTransfersByUserPublicIdentifier(publicIdentifier);
+  }
+
   async getLinkedTransferByPaymentId(data: {
     paymentId: string;
   }): Promise<LinkedTransfer | undefined> {
@@ -130,7 +140,12 @@ class AdminMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "admin.get-linked-transfer-by-payment-id",
       this.authService.useAdminToken(this.getLinkedTransferByPaymentId.bind(this)),
-    );
+    );   
+
+    await super.connectRequestReponse(
+      "admin.get-linked-transfers-by-recipient-xpub",
+      this.authService.useAdminToken(this.getLinkedTransfersByUserPublicIdentifier.bind(this)),
+    );   
 
     await super.connectRequestReponse(
       "admin.get-incorrect-multisig",

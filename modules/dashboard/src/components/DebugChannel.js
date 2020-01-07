@@ -9,7 +9,7 @@ import {
   styled,
 } from "@material-ui/core";
 import { Search as SearchIcon } from "@material-ui/icons";
-import { bigNumberify } from "ethers/utils";
+import { bigNumberify, WeiPerEther } from "ethers/utils";
 import JSONTree from "react-json-tree";
 
 const RootGrid = styled(Grid)({
@@ -36,6 +36,8 @@ const DebugChannel = ({ classes, messaging }) => {
   const [, setNoFreeBalance] = useState(null);
   const [channelState, setChannelState] = useState(null);
   const [freeBalance, setFreeBalance] = useState(0);
+  const [valueReclaimable, setValueReclaimable] = useState(0)
+  const [numberReclaimable, setNumberReclaimable] = useState(0)
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState(null);
 
@@ -63,7 +65,8 @@ const DebugChannel = ({ classes, messaging }) => {
       const freeBalanceTotalReduced = freeBalanceTotalHolder.reduce((a, b) => {
         return a + b;
       }, 0);
-
+      console.log(xPubSearch)
+      await getReclaimableTransfers(xPubSearch)
       setFreeBalance(freeBalanceTotalReduced);
       setChannelState(res);
       setLoading(false);
@@ -97,6 +100,29 @@ const DebugChannel = ({ classes, messaging }) => {
       setLoading(false);
       setSearchError(`Multisig (${multiSigSearch}) not found`);
     }
+  };
+
+  const getReclaimableTransfers = async (xPub) => {
+    const res = await messaging.getLinkedTransfersByUserPublicIdentifier(xPub)
+
+    let reclaimableValue = [];
+    if (res && res.length >0) {
+      for (let transfer of res) {
+        if(transfer.status !== "PENDING" && transfer.status !== "REDEEMED"){
+          reclaimableValue.push(parseInt(transfer.amount._hex, 16));
+        }
+      }
+      var reclaimableValueReduced = reclaimableValue.reduce((a, b) => {
+        return a + b;
+      }, 0);
+      var totalValueReclaimable = reclaimableValueReduced / WeiPerEther;
+    }else{
+      return
+    }
+    
+
+    setNumberReclaimable(res.length);
+    setValueReclaimable(totalValueReclaimable)
   };
 
   return (
@@ -158,6 +184,8 @@ const DebugChannel = ({ classes, messaging }) => {
       </Grid>
       <Grid item xs={12}>
         <CardTextTypography>Free Balance: {freeBalance}</CardTextTypography>
+        <CardTextTypography>Reclaimable Payments: {numberReclaimable}</CardTextTypography>
+        <CardTextTypography>Value of Reclaimable Payments: {valueReclaimable}</CardTextTypography>
       </Grid>
       {!!channelState && <JSONTree data={channelState} />
       // Object.entries(channelState).map(([k, v], i) => {
