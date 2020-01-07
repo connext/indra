@@ -216,14 +216,20 @@ export class TransferService {
           "DEPOSIT_CONFIRMED_EVENT",
           async (msg: DepositConfirmationMessage) => {
             if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
-              reject(
+              // do not reject promise here, since theres a chance the event is
+              // emitted for another user depositing into their channel
+              logger.debug(
                 `Deposit event from field: ${msg.from}, did not match public identifier: ${this.cfCoreService.cfCore.publicIdentifier}`,
               );
+              return;
             }
             if (msg.data.multisigAddress !== channel.multisigAddress) {
-              reject(
+              // do not reject promise here, since theres a chance the event is
+              // emitted for node collateralizing another users' channel
+              logger.debug(
                 `Deposit event multisigAddress: ${msg.data.multisigAddress}, did not match channel multisig address: ${channel.multisigAddress}`,
               );
+              return;
             }
             // make sure free balance is appropriate
             const fb = await this.cfCoreService.getFreeBalance(

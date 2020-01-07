@@ -248,7 +248,7 @@ export class ConditionalTransferController extends AbstractController {
   // TODO: fix type of data
   private resolveInstallTransfer = (
     res: (value?: unknown) => void,
-    rej: (value?: unknown) => void,
+    rej: (msg?: string) => void,
     appId: string,
     message: any,
   ): any => {
@@ -256,19 +256,14 @@ export class ConditionalTransferController extends AbstractController {
     const appInstance = message.data.data ? message.data.data : message.data;
 
     if (appInstance.identityHash !== appId) {
-      // not our app
-      this.log.warn(
+      rej(
         `Caught INSTALL event for different app ${stringify(
           message,
         )}, expected ${appId}. This should not happen.`,
       );
-      return rej(
-        `Caught INSTALL event for different app ${stringify(
-          message,
-        )}, expected ${appId}. This should not happen.`,
-      );
+    } else {
+      res(message);
     }
-    res(message);
     return message;
   };
 
@@ -279,16 +274,12 @@ export class ConditionalTransferController extends AbstractController {
   ): any => {
     // check app id
     if (appId !== msg.data.appInstanceId) {
-      this.log.warn(
+      rej(
         `Caught INSTALL event for different app ${stringify(
           msg,
         )}, expected ${appId}. This should not happen.`,
       );
-      return rej(
-        `Caught INSTALL event for different app ${stringify(
-          msg,
-        )}, expected ${appId}. This should not happen.`,
-      );
+      return;
     }
 
     return rej(`Install failed. Event data: ${stringify(msg)}`);
