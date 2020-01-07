@@ -173,7 +173,7 @@ test-integration:
 	bash ops/test-integration.sh
 
 watch-integration:
-	bash ops/test-integration.sh --watch
+	bash ops/test-integration.sh --watchAll
 
 test-cf: cf-core
 	bash ops/test-cf.sh
