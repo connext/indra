@@ -336,7 +336,7 @@ export class ConnextListener extends EventEmitter {
     const subject = `transfer.send-async.${this.connext.publicIdentifier}`;
     await this.connext.messaging.subscribe(subject, async (msg: any) => {
       this.log.info(`Received message for subscription: ${stringify(msg)}`);
-      if (!msg.paymentId && !msg.dta) {
+      if (!msg.paymentId && !msg.data) {
         throw new Error(`Could not parse data from message: ${stringify(msg)}`);
       }
       const data = msg.paymentId ? msg : JSON.parse(msg.data);
