@@ -10,6 +10,8 @@ SHELL=/bin/bash
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
 
 commit=$(shell git rev-parse HEAD | head -c 8)
+version=$(shell cat package.json | grep '"version"' | awk -F '"' '{print $$4}')
+legacy_version=$(shell echo $(version) | cut -d '.' -f 1).0.0
 solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
 # Pool of images to pull cached layers from during docker build steps
@@ -130,26 +132,22 @@ reset: stop
 	rm -rf $(flags)/deployed-contracts
 
 push-commit:
-	bash ops/push-images.sh commit bot database ethprovider node proxy relay test_runner
+	bash ops/push-images.sh $(commit)
 
 push-release:
-	bash ops/push-images.sh release database node proxy relay test_runner
+	bash ops/push-images.sh $(version)
 
-pull:
-	docker pull $(registry)/$(project)_bot:$(commit) && docker tag $(registry)/$(project)_bot:$(commit) $(project)_bot:$(commit) || true
-	docker pull $(registry)/$(project)_database:$(commit) && docker tag $(registry)/$(project)_database:$(commit) $(project)_database:$(commit) || true
-	docker pull $(registry)/$(project)_ethprovider:$(commit) && docker tag $(registry)/$(project)_ethprovider:$(commit) $(project)_ethprovider:$(commit) || true
-	docker pull $(registry)/$(project)_node:$(commit) && docker tag $(registry)/$(project)_node:$(commit) $(project)_node:$(commit) || true
-	docker pull $(registry)/$(project)_proxy:$(commit) && docker tag $(registry)/$(project)_proxy:$(commit) $(project)_proxy:$(commit) || true
-	docker pull $(registry)/$(project)_relay:$(commit) && docker tag $(registry)/$(project)_relay:$(commit) $(project)_relay:$(commit) || true
-	docker pull $(registry)/$(project)_test_runner:$(commit) && docker tag $(registry)/$(project)_test_runner:$(commit) $(project)_test_runner:$(commit) || true
-	docker pull $(registry)/$(project)_bot:latest && docker tag $(registry)/$(project)_bot:latest $(project)_bot:latest || true
-	docker pull $(registry)/$(project)_database:latest && docker tag $(registry)/$(project)_database:latest $(project)_database:latest || true
-	docker pull $(registry)/$(project)_ethprovider:latest && docker tag $(registry)/$(project)_ethprovider:latest $(project)_ethprovider:latest || true
-	docker pull $(registry)/$(project)_node:latest && docker tag $(registry)/$(project)_node:latest $(project)_node:latest || true
-	docker pull $(registry)/$(project)_proxy:latest && docker tag $(registry)/$(project)_proxy:latest $(project)_proxy:latest || true
-	docker pull $(registry)/$(project)_relay:latest && docker tag $(registry)/$(project)_relay:latest $(project)_relay:latest || true
-	docker pull $(registry)/$(project)_test_runner:latest && docker tag $(registry)/$(project)_test_runner:latest $(project)_test_runner:latest || true
+pull-latest:
+	bash ops/pull-images.sh latest
+
+pull-commit:
+	bash ops/pull-images.sh $(commit)
+
+pull-release:
+	bash ops/pull-images.sh $(version)
+
+pull-legacy:
+	bash ops/pull-images.sh $(legacy_version)
 
 deployed-contracts: ethprovider
 	bash ops/deploy-contracts.sh ganache

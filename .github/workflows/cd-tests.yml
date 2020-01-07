@@ -20,7 +20,7 @@ jobs:
         path: .npm
         key: npm-${{ hashFiles('package-lock.json') }}
         restore-keys: npm-
-    - run: make pull
+    - run: make pull-latest
     - run: make staging
     - run: make build-report
     - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
@@ -45,7 +45,7 @@ jobs:
     needs: [build]
     steps:
     - uses: actions/checkout@v1
-    - run: make pull
+    - run: make pull-commit
     - run: make start-test
     - run: make test-integration
 
@@ -54,7 +54,7 @@ jobs:
     needs: [build]
     steps:
     - uses: actions/checkout@v1
-    - run: make pull
+    - run: make pull-commit
     - run: make start-test
     - run: make test-bot
 
@@ -63,7 +63,7 @@ jobs:
     needs: [build]
     steps:
     - uses: actions/checkout@v1
-    - run: make pull
+    - run: make pull-commit
     - run: make start-test
     - run: make test-bot-farm
 
@@ -72,6 +72,6 @@ jobs:
     needs: [build]
     steps:
     - uses: actions/checkout@v1
-    - run: make pull
+    - run: make pull-commit
     - run: make start-test
     - run: make test-daicard

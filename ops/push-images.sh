@@ -5,20 +5,10 @@ dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../package.json | jq .name | tr -d '"'`"
 organization="connextproject"
 registry_url="https://index.docker.io/v1/repositories/$organization"
-
 commit=`git rev-parse HEAD | head -c 8`
-release=`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`
 
-version="$1" # one of "commit" or "release"
-shift
-images=$@
-
-if [[ "$version" == "commit" ]]
-then version=$commit
-elif [[ "$version" == "release" ]]
-then version=$release
-else echo 'First arg should either be "commit" or "release" followed by images to push' && exit 1
-fi
+version="$1"
+images="bot database ethprovider node proxy relay test_runner"
 
 function safePush {
   image=${project}_$1
@@ -31,7 +21,7 @@ function safePush {
     docker tag $image:$commit $organization/$image:$version
     docker push $organization/$image:$version
     # latest images are used as cache for build steps, keep them up-to-date
-    docker tag $organization/$image:$version $organization/$image:latest
+    docker tag $image:$commit $organization/$image:latest
     docker push $organization/$image:latest
   fi
 }
