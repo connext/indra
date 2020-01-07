@@ -206,6 +206,7 @@ export class CFCoreService {
     responderDeposit: BigNumber,
     responderDepositTokenAddress: string,
     app: SupportedApplication,
+    meta: object = {},
   ): Promise<CFCoreTypes.ProposeInstallResult | undefined> {
     let boundReject: (reason?: any) => void;
 
@@ -229,6 +230,7 @@ export class CFCoreService {
       initialState,
       initiatorDeposit,
       initiatorDepositTokenAddress,
+      meta,
       outcomeType,
       proposedToIdentifier: userPubId,
       responderDeposit,

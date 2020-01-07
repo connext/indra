@@ -1,7 +1,6 @@
 import { IMessagingService } from "@connext/messaging";
 import { AppInstanceProposal, CF_PATH, LinkedTransferToRecipientParameters } from "@connext/types";
 import "core-js/stable";
-import EthCrypto from "eth-crypto";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { BigNumber, bigNumberify, hexlify, Network, randomBytes, Transaction } from "ethers/utils";
@@ -15,9 +14,9 @@ import { DepositController } from "./controllers/DepositController";
 import { RequestDepositRightsController } from "./controllers/RequestDepositRightsController";
 import { ResolveConditionController } from "./controllers/ResolveConditionController";
 import { SwapController } from "./controllers/SwapController";
-import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger, stringify, withdrawalKey, xpubToAddress } from "./lib";
+import { decryptWithPrivateKey } from "./lib/crypto";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import {
@@ -89,7 +88,6 @@ export class ConnextClient implements IConnextClient {
   private keyGen: KeyGen;
 
   private depositController: DepositController;
-  private transferController: TransferController;
   private swapController: SwapController;
   private withdrawalController: WithdrawalController;
   private conditionalTransferController: ConditionalTransferController;
@@ -121,7 +119,6 @@ export class ConnextClient implements IConnextClient {
 
     // instantiate controllers with log and cf
     this.depositController = new DepositController("DepositController", this);
-    this.transferController = new TransferController("TransferController", this);
     this.swapController = new SwapController("SwapController", this);
     this.withdrawalController = new WithdrawalController("WithdrawalController", this);
     this.resolveConditionController = new ResolveConditionController(
@@ -808,12 +805,14 @@ export class ConnextClient implements IConnextClient {
   public reclaimPendingAsyncTransfers = async (): Promise<void> => {
     const pendingTransfers = await this.node.getPendingAsyncTransfers();
     for (const transfer of pendingTransfers) {
-      const { encryptedPreImage, paymentId } = transfer;
-      await this.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
+      const { encryptedPreImage, paymentId, amount, assetId } = transfer;
+      await this.reclaimPendingAsyncTransfer(amount, assetId, paymentId, encryptedPreImage);
     }
   };
 
   public reclaimPendingAsyncTransfer = async (
+    amount: string,
+    assetId: string,
     paymentId: string,
     encryptedPreImage: string,
   ): Promise<ResolveLinkedTransferResponse> => {
@@ -831,11 +830,11 @@ export class ConnextClient implements IConnextClient {
       throw new Error(`No way to decode transfer, this should never happen!`);
     }
 
-    const cipher = EthCrypto.cipher.parse(encryptedPreImage);
-
-    const preImage = await EthCrypto.decryptWithPrivateKey(privateKey, cipher);
+    const preImage = await decryptWithPrivateKey(privateKey, encryptedPreImage);
     this.log.debug(`Decrypted message and recovered preImage: ${preImage}`);
     const response = await this.resolveCondition({
+      amount,
+      assetId,
       conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
       paymentId,
       preImage,

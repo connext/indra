@@ -9,7 +9,6 @@ import {
   AppRegistry,
   CFCoreTypes,
   ChannelAppSequences,
-  ConnextRpcMethod,
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
@@ -17,6 +16,7 @@ import {
   NodeInitializationParameters,
   PaymentProfile,
   RequestCollateralResponse,
+  ResolveLinkedTransferResponse,
   SupportedApplication,
   SupportedNetwork,
   Transfer,
@@ -44,9 +44,9 @@ export interface INodeApiClient {
   fetchLinkedTransfer(paymentId: string): Promise<any>;
   resolveLinkedTransfer(
     paymentId: string,
-    preImage: string,
-    recipientPublicIdentifier?: string,
-  ): Promise<void>;
+    linkedHash: string,
+    meta: object,
+  ): Promise<ResolveLinkedTransferResponse>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   restoreState(publicIdentifier: string): Promise<any>;
   subscribeToSwapRates(from: string, to: string, callback: any): void;
@@ -195,13 +195,13 @@ export class NodeApiClient implements INodeApiClient {
 
   public async resolveLinkedTransfer(
     paymentId: string,
-    preImage: string,
-    recipientPublicIdentifier?: string,
-  ): Promise<void> {
+    linkedHash: string,
+    meta: object = {},
+  ): Promise<ResolveLinkedTransferResponse> {
     return await this.send(`transfer.resolve-linked.${this.userPublicIdentifier}`, {
+      linkedHash,
+      meta,
       paymentId,
-      preImage,
-      recipientPublicIdentifier,
     });
   }
 
@@ -279,9 +279,6 @@ export class NodeApiClient implements INodeApiClient {
         `Must have instantiated a channel provider (ie a signing thing) before setting auth token`,
       );
     }
-    // TODO: merge:
-    // https://github.com/WalletConnect/walletconnect-monorepo/pull/210
-    // and publish / update package
     const nonce = await this.send("auth.getNonce", {
       address: this.channelProvider.signerAddress,
     });
