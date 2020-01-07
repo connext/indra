@@ -5,7 +5,7 @@ import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { BigNumber, BigNumberish, defaultAbiCoder } from "ethers/utils";
 
-import UnidirectionalTransferApp from "../build/UnidirectionalTransferApp.json";
+import UnidirectionalTransferApp from "../../build/UnidirectionalTransferApp.json";
 
 const { expect } = chai.use(waffle.solidity);
 

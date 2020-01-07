@@ -5,7 +5,7 @@ import { Contract } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 
-import UnidirectionalLinkedTransferApp from "../build/UnidirectionalLinkedTransferApp.json";
+import UnidirectionalLinkedTransferApp from "../../build/UnidirectionalLinkedTransferApp.json";
 
 chai.use(waffle.solidity);
 

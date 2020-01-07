@@ -6,8 +6,7 @@
   "files": ["build", "contracts"],
   "scripts": {
     "build": "waffle waffle.json",
-    "migrate": "truffle migrate",
-    "test": "ts-mocha test/*"
+    "test": "ts-mocha test/**/*"
   },
   "author": "",
   "license": "ISC",

@@ -4,7 +4,7 @@ import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
 
-import SimpleTransferApp from "../build/SimpleTransferApp.json";
+import SimpleTransferApp from "../../build/SimpleTransferApp.json";
 
 chai.use(waffle.solidity);
 
