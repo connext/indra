@@ -1,7 +1,6 @@
 import { IMessagingService } from "@connext/messaging";
 import { AppInstanceProposal, CF_PATH, LinkedTransferToRecipientParameters } from "@connext/types";
 import "core-js/stable";
-import EthCrypto from "eth-crypto";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { BigNumber, bigNumberify, hexlify, Network, randomBytes, Transaction } from "ethers/utils";
@@ -18,6 +17,7 @@ import { SwapController } from "./controllers/SwapController";
 import { TransferController } from "./controllers/TransferController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger, stringify, withdrawalKey, xpubToAddress } from "./lib";
+import { decryptWithPrivateKey } from "./lib/crypto";
 import { ConnextListener } from "./listener";
 import { NodeApiClient } from "./node";
 import {
@@ -831,9 +831,7 @@ export class ConnextClient implements IConnextClient {
       throw new Error(`No way to decode transfer, this should never happen!`);
     }
 
-    const cipher = EthCrypto.cipher.parse(encryptedPreImage);
-
-    const preImage = await EthCrypto.decryptWithPrivateKey(privateKey, cipher);
+    const preImage = await decryptWithPrivateKey(privateKey, encryptedPreImage);
     this.log.debug(`Decrypted message and recovered preImage: ${preImage}`);
     const response = await this.resolveCondition({
       conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
