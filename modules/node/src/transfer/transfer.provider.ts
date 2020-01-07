@@ -81,7 +81,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
-      "transfer.get-linked.>",
+      "transfer.fetch-linked.>",
       this.authService.useVerifiedPublicIdentifier(this.getLinkedTransferByPaymentId.bind(this)),
     );
     await super.connectRequestReponse(

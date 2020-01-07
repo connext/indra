@@ -188,7 +188,7 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   public async fetchLinkedTransfer(paymentId: string): Promise<any> {
-    return await this.send(`transfer.get-linked.${this.userPublicIdentifier}`, {
+    return await this.send(`transfer.fetch-linked.${this.userPublicIdentifier}`, {
       paymentId,
     });
   }
