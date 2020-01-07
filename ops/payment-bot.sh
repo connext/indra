@@ -38,6 +38,12 @@ while [ "$1" != "" ]; do
     shift
 done
 
+commit=$(shell git rev-parse HEAD | head -c 8)
+if [[ -n "`docker image ls -q ${project}_bot:$commit`" ]]
+then version=$commit
+else version=latest
+fi
+
 # Damn I forget where I copy/pasted this witchcraft from, yikes.
 # It's supposed to find out whether we're calling this script from a shell & can print stuff
 # Or whether it's running in the background of another script and can't attach to a screen
@@ -58,4 +64,4 @@ docker run \
   --rm \
   --tty \
   --volume="$cwd/.bot-store:/store" \
-  ${project}_bot "`id -u`:`id -g`" $args
+  ${project}_bot:$version "`id -u`:`id -g`" $args

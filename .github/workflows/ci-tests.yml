@@ -34,5 +34,5 @@ jobs:
     - run: make
     - run: make start-headless
     - run: make build-report
-    - run: sleep 10 && make dls
+    - run: sleep 15 && make dls
     - run: make test-integration
