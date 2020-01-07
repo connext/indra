@@ -220,7 +220,7 @@ export class ConditionalTransferController extends AbstractController {
     try {
       const raceRes = await Promise.race([
         new Promise((res: () => any, rej: () => any): void => {
-          boundResolve = this.resolveInstallTransfer.bind(null, res, appId);
+          boundResolve = this.resolveInstallTransfer.bind(null, res, rej, appId);
           boundReject = this.rejectInstallTransfer.bind(null, rej, appId);
           this.connext.messaging.subscribe(
             `indra.node.${this.connext.nodePublicIdentifier}.install.${proposeRes.appInstanceId}`,
@@ -247,6 +247,7 @@ export class ConditionalTransferController extends AbstractController {
   // TODO: fix type of data
   private resolveInstallTransfer = (
     res: (value?: unknown) => void,
+    rej: (msg?: string) => void,
     appId: string,
     message: any,
   ): any => {
@@ -254,15 +255,14 @@ export class ConditionalTransferController extends AbstractController {
     const appInstance = message.data.data ? message.data.data : message.data;
 
     if (appInstance.identityHash !== appId) {
-      // not our app
-      this.log.warn(
+      rej(
         `Caught INSTALL event for different app ${stringify(
           message,
         )}, expected ${appId}. This should not happen.`,
       );
-      return;
+    } else {
+      res(message);
     }
-    res(message);
     return message;
   };
 
@@ -273,7 +273,7 @@ export class ConditionalTransferController extends AbstractController {
   ): any => {
     // check app id
     if (appId !== msg.data.appInstanceId) {
-      this.log.warn(
+      rej(
         `Caught INSTALL event for different app ${stringify(
           msg,
         )}, expected ${appId}. This should not happen.`,

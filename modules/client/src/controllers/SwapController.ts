@@ -82,14 +82,23 @@ export class SwapController extends AbstractController {
   /////////////////////////////////
   ////// PRIVATE METHODS
   // TODO: fix type of data
-  private resolveInstallSwap = (res: (value?: unknown) => void, appId: string, data: any): any => {
+  private resolveInstallSwap = (
+    res: (value?: unknown) => void,
+    rej: (value?: unknown) => void,
+    appId: string,
+    data: any,
+  ): any => {
     if (appId !== data.params.appInstanceId) {
       this.log.warn(
         `Attempting to resolve promise for ${appId}, but got event data from ${stringify(
           data,
         )}. This should not happen.`,
       );
-      return;
+      return rej(
+        `Attempting to resolve promise for ${appId}, but got event data from ${stringify(
+          data,
+        )}. This should not happen.`,
+      );
     }
     res(data);
     return data;
@@ -110,7 +119,11 @@ export class SwapController extends AbstractController {
           msg,
         )}. This should not happen.`,
       );
-      return;
+      return rej(
+        `Attempting to reject promise for ${appId}, but got event data from ${stringify(
+          msg,
+        )}. This should not happen.`,
+      );
     }
 
     rej(`Install rejected. Event data: ${stringify(msg)}`);
@@ -183,7 +196,7 @@ export class SwapController extends AbstractController {
     await Promise.race([
       new Promise((resolve: (value?: unknown) => void, reject: (value?: string) => void): void => {
         boundReject = this.rejectInstallSwap.bind(null, reject, res.appInstanceId);
-        boundResolve = this.resolveInstallSwap.bind(null, resolve, res.appInstanceId);
+        boundResolve = this.resolveInstallSwap.bind(null, resolve, reject, res.appInstanceId);
         this.listener.on(
           CFCoreTypes.EventNames.INSTALL_EVENT as CFCoreTypes.EventName,
           boundResolve,
