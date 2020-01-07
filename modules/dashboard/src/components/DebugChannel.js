@@ -9,7 +9,8 @@ import {
   styled,
 } from "@material-ui/core";
 import { Search as SearchIcon } from "@material-ui/icons";
-import { bigNumberify, WeiPerEther } from "ethers/utils";
+import { bigNumberify } from "ethers/utils";
+import { WeiPerEther } from "ethers/constants";
 import JSONTree from "react-json-tree";
 
 const RootGrid = styled(Grid)({

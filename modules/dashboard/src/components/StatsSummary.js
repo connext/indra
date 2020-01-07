@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Grid, Typography, styled, Button, CircularProgress } from "@material-ui/core";
-import { HashZero } from "ethers/constants";
+import { HashZero, WeiPerEther } from "ethers/constants";
 
 const TopGrid = styled(Grid)({
   display: "flex",
@@ -39,6 +39,8 @@ const StatsSummary = ({ classes, messaging }) => {
   const [averageTransfer, setAverageTransfer] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState(null);
+  const [valueReclaimable, setValueReclaimable] = useState(0)
+  const [numberReclaimable, setNumberReclaimable] = useState(0)
 
   useEffect(() => {
     if (!messaging) {
@@ -47,8 +49,8 @@ const StatsSummary = ({ classes, messaging }) => {
   });
 
   const onRefresh = async () => {
-    console.log("refreshing!");
-    await messaging.getLinkedTransferByPaymentId(HashZero);
+    // console.log("refreshing!");
+    // await messaging.getLinkedTransferByPaymentId(HashZero);
     await getChannels();
     await getTransfers();
   };
@@ -57,21 +59,17 @@ const StatsSummary = ({ classes, messaging }) => {
     setLoading(true);
     try {
       const res = await messaging.getAllChannelStates();
-      console.log("res", res);
       let xPubsToSearch = [];
       for (let row of res) {
         xPubsToSearch.push(row.userPublicIdentifier);
       }
-
-      console.log(xPubsToSearch);
 
       setAllChannels(xPubsToSearch);
       let channelTotalArr = [];
       let nodeChannelTotalArr = [];
 
       for (let xPub of xPubsToSearch) {
-        const currentChannelValue = await getUserChannelAmount(xPub);
-        const currentNodeChannelValue = await getNodeChannelAmount(xPub);
+        const {currentChannelValue,currentNodeChannelValue}  = Promise.all([await getUserChannelAmount(xPub), await getNodeChannelAmount(xPub)])
 
         currentChannelValue !== 0 && channelTotalArr.push(currentChannelValue);
         currentNodeChannelValue !== 0 && nodeChannelTotalArr.push(currentNodeChannelValue);
@@ -137,6 +135,7 @@ const StatsSummary = ({ classes, messaging }) => {
 
     let totalTransfers = [];
     if (res) {
+      getReclaimableTransfers(res)
       for (let transfer of res) {
         totalTransfers.push(parseInt(transfer.amount._hex, 16));
       }
@@ -144,10 +143,30 @@ const StatsSummary = ({ classes, messaging }) => {
         return a + b;
       }, 0);
     }
-    var averageTransfer = totalTransfersReduced / res.length / 1000000000000000000;
-
+    var averageTransfer = totalTransfersReduced / res.length / WeiPerEther;
     setAverageTransfer(averageTransfer);
     setAllTransfers(res);
+  };
+
+  const getReclaimableTransfers = async (allTransfers) => {
+
+    let reclaimableValue = [];
+    if (allTransfers && allTransfers.length >0) {
+      for (let transfer of allTransfers) {
+        if(transfer.status !== "PENDING" && transfer.status !== "REDEEMED"){
+          reclaimableValue.push(parseInt(transfer.amount._hex, 16));
+        }
+      }
+      var reclaimableValueReduced = reclaimableValue.reduce((a, b) => {
+        return a + b;
+      }, 0);
+      var totalValueReclaimable = reclaimableValueReduced / WeiPerEther;
+    }else{
+      return
+    }
+    
+    setNumberReclaimable(allTransfers.length);
+    setValueReclaimable(totalValueReclaimable)
   };
 
   return (
@@ -175,18 +194,25 @@ const StatsSummary = ({ classes, messaging }) => {
           <StatTypography >
             TVL:payment volume:{" "}
             {nodeTotal && allTransfers && allTransfers.length > 0
-              ? (nodeTotal/1000000000000000000) / allTransfers.length
+              ? (nodeTotal/WeiPerEther) / allTransfers.length
               : 0}
           </StatTypography>
 
           <StatTypography>
-            total user balances: {JSON.stringify(channelTotal / 1000000000000000000)}
+            total user balances: {JSON.stringify(channelTotal / WeiPerEther)}
           </StatTypography>
           <StatTypography>
             average transfer: {averageTransfer}
           </StatTypography>
           <StatTypography >
-            total node balances: {JSON.stringify(nodeTotal / 1000000000000000000)}
+            total node balances: {JSON.stringify(nodeTotal / WeiPerEther)}
+          </StatTypography>
+          <StatTypography >
+            number of reclaimable payments: {JSON.stringify(numberReclaimable)}
+          </StatTypography>
+
+          <StatTypography >
+            value of reclaimable payments: {JSON.stringify(valueReclaimable)}
           </StatTypography>
         </Grid>
       )}
