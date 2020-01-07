@@ -11,7 +11,7 @@ find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path
 
 commit=$(shell git rev-parse HEAD | head -c 8)
 version=$(shell cat package.json | grep '"version"' | awk -F '"' '{print $$4}')
-legacy_version=$(shell echo $(version) | cut -d '.' -f 1).0.0
+zero_version=$(shell echo $(version) | cut -d '.' -f 1).0.0
 solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
 # Pool of images to pull cached layers from during docker build steps
@@ -146,8 +146,8 @@ pull-commit:
 pull-release:
 	bash ops/pull-images.sh $(version)
 
-pull-legacy:
-	bash ops/pull-images.sh $(legacy_version)
+pull-zero:
+	bash ops/pull-images.sh $(zero_version)
 
 deployed-contracts: ethprovider
 	bash ops/deploy-contracts.sh ganache
@@ -169,6 +169,9 @@ watch: watch-node
 
 test-integration:
 	bash ops/test-integration.sh
+
+test-integration-zero:
+	bash ops/test-integration.sh $(zero_version)
 
 watch-integration:
 	bash ops/test-integration.sh --watch

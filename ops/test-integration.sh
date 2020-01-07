@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
+version="${1:-latest}"
+
 exec docker run \
   --env="INDRA_CLIENT_LOG_LEVEL=$LOG_LEVEL" \
   --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
@@ -9,4 +11,4 @@ exec docker run \
   --name="indra_test_runner" \
   --rm \
   --tty \
-  indra_test_runner "$@"
+  indra_test_runner:$version "$@"
