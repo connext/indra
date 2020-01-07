@@ -7,6 +7,7 @@ import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigModule } from "../config/config.module";
 import { SwapRateModule } from "../swapRate/swapRate.module";
 import { TransferModule } from "../transfer/transfer.module";
+import { LinkedTransferRepository } from "../transfer/transfer.repository";
 
 import { AppRegistryController } from "./appRegistry.controller";
 import { appRegistryProviderFactory } from "./appRegistry.provider";
@@ -18,7 +19,7 @@ import { AppRegistryService } from "./appRegistry.service";
   exports: [AppRegistryService],
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([AppRegistryRepository, ChannelRepository]),
+    TypeOrmModule.forFeature([AppRegistryRepository, ChannelRepository, LinkedTransferRepository]),
     CFCoreModule,
     SwapRateModule,
     ChannelModule,

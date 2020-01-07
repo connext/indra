@@ -1,6 +1,9 @@
 import {
   AllowedSwap,
+  AppInstanceJson,
   CoinTransfer,
+  CoinTransferBigNumber,
+  DefaultApp,
   SimpleLinkedTransferAppStateBigNumber,
   SimpleTransferAppStateBigNumber,
   SupportedApplications,
@@ -12,7 +15,10 @@ import { BigNumber, bigNumberify, formatEther } from "ethers/utils";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
+import { ConfigService } from "../config/config.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
+import { LinkedTransferStatus } from "../transfer/transfer.entity";
+import { LinkedTransferRepository } from "../transfer/transfer.repository";
 import { TransferService } from "../transfer/transfer.service";
 import {
   bigNumberifyObj,
@@ -40,6 +46,8 @@ export class AppRegistryService {
     private readonly transferService: TransferService,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
+    private readonly configService: ConfigService,
+    private readonly linkedTransferRepository: LinkedTransferRepository,
   ) {}
 
   /**
@@ -194,9 +202,86 @@ export class AppRegistryService {
       (transfer: CoinTransfer<BigNumber>) => bigNumberifyObj(transfer),
     ) as any;
 
-    if (responderDeposit.gt(Zero)) {
+    const nodeTransfer = initialState.coinTransfers.filter((transfer: CoinTransferBigNumber) => {
+      return transfer.to === this.cfCoreService.cfCore.freeBalanceAddress;
+    })[0];
+    const counterpartyTransfer = initialState.coinTransfers.filter(
+      (transfer: CoinTransferBigNumber) => {
+        return transfer.to !== this.cfCoreService.cfCore.freeBalanceAddress;
+      },
+    )[0];
+
+    if (
+      !counterpartyTransfer.amount.eq(initiatorDeposit) ||
+      !nodeTransfer.amount.eq(responderDeposit)
+    ) {
+      throw new Error(`Mismatch between deposits and initial state, refusing to install.`);
+    }
+
+    const initiatorReclaiming = responderDeposit.gt(Zero) && initiatorDeposit.eq(Zero);
+    if (initiatorReclaiming) {
+      if (!initialState.amount.eq(responderDeposit)) {
+        throw new Error(
+          `Payment amount must be the same as responder deposit ${stringify(params)}`,
+        );
+      }
+
+      if (nodeTransfer.amount.lte(Zero)) {
+        throw new Error(
+          `Cannot install a linked transfer app with a sender transfer of <= 0. Transfer amount: ${bigNumberify(
+            initialState.coinTransfers[0].amount,
+          ).toString()}`,
+        );
+      }
+
+      if (!counterpartyTransfer.amount.eq(Zero)) {
+        throw new Error(
+          `Cannot install a linked transfer app with a redeemer transfer of != 0. Transfer amount: ${bigNumberify(
+            initialState.coinTransfers[1].amount,
+          ).toString()}`,
+        );
+      }
+
+      // check that we have recorded this transfer in our db
+      const transfer = await this.linkedTransferRepository.findByPaymentId(initialState.paymentId);
+      if (!transfer) {
+        throw new Error(`No transfer exists for paymentId ${initialState.paymentId}`);
+      }
+
+      if (initialState.linkedHash !== transfer.linkedHash) {
+        throw new Error(`No transfer exists for linkedHash ${initialState.linkedHash}`);
+      }
+
+      if (transfer.status === LinkedTransferStatus.REDEEMED) {
+        throw new Error(
+          `Transfer with linkedHash ${initialState.linkedHash} has already been redeemed`,
+        );
+      }
+
+      // check that linked transfer app has been installed from sender
+      const defaultApp = (await this.configService.getDefaultApps()).find(
+        (app: DefaultApp) => app.name === SupportedApplications.SimpleLinkedTransferApp,
+      );
+      const installedApps = await this.cfCoreService.getAppInstances();
+      const senderApp = installedApps.find(
+        (app: AppInstanceJson) =>
+          app.appInterface.addr === defaultApp!.appDefinitionAddress &&
+          (app.latestState as SimpleLinkedTransferAppStateBigNumber).linkedHash ===
+            initialState.linkedHash,
+      );
+
+      if (!senderApp) {
+        throw new Error(
+          `App with provided hash has not been installed: ${initialState.linkedHash}`,
+        );
+      }
+
+      return;
+    }
+
+    if (!responderDeposit.eq(Zero)) {
       throw new Error(
-        `Will not accept linked transfer install where node deposit is >0 ${stringify(params)}`,
+        `Will not accept linked transfer install where node deposit is != 0 ${stringify(params)}`,
       );
     }
 
@@ -212,7 +297,7 @@ export class AppRegistryService {
       throw new Error(`Payment amount bust be the same as initiator deposit ${stringify(params)}`);
     }
 
-    if (bigNumberify(initialState.coinTransfers[0].amount).lte(Zero)) {
+    if (counterpartyTransfer.amount.lte(Zero)) {
       throw new Error(
         `Cannot install a linked transfer app with a sender transfer of <= 0. Transfer amount: ${bigNumberify(
           initialState.coinTransfers[0].amount,
@@ -220,19 +305,12 @@ export class AppRegistryService {
       );
     }
 
-    if (bigNumberify(initialState.coinTransfers[1].amount).lt(Zero)) {
+    if (!nodeTransfer.amount.eq(Zero)) {
       throw new Error(
-        `Cannot install a linked transfer app with a redeemer transfer of < 0. Transfer amount: ${bigNumberify(
+        `Cannot install a linked transfer app with a redeemer transfer of != 0. Transfer amount: ${bigNumberify(
           initialState.coinTransfers[1].amount,
         ).toString()}`,
       );
-    }
-
-    if (
-      !bigNumberify(initialState.coinTransfers[0].amount).eq(initiatorDeposit) ||
-      !bigNumberify(initialState.coinTransfers[1].amount).eq(responderDeposit)
-    ) {
-      throw new Error(`Mismatch between deposits and initial state, refusing to install.`);
     }
   }
 
@@ -301,27 +379,12 @@ export class AppRegistryService {
     }
 
     // make sure that the node has sufficient balance for requested deposit
-    const nodeIsResponder = proposedToIdentifier === this.cfCoreService.cfCore.publicIdentifier;
-    let freeBalanceResponderAsset: CFCoreTypes.GetFreeBalanceStateResult;
-    if (nodeIsResponder) {
-      freeBalanceResponderAsset = await this.cfCoreService.getFreeBalance(
-        initiatorIdentifier,
-        initiatorChannel.multisigAddress,
-        responderDepositTokenAddress,
-      );
-    } else {
-      const responderChannel = await this.channelRepository.findByUserPublicIdentifier(
-        proposedToIdentifier,
-      );
-      if (!responderChannel) {
-        throw new Error(`Could not find channel for user: ${proposedToIdentifier}`);
-      }
-      freeBalanceResponderAsset = await this.cfCoreService.getFreeBalance(
-        proposedToIdentifier,
-        responderChannel.multisigAddress,
-        responderDepositTokenAddress,
-      );
-    }
+    // NOTE: the following will need to be adjusted for virtual applications
+    const freeBalanceResponderAsset = await this.cfCoreService.getFreeBalance(
+      initiatorIdentifier,
+      initiatorChannel.multisigAddress,
+      responderDepositTokenAddress,
+    );
     const balAvailable = freeBalanceResponderAsset[xpubToAddress(proposedToIdentifier)];
     if (balAvailable.lt(responderDeposit)) {
       throw new Error(`Node has insufficient balance to install the app with proposed deposit.`);

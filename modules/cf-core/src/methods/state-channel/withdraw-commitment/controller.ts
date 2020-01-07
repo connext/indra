@@ -9,8 +9,10 @@ import { runWithdrawProtocol } from "../withdraw/operation";
 import { getCreate2MultisigAddress } from "../../../utils";
 import {
   INCORRECT_MULTISIG_ADDRESS,
-  INVALID_FACTORY_ADDRESS
+  INVALID_FACTORY_ADDRESS,
+  CANNOT_WITHDRAW
 } from "../../errors";
+import { AddressZero } from "ethers/constants";
 
 // Note: This can't extend `WithdrawController` because the `methodName` static
 // members of each class are incompatible.
@@ -30,12 +32,21 @@ export default class WithdrawCommitmentController extends NodeController {
     params: CFCoreTypes.WithdrawCommitmentParams
   ): Promise<void> {
     const { store, provider, networkContext } = requestHandler;
-    const { multisigAddress } = params;
+    const { multisigAddress, tokenAddress } = params;
 
     const channel = await store.getStateChannel(multisigAddress);
 
     if (!channel.proxyFactoryAddress) {
       throw Error(INVALID_FACTORY_ADDRESS(channel.proxyFactoryAddress));
+    }
+
+    if (
+      channel.hasBalanceRefundAppInstance(
+        networkContext.CoinBalanceRefundApp,
+        tokenAddress || AddressZero
+      )
+    ) {
+      throw Error(CANNOT_WITHDRAW);
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
