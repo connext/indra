@@ -8,14 +8,14 @@ import {
   SupportedApplications,
 } from "@connext/types";
 import { forwardRef, Inject, Injectable } from "@nestjs/common";
-import { Zero } from "ethers/constants";
+import { HashZero, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
-import { CLogger, createLinkedHash, mkHash, xpubToAddress } from "../util";
+import { CLogger, createLinkedHash, xpubToAddress } from "../util";
 import { AppInstanceJson } from "../util/cfCore";
 
 import {
@@ -263,7 +263,7 @@ export class TransferService {
       ],
       linkedHash,
       paymentId,
-      preImage: mkHash("0x0"),
+      preImage: HashZero,
     };
 
     const receiverAppInstallRes = await this.cfCoreService.proposeAndWaitForInstallApp(

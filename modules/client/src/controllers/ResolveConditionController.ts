@@ -1,7 +1,7 @@
-import { Zero } from "ethers/constants";
+import { HashZero, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
-import { createLinkedHash, mkHash, stringify, xpubToAddress } from "../lib";
+import { createLinkedHash, stringify, xpubToAddress } from "../lib";
 import {
   ResolveConditionParameters,
   ResolveConditionResponse,
@@ -230,7 +230,7 @@ export class ResolveConditionController extends AbstractController {
       throwErr(`incorrect linked hash`);
     }
 
-    if (mkHash("0x0") !== preImage) {
+    if (HashZero !== preImage) {
       throwErr(`non-zero preimage`);
     }
 
