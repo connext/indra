@@ -111,6 +111,8 @@ export interface IConnextClient {
   getTransferHistory(): Promise<Transfer[]>;
   reclaimPendingAsyncTransfers(): Promise<void>;
   reclaimPendingAsyncTransfer(
+    amount: string,
+    assetId: string,
     paymentId: string,
     encryptedPreImage: string,
   ): Promise<ResolveLinkedTransferResponse>;

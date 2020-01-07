@@ -81,6 +81,8 @@ export type ResolveLinkedTransferToRecipientParameters<T = string> = Omit<
   ResolveLinkedTransferParameters<T>,
   "recipient" | "conditionType"
 > & {
+  amount: T;
+  assetId: string;
   conditionType: "LINKED_TRANSFER_TO_RECIPIENT";
 };
 // tslint:disable-next-line: max-line-length
@@ -94,6 +96,7 @@ export type ResolveConditionParameters<T = string> =
   | ResolveLinkedTransferToRecipientParameters<T>;
 
 export type ResolveLinkedTransferResponse = {
+  appId: string;
   freeBalance: CFCoreTypes.GetFreeBalanceStateResult;
   paymentId: string;
 };

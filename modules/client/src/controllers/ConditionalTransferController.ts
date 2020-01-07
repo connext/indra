@@ -1,4 +1,3 @@
-import EthCrypto from "eth-crypto";
 import { HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
@@ -9,6 +8,7 @@ import {
   stringify,
   xpubToAddress,
 } from "../lib";
+import { encryptWithPublicKey } from "../lib/crypto";
 import {
   BigNumber,
   CFCoreTypes,
@@ -86,11 +86,12 @@ export class ConditionalTransferController extends AbstractController {
     // set recipient and encrypted pre-image on linked transfer
     // TODO: use app path instead?
     const recipientPublicKey = fromExtendedKey(recipient).derivePath("0").publicKey;
-    const encryptedPreImageCipher = await EthCrypto.encryptWithPublicKey(
+    const encryptedPreImage = await encryptWithPublicKey(
       recipientPublicKey.slice(2), // remove 0x
       preImage,
     );
-    const encryptedPreImage = EthCrypto.cipher.stringify(encryptedPreImageCipher);
+    // TODO: if this fails for ANY REASON, uninstall the app to make sure that
+    // the sender doesnt lose any money
     await this.connext.setRecipientAndEncryptedPreImageForLinkedTransfer(
       recipient,
       encryptedPreImage,
@@ -99,6 +100,8 @@ export class ConditionalTransferController extends AbstractController {
 
     // publish encrypted secret
     // TODO: should we move this to its own file?
+    // TODO: if this fails for ANY REASON, uninstall the app to make sure that
+    // the sender doesnt lose any money (retry logic?)
     this.connext.messaging.publish(
       `transfer.send-async.${recipient}`,
       stringify({
@@ -187,10 +190,6 @@ export class ConditionalTransferController extends AbstractController {
     appInfo: DefaultApp,
     meta?: object,
   ): Promise<string | undefined> => {
-    let boundResolve: (value?: any) => void;
-    let boundReject: (reason?: any) => void;
-
-    // note: intermediary is added in connext.ts as well
     const {
       appDefinitionAddress: appDefinition,
       outcomeType,
@@ -214,82 +213,8 @@ export class ConditionalTransferController extends AbstractController {
       timeout: Zero,
     };
 
-    const proposeRes = await this.connext.proposeInstallApp(params);
-    // set app instance id
-    const appId = proposeRes.appInstanceId;
-
-    try {
-      const raceRes = await Promise.race([
-        new Promise((res: () => any, rej: () => any): void => {
-          boundResolve = this.resolveInstallTransfer.bind(null, res, appId);
-          boundReject = this.rejectInstallTransfer.bind(null, rej, appId);
-          this.connext.messaging.subscribe(
-            `indra.node.${this.connext.nodePublicIdentifier}.install.${proposeRes.appInstanceId}`,
-            boundResolve,
-          );
-          this.listener.on(CFCoreTypes.EventNames.REJECT_INSTALL_EVENT, boundReject);
-        }),
-        delayAndThrow(
-          CF_METHOD_TIMEOUT,
-          `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
-        ),
-      ]);
-      this.log.info(`Installed app ${appId}`);
-      this.log.debug(`Installed app details: ${stringify(raceRes as object)}`);
-      return proposeRes.appInstanceId;
-    } catch (e) {
-      this.log.error(`Error installing app: ${e.stack || e.message}`);
-      return undefined;
-    } finally {
-      this.cleanupInstallListeners(boundReject, proposeRes.appInstanceId);
-    }
-  };
-
-  // TODO: fix type of data
-  private resolveInstallTransfer = (
-    res: (value?: unknown) => void,
-    appId: string,
-    message: any,
-  ): any => {
-    // TODO: why is it sometimes data vs data.data?
-    const appInstance = message.data.data ? message.data.data : message.data;
-
-    if (appInstance.identityHash !== appId) {
-      // not our app
-      this.log.warn(
-        `Caught INSTALL event for different app ${stringify(
-          message,
-        )}, expected ${appId}. This should not happen.`,
-      );
-      return;
-    }
-    res(message);
-    return message;
-  };
-
-  private rejectInstallTransfer = (
-    rej: (reason?: string) => void,
-    appId: string,
-    msg: RejectInstallVirtualMessage,
-  ): any => {
-    // check app id
-    if (appId !== msg.data.appInstanceId) {
-      this.log.warn(
-        `Caught INSTALL event for different app ${stringify(
-          msg,
-        )}, expected ${appId}. This should not happen.`,
-      );
-      return;
-    }
-
-    return rej(`Install failed. Event data: ${stringify(msg)}`);
-  };
-
-  private cleanupInstallListeners = (boundReject: any, appId: string): void => {
-    this.connext.messaging.unsubscribe(
-      `indra.node.${this.connext.nodePublicIdentifier}.install.${appId}`,
-    );
-    this.listener.removeListener(CFCoreTypes.EventNames.REJECT_INSTALL_EVENT, boundReject);
+    const appId = await this.proposeAndInstallLedgerApp(params);
+    return appId;
   };
 
   // add all executors/handlers here
