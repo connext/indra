@@ -113,7 +113,7 @@ const deployContract = async (name, artifacts, args) => {
 }
 
 const sendGift = async (address, token) => {
-  const ethGift = '3'
+  const ethGift = '100000' // 1mil eth by default
   const tokenGift = '1000000'
   const ethBalance = await wallet.provider.getBalance(address)
   if (ethBalance.eq(Zero)) {

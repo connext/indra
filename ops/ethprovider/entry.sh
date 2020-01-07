@@ -13,7 +13,8 @@ then
     --host="0.0.0.0" \
     --mnemonic="$ETH_MNEMONIC" \
     --networkId="4447" \
-    --port="8545"
+    --port="8545" \
+    --defaultBalanceEther="1000000" # default 1mil ETH to each account $$$
 elif [[ "$1" == "deploy" ]]
 then
   echo "Deploying contracts.."
@@ -28,6 +29,7 @@ then
       --mnemonic="$ETH_MNEMONIC" \
       --networkId="4447" \
       --port="8545" \
+      --defaultBalanceEther="1000000" \
        > ganache.log &
     bash wait-for.sh localhost:8545 2> /dev/null
   fi
