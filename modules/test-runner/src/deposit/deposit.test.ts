@@ -3,23 +3,13 @@ import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 
 import { createClient } from "../util/client";
-import { FUNDED_MNEMONICS } from "../util/constants";
-import { clearDb } from "../util/db";
-import { revertEVMSnapshot, takeEVMSnapshot } from "../util/ethprovider";
 
 describe("Deposits", () => {
   let clientA: IConnextClient;
-  let snapshot: string;
-
+  
   beforeEach(async () => {
-    await clearDb();
-    clientA = await createClient(FUNDED_MNEMONICS[0]);
-    snapshot = await takeEVMSnapshot();
+    clientA = await createClient();
   }, 90_000);
-
-  afterEach(async () => {
-    await revertEVMSnapshot(snapshot);
-  });
 
   test("happy case: client should deposit ETH", async () => {
     await clientA.deposit({ amount: "1", assetId: AddressZero });

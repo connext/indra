@@ -87,11 +87,6 @@ export class ChannelRepository extends Repository<Channel> {
       (prof: PaymentProfile) => prof.assetId.toLowerCase() === assetId.toLowerCase(),
     );
 
-    if (!profile) {
-      if (assetId === AddressZero) {
-        return defaultPaymentProfileEth;
-      }
-    }
     return profile;
   }
 

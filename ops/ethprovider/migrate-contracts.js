@@ -1,7 +1,6 @@
 const { EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT: coreContracts } = require(`@connext/types`)
 const fs = require('fs')
 const eth = require('ethers')
-const linker = require('solc/linker')
 const tokenArtifacts = require('openzeppelin-solidity/build/contracts/ERC20Mintable.json')
 
 const appContracts = [
@@ -218,6 +217,11 @@ const sendGift = async (address, token) => {
       await sendGift(eth.Wallet.fromMnemonic(botMnemonic, cfPath).address, token)
     }
   }
+
+  ////////////////////////////////////////
+  // Take a snapshot of this state
+  const snapshotId = await provider.send("evm_snapshot", [])
+  console.log(`Took an EVM snapshot, id: ${snapshotId}`);
 
   ////////////////////////////////////////
   // Print summary

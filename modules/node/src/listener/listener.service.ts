@@ -65,7 +65,6 @@ export default class ListenerService implements OnModuleInit {
     private readonly channelRepository: ChannelRepository,
   ) {}
 
-  // TODO: move the business logic into the respective modules?
   getEventListeners(): CallbackStruct {
     return {
       CREATE_CHANNEL_EVENT: async (data: CreateChannelMessage): Promise<void> => {
@@ -100,7 +99,7 @@ export default class ListenerService implements OnModuleInit {
         }
         logEvent("PROPOSE_INSTALL_EVENT", data);
 
-        // TODO: better architecture
+        // TODO: separate install from validation, do both at this level
         // install if possible
         let allowedOrRejected;
         try {

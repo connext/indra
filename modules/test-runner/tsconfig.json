@@ -5,6 +5,7 @@
     "module": "ESNext",
     "outDir": "dist/",
     "typeRoots": [
+      "./src/typings",
       "./node_modules/@types",
       "../../node_modules/@types"
     ]

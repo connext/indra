@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build-bundle": "webpack --config ops/webpack.config.js",
-    "test": "jest --detectOpenHandles"
+    "test": "jest --detectOpenHandles --runInBand --forceExit --config jest.config.js"
   },
   "author": "",
   "license": "ISC",
@@ -16,6 +16,7 @@
     "core-js": "3.6.1",
     "dotenv": "8.2.0",
     "ethers": "4.0.41",
+    "human-standard-token-abi": "2.0.0",
     "jest": "24.9.0",
     "pg": "7.17.0",
     "ts-jest": "24.2.0",

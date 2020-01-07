@@ -1,6 +1,8 @@
 import { JsonRpcProvider } from "ethers/providers";
 
-export const ethProvider = new JsonRpcProvider(process.env.INDRA_ETH_RPC_URL);
+import { env } from "./env";
+
+export const ethProvider = new JsonRpcProvider(env.ethProviderUrl);
 
 /**
  * EVM snapshot, returns hex string of snapshot ID.
