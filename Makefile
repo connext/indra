@@ -9,7 +9,6 @@ SHELL=/bin/bash
 
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
 
-version=$(shell cat package.json | grep '"version":' | awk -F '"' '{print $$4}')
 commit=$(shell git rev-parse HEAD | head -c 8)
 solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
@@ -274,7 +273,7 @@ ssh-action: $(shell find $(ssh-action) $(find_options))
 test-runner-release: $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
 	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build-bundle"
-	docker build --file $(tests)/ops/release.dockerfile $(cache_from) --tag $(project)_test_runner:$(version) .
+	docker build --file $(tests)/ops/release.dockerfile $(cache_from) --tag $(project)_test_runner:$(commit) .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 test-runner-staging: $(shell find $(tests)/src $(tests)/ops $(find_options))
