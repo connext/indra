@@ -20,8 +20,6 @@ COPY modules/cf-adjudicator-contracts cf-adjudicator-contracts
 RUN true
 COPY modules/cf-funding-protocol-contracts cf-funding-protocol-contracts
 RUN true
-COPY modules/cf-apps cf-apps
-RUN true
 COPY modules/contracts contracts
 
 ENV PATH="./node_modules/.bin:${PATH}"

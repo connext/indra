@@ -20,7 +20,6 @@ cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(p
 cwd=$(shell pwd)
 bot=$(cwd)/modules/payment-bot
 cf-adjudicator-contracts=$(cwd)/modules/cf-adjudicator-contracts
-cf-apps=$(cwd)/modules/cf-apps
 cf-core=$(cwd)/modules/cf-core
 cf-funding-protocol-contracts=$(cwd)/modules/cf-funding-protocol-contracts
 client=$(cwd)/modules/client
@@ -233,7 +232,7 @@ database: node-modules $(shell find $(database) $(find_options))
 	docker tag $(project)_database $(project)_database:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-ethprovider: contracts cf-adjudicator-contracts cf-funding-protocol-contracts cf-apps $(shell find $(ethprovider) $(find_options))
+ethprovider: contracts cf-adjudicator-contracts cf-funding-protocol-contracts $(shell find $(ethprovider) $(find_options))
 	$(log_start)
 	docker build --file $(ethprovider)/Dockerfile $(cache_from) --tag $(project)_ethprovider .
 	docker tag $(project)_ethprovider $(project)_ethprovider:$(commit)
@@ -307,12 +306,7 @@ cf-adjudicator-contracts: node-modules $(shell find $(cf-adjudicator-contracts)/
 	$(docker_run) "cd modules/cf-adjudicator-contracts && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-cf-apps: node-modules cf-adjudicator-contracts $(shell find $(cf-apps)/contracts $(cf-apps)/waffle.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/cf-apps && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-cf-core: node-modules types cf-adjudicator-contracts cf-apps cf-funding-protocol-contracts $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
+cf-core: node-modules types cf-adjudicator-contracts cf-funding-protocol-contracts $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/cf-core && npm run build:ts"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
