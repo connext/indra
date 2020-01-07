@@ -1,12 +1,9 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient, SwapParameters } from "@connext/types";
-import { AddressZero, Zero, One } from "ethers/constants";
-import { bigNumberify, parseEther, BigNumber, formatEther } from "ethers/utils";
+import { AddressZero, One, Zero } from "ethers/constants";
+import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
 
 import { createClient } from "../util/client";
-import { FUNDED_MNEMONICS } from "../util/constants";
-import { clearDb } from "../util/db";
-import { revertEVMSnapshot, takeEVMSnapshot } from "../util/ethprovider";
 
 export const calculateExchange = (amount: BigNumber, swapRate: string): BigNumber => {
   return bigNumberify(formatEther(amount.mul(parseEther(swapRate))).replace(/\.[0-9]*$/, ""));
@@ -14,7 +11,6 @@ export const calculateExchange = (amount: BigNumber, swapRate: string): BigNumbe
 
 describe("Swaps", () => {
   let clientA: IConnextClient;
-  let snapshot: string;
   let tokenAddress: string;
   let nodeFreeBalanceAddress: string;
   let nodePublicIdentifier: string;
@@ -29,7 +25,7 @@ describe("Swaps", () => {
 
   test("happy case: client swaps eth for tokens successfully", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: parseEther("0.5").toString(), assetId: AddressZero });
+    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
 
     // check balances pre
@@ -37,7 +33,7 @@ describe("Swaps", () => {
       [clientA.freeBalanceAddress]: preSwapFreeBalanceEthClient,
       [nodeFreeBalanceAddress]: preSwapFreeBalanceEthNode,
     } = await clientA.getFreeBalance(AddressZero);
-    expect(preSwapFreeBalanceEthClient).toBeBigNumberEq(parseEther("0.5"));
+    expect(preSwapFreeBalanceEthClient).toBeBigNumberEq(parseEther("0.01"));
     expect(preSwapFreeBalanceEthNode).toBeBigNumberEq(Zero);
 
     const {
