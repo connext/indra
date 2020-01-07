@@ -47,6 +47,7 @@ jobs:
     - uses: actions/checkout@v1
     - run: make pull-commit
     - run: make start-test
+    - run: sleep 15 && make dls
     - run: make test-integration
 
   test-integration-zero:
@@ -57,6 +58,7 @@ jobs:
     - run: make pull-commit
     - run: make start-test
     - run: make pull-zero
+    - run: sleep 15 && make dls
     - run: make test-integration-zero
 
   test-bot:
