@@ -451,6 +451,12 @@ export class ConnextClient implements IConnextClient {
   ///////////////////////////////////
   // PROVIDER/ROUTER METHODS
 
+  public deployMultisig = async (): Promise<CFCoreTypes.DeployStateDepositHolderResult> => {
+    return await this.channelProvider.send("chan_deployStateDepositHolder", {
+      multisigAddress: this.multisigAddress,
+    });
+  };
+
   public getStateChannel = async (): Promise<CFCoreTypes.GetStateChannelResult> => {
     return await this.channelProvider.send(
       CFCoreTypes.RpcMethodNames.chan_getStateChannel as CFCoreTypes.RpcMethodName,
