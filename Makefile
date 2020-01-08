@@ -15,7 +15,7 @@ zero_version=$(shell echo $(version) | cut -d '.' -f 1).0.0
 solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
 # Pool of images to pull cached layers from during docker build steps
-cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database:latest,$(project)_ethprovider:$(commit),$(project)_ethprovider:latest,$(project)_node:$(commit),$(project)_node:latest,$(project)_proxy:$(commit),$(project)_proxy:latest,$(project)_relay:$(commit),$(project)_relay:latest,$(project)_bot:$(commit),$(project)_bot:latest,$(project)_builder:latest"; else echo ""; fi)
+cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_relay:$(commit),$(project)_relay,$(project)_bot:$(commit),$(project)_bot,$(project)_builder"; else echo ""; fi)
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
@@ -213,57 +213,55 @@ watch-node: node
 
 daicard-proxy: $(shell find $(proxy) $(find_options))
 	$(log_start)
-	docker build --file $(proxy)/daicard.io/prod.dockerfile $(cache_from) --tag daicard_proxy:latest .
-	docker tag daicard_proxy:latest daicard_proxy:$(commit)
+	docker build --file $(proxy)/daicard.io/prod.dockerfile $(cache_from) --tag daicard_proxy .
+	docker tag daicard_proxy daicard_proxy:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 database: node-modules $(shell find $(database) $(find_options))
 	$(log_start)
-	docker build --file $(database)/db.dockerfile $(cache_from) --tag $(project)_database:latest $(database)
-	docker tag $(project)_database:latest $(project)_database:$(commit)
+	docker build --file $(database)/db.dockerfile $(cache_from) --tag $(project)_database $(database)
+	docker tag $(project)_database $(project)_database:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ethprovider: contracts cf-adjudicator-contracts cf-funding-protocol-contracts cf-apps $(shell find $(ethprovider) $(find_options))
 	$(log_start)
-	docker build --file $(ethprovider)/Dockerfile $(cache_from) --tag $(project)_ethprovider:latest .
-	docker tag $(project)_ethprovider:latest $(project)_ethprovider:$(commit)
+	docker build --file $(ethprovider)/Dockerfile $(cache_from) --tag $(project)_ethprovider .
+	docker tag $(project)_ethprovider $(project)_ethprovider:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 node-release: node $(node)/ops/Dockerfile $(node)/ops/entry.sh
 	$(log_start)
-	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node:latest .
-	docker tag $(project)_node:latest $(project)_node:$(commit)
+	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node .
+	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 node-staging: node $(node)/ops/Dockerfile $(node)/ops/entry.sh
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build-bundle"
-	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node:latest .
-	docker tag $(project)_node:latest $(project)_node:$(commit)
+	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node .
+	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 payment-bot-release: payment-bot-js $(shell find $(bot)/ops $(find_options))
 	$(log_start)
-	docker build --file $(bot)/ops/release.dockerfile $(cache_from) --tag $(project)_bot:latest .
-	docker tag $(project)_bot:latest $(project)_bot:$(commit)
+	docker build --file $(bot)/ops/release.dockerfile $(cache_from) --tag $(project)_bot .
+	docker tag $(project)_bot $(project)_bot:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 payment-bot-staging: payment-bot-js $(shell find $(bot)/ops $(find_options))
 	$(log_start)
-	docker build --file $(bot)/ops/staging.dockerfile $(cache_from) --tag $(project)_bot:latest .
-	docker tag $(project)_bot:latest $(project)_bot:$(commit)
+	docker build --file $(bot)/ops/staging.dockerfile $(cache_from) --tag $(project)_bot .
+	docker tag $(project)_bot $(project)_bot:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
 	$(log_start)
-	docker build --file $(proxy)/indra.connext.network/dev.dockerfile $(cache_from) --tag $(project)_proxy:dev .
-	docker tag $(project)_proxy:dev $(project)_proxy:$(commit)
+	docker build --file $(proxy)/indra.connext.network/dev.dockerfile $(cache_from) --tag $(project)_proxy .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 indra-proxy-prod: daicard-prod dashboard-prod ws-tcp-relay $(shell find $(proxy) $(find_options))
 	$(log_start)
-	docker build --file $(proxy)/indra.connext.network/prod.dockerfile $(cache_from) --tag $(project)_proxy:latest .
-	docker tag $(project)_proxy:latest $(project)_proxy:$(commit)
+	docker build --file $(proxy)/indra.connext.network/prod.dockerfile $(cache_from) --tag $(project)_proxy:$(commit) .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ssh-action: $(shell find $(ssh-action) $(find_options))
@@ -280,14 +278,14 @@ test-runner-release: node-modules $(shell find $(tests)/src $(tests)/ops $(find_
 test-runner-staging: node-modules $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
 	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build-bundle"
-	docker build --file $(tests)/ops/staging.dockerfile $(cache_from) --tag $(project)_test_runner:latest .
-	docker tag $(project)_test_runner:latest $(project)_test_runner:$(commit)
+	docker build --file $(tests)/ops/staging.dockerfile $(cache_from) --tag $(project)_test_runner .
+	docker tag $(project)_test_runner $(project)_test_runner:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ws-tcp-relay: ops/ws-tcp-relay.dockerfile
 	$(log_start)
-	docker build --file ops/ws-tcp-relay.dockerfile $(cache_from) --tag $(project)_relay:latest .
-	docker tag $(project)_relay:latest $(project)_relay:$(commit)
+	docker build --file ops/ws-tcp-relay.dockerfile $(cache_from) --tag $(project)_relay .
+	docker tag $(project)_relay $(project)_relay:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ########################################
@@ -367,5 +365,5 @@ node-modules: builder package.json $(shell ls modules/**/package.json)
 
 builder: ops/builder.dockerfile
 	$(log_start)
-	docker build --file ops/builder.dockerfile --build-arg SOLC_VERSION=$(solc_version) $(cache_from) --tag $(project)_builder:latest .
+	docker build --file ops/builder.dockerfile --build-arg SOLC_VERSION=$(solc_version) $(cache_from) --tag $(project)_builder .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
