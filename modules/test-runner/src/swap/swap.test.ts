@@ -46,7 +46,7 @@ describe("Swaps", () => {
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
 
-    const swapAmount = One;
+    const swapAmount = parseEther("0.01");
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),
       fromAssetId: AddressZero,
@@ -130,4 +130,42 @@ describe("Swaps", () => {
     );
     expect(postSwapFreeBalanceTokenNode).toBeBigNumberEq(swapAmount);
   });
+
+  test("Bot A tries to swap with invalid from token address", async () => {
+    // client deposit and request node collateral
+    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.requestCollateral(tokenAddress);
+
+    const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
+    const wrongAddress = "0xdeadbeef";
+    const swapAmount = One;
+    const swapParams: SwapParameters = {
+      amount: swapAmount.toString(),
+      fromAssetId: wrongAddress,
+      swapRate,
+      toAssetId: tokenAddress,
+    };
+    await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not a valid eth address`);
+  });
+
+  test("Bot A tries to swap with invalid to token address", async () => {
+    // client deposit and request node collateral
+    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.requestCollateral(tokenAddress);
+
+    const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
+    const wrongAddress = "0xdeadbeef";
+    const swapAmount = One;
+    const swapParams: SwapParameters = {
+      amount: swapAmount.toString(),
+      fromAssetId: AddressZero,
+      swapRate,
+      toAssetId: wrongAddress,
+    };
+    await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not a valid eth address`);
+  });
+
+  test.only("Bot A tries to swap with insufficient free balance for the user", async () => {
+    
+  })
 });
