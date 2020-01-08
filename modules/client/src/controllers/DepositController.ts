@@ -10,7 +10,6 @@ import {
   CoinBalanceRefundAppStateBigNumber,
   convert,
   DepositParameters,
-  RejectProposalMessage,
   SupportedApplication,
   SupportedApplications,
 } from "../types";
