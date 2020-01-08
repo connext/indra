@@ -22,13 +22,13 @@ function finish {
 }
 trap finish SIGTERM SIGINT
 
-if [[ "$1" == "--watch" ]]
-then command="exec jest --config jest.config.js --runInBand --watch" && shift
+if [[ "$MODE" == "watch" ]]
+then command="exec jest --config jest.config.js --runInBand"
 else command="jest --config jest.config.js --forceExit --runInBand"
 fi
 
-bash wait-for.sh $INDRA_PG_HOST:$INDRA_PG_PORT
-bash wait-for.sh ${INDRA_ETH_RPC_URL#*://}
-bash wait-for.sh ${INDRA_NODE_URL#*://}
+bash ops/wait-for.sh $INDRA_PG_HOST:$INDRA_PG_PORT
+bash ops/wait-for.sh ${INDRA_ETH_RPC_URL#*://}
+bash ops/wait-for.sh ${INDRA_NODE_URL#*://}
 
 $command $@

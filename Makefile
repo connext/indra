@@ -175,7 +175,7 @@ test-backwards-compatibility: pull-backwards-compatible
 	bash ops/test-integration.sh $(backwards_compatible_version)
 
 watch-integration:
-	bash ops/test-integration.sh --watchAll
+	bash ops/test-integration.sh --watch
 
 test-cf: cf-core
 	bash ops/test-cf.sh
@@ -270,6 +270,7 @@ ssh-action: $(shell find $(ssh-action) $(find_options))
 	docker build --file $(ssh-action)/Dockerfile --tag $(project)_ssh_action $(ssh-action)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
+test-runner: test-runner-staging
 test-runner-release: node-modules $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
 	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build-bundle"
