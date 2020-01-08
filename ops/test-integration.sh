@@ -6,9 +6,11 @@ commit="`git rev-parse HEAD | head -c 8`"
 
 if [[ -n "`docker image ls -q $name:$1`" ]]
 then image=$name:$1
-elif [[ -n "`docker image ls -q $name:$commit`" ]]
+elif [[ -z "$1" && -n "`docker image ls -q $name:$commit`" ]]
 then image=$name:$commit
-else image=$name:latest
+elif [[ -z "$1" ]]
+then image=$name:latest
+else echo "Aborting: couldn't find an image to run for input: $1" && exit 1
 fi
 
 # If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
