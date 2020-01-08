@@ -5,7 +5,7 @@ import { parseEther } from "ethers/utils";
 
 import { createClient } from "../util/client";
 
-describe("Async Transfers", () => {
+describe.only("Async Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
