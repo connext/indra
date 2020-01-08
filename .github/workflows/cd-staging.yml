@@ -102,7 +102,7 @@ jobs:
     env:
       RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
       STAGING_DOMAINNAME: staging.indra.connext.network
-    needs: [test-bot, test-bot-farm, test-cf, test-daicard, test-integration, test-node, test-ssh]
+    needs: [test-backwards-compatibility, test-bot, test-bot-farm, test-cf, test-daicard, test-integration, test-node, test-ssh]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
