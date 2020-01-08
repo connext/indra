@@ -17,7 +17,9 @@ const compress = (pubKey: string): string => {
 // if already decompressed an not has trailing 04
 const decompress = (pubKey: string): string => {
   const startsWith04 = Buffer.from(pubKey, "hex").length === 64 ? `04${pubKey}` : pubKey;
-  return publicKeyConvert(Buffer.from(startsWith04, "hex"), false).toString("hex").substring(2);
+  return publicKeyConvert(Buffer.from(startsWith04, "hex"), false)
+    .toString("hex")
+    .substring(2);
 };
 
 export const encryptWithPublicKey = async (publicKey: string, message: string): Promise<string> => {
@@ -58,6 +60,7 @@ export const decryptWithPrivateKey = async (
     iv: Buffer.from(encrypted.iv, "hex"),
     mac: Buffer.from(encrypted.mac, "hex"),
   };
+  throw new Error(`encrypted: ${JSON.stringify(encrypted)}`);
   const decryptedBuffer = await decrypt(Buffer.from(twoStripped, "hex"), encryptedBuffer);
   return decryptedBuffer.toString();
 };
