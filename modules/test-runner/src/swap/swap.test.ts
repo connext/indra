@@ -166,6 +166,18 @@ describe("Swaps", () => {
   });
 
   test.only("Bot A tries to swap with insufficient free balance for the user", async () => {
-    
-  })
+    // client deposit and request node collateral
+    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.requestCollateral(tokenAddress);
+
+    const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
+    const swapAmount = parseEther("0.02");
+    const swapParams: SwapParameters = {
+      amount: swapAmount.toString(),
+      fromAssetId: AddressZero,
+      swapRate,
+      toAssetId: tokenAddress,
+    };
+    await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not less than or equal to`);
+  });
 });
