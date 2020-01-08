@@ -165,7 +165,7 @@ describe("Swaps", () => {
     await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not a valid eth address`);
   });
 
-  test.only("Bot A tries to swap with insufficient free balance for the user", async () => {
+  test("Bot A tries to swap with insufficient free balance for the user", async () => {
     // client deposit and request node collateral
     await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
@@ -179,5 +179,23 @@ describe("Swaps", () => {
       toAssetId: tokenAddress,
     };
     await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not less than or equal to`);
+  });
+
+  test.only("Bot A tries to swap with negative swap rate", async () => {
+    // client deposit and request node collateral
+    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.requestCollateral(tokenAddress);
+
+    const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
+    const swapAmount = One;
+    const swapParams: SwapParameters = {
+      amount: swapAmount.toString(),
+      fromAssetId: AddressZero,
+      swapRate: (-swapRate).toString(),
+      toAssetId: tokenAddress,
+    };
+    await expect(clientA.swap(swapParams)).rejects.toThrowError(
+      `is not greater than or equal to 0`,
+    );
   });
 });
