@@ -4,12 +4,14 @@ set -e
 name="indra_test_runner"
 commit="`git rev-parse HEAD | head -c 8`"
 
-if [[ -n "$1" && -n "`docker image ls -q $name:$1`" ]]
+if [[ -z "$1" || ! "$1" =~ [0-9.] ]]
+then
+  if [[ -n "`docker image ls -q $name:$commit`" ]]
+  then image=$name:$commit
+  else image=$name:latest
+  fi
+elif [[ -n "`docker image ls -q $name:$1`" ]]
 then image=$name:$1; shift # rm $1 from $@
-elif [[ -z "$1" && -n "`docker image ls -q $name:$commit`" ]]
-then image=$name:$commit
-elif [[ -z "$1" ]]
-then image=$name:latest
 else echo "Aborting: couldn't find an image to run for input: $1" && exit 1
 fi
 
