@@ -9,7 +9,7 @@ import { getOnchainBalance, revertEVMSnapshot, takeEVMSnapshot } from "../util/e
 
 describe("Deposits", () => {
   let clientA: IConnextClient;
-  
+
   beforeEach(async () => {
     clientA = await createClient();
   }, 90_000);
@@ -39,7 +39,7 @@ describe("Deposits", () => {
   });
 
   // TODO: unskip when it passes
-  test.skip("client should not be able to deposit with invalid token address", async () => {
+  test("client should not be able to deposit with invalid token address", async () => {
     // TODO: fix assert message when this is fixed
     await expect(clientA.deposit({ amount: "1", assetId: "0xdeadbeef" })).rejects.toThrowError(
       "invalid token address",
@@ -63,7 +63,7 @@ describe("Deposits", () => {
     ).rejects.toThrowError("is not less than or equal to");
   });
 
-  test.only("client has already requested deposit rights before calling deposit", async () => {
+  test("client has already requested deposit rights before calling deposit", async () => {
     await clientA.requestDepositRights({ assetId: clientA.config.contractAddresses.Token });
 
     await clientA.deposit({ amount: "1", assetId: clientA.config.contractAddresses.Token });
@@ -75,28 +75,27 @@ describe("Deposits", () => {
     //TODO: is there any way to test to make sure deposit rights were rescinded as part of the .deposit call?
   });
 
-  test("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => {
-  });
+  test("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => {});
 
-  test("client tries to deposit while node already has deposit rights and has sent tx to chain (not confirmed onchain)", async () => { });
+  test("client tries to deposit while node already has deposit rights and has sent tx to chain (not confirmed onchain)", async () => {});
 
-  test("client deposits a different amount onchain than passed into the deposit fn", async () => { });
+  test("client deposits a different amount onchain than passed into the deposit fn", async () => {});
 
-  test("client proposes deposit but no response from node (node doesn't receive NATS message)", async () => { });
+  test("client proposes deposit but no response from node (node doesn't receive NATS message)", async () => {});
 
-  test("client proposes deposit but no response from node (node receives NATS message after timeout expired)", async () => { });
+  test("client proposes deposit but no response from node (node receives NATS message after timeout expired)", async () => {});
 
-  test("client goes offline after proposing deposit and then comes back online after timeout is over", async () => { });
+  test("client goes offline after proposing deposit and then comes back online after timeout is over", async () => {});
 
-  test("client proposes deposit then deletes its store", async () => { });
+  test("client proposes deposit then deletes its store", async () => {});
 
-  test("client proposes deposit but never sends tx to chain", async () => { });
+  test("client proposes deposit but never sends tx to chain", async () => {});
 
-  test("client proposes deposit, sends tx to chain, but deposit takes a long time to confirm", async () => { });
+  test("client proposes deposit, sends tx to chain, but deposit takes a long time to confirm", async () => {});
 
-  test("client proposes deposit, sends tx to chain, but deposit fails onchain", async () => { });
+  test("client proposes deposit, sends tx to chain, but deposit fails onchain", async () => {});
 
-  test("client bypasses proposeDeposit flow and calls providerDeposit directly", async () => { });
+  test("client bypasses proposeDeposit flow and calls providerDeposit directly", async () => {});
 
-  test("client deposits, withdraws, then successfully deposits again", async () => { });
+  test("client deposits, withdraws, then successfully deposits again", async () => {});
 });
