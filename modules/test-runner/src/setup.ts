@@ -1,7 +1,10 @@
 import { BigNumber, BigNumberish } from "ethers/utils";
 
 expect.extend({
-  toBeBigNumberEq(received: BigNumber, equalTo: BigNumberish): any {
+  toBeBigNumberEq(
+    received: BigNumber,
+    equalTo: BigNumberish,
+  ): { message: () => string; pass: boolean } {
     const pass = received.eq(equalTo);
     if (pass) {
       return {

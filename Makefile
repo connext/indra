@@ -7,13 +7,14 @@ flags=.makeflags
 VPATH=$(flags)
 SHELL=/bin/bash
 
-find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
+backwards_compatible_version=2.3.20 #$(shell echo $(version) | cut -d '.' -f 1).0.0
 
 commit=$(shell git rev-parse HEAD | head -c 8)
+version=$(shell cat package.json | grep '"version"' | awk -F '"' '{print $$4}')
 solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
 # Pool of images to pull cached layers from during docker build steps
-cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database:latest,$(project)_ethprovider:$(commit),$(project)_ethprovider:latest,$(project)_node:$(commit),$(project)_node:latest,$(project)_proxy:$(commit),$(project)_proxy:latest,$(project)_relay:$(commit),$(project)_relay:latest,$(project)_bot:$(commit),$(project)_bot:latest,$(project)_builder:latest"; else echo ""; fi)
+cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_relay:$(commit),$(project)_relay,$(project)_bot:$(commit),$(project)_bot,$(project)_builder"; else echo ""; fi)
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
@@ -34,6 +35,8 @@ proxy=$(cwd)/modules/proxy
 ssh-action=$(cwd)/ops/ssh-action
 tests=$(cwd)/modules/test-runner
 types=$(cwd)/modules/types
+
+find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
 
 # Setup docker run time
 # If on Linux, give the container our uid & gid so we know what to reset permissions to
@@ -130,26 +133,22 @@ reset: stop
 	rm -rf $(flags)/deployed-contracts
 
 push-commit:
-	bash ops/push-images.sh commit bot database ethprovider node proxy relay test_runner
+	bash ops/push-images.sh $(commit)
 
 push-release:
-	bash ops/push-images.sh release database node proxy relay test_runner
+	bash ops/push-images.sh $(version)
 
-pull:
-	docker pull $(registry)/$(project)_bot:$(commit) && docker tag $(registry)/$(project)_bot:$(commit) $(project)_bot:$(commit) || true
-	docker pull $(registry)/$(project)_database:$(commit) && docker tag $(registry)/$(project)_database:$(commit) $(project)_database:$(commit) || true
-	docker pull $(registry)/$(project)_ethprovider:$(commit) && docker tag $(registry)/$(project)_ethprovider:$(commit) $(project)_ethprovider:$(commit) || true
-	docker pull $(registry)/$(project)_node:$(commit) && docker tag $(registry)/$(project)_node:$(commit) $(project)_node:$(commit) || true
-	docker pull $(registry)/$(project)_proxy:$(commit) && docker tag $(registry)/$(project)_proxy:$(commit) $(project)_proxy:$(commit) || true
-	docker pull $(registry)/$(project)_relay:$(commit) && docker tag $(registry)/$(project)_relay:$(commit) $(project)_relay:$(commit) || true
-	docker pull $(registry)/$(project)_test_runner:$(commit) && docker tag $(registry)/$(project)_test_runner:$(commit) $(project)_test_runner:$(commit) || true
-	docker pull $(registry)/$(project)_bot:latest && docker tag $(registry)/$(project)_bot:latest $(project)_bot:latest || true
-	docker pull $(registry)/$(project)_database:latest && docker tag $(registry)/$(project)_database:latest $(project)_database:latest || true
-	docker pull $(registry)/$(project)_ethprovider:latest && docker tag $(registry)/$(project)_ethprovider:latest $(project)_ethprovider:latest || true
-	docker pull $(registry)/$(project)_node:latest && docker tag $(registry)/$(project)_node:latest $(project)_node:latest || true
-	docker pull $(registry)/$(project)_proxy:latest && docker tag $(registry)/$(project)_proxy:latest $(project)_proxy:latest || true
-	docker pull $(registry)/$(project)_relay:latest && docker tag $(registry)/$(project)_relay:latest $(project)_relay:latest || true
-	docker pull $(registry)/$(project)_test_runner:latest && docker tag $(registry)/$(project)_test_runner:latest $(project)_test_runner:latest || true
+pull-latest:
+	bash ops/pull-images.sh latest
+
+pull-commit:
+	bash ops/pull-images.sh $(commit)
+
+pull-release:
+	bash ops/pull-images.sh $(version)
+
+pull-backwards-compatible:
+	bash ops/pull-images.sh $(backwards_compatible_version)
 
 deployed-contracts: ethprovider
 	bash ops/deploy-contracts.sh ganache
@@ -166,11 +165,14 @@ dls:
 ########################################
 # Test Runner Shortcuts
 
-test: test-node
-watch: watch-node
+test: test-integration
+watch: watch-integration
 
 test-integration:
 	bash ops/test-integration.sh
+
+test-backwards-compatibility: pull-backwards-compatible
+	bash ops/test-integration.sh $(backwards_compatible_version)
 
 watch-integration:
 	bash ops/test-integration.sh --watch
@@ -212,57 +214,55 @@ watch-node: node
 
 daicard-proxy: $(shell find $(proxy) $(find_options))
 	$(log_start)
-	docker build --file $(proxy)/daicard.io/prod.dockerfile $(cache_from) --tag daicard_proxy:latest .
-	docker tag daicard_proxy:latest daicard_proxy:$(commit)
+	docker build --file $(proxy)/daicard.io/prod.dockerfile $(cache_from) --tag daicard_proxy .
+	docker tag daicard_proxy daicard_proxy:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 database: node-modules $(shell find $(database) $(find_options))
 	$(log_start)
-	docker build --file $(database)/db.dockerfile $(cache_from) --tag $(project)_database:latest $(database)
-	docker tag $(project)_database:latest $(project)_database:$(commit)
+	docker build --file $(database)/db.dockerfile $(cache_from) --tag $(project)_database $(database)
+	docker tag $(project)_database $(project)_database:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ethprovider: contracts cf-adjudicator-contracts cf-funding-protocol-contracts cf-apps $(shell find $(ethprovider) $(find_options))
 	$(log_start)
-	docker build --file $(ethprovider)/Dockerfile $(cache_from) --tag $(project)_ethprovider:latest .
-	docker tag $(project)_ethprovider:latest $(project)_ethprovider:$(commit)
+	docker build --file $(ethprovider)/Dockerfile $(cache_from) --tag $(project)_ethprovider .
+	docker tag $(project)_ethprovider $(project)_ethprovider:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 node-release: node $(node)/ops/Dockerfile $(node)/ops/entry.sh
 	$(log_start)
-	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node:latest .
-	docker tag $(project)_node:latest $(project)_node:$(commit)
+	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node .
+	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 node-staging: node $(node)/ops/Dockerfile $(node)/ops/entry.sh
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build-bundle"
-	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node:latest .
-	docker tag $(project)_node:latest $(project)_node:$(commit)
+	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node .
+	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 payment-bot-release: payment-bot-js $(shell find $(bot)/ops $(find_options))
 	$(log_start)
-	docker build --file $(bot)/ops/release.dockerfile $(cache_from) --tag $(project)_bot:latest .
-	docker tag $(project)_bot:latest $(project)_bot:$(commit)
+	docker build --file $(bot)/ops/release.dockerfile $(cache_from) --tag $(project)_bot .
+	docker tag $(project)_bot $(project)_bot:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 payment-bot-staging: payment-bot-js $(shell find $(bot)/ops $(find_options))
 	$(log_start)
-	docker build --file $(bot)/ops/staging.dockerfile $(cache_from) --tag $(project)_bot:latest .
-	docker tag $(project)_bot:latest $(project)_bot:$(commit)
+	docker build --file $(bot)/ops/staging.dockerfile $(cache_from) --tag $(project)_bot .
+	docker tag $(project)_bot $(project)_bot:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
 	$(log_start)
-	docker build --file $(proxy)/indra.connext.network/dev.dockerfile $(cache_from) --tag $(project)_proxy:dev .
-	docker tag $(project)_proxy:dev $(project)_proxy:$(commit)
+	docker build --file $(proxy)/indra.connext.network/dev.dockerfile $(cache_from) --tag $(project)_proxy .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 indra-proxy-prod: daicard-prod dashboard-prod ws-tcp-relay $(shell find $(proxy) $(find_options))
 	$(log_start)
-	docker build --file $(proxy)/indra.connext.network/prod.dockerfile $(cache_from) --tag $(project)_proxy:latest .
-	docker tag $(project)_proxy:latest $(project)_proxy:$(commit)
+	docker build --file $(proxy)/indra.connext.network/prod.dockerfile $(cache_from) --tag $(project)_proxy:$(commit) .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ssh-action: $(shell find $(ssh-action) $(find_options))
@@ -270,23 +270,24 @@ ssh-action: $(shell find $(ssh-action) $(find_options))
 	docker build --file $(ssh-action)/Dockerfile --tag $(project)_ssh_action $(ssh-action)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-test-runner-release: $(shell find $(tests)/src $(tests)/ops $(find_options))
+test-runner: test-runner-staging
+test-runner-release: node-modules $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
 	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build-bundle"
 	docker build --file $(tests)/ops/release.dockerfile $(cache_from) --tag $(project)_test_runner:$(commit) .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-test-runner-staging: $(shell find $(tests)/src $(tests)/ops $(find_options))
+test-runner-staging: node-modules $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
 	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build-bundle"
-	docker build --file $(tests)/ops/staging.dockerfile $(cache_from) --tag $(project)_test_runner:latest .
-	docker tag $(project)_test_runner:latest $(project)_test_runner:$(commit)
+	docker build --file $(tests)/ops/staging.dockerfile $(cache_from) --tag $(project)_test_runner .
+	docker tag $(project)_test_runner $(project)_test_runner:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ws-tcp-relay: ops/ws-tcp-relay.dockerfile
 	$(log_start)
-	docker build --file ops/ws-tcp-relay.dockerfile $(cache_from) --tag $(project)_relay:latest .
-	docker tag $(project)_relay:latest $(project)_relay:$(commit)
+	docker build --file ops/ws-tcp-relay.dockerfile $(cache_from) --tag $(project)_relay .
+	docker tag $(project)_relay $(project)_relay:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ########################################
@@ -366,5 +367,5 @@ node-modules: builder package.json $(shell ls modules/**/package.json)
 
 builder: ops/builder.dockerfile
 	$(log_start)
-	docker build --file ops/builder.dockerfile --build-arg SOLC_VERSION=$(solc_version) $(cache_from) --tag $(project)_builder:latest .
+	docker build --file ops/builder.dockerfile --build-arg SOLC_VERSION=$(solc_version) $(cache_from) --tag $(project)_builder .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@

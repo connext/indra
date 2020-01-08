@@ -26,7 +26,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
     data: { paymentId: string },
   ): Promise<LinkedTransfer> {
     if (!data.paymentId) {
-      throw new RpcException(`Incorrect data received. Data: ${data}`);
+      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
     logger.log(`Got fetch link request for: ${data.paymentId}`);
     return await this.transferService.getLinkedTransferByPaymentId(data.paymentId);
@@ -39,7 +39,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
     logger.log(`Got resolve link request with data: ${JSON.stringify(data, replaceBN, 2)}`);
     const { paymentId, linkedHash, meta } = data;
     if (!paymentId || !linkedHash) {
-      throw new RpcException(`Incorrect data received. Data: ${data}`);
+      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
     return await this.transferService.resolveLinkedTransfer(pubId, paymentId, linkedHash, meta);
   }
@@ -55,7 +55,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
   ): Promise<{ linkedHash: string }> {
     const { recipientPublicIdentifier, linkedHash, encryptedPreImage } = data;
     if (!recipientPublicIdentifier) {
-      throw new RpcException(`Incorrect data received. Data: ${data}`);
+      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
 
     const transfer = await this.transferService.setRecipientAndEncryptedPreImageOnLinkedTransfer(

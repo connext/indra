@@ -1,10 +1,9 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
+import { parseEther } from "ethers/utils";
 
 import { createClient } from "../util/client";
-import { FUNDED_MNEMONICS } from "../util/constants";
-import { parseEther } from "ethers/utils";
 
 describe("Collateral", () => {
   let clientA: IConnextClient;
