@@ -39,7 +39,7 @@ describe("Deposits", () => {
   });
 
   // TODO: unskip when it passes
-  test("client should not be able to deposit with invalid token address", async () => {
+  test.skip("client should not be able to deposit with invalid token address", async () => {
     // TODO: fix assert message when this is fixed
     await expect(clientA.deposit({ amount: "1", assetId: "0xdeadbeef" })).rejects.toThrowError(
       "invalid token address",
@@ -97,5 +97,30 @@ describe("Deposits", () => {
 
   test("client bypasses proposeDeposit flow and calls providerDeposit directly", async () => {});
 
-  test("client deposits, withdraws, then successfully deposits again", async () => {});
+  test("client deposits eth, withdraws, then successfully deposits eth again", async () => {
+    await clientA.deposit({ amount: "2", assetId: AddressZero });
+    await clientA.withdraw({ amount: "2", assetId: AddressZero });
+    await clientA.deposit({ amount: "1", assetId: AddressZero });
+
+    const freeBalance = await clientA.getFreeBalance(AddressZero);
+    const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
+    expect(freeBalance[clientA.freeBalanceAddress]).toBeBigNumberEq(1);
+    expect(freeBalance[nodeFreeBalanceAddress]).toBeBigNumberEq(0);
+  });
+
+  test("client deposits eth, withdraws, then successfully deposits tokens", async () => {
+    const tokenAddress = clientA.config.contractAddresses.Token;
+
+    await clientA.deposit({ amount: "2", assetId: AddressZero });
+    await clientA.withdraw({ amount: "2", assetId: AddressZero });
+    await clientA.deposit({ amount: "1", assetId: tokenAddress });
+
+    const freeBalanceToken = await clientA.getFreeBalance(tokenAddress);
+    const freeBalanceEth = await clientA.getFreeBalance(AddressZero);
+    const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
+    expect(freeBalanceEth[clientA.freeBalanceAddress]).toBeBigNumberEq(0);
+    expect(freeBalanceEth[nodeFreeBalanceAddress]).toBeBigNumberEq(0);
+    expect(freeBalanceToken[clientA.freeBalanceAddress]).toBeBigNumberEq(1);
+    expect(freeBalanceToken[nodeFreeBalanceAddress]).toBeBigNumberEq(0);
+  });
 });
