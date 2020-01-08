@@ -1,3 +1,6 @@
+import { config } from "dotenv";
+config();
+
 export const env = {
   dbConfig: {
     database: process.env.INDRA_PG_DATABASE || "",
