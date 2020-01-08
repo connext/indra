@@ -7,11 +7,10 @@ flags=.makeflags
 VPATH=$(flags)
 SHELL=/bin/bash
 
-find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
+backwards_compatible_version=2.3.20 #$(shell echo $(version) | cut -d '.' -f 1).0.0
 
 commit=$(shell git rev-parse HEAD | head -c 8)
 version=$(shell cat package.json | grep '"version"' | awk -F '"' '{print $$4}')
-zero_version=$(shell echo $(version) | cut -d '.' -f 1).0.0
 solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
 # Pool of images to pull cached layers from during docker build steps
@@ -36,6 +35,8 @@ proxy=$(cwd)/modules/proxy
 ssh-action=$(cwd)/ops/ssh-action
 tests=$(cwd)/modules/test-runner
 types=$(cwd)/modules/types
+
+find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
 
 # Setup docker run time
 # If on Linux, give the container our uid & gid so we know what to reset permissions to
@@ -146,8 +147,8 @@ pull-commit:
 pull-release:
 	bash ops/pull-images.sh $(version)
 
-pull-zero:
-	bash ops/pull-images.sh $(zero_version)
+pull-backwards-compatible:
+	bash ops/pull-images.sh $(backwards_compatible_version)
 
 deployed-contracts: ethprovider
 	bash ops/deploy-contracts.sh ganache
@@ -170,8 +171,8 @@ watch: watch-node
 test-integration:
 	bash ops/test-integration.sh
 
-test-integration-zero:
-	bash ops/test-integration.sh $(zero_version)
+test-backwards-compatibility: pull-backwards-compatible
+	bash ops/test-integration.sh $(backwards_compatible_version)
 
 watch-integration:
 	bash ops/test-integration.sh --watchAll
