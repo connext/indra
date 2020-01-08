@@ -100,6 +100,10 @@ export default class WithdrawController extends NodeController {
 
     const { multisigAddress, recipient } = params;
 
+    const signer = await requestHandler.getSigner();
+    const signerAddress = await signer.getAddress();
+    const nonce = await provider.getTransactionCount(signerAddress);
+
     params.recipient = recipient || xkeyKthAddress(publicIdentifier, 0);
 
     await runWithdrawProtocol(requestHandler, params);
@@ -117,7 +121,8 @@ export default class WithdrawController extends NodeController {
     const tx = {
       ...commitment,
       gasPrice: await provider.getGasPrice(),
-      gasLimit: 300000
+      gasLimit: 300000,
+      nonce
     };
 
     let txResponse: TransactionResponse;

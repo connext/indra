@@ -141,7 +141,6 @@ class App extends React.Component {
       state: machine.initialState,
       swapRate,
       token: null,
-      tokenProfile: null,
     };
     this.refreshBalances.bind(this);
     this.autoDeposit.bind(this);
@@ -336,19 +335,11 @@ class App extends React.Component {
       machine.send("ERROR_RECEIVE");
     });
 
-    const tokenProfile = await channel.addPaymentProfile({
-      amountToCollateralize: DEFAULT_AMOUNT_TO_COLLATERALIZE.wad.toString(),
-      minimumMaintainedCollateral: DEFAULT_COLLATERAL_MINIMUM.wad.toString(),
-      assetId: token.address,
-    });
-    console.log(`Set a default token profile: ${JSON.stringify(tokenProfile)}`);
-
     this.setState({
       channel,
       useWalletConnext,
       swapRate,
       token,
-      tokenProfile,
     });
 
     const saiBalance = Currency.DEI(await this.getSaiBalance(ethProvider), swapRate);
@@ -592,13 +583,6 @@ class App extends React.Component {
     console.log(`Collateral: ${collateral} tokens, need: ${formatEther(collateralNeeded)}`);
     if (collateralNeeded.gt(parseEther(collateral))) {
       console.log(`Requesting more collateral...`);
-      const tokenProfile = await channel.addPaymentProfile({
-        amountToCollateralize: collateralNeeded.add(parseEther("10")), // add a buffer of $10 so you dont collateralize on every payment
-        minimumMaintainedCollateral: collateralNeeded,
-        assetId: token.address,
-      });
-      console.log(`Got a new token profile: ${JSON.stringify(tokenProfile)}`);
-      this.setState({ tokenProfile });
       await channel.requestCollateral(token.address);
       collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress]);
       console.log(`Collateral: ${collateral} tokens, need: ${formatEther(collateralNeeded)}`);
@@ -764,7 +748,7 @@ class App extends React.Component {
             <Route
               path="/redeem"
               render={props => (
-                <RedeemCard {...props} channel={channel} tokenProfile={this.state.tokenProfile} />
+                <RedeemCard {...props} channel={channel} token={token} />
               )}
             />
             <Route

@@ -174,7 +174,7 @@ test-integration-zero:
 	bash ops/test-integration.sh $(zero_version)
 
 watch-integration:
-	bash ops/test-integration.sh --watch
+	bash ops/test-integration.sh --watchAll
 
 test-cf: cf-core
 	bash ops/test-cf.sh
@@ -257,7 +257,7 @@ payment-bot-staging: payment-bot-js $(shell find $(bot)/ops $(find_options))
 indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/indra.connext.network/dev.dockerfile $(cache_from) --tag $(project)_proxy:dev .
-	docker tag $(project)_proxy:latest $(project)_proxy:$(commit)
+	docker tag $(project)_proxy:dev $(project)_proxy:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 indra-proxy-prod: daicard-prod dashboard-prod ws-tcp-relay $(shell find $(proxy) $(find_options))
@@ -271,13 +271,13 @@ ssh-action: $(shell find $(ssh-action) $(find_options))
 	docker build --file $(ssh-action)/Dockerfile --tag $(project)_ssh_action $(ssh-action)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-test-runner-release: node-modules $(shell find $(tests)/ops $(find_options))
+test-runner-release: node-modules $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
 	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build-bundle"
 	docker build --file $(tests)/ops/release.dockerfile $(cache_from) --tag $(project)_test_runner:$(commit) .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-test-runner-staging: node-modules $(shell find $(tests)/ops $(find_options))
+test-runner-staging: node-modules $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
 	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build-bundle"
 	docker build --file $(tests)/ops/staging.dockerfile $(cache_from) --tag $(project)_test_runner:latest .

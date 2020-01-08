@@ -61,6 +61,7 @@ export interface IConnextClient {
   multisigAddress: string;
   nodePublicIdentifier: string;
   publicIdentifier: string;
+  signerAddress: string;
 
   ////////////////////////////////////////
   // Methods
@@ -119,6 +120,7 @@ export interface IConnextClient {
 
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
+  deployMultisig(): Promise<CFCoreTypes.DeployStateDepositHolderResult>;
   getStateChannel(): Promise<CFCoreTypes.GetStateChannelResult>;
   providerDeposit(
     amount: BigNumber,

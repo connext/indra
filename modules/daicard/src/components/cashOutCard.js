@@ -77,11 +77,6 @@ export const CashoutCard = style(
       console.log(`Withdrawing ${total.toETH().format()} to: ${value}`);
       // swap all in-channel tokens for eth
       if (balance.channel.token.wad.gt(Zero)) {
-        await channel.addPaymentProfile({
-          amountToCollateralize: total.toETH().wad.toString(),
-          minimumMaintainedCollateral: total.toETH().wad.toString(),
-          assetId: AddressZero,
-        });
         await channel.requestCollateral(AddressZero);
         await channel.swap({
           amount: balance.channel.token.wad.toString(),
