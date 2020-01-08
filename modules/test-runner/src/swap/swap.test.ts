@@ -181,7 +181,7 @@ describe("Swaps", () => {
     await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not less than or equal to`);
   });
 
-  test.only("Bot A tries to swap with negative swap rate", async () => {
+  test("Bot A tries to swap with negative swap rate", async () => {
     // client deposit and request node collateral
     await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
@@ -197,5 +197,21 @@ describe("Swaps", () => {
     await expect(clientA.swap(swapParams)).rejects.toThrowError(
       `is not greater than or equal to 0`,
     );
+  });
+
+  test.only("Bot A tries to swap with negative user amount", async () => {
+    // client deposit and request node collateral
+    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.requestCollateral(tokenAddress);
+
+    const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
+    const swapAmount = One;
+    const swapParams: SwapParameters = {
+      amount: (-swapAmount).toString(),
+      fromAssetId: AddressZero,
+      swapRate,
+      toAssetId: tokenAddress,
+    };
+    await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not greater than 0`);
   });
 });
