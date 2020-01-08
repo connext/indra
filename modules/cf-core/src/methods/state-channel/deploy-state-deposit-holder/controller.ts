@@ -124,6 +124,9 @@ async function sendMultisigDeployTx(
     throw Error("wallet must have a provider");
   }
 
+  const signerAddress = await signer.getAddress();
+  const nonce = await provider.getTransactionCount(signerAddress);
+
   let error;
   for (let tryCount = 1; tryCount < retryCount + 1; tryCount += 1) {
     try {
@@ -135,7 +138,8 @@ async function sendMultisigDeployTx(
         0, // TODO: Increment nonce as needed
         {
           gasLimit: CREATE_PROXY_AND_SETUP_GAS,
-          gasPrice: provider.getGasPrice()
+          gasPrice: provider.getGasPrice(),
+          nonce
         }
       );
 

@@ -158,6 +158,8 @@ process.on("unhandledRejection", (e: any): any => {
   if (config.redeemLinkedTo) {
     checkForLinkedFields(config);
     const resolveParams: ResolveLinkedTransferToRecipientParameters = {
+      amount: parseEther(config.linkedTo).toString(),
+      assetId: config.assetId,
       conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
       paymentId: config.paymentId,
       preImage: config.preImage,

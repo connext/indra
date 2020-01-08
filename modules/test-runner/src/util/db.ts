@@ -1,12 +1,8 @@
 import { Client as DBClient } from "pg";
 
-const dbClient = new DBClient({
-  database: process.env.INDRA_PG_DATABASE,
-  host: process.env.INDRA_PG_HOST,
-  password: process.env.INDRA_PG_PASSWORD,
-  port: parseInt(process.env.INDRA_PG_PORT!, 10),
-  user: process.env.INDRA_PG_USERNAME,
-});
+import { env } from "./env";
+
+const dbClient = new DBClient(env.dbConfig);
 
 dbClient.connect();
 

@@ -61,6 +61,7 @@ export interface IConnextClient {
   multisigAddress: string;
   nodePublicIdentifier: string;
   publicIdentifier: string;
+  signerAddress: string;
 
   ////////////////////////////////////////
   // Methods
@@ -110,6 +111,8 @@ export interface IConnextClient {
   getTransferHistory(): Promise<Transfer[]>;
   reclaimPendingAsyncTransfers(): Promise<void>;
   reclaimPendingAsyncTransfer(
+    amount: string,
+    assetId: string,
     paymentId: string,
     encryptedPreImage: string,
   ): Promise<ResolveLinkedTransferResponse>;
@@ -117,6 +120,7 @@ export interface IConnextClient {
 
   ///////////////////////////////////
   // CF MODULE EASY ACCESS METHODS
+  deployMultisig(): Promise<CFCoreTypes.DeployStateDepositHolderResult>;
   getStateChannel(): Promise<CFCoreTypes.GetStateChannelResult>;
   providerDeposit(
     amount: BigNumber,

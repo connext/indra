@@ -1,10 +1,7 @@
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
-import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import { delayAndThrow, stringify } from "../lib";
 import { xpubToAddress } from "../lib/cfCore";
-import { CF_METHOD_TIMEOUT } from "../lib/constants";
 import {
   CFCoreChannel,
   CFCoreTypes,
@@ -81,41 +78,6 @@ export class SwapController extends AbstractController {
 
   /////////////////////////////////
   ////// PRIVATE METHODS
-  // TODO: fix type of data
-  private resolveInstallSwap = (res: (value?: unknown) => void, appId: string, data: any): any => {
-    if (appId !== data.params.appInstanceId) {
-      this.log.warn(
-        `Attempting to resolve promise for ${appId}, but got event data from ${stringify(
-          data,
-        )}. This should not happen.`,
-      );
-      return;
-    }
-    res(data);
-    return data;
-  };
-
-  private rejectInstallSwap = (rej: (value?: string) => void, appId: string, msg: any): any => {
-    // check app id
-    const appInstanceId = msg.appInstanceId || msg.data.appInstanceId;
-    if (msg.data) {
-      this.log.warn(
-        `This should not have this structure when emitted, strange. msg: ${stringify(msg)}`,
-      );
-    }
-
-    if (appId !== appInstanceId) {
-      this.log.warn(
-        `Attempting to reject promise for ${appId}, but got event data from ${stringify(
-          msg,
-        )}. This should not happen.`,
-      );
-      return;
-    }
-
-    rej(`Install rejected. Event data: ${stringify(msg)}`);
-    return msg;
-  };
 
   // TODO: fix for virtual exchanges!
   private swapAppInstall = async (
@@ -125,9 +87,6 @@ export class SwapController extends AbstractController {
     swapRate: string,
     appInfo: DefaultApp,
   ): Promise<string> => {
-    let boundResolve;
-    let boundReject;
-
     const swappedAmount = calculateExchange(amount, swapRate);
 
     this.log.info(
@@ -145,13 +104,13 @@ export class SwapController extends AbstractController {
         [
           {
             amount,
-            to: fromExtendedKey(this.connext.publicIdentifier).derivePath("0").address,
+            to: this.connext.freeBalanceAddress,
           },
         ],
         [
           {
             amount: swappedAmount,
-            to: fromExtendedKey(this.connext.nodePublicIdentifier).derivePath("0").address,
+            to: xpubToAddress(this.connext.nodePublicIdentifier),
           },
         ],
       ],
@@ -166,51 +125,16 @@ export class SwapController extends AbstractController {
       },
       appDefinition,
       initialState,
-      initiatorDeposit: amount, // TODO will this work?
+      initiatorDeposit: amount,
       initiatorDepositTokenAddress: fromAssetId,
       outcomeType: appInfo.outcomeType,
       proposedToIdentifier: this.connext.nodePublicIdentifier,
-      responderDeposit: swappedAmount, // TODO will this work? ERC20 context?
+      responderDeposit: swappedAmount,
       responderDepositTokenAddress: toAssetId,
       timeout: Zero,
     };
 
-    const res = await this.connext.proposeInstallApp(params);
-
-    // set app instance id
-    this.log.debug(`Successfully proposed appId: ${res.appInstanceId}`);
-
-    await Promise.race([
-      new Promise((resolve: (value?: unknown) => void, reject: (value?: string) => void): void => {
-        boundReject = this.rejectInstallSwap.bind(null, reject, res.appInstanceId);
-        boundResolve = this.resolveInstallSwap.bind(null, resolve, res.appInstanceId);
-        this.listener.on(
-          CFCoreTypes.EventNames.INSTALL_EVENT as CFCoreTypes.EventName,
-          boundResolve,
-        );
-        this.listener.on(
-          CFCoreTypes.EventNames.REJECT_INSTALL_EVENT as CFCoreTypes.EventName,
-          boundReject,
-        );
-      }),
-      delayAndThrow(
-        CF_METHOD_TIMEOUT,
-        `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
-      ),
-    ]);
-
-    this.cleanupInstallListeners(boundResolve, boundReject);
-    return res.appInstanceId;
-  };
-
-  private cleanupInstallListeners = (boundResolve: any, boundReject: any): void => {
-    this.listener.removeListener(
-      CFCoreTypes.EventNames.INSTALL_EVENT as CFCoreTypes.EventName,
-      boundResolve,
-    );
-    this.listener.removeListener(
-      CFCoreTypes.EventNames.REJECT_INSTALL_EVENT as CFCoreTypes.EventName,
-      boundReject,
-    );
+    const appInstanceId = await this.proposeAndInstallLedgerApp(params);
+    return appInstanceId;
   };
 }

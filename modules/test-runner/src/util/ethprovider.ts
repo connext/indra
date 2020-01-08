@@ -2,7 +2,9 @@ import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 
-export const ethProvider = new JsonRpcProvider(process.env.INDRA_ETH_RPC_URL);
+import { env } from "./env";
+
+export const ethProvider = new JsonRpcProvider(env.ethProviderUrl);
 
 const abi = [
   "function balanceOf(address owner) view returns (uint)",

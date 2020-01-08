@@ -334,27 +334,17 @@ export class ConnextListener extends EventEmitter {
 
   private registerLinkedTransferSubscription = async (): Promise<void> => {
     const subject = `transfer.send-async.${this.connext.publicIdentifier}`;
-    await this.connext.messaging.subscribe(subject, async (data: any) => {
-      this.log.info(`Received message for subscription: ${stringify(data)}`);
-      let paymentId: string;
-      let encryptedPreImage: string;
-      if (data.paymentId) {
-        this.log.debug(`Not nested data`);
-        paymentId = data.paymentId;
-        encryptedPreImage = data.encryptedPreImage;
-      } else if (data.data) {
-        this.log.debug(`Nested data`);
-        const parsedData = JSON.parse(data.data);
-        paymentId = parsedData.paymentId;
-        encryptedPreImage = parsedData.encryptedPreImage;
-      } else {
-        throw new Error(`Could not parse data from message: ${stringify(data)}`);
+    await this.connext.messaging.subscribe(subject, async (msg: any) => {
+      this.log.info(`Received message for subscription: ${stringify(msg)}`);
+      if (!msg.paymentId && !msg.dta) {
+        throw new Error(`Could not parse data from message: ${stringify(msg)}`);
       }
-
-      if (!paymentId || !encryptedPreImage) {
+      const data = msg.paymentId ? msg : JSON.parse(msg.data);
+      const { paymentId, encryptedPreImage, amount, assetId } = data;
+      if (!paymentId || !encryptedPreImage || !amount || !assetId) {
         throw new Error(`Unable to parse transfer details from message ${stringify(data)}`);
       }
-      await this.connext.reclaimPendingAsyncTransfer(paymentId, encryptedPreImage);
+      await this.connext.reclaimPendingAsyncTransfer(amount, assetId, paymentId, encryptedPreImage);
       this.log.info(`Successfully reclaimed transfer with paymentId: ${paymentId}`);
     });
   };

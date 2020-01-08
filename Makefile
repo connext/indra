@@ -9,7 +9,6 @@ SHELL=/bin/bash
 
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
 
-version=$(shell cat package.json | grep '"version":' | awk -F '"' '{print $$4}')
 commit=$(shell git rev-parse HEAD | head -c 8)
 solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
@@ -174,7 +173,7 @@ test-integration:
 	bash ops/test-integration.sh
 
 watch-integration:
-	bash ops/test-integration.sh --watch
+	bash ops/test-integration.sh --watchAll
 
 test-cf: cf-core
 	bash ops/test-cf.sh
@@ -257,7 +256,7 @@ payment-bot-staging: payment-bot-js $(shell find $(bot)/ops $(find_options))
 indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
 	$(log_start)
 	docker build --file $(proxy)/indra.connext.network/dev.dockerfile $(cache_from) --tag $(project)_proxy:dev .
-	docker tag $(project)_proxy:latest $(project)_proxy:$(commit)
+	docker tag $(project)_proxy:dev $(project)_proxy:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 indra-proxy-prod: daicard-prod dashboard-prod ws-tcp-relay $(shell find $(proxy) $(find_options))
@@ -271,13 +270,13 @@ ssh-action: $(shell find $(ssh-action) $(find_options))
 	docker build --file $(ssh-action)/Dockerfile --tag $(project)_ssh_action $(ssh-action)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-test-runner-release: $(shell find $(tests)/ops $(find_options))
+test-runner-release: $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
 	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build-bundle"
-	docker build --file $(tests)/ops/release.dockerfile $(cache_from) --tag $(project)_test_runner:$(version) .
+	docker build --file $(tests)/ops/release.dockerfile $(cache_from) --tag $(project)_test_runner:$(commit) .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-test-runner-staging: $(shell find $(tests)/ops $(find_options))
+test-runner-staging: $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
 	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build-bundle"
 	docker build --file $(tests)/ops/staging.dockerfile $(cache_from) --tag $(project)_test_runner:latest .

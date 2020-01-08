@@ -1,9 +1,10 @@
+import { AddressZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
-import { getAddress, bigNumberify } from "ethers/utils";
+import { bigNumberify, getAddress } from "ethers/utils";
 
 import { stringify, withdrawalKey } from "../lib";
 import { BigNumber, CFCoreTypes, convert, WithdrawalResponse, WithdrawParameters } from "../types";
-import { invalidAddress, notLessThanOrEqualTo, validate } from "../validation";
+import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
@@ -16,6 +17,7 @@ export class WithdrawalController extends AbstractController {
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preWithdrawalBal = freeBalance[this.connext.freeBalanceAddress];
     validate(
+      notPositive(amount),
       notLessThanOrEqualTo(amount, preWithdrawalBal),
       invalidAddress(assetId), // check address of asset
     );
@@ -28,9 +30,6 @@ export class WithdrawalController extends AbstractController {
     this.log.info(
       `\nWithdrawing ${amount} wei from ${this.connext.multisigAddress} to ${recipient}\n`,
     );
-
-    // register listeners
-    this.registerListeners();
 
     let transaction: TransactionResponse | undefined;
     try {
@@ -54,6 +53,15 @@ export class WithdrawalController extends AbstractController {
 
         this.log.info(`Node Withdraw Response: ${stringify(transaction)}`);
       } else {
+        // first deploy the multisig
+        this.log.info(`Calling ${CFCoreTypes.RpcMethodNames.chan_deployStateDepositHolder}`);
+        const deployRes = await this.connext.deployMultisig();
+        this.log.debug(`Multisig deploy transaction: ${stringify(deployRes)}`);
+        if (deployRes.transactionHash !== AddressZero) {
+          // wait for multisig deploy transaction
+          // will be 0x000.. if the multisig has already been deployed.
+          this.ethProvider.waitForTransaction(deployRes.transactionHash);
+        }
         this.log.info(`Calling ${CFCoreTypes.RpcMethodNames.chan_withdraw}`);
         // user submitting the withdrawal
         const withdrawResponse = await this.connext.providerWithdraw(
@@ -66,7 +74,7 @@ export class WithdrawalController extends AbstractController {
       }
       const postWithdrawBalances = await this.connext.getFreeBalance(assetId);
 
-      this.log.info(`Pre-Withdraw Balances: ${stringify(preWithdrawBalances)}`);
+      this.log.debug(`Pre-Withdraw Balances: ${stringify(preWithdrawBalances)}`);
       const expectedFreeBal = bigNumberify(preWithdrawBalances[myFreeBalanceAddress]).sub(amount);
 
       // sanity check the free balance decrease
@@ -77,7 +85,6 @@ export class WithdrawalController extends AbstractController {
       this.log.info("Withdrawn!");
     } catch (e) {
       this.log.error(`Failed to withdraw: ${e.stack || e.message}`);
-      this.removeListeners();
       throw new Error(e);
     }
 
@@ -86,43 +93,5 @@ export class WithdrawalController extends AbstractController {
       freeBalance: await this.connext.getFreeBalance(),
       transaction,
     };
-  }
-
-  /////////////////////////////////
-  ////// PRIVATE METHODS
-  ////// Listener callbacks
-  private withdrawConfirmedCallback = async (data: any): Promise<void> => {
-    this.log.info(`Withdrawal confimed.`);
-    this.removeListeners();
-  };
-
-  private withdrawFailedCallback = (data: any): void => {
-    this.log.warn(`Withdrawal failed with data: ${stringify(data)}`);
-    this.removeListeners();
-  };
-
-  ////// Listener registration/deregistration
-  private registerListeners(): void {
-    this.listener.registerCfListener(
-      CFCoreTypes.EventNames.WITHDRAWAL_CONFIRMED_EVENT as CFCoreTypes.EventName,
-      this.withdrawConfirmedCallback,
-    );
-
-    this.listener.registerCfListener(
-      CFCoreTypes.EventNames.WITHDRAWAL_FAILED_EVENT as CFCoreTypes.EventName,
-      this.withdrawFailedCallback,
-    );
-  }
-
-  private removeListeners(): void {
-    this.listener.removeCfListener(
-      CFCoreTypes.EventNames.WITHDRAWAL_CONFIRMED_EVENT as CFCoreTypes.EventName,
-      this.withdrawConfirmedCallback,
-    );
-
-    this.listener.removeCfListener(
-      CFCoreTypes.EventNames.WITHDRAWAL_FAILED_EVENT as CFCoreTypes.EventName,
-      this.withdrawFailedCallback,
-    );
   }
 }

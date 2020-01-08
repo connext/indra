@@ -9,19 +9,12 @@ import { getOnchainBalance, revertEVMSnapshot, takeEVMSnapshot } from "../util/e
 
 describe("Deposits", () => {
   let clientA: IConnextClient;
-  let snapshot: string;
-
+  
   beforeEach(async () => {
-    await clearDb();
-    clientA = await createClient(FUNDED_MNEMONICS[0]);
-    snapshot = await takeEVMSnapshot();
+    clientA = await createClient();
   }, 90_000);
 
-  afterEach(async () => {
-    await revertEVMSnapshot(snapshot);
-  });
-
-  test.skip("happy case: client should deposit ETH", async () => {
+  test("happy case: client should deposit ETH", async () => {
     await clientA.deposit({ amount: "1", assetId: AddressZero });
     const freeBalance = await clientA.getFreeBalance(AddressZero);
 

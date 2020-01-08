@@ -13,6 +13,7 @@ import {
   NodeInitializationParameters,
   PaymentProfile,
   RequestCollateralResponse,
+  ResolveLinkedTransferResponse,
   SupportedApplication,
   SupportedNetwork,
   Transfer,
@@ -116,6 +117,7 @@ export class MockNodeClientApi implements INodeApiClient {
     // TODO: mock out properly!! create mocking fns!!!
     createChannel: {} as CreateChannelResponse,
     getChannel: {} as GetChannelResponse,
+    resolveLinkedTransfer: {} as ResolveLinkedTransferResponse,
     verifyAppSequenceNumber: {} as ChannelAppSequences,
     withdraw: {} as TransactionResponse,
   };
@@ -167,7 +169,9 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public async fetchLinkedTransfer(paymentId: string): Promise<any> {}
 
-  public async resolveLinkedTransfer(): Promise<void> {}
+  public async resolveLinkedTransfer(): Promise<ResolveLinkedTransferResponse> {
+    return MockNodeClientApi.returnValues.resolveLinkedTransfer;
+  }
 
   public async restoreState(publicIdentifier: string): Promise<any> {
     return {
