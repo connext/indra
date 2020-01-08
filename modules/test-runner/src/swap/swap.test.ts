@@ -199,7 +199,7 @@ describe("Swaps", () => {
     );
   });
 
-  test.only("Bot A tries to swap with negative user amount", async () => {
+  test("Bot A tries to swap with negative user amount", async () => {
     // client deposit and request node collateral
     await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
@@ -213,5 +213,23 @@ describe("Swaps", () => {
       toAssetId: tokenAddress,
     };
     await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not greater than 0`);
+  });
+
+  test.only("Bot A tries to swap with insufficient collateral on node", async () => {
+    // client deposit and request node collateral
+    await clientA.deposit({ amount: One.toString(), assetId: AddressZero });
+    await clientA.requestCollateral(tokenAddress);
+
+    const freeBalanceToken = await clientA.getFreeBalance(tokenAddress);
+
+    const swapRate = (await clientA.getLatestSwapRate(AddressZero, tokenAddress)).toString();
+    const swapAmount = One;
+    const swapParams: SwapParameters = {
+      amount: swapAmount.toString(),
+      fromAssetId: AddressZero,
+      swapRate,
+      toAssetId: tokenAddress,
+    };
+    await expect(clientA.swap(swapParams)).rejects.toThrowError(`is jiaji greater than 0`);
   });
 });
