@@ -166,7 +166,7 @@ dls:
 # Test Runner Shortcuts
 
 test: test-integration
-watch: watch-node
+watch: watch-integration
 
 test-integration:
 	bash ops/test-integration.sh
@@ -175,7 +175,7 @@ test-backwards-compatibility: pull-backwards-compatible
 	bash ops/test-integration.sh $(backwards_compatible_version)
 
 watch-integration:
-	bash ops/test-integration.sh --watchAll
+	bash ops/test-integration.sh --watch
 
 test-cf: cf-core
 	bash ops/test-cf.sh
