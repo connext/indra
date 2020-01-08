@@ -222,7 +222,7 @@ describe("Swaps", () => {
 
     const freeBalanceToken = await clientA.getFreeBalance(tokenAddress);
 
-    const swapRate = (await clientA.getLatestSwapRate(AddressZero, tokenAddress)).toString();
+    const swapRate = formatEther(freeBalanceToken[nodeFreeBalanceAddress]) + 1;
     const swapAmount = One;
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),
