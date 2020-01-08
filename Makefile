@@ -165,7 +165,7 @@ dls:
 ########################################
 # Test Runner Shortcuts
 
-test: test-node
+test: test-integration
 watch: watch-node
 
 test-integration:
