@@ -4,8 +4,8 @@ set -e
 name="indra_test_runner"
 commit="`git rev-parse HEAD | head -c 8`"
 
-if [[ -n "`docker image ls -q $name:$1`" ]]
-then image=$name:$1
+if [[ -n "$1" && -n "`docker image ls -q $name:$1`" ]]
+then image=$name:$1; shift # rm $1 from $@
 elif [[ -z "$1" && -n "`docker image ls -q $name:$commit`" ]]
 then image=$name:$commit
 elif [[ -z "$1" ]]
