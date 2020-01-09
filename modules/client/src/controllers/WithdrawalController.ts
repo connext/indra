@@ -10,7 +10,15 @@ import { AbstractController } from "./AbstractController";
 
 export class WithdrawalController extends AbstractController {
   public async withdraw(params: WithdrawParameters): Promise<WithdrawalResponse> {
-    params.assetId = params.assetId ? getAddress(params.assetId) : undefined;
+    if (params.assetId) {
+      try {
+        params.assetId = getAddress(params.assetId);
+      } catch (e) {
+        // likely means that this is an invalid eth address, so
+        // use validator fn for better error message
+        validate(invalidAddress(params.assetId));
+      }
+    }
     const myFreeBalanceAddress = this.connext.freeBalanceAddress;
 
     const { amount, assetId, recipient, userSubmitted } = convert.Withdraw("bignumber", params);
