@@ -1,22 +1,39 @@
 import React, { useState } from "react";
 import { Button, Grid, Typography, styled } from "@material-ui/core";
+import { WeiPerEther } from "ethers/constants";
+
 
 const TopGrid = styled(Grid)({
   display: "flex",
   flexWrap: "wrap",
-  flexDirection: "row",
+  flexDirection: "column",
   width: "100%",
   height: "100%",
-  justifyContent: "center",
-  alignItems: "center",
+  paddingLeft: "5%",
+  justifyContent: "flex-start",
+  alignItems: "flex-start",
+});
+
+const SectionWrapper = styled(Grid)({
+  marginTop: "1%",
+  marginBottom: "1%",
+  width:"30%",
 });
 
 const StatTypography = styled(Typography)({
-  textAlign: "center",
+  textAlign: "left",
   width: "90%",
   fontSize: "24px",
   color: "#002868",
   textDecoration: "none",
+});
+
+const HeaderTypography = styled(Typography)({
+  textAlign: "left",
+  width: "90%",
+  fontSize: "30px",
+  color: "#002868",
+  fontStyle: "underline",
 });
 
 const StatsTransfers = props => {
@@ -24,6 +41,7 @@ const StatsTransfers = props => {
 
   const [allTransfers, setAllTransfers] = useState(null);
   const [averageTransfer, setAverageTransfer] = useState(0);
+  const [transferDateWindows, setTransferDateWindows] = useState({});
 
   // useEffect(() => {
   // }, []);
@@ -32,17 +50,59 @@ const StatsTransfers = props => {
     const res = await messaging.getAllLinkedTransfers();
 
     let totalTransfers = [];
+    let pastDayTotal = 0,
+      pastWeekTotal = 0,
+      pastMonthTotal = 0;
+    let pastDayAvg = [],
+      pastWeekAvg = [],
+      pastMonthAvg = [];
+
     if (res) {
       for (let transfer of res) {
         totalTransfers.push(parseInt(transfer.amount._hex, 16));
+        const createdDate = new Date(transfer.createdAt);
+        const hourDifference = (Date.now() - createdDate.getTime()) / 3600000;
+
+        if (hourDifference <= 24) {
+          pastDayTotal++;
+          pastDayAvg.push(parseInt(transfer.amount._hex, 16));
+        } else if (hourDifference > 24 && hourDifference <= 168) {
+          pastWeekTotal++;
+          pastWeekAvg.push(parseInt(transfer.amount._hex, 16));
+        } else if (hourDifference > 168 && hourDifference <= 720) {
+          pastMonthTotal++;
+          pastMonthAvg.push(parseInt(transfer.amount._hex, 16));
+        }
       }
+      var pastDayReduced = pastDayAvg.reduce((a, b) => {
+        return a + b;
+      }, 0);
+      var pastWeekReduced = pastWeekAvg.reduce((a, b) => {
+        return a + b;
+      }, 0);
+      var pastMonthReduced = pastMonthAvg.reduce((a, b) => {
+        return a + b;
+      }, 0);
+
       var totalTransfersReduced = totalTransfers.reduce((a, b) => {
         return a + b;
       }, 0);
     }
-    var averageTransfer = totalTransfersReduced / res.length / 1000000000000000000;
+    var averageTransfer = totalTransfersReduced / res.length / WeiPerEther;
+    var averageTransferDay = pastDayReduced / pastDayAvg.length / WeiPerEther;
+    var averageTransferWeek = pastWeekReduced / pastWeekAvg.length / WeiPerEther;
+    var averageTransferMonth = pastMonthReduced / pastMonthAvg.length / WeiPerEther;
 
-    setAverageTransfer(averageTransfer);
+    var transferDateWindows = {
+      pastDayTotal: pastDayTotal,
+      averageTransferDay: averageTransferDay.toFixed(2),
+      pastWeekTotal: pastWeekTotal,
+      averageTransferWeek: averageTransferWeek.toFixed(2),
+      pastMonthTotal: pastMonthTotal,
+      averageTransferMonth: averageTransferMonth.toFixed(2),
+    };
+    setTransferDateWindows(transferDateWindows);
+    setAverageTransfer(averageTransfer.toFixed(2));
     setAllTransfers(res);
   };
 
@@ -60,14 +120,38 @@ const StatsTransfers = props => {
       >
         Refresh stats
       </Button>
-      <Grid>
-        <StatTypography >
-          total transfers: {allTransfers ? allTransfers.length : 0}
+      <SectionWrapper>
+        <HeaderTypography>All time</HeaderTypography>
+        <StatTypography>{allTransfers ? allTransfers.length : 0} total transfers</StatTypography>
+        <StatTypography>${averageTransfer ? averageTransfer : 0} average</StatTypography>
+      </SectionWrapper>
+      <SectionWrapper>
+        <HeaderTypography>Past Day</HeaderTypography>
+        <StatTypography>
+          {transferDateWindows ? transferDateWindows.pastDayTotal : 0} total transfers
         </StatTypography>
-        <StatTypography >
-          average transfer size: {averageTransfer ? averageTransfer : 0}
+        <StatTypography>
+          ${transferDateWindows ? transferDateWindows.averageTransferDay : 0} average
         </StatTypography>
-      </Grid>
+      </SectionWrapper>
+      <SectionWrapper>
+        <HeaderTypography>Past Week</HeaderTypography>
+        <StatTypography>
+          ${transferDateWindows ? transferDateWindows.pastWeekTotal : 0} total transfers
+        </StatTypography>
+        <StatTypography>
+          ${transferDateWindows ? transferDateWindows.averageTransferWeek : 0} average
+        </StatTypography>
+      </SectionWrapper>
+      <SectionWrapper>
+        <HeaderTypography>Past Month</HeaderTypography>
+        <StatTypography>
+          {transferDateWindows ? transferDateWindows.pastMonthTotal : 0} total transfers
+        </StatTypography>
+        <StatTypography>
+          ${transferDateWindows ? transferDateWindows.averageTransferMonth : 0} average
+        </StatTypography>
+      </SectionWrapper>
     </TopGrid>
   );
 };

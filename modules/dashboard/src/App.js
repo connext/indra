@@ -65,7 +65,6 @@ const App = () => {
   const [loading, setLoading] = useState(false);
 
   // If no mnemonic, create one and save to local storage
-
   useEffect(() => {
     (async () => {
       let token = localStorage.getItem("token");
