@@ -1,4 +1,4 @@
-import { createClient } from "../util/client";
+import { createClient, getStore } from "../util/client";
 import { IConnextClient } from "@connext/types";
 import { xkeyKthAddress } from "@connext/cf-core";
 import { parseEther } from "ethers/utils";
@@ -24,17 +24,25 @@ describe("Restore State", () => {
     await clientA.requestCollateral(tokenAddress);
 
     // delete store
+    const store = getStore();
+    store.reset();
 
     // check balances pre (will this work?)
+    const freeBalanceEthPre = clientA.getFreeBalance(AddressZero);
+    const freeBalanceTokenPre = clientA.getFreeBalance(tokenAddress);
+    expect(freeBalanceEthPre[nodeFreeBalanceAddress]).toBe(undefined);
+    expect(freeBalanceEthPre[nodeFreeBalanceAddress]).toBe(undefined);
+    expect(freeBalanceTokenPre[clientA.freeBalanceAddress]).toBe(undefined);
+    expect(freeBalanceTokenPre[nodeFreeBalanceAddress]).toBe(undefined);
 
-    clientA.restoreState();
+    // clientA.restoreState();
 
-    // check balances post
-    const freeBalanceEthPost = clientA.getFreeBalance(AddressZero);
-    const freeBalanceTokenPost = clientA.getFreeBalance(tokenAddress);
-    expect(freeBalanceEthPost[clientA.freeBalanceAddress]).toBeBigNumberEq(parseEther("0.01"));
-    expect(freeBalanceEthPost[nodeFreeBalanceAddress]).toBeBigNumberEq(Zero);
-    expect(freeBalanceTokenPost[clientA.freeBalanceAddress]).toBeBigNumberEq(Zero);
-    expect(freeBalanceTokenPost[nodeFreeBalanceAddress]).toBeBigNumberEq(parseEther("0.01"));
+    // // check balances post
+    // const freeBalanceEthPost = clientA.getFreeBalance(AddressZero);
+    // const freeBalanceTokenPost = clientA.getFreeBalance(tokenAddress);
+    // expect(freeBalanceEthPost[clientA.freeBalanceAddress]).toBeBigNumberEq(parseEther("0.01"));
+    // expect(freeBalanceEthPost[nodeFreeBalanceAddress]).toBeBigNumberEq(Zero);
+    // expect(freeBalanceTokenPost[clientA.freeBalanceAddress]).toBeBigNumberEq(Zero);
+    // expect(freeBalanceTokenPost[nodeFreeBalanceAddress]).toBeBigNumberEq(parseEther("0.01"));
   });
 });
