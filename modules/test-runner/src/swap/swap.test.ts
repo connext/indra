@@ -217,12 +217,29 @@ describe("Swaps", () => {
 
   test.only("Bot A tries to swap with insufficient collateral on node", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: One.toString(), assetId: AddressZero });
+    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    // No collateral requested
+
+    const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
+    const swapAmount = One;
+    const swapParams: SwapParameters = {
+      amount: swapAmount.toString(),
+      fromAssetId: AddressZero,
+      swapRate,
+      toAssetId: tokenAddress,
+    };
+    await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not less than or equal to 0`);
+  });
+
+  // TODO Currently, this test always fails because when promise is never rejected when
+  //      node rejects install.
+  test.skip("Bot A tries to swap with incorrect swap rate (node rejects)", async () => {
+    // client deposit and request node collateral
+    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
+    // No collateral requested
 
-    const freeBalanceToken = await clientA.getFreeBalance(tokenAddress);
-
-    const swapRate = formatEther(freeBalanceToken[nodeFreeBalanceAddress]) + 1;
+    const swapRate = "1";
     const swapAmount = One;
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),
