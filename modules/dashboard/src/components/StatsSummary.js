@@ -49,8 +49,6 @@ const StatsSummary = ({ classes, messaging }) => {
   });
 
   const onRefresh = async () => {
-    // console.log("refreshing!");
-    // await messaging.getLinkedTransferByPaymentId(HashZero);
     await getChannels();
     await getTransfers();
   };
@@ -133,17 +131,17 @@ const StatsSummary = ({ classes, messaging }) => {
   const getTransfers = async () => {
     const res = await messaging.getAllLinkedTransfers() || [];
 
-    let totalTransfers = [];
+    const totalTransfers = [];
     if (res) {
-      getReclaimableTransfers(res)
+      await getReclaimableTransfers(res)
       for (let transfer of res) {
         totalTransfers.push(parseInt(transfer.amount._hex, 16));
       }
-      var totalTransfersReduced = totalTransfers.reduce((a, b) => {
+      const totalTransfersReduced = totalTransfers.reduce((a, b) => {
         return a + b;
       }, 0);
     }
-    var averageTransfer = totalTransfersReduced / res.length / WeiPerEther;
+    const averageTransfer = totalTransfersReduced / res.length / WeiPerEther;
     setAverageTransfer(averageTransfer);
     setAllTransfers(res);
   };
@@ -161,12 +159,10 @@ const StatsSummary = ({ classes, messaging }) => {
         return a + b;
       }, 0);
       var totalValueReclaimable = reclaimableValueReduced / WeiPerEther;
-    }else{
-      return
+      setNumberReclaimable(allTransfers.length);
+      setValueReclaimable(totalValueReclaimable)
     }
-    
-    setNumberReclaimable(allTransfers.length);
-    setValueReclaimable(totalValueReclaimable)
+
   };
 
   return (

@@ -66,7 +66,6 @@ const DebugChannel = ({ classes, messaging }) => {
       const freeBalanceTotalReduced = freeBalanceTotalHolder.reduce((a, b) => {
         return a + b;
       }, 0);
-      console.log(xPubSearch)
       await getReclaimableTransfers(xPubSearch)
       setFreeBalance(freeBalanceTotalReduced);
       setChannelState(res);
@@ -106,24 +105,22 @@ const DebugChannel = ({ classes, messaging }) => {
   const getReclaimableTransfers = async (xPub) => {
     const res = await messaging.getLinkedTransfersByUserPublicIdentifier(xPub)
 
-    let reclaimableValue = [];
+    const reclaimableValue = [];
     if (res && res.length >0) {
       for (let transfer of res) {
         if(transfer.status !== "PENDING" && transfer.status !== "REDEEMED"){
           reclaimableValue.push(parseInt(transfer.amount._hex, 16));
         }
       }
-      var reclaimableValueReduced = reclaimableValue.reduce((a, b) => {
+      const reclaimableValueReduced = reclaimableValue.reduce((a, b) => {
         return a + b;
       }, 0);
-      var totalValueReclaimable = reclaimableValueReduced / WeiPerEther;
-    }else{
-      return
+      const totalValueReclaimable = reclaimableValueReduced / WeiPerEther;
+      setNumberReclaimable(res.length);
+      setValueReclaimable(totalValueReclaimable)
     }
-    
 
-    setNumberReclaimable(res.length);
-    setValueReclaimable(totalValueReclaimable)
+   
   };
 
   return (
