@@ -35,14 +35,14 @@ describe("Restore State", () => {
     expect(freeBalanceTokenPre[clientA.freeBalanceAddress]).toBe(undefined);
     expect(freeBalanceTokenPre[nodeFreeBalanceAddress]).toBe(undefined);
 
-    // clientA.restoreState();
+    await clientA.restoreState();
 
     // // check balances post
-    // const freeBalanceEthPost = clientA.getFreeBalance(AddressZero);
-    // const freeBalanceTokenPost = clientA.getFreeBalance(tokenAddress);
-    // expect(freeBalanceEthPost[clientA.freeBalanceAddress]).toBeBigNumberEq(parseEther("0.01"));
-    // expect(freeBalanceEthPost[nodeFreeBalanceAddress]).toBeBigNumberEq(Zero);
-    // expect(freeBalanceTokenPost[clientA.freeBalanceAddress]).toBeBigNumberEq(Zero);
-    // expect(freeBalanceTokenPost[nodeFreeBalanceAddress]).toBeBigNumberEq(parseEther("0.01"));
+    const freeBalanceEthPost = clientA.getFreeBalance(AddressZero);
+    const freeBalanceTokenPost = clientA.getFreeBalance(tokenAddress);
+    expect(freeBalanceEthPost[clientA.freeBalanceAddress]).toBeBigNumberEq(parseEther("0.01"));
+    expect(freeBalanceEthPost[nodeFreeBalanceAddress]).toBeBigNumberEq(Zero);
+    expect(freeBalanceTokenPost[clientA.freeBalanceAddress]).toBeBigNumberEq(Zero);
+    expect(freeBalanceTokenPost[nodeFreeBalanceAddress]).toBeBigNumberEq(parseEther("0.01"));
   });
 });
