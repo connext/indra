@@ -215,7 +215,7 @@ describe("Swaps", () => {
     await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not greater than 0`);
   });
 
-  test.only("Bot A tries to swap with insufficient collateral on node", async () => {
+  test("Bot A tries to swap with insufficient collateral on node", async () => {
     // client deposit and request node collateral
     await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
     // No collateral requested
