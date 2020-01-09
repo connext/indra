@@ -14,9 +14,6 @@ export INDRA_PG_PORT="${INDRA_PG_PORT:-5432}"
 export INDRA_PG_USERNAME="${INDRA_PG_USERNAME:-$project}"
 export NODE_ENV="${NODE_ENV:-development}"
 
-test_command="jest --config jest.config.js --forceExit --runInBand"
-watch_command="exec jest --config jest.config.js --runInBand --watch"
-
 echo "Integration Tester Container launched!"
 echo
 
@@ -25,12 +22,13 @@ function finish {
 }
 trap finish SIGTERM SIGINT
 
-if [[ "$1" == "--watch" ]]
-then
-  command="$watch_command"
-  shift # forget $1 and replace it w $2, etc
-else
-  command="$test_command"
+if [[ "$MODE" == "watch" ]]
+then command="exec jest --config jest.config.js --runInBand"
+else command="jest --config jest.config.js --forceExit --runInBand"
 fi
+
+bash ops/wait-for.sh $INDRA_PG_HOST:$INDRA_PG_PORT
+bash ops/wait-for.sh ${INDRA_ETH_RPC_URL#*://}
+bash ops/wait-for.sh ${INDRA_NODE_URL#*://}
 
 $command $@
