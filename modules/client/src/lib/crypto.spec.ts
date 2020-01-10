@@ -11,7 +11,6 @@ describe("crypto", () => {
     const message = "Hello World!";
     const encrypted = await encryptWithPublicKey(pubKey, message);
     const decrypted = await decryptWithPrivateKey(prvKey, encrypted);
-    console.log(`Decryped message: ${decrypted}`);
     expect(message).toEqual(decrypted);
   });
 
@@ -19,9 +18,21 @@ describe("crypto", () => {
     const prvKey = Wallet.createRandom().privateKey;
     const pubKey = computePublicKey(prvKey);
     const message = "Hello World!";
-    const encrypted = await EthCrypto.encryptWithPublicKey(pubKey, message);
+    const encrypted = await EthCrypto.encryptWithPublicKey(pubKey.replace(/^0x/, ""), message);
     const encryptedMessage = EthCrypto.cipher.stringify(encrypted);
     const decrypted = await decryptWithPrivateKey(prvKey, encryptedMessage);
+    expect(message).toEqual(decrypted);
+  });
+
+  test("eth-crypto should be able to decrypt messages that we encrypted", async () => {
+    const prvKey = Wallet.createRandom().privateKey;
+    const pubKey = computePublicKey(prvKey);
+    const message = "Hello World!";
+    const encrypted = await encryptWithPublicKey(pubKey, message);
+    const decrypted = await EthCrypto.decryptWithPrivateKey(
+      prvKey,
+      EthCrypto.cipher.parse(encrypted),
+    );
     console.log(`Decryped message: ${decrypted}`);
     expect(message).toEqual(decrypted);
   });
