@@ -1,5 +1,4 @@
 import { decrypt, encrypt } from "eccrypto";
-import { arrayify } from "ethers/utils";
 import { publicKeyConvert } from "secp256k1";
 
 type Encrypted = {
@@ -8,8 +7,6 @@ type Encrypted = {
   iv: string;
   mac: string;
 };
-
-const no0x = (hex: string): string => hex.replace(/^0x/, "");
 
 const compress = (pubKey: string): string => {
   const startsWith04 =

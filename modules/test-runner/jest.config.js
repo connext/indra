@@ -6,6 +6,5 @@ module.exports = {
   moduleFileExtensions: ["node", "ts", "tsx", "js", "json"],
   setupFilesAfterEnv: ['./src/setup.ts'],
   testEnvironment: 'node',
-  testEnvironment: 'node',
   transform: { '^.+\\.tsx?$': 'ts-jest', },
 };
