@@ -9,7 +9,6 @@ export const fundChannel = async (
 ): Promise<void> => {
   const prevFreeBalance = await client.getFreeBalance();
   await new Promise(async resolve => {
-    // TODO: should add `once` to top level client
     client.once("DEPOSIT_CONFIRMED_EVENT", async () => {
       const freeBalance = await client.getFreeBalance(assetId);
       // verify free balance increased as expected
