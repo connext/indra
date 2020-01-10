@@ -62,6 +62,7 @@ export interface IConnextClient {
   nodePublicIdentifier: string;
   publicIdentifier: string;
   signerAddress: string;
+  channelProvider: ChannelProvider;
 
   ////////////////////////////////////////
   // Methods
