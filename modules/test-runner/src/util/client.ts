@@ -1,10 +1,10 @@
 import { connect } from "@connext/client";
 import { ClientOptions, IConnextClient } from "@connext/types";
 import { Contract, Wallet } from "ethers";
-import { JsonRpcProvider } from "ethers/providers";
 import { parseEther } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
+import { ChannelProvider } from "./channelProvider";
 import { env } from "./env";
 import { ethProvider } from "./ethprovider";
 import { MemoryStoreServiceFactory } from "./store";
@@ -38,6 +38,25 @@ export const createClient = async (
   const tokenTx = await token.functions.transfer(client.signerAddress, parseEther("10"));
 
   await Promise.all([ethTx.wait(), tokenTx.wait()]);
+
+  expect(client.freeBalanceAddress).toBeTruthy();
+  expect(client.publicIdentifier).toBeTruthy();
+
+  return client;
+};
+
+export const createRemoteClient = async (
+  channelProvider: ChannelProvider,
+): Promise<IConnextClient> => {
+  const clientOpts: ClientOptions = {
+    channelProvider,
+    ethProviderUrl: env.ethProviderUrl,
+    logLevel: env.logLevel,
+  };
+
+  const client = await connect(clientOpts);
+
+  await client.isAvailable();
 
   expect(client.freeBalanceAddress).toBeTruthy();
   expect(client.publicIdentifier).toBeTruthy();

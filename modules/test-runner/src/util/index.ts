@@ -4,6 +4,7 @@ export * from "./helpers/withdrawFromChannel";
 
 // export from current dir
 export * from "./bn";
+export * from "./channelProvider";
 export * from "./client";
 export * from "./constants";
 export * from "./db";

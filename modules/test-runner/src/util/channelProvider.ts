@@ -1,9 +1,45 @@
-import { ChannelProviderConfig, ChannelProviderRpcMethod, StorePair } from "@connext/types";
+import {
+  ChannelProviderConfig,
+  ChannelProviderRpcMethod,
+  IConnextClient,
+  StorePair,
+} from "@connext/types";
 import EventEmitter from "events";
 
-import MockConnection from "./mockConnection";
+export const createMockChannelProvider = async (
+  channel: IConnextClient,
+): Promise<ChannelProvider> => {
+  const connection = new MockConnection(channel);
+  const channelProvider = new ChannelProvider(connection);
+  await channelProvider.enable();
+  return channelProvider;
+};
 
-class ChannelProvider extends EventEmitter {
+export class MockConnection {
+  private connected: boolean = true;
+  private channel: IConnextClient;
+
+  constructor(channel: IConnextClient) {
+    this.channel = channel;
+  }
+
+  public send(payload: any): Promise<any> {
+    if (!this.connected) {
+      return Promise.resolve();
+    }
+    return this.channel.channelProvider.send((payload.method, payload.params));
+  }
+
+  public open(): void {
+    this.connected = true;
+  }
+
+  public close(): void {
+    this.connected = false;
+  }
+}
+
+export class ChannelProvider extends EventEmitter {
   public connected: boolean = false;
   public connection: MockConnection;
 
@@ -155,5 +191,3 @@ class ChannelProvider extends EventEmitter {
     return result;
   }
 }
-
-export default ChannelProvider;
