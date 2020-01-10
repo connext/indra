@@ -78,7 +78,8 @@ describe("Withdrawal", () => {
   });
 
   // FIXME: may have race condition! saw intermittent failures, tough to
-  // consistently reproduce. appear as `validating signer` errors
+  // consistently reproduce. appear as `validating signer` errors.
+  // see issue #705
   test.skip("client tries to withdraw while node is collateralizing", async (done: any) => {
     await fundChannel(client, "0.01");
 
@@ -110,7 +111,7 @@ describe("Withdrawal", () => {
   });
 
   describe("client tries to withdraw while it has active deposit rights", () => {
-    test.only("client has active rights in eth, withdrawing eth", async () => {
+    test("client has active rights in eth, withdrawing eth", async () => {
       await fundChannel(client, "0.01");
       // give client eth rights
       await requestDepositRights(client);
