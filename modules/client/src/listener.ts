@@ -345,7 +345,7 @@ export class ConnextListener extends EventEmitter {
         throw new Error(`Unable to parse transfer details from message ${stringify(data)}`);
       }
       await this.connext.reclaimPendingAsyncTransfer(amount, assetId, paymentId, encryptedPreImage);
-      this.log.info(`Successfully reclaimed transfer with paymentId: ${paymentId}`);
+      this.log.info(`Successfully redeemed transfer with paymentId: ${paymentId}`);
     });
   };
 }
