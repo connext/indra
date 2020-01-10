@@ -1,3 +1,4 @@
+import "./channelProvider/channelProvider.test";
 import "./deposit/collateral.test";
 import "./deposit/deposit.test";
 import "./swap/swap.test";

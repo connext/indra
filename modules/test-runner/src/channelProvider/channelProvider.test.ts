@@ -19,6 +19,7 @@ describe("ChannelProvider", () => {
     channelProvider = await createChannelProvider(clientA);
   }, 90_000);
 
+  // tslint:disable-next-line:max-line-length
   test("Happy case: client A1 can be instantiated with a channelProvider generated from client A", async () => {
     clientB = await createRemoteClient(channelProvider);
 
