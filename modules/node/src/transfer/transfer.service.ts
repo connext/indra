@@ -103,7 +103,10 @@ export class TransferService {
     return await this.linkedTransferRepository.save(transfer);
   }
 
-  // @hunter -- this should be pulling from the transfer view right?
+  async getTransferByPaymentId(paymentId: string): Promise<Transfer | undefined> {
+    return await this.transferRepositiory.findByPaymentId(paymentId);
+  }
+
   async getLinkedTransferByPaymentId(paymentId: string): Promise<LinkedTransfer | undefined> {
     return await this.linkedTransferRepository.findByPaymentId(paymentId);
   }
