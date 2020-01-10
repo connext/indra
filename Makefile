@@ -168,46 +168,49 @@ dls:
 test: test-integration
 watch: watch-integration
 
-test-integration:
-	bash ops/test-integration.sh
-
 test-backwards-compatibility: pull-backwards-compatible
-	bash ops/test-integration.sh $(backwards_compatible_version)
+	bash ops/test/integration.sh $(backwards_compatible_version)
 
-watch-integration:
-	bash ops/test-integration.sh --watch
+test-bot:
+	bash ops/test/bot.sh
+
+test-bot-farm:
+	bash ops/test/bot-farm.sh
 
 test-cf: cf-core
-	bash ops/test-cf.sh
+	bash ops/test/cf.sh
 
-watch-cf: cf-core
-	bash ops/test-cf.sh --watch
+test-client: builder client
+	bash ops/test/client.sh
+
+test-contracts: contracts
+	bash ops/test/contracts.sh
 
 test-daicard:
-	bash ops/test-ui.sh daicard
+	bash ops/test/ui.sh daicard
 
 # ensure you've run "make start-dashboard" first & not just "make start"
 test-dashboard:
-	bash ops/test-ui.sh dashboard
+	bash ops/test/ui.sh dashboard
+
+test-integration:
+	bash ops/test/integration.sh
+
+test-node: node
+	bash ops/test/node.sh --runInBand --forceExit
+
+watch-cf: cf-core
+	bash ops/test/cf.sh --watch
+
+watch-integration:
+	bash ops/test/integration.sh --watch
 
 # You can interactively select daicard or dashboard tests after running below
 watch-ui: node-modules
-	bash ops/test-ui.sh --watch
-
-test-bot:
-	bash ops/test-bot.sh
-
-test-bot-farm:
-	bash ops/test-bot-farm.sh
-
-test-contracts: contracts
-	bash ops/test-contracts.sh
-
-test-node: node
-	bash ops/test-node.sh --runInBand --forceExit
+	bash ops/test/ui.sh --watch
 
 watch-node: node
-	bash ops/test-node.sh --watch
+	bash ops/test/node.sh --watch
 
 ########################################
 # Docker Images
