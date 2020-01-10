@@ -103,6 +103,8 @@ restart-prod:
 clean: stop
 	docker container prune -f
 	rm -rf $(flags)/*
+	rm -rf node_modules/@connext/*
+	rm -rf modules/**/node_modules/@connext/*
 	rm -rf node_modules/@counterfactual/*
 	rm -rf modules/**/node_modules/@counterfactual/*
 	rm -rf node_modules/@walletconnect/*
