@@ -42,6 +42,11 @@ describe("Async Transfers", () => {
     expect(preTransferFreeBalanceEthClientB).toBeBigNumberEq(0);
     expect(preTransferFreeBalanceEthNodeB).toBeBigNumberGte(transferAmount);
 
+    const senderDone = new Promise((res: any): any => clientA.on("UNINSTALL_EVENT", res));
+    const recipientDone = new Promise((res: any): any =>
+      clientB.on("RECIEVE_TRANSFER_FINISHED_EVENT", res),
+    );
+
     await clientA.transfer({
       amount: transferAmount.toString(),
       assetId: AddressZero,
@@ -49,7 +54,8 @@ describe("Async Transfers", () => {
       recipient: clientB.publicIdentifier,
     });
 
-    await new Promise((res: any): any => clientB.on("RECIEVE_TRANSFER_FINISHED_EVENT", res));
+    await recipientDone;
+    await senderDone;
 
     const {
       [clientA.freeBalanceAddress]: postTransferFreeBalanceEthClientA,
@@ -62,7 +68,7 @@ describe("Async Transfers", () => {
     } = await clientB.getFreeBalance(AddressZero);
 
     expect(postTransferFreeBalanceEthClientA).toBeBigNumberEq(0);
-    expect(postTransferFreeBalanceEthNodeA).toBeBigNumberEq(0); // not transferAmount?
+    expect(postTransferFreeBalanceEthNodeA).toBeBigNumberEq(transferAmount);
 
     expect(postTransferFreeBalanceEthClientB).toBeBigNumberEq(transferAmount);
     expect(postTransferFreeBalanceEthNodeB).toBeBigNumberEq(
