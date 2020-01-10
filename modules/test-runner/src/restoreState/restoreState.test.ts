@@ -1,8 +1,9 @@
-import { createClient, getStore } from "../util/client";
-import { IConnextClient } from "@connext/types";
 import { xkeyKthAddress } from "@connext/cf-core";
-import { parseEther } from "ethers/utils";
+import { IConnextClient } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
+import { BigNumber, parseEther } from "ethers/utils";
+
+import { createClient, getStore } from "../util/client";
 
 describe("Restore State", () => {
   let clientA: IConnextClient;
@@ -23,26 +24,34 @@ describe("Restore State", () => {
     await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
 
+    // check balances pre
+    const freeBalanceEthPre = await clientA.getFreeBalance(AddressZero);
+    const freeBalanceTokenPre = await clientA.getFreeBalance(tokenAddress);
+    expect(freeBalanceEthPre[clientA.freeBalanceAddress]).toBeBigNumberEq(parseEther("0.01"));
+    expect(freeBalanceEthPre[nodeFreeBalanceAddress]).toBeBigNumberEq(Zero);
+    expect(freeBalanceTokenPre[clientA.freeBalanceAddress]).toBeBigNumberEq(Zero);
+    expect(freeBalanceTokenPre[nodeFreeBalanceAddress]).toBeBigNumberEq(parseEther("10"));
+
     // delete store
     const store = getStore();
     store.reset();
 
-    // check balances pre (will this work?)
-    const freeBalanceEthPre = clientA.getFreeBalance(AddressZero);
-    const freeBalanceTokenPre = clientA.getFreeBalance(tokenAddress);
-    expect(freeBalanceEthPre[nodeFreeBalanceAddress]).toBe(undefined);
-    expect(freeBalanceEthPre[nodeFreeBalanceAddress]).toBe(undefined);
-    expect(freeBalanceTokenPre[clientA.freeBalanceAddress]).toBe(undefined);
-    expect(freeBalanceTokenPre[nodeFreeBalanceAddress]).toBe(undefined);
+    // check that getting balances will now error
+    await expect(clientA.getFreeBalance(AddressZero)).rejects.toThrowError(
+      "Call to getStateChannel failed when searching for multisig address",
+    );
+    await expect(clientA.getFreeBalance(tokenAddress)).rejects.toThrowError(
+      "Call to getStateChannel failed when searching for multisig address",
+    );
 
     await clientA.restoreState();
 
-    // // check balances post
-    const freeBalanceEthPost = clientA.getFreeBalance(AddressZero);
-    const freeBalanceTokenPost = clientA.getFreeBalance(tokenAddress);
+    // check balances post
+    const freeBalanceEthPost = await clientA.getFreeBalance(AddressZero);
+    const freeBalanceTokenPost = await clientA.getFreeBalance(tokenAddress);
     expect(freeBalanceEthPost[clientA.freeBalanceAddress]).toBeBigNumberEq(parseEther("0.01"));
     expect(freeBalanceEthPost[nodeFreeBalanceAddress]).toBeBigNumberEq(Zero);
     expect(freeBalanceTokenPost[clientA.freeBalanceAddress]).toBeBigNumberEq(Zero);
-    expect(freeBalanceTokenPost[nodeFreeBalanceAddress]).toBeBigNumberEq(parseEther("0.01"));
+    expect(freeBalanceTokenPost[nodeFreeBalanceAddress]).toBeBigNumberEq(parseEther("10"));
   });
 });
