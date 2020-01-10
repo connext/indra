@@ -34,7 +34,8 @@ describe("Get State Channel", () => {
 
   test.only("Store contains state channel on wrong multisig address", async () => {
     const store: Store = getStore();
-    const path: `${this.storeKeyPrefix}/${DB_NAMESPACE_CHANNEL}/${stateChannel.multisigAddress}`;
+    // const path: `${this.storeKeyPrefix}/${DB_NAMESPACE_CHANNEL}/${stateChannel.multisigAddress}`;
+    const path = "";
     const value: StateChannel = await store.get(path);
 
     const pair: StorePair[] = [{ path, value }];
