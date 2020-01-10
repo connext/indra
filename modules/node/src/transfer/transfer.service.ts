@@ -103,7 +103,10 @@ export class TransferService {
     return await this.linkedTransferRepository.save(transfer);
   }
 
-  // @hunter -- this should be pulling from the transfer view right?
+  async getTransferByPaymentId(paymentId: string): Promise<Transfer | undefined> {
+    return await this.transferRepositiory.findByPaymentId(paymentId);
+  }
+
   async getLinkedTransferByPaymentId(paymentId: string): Promise<LinkedTransfer | undefined> {
     return await this.linkedTransferRepository.findByPaymentId(paymentId);
   }
@@ -295,6 +298,8 @@ export class TransferService {
     // add preimage to database to allow unlock from a listener
     transfer.receiverAppInstanceId = receiverAppInstallRes.appInstanceId;
     transfer.paymentId = paymentId;
+    transfer.recipientPublicIdentifier = userPubId;
+    transfer.receiverChannel = channel;
     await this.linkedTransferRepository.save(transfer);
 
     return {

@@ -46,7 +46,7 @@ describe("Swaps", () => {
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
 
-    const swapAmount = One;
+    const swapAmount = parseEther("0.01");
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),
       fromAssetId: AddressZero,
@@ -129,5 +129,124 @@ describe("Swaps", () => {
       preSwapFreeBalanceTokenClient.sub(swapAmount),
     );
     expect(postSwapFreeBalanceTokenNode).toBeBigNumberEq(swapAmount);
+  });
+
+  test("Bot A tries to swap with invalid from token address", async () => {
+    // client deposit and request node collateral
+    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.requestCollateral(tokenAddress);
+
+    const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
+    const wrongAddress = "0xdeadbeef";
+    const swapAmount = parseEther("0.005");
+    const swapParams: SwapParameters = {
+      amount: swapAmount.toString(),
+      fromAssetId: wrongAddress,
+      swapRate,
+      toAssetId: tokenAddress,
+    };
+    await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not a valid eth address`);
+  });
+
+  test("Bot A tries to swap with invalid to token address", async () => {
+    // client deposit and request node collateral
+    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.requestCollateral(tokenAddress);
+
+    const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
+    const wrongAddress = "0xdeadbeef";
+    const swapAmount = parseEther("0.005");
+    const swapParams: SwapParameters = {
+      amount: swapAmount.toString(),
+      fromAssetId: AddressZero,
+      swapRate,
+      toAssetId: wrongAddress,
+    };
+    await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not a valid eth address`);
+  });
+
+  test("Bot A tries to swap with insufficient free balance for the user", async () => {
+    // client deposit and request node collateral
+    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.requestCollateral(tokenAddress);
+
+    const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
+    const swapAmount = parseEther("0.02");
+    const swapParams: SwapParameters = {
+      amount: swapAmount.toString(),
+      fromAssetId: AddressZero,
+      swapRate,
+      toAssetId: tokenAddress,
+    };
+    await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not less than or equal to`);
+  });
+
+  test("Bot A tries to swap with negative swap rate", async () => {
+    // client deposit and request node collateral
+    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.requestCollateral(tokenAddress);
+
+    const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
+    const swapAmount = parseEther("0.005");
+    const swapParams: SwapParameters = {
+      amount: swapAmount.toString(),
+      fromAssetId: AddressZero,
+      swapRate: (-swapRate).toString(),
+      toAssetId: tokenAddress,
+    };
+    await expect(clientA.swap(swapParams)).rejects.toThrowError(
+      `is not greater than or equal to 0`,
+    );
+  });
+
+  test("Bot A tries to swap with negative user amount", async () => {
+    // client deposit and request node collateral
+    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.requestCollateral(tokenAddress);
+
+    const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
+    const swapAmount = parseEther("0.005");
+    const swapParams: SwapParameters = {
+      amount: swapAmount.mul(-1).toString(),
+      fromAssetId: AddressZero,
+      swapRate,
+      toAssetId: tokenAddress,
+    };
+    await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not greater than 0`);
+  });
+
+  test("Bot A tries to swap with insufficient collateral on node", async () => {
+    // client deposit and request node collateral
+    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    // No collateral requested
+
+    const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
+    const swapAmount = parseEther("0.005");
+    const swapParams: SwapParameters = {
+      amount: swapAmount.toString(),
+      fromAssetId: AddressZero,
+      swapRate,
+      toAssetId: tokenAddress,
+    };
+    await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not less than or equal to 0`);
+  });
+
+  // TODO Currently, this test always fails because when promise is never rejected when
+  //      node rejects install.
+  test.skip("Bot A tries to swap with incorrect swap rate (node rejects)", async () => {
+    // client deposit and request node collateral
+    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.requestCollateral(tokenAddress);
+    // No collateral requested
+
+    const swapRate = "1";
+    const swapAmount = parseEther("0.005");
+    const swapParams: SwapParameters = {
+      amount: swapAmount.toString(),
+      fromAssetId: AddressZero,
+      swapRate,
+      toAssetId: tokenAddress,
+    };
+    await expect(clientA.swap(swapParams)).rejects.toThrowError(`is jiaji greater than 0`);
   });
 });

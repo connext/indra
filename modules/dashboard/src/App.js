@@ -65,7 +65,6 @@ const App = () => {
   const [loading, setLoading] = useState(false);
 
   // If no mnemonic, create one and save to local storage
-
   useEffect(() => {
     (async () => {
       let token = localStorage.getItem("token");
@@ -90,6 +89,7 @@ const App = () => {
       return;
     }
     try {
+      console.log(env.nodeUrl)
       const messaging = new DashboardMessaging(env.nodeUrl, token, 5);
       await messaging.connect();
       setMessaging(messaging);
