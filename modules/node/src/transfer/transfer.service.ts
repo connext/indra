@@ -362,6 +362,7 @@ export class TransferService {
 
     logger.log(`Uninstalling app ${transfer.senderAppInstanceId} to reclaim collateral`);
     await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
+    await this.linkedTransferRepository.markAsReclaimed(transfer);
   }
 
   async getLinkedTransfersForReclaim(userPublicIdentifier: string): Promise<LinkedTransfer[]> {
