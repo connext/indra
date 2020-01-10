@@ -15,11 +15,13 @@ let clientStore: MemoryStoreService;
 
 export const createClient = async (
   mnemonic: string = Wallet.createRandom().mnemonic,
+  opts?: ClientOptions,
 ): Promise<IConnextClient> => {
   const storeServiceFactory = new MemoryStoreServiceFactory();
 
   clientStore = storeServiceFactory.createStoreService();
-  const clientOpts: ClientOptions = {
+  const clientOpts = {
+    ...opts,
     ethProviderUrl: env.ethProviderUrl,
     logLevel: env.logLevel,
     mnemonic,
