@@ -32,6 +32,12 @@ export class LinkedTransferRepository extends Repository<LinkedTransfer> {
     });
   }
 
+  async findReclaimable(senderChannel: Channel): Promise<LinkedTransfer[]> {
+    return await this.find({
+      where: { senderChannel, status: LinkedTransferStatus.REDEEMED },
+    });
+  }
+
   async findAll(): Promise<LinkedTransfer[]> {
     return await this.find();
   }

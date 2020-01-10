@@ -185,8 +185,21 @@ export default class ListenerService implements OnModuleInit {
         transfer.status = LinkedTransferStatus.FAILED;
         await this.linkedTransferRepository.save(transfer);
       },
-      UNINSTALL_EVENT: (data: UninstallMessage): void => {
+      UNINSTALL_EVENT: async (data: UninstallMessage): Promise<void> => {
         logEvent("UNINSTALL_EVENT", data);
+        // check if app being uninstalled is a receiver app for a transfer
+        // if so, try to uninstall the sender app
+        const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(
+          data.data.appInstanceId,
+        );
+        if (!transfer || transfer.status !== LinkedTransferStatus.REDEEMED) {
+          logger.debug(
+            `Uninstalled app was not a transfer or was not redeemed: ${JSON.stringify(transfer)}`,
+          );
+          return;
+        }
+        logger.debug(`Found transfer that needs collateral redeemed: ${JSON.stringify(transfer)}`);
+        await this.transferService.reclaimLinkedTransferCollateral(transfer.paymentId);
       },
       UNINSTALL_VIRTUAL_EVENT: (data: UninstallVirtualMessage): void => {
         logEvent("UNINSTALL_VIRTUAL_EVENT", data);

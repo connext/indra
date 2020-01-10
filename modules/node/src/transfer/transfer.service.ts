@@ -354,11 +354,37 @@ export class TransferService {
     return res.appInstanceId;
   }
 
+  async reclaimLinkedTransferCollateral(paymentId: string): Promise<void> {
+    const transfer = await this.linkedTransferRepository.findByPaymentId(paymentId);
+    if (transfer.status !== LinkedTransferStatus.REDEEMED) {
+      throw new Error(`Transfer with id ${paymentId} has not been redeemed`);
+    }
+
+    logger.log(`Uninstalling app ${transfer.senderAppInstanceId} to reclaim collateral`);
+    await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
+  }
+
+  async getLinkedTransfersForReclaim(userPublicIdentifier: string): Promise<LinkedTransfer[]> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new Error(`No channel exists for userPubId ${userPublicIdentifier}`);
+    }
+    return await this.linkedTransferRepository.findReclaimable(channel);
+  }
+
   async getPendingTransfers(userPublicIdentifier: string): Promise<LinkedTransfer[]> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new Error(`No channel exists for userPubId ${userPublicIdentifier}`);
+    }
     return await this.linkedTransferRepository.findPendingByRecipient(userPublicIdentifier);
   }
 
   async getTransfersByPublicIdentifier(userPublicIdentifier: string): Promise<Transfer[]> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new Error(`No channel exists for userPubId ${userPublicIdentifier}`);
+    }
     return await this.transferRepositiory.findByPublicIdentifier(userPublicIdentifier);
   }
 }
