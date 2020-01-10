@@ -35,6 +35,7 @@ export const encryptWithPublicKey = async (publicKey: string, message: string): 
     iv: encryptedBuffers.iv.toString("hex"),
     mac: encryptedBuffers.mac.toString("hex"),
   };
+  console.log(`Encrypted data: ${JSON.stringify(encrypted, null, 2)}`);
   return Buffer.concat([
     Buffer.from(encrypted.iv, "hex"), // 16bit
     Buffer.from(compress(encrypted.ephemPublicKey), "hex"), // 33bit
@@ -50,18 +51,16 @@ export const decryptWithPrivateKey = async (
   const buf = Buffer.from(message, "hex");
   const encrypted = {
     ciphertext: buf.toString("hex", 81, buf.length),
-    ephemPublicKey: buf.toString("hex", 16, 49),
+    ephemPublicKey: `04${decompress(buf.toString("hex", 16, 49))}`,
     iv: buf.toString("hex", 0, 16),
     mac: buf.toString("hex", 49, 81),
   };
-  encrypted.ephemPublicKey = `04${decompress(encrypted.ephemPublicKey)}`;
-  const twoStripped = privateKey.replace(/^0x/, "");
-  const encryptedBuffer = {
+  console.log(`Decrypting data: ${JSON.stringify(encrypted, null, 2)}`);
+  const decryptedBuffer = await decrypt(Buffer.from(privateKey.replace(/^0x/, ""), "hex"), {
     ciphertext: Buffer.from(encrypted.ciphertext, "hex"),
     ephemPublicKey: Buffer.from(encrypted.ephemPublicKey, "hex"),
     iv: Buffer.from(encrypted.iv, "hex"),
     mac: Buffer.from(encrypted.mac, "hex"),
-  };
-  const decryptedBuffer = await decrypt(Buffer.from(twoStripped, "hex"), encryptedBuffer);
+  });
   return decryptedBuffer.toString();
 };
