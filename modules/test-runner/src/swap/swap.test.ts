@@ -181,7 +181,7 @@ describe("Swaps", () => {
     await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not less than or equal to`);
   });
 
-  test.only("Bot A tries to swap with negative swap rate", async () => {
+  test("Bot A tries to swap with negative swap rate", async () => {
     // client deposit and request node collateral
     await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
