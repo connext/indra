@@ -138,7 +138,7 @@ describe("Swaps", () => {
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
     const wrongAddress = "0xdeadbeef";
-    const swapAmount = One;
+    const swapAmount = parseEther("0.005");
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),
       fromAssetId: wrongAddress,
@@ -155,7 +155,7 @@ describe("Swaps", () => {
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
     const wrongAddress = "0xdeadbeef";
-    const swapAmount = One;
+    const swapAmount = parseEther("0.005");
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),
       fromAssetId: AddressZero,
@@ -181,13 +181,13 @@ describe("Swaps", () => {
     await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not less than or equal to`);
   });
 
-  test("Bot A tries to swap with negative swap rate", async () => {
+  test.only("Bot A tries to swap with negative swap rate", async () => {
     // client deposit and request node collateral
     await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
-    const swapAmount = One;
+    const swapAmount = parseEther("0.005");
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),
       fromAssetId: AddressZero,
@@ -205,9 +205,9 @@ describe("Swaps", () => {
     await clientA.requestCollateral(tokenAddress);
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
-    const swapAmount = One;
+    const swapAmount = parseEther("0.005");
     const swapParams: SwapParameters = {
-      amount: (-swapAmount).toString(),
+      amount: swapAmount.mul(-1).toString(),
       fromAssetId: AddressZero,
       swapRate,
       toAssetId: tokenAddress,
@@ -221,7 +221,7 @@ describe("Swaps", () => {
     // No collateral requested
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
-    const swapAmount = One;
+    const swapAmount = parseEther("0.005");
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),
       fromAssetId: AddressZero,
@@ -240,7 +240,7 @@ describe("Swaps", () => {
     // No collateral requested
 
     const swapRate = "1";
-    const swapAmount = One;
+    const swapAmount = parseEther("0.005");
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),
       fromAssetId: AddressZero,
