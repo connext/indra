@@ -1,5 +1,5 @@
 import { StateChannel, xkeyKthAddress } from "@connext/cf-core";
-import { IConnextClient, StateChannelJSON } from "@connext/types";
+import { IConnextClient, StateChannelJSON, ClientOptions, Store } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 import { createClient, getStore } from "../util";
@@ -30,5 +30,25 @@ describe("Get State Channel", () => {
     await expect(clientA.getStateChannel()).rejects.toThrowError(
       "Call to getStateChannel failed when searching for multisig address",
     );
+  });
+
+  test("Store contains state channel on wrong multisig address", async () => {
+    // How do we test this?
+  });
+
+  test.only("Store contains multiple state channels", async () => {
+    // Get store from clientA
+    const store: Store = getStore();
+    const opts: any = { store };
+
+    // Client with same store and new mnemonic
+    const clientB = await createClient(opts);
+    await clientB.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientB.requestCollateral(tokenAddress);
+
+    const stateChannelA: StateChannelJSON = (await clientA.getStateChannel()).data;
+    const stateChannelB: StateChannelJSON = (await clientB.getStateChannel()).data;
+    expect(stateChannelA.multisigAddress).toBe(clientA.multisigAddress);
+    expect(stateChannelB.multisigAddress).toBe(clientB.multisigAddress);
   });
 });

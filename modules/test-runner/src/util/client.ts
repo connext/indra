@@ -13,21 +13,18 @@ const wallet = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider);
 
 let clientStore: MemoryStoreService;
 
-export const createClient = async (
-  mnemonic: string = Wallet.createRandom().mnemonic,
-  opts?: ClientOptions,
-): Promise<IConnextClient> => {
+export const createClient = async (opts?: ClientOptions): Promise<IConnextClient> => {
   const storeServiceFactory = new MemoryStoreServiceFactory();
 
   clientStore = storeServiceFactory.createStoreService();
-  const clientOpts = {
-    ...opts,
+  let clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
     logLevel: env.logLevel,
-    mnemonic,
+    mnemonic: Wallet.createRandom().mnemonic,
     nodeUrl: env.nodeUrl,
     store: clientStore,
   };
+  clientOpts = { ...clientOpts, ...opts };
   const client = await connect(clientOpts);
 
   // TODO: add client endpoint to get node config, so we can easily have its xpub etc
