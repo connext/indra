@@ -1,8 +1,8 @@
+import { StateChannel, xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient, StateChannelJSON } from "@connext/types";
-import { createClient } from "../util";
-import { xkeyKthAddress, StateChannel } from "@connext/cf-core";
-import { parseEther } from "ethers/utils";
 import { AddressZero } from "ethers/constants";
+import { parseEther } from "ethers/utils";
+import { createClient, getStore } from "../util";
 
 describe("Get State Channel", () => {
   let clientA: IConnextClient;
@@ -24,4 +24,11 @@ describe("Get State Channel", () => {
     expect(stateChannel.multisigAddress).toBe(clientA.multisigAddress);
   });
 
+  test("Store does not contain state channel", async () => {
+    const store = getStore();
+    store.reset();
+    await expect(clientA.getStateChannel()).rejects.toThrowError(
+      "Call to getStateChannel failed when searching for multisig address",
+    );
+  });
 });
