@@ -112,6 +112,10 @@ export class TransferMessaging extends AbstractMessagingProvider {
       "transfer.get-history.>",
       this.authService.useUnverifiedPublicIdentifier(this.getTransferHistory.bind(this)),
     );
+    await super.connectRequestReponse(
+      "client.check-in.>",
+      this.authService.useVerifiedPublicIdentifier(this.clientCheckIn.bind(this)),
+    );
   }
 }
 
