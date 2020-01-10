@@ -4,13 +4,20 @@ import {
   AppActionBigNumber,
   AppRegistry,
   AppState,
+  DefaultApp,
   SupportedApplication,
   SupportedNetwork,
 } from "./app";
 import { ConnextEvent } from "./basic";
 import { AppInstanceJson, CFCoreTypes } from "./cf";
 import { CFCoreChannel, ChannelAppSequences, ChannelState, PaymentProfile } from "./channel";
-import { ChannelProvider, ChannelProviderConfig, KeyGen, StorePair } from "./channelProvider";
+import {
+  ChannelProvider,
+  ChannelProviderConfig,
+  ChannelProviderRpcMethod,
+  KeyGen,
+  StorePair,
+} from "./channelProvider";
 import {
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
@@ -71,8 +78,9 @@ export interface IConnextClient {
 
   ///////////////////////////////////
   // LISTENER METHODS
-  on(event: ConnextEvent | CFCoreTypes.EventName, callback: (...args: any[]) => void): void;
-  emit(event: ConnextEvent | CFCoreTypes.EventName, data: any): boolean;
+  on(event: ConnextEvent | ChannelProviderRpcMethod, callback: (...args: any[]) => void): void;
+  once(event: ConnextEvent | ChannelProviderRpcMethod, callback: (...args: any[]) => void): void;
+  emit(event: ConnextEvent | ChannelProviderRpcMethod, data: any): boolean;
 
   ///////////////////////////////////
   // CORE CHANNEL METHODS
@@ -101,6 +109,7 @@ export interface IConnextClient {
     name: SupportedApplication;
     network: SupportedNetwork;
   }): Promise<AppRegistry>;
+  getRegisteredAppDetails(appName: SupportedApplication): DefaultApp;
   createChannel(): Promise<CreateChannelResponse>;
   subscribeToSwapRates(from: string, to: string, callback: any): Promise<any>;
   getLatestSwapRate(from: string, to: string): Promise<string>;

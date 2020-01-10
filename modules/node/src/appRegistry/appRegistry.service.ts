@@ -59,6 +59,7 @@ export class AppRegistryService {
     try {
       const registryAppInfo = await this.verifyAppProposal(data.data, data.from);
       if (registryAppInfo.name === SupportedApplications.CoinBalanceRefundApp) {
+        logger.log(`Not installing coin balance refund app, returning registry information`);
         return registryAppInfo;
       }
       await this.cfCoreService.installApp(data.data.appInstanceId);

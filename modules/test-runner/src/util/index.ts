@@ -1,6 +1,7 @@
 // export from helpers dir
 export * from "./helpers/fundChannel";
 export * from "./helpers/withdrawFromChannel";
+export * from "./helpers/requestDepositRights";
 
 // export from current dir
 export * from "./bn";
