@@ -81,4 +81,10 @@ export class TransferRepository extends Repository<Transfer> {
       ],
     });
   }
+
+  async findByPaymentId(paymentId: string): Promise<Transfer> {
+    return await this.findOne({
+      where: { paymentId },
+    });
+  }
 }

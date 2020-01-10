@@ -8,6 +8,7 @@ import { ClientProxy } from "@nestjs/microservices";
 import { Zero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
 
+import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -101,7 +102,7 @@ export default class ListenerService implements OnModuleInit {
 
         // TODO: separate install from validation, do both at this level
         // install if possible
-        let allowedOrRejected;
+        let allowedOrRejected: AppRegistry | void;
         try {
           allowedOrRejected = await this.appRegistryService.allowOrReject(data);
         } catch (e) {

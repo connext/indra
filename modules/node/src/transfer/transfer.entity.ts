@@ -134,16 +134,23 @@ export class LinkedTransfer {
   meta: object;
 }
 
+export enum TransferType {
+  P2P = "P2P",
+  LINKED = "LINKED",
+}
+
 @ViewEntity({
   expression: `
     SELECT
-      "peer_to_peer_transfer"."id" as "id",
+      "peer_to_peer_transfer"."id" as "payment_id",
       "peer_to_peer_transfer"."amount" as "amount",
       "peer_to_peer_transfer"."assetId" as "assetId",
       "sender_channel"."userPublicIdentifier" as "senderPublicIdentifier",
       "receiver_channel"."userPublicIdentifier" as "receiverPublicIdentifier",
       "peer_to_peer_transfer"."createdAt" as "createdAt",
-      "peer_to_peer_transfer"."meta" as "meta"
+      "peer_to_peer_transfer"."meta" as "meta",
+      "peer_to_peer_transfer"."status" as "status",
+      ${TransferType.P2P} as "type"
     FROM "peer_to_peer_transfer"
     LEFT JOIN "channel" as "receiver_channel"
       ON "receiver_channel"."id" = "peer_to_peer_transfer"."receiverChannelId"
@@ -151,13 +158,15 @@ export class LinkedTransfer {
       ON "sender_channel"."id" = "peer_to_peer_transfer"."senderChannelId"
     UNION ALL
     SELECT
-      "linked_transfer"."id" as "id",
+      "linked_transfer"."payment_id" as "payment_id",
       "linked_transfer"."amount" as "amount",
       "linked_transfer"."assetId" as "assetId",
       "sender_channel"."userPublicIdentifier" as "senderPublicIdentifier",
       "receiver_channel"."userPublicIdentifier" as "receiverPublicIdentifier",
       "linked_transfer"."createdAt" as "createdAt",
-      "linked_transfer"."meta" as "meta"
+      "linked_transfer"."meta" as "meta",
+      "linked_transfer"."status" as "status",
+      ${TransferType.LINKED} as "type"
     FROM "linked_transfer"
     LEFT JOIN "channel" as "receiver_channel"
       ON "receiver_channel"."id" = "linked_transfer"."receiverChannelId"
@@ -167,7 +176,7 @@ export class LinkedTransfer {
 })
 export class Transfer {
   @ViewColumn()
-  id!: number;
+  paymentId!: string;
 
   @ViewColumn()
   createdAt!: Date;
@@ -185,5 +194,11 @@ export class Transfer {
   receiverPublicIdentifier!: string;
 
   @ViewColumn()
-  meta: object;
+  type!: string;
+
+  @ViewColumn()
+  status!: string;
+
+  @ViewColumn()
+  meta!: object;
 }
