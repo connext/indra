@@ -9,7 +9,8 @@ import { NO_APP_INSTANCE_ID_TO_INSTALL } from "../../errors";
 export async function install(
   store: Store,
   protocolRunner: ProtocolRunner,
-  params: CFCoreTypes.InstallParams
+  params: CFCoreTypes.InstallParams,
+  initiatorXpub: string
 ): Promise<AppInstanceProposal> {
   const { appInstanceId } = params;
 
@@ -30,8 +31,11 @@ export async function install(
       [stateChannel.multisigAddress, stateChannel]
     ]),
     {
-      initiatorXpub: proposal.proposedToIdentifier,
-      responderXpub: proposal.proposedByIdentifier,
+      initiatorXpub,
+      responderXpub:
+        initiatorXpub === proposal.proposedToIdentifier
+          ? proposal.proposedByIdentifier
+          : proposal.proposedToIdentifier,
       initiatorBalanceDecrement: bigNumberify(proposal.initiatorDeposit),
       responderBalanceDecrement: bigNumberify(proposal.responderDeposit),
       multisigAddress: stateChannel.multisigAddress,
