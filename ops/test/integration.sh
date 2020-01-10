@@ -2,7 +2,7 @@
 set -e
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../package.json | jq .name | tr -d '"'`"
+project="`cat $dir/../../package.json | jq .name | tr -d '"'`"
 name="${project}_test_runner"
 commit="`git rev-parse HEAD | head -c 8`"
 
@@ -32,6 +32,7 @@ echo "Executing image $image"
 
 exec docker run \
   $watchOptions \
+  --env="ECCRYPTO_NO_FALLBACK=true" \
   --env="INDRA_CLIENT_LOG_LEVEL=$LOG_LEVEL" \
   --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
   --env="INDRA_NODE_URL=$NODE_URL" \
