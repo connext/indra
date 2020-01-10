@@ -11,7 +11,7 @@ docker run \
   --entrypoint="bash" \
   --env="ECCRYPTO_NO_FALLBACK=true" \
   $interactive \
-  --name="${project}_test_cf_core" \
+  --name="${project}_test_client" \
   --rm \
   --tty \
   --volume="`pwd`:/root" \
