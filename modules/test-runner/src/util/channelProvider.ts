@@ -6,9 +6,7 @@ import {
 } from "@connext/types";
 import EventEmitter from "events";
 
-export const createMockChannelProvider = async (
-  channel: IConnextClient,
-): Promise<ChannelProvider> => {
+export const createChannelProvider = async (channel: IConnextClient): Promise<ChannelProvider> => {
   const connection = new MockConnection(channel);
   const channelProvider = new ChannelProvider(connection);
   await channelProvider.enable();
