@@ -11,4 +11,5 @@ export * from "./constants";
 export * from "./db";
 export * from "./env";
 export * from "./ethprovider";
+export * from "./remoteClient";
 export * from "./store";
