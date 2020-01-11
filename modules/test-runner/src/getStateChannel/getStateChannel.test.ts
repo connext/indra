@@ -74,4 +74,32 @@ describe("Get State Channel", () => {
     expect(stateChannelA.multisigAddress).toBe(clientA.multisigAddress);
     expect(stateChannelB.multisigAddress).toBe(clientB.multisigAddress);
   });
+
+  test.skip("State channel under multisig key has no proxy factory address", async () => {
+    const store = getStore();
+    const path: string = `${ConnextClientStorePrefix}/${clientA.publicIdentifier}/channel/${clientA.multisigAddress}`;
+    let value: any = await store.get(path);
+
+    expect(value.proxyFactoryAddress).toBe((await clientA.getStateChannel()).data.proxyFactoryAddress);
+
+    value.proxyFactoryAddress = null;
+    const pair: StorePair[] = [{ path, value }];
+    await store.set(pair);
+
+    await expect(clientA.getStateChannel()).rejects.toThrowError("");
+  });
+
+  test.skip("State channel under multisig key has freeBalanceAppInstance", async () => {
+    const store = getStore();
+    const path: string = `${ConnextClientStorePrefix}/${clientA.publicIdentifier}/channel/${clientA.multisigAddress}`;
+    let value: any = await store.get(path);
+
+    expect(value.freeBalanceAppInstance).toBeDefined();
+
+    value.freeBalanceAppInstance = null;
+    const pair: StorePair[] = [{ path, value }];
+    await store.set(pair);
+
+    await expect(clientA.getStateChannel()).rejects.toThrowError("");
+  });
 });
