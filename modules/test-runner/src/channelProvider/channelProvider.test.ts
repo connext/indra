@@ -5,7 +5,7 @@ import { createChannelProvider, createClient, createRemoteClient } from "../util
 
 describe("ChannelProvider", () => {
   let clientA: IConnextClient;
-  let clientB: IConnextClient;
+  let clientA1: IConnextClient;
   let tokenAddress: string;
   let nodeFreeBalanceAddress: string;
   let nodePublicIdentifier: string;
@@ -21,12 +21,12 @@ describe("ChannelProvider", () => {
 
   // tslint:disable-next-line:max-line-length
   test("Happy case: client A1 can be instantiated with a channelProvider generated from client A", async () => {
-    clientB = await createRemoteClient(channelProvider);
+    clientA1 = await createRemoteClient(channelProvider);
 
     // tslint:disable-next-line:variable-name
-    const _tokenAddress = clientB.config.contractAddresses.Token;
+    const _tokenAddress = clientA1.config.contractAddresses.Token;
     // tslint:disable-next-line:variable-name
-    const _nodePublicIdentifier = clientB.config.nodePublicIdentifier;
+    const _nodePublicIdentifier = clientA1.config.nodePublicIdentifier;
     // tslint:disable-next-line:variable-name
     const _nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
 
