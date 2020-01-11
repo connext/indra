@@ -1,5 +1,6 @@
 import { Wallet } from "ethers";
 import { arrayify } from "ethers/utils";
+import EventEmitter from "events";
 import { RpcParameters } from "rpc-server";
 
 import { CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
@@ -8,7 +9,9 @@ import {
   CFCoreTypes,
   ChannelProviderConfig,
   ChannelProviderRpcMethod,
-  RpcConnection,
+  IChannelProvider,
+  IRpcConnection,
+  JsonRpcRequest,
   Store,
   StorePair,
 } from "./types";
@@ -40,8 +43,9 @@ export const createCFChannelProvider = async ({
     signerAddress: xpubToAddress(xpub),
     userPublicIdentifier: xpub,
   };
+  const connection = new RpcConnection(cfCore);
   const channelProvider = new ChannelProvider(
-    cfCore,
+    connection,
     channelProviderConfig,
     store,
     await keyGen("0"),
@@ -49,24 +53,57 @@ export const createCFChannelProvider = async ({
   return channelProvider;
 };
 
-export class ChannelProvider {
-  private connection: RpcConnection;
-  private store: Store;
+export class RpcConnection extends EventEmitter implements IRpcConnection {
+  public connected: boolean = true;
+  public cfCore: CFCore;
+
+  constructor(cfCore: CFCore) {
+    super();
+    this.cfCore = cfCore;
+  }
+
+  public async send(payload: JsonRpcRequest): Promise<any> {
+    if (!this.connected) {
+      return Promise.resolve();
+    }
+    const ret = await this.cfCore.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: payload.method,
+      parameters: deBigNumberifyJson(payload.params),
+    });
+    const result = ret.result.result;
+    return result;
+  }
+
+  public open(): void {
+    this.connected = true;
+  }
+
+  public close(): void {
+    this.connected = false;
+  }
+}
+
+export class ChannelProvider extends EventEmitter implements IChannelProvider {
+  public connected: boolean = true;
+  public connection: IRpcConnection;
+  public store: Store;
 
   // TODO: replace this when signing keys are added!
-  private wallet: Wallet;
+  public wallet: Wallet;
 
   // shouldnt really ever be used
-  private _config: ChannelProviderConfig; // tslint:disable-line:variable-name
-  private _multisigAddress: string | undefined = undefined; // tslint:disable-line:variable-name
-  private _signerAddress: string | undefined = undefined; // tslint:disable-line:variable-name
+  public _config: ChannelProviderConfig; // tslint:disable-line:variable-name
+  public _multisigAddress: string | undefined = undefined; // tslint:disable-line:variable-name
+  public _signerAddress: string | undefined = undefined; // tslint:disable-line:variable-name
 
   constructor(
-    connection: RpcConnection,
+    connection: IRpcConnection,
     config: ChannelProviderConfig,
     store: Store,
     authKey: any,
   ) {
+    super();
     this.store = store;
     this.wallet = authKey ? new Wallet(authKey) : null;
     this.connection = connection;
@@ -104,6 +141,10 @@ export class ChannelProvider {
     return result;
   };
 
+  public close(): void {
+    // no-op
+  }
+
   ///////////////////////////////////////////////
   ///// GETTERS / SETTERS
   get isSigner(): boolean {
@@ -134,12 +175,12 @@ export class ChannelProvider {
 
   ///////////////////////////////////////////////
   ///// LISTENER METHODS
-  public on = (event: string, listener: (...args: any[]) => void): RpcConnection => {
+  public on = (event: string, listener: (...args: any[]) => void): any => {
     this.connection.on(event, listener);
     return this.connection;
   };
 
-  public once = (event: string, listener: (...args: any[]) => void): RpcConnection => {
+  public once = (event: string, listener: (...args: any[]) => void): any => {
     this.connection.once(event, listener);
     return this.connection;
   };
@@ -184,16 +225,14 @@ export class ChannelProvider {
   ///// PRIVATE METHODS
 
   // tslint:disable-next-line:variable-name
-  private _send = async (
-    methodName: CFCoreTypes.RpcMethodName,
-    parameters: RpcParameters,
-  ): Promise<any> => {
-    const ret = await this.connection.rpcRouter.dispatch({
+  public _send = async (method: CFCoreTypes.RpcMethodName, params: RpcParameters): Promise<any> => {
+    const payload = {
       id: Date.now(),
-      methodName,
-      parameters: deBigNumberifyJson(parameters),
-    });
-    const result = ret.result.result;
+      jsonrpc: "2.0",
+      method,
+      params,
+    };
+    const result = await this.connection.send(payload as JsonRpcRequest);
     return result;
   };
 }

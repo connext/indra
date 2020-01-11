@@ -1,23 +1,26 @@
 import {
   ChannelProviderConfig,
   ChannelProviderRpcMethod,
+  IChannelProvider,
   IConnextClient,
+  IRpcConnection,
   StorePair,
 } from "@connext/types";
 import EventEmitter from "events";
 
 export const createChannelProvider = async (channel: IConnextClient): Promise<ChannelProvider> => {
-  const connection = new MockConnection(channel);
+  const connection = new RpcConnection(channel);
   const channelProvider = new ChannelProvider(connection);
   await channelProvider.enable();
   return channelProvider;
 };
 
-export class MockConnection {
-  private connected: boolean = true;
-  private channel: IConnextClient;
+export class RpcConnection extends EventEmitter implements IRpcConnection {
+  public connected: boolean = true;
+  public channel: IConnextClient;
 
   constructor(channel: IConnextClient) {
+    super();
     this.channel = channel;
   }
 
@@ -25,7 +28,7 @@ export class MockConnection {
     if (!this.connected) {
       return Promise.resolve();
     }
-    return this.channel.channelProvider.send((payload.method, payload.params));
+    return this.channel.channelProvider.send(payload.method, payload.params);
   }
 
   public open(): void {
@@ -37,16 +40,16 @@ export class MockConnection {
   }
 }
 
-export class ChannelProvider extends EventEmitter {
+export class ChannelProvider extends EventEmitter implements IChannelProvider {
   public connected: boolean = false;
-  public connection: MockConnection;
+  public connection: IRpcConnection;
 
   // tslint:disable-next-line:variable-name
-  private _config: ChannelProviderConfig | undefined = undefined;
-  private _multisigAddress: string | undefined = undefined; // tslint:disable-line:variable-name
-  private _signerAddress: string | undefined = undefined; // tslint:disable-line:variable-name
+  public _config: ChannelProviderConfig | undefined = undefined;
+  public _multisigAddress: string | undefined = undefined; // tslint:disable-line:variable-name
+  public _signerAddress: string | undefined = undefined; // tslint:disable-line:variable-name
 
-  constructor(connection: MockConnection) {
+  constructor(connection: IRpcConnection) {
     super();
     this.connection = connection;
   }
@@ -183,7 +186,7 @@ export class ChannelProvider extends EventEmitter {
   // probably can remove the `| string` typing once 1.4.1 types package is
   // published, assuming no non-channel methods are sent to the `_send` fn
   // tslint:disable-next-line:function-name
-  private async _send(method: ChannelProviderRpcMethod | string, params: any = {}): Promise<any> {
+  public async _send(method: ChannelProviderRpcMethod | string, params: any = {}): Promise<any> {
     const payload = { jsonrpc: "2.0", id: Date.now(), method, params };
     const { result } = await this.connection.send(payload);
     return result;

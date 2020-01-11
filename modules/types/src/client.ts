@@ -10,7 +10,7 @@ import {
 import { ConnextEvent } from "./basic";
 import { AppInstanceJson, CFCoreTypes } from "./cf";
 import { CFCoreChannel, ChannelAppSequences, ChannelState, PaymentProfile } from "./channel";
-import { ChannelProvider, ChannelProviderConfig, KeyGen, StorePair } from "./channelProvider";
+import { ChannelProviderConfig, IChannelProvider, KeyGen, StorePair } from "./channelProvider";
 import {
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
@@ -44,7 +44,7 @@ export interface Store extends CFCoreTypes.IStoreService {
 export interface ClientOptions {
   ethProviderUrl: string;
   nodeUrl?: string; // ws:// or nats:// urls are supported
-  channelProvider?: ChannelProvider;
+  channelProvider?: IChannelProvider;
   keyGen?: KeyGen;
   mnemonic?: string;
   xpub?: string;
@@ -62,7 +62,7 @@ export interface IConnextClient {
   nodePublicIdentifier: string;
   publicIdentifier: string;
   signerAddress: string;
-  channelProvider: ChannelProvider;
+  channelProvider: IChannelProvider;
 
   ////////////////////////////////////////
   // Methods
