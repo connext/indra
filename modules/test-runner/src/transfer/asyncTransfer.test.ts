@@ -166,7 +166,7 @@ describe("Async Transfers", () => {
     } = await clientB.getFreeBalance(tokenAddress);
 
     expect(postTransferFreeBalanceClientA).toBeBigNumberEq(0);
-    // expect(postTransferFreeBalanceNodeA).toBeBigNumberEq(transferAmount);
+    expect(postTransferFreeBalanceNodeA).toBeBigNumberEq(transferAmount);
 
     expect(postTransferFreeBalanceClientB).toBeBigNumberEq(transferAmount);
     expect(postTransferFreeBalanceNodeB).toBeBigNumberEq(
