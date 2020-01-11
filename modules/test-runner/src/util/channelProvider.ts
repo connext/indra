@@ -11,11 +11,8 @@ import EventEmitter from "events";
 
 export const createChannelProvider = async (channel: IConnextClient): Promise<IChannelProvider> => {
   const connection = new RpcConnection(channel);
-  console.log("[createChannelProvider]", "connection", connection);
   const channelProvider = new ChannelProvider(connection);
-  console.log("[createChannelProvider]", "channelProvider", channelProvider);
-  const config = await channelProvider.enable();
-  console.log("[createChannelProvider]", "config", config);
+  await channelProvider.enable();
   return channelProvider;
 };
 
