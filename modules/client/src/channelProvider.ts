@@ -77,6 +77,16 @@ export class RpcConnection extends EventEmitter implements IRpcConnection {
     return result;
   }
 
+  public on = (event: string, listener: (...args: any[]) => void): any => {
+    this.cfCore.on(event as any, listener);
+    return this.cfCore;
+  };
+
+  public once = (event: string, listener: (...args: any[]) => void): any => {
+    this.cfCore.once(event as any, listener);
+    return this.cfCore;
+  };
+
   public open(): void {
     this.connected = true;
   }
