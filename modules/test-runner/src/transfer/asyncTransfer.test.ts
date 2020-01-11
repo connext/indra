@@ -1,6 +1,6 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
-import { AddressZero, Zero } from "ethers/constants";
+import { AddressZero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
 import { createClient } from "../util/client";
@@ -42,22 +42,33 @@ describe("Async Transfers", () => {
     expect(preTransferFreeBalanceEthClientB).toBeBigNumberEq(0);
     expect(preTransferFreeBalanceEthNodeB).toBeBigNumberGte(transferAmount);
 
-    const senderDone = new Promise((res: any): any => clientA.on("UNINSTALL_EVENT", res));
-    const recipientDone = new Promise((res: any): any =>
-      clientB.on("RECIEVE_TRANSFER_FINISHED_EVENT", res),
-    );
+    let paymentId;
+    await new Promise(async resolve => {
+      let count = 0;
+      clientA.once("UNINSTALL_EVENT", async () => {
+        count += 1;
+        if (count === 2) {
+          resolve();
+        }
+      });
 
-    await clientA.transfer({
-      amount: transferAmount.toString(),
-      assetId: AddressZero,
-      meta: { hello: "world" },
-      recipient: clientB.publicIdentifier,
+      clientB.once("RECIEVE_TRANSFER_FINISHED_EVENT", async () => {
+        count += 1;
+        if (count === 2) {
+          resolve();
+        }
+      });
+
+      const { paymentId: senderPaymentId, preImage: linkedPreImage } = await clientA.transfer({
+        amount: transferAmount.toString(),
+        assetId: AddressZero,
+        meta: { hello: "world" },
+        recipient: clientB.publicIdentifier,
+      });
+      paymentId = senderPaymentId;
     });
-
-    await recipientDone;
-
-    // TODO: this doesn't work
-    // await senderDone;
+    expect((await clientB.getAppInstances()).length).toEqual(0);
+    expect((await clientA.getAppInstances()).length).toEqual(0);
 
     const {
       [clientA.freeBalanceAddress]: postTransferFreeBalanceEthClientA,
@@ -70,12 +81,27 @@ describe("Async Transfers", () => {
     } = await clientB.getFreeBalance(AddressZero);
 
     expect(postTransferFreeBalanceEthClientA).toBeBigNumberEq(0);
-    // expect(postTransferFreeBalanceEthNodeA).toBeBigNumberEq(transferAmount);
+    expect(postTransferFreeBalanceEthNodeA).toBeBigNumberEq(transferAmount);
 
     expect(postTransferFreeBalanceEthClientB).toBeBigNumberEq(transferAmount);
     expect(postTransferFreeBalanceEthNodeB).toBeBigNumberEq(
       preTransferFreeBalanceEthNodeB.sub(transferAmount),
     );
+
+    // verify payment
+    const paymentA = await clientA.getLinkedTransfer(paymentId);
+    const paymentB = await clientB.getLinkedTransfer(paymentId);
+    expect(paymentA).toMatchObject({
+      paymentId,
+      assetId: AddressZero,
+      amount: transferAmount.toString(),
+      status: "RECLAIMED",
+      type: "LINKED",
+      senderPublicIdentifier: clientA.publicIdentifier,
+      receiverPublicIdentifier: clientB.publicIdentifier,
+      meta: { hello: "world" },
+    });
+    expect(paymentB).toMatchObject(paymentA);
   });
 
   test("happy case: client A transfers tokens to client B through node", async () => {
@@ -99,22 +125,35 @@ describe("Async Transfers", () => {
     expect(preTransferFreeBalanceClientB).toBeBigNumberEq(0);
     expect(preTransferFreeBalanceNodeB).toBeBigNumberGte(transferAmount);
 
-    const senderDone = new Promise((res: any): any => clientA.on("UNINSTALL_EVENT", res));
-    const recipientDone = new Promise((res: any): any =>
-      clientB.on("RECIEVE_TRANSFER_FINISHED_EVENT", res),
-    );
+    let paymentId;
+    await new Promise(async resolve => {
+      let count = 0;
+      clientA.once("UNINSTALL_EVENT", async () => {
+        console.error(`Caught sender uninstall event!!!!!`);
+        count += 1;
+        if (count === 2) {
+          console.error(`resolving promise!`);
+          resolve();
+        }
+      });
 
-    await clientA.transfer({
-      amount: transferAmount.toString(),
-      assetId: tokenAddress,
-      meta: { hello: "world" },
-      recipient: clientB.publicIdentifier,
+      clientB.once("RECIEVE_TRANSFER_FINISHED_EVENT", async () => {
+        count += 1;
+        if (count === 2) {
+          resolve();
+        }
+      });
+
+      const { paymentId: senderPaymentId } = await clientA.transfer({
+        amount: transferAmount.toString(),
+        assetId: tokenAddress,
+        meta: { hello: "world" },
+        recipient: clientB.publicIdentifier,
+      });
+      paymentId = senderPaymentId;
     });
-
-    await recipientDone;
-
-    // TODO: this doesn't work
-    // await senderDone;
+    expect((await clientB.getAppInstances()).length).toEqual(0);
+    expect((await clientA.getAppInstances()).length).toEqual(0);
 
     const {
       [clientA.freeBalanceAddress]: postTransferFreeBalanceClientA,
@@ -133,5 +172,20 @@ describe("Async Transfers", () => {
     expect(postTransferFreeBalanceNodeB).toBeBigNumberEq(
       preTransferFreeBalanceNodeB.sub(transferAmount),
     );
+
+    // verify payment
+    const paymentA = await clientA.getLinkedTransfer(paymentId);
+    const paymentB = await clientB.getLinkedTransfer(paymentId);
+    expect(paymentA).toMatchObject({
+      paymentId,
+      assetId: tokenAddress,
+      amount: transferAmount.toString(),
+      status: "RECLAIMED",
+      type: "LINKED",
+      senderPublicIdentifier: clientA.publicIdentifier,
+      receiverPublicIdentifier: clientB.publicIdentifier,
+      meta: { hello: "world" },
+    });
+    expect(paymentB).toMatchObject(paymentA);
   });
 });
