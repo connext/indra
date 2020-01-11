@@ -8,9 +8,11 @@ import tokenAbi from "human-standard-token-abi";
 import { ChannelProvider } from "./channelProvider";
 import { env } from "./env";
 import { ethProvider } from "./ethprovider";
-import { MemoryStoreServiceFactory } from "./store";
+import { MemoryStoreService, MemoryStoreServiceFactory } from "./store";
 
 const wallet = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider);
+
+let clientStore: MemoryStoreService;
 
 export const createClient = async (
   mnemonic: string = Wallet.createRandom().mnemonic,
@@ -18,7 +20,7 @@ export const createClient = async (
   const storeServiceFactory = new MemoryStoreServiceFactory();
   console.log("createClient", "storeServiceFactory", storeServiceFactory);
 
-  const clientStore = storeServiceFactory.createStoreService();
+  clientStore = storeServiceFactory.createStoreService();
   console.log("createClient", "clientStore", clientStore);
 
   const clientOpts: ClientOptions = {
@@ -77,4 +79,8 @@ export const createRemoteClient = async (
   expect(client.publicIdentifier).toBeTruthy();
 
   return client;
+};
+
+export const getStore = (): MemoryStoreService => {
+  return clientStore;
 };

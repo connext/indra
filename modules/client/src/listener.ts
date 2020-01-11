@@ -15,7 +15,6 @@ import {
   InstallVirtualMessage,
   NodeMessageWrappedProtocolMessage,
   ProposeMessage,
-  RejectInstallVirtualMessage,
   RejectProposalMessage,
   SupportedApplications,
   UninstallMessage,

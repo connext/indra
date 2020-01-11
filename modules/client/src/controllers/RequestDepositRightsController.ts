@@ -70,9 +70,6 @@ export class RequestDepositRightsController extends AbstractController {
     this.log.info(`Deposit rights gained for ${assetId}`);
 
     const freeBalance = await this.connext.getFreeBalance(assetId);
-    // this.listener.emit(`indra.client.${this.connext.publicIdentifier}.freeBalanceUpdated`, {
-    //   freeBalance,
-    // });
 
     return {
       freeBalance,

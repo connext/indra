@@ -24,12 +24,12 @@ export class TransferMessaging extends AbstractMessagingProvider {
   async getLinkedTransferByPaymentId(
     pubId: string,
     data: { paymentId: string },
-  ): Promise<LinkedTransfer> {
+  ): Promise<Transfer> {
     if (!data.paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
     logger.log(`Got fetch link request for: ${data.paymentId}`);
-    return await this.transferService.getLinkedTransferByPaymentId(data.paymentId);
+    return await this.transferService.getTransferByPaymentId(data.paymentId);
   }
 
   async resolveLinkedTransfer(

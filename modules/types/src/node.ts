@@ -26,7 +26,7 @@ export interface NodeConfig {
 }
 
 export type Transfer<T = string> = {
-  id: number;
+  paymentId: string;
   amount: T;
   assetId: string;
   senderPublicIdentifier: string;
