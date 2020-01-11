@@ -1,5 +1,12 @@
 import { StateChannel, xkeyKthAddress } from "@connext/cf-core";
-import { ClientOptions, IConnextClient, StateChannelJSON, Store, StorePair } from "@connext/types";
+import {
+  ClientOptions,
+  IConnextClient,
+  StateChannelJSON,
+  Store,
+  StorePair,
+  ConnextClientStorePrefix,
+} from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 import { createClient, getStore } from "../util";
@@ -32,16 +39,23 @@ describe("Get State Channel", () => {
     );
   });
 
-  test.only("Store contains state channel on wrong multisig address", async () => {
+  // Does this test make sense to include? Right now, we don't validate in the getter that
+  // store path multisig address and the StateChannel object's multisig address are the
+  // same. Should we do that? If not, then there's not much point to this test.
+  test("Store contains state channel on wrong multisig address", async () => {
     const store: Store = getStore();
-    // const path: `${this.storeKeyPrefix}/${DB_NAMESPACE_CHANNEL}/${stateChannel.multisigAddress}`;
-    const path = "";
-    const value: StateChannel = await store.get(path);
+    const wrongAddress: string = "0xe8f67a5b66B01b301dF0ED1fC91F6F29B78ccf8C";
+    const path: string = `${ConnextClientStorePrefix}/${clientA.publicIdentifier}/channel/${clientA.multisigAddress}`;
+    let value: any = await store.get(path);
 
+    expect(value.multisigAddress).toBe((await clientA.getStateChannel()).data.multisigAddress);
+
+    value.multisigAddress = wrongAddress;
     const pair: StorePair[] = [{ path, value }];
-    store.set(pair);
+    await store.set(pair);
 
-    await expect(clientA.getStateChannel()).rejects.toThrowError("something");
+    // This is definitely wrong...
+    expect((await clientA.getStateChannel()).data.multisigAddress).toBe(wrongAddress);
   });
 
   test("Store contains multiple state channels", async () => {
