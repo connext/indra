@@ -360,7 +360,12 @@ export class TransferService {
       throw new Error(`Transfer with id ${paymentId} has not been redeemed`);
     }
 
-    logger.log(`Uninstalling app ${transfer.senderAppInstanceId} to reclaim collateral`);
+    logger.log(
+      `Taking action with preImage ${transfer.preImage} and uninstalling app ${transfer.senderAppInstanceId} to reclaim collateral`,
+    );
+    await this.cfCoreService.takeAction(transfer.senderAppInstanceId, {
+      preImage: transfer.preImage,
+    });
     await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
     await this.linkedTransferRepository.markAsReclaimed(transfer);
   }
