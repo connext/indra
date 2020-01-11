@@ -11,12 +11,12 @@ export const withdrawFromChannel = async (
   amount: string, // ETH string
   assetId: string,
   userSubmitted: boolean = false,
+  recipient: string = Wallet.createRandom().address,
 ): Promise<void> => {
   // try to withdraw
   const preWithdrawalBalance = await client.getFreeBalance(assetId);
   const wdAmt = parseEther(amount);
   const expected = preWithdrawalBalance[client.freeBalanceAddress].sub(wdAmt);
-  const recipient = Wallet.createRandom().address;
   await client.withdraw({
     amount: wdAmt.toString(),
     assetId,
