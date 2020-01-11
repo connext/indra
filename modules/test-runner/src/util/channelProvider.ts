@@ -5,6 +5,7 @@ import {
   IConnextClient,
   IRpcConnection,
   StorePair,
+  JsonRpcRequest,
 } from "@connext/types";
 import EventEmitter from "events";
 
@@ -188,7 +189,7 @@ export class ChannelProvider extends EventEmitter implements IChannelProvider {
   // tslint:disable-next-line:function-name
   public async _send(method: ChannelProviderRpcMethod | string, params: any = {}): Promise<any> {
     const payload = { jsonrpc: "2.0", id: Date.now(), method, params };
-    const { result } = await this.connection.send(payload);
+    const { result } = await this.connection.send(payload as JsonRpcRequest);
     return result;
   }
 }

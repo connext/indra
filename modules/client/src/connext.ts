@@ -1,5 +1,10 @@
 import { IMessagingService } from "@connext/messaging";
-import { AppInstanceProposal, CF_PATH, LinkedTransferToRecipientParameters } from "@connext/types";
+import {
+  AppInstanceProposal,
+  CF_PATH,
+  LinkedTransferToRecipientParameters,
+  IChannelProvider,
+} from "@connext/types";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -68,7 +73,7 @@ const MAX_WITHDRAWAL_RETRIES = 3;
 
 export class ConnextClient implements IConnextClient {
   public appRegistry: AppRegistry;
-  public channelProvider: ChannelProvider;
+  public channelProvider: IChannelProvider;
   public config: GetConfigResponse;
   public ethProvider: providers.JsonRpcProvider;
   public freeBalanceAddress: string;

@@ -3,7 +3,6 @@ import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
 import uuid = require("uuid");
 
-import { ChannelProvider } from "./channelProvider";
 import { Logger, NATS_ATTEMPTS, NATS_TIMEOUT, stringify } from "./lib";
 import {
   AppRegistry,
@@ -12,6 +11,7 @@ import {
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
+  IChannelProvider,
   makeChecksumOrEthAddress,
   NodeInitializationParameters,
   PaymentProfile,
@@ -66,7 +66,7 @@ export class NodeApiClient implements INodeApiClient {
 
   private _userPublicIdentifier: string | undefined; // tslint:disable-line:variable-name
   private _nodePublicIdentifier: string | undefined; // tslint:disable-line:variable-name
-  private _channelProvider: ChannelProvider | undefined; // tslint:disable-line:variable-name
+  private _channelProvider: IChannelProvider | undefined; // tslint:disable-line:variable-name
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
@@ -78,11 +78,11 @@ export class NodeApiClient implements INodeApiClient {
 
   ////////////////////////////////////////
   // GETTERS/SETTERS
-  get channelProvider(): ChannelProvider | undefined {
+  get channelProvider(): IChannelProvider | undefined {
     return this._channelProvider;
   }
 
-  set channelProvider(channelProvider: ChannelProvider) {
+  set channelProvider(channelProvider: IChannelProvider) {
     this._channelProvider = channelProvider;
   }
 

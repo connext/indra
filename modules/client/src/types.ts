@@ -9,7 +9,7 @@ import {
 import { Contract, providers } from "ethers";
 import { Network } from "ethers/utils";
 
-import { ChannelProvider } from "./channelProvider";
+import { IIChannelProvider } from "./channelProvider";
 import { NodeApiClient } from "./node";
 
 export {
@@ -113,7 +113,7 @@ export const BigNumber = connextBN;
 
 export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
-  channelProvider: ChannelProvider;
+  channelProvider: IIChannelProvider;
   config: GetConfigResponse;
   ethProvider: providers.JsonRpcProvider;
   messaging: IMessagingService;
@@ -128,5 +128,5 @@ export interface NodeInitializationParameters {
   logLevel?: number;
   userPublicIdentifier?: string;
   nodePublicIdentifier?: string;
-  channelProvider?: ChannelProvider;
+  channelProvider?: IIChannelProvider;
 }
