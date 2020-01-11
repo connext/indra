@@ -4,15 +4,18 @@ import {
   IChannelProvider,
   IConnextClient,
   IRpcConnection,
-  StorePair,
   JsonRpcRequest,
+  StorePair,
 } from "@connext/types";
 import EventEmitter from "events";
 
-export const createChannelProvider = async (channel: IConnextClient): Promise<ChannelProvider> => {
+export const createChannelProvider = async (channel: IConnextClient): Promise<IChannelProvider> => {
   const connection = new RpcConnection(channel);
+  console.log("[createChannelProvider]", "connection", connection);
   const channelProvider = new ChannelProvider(connection);
-  await channelProvider.enable();
+  console.log("[createChannelProvider]", "channelProvider", channelProvider);
+  const config = await channelProvider.enable();
+  console.log("[createChannelProvider]", "config", config);
   return channelProvider;
 };
 

@@ -14,13 +14,18 @@ describe("ChannelProvider", () => {
   beforeEach(async () => {
     clientA = await createClient();
     tokenAddress = clientA.config.contractAddresses.Token;
+    console.log("[beforeEach]", "tokenAddress", tokenAddress);
     nodePublicIdentifier = clientA.config.nodePublicIdentifier;
+    console.log("[beforeEach]", "nodePublicIdentifier", nodePublicIdentifier);
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
+    console.log("[beforeEach]", "nodeFreeBalanceAddress", nodeFreeBalanceAddress);
     channelProvider = await createChannelProvider(clientA);
   }, 90_000);
 
   // tslint:disable-next-line:max-line-length
   test("Happy case: client A1 can be instantiated with a channelProvider generated from client A", async () => {
+    console.log(" ====> Starting test with channelProvider", channelProvider);
+
     clientB = await createRemoteClient(channelProvider);
 
     // tslint:disable-next-line:variable-name
