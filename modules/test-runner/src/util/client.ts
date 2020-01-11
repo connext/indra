@@ -19,7 +19,6 @@ export const createClient = async (
   const storeServiceFactory = new MemoryStoreServiceFactory();
 
   clientStore = storeServiceFactory.createStoreService();
-
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
     logLevel: env.logLevel,
@@ -36,7 +35,6 @@ export const createClient = async (
     to: client.signerAddress,
     value: parseEther("0.1"),
   });
-
   const token = new Contract(client.config.contractAddresses.Token, tokenAbi, wallet);
   const tokenTx = await token.functions.transfer(client.signerAddress, parseEther("10"));
 
@@ -44,6 +42,7 @@ export const createClient = async (
 
   expect(client.freeBalanceAddress).toBeTruthy();
   expect(client.publicIdentifier).toBeTruthy();
+
   return client;
 };
 
