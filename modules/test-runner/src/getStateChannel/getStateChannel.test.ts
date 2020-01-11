@@ -35,10 +35,8 @@ describe("Get State Channel", () => {
   });
 
   test("Store contains multiple state channels", async () => {
-    const opts: any = { store };
-
     // Client with same store and new mnemonic
-    const clientB = await createClient(opts);
+    const clientB = await createClient({ store });
     await clientB.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
     await clientB.requestCollateral(tokenAddress);
 
