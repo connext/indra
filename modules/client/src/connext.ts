@@ -232,7 +232,7 @@ export class ConnextClient implements IConnextClient {
     return this.channelProvider.config;
   };
 
-  public getLinkedTransfer = async (paymentId: string): Promise<any> => {
+  public getLinkedTransfer = async (paymentId: string): Promise<Transfer> => {
     return await this.node.fetchLinkedTransfer(paymentId);
   };
 
