@@ -1,7 +1,7 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { IConnextClient } from "@connext/types";
+import { IChannelProvider, IConnextClient } from "@connext/types";
 
-import { ChannelProvider, createChannelProvider, createClient, createRemoteClient } from "../util";
+import { createChannelProvider, createClient, createRemoteClient } from "../util";
 
 describe("ChannelProvider", () => {
   let clientA: IConnextClient;
@@ -9,7 +9,7 @@ describe("ChannelProvider", () => {
   let tokenAddress: string;
   let nodeFreeBalanceAddress: string;
   let nodePublicIdentifier: string;
-  let channelProvider: ChannelProvider;
+  let channelProvider: IChannelProvider;
 
   beforeEach(async () => {
     clientA = await createClient();
@@ -31,7 +31,7 @@ describe("ChannelProvider", () => {
     const _nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
 
     expect(_tokenAddress).toBe(tokenAddress);
-    expect(_nodePublicIdentifier).toBe(nodeFreeBalanceAddress);
-    expect(_nodeFreeBalanceAddress).toBe(nodePublicIdentifier);
+    expect(_nodePublicIdentifier).toBe(nodePublicIdentifier);
+    expect(_nodeFreeBalanceAddress).toBe(nodeFreeBalanceAddress);
   });
 });

@@ -25,11 +25,13 @@ export class RpcConnection extends EventEmitter implements IRpcConnection {
     this.channel = channel;
   }
 
-  public send(payload: any): Promise<any> {
+  public async send(payload: any): Promise<any> {
     if (!this.connected) {
       return Promise.resolve();
     }
-    return this.channel.channelProvider.send(payload.method, payload.params);
+
+    const result = await this.channel.channelProvider.send(payload.method, payload.params);
+    return result;
   }
 
   public open(): void {
@@ -189,7 +191,7 @@ export class ChannelProvider extends EventEmitter implements IChannelProvider {
   // tslint:disable-next-line:function-name
   public async _send(method: ChannelProviderRpcMethod | string, params: any = {}): Promise<any> {
     const payload = { jsonrpc: "2.0", id: Date.now(), method, params };
-    const { result } = await this.connection.send(payload as JsonRpcRequest);
+    const result = await this.connection.send(payload as JsonRpcRequest);
     return result;
   }
 }
