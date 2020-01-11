@@ -1,24 +1,34 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient, SwapParameters } from "@connext/types";
-import { AddressZero, One, Zero } from "ethers/constants";
-import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
+import { AddressZero, Zero } from "ethers/constants";
+import { BigNumber, parseEther } from "ethers/utils";
 
-import { inverse } from "../util/bn";
-import { createClient } from "../util/client";
-
-export const calculateExchange = (amount: BigNumber, swapRate: string): BigNumber => {
-  return bigNumberify(formatEther(amount.mul(parseEther(swapRate))).replace(/\.[0-9]*$/, ""));
-};
+import {
+  calculateExchange,
+  createClient,
+  inverse,
+  TEST_ETH_AMOUNT,
+  TEST_ETH_AMOUNT_ALT,
+  TEST_TOKEN_AMOUNT,
+  WRONG_ADDRESS,
+  ZERO_TWO,
+  ZERO_ZERO_FIVE,
+} from "../util";
 
 describe("Swaps", () => {
   let clientA: IConnextClient;
+  let ethAmount: BigNumber;
+  let ethAmountAlt: BigNumber;
+  let tokenAmount: BigNumber;
   let tokenAddress: string;
   let nodeFreeBalanceAddress: string;
   let nodePublicIdentifier: string;
 
   beforeEach(async () => {
     clientA = await createClient();
-
+    ethAmount = TEST_ETH_AMOUNT;
+    ethAmountAlt = TEST_ETH_AMOUNT_ALT;
+    tokenAmount = TEST_TOKEN_AMOUNT;
     tokenAddress = clientA.config.contractAddresses.Token;
     nodePublicIdentifier = clientA.config.nodePublicIdentifier;
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
@@ -26,7 +36,7 @@ describe("Swaps", () => {
 
   test("happy case: client swaps eth for tokens successfully", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.deposit({ amount: ethAmount.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
 
     // check balances pre
@@ -34,19 +44,19 @@ describe("Swaps", () => {
       [clientA.freeBalanceAddress]: preSwapFreeBalanceEthClient,
       [nodeFreeBalanceAddress]: preSwapFreeBalanceEthNode,
     } = await clientA.getFreeBalance(AddressZero);
-    expect(preSwapFreeBalanceEthClient).toBeBigNumberEq(parseEther("0.01"));
+    expect(preSwapFreeBalanceEthClient).toBeBigNumberEq(ethAmount);
     expect(preSwapFreeBalanceEthNode).toBeBigNumberEq(Zero);
 
     const {
       [clientA.freeBalanceAddress]: preSwapFreeBalanceTokenClient,
       [nodeFreeBalanceAddress]: preSwapFreeBalanceTokenNode,
     } = await clientA.getFreeBalance(tokenAddress);
-    expect(preSwapFreeBalanceTokenNode).toBeBigNumberEq(parseEther("10"));
+    expect(preSwapFreeBalanceTokenNode).toBeBigNumberEq(tokenAmount);
     expect(preSwapFreeBalanceTokenClient).toBeBigNumberEq(Zero);
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
 
-    const swapAmount = parseEther("0.01");
+    const swapAmount = ethAmount;
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),
       fromAssetId: AddressZero,
@@ -78,7 +88,7 @@ describe("Swaps", () => {
 
   test("happy case: client swaps tokens for eth successfully", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: parseEther("10").toString(), assetId: tokenAddress });
+    await clientA.deposit({ amount: tokenAmount.toString(), assetId: tokenAddress });
     await clientA.requestCollateral(AddressZero);
 
     // check balances pre
@@ -87,20 +97,20 @@ describe("Swaps", () => {
       [nodeFreeBalanceAddress]: preSwapFreeBalanceEthNode,
     } = await clientA.getFreeBalance(AddressZero);
     expect(preSwapFreeBalanceEthClient).toBeBigNumberEq(Zero);
-    expect(preSwapFreeBalanceEthNode).toBeBigNumberEq(parseEther("0.1"));
+    expect(preSwapFreeBalanceEthNode).toBeBigNumberEq(ethAmountAlt);
 
     const {
       [clientA.freeBalanceAddress]: preSwapFreeBalanceTokenClient,
       [nodeFreeBalanceAddress]: preSwapFreeBalanceTokenNode,
     } = await clientA.getFreeBalance(tokenAddress);
     expect(preSwapFreeBalanceTokenNode).toBeBigNumberEq(Zero);
-    expect(preSwapFreeBalanceTokenClient).toBeBigNumberEq(parseEther("10"));
+    expect(preSwapFreeBalanceTokenClient).toBeBigNumberEq(tokenAmount);
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
     const inverseSwapRate = inverse(swapRate);
     console.log("inverseSwapRate: ", inverseSwapRate);
 
-    const swapAmount = parseEther("10");
+    const swapAmount = tokenAmount;
     console.log("swapAmount: ", swapAmount);
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),
@@ -133,15 +143,14 @@ describe("Swaps", () => {
 
   test("Bot A tries to swap with invalid from token address", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.deposit({ amount: ethAmount.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
-    const wrongAddress = "0xdeadbeef";
-    const swapAmount = parseEther("0.005");
+    const swapAmount = parseEther(ZERO_ZERO_FIVE);
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),
-      fromAssetId: wrongAddress,
+      fromAssetId: WRONG_ADDRESS,
       swapRate,
       toAssetId: tokenAddress,
     };
@@ -150,28 +159,27 @@ describe("Swaps", () => {
 
   test("Bot A tries to swap with invalid to token address", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.deposit({ amount: ethAmount.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
-    const wrongAddress = "0xdeadbeef";
-    const swapAmount = parseEther("0.005");
+    const swapAmount = parseEther(ZERO_ZERO_FIVE);
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),
       fromAssetId: AddressZero,
       swapRate,
-      toAssetId: wrongAddress,
+      toAssetId: WRONG_ADDRESS,
     };
     await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not a valid eth address`);
   });
 
   test("Bot A tries to swap with insufficient free balance for the user", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.deposit({ amount: ethAmount.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
-    const swapAmount = parseEther("0.02");
+    const swapAmount = parseEther(ZERO_TWO);
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),
       fromAssetId: AddressZero,
@@ -183,11 +191,11 @@ describe("Swaps", () => {
 
   test("Bot A tries to swap with negative swap rate", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.deposit({ amount: ethAmount.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
-    const swapAmount = parseEther("0.005");
+    const swapAmount = parseEther(ZERO_ZERO_FIVE);
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),
       fromAssetId: AddressZero,
@@ -201,11 +209,11 @@ describe("Swaps", () => {
 
   test("Bot A tries to swap with negative user amount", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.deposit({ amount: ethAmount.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
-    const swapAmount = parseEther("0.005");
+    const swapAmount = parseEther(ZERO_ZERO_FIVE);
     const swapParams: SwapParameters = {
       amount: swapAmount.mul(-1).toString(),
       fromAssetId: AddressZero,
@@ -217,11 +225,11 @@ describe("Swaps", () => {
 
   test("Bot A tries to swap with insufficient collateral on node", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.deposit({ amount: ethAmount.toString(), assetId: AddressZero });
     // No collateral requested
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
-    const swapAmount = parseEther("0.005");
+    const swapAmount = parseEther(ZERO_ZERO_FIVE);
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),
       fromAssetId: AddressZero,
@@ -235,12 +243,12 @@ describe("Swaps", () => {
   //      node rejects install.
   test.skip("Bot A tries to swap with incorrect swap rate (node rejects)", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.deposit({ amount: ethAmount.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
     // No collateral requested
 
     const swapRate = "1";
-    const swapAmount = parseEther("0.005");
+    const swapAmount = parseEther(ZERO_ZERO_FIVE);
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),
       fromAssetId: AddressZero,
