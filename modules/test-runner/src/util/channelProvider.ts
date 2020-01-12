@@ -1,3 +1,4 @@
+import { delayAndThrow } from "@connext/client/dist/lib";
 import {
   ChannelProviderConfig,
   ChannelProviderRpcMethod,
@@ -27,9 +28,8 @@ export class RpcConnection extends EventEmitter implements IRpcConnection {
 
   public async send(payload: any): Promise<any> {
     if (!this.connected) {
-      return Promise.resolve();
+      await delayAndThrow(30_000, "RpcConnection: Timeout - JSON-RPC not responded within 30s");
     }
-
     const result = await this.channel.channelProvider.send(payload.method, payload.params);
     return result;
   }

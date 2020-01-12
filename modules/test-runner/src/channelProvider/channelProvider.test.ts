@@ -190,7 +190,12 @@ describe("ChannelProvider", () => {
 
   // tslint:disable-next-line:max-line-length
   test("Bot A1 tries to call a function when Bot A is offline", async () => {
-    // TODO: add test
+    // close channelProvider connection
+    clientA1.channelProvider.close();
+
+    await expect(clientA1.getFreeBalance(AddressZero)).rejects.toThrowError(
+      "RpcConnection: Timeout - JSON-RPC not responded within 30s",
+    );
   });
 
   // tslint:disable-next-line:max-line-length
