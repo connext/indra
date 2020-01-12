@@ -9,20 +9,21 @@ export async function asyncTransferAsset(
   assetId: string,
   nodeFreeBalanceAddress: string,
 ): Promise<string> {
-  if (assetId === AddressZero) {
+  const ethTransfer = assetId === AddressZero;
+  if (ethTransfer) {
     const {
-      [clientA.freeBalanceAddress]: preTransferFreeBalanceEthClientA,
-      [nodeFreeBalanceAddress]: preTransferFreeBalanceEthNodeA,
+      [clientA.freeBalanceAddress]: preTransferFreeBalanceClientA,
+      [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeA,
     } = await clientA.getFreeBalance(assetId);
-    expect(preTransferFreeBalanceEthClientA).toBeBigNumberEq(transferAmount);
-    expect(preTransferFreeBalanceEthNodeA).toBeBigNumberEq(Zero);
+    expect(preTransferFreeBalanceClientA).toBeBigNumberEq(transferAmount);
+    expect(preTransferFreeBalanceNodeA).toBeBigNumberEq(Zero);
 
     const {
-      [clientB.freeBalanceAddress]: preTransferFreeBalanceEthClientB,
-      [nodeFreeBalanceAddress]: preTransferFreeBalanceEthNodeB,
+      [clientB.freeBalanceAddress]: preTransferFreeBalanceClientB,
+      [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeB,
     } = await clientB.getFreeBalance(assetId);
-    expect(preTransferFreeBalanceEthClientB).toBeBigNumberEq(Zero);
-    expect(preTransferFreeBalanceEthNodeB).toBeBigNumberGte(transferAmount);
+    expect(preTransferFreeBalanceClientB).toBeBigNumberEq(Zero);
+    expect(preTransferFreeBalanceNodeB).toBeBigNumberGte(transferAmount);
 
     let paymentId;
     await new Promise(async resolve => {
@@ -53,19 +54,19 @@ export async function asyncTransferAsset(
     expect((await clientA.getAppInstances()).length).toEqual(Zero.toNumber());
 
     const {
-      [clientA.freeBalanceAddress]: postTransferFreeBalanceEthClientA,
-      [nodeFreeBalanceAddress]: postTransferFreeBalanceEthNodeA,
+      [clientA.freeBalanceAddress]: postTransferFreeBalanceClientA,
+      [nodeFreeBalanceAddress]: postTransferFreeBalanceNodeA,
     } = await clientA.getFreeBalance(assetId);
-    expect(postTransferFreeBalanceEthClientA).toBeBigNumberEq(Zero);
-    expect(postTransferFreeBalanceEthNodeA).toBeBigNumberEq(transferAmount);
+    expect(postTransferFreeBalanceClientA).toBeBigNumberEq(Zero);
+    expect(postTransferFreeBalanceNodeA).toBeBigNumberEq(transferAmount);
 
     const {
-      [clientB.freeBalanceAddress]: postTransferFreeBalanceEthClientB,
-      [nodeFreeBalanceAddress]: postTransferFreeBalanceEthNodeB,
+      [clientB.freeBalanceAddress]: postTransferFreeBalanceClientB,
+      [nodeFreeBalanceAddress]: postTransferFreeBalanceNodeB,
     } = await clientB.getFreeBalance(assetId);
-    expect(postTransferFreeBalanceEthClientB).toBeBigNumberEq(transferAmount);
-    expect(postTransferFreeBalanceEthNodeB).toBeBigNumberEq(
-      preTransferFreeBalanceEthNodeB.sub(transferAmount),
+    expect(postTransferFreeBalanceClientB).toBeBigNumberEq(transferAmount);
+    expect(postTransferFreeBalanceNodeB).toBeBigNumberEq(
+      preTransferFreeBalanceNodeB.sub(transferAmount),
     );
 
     return paymentId;
