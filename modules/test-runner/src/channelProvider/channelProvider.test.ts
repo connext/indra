@@ -9,6 +9,7 @@ import {
   createRemoteClient,
   ETH_AMOUNT_SM,
   TOKEN_AMOUNT,
+  withdrawFromChannel,
 } from "../util";
 
 describe("ChannelProvider", () => {
@@ -100,11 +101,91 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // TRANSFER FLOW
-    // TODO: add transfer flow
+    const transferAmount = ETH_AMOUNT_SM;
+    const clientB = await createClient();
+    await clientA1.deposit({ amount: transferAmount.toString(), assetId: AddressZero });
+    await clientB.requestCollateral(AddressZero);
+
+    const {
+      [clientA1.freeBalanceAddress]: preTransferFreeBalanceEthClientA1,
+      [nodeFreeBalanceAddress]: preTransferFreeBalanceEthNodeA1,
+    } = await clientA1.getFreeBalance(AddressZero);
+
+    const {
+      [clientB.freeBalanceAddress]: preTransferFreeBalanceEthClientB,
+      [nodeFreeBalanceAddress]: preTransferFreeBalanceEthNodeB,
+    } = await clientB.getFreeBalance(AddressZero);
+
+    expect(preTransferFreeBalanceEthClientA1).toBeBigNumberEq(transferAmount);
+    expect(preTransferFreeBalanceEthNodeA1).toBeBigNumberEq(0);
+
+    expect(preTransferFreeBalanceEthClientB).toBeBigNumberEq(0);
+    expect(preTransferFreeBalanceEthNodeB).toBeBigNumberGte(transferAmount);
+
+    let paymentId;
+    await new Promise(async resolve => {
+      let count = 0;
+      clientA1.once("UNINSTALL_EVENT", async () => {
+        count += 1;
+        if (count === 2) {
+          resolve();
+        }
+      });
+
+      clientB.once("RECIEVE_TRANSFER_FINISHED_EVENT", async () => {
+        count += 1;
+        if (count === 2) {
+          resolve();
+        }
+      });
+
+      const { paymentId: senderPaymentId, preImage: linkedPreImage } = await clientA1.transfer({
+        amount: transferAmount.toString(),
+        assetId: AddressZero,
+        meta: { hello: "world" },
+        recipient: clientB.publicIdentifier,
+      });
+      paymentId = senderPaymentId;
+    });
+    expect((await clientB.getAppInstances()).length).toEqual(0);
+    expect((await clientA1.getAppInstances()).length).toEqual(0);
+
+    const {
+      [clientA1.freeBalanceAddress]: postTransferFreeBalanceEthClientA1,
+      [nodeFreeBalanceAddress]: postTransferFreeBalanceEthNodeA1,
+    } = await clientA1.getFreeBalance(AddressZero);
+
+    const {
+      [clientB.freeBalanceAddress]: postTransferFreeBalanceEthClientB,
+      [nodeFreeBalanceAddress]: postTransferFreeBalanceEthNodeB,
+    } = await clientB.getFreeBalance(AddressZero);
+
+    expect(postTransferFreeBalanceEthClientA1).toBeBigNumberEq(0);
+    expect(postTransferFreeBalanceEthNodeA1).toBeBigNumberEq(transferAmount);
+
+    expect(postTransferFreeBalanceEthClientB).toBeBigNumberEq(transferAmount);
+    expect(postTransferFreeBalanceEthNodeB).toBeBigNumberEq(
+      preTransferFreeBalanceEthNodeB.sub(transferAmount),
+    );
+
+    // verify payment
+    const paymentA = await clientA1.getLinkedTransfer(paymentId);
+    const paymentB = await clientB.getLinkedTransfer(paymentId);
+    expect(paymentA).toMatchObject({
+      amount: transferAmount.toString(),
+      assetId: AddressZero,
+      meta: { hello: "world" },
+      paymentId,
+      receiverPublicIdentifier: clientB.publicIdentifier,
+      senderPublicIdentifier: clientA1.publicIdentifier,
+      status: "RECLAIMED",
+      type: "LINKED",
+    });
+    expect(paymentB).toMatchObject(paymentA);
 
     ////////////////////////////////////////
     // WITHDRAW FLOW
-    // TODO: add withdraw flow
+    await withdrawFromChannel(clientA1, postTransferFreeBalanceEthClientA1.toString(), AddressZero);
   });
 
   // tslint:disable-next-line:max-line-length
