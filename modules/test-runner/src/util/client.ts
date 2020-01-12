@@ -1,13 +1,12 @@
 import { connect } from "@connext/client";
 import { ClientOptions, IChannelProvider, IConnextClient } from "@connext/types";
 import { Contract, Wallet } from "ethers";
-import { parseEther } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
+import { TEST_ETH_AMOUNT_ALT, TEST_TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
 import { ethProvider } from "./ethprovider";
 import { MemoryStoreService, MemoryStoreServiceFactory } from "./store";
-import { TEST_ETH_AMOUNT_ALT, TEST_TOKEN_AMOUNT } from "./constants";
 
 const wallet = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider);
 
