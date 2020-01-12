@@ -87,7 +87,7 @@ export class ConditionalTransferController extends AbstractController {
     // TODO: use app path instead?
     const recipientPublicKey = fromExtendedKey(recipient).derivePath("0").publicKey;
     const encryptedPreImage = await encryptWithPublicKey(
-      recipientPublicKey.slice(2), // remove 0x
+      recipientPublicKey.replace(/^0x/, ""),
       preImage,
     );
     // TODO: if this fails for ANY REASON, uninstall the app to make sure that

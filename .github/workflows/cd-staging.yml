@@ -25,19 +25,32 @@ jobs:
     - run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
     - run: make push-commit
 
-  test-node:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - run: make node
-    - run: make test-node
-
   test-cf:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
     - run: make cf-core
     - run: make test-cf
+
+  test-client:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Cache node modules
+      uses: actions/cache@v1
+      with:
+        path: .npm
+        key: npm-${{ hashFiles('package-lock.json') }}
+        restore-keys: npm-
+    - run: make client
+    - run: make test-client
+
+  test-node:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - run: make node
+    - run: make test-node
 
   test-ssh:
     env:
@@ -102,7 +115,7 @@ jobs:
     env:
       RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
       STAGING_DOMAINNAME: staging.indra.connext.network
-    needs: [test-backwards-compatibility, test-bot, test-bot-farm, test-cf, test-daicard, test-integration, test-node, test-ssh]
+    needs: [test-backwards-compatibility, test-bot, test-bot-farm, test-cf, test-client, test-daicard, test-integration, test-node, test-ssh]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1

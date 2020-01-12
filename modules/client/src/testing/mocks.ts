@@ -34,8 +34,8 @@ export class MockMessagingService implements IMessagingService {
   private returnVals: any = MockNodeClientApi.returnValues;
   private log: Logger;
 
-  public constructor(opts: any) {
-    this.log = new Logger("MockMessagingService", opts.logLevel);
+  public constructor(opts?: any) {
+    this.log = new Logger("MockMessagingService", opts ? opts.logLevel : 3);
   }
 
   async connect(): Promise<void> {

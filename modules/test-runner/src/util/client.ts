@@ -16,18 +16,17 @@ export const getStore = (): MemoryStoreService => {
   return clientStore;
 };
 
-export const createClient = async (
-  mnemonic: string = Wallet.createRandom().mnemonic,
-): Promise<IConnextClient> => {
+export const createClient = async (opts?: Partial<ClientOptions>): Promise<IConnextClient> => {
   const storeServiceFactory = new MemoryStoreServiceFactory();
 
   clientStore = storeServiceFactory.createStoreService();
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
     logLevel: env.logLevel,
-    mnemonic,
+    mnemonic: Wallet.createRandom().mnemonic,
     nodeUrl: env.nodeUrl,
     store: clientStore,
+    ...opts,
   };
   const client = await connect(clientOpts);
   // TODO: add client endpoint to get node config, so we can easily have its xpub etc

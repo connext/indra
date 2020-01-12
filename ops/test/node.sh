@@ -1,25 +1,17 @@
 #!/usr/bin/env bash
 set -e
 
-test_command='
-  jest --config ops/jest.config.json '"$@"'
-'
-
-watch_command='
-  exec jest --config ops/jest.config.json --watch '"$@"'
-'
-
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../package.json | jq .name | tr -d '"'`"
+project="`cat $dir/../../package.json | jq .name | tr -d '"'`"
 
 if [[ "$1" == "--watch" ]]
 then
   suffix="node_watcher"
-  command="$watch_command"
+  command='exec jest --config ops/jest.config.json --watch '"$@"
   shift # forget $1 and replace it w $2, etc
 else
   suffix="node_tester"
-  command="$test_command"
+  command='jest --config ops/jest.config.json '"$@"
 fi
 
 ####################
