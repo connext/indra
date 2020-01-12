@@ -4,6 +4,7 @@ import { AddressZero, Zero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
 
 import {
+  asyncTransferAsset,
   calculateExchange,
   createChannelProvider,
   createClient,
@@ -105,83 +106,14 @@ describe("ChannelProvider", () => {
     ////////////////////////////////////////
     // TRANSFER FLOW
     const transferAmount = bigNumberify(ONE);
+    const assetId = AddressZero;
     const clientB = await createClient();
     await clientB.requestCollateral(AddressZero);
 
-    const {
-      [clientA1.freeBalanceAddress]: preTransferFreeBalanceEthClientA1,
-      [nodeFreeBalanceAddress]: preTransferFreeBalanceEthNodeA1,
-    } = await clientA1.getFreeBalance(AddressZero);
-    expect(preTransferFreeBalanceEthClientA1).toBeBigNumberEq(postSwapFreeBalanceEthClient);
-    expect(preTransferFreeBalanceEthNodeA1).toBeBigNumberEq(postSwapFreeBalanceEthNode);
-
-    const {
-      [clientB.freeBalanceAddress]: preTransferFreeBalanceEthClientB,
-      [nodeFreeBalanceAddress]: preTransferFreeBalanceEthNodeB,
-    } = await clientB.getFreeBalance(AddressZero);
-    expect(preTransferFreeBalanceEthClientB).toBeBigNumberEq(Zero);
-    expect(preTransferFreeBalanceEthNodeB).toBeBigNumberGte(transferAmount);
-
-    let paymentId;
-    await new Promise(async resolve => {
-      let count = 0;
-      clientA1.once("UNINSTALL_EVENT", async () => {
-        count += 1;
-        if (count === 2) {
-          resolve();
-        }
-      });
-
-      clientB.once("RECIEVE_TRANSFER_FINISHED_EVENT", async () => {
-        count += 1;
-        if (count === 2) {
-          resolve();
-        }
-      });
-
-      const { paymentId: senderPaymentId } = await clientA1.transfer({
-        amount: transferAmount.toString(),
-        assetId: AddressZero,
-        meta: { hello: "world" },
-        recipient: clientB.publicIdentifier,
-      });
-      paymentId = senderPaymentId;
+    await asyncTransferAsset(clientA1, clientB, transferAmount, assetId, nodeFreeBalanceAddress, {
+      freeBalanceClientA: postSwapFreeBalanceEthClient,
+      freeBalanceNodeA: postSwapFreeBalanceEthNode,
     });
-    expect((await clientB.getAppInstances()).length).toEqual(Zero.toNumber());
-    expect((await clientA1.getAppInstances()).length).toEqual(Zero.toNumber());
-
-    const {
-      [clientA1.freeBalanceAddress]: postTransferFreeBalanceEthClientA1,
-      [nodeFreeBalanceAddress]: postTransferFreeBalanceEthNodeA1,
-    } = await clientA1.getFreeBalance(AddressZero);
-    expect(postTransferFreeBalanceEthClientA1).toBeBigNumberEq(
-      preTransferFreeBalanceEthClientA1.sub(transferAmount),
-    );
-    expect(postTransferFreeBalanceEthNodeA1).toBeBigNumberEq(transferAmount);
-
-    const {
-      [clientB.freeBalanceAddress]: postTransferFreeBalanceEthClientB,
-      [nodeFreeBalanceAddress]: postTransferFreeBalanceEthNodeB,
-    } = await clientB.getFreeBalance(AddressZero);
-    expect(postTransferFreeBalanceEthClientB).toBeBigNumberEq(transferAmount);
-    expect(postTransferFreeBalanceEthNodeB).toBeBigNumberEq(
-      preTransferFreeBalanceEthNodeB.sub(transferAmount),
-    );
-
-    // verify payment
-    const paymentA = await clientA1.getLinkedTransfer(paymentId);
-    const paymentB = await clientB.getLinkedTransfer(paymentId);
-    expect(paymentA).toMatchObject({
-      amount: transferAmount.toString(),
-      assetId: AddressZero,
-      meta: { hello: "world" },
-      paymentId,
-      receiverPublicIdentifier: clientB.publicIdentifier,
-      senderPublicIdentifier: clientA1.publicIdentifier,
-      status: "RECLAIMED",
-      type: "LINKED",
-    });
-    expect(paymentB).toMatchObject(paymentA);
 
     ////////////////////////////////////////
     // WITHDRAW FLOW
