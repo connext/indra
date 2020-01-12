@@ -259,10 +259,6 @@ export class ConnextClient implements IConnextClient {
     return await this.node.unsubscribeFromSwapRates(from, to);
   };
 
-  public addPaymentProfile = async (profile: PaymentProfile): Promise<PaymentProfile> => {
-    return await this.node.addPaymentProfile(profile);
-  };
-
   public getPaymentProfile = async (assetId?: string): Promise<PaymentProfile | undefined> => {
     return await this.node.getPaymentProfile(assetId);
   };

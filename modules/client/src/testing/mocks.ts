@@ -107,7 +107,6 @@ export class MockNodeClientApi implements INodeApiClient {
   // should have keys same as the message passed in to fake messaging client
   // TODO: how well will this work with dynamic paths?
   public static returnValues: any = {
-    addPaymentProfile: {} as PaymentProfile,
     appRegistry: {} as AppRegistry,
     config: {
       chainId: "mocks", // network that your channel is on
@@ -177,10 +176,6 @@ export class MockNodeClientApi implements INodeApiClient {
     return {
       multisigAddress: address,
     };
-  }
-
-  public async addPaymentProfile(): Promise<any> {
-    return MockNodeClientApi.returnValues.addPaymentProfile;
   }
 
   public async getPaymentProfile(): Promise<PaymentProfile | undefined> {
