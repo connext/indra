@@ -8,6 +8,7 @@ import {
   NEGATIVE_ETH_AMOUNT,
   ONE_WEI_AMOUNT,
   TWO_WEI_AMOUNT,
+  WRONG_ADDRESS,
 } from "../util";
 
 describe("Deposits", () => {
@@ -45,7 +46,7 @@ describe("Deposits", () => {
   test.skip("client should not be able to deposit with invalid token address", async () => {
     // TODO: fix assert message when this is fixed
     await expect(
-      clientA.deposit({ amount: ONE_WEI_AMOUNT, assetId: "0xdeadbeef" }),
+      clientA.deposit({ amount: ONE_WEI_AMOUNT, assetId: WRONG_ADDRESS }),
     ).rejects.toThrowError("invalid token address");
   });
 

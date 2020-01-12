@@ -7,6 +7,7 @@ import tokenAbi from "human-standard-token-abi";
 import { env } from "./env";
 import { ethProvider } from "./ethprovider";
 import { MemoryStoreService, MemoryStoreServiceFactory } from "./store";
+import { TEST_ETH_AMOUNT_ALT, TEST_TOKEN_AMOUNT } from "./constants";
 
 const wallet = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider);
 
@@ -36,10 +37,10 @@ export const createClient = async (
 
   const ethTx = await wallet.sendTransaction({
     to: client.signerAddress,
-    value: parseEther("0.1"),
+    value: TEST_ETH_AMOUNT_ALT,
   });
   const token = new Contract(client.config.contractAddresses.Token, tokenAbi, wallet);
-  const tokenTx = await token.functions.transfer(client.signerAddress, parseEther("10"));
+  const tokenTx = await token.functions.transfer(client.signerAddress, TEST_TOKEN_AMOUNT);
 
   await Promise.all([ethTx.wait(), tokenTx.wait()]);
 
