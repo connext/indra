@@ -1,7 +1,6 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IChannelProvider, IConnextClient, SwapParameters } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
 
 import {
   calculateExchange,
@@ -15,8 +14,6 @@ import {
 describe("ChannelProvider", () => {
   let clientA: IConnextClient;
   let clientA1: IConnextClient;
-  let ethAmount: BigNumber;
-  let tokenAmount: BigNumber;
   let tokenAddress: string;
   let nodeFreeBalanceAddress: string;
   let nodePublicIdentifier: string;
@@ -24,8 +21,6 @@ describe("ChannelProvider", () => {
 
   beforeEach(async () => {
     clientA = await createClient();
-    ethAmount = TEST_ETH_AMOUNT;
-    tokenAmount = TEST_TOKEN_AMOUNT;
     tokenAddress = clientA.config.contractAddresses.Token;
     nodePublicIdentifier = clientA.config.nodePublicIdentifier;
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
@@ -52,7 +47,7 @@ describe("ChannelProvider", () => {
     ////////////////////////////////////////
     // DEPOSIT FLOW
     // client deposit and request node collateral
-    await clientA1.deposit({ amount: ethAmount.toString(), assetId: AddressZero });
+    await clientA1.deposit({ amount: TEST_ETH_AMOUNT.toString(), assetId: AddressZero });
     await clientA1.requestCollateral(tokenAddress);
 
     ////////////////////////////////////////
@@ -63,19 +58,19 @@ describe("ChannelProvider", () => {
       [clientA1.freeBalanceAddress]: preSwapFreeBalanceEthClient,
       [nodeFreeBalanceAddress]: preSwapFreeBalanceEthNode,
     } = await clientA1.getFreeBalance(AddressZero);
-    expect(preSwapFreeBalanceEthClient).toBeBigNumberEq(ethAmount);
+    expect(preSwapFreeBalanceEthClient).toBeBigNumberEq(TEST_ETH_AMOUNT);
     expect(preSwapFreeBalanceEthNode).toBeBigNumberEq(Zero);
 
     const {
       [clientA1.freeBalanceAddress]: preSwapFreeBalanceTokenClient,
       [nodeFreeBalanceAddress]: preSwapFreeBalanceTokenNode,
     } = await clientA1.getFreeBalance(tokenAddress);
-    expect(preSwapFreeBalanceTokenNode).toBeBigNumberEq(tokenAmount);
+    expect(preSwapFreeBalanceTokenNode).toBeBigNumberEq(TEST_TOKEN_AMOUNT);
     expect(preSwapFreeBalanceTokenClient).toBeBigNumberEq(Zero);
 
     const swapRate = await clientA1.getLatestSwapRate(AddressZero, tokenAddress);
 
-    const swapAmount = ethAmount;
+    const swapAmount = TEST_ETH_AMOUNT;
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),
       fromAssetId: AddressZero,
