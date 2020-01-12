@@ -232,7 +232,7 @@ export class ConnextClient implements IConnextClient {
     return this.channelProvider.config;
   };
 
-  public getLinkedTransfer = async (paymentId: string): Promise<any> => {
+  public getLinkedTransfer = async (paymentId: string): Promise<Transfer> => {
     return await this.node.fetchLinkedTransfer(paymentId);
   };
 
@@ -450,6 +450,12 @@ export class ConnextClient implements IConnextClient {
 
   ///////////////////////////////////
   // PROVIDER/ROUTER METHODS
+
+  public deployMultisig = async (): Promise<CFCoreTypes.DeployStateDepositHolderResult> => {
+    return await this.channelProvider.send("chan_deployStateDepositHolder", {
+      multisigAddress: this.multisigAddress,
+    });
+  };
 
   public getStateChannel = async (): Promise<CFCoreTypes.GetStateChannelResult> => {
     return await this.channelProvider.send(
@@ -785,6 +791,10 @@ export class ConnextClient implements IConnextClient {
   ///////////////////////////////////
   // NODE METHODS
 
+  public clientCheckIn = async (): Promise<void> => {
+    return await this.node.clientCheckIn();
+  };
+
   public verifyAppSequenceNumber = async (): Promise<any> => {
     const { data: sc } = await this.channelProvider.send("chan_getStateChannel" as any, {
       multisigAddress: this.multisigAddress,
@@ -839,7 +849,7 @@ export class ConnextClient implements IConnextClient {
       paymentId,
       preImage,
     });
-    this.log.info(`Reclaimed transfer ${stringify(response)}`);
+    this.log.info(`Redeemed transfer ${stringify(response)}`);
     return response;
   };
 

@@ -270,6 +270,10 @@ export class NodeApiClient implements INodeApiClient {
     return await this.send(`channel.latestWithdrawal.${this.userPublicIdentifier}`);
   }
 
+  public async clientCheckIn(): Promise<void> {
+    return await this.send(`client.check-in.${this.userPublicIdentifier}`);
+  }
+
   ////////////////////////////////////////
   // PRIVATE
 

@@ -159,13 +159,15 @@ export class ChannelService {
       return undefined;
     }
 
-    const profile = await this.channelRepository.getPaymentProfileForChannelAndToken(
+    const profile = await this.getPaymentProfileForChannelAndTokenOrDefault(
       userPubId,
       normalizedAssetId,
     );
 
     if (!profile) {
-      throw new Error(`Profile does not exist for user ${userPubId} and assetId ${assetId}`);
+      throw new Error(
+        `Node is not configured to collateralize asset ${assetId} for user ${userPubId}`,
+      );
     }
 
     let collateralNeeded = profile.minimumMaintainedCollateral;
@@ -329,6 +331,22 @@ export class ChannelService {
     const txRes = await wallet.sendTransaction(tx);
     await this.onchainRepository.addUserWithdrawal(txRes, channel);
     return txRes;
+  }
+
+  async getPaymentProfileForChannelAndTokenOrDefault(
+    userPublicIdentifier: string,
+    assetId: string = AddressZero,
+  ): Promise<PaymentProfile> {
+    // try to get payment profile configured
+    let profile = await this.channelRepository.getPaymentProfileForChannelAndToken(
+      userPublicIdentifier,
+      assetId,
+    );
+    if (!profile) {
+      profile = await this.configService.getDefaultPaymentProfile(assetId);
+      logger.debug(`Collateralizing with default profile: ${stringify(profile)}`);
+    }
+    return profile;
   }
 
   async getLatestWithdrawal(userPublicIdentifier: string): Promise<OnchainTransaction | undefined> {

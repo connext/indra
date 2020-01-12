@@ -83,7 +83,7 @@ export abstract class AbstractController {
             );
             const { appInstanceId } = await this.connext.proposeInstallApp(params);
             appId = appInstanceId;
-            this.log.warn(`waiting for proposal acceptance of ${appInstanceId}`);
+            this.log.debug(`waiting for proposal acceptance of ${appInstanceId}`);
             this.listener.on(CFCoreTypes.EventNames.REJECT_INSTALL_EVENT, boundReject);
           },
         ),

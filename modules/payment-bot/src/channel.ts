@@ -30,18 +30,6 @@ export const getOrCreateChannel = async (): Promise<IConnextClient> => {
   console.log(` - Node freeBalance address: ${nodeFBAddress}`);
   console.log(` - token address: ${client.config.contractAddresses.Token}`);
 
-  await client.addPaymentProfile({
-    amountToCollateralize: parseEther("0.1").toString(),
-    assetId: AddressZero,
-    minimumMaintainedCollateral: parseEther("0.01").toString(),
-  });
-
-  await client.addPaymentProfile({
-    amountToCollateralize: parseEther("10").toString(),
-    assetId: makeChecksum(client.config.contractAddresses.Token),
-    minimumMaintainedCollateral: parseEther("5").toString(),
-  });
-
   client.on(
     "UNINSTALL_VIRTUAL_EVENT",
     async (): Promise<void> => {

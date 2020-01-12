@@ -24,12 +24,12 @@ export class TransferMessaging extends AbstractMessagingProvider {
   async getLinkedTransferByPaymentId(
     pubId: string,
     data: { paymentId: string },
-  ): Promise<LinkedTransfer> {
+  ): Promise<Transfer> {
     if (!data.paymentId) {
-      throw new RpcException(`Incorrect data received. Data: ${data}`);
+      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
     logger.log(`Got fetch link request for: ${data.paymentId}`);
-    return await this.transferService.getLinkedTransferByPaymentId(data.paymentId);
+    return await this.transferService.getTransferByPaymentId(data.paymentId);
   }
 
   async resolveLinkedTransfer(
@@ -39,7 +39,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
     logger.log(`Got resolve link request with data: ${JSON.stringify(data, replaceBN, 2)}`);
     const { paymentId, linkedHash, meta } = data;
     if (!paymentId || !linkedHash) {
-      throw new RpcException(`Incorrect data received. Data: ${data}`);
+      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
     return await this.transferService.resolveLinkedTransfer(pubId, paymentId, linkedHash, meta);
   }
@@ -55,7 +55,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
   ): Promise<{ linkedHash: string }> {
     const { recipientPublicIdentifier, linkedHash, encryptedPreImage } = data;
     if (!recipientPublicIdentifier) {
-      throw new RpcException(`Incorrect data received. Data: ${data}`);
+      throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
 
     const transfer = await this.transferService.setRecipientAndEncryptedPreImageOnLinkedTransfer(
@@ -65,6 +65,18 @@ export class TransferMessaging extends AbstractMessagingProvider {
       linkedHash,
     );
     return { linkedHash: transfer.linkedHash };
+  }
+
+  /**
+   * Check in endpoint for client to call when it comes online to handle pending tasks
+   * @param pubId
+   */
+  async clientCheckIn(pubId: string): Promise<void> {
+    // reclaim collateral from redeemed transfers
+    const reclaimableTransfers = await this.transferService.getLinkedTransfersForReclaim(pubId);
+    for (const transfer of reclaimableTransfers) {
+      await this.transferService.reclaimLinkedTransferCollateral(transfer.paymentId);
+    }
   }
 
   async getPendingTransfers(pubId: string, data?: unknown): Promise<{ paymentId: string }[]> {
@@ -99,6 +111,10 @@ export class TransferMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "transfer.get-history.>",
       this.authService.useUnverifiedPublicIdentifier(this.getTransferHistory.bind(this)),
+    );
+    await super.connectRequestReponse(
+      "client.check-in.>",
+      this.authService.useVerifiedPublicIdentifier(this.clientCheckIn.bind(this)),
     );
   }
 }

@@ -23,12 +23,18 @@ export class LinkedTransferRepository extends Repository<LinkedTransfer> {
   }
 
   async findByReceiverAppInstanceId(appInstanceId: string): Promise<LinkedTransfer | undefined> {
-    return await this.findOne({ where: { appInstanceId } });
+    return await this.findOne({ where: { receiverAppInstanceId: appInstanceId } });
   }
 
   async findPendingByRecipient(recipientPublicIdentifier: string): Promise<LinkedTransfer[]> {
     return await this.find({
       where: { recipientPublicIdentifier, status: LinkedTransferStatus.PENDING },
+    });
+  }
+
+  async findReclaimable(senderChannel: Channel): Promise<LinkedTransfer[]> {
+    return await this.find({
+      where: { senderChannel, status: LinkedTransferStatus.REDEEMED },
     });
   }
 
@@ -79,6 +85,12 @@ export class TransferRepository extends Repository<Transfer> {
           receiverPublicIdentifier: publicIdentifier,
         },
       ],
+    });
+  }
+
+  async findByPaymentId(paymentId: string): Promise<Transfer> {
+    return await this.findOne({
+      where: { paymentId },
     });
   }
 }

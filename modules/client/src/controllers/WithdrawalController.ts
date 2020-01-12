@@ -1,3 +1,4 @@
+import { AddressZero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
 import { bigNumberify, getAddress } from "ethers/utils";
 
@@ -9,7 +10,15 @@ import { AbstractController } from "./AbstractController";
 
 export class WithdrawalController extends AbstractController {
   public async withdraw(params: WithdrawParameters): Promise<WithdrawalResponse> {
-    params.assetId = params.assetId ? getAddress(params.assetId) : undefined;
+    if (params.assetId) {
+      try {
+        params.assetId = getAddress(params.assetId);
+      } catch (e) {
+        // likely means that this is an invalid eth address, so
+        // use validator fn for better error message
+        validate(invalidAddress(params.assetId));
+      }
+    }
     const myFreeBalanceAddress = this.connext.freeBalanceAddress;
 
     const { amount, assetId, recipient, userSubmitted } = convert.Withdraw("bignumber", params);
@@ -52,6 +61,15 @@ export class WithdrawalController extends AbstractController {
 
         this.log.info(`Node Withdraw Response: ${stringify(transaction)}`);
       } else {
+        // first deploy the multisig
+        this.log.info(`Calling ${CFCoreTypes.RpcMethodNames.chan_deployStateDepositHolder}`);
+        const deployRes = await this.connext.deployMultisig();
+        this.log.debug(`Multisig deploy transaction: ${stringify(deployRes)}`);
+        if (deployRes.transactionHash !== AddressZero) {
+          // wait for multisig deploy transaction
+          // will be 0x000.. if the multisig has already been deployed.
+          this.ethProvider.waitForTransaction(deployRes.transactionHash);
+        }
         this.log.info(`Calling ${CFCoreTypes.RpcMethodNames.chan_withdraw}`);
         // user submitting the withdrawal
         const withdrawResponse = await this.connext.providerWithdraw(
@@ -64,7 +82,7 @@ export class WithdrawalController extends AbstractController {
       }
       const postWithdrawBalances = await this.connext.getFreeBalance(assetId);
 
-      this.log.info(`Pre-Withdraw Balances: ${stringify(preWithdrawBalances)}`);
+      this.log.debug(`Pre-Withdraw Balances: ${stringify(preWithdrawBalances)}`);
       const expectedFreeBal = bigNumberify(preWithdrawBalances[myFreeBalanceAddress]).sub(amount);
 
       // sanity check the free balance decrease
