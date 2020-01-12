@@ -13,3 +13,4 @@ export * from "./db";
 export * from "./env";
 export * from "./ethprovider";
 export * from "./store";
+export * from "./types";

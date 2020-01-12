@@ -2,39 +2,7 @@ import { IConnextClient } from "@connext/types";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
-interface ExistingBalances {
-  freeBalanceClientA: BigNumber;
-  freeBalanceClientB: BigNumber;
-  freeBalanceNodeA: BigNumber;
-  freeBalanceNodeB: BigNumber;
-}
-
-function parseExistingBalances(
-  transferAmount: BigNumber,
-  preExistingBalances?: Partial<ExistingBalances>,
-): ExistingBalances {
-  const defaultExistingBalances: ExistingBalances = {
-    freeBalanceClientA: transferAmount,
-    freeBalanceClientB: Zero,
-    freeBalanceNodeA: Zero,
-    freeBalanceNodeB: transferAmount,
-  };
-
-  const existingBalances = !preExistingBalances
-    ? defaultExistingBalances
-    : {
-        freeBalanceClientA:
-          preExistingBalances.freeBalanceClientA || defaultExistingBalances.freeBalanceClientA,
-        freeBalanceClientB:
-          preExistingBalances.freeBalanceClientB || defaultExistingBalances.freeBalanceClientB,
-        freeBalanceNodeA:
-          preExistingBalances.freeBalanceNodeA || defaultExistingBalances.freeBalanceNodeA,
-        freeBalanceNodeB:
-          preExistingBalances.freeBalanceNodeB || defaultExistingBalances.freeBalanceNodeB,
-      };
-
-  return existingBalances;
-}
+import { ExistingBalances } from "../types";
 
 export async function asyncTransferAsset(
   clientA: IConnextClient,
@@ -42,9 +10,15 @@ export async function asyncTransferAsset(
   transferAmount: BigNumber,
   assetId: string,
   nodeFreeBalanceAddress: string,
-  preExistingBalances?: Partial<ExistingBalances>,
+  preExistingBalances: Partial<ExistingBalances> = {},
 ): Promise<void> {
-  const existingBalances = parseExistingBalances(transferAmount, preExistingBalances);
+  const existingBalances = {
+    freeBalanceClientA: transferAmount,
+    freeBalanceClientB: Zero,
+    freeBalanceNodeA: Zero,
+    freeBalanceNodeB: transferAmount,
+    ...preExistingBalances,
+  };
 
   const {
     [clientA.freeBalanceAddress]: preTransferFreeBalanceClientA,
