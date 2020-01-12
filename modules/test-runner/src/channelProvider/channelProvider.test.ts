@@ -154,17 +154,15 @@ describe("ChannelProvider", () => {
       [clientA1.freeBalanceAddress]: postTransferFreeBalanceEthClientA1,
       [nodeFreeBalanceAddress]: postTransferFreeBalanceEthNodeA1,
     } = await clientA1.getFreeBalance(AddressZero);
-
-    const {
-      [clientB.freeBalanceAddress]: postTransferFreeBalanceEthClientB,
-      [nodeFreeBalanceAddress]: postTransferFreeBalanceEthNodeB,
-    } = await clientB.getFreeBalance(AddressZero);
-
     expect(postTransferFreeBalanceEthClientA1).toBeBigNumberEq(
       preTransferFreeBalanceEthClientA1.sub(transferAmount),
     );
     expect(postTransferFreeBalanceEthNodeA1).toBeBigNumberEq(transferAmount);
 
+    const {
+      [clientB.freeBalanceAddress]: postTransferFreeBalanceEthClientB,
+      [nodeFreeBalanceAddress]: postTransferFreeBalanceEthNodeB,
+    } = await clientB.getFreeBalance(AddressZero);
     expect(postTransferFreeBalanceEthClientB).toBeBigNumberEq(transferAmount);
     expect(postTransferFreeBalanceEthNodeB).toBeBigNumberEq(
       preTransferFreeBalanceEthNodeB.sub(transferAmount),

@@ -59,21 +59,21 @@ describe("Swaps", () => {
     };
     await clientA.swap(swapParams);
 
+    const expectedTokenSwapAmount = calculateExchange(swapAmount, swapRate);
+
     const {
       [clientA.freeBalanceAddress]: postSwapFreeBalanceEthClient,
       [nodeFreeBalanceAddress]: postSwapFreeBalanceEthNode,
     } = await clientA.getFreeBalance(AddressZero);
-    const {
-      [clientA.freeBalanceAddress]: postSwapFreeBalanceTokenClient,
-      [nodeFreeBalanceAddress]: postSwapFreeBalanceTokenNode,
-    } = await clientA.getFreeBalance(tokenAddress);
-
     expect(postSwapFreeBalanceEthClient).toBeBigNumberEq(
       preSwapFreeBalanceEthClient.sub(swapAmount),
     );
     expect(postSwapFreeBalanceEthNode).toBeBigNumberEq(swapAmount);
 
-    const expectedTokenSwapAmount = calculateExchange(swapAmount, swapRate);
+    const {
+      [clientA.freeBalanceAddress]: postSwapFreeBalanceTokenClient,
+      [nodeFreeBalanceAddress]: postSwapFreeBalanceTokenNode,
+    } = await clientA.getFreeBalance(tokenAddress);
     expect(postSwapFreeBalanceTokenClient).toBeBigNumberEq(expectedTokenSwapAmount);
     expect(postSwapFreeBalanceTokenNode).toBeBigNumberEq(
       preSwapFreeBalanceTokenNode.sub(expectedTokenSwapAmount),
@@ -114,21 +114,21 @@ describe("Swaps", () => {
     };
     await clientA.swap(swapParams);
 
+    const expectedEthSwapAmount = calculateExchange(swapAmount, inverseSwapRate);
+
     const {
       [clientA.freeBalanceAddress]: postSwapFreeBalanceEthClient,
       [nodeFreeBalanceAddress]: postSwapFreeBalanceEthNode,
     } = await clientA.getFreeBalance(AddressZero);
-    const {
-      [clientA.freeBalanceAddress]: postSwapFreeBalanceTokenClient,
-      [nodeFreeBalanceAddress]: postSwapFreeBalanceTokenNode,
-    } = await clientA.getFreeBalance(tokenAddress);
-
-    const expectedEthSwapAmount = calculateExchange(swapAmount, inverseSwapRate);
     expect(postSwapFreeBalanceEthClient).toBeBigNumberEq(expectedEthSwapAmount);
     expect(postSwapFreeBalanceEthNode).toBeBigNumberEq(
       preSwapFreeBalanceEthNode.sub(expectedEthSwapAmount),
     );
 
+    const {
+      [clientA.freeBalanceAddress]: postSwapFreeBalanceTokenClient,
+      [nodeFreeBalanceAddress]: postSwapFreeBalanceTokenNode,
+    } = await clientA.getFreeBalance(tokenAddress);
     expect(postSwapFreeBalanceTokenClient).toBeBigNumberEq(
       preSwapFreeBalanceTokenClient.sub(swapAmount),
     );

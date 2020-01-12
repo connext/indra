@@ -29,15 +29,13 @@ describe("Async Transfers", () => {
       [clientA.freeBalanceAddress]: preTransferFreeBalanceEthClientA,
       [nodeFreeBalanceAddress]: preTransferFreeBalanceEthNodeA,
     } = await clientA.getFreeBalance(AddressZero);
+    expect(preTransferFreeBalanceEthClientA).toBeBigNumberEq(transferAmount);
+    expect(preTransferFreeBalanceEthNodeA).toBeBigNumberEq(Zero);
 
     const {
       [clientB.freeBalanceAddress]: preTransferFreeBalanceEthClientB,
       [nodeFreeBalanceAddress]: preTransferFreeBalanceEthNodeB,
     } = await clientB.getFreeBalance(AddressZero);
-
-    expect(preTransferFreeBalanceEthClientA).toBeBigNumberEq(transferAmount);
-    expect(preTransferFreeBalanceEthNodeA).toBeBigNumberEq(Zero);
-
     expect(preTransferFreeBalanceEthClientB).toBeBigNumberEq(Zero);
     expect(preTransferFreeBalanceEthNodeB).toBeBigNumberGte(transferAmount);
 
@@ -73,15 +71,13 @@ describe("Async Transfers", () => {
       [clientA.freeBalanceAddress]: postTransferFreeBalanceEthClientA,
       [nodeFreeBalanceAddress]: postTransferFreeBalanceEthNodeA,
     } = await clientA.getFreeBalance(AddressZero);
+    expect(postTransferFreeBalanceEthClientA).toBeBigNumberEq(Zero);
+    expect(postTransferFreeBalanceEthNodeA).toBeBigNumberEq(transferAmount);
 
     const {
       [clientB.freeBalanceAddress]: postTransferFreeBalanceEthClientB,
       [nodeFreeBalanceAddress]: postTransferFreeBalanceEthNodeB,
     } = await clientB.getFreeBalance(AddressZero);
-
-    expect(postTransferFreeBalanceEthClientA).toBeBigNumberEq(Zero);
-    expect(postTransferFreeBalanceEthNodeA).toBeBigNumberEq(transferAmount);
-
     expect(postTransferFreeBalanceEthClientB).toBeBigNumberEq(transferAmount);
     expect(postTransferFreeBalanceEthNodeB).toBeBigNumberEq(
       preTransferFreeBalanceEthNodeB.sub(transferAmount),
@@ -112,15 +108,13 @@ describe("Async Transfers", () => {
       [clientA.freeBalanceAddress]: preTransferFreeBalanceClientA,
       [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeA,
     } = await clientA.getFreeBalance(tokenAddress);
+    expect(preTransferFreeBalanceClientA).toBeBigNumberEq(transferAmount);
+    expect(preTransferFreeBalanceNodeA).toBeBigNumberEq(Zero);
 
     const {
       [clientB.freeBalanceAddress]: preTransferFreeBalanceClientB,
       [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeB,
     } = await clientB.getFreeBalance(tokenAddress);
-
-    expect(preTransferFreeBalanceClientA).toBeBigNumberEq(transferAmount);
-    expect(preTransferFreeBalanceNodeA).toBeBigNumberEq(Zero);
-
     expect(preTransferFreeBalanceClientB).toBeBigNumberEq(Zero);
     expect(preTransferFreeBalanceNodeB).toBeBigNumberGte(transferAmount);
 
@@ -158,15 +152,13 @@ describe("Async Transfers", () => {
       [clientA.freeBalanceAddress]: postTransferFreeBalanceClientA,
       [nodeFreeBalanceAddress]: postTransferFreeBalanceNodeA,
     } = await clientA.getFreeBalance(tokenAddress);
+    expect(postTransferFreeBalanceClientA).toBeBigNumberEq(Zero);
+    expect(postTransferFreeBalanceNodeA).toBeBigNumberEq(transferAmount);
 
     const {
       [clientB.freeBalanceAddress]: postTransferFreeBalanceClientB,
       [nodeFreeBalanceAddress]: postTransferFreeBalanceNodeB,
     } = await clientB.getFreeBalance(tokenAddress);
-
-    expect(postTransferFreeBalanceClientA).toBeBigNumberEq(Zero);
-    expect(postTransferFreeBalanceNodeA).toBeBigNumberEq(transferAmount);
-
     expect(postTransferFreeBalanceClientB).toBeBigNumberEq(transferAmount);
     expect(postTransferFreeBalanceNodeB).toBeBigNumberEq(
       preTransferFreeBalanceNodeB.sub(transferAmount),
@@ -176,14 +168,14 @@ describe("Async Transfers", () => {
     const paymentA = await clientA.getLinkedTransfer(paymentId);
     const paymentB = await clientB.getLinkedTransfer(paymentId);
     expect(paymentA).toMatchObject({
-      paymentId,
-      assetId: tokenAddress,
       amount: transferAmount.toString(),
+      assetId: tokenAddress,
+      meta: { hello: "world" },
+      paymentId,
+      receiverPublicIdentifier: clientB.publicIdentifier,
+      senderPublicIdentifier: clientA.publicIdentifier,
       status: "RECLAIMED",
       type: "LINKED",
-      senderPublicIdentifier: clientA.publicIdentifier,
-      receiverPublicIdentifier: clientB.publicIdentifier,
-      meta: { hello: "world" },
     });
     expect(paymentB).toMatchObject(paymentA);
   });
