@@ -52,7 +52,6 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // SWAP FLOW
-
     // check balances pre
     const {
       [clientA1.freeBalanceAddress]: preSwapFreeBalanceEthClient,
