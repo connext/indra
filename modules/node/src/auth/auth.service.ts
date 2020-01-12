@@ -110,7 +110,7 @@ export class AuthService {
   verifySig(xpubAddress: string, data: { token: string }): { err: string } | undefined {
     // Get & validate the nonce + signature from provided token
     if (!data || !data.token || data.token.indexOf(":") === -1) {
-      return badToken(`Missing or malformed token in data: ${data || data.token}`);
+      return badToken(`Missing or malformed token in data: ${JSON.stringify(data || data.token)}`);
     }
     const token = data.token;
     const nonce = token.split(":")[0];
