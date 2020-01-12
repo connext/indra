@@ -7,6 +7,7 @@ import {
   createChannelProvider,
   createClient,
   createRemoteClient,
+  ETH_AMOUNT_MD,
   ETH_AMOUNT_SM,
   TOKEN_AMOUNT,
   withdrawFromChannel,
@@ -48,7 +49,8 @@ describe("ChannelProvider", () => {
     ////////////////////////////////////////
     // DEPOSIT FLOW
     // client deposit and request node collateral
-    await clientA1.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
+    const depositAmount = ETH_AMOUNT_MD;
+    await clientA1.deposit({ amount: depositAmount.toString(), assetId: AddressZero });
     await clientA1.requestCollateral(tokenAddress);
 
     ////////////////////////////////////////
@@ -58,7 +60,7 @@ describe("ChannelProvider", () => {
       [clientA1.freeBalanceAddress]: preSwapFreeBalanceEthClient,
       [nodeFreeBalanceAddress]: preSwapFreeBalanceEthNode,
     } = await clientA1.getFreeBalance(AddressZero);
-    expect(preSwapFreeBalanceEthClient).toBeBigNumberEq(ETH_AMOUNT_SM);
+    expect(preSwapFreeBalanceEthClient).toBeBigNumberEq(depositAmount);
     expect(preSwapFreeBalanceEthNode).toBeBigNumberEq(Zero);
 
     const {
