@@ -99,7 +99,7 @@ describe("ChannelProvider", () => {
     } = await clientA1.getFreeBalance(tokenAddress);
     expect(postSwapFreeBalanceTokenClient).toBeBigNumberEq(expectedTokenSwapAmount);
     expect(postSwapFreeBalanceTokenNode).toBeBigNumberEq(
-      preSwapFreeBalanceTokenNode.sub(expectedTokenSwapAmount.toString()),
+      preSwapFreeBalanceTokenNode.sub(expectedTokenSwapAmount),
     );
 
     ////////////////////////////////////////

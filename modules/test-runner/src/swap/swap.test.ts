@@ -76,7 +76,7 @@ describe("Swaps", () => {
     const expectedTokenSwapAmount = calculateExchange(swapAmount, swapRate);
     expect(postSwapFreeBalanceTokenClient).toBeBigNumberEq(expectedTokenSwapAmount);
     expect(postSwapFreeBalanceTokenNode).toBeBigNumberEq(
-      preSwapFreeBalanceTokenNode.sub(expectedTokenSwapAmount.toString()),
+      preSwapFreeBalanceTokenNode.sub(expectedTokenSwapAmount),
     );
   });
 
