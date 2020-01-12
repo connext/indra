@@ -1,4 +1,5 @@
 // export from helpers dir
+export * from "./helpers/asyncTransferAsset";
 export * from "./helpers/fundChannel";
 export * from "./helpers/withdrawFromChannel";
 export * from "./helpers/requestDepositRights";
