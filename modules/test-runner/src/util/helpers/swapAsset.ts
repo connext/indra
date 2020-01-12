@@ -15,7 +15,7 @@ export async function swapAsset(
   const ethAssetId = ethToToken ? input.assetId : output.assetId;
   const tokenAssetId = ethToToken ? output.assetId : input.assetId;
 
-  const pre: ExistingBalancesSwap = {
+  const preSwap: ExistingBalancesSwap = {
     freeBalanceClientEth: ethToToken ? input.amount : Zero,
     freeBalanceClientToken: ethToToken ? Zero : input.amount,
     freeBalanceNodeEth: ethToToken ? Zero : output.amount,
@@ -23,20 +23,19 @@ export async function swapAsset(
     ...preExistingBalances,
   };
 
-  // check balances pre
   const {
     [client.freeBalanceAddress]: preSwapFreeBalanceClientEth,
     [nodeFreeBalanceAddress]: preSwapFreeBalanceNodeEth,
   } = await client.getFreeBalance(ethAssetId);
-  expect(preSwapFreeBalanceClientEth).toBeBigNumberEq(pre.freeBalanceClientEth);
-  expect(preSwapFreeBalanceNodeEth).toBeBigNumberEq(pre.freeBalanceNodeEth);
+  expect(preSwapFreeBalanceClientEth).toBeBigNumberEq(preSwap.freeBalanceClientEth);
+  expect(preSwapFreeBalanceNodeEth).toBeBigNumberEq(preSwap.freeBalanceNodeEth);
 
   const {
     [client.freeBalanceAddress]: preSwapFreeBalanceClientToken,
     [nodeFreeBalanceAddress]: preSwapFreeBalanceNodeToken,
   } = await client.getFreeBalance(tokenAssetId);
-  expect(preSwapFreeBalanceNodeToken).toBeBigNumberEq(pre.freeBalanceNodeToken);
-  expect(preSwapFreeBalanceClientToken).toBeBigNumberEq(pre.freeBalanceClientToken);
+  expect(preSwapFreeBalanceNodeToken).toBeBigNumberEq(preSwap.freeBalanceNodeToken);
+  expect(preSwapFreeBalanceClientToken).toBeBigNumberEq(preSwap.freeBalanceClientToken);
 
   const rate = await client.getLatestSwapRate(ethAssetId, tokenAssetId);
   const swapRate = ethToToken ? rate : inverse(rate);

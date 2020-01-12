@@ -12,7 +12,7 @@ export async function asyncTransferAsset(
   nodeFreeBalanceAddress: string,
   preExistingBalances: Partial<ExistingBalancesAsyncTransfer> = {},
 ): Promise<ExistingBalancesAsyncTransfer> {
-  const pre: ExistingBalancesAsyncTransfer = {
+  const preTransfer: ExistingBalancesAsyncTransfer = {
     freeBalanceClientA: transferAmount,
     freeBalanceClientB: Zero,
     freeBalanceNodeA: Zero,
@@ -24,15 +24,15 @@ export async function asyncTransferAsset(
     [clientA.freeBalanceAddress]: preTransferFreeBalanceClientA,
     [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeA,
   } = await clientA.getFreeBalance(assetId);
-  expect(preTransferFreeBalanceClientA).toBeBigNumberEq(pre.freeBalanceClientA);
-  expect(preTransferFreeBalanceNodeA).toBeBigNumberEq(pre.freeBalanceNodeA);
+  expect(preTransferFreeBalanceClientA).toBeBigNumberEq(preTransfer.freeBalanceClientA);
+  expect(preTransferFreeBalanceNodeA).toBeBigNumberEq(preTransfer.freeBalanceNodeA);
 
   const {
     [clientB.freeBalanceAddress]: preTransferFreeBalanceClientB,
     [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeB,
   } = await clientB.getFreeBalance(assetId);
-  expect(preTransferFreeBalanceClientB).toBeBigNumberEq(pre.freeBalanceClientB);
-  expect(preTransferFreeBalanceNodeB).toBeBigNumberGte(pre.freeBalanceNodeB);
+  expect(preTransferFreeBalanceClientB).toBeBigNumberEq(preTransfer.freeBalanceClientB);
+  expect(preTransferFreeBalanceNodeB).toBeBigNumberGte(preTransfer.freeBalanceNodeB);
 
   let paymentId;
   await new Promise(async resolve => {
