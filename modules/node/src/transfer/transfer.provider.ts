@@ -67,6 +67,18 @@ export class TransferMessaging extends AbstractMessagingProvider {
     return { linkedHash: transfer.linkedHash };
   }
 
+  /**
+   * Check in endpoint for client to call when it comes online to handle pending tasks
+   * @param pubId
+   */
+  async clientCheckIn(pubId: string): Promise<void> {
+    // reclaim collateral from redeemed transfers
+    const reclaimableTransfers = await this.transferService.getLinkedTransfersForReclaim(pubId);
+    for (const transfer of reclaimableTransfers) {
+      await this.transferService.reclaimLinkedTransferCollateral(transfer.paymentId);
+    }
+  }
+
   async getPendingTransfers(pubId: string, data?: unknown): Promise<{ paymentId: string }[]> {
     const transfers = await this.transferService.getPendingTransfers(pubId);
     return transfers.map((transfer: LinkedTransfer) => {
@@ -99,6 +111,10 @@ export class TransferMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "transfer.get-history.>",
       this.authService.useUnverifiedPublicIdentifier(this.getTransferHistory.bind(this)),
+    );
+    await super.connectRequestReponse(
+      "client.check-in.>",
+      this.authService.useVerifiedPublicIdentifier(this.clientCheckIn.bind(this)),
     );
   }
 }
