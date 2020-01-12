@@ -6,8 +6,8 @@ import {
   StorePair,
 } from "@connext/types";
 import { AddressZero } from "ethers/constants";
-import { parseEther } from "ethers/utils";
-import { createClient, getStore, MemoryStoreService } from "../util";
+
+import { createClient, ETH_AMOUNT_SM, getStore, MemoryStoreService } from "../util";
 
 describe("Get State Channel", () => {
   let clientA: IConnextClient;
@@ -17,7 +17,7 @@ describe("Get State Channel", () => {
   beforeEach(async () => {
     clientA = await createClient();
     tokenAddress = clientA.config.contractAddresses.Token;
-    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
     store = getStore();
   }, 90_000);
@@ -37,7 +37,7 @@ describe("Get State Channel", () => {
   test("Store contains multiple state channels", async () => {
     // Client with same store and new mnemonic
     const clientB = await createClient({ store });
-    await clientB.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientB.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
     await clientB.requestCollateral(tokenAddress);
 
     // Now check both exist in the same store

@@ -3,7 +3,7 @@ import { ClientOptions, IChannelProvider, IConnextClient } from "@connext/types"
 import { Contract, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 
-import { TEST_ETH_AMOUNT_ALT, TEST_TOKEN_AMOUNT } from "./constants";
+import { ETH_AMOUNT_MD, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
 import { ethProvider } from "./ethprovider";
 import { MemoryStoreService, MemoryStoreServiceFactory } from "./store";
@@ -35,10 +35,10 @@ export const createClient = async (opts?: Partial<ClientOptions>): Promise<IConn
 
   const ethTx = await wallet.sendTransaction({
     to: client.signerAddress,
-    value: TEST_ETH_AMOUNT_ALT,
+    value: ETH_AMOUNT_MD,
   });
   const token = new Contract(client.config.contractAddresses.Token, tokenAbi, wallet);
-  const tokenTx = await token.functions.transfer(client.signerAddress, TEST_TOKEN_AMOUNT);
+  const tokenTx = await token.functions.transfer(client.signerAddress, TOKEN_AMOUNT);
 
   await Promise.all([ethTx.wait(), tokenTx.wait()]);
 

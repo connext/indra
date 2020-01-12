@@ -1,9 +1,8 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
-import { parseEther } from "ethers/utils";
 
-import { createClient } from "../util/client";
+import { createClient, ETH_AMOUNT_LG, ETH_AMOUNT_SM } from "../util";
 
 describe("Async Transfers", () => {
   let clientA: IConnextClient;
@@ -22,7 +21,7 @@ describe("Async Transfers", () => {
   }, 90_000);
 
   test("happy case: client A transfers eth to client B through node", async () => {
-    const transferAmount = parseEther("0.01");
+    const transferAmount = ETH_AMOUNT_SM;
     await clientA.deposit({ amount: transferAmount.toString(), assetId: AddressZero });
     await clientB.requestCollateral(AddressZero);
 
@@ -92,20 +91,20 @@ describe("Async Transfers", () => {
     const paymentA = await clientA.getLinkedTransfer(paymentId);
     const paymentB = await clientB.getLinkedTransfer(paymentId);
     expect(paymentA).toMatchObject({
-      paymentId,
-      assetId: AddressZero,
       amount: transferAmount.toString(),
+      assetId: AddressZero,
+      meta: { hello: "world" },
+      paymentId,
+      receiverPublicIdentifier: clientB.publicIdentifier,
+      senderPublicIdentifier: clientA.publicIdentifier,
       status: "RECLAIMED",
       type: "LINKED",
-      senderPublicIdentifier: clientA.publicIdentifier,
-      receiverPublicIdentifier: clientB.publicIdentifier,
-      meta: { hello: "world" },
     });
     expect(paymentB).toMatchObject(paymentA);
   });
 
   test("happy case: client A transfers tokens to client B through node", async () => {
-    const transferAmount = parseEther("1");
+    const transferAmount = ETH_AMOUNT_LG;
     await clientA.deposit({ amount: transferAmount.toString(), assetId: tokenAddress });
     await clientB.requestCollateral(tokenAddress);
 

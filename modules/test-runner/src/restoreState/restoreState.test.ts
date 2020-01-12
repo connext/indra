@@ -2,7 +2,7 @@ import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 
-import { createClient, getStore, TEST_ETH_AMOUNT, TEST_TOKEN_AMOUNT } from "../util";
+import { createClient, ETH_AMOUNT_SM, getStore, TOKEN_AMOUNT } from "../util";
 
 describe("Restore State", () => {
   let clientA: IConnextClient;
@@ -19,16 +19,16 @@ describe("Restore State", () => {
 
   test("happy case: client can delete its store and restore from a remote backup", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: TEST_ETH_AMOUNT.toString(), assetId: AddressZero });
+    await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
 
     // check balances pre
     const freeBalanceEthPre = await clientA.getFreeBalance(AddressZero);
     const freeBalanceTokenPre = await clientA.getFreeBalance(tokenAddress);
-    expect(freeBalanceEthPre[clientA.freeBalanceAddress]).toBeBigNumberEq(TEST_ETH_AMOUNT);
+    expect(freeBalanceEthPre[clientA.freeBalanceAddress]).toBeBigNumberEq(ETH_AMOUNT_SM);
     expect(freeBalanceEthPre[nodeFreeBalanceAddress]).toBeBigNumberEq(Zero);
     expect(freeBalanceTokenPre[clientA.freeBalanceAddress]).toBeBigNumberEq(Zero);
-    expect(freeBalanceTokenPre[nodeFreeBalanceAddress]).toBeBigNumberEq(TEST_TOKEN_AMOUNT);
+    expect(freeBalanceTokenPre[nodeFreeBalanceAddress]).toBeBigNumberEq(TOKEN_AMOUNT);
 
     // delete store
     const store = getStore();
@@ -47,9 +47,9 @@ describe("Restore State", () => {
     // check balances post
     const freeBalanceEthPost = await clientA.getFreeBalance(AddressZero);
     const freeBalanceTokenPost = await clientA.getFreeBalance(tokenAddress);
-    expect(freeBalanceEthPost[clientA.freeBalanceAddress]).toBeBigNumberEq(TEST_ETH_AMOUNT);
+    expect(freeBalanceEthPost[clientA.freeBalanceAddress]).toBeBigNumberEq(ETH_AMOUNT_SM);
     expect(freeBalanceEthPost[nodeFreeBalanceAddress]).toBeBigNumberEq(Zero);
     expect(freeBalanceTokenPost[clientA.freeBalanceAddress]).toBeBigNumberEq(Zero);
-    expect(freeBalanceTokenPost[nodeFreeBalanceAddress]).toBeBigNumberEq(TEST_TOKEN_AMOUNT);
+    expect(freeBalanceTokenPost[nodeFreeBalanceAddress]).toBeBigNumberEq(TOKEN_AMOUNT);
   });
 });

@@ -2,14 +2,7 @@ import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 
-import {
-  createClient,
-  getOnchainBalance,
-  NEGATIVE_ETH_AMOUNT,
-  ONE_WEI_AMOUNT,
-  TWO_WEI_AMOUNT,
-  WRONG_ADDRESS,
-} from "../util";
+import { createClient, getOnchainBalance, NEGATIVE_ONE, ONE, TWO, WRONG_ADDRESS } from "../util";
 
 describe("Deposits", () => {
   let clientA: IConnextClient;
@@ -19,7 +12,7 @@ describe("Deposits", () => {
   }, 90_000);
 
   test("happy case: client should deposit ETH", async () => {
-    await clientA.deposit({ amount: ONE_WEI_AMOUNT, assetId: AddressZero });
+    await clientA.deposit({ amount: ONE, assetId: AddressZero });
     const freeBalance = await clientA.getFreeBalance(AddressZero);
 
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
@@ -32,7 +25,7 @@ describe("Deposits", () => {
   test("happy case: client should deposit tokens", async () => {
     const tokenAddress = clientA.config.contractAddresses.Token;
 
-    await clientA.deposit({ amount: ONE_WEI_AMOUNT, assetId: tokenAddress });
+    await clientA.deposit({ amount: ONE, assetId: tokenAddress });
     const freeBalance = await clientA.getFreeBalance(tokenAddress);
 
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
@@ -45,14 +38,14 @@ describe("Deposits", () => {
   // TODO: unskip when it passes
   test.skip("client should not be able to deposit with invalid token address", async () => {
     // TODO: fix assert message when this is fixed
-    await expect(
-      clientA.deposit({ amount: ONE_WEI_AMOUNT, assetId: WRONG_ADDRESS }),
-    ).rejects.toThrowError("invalid token address");
+    await expect(clientA.deposit({ amount: ONE, assetId: WRONG_ADDRESS })).rejects.toThrowError(
+      "invalid token address",
+    );
   });
 
   test("client should not be able to deposit with negative amount", async () => {
     await expect(
-      clientA.deposit({ amount: NEGATIVE_ETH_AMOUNT, assetId: AddressZero }),
+      clientA.deposit({ amount: NEGATIVE_ONE, assetId: AddressZero }),
     ).rejects.toThrowError("is not greater than or equal to 0");
   });
 
@@ -71,7 +64,7 @@ describe("Deposits", () => {
     await clientA.requestDepositRights({ assetId: clientA.config.contractAddresses.Token });
 
     await clientA.deposit({
-      amount: ONE_WEI_AMOUNT,
+      amount: ONE,
       assetId: clientA.config.contractAddresses.Token,
     });
     const freeBalance = await clientA.getFreeBalance(clientA.config.contractAddresses.Token);
@@ -105,9 +98,9 @@ describe("Deposits", () => {
   test("client bypasses proposeDeposit flow and calls providerDeposit directly", async () => {});
 
   test("client deposits eth, withdraws, then successfully deposits eth again", async () => {
-    await clientA.deposit({ amount: TWO_WEI_AMOUNT, assetId: AddressZero });
-    await clientA.withdraw({ amount: TWO_WEI_AMOUNT, assetId: AddressZero });
-    await clientA.deposit({ amount: ONE_WEI_AMOUNT, assetId: AddressZero });
+    await clientA.deposit({ amount: TWO, assetId: AddressZero });
+    await clientA.withdraw({ amount: TWO, assetId: AddressZero });
+    await clientA.deposit({ amount: ONE, assetId: AddressZero });
 
     const freeBalance = await clientA.getFreeBalance(AddressZero);
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
@@ -118,9 +111,9 @@ describe("Deposits", () => {
   test("client deposits eth, withdraws, then successfully deposits tokens", async () => {
     const tokenAddress = clientA.config.contractAddresses.Token;
 
-    await clientA.deposit({ amount: TWO_WEI_AMOUNT, assetId: AddressZero });
-    await clientA.withdraw({ amount: TWO_WEI_AMOUNT, assetId: AddressZero });
-    await clientA.deposit({ amount: ONE_WEI_AMOUNT, assetId: tokenAddress });
+    await clientA.deposit({ amount: TWO, assetId: AddressZero });
+    await clientA.withdraw({ amount: TWO, assetId: AddressZero });
+    await clientA.deposit({ amount: ONE, assetId: tokenAddress });
 
     const freeBalanceToken = await clientA.getFreeBalance(tokenAddress);
     const freeBalanceEth = await clientA.getFreeBalance(AddressZero);
