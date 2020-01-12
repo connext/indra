@@ -14,6 +14,7 @@ import {
   TOKEN_AMOUNT,
   withdrawFromChannel,
 } from "../util";
+import { swapAsset } from "../util/helpers/swapAsset";
 
 describe("ChannelProvider", () => {
   let clientA: IConnextClient;
@@ -48,59 +49,22 @@ describe("ChannelProvider", () => {
 
   // tslint:disable-next-line:max-line-length
   test("Happy case: Bot A1 can call the full deposit → swap → transfer → withdraw flow on Bot A", async () => {
+    const input = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    const output = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+
     ////////////////////////////////////////
     // DEPOSIT FLOW
     // client deposit and request node collateral
-    const depositAmount = ETH_AMOUNT_SM;
-    await clientA1.deposit({ amount: depositAmount.toString(), assetId: AddressZero });
-    await clientA1.requestCollateral(tokenAddress);
+    await clientA.deposit({ amount: input.amount.toString(), assetId: input.assetId });
+    await clientA.requestCollateral(output.assetId);
 
     ////////////////////////////////////////
     // SWAP FLOW
-    // check balances pre
-    const {
-      [clientA1.freeBalanceAddress]: preSwapFreeBalanceEthClient,
-      [nodeFreeBalanceAddress]: preSwapFreeBalanceEthNode,
-    } = await clientA1.getFreeBalance(AddressZero);
-    expect(preSwapFreeBalanceEthClient).toBeBigNumberEq(depositAmount);
-    expect(preSwapFreeBalanceEthNode).toBeBigNumberEq(Zero);
-
-    const {
-      [clientA1.freeBalanceAddress]: preSwapFreeBalanceTokenClient,
-      [nodeFreeBalanceAddress]: preSwapFreeBalanceTokenNode,
-    } = await clientA1.getFreeBalance(tokenAddress);
-    expect(preSwapFreeBalanceTokenNode).toBeBigNumberEq(TOKEN_AMOUNT);
-    expect(preSwapFreeBalanceTokenClient).toBeBigNumberEq(Zero);
-
-    const swapRate = await clientA1.getLatestSwapRate(AddressZero, tokenAddress);
-
-    const swapAmount = bigNumberify(ONE);
-    const swapParams: SwapParameters = {
-      amount: swapAmount.toString(),
-      fromAssetId: AddressZero,
-      swapRate,
-      toAssetId: tokenAddress,
-    };
-    await clientA1.swap(swapParams);
-
-    const expectedTokenSwapAmount = calculateExchange(swapAmount, swapRate);
-
-    const {
-      [clientA1.freeBalanceAddress]: postSwapFreeBalanceEthClient,
-      [nodeFreeBalanceAddress]: postSwapFreeBalanceEthNode,
-    } = await clientA1.getFreeBalance(AddressZero);
-    expect(postSwapFreeBalanceEthClient).toBeBigNumberEq(
-      preSwapFreeBalanceEthClient.sub(swapAmount),
-    );
-    expect(postSwapFreeBalanceEthNode).toBeBigNumberEq(swapAmount);
-
-    const {
-      [clientA1.freeBalanceAddress]: postSwapFreeBalanceTokenClient,
-      [nodeFreeBalanceAddress]: postSwapFreeBalanceTokenNode,
-    } = await clientA1.getFreeBalance(tokenAddress);
-    expect(postSwapFreeBalanceTokenClient).toBeBigNumberEq(expectedTokenSwapAmount);
-    expect(postSwapFreeBalanceTokenNode).toBeBigNumberEq(
-      preSwapFreeBalanceTokenNode.sub(expectedTokenSwapAmount),
+    const { freeBalanceClientEth, freeBalanceNodeEth } = await swapAsset(
+      clientA,
+      input,
+      output,
+      nodeFreeBalanceAddress,
     );
 
     ////////////////////////////////////////
@@ -111,8 +75,8 @@ describe("ChannelProvider", () => {
     await clientB.requestCollateral(AddressZero);
 
     await asyncTransferAsset(clientA1, clientB, transferAmount, assetId, nodeFreeBalanceAddress, {
-      freeBalanceClientA: postSwapFreeBalanceEthClient,
-      freeBalanceNodeA: postSwapFreeBalanceEthNode,
+      freeBalanceClientA: freeBalanceClientEth,
+      freeBalanceNodeA: freeBalanceNodeEth,
     });
 
     ////////////////////////////////////////

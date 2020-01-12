@@ -2,7 +2,7 @@ import { IConnextClient } from "@connext/types";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
-import { ExistingBalances } from "../types";
+import { ExistingBalancesAsyncTransfer } from "../types";
 
 export async function asyncTransferAsset(
   clientA: IConnextClient,
@@ -10,9 +10,9 @@ export async function asyncTransferAsset(
   transferAmount: BigNumber,
   assetId: string,
   nodeFreeBalanceAddress: string,
-  preExistingBalances: Partial<ExistingBalances> = {},
-): Promise<void> {
-  const existingBalances = {
+  preExistingBalances: Partial<ExistingBalancesAsyncTransfer> = {},
+): Promise<ExistingBalancesAsyncTransfer> {
+  const pre: ExistingBalancesAsyncTransfer = {
     freeBalanceClientA: transferAmount,
     freeBalanceClientB: Zero,
     freeBalanceNodeA: Zero,
@@ -24,15 +24,15 @@ export async function asyncTransferAsset(
     [clientA.freeBalanceAddress]: preTransferFreeBalanceClientA,
     [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeA,
   } = await clientA.getFreeBalance(assetId);
-  expect(preTransferFreeBalanceClientA).toBeBigNumberEq(existingBalances.freeBalanceClientA);
-  expect(preTransferFreeBalanceNodeA).toBeBigNumberEq(existingBalances.freeBalanceNodeA);
+  expect(preTransferFreeBalanceClientA).toBeBigNumberEq(pre.freeBalanceClientA);
+  expect(preTransferFreeBalanceNodeA).toBeBigNumberEq(pre.freeBalanceNodeA);
 
   const {
     [clientB.freeBalanceAddress]: preTransferFreeBalanceClientB,
     [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeB,
   } = await clientB.getFreeBalance(assetId);
-  expect(preTransferFreeBalanceClientB).toBeBigNumberEq(existingBalances.freeBalanceClientB);
-  expect(preTransferFreeBalanceNodeB).toBeBigNumberGte(existingBalances.freeBalanceNodeB);
+  expect(preTransferFreeBalanceClientB).toBeBigNumberEq(pre.freeBalanceClientB);
+  expect(preTransferFreeBalanceNodeB).toBeBigNumberGte(pre.freeBalanceNodeB);
 
   let paymentId;
   await new Promise(async resolve => {
@@ -99,4 +99,11 @@ export async function asyncTransferAsset(
     type: "LINKED",
   });
   expect(paymentB).toMatchObject(paymentA);
+
+  return {
+    freeBalanceClientA: postTransferFreeBalanceClientA,
+    freeBalanceClientB: postTransferFreeBalanceClientB,
+    freeBalanceNodeA: postTransferFreeBalanceNodeA,
+    freeBalanceNodeB: postTransferFreeBalanceNodeB,
+  };
 }

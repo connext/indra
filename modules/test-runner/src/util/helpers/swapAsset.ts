@@ -1,138 +1,90 @@
 import { IConnextClient, SwapParameters } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber } from "ethers/utils";
 
 import { calculateExchange, inverse } from "../bn";
-import { ExistingBalances } from "../types";
-
-interface AssetOptions {
-  amount: BigNumber;
-  assetId: string;
-}
-
-function isEth(assetId: string) {
-  return assetId === AddressZero;
-}
+import { ExistingBalancesSwap, SwapAssetOptions } from "../types";
 
 export async function swapAsset(
   client: IConnextClient,
-  input: AssetOptions,
-  output: AssetOptions,
+  input: SwapAssetOptions,
+  output: SwapAssetOptions,
   nodeFreeBalanceAddress: string,
-  preExistingBalances?: Partial<ExistingBalances>,
-): Promise<void> {
-  const ethToToken = isEth(input.assetId);
-  if (ethToToken) {
-    const existingBalances = {
-      freeBalanceClientA: input.amount,
-      freeBalanceClientB: Zero,
-      freeBalanceNodeA: Zero,
-      freeBalanceNodeB: output.amount,
-      ...preExistingBalances,
-    };
+  preExistingBalances?: Partial<ExistingBalancesSwap>,
+): Promise<ExistingBalancesSwap> {
+  const ethToToken = input.assetId === AddressZero;
+  const ethAssetId = ethToToken ? input.assetId : output.assetId;
+  const tokenAssetId = ethToToken ? output.assetId : input.assetId;
 
-    // check balances pre
-    const {
-      [client.freeBalanceAddress]: preSwapFreeBalanceEthClient,
-      [nodeFreeBalanceAddress]: preSwapFreeBalanceEthNode,
-    } = await client.getFreeBalance(input.assetId);
-    expect(preSwapFreeBalanceEthClient).toBeBigNumberEq(input.amount);
-    expect(preSwapFreeBalanceEthNode).toBeBigNumberEq(Zero);
+  const pre: ExistingBalancesSwap = {
+    freeBalanceClientEth: ethToToken ? input.amount : Zero,
+    freeBalanceClientToken: ethToToken ? Zero : input.amount,
+    freeBalanceNodeEth: ethToToken ? Zero : output.amount,
+    freeBalanceNodeToken: ethToToken ? output.amount : Zero,
+    ...preExistingBalances,
+  };
 
-    const {
-      [client.freeBalanceAddress]: preSwapFreeBalanceTokenClient,
-      [nodeFreeBalanceAddress]: preSwapFreeBalanceTokenNode,
-    } = await client.getFreeBalance(output.assetId);
-    expect(preSwapFreeBalanceTokenNode).toBeBigNumberEq(output.amount);
-    expect(preSwapFreeBalanceTokenClient).toBeBigNumberEq(Zero);
+  // check balances pre
+  const {
+    [client.freeBalanceAddress]: preSwapFreeBalanceClientEth,
+    [nodeFreeBalanceAddress]: preSwapFreeBalanceNodeEth,
+  } = await client.getFreeBalance(ethAssetId);
+  expect(preSwapFreeBalanceClientEth).toBeBigNumberEq(pre.freeBalanceClientEth);
+  expect(preSwapFreeBalanceNodeEth).toBeBigNumberEq(pre.freeBalanceNodeEth);
 
-    const rate = await client.getLatestSwapRate(input.assetId, output.assetId);
-    const swapRate = rate;
+  const {
+    [client.freeBalanceAddress]: preSwapFreeBalanceClientToken,
+    [nodeFreeBalanceAddress]: preSwapFreeBalanceNodeToken,
+  } = await client.getFreeBalance(tokenAssetId);
+  expect(preSwapFreeBalanceNodeToken).toBeBigNumberEq(pre.freeBalanceNodeToken);
+  expect(preSwapFreeBalanceClientToken).toBeBigNumberEq(pre.freeBalanceClientToken);
 
-    const swapAmount = input.amount;
-    const swapParams: SwapParameters = {
-      amount: swapAmount.toString(),
-      fromAssetId: input.assetId,
-      swapRate,
-      toAssetId: output.assetId,
-    };
-    await client.swap(swapParams);
+  const rate = await client.getLatestSwapRate(ethAssetId, tokenAssetId);
+  const swapRate = ethToToken ? rate : inverse(rate);
 
-    const expectedTokenSwapAmount = calculateExchange(swapAmount, swapRate);
+  const swapAmount = input.amount;
+  const swapParams: SwapParameters = {
+    amount: swapAmount.toString(),
+    fromAssetId: input.assetId,
+    swapRate,
+    toAssetId: output.assetId,
+  };
+  await client.swap(swapParams);
 
-    const {
-      [client.freeBalanceAddress]: postSwapFreeBalanceEthClient,
-      [nodeFreeBalanceAddress]: postSwapFreeBalanceEthNode,
-    } = await client.getFreeBalance(input.assetId);
-    expect(postSwapFreeBalanceEthClient).toBeBigNumberEq(
-      preSwapFreeBalanceEthClient.sub(swapAmount),
-    );
-    expect(postSwapFreeBalanceEthNode).toBeBigNumberEq(swapAmount);
+  const expectedSwapAmount = calculateExchange(swapAmount, swapRate);
 
-    const {
-      [client.freeBalanceAddress]: postSwapFreeBalanceTokenClient,
-      [nodeFreeBalanceAddress]: postSwapFreeBalanceTokenNode,
-    } = await client.getFreeBalance(output.assetId);
-    expect(postSwapFreeBalanceTokenClient).toBeBigNumberEq(expectedTokenSwapAmount);
-    expect(postSwapFreeBalanceTokenNode).toBeBigNumberEq(
-      preSwapFreeBalanceTokenNode.sub(expectedTokenSwapAmount),
-    );
-  } else {
-    const existingBalances = {
-      freeBalanceClientA: Zero,
-      freeBalanceClientB: output.amount,
-      freeBalanceNodeA: Zero,
-      freeBalanceNodeB: input.amount,
-      ...preExistingBalances,
-    };
+  const {
+    [client.freeBalanceAddress]: postSwapFreeBalanceClientEth,
+    [nodeFreeBalanceAddress]: postSwapFreeBalanceNodeEth,
+  } = await client.getFreeBalance(ethAssetId);
+  expect(postSwapFreeBalanceClientEth).toBeBigNumberEq(
+    ethToToken
+      ? preSwapFreeBalanceClientEth.sub(expectedSwapAmount)
+      : preSwapFreeBalanceClientEth.add(expectedSwapAmount),
+  );
+  expect(postSwapFreeBalanceNodeEth).toBeBigNumberEq(
+    ethToToken
+      ? preSwapFreeBalanceNodeEth.add(expectedSwapAmount)
+      : preSwapFreeBalanceNodeEth.sub(expectedSwapAmount),
+  );
 
-    // check balances pre
-    const {
-      [client.freeBalanceAddress]: preSwapFreeBalanceEthClient,
-      [nodeFreeBalanceAddress]: preSwapFreeBalanceEthNode,
-    } = await client.getFreeBalance(output.assetId);
-    expect(preSwapFreeBalanceEthClient).toBeBigNumberEq(Zero);
-    expect(preSwapFreeBalanceEthNode).toBeBigNumberEq(output.amount);
-
-    const {
-      [client.freeBalanceAddress]: preSwapFreeBalanceTokenClient,
-      [nodeFreeBalanceAddress]: preSwapFreeBalanceTokenNode,
-    } = await client.getFreeBalance(input.assetId);
-    expect(preSwapFreeBalanceTokenNode).toBeBigNumberEq(Zero);
-    expect(preSwapFreeBalanceTokenClient).toBeBigNumberEq(input.amount);
-
-    const rate = await client.getLatestSwapRate(output.assetId, input.assetId);
-    const swapRate = inverse(rate);
-    console.log("swapRate: ", swapRate);
-
-    const swapAmount = input.amount;
-    console.log("swapAmount: ", swapAmount);
-    const swapParams: SwapParameters = {
-      amount: swapAmount.toString(),
-      fromAssetId: input.assetId,
-      swapRate,
-      toAssetId: output.assetId,
-    };
-    await client.swap(swapParams);
-
-    const expectedEthSwapAmount = calculateExchange(swapAmount, swapRate);
-
-    const {
-      [client.freeBalanceAddress]: postSwapFreeBalanceEthClient,
-      [nodeFreeBalanceAddress]: postSwapFreeBalanceEthNode,
-    } = await client.getFreeBalance(output.assetId);
-    expect(postSwapFreeBalanceEthClient).toBeBigNumberEq(expectedEthSwapAmount);
-    expect(postSwapFreeBalanceEthNode).toBeBigNumberEq(
-      preSwapFreeBalanceEthNode.sub(expectedEthSwapAmount),
-    );
-
-    const {
-      [client.freeBalanceAddress]: postSwapFreeBalanceTokenClient,
-      [nodeFreeBalanceAddress]: postSwapFreeBalanceTokenNode,
-    } = await client.getFreeBalance(input.assetId);
-    expect(postSwapFreeBalanceTokenClient).toBeBigNumberEq(
-      preSwapFreeBalanceTokenClient.sub(swapAmount),
-    );
-    expect(postSwapFreeBalanceTokenNode).toBeBigNumberEq(swapAmount);
-  }
+  const {
+    [client.freeBalanceAddress]: postSwapFreeBalanceClientToken,
+    [nodeFreeBalanceAddress]: postSwapFreeBalanceNodeToken,
+  } = await client.getFreeBalance(tokenAssetId);
+  expect(postSwapFreeBalanceClientToken).toBeBigNumberEq(
+    ethToToken
+      ? preSwapFreeBalanceClientToken.add(expectedSwapAmount)
+      : preSwapFreeBalanceClientToken.sub(expectedSwapAmount),
+  );
+  expect(postSwapFreeBalanceNodeToken).toBeBigNumberEq(
+    ethToToken
+      ? preSwapFreeBalanceNodeToken.sub(expectedSwapAmount)
+      : preSwapFreeBalanceNodeToken.add(expectedSwapAmount),
+  );
+  return {
+    freeBalanceClientEth: postSwapFreeBalanceClientEth,
+    freeBalanceClientToken: postSwapFreeBalanceClientToken,
+    freeBalanceNodeEth: postSwapFreeBalanceNodeEth,
+    freeBalanceNodeToken: postSwapFreeBalanceNodeToken,
+  };
 }
