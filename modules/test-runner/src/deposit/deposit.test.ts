@@ -1,6 +1,6 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
-import { AddressZero } from "ethers/constants";
+import { AddressZero, Zero } from "ethers/constants";
 
 import { createClient, getOnchainBalance, NEGATIVE_ONE, ONE, TWO, WRONG_ADDRESS } from "../util";
 
@@ -16,8 +16,8 @@ describe("Deposits", () => {
     const freeBalance = await clientA.getFreeBalance(AddressZero);
 
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress]).toBeBigNumberEq(1);
-    expect(freeBalance[nodeFreeBalanceAddress]).toBeBigNumberEq(0);
+    expect(freeBalance[clientA.freeBalanceAddress]).toBeBigNumberEq(ONE);
+    expect(freeBalance[nodeFreeBalanceAddress]).toBeBigNumberEq(Zero);
 
     // TODO: assert node's version of free balance also?
   });
@@ -29,8 +29,8 @@ describe("Deposits", () => {
     const freeBalance = await clientA.getFreeBalance(tokenAddress);
 
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress]).toBeBigNumberEq(1);
-    expect(freeBalance[nodeFreeBalanceAddress]).toBeBigNumberEq(0);
+    expect(freeBalance[clientA.freeBalanceAddress]).toBeBigNumberEq(ONE);
+    expect(freeBalance[nodeFreeBalanceAddress]).toBeBigNumberEq(Zero);
 
     // TODO: assert node's version of free balance also?
   });
@@ -70,8 +70,8 @@ describe("Deposits", () => {
     const freeBalance = await clientA.getFreeBalance(clientA.config.contractAddresses.Token);
 
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress]).toBeBigNumberEq(1);
-    expect(freeBalance[nodeFreeBalanceAddress]).toBeBigNumberEq(0);
+    expect(freeBalance[clientA.freeBalanceAddress]).toBeBigNumberEq(ONE);
+    expect(freeBalance[nodeFreeBalanceAddress]).toBeBigNumberEq(Zero);
     //TODO: is there any way to test to make sure deposit rights were rescinded as part of the .deposit call?
   });
 
@@ -104,8 +104,8 @@ describe("Deposits", () => {
 
     const freeBalance = await clientA.getFreeBalance(AddressZero);
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress]).toBeBigNumberEq(1);
-    expect(freeBalance[nodeFreeBalanceAddress]).toBeBigNumberEq(0);
+    expect(freeBalance[clientA.freeBalanceAddress]).toBeBigNumberEq(ONE);
+    expect(freeBalance[nodeFreeBalanceAddress]).toBeBigNumberEq(Zero);
   });
 
   test("client deposits eth, withdraws, then successfully deposits tokens", async () => {
@@ -118,9 +118,9 @@ describe("Deposits", () => {
     const freeBalanceToken = await clientA.getFreeBalance(tokenAddress);
     const freeBalanceEth = await clientA.getFreeBalance(AddressZero);
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalanceEth[clientA.freeBalanceAddress]).toBeBigNumberEq(0);
-    expect(freeBalanceEth[nodeFreeBalanceAddress]).toBeBigNumberEq(0);
-    expect(freeBalanceToken[clientA.freeBalanceAddress]).toBeBigNumberEq(1);
-    expect(freeBalanceToken[nodeFreeBalanceAddress]).toBeBigNumberEq(0);
+    expect(freeBalanceEth[clientA.freeBalanceAddress]).toBeBigNumberEq(Zero);
+    expect(freeBalanceEth[nodeFreeBalanceAddress]).toBeBigNumberEq(Zero);
+    expect(freeBalanceToken[clientA.freeBalanceAddress]).toBeBigNumberEq(ONE);
+    expect(freeBalanceToken[nodeFreeBalanceAddress]).toBeBigNumberEq(Zero);
   });
 });

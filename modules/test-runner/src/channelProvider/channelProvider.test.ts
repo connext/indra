@@ -1,14 +1,15 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IChannelProvider, IConnextClient, SwapParameters } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
+import { bigNumberify } from "ethers/utils";
 
 import {
   calculateExchange,
   createChannelProvider,
   createClient,
   createRemoteClient,
-  ETH_AMOUNT_MD,
   ETH_AMOUNT_SM,
+  ONE,
   TOKEN_AMOUNT,
   withdrawFromChannel,
 } from "../util";
@@ -49,7 +50,7 @@ describe("ChannelProvider", () => {
     ////////////////////////////////////////
     // DEPOSIT FLOW
     // client deposit and request node collateral
-    const depositAmount = ETH_AMOUNT_MD;
+    const depositAmount = ETH_AMOUNT_SM;
     await clientA1.deposit({ amount: depositAmount.toString(), assetId: AddressZero });
     await clientA1.requestCollateral(tokenAddress);
 
@@ -72,7 +73,7 @@ describe("ChannelProvider", () => {
 
     const swapRate = await clientA1.getLatestSwapRate(AddressZero, tokenAddress);
 
-    const swapAmount = ETH_AMOUNT_SM;
+    const swapAmount = bigNumberify(ONE);
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),
       fromAssetId: AddressZero,
@@ -81,21 +82,21 @@ describe("ChannelProvider", () => {
     };
     await clientA1.swap(swapParams);
 
+    const expectedTokenSwapAmount = calculateExchange(swapAmount, swapRate);
+
     const {
       [clientA1.freeBalanceAddress]: postSwapFreeBalanceEthClient,
       [nodeFreeBalanceAddress]: postSwapFreeBalanceEthNode,
     } = await clientA1.getFreeBalance(AddressZero);
-    const {
-      [clientA1.freeBalanceAddress]: postSwapFreeBalanceTokenClient,
-      [nodeFreeBalanceAddress]: postSwapFreeBalanceTokenNode,
-    } = await clientA1.getFreeBalance(tokenAddress);
-
     expect(postSwapFreeBalanceEthClient).toBeBigNumberEq(
       preSwapFreeBalanceEthClient.sub(swapAmount),
     );
     expect(postSwapFreeBalanceEthNode).toBeBigNumberEq(swapAmount);
 
-    const expectedTokenSwapAmount = calculateExchange(swapAmount, swapRate);
+    const {
+      [clientA1.freeBalanceAddress]: postSwapFreeBalanceTokenClient,
+      [nodeFreeBalanceAddress]: postSwapFreeBalanceTokenNode,
+    } = await clientA1.getFreeBalance(tokenAddress);
     expect(postSwapFreeBalanceTokenClient).toBeBigNumberEq(expectedTokenSwapAmount);
     expect(postSwapFreeBalanceTokenNode).toBeBigNumberEq(
       preSwapFreeBalanceTokenNode.sub(expectedTokenSwapAmount.toString()),
@@ -103,25 +104,22 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // TRANSFER FLOW
-    const transferAmount = ETH_AMOUNT_SM;
+    const transferAmount = bigNumberify(ONE);
     const clientB = await createClient();
-    await clientA1.deposit({ amount: transferAmount.toString(), assetId: AddressZero });
     await clientB.requestCollateral(AddressZero);
 
     const {
       [clientA1.freeBalanceAddress]: preTransferFreeBalanceEthClientA1,
       [nodeFreeBalanceAddress]: preTransferFreeBalanceEthNodeA1,
     } = await clientA1.getFreeBalance(AddressZero);
+    expect(preTransferFreeBalanceEthClientA1).toBeBigNumberEq(postSwapFreeBalanceEthClient);
+    expect(preTransferFreeBalanceEthNodeA1).toBeBigNumberEq(postSwapFreeBalanceEthNode);
 
     const {
       [clientB.freeBalanceAddress]: preTransferFreeBalanceEthClientB,
       [nodeFreeBalanceAddress]: preTransferFreeBalanceEthNodeB,
     } = await clientB.getFreeBalance(AddressZero);
-
-    expect(preTransferFreeBalanceEthClientA1).toBeBigNumberEq(transferAmount);
-    expect(preTransferFreeBalanceEthNodeA1).toBeBigNumberEq(0);
-
-    expect(preTransferFreeBalanceEthClientB).toBeBigNumberEq(0);
+    expect(preTransferFreeBalanceEthClientB).toBeBigNumberEq(Zero);
     expect(preTransferFreeBalanceEthNodeB).toBeBigNumberGte(transferAmount);
 
     let paymentId;
@@ -141,7 +139,7 @@ describe("ChannelProvider", () => {
         }
       });
 
-      const { paymentId: senderPaymentId, preImage: linkedPreImage } = await clientA1.transfer({
+      const { paymentId: senderPaymentId } = await clientA1.transfer({
         amount: transferAmount.toString(),
         assetId: AddressZero,
         meta: { hello: "world" },
@@ -149,8 +147,8 @@ describe("ChannelProvider", () => {
       });
       paymentId = senderPaymentId;
     });
-    expect((await clientB.getAppInstances()).length).toEqual(0);
-    expect((await clientA1.getAppInstances()).length).toEqual(0);
+    expect((await clientB.getAppInstances()).length).toEqual(Zero.toNumber());
+    expect((await clientA1.getAppInstances()).length).toEqual(Zero.toNumber());
 
     const {
       [clientA1.freeBalanceAddress]: postTransferFreeBalanceEthClientA1,
@@ -162,7 +160,9 @@ describe("ChannelProvider", () => {
       [nodeFreeBalanceAddress]: postTransferFreeBalanceEthNodeB,
     } = await clientB.getFreeBalance(AddressZero);
 
-    expect(postTransferFreeBalanceEthClientA1).toBeBigNumberEq(0);
+    expect(postTransferFreeBalanceEthClientA1).toBeBigNumberEq(
+      preTransferFreeBalanceEthClientA1.sub(transferAmount),
+    );
     expect(postTransferFreeBalanceEthNodeA1).toBeBigNumberEq(transferAmount);
 
     expect(postTransferFreeBalanceEthClientB).toBeBigNumberEq(transferAmount);
@@ -187,7 +187,8 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // WITHDRAW FLOW
-    await withdrawFromChannel(clientA1, postTransferFreeBalanceEthClientA1.toString(), AddressZero);
+    const withdrawAmount = bigNumberify(ONE);
+    await withdrawFromChannel(clientA1, withdrawAmount.toString(), AddressZero);
   });
 
   // tslint:disable-next-line:max-line-length
@@ -201,7 +202,7 @@ describe("ChannelProvider", () => {
   });
 
   // tslint:disable-next-line:max-line-length
-  test("Bot A1 tries to reject installing a proposed app that bot A has already installed?", async () => {
+  test.skip("Bot A1 tries to reject installing a proposed app that bot A has already installed?", async () => {
     // TODO: add test
   });
 });

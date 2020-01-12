@@ -1,6 +1,6 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
-import { AddressZero } from "ethers/constants";
+import { AddressZero, Zero } from "ethers/constants";
 
 import { createClient, ETH_AMOUNT_MD, TOKEN_AMOUNT } from "../util";
 
@@ -16,7 +16,7 @@ describe("Collateral", () => {
     const freeBalance = await clientA.getFreeBalance(AddressZero);
 
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress]).toBeBigNumberEq(0);
+    expect(freeBalance[clientA.freeBalanceAddress]).toBeBigNumberEq(Zero);
     expect(freeBalance[nodeFreeBalanceAddress]).toBeBigNumberEq(ETH_AMOUNT_MD);
   });
 
@@ -27,7 +27,7 @@ describe("Collateral", () => {
     const freeBalance = await clientA.getFreeBalance(tokenAddress);
 
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress]).toBeBigNumberEq(0);
+    expect(freeBalance[clientA.freeBalanceAddress]).toBeBigNumberEq(Zero);
     expect(freeBalance[nodeFreeBalanceAddress]).toBeBigNumberEq(TOKEN_AMOUNT);
   });
 });

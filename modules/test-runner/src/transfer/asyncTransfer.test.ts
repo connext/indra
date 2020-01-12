@@ -1,6 +1,6 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
-import { AddressZero } from "ethers/constants";
+import { AddressZero, Zero } from "ethers/constants";
 
 import { createClient, ETH_AMOUNT_LG, ETH_AMOUNT_SM } from "../util";
 
@@ -36,9 +36,9 @@ describe("Async Transfers", () => {
     } = await clientB.getFreeBalance(AddressZero);
 
     expect(preTransferFreeBalanceEthClientA).toBeBigNumberEq(transferAmount);
-    expect(preTransferFreeBalanceEthNodeA).toBeBigNumberEq(0);
+    expect(preTransferFreeBalanceEthNodeA).toBeBigNumberEq(Zero);
 
-    expect(preTransferFreeBalanceEthClientB).toBeBigNumberEq(0);
+    expect(preTransferFreeBalanceEthClientB).toBeBigNumberEq(Zero);
     expect(preTransferFreeBalanceEthNodeB).toBeBigNumberGte(transferAmount);
 
     let paymentId;
@@ -58,7 +58,7 @@ describe("Async Transfers", () => {
         }
       });
 
-      const { paymentId: senderPaymentId, preImage: linkedPreImage } = await clientA.transfer({
+      const { paymentId: senderPaymentId } = await clientA.transfer({
         amount: transferAmount.toString(),
         assetId: AddressZero,
         meta: { hello: "world" },
@@ -66,8 +66,8 @@ describe("Async Transfers", () => {
       });
       paymentId = senderPaymentId;
     });
-    expect((await clientB.getAppInstances()).length).toEqual(0);
-    expect((await clientA.getAppInstances()).length).toEqual(0);
+    expect((await clientB.getAppInstances()).length).toEqual(Zero.toNumber());
+    expect((await clientA.getAppInstances()).length).toEqual(Zero.toNumber());
 
     const {
       [clientA.freeBalanceAddress]: postTransferFreeBalanceEthClientA,
@@ -79,7 +79,7 @@ describe("Async Transfers", () => {
       [nodeFreeBalanceAddress]: postTransferFreeBalanceEthNodeB,
     } = await clientB.getFreeBalance(AddressZero);
 
-    expect(postTransferFreeBalanceEthClientA).toBeBigNumberEq(0);
+    expect(postTransferFreeBalanceEthClientA).toBeBigNumberEq(Zero);
     expect(postTransferFreeBalanceEthNodeA).toBeBigNumberEq(transferAmount);
 
     expect(postTransferFreeBalanceEthClientB).toBeBigNumberEq(transferAmount);
@@ -119,9 +119,9 @@ describe("Async Transfers", () => {
     } = await clientB.getFreeBalance(tokenAddress);
 
     expect(preTransferFreeBalanceClientA).toBeBigNumberEq(transferAmount);
-    expect(preTransferFreeBalanceNodeA).toBeBigNumberEq(0);
+    expect(preTransferFreeBalanceNodeA).toBeBigNumberEq(Zero);
 
-    expect(preTransferFreeBalanceClientB).toBeBigNumberEq(0);
+    expect(preTransferFreeBalanceClientB).toBeBigNumberEq(Zero);
     expect(preTransferFreeBalanceNodeB).toBeBigNumberGte(transferAmount);
 
     let paymentId;
@@ -151,8 +151,8 @@ describe("Async Transfers", () => {
       });
       paymentId = senderPaymentId;
     });
-    expect((await clientB.getAppInstances()).length).toEqual(0);
-    expect((await clientA.getAppInstances()).length).toEqual(0);
+    expect((await clientB.getAppInstances()).length).toEqual(Zero.toNumber());
+    expect((await clientA.getAppInstances()).length).toEqual(Zero.toNumber());
 
     const {
       [clientA.freeBalanceAddress]: postTransferFreeBalanceClientA,
@@ -164,7 +164,7 @@ describe("Async Transfers", () => {
       [nodeFreeBalanceAddress]: postTransferFreeBalanceNodeB,
     } = await clientB.getFreeBalance(tokenAddress);
 
-    expect(postTransferFreeBalanceClientA).toBeBigNumberEq(0);
+    expect(postTransferFreeBalanceClientA).toBeBigNumberEq(Zero);
     expect(postTransferFreeBalanceNodeA).toBeBigNumberEq(transferAmount);
 
     expect(postTransferFreeBalanceClientB).toBeBigNumberEq(transferAmount);
