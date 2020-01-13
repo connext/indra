@@ -5,7 +5,7 @@ dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | jq .name | tr -d '"'`"
 name="${project}_test_runner"
 commit="`git rev-parse HEAD | head -c 8`"
-release="`cat package.json | grep '"version:"' | awk -F '"' '{print $4}'`"
+release="`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 
 if [[ "$TEST_MODE" == "release" ]]
 then image=$name:$release;
