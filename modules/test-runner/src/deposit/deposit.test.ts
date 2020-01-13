@@ -3,9 +3,7 @@ import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 
 import { createClient } from "../util/client";
-import { FUNDED_MNEMONICS } from "../util/constants";
-import { clearDb } from "../util/db";
-import { getOnchainBalance, revertEVMSnapshot, takeEVMSnapshot } from "../util/ethprovider";
+import { getOnchainBalance } from "../util/ethprovider";
 
 describe("Deposits", () => {
   let clientA: IConnextClient;
