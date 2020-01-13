@@ -1,7 +1,8 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IChannelProvider, IConnextClient } from "@connext/types";
-import { AddressZero } from "ethers/constants";
+import { AddressZero, One } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
+import { Client } from "ts-nats";
 
 import {
   asyncTransferAsset,
@@ -14,6 +15,7 @@ import {
   TOKEN_AMOUNT,
   withdrawFromChannel,
 } from "../util";
+import { createOrRetrieveNatsConnection } from "../util/nats";
 
 describe("ChannelProvider", () => {
   let clientA: IConnextClient;
@@ -22,6 +24,11 @@ describe("ChannelProvider", () => {
   let nodeFreeBalanceAddress: string;
   let nodePublicIdentifier: string;
   let channelProvider: IChannelProvider;
+  let natsConnection: Client;
+
+  beforeAll(async () => {
+    natsConnection = await createOrRetrieveNatsConnection();
+  });
 
   beforeEach(async () => {
     clientA = await createClient();
@@ -47,7 +54,7 @@ describe("ChannelProvider", () => {
   });
 
   // tslint:disable-next-line:max-line-length
-  test("Happy case: Bot A1 can call the full deposit → swap → transfer → withdraw flow on Bot A", async () => {
+  test.only("Happy case: Bot A1 can call the full deposit → swap → transfer → withdraw flow on Bot A", async () => {
     const input = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const output = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
 
@@ -67,21 +74,35 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // TRANSFER FLOW
-    const transfer = { amount: bigNumberify(ONE), assetId: tokenAddress };
+    const transfer = { amount: One, assetId: tokenAddress };
     const clientB = await createClient();
     await clientB.requestCollateral(tokenAddress);
 
-    await asyncTransferAsset(
-      clientA1,
-      clientB,
-      transfer.amount,
-      transfer.assetId,
-      nodeFreeBalanceAddress,
-      {
-        freeBalanceClientA: freeBalanceClientToken,
-        freeBalanceNodeA: freeBalanceNodeToken,
-      },
-    );
+    const transferFinished = Promise.all([
+      new Promise(async resolve => {
+        const sub = await natsConnection.subscribe(
+          `indra.node.${clientA.nodePublicIdentifier}.uninstall.>`,
+          () => {
+            resolve();
+            sub.unsubscribe();
+          },
+        );
+      }),
+      new Promise(async resolve => {
+        clientB.once("RECIEVE_TRANSFER_FINISHED_EVENT", async () => {
+          console.error(`Caught receive finished event!!!!!`);
+          resolve();
+        });
+      }),
+    ]);
+
+    await clientA1.transfer({
+      amount: transfer.amount.toString(),
+      assetId: transfer.assetId,
+      recipient: clientB.publicIdentifier,
+    });
+
+    await transferFinished;
 
     ////////////////////////////////////////
     // WITHDRAW FLOW
