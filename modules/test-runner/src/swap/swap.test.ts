@@ -4,17 +4,15 @@ import { AddressZero, Zero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
 import {
-  calculateExchange,
   createClient,
   ETH_AMOUNT_MD,
   ETH_AMOUNT_SM,
-  inverse,
+  swapAsset,
   TOKEN_AMOUNT,
   WRONG_ADDRESS,
   ZERO_ZERO_TWO,
   ZERO_ZERO_ZERO_FIVE,
 } from "../util";
-import { swapAsset } from "../util/helpers/swapAsset";
 
 describe("Swaps", () => {
   let clientA: IConnextClient;

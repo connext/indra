@@ -1,20 +1,19 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { IChannelProvider, IConnextClient, SwapParameters } from "@connext/types";
+import { IChannelProvider, IConnextClient } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
 
 import {
   asyncTransferAsset,
-  calculateExchange,
   createChannelProvider,
   createClient,
   createRemoteClient,
   ETH_AMOUNT_SM,
   ONE,
+  swapAsset,
   TOKEN_AMOUNT,
   withdrawFromChannel,
 } from "../util";
-import { swapAsset } from "../util/helpers/swapAsset";
 
 describe("ChannelProvider", () => {
   let clientA: IConnextClient;
