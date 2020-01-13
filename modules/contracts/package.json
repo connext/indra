@@ -7,13 +7,13 @@
   "files": ["build", "contracts"],
   "keywords": ["ethereum", "counterfactual", "state channels", "solidity"],
   "scripts": {
+    "build": "waffle waffle.json",
     "build-apps": "waffle waffle.apps.json",
     "build-adjudicator": "waffle waffle.adjudicator.json",
+    "build-funding": "waffle waffle.funding.json",
     "test": "ts-mocha test/**/*"
   },
   "devDependencies": {
-    "@connext/cf-adjudicator-contracts": "0.4.1",
-    "@connext/cf-funding-protocol-contracts": "0.4.1",
     "@connext/types": "1.4.4",
     "@types/chai": "4.2.7",
     "@types/mocha": "5.2.7",
