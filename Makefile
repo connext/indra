@@ -73,8 +73,12 @@ start-daicard: dev
 start-dashboard: dev
 	INDRA_UI=dashboard bash ops/start-dev.sh
 
-start-test:
-	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test bash ops/start-prod.sh
+start-test: start-test-staging
+start-test-staging:
+	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test-staging bash ops/start-prod.sh
+
+start-test-release:
+	INDRA_ETH_PROVIDER=http://localhost:8545 INDRA_MODE=test-release bash ops/start-prod.sh
 
 start-prod: prod
 	bash ops/start-prod.sh

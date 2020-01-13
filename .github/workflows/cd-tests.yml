@@ -59,7 +59,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make pull-commit
-    - run: make start-test
+    - run: make start-test-staging
     - run: sleep 15 && make dls
     - run: make test-integration
 
@@ -69,7 +69,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make pull-commit
-    - run: make start-test
+    - run: make start-test-staging
     - run: sleep 15 && make dls
     - run: make test-backwards-compatibility
 
@@ -79,7 +79,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make pull-commit
-    - run: make start-test
+    - run: make start-test-staging
     - run: make test-bot
 
   test-bot-farm:
@@ -88,7 +88,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make pull-commit
-    - run: make start-test
+    - run: make start-test-staging
     - run: make test-bot-farm
 
   test-daicard:
@@ -97,5 +97,5 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make pull-commit
-    - run: make start-test
+    - run: make start-test-staging
     - run: make test-daicard

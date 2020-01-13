@@ -78,7 +78,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make pull-release
-    - run: make start-test
+    - run: make start-test-release
     - run: make test-integration
 
   test-backwards-compatibility:
@@ -87,7 +87,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make pull-release
-    - run: make start-test
+    - run: make start-test-release
     - run: sleep 15 && make dls
     - run: make test-backwards-compatibility
 
@@ -97,7 +97,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make pull-release
-    - run: make start-test
+    - run: make start-test-release
     - run: make test-bot
 
   test-bot-farm:
@@ -106,7 +106,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make pull-release
-    - run: make start-test
+    - run: make start-test-release
     - run: make test-bot-farm
 
   test-daicard:
@@ -115,7 +115,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make pull-release
-    - run: make start-test
+    - run: make start-test-release
     - run: make test-daicard
 
   deploy-rinkeby:
