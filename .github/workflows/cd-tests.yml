@@ -46,6 +46,19 @@ jobs:
     - run: make client
     - run: make test-client
 
+  test-contracts:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Cache node modules
+      uses: actions/cache@v1
+      with:
+        path: .npm
+        key: npm-${{ hashFiles('package-lock.json') }}
+        restore-keys: npm-
+    - run: make contracts
+    - run: make test-contracts
+
   test-node:
     runs-on: ubuntu-latest
     steps:
