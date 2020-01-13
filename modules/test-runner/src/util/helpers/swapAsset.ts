@@ -17,9 +17,10 @@ export async function swapAsset(
 
   const preSwap: ExistingBalancesSwap = {
     freeBalanceClientEth: ethToToken ? input.amount : Zero,
-    freeBalanceClientToken: ethToToken ? Zero : input.amount,
     freeBalanceNodeEth: ethToToken ? Zero : output.amount,
-    freeBalanceNodeToken: ethToToken ? output.amount : Zero,
+    // tslint:disable-next-line:object-literal-sort-keys
+    freeBalanceClientToken: ethToToken ? output.amount : Zero,
+    freeBalanceNodeToken: ethToToken ? Zero : input.amount,
     ...preExistingBalances,
   };
 
@@ -34,8 +35,8 @@ export async function swapAsset(
     [client.freeBalanceAddress]: preSwapFreeBalanceClientToken,
     [nodeFreeBalanceAddress]: preSwapFreeBalanceNodeToken,
   } = await client.getFreeBalance(tokenAssetId);
-  expect(preSwapFreeBalanceNodeToken).toBeBigNumberEq(preSwap.freeBalanceNodeToken);
   expect(preSwapFreeBalanceClientToken).toBeBigNumberEq(preSwap.freeBalanceClientToken);
+  expect(preSwapFreeBalanceNodeToken).toBeBigNumberEq(preSwap.freeBalanceNodeToken);
 
   const rate = await client.getLatestSwapRate(ethAssetId, tokenAssetId);
   const swapRate = ethToToken ? rate : inverse(rate);
@@ -80,10 +81,14 @@ export async function swapAsset(
       ? preSwapFreeBalanceNodeToken.sub(expectedSwapAmount)
       : preSwapFreeBalanceNodeToken.add(expectedSwapAmount),
   );
-  return {
+
+  const postSwap: ExistingBalancesSwap = {
     freeBalanceClientEth: postSwapFreeBalanceClientEth,
-    freeBalanceClientToken: postSwapFreeBalanceClientToken,
     freeBalanceNodeEth: postSwapFreeBalanceNodeEth,
+    // tslint:disable-next-line:object-literal-sort-keys
+    freeBalanceClientToken: postSwapFreeBalanceClientToken,
     freeBalanceNodeToken: postSwapFreeBalanceNodeToken,
   };
+
+  return postSwap;
 }

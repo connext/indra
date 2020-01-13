@@ -2,15 +2,15 @@ import { BigNumber } from "ethers/utils";
 
 export interface ExistingBalancesAsyncTransfer {
   freeBalanceClientA: BigNumber;
-  freeBalanceClientB: BigNumber;
   freeBalanceNodeA: BigNumber;
+  freeBalanceClientB: BigNumber;
   freeBalanceNodeB: BigNumber;
 }
 
 export interface ExistingBalancesSwap {
   freeBalanceClientEth: BigNumber;
-  freeBalanceClientToken: BigNumber;
   freeBalanceNodeEth: BigNumber;
+  freeBalanceClientToken: BigNumber;
   freeBalanceNodeToken: BigNumber;
 }
 

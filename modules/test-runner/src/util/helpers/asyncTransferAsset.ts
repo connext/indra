@@ -14,8 +14,9 @@ export async function asyncTransferAsset(
 ): Promise<ExistingBalancesAsyncTransfer> {
   const preTransfer: ExistingBalancesAsyncTransfer = {
     freeBalanceClientA: transferAmount,
-    freeBalanceClientB: Zero,
     freeBalanceNodeA: Zero,
+    // tslint:disable-next-line:object-literal-sort-keys
+    freeBalanceClientB: Zero,
     freeBalanceNodeB: transferAmount,
     ...preExistingBalances,
   };
@@ -100,10 +101,13 @@ export async function asyncTransferAsset(
   });
   expect(paymentB).toMatchObject(paymentA);
 
-  return {
+  const postTransfer: ExistingBalancesAsyncTransfer = {
     freeBalanceClientA: postTransferFreeBalanceClientA,
-    freeBalanceClientB: postTransferFreeBalanceClientB,
     freeBalanceNodeA: postTransferFreeBalanceNodeA,
+    // tslint:disable-next-line:object-literal-sort-keys
+    freeBalanceClientB: postTransferFreeBalanceClientB,
     freeBalanceNodeB: postTransferFreeBalanceNodeB,
   };
+
+  return postTransfer;
 }
