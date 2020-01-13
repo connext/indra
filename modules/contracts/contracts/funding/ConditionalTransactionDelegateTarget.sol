@@ -2,7 +2,7 @@ pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
 /* solium-disable-next-line */
-import "@connext/contracts/contracts/ChallengeRegistry.sol";
+import "../adjudicator/ChallengeRegistry.sol";
 
 import "./libs/LibOutcome.sol";
 

@@ -4,7 +4,7 @@ pragma experimental "ABIEncoderV2";
 /* solium-disable-next-line */
 import "../adjudicator/interfaces/CounterfactualApp.sol";
 /* solium-disable-next-line */
-import "@connext/cf-funding-protocol-contracts/contracts/libs/LibOutcome.sol";
+import "../funding/libs/LibOutcome.sol";
 
 
 /*

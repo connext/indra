@@ -2,9 +2,9 @@ pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
 /* solium-disable-next-line */
-import "@connext/contracts/contracts/interfaces/CounterfactualApp.sol";
+import "../../adjudicator/interfaces/CounterfactualApp.sol";
 /* solium-disable-next-line */
-import "@connext/contracts/contracts/ChallengeRegistry.sol";
+import "../../adjudicator/ChallengeRegistry.sol";
 
 
 /// @notice TimeLockedPassThrough - Before `switchesOutcomeAt`, this contract

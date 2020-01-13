@@ -6,7 +6,7 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 /* solium-disable-next-line */
 import "../adjudicator/interfaces/CounterfactualApp.sol";
 /* solium-disable-next-line */
-import "@connext/cf-funding-protocol-contracts/contracts/libs/LibOutcome.sol";
+import "../funding/libs/LibOutcome.sol";
 
 
 /// @title Simple Linked Transfer App

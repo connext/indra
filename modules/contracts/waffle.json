@@ -5,5 +5,5 @@
   "compilerOptions": {
     "evmVersion": "constantinople"
   },
-  "sourcesPath": "./contracts/apps"
+  "sourcesPath": "./contracts"
 }

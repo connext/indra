@@ -297,16 +297,6 @@ ws-tcp-relay: ops/ws-tcp-relay.dockerfile
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ########################################
-# Contracts
-
-contracts: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.*.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/contracts && npm run build-apps"
-	$(docker_run) "cd modules/contracts && npm run build-adjudicator"
-	$(docker_run) "cd modules/contracts && npm run build-funding"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-########################################
 # JS & bundles
 
 client: cf-core contracts types messaging $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
@@ -351,6 +341,13 @@ types: node-modules $(shell find $(types)/src $(find_options))
 
 ########################################
 # Common Prerequisites
+
+contracts: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.*.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/contracts && npm run build-apps"
+	$(docker_run) "cd modules/contracts && npm run build-adjudicator"
+	$(docker_run) "cd modules/contracts && npm run build-funding"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 node-modules: builder package.json $(shell ls modules/**/package.json)
 	$(log_start)
