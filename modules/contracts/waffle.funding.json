@@ -5,6 +5,7 @@
   "compilerOptions": {
     "evmVersion": "constantinople"
   },
+  "allowedPaths": ["./contracts"],
   "sourcesPath": "./contracts/funding"
 }
 

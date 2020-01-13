@@ -3,7 +3,6 @@ pragma experimental "ABIEncoderV2";
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
-
 import "../libs/LibOutcome.sol";
 
 
