@@ -41,16 +41,16 @@ export async function swapAsset(
   const rate = await client.getLatestSwapRate(ethAssetId, tokenAssetId);
   const swapRate = ethToToken ? rate : inverse(rate);
 
-  const swapAmount = input.amount;
+  const inputSwapAmount = input.amount;
   const swapParams: SwapParameters = {
-    amount: swapAmount.toString(),
+    amount: inputSwapAmount.toString(),
     fromAssetId: input.assetId,
     swapRate,
     toAssetId: output.assetId,
   };
   await client.swap(swapParams);
 
-  const expectedSwapAmount = calculateExchange(swapAmount, swapRate);
+  const expectedOutputSwapAmount = calculateExchange(inputSwapAmount, swapRate);
 
   const {
     [client.freeBalanceAddress]: postSwapFreeBalanceClientEth,
@@ -58,13 +58,13 @@ export async function swapAsset(
   } = await client.getFreeBalance(ethAssetId);
   expect(postSwapFreeBalanceClientEth).toBeBigNumberEq(
     ethToToken
-      ? preSwapFreeBalanceClientEth.sub(expectedSwapAmount)
-      : preSwapFreeBalanceClientEth.add(expectedSwapAmount),
+      ? preSwapFreeBalanceClientEth.sub(inputSwapAmount)
+      : preSwapFreeBalanceClientEth.add(expectedOutputSwapAmount),
   );
   expect(postSwapFreeBalanceNodeEth).toBeBigNumberEq(
     ethToToken
-      ? preSwapFreeBalanceNodeEth.add(expectedSwapAmount)
-      : preSwapFreeBalanceNodeEth.sub(expectedSwapAmount),
+      ? preSwapFreeBalanceNodeEth.add(inputSwapAmount)
+      : preSwapFreeBalanceNodeEth.sub(expectedOutputSwapAmount),
   );
 
   const {
@@ -73,13 +73,13 @@ export async function swapAsset(
   } = await client.getFreeBalance(tokenAssetId);
   expect(postSwapFreeBalanceClientToken).toBeBigNumberEq(
     ethToToken
-      ? preSwapFreeBalanceClientToken.add(expectedSwapAmount)
-      : preSwapFreeBalanceClientToken.sub(expectedSwapAmount),
+      ? preSwapFreeBalanceClientToken.add(expectedOutputSwapAmount)
+      : preSwapFreeBalanceClientToken.sub(inputSwapAmount),
   );
   expect(postSwapFreeBalanceNodeToken).toBeBigNumberEq(
     ethToToken
-      ? preSwapFreeBalanceNodeToken.sub(expectedSwapAmount)
-      : preSwapFreeBalanceNodeToken.add(expectedSwapAmount),
+      ? preSwapFreeBalanceNodeToken.sub(expectedOutputSwapAmount)
+      : preSwapFreeBalanceNodeToken.add(inputSwapAmount),
   );
 
   const postSwap: ExistingBalancesSwap = {
