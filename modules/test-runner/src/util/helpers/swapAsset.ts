@@ -19,8 +19,8 @@ export async function swapAsset(
     freeBalanceClientEth: ethToToken ? input.amount : Zero,
     freeBalanceNodeEth: ethToToken ? Zero : output.amount,
     // tslint:disable-next-line:object-literal-sort-keys
-    freeBalanceClientToken: ethToToken ? output.amount : Zero,
-    freeBalanceNodeToken: ethToToken ? Zero : input.amount,
+    freeBalanceClientToken: ethToToken ? Zero : input.amount,
+    freeBalanceNodeToken: ethToToken ? output.amount : Zero,
     ...preExistingBalances,
   };
 
