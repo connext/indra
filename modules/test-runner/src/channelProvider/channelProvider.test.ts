@@ -1,6 +1,6 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IChannelProvider, IConnextClient } from "@connext/types";
-import { AddressZero, Zero } from "ethers/constants";
+import { AddressZero } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
 
 import {
@@ -67,20 +67,26 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // TRANSFER FLOW
-    const transferAmount = bigNumberify(ONE);
-    const assetId = AddressZero;
+    const transfer = { amount: bigNumberify(ONE), assetId: AddressZero };
     const clientB = await createClient();
     await clientB.requestCollateral(AddressZero);
 
-    await asyncTransferAsset(clientA1, clientB, transferAmount, assetId, nodeFreeBalanceAddress, {
-      freeBalanceClientA: freeBalanceClientEth,
-      freeBalanceNodeA: freeBalanceNodeEth,
-    });
+    await asyncTransferAsset(
+      clientA1,
+      clientB,
+      transfer.amount,
+      transfer.assetId,
+      nodeFreeBalanceAddress,
+      {
+        freeBalanceClientA: freeBalanceClientEth,
+        freeBalanceNodeA: freeBalanceNodeEth,
+      },
+    );
 
     ////////////////////////////////////////
     // WITHDRAW FLOW
-    const withdrawAmount = bigNumberify(ONE);
-    await withdrawFromChannel(clientA1, withdrawAmount.toString(), AddressZero);
+    const withdraw = { amount: bigNumberify(ONE), assetId: AddressZero };
+    await withdrawFromChannel(clientA1, withdraw.amount.toString(), withdraw.assetId);
   });
 
   // tslint:disable-next-line:max-line-length
