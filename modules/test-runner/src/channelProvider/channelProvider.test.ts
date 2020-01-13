@@ -53,13 +53,13 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // DEPOSIT FLOW
-    await clientA.deposit({ amount: input.amount.toString(), assetId: input.assetId });
-    await clientA.requestCollateral(output.assetId);
+    await clientA1.deposit({ amount: input.amount.toString(), assetId: input.assetId });
+    await clientA1.requestCollateral(output.assetId);
 
     ////////////////////////////////////////
     // SWAP FLOW
     const { freeBalanceClientEth, freeBalanceNodeEth } = await swapAsset(
-      clientA,
+      clientA1,
       input,
       output,
       nodeFreeBalanceAddress,
