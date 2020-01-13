@@ -16,8 +16,6 @@ COPY ops/ethprovider/migrate-contracts.js migrate-contracts.js
 RUN true
 COPY address-book.json address-book.json
 RUN true
-COPY modules/cf-adjudicator-contracts cf-adjudicator-contracts
-RUN true
 COPY modules/cf-funding-protocol-contracts cf-funding-protocol-contracts
 RUN true
 COPY modules/contracts contracts

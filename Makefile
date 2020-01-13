@@ -19,7 +19,6 @@ cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(p
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
 bot=$(cwd)/modules/payment-bot
-cf-adjudicator-contracts=$(cwd)/modules/cf-adjudicator-contracts
 cf-core=$(cwd)/modules/cf-core
 cf-funding-protocol-contracts=$(cwd)/modules/cf-funding-protocol-contracts
 client=$(cwd)/modules/client
@@ -232,7 +231,7 @@ database: node-modules $(shell find $(database) $(find_options))
 	docker tag $(project)_database $(project)_database:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-ethprovider: contracts cf-adjudicator-contracts cf-funding-protocol-contracts $(shell find $(ethprovider) $(find_options))
+ethprovider: contracts cf-funding-protocol-contracts $(shell find $(ethprovider) $(find_options))
 	$(log_start)
 	docker build --file $(ethprovider)/Dockerfile $(cache_from) --tag $(project)_ethprovider .
 	docker tag $(project)_ethprovider $(project)_ethprovider:$(commit)
@@ -301,24 +300,15 @@ ws-tcp-relay: ops/ws-tcp-relay.dockerfile
 ########################################
 # Contracts
 
-cf-adjudicator-contracts: node-modules $(shell find $(cf-adjudicator-contracts)/contracts $(cf-adjudicator-contracts)/waffle.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/cf-adjudicator-contracts && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-cf-core: node-modules types contracts cf-adjudicator-contracts cf-funding-protocol-contracts $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/cf-core && npm run build:ts"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
 cf-funding-protocol-contracts: node-modules $(shell find $(cf-funding-protocol-contracts)/contracts $(cf-funding-protocol-contracts)/waffle.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/cf-funding-protocol-contracts && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-contracts: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.json $(find_options))
+contracts: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.*.json $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/contracts && npm run build"
+	$(docker_run) "cd modules/contracts && npm run build-adjudicator"
+	$(docker_run) "cd modules/contracts && npm run build-apps"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ########################################
@@ -327,6 +317,11 @@ contracts: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.
 client: cf-core contracts types messaging $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+cf-core: node-modules types contracts cf-funding-protocol-contracts $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/cf-core && npm run build:ts"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))

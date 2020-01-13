@@ -4,5 +4,6 @@
   "legacyOutput": true,
   "compilerOptions": {
     "evmVersion": "constantinople"
-  }
+  },
+  "sourcesPath": "./contracts/adjudicator"
 }

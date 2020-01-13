@@ -14,13 +14,14 @@ console.log(`Core contracts: ${JSON.stringify(coreContracts)}`);
 const artifacts = {}
 for (const contract of coreContracts) {
   try {
-    artifacts[contract] = require(`./cf-adjudicator-contracts/build/${contract}.json`)
+    artifacts[contract] = require(`./contracts/build/${contract}.json`)
     console.log(`Imported adjudicator contract: ${contract}`)
   } catch (e) {
     artifacts[contract] = require(`./cf-funding-protocol-contracts/build/${contract}.json`)
     console.log(`Imported funding contract: ${contract}`)
   }
 }
+
 for (const contract of appContracts) {
   artifacts[contract] = require(`./contracts/build/${contract}.json`)
 }

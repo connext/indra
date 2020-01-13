@@ -28,8 +28,5 @@ exec docker run \
     trap finish SIGTERM SIGINT
 
     echo "Launching tests!";echo
-    ls
-    pwd
-    ls test
     npm run test
   '
