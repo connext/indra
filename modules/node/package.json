@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@connext/cf-core": "1.4.4",
-    "@connext/cf-funding-protocol-contracts": "0.4.1",
+    "@connext/contracts": "1.0.0",
     "@connext/messaging": "1.4.4",
     "@connext/types": "1.4.4",
     "@nestjs/common": "6.5.3",

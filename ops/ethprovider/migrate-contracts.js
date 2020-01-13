@@ -17,7 +17,7 @@ for (const contract of coreContracts) {
     artifacts[contract] = require(`./contracts/build/${contract}.json`)
     console.log(`Imported adjudicator contract: ${contract}`)
   } catch (e) {
-    artifacts[contract] = require(`./cf-funding-protocol-contracts/build/${contract}.json`)
+    artifacts[contract] = require(`./contracts/build/${contract}.json`)
     console.log(`Imported funding contract: ${contract}`)
   }
 }
