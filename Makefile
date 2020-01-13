@@ -7,11 +7,11 @@ flags=.makeflags
 VPATH=$(flags)
 SHELL=/bin/bash
 
-backwards_compatible_version=2.3.20 #$(shell echo $(version) | cut -d '.' -f 1).0.0
 
 commit=$(shell git rev-parse HEAD | head -c 8)
-version=$(shell cat package.json | grep '"version"' | awk -F '"' '{print $$4}')
+release=$(shell cat package.json | grep '"version"' | awk -F '"' '{print $$4}')
 solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}')
+backwards_compatible_version=2.3.20 #$(shell echo $(release) | cut -d '.' -f 1).0.0
 
 # Pool of images to pull cached layers from during docker build steps
 cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_relay:$(commit),$(project)_relay,$(project)_bot:$(commit),$(project)_bot,$(project)_builder"; else echo ""; fi)
@@ -142,7 +142,7 @@ push-commit:
 	bash ops/push-images.sh $(commit)
 
 push-release:
-	bash ops/push-images.sh $(version)
+	bash ops/push-images.sh $(release)
 
 pull-latest:
 	bash ops/pull-images.sh latest
@@ -151,7 +151,7 @@ pull-commit:
 	bash ops/pull-images.sh $(commit)
 
 pull-release:
-	bash ops/pull-images.sh $(version)
+	bash ops/pull-images.sh $(release)
 
 pull-backwards-compatible:
 	bash ops/pull-images.sh $(backwards_compatible_version)

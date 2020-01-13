@@ -79,7 +79,7 @@ jobs:
     - uses: actions/checkout@v1
     - run: make pull-release
     - run: make start-test-release
-    - run: make test-integration
+    - run: TEST_MODE=release make test-integration
 
   test-backwards-compatibility:
     runs-on: ubuntu-latest
@@ -89,7 +89,7 @@ jobs:
     - run: make pull-release
     - run: make start-test-release
     - run: sleep 15 && make dls
-    - run: make test-backwards-compatibility
+    - run: TEST_MODE=release make test-backwards-compatibility
 
   test-bot:
     runs-on: ubuntu-latest
@@ -98,7 +98,7 @@ jobs:
     - uses: actions/checkout@v1
     - run: make pull-release
     - run: make start-test-release
-    - run: make test-bot
+    - run: TEST_MODE=release make test-bot
 
   test-bot-farm:
     runs-on: ubuntu-latest
@@ -107,7 +107,7 @@ jobs:
     - uses: actions/checkout@v1
     - run: make pull-release
     - run: make start-test-release
-    - run: make test-bot-farm
+    - run: TEST_MODE=release make test-bot-farm
 
   test-daicard:
     runs-on: ubuntu-latest
