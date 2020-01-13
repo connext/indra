@@ -54,7 +54,6 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // DEPOSIT FLOW
-    // client deposit and request node collateral
     await clientA.deposit({ amount: input.amount.toString(), assetId: input.assetId });
     await clientA.requestCollateral(output.assetId);
 
