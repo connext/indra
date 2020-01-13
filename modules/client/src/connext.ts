@@ -2,8 +2,8 @@ import { IMessagingService } from "@connext/messaging";
 import {
   AppInstanceProposal,
   CF_PATH,
-  LinkedTransferToRecipientParameters,
   IChannelProvider,
+  LinkedTransferToRecipientParameters,
 } from "@connext/types";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
@@ -13,7 +13,7 @@ import { fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
-import { ChannelProvider, createCFChannelProvider } from "./channelProvider";
+import { createCFChannelProvider } from "./channelProvider";
 import { ConditionalTransferController } from "./controllers/ConditionalTransferController";
 import { DepositController } from "./controllers/DepositController";
 import { RequestDepositRightsController } from "./controllers/RequestDepositRightsController";
@@ -23,7 +23,6 @@ import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger, stringify, withdrawalKey, xpubToAddress } from "./lib";
 import { decryptWithPrivateKey } from "./lib/crypto";
 import { ConnextListener } from "./listener";
-import { NodeApiClient } from "./node";
 import {
   Address,
   AppActionBigNumber,
@@ -46,6 +45,7 @@ import {
   GetChannelResponse,
   GetConfigResponse,
   IConnextClient,
+  INodeApiClient,
   InternalClientOptions,
   KeyGen,
   makeChecksum,
@@ -82,7 +82,7 @@ export class ConnextClient implements IConnextClient {
   public messaging: IMessagingService;
   public multisigAddress: Address;
   public network: Network;
-  public node: NodeApiClient;
+  public node: INodeApiClient;
   public nodePublicIdentifier: string;
   public publicIdentifier: string;
   public signerAddress: Address;

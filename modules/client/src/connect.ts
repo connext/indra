@@ -19,6 +19,7 @@ import {
   GetConfigResponse,
   IChannelProvider,
   IConnextClient,
+  INodeApiClient,
 } from "./types";
 
 const exists = (obj: any): boolean => {
@@ -37,7 +38,7 @@ const createMessagingService = async (
 };
 
 const setupMultisigAddress = async (
-  node: NodeApiClient,
+  node: INodeApiClient,
   channelProvider: IChannelProvider,
   log: Logger,
 ): Promise<IChannelProvider> => {
@@ -101,7 +102,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
 
   // setup messaging and node api
   let messaging: IMessagingService;
-  let node: NodeApiClient;
+  let node: INodeApiClient;
   let config: GetConfigResponse;
 
   // setup channelProvider

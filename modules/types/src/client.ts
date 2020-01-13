@@ -1,4 +1,5 @@
-import { BigNumber } from "ethers/utils";
+import { providers, Contract } from "ethers";
+import { BigNumber, Network } from "ethers/utils";
 
 import {
   AppActionBigNumber,
@@ -34,13 +35,27 @@ import {
   TransferParameters,
   WithdrawParameters,
 } from "./inputs";
+import { IMessagingService } from "./messaging";
 import {
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
+  INodeApiClient,
   RequestCollateralResponse,
   Transfer,
 } from "./node";
+
+export type InternalClientOptions = ClientOptions & {
+  appRegistry: AppRegistry;
+  channelProvider: IChannelProvider;
+  config: GetConfigResponse;
+  ethProvider: providers.JsonRpcProvider;
+  messaging: IMessagingService;
+  network: Network;
+  node: INodeApiClient;
+  store: Store;
+  token: Contract;
+};
 
 export interface Store extends CFCoreTypes.IStoreService {
   set(pairs: StorePair[], shouldBackup?: Boolean): Promise<void>;

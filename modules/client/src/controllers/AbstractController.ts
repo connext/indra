@@ -4,7 +4,7 @@ import { providers } from "ethers";
 import { ConnextClient } from "../connext";
 import { CF_METHOD_TIMEOUT, delayAndThrow, Logger, stringify } from "../lib";
 import { ConnextListener } from "../listener";
-import { INodeApiClient } from "../node";
+import { INodeApiClient } from "../types";
 
 export abstract class AbstractController {
   public name: string;
