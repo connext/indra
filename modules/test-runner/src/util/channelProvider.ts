@@ -10,13 +10,13 @@ import {
 import EventEmitter from "events";
 
 export const createChannelProvider = async (channel: IConnextClient): Promise<IChannelProvider> => {
-  const connection = new RpcConnection(channel);
-  const channelProvider = new ChannelProvider(connection);
+  const connection = new MockRpcConnection(channel);
+  const channelProvider = new MockChannelProvider(connection);
   await channelProvider.enable();
   return channelProvider;
 };
 
-export class RpcConnection extends EventEmitter implements IRpcConnection {
+export class MockRpcConnection extends EventEmitter implements IRpcConnection {
   public connected: boolean = true;
   public channel: IConnextClient;
 
@@ -43,7 +43,7 @@ export class RpcConnection extends EventEmitter implements IRpcConnection {
   }
 }
 
-export class ChannelProvider extends EventEmitter implements IChannelProvider {
+export class MockChannelProvider extends EventEmitter implements IChannelProvider {
   public connected: boolean = false;
   public connection: IRpcConnection;
 

@@ -63,9 +63,6 @@ export class RpcConnection extends EventEmitter implements IRpcConnection {
   }
 
   public async send(payload: JsonRpcRequest): Promise<any> {
-    if (!this.connected) {
-      return Promise.resolve();
-    }
     const ret = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: payload.method,
@@ -75,22 +72,28 @@ export class RpcConnection extends EventEmitter implements IRpcConnection {
     return result;
   }
 
-  public on = (event: string, listener: (...args: any[]) => void): any => {
+  public on = (
+    event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
+    listener: (...args: any[]) => void,
+  ): any => {
     this.cfCore.on(event as any, listener);
     return this.cfCore;
   };
 
-  public once = (event: string, listener: (...args: any[]) => void): any => {
+  public once = (
+    event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
+    listener: (...args: any[]) => void,
+  ): any => {
     this.cfCore.once(event as any, listener);
     return this.cfCore;
   };
 
   public open(): void {
-    this.connected = true;
+    // no-op
   }
 
   public close(): void {
-    this.connected = false;
+    // no-op
   }
 }
 
