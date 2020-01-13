@@ -58,7 +58,7 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // SWAP FLOW
-    const { freeBalanceClientEth, freeBalanceNodeEth } = await swapAsset(
+    const { freeBalanceClientToken, freeBalanceNodeToken } = await swapAsset(
       clientA1,
       input,
       output,
@@ -67,9 +67,9 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // TRANSFER FLOW
-    const transfer = { amount: bigNumberify(ONE), assetId: AddressZero };
+    const transfer = { amount: bigNumberify(ONE), assetId: tokenAddress };
     const clientB = await createClient();
-    await clientB.requestCollateral(AddressZero);
+    await clientB.requestCollateral(tokenAddress);
 
     await asyncTransferAsset(
       clientA1,
@@ -78,14 +78,14 @@ describe("ChannelProvider", () => {
       transfer.assetId,
       nodeFreeBalanceAddress,
       {
-        freeBalanceClientA: freeBalanceClientEth,
-        freeBalanceNodeA: freeBalanceNodeEth,
+        freeBalanceClientA: freeBalanceClientToken,
+        freeBalanceNodeA: freeBalanceNodeToken,
       },
     );
 
     ////////////////////////////////////////
     // WITHDRAW FLOW
-    const withdraw = { amount: bigNumberify(ONE), assetId: AddressZero };
+    const withdraw = { amount: bigNumberify(ONE), assetId: tokenAddress };
     await withdrawFromChannel(clientA1, withdraw.amount.toString(), withdraw.assetId);
   });
 
