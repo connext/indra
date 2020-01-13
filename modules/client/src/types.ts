@@ -1,17 +1,4 @@
-import { IMessagingService } from "@connext/messaging";
-import {
-  AppRegistry,
-  BigNumber as connextBN,
-  ClientOptions,
-  GetConfigResponse,
-  Store,
-} from "@connext/types";
-import { Contract, providers } from "ethers";
-import { Network } from "ethers/utils";
-
-import { IIChannelProvider } from "./channelProvider";
-import { NodeApiClient } from "./node";
-
+import { BigNumber as connextBN } from "@connext/types";
 export {
   CreateChannelMessage,
   DepositConfirmationMessage,
@@ -67,6 +54,8 @@ export {
   GetConfigResponse,
   IConnextClient,
   IChannelProvider,
+  INodeApiClient,
+  InternalClientOptions,
   IRpcConnection,
   KeyGen,
   JsonRpcRequest,
@@ -76,8 +65,10 @@ export {
   LinkedTransferToRecipientResponse,
   makeChecksum,
   makeChecksumOrEthAddress,
+  NodeInitializationParameters,
   CFCoreTypes,
   PaymentProfile,
+  PendingAsyncTransfer,
   RequestCollateralResponse,
   ResolveConditionParameters,
   ResolveConditionResponse,
@@ -110,23 +101,3 @@ export {
 
 export type BigNumber = connextBN;
 export const BigNumber = connextBN;
-
-export type InternalClientOptions = ClientOptions & {
-  appRegistry: AppRegistry;
-  channelProvider: IIChannelProvider;
-  config: GetConfigResponse;
-  ethProvider: providers.JsonRpcProvider;
-  messaging: IMessagingService;
-  network: Network;
-  node: NodeApiClient;
-  store: Store;
-  token: Contract;
-};
-
-export interface NodeInitializationParameters {
-  messaging: IMessagingService;
-  logLevel?: number;
-  userPublicIdentifier?: string;
-  nodePublicIdentifier?: string;
-  channelProvider?: IIChannelProvider;
-}

@@ -16,8 +16,6 @@ import {
   StorePair,
 } from "./types";
 
-export type IIChannelProvider = IChannelProvider;
-
 export const createCFChannelProvider = async ({
   ethProvider,
   keyGen,
