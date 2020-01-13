@@ -57,7 +57,7 @@ test -t 0 -a -t 1 -a -t 2 && interactive="--interactive"
 ########################################
 ## Launch payment bot
 
-exec docker run \
+docker run \
   --env="ETH_RPC_URL=$ETH_RPC_URL" \
   --env="MNEMONIC=$mnemonic" \
   --env="NODE_URL=$NODE_URL" \
