@@ -5,10 +5,8 @@ import { parseEther } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { env } from "./env";
-import { ethProvider } from "./ethprovider";
+import { ethWallet } from "./ethprovider";
 import { MemoryStoreService, MemoryStoreServiceFactory } from "./store";
-
-const wallet = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider);
 
 let clientStore: MemoryStoreService;
 
@@ -30,11 +28,11 @@ export const createClient = async (opts?: Partial<ClientOptions>): Promise<IConn
 
   await client.isAvailable();
 
-  const ethTx = await wallet.sendTransaction({
+  const ethTx = await ethWallet.sendTransaction({
     to: client.signerAddress,
     value: parseEther("0.1"),
   });
-  const token = new Contract(client.config.contractAddresses.Token, tokenAbi, wallet);
+  const token = new Contract(client.config.contractAddresses.Token, tokenAbi, ethWallet);
   const tokenTx = await token.functions.transfer(client.signerAddress, parseEther("10"));
 
   await Promise.all([ethTx.wait(), tokenTx.wait()]);
