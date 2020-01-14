@@ -2,7 +2,6 @@ import {
   ConnextClientStorePrefix,
   IConnextClient,
   StateChannelJSON,
-  Store,
   StorePair,
 } from "@connext/types";
 import { AddressZero } from "ethers/constants";

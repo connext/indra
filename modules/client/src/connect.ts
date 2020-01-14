@@ -159,6 +159,13 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     config = await node.config();
     log.debug(`Node provided config: ${stringify(config)}`);
 
+    // ensure that node and user xpub are different
+    if (config.nodePublicIdentifier === xpub) {
+      throw new Error(
+        "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
+      );
+    }
+
     channelProvider = await createCFChannelProvider({
       ethProvider,
       keyGen,
