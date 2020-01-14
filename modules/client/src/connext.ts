@@ -185,6 +185,14 @@ export class ConnextClient implements IConnextClient {
       this.log.warn(`Cannot restart with an injected provider.`);
       return;
     }
+
+    // ensure that node and user xpub are different
+    if (this.nodePublicIdentifier === this.publicIdentifier) {
+      throw new Error(
+        "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
+      );
+    }
+
     // Create a fresh channelProvider & start using that.
     // End goal is to use this to restart the cfNode after restoring state
     const channelProvider = await createCFChannelProvider({
@@ -257,10 +265,6 @@ export class ConnextClient implements IConnextClient {
 
   public unsubscribeToSwapRates = async (from: string, to: string): Promise<void> => {
     return await this.node.unsubscribeFromSwapRates(from, to);
-  };
-
-  public addPaymentProfile = async (profile: PaymentProfile): Promise<PaymentProfile> => {
-    return await this.node.addPaymentProfile(profile);
   };
 
   public getPaymentProfile = async (assetId?: string): Promise<PaymentProfile | undefined> => {

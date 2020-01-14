@@ -71,8 +71,8 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make pull-commit
-    - run: make start-test
-    - run: make test-integration
+    - run: make start-test-staging
+    - run: TEST_MODE=staging make test-integration
 
   test-backwards-compatibility:
     runs-on: ubuntu-latest
@@ -80,7 +80,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make pull-commit
-    - run: make start-test
+    - run: make start-test-staging
     - run: sleep 15 && make dls
     - run: make test-backwards-compatibility
 
@@ -90,17 +90,8 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make pull-commit
-    - run: make start-test
-    - run: make test-bot
-
-  test-bot-farm:
-    runs-on: ubuntu-latest
-    needs: [build]
-    steps:
-    - uses: actions/checkout@v1
-    - run: make pull-commit
-    - run: make start-test
-    - run: make test-bot-farm
+    - run: make start-test-staging
+    - run: TEST_MODE=staging make test-bot
 
   test-daicard:
     runs-on: ubuntu-latest
@@ -108,14 +99,14 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - run: make pull-commit
-    - run: make start-test
+    - run: make start-test-staging
     - run: make test-daicard
 
   deploy-staging:
     env:
       RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
       STAGING_DOMAINNAME: staging.indra.connext.network
-    needs: [test-backwards-compatibility, test-bot, test-bot-farm, test-cf, test-client, test-daicard, test-integration, test-node, test-ssh]
+    needs: [test-backwards-compatibility, test-bot, test-cf, test-client, test-daicard, test-integration, test-node, test-ssh]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1

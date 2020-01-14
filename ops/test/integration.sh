@@ -5,15 +5,20 @@ dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | jq .name | tr -d '"'`"
 name="${project}_test_runner"
 commit="`git rev-parse HEAD | head -c 8`"
+release="`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 
-if [[ -z "$1" || ! "$1" =~ [0-9.] ]]
+if [[ "$TEST_MODE" == "release" ]]
+then image=$name:$release;
+elif [[ "$TEST_MODE" == "staging" ]]
+then image=$name:$commit;
+elif [[ -n "`docker image ls -q $name:$1`" ]]
+then image=$name:$1; shift # rm $1 from $@
+elif [[ -z "$1" || -z "`docker image ls -q $name:$1`" ]]
 then
   if [[ -n "`docker image ls -q $name:$commit`" ]]
   then image=$name:$commit
   else image=$name:latest
   fi
-elif [[ -n "`docker image ls -q $name:$1`" ]]
-then image=$name:$1; shift # rm $1 from $@
 else echo "Aborting: couldn't find an image to run for input: $1" && exit 1
 fi
 
