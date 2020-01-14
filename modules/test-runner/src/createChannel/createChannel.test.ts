@@ -2,7 +2,7 @@ import { IConnextClient } from "@connext/types";
 
 import { createClient } from "../util/client";
 
-describe("Create Channel", async () => {
+describe("Create Channel", () => {
   beforeEach(async () => {});
 
   test("Happy case: user creates channel with node and is given multisig address", async () => {
@@ -13,6 +13,8 @@ describe("Create Channel", async () => {
   test("Creating a channel fails if user xpub and node xpub are the same", async () => {
     const nodeMnemonic: string =
       "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat";
-    await expect(createClient({ mnemonic: nodeMnemonic })).rejects.toThrowError("test");
+    await expect(createClient({ mnemonic: nodeMnemonic })).rejects.toThrowError(
+      "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
+    );
   });
 });
