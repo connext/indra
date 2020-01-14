@@ -1,19 +1,14 @@
 import { IConnextClient } from "@connext/types";
-
-import { createClient } from "../util";
 import { AddressZero } from "ethers/constants";
 import { hexlify, randomBytes } from "ethers/utils";
 
+import { createClient } from "../util";
+
 describe("Async Transfers", () => {
   let clientA: IConnextClient;
-  let clientB: IConnextClient;
-  let tokenAddress: string;
-  let nodeFreeBalanceAddress: string;
-  let nodePublicIdentifier: string;
 
   beforeEach(async () => {
     clientA = await createClient();
-    clientB = await createClient();
   });
 
   test.only("happy case: get linked transfer by payment id", async () => {
@@ -32,7 +27,7 @@ describe("Async Transfers", () => {
       amount: "1",
       assetId: AddressZero,
       paymentId,
-      receiverPublicIdentifier: undefined,
+      receiverPublicIdentifier: null,
       senderPublicIdentifier: clientA.publicIdentifier,
     });
   });
