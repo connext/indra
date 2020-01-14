@@ -2,7 +2,7 @@ import { IConnextClient } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
 import { hexlify, randomBytes } from "ethers/utils";
 
-import { createClient, fundChannel } from "../util";
+import { AssetOptions, createClient, fundChannel } from "../util";
 
 describe("Async Transfers", () => {
   let clientA: IConnextClient;
@@ -14,10 +14,11 @@ describe("Async Transfers", () => {
   test("happy case: get linked transfer by payment id", async () => {
     const paymentId = hexlify(randomBytes(32));
     const preImage = hexlify(randomBytes(32));
-    await fundChannel(clientA, One, AddressZero);
+    const transfer: AssetOptions = { amount: One, assetId: AddressZero };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     await clientA.conditionalTransfer({
-      amount: "1",
+      amount: transfer.amount.toString(),
       assetId: AddressZero,
       conditionType: "LINKED_TRANSFER",
       paymentId,
@@ -25,7 +26,7 @@ describe("Async Transfers", () => {
     });
     const linkedTransfer = await clientA.getLinkedTransfer(paymentId);
     expect(linkedTransfer).toMatchObject({
-      amount: "1",
+      amount: transfer.amount.toString(),
       assetId: AddressZero,
       paymentId,
       receiverPublicIdentifier: null,
@@ -37,10 +38,11 @@ describe("Async Transfers", () => {
     const clientB = await createClient();
     const paymentId = hexlify(randomBytes(32));
     const preImage = hexlify(randomBytes(32));
-    await fundChannel(clientA, One, AddressZero);
+    const transfer: AssetOptions = { amount: One, assetId: AddressZero };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     await clientA.conditionalTransfer({
-      amount: "1",
+      amount: transfer.amount.toString(),
       assetId: AddressZero,
       conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
       paymentId,
@@ -49,7 +51,7 @@ describe("Async Transfers", () => {
     });
     const linkedTransfer = await clientA.getLinkedTransfer(paymentId);
     expect(linkedTransfer).toMatchObject({
-      amount: "1",
+      amount: transfer.amount.toString(),
       assetId: AddressZero,
       paymentId,
       receiverPublicIdentifier: clientB.publicIdentifier,
@@ -61,10 +63,11 @@ describe("Async Transfers", () => {
     const clientB = await createClient();
     const paymentId = hexlify(randomBytes(32));
     const preImage = hexlify(randomBytes(32));
-    await fundChannel(clientA, One, AddressZero);
+    const transfer: AssetOptions = { amount: One, assetId: AddressZero };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
 
     await clientA.conditionalTransfer({
-      amount: "1",
+      amount: transfer.amount.toString(),
       assetId: AddressZero,
       conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
       paymentId,

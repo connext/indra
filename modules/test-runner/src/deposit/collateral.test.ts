@@ -1,9 +1,8 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
-import { AddressZero } from "ethers/constants";
-import { parseEther } from "ethers/utils";
+import { AddressZero, Zero } from "ethers/constants";
 
-import { createClient } from "../util/client";
+import { createClient, ETH_AMOUNT_MD, TOKEN_AMOUNT } from "../util";
 
 describe("Collateral", () => {
   let clientA: IConnextClient;
@@ -17,8 +16,8 @@ describe("Collateral", () => {
     const freeBalance = await clientA.getFreeBalance(AddressZero);
 
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress]).toBeBigNumberEq(0);
-    expect(freeBalance[nodeFreeBalanceAddress]).toBeBigNumberEq(parseEther("0.1"));
+    expect(freeBalance[clientA.freeBalanceAddress]).toBeBigNumberEq(Zero);
+    expect(freeBalance[nodeFreeBalanceAddress]).toBeBigNumberEq(ETH_AMOUNT_MD);
   });
 
   test("happy case: node should collateralize tokens", async () => {
@@ -28,7 +27,7 @@ describe("Collateral", () => {
     const freeBalance = await clientA.getFreeBalance(tokenAddress);
 
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress]).toBeBigNumberEq(0);
-    expect(freeBalance[nodeFreeBalanceAddress]).toBeBigNumberEq(parseEther("10"));
+    expect(freeBalance[clientA.freeBalanceAddress]).toBeBigNumberEq(Zero);
+    expect(freeBalance[nodeFreeBalanceAddress]).toBeBigNumberEq(TOKEN_AMOUNT);
   });
 });

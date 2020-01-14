@@ -1,8 +1,9 @@
 import { NodeApiClient } from "./node";
 import { MockMessagingService, nodeUrl } from "./testing/mocks";
+import { INodeApiClient } from "./types";
 
 describe("NodeApiClient", () => {
-  let nodeClient: NodeApiClient;
+  let nodeClient: INodeApiClient;
 
   beforeEach(() => {
     nodeClient = new NodeApiClient({

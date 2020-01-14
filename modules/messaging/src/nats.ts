@@ -34,7 +34,10 @@ export class NatsMessagingService implements IMessagingService {
   ////////////////////////////////////////
   // CFCoreTypes.IMessagingService Methods
 
-  async onReceive(subject: string, callback: (msg: CFCoreTypes.NodeMessage) => void): Promise<void> {
+  async onReceive(
+    subject: string,
+    callback: (msg: CFCoreTypes.NodeMessage) => void,
+  ): Promise<void> {
     this.assertConnected();
     this.subscriptions[subject] = await this.connection!.subscribe(
       this.prependKey(`${subject}.>`),
@@ -73,7 +76,10 @@ export class NatsMessagingService implements IMessagingService {
     return response;
   }
 
-  async subscribe(subject: string, callback: (msg: CFCoreTypes.NodeMessage) => void): Promise<void> {
+  async subscribe(
+    subject: string,
+    callback: (msg: CFCoreTypes.NodeMessage) => void,
+  ): Promise<void> {
     this.assertConnected();
     this.subscriptions[subject] = await this.connection!.subscribe(
       subject,
