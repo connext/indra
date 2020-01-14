@@ -21,6 +21,7 @@ import {
   SupportedNetwork,
   Transfer,
 } from "./types";
+import { invalidXpub } from "./validation";
 
 // Include our access token when interacting with these subjects
 const guardedSubjects = ["channel", "lock", "transfer"];
@@ -241,10 +242,18 @@ export class NodeApiClient implements INodeApiClient {
   };
 
   public setUserPublicIdentifier(publicIdentifier: string): void {
+    const ret = invalidXpub(publicIdentifier);
+    if (ret !== undefined) {
+      throw new Error(ret);
+    }
     this.userPublicIdentifier = publicIdentifier;
   }
 
   public setNodePublicIdentifier(publicIdentifier: string): void {
+    const ret = invalidXpub(publicIdentifier);
+    if (ret !== undefined) {
+      throw new Error(ret);
+    }
     this.nodePublicIdentifier = publicIdentifier;
   }
 

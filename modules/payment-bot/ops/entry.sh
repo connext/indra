@@ -41,4 +41,4 @@ bash wait-for.sh ${ETH_RPC_URL#*://} 2> /dev/null
 mkdir -p ${DB_FILENAME%/*}
 touch $DB_FILENAME
 node --no-deprecation dist/index.js $args
-chown -R $user . || true
+chown -R $user ${DB_FILENAME%/*} || true

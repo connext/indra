@@ -13,9 +13,9 @@ COPY modules/test-runner/ops ops
 RUN true
 COPY modules/test-runner/jest.cd.js jest.config.js
 RUN true
-COPY modules/test-runner/dist/setup.staging.bundle.js dist/setup.bundle.js
+COPY modules/test-runner/dist/setup.release.bundle.js dist/setup.bundle.js
 RUN true
-COPY modules/test-runner/dist/tests.staging.bundle.js dist/test.bundle.js
+COPY modules/test-runner/dist/tests.release.bundle.js dist/test.bundle.js
 
 ENV PATH="./node_modules/.bin:${PATH}"
 ENTRYPOINT ["bash", "ops/entry.sh"]
