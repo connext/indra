@@ -1,6 +1,6 @@
 {
   "name": "@connext/contracts",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Smart contracts that power a Counterfactual State Channel platform",
   "license": "ISC",
   "files": ["address-book.json", "build", "contracts"],

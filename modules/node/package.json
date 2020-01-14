@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@connext/cf-core": "1.5.0",
-    "@connext/contracts": "1.0.0",
+    "@connext/contracts": "1.0.1",
     "@connext/messaging": "1.5.0",
     "@connext/types": "1.5.0",
     "@nestjs/common": "6.5.3",
