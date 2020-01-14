@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Grid, Typography, styled, Button, CircularProgress } from "@material-ui/core";
 import { HashZero, WeiPerEther } from "ethers/constants";
+import { BigNumber, bigNumberify } from "ethers/utils";
 
 const TopGrid = styled(Grid)({
   display: "flex",
@@ -31,16 +32,18 @@ const address = {
   // rinkeby: "0x5307b4f67ca8746562a4a9fdeb0714033008ef4a",
 };
 
+const EthWeiConversion = new BigNumber(WeiPerEther)
+
 const StatsSummary = ({ classes, messaging }) => {
   const [allChannels, setAllChannels] = useState(null);
   const [channelTotal, setChannelTotal] = useState(0);
-  const [nodeTotal, setNodeTotal] = useState(0);
+  const [nodeTotal, setNodeTotal] = useState(new BigNumber(0));
   const [allTransfers, setAllTransfers] = useState(null);
   const [averageTransfer, setAverageTransfer] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState(null);
-  const [valueReclaimable, setValueReclaimable] = useState(0)
-  const [numberReclaimable, setNumberReclaimable] = useState(0)
+  const [valueReclaimable, setValueReclaimable] = useState(new BigNumber(0))
+  const [numberReclaimable, setNumberReclaimable] = useState(new BigNumber(0))
 
   useEffect(() => {
     if (!messaging) {
@@ -50,7 +53,7 @@ const StatsSummary = ({ classes, messaging }) => {
 
   const onRefresh = async () => {
     await getChannels();
-    // await getTransfers();
+    await getTransfers();
   };
 
   const getChannels = async () => {
@@ -67,18 +70,17 @@ const StatsSummary = ({ classes, messaging }) => {
       let nodeChannelTotalArr = [];
 
       for (let xPub of xPubsToSearch) {
-        const {currentChannelValue,currentNodeChannelValue}  = Promise.all([await getUserChannelAmount(xPub), await getNodeChannelAmount(xPub)])
 
-        currentChannelValue !== 0 && channelTotalArr.push(currentChannelValue);
-        currentNodeChannelValue !== 0 && nodeChannelTotalArr.push(currentNodeChannelValue);
+        const {currentChannelValue,currentNodeChannelValue}  = Promise.all([await getUserChannelAmount(xPub), await getNodeChannelAmount(xPub)])
+        currentChannelValue && currentChannelValue !== 0 && channelTotalArr.push(new BigNumber(currentChannelValue));
+        currentNodeChannelValue && currentNodeChannelValue !== 0 && nodeChannelTotalArr.push(new BigNumber(currentNodeChannelValue));
       }
       var channelTotalArrReduced = channelTotalArr.reduce((a, b) => {
-        return a + b;
+        return (a.add(b)).div(EthWeiConversion);
       }, 0);
       var nodeChannelTotalArrReduced = nodeChannelTotalArr.reduce((a, b) => {
-        return a + b;
+        return (a.add(b)).div(EthWeiConversion);
       }, 0);
-
       setNodeTotal(nodeChannelTotalArrReduced);
       setChannelTotal(channelTotalArrReduced);
       setLoading(false);
@@ -98,11 +100,10 @@ const StatsSummary = ({ classes, messaging }) => {
           balanceArr.push(parseInt(balance.amount._hex, 16));
         }
       });
-
       const balanceArrReduced = balanceArr.reduce((a, b) => {
         return a + b;
       }, 0);
-
+      console.warn(balanceArrReduced)
       return balanceArrReduced;
     } catch (e) {
       setSearchError(`error getting channel: ${e}`);
@@ -132,17 +133,17 @@ const StatsSummary = ({ classes, messaging }) => {
     const res = await messaging.getAllLinkedTransfers() || [];
 
     const totalTransfers = [];
-    const totalTransfersReduced = 0;
+    const totalTransfersReduced = new BigNumber(0);
     if (res) {
       await getReclaimableTransfers(res)
       for (let transfer of res) {
-        totalTransfers.push(parseInt(transfer.amount._hex, 16));
+        totalTransfers.push(bigNumberify(transfer.amount._hex));
       }
       totalTransfersReduced = totalTransfers.reduce((a, b) => {
-        return a + b;
+        return a.add(b);
       }, 0);
     }
-    const averageTransfer = totalTransfersReduced / res.length / WeiPerEther;
+    const averageTransfer = totalTransfersReduced.div(res.length.mul(EthWeiConversion))
     setAverageTransfer(averageTransfer);
     setAllTransfers(res);
   };
@@ -153,15 +154,16 @@ const StatsSummary = ({ classes, messaging }) => {
     if (allTransfers && allTransfers.length >0) {
       for (let transfer of allTransfers) {
         if(transfer.status !== "PENDING" && transfer.status !== "REDEEMED"){
-          reclaimableValue.push(parseInt(transfer.amount._hex, 16));
+          reclaimableValue.push(bigNumberify(transfer.amount._hex));
         }
       }
+      console.warn(reclaimableValue)
       var reclaimableValueReduced = reclaimableValue.reduce((a, b) => {
-        return a + b;
+        console.warn(typeof a)
+        return (a.add(b)).div(EthWeiConversion);
       }, 0);
-      var totalValueReclaimable = reclaimableValueReduced / WeiPerEther;
       setNumberReclaimable(allTransfers.length);
-      setValueReclaimable(totalValueReclaimable)
+      setValueReclaimable(reclaimableValueReduced)
     }
 
   };
@@ -185,9 +187,9 @@ const StatsSummary = ({ classes, messaging }) => {
           <StatTypography>
             total channels: {allChannels ? allChannels.length : 0}
           </StatTypography>
-          <StatTypography >
-            collateral ratio: {JSON.stringify(nodeTotal / channelTotal)}
-          </StatTypography>
+          {/* <StatTypography >
+            collateral ratio: {channelTotal.isZero()? 0: nodeTotal.div(channelTotal)}
+          </StatTypography> */}
           <StatTypography >
             TVL:payment volume:{" "}
             {nodeTotal && allTransfers && allTransfers.length > 0
@@ -196,20 +198,20 @@ const StatsSummary = ({ classes, messaging }) => {
           </StatTypography>
 
           <StatTypography>
-            total user balances: {JSON.stringify(channelTotal / WeiPerEther)}
+            total user balances: {channelTotal.toString()}
           </StatTypography>
           <StatTypography>
             average transfer: {averageTransfer}
           </StatTypography>
           <StatTypography >
-            total node balances: {JSON.stringify(nodeTotal / WeiPerEther)}
+            total node balances: {nodeTotal.toString()}
           </StatTypography>
           <StatTypography >
-            number of reclaimable payments: {JSON.stringify(numberReclaimable)}
+            number of reclaimable payments: {numberReclaimable.toString()}
           </StatTypography>
 
           <StatTypography >
-            value of reclaimable payments: {JSON.stringify(valueReclaimable)}
+            value of reclaimable payments: {valueReclaimable.toString()}
           </StatTypography>
         </Grid>
       )}
