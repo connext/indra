@@ -70,5 +70,8 @@ export function notPositive(value: any): string | undefined {
 }
 
 export function notNegative(value: any): string | undefined {
-  return notLessThan(0, value);
+  if (notLessThan(0, value)) {
+    return `Value ${value.toString()} is negative.`;
+  }
+  return undefined;
 }
