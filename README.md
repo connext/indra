@@ -1,4 +1,4 @@
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/ConnextProject/indra/CD Master)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/ConnextProject/indra/CD Master)]()
 [![Discord](https://img.shields.io/discord/454734546869551114)](https://discord.gg/m93Sqf4)
 [![Twitter Follow](https://img.shields.io/twitter/follow/ConnextNetwork?style=social)](https://twitter.com/ConnextNetwork)
 
