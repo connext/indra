@@ -13,7 +13,7 @@ INDRA_DOMAINNAME="${INDRA_DOMAINNAME:-localhost}"
 INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl certs expire
 INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER}"
 INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
-INDRA_MODE="${INDRA_MODE:-staging}" # One of: release, staging, test
+INDRA_MODE="${INDRA_MODE:-test-staging}" # One of: release, staging, test-staging, or test-release
 INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-cxt1234}" # pass this in through CI
 
 ####################
@@ -57,7 +57,7 @@ function pull_if_unavailable {
 ########################################
 ## Database Conig
 
-if [[ "$INDRA_MODE" == "test" ]]
+if [[ "$INDRA_MODE" == "test"* ]]
 then
   db_volume="database_test_`date +%y%m%d_%H%M%S`"
   db_secret="${project}_database_test"
@@ -83,15 +83,14 @@ redis_url="redis://redis:6379"
 ########################################
 ## Docker Image Config
 
-registry="docker.io/connextproject/"
+if [[ "$INDRA_MODE" == "test"* ]]
+then registry=""
+else registry="docker.io/connextproject/"
+fi
 
-if [[ "$INDRA_MODE" == "test" ]]
-then
-  version="`git rev-parse HEAD | head -c 8`"
-  registry=""
-elif [[ "$INDRA_MODE" == "staging" ]]
+if [[ "$INDRA_MODE" == *"staging" ]]
 then version="`git rev-parse HEAD | head -c 8`"
-elif [[ "$INDRA_MODE" == "release" ]]
+elif [[ "$INDRA_MODE" == *"release" ]]
 then version="`cat package.json | jq .version | tr -d '"'`"
 else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" && exit 1
 fi

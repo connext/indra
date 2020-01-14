@@ -1,28 +1,28 @@
 import { connect } from "@connext/client";
 import { ClientOptions, IConnextClient } from "@connext/types";
 import { Contract, Wallet } from "ethers";
-import { JsonRpcProvider } from "ethers/providers";
 import { parseEther } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { env } from "./env";
 import { ethProvider } from "./ethprovider";
-import { MemoryStoreServiceFactory } from "./store";
+import { MemoryStoreService, MemoryStoreServiceFactory } from "./store";
 
 const wallet = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider);
 
-export const createClient = async (
-  mnemonic: string = Wallet.createRandom().mnemonic,
-): Promise<IConnextClient> => {
+let clientStore: MemoryStoreService;
+
+export const createClient = async (opts?: Partial<ClientOptions>): Promise<IConnextClient> => {
   const storeServiceFactory = new MemoryStoreServiceFactory();
 
-  const clientStore = storeServiceFactory.createStoreService();
+  clientStore = storeServiceFactory.createStoreService();
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
     logLevel: env.logLevel,
-    mnemonic,
+    mnemonic: Wallet.createRandom().mnemonic,
     nodeUrl: env.nodeUrl,
     store: clientStore,
+    ...opts,
   };
   const client = await connect(clientOpts);
 
@@ -43,4 +43,8 @@ export const createClient = async (
   expect(client.publicIdentifier).toBeTruthy();
 
   return client;
+};
+
+export const getStore = (): MemoryStoreService => {
+  return clientStore;
 };

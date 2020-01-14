@@ -32,7 +32,10 @@ export class MemoryStoreService implements CFCoreTypes.IStoreService {
   async set(pairs: { path: string; value: any }[]): Promise<void> {
     await new Promise(res => setTimeout(() => res(), this.delay));
     for (const pair of pairs) {
-      this.store.set(pair.path, JSON.parse(JSON.stringify(pair.value)));
+      this.store.set(
+        pair.path,
+        pair.value == undefined ? undefined : JSON.parse(JSON.stringify(pair.value)),
+      );
     }
   }
 

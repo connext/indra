@@ -12,8 +12,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@connext/client": "1.4.2",
-    "@connext/types": "1.4.2",
+    "@connext/client": "1.4.4",
+    "@connext/types": "1.4.4",
     "commander": "4.0.1",
     "dotenv": "8.2.0",
     "ethers": "4.0.41",

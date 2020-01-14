@@ -15,7 +15,6 @@ import {
   InstallVirtualMessage,
   NodeMessageWrappedProtocolMessage,
   ProposeMessage,
-  RejectInstallVirtualMessage,
   RejectProposalMessage,
   SupportedApplications,
   UninstallMessage,
@@ -336,7 +335,7 @@ export class ConnextListener extends EventEmitter {
     const subject = `transfer.send-async.${this.connext.publicIdentifier}`;
     await this.connext.messaging.subscribe(subject, async (msg: any) => {
       this.log.info(`Received message for subscription: ${stringify(msg)}`);
-      if (!msg.paymentId && !msg.dta) {
+      if (!msg.paymentId && !msg.data) {
         throw new Error(`Could not parse data from message: ${stringify(msg)}`);
       }
       const data = msg.paymentId ? msg : JSON.parse(msg.data);
@@ -345,7 +344,7 @@ export class ConnextListener extends EventEmitter {
         throw new Error(`Unable to parse transfer details from message ${stringify(data)}`);
       }
       await this.connext.reclaimPendingAsyncTransfer(amount, assetId, paymentId, encryptedPreImage);
-      this.log.info(`Successfully reclaimed transfer with paymentId: ${paymentId}`);
+      this.log.info(`Successfully redeemed transfer with paymentId: ${paymentId}`);
     });
   };
 }

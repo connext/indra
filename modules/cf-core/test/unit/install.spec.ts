@@ -5,13 +5,13 @@ import {
 import { Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { BaseProvider } from "ethers/providers";
-import { hexlify, randomBytes } from "ethers/utils";
+import { hexlify, randomBytes, HDNode } from "ethers/utils";
 import { anything, instance, mock, when } from "ts-mockito";
 
 import {
   NO_APP_INSTANCE_ID_TO_INSTALL,
   NO_MULTISIG_FOR_APP_INSTANCE_ID,
-  NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID
+  NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID,
 } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import {
@@ -38,6 +38,7 @@ const NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES = EXPECTED_CONTRACT_NAMES_IN_NETWORK
 describe("Can handle correct & incorrect installs", () => {
   let store: Store;
   let protocolRunner: ProtocolRunner;
+  let initiatorIdentifier: string;
 
   beforeAll(() => {
     store = new Store(new MemoryStoreService(), "install.spec.ts-test-store");
@@ -45,23 +46,36 @@ describe("Can handle correct & incorrect installs", () => {
       NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES,
       {} as BaseProvider
     );
+    initiatorIdentifier = HDNode.fromMnemonic(
+      Wallet.createRandom().mnemonic
+    ).neuter().extendedKey;
   });
 
   it("fails to install with undefined appInstanceId", async () => {
     await expect(
-      install(store, protocolRunner, { appInstanceId: undefined! })
+      install(
+        store,
+        protocolRunner,
+        { appInstanceId: undefined! },
+        initiatorIdentifier
+      )
     ).rejects.toThrowError(NO_APP_INSTANCE_ID_TO_INSTALL);
   });
 
   it("fails to install with empty string appInstanceId", async () => {
     await expect(
-      install(store, protocolRunner, { appInstanceId: "" })
+      install(store, protocolRunner, { appInstanceId: "" }, initiatorIdentifier)
     ).rejects.toThrowError(NO_APP_INSTANCE_ID_TO_INSTALL);
   });
 
   it("fails to install without the AppInstance being proposed first", async () => {
     await expect(
-      install(store, protocolRunner, { appInstanceId: HashZero })
+      install(
+        store,
+        protocolRunner,
+        { appInstanceId: HashZero },
+        initiatorIdentifier
+      )
     ).rejects.toThrowError(NO_MULTISIG_FOR_APP_INSTANCE_ID);
   });
 
@@ -82,7 +96,12 @@ describe("Can handle correct & incorrect installs", () => {
     );
 
     await expect(
-      install(instance(mockedStore), protocolRunner, { appInstanceId })
+      install(
+        instance(mockedStore),
+        protocolRunner,
+        { appInstanceId },
+        initiatorIdentifier
+      )
     ).rejects.toThrowError(NO_MULTISIG_FOR_APP_INSTANCE_ID);
   });
 
@@ -142,9 +161,14 @@ describe("Can handle correct & incorrect installs", () => {
     // The AppInstanceProposal that's returned is the one that was installed, which
     // is the same one as the one that was proposed
     await expect(
-      install(store, protocolRunner, {
-        appInstanceId
-      })
+      install(
+        store,
+        protocolRunner,
+        {
+          appInstanceId
+        },
+        extendedKeys[0]
+      )
     ).resolves.toEqual(appInstanceProposal);
   });
 });

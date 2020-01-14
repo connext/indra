@@ -68,14 +68,14 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getAllLinkedTransfers();
   }
 
-  async getLinkedTransfersByUserPublicIdentifier(data: {
+  async getLinkedTransfersByRecipientPublicIdentifier(data: {
     publicIdentifier: string;
   }): Promise<LinkedTransfer[]> {
     const { publicIdentifier } = data;
     if (!publicIdentifier) {
       throw new RpcException(`No public identifier supplied: ${stringify(data)}`);
     }
-    return await this.adminService.getLinkedTransfersByUserPublicIdentifier(publicIdentifier);
+    return await this.adminService.getLinkedTransfersByRecipientPublicIdentifier(publicIdentifier);
   }
 
   async getLinkedTransferByPaymentId(data: {
@@ -144,7 +144,7 @@ class AdminMessaging extends AbstractMessagingProvider {
 
     await super.connectRequestReponse(
       "admin.get-linked-transfers-by-recipient-xpub",
-      this.authService.useAdminToken(this.getLinkedTransfersByUserPublicIdentifier.bind(this)),
+      this.authService.useAdminToken(this.getLinkedTransfersByRecipientPublicIdentifier.bind(this)),
     );   
 
     await super.connectRequestReponse(

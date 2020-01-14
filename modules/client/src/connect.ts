@@ -255,6 +255,9 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // use events
   await client.reclaimPendingAsyncTransfers();
 
+  // check in with node to do remaining work
+  await client.clientCheckIn();
+
   log.debug("Done creating channel client");
   return client;
 };

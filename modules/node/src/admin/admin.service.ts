@@ -87,8 +87,8 @@ export class AdminService {
     return await this.transferService.getAllLinkedTransfers();
   }
 
-  async getLinkedTransfersByUserPublicIdentifier(publicIdentifier: string): Promise<LinkedTransfer[]> {
-    return await this.transferService.getLinkedTransfersByUserPublicIdentifier(publicIdentifier);
+  async getLinkedTransfersByRecipientPublicIdentifier(publicIdentifier: string): Promise<LinkedTransfer[]> {
+    return await this.transferService.getLinkedTransfersByRecipientPublicIdentifier(publicIdentifier);
   }
 
   /** Get transfer */

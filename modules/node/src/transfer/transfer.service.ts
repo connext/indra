@@ -15,7 +15,7 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
-import { CLogger, createLinkedHash, xpubToAddress } from "../util";
+import { CLogger, xpubToAddress } from "../util";
 import { AppInstanceJson } from "../util/cfCore";
 
 import {
@@ -103,13 +103,15 @@ export class TransferService {
     return await this.linkedTransferRepository.save(transfer);
   }
 
-  // @hunter -- this should be pulling from the transfer view right?
-  // HH - I'm not sure? I have a good handle on db structure but not how the system typically interacts with it
+  async getTransferByPaymentId(paymentId: string): Promise<Transfer | undefined> {
+    return await this.transferRepositiory.findByPaymentId(paymentId);
+  }
+
   async getLinkedTransferByPaymentId(paymentId: string): Promise<LinkedTransfer | undefined> {
     return await this.linkedTransferRepository.findByPaymentId(paymentId);
   }
 
-  async getLinkedTransfersByUserPublicIdentifier(publicIdentifier: string): Promise<LinkedTransfer[]> {
+  async getLinkedTransfersByRecipientPublicIdentifier(publicIdentifier: string): Promise<LinkedTransfer[]> {
     return await this.linkedTransferRepository.findAllByRecipient(publicIdentifier);
   }
 
@@ -300,6 +302,8 @@ export class TransferService {
     // add preimage to database to allow unlock from a listener
     transfer.receiverAppInstanceId = receiverAppInstallRes.appInstanceId;
     transfer.paymentId = paymentId;
+    transfer.recipientPublicIdentifier = userPubId;
+    transfer.receiverChannel = channel;
     await this.linkedTransferRepository.save(transfer);
 
     return {
@@ -354,11 +358,46 @@ export class TransferService {
     return res.appInstanceId;
   }
 
+  async reclaimLinkedTransferCollateral(paymentId: string): Promise<void> {
+    const transfer = await this.linkedTransferRepository.findByPaymentId(paymentId);
+    if (transfer.status !== LinkedTransferStatus.REDEEMED) {
+      throw new Error(
+        `Transfer with id ${paymentId} has not been redeemed, status: ${transfer.status}`,
+      );
+    }
+
+    logger.log(
+      `Taking action with preImage ${transfer.preImage} and uninstalling app ${transfer.senderAppInstanceId} to reclaim collateral`,
+    );
+    await this.cfCoreService.takeAction(transfer.senderAppInstanceId, {
+      preImage: transfer.preImage,
+    });
+    logger.debug(`Action taken, uninstalling app.`);
+    await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
+    await this.linkedTransferRepository.markAsReclaimed(transfer);
+  }
+
+  async getLinkedTransfersForReclaim(userPublicIdentifier: string): Promise<LinkedTransfer[]> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new Error(`No channel exists for userPubId ${userPublicIdentifier}`);
+    }
+    return await this.linkedTransferRepository.findReclaimable(channel);
+  }
+
   async getPendingTransfers(userPublicIdentifier: string): Promise<LinkedTransfer[]> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new Error(`No channel exists for userPubId ${userPublicIdentifier}`);
+    }
     return await this.linkedTransferRepository.findPendingByRecipient(userPublicIdentifier);
   }
 
   async getTransfersByPublicIdentifier(userPublicIdentifier: string): Promise<Transfer[]> {
+    const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new Error(`No channel exists for userPubId ${userPublicIdentifier}`);
+    }
     return await this.transferRepositiory.findByPublicIdentifier(userPublicIdentifier);
   }
 }

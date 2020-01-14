@@ -1,12 +1,17 @@
 const path = require('path');
 const webpack = require('webpack');
+const nodeExternals = require('webpack-node-externals');
+
+const mode = process.env.MODE === "release" ? "release" : "staging";
+const whitelist = mode === "release" ? '' : /@connext\/.*/;
 
 module.exports = {
   mode: "development",
   target: 'node',
-  externals: {
-    eccrypto: 'commonjs eccrypto'
-  },
+  externals: [nodeExternals({
+    modulesDir: path.resolve(__dirname, '../../../node_modules'),
+    whitelist,
+  })],
 
   resolve: {
     extensions: [ '.js', '.ts', '.json' ],

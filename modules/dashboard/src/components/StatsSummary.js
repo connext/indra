@@ -50,7 +50,7 @@ const StatsSummary = ({ classes, messaging }) => {
 
   const onRefresh = async () => {
     await getChannels();
-    await getTransfers();
+    // await getTransfers();
   };
 
   const getChannels = async () => {
@@ -132,12 +132,13 @@ const StatsSummary = ({ classes, messaging }) => {
     const res = await messaging.getAllLinkedTransfers() || [];
 
     const totalTransfers = [];
+    const totalTransfersReduced = 0;
     if (res) {
       await getReclaimableTransfers(res)
       for (let transfer of res) {
         totalTransfers.push(parseInt(transfer.amount._hex, 16));
       }
-      const totalTransfersReduced = totalTransfers.reduce((a, b) => {
+      totalTransfersReduced = totalTransfers.reduce((a, b) => {
         return a + b;
       }, 0);
     }
