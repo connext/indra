@@ -10,58 +10,41 @@ export async function asyncTransferAsset(
   transferAmount: BigNumber,
   assetId: string,
   nodeFreeBalanceAddress: string,
-  preExistingBalances: Partial<ExistingBalancesAsyncTransfer> = {},
 ): Promise<ExistingBalancesAsyncTransfer> {
-  const preTransfer: ExistingBalancesAsyncTransfer = {
-    freeBalanceClientA: transferAmount,
-    freeBalanceNodeA: Zero,
-    // tslint:disable-next-line:object-literal-sort-keys
-    freeBalanceClientB: Zero,
-    freeBalanceNodeB: transferAmount,
-    ...preExistingBalances,
-  };
-
   const {
     [clientA.freeBalanceAddress]: preTransferFreeBalanceClientA,
     [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeA,
   } = await clientA.getFreeBalance(assetId);
-  expect(preTransferFreeBalanceClientA).toBeBigNumberEq(preTransfer.freeBalanceClientA);
-  expect(preTransferFreeBalanceNodeA).toBeBigNumberEq(preTransfer.freeBalanceNodeA);
 
   const {
     [clientB.freeBalanceAddress]: preTransferFreeBalanceClientB,
     [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeB,
   } = await clientB.getFreeBalance(assetId);
-  expect(preTransferFreeBalanceClientB).toBeBigNumberEq(preTransfer.freeBalanceClientB);
-  expect(preTransferFreeBalanceNodeB).toBeBigNumberGte(preTransfer.freeBalanceNodeB);
 
-  let paymentId;
-  await new Promise(async resolve => {
-    let count = 0;
-    clientA.once("UNINSTALL_EVENT", async () => {
-      console.error(`Caught sender uninstall event!!!!!`);
-      count += 1;
-      if (count === 2) {
-        console.error(`resolving promise!`);
+  let paymentId: string;
+
+  const transferFinished = Promise.all([
+    new Promise(async resolve => {
+      clientA.once("UNINSTALL_EVENT", async () => {
         resolve();
-      }
-    });
-
-    clientB.once("RECIEVE_TRANSFER_FINISHED_EVENT", async () => {
-      count += 1;
-      if (count === 2) {
+      });
+    }),
+    new Promise(async resolve => {
+      clientB.once("RECIEVE_TRANSFER_FINISHED_EVENT", async () => {
         resolve();
-      }
-    });
+      });
+    }),
+  ]);
 
-    const { paymentId: senderPaymentId } = await clientA.transfer({
-      amount: transferAmount.toString(),
-      assetId,
-      meta: { hello: "world" },
-      recipient: clientB.publicIdentifier,
-    });
-    paymentId = senderPaymentId;
+  const { paymentId: senderPaymentId } = await clientA.transfer({
+    amount: transferAmount.toString(),
+    assetId,
+    meta: { hello: "world" },
+    recipient: clientB.publicIdentifier,
   });
+  paymentId = senderPaymentId;
+
+  await transferFinished;
   expect((await clientB.getAppInstances()).length).toEqual(Zero.toNumber());
   expect((await clientA.getAppInstances()).length).toEqual(Zero.toNumber());
 
