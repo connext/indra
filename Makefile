@@ -29,6 +29,7 @@ messaging=$(cwd)/modules/messaging
 node=$(cwd)/modules/node
 proxy=$(cwd)/ops/proxy
 ssh-action=$(cwd)/ops/ssh-action
+store=$(cwd)/modules/store
 tests=$(cwd)/modules/test-runner
 types=$(cwd)/modules/types
 
@@ -300,7 +301,7 @@ ws-tcp-relay: ops/ws-tcp-relay.dockerfile
 ########################################
 # JS & bundles
 
-client: cf-core contracts types messaging $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
+client: cf-core contracts types messaging store $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
@@ -328,6 +329,11 @@ messaging: node-modules types $(shell find $(messaging)/src $(find_options))
 node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+store: node-modules types $(shell find $(store)/src $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/store && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 types: node-modules $(shell find $(types)/src $(find_options))
