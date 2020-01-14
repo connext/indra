@@ -45,7 +45,7 @@ export abstract class AbstractController {
             `indra.node.${this.connext.nodePublicIdentifier}.install.${appInstanceId}`,
             boundResolve,
           );
-          this.listener.on(CFCoreTypes.EventNames.REJECT_INSTALL_EVENT, boundReject);
+          this.listener.on("REJECT_INSTALL_EVENT", boundReject);
         }),
         delayAndThrow(
           CF_METHOD_TIMEOUT,
@@ -58,7 +58,7 @@ export abstract class AbstractController {
       return appInstanceId;
     } catch (e) {
       this.log.error(`Error installing app: ${e.stack || e.message}`);
-      return appInstanceId;
+      throw new Error(e.stack || e.message);
     } finally {
       this.cleanupInstallListeners(boundReject, appInstanceId);
     }
@@ -95,7 +95,7 @@ export abstract class AbstractController {
       return appId;
     } catch (e) {
       this.log.error(`Error proposing app: ${e.stack || e.message}`);
-      return e.message;
+      throw new Error(e.stack || e.message);
     } finally {
       this.cleanupProposalListeners(boundReject);
     }
