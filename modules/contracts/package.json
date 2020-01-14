@@ -13,7 +13,7 @@
     "lint-ts": "tslint -c tslint.json test/**/*.ts"
   },
   "dependencies": {
-    "@connext/types": "1.5.0",
+    "@connext/types": "1.5.1",
     "ethers": "4.0.41",
     "openzeppelin-solidity": "2.3.0"
   },
