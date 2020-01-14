@@ -29,7 +29,6 @@ const sendFailed = "Failed to send message";
 
 export interface INodeApiClient {
   acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;
-  addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile>;
   appRegistry(appDetails?: {
     name: SupportedApplication;
     network: SupportedNetwork;
@@ -204,10 +203,6 @@ export class NodeApiClient implements INodeApiClient {
       meta,
       paymentId,
     });
-  }
-
-  public async addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile> {
-    return await this.send(`channel.add-profile.${this.userPublicIdentifier}`, profile);
   }
 
   public async getPaymentProfile(assetId?: string): Promise<PaymentProfile> {
