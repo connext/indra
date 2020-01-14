@@ -3,9 +3,7 @@ import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 
 import { createClient } from "../util/client";
-import { FUNDED_MNEMONICS } from "../util/constants";
-import { clearDb } from "../util/db";
-import { getOnchainBalance, revertEVMSnapshot, takeEVMSnapshot } from "../util/ethprovider";
+import { getOnchainBalance } from "../util/ethprovider";
 
 describe("Deposits", () => {
   let clientA: IConnextClient;
@@ -57,7 +55,9 @@ describe("Deposits", () => {
 
     await expect(
       clientA.deposit({
-        amount: (await getOnchainBalance(clientA.freeBalanceAddress, tokenAddress)) + 1,
+        amount: (await getOnchainBalance(clientA.freeBalanceAddress, tokenAddress))
+          .add(1)
+          .toString(),
         assetId: clientA.config.contractAddresses.Token,
       }),
     ).rejects.toThrowError("is not less than or equal to");
