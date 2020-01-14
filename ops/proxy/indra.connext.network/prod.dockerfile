@@ -8,8 +8,12 @@ RUN apk add --update --no-cache bash certbot curl iputils nginx openssl && \
 # https://github.com/moby/moby/issues/37965#issuecomment-426853382
 COPY ops/wait-for.sh /root/wait-for.sh
 RUN true
-COPY modules/proxy/daicard.io/prod.conf /etc/nginx/nginx.conf
+COPY ops/proxy/indra.connext.network/prod.conf /etc/nginx/nginx.conf
 RUN true
-COPY modules/proxy/daicard.io/entry.sh /root/entry.sh
+COPY ops/proxy/indra.connext.network/entry.sh /root/entry.sh
+RUN true
+COPY ops/daicard/build /var/www/html/daicard
+RUN true
+COPY ops/dashboard/build /var/www/html/dashboard
 
 ENTRYPOINT ["bash", "/root/entry.sh"]
