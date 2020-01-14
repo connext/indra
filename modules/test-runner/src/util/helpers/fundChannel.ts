@@ -4,7 +4,7 @@ import { BigNumber } from "ethers/utils";
 
 export const fundChannel = async (
   client: IConnextClient,
-  amount: string,
+  amount: BigNumber,
   assetId: string = AddressZero,
 ): Promise<void> => {
   const prevFreeBalance = await client.getFreeBalance();
@@ -17,7 +17,7 @@ export const fundChannel = async (
       resolve();
     });
 
-    await client.deposit({ amount, assetId });
+    await client.deposit({ amount: amount.toString(), assetId });
   });
 
   return;

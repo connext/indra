@@ -6,7 +6,7 @@ import { AddressZero, Zero } from "ethers/constants";
 import {
   createClient,
   fundChannel,
-  NEGATIVE_ZERO__ZERO_ONE_ETH,
+  NEGATIVE_ZERO_ZERO_ONE_ETH,
   requestDepositRights,
   withdrawFromChannel,
   ZERO_ZERO_ONE_ETH,
@@ -61,8 +61,8 @@ describe("Withdrawal", () => {
   test("client tries to withdraw a negative amount", async () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
     await expect(
-      withdrawFromChannel(client, NEGATIVE_ZERO__ZERO_ONE_ETH, AddressZero),
-    ).rejects.toThrow(`Value (${NEGATIVE_ZERO__ZERO_ONE_ETH}) is not greater than or equal to 0`);
+      withdrawFromChannel(client, NEGATIVE_ZERO_ZERO_ONE_ETH, AddressZero),
+    ).rejects.toThrow(`Value (${NEGATIVE_ZERO_ZERO_ONE_ETH}) is not greater than or equal to 0`);
   });
 
   test("client tries to withdraw to an invalid recipient address", async () => {
@@ -78,7 +78,7 @@ describe("Withdrawal", () => {
     // which will throw a separate error
     await expect(
       client.withdraw({
-        amount: ZERO_ZERO_ONE_ETH,
+        amount: ZERO_ZERO_ONE_ETH.toString(),
         assetId: "0xabc",
         recipient: Wallet.createRandom().address,
       }),

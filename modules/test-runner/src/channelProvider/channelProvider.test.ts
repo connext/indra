@@ -1,16 +1,14 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IChannelProvider, IConnextClient } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
-import { bigNumberify } from "ethers/utils";
 import { Client } from "ts-nats";
 
 import {
-  asyncTransferAsset,
+  // asyncTransferAsset,
   createChannelProvider,
   createClient,
   createRemoteClient,
   ETH_AMOUNT_SM,
-  ONE,
   swapAsset,
   TOKEN_AMOUNT,
   withdrawFromChannel,
@@ -107,8 +105,8 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // WITHDRAW FLOW
-    const withdraw = { amount: bigNumberify(ONE), assetId: tokenAddress };
-    await withdrawFromChannel(clientA1, withdraw.amount.toString(), withdraw.assetId);
+    const withdraw = { amount: One, assetId: tokenAddress };
+    await withdrawFromChannel(clientA1, withdraw.amount, withdraw.assetId);
   });
 
   // tslint:disable-next-line:max-line-length

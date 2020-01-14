@@ -1,13 +1,14 @@
 import { IConnextClient } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
+import { BigNumber } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { ethProvider } from "../ethprovider";
 
 export const withdrawFromChannel = async (
   client: IConnextClient,
-  amount: string,
+  amount: BigNumber,
   assetId: string,
   userSubmitted: boolean = false,
   recipient: string = Wallet.createRandom().address,
@@ -16,7 +17,7 @@ export const withdrawFromChannel = async (
   const preWithdrawalBalance = await client.getFreeBalance(assetId);
   const expected = preWithdrawalBalance[client.freeBalanceAddress].sub(amount);
   await client.withdraw({
-    amount,
+    amount: amount.toString(),
     assetId,
     recipient,
     userSubmitted,
