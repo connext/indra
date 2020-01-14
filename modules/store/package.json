@@ -1,0 +1,30 @@
+{
+  "name": "@connext/store",
+  "version": "1.5.0",
+  "description": "Store module for Connext client",
+  "main": "dist/index.js",
+  "files": [
+    "dist",
+    "src",
+    "types"
+  ],
+  "scripts": {
+    "build": "./node_modules/.bin/tsc -p tsconfig.json",
+    "rebuild": "npm run clean && npm run build",
+    "clean": "rm -rf ./dist",
+    "prepare": "npm run build",
+    "test": "./node_modules/.bin/jest"
+  },
+  "dependencies": {
+    "ethers": "4.0.40",
+    "pisa-client": "0.1.4-connext-beta.1"
+  },
+  "devDependencies": {
+    "@babel/polyfill": "7.7.0",
+    "@types/jest": "24.0.25",
+    "@types/node": "12.12.14",
+    "jest": "24.9.0",
+    "ts-jest": "24.2.0",
+    "typescript": "3.5.3"
+  }
+}
