@@ -1,20 +1,23 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
-import { Wallet } from "ethers";
+import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { HDNode, hexlify, parseEther, randomBytes } from "ethers/utils";
+import { HDNode, hexlify, randomBytes } from "ethers/utils";
+const tokenArtifacts = require("openzeppelin-solidity/build/contracts/ERC20Mintable.json");
 
 import {
   asyncTransferAsset,
   createClient,
   ETH_AMOUNT_LG,
+  ETH_AMOUNT_MD,
   ETH_AMOUNT_SM,
+  ethProvider,
   fundChannel,
-  ZERO_ONE,
-  ZERO_ZERO_ONE,
+  FUNDED_MNEMONICS,
+  TOKEN_AMOUNT,
 } from "../util";
 
-describe("Async Transfers", () => {
+describe.only("Async Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
@@ -31,25 +34,21 @@ describe("Async Transfers", () => {
   }, 90_000);
 
   test("happy case: client A transfers eth to client B through node", async () => {
-    const transferAmount = ETH_AMOUNT_SM;
-    const assetId = AddressZero;
-    await clientA.deposit({ amount: transferAmount.toString(), assetId });
-    await clientB.requestCollateral(assetId);
+    await fundChannel(clientA, ETH_AMOUNT_SM, AddressZero);
+    await clientB.requestCollateral(AddressZero);
 
-    await asyncTransferAsset(clientA, clientB, transferAmount, assetId, nodeFreeBalanceAddress);
+    await asyncTransferAsset(clientA, clientB, ETH_AMOUNT_SM, AddressZero, nodeFreeBalanceAddress);
   });
 
   test("happy case: client A transfers tokens to client B through node", async () => {
-    const transferAmount = ETH_AMOUNT_LG;
-    const assetId = tokenAddress;
-    await clientA.deposit({ amount: transferAmount.toString(), assetId });
-    await clientB.requestCollateral(assetId);
+    await fundChannel(clientA, ETH_AMOUNT_LG, tokenAddress);
+    await clientB.requestCollateral(tokenAddress);
 
-    await asyncTransferAsset(clientA, clientB, transferAmount, assetId, nodeFreeBalanceAddress);
+    await asyncTransferAsset(clientA, clientB, ETH_AMOUNT_LG, tokenAddress, nodeFreeBalanceAddress);
   });
 
   test("Bot A tries to transfer a negative amount", async () => {
-    await fundChannel(clientA, ZERO_ZERO_ONE, tokenAddress);
+    await fundChannel(clientA, ETH_AMOUNT_MD, tokenAddress);
     // verify collateral
     await clientB.requestCollateral(tokenAddress);
 
@@ -63,7 +62,7 @@ describe("Async Transfers", () => {
   });
 
   test("Bot A tries to transfer with an invalid token address", async () => {
-    await fundChannel(clientA, ZERO_ZERO_ONE, tokenAddress);
+    await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
 
     await expect(
       clientA.transfer({
@@ -78,22 +77,35 @@ describe("Async Transfers", () => {
     // because it will not be able to fetch the free balance of the assetId
   });
 
-  // TODO: need to add free balance of the asset in question to get to the
-  // hub error
-  test.skip("Bot A tries to transfer with an unsupported (but not invalid) token address", async () => {
-    await fundChannel(clientA, ZERO_ZERO_ONE, tokenAddress);
+  test.only("Bot A tries to transfer with an unsupported (but not invalid) token address", async () => {
+    // deploy a token
+    const factory = ContractFactory.fromSolidity(tokenArtifacts);
+    const token = await factory
+      .connect(Wallet.fromMnemonic(FUNDED_MNEMONICS[0]).connect(ethProvider))
+      .deploy();
+    const deployHash = token.deployTransaction.hash;
+    expect(deployHash).toBeDefined();
+    await ethProvider.waitForTransaction(token.deployTransaction.hash!);
+    // mint token to client
+    await token.mint(clientA.signerAddress, TOKEN_AMOUNT);
+    // assert sender balance
+    const senderBal = await token.balanceOf(clientA.signerAddress);
+    expect(senderBal).toBeBigNumberEq(TOKEN_AMOUNT);
+
+    // fund channel
+    await fundChannel(clientA, ETH_AMOUNT_LG, token.address);
 
     await expect(
       clientA.transfer({
-        amount: ETH_AMOUNT_SM.toString(),
-        assetId: Wallet.createRandom().address,
+        amount: ETH_AMOUNT_LG.toString(),
+        assetId: token.address,
         recipient: clientB.publicIdentifier,
       }),
     ).rejects.toThrowError(`test`);
   });
 
   test("Bot A tries to transfer with invalid recipient xpub", async () => {
-    await fundChannel(clientA, ZERO_ZERO_ONE, tokenAddress);
+    await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
 
     await expect(
       clientA.transfer({
@@ -108,17 +120,15 @@ describe("Async Transfers", () => {
   test("Bot A tries to transfer an amount greater than they have in their free balance", async () => {
     await expect(
       clientA.transfer({
-        amount: parseEther(ZERO_ZERO_ONE).toString(),
+        amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
       }),
-    ).rejects.toThrowError(
-      `Value (${parseEther(ZERO_ZERO_ONE).toString()}) is not less than or equal to 0`,
-    );
+    ).rejects.toThrowError(`Value (${ETH_AMOUNT_SM.toString()}) is not less than or equal to 0`);
   });
 
   test("Bot A tries to transfer with a paymentId that is not 32 bytes", async () => {
-    await fundChannel(clientA, ZERO_ZERO_ONE, tokenAddress);
+    await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
 
     await expect(
       clientA.conditionalTransfer({
@@ -133,11 +143,11 @@ describe("Async Transfers", () => {
   });
 
   test("Bot A tries to transfer with a preimage that is not 32 bytes", async () => {
-    await fundChannel(clientA, ZERO_ZERO_ONE, tokenAddress);
+    await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
 
     await expect(
       clientA.conditionalTransfer({
-        amount: parseEther(ZERO_ONE).toString(),
+        amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
         conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
         paymentId: hexlify(randomBytes(32)),
@@ -148,11 +158,11 @@ describe("Async Transfers", () => {
   });
 
   test("Bot A proposes a transfer to an xpub that doesn’t have a channel", async () => {
-    await fundChannel(clientA, ZERO_ZERO_ONE, tokenAddress);
+    await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
 
     await expect(
       clientA.transfer({
-        amount: parseEther(ZERO_ZERO_ONE).toString(),
+        amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
         recipient: HDNode.fromMnemonic(Wallet.createRandom().mnemonic).neuter().extendedKey,
       }),
