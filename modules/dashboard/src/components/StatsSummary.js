@@ -48,7 +48,6 @@ const StatsSummary = ({ classes, messaging }) => {
 
   const onRefresh = async () => {
     console.log("refreshing!");
-    await messaging.getLinkedTransferByPaymentId(HashZero);
     await getChannels();
     await getTransfers();
   };

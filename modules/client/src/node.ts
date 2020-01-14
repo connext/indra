@@ -171,10 +171,6 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
-  public async addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile> {
-    return await this.send(`channel.add-profile.${this.userPublicIdentifier}`, profile);
-  }
-
   public async getPaymentProfile(assetId?: string): Promise<PaymentProfile> {
     return await this.send(`channel.get-profile.${this.userPublicIdentifier}`, {
       assetId: makeChecksumOrEthAddress(assetId),

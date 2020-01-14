@@ -131,7 +131,6 @@ export interface IConnextClient {
   getLatestSwapRate(from: string, to: string): Promise<string>;
   unsubscribeToSwapRates(from: string, to: string): Promise<void>;
   requestCollateral(tokenAddress: string): Promise<RequestCollateralResponse | void>;
-  addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile>;
   getPaymentProfile(assetId?: string): Promise<PaymentProfile | undefined>;
   getTransferHistory(): Promise<Transfer[]>;
   reclaimPendingAsyncTransfers(): Promise<void>;

@@ -88,7 +88,6 @@ export interface INodeApiClient {
   nodePublicIdentifier: string | undefined;
 
   acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;
-  addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile>;
   appRegistry(appDetails?: {
     name: SupportedApplication;
     network: SupportedNetwork;
