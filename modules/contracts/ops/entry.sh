@@ -31,7 +31,7 @@ then
       --port="8545" \
       --defaultBalanceEther="1000000000" \
        > ganache.log &
-    bash wait-for.sh localhost:8545 2> /dev/null
+    bash wait-for.sh localhost:8545
   fi
   touch contracts/address-book.json
   node contracts/ops/migrate-contracts.js

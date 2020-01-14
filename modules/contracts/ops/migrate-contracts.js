@@ -45,7 +45,7 @@ const cwd = process.cwd()
 const HOME = (cwd.indexOf(project) !== -1)  ?
   `${cwd.substring(0,cwd.indexOf(project)+project.length)}` :
   `/root`
-const addressBookPath = `${HOME}/../address-book.json`
+const addressBookPath = `${HOME}/contracts/address-book.json`
 const addressBook = JSON.parse(fs.readFileSync(addressBookPath, 'utf8') || "{}")
 
 // Global scope vars

@@ -17,7 +17,6 @@
 		"chai-bn": "0.2.0",
 		"cypress": "3.7.0",
 		"ethers": "4.0.41",
-		"ganache-cli": "6.7.0",
 		"lerna": "3.19.0",
 		"openzeppelin-solidity": "2.3.0",
 		"prettier": "1.19.1",

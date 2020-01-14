@@ -111,7 +111,7 @@ id="`
     --env="INFURA_KEY=$INFURA_KEY" \
     --mount="type=volume,source=${project}_chain_dev,target=/data" \
     --mount="type=bind,source=$log,target=/root/ganache.log" \
-    --mount="type=bind,source=$cwd/address-book.json,target=/root/address-book.json" \
+    --mount="type=bind,source=$cwd/modules/contracts/address-book.json,target=/root/contracts/address-book.json" \
     --restart-condition="none" \
     $SECRET_ENV \
     $image deploy 2> /dev/null
