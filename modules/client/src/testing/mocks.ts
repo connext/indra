@@ -1,8 +1,8 @@
 import { IMessagingService } from "@connext/messaging";
 import { providers } from "ethers";
+import { BigNumber, Transaction } from "ethers/utils";
 
 import { Logger } from "../lib";
-import { INodeApiClient } from "../node";
 import {
   AppRegistry,
   CFCoreTypes,
@@ -10,8 +10,11 @@ import {
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
+  IChannelProvider,
+  INodeApiClient,
   NodeInitializationParameters,
   PaymentProfile,
+  PendingAsyncTransfer,
   RequestCollateralResponse,
   ResolveLinkedTransferResponse,
   SupportedApplication,
@@ -89,6 +92,10 @@ export class MockNodeClientApi implements INodeApiClient {
   private nonce: string | undefined;
   private signature: string | undefined;
 
+  public channelProvider: IChannelProvider | undefined;
+  public userPublicIdentifier: string | undefined;
+  public nodePublicIdentifier: string | undefined;
+
   public constructor(opts: Partial<NodeInitializationParameters> = {}) {
     this.log = new Logger("MockNodeClientApi", opts.logLevel);
     this.messaging = (opts.messaging as any) || new MockMessagingService(opts);
@@ -107,7 +114,6 @@ export class MockNodeClientApi implements INodeApiClient {
   // should have keys same as the message passed in to fake messaging client
   // TODO: how well will this work with dynamic paths?
   public static returnValues: any = {
-    addPaymentProfile: {} as PaymentProfile,
     appRegistry: {} as AppRegistry,
     config: {
       chainId: "mocks", // network that your channel is on
@@ -141,9 +147,35 @@ export class MockNodeClientApi implements INodeApiClient {
     return "100";
   }
 
-  public async getTransferHistory(): Promise<Transfer[]> {
+  public async getPendingAsyncTransfers(): Promise<PendingAsyncTransfer[]> {
+    return [
+      {
+        amount: "",
+        assetId: "",
+        encryptedPreImage: "",
+        linkedHash: "",
+        paymentId: "",
+      },
+    ];
+  }
+
+  public async getTransferHistory(publicIdentifier?: string): Promise<Transfer[]> {
     return [];
   }
+  public async getLatestWithdrawal(): Promise<Transaction> {
+    const mockNumber = 1;
+    const mockBigNumber = new BigNumber(mockNumber);
+    return {
+      chainId: mockNumber,
+      data: "",
+      gasLimit: mockBigNumber,
+      gasPrice: mockBigNumber,
+      nonce: mockNumber,
+      value: mockBigNumber,
+    };
+  }
+
+  public async clientCheckIn(): Promise<void> {}
 
   public async createChannel(): Promise<CreateChannelResponse> {
     return MockNodeClientApi.returnValues.createChannel;
@@ -179,10 +211,6 @@ export class MockNodeClientApi implements INodeApiClient {
     };
   }
 
-  public async addPaymentProfile(): Promise<any> {
-    return MockNodeClientApi.returnValues.addPaymentProfile;
-  }
-
   public async getPaymentProfile(): Promise<PaymentProfile | undefined> {
     return undefined;
   }
@@ -190,4 +218,10 @@ export class MockNodeClientApi implements INodeApiClient {
   public async verifyAppSequenceNumber(): Promise<ChannelAppSequences> {
     return MockNodeClientApi.returnValues.verifyAppSequenceNumber;
   }
+
+  public async setRecipientAndEncryptedPreImageForLinkedTransfer(
+    recipient: string,
+    encryptedPreImage: string,
+    linkedHash: string,
+  ): Promise<any> {}
 }

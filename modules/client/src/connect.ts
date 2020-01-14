@@ -7,9 +7,9 @@ import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
-import { ChannelProvider, createCFChannelProvider } from "./channelProvider";
+import { createCFChannelProvider } from "./channelProvider";
 import { ConnextClient } from "./connext";
-import { Logger, stringify, delayAndThrow } from "./lib";
+import { delayAndThrow, Logger, stringify } from "./lib";
 import { NodeApiClient } from "./node";
 import {
   CFCoreTypes,
@@ -17,7 +17,9 @@ import {
   ConnextClientStorePrefix,
   CreateChannelMessage,
   GetConfigResponse,
+  IChannelProvider,
   IConnextClient,
+  INodeApiClient,
 } from "./types";
 
 const exists = (obj: any): boolean => {
@@ -36,10 +38,10 @@ const createMessagingService = async (
 };
 
 const setupMultisigAddress = async (
-  node: NodeApiClient,
-  channelProvider: ChannelProvider,
+  node: INodeApiClient,
+  channelProvider: IChannelProvider,
   log: Logger,
-): Promise<ChannelProvider> => {
+): Promise<IChannelProvider> => {
   const myChannel = await node.getChannel();
 
   let multisigAddress: string;
@@ -100,11 +102,11 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
 
   // setup messaging and node api
   let messaging: IMessagingService;
-  let node: NodeApiClient;
+  let node: INodeApiClient;
   let config: GetConfigResponse;
 
   // setup channelProvider
-  let channelProvider: ChannelProvider;
+  let channelProvider: IChannelProvider;
   let isInjected = false;
 
   if (providedChannelProvider) {
@@ -156,6 +158,13 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     node = new NodeApiClient({ logLevel, messaging });
     config = await node.config();
     log.debug(`Node provided config: ${stringify(config)}`);
+
+    // ensure that node and user xpub are different
+    if (config.nodePublicIdentifier === xpub) {
+      throw new Error(
+        "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
+      );
+    }
 
     channelProvider = await createCFChannelProvider({
       ethProvider,

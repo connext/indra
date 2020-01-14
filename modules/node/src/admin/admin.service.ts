@@ -1,6 +1,6 @@
 import { StateChannel } from "@connext/cf-core";
-import MinimumViableMultisig from "@connext/cf-funding-protocol-contracts/build/MinimumViableMultisig.json";
-import ProxyFactory from "@connext/cf-funding-protocol-contracts/build/ProxyFactory.json";
+import MinimumViableMultisig from "@connext/contracts/build/MinimumViableMultisig.json";
+import ProxyFactory from "@connext/contracts/build/ProxyFactory.json";
 import { ConnextNodeStorePrefix, StateChannelJSON } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { Contract } from "ethers";

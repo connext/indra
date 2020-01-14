@@ -10,9 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@connext/cf-core": "1.4.4",
-    "@connext/client": "1.4.4",
-    "@connext/types": "1.4.4",
+    "@connext/cf-core": "1.5.0",
+    "@connext/client": "1.5.0",
+    "@connext/types": "1.5.0",
     "core-js": "3.6.1",
     "dotenv": "8.2.0",
     "ethers": "4.0.41",
@@ -20,6 +20,7 @@
     "jest": "24.9.0",
     "pg": "7.17.0",
     "ts-jest": "24.2.0",
+    "ts-nats": "1.2.4",
     "typescript": "3.5.3"
   },
   "devDependencies": {
@@ -28,7 +29,7 @@
     "babel-loader": "8.0.6",
     "ts-loader": "6.2.1",
     "webpack": "4.41.5",
-    "webpack-node-externals": "1.7.2",
-    "webpack-cli": "3.3.10"
+    "webpack-cli": "3.3.10",
+    "webpack-node-externals": "1.7.2"
   }
 }

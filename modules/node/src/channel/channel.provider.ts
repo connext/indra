@@ -165,7 +165,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     );
     await super.connectRequestReponse(
       "channel.add-profile.>",
-      this.authService.useVerifiedPublicIdentifier(this.addPaymentProfile.bind(this)),
+      this.authService.useAdminToken(this.addPaymentProfile.bind(this)),
     );
     await super.connectRequestReponse(
       "channel.get-profile.>",

@@ -3,7 +3,6 @@ import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
 import uuid = require("uuid");
 
-import { ChannelProvider } from "./channelProvider";
 import { Logger, NATS_ATTEMPTS, NATS_TIMEOUT, stringify } from "./lib";
 import {
   AppRegistry,
@@ -12,9 +11,12 @@ import {
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
+  IChannelProvider,
+  INodeApiClient,
   makeChecksumOrEthAddress,
   NodeInitializationParameters,
   PaymentProfile,
+  PendingAsyncTransfer,
   RequestCollateralResponse,
   ResolveLinkedTransferResponse,
   SupportedApplication,
@@ -27,35 +29,6 @@ import { invalidXpub } from "./validation";
 const guardedSubjects = ["channel", "lock", "transfer"];
 const sendFailed = "Failed to send message";
 
-export interface INodeApiClient {
-  acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;
-  addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile>;
-  appRegistry(appDetails?: {
-    name: SupportedApplication;
-    network: SupportedNetwork;
-  }): Promise<AppRegistry>;
-  config(): Promise<GetConfigResponse>;
-  createChannel(): Promise<CreateChannelResponse>;
-  getChannel(): Promise<GetChannelResponse>;
-  getLatestSwapRate(from: string, to: string): Promise<string>;
-  getPaymentProfile(assetId?: string): Promise<PaymentProfile>;
-  getTransferHistory(publicIdentifier: string): Promise<Transfer[]>;
-  requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
-  withdraw(tx: CFCoreTypes.MinimalTransaction): Promise<TransactionResponse>;
-  fetchLinkedTransfer(paymentId: string): Promise<any>;
-  resolveLinkedTransfer(
-    paymentId: string,
-    linkedHash: string,
-    meta: object,
-  ): Promise<ResolveLinkedTransferResponse>;
-  recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
-  restoreState(publicIdentifier: string): Promise<any>;
-  subscribeToSwapRates(from: string, to: string, callback: any): void;
-  unsubscribeFromSwapRates(from: string, to: string): void;
-  // TODO: fix types
-  verifyAppSequenceNumber(appSequenceNumber: number): Promise<ChannelAppSequences>;
-}
-
 // NOTE: swap rates are given as a decimal string describing:
 // Given 1 unit of `from`, how many units `to` are recieved.
 // eg the rate string might be "202.02" if 1 eth can be swapped for 202.02 dai
@@ -67,7 +40,7 @@ export class NodeApiClient implements INodeApiClient {
 
   private _userPublicIdentifier: string | undefined; // tslint:disable-line:variable-name
   private _nodePublicIdentifier: string | undefined; // tslint:disable-line:variable-name
-  private _channelProvider: ChannelProvider | undefined; // tslint:disable-line:variable-name
+  private _channelProvider: IChannelProvider | undefined; // tslint:disable-line:variable-name
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
@@ -79,11 +52,11 @@ export class NodeApiClient implements INodeApiClient {
 
   ////////////////////////////////////////
   // GETTERS/SETTERS
-  get channelProvider(): ChannelProvider | undefined {
+  get channelProvider(): IChannelProvider | undefined {
     return this._channelProvider;
   }
 
-  set channelProvider(channelProvider: ChannelProvider) {
+  set channelProvider(channelProvider: IChannelProvider) {
     this._channelProvider = channelProvider;
   }
 
@@ -144,15 +117,7 @@ export class NodeApiClient implements INodeApiClient {
     return await this.send(`channel.get.${this.userPublicIdentifier}`);
   }
 
-  public async getPendingAsyncTransfers(): Promise<
-    {
-      assetId: string;
-      amount: string;
-      encryptedPreImage: string;
-      linkedHash: string;
-      paymentId: string;
-    }[]
-  > {
+  public async getPendingAsyncTransfers(): Promise<PendingAsyncTransfer[]> {
     return (await this.send(`transfer.get-pending.${this.userPublicIdentifier}`)) || [];
   }
 
@@ -204,10 +169,6 @@ export class NodeApiClient implements INodeApiClient {
       meta,
       paymentId,
     });
-  }
-
-  public async addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile> {
-    return await this.send(`channel.add-profile.${this.userPublicIdentifier}`, profile);
   }
 
   public async getPaymentProfile(assetId?: string): Promise<PaymentProfile> {

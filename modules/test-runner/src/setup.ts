@@ -23,6 +23,7 @@ expect.extend({
     if (pass) {
       return {
         message: (): string =>
+          //  tslint:disable-next-line:max-line-length
           `expected ${received.toString()} not to be greater than or equal to ${equalTo.toString()}`,
         pass: true,
       };

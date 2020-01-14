@@ -1,17 +1,4 @@
-import { IMessagingService } from "@connext/messaging";
-import {
-  AppRegistry,
-  BigNumber as connextBN,
-  ClientOptions,
-  GetConfigResponse,
-  Store,
-} from "@connext/types";
-import { Contract, providers } from "ethers";
-import { Network } from "ethers/utils";
-
-import { ChannelProvider } from "./channelProvider";
-import { NodeApiClient } from "./node";
-
+import { BigNumber as connextBN } from "@connext/types";
 export {
   CreateChannelMessage,
   DepositConfirmationMessage,
@@ -43,7 +30,6 @@ export {
   CFCoreChannel,
   CFChannelProviderOptions,
   ChannelAppSequences,
-  ChannelProvider,
   ChannelProviderConfig,
   ChannelProviderRpcMethod,
   ChannelProviderRpcMethods,
@@ -67,15 +53,22 @@ export {
   GetChannelResponse,
   GetConfigResponse,
   IConnextClient,
+  IChannelProvider,
+  INodeApiClient,
+  InternalClientOptions,
+  IRpcConnection,
   KeyGen,
+  JsonRpcRequest,
   LinkedTransferParameters,
   LinkedTransferResponse,
   LinkedTransferToRecipientParameters,
   LinkedTransferToRecipientResponse,
   makeChecksum,
   makeChecksumOrEthAddress,
+  NodeInitializationParameters,
   CFCoreTypes,
   PaymentProfile,
+  PendingAsyncTransfer,
   RequestCollateralResponse,
   ResolveConditionParameters,
   ResolveConditionResponse,
@@ -86,7 +79,6 @@ export {
   RequestDepositRightsResponse,
   RescindDepositRightsParameters,
   RescindDepositRightsResponse,
-  RpcConnection,
   SimpleLinkedTransferAppState,
   SimpleLinkedTransferAppStateBigNumber,
   SimpleSwapAppState,
@@ -109,23 +101,3 @@ export {
 
 export type BigNumber = connextBN;
 export const BigNumber = connextBN;
-
-export type InternalClientOptions = ClientOptions & {
-  appRegistry: AppRegistry;
-  channelProvider: ChannelProvider;
-  config: GetConfigResponse;
-  ethProvider: providers.JsonRpcProvider;
-  messaging: IMessagingService;
-  network: Network;
-  node: NodeApiClient;
-  store: Store;
-  token: Contract;
-};
-
-export interface NodeInitializationParameters {
-  messaging: IMessagingService;
-  logLevel?: number;
-  userPublicIdentifier?: string;
-  nodePublicIdentifier?: string;
-  channelProvider?: ChannelProvider;
-}

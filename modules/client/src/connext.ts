@@ -1,5 +1,10 @@
 import { IMessagingService } from "@connext/messaging";
-import { AppInstanceProposal, CF_PATH, LinkedTransferToRecipientParameters } from "@connext/types";
+import {
+  AppInstanceProposal,
+  CF_PATH,
+  IChannelProvider,
+  LinkedTransferToRecipientParameters,
+} from "@connext/types";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -8,7 +13,7 @@ import { fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
-import { ChannelProvider, createCFChannelProvider } from "./channelProvider";
+import { createCFChannelProvider } from "./channelProvider";
 import { ConditionalTransferController } from "./controllers/ConditionalTransferController";
 import { DepositController } from "./controllers/DepositController";
 import { RequestDepositRightsController } from "./controllers/RequestDepositRightsController";
@@ -18,7 +23,6 @@ import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger, stringify, withdrawalKey, xpubToAddress } from "./lib";
 import { decryptWithPrivateKey } from "./lib/crypto";
 import { ConnextListener } from "./listener";
-import { NodeApiClient } from "./node";
 import {
   Address,
   AppActionBigNumber,
@@ -41,6 +45,7 @@ import {
   GetChannelResponse,
   GetConfigResponse,
   IConnextClient,
+  INodeApiClient,
   InternalClientOptions,
   KeyGen,
   makeChecksum,
@@ -68,7 +73,7 @@ const MAX_WITHDRAWAL_RETRIES = 3;
 
 export class ConnextClient implements IConnextClient {
   public appRegistry: AppRegistry;
-  public channelProvider: ChannelProvider;
+  public channelProvider: IChannelProvider;
   public config: GetConfigResponse;
   public ethProvider: providers.JsonRpcProvider;
   public freeBalanceAddress: string;
@@ -77,7 +82,7 @@ export class ConnextClient implements IConnextClient {
   public messaging: IMessagingService;
   public multisigAddress: Address;
   public network: Network;
-  public node: NodeApiClient;
+  public node: INodeApiClient;
   public nodePublicIdentifier: string;
   public publicIdentifier: string;
   public signerAddress: Address;
@@ -185,6 +190,14 @@ export class ConnextClient implements IConnextClient {
       this.log.warn(`Cannot restart with an injected provider.`);
       return;
     }
+
+    // ensure that node and user xpub are different
+    if (this.nodePublicIdentifier === this.publicIdentifier) {
+      throw new Error(
+        "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
+      );
+    }
+
     // Create a fresh channelProvider & start using that.
     // End goal is to use this to restart the cfNode after restoring state
     const channelProvider = await createCFChannelProvider({
@@ -257,10 +270,6 @@ export class ConnextClient implements IConnextClient {
 
   public unsubscribeToSwapRates = async (from: string, to: string): Promise<void> => {
     return await this.node.unsubscribeFromSwapRates(from, to);
-  };
-
-  public addPaymentProfile = async (profile: PaymentProfile): Promise<PaymentProfile> => {
-    return await this.node.addPaymentProfile(profile);
   };
 
   public getPaymentProfile = async (assetId?: string): Promise<PaymentProfile | undefined> => {
