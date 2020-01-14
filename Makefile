@@ -19,20 +19,17 @@ cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(p
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
 bot=$(cwd)/modules/payment-bot
-cf-adjudicator-contracts=$(cwd)/modules/cf-adjudicator-contracts
-cf-apps=$(cwd)/modules/cf-apps
 cf-core=$(cwd)/modules/cf-core
-cf-funding-protocol-contracts=$(cwd)/modules/cf-funding-protocol-contracts
 client=$(cwd)/modules/client
 contracts=$(cwd)/modules/contracts
 daicard=$(cwd)/modules/daicard
 dashboard=$(cwd)/modules/dashboard
 database=$(cwd)/modules/database
-ethprovider=$(cwd)/ops/ethprovider
 messaging=$(cwd)/modules/messaging
 node=$(cwd)/modules/node
-proxy=$(cwd)/modules/proxy
+proxy=$(cwd)/ops/proxy
 ssh-action=$(cwd)/ops/ssh-action
+store=$(cwd)/modules/store
 tests=$(cwd)/modules/test-runner
 types=$(cwd)/modules/types
 
@@ -189,7 +186,7 @@ test-cf: cf-core
 test-client: builder client
 	bash ops/test/client.sh
 
-test-contracts: contracts
+test-contracts: contracts types
 	bash ops/test/contracts.sh
 
 test-daicard:
@@ -233,34 +230,37 @@ database: node-modules $(shell find $(database) $(find_options))
 	docker tag $(project)_database $(project)_database:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-ethprovider: contracts cf-adjudicator-contracts cf-funding-protocol-contracts cf-apps $(shell find $(ethprovider) $(find_options))
+ethprovider: contracts $(shell find $(contracts)/ops $(find_options))
 	$(log_start)
-	docker build --file $(ethprovider)/Dockerfile $(cache_from) --tag $(project)_ethprovider .
+	docker build --file $(contracts)/ops/Dockerfile $(cache_from) --tag $(project)_ethprovider .
 	docker tag $(project)_ethprovider $(project)_ethprovider:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 node-release: node $(node)/ops/Dockerfile $(node)/ops/entry.sh
 	$(log_start)
+	$(docker_run) "MODE=release cd modules/node && npm run build-bundle"
 	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node .
 	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 node-staging: node $(node)/ops/Dockerfile $(node)/ops/entry.sh
 	$(log_start)
-	$(docker_run) "cd modules/node && npm run build-bundle"
+	$(docker_run) "MODE=staging cd modules/node && npm run build-bundle"
 	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node .
 	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-payment-bot-release: payment-bot-js $(shell find $(bot)/ops $(find_options))
+payment-bot-release: $(shell find $(bot)/src $(bot)/ops $(find_options))
 	$(log_start)
-	docker build --file $(bot)/ops/release.dockerfile $(cache_from) --tag $(project)_bot .
+	$(docker_run) "MODE=release cd modules/payment-bot && npm run build-bundle"
+	docker build --file $(bot)/ops/Dockerfile $(cache_from) --tag $(project)_bot .
 	docker tag $(project)_bot $(project)_bot:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-payment-bot-staging: payment-bot-js $(shell find $(bot)/ops $(find_options))
+payment-bot-staging: $(shell find $(bot)/src $(bot)/ops $(find_options))
 	$(log_start)
-	docker build --file $(bot)/ops/staging.dockerfile $(cache_from) --tag $(project)_bot .
+	$(docker_run) "MODE=staging cd modules/payment-bot && npm run build-bundle"
+	docker build --file $(bot)/ops/Dockerfile $(cache_from) --tag $(project)_bot .
 	docker tag $(project)_bot $(project)_bot:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
@@ -279,17 +279,16 @@ ssh-action: $(shell find $(ssh-action) $(find_options))
 	docker build --file $(ssh-action)/Dockerfile --tag $(project)_ssh_action $(ssh-action)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-test-runner: test-runner-staging
 test-runner-release: node-modules $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
 	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build-bundle"
-	docker build --file $(tests)/ops/release.dockerfile $(cache_from) --tag $(project)_test_runner:$(commit) .
+	docker build --file $(tests)/ops/Dockerfile $(cache_from) --tag $(project)_test_runner:$(commit) .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 test-runner-staging: node-modules $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
 	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build-bundle"
-	docker build --file $(tests)/ops/staging.dockerfile $(cache_from) --tag $(project)_test_runner .
+	docker build --file $(tests)/ops/Dockerfile $(cache_from) --tag $(project)_test_runner .
 	docker tag $(project)_test_runner $(project)_test_runner:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
@@ -300,39 +299,16 @@ ws-tcp-relay: ops/ws-tcp-relay.dockerfile
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ########################################
-# Contracts
-
-cf-adjudicator-contracts: node-modules $(shell find $(cf-adjudicator-contracts)/contracts $(cf-adjudicator-contracts)/waffle.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/cf-adjudicator-contracts && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-cf-apps: node-modules cf-adjudicator-contracts $(shell find $(cf-apps)/contracts $(cf-apps)/waffle.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/cf-apps && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-cf-core: node-modules types cf-adjudicator-contracts cf-apps cf-funding-protocol-contracts $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/cf-core && npm run build:ts"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-cf-funding-protocol-contracts: node-modules $(shell find $(cf-funding-protocol-contracts)/contracts $(cf-funding-protocol-contracts)/waffle.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/cf-funding-protocol-contracts && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-contracts: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.json $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/contracts && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-########################################
 # JS & bundles
 
-client: cf-core contracts types messaging $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
+client: cf-core contracts types messaging store $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+cf-core: node-modules types contracts $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/cf-core && npm run build:ts"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))
@@ -355,9 +331,9 @@ node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrati
 	$(docker_run) "cd modules/node && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-payment-bot-js: node-modules client types $(shell find $(bot)/src $(bot)/ops $(find_options))
+store: node-modules types $(shell find $(store)/src $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/payment-bot && npm run build-bundle"
+	$(docker_run) "cd modules/store && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 types: node-modules $(shell find $(types)/src $(find_options))
@@ -367,6 +343,16 @@ types: node-modules $(shell find $(types)/src $(find_options))
 
 ########################################
 # Common Prerequisites
+
+contracts: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/contracts && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+contracts-native: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.native.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/contracts && npm run build-native"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 node-modules: builder package.json $(shell ls modules/**/package.json)
 	$(log_start)

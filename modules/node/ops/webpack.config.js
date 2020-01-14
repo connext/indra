@@ -1,5 +1,10 @@
 const path = require('path');
 const webpack = require('webpack');
+const nodeExternals = require('webpack-node-externals');
+
+const mode = process.env.MODE === "release" ? "release" : "staging";
+const whitelist = mode === "release" ? '' : /@connext\/.*/;
+console.log(`Building ${mode}-mode bundle`);
 
 module.exports = {
   mode: "development",

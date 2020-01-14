@@ -1,6 +1,6 @@
 {
 	"name": "indra",
-	"version": "2.4.0",
+	"version": "2.4.1",
 	"description": "",
 	"repository": {
 		"type": "git",
@@ -13,13 +13,10 @@
 	},
 	"homepage": "https://github.com/ConnextProject/indra#readme",
 	"devDependencies": {
-		"@connext/cf-adjudicator-contracts": "0.4.1",
-		"@connext/cf-funding-protocol-contracts": "0.4.1",
-		"@connext/types": "1.4.1",
+		"@connext/types": "1.5.0",
 		"chai-bn": "0.2.0",
 		"cypress": "3.7.0",
 		"ethers": "4.0.41",
-		"ganache-cli": "6.7.0",
 		"lerna": "3.19.0",
 		"openzeppelin-solidity": "2.3.0",
 		"prettier": "1.19.1",

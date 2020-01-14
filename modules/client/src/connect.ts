@@ -1,4 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
+import { ConnextStore } from "@connext/store";
 import { CF_PATH } from "@connext/types";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
@@ -7,7 +8,7 @@ import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
-import { ChannelProvider, createCFChannelProvider } from "./channelProvider";
+import { createCFChannelProvider } from "./channelProvider";
 import { ConnextClient } from "./connext";
 import { delayAndThrow, Logger, stringify } from "./lib";
 import { NodeApiClient } from "./node";
@@ -17,7 +18,9 @@ import {
   ConnextClientStorePrefix,
   CreateChannelMessage,
   GetConfigResponse,
+  IChannelProvider,
   IConnextClient,
+  INodeApiClient,
 } from "./types";
 
 const exists = (obj: any): boolean => {
@@ -36,10 +39,10 @@ const createMessagingService = async (
 };
 
 const setupMultisigAddress = async (
-  node: NodeApiClient,
-  channelProvider: ChannelProvider,
+  node: INodeApiClient,
+  channelProvider: IChannelProvider,
   log: Logger,
-): Promise<ChannelProvider> => {
+): Promise<IChannelProvider> => {
   const myChannel = await node.getChannel();
 
   let multisigAddress: string;
@@ -76,11 +79,10 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     logLevel,
     ethProviderUrl,
     nodeUrl,
-    store,
     mnemonic,
     channelProvider: providedChannelProvider,
   } = opts;
-  let { xpub, keyGen } = opts;
+  let { xpub, keyGen, store } = opts;
 
   const log = new Logger("ConnextConnect", logLevel);
 
@@ -100,11 +102,11 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
 
   // setup messaging and node api
   let messaging: IMessagingService;
-  let node: NodeApiClient;
+  let node: INodeApiClient;
   let config: GetConfigResponse;
 
   // setup channelProvider
-  let channelProvider: ChannelProvider;
+  let channelProvider: IChannelProvider;
   let isInjected = false;
 
   if (providedChannelProvider) {
@@ -129,12 +131,12 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
 
     isInjected = true;
   } else if (mnemonic || (xpub && keyGen)) {
-    if (!store) {
-      throw new Error("Client must be instantiated with store if not using a channelProvider");
-    }
-
     if (!nodeUrl) {
       throw new Error("Client must be instantiated with nodeUrl if not using a channelProvider");
+    }
+
+    if (!store) {
+      store = new ConnextStore(window.localStorage);
     }
 
     if (mnemonic) {

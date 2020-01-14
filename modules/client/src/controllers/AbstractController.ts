@@ -1,18 +1,17 @@
-import { CFCoreTypes } from "@connext/types";
+import { CFCoreTypes, IChannelProvider } from "@connext/types";
 import { providers } from "ethers";
 
-import { ChannelProvider } from "../channelProvider";
 import { ConnextClient } from "../connext";
 import { CF_METHOD_TIMEOUT, delayAndThrow, Logger, stringify } from "../lib";
 import { ConnextListener } from "../listener";
-import { INodeApiClient } from "../node";
+import { INodeApiClient } from "../types";
 
 export abstract class AbstractController {
   public name: string;
   public connext: ConnextClient;
   public log: Logger;
   public node: INodeApiClient;
-  public channelProvider: ChannelProvider;
+  public channelProvider: IChannelProvider;
   public listener: ConnextListener;
   public ethProvider: providers.JsonRpcProvider;
 

@@ -1,4 +1,4 @@
-import { revertEVMSnapshot } from "./util/ethprovider";
+import { revertEVMSnapshot } from "./util";
 
 // TODO: don't hardcode this
 const PRE_TEST_SNAPSHOT_ID = "0x1";

@@ -1,29 +1,32 @@
 {
   "name": "@connext/contracts",
-  "version": "0.0.1",
-  "description": "",
-  "main": "index.js",
-  "files": ["build", "contracts"],
+  "version": "1.0.1",
+  "description": "Smart contracts that power a Counterfactual State Channel platform",
+  "license": "ISC",
+  "files": ["address-book.json", "build", "contracts"],
+  "keywords": ["ethereum", "counterfactual", "state channels", "solidity"],
   "scripts": {
     "build": "waffle waffle.json",
-    "migrate": "truffle migrate",
-    "test": "ts-mocha test/*"
+    "build-native": "waffle waffle.native.json",
+    "test": "ts-mocha test/**/*",
+    "lint-sol": "solium -d .",
+    "lint-ts": "tslint -c tslint.json test/**/*.ts"
   },
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@connext/cf-adjudicator-contracts": "0.4.1",
-    "@connext/cf-funding-protocol-contracts": "0.4.1",
-    "@types/chai": "4.2.7",
-    "chai": "4.2.0",
-    "dotenv": "8.2.0",
-    "eth-gas-reporter": "0.2.14",
-    "ethereum-waffle": "2.1.0",
+  "dependencies": {
+    "@connext/types": "1.5.1",
     "ethers": "4.0.41",
-    "openzeppelin-solidity": "2.3.0",
-    "truffle": "5.1.6",
-    "truffle-hdwallet-provider": "1.0.17",
+    "openzeppelin-solidity": "2.3.0"
+  },
+  "devDependencies": {
+    "@types/chai": "4.2.7",
+    "@types/mocha": "5.2.7",
+    "@types/node": "13.1.2",
+    "chai": "4.2.0",
+    "ethereum-waffle": "2.1.0",
+    "ethlint": "1.2.5",
+    "mocha": "6.2.2",
     "ts-mocha": "6.0.0",
-    "ts-node": "8.5.4"
+    "ts-node": "8.5.4",
+    "tslint": "5.20.1"
   }
 }

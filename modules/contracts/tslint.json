@@ -1,0 +1,58 @@
+{
+  "extends": [
+    "tslint-config-airbnb",
+    "tslint-plugin-prettier",
+    "tslint-config-prettier"
+  ],
+  "rules": {
+    "comment-format": [true, "check-space"],
+    "completed-docs": false,
+    "curly": [true, "ignore-same-line"],
+    "cyclomatic-complexity": [true, 25],
+    "file-name-casing": false,
+    "import-name": false,
+    "interface-name": false,
+    "interface-over-type-literal": false,
+    "jsdoc-format": false,
+    "max-classes-per-file": false,
+    "max-file-line-count": false,
+    "max-line-length": [true, 100],
+    "member-ordering": false,
+    "newline-before-return": false,
+    "newline-per-chained-call": false,
+    "no-any": false,
+    "no-console": false,
+    "no-default-export": false,
+    "no-default-import": false,
+    "no-implicit-dependencies": [true, "dev"],
+    "no-inferrable-types": false,
+    "no-magic-numbers": false,
+    "no-parameter-properties": false,
+    "no-submodule-imports": false,
+    "no-this-assignment": [true, {"allow-destructuring": true}],
+    "no-trailing-whitespace": [true],
+    "no-unused-variable": true,
+    "object-literal-sort-keys": [true, "ignore-case"],
+    "object-shorthand-properties-first": false,
+    "only-arrow-functions": false,
+    "ordered-imports": [true, { "grouped-imports": true }],
+    "prefer-function-over-method": [false, "allow-public"],
+    "prettier": true,
+    "quotemark": [true, "double", "backtick"],
+    "semicolon": [true, "always", "strict-bound-class-methods"],
+    "strict-boolean-expressions": false,
+    "trailing-comma": [ true, { "multiline": "always", "singleline": "never", "esSpecCompliant": true } ],
+    "variable-name": [true, "allow-pascal-case"],
+    "typedef": [true,
+      "call-signature",
+      "arrow-call-signature",
+      "parameter",
+      "arrow-parameter",
+      "property-declaration",
+      "member-variable-declaration"
+    ]
+  },
+  "jsRules": {
+    "max-line-length": [true, 100]
+  }
+}
