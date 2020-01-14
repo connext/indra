@@ -33,7 +33,7 @@ then
        > ganache.log &
     bash wait-for.sh localhost:8545 2> /dev/null
   fi
-  touch address-book.json
+  touch contracts/address-book.json
   node contracts/ops/migrate-contracts.js
 else
   echo "Exiting. No command given, expected: start or deploy"
