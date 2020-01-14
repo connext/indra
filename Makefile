@@ -25,7 +25,6 @@ contracts=$(cwd)/modules/contracts
 daicard=$(cwd)/modules/daicard
 dashboard=$(cwd)/modules/dashboard
 database=$(cwd)/modules/database
-ethprovider=$(cwd)/ops/ethprovider
 messaging=$(cwd)/modules/messaging
 node=$(cwd)/modules/node
 proxy=$(cwd)/modules/proxy
@@ -230,9 +229,9 @@ database: node-modules $(shell find $(database) $(find_options))
 	docker tag $(project)_database $(project)_database:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-ethprovider: contracts $(shell find $(ethprovider) $(find_options))
+ethprovider: contracts $(shell find $(contracts)/ops $(find_options))
 	$(log_start)
-	docker build --file $(ethprovider)/Dockerfile $(cache_from) --tag $(project)_ethprovider .
+	docker build --file $(contracts)/ops/Dockerfile $(cache_from) --tag $(project)_ethprovider .
 	docker tag $(project)_ethprovider $(project)_ethprovider:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
