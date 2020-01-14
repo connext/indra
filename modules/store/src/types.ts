@@ -1,3 +1,5 @@
+export { StorePair, Signer } from "@connext/types";
+
 import { ethers } from "ethers";
 import { PisaClient as IPisaClient } from "pisa-client";
 
@@ -9,13 +11,6 @@ export type InitCallback = (data: AsyncStorageData) => void;
 export interface AsyncStorageData {
   [key: string]: any;
 }
-
-export interface StorePair {
-  path: string;
-  value: any;
-}
-
-export type Signer = (digest: any) => Promise<string>;
 
 export interface StoreFactoryOptions {
   pisaClient?: IPisaClient | null;

@@ -18,6 +18,7 @@
   "dependencies": {
     "@connext/cf-core": "1.5.0",
     "@connext/messaging": "1.5.0",
+    "@connext/store": "1.5.0",
     "@connext/types": "1.5.0",
     "core-js": "3.6.1",
     "eccrypto": "1.1.2",
