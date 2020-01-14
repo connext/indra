@@ -95,15 +95,6 @@ jobs:
     - run: make start-test-staging
     - run: TEST_MODE=staging make test-bot
 
-  test-bot-farm:
-    runs-on: ubuntu-latest
-    needs: [build]
-    steps:
-    - uses: actions/checkout@v1
-    - run: make pull-commit
-    - run: make start-test-staging
-    - run: TEST_MODE=staging make test-bot-farm
-
   test-daicard:
     runs-on: ubuntu-latest
     needs: [build]
