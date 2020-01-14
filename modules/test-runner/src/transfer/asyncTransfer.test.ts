@@ -177,14 +177,14 @@ describe("Async Transfers", () => {
     const paymentA = await clientA.getLinkedTransfer(paymentId);
     const paymentB = await clientB.getLinkedTransfer(paymentId);
     expect(paymentA).toMatchObject({
-      paymentId,
-      assetId: tokenAddress,
       amount: transferAmount.toString(),
+      assetId: tokenAddress,
+      meta: { hello: "world" },
+      paymentId,
+      receiverPublicIdentifier: clientB.publicIdentifier,
+      senderPublicIdentifier: clientA.publicIdentifier,
       status: "RECLAIMED",
       type: "LINKED",
-      senderPublicIdentifier: clientA.publicIdentifier,
-      receiverPublicIdentifier: clientB.publicIdentifier,
-      meta: { hello: "world" },
     });
     expect(paymentB).toMatchObject(paymentA);
   });
