@@ -78,6 +78,7 @@ describe("ChannelProvider", () => {
     const clientB = await createClient();
     await clientB.requestCollateral(tokenAddress);
 
+    // TODO: Move natsConnection to MockChannelProvider and use asyncTransferAsset test
     const transferFinished = Promise.all([
       new Promise(async resolve => {
         const sub = await natsConnection.subscribe(
