@@ -55,7 +55,9 @@ describe("Deposits", () => {
 
     await expect(
       clientA.deposit({
-        amount: (await getOnchainBalance(clientA.freeBalanceAddress, tokenAddress)) + 1,
+        amount: (await getOnchainBalance(clientA.freeBalanceAddress, tokenAddress))
+          .add(1)
+          .toString(),
         assetId: clientA.config.contractAddresses.Token,
       }),
     ).rejects.toThrowError("is not less than or equal to");
