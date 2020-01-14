@@ -14,7 +14,7 @@ export interface ExistingBalancesSwap {
   freeBalanceNodeToken: BigNumber;
 }
 
-export interface SwapAssetOptions {
+export interface AssetOptions {
   amount: BigNumber;
   assetId: string;
 }

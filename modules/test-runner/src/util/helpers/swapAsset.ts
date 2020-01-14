@@ -2,12 +2,12 @@ import { IConnextClient, SwapParameters } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 
 import { calculateExchange, inverse } from "../bn";
-import { ExistingBalancesSwap, SwapAssetOptions } from "../types";
+import { AssetOptions, ExistingBalancesSwap } from "../types";
 
 export async function swapAsset(
   client: IConnextClient,
-  input: SwapAssetOptions,
-  output: SwapAssetOptions,
+  input: AssetOptions,
+  output: AssetOptions,
   nodeFreeBalanceAddress: string,
   preExistingBalances?: Partial<ExistingBalancesSwap>,
 ): Promise<ExistingBalancesSwap> {

@@ -4,6 +4,7 @@ import { AddressZero, One } from "ethers/constants";
 import { Client } from "ts-nats";
 
 import {
+  AssetOptions,
   // asyncTransferAsset,
   createChannelProvider,
   createClient,
@@ -53,8 +54,8 @@ describe("ChannelProvider", () => {
 
   // tslint:disable-next-line:max-line-length
   test("Happy case: Bot A1 can call the full deposit → swap → transfer → withdraw flow on Bot A", async () => {
-    const input = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
-    const output = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
 
     ////////////////////////////////////////
     // DEPOSIT FLOW
@@ -72,7 +73,7 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // TRANSFER FLOW
-    const transfer = { amount: One, assetId: tokenAddress };
+    const transfer: AssetOptions = { amount: One, assetId: tokenAddress };
     const clientB = await createClient();
     await clientB.requestCollateral(tokenAddress);
 
@@ -105,7 +106,7 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // WITHDRAW FLOW
-    const withdraw = { amount: One, assetId: tokenAddress };
+    const withdraw: AssetOptions = { amount: One, assetId: tokenAddress };
     await withdrawFromChannel(clientA1, withdraw.amount, withdraw.assetId);
   });
 

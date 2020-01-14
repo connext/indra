@@ -1,9 +1,10 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient, SwapParameters } from "@connext/types";
-import { AddressZero, Zero } from "ethers/constants";
+import { AddressZero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
 
 import {
+  AssetOptions,
   createClient,
   ETH_AMOUNT_MD,
   ETH_AMOUNT_SM,
@@ -28,8 +29,8 @@ describe("Swaps", () => {
   }, 90_000);
 
   test("happy case: client swaps eth for tokens successfully", async () => {
-    const input = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
-    const output = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     // client deposit and request node collateral
     await clientA.deposit({ amount: input.amount.toString(), assetId: input.assetId });
     await clientA.requestCollateral(output.assetId);
@@ -38,8 +39,8 @@ describe("Swaps", () => {
   });
 
   test("happy case: client swaps tokens for eth successfully", async () => {
-    const input = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
-    const output = { amount: ETH_AMOUNT_MD, assetId: AddressZero };
+    const input: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    const output: AssetOptions = { amount: ETH_AMOUNT_MD, assetId: AddressZero };
     // client deposit and request node collateral
     await clientA.deposit({ amount: input.amount.toString(), assetId: input.assetId });
     await clientA.requestCollateral(output.assetId);
