@@ -34,7 +34,7 @@ then
     bash wait-for.sh localhost:8545 2> /dev/null
   fi
   touch address-book.json
-  node migrate-contracts.js
+  node contracts/ops/migrate-contracts.js
 else
   echo "Exiting. No command given, expected: start or deploy"
 fi

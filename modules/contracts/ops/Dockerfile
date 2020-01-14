@@ -11,13 +11,8 @@ RUN npm install
 
 COPY ops/wait-for.sh wait-for.sh
 RUN true
-COPY contracts/ops/entry.sh entry.sh
-RUN true
-COPY contracts/ops/migrate-contracts.js migrate-contracts.js
-RUN true
 COPY address-book.json address-book.json
 RUN true
-COPY modules/contracts/build build
+COPY modules/contracts contracts
 
-ENV PATH="./node_modules/.bin:${PATH}"
-ENTRYPOINT ["bash", "entry.sh"]
+ENTRYPOINT ["bash", "contracts/ops/entry.sh"]
