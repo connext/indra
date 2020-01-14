@@ -23,7 +23,9 @@ else echo "Aborting: couldn't find an image to run for input: $1" && exit 1
 fi
 
 # If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
-test -t 0 -a -t 1 -a -t 2 && interactive="--interactive"
+if [[ -t 0 && -t 1 && -t 2 ]]
+then interactive="--interactive"
+fi
 
 if [[ $@ == *"--watch"* ]]
 then watchOptions="\
