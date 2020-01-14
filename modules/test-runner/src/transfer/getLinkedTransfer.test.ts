@@ -2,7 +2,7 @@ import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { hexlify, randomBytes } from "ethers/utils";
 
-import { createClient } from "../util";
+import { createClient, fundChannel } from "../util";
 
 describe("Async Transfers", () => {
   let clientA: IConnextClient;
@@ -14,7 +14,8 @@ describe("Async Transfers", () => {
   test("happy case: get linked transfer by payment id", async () => {
     const paymentId = hexlify(randomBytes(32));
     const preImage = hexlify(randomBytes(32));
-    await clientA.deposit({ amount: "1", assetId: AddressZero });
+    await fundChannel(clientA, "1", AddressZero);
+
     await clientA.conditionalTransfer({
       amount: "1",
       assetId: AddressZero,
@@ -36,7 +37,8 @@ describe("Async Transfers", () => {
     const clientB = await createClient();
     const paymentId = hexlify(randomBytes(32));
     const preImage = hexlify(randomBytes(32));
-    await clientA.deposit({ amount: "1", assetId: AddressZero });
+    await fundChannel(clientA, "1", AddressZero);
+
     await clientA.conditionalTransfer({
       amount: "1",
       assetId: AddressZero,
@@ -53,5 +55,23 @@ describe("Async Transfers", () => {
       receiverPublicIdentifier: clientB.publicIdentifier,
       senderPublicIdentifier: clientA.publicIdentifier,
     });
+  });
+
+  test("cannot get linked transfer", async () => {
+    const clientB = await createClient();
+    const paymentId = hexlify(randomBytes(32));
+    const preImage = hexlify(randomBytes(32));
+    await fundChannel(clientA, "1", AddressZero);
+
+    await clientA.conditionalTransfer({
+      amount: "1",
+      assetId: AddressZero,
+      conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
+      paymentId,
+      preImage,
+      recipient: clientB.publicIdentifier,
+    });
+    const linkedTransfer = await clientA.getLinkedTransfer(hexlify(randomBytes(32)));
+    expect(linkedTransfer).toBeFalsy();
   });
 });
