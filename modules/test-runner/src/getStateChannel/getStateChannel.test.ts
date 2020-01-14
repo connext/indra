@@ -2,11 +2,11 @@ import {
   ConnextClientStorePrefix,
   IConnextClient,
   StateChannelJSON,
-  Store,
   StorePair,
 } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { parseEther } from "ethers/utils";
+
 import { createClient, getStore, MemoryStoreService } from "../util";
 
 describe("Get State Channel", () => {

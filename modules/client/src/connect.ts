@@ -9,7 +9,7 @@ import "regenerator-runtime/runtime";
 
 import { ChannelProvider, createCFChannelProvider } from "./channelProvider";
 import { ConnextClient } from "./connext";
-import { Logger, stringify, delayAndThrow } from "./lib";
+import { delayAndThrow, Logger, stringify } from "./lib";
 import { NodeApiClient } from "./node";
 import {
   CFCoreTypes,
@@ -156,6 +156,13 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     node = new NodeApiClient({ logLevel, messaging });
     config = await node.config();
     log.debug(`Node provided config: ${stringify(config)}`);
+
+    // ensure that node and user xpub are different
+    if (config.nodePublicIdentifier === xpub) {
+      throw new Error(
+        "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
+      );
+    }
 
     channelProvider = await createCFChannelProvider({
       ethProvider,
