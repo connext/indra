@@ -8,9 +8,9 @@ import {
   solidityPack
 } from "ethers/utils";
 
-import Echo from "../build/Echo.json";
-import Proxy from "../build/Proxy.json";
-import ProxyFactory from "../build/ProxyFactory.json";
+import Echo from "../../build/Echo.json";
+import Proxy from "../../build/Proxy.json";
+import ProxyFactory from "../../build/ProxyFactory.json";
 
 import { expect } from "./utils/index";
 

@@ -1,5 +1,5 @@
-import DolphinCoin from "../build/DolphinCoin.json";
-import MultiAssetMultiPartyCoinTransferInterpreter from "../build/MultiAssetMultiPartyCoinTransferInterpreter.json";
+import DolphinCoin from "../../build/DolphinCoin.json";
+import MultiAssetMultiPartyCoinTransferInterpreter from "../../build/MultiAssetMultiPartyCoinTransferInterpreter.json";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { AddressZero, One } from "ethers/constants";

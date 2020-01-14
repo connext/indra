@@ -1,6 +1,6 @@
 {
   "compiler": "solcjs",
-  "solcVersion": "v0.5.15+commit.6a57276f",
+  "solcVersion": "v0.5.11+commit.c082d0b4",
   "npmPath": "../../node_modules",
   "legacyOutput": true,
   "compilerOptions": {
