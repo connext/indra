@@ -54,7 +54,7 @@ describe("ChannelProvider", () => {
   });
 
   // tslint:disable-next-line:max-line-length
-  test.only("Happy case: Bot A1 can call the full deposit → swap → transfer → withdraw flow on Bot A", async () => {
+  test("Happy case: Bot A1 can call the full deposit → swap → transfer → withdraw flow on Bot A", async () => {
     const input = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const output = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
 
