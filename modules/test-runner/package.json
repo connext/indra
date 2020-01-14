@@ -18,6 +18,7 @@
     "ethers": "4.0.41",
     "human-standard-token-abi": "2.0.0",
     "jest": "24.9.0",
+    "openzeppelin-solidity": "2.3.0",
     "pg": "7.17.0",
     "ts-jest": "24.2.0",
     "ts-nats": "1.2.4",
