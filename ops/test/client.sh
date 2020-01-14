@@ -5,9 +5,11 @@ dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | jq .name | tr -d '"'`"
 
 # If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
-test -t 0 -a -t 1 -a -t 2 && interactive="--interactive"
+if [[ -t 0 && -t 1 && -t 2 ]]
+then interactive="--interactive"
+fi
 
-docker run \
+exec docker run \
   --entrypoint="bash" \
   --env="ECCRYPTO_NO_FALLBACK=true" \
   $interactive \

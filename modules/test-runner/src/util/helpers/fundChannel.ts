@@ -1,10 +1,10 @@
 import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
-import { parseEther } from "ethers/utils";
+import { BigNumber } from "ethers/utils";
 
 export const fundChannel = async (
   client: IConnextClient,
-  amount: string, // ETH string, only included if not collateral
+  amount: string,
   assetId: string = AddressZero,
 ): Promise<void> => {
   const prevFreeBalance = await client.getFreeBalance();
@@ -12,12 +12,12 @@ export const fundChannel = async (
     client.once("DEPOSIT_CONFIRMED_EVENT", async () => {
       const freeBalance = await client.getFreeBalance(assetId);
       // verify free balance increased as expected
-      const expected = prevFreeBalance[client.freeBalanceAddress].add(parseEther(amount));
+      const expected = prevFreeBalance[client.freeBalanceAddress].add(amount);
       expect(freeBalance[client.freeBalanceAddress]).toBeBigNumberEq(expected);
       resolve();
     });
 
-    await client.deposit({ amount: parseEther(amount).toString(), assetId });
+    await client.deposit({ amount, assetId });
   });
 
   return;

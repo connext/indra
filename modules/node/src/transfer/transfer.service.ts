@@ -154,7 +154,7 @@ export class TransferService {
 
     return await this.linkedTransferRepository.addRecipientPublicIdentifierAndEncryptedPreImage(
       transfer,
-      recipientPublicIdentifier,
+      recipientChannel,
       encryptedPreImage,
     );
   }
