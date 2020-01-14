@@ -1,4 +1,5 @@
-export { StorePair, Signer } from "@connext/types";
+export { Signer } from "ethers";
+export { StorePair } from "@connext/types";
 
 import { ethers } from "ethers";
 import { PisaClient as IPisaClient } from "pisa-client";
