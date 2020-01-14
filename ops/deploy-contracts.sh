@@ -10,7 +10,7 @@ cwd="`pwd`"
 registry="connextproject"
 
 name=${project}_contract_deployer
-log="$cwd/ops/ethprovider/ganache.log"
+log="$cwd/.ganache.log"
 image="${project}_ethprovider:$version"
 
 ########################################

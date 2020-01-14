@@ -1,8 +1,7 @@
 {
   "name": "@connext/contracts",
   "version": "1.0.0",
-  "description": "Smart contracts powering Counterfactual State Channel platform",
-  "description": "",
+  "description": "Smart contracts that power a Counterfactual State Channel platform",
   "license": "ISC",
   "files": ["build", "contracts"],
   "keywords": ["ethereum", "counterfactual", "state channels", "solidity"],
@@ -10,12 +9,8 @@
     "build": "waffle waffle.json",
     "build-native": "waffle waffle.native.json",
     "test": "ts-mocha test/**/*",
-    "lint:fix": "npm run lint:ts:fix && npm run lint:sol:fix",
-    "lint": "npm run lint:ts && npm run lint:sol",
-    "lint:sol:fix": "npm run lint:sol --fix",
-    "lint:sol": "solium -d .",
-    "lint:ts:fix": "npm run lint:ts --fix",
-    "lint:ts": "tslint -c tslint.json test/**/*.ts"
+    "lint-sol": "solium -d .",
+    "lint-ts": "tslint -c tslint.json test/**/*.ts"
   },
   "devDependencies": {
     "@connext/types": "1.4.4",
