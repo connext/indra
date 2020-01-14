@@ -34,7 +34,7 @@ TL;DR run:
 ```
 git clone https://github.com/ConnextProject/indra.git
 cd indra
-npm start
+make start
 ```
 
 2. Deploy
