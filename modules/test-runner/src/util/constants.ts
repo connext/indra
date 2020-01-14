@@ -19,6 +19,11 @@ export const ZERO_ZERO_ONE = "0.01";
 export const ZERO_ZERO_ZERO_FIVE = "0.005";
 export const ZERO_ZERO_ZERO_ONE = "0.001";
 
+export const ZERO_ZERO_ONE_ETH = parseEther(ZERO_ZERO_ONE).toString();
+export const ZERO_ZERO_TWO_ETH = parseEther(ZERO_ZERO_TWO).toString();
+export const ZERO_ZERO_ZERO_ONE_ETH = parseEther(ZERO_ZERO_ZERO_ONE).toString();
+export const NEGATIVE_ZERO__ZERO_ONE_ETH = parseEther(NEGATIVE_ZERO__ZERO_ONE).toString();
+
 export const ETH_AMOUNT_SM = parseEther(ZERO_ZERO_ONE);
 export const ETH_AMOUNT_MD = parseEther(ZERO_ONE);
 export const ETH_AMOUNT_LG = parseEther(ONE);

@@ -2,25 +2,19 @@ import { utils } from "@connext/client";
 import { IConnextClient } from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
-import { parseEther } from "ethers/utils";
 
 import {
   createClient,
   fundChannel,
-  NEGATIVE_ZERO__ZERO_ONE,
+  NEGATIVE_ZERO__ZERO_ONE_ETH,
   requestDepositRights,
   withdrawFromChannel,
-  ZERO_ZERO_ONE,
-  ZERO_ZERO_TWO,
-  ZERO_ZERO_ZERO_ONE,
+  ZERO_ZERO_ONE_ETH,
+  ZERO_ZERO_TWO_ETH,
+  ZERO_ZERO_ZERO_ONE_ETH,
 } from "../util";
 
 const { xpubToAddress } = utils;
-
-const ZERO_ZERO_ONE_ETH = parseEther(ZERO_ZERO_ONE).toString();
-const ZERO_ZERO_TWO_ETH = parseEther(ZERO_ZERO_TWO).toString();
-const ZERO_ZERO_ZERO_ONE_ETH = parseEther(ZERO_ZERO_ZERO_ONE).toString();
-const NEGATIVE_ZERO__ZERO_ONE_ETH = parseEther(NEGATIVE_ZERO__ZERO_ONE).toString();
 
 describe("Withdrawal", () => {
   let client: IConnextClient;
@@ -60,9 +54,7 @@ describe("Withdrawal", () => {
   test("client tries to withdraw more than it has in free balance", async () => {
     await fundChannel(client, ZERO_ZERO_ZERO_ONE_ETH);
     await expect(withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero)).rejects.toThrow(
-      `Value (${parseEther(ZERO_ZERO_ONE)}) is not less than or equal to ${parseEther(
-        ZERO_ZERO_ZERO_ONE,
-      )}`,
+      `Value (${ZERO_ZERO_ONE_ETH}) is not less than or equal to ${ZERO_ZERO_ZERO_ONE_ETH}`,
     );
   });
 
@@ -70,9 +62,7 @@ describe("Withdrawal", () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
     await expect(
       withdrawFromChannel(client, NEGATIVE_ZERO__ZERO_ONE_ETH, AddressZero),
-    ).rejects.toThrow(
-      `Value (${parseEther(NEGATIVE_ZERO__ZERO_ONE)}) is not greater than or equal to 0`,
-    );
+    ).rejects.toThrow(`Value (${NEGATIVE_ZERO__ZERO_ONE_ETH}) is not greater than or equal to 0`);
   });
 
   test("client tries to withdraw to an invalid recipient address", async () => {
