@@ -1,4 +1,5 @@
 import * as connext from "@connext/client";
+import { ConnextStore } from "@connext/store";
 import { CF_PATH, ConnextClientStorePrefix } from "@connext/types";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
@@ -35,7 +36,6 @@ import {
   Currency,
   migrate,
   minBN,
-  storeFactory,
   toBN,
   tokenToWei,
   weiToToken,
@@ -222,7 +222,7 @@ class App extends React.Component {
       const pisaUrl = urls.pisaUrl(network.chainId);
       if (pisaUrl) {
         console.log(`Using external state backup service: ${pisaUrl}`);
-        store = storeFactory({
+        store = new ConnextStore(window.localStorage, {
           wallet,
           pisaClient: new PisaClient(
             pisaUrl,
@@ -230,7 +230,7 @@ class App extends React.Component {
           ),
         });
       } else {
-        store = storeFactory();
+        store = new ConnextStore(window.localStorage);
       }
 
       // If store has double prefixes, flush and restore
@@ -595,13 +595,17 @@ class App extends React.Component {
     // depending on payment profile for user and amount to swap,
     // the amount the hub collateralized could be lte token equivalent
     // of client eth deposit
-    const weiToSwap = collateral.sub(tokensForWei).gte(Zero) 
+    const weiToSwap = collateral.sub(tokensForWei).gte(Zero)
       ? availableWeiToSwap.toString() // sufficient collateral for entire swap
-      : tokenToWei(collateral, swapRate).toString() // insufficient, claim all hubs balance
+      : tokenToWei(collateral, swapRate).toString(); // insufficient, claim all hubs balance
 
-    console.log(`Attempting to swap ${formatEther(weiToSwap)} eth for ${formatEther(weiToToken(weiToSwap, swapRate))} dai at rate: ${swapRate}`);
+    console.log(
+      `Attempting to swap ${formatEther(weiToSwap)} eth for ${formatEther(
+        weiToToken(weiToSwap, swapRate),
+      )} dai at rate: ${swapRate}`,
+    );
     machine.send(["START_SWAP"]);
-  
+
     await channel.swap({
       amount: weiToSwap,
       fromAssetId: AddressZero,

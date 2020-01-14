@@ -1,7 +1,7 @@
 {
-  "name": "@connext/client",
+  "name": "@connext/store",
   "version": "1.5.0",
-  "description": "Shared code between wallet and node",
+  "description": "Store module for Connext client",
   "main": "dist/index.js",
   "files": [
     "dist",
@@ -16,25 +16,14 @@
     "test": "./node_modules/.bin/jest"
   },
   "dependencies": {
-    "@connext/cf-core": "1.5.0",
-    "@connext/messaging": "1.5.0",
-    "@connext/store": "1.5.0",
     "@connext/types": "1.5.0",
-    "core-js": "3.6.1",
-    "eccrypto": "1.1.2",
-    "ethers": "4.0.41",
-    "human-standard-token-abi": "2.0.0",
-    "regenerator-runtime": "0.13.3",
-    "rpc-server": "0.0.1",
-    "secp256k1": "3.8.0",
-    "uuid": "3.3.3"
+    "ethers": "4.0.40",
+    "pisa-client": "0.1.4-connext-beta.1"
   },
   "devDependencies": {
     "@babel/polyfill": "7.7.0",
-    "@types/eccrypto": "1.1.1",
     "@types/jest": "24.0.25",
-    "@types/uuid": "3.4.6",
-    "eth-crypto": "1.5.0",
+    "@types/node": "12.12.14",
     "jest": "24.9.0",
     "ts-jest": "24.2.0",
     "typescript": "3.5.3"

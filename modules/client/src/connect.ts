@@ -1,4 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
+import { ConnextStore } from "@connext/store";
 import { CF_PATH } from "@connext/types";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
@@ -78,11 +79,10 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     logLevel,
     ethProviderUrl,
     nodeUrl,
-    store,
     mnemonic,
     channelProvider: providedChannelProvider,
   } = opts;
-  let { xpub, keyGen } = opts;
+  let { xpub, keyGen, store } = opts;
 
   const log = new Logger("ConnextConnect", logLevel);
 
@@ -131,12 +131,12 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
 
     isInjected = true;
   } else if (mnemonic || (xpub && keyGen)) {
-    if (!store) {
-      throw new Error("Client must be instantiated with store if not using a channelProvider");
-    }
-
     if (!nodeUrl) {
       throw new Error("Client must be instantiated with nodeUrl if not using a channelProvider");
+    }
+
+    if (!store) {
+      store = new ConnextStore(window.localStorage);
     }
 
     if (mnemonic) {
