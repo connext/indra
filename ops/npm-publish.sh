@@ -2,7 +2,7 @@
 set -e
 
 # This is the order they'll be published in
-packages="types,cf-core,messaging,client"
+packages="types,cf-core,messaging,store,client"
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../package.json | jq .name | tr -d '"'`"
