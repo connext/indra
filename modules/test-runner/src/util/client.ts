@@ -5,10 +5,8 @@ import { parseEther } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { env } from "./env";
-import { ethProvider } from "./ethprovider";
+import { ethWallet } from "./ethprovider";
 import { MemoryStoreService, MemoryStoreServiceFactory } from "./store";
-
-export const ethWallet = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider);
 
 let clientStore: MemoryStoreService;
 
