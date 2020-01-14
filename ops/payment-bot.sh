@@ -52,7 +52,9 @@ else image=$name:latest;
 fi
 
 # If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
-test -t 0 -a -t 1 -a -t 2 && interactive="--interactive"
+if [[ -t 0 && -t 1 && -t 2 ]]
+then interactive="--interactive"
+fi
 
 ########################################
 ## Launch payment bot

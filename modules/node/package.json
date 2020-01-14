@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@connext/cf-core": "1.5.0",
-    "@connext/cf-funding-protocol-contracts": "0.4.1",
+    "@connext/contracts": "1.0.1",
     "@connext/messaging": "1.5.0",
     "@connext/types": "1.5.0",
     "@nestjs/common": "6.5.3",
@@ -61,6 +61,7 @@
     "typescript": "3.5.3",
     "wait-on": "3.3.0",
     "webpack": "4.41.5",
-    "webpack-cli": "3.3.10"
+    "webpack-cli": "3.3.10",
+    "webpack-node-externals": "1.7.2"
   }
 }
