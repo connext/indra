@@ -185,7 +185,7 @@ test-cf: cf-core
 test-client: builder client
 	bash ops/test/client.sh
 
-test-contracts: contracts
+test-contracts: contracts types
 	bash ops/test/contracts.sh
 
 test-daicard:
