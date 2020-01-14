@@ -8,9 +8,7 @@
   "keywords": ["ethereum", "counterfactual", "state channels", "solidity"],
   "scripts": {
     "build": "waffle waffle.json",
-    "build-apps": "waffle waffle.apps.json",
-    "build-adjudicator": "waffle waffle.adjudicator.json",
-    "build-funding": "waffle waffle.funding.json",
+    "build-native": "waffle waffle.native.json",
     "test": "ts-mocha test/**/*",
     "lint:fix": "npm run lint:ts:fix && npm run lint:sol:fix",
     "lint": "npm run lint:ts && npm run lint:sol",

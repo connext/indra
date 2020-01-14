@@ -1,9 +1,0 @@
-{
-  "compiler": "native",
-  "npmPath": "../../node_modules",
-  "legacyOutput": true,
-  "compilerOptions": {
-    "evmVersion": "constantinople"
-  },
-  "sourcesPath": "./contracts/apps"
-}

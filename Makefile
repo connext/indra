@@ -342,11 +342,14 @@ types: node-modules $(shell find $(types)/src $(find_options))
 ########################################
 # Common Prerequisites
 
-contracts: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.*.json $(find_options))
+contracts: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.json $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/contracts && npm run build-apps"
-	$(docker_run) "cd modules/contracts && npm run build-adjudicator"
-	$(docker_run) "cd modules/contracts && npm run build-funding"
+	$(docker_run) "cd modules/contracts && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+contracts-native: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.native.json $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/contracts && npm run build-native"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 node-modules: builder package.json $(shell ls modules/**/package.json)
