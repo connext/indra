@@ -6,7 +6,7 @@ RUN npm config set unsafe-perm true
 RUN npm install -g npm@6.12.0
 
 COPY modules/payment-bot/package.json package.json
-RUN npm install > /dev/null 2>&1
+RUN npm install --only=production > /dev/null 2>&1
 
 # https://github.com/moby/moby/issues/37965#issuecomment-426853382
 COPY ops/wait-for.sh wait-for.sh

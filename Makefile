@@ -237,26 +237,29 @@ ethprovider: contracts $(shell find $(contracts)/ops $(find_options))
 
 node-release: node $(node)/ops/Dockerfile $(node)/ops/entry.sh
 	$(log_start)
+	$(docker_run) "MODE=release cd modules/node && npm run build-bundle"
 	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node .
 	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 node-staging: node $(node)/ops/Dockerfile $(node)/ops/entry.sh
 	$(log_start)
-	$(docker_run) "cd modules/node && npm run build-bundle"
+	$(docker_run) "MODE=staging cd modules/node && npm run build-bundle"
 	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node .
 	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-payment-bot-release: payment-bot-js $(shell find $(bot)/ops $(find_options))
+payment-bot-release: $(shell find $(bot)/src $(bot)/ops $(find_options))
 	$(log_start)
-	docker build --file $(bot)/ops/release.dockerfile $(cache_from) --tag $(project)_bot .
+	$(docker_run) "MODE=release cd modules/payment-bot && npm run build-bundle"
+	docker build --file $(bot)/ops/Dockerfile $(cache_from) --tag $(project)_bot .
 	docker tag $(project)_bot $(project)_bot:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-payment-bot-staging: payment-bot-js $(shell find $(bot)/ops $(find_options))
+payment-bot-staging: $(shell find $(bot)/src $(bot)/ops $(find_options))
 	$(log_start)
-	docker build --file $(bot)/ops/staging.dockerfile $(cache_from) --tag $(project)_bot .
+	$(docker_run) "MODE=staging cd modules/payment-bot && npm run build-bundle"
+	docker build --file $(bot)/ops/Dockerfile $(cache_from) --tag $(project)_bot .
 	docker tag $(project)_bot $(project)_bot:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
@@ -275,17 +278,16 @@ ssh-action: $(shell find $(ssh-action) $(find_options))
 	docker build --file $(ssh-action)/Dockerfile --tag $(project)_ssh_action $(ssh-action)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-test-runner: test-runner-staging
 test-runner-release: node-modules $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
 	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build-bundle"
-	docker build --file $(tests)/ops/release.dockerfile $(cache_from) --tag $(project)_test_runner:$(commit) .
+	docker build --file $(tests)/ops/Dockerfile $(cache_from) --tag $(project)_test_runner:$(commit) .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 test-runner-staging: node-modules $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
 	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build-bundle"
-	docker build --file $(tests)/ops/staging.dockerfile $(cache_from) --tag $(project)_test_runner .
+	docker build --file $(tests)/ops/Dockerfile $(cache_from) --tag $(project)_test_runner .
 	docker tag $(project)_test_runner $(project)_test_runner:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
@@ -326,11 +328,6 @@ messaging: node-modules types $(shell find $(messaging)/src $(find_options))
 node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-payment-bot-js: node-modules client types $(shell find $(bot)/src $(bot)/ops $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/payment-bot && npm run build-bundle"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 types: node-modules $(shell find $(types)/src $(find_options))
