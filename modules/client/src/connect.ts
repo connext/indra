@@ -10,7 +10,7 @@ import "regenerator-runtime/runtime";
 
 import { createCFChannelProvider } from "./channelProvider";
 import { ConnextClient } from "./connext";
-import { getDefaultOptions } from "./default";
+import { getDefaultOptions, isWalletProvided } from "./default";
 import { delayAndThrow, Logger, stringify } from "./lib";
 import { NodeApiClient } from "./node";
 import {
@@ -139,7 +139,7 @@ export const connect = async (
     node.nodePublicIdentifier = config.nodePublicIdentifier;
 
     isInjected = true;
-  } else if (mnemonic || (xpub && keyGen)) {
+  } else if (isWalletProvided(opts)) {
     if (!nodeUrl) {
       throw new Error("Client must be instantiated with nodeUrl if not using a channelProvider");
     }
