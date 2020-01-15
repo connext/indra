@@ -9,6 +9,11 @@ name="${project}_test_runner"
 commit="`git rev-parse HEAD | head -c 8`"
 release="`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 
+# If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
+if [[ -t 0 && -t 1 && -t 2 ]]
+then interactive="--interactive"
+fi
+
 if [[ "$mode" == "local" ]]
 then
 
@@ -18,7 +23,7 @@ then
     --env="INDRA_CLIENT_LOG_LEVEL=$LOG_LEVEL" \
     --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
     --env="INDRA_NODE_URL=$NODE_URL" \
-    --interactive \
+    $interactive \
     --name="$name" \
     --mount="type=bind,source=`pwd`,target=/root" \
     --rm \
@@ -38,11 +43,6 @@ then
   else image=$name:latest
   fi
 else echo "Aborting: couldn't find an image to run for input: $1" && exit 1
-fi
-
-# If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
-if [[ -t 0 && -t 1 && -t 2 ]]
-then interactive="--interactive"
 fi
 
 echo "Executing image $image"

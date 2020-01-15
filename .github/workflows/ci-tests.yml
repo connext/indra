@@ -61,4 +61,4 @@ jobs:
     - run: make start-headless
     - run: make build-report
     - run: sleep 15 && make dls
-    - run: make test-integration
+    - run: TEST_MODE=staging make test-integration
