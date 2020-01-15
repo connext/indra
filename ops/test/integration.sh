@@ -12,11 +12,6 @@ release="`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 if [[ "$mode" == "local" ]]
 then
 
-  if [[ $@ == *"--watch"* ]]
-  then command="npm run watch"
-  else command="npm run test"
-  fi
-
   exec docker run \
     --entrypoint="bash" \
     --env="ECCRYPTO_NO_FALLBACK=true" \
@@ -28,14 +23,7 @@ then
     --mount="type=bind,source=`pwd`,target=/root" \
     --rm \
     --tty \
-    ${project}_builder -c '
-      set -e
-      if [[ -d modules/test-runner ]]
-      then cd modules/test-runner
-      fi
-      npm run build-bundle
-      '"$command"'
-    '
+    ${project}_builder -c "cd modules/test-runner && bash ops/entry.sh $@"
 
 elif [[ "$mode" == "release" ]]
 then image=$name:$release;
