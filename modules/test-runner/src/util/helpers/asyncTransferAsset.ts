@@ -5,6 +5,8 @@ import { BigNumber } from "ethers/utils";
 import { expect } from "../assertions";
 import { ExistingBalancesAsyncTransfer } from "../types";
 
+// NOTE: will fail if not collateralized by transfer amount exactly
+// when pretransfer balances are not supplied.
 export async function asyncTransferAsset(
   clientA: IConnextClient,
   clientB: IConnextClient,
@@ -25,15 +27,15 @@ export async function asyncTransferAsset(
     [clientA.freeBalanceAddress]: preTransferFreeBalanceClientA,
     [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeA,
   } = await clientA.getFreeBalance(assetId);
-  expect(preTransferFreeBalanceClientA.toString()).to.be.eq(preTransfer.freeBalanceClientA.toString());
-  expect(preTransferFreeBalanceNodeA.toString()).to.be.eq(preTransfer.freeBalanceNodeA.toString());
+  expect(preTransferFreeBalanceClientA).to.be.bigNumberEq(preTransfer.freeBalanceClientA);
+  expect(preTransferFreeBalanceNodeA).to.be.bigNumberEq(preTransfer.freeBalanceNodeA);
 
   const {
     [clientB.freeBalanceAddress]: preTransferFreeBalanceClientB,
     [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeB,
   } = await clientB.getFreeBalance(assetId);
-  expect(preTransferFreeBalanceClientB.toString()).to.be.eq(preTransfer.freeBalanceClientB.toString());
-  expect(preTransferFreeBalanceNodeB.toString()).to.be.eq(preTransfer.freeBalanceNodeB.toString());
+  expect(preTransferFreeBalanceClientB).to.be.bigNumberEq(preTransfer.freeBalanceClientB);
+  expect(preTransferFreeBalanceNodeB).to.be.bigNumberEq(preTransfer.freeBalanceNodeB);
 
   let paymentId;
   await new Promise(async resolve => {
@@ -67,19 +69,23 @@ export async function asyncTransferAsset(
     [clientA.freeBalanceAddress]: postTransferFreeBalanceClientA,
     [nodeFreeBalanceAddress]: postTransferFreeBalanceNodeA,
   } = await clientA.getFreeBalance(assetId);
-  expect(postTransferFreeBalanceClientA.toString()).to.be.eq(
-    preTransferFreeBalanceClientA.sub(transferAmount).toString(),
+  expect(postTransferFreeBalanceClientA).to.be.bigNumberEq(
+    preTransferFreeBalanceClientA.sub(transferAmount),
   );
-  expect(postTransferFreeBalanceNodeA.toString()).to.be.eq(
-    preTransferFreeBalanceNodeA.add(transferAmount).toString(),
+  expect(postTransferFreeBalanceNodeA).to.be.bigNumberEq(
+    preTransferFreeBalanceNodeA.add(transferAmount),
   );
 
   const {
     [clientB.freeBalanceAddress]: postTransferFreeBalanceClientB,
     [nodeFreeBalanceAddress]: postTransferFreeBalanceNodeB,
   } = await clientB.getFreeBalance(assetId);
-  expect(postTransferFreeBalanceClientB.toString()).to.be.eq(preTransferFreeBalanceClientB.add(transferAmount).toString());
-  expect(postTransferFreeBalanceNodeB.toString()).to.be.eq(preTransferFreeBalanceNodeB.sub(transferAmount).toString());
+  expect(postTransferFreeBalanceClientB).to.be.bigNumberEq(
+    preTransferFreeBalanceClientB.add(transferAmount),
+  );
+  expect(postTransferFreeBalanceNodeB).to.be.bigNumberEq(
+    preTransferFreeBalanceNodeB.sub(transferAmount),
+  );
 
   // TODO: explicitly await for status redeemed -> reclaimed
   await new Promise(res => setTimeout(res, 1000));
