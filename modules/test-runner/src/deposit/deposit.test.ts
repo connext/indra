@@ -1,9 +1,8 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
-import { expect } from "chai";
 import { AddressZero, Zero } from "ethers/constants";
 
-import { NEGATIVE_ONE, ONE, TWO, WRONG_ADDRESS } from "../util";
+import { expect, NEGATIVE_ONE, ONE, TWO, WRONG_ADDRESS } from "../util";
 import { createClient } from "../util/client";
 import { getOnchainBalance } from "../util/ethprovider";
 
@@ -17,15 +16,12 @@ describe("Deposits", () => {
   it("happy case: client should deposit ETH", async () => {
     await clientA.deposit({ amount: ONE, assetId: AddressZero });
     const freeBalance = await clientA.getFreeBalance(AddressZero);
-
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress].toString()).to.equal("1");
+    expect(freeBalance[clientA.freeBalanceAddress].toString()).to.equal(ONE);
     expect(freeBalance[nodeFreeBalanceAddress].toString()).to.equal("0");
-
     // TODO: assert node's version of free balance also?
   });
 
-/*
   it("happy case: client should deposit tokens", async () => {
     const tokenAddress = clientA.config.contractAddresses.Token;
 
@@ -33,29 +29,25 @@ describe("Deposits", () => {
     const freeBalance = await clientA.getFreeBalance(tokenAddress);
 
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress]).to.be.BigNumberEq(ONE);
-    expect(freeBalance[nodeFreeBalanceAddress]).to.be.BigNumberEq(Zero);
+    expect(freeBalance[clientA.freeBalanceAddress].toString()).to.be.eq(ONE);
+    expect(freeBalance[nodeFreeBalanceAddress].toString()).to.be.eq("0");
 
     // TODO: assert node's version of free balance also?
   });
 
-  // TODO: unskip when it passes
-  it.skip("client should not be able to deposit with invalid token address", async () => {
-    // TODO: fix assert message when this is fixed
-    await expect(clientA.deposit({ amount: ONE, assetId: WRONG_ADDRESS })).rejects.toThrowError(
-      "invalid token address",
-    );
+  it("client should not be able to deposit with invalid token address", async () => {
+    await expect(clientA.deposit({ amount: ONE, assetId: WRONG_ADDRESS })).to.be.rejected;
+    // TODO: assert error message
   });
 
   it("client should not be able to deposit with negative amount", async () => {
     await expect(
       clientA.deposit({ amount: NEGATIVE_ONE, assetId: AddressZero }),
-    ).rejects.toThrowError("is not greater than or equal to 0");
+    ).to.be.rejectedWith("is not greater than or equal to 0");
   });
 
   it("client should not be able to propose deposit with value it doesn't have", async () => {
     const tokenAddress = clientA.config.contractAddresses.Token;
-
     await expect(
       clientA.deposit({
         amount: (await getOnchainBalance(clientA.freeBalanceAddress, tokenAddress))
@@ -63,7 +55,7 @@ describe("Deposits", () => {
           .toString(),
         assetId: clientA.config.contractAddresses.Token,
       }),
-    ).rejects.toThrowError("is not less than or equal to");
+    ).to.be.rejectedWith("is not less than or equal to");
   });
 
   it("client has already requested deposit rights before calling deposit", async () => {
@@ -76,8 +68,8 @@ describe("Deposits", () => {
     const freeBalance = await clientA.getFreeBalance(clientA.config.contractAddresses.Token);
 
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress]).to.be.BigNumberEq(ONE);
-    expect(freeBalance[nodeFreeBalanceAddress]).to.be.BigNumberEq(Zero);
+    expect(freeBalance[clientA.freeBalanceAddress].toString()).to.be.eq(ONE);
+    expect(freeBalance[nodeFreeBalanceAddress].toString()).to.be.eq("0");
     //TODO: is there any way to test to make sure deposit rights were rescinded as part of the .deposit call?
   });
 
@@ -110,8 +102,8 @@ describe("Deposits", () => {
 
     const freeBalance = await clientA.getFreeBalance(AddressZero);
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress]).to.be.BigNumberEq(ONE);
-    expect(freeBalance[nodeFreeBalanceAddress]).to.be.BigNumberEq(Zero);
+    expect(freeBalance[clientA.freeBalanceAddress].toString()).to.be.eq(ONE);
+    expect(freeBalance[nodeFreeBalanceAddress].toString()).to.be.eq("0");
   });
 
   it("client deposits eth, withdraws, then successfully deposits tokens", async () => {
@@ -124,10 +116,9 @@ describe("Deposits", () => {
     const freeBalanceToken = await clientA.getFreeBalance(tokenAddress);
     const freeBalanceEth = await clientA.getFreeBalance(AddressZero);
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalanceEth[clientA.freeBalanceAddress]).to.be.BigNumberEq(Zero);
-    expect(freeBalanceEth[nodeFreeBalanceAddress]).to.be.BigNumberEq(Zero);
-    expect(freeBalanceToken[clientA.freeBalanceAddress]).to.be.BigNumberEq(ONE);
-    expect(freeBalanceToken[nodeFreeBalanceAddress]).to.be.BigNumberEq(Zero);
+    expect(freeBalanceEth[clientA.freeBalanceAddress].toString()).to.be.eq("0");
+    expect(freeBalanceEth[nodeFreeBalanceAddress].toString()).to.be.eq("0");
+    expect(freeBalanceToken[clientA.freeBalanceAddress].toString()).to.be.eq(ONE);
+    expect(freeBalanceToken[nodeFreeBalanceAddress].toString()).to.be.eq("0");
   });
-  */
 });

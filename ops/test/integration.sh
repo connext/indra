@@ -24,6 +24,7 @@ then
     --rm \
     --tty \
     ${project}_builder -c '
+      set -e
       if [[ -d modules/test-runner ]]
       then cd modules/test-runner
       fi
