@@ -185,8 +185,7 @@ const sendGift = async (address, token) => {
     console.log(`\nPreparing to migrate contracts to ${net} network (${chainId})`)
     console.log(`Deployer Wallet: address=${wallet.address} nonce=${nonce} balance=${balance}`)
   } else {
-    console.error(`Given network (${net}) doesn't match the network ID from provider: ${chainId}`)
-    process.exit(1)
+    console.error(`Warning: given network (${net}) doesn't match the network ID from provider: ${chainId}`)
   }
 
   ////////////////////////////////////////
@@ -221,8 +220,11 @@ const sendGift = async (address, token) => {
 
   ////////////////////////////////////////
   // Take a snapshot of this state
-  const snapshotId = await provider.send("evm_snapshot", [])
-  console.log(`Took an EVM snapshot, id: ${snapshotId}`);
+
+  if (chainId === ganacheId) {
+    const snapshotId = await provider.send("evm_snapshot", [])
+    console.log(`Took an EVM snapshot, id: ${snapshotId}`);
+  }
 
   ////////////////////////////////////////
   // Print summary
