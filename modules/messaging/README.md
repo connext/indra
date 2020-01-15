@@ -1,5 +1,5 @@
-# @connext/store
+# @connext/messaging
 
-Store module for Connext client
+Messaging module for Connext client
 
 Find documentation at [https://docs.connext.network/](https://docs.connext.network/)
