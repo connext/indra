@@ -14,7 +14,8 @@
     "test": "./node_modules/.bin/jest"
   },
   "dependencies": {
-    "ethers": "4.0.41"
+    "ethers": "4.0.41",
+    "pisa-client": "0.1.4-connext-beta.1"
   },
   "devDependencies": {
     "@types/jest": "24.0.25",
