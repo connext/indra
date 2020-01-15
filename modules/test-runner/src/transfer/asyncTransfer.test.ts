@@ -17,7 +17,7 @@ import {
   TOKEN_AMOUNT,
 } from "../util";
 
-describe.only("Async Transfers", () => {
+describe("Async Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
