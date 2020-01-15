@@ -29,8 +29,6 @@ export const createClient = async (opts?: Partial<ClientOptions>): Promise<IConn
   const client = await connect(clientOpts);
   // TODO: add client endpoint to get node config, so we can easily have its xpub etc
 
-  await client.isAvailable();
-
   const ethTx = await ethWallet.sendTransaction({
     to: client.signerAddress,
     value: ETH_AMOUNT_MD,
@@ -56,8 +54,6 @@ export const createRemoteClient = async (
   };
 
   const client = await connect(clientOpts);
-
-  await client.isAvailable();
 
   expect(client.freeBalanceAddress).toBeTruthy();
   expect(client.publicIdentifier).toBeTruthy();
