@@ -1,23 +1,6 @@
 import { Assertion, expect, util } from "chai";
 import { BigNumberish } from "ethers/utils";
 
-util.addMethod(Assertion.prototype, "bigNumberEq", function(expected: BigNumberish): void {
-  // @ts-ignore
-  const received = util.flag(this, "object");
-  new Assertion(
-    received.eq(expected),
-    `expected ${JSON.stringify(received)} to equal ${expected.toString()}`,
-  ).to.be.true;
-});
-
-util.addMethod(Assertion.prototype, "bigNumberGte", function(expected: BigNumberish): void {
-  // @ts-ignore
-  const received = util.flag(this, "object");
-  new Assertion(
-    received.gte(expected),
-    `expected ${JSON.stringify(received)} to be greater than or equal to ${expected.toString()}`,
-  ).to.be.true;
-});
 
 // Assertion.addMethod("bigNumberEq", (received: BigNumber, equalTo: BigNumberish): {
 //   message: () => string;
