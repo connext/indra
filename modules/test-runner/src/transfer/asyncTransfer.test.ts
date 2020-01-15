@@ -17,7 +17,7 @@ import {
   TOKEN_AMOUNT,
 } from "../util";
 
-describe.only("Async Transfers", () => {
+describe("Async Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
@@ -77,6 +77,9 @@ describe.only("Async Transfers", () => {
     // because it will not be able to fetch the free balance of the assetId
   });
 
+  // Failing because `REJECT_INSTALL_EVENT` is fired before the promise
+  // is created. Skipped to merge in other tests, will be continued in
+  // PR #736
   test.skip("Bot A tries to transfer with an unsupported (but not invalid) token address", async () => {
     // deploy a token
     const factory = ContractFactory.fromSolidity(tokenArtifacts);
