@@ -6,6 +6,7 @@ import { HDNode, hexlify, randomBytes } from "ethers/utils";
 const tokenArtifacts = require("openzeppelin-solidity/build/contracts/ERC20Mintable.json");
 
 import {
+  AssetOptions,
   asyncTransferAsset,
   createClient,
   ETH_AMOUNT_LG,
@@ -34,17 +35,31 @@ describe("Async Transfers", () => {
   }, 90_000);
 
   test("happy case: client A transfers eth to client B through node", async () => {
-    await fundChannel(clientA, ETH_AMOUNT_SM, AddressZero);
-    await clientB.requestCollateral(AddressZero);
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
+    await clientB.requestCollateral(transfer.assetId);
 
-    await asyncTransferAsset(clientA, clientB, ETH_AMOUNT_SM, AddressZero, nodeFreeBalanceAddress);
+    await asyncTransferAsset(
+      clientA,
+      clientB,
+      transfer.amount,
+      transfer.assetId,
+      nodeFreeBalanceAddress,
+    );
   });
 
   test("happy case: client A transfers tokens to client B through node", async () => {
-    await fundChannel(clientA, ETH_AMOUNT_LG, tokenAddress);
-    await clientB.requestCollateral(tokenAddress);
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_LG, assetId: tokenAddress };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
+    await clientB.requestCollateral(transfer.assetId);
 
-    await asyncTransferAsset(clientA, clientB, ETH_AMOUNT_LG, tokenAddress, nodeFreeBalanceAddress);
+    await asyncTransferAsset(
+      clientA,
+      clientB,
+      transfer.amount,
+      transfer.assetId,
+      nodeFreeBalanceAddress,
+    );
   });
 
   test("Bot A tries to transfer a negative amount", async () => {
