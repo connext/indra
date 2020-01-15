@@ -1,9 +1,3 @@
-import * as chai from "chai";
-import * as chaiAsPromised from "chai-as-promised";
-
-chai.use(chaiAsPromised);
-
-export const expect = chai.expect as any;
 
 // export from helpers dir
 export * from "./helpers/asyncTransferAsset";
@@ -13,6 +7,7 @@ export * from "./helpers/swapAsset";
 export * from "./helpers/withdrawFromChannel";
 
 // export from current dir
+export * from "./assertions";
 export * from "./bn";
 export * from "./channelProvider";
 export * from "./client";

@@ -2,6 +2,7 @@ import { IConnextClient } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
 import { hexlify, randomBytes } from "ethers/utils";
 
+import { expect } from "../util";
 import { AssetOptions, createClient, fundChannel } from "../util";
 
 describe("Async Transfers", () => {

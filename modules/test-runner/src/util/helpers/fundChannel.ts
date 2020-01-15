@@ -2,6 +2,8 @@ import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
+import { expect } from "../assertions";
+
 export const fundChannel = async (
   client: IConnextClient,
   amount: BigNumber,
@@ -13,7 +15,7 @@ export const fundChannel = async (
       const freeBalance = await client.getFreeBalance(assetId);
       // verify free balance increased as expected
       const expected = prevFreeBalance[client.freeBalanceAddress].add(amount);
-      expect(freeBalance[client.freeBalanceAddress]).toBeBigNumberEq(expected);
+      expect(freeBalance[client.freeBalanceAddress].toString()).to.be.eq(expected.toString());
       resolve();
     });
 

@@ -1,5 +1,6 @@
 import { IConnextClient } from "@connext/types";
 
+import { expect } from "../util";
 import { createClient } from "../util/client";
 
 describe("Create Channel", () => {

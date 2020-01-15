@@ -4,6 +4,7 @@ import { AddressZero, One } from "ethers/constants";
 import { Client } from "ts-nats";
 
 import {
+  expect,
   AssetOptions,
   // asyncTransferAsset,
   createChannelProvider,
@@ -47,9 +48,9 @@ describe("ChannelProvider", () => {
     // tslint:disable-next-line:variable-name
     const _nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
 
-    expect(_tokenAddress).toBe(tokenAddress);
-    expect(_nodePublicIdentifier).toBe(nodePublicIdentifier);
-    expect(_nodeFreeBalanceAddress).toBe(nodeFreeBalanceAddress);
+    expect(_tokenAddress).to.be.eq(tokenAddress);
+    expect(_nodePublicIdentifier).to.be.eq(nodePublicIdentifier);
+    expect(_nodeFreeBalanceAddress).to.be.eq(nodeFreeBalanceAddress);
   });
 
   // tslint:disable-next-line:max-line-length
@@ -90,7 +91,6 @@ describe("ChannelProvider", () => {
       }),
       new Promise(async resolve => {
         clientB.once("RECIEVE_TRANSFER_FINISHED_EVENT", async () => {
-          console.error(`Caught receive finished event!!!!!`);
           resolve();
         });
       }),
@@ -115,7 +115,7 @@ describe("ChannelProvider", () => {
     // close channelProvider connection
     clientA1.channelProvider.close();
 
-    await expect(clientA1.getFreeBalance(AddressZero)).rejects.toThrowError(
+    await expect(clientA1.getFreeBalance(AddressZero)).to.be.rejectedWith(
       "RpcConnection: Timeout - JSON-RPC not responded within 30s",
     );
   });

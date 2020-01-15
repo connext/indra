@@ -2,6 +2,7 @@ import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 
+import { expect } from "../util";
 import { createClient, ETH_AMOUNT_SM, getStore, TOKEN_AMOUNT } from "../util";
 
 describe("Restore State", () => {

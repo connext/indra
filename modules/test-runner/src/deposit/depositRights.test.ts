@@ -1,6 +1,7 @@
 import { IConnextClient } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
 
+import { expect } from "../util";
 import { createClient, ethProvider, ethWallet, getOnchainBalance, sendOnchainValue } from "../util";
 
 describe("Deposits", () => {

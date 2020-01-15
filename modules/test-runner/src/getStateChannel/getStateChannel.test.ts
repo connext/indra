@@ -6,6 +6,7 @@ import {
 } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 
+import { expect } from "../util";
 import { createClient, ETH_AMOUNT_SM, getStore, MemoryStoreService } from "../util";
 
 describe("Get State Channel", () => {

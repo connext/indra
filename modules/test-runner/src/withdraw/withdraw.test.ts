@@ -3,6 +3,7 @@ import { IConnextClient } from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 
+import { expect } from "../util";
 import {
   createClient,
   fundChannel,
