@@ -1,6 +1,6 @@
 {
   "name": "@connext/store",
-  "version": "1.5.1",
+  "version": "3.0.0",
   "description": "Store module for Connext client",
   "main": "dist/index.js",
   "files": [
@@ -16,14 +16,14 @@
     "test": "./node_modules/.bin/jest"
   },
   "dependencies": {
-    "@connext/types": "1.5.1",
-    "ethers": "4.0.40",
+    "@connext/types": "3.0.0",
+    "ethers": "4.0.41",
     "pisa-client": "0.1.4-connext-beta.1"
   },
   "devDependencies": {
     "@babel/polyfill": "7.7.0",
     "@types/jest": "24.0.25",
-    "@types/node": "12.12.14",
+    "@types/node": "13.1.2",
     "jest": "24.9.0",
     "ts-jest": "24.2.0",
     "typescript": "3.5.3"

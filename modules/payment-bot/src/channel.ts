@@ -18,7 +18,6 @@ export const getOrCreateChannel = async (): Promise<IConnextClient> => {
     store,
   };
   const client = await connext.connect(connextOpts);
-  await client.isAvailable();
   const nodeFBAddress = connext.utils.xpubToAddress(client.nodePublicIdentifier);
   console.log("Payment bot launched:");
   console.log(` - mnemonic: ${connextOpts.mnemonic}`);
