@@ -84,6 +84,7 @@ export const connect = async (
       ? await getDefaultOptions(clientOptions, overrideOptions)
       : clientOptions;
   const {
+    asyncStorage,
     logLevel,
     ethProviderUrl,
     nodeUrl,
@@ -144,7 +145,7 @@ export const connect = async (
     }
 
     if (!store) {
-      store = new ConnextStore(window.localStorage);
+      store = new ConnextStore(asyncStorage || window.localStorage);
     }
 
     if (mnemonic) {
