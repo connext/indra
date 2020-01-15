@@ -16,7 +16,6 @@ export async function asyncTransferAsset(
   const preTransfer: ExistingBalancesAsyncTransfer = {
     freeBalanceClientA: transferAmount,
     freeBalanceNodeA: Zero,
-    // tslint:disable-next-line:object-literal-sort-keys
     freeBalanceClientB: Zero,
     freeBalanceNodeB: transferAmount,
     ...preExistingBalances,
@@ -61,8 +60,8 @@ export async function asyncTransferAsset(
     });
     paymentId = senderPaymentId;
   });
-  expect((await clientB.getAppInstances()).length).toEqual(Zero.toNumber());
-  expect((await clientA.getAppInstances()).length).toEqual(Zero.toNumber());
+  expect((await clientB.getAppInstances()).length).to.be.eq(Zero.toNumber());
+  expect((await clientA.getAppInstances()).length).to.be.eq(Zero.toNumber());
 
   const {
     [clientA.freeBalanceAddress]: postTransferFreeBalanceClientA,
@@ -82,9 +81,12 @@ export async function asyncTransferAsset(
   expect(postTransferFreeBalanceClientB.toString()).to.be.eq(preTransferFreeBalanceClientB.add(transferAmount).toString());
   expect(postTransferFreeBalanceNodeB.toString()).to.be.eq(preTransferFreeBalanceNodeB.sub(transferAmount).toString());
 
+  // TODO: explicitly await for status redeemed -> reclaimed
+  await new Promise(res => setTimeout(res, 1000));
+
   const paymentA = await clientA.getLinkedTransfer(paymentId);
   const paymentB = await clientB.getLinkedTransfer(paymentId);
-  expect(paymentA).toMatchObject({
+  expect(paymentA).to.deep.include({
     amount: transferAmount.toString(),
     assetId,
     meta: { hello: "world" },
@@ -94,7 +96,7 @@ export async function asyncTransferAsset(
     status: "RECLAIMED",
     type: "LINKED",
   });
-  expect(paymentB).toMatchObject(paymentA);
+  expect(paymentA).to.deep.include(paymentB);
 
   const postTransfer: ExistingBalancesAsyncTransfer = {
     freeBalanceClientA: postTransferFreeBalanceClientA,

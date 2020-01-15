@@ -32,12 +32,17 @@ describe("Async Transfers", () => {
     await clientA.deposit({ amount: transfer.amount.toString(), assetId: transfer.assetId });
     await clientB.requestCollateral(transfer.assetId);
 
+    const { [nodeFreeBalanceAddress]: freeBalanceNodeB } = await clientB.getFreeBalance(
+      transfer.assetId,
+    );
+
     await asyncTransferAsset(
       clientA,
       clientB,
       transfer.amount,
       transfer.assetId,
       nodeFreeBalanceAddress,
+      { freeBalanceNodeB },
     );
   });
 
@@ -46,12 +51,17 @@ describe("Async Transfers", () => {
     await clientA.deposit({ amount: transfer.amount.toString(), assetId: transfer.assetId });
     await clientB.requestCollateral(transfer.assetId);
 
+    const { [nodeFreeBalanceAddress]: freeBalanceNodeB } = await clientB.getFreeBalance(
+      transfer.assetId,
+    );
+
     await asyncTransferAsset(
       clientA,
       clientB,
       transfer.amount,
       transfer.assetId,
       nodeFreeBalanceAddress,
+      { freeBalanceNodeB },
     );
   });
 });
