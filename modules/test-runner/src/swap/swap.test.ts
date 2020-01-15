@@ -14,6 +14,7 @@ import {
   WRONG_ADDRESS,
   ZERO_ZERO_TWO,
   ZERO_ZERO_ZERO_FIVE,
+  ONE,
 } from "../util";
 
 describe("Swaps", () => {
@@ -155,7 +156,7 @@ describe("Swaps", () => {
     await clientA.requestCollateral(tokenAddress);
     // No collateral requested
 
-    const swapRate = "1";
+    const swapRate = ONE;
     const swapAmount = parseEther(ZERO_ZERO_ZERO_FIVE);
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),

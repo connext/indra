@@ -67,26 +67,29 @@ describe("Async Transfers", () => {
     // verify collateral
     await clientB.requestCollateral(tokenAddress);
 
+    const amount = ETH_AMOUNT_SM.mul(-1).toString();
     await expect(
       clientA.transfer({
-        amount: ETH_AMOUNT_SM.mul(-1).toString(),
+        amount,
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
       }),
-    ).rejects.toThrowError("Value -10000000000000000 is negative");
+    ).rejects.toThrowError(`Value ${amount} is negative`);
   });
 
   test("Bot A tries to transfer with an invalid token address", async () => {
     await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
 
+    const amount = ETH_AMOUNT_SM.toString();
+    const assetId = "0xabc";
     await expect(
       clientA.transfer({
-        amount: ETH_AMOUNT_SM.toString(),
-        assetId: "0xabc",
+        amount,
+        assetId,
         recipient: clientB.publicIdentifier,
       }),
     ).rejects.toThrowError(
-      `Value "0xabc" is not a valid eth address, Value (${ETH_AMOUNT_SM.toString()}) is not less than or equal to 0`,
+      `Value ${assetId} is not a valid eth address, Value (${amount}) is not less than or equal to 0`,
     );
     // NOTE: will also include a `Value (..) is not less than or equal to 0
     // because it will not be able to fetch the free balance of the assetId
@@ -125,54 +128,58 @@ describe("Async Transfers", () => {
   test("Bot A tries to transfer with invalid recipient xpub", async () => {
     await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
 
+    const recipient = "nope";
     await expect(
       clientA.transfer({
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
-        recipient: `nope`,
+        recipient,
       }),
-    ).rejects.toThrowError(`Value \"nope\" must start with \"xpub\"`);
+    ).rejects.toThrowError(`Value \"${recipient}\" must start with \"xpub\"`);
   });
 
   // tslint:disable-next-line: max-line-length
   test("Bot A tries to transfer an amount greater than they have in their free balance", async () => {
+    const amount = ETH_AMOUNT_SM.toString();
     await expect(
       clientA.transfer({
-        amount: ETH_AMOUNT_SM.toString(),
+        amount,
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
       }),
-    ).rejects.toThrowError(`Value (${ETH_AMOUNT_SM.toString()}) is not less than or equal to 0`);
+    ).rejects.toThrowError(`Value (${amount}) is not less than or equal to 0`);
   });
 
   test("Bot A tries to transfer with a paymentId that is not 32 bytes", async () => {
     await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
 
+    const paymentId = "nope";
     await expect(
       clientA.conditionalTransfer({
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
         conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
-        paymentId: "nope",
+        paymentId,
         preImage: hexlify(randomBytes(32)),
         recipient: clientB.publicIdentifier,
       }),
-    ).rejects.toThrowError(`Value \"nope\" is not a valid hex string`);
+    ).rejects.toThrowError(`Value \"${paymentId}\" is not a valid hex string`);
   });
 
   test("Bot A tries to transfer with a preimage that is not 32 bytes", async () => {
     await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
 
+    const preImage = "nope";
     await expect(
       clientA.conditionalTransfer({
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
         conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
         paymentId: hexlify(randomBytes(32)),
-        preImage: "nope",
+        preImage,
         recipient: clientB.publicIdentifier,
       }),
-    ).rejects.toThrowError(`Value \"nope\" is not a valid hex string`);
+    ).rejects.toThrowError(`Value \"${preImage}\" is not a valid hex string`);
   });
 
   test("Bot A proposes a transfer to an xpub that doesn’t have a channel", async () => {
