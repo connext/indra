@@ -3,7 +3,7 @@ set -e
 
 project="indra"
 
-export INDRA_CLIENT_LOG_LEVEL="${INDRA_CLIENT_LOG_LEVEL:-3}"
+export INDRA_CLIENT_LOG_LEVEL="${INDRA_CLIENT_LOG_LEVEL:-2}"
 export INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://172.17.0.1:8545}"
 export INDRA_ETH_MNEMONIC="${INDRA_ETH_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
 export INDRA_NODE_URL="${INDRA_NODE_URL:-nats://172.17.0.1:4222}"
@@ -22,13 +22,13 @@ function finish {
 }
 trap finish SIGTERM SIGINT
 
-if [[ "$MODE" == "watch" ]]
-then command="exec jest --config jest.config.js --runInBand"
-else command="jest --config jest.config.js --forceExit --runInBand"
-fi
+#if [[ "$MODE" == "watch" ]]
+#then command="exec jest --config jest.config.js --runInBand"
+#else command="mocha dist/tests.bundle.js"
+#fi
 
 bash ops/wait-for.sh $INDRA_PG_HOST:$INDRA_PG_PORT
 bash ops/wait-for.sh ${INDRA_ETH_RPC_URL#*://}
 bash ops/wait-for.sh ${INDRA_NODE_URL#*://}
 
-$command $@
+mocha --exit --timeout 90000 dist/tests.bundle.js

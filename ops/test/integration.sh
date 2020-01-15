@@ -1,15 +1,39 @@
 #!/usr/bin/env bash
 set -e
 
+mode="${TEST_MODE:-local}"
+
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | jq .name | tr -d '"'`"
 name="${project}_test_runner"
 commit="`git rev-parse HEAD | head -c 8`"
 release="`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 
-if [[ "$TEST_MODE" == "release" ]]
+if [[ "$mode" == "local" ]]
+then
+
+  exec docker run \
+    --entrypoint="bash" \
+    --env="ECCRYPTO_NO_FALLBACK=true" \
+    --env="INDRA_CLIENT_LOG_LEVEL=$LOG_LEVEL" \
+    --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
+    --env="INDRA_NODE_URL=$NODE_URL" \
+    --interactive \
+    --name="$name" \
+    --mount="type=bind,source=`pwd`,target=/root" \
+    --rm \
+    --tty \
+    ${project}_builder -c '
+      if [[ -d modules/test-runner ]]
+      then cd modules/test-runner
+      fi
+      npm run build-bundle
+      npm run test
+    '
+
+elif [[ "$mode" == "release" ]]
 then image=$name:$release;
-elif [[ "$TEST_MODE" == "staging" ]]
+elif [[ "$mode" == "staging" ]]
 then image=$name:$commit;
 elif [[ -n "`docker image ls -q $name:$1`" ]]
 then image=$name:$1; shift # rm $1 from $@

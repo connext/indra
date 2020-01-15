@@ -11,7 +11,7 @@ describe("Collateral", () => {
     clientA = await createClient();
   }, 90_000);
 
-  test("happy case: node should collateralize ETH", async () => {
+  it("happy case: node should collateralize ETH", async () => {
     await clientA.requestCollateral(AddressZero);
     const freeBalance = await clientA.getFreeBalance(AddressZero);
 
@@ -20,7 +20,7 @@ describe("Collateral", () => {
     expect(freeBalance[nodeFreeBalanceAddress]).toBeBigNumberEq(ETH_AMOUNT_MD);
   });
 
-  test("happy case: node should collateralize tokens", async () => {
+  it("happy case: node should collateralize tokens", async () => {
     const tokenAddress = clientA.config.contractAddresses.Token;
 
     await clientA.requestCollateral(tokenAddress);

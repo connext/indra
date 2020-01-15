@@ -11,7 +11,7 @@ describe("Async Transfers", () => {
     clientA = await createClient();
   });
 
-  test("happy case: get linked transfer by payment id", async () => {
+  it("happy case: get linked transfer by payment id", async () => {
     const paymentId = hexlify(randomBytes(32));
     const preImage = hexlify(randomBytes(32));
     const transfer: AssetOptions = { amount: One, assetId: AddressZero };
@@ -34,7 +34,7 @@ describe("Async Transfers", () => {
     });
   });
 
-  test("happy case: get linked transfer to recipient by payment id", async () => {
+  it("happy case: get linked transfer to recipient by payment id", async () => {
     const clientB = await createClient();
     const paymentId = hexlify(randomBytes(32));
     const preImage = hexlify(randomBytes(32));
@@ -59,7 +59,7 @@ describe("Async Transfers", () => {
     });
   });
 
-  test("cannot get linked transfer for invalid payment id", async () => {
+  it("cannot get linked transfer for invalid payment id", async () => {
     const clientB = await createClient();
     const paymentId = hexlify(randomBytes(32));
     const preImage = hexlify(randomBytes(32));

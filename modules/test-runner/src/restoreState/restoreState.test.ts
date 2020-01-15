@@ -17,7 +17,7 @@ describe("Restore State", () => {
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
   }, 90_000);
 
-  test("happy case: client can delete its store and restore from a remote backup", async () => {
+  it("happy case: client can delete its store and restore from a remote backup", async () => {
     // client deposit and request node collateral
     await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);

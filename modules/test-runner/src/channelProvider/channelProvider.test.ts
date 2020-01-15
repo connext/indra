@@ -25,7 +25,7 @@ describe("ChannelProvider", () => {
   let channelProvider: IChannelProvider;
   let natsConnection: Client;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     natsConnection = await createOrRetrieveNatsConnection();
   });
 
@@ -39,7 +39,7 @@ describe("ChannelProvider", () => {
   }, 90_000);
 
   // tslint:disable-next-line:max-line-length
-  test("Happy case: client A1 can be instantiated with a channelProvider generated from client A", async () => {
+  it("Happy case: client A1 can be instantiated with a channelProvider generated from client A", async () => {
     // tslint:disable-next-line:variable-name
     const _tokenAddress = clientA1.config.contractAddresses.Token;
     // tslint:disable-next-line:variable-name
@@ -53,7 +53,7 @@ describe("ChannelProvider", () => {
   });
 
   // tslint:disable-next-line:max-line-length
-  test("Happy case: Bot A1 can call the full deposit → swap → transfer → withdraw flow on Bot A", async () => {
+  it("Happy case: Bot A1 can call the full deposit → swap → transfer → withdraw flow on Bot A", async () => {
     const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
 
@@ -111,7 +111,7 @@ describe("ChannelProvider", () => {
   });
 
   // tslint:disable-next-line:max-line-length
-  test("Bot A1 tries to call a function when Bot A is offline", async () => {
+  it("Bot A1 tries to call a function when Bot A is offline", async () => {
     // close channelProvider connection
     clientA1.channelProvider.close();
 
@@ -121,7 +121,7 @@ describe("ChannelProvider", () => {
   });
 
   // tslint:disable-next-line:max-line-length
-  test.skip("Bot A1 tries to reject installing a proposed app that bot A has already installed?", async () => {
+  it.skip("Bot A1 tries to reject installing a proposed app that bot A has already installed?", async () => {
     // TODO: add test
   });
 });

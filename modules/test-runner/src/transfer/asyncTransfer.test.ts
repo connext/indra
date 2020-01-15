@@ -26,7 +26,7 @@ describe("Async Transfers", () => {
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
   }, 90_000);
 
-  test("happy case: client A transfers eth to client B through node", async () => {
+  it("happy case: client A transfers eth to client B through node", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await clientA.deposit({ amount: transfer.amount.toString(), assetId: transfer.assetId });
     await clientB.requestCollateral(transfer.assetId);
@@ -40,7 +40,7 @@ describe("Async Transfers", () => {
     );
   });
 
-  test("happy case: client A transfers tokens to client B through node", async () => {
+  it("happy case: client A transfers tokens to client B through node", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_LG, assetId: tokenAddress };
     await clientA.deposit({ amount: transfer.amount.toString(), assetId: transfer.assetId });
     await clientB.requestCollateral(transfer.assetId);
