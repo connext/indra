@@ -34,11 +34,11 @@ describe.only("Async Transfers", () => {
   }, 90_000);
 
   it("happy case: client A transfers eth to client B through node", async () => {
-    await fundChannel(clientA, ETH_AMOUNT_MD, AddressZero);
+    await fundChannel(clientA, ETH_AMOUNT_SM, AddressZero);
     await clientB.requestCollateral(AddressZero);
-    // NOTE: will fail if not collateralized by transfer amount exactly
-    // when pretransfer balances are not supplied.
-    await asyncTransferAsset(clientA, clientB, ETH_AMOUNT_MD, AddressZero, nodeFreeBalanceAddress);
+    await asyncTransferAsset(clientA, clientB, ETH_AMOUNT_SM, AddressZero, nodeFreeBalanceAddress, {
+      freeBalanceNodeB: ETH_AMOUNT_MD,
+    });
   });
 
   it("happy case: client A transfers tokens to client B through node", async () => {
