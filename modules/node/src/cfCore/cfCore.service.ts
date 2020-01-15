@@ -1,4 +1,4 @@
-import { NatsMessagingService } from "@connext/messaging";
+import { MessagingService } from "@connext/messaging";
 import {
   AppActionBigNumber,
   ConnextNodeStorePrefix,
@@ -33,7 +33,7 @@ export class CFCoreService {
   constructor(
     @Inject(CFCoreProviderId) public readonly cfCore: CFCore,
     private readonly configService: ConfigService,
-    @Inject(MessagingProviderId) private readonly messagingProvider: NatsMessagingService,
+    @Inject(MessagingProviderId) private readonly messagingProvider: MessagingService,
     private readonly cfCoreRepository: CFCoreRecordRepository,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly log: LoggerService,

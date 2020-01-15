@@ -80,6 +80,7 @@ pg_port="5432"
 pg_user="$project"
 
 # nats bearer auth settings
+nats_jwt_signer_privkey='' # FIXME-- read from configuration
 nats_jwt_signer_pubkey='' # FIXME-- read from configuration
 nats_port="4222"
 nats_ws_port="4221"
@@ -216,6 +217,8 @@ services:
       INDRA_ETH_RPC_URL: $INDRA_ETH_PROVIDER
       INDRA_LOG_LEVEL: $log_level
       INDRA_NATS_CLUSTER_ID: abc123
+      INDRA_NATS_JWT_SIGNER_PRIVATE_KEY: "$nats_jwt_signer_privkey"
+      INDRA_NATS_JWT_SIGNER_PUBLIC_KEY: "$nats_jwt_signer_pubkey"
       INDRA_NATS_SERVERS: nats://nats:$nats_port
       INDRA_NATS_WS_ENDPOINT: wss://nats:$nats_ws_port
       INDRA_NATS_TOKEN: abc123

@@ -5,7 +5,12 @@ import { fromExtendedKey } from "ethers/utils/hdnode";
 import { ChannelRepository } from "../channel/channel.repository";
 import { LoggerService } from "../logger/logger.service";
 import { isValidHex, isXpub, isEthAddress } from "../util";
+import { MessagingAuthService } from "@connext/messaging";
+import { CLogger, isValidHex, isXpub, isEthAddress } from "../util";
 
+// TODO: integrate JWT token
+
+const logger = new CLogger("AuthService");
 const nonceLen = 16;
 const nonceTTL = 2 * 60 * 60 * 1000;
 
@@ -15,36 +20,60 @@ export function getAuthAddressFromXpub(xpub: string): string {
 
 @Injectable()
 export class AuthService {
-  private nonces: { [key: string]: { address: string; expiry: number } } = {};
+  private nonces: { [key: string]: { nonce: string; expiry: number } } = {};
   private signerCache: { [key: string]: string } = {};
   constructor(
     private readonly channelRepo: ChannelRepository,
-    private readonly log: LoggerService,
-  ) {
-    this.log.setContext("AuthService");
-  }
+    private readonly messagingAuthSerivice: MessagingAuthService,
+  ) {}
 
-  badToken(warning: string): any {
-    this.log.warn(warning);
-    return { err: `Invalid token` } as any;
-  }
-
-  badSubject(warning: string): any {
-    this.log.warn(warning);
-    return { err: `Invalid subject` } as any;
-  }
-
-  async getNonce(address: string): Promise<string> {
-    if (!isEthAddress(address)) {
-      return JSON.stringify({ err: `Invalid address: ${address}` });
-    }
+  // FIXME-- fix this client api contract error...
+  // TODO-- rearch subjects for <xpub>.fully.qualified.subject.with.id
+  // TODO-- get ops/start_prod.sh placeholders filled out
+  async getNonce(userPublicIdentifier: string): Promise<string> {
     const nonce = hexlify(randomBytes(nonceLen));
     const expiry = Date.now() + nonceTTL;
-    this.nonces[nonce] = { address, expiry };
-    this.log.debug(
-      `getNonce: Gave address ${address} a nonce that expires at ${expiry}: ${nonce}`,
-    );
+    // FIXME-- store nonce in redis instead of here...
+    this.nonces[userPublicIdentifier] = { expiry, nonce };
+    logger.debug(`getNonce: Gave xpub ${userPublicIdentifier} a nonce that expires at ${expiry}: ${nonce}`);
     return nonce;
+  }
+
+  async verifyAndVend(signedNonce: string, userPublicIdentifier: string): string {
+    const xpubAddress = getAuthAddressFromXpub(userPublicIdentifier);
+    logger.debug(`Got address ${xpubAddress} from xpub ${userPublicIdentifier}`);
+
+    const { nonce, expiry } = this.nonces[userPublicIdentifier];
+    const addr = verifyMessage(arrayify(nonce), signedNonce);
+    if (addr !== xpubAddress) {
+      throw new Error(`verification failed`);
+    }
+    if (Date.now() > expiry) {
+      throw new Error(`verification failed... nonce expired for xpub: ${userPublicIdentifier}`);
+    }
+
+    const permissions = {
+      publish: {
+        allow: [`${userPublicIdentifier}.>`],
+        // deny: [],
+      },
+      subscribe: {
+        allow: [`${userPublicIdentifier}.>`],
+        // deny: [],
+      },
+      // response: {
+      // TODO: consider some sane ttl to safeguard DDOS
+      // },
+    };
+
+    // TODO... fixup this admin stuff
+    // if (isAdmin) {
+    //   do permissions stuff...
+    // }
+
+    const jwt = this.messagingAuthSerivice.vend(userPublicIdentifier, nonceTTL, permissions);
+    logger.debug(``);
+    return jwt;
   }
 
   useVerifiedMultisig(callback: any): any {
@@ -90,6 +119,7 @@ export class AuthService {
     };
   }
 
+  // TODO: deprecate
   useUnverifiedHexString(callback: any): any {
     return async (subject: string, data: { token: string }): Promise<string> => {
       const lockName = subject.split(".").pop(); // last item of subject is lock name
@@ -97,25 +127,6 @@ export class AuthService {
         return this.badSubject(`Subject's last item isn't a valid hex string: ${subject}`);
       }
       return callback(lockName, data);
-    };
-  }
-
-  useVerifiedPublicIdentifier(callback: any): any {
-    return async (subject: string, data: { token: string }): Promise<string> => {
-      // // Get & validate xpub from subject
-      const xpub = subject.split(".").pop(); // last item of subscription is xpub
-      if (!xpub || !isXpub(xpub)) {
-        return this.badSubject(`Subject's last item isn't a valid xpub: ${subject}`);
-      }
-      const xpubAddress = getAuthAddressFromXpub(xpub);
-      const authRes = this.verifySig(xpubAddress, data);
-      if (authRes && subject.startsWith("channel.restore-states")) {
-        this.log.error(
-          `Auth failed (${authRes.err}) but we're just gonna ignore that for now..`,
-        );
-        return callback(xpub, data);
-      }
-      return authRes || callback(xpub, data);
     };
   }
 
@@ -158,46 +169,5 @@ export class AuthService {
       }
       return callback(xpub, data);
     };
-  }
-
-  verifySig(xpubAddress: string, data: { token: string }): { err: string } | undefined {
-    // Get & validate the nonce + signature from provided token
-    if (!data || !data.token || data.token.indexOf(":") === -1) {
-      return this.badToken(
-        `Missing or malformed token in data: ${JSON.stringify(data || data.token)}`,
-      );
-    }
-    const token = data.token;
-    const nonce = token.split(":")[0];
-    const sig = token.split(":")[1];
-    if (!isValidHex(nonce, nonceLen) || !isValidHex(sig, 65)) {
-      return this.badToken(`Improperly formatted nonce or sig in token: ${token}`);
-    }
-
-    // Get & validate expected address/expiry from local nonce storage
-    if (!this.nonces[nonce] || !this.nonces[nonce].address || !this.nonces[nonce].expiry) {
-      return this.badToken(`Unknown nonce provided by ${xpubAddress}: ${nonce}`);
-    }
-    const { address, expiry } = this.nonces[nonce];
-    if (xpubAddress !== address) {
-      return this.badToken(
-        `Nonce ${nonce} for address ${address}, but xpub maps to ${xpubAddress}`,
-      );
-    }
-    if (Date.now() >= expiry) {
-      delete this.nonces[nonce];
-      return this.badToken(`Nonce ${nonce} for ${address} expired at ${expiry}`);
-    }
-
-    // Cache sig recovery calculation
-    if (!this.signerCache[token]) {
-      this.signerCache[token] = verifyMessage(arrayify(nonce), sig);
-      this.log.debug(`Recovered signer ${this.signerCache[token]} from token ${token}`);
-    }
-    const signer = this.signerCache[token];
-    if (signer !== address) {
-      return this.badToken(`Invalid sig for nonce ${nonce}: Got ${signer}, expected ${address}`);
-    }
-    return undefined;
   }
 }

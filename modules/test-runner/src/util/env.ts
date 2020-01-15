@@ -14,6 +14,11 @@ export const env = {
   mnemonic: process.env.INDRA_ETH_MNEMONIC || "",
   nodeUrl: process.env.INDRA_NODE_URL || "",
   storeDir: process.env.STORE_DIR || "",
+<<<<<<< HEAD
   adminToken: process.env.INDRA_ADMIN_TOKEN || "foo",
+=======
+  natsPrivateKey: process.env.INDRA_NATS_JWT_SIGNER_PRIVATE_KEY,
+  natsPublicKey: process.env.INDRA_NATS_JWT_SIGNER_PUBLIC_KEY,
+>>>>>>> WIP test suite
 };
 // console.log(`Starting tests in env: ${JSON.stringify(env, null, 2)}`);

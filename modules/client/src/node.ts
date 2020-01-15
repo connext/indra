@@ -33,6 +33,8 @@ const sendFailed = "Failed to send message";
 // Given 1 unit of `from`, how many units `to` are received.
 // eg the rate string might be "202.02" if 1 eth can be swapped for 202.02 dai
 
+// TODO: integrate JWT token
+
 export class NodeApiClient implements INodeApiClient {
   public messaging: IMessagingService;
   public latestSwapRates: { [key: string]: string } = {};

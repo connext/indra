@@ -16,8 +16,9 @@
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
   },
   "dependencies": {
-    "@connext/types": "4.3.0",
-    "ts-nats": "1.2.4",
+    "@connext/types": "4.0.11",
+    "jsonwebtoken": "^8.5.1",
+    "ts-natsutil": "^0.1.12",
     "websocket-nats": "0.3.3"
   },
   "devDependencies": {

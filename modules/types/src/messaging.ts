@@ -46,7 +46,10 @@ export interface MessagingConfig {
   logger?: ILoggerService;
   messagingUrl: string | string[];
   options?: any;
+  privateKey?: string;
+  publicKey?: string;
   token?: string;
+  websocketUrl?: string | string[];
 }
 
 export interface CFMessagingService {

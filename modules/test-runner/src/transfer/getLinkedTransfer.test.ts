@@ -13,6 +13,7 @@ describe("Async Transfers", () => {
   });
 
   afterEach(async () => {
+    console.log(clientA.messaging);
     await clientA.messaging.disconnect();
   });
 

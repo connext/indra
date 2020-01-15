@@ -31,6 +31,7 @@ describe("ChannelProvider", () => {
   });
 
   afterEach(async () => {
+    console.log(client);
     await client.messaging.disconnect();
   });
 
