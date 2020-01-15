@@ -10,6 +10,7 @@ import "regenerator-runtime/runtime";
 
 import { createCFChannelProvider } from "./channelProvider";
 import { ConnextClient } from "./connext";
+import { getDefaultOptions } from "./default";
 import { delayAndThrow, Logger, stringify } from "./lib";
 import { NodeApiClient } from "./node";
 import {
@@ -74,7 +75,14 @@ const setupMultisigAddress = async (
   return channelProvider;
 };
 
-export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
+export const connect = async (
+  clientOptions: string | ClientOptions,
+  overrideOptions?: ClientOptions,
+): Promise<IConnextClient> => {
+  const opts =
+    typeof clientOptions === "string"
+      ? await getDefaultOptions(clientOptions, overrideOptions)
+      : clientOptions;
   const {
     logLevel,
     ethProviderUrl,
