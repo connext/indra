@@ -1,14 +1,14 @@
 import { REACT_NATIVE_STORE } from "./constants";
-import { AsyncStorageData, InitCallback, StorageWrapper } from "./types";
+import { AsyncStorageData, IAsyncStorage, InitCallback, StorageWrapper } from "./types";
 import { safeJsonParse, safeJsonStringify } from "./utils";
 
 class AsyncStorageWrapper implements StorageWrapper {
-  private asyncStorage: any;
+  private asyncStorage: IAsyncStorage;
   private data: AsyncStorageData = {};
   private initializing: boolean = false;
   private initCallbacks: InitCallback[] = [];
 
-  constructor(asyncStorage: any) {
+  constructor(asyncStorage: IAsyncStorage) {
     this.asyncStorage = asyncStorage;
     this.loadData();
   }

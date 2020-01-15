@@ -17,8 +17,7 @@
   },
   "dependencies": {
     "@connext/types": "3.0.0",
-    "ethers": "4.0.41",
-    "pisa-client": "0.1.4-connext-beta.1"
+    "ethers": "4.0.41"
   },
   "devDependencies": {
     "@babel/polyfill": "7.7.0",
