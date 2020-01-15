@@ -21,7 +21,7 @@
     "@connext/store": "3.0.0",
     "@connext/types": "3.0.0",
     "core-js": "3.6.1",
-    "eccrypto": "1.1.2",
+    "eccrypto": "1.1.3",
     "ethers": "4.0.41",
     "human-standard-token-abi": "2.0.0",
     "regenerator-runtime": "0.13.3",
