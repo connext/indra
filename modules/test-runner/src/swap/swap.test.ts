@@ -62,7 +62,7 @@ describe("Swaps", () => {
       swapRate,
       toAssetId: tokenAddress,
     };
-    await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not a valid eth address`);
+    await expect(clientA.swap(swapParams)).to.be.rejectedWith(`is not a valid eth address`);
   });
 
   it("Bot A tries to swap with invalid to token address", async () => {
@@ -78,7 +78,7 @@ describe("Swaps", () => {
       swapRate,
       toAssetId: WRONG_ADDRESS,
     };
-    await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not a valid eth address`);
+    await expect(clientA.swap(swapParams)).to.be.rejectedWith(`is not a valid eth address`);
   });
 
   it("Bot A tries to swap with insufficient free balance for the user", async () => {
@@ -94,7 +94,7 @@ describe("Swaps", () => {
       swapRate,
       toAssetId: tokenAddress,
     };
-    await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not less than or equal to`);
+    await expect(clientA.swap(swapParams)).to.be.rejectedWith(`is not less than or equal to`);
   });
 
   it("Bot A tries to swap with negative swap rate", async () => {
@@ -110,7 +110,7 @@ describe("Swaps", () => {
       swapRate: (-swapRate).toString(),
       toAssetId: tokenAddress,
     };
-    await expect(clientA.swap(swapParams)).rejects.toThrowError(
+    await expect(clientA.swap(swapParams)).to.be.rejectedWith(
       `is not greater than or equal to 0`,
     );
   });
@@ -128,7 +128,7 @@ describe("Swaps", () => {
       swapRate,
       toAssetId: tokenAddress,
     };
-    await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not greater than 0`);
+    await expect(clientA.swap(swapParams)).to.be.rejectedWith(`is not greater than 0`);
   });
 
   it("Bot A tries to swap with insufficient collateral on node", async () => {
@@ -144,7 +144,7 @@ describe("Swaps", () => {
       swapRate,
       toAssetId: tokenAddress,
     };
-    await expect(clientA.swap(swapParams)).rejects.toThrowError(`is not less than or equal to 0`);
+    await expect(clientA.swap(swapParams)).to.be.rejectedWith(`is not less than or equal to 0`);
   });
 
   // TODO Currently, this test always fails because when promise is never rejected when
@@ -163,6 +163,6 @@ describe("Swaps", () => {
       swapRate,
       toAssetId: tokenAddress,
     };
-    await expect(clientA.swap(swapParams)).rejects.toThrowError(`is jiaji greater than 0`);
+    await expect(clientA.swap(swapParams)).to.be.rejectedWith(`is jiaji greater than 0`);
   });
 });

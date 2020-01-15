@@ -54,7 +54,7 @@ describe("Withdrawal", () => {
 
   it("client tries to withdraw more than it has in free balance", async () => {
     await fundChannel(client, ZERO_ZERO_ZERO_ONE_ETH);
-    await expect(withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero)).rejects.toThrow(
+    await expect(withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero)).to.be.rejectedWith(
       `Value (${ZERO_ZERO_ONE_ETH}) is not less than or equal to ${ZERO_ZERO_ZERO_ONE_ETH}`,
     );
   });
@@ -63,14 +63,14 @@ describe("Withdrawal", () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
     await expect(
       withdrawFromChannel(client, NEGATIVE_ZERO_ZERO_ONE_ETH, AddressZero),
-    ).rejects.toThrow(`Value (${NEGATIVE_ZERO_ZERO_ONE_ETH}) is not greater than or equal to 0`);
+    ).to.be.rejectedWith(`Value (${NEGATIVE_ZERO_ZERO_ONE_ETH}) is not greater than or equal to 0`);
   });
 
   it("client tries to withdraw to an invalid recipient address", async () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
     await expect(
       withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, false, "0xabc"),
-    ).rejects.toThrow(`Value \"0xabc\" is not a valid eth address`);
+    ).to.be.rejectedWith(`Value \"0xabc\" is not a valid eth address`);
   });
 
   it("client tries to withdraw with invalid assetId", async () => {
@@ -83,7 +83,7 @@ describe("Withdrawal", () => {
         assetId: "0xabc",
         recipient: Wallet.createRandom().address,
       }),
-    ).rejects.toThrow(`Value \"0xabc\" is not a valid eth address`);
+    ).to.be.rejectedWith(`Value \"0xabc\" is not a valid eth address`);
   });
 
   // FIXME: may have race condition! saw intermittent failures, tough to

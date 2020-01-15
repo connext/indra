@@ -29,8 +29,8 @@ bash ops/wait-for.sh ${INDRA_NODE_URL#*://}
 if [[ $@ == *"--watch"* ]]
 then
   webpack --watch --config ops/webpack.config.js &
-  mocha --watch --timeout 90000 dist/tests.bundle.js
+  mocha --watch --timeout 30000 dist/tests.bundle.js
 else
-  mocha --exit --timeout 90000 dist/tests.bundle.js
+  mocha --exit --timeout 30000 dist/tests.bundle.js
 fi
 

@@ -40,10 +40,8 @@ export async function asyncTransferAsset(
   await new Promise(async resolve => {
     let count = 0;
     clientA.once("UNINSTALL_EVENT", async () => {
-      console.error(`Caught sender uninstall event!!!!!`);
       count += 1;
       if (count === 2) {
-        console.error(`resolving promise!`);
         resolve();
       }
     });

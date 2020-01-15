@@ -26,7 +26,7 @@ describe("Async Transfers", () => {
       preImage,
     });
     const linkedTransfer = await clientA.getLinkedTransfer(paymentId);
-    expect(linkedTransfer).toMatchObject({
+    expect(linkedTransfer).to.deep.include({
       amount: transfer.amount.toString(),
       assetId: AddressZero,
       paymentId,
@@ -51,7 +51,7 @@ describe("Async Transfers", () => {
       recipient: clientB.publicIdentifier,
     });
     const linkedTransfer = await clientA.getLinkedTransfer(paymentId);
-    expect(linkedTransfer).toMatchObject({
+    expect(linkedTransfer).to.deep.include({
       amount: transfer.amount.toString(),
       assetId: AddressZero,
       paymentId,
@@ -76,6 +76,6 @@ describe("Async Transfers", () => {
       recipient: clientB.publicIdentifier,
     });
     const linkedTransfer = await clientA.getLinkedTransfer(hexlify(randomBytes(32)));
-    expect(linkedTransfer).toBeFalsy();
+    expect(linkedTransfer).to.not.be.ok;
   });
 });
