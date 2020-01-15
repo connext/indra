@@ -12,6 +12,11 @@ release="`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 if [[ "$mode" == "local" ]]
 then
 
+  if [[ $@ == *"--watch"* ]]
+  then command="npm run watch"
+  else command="npm run test"
+  fi
+
   exec docker run \
     --entrypoint="bash" \
     --env="ECCRYPTO_NO_FALLBACK=true" \
@@ -29,7 +34,7 @@ then
       then cd modules/test-runner
       fi
       npm run build-bundle
-      npm run test
+      '"$command"'
     '
 
 elif [[ "$mode" == "release" ]]
@@ -50,14 +55,6 @@ fi
 # If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
 if [[ -t 0 && -t 1 && -t 2 ]]
 then interactive="--interactive"
-fi
-
-if [[ $@ == *"--watch"* ]]
-then watchOptions="\
-  --mount=type=bind,source=$dir/../,target=/root \
-  --workdir=/root/modules/test-runner \
-  --env=MODE=watch \
-  "
 fi
 
 echo "Executing image $image"

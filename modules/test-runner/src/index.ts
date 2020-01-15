@@ -1,6 +1,8 @@
-import "./channelProvider/channelProvider.test";
 /*
+import "./channelProvider/channelProvider.test";
+*/
 import "./createChannel/createChannel.test";
+/*
 import "./deposit/collateral.test";
 import "./deposit/deposit.test";
 import "./deposit/depositRights.test";

@@ -6,7 +6,8 @@
   "scripts": {
     "build-bundle": "webpack --config ops/webpack.config.js",
     "test": "bash ops/entry.sh",
-    "test-jest": "jest --detectOpenHandles --runInBand --forceExit --config jest.config.js"
+    "test-jest": "jest --detectOpenHandles --runInBand --forceExit --config jest.config.js",
+    "watch": "bash ops/entry.sh --watch"
   },
   "author": "",
   "license": "ISC",

@@ -22,13 +22,15 @@ function finish {
 }
 trap finish SIGTERM SIGINT
 
-#if [[ "$MODE" == "watch" ]]
-#then command="exec jest --config jest.config.js --runInBand"
-#else command="mocha dist/tests.bundle.js"
-#fi
-
 bash ops/wait-for.sh $INDRA_PG_HOST:$INDRA_PG_PORT
 bash ops/wait-for.sh ${INDRA_ETH_RPC_URL#*://}
 bash ops/wait-for.sh ${INDRA_NODE_URL#*://}
 
-mocha --exit --timeout 90000 dist/tests.bundle.js
+if [[ $@ == *"--watch"* ]]
+then
+  webpack --watch --config ops/webpack.config.js &
+  mocha --watch --timeout 90000 dist/tests.bundle.js
+else
+  mocha --exit --timeout 90000 dist/tests.bundle.js
+fi
+
