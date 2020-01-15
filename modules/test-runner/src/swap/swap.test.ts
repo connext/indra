@@ -8,11 +8,13 @@ import {
   createClient,
   ETH_AMOUNT_MD,
   ETH_AMOUNT_SM,
+  fundChannel,
   swapAsset,
   TOKEN_AMOUNT,
   WRONG_ADDRESS,
   ZERO_ZERO_TWO,
   ZERO_ZERO_ZERO_FIVE,
+  ONE,
 } from "../util";
 
 describe("Swaps", () => {
@@ -32,7 +34,7 @@ describe("Swaps", () => {
     const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     // client deposit and request node collateral
-    await clientA.deposit({ amount: input.amount.toString(), assetId: input.assetId });
+    await fundChannel(clientA, input.amount, input.assetId);
     await clientA.requestCollateral(output.assetId);
 
     await swapAsset(clientA, input, output, nodeFreeBalanceAddress);
@@ -42,7 +44,7 @@ describe("Swaps", () => {
     const input: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     const output: AssetOptions = { amount: ETH_AMOUNT_MD, assetId: AddressZero };
     // client deposit and request node collateral
-    await clientA.deposit({ amount: input.amount.toString(), assetId: input.assetId });
+    await fundChannel(clientA, input.amount, input.assetId);
     await clientA.requestCollateral(output.assetId);
 
     await swapAsset(clientA, input, output, nodeFreeBalanceAddress);
@@ -50,7 +52,7 @@ describe("Swaps", () => {
 
   test("Bot A tries to swap with invalid from token address", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
+    await fundChannel(clientA, ETH_AMOUNT_SM, AddressZero);
     await clientA.requestCollateral(tokenAddress);
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
@@ -66,7 +68,7 @@ describe("Swaps", () => {
 
   test("Bot A tries to swap with invalid to token address", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
+    await fundChannel(clientA, ETH_AMOUNT_SM, AddressZero);
     await clientA.requestCollateral(tokenAddress);
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
@@ -82,7 +84,7 @@ describe("Swaps", () => {
 
   test("Bot A tries to swap with insufficient free balance for the user", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
+    await fundChannel(clientA, ETH_AMOUNT_SM, AddressZero);
     await clientA.requestCollateral(tokenAddress);
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
@@ -98,7 +100,7 @@ describe("Swaps", () => {
 
   test("Bot A tries to swap with negative swap rate", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
+    await fundChannel(clientA, ETH_AMOUNT_SM, AddressZero);
     await clientA.requestCollateral(tokenAddress);
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
@@ -116,7 +118,7 @@ describe("Swaps", () => {
 
   test("Bot A tries to swap with negative user amount", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
+    await fundChannel(clientA, ETH_AMOUNT_SM, AddressZero);
     await clientA.requestCollateral(tokenAddress);
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
@@ -132,7 +134,7 @@ describe("Swaps", () => {
 
   test("Bot A tries to swap with insufficient collateral on node", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
+    await fundChannel(clientA, ETH_AMOUNT_SM, AddressZero);
     // No collateral requested
 
     const swapRate = await clientA.getLatestSwapRate(AddressZero, tokenAddress);
@@ -150,11 +152,11 @@ describe("Swaps", () => {
   //      node rejects install.
   test.skip("Bot A tries to swap with incorrect swap rate (node rejects)", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
+    await fundChannel(clientA, ETH_AMOUNT_SM, AddressZero);
     await clientA.requestCollateral(tokenAddress);
     // No collateral requested
 
-    const swapRate = "1";
+    const swapRate = ONE;
     const swapAmount = parseEther(ZERO_ZERO_ZERO_FIVE);
     const swapParams: SwapParameters = {
       amount: swapAmount.toString(),

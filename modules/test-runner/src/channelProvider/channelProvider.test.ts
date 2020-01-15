@@ -10,6 +10,7 @@ import {
   createClient,
   createRemoteClient,
   ETH_AMOUNT_SM,
+  fundChannel,
   swapAsset,
   TOKEN_AMOUNT,
   withdrawFromChannel,
@@ -59,7 +60,7 @@ describe("ChannelProvider", () => {
 
     ////////////////////////////////////////
     // DEPOSIT FLOW
-    await clientA1.deposit({ amount: input.amount.toString(), assetId: input.assetId });
+    await fundChannel(clientA, input.amount, input.assetId);
     await clientA1.requestCollateral(output.assetId);
 
     ////////////////////////////////////////

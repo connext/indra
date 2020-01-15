@@ -7,7 +7,7 @@ export const fundChannel = async (
   amount: BigNumber,
   assetId: string = AddressZero,
 ): Promise<void> => {
-  const prevFreeBalance = await client.getFreeBalance();
+  const prevFreeBalance = await client.getFreeBalance(assetId);
   await new Promise(async resolve => {
     client.once("DEPOSIT_CONFIRMED_EVENT", async () => {
       const freeBalance = await client.getFreeBalance(assetId);
