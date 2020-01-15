@@ -45,7 +45,7 @@ export abstract class AbstractController {
             `indra.node.${this.connext.nodePublicIdentifier}.install.${appInstanceId}`,
             boundResolve,
           );
-          this.listener.on("REJECT_INSTALL_EVENT", boundReject);
+          this.listener.on(CFCoreTypes.EventNames.REJECT_INSTALL_EVENT, boundReject);
         }),
         delayAndThrow(
           CF_METHOD_TIMEOUT,

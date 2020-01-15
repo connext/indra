@@ -5,6 +5,7 @@ import { AddressZero } from "ethers/constants";
 import { HDNode, hexlify, randomBytes } from "ethers/utils";
 const tokenArtifacts = require("openzeppelin-solidity/build/contracts/ERC20Mintable.json");
 import {
+  AssetOptions,
   asyncTransferAsset,
   createClient,
   ETH_AMOUNT_LG,
@@ -34,20 +35,22 @@ describe("Async Transfers", () => {
   }, 90_000);
 
   it("happy case: client A transfers eth to client B through node", async () => {
-    await fundChannel(clientA, ETH_AMOUNT_SM, AddressZero);
-    await clientB.requestCollateral(AddressZero);
-    await asyncTransferAsset(clientA, clientB, ETH_AMOUNT_SM, AddressZero, nodeFreeBalanceAddress, {
-      freeBalanceNodeB: ETH_AMOUNT_MD,
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
+    await clientB.requestCollateral(transfer.assetId);
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nodeFreeBalanceAddress, {
+      freeBalanceNodeB: ETH_AMOUNT_MD, // collateralization amount
     });
   });
 
   it("happy case: client A transfers tokens to client B through node", async () => {
-    await fundChannel(clientA, TOKEN_AMOUNT, tokenAddress);
-    await clientB.requestCollateral(tokenAddress);
+    const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
+    await clientB.requestCollateral(transfer.assetId);
 
     // NOTE: will fail if not collateralized by transfer amount exactly
     // when pretransfer balances are not supplied.
-    await asyncTransferAsset(clientA, clientB, TOKEN_AMOUNT, tokenAddress, nodeFreeBalanceAddress);
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nodeFreeBalanceAddress);
   });
 
   it("Bot A tries to transfer a negative amount", async () => {
@@ -55,27 +58,30 @@ describe("Async Transfers", () => {
     // verify collateral
     await clientB.requestCollateral(tokenAddress);
 
+    const amount = ETH_AMOUNT_SM.mul(-1).toString();
     await expect(
       clientA.transfer({
-        amount: ETH_AMOUNT_SM.mul(-1).toString(),
+        amount,
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith("Value -10000000000000000 is negative");
+    ).to.be.rejectedWith(`Value ${amount} is negative`);
   });
 
   it("Bot A tries to transfer with an invalid token address", async () => {
     await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
 
+    const amount = ETH_AMOUNT_SM.toString();
+    const assetId = "0xabc";
     await expect(
       clientA.transfer({
-        amount: ETH_AMOUNT_SM.toString(),
-        assetId: "0xabc",
+        amount,
+        assetId,
         recipient: clientB.publicIdentifier,
       }),
     ).to.be.rejectedWith(
-      `Value "0xabc" is not a valid eth address, Value (${ETH_AMOUNT_SM.toString()}) is not less than or equal to 0`,
-    );
+      `Value "${assetId}" is not a valid eth address, Value (${amount}) is not less than or equal to 0`,
+    )
     // NOTE: will also include a `Value (..) is not less than or equal to 0
     // because it will not be able to fetch the free balance of the assetId
   });
@@ -112,54 +118,58 @@ describe("Async Transfers", () => {
   it("Bot A tries to transfer with invalid recipient xpub", async () => {
     await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
 
+    const recipient = "nope";
     await expect(
       clientA.transfer({
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
-        recipient: `nope`,
+        recipient,
       }),
-    ).to.be.rejectedWith(`Value \"nope\" must start with \"xpub\"`);
+    ).to.be.rejectedWith(`Value \"${recipient}\" must start with \"xpub\"`);
   });
 
   // tslint:disable-next-line: max-line-length
   it("Bot A tries to transfer an amount greater than they have in their free balance", async () => {
+    const amount = ETH_AMOUNT_SM.toString();
     await expect(
       clientA.transfer({
-        amount: ETH_AMOUNT_SM.toString(),
+        amount,
         assetId: tokenAddress,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`Value (${ETH_AMOUNT_SM.toString()}) is not less than or equal to 0`);
+    ).to.be.rejectedWith(`Value (${amount}) is not less than or equal to 0`);
   });
 
   it("Bot A tries to transfer with a paymentId that is not 32 bytes", async () => {
     await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
 
+    const paymentId = "nope";
     await expect(
       clientA.conditionalTransfer({
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
         conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
-        paymentId: "nope",
+        paymentId,
         preImage: hexlify(randomBytes(32)),
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`Value \"nope\" is not a valid hex string`);
+    ).to.be.rejectedWith(`Value \"${paymentId}\" is not a valid hex string`);
   });
 
   it("Bot A tries to transfer with a preimage that is not 32 bytes", async () => {
     await fundChannel(clientA, ETH_AMOUNT_SM, tokenAddress);
 
+    const preImage = "nope";
     await expect(
       clientA.conditionalTransfer({
         amount: ETH_AMOUNT_SM.toString(),
         assetId: tokenAddress,
         conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
         paymentId: hexlify(randomBytes(32)),
-        preImage: "nope",
+        preImage,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`Value \"nope\" is not a valid hex string`);
+    ).to.be.rejectedWith(`Value \"${preImage}\" is not a valid hex string`);
   });
 
   it("Bot A proposes a transfer to an xpub that doesn’t have a channel", async () => {

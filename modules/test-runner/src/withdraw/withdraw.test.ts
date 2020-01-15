@@ -3,9 +3,9 @@ import { IConnextClient } from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 
-import { expect } from "../util";
 import {
   createClient,
+  expect,
   fundChannel,
   NEGATIVE_ZERO_ZERO_ONE_ETH,
   requestDepositRights,
@@ -68,22 +68,24 @@ describe("Withdrawal", () => {
 
   it("client tries to withdraw to an invalid recipient address", async () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
+    const recipient = "0xabc";
     await expect(
-      withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, false, "0xabc"),
-    ).to.be.rejectedWith(`Value \"0xabc\" is not a valid eth address`);
+      withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, false, recipient),
+    ).rejects.toThrow(`Value \"${recipient}\" is not a valid eth address`);
   });
 
   it("client tries to withdraw with invalid assetId", async () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
     // cannot use util fn because it will check the pre withdraw free balance,
     // which will throw a separate error
+    const assetId = "0xabc";
     await expect(
       client.withdraw({
         amount: ZERO_ZERO_ONE_ETH.toString(),
-        assetId: "0xabc",
+        assetId,
         recipient: Wallet.createRandom().address,
       }),
-    ).to.be.rejectedWith(`Value \"0xabc\" is not a valid eth address`);
+    ).rejects.toThrow(`Value \"${assetId}\" is not a valid eth address`);
   });
 
   // FIXME: may have race condition! saw intermittent failures, tough to
