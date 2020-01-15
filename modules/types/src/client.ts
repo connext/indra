@@ -1,4 +1,4 @@
-import { providers, Contract } from "ethers";
+import { Contract, providers } from "ethers";
 import { BigNumber, Network } from "ethers/utils";
 
 import {
@@ -89,7 +89,6 @@ export interface IConnextClient {
   ////////////////////////////////////////
   // Methods
 
-  isAvailable: () => Promise<void>;
   restart(): Promise<void>;
 
   ///////////////////////////////////
