@@ -144,7 +144,7 @@ export class ConnextClient implements IConnextClient {
    * Creates a promise that returns when the channel is available,
    * ie. when the setup protocol or create channel call is completed
    */
-  public isAvailable = async (): Promise<void> => {
+  private isAvailable = async (): Promise<void> => {
     return new Promise(
       async (resolve: any, reject: any): Promise<any> => {
         // Wait for channel to be available

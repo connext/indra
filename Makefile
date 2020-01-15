@@ -279,13 +279,15 @@ ssh-action: $(shell find $(ssh-action) $(find_options))
 	docker build --file $(ssh-action)/Dockerfile --tag $(project)_ssh_action $(ssh-action)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-test-runner-release: node-modules $(shell find $(tests)/src $(tests)/ops $(find_options))
+test-runner: test-runner-staging
+
+test-runner-release: node-modules client $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
 	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build-bundle"
 	docker build --file $(tests)/ops/Dockerfile $(cache_from) --tag $(project)_test_runner:$(commit) .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-test-runner-staging: node-modules $(shell find $(tests)/src $(tests)/ops $(find_options))
+test-runner-staging: node-modules client $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
 	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build-bundle"
 	docker build --file $(tests)/ops/Dockerfile $(cache_from) --tag $(project)_test_runner .

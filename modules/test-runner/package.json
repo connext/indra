@@ -10,9 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@connext/cf-core": "1.5.1",
-    "@connext/client": "1.5.1",
-    "@connext/types": "1.5.1",
+    "@connext/cf-core": "3.0.0",
+    "@connext/client": "3.0.0",
+    "@connext/types": "3.0.0",
     "core-js": "3.6.1",
     "dotenv": "8.2.0",
     "ethers": "4.0.41",
