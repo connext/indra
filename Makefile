@@ -55,7 +55,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev staging release
-dev: database ethprovider node client payment-bot-staging indra-proxy ws-tcp-relay
+dev: database node client payment-bot-js indra-proxy test-runner-js ws-tcp-relay
 staging: daicard-proxy database ethprovider indra-proxy-prod node-staging payment-bot-staging test-runner-staging ws-tcp-relay
 release: daicard-proxy database ethprovider indra-proxy-prod node-release payment-bot-release test-runner-release ws-tcp-relay
 
@@ -153,7 +153,7 @@ pull-release:
 pull-backwards-compatible:
 	bash ops/pull-images.sh $(backwards_compatible_version)
 
-deployed-contracts: ethprovider
+deployed-contracts: contracts
 	bash ops/deploy-contracts.sh ganache
 	touch $(flags)/$@
 
@@ -333,9 +333,19 @@ node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrati
 	$(docker_run) "cd modules/node && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
+payment-bot-js: $(shell find $(bot)/src $(bot)/ops $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/payment-bot && npm run build-bundle"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
 store: node-modules types $(shell find $(store)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/store && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+test-runner-js: node-modules client $(shell find $(tests)/src $(tests)/ops $(find_options))
+	$(log_start)
+	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build-bundle"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 types: node-modules $(shell find $(types)/src $(find_options))
