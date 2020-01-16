@@ -98,6 +98,11 @@ echo
 ########################################
 # Deploy contracts
 
+# If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
+if [[ -t 0 && -t 1 && -t 2 ]]
+then interactive="--interactive --tty"
+else echo "Running in non-interactive mode"
+fi
 
 if [[ "$mode" == "local" ]]
 then
@@ -105,7 +110,7 @@ then
   echo "Deploying $mode-mode contract deployer (image: builder)..."
 
   exec docker run \
-    --interactive \
+    $interactive \
     --entrypoint="bash" \
     --name="$name" \
     --env="ETH_MNEMONIC=$ETH_MNEMONIC" \
@@ -114,7 +119,6 @@ then
     --mount="type=volume,source=${project}_chain_dev,target=/data" \
     --mount="type=bind,source=$cwd,target=/root" \
     --rm \
-    --tty \
     ${project}_builder -c "cd modules/contracts && bash ops/entry.sh deploy"
 
 elif [[ "$mode" == "release" ]]

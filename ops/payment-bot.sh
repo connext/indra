@@ -45,7 +45,8 @@ release="`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 
 # If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
 if [[ -t 0 && -t 1 && -t 2 ]]
-then interactive="--interactive"
+then interactive="--interactive --tty"
+else echo "Running in non-interactive mode"
 fi
 
 if [[ "$mode" == "local" ]]
@@ -65,7 +66,6 @@ then
     --env="PISA_CONTRACT_ADDRESS=$PISA_CONTRACT_ADDRESS" \
     --name="${project}_payment_bot_$identifier" \
     --rm \
-    --tty \
     --volume="$cwd/.bot-store:/store" \
     --volume="$cwd:/root" \
     ${project}_builder -c "cd modules/payment-bot && bash ops/entry.sh `id -u`:`id -g` $args"
@@ -90,6 +90,5 @@ exec docker run \
   $interactive \
   --name="${project}_payment_bot_$identifier" \
   --rm \
-  --tty \
   --volume="$cwd/.bot-store:/store" \
   $image "`id -u`:`id -g`" $args

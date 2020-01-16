@@ -12,7 +12,8 @@ release="`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 
 # If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
 if [[ -t 0 && -t 1 && -t 2 ]]
-then interactive="--interactive"
+then interactive="--interactive --tty"
+else echo "Running in non-interactive mode"
 fi
 
 if [[ "$mode" == "local" ]]
@@ -28,7 +29,6 @@ then
     --name="$name" \
     --mount="type=bind,source=`pwd`,target=/root" \
     --rm \
-    --tty \
     ${project}_builder -c "cd modules/test-runner && bash ops/entry.sh $@"
 
 elif [[ -n "`docker image ls -q $name:$1`" ]]
@@ -51,5 +51,4 @@ exec docker run \
   $interactive \
   --name="$name" \
   --rm \
-  --tty \
   $image $@
