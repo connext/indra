@@ -1,22 +1,22 @@
 import { ethers } from "ethers";
 
 import {
+  arrayify,
   DEFAULT_STORE_PREFIX,
   DEFAULT_STORE_SEPARATOR,
+  hexlify,
+  IPisaClient,
+  keccak256,
   PATH_CHANNEL,
   PATH_PROPOSED_APP_INSTANCE_ID,
-} from "./constants";
-import InternalStore from "./store";
-import { IPisaClient, StoreFactoryOptions, StorePair } from "./types";
-import {
-  arrayify,
-  hexlify,
-  keccak256,
   safeJsonParse,
   safeJsonStringify,
+  StoreFactoryOptions,
+  StorePair,
   toUtf8Bytes,
   toUtf8String,
-} from "./utils";
+} from "./helpers";
+import InternalStore from "./internalStore";
 
 export class ConnextStore {
   private store: InternalStore;
