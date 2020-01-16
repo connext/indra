@@ -1,3 +1,4 @@
+
 // export from helpers dir
 export * from "./helpers/asyncTransferAsset";
 export * from "./helpers/fundChannel";
@@ -6,6 +7,7 @@ export * from "./helpers/swapAsset";
 export * from "./helpers/withdrawFromChannel";
 
 // export from current dir
+export * from "./assertions";
 export * from "./bn";
 export * from "./channelProvider";
 export * from "./client";

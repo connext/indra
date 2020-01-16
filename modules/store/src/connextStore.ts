@@ -1,3 +1,5 @@
+import { ethers } from "ethers";
+
 import {
   DEFAULT_STORE_PREFIX,
   DEFAULT_STORE_SEPARATOR,
@@ -5,7 +7,7 @@ import {
   PATH_PROPOSED_APP_INSTANCE_ID,
 } from "./constants";
 import InternalStore from "./store";
-import { PisaClient, StoreFactoryOptions, StorePair, Wallet } from "./types";
+import { IPisaClient, StoreFactoryOptions, StorePair } from "./types";
 import {
   arrayify,
   hexlify,
@@ -21,8 +23,8 @@ export class ConnextStore {
 
   private prefix: string = DEFAULT_STORE_PREFIX;
   private separator: string = DEFAULT_STORE_SEPARATOR;
-  private pisaClient: PisaClient | null = null;
-  private wallet: Wallet | null = null;
+  private pisaClient: IPisaClient | null = null;
+  private wallet: ethers.Wallet | null = null;
 
   constructor(storage: any, opts?: StoreFactoryOptions) {
     if (opts) {
@@ -93,7 +95,7 @@ export class ConnextStore {
   /// ////////////////////////////////////////////
   /// // WALLET METHODS
 
-  private getWallet(): Wallet {
+  private getWallet(): ethers.Wallet {
     if (!this.wallet) {
       throw new Error("No Wallet was provided");
     }
@@ -118,7 +120,7 @@ export class ConnextStore {
   /// ////////////////////////////////////////////
   /// // PISA METHODS
 
-  private getPisaClient(): PisaClient {
+  private getPisaClient(): IPisaClient {
     if (!this.pisaClient) {
       throw new Error("No Pisa Client was provided");
     }

@@ -2,8 +2,11 @@ import { IConnextClient } from "@connext/types";
 import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
+import { expect } from "../assertions";
 import { ExistingBalancesAsyncTransfer } from "../types";
 
+// NOTE: will fail if not collateralized by transfer amount exactly
+// when pretransfer balances are not supplied.
 export async function asyncTransferAsset(
   clientA: IConnextClient,
   clientB: IConnextClient,
@@ -15,7 +18,6 @@ export async function asyncTransferAsset(
   const preTransfer: ExistingBalancesAsyncTransfer = {
     freeBalanceClientA: transferAmount,
     freeBalanceNodeA: Zero,
-    // tslint:disable-next-line:object-literal-sort-keys
     freeBalanceClientB: Zero,
     freeBalanceNodeB: transferAmount,
     ...preExistingBalances,
@@ -25,24 +27,22 @@ export async function asyncTransferAsset(
     [clientA.freeBalanceAddress]: preTransferFreeBalanceClientA,
     [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeA,
   } = await clientA.getFreeBalance(assetId);
-  expect(preTransferFreeBalanceClientA).toBeBigNumberEq(preTransfer.freeBalanceClientA);
-  expect(preTransferFreeBalanceNodeA).toBeBigNumberEq(preTransfer.freeBalanceNodeA);
+  expect(preTransferFreeBalanceClientA).to.be.bigNumberEq(preTransfer.freeBalanceClientA);
+  expect(preTransferFreeBalanceNodeA).to.be.bigNumberEq(preTransfer.freeBalanceNodeA);
 
   const {
     [clientB.freeBalanceAddress]: preTransferFreeBalanceClientB,
     [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeB,
   } = await clientB.getFreeBalance(assetId);
-  expect(preTransferFreeBalanceClientB).toBeBigNumberEq(preTransfer.freeBalanceClientB);
-  expect(preTransferFreeBalanceNodeB).toBeBigNumberGte(preTransfer.freeBalanceNodeB);
+  expect(preTransferFreeBalanceClientB).to.be.bigNumberEq(preTransfer.freeBalanceClientB);
+  expect(preTransferFreeBalanceNodeB).to.be.bigNumberEq(preTransfer.freeBalanceNodeB);
 
   let paymentId;
   await new Promise(async resolve => {
     let count = 0;
     clientA.once("UNINSTALL_EVENT", async () => {
-      console.error(`Caught sender uninstall event!!!!!`);
       count += 1;
       if (count === 2) {
-        console.error(`resolving promise!`);
         resolve();
       }
     });
@@ -62,17 +62,17 @@ export async function asyncTransferAsset(
     });
     paymentId = senderPaymentId;
   });
-  expect((await clientB.getAppInstances()).length).toEqual(Zero.toNumber());
-  expect((await clientA.getAppInstances()).length).toEqual(Zero.toNumber());
+  expect((await clientB.getAppInstances()).length).to.be.eq(Zero.toNumber());
+  expect((await clientA.getAppInstances()).length).to.be.eq(Zero.toNumber());
 
   const {
     [clientA.freeBalanceAddress]: postTransferFreeBalanceClientA,
     [nodeFreeBalanceAddress]: postTransferFreeBalanceNodeA,
   } = await clientA.getFreeBalance(assetId);
-  expect(postTransferFreeBalanceClientA).toBeBigNumberEq(
+  expect(postTransferFreeBalanceClientA).to.be.bigNumberEq(
     preTransferFreeBalanceClientA.sub(transferAmount),
   );
-  expect(postTransferFreeBalanceNodeA).toBeBigNumberEq(
+  expect(postTransferFreeBalanceNodeA).to.be.bigNumberEq(
     preTransferFreeBalanceNodeA.add(transferAmount),
   );
 
@@ -80,16 +80,19 @@ export async function asyncTransferAsset(
     [clientB.freeBalanceAddress]: postTransferFreeBalanceClientB,
     [nodeFreeBalanceAddress]: postTransferFreeBalanceNodeB,
   } = await clientB.getFreeBalance(assetId);
-  expect(postTransferFreeBalanceClientB).toBeBigNumberEq(
+  expect(postTransferFreeBalanceClientB).to.be.bigNumberEq(
     preTransferFreeBalanceClientB.add(transferAmount),
   );
-  expect(postTransferFreeBalanceNodeB).toBeBigNumberEq(
+  expect(postTransferFreeBalanceNodeB).to.be.bigNumberEq(
     preTransferFreeBalanceNodeB.sub(transferAmount),
   );
 
+  // TODO: explicitly await for status redeemed -> reclaimed
+  await new Promise(res => setTimeout(res, 1000));
+
   const paymentA = await clientA.getLinkedTransfer(paymentId);
   const paymentB = await clientB.getLinkedTransfer(paymentId);
-  expect(paymentA).toMatchObject({
+  expect(paymentA).to.deep.include({
     amount: transferAmount.toString(),
     assetId,
     meta: { hello: "world" },
@@ -99,7 +102,7 @@ export async function asyncTransferAsset(
     status: "RECLAIMED",
     type: "LINKED",
   });
-  expect(paymentB).toMatchObject(paymentA);
+  expect(paymentA).to.deep.include(paymentB);
 
   const postTransfer: ExistingBalancesAsyncTransfer = {
     freeBalanceClientA: postTransferFreeBalanceClientA,

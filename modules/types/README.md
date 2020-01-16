@@ -1,5 +1,5 @@
-# @connext/store
+# @connext/types
 
-Store module for Connext client
+TypeScript typings for common Connext types
 
 Find documentation at [https://docs.connext.network/](https://docs.connext.network/)

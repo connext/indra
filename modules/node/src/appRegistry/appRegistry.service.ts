@@ -147,6 +147,15 @@ export class AppRegistryService {
       responderDepositTokenAddress,
     } = normalizeEthAddresses(bigNumberifyObj(params));
 
+    const supportedAddresses = await this.configService.getSupportedTokenAddresses();
+    if (!supportedAddresses.includes(initiatorDepositTokenAddress)) {
+      throw new Error(`Unsupported "initiatorDepositTokenAddress" provided`);
+    }
+
+    if (!supportedAddresses.includes(responderDepositTokenAddress)) {
+      throw new Error(`Unsupported "responderDepositTokenAddress" provided`);
+    }
+
     const validSwaps = await this.swapRateService.getValidSwaps();
     if (
       !validSwaps.find(
@@ -192,8 +201,19 @@ export class AppRegistryService {
     const {
       responderDeposit,
       initiatorDeposit,
+      initiatorDepositTokenAddress,
+      responderDepositTokenAddress,
       initialState: initialStateBadType,
     } = bigNumberifyObj(params);
+
+    const supportedAddresses = await this.configService.getSupportedTokenAddresses();
+    if (!supportedAddresses.includes(initiatorDepositTokenAddress)) {
+      throw new Error(`Unsupported "initiatorDepositTokenAddress" provided`);
+    }
+
+    if (!supportedAddresses.includes(responderDepositTokenAddress)) {
+      throw new Error(`Unsupported "responderDepositTokenAddress" provided`);
+    }
 
     const initialState = bigNumberifyObj(
       initialStateBadType,

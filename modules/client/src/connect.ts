@@ -76,6 +76,7 @@ const setupMultisigAddress = async (
 
 export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   const {
+    asyncStorage,
     logLevel,
     ethProviderUrl,
     nodeUrl,
@@ -136,7 +137,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     }
 
     if (!store) {
-      store = new ConnextStore(window.localStorage);
+      store = new ConnextStore(asyncStorage || window.localStorage);
     }
 
     if (mnemonic) {

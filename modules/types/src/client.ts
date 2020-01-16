@@ -44,6 +44,7 @@ import {
   RequestCollateralResponse,
   Transfer,
 } from "./node";
+import { IAsyncStorage } from "./store";
 
 export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
@@ -72,6 +73,7 @@ export interface ClientOptions {
   xpub?: string;
   store?: Store;
   logLevel?: number;
+  asyncStorage?: IAsyncStorage;
 }
 
 export interface IConnextClient {
