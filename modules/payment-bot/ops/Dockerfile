@@ -9,11 +9,9 @@ COPY modules/payment-bot/package.json package.json
 RUN npm install --only=production > /dev/null 2>&1
 
 # https://github.com/moby/moby/issues/37965#issuecomment-426853382
-COPY ops/wait-for.sh wait-for.sh
+COPY ops/wait-for.sh /wait-for.sh
 RUN true
-COPY modules/payment-bot/ops/entry.sh entry.sh
-RUN true
-COPY modules/payment-bot/dist dist
+COPY modules/payment-bot /root
 
 ENTRYPOINT ["bash", "entry.sh"]
 
