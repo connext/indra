@@ -7,7 +7,7 @@ user="$1"
 shift
 args="$@"
 
-echo "Starting payment bot with args: $args"
+#echo "Starting payment bot with args: $args"
 
 identifier=1
 while [ "$1" != "" ]; do
