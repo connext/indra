@@ -1,4 +1,4 @@
-const { EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT: coreContracts } = require(`@connext/types`)
+const { CF_PATH, EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT: coreContracts } = require(`@connext/types`)
 const fs = require('fs')
 const eth = require('ethers')
 const tokenArtifacts = require('openzeppelin-solidity/build/contracts/ERC20Mintable.json')
@@ -32,20 +32,12 @@ const { formatEther, parseEther } = eth.utils
 ////////////////////////////////////////
 // Environment Setup
 
-const shouldUpdateProxyFactory = false
 const botMnemonics = [
   'humble sense shrug young vehicle assault destroy cook property average silent travel',
   'roof traffic soul urge tenant credit protect conduct enable animal cinnamon adult',
 ]
-const cfPath = "m/44'/60'/0'/25446/0"
 const ganacheId = 4447
-
-const project = 'indra'
-const cwd = process.cwd()
-const HOME = (cwd.indexOf(project) !== -1)  ?
-  `${cwd.substring(0,cwd.indexOf(project)+project.length)}` :
-  `/root`
-const addressBookPath = `${HOME}/contracts/address-book.json`
+const addressBookPath = `./address-book.json`
 const addressBook = JSON.parse(fs.readFileSync(addressBookPath, 'utf8') || "{}")
 
 // Global scope vars
@@ -185,8 +177,7 @@ const sendGift = async (address, token) => {
     console.log(`\nPreparing to migrate contracts to ${net} network (${chainId})`)
     console.log(`Deployer Wallet: address=${wallet.address} nonce=${nonce} balance=${balance}`)
   } else {
-    console.error(`Given network (${net}) doesn't match the network ID from provider: ${chainId}`)
-    process.exit(1)
+    console.error(`Warning: given network (${net}) doesn't match the network ID from provider: ${chainId}`)
   }
 
   ////////////////////////////////////////
@@ -212,17 +203,20 @@ const sendGift = async (address, token) => {
 
   if (chainId === ganacheId) {
     await sendGift(eth.Wallet.fromMnemonic(mnemonic).address, token)
-    await sendGift(eth.Wallet.fromMnemonic(mnemonic, cfPath).address, token)
+    await sendGift(eth.Wallet.fromMnemonic(mnemonic, `${CF_PATH}/0`).address, token)
     for (const botMnemonic of botMnemonics) {
       await sendGift(eth.Wallet.fromMnemonic(botMnemonic).address, token)
-      await sendGift(eth.Wallet.fromMnemonic(botMnemonic, cfPath).address, token)
+      await sendGift(eth.Wallet.fromMnemonic(botMnemonic, `${CF_PATH}/0`).address, token)
     }
   }
 
   ////////////////////////////////////////
   // Take a snapshot of this state
-  const snapshotId = await provider.send("evm_snapshot", [])
-  console.log(`Took an EVM snapshot, id: ${snapshotId}`);
+
+  if (chainId === ganacheId) {
+    const snapshotId = await provider.send("evm_snapshot", [])
+    console.log(`Took an EVM snapshot, id: ${snapshotId}`);
+  }
 
   ////////////////////////////////////////
   // Print summary

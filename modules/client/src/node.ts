@@ -26,7 +26,7 @@ import {
 import { invalidXpub } from "./validation";
 
 // Include our access token when interacting with these subjects
-const guardedSubjects = ["channel", "lock", "transfer"];
+const guardedSubjects = ["channel", "client", "lock", "transfer"];
 const sendFailed = "Failed to send message";
 
 // NOTE: swap rates are given as a decimal string describing:

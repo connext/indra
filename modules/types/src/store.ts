@@ -1,6 +1,4 @@
-import { ethers } from "ethers";
-
-import { IPisaClient } from "./pisaClient";
+import { StorePair } from "./channelProvider";
 
 export type InitCallback = (data: AsyncStorageData) => void;
 
@@ -9,10 +7,10 @@ export interface AsyncStorageData {
 }
 
 export interface StoreFactoryOptions {
-  pisaClient?: IPisaClient | null;
   prefix?: string;
   separator?: string;
-  wallet?: ethers.Wallet | null;
+  asyncStorageKey?: string;
+  backupService?: IBackupServiceAPI | null;
 }
 
 export interface StorageWrapper {
@@ -28,4 +26,9 @@ export interface IAsyncStorage {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
   removeItem(key: string): Promise<void>;
+}
+
+export interface IBackupServiceAPI {
+  restore(): Promise<any[]>;
+  backup(pair: StorePair): Promise<void>;
 }

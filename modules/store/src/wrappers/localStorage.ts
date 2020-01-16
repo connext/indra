@@ -1,6 +1,6 @@
-import { StorageWrapper } from "./types";
+import { StorageWrapper } from "../helpers";
 
-class LocalStorageWrapper implements StorageWrapper {
+export class LocalStorageWrapper implements StorageWrapper {
   private localStorage: Storage;
 
   constructor(localStorage: Storage) {
