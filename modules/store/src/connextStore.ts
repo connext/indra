@@ -1,6 +1,7 @@
 import {
   DEFAULT_STORE_PREFIX,
   DEFAULT_STORE_SEPARATOR,
+  IAsyncStorage,
   IBackupServiceAPI,
   PATH_CHANNEL,
   PATH_PROPOSED_APP_INSTANCE_ID,
@@ -16,7 +17,7 @@ export class ConnextStore {
   private separator: string = DEFAULT_STORE_SEPARATOR;
   private backupService: IBackupServiceAPI | null = null;
 
-  constructor(storage: any, opts?: StoreFactoryOptions) {
+  constructor(storage: Storage | IAsyncStorage, opts?: StoreFactoryOptions) {
     let asyncStorageKey;
 
     if (opts) {

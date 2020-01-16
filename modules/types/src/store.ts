@@ -32,3 +32,8 @@ export interface IBackupServiceAPI {
   restore(): Promise<any[]>;
   backup(pair: StorePair): Promise<void>;
 }
+
+export interface FileStorageOptions {
+  fileExt?: string;
+  fileDir?: string;
+}
