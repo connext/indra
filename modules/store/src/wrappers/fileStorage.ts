@@ -1,4 +1,5 @@
 import path from "path";
+import uuid from "uuid";
 
 import {
   DEFAULT_FILE_STORAGE_DIR,
@@ -13,6 +14,7 @@ import {
 } from "../helpers";
 
 export class FileStorage implements IAsyncStorage {
+  private uuid: string;
   private fileExt: string = DEFAULT_FILE_STORAGE_EXT;
   private fileDir: string = DEFAULT_FILE_STORAGE_DIR;
 
@@ -28,10 +30,12 @@ export class FileStorage implements IAsyncStorage {
         throw new Error(`Provided fileExt (${this.fileExt}) is invalid`);
       }
     }
+
+    this.uuid = uuid.v1();
   }
 
   getFilePath(key: string): string {
-    const fileName = `${key}${this.fileExt}`;
+    const fileName = `${key}-${this.uuid}${this.fileExt}`;
     return path.join(this.fileDir, fileName);
   }
 
