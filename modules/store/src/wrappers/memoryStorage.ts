@@ -1,6 +1,7 @@
-import { EMPTY_STRINGIFIED_DATA, IAsyncStorage } from "../helpers";
+import { IAsyncStorage } from "../helpers";
 
 export class MemoryStorage implements IAsyncStorage {
+  private readonly store: Map<string, any> = new Map();
   private delay: number;
 
   constructor(delay: number = 0) {
@@ -13,13 +14,18 @@ export class MemoryStorage implements IAsyncStorage {
 
   async getItem(key: string): Promise<string | null> {
     await this.handleDelay();
-    return EMPTY_STRINGIFIED_DATA;
+    if (this.store.has(key)) {
+      return this.store.get(key);
+    }
+    return null;
   }
   async setItem(key: string, data: any): Promise<void> {
     await this.handleDelay();
+    this.store.set(key, data);
   }
 
   async removeItem(key: string): Promise<void> {
     await this.handleDelay();
+    this.store.delete(key);
   }
 }
