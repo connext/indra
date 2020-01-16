@@ -5,6 +5,7 @@ export {
   IBackupServiceAPI,
   IPisaClient,
   InitCallback,
+  FileStorageOptions,
   StorePair,
   StorageWrapper,
   StoreFactoryOptions,
