@@ -4,15 +4,16 @@ import {
   StateChannelJSON,
   StorePair,
 } from "@connext/types";
+import { ConnextStore } from "@connext/store";
 import { AddressZero } from "ethers/constants";
 
 import { expect } from "../util";
-import { createClient, ETH_AMOUNT_SM, getStore, MemoryStoreService } from "../util";
+import { createClient, ETH_AMOUNT_SM, getStore } from "../util";
 
 describe("Get State Channel", () => {
   let clientA: IConnextClient;
   let tokenAddress: string;
-  let store: MemoryStoreService;
+  let store: ConnextStore;
 
   beforeEach(async () => {
     clientA = await createClient();
