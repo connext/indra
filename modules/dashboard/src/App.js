@@ -54,7 +54,7 @@ const env = {
   urlPrefix: process.env.PUBLIC_URL || "",
 };
 
-// env.nodeUrl = "wss://indra.connext.network/api/messaging";
+env.nodeUrl = "wss://staging.indra.connext.network/api/messaging";
 // env.adminToken = "foo";
 
 const App = () => {
