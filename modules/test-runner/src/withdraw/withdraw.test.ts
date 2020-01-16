@@ -71,7 +71,7 @@ describe("Withdrawal", () => {
     const recipient = "0xabc";
     await expect(
       withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, false, recipient),
-    ).rejects.toThrow(`Value \"${recipient}\" is not a valid eth address`);
+    ).to.be.rejectedWith(`Value \"${recipient}\" is not a valid eth address`);
   });
 
   it("client tries to withdraw with invalid assetId", async () => {
@@ -85,7 +85,7 @@ describe("Withdrawal", () => {
         assetId,
         recipient: Wallet.createRandom().address,
       }),
-    ).rejects.toThrow(`Value \"${assetId}\" is not a valid eth address`);
+    ).to.be.rejectedWith(`Value \"${assetId}\" is not a valid eth address`);
   });
 
   // FIXME: may have race condition! saw intermittent failures, tough to
