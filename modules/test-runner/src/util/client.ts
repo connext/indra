@@ -1,4 +1,5 @@
 import { connect } from "@connext/client";
+import { ConnextStore, MemoryStorage } from "@connext/store";
 import { ClientOptions, IChannelProvider, IConnextClient } from "@connext/types";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
@@ -7,18 +8,18 @@ import tokenAbi from "human-standard-token-abi";
 import { ETH_AMOUNT_MD, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
 import { ethWallet } from "./ethprovider";
-import { MemoryStoreService, MemoryStoreServiceFactory } from "./store";
 
-let clientStore: MemoryStoreService;
+let clientStore: ConnextStore;
 
-export const getStore = (): MemoryStoreService => {
+export const getStore = (): ConnextStore => {
   return clientStore;
 };
 
 export const createClient = async (opts?: Partial<ClientOptions>): Promise<IConnextClient> => {
-  const storeServiceFactory = new MemoryStoreServiceFactory();
+  const memoryStorage = new MemoryStorage();
 
-  clientStore = storeServiceFactory.createStoreService();
+  clientStore = new ConnextStore(memoryStorage);
+
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
     logLevel: env.logLevel,

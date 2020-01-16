@@ -1,4 +1,3 @@
-
 // export from helpers dir
 export * from "./helpers/asyncTransferAsset";
 export * from "./helpers/fundChannel";
@@ -15,5 +14,4 @@ export * from "./constants";
 export * from "./db";
 export * from "./env";
 export * from "./ethprovider";
-export * from "./store";
 export * from "./types";
