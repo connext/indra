@@ -1,10 +1,9 @@
 import fs from "fs";
 
-import { safeJsonStringify } from "./utils";
+import { EMPTY_STRINGIFIED_DATA } from "./constants";
 
-const FILE_EXISTS = 1;
-const FILE_DOESNT_EXIST = 0;
-const EMPTY_JSON = {};
+export const FILE_EXISTS = 1;
+export const FILE_DOESNT_EXIST = 0;
 
 export function fsRead(path: string): Promise<any> {
   return new Promise((resolve, reject) => {
@@ -71,7 +70,7 @@ export function checkFile(path: string): Promise<number> {
 export async function safeFsRead(path: string): Promise<any> {
   const check = await checkFile(path);
   if (check === FILE_DOESNT_EXIST) {
-    const data = safeJsonStringify(EMPTY_JSON);
+    const data = EMPTY_STRINGIFIED_DATA;
     await fsWrite(path, data);
     return data;
   }
