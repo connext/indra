@@ -6,6 +6,7 @@ mode="${TEST_MODE:-local}"
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | jq .name | tr -d '"'`"
 name="${project}_test_runner"
+registry="connextproject"
 commit="`git rev-parse HEAD | head -c 8`"
 release="`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 
@@ -31,9 +32,9 @@ then
     ${project}_builder -c "cd modules/test-runner && bash ops/entry.sh $@"
 
 elif [[ "$mode" == "release" ]]
-then image=$name:$release;
+then image=$registry/$name:$release;
 elif [[ "$mode" == "staging" ]]
-then image=$name:$commit;
+then image=$registry/$name:$commit;
 elif [[ -n "`docker image ls -q $name:$1`" ]]
 then image=$name:$1; shift # rm $1 from $@
 elif [[ -z "$1" || -z "`docker image ls -q $name:$1`" ]]
