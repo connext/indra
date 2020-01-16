@@ -1,5 +1,5 @@
 import * as connext from "@connext/client";
-import { ConnextStore } from "@connext/store";
+import { ConnextStore, PisaClientBackupAPI } from "@connext/store";
 import { CF_PATH, ConnextClientStorePrefix } from "@connext/types";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
@@ -222,13 +222,14 @@ class App extends React.Component {
       const pisaUrl = urls.pisaUrl(network.chainId);
       if (pisaUrl) {
         console.log(`Using external state backup service: ${pisaUrl}`);
-        store = new ConnextStore(window.localStorage, {
+        const backupService = new PisaClientBackupAPI({
           wallet,
           pisaClient: new PisaClient(
             pisaUrl,
             "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3", // TODO: Don't hardcode
           ),
         });
+        store = new ConnextStore(window.localStorage, { backupService });
       } else {
         store = new ConnextStore(window.localStorage);
       }
