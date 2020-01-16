@@ -26,13 +26,18 @@ bash ops/wait-for.sh $INDRA_PG_HOST:$INDRA_PG_PORT
 bash ops/wait-for.sh ${INDRA_ETH_RPC_URL#*://}
 bash ops/wait-for.sh ${INDRA_NODE_URL#*://}
 
+bundle=dist/tests.bundle.js
+
+if [[ ! -f $bundle ]]
+then webpack --config ops/webpack.config.js
+fi
+
 if [[ $1 == "--watch" ]]
 then
-  webpack --config ops/webpack.config.js
   webpack --watch --config ops/webpack.config.js &
   sleep 5 # give webpack a sec to finish the first watch-mode build
-  mocha --watch --timeout 30000 dist/tests.bundle.js
+  mocha --watch --timeout 30000 $bundle
 else
-  mocha --exit --timeout 30000 dist/tests.bundle.js
+  mocha --exit --timeout 30000 $bundle
 fi
 
