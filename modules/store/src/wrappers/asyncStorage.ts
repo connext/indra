@@ -1,6 +1,6 @@
 import {
   AsyncStorageData,
-  DEFAULT_REACT_NATIVE_STORE,
+  DEFAULT_ASYNC_STORAGE_KEY,
   IAsyncStorage,
   InitCallback,
   safeJsonParse,
@@ -10,13 +10,14 @@ import {
 
 export class AsyncStorageWrapper implements StorageWrapper {
   private asyncStorage: IAsyncStorage;
-  private asyncStorageKey: string = DEFAULT_REACT_NATIVE_STORE;
+  private asyncStorageKey: string = DEFAULT_ASYNC_STORAGE_KEY;
   private data: AsyncStorageData = {};
   private initializing: boolean = false;
   private initCallbacks: InitCallback[] = [];
 
-  constructor(asyncStorage: IAsyncStorage) {
+  constructor(asyncStorage: IAsyncStorage, asyncStorageKey?: string) {
     this.asyncStorage = asyncStorage;
+    this.asyncStorageKey = asyncStorageKey || DEFAULT_ASYNC_STORAGE_KEY;
     this.loadData();
   }
 
