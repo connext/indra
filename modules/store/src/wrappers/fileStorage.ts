@@ -25,7 +25,7 @@ export class FileStorage implements IAsyncStorage {
         throw new Error(`Provided fileDir (${this.fileDir}) is not a directory`);
       }
 
-      this.fileExt = sanitizeExt(opts.fileExt) || DEFAULT_FILE_STORAGE_EXT;
+      this.fileExt = opts.fileExt ? sanitizeExt(opts.fileExt) : DEFAULT_FILE_STORAGE_EXT;
       if (!this.fileExt.trim()) {
         throw new Error(`Provided fileExt (${this.fileExt}) is invalid`);
       }
