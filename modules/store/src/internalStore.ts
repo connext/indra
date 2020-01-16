@@ -1,12 +1,12 @@
-import { StorageWrapper } from "./types";
-import { safeJsonParse, safeJsonStringify, wrapStorage } from "./utils";
+import { StorageWrapper } from "./helpers/types";
+import { safeJsonParse, safeJsonStringify, wrapStorage } from "./helpers/utils";
 
 class InternalStore {
   private _store: StorageWrapper; // tslint:disable-line:variable-name
   private _channelPrefix: string; // tslint:disable-line:variable-name
 
-  constructor(storage: any, channelPrefix: string) {
-    this._store = wrapStorage(storage);
+  constructor(storage: any, channelPrefix: string, asyncStorageKey?: string) {
+    this._store = wrapStorage(storage, asyncStorageKey);
     this._channelPrefix = channelPrefix;
   }
 

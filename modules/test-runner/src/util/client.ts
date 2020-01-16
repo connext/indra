@@ -1,5 +1,6 @@
 import { connect } from "@connext/client";
 import { ClientOptions, IChannelProvider, IConnextClient } from "@connext/types";
+import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
 
@@ -38,8 +39,8 @@ export const createClient = async (opts?: Partial<ClientOptions>): Promise<IConn
 
   await Promise.all([ethTx.wait(), tokenTx.wait()]);
 
-  expect(client.freeBalanceAddress).toBeTruthy();
-  expect(client.publicIdentifier).toBeTruthy();
+  expect(client.freeBalanceAddress).to.be.ok;
+  expect(client.publicIdentifier).to.be.ok;
 
   return client;
 };
@@ -55,8 +56,8 @@ export const createRemoteClient = async (
 
   const client = await connect(clientOpts);
 
-  expect(client.freeBalanceAddress).toBeTruthy();
-  expect(client.publicIdentifier).toBeTruthy();
+  expect(client.freeBalanceAddress).to.be.ok;
+  expect(client.publicIdentifier).to.be.ok;
 
   return client;
 };

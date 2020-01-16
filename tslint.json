@@ -32,7 +32,7 @@
     "no-this-assignment": [true, {"allow-destructuring": true}],
     "no-trailing-whitespace": [true],
     "no-unused-variable": true,
-    "object-literal-sort-keys": [true, "ignore-case"],
+    "object-literal-sort-keys": false,
     "object-shorthand-properties-first": false,
     "only-arrow-functions": false,
     "ordered-imports": [true, { "grouped-imports": true }],

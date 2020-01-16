@@ -1,8 +1,9 @@
 import { utils } from "ethers";
 
-import AsyncStorageWrapper from "./asyncStorage";
-import LocalStorageWrapper from "./localStorage";
+import { AsyncStorageWrapper, LocalStorageWrapper } from "../wrappers";
+
 import { StorageWrapper } from "./types";
+import { IAsyncStorage } from "@connext/types";
 
 export function arrayify(value: string | ArrayLike<number> | utils.Hexable): Uint8Array {
   return utils.arrayify(value);
@@ -51,16 +52,21 @@ export function isAsyncStorage(storage: any): boolean {
   return result;
 }
 
-export function wrapAsyncStorage(asyncStorage: any): StorageWrapper {
-  const storage: StorageWrapper = new AsyncStorageWrapper(asyncStorage);
+export function wrapAsyncStorage(
+  asyncStorage: IAsyncStorage,
+  asyncStorageKey?: string,
+): StorageWrapper {
+  const storage: StorageWrapper = new AsyncStorageWrapper(asyncStorage, asyncStorageKey);
   return storage;
 }
 
-export function wrapLocalStorage(localStorage: any): StorageWrapper {
+export function wrapLocalStorage(localStorage: Storage): StorageWrapper {
   const storage: StorageWrapper = new LocalStorageWrapper(localStorage);
   return storage;
 }
 
-export function wrapStorage(storage: any): StorageWrapper {
-  return isAsyncStorage(storage) ? wrapAsyncStorage(storage) : wrapLocalStorage(storage);
+export function wrapStorage(storage: any, asyncStorageKey?: string): StorageWrapper {
+  return isAsyncStorage(storage)
+    ? wrapAsyncStorage(storage, asyncStorageKey)
+    : wrapLocalStorage(storage);
 }
