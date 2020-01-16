@@ -4,6 +4,7 @@ import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
 
+import { expect } from "../assertions";
 import { ethProvider } from "../ethprovider";
 
 const { xpubToAddress } = utils;
@@ -37,7 +38,7 @@ export const requestDepositRights = async (
       (a: AppInstanceJson, b: AppInstanceJson) => b.appSeqNo - a.appSeqNo,
     )[0];
     // make sure its the coin balance refund app
-    expect(latestApp.appInterface.addr).toEqual(appDefinition);
+    expect(latestApp.appInterface.addr).to.be.eq(appDefinition);
     coinBalanceAppState = latestApp.latestState as CoinBalanceRefundAppState;
   } else {
     // node is installing, params must be manually generated
@@ -70,10 +71,10 @@ export const requestDepositRights = async (
     coinBalanceAppState = appInstance.latestState as CoinBalanceRefundAppState;
   }
   // verify the latest coin balance state is correct
-  expect(coinBalanceAppState.multisig).toEqual(client.multisigAddress);
-  expect(coinBalanceAppState.recipient).toEqual(
+  expect(coinBalanceAppState.multisig).to.be.eq(client.multisigAddress);
+  expect(coinBalanceAppState.recipient).to.be.eq(
     clientIsRecipient ? client.freeBalanceAddress : xpubToAddress(client.nodePublicIdentifier),
   );
-  expect(coinBalanceAppState.tokenAddress).toEqual(assetId);
-  expect(coinBalanceAppState.threshold).toBeBigNumberEq(multisigBalance);
+  expect(coinBalanceAppState.tokenAddress).to.be.eq(assetId);
+  expect(coinBalanceAppState.threshold.toString()).to.be.eq(multisigBalance.toString());
 };

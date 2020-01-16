@@ -1,4 +1,4 @@
-import { providers, Contract } from "ethers";
+import { Contract, providers } from "ethers";
 import { BigNumber, Network } from "ethers/utils";
 
 import {
@@ -44,6 +44,7 @@ import {
   RequestCollateralResponse,
   Transfer,
 } from "./node";
+import { IAsyncStorage } from "./store";
 
 export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
@@ -72,6 +73,7 @@ export interface ClientOptions {
   xpub?: string;
   store?: Store;
   logLevel?: number;
+  asyncStorage?: IAsyncStorage;
 }
 
 export interface IConnextClient {
@@ -89,7 +91,6 @@ export interface IConnextClient {
   ////////////////////////////////////////
   // Methods
 
-  isAvailable: () => Promise<void>;
   restart(): Promise<void>;
 
   ///////////////////////////////////

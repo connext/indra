@@ -54,7 +54,7 @@ pg_user="$project"
 builder_image="${project}_builder"
 ui_image="$builder_image"
 database_image="postgres:9-alpine"
-ethprovider_image="${project}_ethprovider"
+ethprovider_image="$builder_image"
 nats_image="nats:2.0.0-linux"
 node_image="$builder_image"
 proxy_image="${project}_proxy"
@@ -202,6 +202,7 @@ services:
 
   ethprovider:
     image: $ethprovider_image
+    entrypoint: bash modules/contracts/ops/entry.sh
     command: "start"
     environment:
       ETH_MNEMONIC: $eth_mnemonic
@@ -210,6 +211,7 @@ services:
     ports:
       - "8545:8545"
     volumes:
+      - `pwd`:/root
       - chain_dev:/data
 
   database:

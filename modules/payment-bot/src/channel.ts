@@ -1,14 +1,14 @@
 import * as connext from "@connext/client";
-import { ClientOptions, IConnextClient, makeChecksum } from "@connext/types";
+import { ConnextStore, FileStorage } from "@connext/store";
+import { ClientOptions, IConnextClient, IBackupServiceAPI } from "@connext/types";
 import { AddressZero } from "ethers/constants";
-import { parseEther } from "ethers/utils";
 
 import { config } from "./config";
-import { Store } from "./store";
 import { logEthFreeBalance } from "./utils";
 
 export const getOrCreateChannel = async (): Promise<IConnextClient> => {
-  const store = new Store();
+  const fileStorage = new FileStorage({ fileDir: config.storeDir });
+  const store = new ConnextStore(fileStorage);
 
   const connextOpts: ClientOptions = {
     ethProviderUrl: config.ethProviderUrl,
@@ -18,7 +18,6 @@ export const getOrCreateChannel = async (): Promise<IConnextClient> => {
     store,
   };
   const client = await connext.connect(connextOpts);
-  await client.isAvailable();
   const nodeFBAddress = connext.utils.xpubToAddress(client.nodePublicIdentifier);
   console.log("Payment bot launched:");
   console.log(` - mnemonic: ${connextOpts.mnemonic}`);

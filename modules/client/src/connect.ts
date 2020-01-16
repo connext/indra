@@ -1,4 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
+import { ConnextStore } from "@connext/store";
 import { CF_PATH } from "@connext/types";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
@@ -75,14 +76,14 @@ const setupMultisigAddress = async (
 
 export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   const {
+    asyncStorage,
     logLevel,
     ethProviderUrl,
     nodeUrl,
-    store,
     mnemonic,
     channelProvider: providedChannelProvider,
   } = opts;
-  let { xpub, keyGen } = opts;
+  let { xpub, keyGen, store } = opts;
 
   const log = new Logger("ConnextConnect", logLevel);
 
@@ -131,12 +132,12 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
 
     isInjected = true;
   } else if (mnemonic || (xpub && keyGen)) {
-    if (!store) {
-      throw new Error("Client must be instantiated with store if not using a channelProvider");
-    }
-
     if (!nodeUrl) {
       throw new Error("Client must be instantiated with nodeUrl if not using a channelProvider");
+    }
+
+    if (!store) {
+      store = new ConnextStore(asyncStorage || window.localStorage);
     }
 
     if (mnemonic) {
@@ -221,6 +222,21 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     return client;
   }
 
+  // waits until the setup protocol or create channel call is completed
+  await new Promise(
+    async (resolve: any, reject: any): Promise<any> => {
+      // Wait for channel to be available
+      const channelIsAvailable = async (): Promise<boolean> => {
+        const chan = await node.getChannel();
+        return chan && chan.available;
+      };
+      while (!(await channelIsAvailable())) {
+        await new Promise((res: any): any => setTimeout((): void => res(), 100));
+      }
+      resolve();
+    },
+  );
+
   try {
     await client.getFreeBalance();
   } catch (e) {
@@ -233,7 +249,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     }
   }
 
-  // 12/11/2019 make sure state is restored if there is no state channel
+  // 12/11/2019 make sure state is restored if there is no proxy factory in the state
   const { data: sc } = await client.getStateChannel();
   if (!sc.proxyFactoryAddress) {
     log.debug(`No proxy factory address found, restoring client state`);

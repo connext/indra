@@ -3,11 +3,15 @@ set -e
 
 echo "Ethprovider entrypoint activated!"
 
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/.."
+ganache="$dir/node_modules/.bin/ganache-cli"
+
+mkdir -p /data
+
 if [[ "$1" == "start" ]]
 then
   echo "Starting Ganache.."
-  mkdir -p /data
-  exec ganache-cli \
+  exec $ganache \
     --db="/data" \
     --gasPrice="10000000000" \
     --host="0.0.0.0" \
@@ -21,8 +25,7 @@ then
   if [[ "$ETH_NETWORK" == "ganache" ]]
   then
     echo "Starting Ganache.."
-    mkdir -p /data
-    ganache-cli \
+    $ganache \
       --db="/data" \
       --gasPrice="10000000000" \
       --host="0.0.0.0" \
@@ -30,11 +33,11 @@ then
       --networkId="4447" \
       --port="8545" \
       --defaultBalanceEther="1000000000" \
-       > ganache.log &
-    bash wait-for.sh localhost:8545
+       > $dir/.ganache.log &
+    bash /wait-for.sh localhost:8545
   fi
-  touch contracts/address-book.json
-  node contracts/ops/migrate-contracts.js
+  touch $dir/address-book.json
+  node $dir/ops/migrate-contracts.js
 else
   echo "Exiting. No command given, expected: start or deploy"
 fi

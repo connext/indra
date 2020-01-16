@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/ConnextProject/indra/tree/master.svg?style=shield)](https://circleci.com/gh/ConnextProject/indra/tree/master)
+[![](https://github.com/ConnextProject/indra/workflows/CD%20Master/badge.svg)](https://github.com/ConnextProject/indra/actions)
 [![Discord](https://img.shields.io/discord/454734546869551114)](https://discord.gg/m93Sqf4)
 [![Twitter Follow](https://img.shields.io/twitter/follow/ConnextNetwork?style=social)](https://twitter.com/ConnextNetwork)
 

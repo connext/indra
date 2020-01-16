@@ -1,11 +1,15 @@
 {
   "name": "@connext/messaging",
-  "version": "1.5.0",
+  "description": "Messaging module for Connext client",
+  "version": "3.0.0",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
   "types": "dist/index.d.ts",
   "license": "MIT",
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
     "build": "tsc -p . && rollup -c",
     "build:watch": "tsc -p . && rollup -c -w",
@@ -14,7 +18,7 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "@connext/types": "1.5.0",
+    "@connext/types": "3.0.0",
     "ts-nats": "1.2.4",
     "websocket-nats": "0.3.3"
   },
