@@ -31,19 +31,13 @@ then
     --tty \
     ${project}_builder -c "cd modules/test-runner && bash ops/entry.sh $@"
 
+elif [[ -n "`docker image ls -q $name:$1`" ]]
+then image=$name:$1; shift # rm $1 from $@
 elif [[ "$mode" == "release" ]]
 then image=$registry/$name:$release;
 elif [[ "$mode" == "staging" ]]
 then image=$registry/$name:$commit;
-elif [[ -n "`docker image ls -q $name:$1`" ]]
-then image=$name:$1; shift # rm $1 from $@
-elif [[ -z "$1" || -z "`docker image ls -q $name:$1`" ]]
-then
-  if [[ -n "`docker image ls -q $name:$commit`" ]]
-  then image=$name:$commit
-  else image=$name:latest
-  fi
-else echo "Aborting: couldn't find an image to run for input: $1" && exit 1
+else echo "Aborting: couldn't find a $mode-mode image to run for input: $1" && exit 1
 fi
 
 echo "Executing image $image"

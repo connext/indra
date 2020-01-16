@@ -84,7 +84,7 @@ jobs:
     - run: make pull-commit
     - run: make start-test-staging
     - run: sleep 15 && make dls
-    - run: TEST_MODE=staging make test-backwards-compatibility
+    - run: make test-backwards-compatibility
 
   test-bot:
     runs-on: ubuntu-latest
