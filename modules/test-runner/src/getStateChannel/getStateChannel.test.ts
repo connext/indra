@@ -1,14 +1,13 @@
+import { ConnextStore } from "@connext/store";
 import {
   ConnextClientStorePrefix,
   IConnextClient,
   StateChannelJSON,
   StorePair,
 } from "@connext/types";
-import { ConnextStore } from "@connext/store";
 import { AddressZero } from "ethers/constants";
 
-import { expect } from "../util";
-import { createClient, ETH_AMOUNT_SM, getStore } from "../util";
+import { createClient, ETH_AMOUNT_SM, expect, getStore } from "../util";
 
 describe("Get State Channel", () => {
   let clientA: IConnextClient;
