@@ -1,10 +1,20 @@
-export {};
+import { BigNumber } from "ethers/utils";
 
 declare global {
-  namespace jest {
-    interface Matchers<R, T> {
-      toBeBigNumberEq(equalTo: BigNumberish): R;
-      toBeBigNumberGte(greaterThanOrEqualTo: BigNumberish): R;
+  namespace Chai {
+    interface Assertion {
+      bignumber(bignumber: BigNumber): void
+    }
+
+    interface TypeComparison {
+      bignumber: {
+        that: {
+          equals(num: string|BigNumber): Equal,
+          greaterThan(num: string|BigNumber): NumberComparer,
+          lessThan(num: string|BigNumber): NumberComparer,
+          zero: Equal
+        }
+      }
     }
   }
 }

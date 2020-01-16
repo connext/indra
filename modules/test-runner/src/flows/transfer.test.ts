@@ -3,7 +3,7 @@ import { IConnextClient } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
 import { bigNumberify } from "ethers/utils";
 
-import { createClient, fundChannel } from "../util";
+import { createClient, fundChannel, requestCollateral } from "../util";
 import { asyncTransferAsset } from "../util/helpers/asyncTransferAsset";
 
 describe("Full Flow: Transfer", () => {
@@ -19,13 +19,17 @@ describe("Full Flow: Transfer", () => {
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
   });
 
-  test.only("User transfers to multiple clients", async () => {
+  it.only("User transfers to multiple clients", async () => {
     const clientB = await createClient();
     const clientC = await createClient();
     const clientD = await createClient();
     const clientE = await createClient();
 
+    // fund sender
     await fundChannel(clientA, bigNumberify(4), AddressZero);
+
+    // collateralize recipients
+    await requestCollateral(clientB, AddressZero);
 
     await asyncTransferAsset(clientA, clientB, One, AddressZero, nodeFreeBalanceAddress);
     // await asyncTransferAsset(clientA, clientC, One, AddressZero, nodeFreeBalanceAddress);

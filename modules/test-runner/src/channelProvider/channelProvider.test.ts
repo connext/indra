@@ -4,13 +4,13 @@ import { AddressZero, One } from "ethers/constants";
 import { Client } from "ts-nats";
 
 import {
-  expect,
   AssetOptions,
   // asyncTransferAsset,
   createChannelProvider,
   createClient,
   createRemoteClient,
   ETH_AMOUNT_SM,
+  expect,
   fundChannel,
   swapAsset,
   TOKEN_AMOUNT,
