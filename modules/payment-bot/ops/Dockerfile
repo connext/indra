@@ -13,5 +13,4 @@ COPY ops/wait-for.sh /wait-for.sh
 RUN true
 COPY modules/payment-bot /root
 
-ENTRYPOINT ["bash", "entry.sh"]
-
+ENTRYPOINT ["bash", "ops/entry.sh"]

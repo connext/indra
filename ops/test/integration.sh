@@ -16,8 +16,13 @@ then interactive="--interactive --tty"
 else echo "Running in non-interactive mode"
 fi
 
-if [[ "$mode" == "local" ]]
-then
+if [[ -n "`docker image ls -q $name:$1`" ]]
+then image=$name:$1; shift # rm $1 from $@
+elif [[ "$mode" == "release" ]]
+then image=$registry/$name:$release;
+elif [[ "$mode" == "staging" ]]
+then image=$registry/$name:$commit;
+else
 
   exec docker run \
     --entrypoint="bash" \
@@ -30,14 +35,6 @@ then
     --mount="type=bind,source=`pwd`,target=/root" \
     --rm \
     ${project}_builder -c "cd modules/test-runner && bash ops/entry.sh $@"
-
-elif [[ -n "`docker image ls -q $name:$1`" ]]
-then image=$name:$1; shift # rm $1 from $@
-elif [[ "$mode" == "release" ]]
-then image=$registry/$name:$release;
-elif [[ "$mode" == "staging" ]]
-then image=$registry/$name:$commit;
-else echo "Aborting: couldn't find a $mode-mode image to run for input: $1" && exit 1
 fi
 
 echo "Executing image $image"
