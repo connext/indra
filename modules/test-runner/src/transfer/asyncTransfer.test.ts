@@ -86,7 +86,8 @@ describe("Async Transfers", () => {
     // because it will not be able to fetch the free balance of the assetId
   });
 
-  it("Bot A tries to transfer with an unsupported (but not invalid) token address", async () => {
+  // TODO: Fix race condition in this one
+  it.skip("Bot A transfers w a valid, unsupported token address", async () => {
     // deploy a token
     const factory = ContractFactory.fromSolidity(tokenArtifacts);
     const token = await factory
