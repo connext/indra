@@ -1,18 +1,25 @@
 import { IConnextClient } from "@connext/types";
 
-import { CREATE_INITIATOR_COUNT, CREATE_RESPONDER_COUNT, expect } from "../util";
-import { createClient, getMessaging } from "../util/client";
+import {
+  expect,
+  getMessaging,
+  SETUP_RESPONDER_RECEIVED_COUNT,
+  SETUP_RESPONDER_SENT_COUNT,
+} from "../util";
+import { createClient } from "../util/client";
 
 describe("Create Channel", () => {
-  beforeEach(async () => {});
-
   it("Happy case: user creates channel with node and is given multisig address", async () => {
     const clientA: IConnextClient = await createClient();
     expect(clientA.multisigAddress).to.be.ok;
     // verify messaging worked
     const messaging = getMessaging();
-    expect(messaging.count.sent.toString()).to.be.equal(CREATE_RESPONDER_COUNT);
-    expect(messaging.count.received.toString()).to.be.equal(CREATE_INITIATOR_COUNT);
+    expect(messaging.count.sent).to.be.gte(SETUP_RESPONDER_SENT_COUNT);
+    expect(messaging.count.received).to.be.gte(SETUP_RESPONDER_RECEIVED_COUNT);
+    expect(messaging.setup.received).to.be.equal(SETUP_RESPONDER_RECEIVED_COUNT);
+    expect(messaging.setup.sent).to.be.equal(SETUP_RESPONDER_SENT_COUNT);
+    expect(messaging.installVirtual.received).to.be.equal(0);
+    expect(messaging.installVirtual.sent).to.be.equal(0);
   });
 
   it("Creating a channel fails if user xpub and node xpub are the same", async () => {
