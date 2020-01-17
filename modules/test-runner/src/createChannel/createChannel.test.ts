@@ -35,7 +35,8 @@ describe("Create Channel", () => {
     // @ts-ignore
     this.timeout(40_000);
     const messaging = new TestMessagingService();
-    messaging.addCeiling("setup", 0);
+    messaging.addCeiling("any", 0);
+    expect(messaging.count.ceiling).to.be.equal(0);
     await expect(
       createClient({
         messaging,
