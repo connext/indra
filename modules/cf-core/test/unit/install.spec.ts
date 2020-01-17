@@ -1,3 +1,4 @@
+import { MemoryStorage } from "@connext/store";
 import {
   EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
   NetworkContext
@@ -11,7 +12,7 @@ import { anything, instance, mock, when } from "ts-mockito";
 import {
   NO_APP_INSTANCE_ID_TO_INSTALL,
   NO_MULTISIG_FOR_APP_INSTANCE_ID,
-  NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID,
+  NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID
 } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import {
@@ -41,7 +42,10 @@ describe("Can handle correct & incorrect installs", () => {
   let initiatorIdentifier: string;
 
   beforeAll(() => {
-    store = new Store(new MemoryStoreService(), "install.spec.ts-test-store");
+    store = new Store(
+      new MemoryStoreService(new MemoryStorage()),
+      "install.spec.ts-test-store"
+    );
     protocolRunner = new ProtocolRunner(
       NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES,
       {} as BaseProvider

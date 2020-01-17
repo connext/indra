@@ -1,6 +1,12 @@
 import { BigNumber, BigNumberish } from "ethers/utils";
 
-import { AppABIEncodings, AppInstanceJson, AppInstanceProposal, OutcomeType, StateChannelJSON } from "./data-types";
+import {
+  AppABIEncodings,
+  AppInstanceJson,
+  AppInstanceProposal,
+  OutcomeType,
+  StateChannelJSON,
+} from "./data-types";
 import { SolidityValueType } from "./simple-types";
 
 type JsonRpcProtocolV2 = {
@@ -54,7 +60,7 @@ export namespace CFCoreTypes {
     connect?(host: string, port: string): ServiceFactory;
     auth?(email: string, password: string): Promise<void>;
     createMessagingService?(messagingServiceKey: string): IMessagingService;
-    createStoreService?(storeServiceKey: string): IStoreService;
+    createStoreService?(): IStoreService;
   }
 
   export interface IMessagingService {
@@ -87,21 +93,17 @@ export namespace CFCoreTypes {
    * Centralized locking service (i.e. redis)
    */
   export interface ILockService {
-    acquireLock(
-      lockName: string,
-      callback: (...args: any[]) => any,
-      timeout: number
-    ): Promise<any>;
+    acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;
   }
 
   export enum ErrorType {
-    ERROR = "error"
+    ERROR = "error",
   }
 
   // SOURCE: https://github.com/counterfactual/monorepo/blob/master/packages/cf.js/API_REFERENCE.md#public-methods
   export enum MethodName {
     ACCEPT_STATE = "acceptState",
-    GET_PROPOSED_APP_INSTANCE = "getProposedAppInstance"
+    GET_PROPOSED_APP_INSTANCE = "getProposedAppInstance",
   }
 
   export const RpcMethodNames = {
@@ -113,8 +115,7 @@ export namespace CFCoreTypes {
     chan_getAppInstances: "chan_getAppInstances",
     chan_getStateDepositHolderAddress: "chan_getStateDepositHolderAddress",
     chan_getFreeBalanceState: "chan_getFreeBalanceState",
-    chan_getTokenIndexedFreeBalanceStates:
-      "chan_getTokenIndexedFreeBalanceStates",
+    chan_getTokenIndexedFreeBalanceStates: "chan_getTokenIndexedFreeBalanceStates",
     chan_getProposedAppInstances: "chan_getProposedAppInstances",
     chan_getState: "chan_getState",
     chan_getStateChannel: "chan_getStateChannel",
@@ -129,7 +130,7 @@ export namespace CFCoreTypes {
     chan_uninstallVirtual: "chan_uninstallVirtual",
     chan_rescindDepositRights: "chan_rescindDepositRights",
     chan_withdraw: "chan_withdraw",
-    chan_withdrawCommitment: "chan_withdrawCommitment"
+    chan_withdrawCommitment: "chan_withdrawCommitment",
   };
   export type RpcMethodName = keyof typeof RpcMethodNames;
 
@@ -149,7 +150,7 @@ export namespace CFCoreTypes {
     WITHDRAWAL_FAILED_EVENT: "WITHDRAWAL_FAILED_EVENT",
     WITHDRAWAL_STARTED_EVENT: "WITHDRAWAL_STARTED_EVENT",
     PROPOSE_INSTALL_EVENT: "PROPOSE_INSTALL_EVENT",
-    PROTOCOL_MESSAGE_EVENT: "PROTOCOL_MESSAGE_EVENT"
+    PROTOCOL_MESSAGE_EVENT: "PROTOCOL_MESSAGE_EVENT",
   };
   export type EventName = keyof typeof EventNames;
 

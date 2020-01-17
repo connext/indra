@@ -1,3 +1,4 @@
+import { MemoryStorage } from "@connext/store";
 import { JsonRpcProvider } from "ethers/providers";
 
 import { Node } from "../../src/node";
@@ -12,7 +13,7 @@ describe("Node", () => {
   it("can be created", async () => {
     const node = await Node.create(
       mockMessagingService,
-      new MemoryStoreService(),
+      new MemoryStoreService(new MemoryStorage()),
       global["networkContext"],
       { STORE_KEY_PREFIX: "./node.spec.ts-test-file" },
       new JsonRpcProvider(global["ganacheURL"])

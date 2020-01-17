@@ -71,7 +71,7 @@ export async function setup(
   const lockService = new MemoryLockService();
 
   const hdNodeA = fromExtendedKey(extendedPrvKeyA).derivePath(CF_PATH);
-  const storeServiceA = storeServiceFactory.createStoreService!(`test_${generateUUID()}`);
+  const storeServiceA = storeServiceFactory.createStoreService!();
   const nodeA = await Node.create(
     messagingService,
     storeServiceA,
@@ -89,7 +89,7 @@ export async function setup(
   };
 
   const hdNodeB = fromExtendedKey(extendedPrvKeyB).derivePath(CF_PATH);
-  const storeServiceB = storeServiceFactory.createStoreService!(`test_${generateUUID()}`);
+  const storeServiceB = storeServiceFactory.createStoreService!();
   const nodeB = await Node.create(
     messagingService,
     storeServiceB,
@@ -108,7 +108,7 @@ export async function setup(
   let nodeC: Node;
   if (nodeCPresent) {
     const hdNodeC = fromExtendedKey(C_EXTENDED_PRIVATE_KEY).derivePath(CF_PATH);
-    const storeServiceC = storeServiceFactory.createStoreService!(`test_${generateUUID()}`);
+    const storeServiceC = storeServiceFactory.createStoreService!();
     nodeC = await Node.create(
       messagingService,
       storeServiceC,
