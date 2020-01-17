@@ -15,7 +15,7 @@ type MessageCounter = {
 
 export class TestMessagingService implements IMessagingService {
   private connection: IMessagingService;
-  public count: { sent: number; received: number } = defaultCount();
+  public count: MessageCounter = defaultCount();
   private protocolCount: {
     [protocol: string]: MessageCounter;
   } = {
@@ -87,8 +87,12 @@ export class TestMessagingService implements IMessagingService {
 
   // Set the ceilings of the protocol
   public addCeiling(protocol: string, ceiling: number): void {
-    if (!this.protocolCount[protocol]) {
+    if (!this.protocolCount[protocol] && protocol !== "any") {
       throw new Error(`Incorrect protocol detected: ${protocol}`);
+    }
+    if (protocol === "any") {
+      this.count.ceiling = 0;
+      return;
     }
     this.protocolCount[protocol].ceiling = ceiling;
   }
@@ -100,16 +104,32 @@ export class TestMessagingService implements IMessagingService {
     callback: (msg: CFCoreTypes.NodeMessage) => void,
   ): Promise<void> {
     this.count.received += 1;
+    const ceiling = this.count.ceiling;
+    // tslint:disable-next-line: triple-equals
+    if (ceiling != undefined && this.count.received >= ceiling) {
+      console.log(
+        `Reached ceiling (${ceiling}), refusing to process any more messages. Received ${this.count
+          .received - 1} messages`,
+      );
+      return;
+    }
     return await this.connection.onReceive(subject, (msg: CFCoreTypes.NodeMessage) => {
+      // check if any protocol messages are increased
       const protocol = this.getProtocol(msg);
-      if (!protocol) {
-        console.log(`Could not find protocol corresponding to received message`);
-        return;
+      if (!protocol || !this.protocolCount[protocol]) {
+        // `Could not find protocol corresponding to received message,
+        // proceeding with callback`
+        return callback(msg);
       }
       this.protocolCount[protocol].received += 1;
-      const ceiling = this.protocolCount[protocol].ceiling;
-      if (ceiling && this.protocolCount[protocol].received >= ceiling!) {
-        const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached. ${this.protocolCount[protocol].received} received, ceiling: ${ceiling}`;
+      const protocolCeiling = this.protocolCount[protocol].ceiling;
+      if (
+        // tslint:disable-next-line: triple-equals
+        protocolCeiling != undefined &&
+        this.protocolCount[protocol].received >= protocolCeiling
+      ) {
+        const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached. ${this
+          .protocolCount[protocol].received - 1} received, ceiling: ${protocolCeiling}`;
         console.log(msg);
         return;
       }
@@ -119,16 +139,27 @@ export class TestMessagingService implements IMessagingService {
 
   async send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void> {
     this.count.sent += 1;
-    const protocol = this.getProtocol(msg);
-    if (!protocol) {
-      console.log(`Could not find protocol corresponding to received message`);
+    const ceiling = this.count.ceiling;
+    // tslint:disable-next-line: triple-equals
+    if (ceiling != undefined && this.count.sent >= ceiling) {
+      console.log(
+        `Reached ceiling (${ceiling}), refusing to send any more messages. Sent ${this.count.sent -
+          1} messages`,
+      );
       return;
     }
+    const protocol = this.getProtocol(msg);
+    if (!protocol || !this.protocolCount[protocol]) {
+      // Could not find protocol corresponding to received message,
+      // proceeding with sending
+      return await this.connection.send(to, msg);
+    }
     this.protocolCount[protocol].sent += 1;
-    const ceiling = this.protocolCount[protocol].ceiling;
+    const protocolCeiling = this.protocolCount[protocol].ceiling;
     // tslint:disable-next-line: triple-equals
-    if (ceiling != undefined && this.protocolCount[protocol].sent >= ceiling!) {
-      const msg = `Refusing to send any more messages, ceiling for ${protocol} has been reached. ${this.protocolCount[protocol].sent} sent, ceiling: ${ceiling}`;
+    if (protocolCeiling != undefined && this.protocolCount[protocol].sent >= protocolCeiling) {
+      const msg = `Refusing to send any more messages, ceiling for ${protocol} has been reached. ${this
+        .protocolCount[protocol].sent - 1} sent, ceiling: ${protocolCeiling}`;
       console.log(msg);
       return;
     }
@@ -170,20 +201,12 @@ export class TestMessagingService implements IMessagingService {
   // Private methods
   getProtocol(msg: any): string | undefined {
     if (!msg.data) {
-      console.log(
-        `no .data field found, cannot find protocol of msg: ${JSON.stringify(msg, null, 2)}`,
-      );
+      // no .data field found, cannot find protocol of msg
       return undefined;
     }
     const protocol = msg.data.protocol;
     if (!protocol) {
-      console.log(
-        `no .data.protocol field found, cannot find protocol of msg: ${JSON.stringify(
-          msg,
-          null,
-          2,
-        )}`,
-      );
+      // no .data.protocol field found, cannot find protocol of msg
       return undefined;
     }
 
