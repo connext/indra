@@ -11,7 +11,9 @@ import {
 } from "../util";
 import { asyncTransferAsset } from "../util/helpers/asyncTransferAsset";
 
-describe("Full Flow: Transfer", () => {
+describe("Full Flow: Transfer", function(): void {
+  // @ts-ignore
+  this.timeout(60_000);
   let clientA: IConnextClient;
   let tokenAddress: string;
 
