@@ -4,7 +4,7 @@ import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
-import { expect } from "../assertions";
+import { expect } from "../";
 import { ethProvider } from "../ethprovider";
 
 export const withdrawFromChannel = async (

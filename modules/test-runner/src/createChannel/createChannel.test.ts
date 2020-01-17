@@ -1,7 +1,6 @@
 import { IConnextClient } from "@connext/types";
 
-import { expect } from "../util";
-import { createClient } from "../util/client";
+import { createClient, expect } from "../util";
 
 describe("Create Channel", () => {
   beforeEach(async () => {});
