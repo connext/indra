@@ -6,6 +6,7 @@ import {
   getMessaging,
   SETUP_RESPONDER_RECEIVED_COUNT,
   SETUP_RESPONDER_SENT_COUNT,
+  TestMessagingService,
 } from "../util";
 
 describe("Create Channel", () => {
@@ -28,5 +29,17 @@ describe("Create Channel", () => {
     await expect(createClient({ mnemonic: nodeMnemonic })).to.be.rejectedWith(
       "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
     );
+  });
+
+  it("should fail if the client goes offline", async function () {
+    // @ts-ignore
+    this.timeout(40_000);
+    const messaging = new TestMessagingService();
+    messaging.addCeiling("setup", 0);
+    await expect(
+      createClient({
+        messaging,
+      }),
+    ).to.be.rejectedWith(`Create channel event not fired within 30s`);
   });
 });
