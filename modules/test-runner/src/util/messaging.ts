@@ -1,6 +1,8 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import { CFCoreTypes, MessagingConfig } from "@connext/types";
 
+import { env } from "./env";
+
 const defaultCount = (): MessageCounter => {
   return { sent: 0, received: 0, ceiling: undefined };
 };
@@ -28,10 +30,10 @@ export class TestMessagingService implements IMessagingService {
     withdraw: defaultCount(),
   };
 
-  constructor(private readonly config: MessagingConfig) {
+  constructor(private readonly config: Partial<MessagingConfig> = {}) {
     const factory = new MessagingServiceFactory({
-      logLevel: this.config.logLevel,
-      messagingUrl: this.config.messagingUrl,
+      logLevel: this.config.logLevel || env.logLevel,
+      messagingUrl: this.config.messagingUrl || env.nodeUrl,
     });
     this.connection = factory.createService("messaging");
   }
@@ -101,7 +103,8 @@ export class TestMessagingService implements IMessagingService {
     return await this.connection.onReceive(subject, (msg: CFCoreTypes.NodeMessage) => {
       const protocol = this.getProtocol(msg);
       if (!protocol) {
-        throw new Error(`Could not find protocol corresponding to received message`);
+        console.log(`Could not find protocol corresponding to received message`);
+        return;
       }
       this.protocolCount[protocol].received += 1;
       const ceiling = this.protocolCount[protocol].ceiling;
@@ -118,7 +121,8 @@ export class TestMessagingService implements IMessagingService {
     this.count.sent += 1;
     const protocol = this.getProtocol(msg);
     if (!protocol) {
-      throw new Error(`Could not find protocol corresponding to received message`);
+      console.log(`Could not find protocol corresponding to received message`);
+      return;
     }
     this.protocolCount[protocol].sent += 1;
     const ceiling = this.protocolCount[protocol].ceiling;
