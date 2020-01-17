@@ -5,7 +5,6 @@ import { Client } from "ts-nats";
 
 import {
   AssetOptions,
-  // asyncTransferAsset,
   createChannelProvider,
   createClient,
   createRemoteClient,
