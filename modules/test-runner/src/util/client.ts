@@ -1,6 +1,6 @@
 import { connect } from "@connext/client";
 import { ConnextStore, MemoryStorage } from "@connext/store";
-import { ClientOptions, IChannelProvider, IConnextClient } from "@connext/types";
+import { ClientOptions, IChannelProvider, IConnextClient, IMessagingService } from "@connext/types";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
@@ -8,11 +8,17 @@ import tokenAbi from "human-standard-token-abi";
 import { ETH_AMOUNT_MD, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
 import { ethWallet } from "./ethprovider";
+import { TestMessagingService } from "./messaging";
 
 let clientStore: ConnextStore;
+let clientMessaging: TestMessagingService;
 
 export const getStore = (): ConnextStore => {
   return clientStore;
+};
+
+export const getMessaging = (): TestMessagingService => {
+  return clientMessaging;
 };
 
 export const createClient = async (opts?: Partial<ClientOptions>): Promise<IConnextClient> => {
@@ -28,7 +34,11 @@ export const createClient = async (opts?: Partial<ClientOptions>): Promise<IConn
     store: clientStore,
     ...opts,
   };
-  const client = await connect(clientOpts);
+  clientMessaging = new TestMessagingService({
+    logLevel: clientOpts.logLevel!,
+    messagingUrl: clientOpts.nodeUrl!,
+  });
+  const client = await connect({ ...clientOpts, messaging: clientMessaging });
   // TODO: add client endpoint to get node config, so we can easily have its xpub etc
 
   const ethTx = await ethWallet.sendTransaction({

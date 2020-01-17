@@ -35,3 +35,7 @@ export const ETH_AMOUNT_SM = ZERO_ZERO_ONE_ETH;
 export const ETH_AMOUNT_MD = ZERO_ONE_ETH;
 export const ETH_AMOUNT_LG = ONE_ETH;
 export const TOKEN_AMOUNT = TEN_ETH;
+
+// Messaging constants
+export const CREATE_RESPONDER_COUNT = ONE; // responder sends 1 message
+export const CREATE_INITIATOR_COUNT = ONE; // initiator sends 1 message
