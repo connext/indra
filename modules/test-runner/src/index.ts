@@ -4,6 +4,7 @@ import "./deposit/collateral.test";
 import "./deposit/deposit.test";
 import "./deposit/depositRights.test";
 import "./flows/transfer.test";
+import "./getAppRegistry/getAppRegistry.test";
 import "./getStateChannel/getStateChannel.test";
 import "./restoreState/restoreState.test";
 import "./swap/swap.test";

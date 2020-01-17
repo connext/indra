@@ -98,11 +98,15 @@ export class NodeApiClient implements INodeApiClient {
     return retVal;
   }
 
-  public async appRegistry(appDetails?: {
-    name: SupportedApplication;
-    network: SupportedNetwork;
-  }): Promise<AppRegistry> {
-    return (await this.send("app-registry", appDetails)) as AppRegistry;
+  public async appRegistry(
+    appDetails?:
+      | {
+          name: SupportedApplication;
+          network: SupportedNetwork;
+        }
+      | { appDefinitionAddress: string },
+  ): Promise<AppRegistry> {
+    return (await this.send("app-registry", { data: appDetails })) as AppRegistry;
   }
 
   public async config(): Promise<GetConfigResponse> {
