@@ -38,9 +38,16 @@ describe("Async Transfers", () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await clientB.requestCollateral(transfer.assetId);
-    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nodeFreeBalanceAddress, {
-      freeBalanceNodeB: ETH_AMOUNT_MD, // collateralization amount
-    });
+    await asyncTransferAsset(
+      clientA,
+      clientB,
+      transfer.amount,
+      transfer.assetId,
+      nodeFreeBalanceAddress,
+      {
+        freeBalanceNodeB: ETH_AMOUNT_MD, // collateralization amount
+      },
+    );
   });
 
   it("happy case: client A transfers tokens to client B through node", async () => {
@@ -50,7 +57,13 @@ describe("Async Transfers", () => {
 
     // NOTE: will fail if not collateralized by transfer amount exactly
     // when pretransfer balances are not supplied.
-    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nodeFreeBalanceAddress);
+    await asyncTransferAsset(
+      clientA,
+      clientB,
+      transfer.amount,
+      transfer.assetId,
+      nodeFreeBalanceAddress,
+    );
   });
 
   it("Bot A tries to transfer a negative amount", async () => {
@@ -81,7 +94,7 @@ describe("Async Transfers", () => {
       }),
     ).to.be.rejectedWith(
       `Value "${assetId}" is not a valid eth address, Value (${amount}) is not less than or equal to 0`,
-    )
+    );
     // NOTE: will also include a `Value (..) is not less than or equal to 0
     // because it will not be able to fetch the free balance of the assetId
   });
