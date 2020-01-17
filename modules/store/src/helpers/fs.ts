@@ -47,11 +47,6 @@ export function sanitizeExt(ext: string): string {
   return result.startsWith(seperator) ? result : `${seperator}${result}`;
 }
 
-export function isDirectory(path: string): boolean {
-  fs.lstatSync;
-  return fs.lstatSync(path).isDirectory();
-}
-
 export function checkFile(path: string): Promise<number> {
   return new Promise((resolve, reject) => {
     const mode = fs.constants.F_OK | fs.constants.W_OK;
@@ -75,4 +70,15 @@ export async function safeFsRead(path: string): Promise<any> {
     return data;
   }
   return fsRead(path);
+}
+
+export function isDirectorySync(path: string): boolean {
+  fs.lstatSync;
+  return fs.lstatSync(path).isDirectory();
+}
+
+export function createDirectorySync(path: string): void {
+  if (!fs.existsSync(path)) {
+    fs.mkdirSync(path);
+  }
 }
