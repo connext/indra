@@ -1,27 +1,37 @@
-import { ConnextStore, MemoryStorage } from "@connext/store";
+import { ConnextStore, MemoryStorage, FileStorage } from "@connext/store";
+import { StorePair } from "@connext/types";
+
+import { AsyncStorage } from "../util";
+import "../util/localStorage";
 
 describe("Store", () => {
-  let memoryStorage: MemoryStorage;
-  let store: ConnextStore;
-
-  beforeEach(async () => {
-    memoryStorage = new MemoryStorage();
-    store = new ConnextStore(memoryStorage);
-  }, 90_000);
+  const storePair: StorePair = { path: "testing", value: "something" };
 
   it("happy case: instantiate with window.localStorage", async () => {
-    // TODO: happy case: instantiate with window.localStorage
+    const store = new ConnextStore(window.localStorage);
+
+    store.set([storePair]);
+    store.get(storePair.path);
   });
 
   it("happy case: instantiate with AsyncStorage", async () => {
-    // TODO: happy case: instantiate with AsyncStorage
+    const store = new ConnextStore(AsyncStorage);
+
+    store.set([storePair]);
+    store.get(storePair.path);
   });
 
   it("happy case: instantiate with FileStorage", async () => {
-    // TODO: happy case: instantiate with FileStorage
+    const store = new ConnextStore(new FileStorage());
+
+    store.set([storePair]);
+    store.get(storePair.path);
   });
 
   it("happy case: instantiate with MemoryStorage", async () => {
-    // TODO: happy case: instantiate with MemoryStorage
+    const store = new ConnextStore(new MemoryStorage());
+
+    store.set([storePair]);
+    store.get(storePair.path);
   });
 });

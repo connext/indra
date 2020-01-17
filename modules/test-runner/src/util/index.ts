@@ -7,6 +7,7 @@ export * from "./helpers/withdrawFromChannel";
 
 // export from current dir
 export * from "./assertions";
+export * from "./asyncStorage";
 export * from "./bn";
 export * from "./channelProvider";
 export * from "./client";
