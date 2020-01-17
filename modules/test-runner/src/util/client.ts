@@ -21,7 +21,7 @@ export const getMessaging = (): TestMessagingService => {
   return clientMessaging;
 };
 
-export const createClient = async (opts?: Partial<ClientOptions>): Promise<IConnextClient> => {
+export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<IConnextClient> => {
   const memoryStorage = new MemoryStorage();
 
   clientStore = new ConnextStore(memoryStorage);
@@ -32,15 +32,16 @@ export const createClient = async (opts?: Partial<ClientOptions>): Promise<IConn
     mnemonic: Wallet.createRandom().mnemonic,
     nodeUrl: env.nodeUrl,
     store: clientStore,
+    messaging:
+      opts.messaging ||
+      new TestMessagingService({
+        logLevel: opts.logLevel || env.logLevel,
+        messagingUrl: opts.nodeUrl || env.nodeUrl,
+      }),
     ...opts,
   };
-  clientMessaging =
-    (clientOpts.messaging as any) ||
-    new TestMessagingService({
-      logLevel: clientOpts.logLevel!,
-      messagingUrl: clientOpts.nodeUrl!,
-    });
-  const client = await connect({ ...clientOpts, messaging: clientMessaging });
+  clientMessaging = clientOpts.messaging! as TestMessagingService;
+  const client = await connect(clientOpts);
   // TODO: add client endpoint to get node config, so we can easily have its xpub etc
 
   const ethTx = await ethWallet.sendTransaction({
