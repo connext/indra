@@ -1,13 +1,6 @@
-import { isDirectorySync } from "@connext/store";
+import { isDirectorySync, getDirectoryFiles, IAsyncStorage } from "@connext/store";
 
-import {
-  createStore,
-  expect,
-  readDir,
-  setAndGet,
-  setAndGetMultiple,
-  testAsyncStorageKey,
-} from "../util";
+import { createStore, expect, setAndGet, setAndGetMultiple, testAsyncStorageKey } from "../util";
 
 describe("Storage", () => {
   const length = 10;
@@ -48,7 +41,7 @@ describe("Storage", () => {
 
     await setAndGetMultiple(store, length);
 
-    await testAsyncStorageKey(storage, asyncStorageKey);
+    await testAsyncStorageKey(storage as IAsyncStorage, asyncStorageKey);
   });
 
   it("happy case: MemoryStorage should include a single key matching asyncStorageKey", async () => {
@@ -56,7 +49,7 @@ describe("Storage", () => {
 
     await setAndGetMultiple(store, length);
 
-    await testAsyncStorageKey(storage, asyncStorageKey);
+    await testAsyncStorageKey(storage as IAsyncStorage, asyncStorageKey);
   });
 
   it("happy case: FileStorage should include a single key matching asyncStorageKey", async () => {
@@ -64,7 +57,7 @@ describe("Storage", () => {
 
     await setAndGetMultiple(store, length);
 
-    await testAsyncStorageKey(storage, asyncStorageKey);
+    await testAsyncStorageKey(storage as IAsyncStorage, asyncStorageKey);
   });
 
   it("happy case: FileStorage should create a store directory", async () => {
@@ -81,7 +74,7 @@ describe("Storage", () => {
     const key2 = "testing-2";
     storage.setItem(key2, testValue);
 
-    const files = await readDir(fileDir);
+    const files = await getDirectoryFiles(fileDir);
     expect(files.length).to.equal(2);
     const file1 = files.filter((fileName: string) => fileName.includes(key1));
     expect(file1.length).to.equal(1);
@@ -97,7 +90,7 @@ describe("Storage", () => {
     storageA.setItem(key, testValue);
     storageB.setItem(key, testValue);
 
-    const files = await readDir(fileDir);
+    const files = await getDirectoryFiles(fileDir);
     expect(files.length).to.equal(2);
     const file1 = files[0].toLowerCase();
     const file2 = files[1].toLowerCase();

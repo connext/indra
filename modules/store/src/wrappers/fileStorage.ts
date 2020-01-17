@@ -8,14 +8,15 @@ import {
   FileStorageOptions,
   fsUnlink,
   fsWrite,
+  getDirectoryFiles,
   IAsyncStorage,
-  isDirectorySync,
   safeFsRead,
   sanitizeExt,
 } from "../helpers";
 
 export class FileStorage implements IAsyncStorage {
   private uuid: string;
+  private seperator: string = "-";
   private fileExt: string = DEFAULT_FILE_STORAGE_EXT;
   private fileDir: string = DEFAULT_FILE_STORAGE_DIR;
 
@@ -34,8 +35,12 @@ export class FileStorage implements IAsyncStorage {
     this.uuid = uuid.v1();
   }
 
+  get fileSuffix(): string {
+    return `${this.seperator}${this.uuid}${this.fileExt}`;
+  }
+
   getFilePath(key: string): string {
-    const fileName = `${key}-${this.uuid}${this.fileExt}`;
+    const fileName = `${key}${this.fileSuffix}`;
     return path.join(this.fileDir, fileName);
   }
 
@@ -43,6 +48,7 @@ export class FileStorage implements IAsyncStorage {
     const filePath = this.getFilePath(key);
     return await safeFsRead(filePath);
   }
+
   async setItem(key: string, data: any): Promise<void> {
     const filePath = this.getFilePath(key);
     return fsWrite(filePath, data);
@@ -51,5 +57,16 @@ export class FileStorage implements IAsyncStorage {
   async removeItem(key: string): Promise<void> {
     const filePath = this.getFilePath(key);
     return await fsUnlink(filePath);
+  }
+
+  async clear(): Promise<void> {
+    const keys = await this.getAllKeys();
+    await Promise.all(keys.map(key => this.removeItem(key)));
+  }
+  async getAllKeys(): Promise<string[]> {
+    const keys = (await getDirectoryFiles(this.fileDir))
+      .filter((file: string) => file.includes(this.fileSuffix))
+      .map((file: string) => file.replace(this.fileSuffix, ""));
+    return keys;
   }
 }

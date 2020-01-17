@@ -1,7 +1,7 @@
 import { IAsyncStorage } from "../helpers";
 
 export class MemoryStorage implements IAsyncStorage {
-  private readonly store: Map<string, any> = new Map();
+  private store: Map<string, any> = new Map();
   private delay: number;
 
   constructor(delay: number = 0) {
@@ -27,5 +27,13 @@ export class MemoryStorage implements IAsyncStorage {
   async removeItem(key: string): Promise<void> {
     await this.handleDelay();
     this.store.delete(key);
+  }
+
+  async clear(): Promise<void> {
+    this.store = new Map();
+  }
+
+  async getAllKeys(): Promise<string[]> {
+    return [...this.store.keys()];
   }
 }

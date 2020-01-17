@@ -82,3 +82,14 @@ export function createDirectorySync(path: string): void {
     fs.mkdirSync(path);
   }
 }
+
+export function getDirectoryFiles(path: string): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    fs.readdir(path, (err, files) => {
+      if (err) {
+        reject(err);
+      }
+      resolve(files);
+    });
+  });
+}

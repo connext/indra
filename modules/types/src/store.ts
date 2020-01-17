@@ -23,10 +23,9 @@ export interface StorageWrapper {
 }
 
 export interface IAsyncStorage {
-  getItem(): Promise<string | null>;
-  setItem(value: string): Promise<void>;
-  mergeItem(value: string): Promise<void>;
-  removeItem(): Promise<void>;
+  getItem(key: string): Promise<string | null>;
+  setItem(key: string, value: string): Promise<void>;
+  removeItem(key: string): Promise<void>;
   clear(): Promise<void>;
   getAllKeys(): Promise<string[]>;
 }

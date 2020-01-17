@@ -68,19 +68,11 @@ export async function setAndGetMultiple(store: ConnextStore, length: number = 10
   await store.set(pairs);
 }
 
-export function testAsyncStorageKey(storage: any, asyncStorageKey: string) {
-  const keys = storage.getAllKeys();
+export async function testAsyncStorageKey(
+  storage: IAsyncStorage,
+  asyncStorageKey: string,
+): Promise<void> {
+  const keys = await storage.getAllKeys();
   expect(keys.length).to.equal(1);
   expect(keys[0]).to.equal(asyncStorageKey);
-}
-
-export function readDir(path: string): Promise<string[]> {
-  return new Promise((resolve, reject) => {
-    fs.readdir(path, (err, files) => {
-      if (err) {
-        reject(err);
-      }
-      resolve(files);
-    });
-  });
 }
