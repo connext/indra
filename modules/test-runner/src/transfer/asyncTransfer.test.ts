@@ -21,14 +21,12 @@ describe("Async Transfers", () => {
   let clientA: IConnextClient;
   let clientB: IConnextClient;
   let tokenAddress: string;
-  let nodePublicIdentifier: string;
 
   beforeEach(async () => {
     clientA = await createClient();
     clientB = await createClient();
 
     tokenAddress = clientA.config.contractAddresses.Token;
-    nodePublicIdentifier = clientA.config.nodePublicIdentifier;
   }, 90_000);
 
   it("happy case: client A transfers eth to client B through node", async () => {
