@@ -98,9 +98,7 @@ describe("Withdrawal", () => {
     client.once("DEPOSIT_CONFIRMED_EVENT", async () => {
       // make sure node free balance increases
       const freeBalance = await client.getFreeBalance(AddressZero);
-      expect(
-        freeBalance[xpubToAddress(client.nodePublicIdentifier)],
-      ).to.be.a.bignumber.that.greaterThan(Zero);
+      expect(freeBalance[xpubToAddress(client.nodePublicIdentifier)]).to.be.above(Zero);
       eventsCaught += 1;
       if (eventsCaught === 2) {
         done();
