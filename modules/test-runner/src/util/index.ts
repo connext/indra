@@ -2,6 +2,7 @@
 export * from "./helpers/asyncTransferAsset";
 export * from "./helpers/fundChannel";
 export * from "./helpers/requestDepositRights";
+export * from "./helpers/storeMethods";
 export * from "./helpers/swapAsset";
 export * from "./helpers/withdrawFromChannel";
 
