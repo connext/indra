@@ -1,12 +1,12 @@
 import { IConnextClient } from "@connext/types";
 
 import {
+  createClient,
   expect,
   getMessaging,
   SETUP_RESPONDER_RECEIVED_COUNT,
   SETUP_RESPONDER_SENT_COUNT,
 } from "../util";
-import { createClient } from "../util/client";
 
 describe("Create Channel", () => {
   it("Happy case: user creates channel with node and is given multisig address", async () => {
