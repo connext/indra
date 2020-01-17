@@ -74,6 +74,7 @@ export interface ClientOptions {
   store?: Store;
   logLevel?: number;
   asyncStorage?: IAsyncStorage;
+  messaging?: IMessagingService;
 }
 
 export interface IConnextClient {

@@ -83,7 +83,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     mnemonic,
     channelProvider: providedChannelProvider,
   } = opts;
-  let { xpub, keyGen, store } = opts;
+  let { xpub, keyGen, store, messaging } = opts;
 
   const log = new Logger("ConnextConnect", logLevel);
 
@@ -102,7 +102,6 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   }
 
   // setup messaging and node api
-  let messaging: IMessagingService;
   let node: INodeApiClient;
   let config: GetConfigResponse;
 
@@ -118,7 +117,11 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
     log.debug(`Creating messaging service client ${channelProvider.config.nodeUrl}`);
-    messaging = await createMessagingService(channelProvider.config.nodeUrl, logLevel);
+    if (!messaging) {
+      messaging = await createMessagingService(channelProvider.config.nodeUrl, logLevel);
+    } else {
+      await messaging.connect();
+    }
 
     // create a new node api instance
     node = new NodeApiClient({ logLevel, messaging, channelProvider });
@@ -153,7 +156,11 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     }
 
     log.debug(`Creating messaging service client ${nodeUrl}`);
-    messaging = await createMessagingService(nodeUrl, logLevel);
+    if (!messaging) {
+      messaging = await createMessagingService(nodeUrl, logLevel);
+    } else {
+      await messaging.connect();
+    }
 
     // create a new node api instance
     node = new NodeApiClient({ logLevel, messaging });
