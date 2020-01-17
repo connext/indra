@@ -53,7 +53,7 @@ describe("Storage", () => {
   });
 
   it("happy case: FileStorage should include a single key matching asyncStorageKey", async () => {
-    const { store, storage } = createStore("filestorage", { asyncStorageKey });
+    const { store, storage } = createStore("filestorage", { asyncStorageKey }, { fileDir });
 
     await setAndGetMultiple(store, length);
 
