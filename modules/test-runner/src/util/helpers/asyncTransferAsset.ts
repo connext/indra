@@ -17,15 +17,10 @@ export async function asyncTransferAsset(
     [clientA.freeBalanceAddress]: preTransferFreeBalanceClientA,
     [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeA,
   } = await clientA.getFreeBalance(assetId);
-  console.log("preTransferFreeBalanceClientA: ", preTransferFreeBalanceClientA);
-  console.log("preTransferFreeBalanceNodeA: ", preTransferFreeBalanceNodeA);
-
   const {
     [clientB.freeBalanceAddress]: preTransferFreeBalanceClientB,
     [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeB,
   } = await clientB.getFreeBalance(assetId);
-  console.log("preTransferFreeBalanceClientB: ", preTransferFreeBalanceClientB);
-  console.log("preTransferFreeBalanceNodeB: ", preTransferFreeBalanceNodeB);
 
   let paymentId: string;
 
@@ -58,23 +53,20 @@ export async function asyncTransferAsset(
     [clientA.freeBalanceAddress]: postTransferFreeBalanceClientA,
     [nodeFreeBalanceAddress]: postTransferFreeBalanceNodeA,
   } = await clientA.getFreeBalance(assetId);
-  expect(postTransferFreeBalanceClientA).to.be.a.bignumber.that.equals(
+  expect(postTransferFreeBalanceClientA).to.equal(
     preTransferFreeBalanceClientA.sub(transferAmount),
   );
-  expect(postTransferFreeBalanceNodeA).to.be.a.bignumber.that.equals(
-    preTransferFreeBalanceNodeA.add(transferAmount),
-  );
+  expect(postTransferFreeBalanceNodeA).equal(preTransferFreeBalanceNodeA.add(transferAmount));
 
   const {
     [clientB.freeBalanceAddress]: postTransferFreeBalanceClientB,
     [nodeFreeBalanceAddress]: postTransferFreeBalanceNodeB,
   } = await clientB.getFreeBalance(assetId);
-  expect(postTransferFreeBalanceClientB).to.be.a.bignumber.that.equals(
-    preTransferFreeBalanceClientB.add(transferAmount),
-  );
-  expect(postTransferFreeBalanceNodeB).to.be.a.bignumber.that.equals(
-    preTransferFreeBalanceNodeB.sub(transferAmount),
-  );
+  expect(postTransferFreeBalanceClientB).equal(preTransferFreeBalanceClientB.add(transferAmount));
+
+  if (!preTransferFreeBalanceNodeB.isZero()) {
+    expect(postTransferFreeBalanceNodeB).equal(preTransferFreeBalanceNodeB.sub(transferAmount));
+  }
 
   // TODO: explicitly await for status redeemed -> reclaimed
   await new Promise(res => setTimeout(res, 1000));
