@@ -2,13 +2,14 @@ import path from "path";
 import uuid from "uuid";
 
 import {
+  createDirectorySync,
   DEFAULT_FILE_STORAGE_DIR,
   DEFAULT_FILE_STORAGE_EXT,
   FileStorageOptions,
   fsUnlink,
   fsWrite,
   IAsyncStorage,
-  isDirectory,
+  isDirectorySync,
   safeFsRead,
   sanitizeExt,
 } from "../helpers";
@@ -21,7 +22,7 @@ export class FileStorage implements IAsyncStorage {
   constructor(opts?: FileStorageOptions) {
     if (opts) {
       this.fileDir = opts.fileDir || DEFAULT_FILE_STORAGE_DIR;
-      if (!isDirectory(this.fileDir)) {
+      if (!isDirectorySync(this.fileDir)) {
         throw new Error(`Provided fileDir (${this.fileDir}) is not a directory`);
       }
 
@@ -30,6 +31,8 @@ export class FileStorage implements IAsyncStorage {
         throw new Error(`Provided fileExt (${this.fileExt}) is invalid`);
       }
     }
+
+    createDirectorySync(this.fileDir);
 
     this.uuid = uuid.v1();
   }

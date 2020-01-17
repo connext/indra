@@ -36,6 +36,4 @@ export MNEMONIC="${MNEMONIC:-$mnemonic}"
 
 bash /wait-for.sh ${ETH_RPC_URL#*://} 2> /dev/null
 
-mkdir -p ${STORE_DIR%/*}
 node --no-deprecation dist/index.js $args
-chown -R $user ${STORE_DIR%/*} || true
