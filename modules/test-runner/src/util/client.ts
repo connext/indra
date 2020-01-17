@@ -34,10 +34,12 @@ export const createClient = async (opts?: Partial<ClientOptions>): Promise<IConn
     store: clientStore,
     ...opts,
   };
-  clientMessaging = new TestMessagingService({
-    logLevel: clientOpts.logLevel!,
-    messagingUrl: clientOpts.nodeUrl!,
-  });
+  clientMessaging =
+    (clientOpts.messaging as any) ||
+    new TestMessagingService({
+      logLevel: clientOpts.logLevel!,
+      messagingUrl: clientOpts.nodeUrl!,
+    });
   const client = await connect({ ...clientOpts, messaging: clientMessaging });
   // TODO: add client endpoint to get node config, so we can easily have its xpub etc
 
