@@ -19,7 +19,7 @@ describe("Full Flow: Transfer", () => {
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
   });
 
-  it.only("User transfers to multiple clients", async () => {
+  it("User transfers to multiple clients", async () => {
     const clientB = await createClient();
     const clientC = await createClient();
     const clientD = await createClient();
@@ -30,10 +30,13 @@ describe("Full Flow: Transfer", () => {
 
     // collateralize recipients
     await requestCollateral(clientB, AddressZero);
+    await requestCollateral(clientC, AddressZero);
+    await requestCollateral(clientD, AddressZero);
+    await requestCollateral(clientE, AddressZero);
 
     await asyncTransferAsset(clientA, clientB, One, AddressZero, nodeFreeBalanceAddress);
-    // await asyncTransferAsset(clientA, clientC, One, AddressZero, nodeFreeBalanceAddress);
-    // await asyncTransferAsset(clientA, clientD, One, AddressZero, nodeFreeBalanceAddress);
-    // await asyncTransferAsset(clientA, clientE, One, AddressZero, nodeFreeBalanceAddress);
+    await asyncTransferAsset(clientA, clientC, One, AddressZero, nodeFreeBalanceAddress);
+    await asyncTransferAsset(clientA, clientD, One, AddressZero, nodeFreeBalanceAddress);
+    await asyncTransferAsset(clientA, clientE, One, AddressZero, nodeFreeBalanceAddress);
   });
 });
