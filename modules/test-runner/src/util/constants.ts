@@ -37,5 +37,5 @@ export const ETH_AMOUNT_LG = ONE_ETH;
 export const TOKEN_AMOUNT = TEN_ETH;
 
 // Messaging constants
-export const CREATE_RESPONDER_COUNT = ONE; // responder sends 1 message
-export const CREATE_INITIATOR_COUNT = ONE; // initiator sends 1 message
+export const SETUP_RESPONDER_RECEIVED_COUNT = 1; // responder gets 1 messages
+export const SETUP_RESPONDER_SENT_COUNT = 1; // responder sends 1 message
