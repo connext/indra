@@ -1,7 +1,9 @@
+import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 
 import { expect } from "../";
+import { delay } from "../misc";
 import { ExistingBalancesAsyncTransfer } from "../types";
 
 // NOTE: will fail if not collateralized by transfer amount exactly
@@ -11,8 +13,8 @@ export async function asyncTransferAsset(
   clientB: IConnextClient,
   transferAmount: BigNumber,
   assetId: string,
-  nodeFreeBalanceAddress: string,
 ): Promise<ExistingBalancesAsyncTransfer> {
+  const nodeFreeBalanceAddress = xkeyKthAddress(clientA.nodePublicIdentifier);
   const {
     [clientA.freeBalanceAddress]: preTransferFreeBalanceClientA,
     [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeA,
@@ -25,16 +27,20 @@ export async function asyncTransferAsset(
   let paymentId: string;
 
   const transferFinished = Promise.all([
-    new Promise(async resolve => {
-      clientA.once("UNINSTALL_EVENT", async () => {
-        resolve();
-      });
-    }),
-    new Promise(async resolve => {
-      clientB.once("RECIEVE_TRANSFER_FINISHED_EVENT", async () => {
-        resolve();
-      });
-    }),
+    new Promise(
+      async (resolve: Function): Promise<void> => {
+        clientA.once("UNINSTALL_EVENT", async () => {
+          resolve();
+        });
+      },
+    ),
+    new Promise(
+      async (resolve: Function): Promise<void> => {
+        clientB.once("RECIEVE_TRANSFER_FINISHED_EVENT", async () => {
+          resolve();
+        });
+      },
+    ),
   ]);
 
   const { paymentId: senderPaymentId } = await clientA.transfer({
@@ -69,7 +75,7 @@ export async function asyncTransferAsset(
   }
 
   // TODO: explicitly await for status redeemed -> reclaimed
-  await new Promise(res => setTimeout(res, 1000));
+  await delay(1000);
 
   const paymentA = await clientA.getLinkedTransfer(paymentId);
   const paymentB = await clientB.getLinkedTransfer(paymentId);

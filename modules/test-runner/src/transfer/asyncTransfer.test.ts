@@ -38,52 +38,28 @@ describe("Async Transfers", () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await clientB.requestCollateral(transfer.assetId);
-    await asyncTransferAsset(
-      clientA,
-      clientB,
-      transfer.amount,
-      transfer.assetId,
-      nodeFreeBalanceAddress,
-    );
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId);
   });
 
   it("happy case: client A transfers tokens to client B through node", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await clientB.requestCollateral(transfer.assetId);
-    await asyncTransferAsset(
-      clientA,
-      clientB,
-      transfer.amount,
-      transfer.assetId,
-      nodeFreeBalanceAddress,
-    );
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId);
   });
 
   it("client A transfers eth to client B without collateralizing", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
-    await asyncTransferAsset(
-      clientA,
-      clientB,
-      transfer.amount,
-      transfer.assetId,
-      nodeFreeBalanceAddress,
-    );
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId);
   });
 
   it("client A transfers tokens to client B without collateralizing", async () => {
     const transfer: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
 
-    await asyncTransferAsset(
-      clientA,
-      clientB,
-      transfer.amount,
-      transfer.assetId,
-      nodeFreeBalanceAddress,
-    );
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId);
   });
 
   it("Bot A tries to transfer a negative amount", async () => {
