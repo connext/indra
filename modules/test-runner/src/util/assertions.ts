@@ -1,7 +1,7 @@
+import { waffleChai } from "@ethereum-waffle/chai";
 import { use } from "chai";
-import { BigNumber } from "ethers/utils";
 
 use(require("chai-as-promised"));
-use(require("chai-bn")(BigNumber));
+use(waffleChai);
 
 export { expect } from "chai";
