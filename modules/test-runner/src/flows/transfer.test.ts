@@ -84,7 +84,7 @@ describe("Full Flow: Transfer", function(): void {
     await asyncTransferAsset(clientE, clientA, ETH_AMOUNT_SM, AddressZero);
   });
 
-  it.skip("User receives multiple token transfers ", async () => {
+  it("User receives multiple token transfers ", async () => {
     const clientB = await createClient();
     const clientC = await createClient();
     const clientD = await createClient();
