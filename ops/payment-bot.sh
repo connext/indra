@@ -23,6 +23,7 @@ docker swarm init 2> /dev/null || true
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../package.json | jq .name | tr -d '"'`"
+mode="${TEST_MODE:-local}"
 cwd="`pwd`"
 args="$@"
 identifier=1
@@ -42,17 +43,39 @@ name="${project}_bot"
 commit="`git rev-parse HEAD | head -c 8`"
 release="`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 
-if [[ "$TEST_MODE" == "release" ]]
+# If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
+if [[ -t 0 && -t 1 && -t 2 ]]
+then interactive="--interactive --tty"
+else echo "Running in non-interactive mode"
+fi
+
+if [[ "$mode" == "local" ]]
+then
+
+  echo "Launching local bot"
+
+  exec docker run \
+    $interactive \
+    --entrypoint="bash" \
+    --env="ECCRYPTO_NO_FALLBACK=true" \
+    --env="ETH_RPC_URL=$ETH_RPC_URL" \
+    --env="MNEMONIC=$mnemonic" \
+    --env="NODE_URL=$NODE_URL" \
+    --env="WEBDIS_URL=$WEBDIS_URL" \
+    --env="PISA_URL=$PISA_URL" \
+    --env="PISA_CONTRACT_ADDRESS=$PISA_CONTRACT_ADDRESS" \
+    --name="${project}_payment_bot_$identifier" \
+    --rm \
+    --volume="$cwd/.bot-store:/store" \
+    --volume="$cwd:/root" \
+    ${project}_builder -c "cd modules/payment-bot && bash ops/entry.sh `id -u`:`id -g` $args"
+
+elif [[ "$mode" == "release" ]]
 then image=$name:$release;
-elif [[ "$TEST_MODE" == "staging" ]]
-then image=$name:$commit;
-elif [[ -n "`docker image ls -q ${project}_bot:$commit`" ]]
+elif [[ "$mode" == "staging" ]]
 then image=$name:$commit;
 else image=$name:latest;
 fi
-
-# If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
-test -t 0 -a -t 1 -a -t 2 && interactive="--interactive"
 
 ########################################
 ## Launch payment bot
@@ -67,6 +90,5 @@ exec docker run \
   $interactive \
   --name="${project}_payment_bot_$identifier" \
   --rm \
-  --tty \
   --volume="$cwd/.bot-store:/store" \
   $image "`id -u`:`id -g`" $args

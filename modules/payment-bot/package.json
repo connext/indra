@@ -12,8 +12,9 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@connext/client": "1.4.4",
-    "@connext/types": "1.4.4",
+    "@connext/client": "3.0.0",
+    "@connext/store": "3.0.0",
+    "@connext/types": "3.0.0",
     "commander": "4.0.1",
     "dotenv": "8.2.0",
     "ethers": "4.0.41",
@@ -28,6 +29,7 @@
     "ts-node": "8.5.4",
     "typescript": "3.5.3",
     "webpack": "4.41.5",
-    "webpack-cli": "3.3.10"
+    "webpack-cli": "3.3.10",
+    "webpack-node-externals": "1.7.2"
   }
 }

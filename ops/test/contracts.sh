@@ -1,49 +1,25 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../../package.json | jq .name | tr -d '"'`"
 
-test_command='
-  ts-mocha test/*
-'
-
-watch_command='
-  exec ts-mocha --watch test/*
-'
-
-if [[ "$1" == "--watch" ]]
-then
-  suffix="node_watcher"
-  command="$watch_command"
-  shift # forget $1 and replace it w $2, etc
-else
-  suffix="node_tester"
-  command="$test_command"
+# If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
+if [[ -t 0 && -t 1 && -t 2 ]]
+then interactive="--interactive --tty"
+else echo "Running in non-interactive mode"
 fi
 
-########################################
-# Run Tests
-
-echo "Starting $node_host.."
-docker run \
+exec docker run \
+  $interactive \
   --entrypoint="bash" \
-  --interactive \
-  --name="$node_host" \
+  --name="${project}_test_contracts" \
   --rm \
-  --tty \
   --volume="`pwd`:/root" \
   ${project}_builder -c '
-    echo "Contract Tester Container launched!";echo
+    if [[ -d modules/contracts ]]
+    then cd modules/contracts
+    fi
 
-    cd modules/contracts
-    export PATH=./node_modules/.bin:$PATH
-
-    function finish {
-      echo && echo "Node tester container exiting.." && exit
-    }
-    trap finish SIGTERM SIGINT
-
-    '"$command"'
-
+    npm run test
   '

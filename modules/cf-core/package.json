@@ -1,6 +1,6 @@
 {
   "name": "@connext/cf-core",
-  "version": "1.4.4",
+  "version": "3.0.0",
   "main": "dist/src/index.js",
   "iife": "dist/src/index.iife.js",
   "types": "dist/src/index.d.ts",
@@ -17,9 +17,8 @@
     "lint": "tslint -c tslint.json -p ."
   },
   "dependencies": {
-    "@connext/cf-adjudicator-contracts": "0.4.1",
-    "@connext/cf-funding-protocol-contracts": "0.4.1",
-    "@connext/types": "1.4.4",
+    "@connext/contracts": "1.0.1",
+    "@connext/types": "3.0.0",
     "ethers": "4.0.41",
     "eventemitter3": "4.0.0",
     "loglevel": "1.6.6",
@@ -32,7 +31,6 @@
   "devDependencies": {
     "@babel/core": "7.7.4",
     "@babel/plugin-proposal-object-rest-spread": "7.7.4",
-    "@connext/cf-apps": "0.4.1",
     "@counterfactual/local-ganache-server": "0.0.10",
     "@counterfactual/postgresql-node-connector": "0.0.8",
     "@types/chai": "4.2.7",

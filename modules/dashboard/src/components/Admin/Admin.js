@@ -5,8 +5,8 @@ import { Contract, getDefaultProvider } from "ethers";
 import { getAddress, Interface, keccak256, solidityKeccak256 } from "ethers/utils";
 import { GetIncorrectProxyFactoryAddress, FixIncorrectProxyFactoryAddress } from "./IncorrectProxyFactory/IncorrectProxyFactoryAddressView";
 import { fromExtendedKey } from "ethers/utils/hdnode";
-import MinimumViableMultisig from "@connext/cf-funding-protocol-contracts/build/MinimumViableMultisig.json";
-import ProxyFactory from "@connext/cf-funding-protocol-contracts/build/ProxyFactory.json";
+import MinimumViableMultisig from "@connext/contracts/build/MinimumViableMultisig.json";
+import ProxyFactory from "@connext/contracts/build/ProxyFactory.json";
 import historicalData from "./historicalData";
 
 const RootGrid = styled(Grid)({

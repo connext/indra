@@ -151,13 +151,16 @@ then
   "
   INDRA_ETH_PROVIDER="http://ethprovider:8545"
   pull_if_unavailable "$ethprovider_image"
-  bash ops/deploy-contracts.sh ganache $version
+  MODE=${INDRA_MODE#*-} bash ops/deploy-contracts.sh ganache $version
 else echo "Eth network \"$chainId\" is not supported for $INDRA_MODE-mode deployments" && exit 1
 fi
 
+# Prefer top-level address-book override otherwise default to one in contracts
+if [[ -f address-book.json ]]
+then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
+fi
 eth_mnemonic_name="${project}_mnemonic_$eth_network_name"
-eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
-
 
 ########################################
 ## Deploy according to configuration

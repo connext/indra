@@ -1,21 +1,25 @@
 import { connect } from "@connext/client";
-import { ClientOptions, IConnextClient } from "@connext/types";
+import { ConnextStore, MemoryStorage } from "@connext/store";
+import { ClientOptions, IChannelProvider, IConnextClient } from "@connext/types";
+import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
-import { parseEther } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
+import { ETH_AMOUNT_MD, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
-import { ethProvider } from "./ethprovider";
-import { MemoryStoreService, MemoryStoreServiceFactory } from "./store";
+import { ethWallet } from "./ethprovider";
 
-const wallet = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider);
+let clientStore: ConnextStore;
 
-let clientStore: MemoryStoreService;
+export const getStore = (): ConnextStore => {
+  return clientStore;
+};
 
 export const createClient = async (opts?: Partial<ClientOptions>): Promise<IConnextClient> => {
-  const storeServiceFactory = new MemoryStoreServiceFactory();
+  const memoryStorage = new MemoryStorage();
 
-  clientStore = storeServiceFactory.createStoreService();
+  clientStore = new ConnextStore(memoryStorage);
+
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
     logLevel: env.logLevel,
@@ -25,26 +29,36 @@ export const createClient = async (opts?: Partial<ClientOptions>): Promise<IConn
     ...opts,
   };
   const client = await connect(clientOpts);
-
   // TODO: add client endpoint to get node config, so we can easily have its xpub etc
 
-  await client.isAvailable();
-
-  const ethTx = await wallet.sendTransaction({
+  const ethTx = await ethWallet.sendTransaction({
     to: client.signerAddress,
-    value: parseEther("0.1"),
+    value: ETH_AMOUNT_MD,
   });
-  const token = new Contract(client.config.contractAddresses.Token, tokenAbi, wallet);
-  const tokenTx = await token.functions.transfer(client.signerAddress, parseEther("10"));
+  const token = new Contract(client.config.contractAddresses.Token, tokenAbi, ethWallet);
+  const tokenTx = await token.functions.transfer(client.signerAddress, TOKEN_AMOUNT);
 
   await Promise.all([ethTx.wait(), tokenTx.wait()]);
 
-  expect(client.freeBalanceAddress).toBeTruthy();
-  expect(client.publicIdentifier).toBeTruthy();
+  expect(client.freeBalanceAddress).to.be.ok;
+  expect(client.publicIdentifier).to.be.ok;
 
   return client;
 };
 
-export const getStore = (): MemoryStoreService => {
-  return clientStore;
+export const createRemoteClient = async (
+  channelProvider: IChannelProvider,
+): Promise<IConnextClient> => {
+  const clientOpts: ClientOptions = {
+    channelProvider,
+    ethProviderUrl: env.ethProviderUrl,
+    logLevel: env.logLevel,
+  };
+
+  const client = await connect(clientOpts);
+
+  expect(client.freeBalanceAddress).to.be.ok;
+  expect(client.publicIdentifier).to.be.ok;
+
+  return client;
 };

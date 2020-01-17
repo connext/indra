@@ -36,7 +36,11 @@ then
   make deployed-contracts
 fi
 
-eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+# Prefer top-level address-book override otherwise default to one in contracts
+if [[ -f address-book.json ]]
+then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
+fi
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 
 # database connection settings
@@ -50,7 +54,7 @@ pg_user="$project"
 builder_image="${project}_builder"
 ui_image="$builder_image"
 database_image="postgres:9-alpine"
-ethprovider_image="${project}_ethprovider"
+ethprovider_image="$builder_image"
 nats_image="nats:2.0.0-linux"
 node_image="$builder_image"
 proxy_image="${project}_proxy"
@@ -198,6 +202,7 @@ services:
 
   ethprovider:
     image: $ethprovider_image
+    entrypoint: bash modules/contracts/ops/entry.sh
     command: "start"
     environment:
       ETH_MNEMONIC: $eth_mnemonic
@@ -206,6 +211,7 @@ services:
     ports:
       - "8545:8545"
     volumes:
+      - `pwd`:/root
       - chain_dev:/data
 
   database:

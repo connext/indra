@@ -24,10 +24,6 @@ const globals = {
 };
 
 const bundledDependencies = new Set([
-  "@counterfactual/firebase-client",
-  "@counterfactual/cf-funding-protocol-contracts",
-  "@counterfactual/cf-adjudicator-contracts",
-  "@connext/cf-types",
   "typescript-memoize",
   "p-queue",
   "rpc-server"

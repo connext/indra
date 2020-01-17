@@ -1,18 +1,17 @@
-import { CFCoreTypes } from "@connext/types";
+import { CFCoreTypes, IChannelProvider } from "@connext/types";
 import { providers } from "ethers";
 
-import { ChannelProvider } from "../channelProvider";
 import { ConnextClient } from "../connext";
 import { CF_METHOD_TIMEOUT, delayAndThrow, Logger, stringify } from "../lib";
 import { ConnextListener } from "../listener";
-import { INodeApiClient } from "../node";
+import { INodeApiClient } from "../types";
 
 export abstract class AbstractController {
   public name: string;
   public connext: ConnextClient;
   public log: Logger;
   public node: INodeApiClient;
-  public channelProvider: ChannelProvider;
+  public channelProvider: IChannelProvider;
   public listener: ConnextListener;
   public ethProvider: providers.JsonRpcProvider;
 
@@ -59,7 +58,7 @@ export abstract class AbstractController {
       return appInstanceId;
     } catch (e) {
       this.log.error(`Error installing app: ${e.stack || e.message}`);
-      return appInstanceId;
+      throw new Error(e.stack || e.message);
     } finally {
       this.cleanupInstallListeners(boundReject, appInstanceId);
     }
@@ -96,7 +95,7 @@ export abstract class AbstractController {
       return appId;
     } catch (e) {
       this.log.error(`Error proposing app: ${e.stack || e.message}`);
-      return e.message;
+      throw new Error(e.stack || e.message);
     } finally {
       this.cleanupProposalListeners(boundReject);
     }
@@ -104,7 +103,7 @@ export abstract class AbstractController {
 
   private resolveInstall = (
     res: (value?: unknown) => void,
-    rej: (message?: string) => void,
+    rej: (message?: Error) => void,
     appInstanceId: string,
     message: any,
   ): void => {
@@ -117,34 +116,34 @@ export abstract class AbstractController {
         message,
       )}, expected ${appInstanceId}. This should not happen.`;
       this.log.warn(msg);
-      rej(msg);
+      return rej(new Error(msg));
     }
     res(message);
   };
 
   private rejectInstall = (
-    rej: (message?: string) => void,
+    rej: (message?: Error) => void,
     appInstanceId: string,
     message: any,
   ): void => {
     // check app id
-    const data = message.data.data ? message.data.data : message.data;
+    const data = message.data && message.data.data ? message.data.data : message.data || message;
     if (data.appInstanceId !== appInstanceId) {
       const msg = `Caught reject install event for different app ${stringify(
         message,
       )}, expected ${appInstanceId}. This should not happen.`;
       this.log.warn(msg);
-      rej(msg);
+      return rej(new Error(msg));
     }
 
-    return rej(`Install failed. Event data: ${stringify(message)}`);
+    return rej(new Error(`Install failed. Event data: ${stringify(message)}`));
   };
 
   private rejectProposal = (
-    rej: (reason?: string) => void,
+    rej: (reason?: Error) => void,
     msg: CFCoreTypes.RejectInstallEventData,
   ): void => {
-    rej(`Proposal rejected, event data: ${stringify(msg)}`);
+    return rej(new Error(`Proposal rejected, event data: ${stringify(msg)}`));
   };
 
   private cleanupInstallListeners = (boundReject: any, appId: string): void => {

@@ -1,23 +1,54 @@
+import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
-import { parseEther } from "ethers/utils";
+import { BigNumber } from "ethers/utils";
+
+import { expect } from "../";
 
 export const fundChannel = async (
   client: IConnextClient,
-  amount: string, // ETH string, only included if not collateral
+  amount: BigNumber,
   assetId: string = AddressZero,
 ): Promise<void> => {
-  const prevFreeBalance = await client.getFreeBalance();
-  await new Promise(async resolve => {
+  const prevFreeBalance = await client.getFreeBalance(assetId);
+  await new Promise(async (resolve, reject) => {
     client.once("DEPOSIT_CONFIRMED_EVENT", async () => {
       const freeBalance = await client.getFreeBalance(assetId);
       // verify free balance increased as expected
-      const expected = prevFreeBalance[client.freeBalanceAddress].add(parseEther(amount));
-      expect(freeBalance[client.freeBalanceAddress]).toBeBigNumberEq(expected);
+      const expected = prevFreeBalance[client.freeBalanceAddress].add(amount);
+      expect(freeBalance[client.freeBalanceAddress]).to.equal(expected);
       resolve();
     });
+    client.once("DEPOSIT_FAILED_EVENT", async (msg: any) => {
+      reject(new Error(JSON.stringify(msg)));
+    });
 
-    await client.deposit({ amount: parseEther(amount).toString(), assetId });
+    await client.deposit({ amount: amount.toString(), assetId });
+  });
+
+  return;
+};
+
+export const requestCollateral = async (
+  client: IConnextClient,
+  assetId: string = AddressZero,
+): Promise<void> => {
+  const nodeFreeBalanceAddress = xkeyKthAddress(client.nodePublicIdentifier);
+  const prevFreeBalance = await client.getFreeBalance(assetId);
+  await new Promise(async (resolve, reject) => {
+    client.once("DEPOSIT_CONFIRMED_EVENT", async data => {
+      const freeBalance = await client.getFreeBalance(assetId);
+      // verify free balance increased as expected
+      expect(freeBalance[nodeFreeBalanceAddress]).to.be.above(
+        prevFreeBalance[nodeFreeBalanceAddress],
+      );
+      resolve();
+    });
+    client.once("DEPOSIT_FAILED_EVENT", async (msg: any) => {
+      reject(new Error(JSON.stringify(msg)));
+    });
+
+    await client.requestCollateral(assetId);
   });
 
   return;

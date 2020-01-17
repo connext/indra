@@ -1,7 +1,6 @@
 import { bigNumberify } from "ethers/utils";
 import { EventEmitter } from "events";
 
-import { ChannelProvider } from "./channelProvider";
 import { ConnextClient } from "./connext";
 import { Logger, stringify } from "./lib";
 import {
@@ -11,6 +10,7 @@ import {
   DepositConfirmationMessage,
   DepositFailedMessage,
   DepositStartedMessage,
+  IChannelProvider,
   InstallMessage,
   InstallVirtualMessage,
   NodeMessageWrappedProtocolMessage,
@@ -33,7 +33,7 @@ type CallbackStruct = {
 
 export class ConnextListener extends EventEmitter {
   private log: Logger;
-  private channelProvider: ChannelProvider;
+  private channelProvider: IChannelProvider;
   private connext: ConnextClient;
 
   // TODO: add custom parsing functions here to convert event data
@@ -131,7 +131,7 @@ export class ConnextListener extends EventEmitter {
     },
   };
 
-  constructor(channelProvider: ChannelProvider, connext: ConnextClient) {
+  constructor(channelProvider: IChannelProvider, connext: ConnextClient) {
     super();
     this.channelProvider = channelProvider;
     this.connext = connext;

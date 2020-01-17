@@ -1,4 +1,5 @@
-import { BigNumber } from "ethers/utils";
+import { Contract, providers } from "ethers";
+import { BigNumber, Network } from "ethers/utils";
 
 import {
   AppActionBigNumber,
@@ -12,9 +13,9 @@ import { ConnextEvent } from "./basic";
 import { AppInstanceJson, CFCoreTypes } from "./cf";
 import { CFCoreChannel, ChannelAppSequences, ChannelState, PaymentProfile } from "./channel";
 import {
-  ChannelProvider,
   ChannelProviderConfig,
   ChannelProviderRpcMethod,
+  IChannelProvider,
   KeyGen,
   StorePair,
 } from "./channelProvider";
@@ -34,13 +35,28 @@ import {
   TransferParameters,
   WithdrawParameters,
 } from "./inputs";
+import { IMessagingService } from "./messaging";
 import {
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
+  INodeApiClient,
   RequestCollateralResponse,
   Transfer,
 } from "./node";
+import { IAsyncStorage } from "./store";
+
+export type InternalClientOptions = ClientOptions & {
+  appRegistry: AppRegistry;
+  channelProvider: IChannelProvider;
+  config: GetConfigResponse;
+  ethProvider: providers.JsonRpcProvider;
+  messaging: IMessagingService;
+  network: Network;
+  node: INodeApiClient;
+  store: Store;
+  token: Contract;
+};
 
 export interface Store extends CFCoreTypes.IStoreService {
   set(pairs: StorePair[], shouldBackup?: Boolean): Promise<void>;
@@ -51,12 +67,13 @@ export interface Store extends CFCoreTypes.IStoreService {
 export interface ClientOptions {
   ethProviderUrl: string;
   nodeUrl?: string; // ws:// or nats:// urls are supported
-  channelProvider?: ChannelProvider;
+  channelProvider?: IChannelProvider;
   keyGen?: KeyGen;
   mnemonic?: string;
   xpub?: string;
   store?: Store;
   logLevel?: number;
+  asyncStorage?: IAsyncStorage;
 }
 
 export interface IConnextClient {
@@ -69,11 +86,11 @@ export interface IConnextClient {
   nodePublicIdentifier: string;
   publicIdentifier: string;
   signerAddress: string;
+  channelProvider: IChannelProvider;
 
   ////////////////////////////////////////
   // Methods
 
-  isAvailable: () => Promise<void>;
   restart(): Promise<void>;
 
   ///////////////////////////////////
@@ -105,17 +122,20 @@ export interface IConnextClient {
   // TODO: do we really need to expose all of these?
   getChannel(): Promise<GetChannelResponse>;
   getLinkedTransfer(paymentId: string): Promise<Transfer>;
-  getAppRegistry(appDetails?: {
-    name: SupportedApplication;
-    network: SupportedNetwork;
-  }): Promise<AppRegistry>;
+  getAppRegistry(
+    appDetails?:
+      | {
+          name: SupportedApplication;
+          network: SupportedNetwork;
+        }
+      | { appDefinitionAddress: string },
+  ): Promise<AppRegistry>;
   getRegisteredAppDetails(appName: SupportedApplication): DefaultApp;
   createChannel(): Promise<CreateChannelResponse>;
   subscribeToSwapRates(from: string, to: string, callback: any): Promise<any>;
   getLatestSwapRate(from: string, to: string): Promise<string>;
   unsubscribeToSwapRates(from: string, to: string): Promise<void>;
   requestCollateral(tokenAddress: string): Promise<RequestCollateralResponse | void>;
-  addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile>;
   getPaymentProfile(assetId?: string): Promise<PaymentProfile | undefined>;
   getTransferHistory(): Promise<Transfer[]>;
   reclaimPendingAsyncTransfers(): Promise<void>;
