@@ -31,7 +31,8 @@
     "ts-mocha": "6.0.0",
     "ts-nats": "1.2.4",
     "ts-node": "8.5.4",
-    "typescript": "3.5.3"
+    "typescript": "3.5.3",
+    "uuid": "3.3.3"
   },
   "devDependencies": {
     "@types/chai": "4.2.7",

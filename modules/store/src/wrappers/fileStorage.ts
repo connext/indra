@@ -22,9 +22,6 @@ export class FileStorage implements IAsyncStorage {
   constructor(opts?: FileStorageOptions) {
     if (opts) {
       this.fileDir = opts.fileDir || DEFAULT_FILE_STORAGE_DIR;
-      if (!isDirectorySync(this.fileDir)) {
-        throw new Error(`Provided fileDir (${this.fileDir}) is not a directory`);
-      }
 
       this.fileExt = opts.fileExt ? sanitizeExt(opts.fileExt) : DEFAULT_FILE_STORAGE_EXT;
       if (!this.fileExt.trim()) {

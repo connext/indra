@@ -1,5 +1,7 @@
 import { ConnextStore, MemoryStorage } from "@connext/store";
 
+import { setAndGet } from "../util";
+
 describe("Store", () => {
   let memoryStorage: MemoryStorage;
   let store: ConnextStore;
@@ -10,7 +12,7 @@ describe("Store", () => {
   }, 90_000);
 
   it("happy case: set & get the same path consecutively", async () => {
-    // TODO: happy case: set & get the same path consecutively
+    await setAndGet(store);
   });
 
   it("happy case: get partial matches when available", async () => {

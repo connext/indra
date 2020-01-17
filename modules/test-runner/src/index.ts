@@ -7,7 +7,6 @@ import "./flows/transfer.test";
 import "./getAppRegistry/getAppRegistry.test";
 import "./getStateChannel/getStateChannel.test";
 import "./restoreState/restoreState.test";
-import "./store/instantiation.test";
 import "./store/storage.test";
 import "./store/store.test";
 import "./swap/swap.test";

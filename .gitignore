@@ -5,6 +5,7 @@
 .node-gyp
 .npm
 .bot-store
+.test-store
 modules/**/.cache
 modules/**/.config
 modules/**/.node-gyp
