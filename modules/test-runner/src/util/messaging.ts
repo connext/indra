@@ -107,8 +107,8 @@ export class TestMessagingService implements IMessagingService {
       const ceiling = this.protocolCount[protocol].ceiling;
       if (ceiling && this.protocolCount[protocol].received >= ceiling!) {
         const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached. ${this.protocolCount[protocol].received} received, ceiling: ${ceiling}`;
-        console.error(msg);
-        throw new Error(msg);
+        console.log(msg);
+        return;
       }
       return callback(msg);
     });
@@ -122,10 +122,11 @@ export class TestMessagingService implements IMessagingService {
     }
     this.protocolCount[protocol].sent += 1;
     const ceiling = this.protocolCount[protocol].ceiling;
-    if (ceiling && this.protocolCount[protocol].sent >= ceiling!) {
+    // tslint:disable-next-line: triple-equals
+    if (ceiling != undefined && this.protocolCount[protocol].sent >= ceiling!) {
       const msg = `Refusing to send any more messages, ceiling for ${protocol} has been reached. ${this.protocolCount[protocol].sent} sent, ceiling: ${ceiling}`;
-      console.error(msg);
-      throw new Error(msg);
+      console.log(msg);
+      return;
     }
     return await this.connection.send(to, msg);
   }
