@@ -48,9 +48,9 @@ const setupMultisigAddress = async (
   let multisigAddress: string;
   if (!myChannel) {
     log.debug("no channel detected, creating channel..");
-    const creationEventData: CFCoreTypes.CreateChannelResult | void = await Promise.race([
-      await delayAndThrow(30_000, "Create channel event not fired within 30s"),
-      await new Promise(
+    const creationEventData = await Promise.race([
+      delayAndThrow(30_000, "Create channel event not fired within 30s"),
+      new Promise(
         async (res: any): Promise<any> => {
           channelProvider.once(
             CFCoreTypes.EventNames.CREATE_CHANNEL_EVENT as CFCoreTypes.EventName,
