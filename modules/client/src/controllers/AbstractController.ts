@@ -35,7 +35,11 @@ export abstract class AbstractController {
 
     try {
       const res = await Promise.race([
-        new Promise((res: () => any, rej: () => any): void => {
+        await delayAndThrow(
+          CF_METHOD_TIMEOUT,
+          `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
+        ),
+        await new Promise((res: () => any, rej: () => any): void => {
           boundResolve = this.resolveInstall.bind(null, res, rej, appInstanceId);
           boundReject = this.rejectInstall.bind(null, rej, appInstanceId);
           this.log.debug(
@@ -47,10 +51,6 @@ export abstract class AbstractController {
           );
           this.listener.on(CFCoreTypes.EventNames.REJECT_INSTALL_EVENT, boundReject);
         }),
-        delayAndThrow(
-          CF_METHOD_TIMEOUT,
-          `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
-        ),
       ]);
 
       this.log.info(`Installed app ${appInstanceId}`);
@@ -70,7 +70,11 @@ export abstract class AbstractController {
 
     try {
       await Promise.race([
-        new Promise(
+        await delayAndThrow(
+          CF_METHOD_TIMEOUT,
+          `App proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
+        ),
+        await new Promise(
           async (res: () => any, rej: () => any): Promise<void> => {
             boundReject = this.rejectProposal.bind(null, rej);
             this.log.debug(
@@ -85,10 +89,6 @@ export abstract class AbstractController {
             this.log.debug(`waiting for proposal acceptance of ${appInstanceId}`);
             this.listener.on(CFCoreTypes.EventNames.REJECT_INSTALL_EVENT, boundReject);
           },
-        ),
-        delayAndThrow(
-          CF_METHOD_TIMEOUT,
-          `App proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
         ),
       ]);
       this.log.info(`App was proposed successfully!: ${appId}`);
