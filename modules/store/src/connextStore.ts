@@ -5,12 +5,13 @@ import {
   IBackupServiceAPI,
   PATH_CHANNEL,
   PATH_PROPOSED_APP_INSTANCE_ID,
+  Store,
   StoreFactoryOptions,
   StorePair,
 } from "./helpers";
 import InternalStore from "./internalStore";
 
-export class ConnextStore {
+export class ConnextStore implements Store {
   private store: InternalStore;
 
   private prefix: string = DEFAULT_STORE_PREFIX;

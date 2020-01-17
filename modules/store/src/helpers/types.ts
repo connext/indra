@@ -6,6 +6,7 @@ export {
   IPisaClient,
   InitCallback,
   FileStorageOptions,
+  Store,
   StorePair,
   StorageWrapper,
   StoreFactoryOptions,
