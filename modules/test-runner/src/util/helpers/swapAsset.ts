@@ -1,7 +1,7 @@
 import { IConnextClient, SwapParameters } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 
-import { expect } from "../assertions";
+import { expect } from "../";
 import { calculateExchange, inverse } from "../bn";
 import { AssetOptions, ExistingBalancesSwap } from "../types";
 

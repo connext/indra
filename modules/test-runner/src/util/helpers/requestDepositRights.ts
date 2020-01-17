@@ -4,7 +4,7 @@ import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
 
-import { expect } from "../assertions";
+import { expect } from "../";
 import { ethProvider } from "../ethprovider";
 
 const { xpubToAddress } = utils;
