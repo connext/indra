@@ -249,10 +249,14 @@ export class ConnextClient implements IConnextClient {
     return await this.node.fetchLinkedTransfer(paymentId);
   };
 
-  public getAppRegistry = async (appDetails?: {
-    name: SupportedApplication;
-    network: SupportedNetwork;
-  }): Promise<AppRegistry> => {
+  public getAppRegistry = async (
+    appDetails?:
+      | {
+          name: SupportedApplication;
+          network: SupportedNetwork;
+        }
+      | { appDefinitionAddress: string },
+  ): Promise<AppRegistry> => {
     return await this.node.appRegistry(appDetails);
   };
 
