@@ -34,7 +34,7 @@ export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<I
     store: clientStore,
     ...opts,
   };
-  clientMessaging = clientOpts.messaging;
+  clientMessaging = (clientOpts.messaging as TestMessagingService) || undefined;
   const client = await connect(clientOpts);
   // TODO: add client endpoint to get node config, so we can easily have its xpub etc
 
