@@ -16,7 +16,7 @@ import {
 
 export class FileStorage implements IAsyncStorage {
   private uuid: string;
-  private seperator: string = "-";
+  private separator: string = "-";
   private fileExt: string = DEFAULT_FILE_STORAGE_EXT;
   private fileDir: string = DEFAULT_FILE_STORAGE_DIR;
 
@@ -36,7 +36,7 @@ export class FileStorage implements IAsyncStorage {
   }
 
   get fileSuffix(): string {
-    return `${this.seperator}${this.uuid}${this.fileExt}`;
+    return `${this.separator}${this.uuid}${this.fileExt}`;
   }
 
   getFilePath(key: string): string {

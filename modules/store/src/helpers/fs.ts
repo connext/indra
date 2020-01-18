@@ -44,8 +44,8 @@ export function sanitizeExt(ext: string): string {
     .match(/\.?([^.\s]\w)+/gi)
     .join("")
     .toLowerCase();
-  const seperator = ".";
-  return result.startsWith(seperator) ? result : `${seperator}${result}`;
+  const separator = ".";
+  return result.startsWith(separator) ? result : `${separator}${result}`;
 }
 
 export function checkFile(path: string): Promise<number> {
