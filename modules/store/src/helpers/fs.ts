@@ -15,7 +15,6 @@ export function fsRead(path: string): Promise<any> {
     });
   });
 }
-
 export function fsWrite(path: string, data: any): Promise<void> {
   return new Promise((resolve, reject) => {
     fs.writeFile(path, data, err => {
@@ -31,6 +30,31 @@ export function fsUnlink(path: string): Promise<void> {
   return new Promise((resolve, reject) => {
     fs.unlink(path, err => {
       if (err) {
+        if (err.code === "ENOENT") {
+          return resolve();
+        }
+        return reject(err);
+      }
+      resolve();
+    });
+  });
+}
+
+export function fsStat(path: string): Promise<fs.Stats> {
+  return new Promise((resolve, reject) => {
+    fs.stat(path, (err, stat) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(stat);
+    });
+  });
+}
+
+export function fsMkDir(path: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    fs.mkdir(path, err => {
+      if (err) {
         return reject(err);
       }
       resolve();
@@ -43,8 +67,8 @@ export function sanitizeExt(ext: string): string {
     .match(/\.?([^.\s]\w)+/gi)
     .join("")
     .toLowerCase();
-  const seperator = ".";
-  return result.startsWith(seperator) ? result : `${seperator}${result}`;
+  const separator = ".";
+  return result.startsWith(separator) ? result : `${separator}${result}`;
 }
 
 export function checkFile(path: string): Promise<number> {
@@ -63,13 +87,29 @@ export function checkFile(path: string): Promise<number> {
 }
 
 export async function safeFsRead(path: string): Promise<any> {
-  const check = await checkFile(path);
-  if (check === FILE_DOESNT_EXIST) {
+  if ((await checkFile(path)) === FILE_DOESNT_EXIST) {
     const data = EMPTY_STRINGIFIED_DATA;
     await fsWrite(path, data);
     return data;
   }
   return fsRead(path);
+}
+
+export async function isFile(path: string): Promise<boolean> {
+  const fileStat = await fsStat(path);
+  return fileStat.isFile();
+}
+
+export async function isDirectory(path: string): Promise<boolean> {
+  const fileStat = await fsStat(path);
+  return fileStat.isDirectory();
+}
+
+export async function createDirectory(path: string): Promise<void> {
+  if (!fs.existsSync(path)) {
+    return await fsMkDir(path);
+  }
+  return;
 }
 
 export function isDirectorySync(path: string): boolean {
@@ -79,6 +119,18 @@ export function isDirectorySync(path: string): boolean {
 
 export function createDirectorySync(path: string): void {
   if (!fs.existsSync(path)) {
-    fs.mkdirSync(path);
+    return fs.mkdirSync(path);
   }
+  return;
+}
+
+export function getDirectoryFiles(path: string): Promise<string[]> {
+  return new Promise((resolve: any, reject: any): void => {
+    fs.readdir(path, (err: Error, files: string[]) => {
+      if (err) {
+        return reject(err);
+      }
+      return resolve(files);
+    });
+  });
 }
