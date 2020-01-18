@@ -2,6 +2,7 @@ import { IConnextClient } from "@connext/types";
 
 import {
   createClient,
+  createDefaultClient,
   expect,
   getMessaging,
   SETUP_RESPONDER_RECEIVED_COUNT,
@@ -10,6 +11,16 @@ import {
 } from "../util";
 
 describe("Create Channel", () => {
+  it("Happy case: user creates channel with mainnet network string", async () => {
+    const clientA: IConnextClient = await createDefaultClient("mainnet");
+    expect(clientA.multisigAddress).to.be.ok;
+  });
+
+  it("Happy case: user creates channel with rinkeby network string", async () => {
+    const clientA: IConnextClient = await createDefaultClient("rinkeby");
+    expect(clientA.multisigAddress).to.be.ok;
+  });
+
   it("Happy case: user creates channel with node and is given multisig address", async () => {
     const clientA: IConnextClient = await createClient();
     expect(clientA.multisigAddress).to.be.ok;
@@ -27,6 +38,13 @@ describe("Create Channel", () => {
     expect(messaging!.setup.sent).to.be.equal(SETUP_RESPONDER_SENT_COUNT);
     expect(messaging!.installVirtual.received).to.be.equal(0);
     expect(messaging!.installVirtual.sent).to.be.equal(0);
+  });
+
+  // tslint:disable-next-line:max-line-length
+  it("Creating a channel with mainnet network string fails if no mnemonic is provided", async () => {
+    await expect(createDefaultClient("mainnet", { mnemonic: undefined })).to.be.rejectedWith(
+      "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
+    );
   });
 
   it("Creating a channel fails if user xpub and node xpub are the same", async () => {

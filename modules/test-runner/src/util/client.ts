@@ -69,3 +69,20 @@ export const createRemoteClient = async (
 
   return client;
 };
+
+export const createDefaultClient = async (network: string, opts?: Partial<ClientOptions>) => {
+  let clientOpts: Partial<ClientOptions> = { ...opts };
+
+  if (network === "mainnet") {
+    clientOpts = {
+      mnemonic: Wallet.createRandom().mnemonic,
+      ...clientOpts,
+    };
+  }
+  const client = await connect(network, clientOpts);
+
+  expect(client.freeBalanceAddress).to.be.ok;
+  expect(client.publicIdentifier).to.be.ok;
+
+  return client;
+};
