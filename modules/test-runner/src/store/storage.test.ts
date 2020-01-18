@@ -1,4 +1,5 @@
 import { getDirectoryFiles, IAsyncStorage, isDirectorySync } from "@connext/store";
+import uuid from "uuid";
 
 import { createStore, expect, setAndGet, setAndGetMultiple, testAsyncStorageKey } from "../util";
 
@@ -34,12 +35,11 @@ describe("Storage", () => {
 
   it("happy case: localStorage should include multiple keys", async () => {
     const { store, storage } = createStore("localstorage");
+    const preInsert = (storage as Storage).length;
 
     await setAndGetMultiple(store, length);
 
-    console.log("storage", "========>", storage);
-
-    expect((storage as Storage).length).to.equal(length);
+    expect((storage as Storage).length).to.equal(length + preInsert);
     await store.reset();
   });
 
@@ -80,19 +80,18 @@ describe("Storage", () => {
   it("happy case: FileStorage should create a file per key inside directory", async () => {
     const { store, storage } = createStore("filestorage", { asyncStorageKey }, { fileDir });
 
-    const key1 = "testing-1";
-    await storage.setItem(key1, testValue);
-    const key2 = "testing-2";
-    await storage.setItem(key2, testValue);
+    const key1 = uuid.v4();
+    const key2 = uuid.v4();
+    expect(key1).to.not.equal(key2);
+    await Promise.all([storage.setItem(key2, testValue), storage.setItem(key1, testValue)]);
 
     const files = await getDirectoryFiles(fileDir);
-
-    const file1 = files.filter((fileName: string) => fileName.includes(key1));
-    expect(file1.length).to.equal(1);
-
-    const file2 = files.filter((fileName: string) => fileName.includes(key2));
-    expect(file2.length).to.equal(1);
-    await store.reset();
+    const verifyFile = (fileName: string): void => {
+      const fileArr = files.filter((file: string) => file.includes(fileName));
+      expect(fileArr.length).to.equal(1);
+    };
+    verifyFile(key1);
+    verifyFile(key2);
   });
 
   it("happy case: FileStorage should create a files with unique name", async () => {
@@ -107,14 +106,14 @@ describe("Storage", () => {
       { fileDir },
     );
 
-    const key = "testing-1";
-    await storageA.setItem(key, testValue);
-    await storageB.setItem(key, testValue);
+    const key = uuid.v4();
+    await Promise.all([storageA.setItem(key, testValue), storageB.setItem(key, testValue)]);
 
     const files = await getDirectoryFiles(fileDir);
-
-    const file1 = files[0].toLowerCase();
-    const file2 = files[1].toLowerCase();
+    const filteredFiles = files.filter((file: string) => file.includes(key));
+    expect(filteredFiles.length).to.equal(2);
+    const file1 = filteredFiles[0].toLowerCase();
+    const file2 = filteredFiles[1].toLowerCase();
     expect(file1 === file2).to.be.false;
 
     await storeA.reset();
