@@ -1,19 +1,21 @@
 import {
   ConnextStore,
+  MemoryStorage,
   PATH_CHANNEL,
   PATH_PROPOSED_APP_INSTANCE_ID,
   StorePair,
 } from "@connext/store";
+import { hexlify, randomBytes } from "ethers/utils";
 
-import { createStore, expect, setAndGet } from "../util";
+import { createStore, expect, MockBackupService, setAndGet, setAndGetMultiple } from "../util";
 
-describe.only("Store", () => {
-  let memoryStorage: Storage;
+describe("Store", () => {
+  let memoryStorage: MemoryStorage;
   let store: ConnextStore;
 
   beforeEach(async () => {
     const { store: testStore, storage } = createStore("memorystorage");
-    memoryStorage = storage as Storage;
+    memoryStorage = storage as MemoryStorage;
     store = testStore;
   }, 90_000);
 
@@ -24,29 +26,50 @@ describe.only("Store", () => {
   });
 
   it("happy case: get partial matches when available", async () => {
-    // TODO: happy case: get partial matches when available
     const names = [PATH_PROPOSED_APP_INSTANCE_ID, PATH_CHANNEL];
-    const keyspace = `partial`;
+    const subdir = `partial`;
     for (const name of names) {
       const pair: StorePair = {
-        path: `${name}/${keyspace}`,
+        path: `${name}/${subdir}`,
         value: { ilyk: "tests" },
       };
       await setAndGet(store, pair);
       const retrieved = await store.get(name);
-      expect(retrieved).to.deep.equal({ [keyspace]: pair.value });
+      expect(retrieved).to.deep.equal({ [subdir]: pair.value });
     }
   });
 
   it("happy case: reset the whole store state", async () => {
-    // TODO: happy case: reset the whole store state
+    expect((await memoryStorage.getAllKeys()).length).to.equal(0);
+    await setAndGet(store);
+    expect((await memoryStorage.getAllKeys()).length).to.be.greaterThan(0);
+    await store.reset();
+    expect(await memoryStorage.getAllKeys()).to.deep.equal([]);
   });
 
   it("happy case: backup state when provided a backupService", async () => {
-    // TODO: happy case: backup state when provided a backupService
+    // create store with backup service
+    const backupService = new MockBackupService();
+    const { store } = createStore("memorystorage", { backupService });
+    // generate value to properly set and backup
+    const pair: StorePair = {
+      path: `/xpub/channel/${hexlify(randomBytes(20))}`,
+      value: { freeBalanceAppInstance: { test: "pls" } },
+    };
+    await store.set([pair], true);
+    // restore and check states restored
+    const statesRestored = await store.restore();
+    expect(statesRestored).to.deep.equal([pair]);
+    // check store is properly setup
+    expect(await store.get(pair.path)).to.deep.equal(pair.value);
   });
 
   it("happy case: restore empty state without backupService", async () => {
-    // TODO: happy case: restore empty state without backupService
+    await setAndGetMultiple(store);
+    // restore
+    const statesRestored = await store.restore();
+    // expect that store has proper prefix
+    expect(statesRestored).to.be.deep.equal([]);
+    expect(await memoryStorage.getAllKeys()).to.be.deep.equal([]);
   });
 });
