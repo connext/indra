@@ -2,6 +2,7 @@ import path from "path";
 import uuid from "uuid";
 
 import {
+  createDirectory,
   createDirectorySync,
   DEFAULT_FILE_STORAGE_DIR,
   DEFAULT_FILE_STORAGE_EXT,
@@ -39,24 +40,29 @@ export class FileStorage implements IAsyncStorage {
     return `${this.separator}${this.uuid}${this.fileExt}`;
   }
 
-  getFilePath(key: string): string {
+  async checkFileDir(): Promise<void> {
+    await createDirectory(this.fileDir);
+  }
+
+  async getFilePath(key: string): Promise<string> {
+    await this.checkFileDir();
     const fileName = `${key}${this.fileSuffix}`;
     return path.join(this.fileDir, fileName);
   }
 
   async getItem(key: string): Promise<string | null> {
-    const filePath = this.getFilePath(key);
-    return safeFsRead(filePath);
+    const filePath = await this.getFilePath(key);
+    return await safeFsRead(filePath);
   }
 
   async setItem(key: string, data: any): Promise<void> {
-    const filePath = this.getFilePath(key);
-    return fsWrite(filePath, data);
+    const filePath = await this.getFilePath(key);
+    return await fsWrite(filePath, data);
   }
 
   async removeItem(key: string): Promise<void> {
-    const filePath = this.getFilePath(key);
-    return fsUnlink(filePath);
+    const filePath = await this.getFilePath(key);
+    return await fsUnlink(filePath);
   }
 
   async clear(): Promise<void> {

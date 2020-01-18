@@ -40,6 +40,28 @@ export function fsUnlink(path: string): Promise<void> {
   });
 }
 
+export function fsStat(path: string): Promise<fs.Stats> {
+  return new Promise((resolve, reject) => {
+    fs.stat(path, (err, stat) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(stat);
+    });
+  });
+}
+
+export function fsMkDir(path: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    fs.mkdir(path, err => {
+      if (err) {
+        return reject(err);
+      }
+      resolve();
+    });
+  });
+}
+
 export function sanitizeExt(ext: string): string {
   const result = ext
     .match(/\.?([^.\s]\w)+/gi)
@@ -73,6 +95,23 @@ export async function safeFsRead(path: string): Promise<any> {
   return fsRead(path);
 }
 
+export async function isFile(path: string): Promise<boolean> {
+  const fileStat = await fsStat(path);
+  return fileStat.isFile();
+}
+
+export async function isDirectory(path: string): Promise<boolean> {
+  const fileStat = await fsStat(path);
+  return fileStat.isDirectory();
+}
+
+export async function createDirectory(path: string): Promise<void> {
+  if (!fs.existsSync(path)) {
+    return await fsMkDir(path);
+  }
+  return;
+}
+
 export function isDirectorySync(path: string): boolean {
   fs.lstatSync;
   return fs.lstatSync(path).isDirectory();
@@ -80,15 +119,16 @@ export function isDirectorySync(path: string): boolean {
 
 export function createDirectorySync(path: string): void {
   if (!fs.existsSync(path)) {
-    fs.mkdirSync(path);
+    return fs.mkdirSync(path);
   }
+  return;
 }
 
 export function getDirectoryFiles(path: string): Promise<string[]> {
   return new Promise((resolve: any, reject: any): void => {
     fs.readdir(path, (err: Error, files: string[]) => {
       if (err) {
-        return reject(new Error(err.message));
+        return reject(err);
       }
       return resolve(files);
     });
