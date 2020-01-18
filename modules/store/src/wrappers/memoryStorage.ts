@@ -34,6 +34,6 @@ export class MemoryStorage implements IAsyncStorage {
   }
 
   async getAllKeys(): Promise<string[]> {
-    return [...this.store.keys()];
+    return Array.from(this.store.keys());
   }
 }
