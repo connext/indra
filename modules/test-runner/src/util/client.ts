@@ -17,8 +17,8 @@ export const getStore = (): ConnextStore => {
   return clientStore;
 };
 
-export const getMessaging = (): TestMessagingService => {
-  return clientMessaging;
+export const getMessaging = (): TestMessagingService | undefined => {
+  return (clientMessaging as TestMessagingService) || undefined;
 };
 
 export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<IConnextClient> => {
@@ -32,15 +32,9 @@ export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<I
     mnemonic: Wallet.createRandom().mnemonic,
     nodeUrl: env.nodeUrl,
     store: clientStore,
-    messaging:
-      opts.messaging ||
-      new TestMessagingService({
-        logLevel: opts.logLevel || env.logLevel,
-        messagingUrl: opts.nodeUrl || env.nodeUrl,
-      }),
     ...opts,
   };
-  clientMessaging = clientOpts.messaging! as TestMessagingService;
+  clientMessaging = clientOpts.messaging;
   const client = await connect(clientOpts);
   // TODO: add client endpoint to get node config, so we can easily have its xpub etc
 
