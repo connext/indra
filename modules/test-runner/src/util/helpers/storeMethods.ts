@@ -51,13 +51,15 @@ export function createStore(
   return { store, storage };
 }
 
+export function createArray(length: number = 10): string[] {
+  return Array(length).fill("");
+}
+
 export function generateStorePairs(length: number = 10): StorePair[] {
-  return Array(length)
-    .fill("")
-    .map(() => {
-      const id = uuid.v1();
-      return { path: `path-${id}`, value: `value-${id}` };
-    });
+  return createArray(length).map(() => {
+    const id = uuid.v1();
+    return { path: `path-${id}`, value: `value-${id}` };
+  });
 }
 
 export async function setAndGet(

@@ -7,7 +7,14 @@ import {
 } from "@connext/store";
 import { hexlify, randomBytes } from "ethers/utils";
 
-import { createStore, expect, MockBackupService, setAndGet, setAndGetMultiple } from "../util";
+import {
+  createArray,
+  createStore,
+  expect,
+  MockBackupService,
+  setAndGet,
+  setAndGetMultiple,
+} from "../util";
 
 describe("Store", () => {
   let memoryStorage: MemoryStorage;
@@ -20,9 +27,7 @@ describe("Store", () => {
   }, 90_000);
 
   it("happy case: set & get the same path consecutively", async () => {
-    for (const _ of Array(5)) {
-      await setAndGet(store);
-    }
+    await Promise.all(createArray(5).map(() => setAndGet(store)));
   });
 
   it("happy case: get partial matches when available", async () => {

@@ -4,6 +4,7 @@ import { EMPTY_STRINGIFIED_DATA } from "./constants";
 
 export const FILE_EXISTS = 1;
 export const FILE_DOESNT_EXIST = 0;
+
 export function fsRead(path: string): Promise<any> {
   return new Promise((resolve, reject) => {
     fs.readFile(path, (err, data) => {
@@ -25,13 +26,13 @@ export function fsWrite(path: string, data: any): Promise<void> {
   });
 }
 
-export async function fsUnlink(path: string): Promise<void> {
-  if ((await checkFile(path)) === FILE_DOESNT_EXIST) {
-    return;
-  }
+export function fsUnlink(path: string): Promise<void> {
   return new Promise((resolve, reject) => {
     fs.unlink(path, err => {
       if (err) {
+        if (err.code === "ENOENT") {
+          return resolve();
+        }
         return reject(err);
       }
       resolve();
