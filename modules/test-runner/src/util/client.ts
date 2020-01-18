@@ -4,11 +4,18 @@ import { ClientOptions, IChannelProvider, IConnextClient, IMessagingService } fr
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
+import localStorage from "localStorage";
 
 import { ETH_AMOUNT_MD, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
 import { ethWallet } from "./ethprovider";
 import { TestMessagingService } from "./messaging";
+
+declare global {
+  interface Window {
+    localStorage: Storage;
+  }
+}
 
 let clientStore: ConnextStore;
 let clientMessaging: TestMessagingService;
@@ -71,6 +78,8 @@ export const createRemoteClient = async (
 };
 
 export const createDefaultClient = async (network: string, opts?: Partial<ClientOptions>) => {
+  window.localStorage = localStorage;
+
   let clientOpts: Partial<ClientOptions> = { ...opts };
 
   if (network === "mainnet") {
