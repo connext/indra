@@ -1,4 +1,5 @@
 import { ConnextStore } from "@connext/store";
+import { Store } from "@connext/types";
 import { ethers } from "ethers";
 
 import { ClientOptions } from "./types";
@@ -34,7 +35,7 @@ export function generateMnemonic(): string {
   return mnemonic;
 }
 
-export async function getDefaultMnemonic(store: ConnextStore): Promise<string> {
+export async function getDefaultMnemonic(store: Store): Promise<string> {
   console.warn("[Connext] Using mnemonic stored insecurely - DO NOT USE IN PRODUCTION!");
 
   let mnemonic = await store.get(MNEMONIC_KEY);
@@ -69,10 +70,18 @@ export async function getDefaultOptions(
     nodeUrl: `wss://${baseUrl}/messaging`,
   };
 
-  const asyncStorage = overrideOptions ? overrideOptions.asyncStorage : undefined;
-  const store = new ConnextStore(asyncStorage || window.localStorage);
+  let store;
+  let mnemonic;
 
-  const mnemonic = shouldGenerateMnemonic ? await getDefaultMnemonic(store) : undefined;
+  if (overrideOptions) {
+    store =
+      overrideOptions.store ||
+      new ConnextStore(overrideOptions.asyncStorage || window.localStorage);
+
+    mnemonic = shouldGenerateMnemonic(network, overrideOptions)
+      ? await getDefaultMnemonic(store)
+      : undefined;
+  }
 
   return {
     mnemonic,

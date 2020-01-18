@@ -11,12 +11,6 @@ import { env } from "./env";
 import { ethWallet } from "./ethprovider";
 import { TestMessagingService } from "./messaging";
 
-declare global {
-  interface Window {
-    localStorage: Storage;
-  }
-}
-
 let clientStore: ConnextStore;
 let clientMessaging: TestMessagingService;
 
@@ -78,9 +72,10 @@ export const createRemoteClient = async (
 };
 
 export const createDefaultClient = async (network: string, opts?: Partial<ClientOptions>) => {
-  window.localStorage = localStorage;
+  // ideally this would be polyfilled globally but instead overriding the store
+  const store = new ConnextStore(localStorage);
 
-  let clientOpts: Partial<ClientOptions> = { ...opts };
+  let clientOpts: Partial<ClientOptions> = { ...opts, store };
 
   if (network === "mainnet") {
     clientOpts = {
