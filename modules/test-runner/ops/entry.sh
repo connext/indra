@@ -3,6 +3,7 @@ set -e
 
 project="indra"
 
+export STORE_DIR="./.test-store"
 export INDRA_CLIENT_LOG_LEVEL="${INDRA_CLIENT_LOG_LEVEL:-2}"
 export INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://172.17.0.1:8545}"
 export INDRA_ETH_MNEMONIC="${INDRA_ETH_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
@@ -41,3 +42,4 @@ else
   mocha --exit --timeout 30000 $bundle
 fi
 
+rm -rf $STORE_DIR

@@ -13,6 +13,7 @@
   "license": "MIT",
   "dependencies": {
     "@connext/client": "3.0.0",
+    "@connext/store": "3.0.0",
     "@connext/types": "3.0.0",
     "commander": "4.0.1",
     "dotenv": "8.2.0",

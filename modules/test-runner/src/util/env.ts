@@ -13,5 +13,6 @@ export const env = {
   logLevel: parseInt(process.env.INDRA_CLIENT_LOG_LEVEL || "3", 10),
   mnemonic: process.env.INDRA_ETH_MNEMONIC || "",
   nodeUrl: process.env.INDRA_NODE_URL || "",
+  storeDir: process.env.STORE_DIR || "",
 };
 // console.log(`Starting tests in env: ${JSON.stringify(env, null, 2)}`);

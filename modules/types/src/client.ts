@@ -74,6 +74,7 @@ export interface ClientOptions {
   store?: Store;
   logLevel?: number;
   asyncStorage?: IAsyncStorage;
+  messaging?: IMessagingService;
 }
 
 export interface IConnextClient {
@@ -122,10 +123,14 @@ export interface IConnextClient {
   // TODO: do we really need to expose all of these?
   getChannel(): Promise<GetChannelResponse>;
   getLinkedTransfer(paymentId: string): Promise<Transfer>;
-  getAppRegistry(appDetails?: {
-    name: SupportedApplication;
-    network: SupportedNetwork;
-  }): Promise<AppRegistry>;
+  getAppRegistry(
+    appDetails?:
+      | {
+          name: SupportedApplication;
+          network: SupportedNetwork;
+        }
+      | { appDefinitionAddress: string },
+  ): Promise<AppRegistry>;
   getRegisteredAppDetails(appName: SupportedApplication): DefaultApp;
   createChannel(): Promise<CreateChannelResponse>;
   subscribeToSwapRates(from: string, to: string, callback: any): Promise<any>;

@@ -1,5 +1,6 @@
 import { connect } from "@connext/client";
-import { ClientOptions, IChannelProvider, IConnextClient } from "@connext/types";
+import { ConnextStore, MemoryStorage } from "@connext/store";
+import { ClientOptions, IChannelProvider, IConnextClient, IMessagingService } from "@connext/types";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
@@ -7,18 +8,24 @@ import tokenAbi from "human-standard-token-abi";
 import { ETH_AMOUNT_MD, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
 import { ethWallet } from "./ethprovider";
-import { MemoryStoreService, MemoryStoreServiceFactory } from "./store";
+import { TestMessagingService } from "./messaging";
 
-let clientStore: MemoryStoreService;
+let clientStore: ConnextStore;
+let clientMessaging: TestMessagingService;
 
-export const getStore = (): MemoryStoreService => {
+export const getStore = (): ConnextStore => {
   return clientStore;
 };
 
-export const createClient = async (opts?: Partial<ClientOptions>): Promise<IConnextClient> => {
-  const storeServiceFactory = new MemoryStoreServiceFactory();
+export const getMessaging = (): TestMessagingService | undefined => {
+  return (clientMessaging as TestMessagingService) || undefined;
+};
 
-  clientStore = storeServiceFactory.createStoreService();
+export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<IConnextClient> => {
+  const memoryStorage = new MemoryStorage();
+
+  clientStore = new ConnextStore(memoryStorage);
+
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
     logLevel: env.logLevel,
@@ -27,6 +34,7 @@ export const createClient = async (opts?: Partial<ClientOptions>): Promise<IConn
     store: clientStore,
     ...opts,
   };
+  clientMessaging = (clientOpts.messaging as TestMessagingService) || undefined;
   const client = await connect(clientOpts);
   // TODO: add client endpoint to get node config, so we can easily have its xpub etc
 

@@ -1,6 +1,7 @@
 import {
   DEFAULT_STORE_PREFIX,
   DEFAULT_STORE_SEPARATOR,
+  IAsyncStorage,
   IBackupServiceAPI,
   PATH_CHANNEL,
   PATH_PROPOSED_APP_INSTANCE_ID,
@@ -16,7 +17,7 @@ export class ConnextStore {
   private separator: string = DEFAULT_STORE_SEPARATOR;
   private backupService: IBackupServiceAPI | null = null;
 
-  constructor(storage: any, opts?: StoreFactoryOptions) {
+  constructor(storage: Storage | IAsyncStorage, opts?: StoreFactoryOptions) {
     let asyncStorageKey;
 
     if (opts) {
@@ -59,14 +60,18 @@ export class ConnextStore {
     await this.store.clear();
   }
 
-  public async restore(): Promise<any[]> {
-    return this.backupService ? this.backupService.restore() : [];
+  public async restore(): Promise<StorePair[]> {
+    if (this.backupService) {
+      return await this.backupService.restore();
+    }
+    await this.reset();
+    return [];
   }
 
   /// ////////////////////////////////////////////
   /// // PRIVATE METHODS
 
-  private async getPartialMatches(path: string): Promise<any> {
+  private async getPartialMatches(path: string): Promise<any | undefined> {
     // Handle partial matches so the following line works -.-
     // https://github.com/counterfactual/monorepo/blob/master/packages/node/src/store.ts#L54
     if (path.endsWith(PATH_CHANNEL) || path.endsWith(PATH_PROPOSED_APP_INSTANCE_ID)) {
@@ -79,8 +84,8 @@ export class ConnextStore {
           partialMatches[k.replace(pathToFind, "")] = value;
         }
       }
-      return partialMatches;
+      return Object.keys(partialMatches).length === 0 ? undefined : partialMatches;
     }
-    return null;
+    return undefined;
   }
 }
