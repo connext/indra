@@ -1,9 +1,10 @@
+import { IAsyncStorage } from "@connext/types";
 import { utils } from "ethers";
 
 import { AsyncStorageWrapper, LocalStorageWrapper } from "../wrappers";
 
+import { ASYNC_STORAGE_TEST_KEY } from "./constants";
 import { StorageWrapper } from "./types";
-import { IAsyncStorage } from "@connext/types";
 
 export function arrayify(value: string | ArrayLike<number> | utils.Hexable): Uint8Array {
   return utils.arrayify(value);
@@ -40,15 +41,27 @@ export function safeJsonStringify(value: any): string {
   return typeof value === "string" ? value : JSON.stringify(value);
 }
 
-export function isAsyncStorage(storage: any): boolean {
-  const key = "__react_native_storage_test";
-  const promiseTest = storage.setItem(key, "test");
+export function removeAsyncStorageTest(
+  storage: Storage | IAsyncStorage,
+  promiseTest: Promise<void>,
+): void {
+  if (promiseTest && promiseTest.then) {
+    promiseTest.then(() => {
+      storage.removeItem(ASYNC_STORAGE_TEST_KEY);
+    });
+    return;
+  }
+  storage.removeItem(ASYNC_STORAGE_TEST_KEY);
+}
+
+export function isAsyncStorage(storage: Storage | IAsyncStorage): boolean {
+  const promiseTest = storage.setItem(ASYNC_STORAGE_TEST_KEY, "test");
   const result = !!(
     typeof promiseTest !== "undefined" &&
     typeof promiseTest.then !== "undefined" &&
-    typeof storage.length === "undefined"
+    typeof (storage as Storage).length === "undefined"
   );
-  storage.removeItem(key);
+  removeAsyncStorageTest(storage, promiseTest);
   return result;
 }
 

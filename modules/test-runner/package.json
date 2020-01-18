@@ -23,14 +23,17 @@
     "ethers": "4.0.41",
     "@ethereum-waffle/chai": "^2.3.0",
     "human-standard-token-abi": "2.0.0",
+    "localStorage": "1.0.4",
     "mocha": "6.2.2",
     "openzeppelin-solidity": "2.3.0",
     "pg": "7.17.0",
+    "mock-async-storage": "2.2.0",
     "ts-jest": "24.2.0",
     "ts-mocha": "6.0.0",
     "ts-nats": "1.2.4",
     "ts-node": "8.5.4",
-    "typescript": "3.5.3"
+    "typescript": "3.5.3",
+    "uuid": "3.3.3"
   },
   "devDependencies": {
     "@types/chai": "4.2.7",

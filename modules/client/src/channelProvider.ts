@@ -223,7 +223,10 @@ export class ChannelProvider extends EventEmitter implements IChannelProvider {
     return await this.store.reset();
   };
 
+  // TODO: clean up types from restore, without the any typing things
+  // get messed up. will likely be a breaking change
   public restoreState = async (path: string): Promise<void> => {
+    // TODO: remove when using only store package
     this.reset();
     let state;
     state = await this.restore();
