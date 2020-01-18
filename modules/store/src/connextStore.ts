@@ -60,8 +60,12 @@ export class ConnextStore {
     await this.store.clear();
   }
 
-  public async restore(): Promise<any[]> {
-    return this.backupService ? this.backupService.restore() : [];
+  public async restore(): Promise<StorePair[]> {
+    if (this.backupService) {
+      return await this.backupService.restore();
+    }
+    await this.reset();
+    return [];
   }
 
   /// ////////////////////////////////////////////
