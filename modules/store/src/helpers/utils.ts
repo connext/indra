@@ -1,9 +1,9 @@
+import { IAsyncStorage } from "@connext/types";
 import { utils } from "ethers";
 
 import { AsyncStorageWrapper, LocalStorageWrapper } from "../wrappers";
 
 import { StorageWrapper } from "./types";
-import { IAsyncStorage } from "@connext/types";
 
 export function arrayify(value: string | ArrayLike<number> | utils.Hexable): Uint8Array {
   return utils.arrayify(value);
