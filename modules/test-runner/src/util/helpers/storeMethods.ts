@@ -1,5 +1,6 @@
 import { ConnextStore, FileStorage, MemoryStorage } from "@connext/store";
 import { IAsyncStorage, StoreFactoryOptions, StorePair } from "@connext/types";
+import { BigNumber } from "ethers/utils";
 import localStorage from "localStorage";
 import MockAsyncStorage from "mock-async-storage";
 import uuid from "uuid";
@@ -8,8 +9,16 @@ import { expect } from "../";
 
 const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" };
 
+const StoreTypes = {
+  asyncstorage: "asyncstorage",
+  filestorage: "filestorage",
+  localstorage: "localstorage",
+  memorystorage: "memorystorage",
+};
+type StoreType = keyof typeof StoreTypes;
+
 export function createStore(
-  type: string,
+  type: StoreType,
   opts?: StoreFactoryOptions,
   storageOpts?: any,
 ): { store: ConnextStore; storage: Storage | IAsyncStorage } {
@@ -57,7 +66,10 @@ export async function setAndGet(
 ): Promise<void> {
   await store.set([storePair]);
   const value = await store.get(storePair.path);
-
+  if (typeof storePair.value === "object" && !BigNumber.isBigNumber(storePair.value)) {
+    expect(value).to.be.deep.equal(storePair.value);
+    return;
+  }
   expect(value).to.be.equal(storePair.value);
 }
 
