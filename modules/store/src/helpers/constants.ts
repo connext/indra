@@ -11,3 +11,5 @@ export const PATH_PROPOSED_APP_INSTANCE_ID = "appInstanceIdToProposedAppInstance
 
 export const EMPTY_DATA = {};
 export const EMPTY_STRINGIFIED_DATA = safeJsonStringify(EMPTY_DATA);
+
+export const ASYNC_STORAGE_TEST_KEY = "__is_async_storage_test";

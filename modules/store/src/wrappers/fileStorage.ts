@@ -46,7 +46,7 @@ export class FileStorage implements IAsyncStorage {
 
   async getItem(key: string): Promise<string | null> {
     const filePath = this.getFilePath(key);
-    return await safeFsRead(filePath);
+    return safeFsRead(filePath);
   }
 
   async setItem(key: string, data: any): Promise<void> {
@@ -56,7 +56,7 @@ export class FileStorage implements IAsyncStorage {
 
   async removeItem(key: string): Promise<void> {
     const filePath = this.getFilePath(key);
-    return await fsUnlink(filePath);
+    return fsUnlink(filePath);
   }
 
   async clear(): Promise<void> {

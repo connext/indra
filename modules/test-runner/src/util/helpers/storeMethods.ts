@@ -1,6 +1,5 @@
 import { ConnextStore, FileStorage, MemoryStorage } from "@connext/store";
 import { IAsyncStorage, StoreFactoryOptions, StorePair } from "@connext/types";
-import fs from "fs";
 import localStorage from "localStorage";
 import MockAsyncStorage from "mock-async-storage";
 import uuid from "uuid";
@@ -21,7 +20,7 @@ export function createStore(
       storage = localStorage;
       break;
 
-    case "localstorage":
+    case "asyncstorage":
       storage = new MockAsyncStorage(storageOpts);
       break;
 
@@ -29,7 +28,7 @@ export function createStore(
       storage = new FileStorage(storageOpts);
       break;
 
-    case "localstorage":
+    case "memorystorage":
       storage = new MemoryStorage(storageOpts);
       break;
 
@@ -44,28 +43,34 @@ export function createStore(
 }
 
 export function generateStorePairs(length: number = 10): StorePair[] {
-  const id = uuid.v1();
-  return Array(length).map(
-    (): StorePair => ({
-      path: id,
-      value: id,
-    }),
-  );
+  return Array(length)
+    .fill("")
+    .map(() => {
+      const id = uuid.v1();
+      return { path: `path-${id}`, value: `value-${id}` };
+    });
 }
 
 export async function setAndGet(
   store: ConnextStore,
-  storePair: StorePair = TEST_STORE_PAIR,
+  pair: StorePair = TEST_STORE_PAIR,
 ): Promise<void> {
-  await store.set([storePair]);
-  const value = await store.get(storePair.path);
-
-  expect(value).to.be.equal(storePair.value);
+  await store.set([pair]);
+  const value = await store.get(pair.path);
+  expect(value).to.be.equal(pair.value);
 }
 
 export async function setAndGetMultiple(store: ConnextStore, length: number = 10): Promise<void> {
   const pairs = generateStorePairs(length);
   await store.set(pairs);
+  await Promise.all(
+    pairs.map(
+      async (pair: StorePair, index: number): Promise<void> => {
+        const value = await store.get(pair.path);
+        expect(value).to.be.equal(pairs[index].value);
+      },
+    ),
+  );
 }
 
 export async function testAsyncStorageKey(

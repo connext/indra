@@ -13,6 +13,7 @@ describe("Store", () => {
 
   it("happy case: set & get the same path consecutively", async () => {
     await setAndGet(store);
+    await store.reset();
   });
 
   it("happy case: get partial matches when available", async () => {
