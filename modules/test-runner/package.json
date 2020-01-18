@@ -13,6 +13,7 @@
     "@connext/cf-core": "3.0.0",
     "@connext/client": "3.0.0",
     "@connext/contracts": "1.0.1",
+    "@connext/messaging": "3.0.0",
     "@connext/store": "3.0.0",
     "@connext/types": "3.0.0",
     "core-js": "3.6.1",
