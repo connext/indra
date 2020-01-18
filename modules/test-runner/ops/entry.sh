@@ -42,4 +42,4 @@ else
   mocha --exit --timeout 30000 $bundle
 fi
 
-rm -rf STORE_DIR
+rm -rf $STORE_DIR
