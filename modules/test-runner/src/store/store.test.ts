@@ -23,7 +23,6 @@ describe("Store", () => {
     for (const _ of Array(5)) {
       await setAndGet(store);
     }
-    await store.reset();
   });
 
   it("happy case: get partial matches when available", async () => {

@@ -92,6 +92,7 @@ describe("Storage", () => {
     };
     verifyFile(key1);
     verifyFile(key2);
+    await store.reset();
   });
 
   it("happy case: FileStorage should create a files with unique name", async () => {
