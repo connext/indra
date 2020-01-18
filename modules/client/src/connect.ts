@@ -77,7 +77,7 @@ const setupMultisigAddress = async (
 
 export const connect = async (
   clientOptions: string | ClientOptions,
-  overrideOptions?: ClientOptions,
+  overrideOptions?: Partial<ClientOptions>,
 ): Promise<IConnextClient> => {
   const opts =
     typeof clientOptions === "string"

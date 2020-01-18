@@ -19,7 +19,7 @@ export function isRinkeby(network: string): boolean {
   return network.toLowerCase() === RINKEBY;
 }
 
-export function isWalletProvided(opts?: ClientOptions): boolean {
+export function isWalletProvided(opts?: Partial<ClientOptions>): boolean {
   if (!opts) {
     return false;
   }
@@ -46,13 +46,13 @@ export async function getDefaultMnemonic(store: ConnextStore): Promise<string> {
   return mnemonic;
 }
 
-export function shouldGenerateMnemonic(network: string, opts?: ClientOptions): boolean {
+export function shouldGenerateMnemonic(network: string, opts?: Partial<ClientOptions>): boolean {
   return !isMainnet(network) && !isWalletProvided(opts);
 }
 
 export async function getDefaultOptions(
   network: string,
-  overrideOptions?: ClientOptions,
+  overrideOptions?: Partial<ClientOptions>,
 ): Promise<ClientOptions> {
   const baseUrl = isMainnet(network)
     ? "indra.connext.network/api"
