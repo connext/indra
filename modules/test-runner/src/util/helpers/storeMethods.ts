@@ -7,7 +7,7 @@ import uuid from "uuid";
 
 import { expect } from "../";
 
-const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" };
+export const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" };
 
 const StoreTypes = {
   asyncstorage: "asyncstorage",
