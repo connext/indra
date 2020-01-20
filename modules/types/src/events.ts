@@ -17,7 +17,7 @@ export const EventNames = {
 };
 export type EventName = keyof typeof EventNames;
 
-// TODO: merge these
+// TODO: merge these?
 
 export const ConnextEvents = {
   ...EventNames,

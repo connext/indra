@@ -49,7 +49,7 @@ export async function setup(
   nodeCPresent: boolean = false,
   newExtendedPrvKey: boolean = false,
   messagingService: CFCoreTypes.IMessagingService = new MemoryMessagingService(),
-  storeServiceFactory: CFCoreTypes.ServiceFactory = new MemoryStoreServiceFactory(),
+  storeServiceFactory: any = new MemoryStoreServiceFactory(),
 ): Promise<SetupContext> {
   const setupContext: SetupContext = {};
 
