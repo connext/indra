@@ -72,14 +72,25 @@ export const createRemoteClient = async (
 };
 
 export const createDefaultClient = async (network: string, opts?: Partial<ClientOptions>) => {
-  // ideally this would be polyfilled globally but instead overriding the store
+  // TODO: replace with polyfilled window.localStorage
   const store = new ConnextStore(localStorage);
 
-  let clientOpts: Partial<ClientOptions> = { ...opts, store };
+  // TODO: allow test-runner to access external urls
+  const urlOptions = {
+    ethProviderUrl: env.ethProviderUrl,
+    nodeUrl: env.nodeUrl,
+  };
+
+  let clientOpts: Partial<ClientOptions> = {
+    ...opts,
+    ...urlOptions,
+    store,
+  };
 
   if (network === "mainnet") {
     clientOpts = {
       mnemonic: Wallet.createRandom().mnemonic,
+
       ...clientOpts,
     };
   }
