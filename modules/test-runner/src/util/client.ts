@@ -4,6 +4,7 @@ import { ClientOptions, IChannelProvider, IConnextClient, IMessagingService } fr
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
+import localStorage from "localStorage";
 
 import { ETH_AMOUNT_MD, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
@@ -63,6 +64,37 @@ export const createRemoteClient = async (
   };
 
   const client = await connect(clientOpts);
+
+  expect(client.freeBalanceAddress).to.be.ok;
+  expect(client.publicIdentifier).to.be.ok;
+
+  return client;
+};
+
+export const createDefaultClient = async (network: string, opts?: Partial<ClientOptions>) => {
+  // TODO: replace with polyfilled window.localStorage
+  const store = new ConnextStore(localStorage);
+
+  // TODO: allow test-runner to access external urls
+  const urlOptions = {
+    ethProviderUrl: env.ethProviderUrl,
+    nodeUrl: env.nodeUrl,
+  };
+
+  let clientOpts: Partial<ClientOptions> = {
+    ...opts,
+    ...urlOptions,
+    store,
+  };
+
+  if (network === "mainnet") {
+    clientOpts = {
+      mnemonic: Wallet.createRandom().mnemonic,
+
+      ...clientOpts,
+    };
+  }
+  const client = await connect(network, clientOpts);
 
   expect(client.freeBalanceAddress).to.be.ok;
   expect(client.publicIdentifier).to.be.ok;
