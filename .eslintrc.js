@@ -2,7 +2,7 @@ module.exports = {
     rules: {
       "comma-dangle": ["error", "only-multiline"],
       "indent": ["error", 2],
-      "max-len": ["error", 100],
+      "max-len": ["error", { "code": 100, "ignoreTemplateLiterals": true }],
       "no-undef": ["error"],
       "no-unused-vars": ["error"],
       "no-var": ["error"],
