@@ -40,7 +40,8 @@ find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path
 # On Mac, the docker-VM takes care of this for us so pass root's id (ie noop)
 my_id=$(shell id -u):$(shell id -g)
 id=$(shell if [[ "`uname`" == "Darwin" ]]; then echo 0:0; else echo $(my_id); fi)
-docker_run=docker run --name=$(project)_builder --tty --rm --volume=$(cwd):/root $(project)_builder $(id)
+interactive=$(shell if [[ -t 0 && -t 2 ]]; then echo "--interactive"; else echo ""; fi)
+docker_run=docker run --name=$(project)_builder $(interactive) --tty --rm --volume=$(cwd):/root $(project)_builder $(id)
 
 startTime=$(flags)/.startTime
 totalTime=$(flags)/.totalTime
