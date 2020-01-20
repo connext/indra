@@ -53,6 +53,7 @@
     ]
   },
   "jsRules": {
-    "max-line-length": [true, 100]
+    "max-line-length": [true, 100],
+    "no-use-before-declare": true
   }
 }
