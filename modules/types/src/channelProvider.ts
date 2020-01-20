@@ -1,7 +1,7 @@
 import EventEmitter from "events";
 
 import { CFCoreTypes, NetworkContext } from "./cf";
-import { Store } from "./client";
+import { Store, StorePair } from "./store";
 
 export interface IChannelProvider extends EventEmitter {
   ////////////////////////////////////////
@@ -89,11 +89,6 @@ export type JsonRpcRequest = {
   jsonrpc: "2.0";
   method: string;
   params: any;
-};
-
-export type StorePair = {
-  path: string;
-  value: any;
 };
 
 export type KeyGen = (index: string) => Promise<string>;

@@ -1,6 +1,8 @@
 import { BigNumber, BigNumberish } from "ethers/utils";
 
-import { AppABIEncodings, AppInstanceJson, AppInstanceProposal, OutcomeType, StateChannelJSON } from "./data-types";
+import { StateChannelJSON } from "../state";
+
+import { AppABIEncodings, AppInstanceJson, AppInstanceProposal, OutcomeType } from "./data-types";
 import { SolidityValueType } from "./simple-types";
 
 type JsonRpcProtocolV2 = {
@@ -50,33 +52,18 @@ export namespace CFCoreTypes {
     data: string;
   };
 
+/*
   export interface ServiceFactory {
     connect?(host: string, port: string): ServiceFactory;
     auth?(email: string, password: string): Promise<void>;
     createMessagingService?(messagingServiceKey: string): IMessagingService;
     createStoreService?(storeServiceKey: string): IStoreService;
   }
+*/
 
   export interface IMessagingService {
     send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void>;
     onReceive(address: string, callback: (msg: CFCoreTypes.NodeMessage) => void): any;
-  }
-
-  /**
-   * An interface for a stateful storage service with an API very similar to Firebase's API.
-   * Values are addressed by paths, which are separated by the forward slash separator `/`.
-   * `get` must return values whose paths have prefixes that match the provided path,
-   * keyed by the remaining path.
-   * `set` allows multiple values and paths to be atomically set. In Firebase, passing `null`
-   * as `value` deletes the entry at the given prefix, and passing objects with null subvalues
-   * deletes entries at the path extended by the subvalue's path within the object. `set` must
-   * have the same behaviour if the `allowDelete` flag is passed; otherwise, any null values or
-   * subvalues throws an error.
-   */
-  export interface IStoreService {
-    get(path: string): Promise<any>;
-    set(pairs: { path: string; value: any }[], allowDelete?: Boolean): Promise<void>;
-    reset?(): Promise<void>;
   }
 
   export interface IPrivateKeyGenerator {

@@ -17,7 +17,6 @@ import {
   ChannelProviderRpcMethod,
   IChannelProvider,
   KeyGen,
-  StorePair,
 } from "./channelProvider";
 import {
   CheckDepositRightsParameters,
@@ -44,7 +43,7 @@ import {
   RequestCollateralResponse,
   Transfer,
 } from "./node";
-import { IAsyncStorage } from "./store";
+import { IAsyncStorage, Store } from "./store";
 
 export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
@@ -57,11 +56,6 @@ export type InternalClientOptions = ClientOptions & {
   store: Store;
   token: Contract;
 };
-
-export interface Store extends CFCoreTypes.IStoreService {
-  set(pairs: StorePair[], shouldBackup?: Boolean): Promise<void>;
-  restore(): Promise<StorePair[]>;
-}
 
 // channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
 export interface ClientOptions {

@@ -14,7 +14,3 @@ export const ConnextEvents = {
   RECIEVE_TRANSFER_STARTED_EVENT: "RECIEVE_TRANSFER_STARTED_EVENT",
 };
 export type ConnextEvent = keyof typeof ConnextEvents;
-
-export const ConnextNodeStorePrefix = "INDRA_NODE_CF_CORE";
-
-export const ConnextClientStorePrefix = "INDRA_CLIENT_CF_CORE";
