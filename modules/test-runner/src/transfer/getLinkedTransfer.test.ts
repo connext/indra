@@ -26,6 +26,7 @@ describe("Async Transfers", () => {
       preImage,
     });
     const linkedTransfer = await clientA.getLinkedTransfer(paymentId);
+    expect(linkedTransfer).to.be.ok;
     expect(linkedTransfer).to.deep.include({
       amount: transfer.amount.toString(),
       assetId: AddressZero,
