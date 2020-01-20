@@ -43,7 +43,8 @@ describe("Create Channel", () => {
   // tslint:disable-next-line:max-line-length
   it("Creating a channel with mainnet network string fails if no mnemonic is provided", async () => {
     await expect(createDefaultClient("mainnet", { mnemonic: undefined })).to.be.rejectedWith(
-      "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
+      // tslint:disable-next-line:max-line-length
+      "Client must be instantiated with xpub and keyGen, or a channelProvider if not using mnemonic",
     );
   });
 
