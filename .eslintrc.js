@@ -1,5 +1,6 @@
 module.exports = {
     rules: {
+      "@typescript-eslint/no-unused-expressions": "off",
       "comma-dangle": ["error", "only-multiline"],
       "indent": ["error", 2],
       "max-len": ["error", { "code": 100, "ignoreTemplateLiterals": true }],
