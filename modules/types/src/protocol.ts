@@ -1,8 +1,138 @@
-import { AppInstanceJson, AppInstanceProposal, AppABIEncodings } from "./app";
+import { AppInstanceJson, AppInterface, AppInstanceProposal, AppABIEncodings } from "./app";
 import { BigNumber, BigNumberish, SolidityValueType } from "./basic";
 import { OutcomeType } from "./contracts";
 import { EventName } from "./events";
 import { StateChannelJSON } from "./state";
+
+export enum Protocol {
+  Install = "install",
+  InstallVirtualApp = "install-virtual-app",
+  Setup = "setup",
+  Propose = "propose",
+  TakeAction = "takeAction",
+  Uninstall = "uninstall",
+  UninstallVirtualApp = "uninstall-virtual-app",
+  Update = "update",
+  Withdraw = "withdraw"
+}
+
+export type ProtocolMessage = {
+  processID: string;
+  protocol: Protocol;
+  params?: ProtocolParameters;
+  toXpub: string;
+  seq: number;
+  /*
+  Additional data which depends on the protocol (or even the specific message
+  number in a protocol) lives here. Includes signatures, final outcome of a
+  virtual app instance
+  */
+  customData: { [key: string]: any };
+};
+
+export type InstallProtocolParams = {
+  initiatorXpub: string;
+  initiatorDepositTokenAddress: string;
+  responderXpub: string;
+  responderDepositTokenAddress: string;
+  multisigAddress: string;
+  initiatorBalanceDecrement: BigNumber;
+  responderBalanceDecrement: BigNumber;
+  participants: string[];
+  initialState: SolidityValueType;
+  appInterface: AppInterface;
+  defaultTimeout: number;
+  appSeqNo: number;
+  // Outcome Type returned by the app instance, as defined by `appInterface`
+  outcomeType: OutcomeType;
+  // By default, the SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER interpreter params
+  // contains a "limit" that is computed as
+  // `initiatorBalanceDecrement + responderBalanceDecrement`; setting this
+  // flag disables the limit by setting it to MAX_UINT256
+  disableLimit: boolean;
+};
+
+export type InstallVirtualAppProtocolParams = {
+  initiatorXpub: string;
+  responderXpub: string;
+  intermediaryXpub: string;
+  defaultTimeout: number;
+  appInterface: AppInterface;
+  initialState: SolidityValueType;
+  // initiator and respondor must fund the installed virtual app with the same
+  // token type `tokenAddress`, but may use different amounts
+  initiatorBalanceDecrement: BigNumber;
+  responderBalanceDecrement: BigNumber;
+  tokenAddress: string;
+  appSeqNo: number;
+  // outcomeType returned by the app instance, as defined by the app definition `appInterface`
+  outcomeType: OutcomeType;
+};
+
+export type ProposeInstallProtocolParams = {
+  multisigAddress: string;
+  initiatorXpub: string;
+  responderXpub: string;
+  appDefinition: string;
+  abiEncodings: AppABIEncodings;
+  initiatorDeposit: BigNumber;
+  initiatorDepositTokenAddress?: string;
+  responderDeposit: BigNumber;
+  responderDepositTokenAddress?: string;
+  timeout: BigNumber;
+  initialState: SolidityValueType;
+  outcomeType: OutcomeType;
+  meta?: Object;
+};
+
+export type SetupProtocolParams = {
+  initiatorXpub: string;
+  responderXpub: string;
+  multisigAddress: string;
+};
+
+export type UninstallProtocolParams = {
+  appIdentityHash: string;
+  initiatorXpub: string;
+  responderXpub: string;
+  multisigAddress: string;
+  blockNumberToUseIfNecessary?: number;
+};
+
+export type UninstallVirtualAppProtocolParams = {
+  initiatorXpub: string;
+  responderXpub: string;
+  intermediaryXpub: string;
+  targetAppIdentityHash: string;
+  targetOutcome: string;
+};
+
+export type UpdateProtocolParams = {
+  initiatorXpub: string;
+  responderXpub: string;
+  multisigAddress: string;
+  appIdentityHash: string;
+  newState: SolidityValueType;
+};
+
+export type WithdrawProtocolParams = {
+  initiatorXpub: string;
+  responderXpub: string;
+  multisigAddress: string;
+  recipient: string;
+  amount: BigNumber;
+  tokenAddress: string;
+};
+
+export type ProtocolParameters =
+  | InstallProtocolParams
+  | InstallVirtualAppProtocolParams
+  | ProposeInstallProtocolParams
+  | SetupProtocolParams
+  | UninstallProtocolParams
+  | UninstallVirtualAppProtocolParams
+  | UpdateProtocolParams
+  | WithdrawProtocolParams;
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace ProtocolTypes {

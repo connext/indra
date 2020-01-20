@@ -1,6 +1,7 @@
+import { CreateChannelMessage } from "@connext/types";
 import { isHexString } from "ethers/utils";
 
-import { CreateChannelMessage, Node, NODE_EVENTS } from "../../src";
+import { Node } from "../../src";
 
 import { setup, SetupContext } from "./setup";
 import {
@@ -39,12 +40,12 @@ describe("Node can create multisig, other owners get notified", () => {
         ],
         counterpartyXpub: nodeB.publicIdentifier,
       }
-    }
+    };
 
     let assertionCount = 0;
 
     nodeA.once("CREATE_CHANNEL_EVENT", async (msg: CreateChannelMessage) => {
-      assertNodeMessage(msg, expectedMsg, ['data.multisigAddress']);
+      assertNodeMessage(msg, expectedMsg, ["data.multisigAddress"]);
       assertionCount += 1;
       if (assertionCount === 2) done();
     });
@@ -56,12 +57,13 @@ describe("Node can create multisig, other owners get notified", () => {
           ...expectedMsg.data,
           counterpartyXpub: nodeA.publicIdentifier,
         }
-      }, ['data.multisigAddress'])
+      }, ["data.multisigAddress"]);
       assertionCount += 1;
       if (assertionCount === 3) done();
     });
 
-    const { result: { result: { multisigAddress } } } = await nodeB.rpcRouter.dispatch(constructChannelCreationRpc(owners));
+    const { result: { result: { multisigAddress } } } =
+      await nodeB.rpcRouter.dispatch(constructChannelCreationRpc(owners));
     expect(isHexString(multisigAddress)).toBeTruthy();
     assertionCount += 1;
     if (assertionCount === 3) done();
@@ -77,7 +79,7 @@ describe("Node can create multisig, other owners get notified", () => {
       const ownersABFreeBalanceAddr = [
         nodeA.freeBalanceAddress,
         nodeB.freeBalanceAddress,
-      ]
+      ];
 
       const ownersACPublicIdentifiers = [
         nodeA.publicIdentifier,
@@ -87,7 +89,7 @@ describe("Node can create multisig, other owners get notified", () => {
       const ownersACFreeBalanceAddr = [
         nodeA.freeBalanceAddress,
         nodeC.freeBalanceAddress,
-      ]
+      ];
 
       nodeA.on(
         "CREATE_CHANNEL_EVENT",

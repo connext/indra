@@ -6,7 +6,9 @@ import {
 } from "ethers/utils";
 
 export { Contract } from "ethers";
-export { BaseProvider, JsonRpcProvider, TransactionResponse } from "ethers/providers";
+export {
+  BaseProvider, JsonRpcProvider, TransactionReceipt, TransactionResponse,
+} from "ethers/providers";
 export { BigNumberish, Network, Transaction } from "ethers/utils";
 
 export type BigNumber = ethersBN;

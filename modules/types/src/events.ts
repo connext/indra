@@ -27,4 +27,5 @@ export const ConnextEvents = {
 };
 export type ConnextEvent = keyof typeof ConnextEvents;
 
-
+export type NodeEvent = EventName;
+export const NODE_EVENTS = EventNames;
