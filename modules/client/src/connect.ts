@@ -257,7 +257,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     }
   }
 
-  // 12/11/2019 make sure state is restored if there is no proxy factory in the state
+  // 190120 (YYMMDD): we now need to have both proxyFactory & multisigMastercopy addresses
   const { data: sc } = await client.getStateChannel();
   if (!sc.addresses || !sc.addresses.proxyFactory || !sc.addresses.multisigMastercopy) {
     log.debug("No critical state channel addresses found, restoring client state");
