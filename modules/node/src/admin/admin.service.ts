@@ -1,4 +1,3 @@
-import { StateChannel } from "@connext/cf-core";
 import MinimumViableMultisig from "@connext/contracts/build/MinimumViableMultisig.json";
 import ProxyFactory from "@connext/contracts/build/ProxyFactory.json";
 import { ConnextNodeStorePrefix, StateChannelJSON } from "@connext/types";
@@ -6,7 +5,7 @@ import { Injectable } from "@nestjs/common";
 import { Contract } from "ethers";
 import { Provider } from "ethers/providers";
 import { getAddress, Interface, keccak256, solidityKeccak256 } from "ethers/utils";
-import { fromExtendedKey, HDNode } from "ethers/utils/hdnode";
+import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -15,7 +14,7 @@ import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { LinkedTransfer } from "../transfer/transfer.entity";
 import { TransferService } from "../transfer/transfer.service";
-import { CLogger, getCreate2MultisigAddress, stringify } from "../util";
+import { CLogger, getCreate2MultisigAddress } from "../util";
 
 const logger = new CLogger("AdminService");
 
@@ -269,7 +268,7 @@ export class AdminService {
       repoPath: string,
       pfAddress: string,
     ): Promise<void> => {
-      logger.log(`Multisig address is as expected, adding correct proxyFactory address`);
+      logger.log("Multisig address is as expected, adding correct proxyFactory address");
       const cfCoreRecord = await this.cfCoreRepository.get(repoPath);
       cfCoreRecord["proxyFactoryAddress"] = pfAddress;
       await this.cfCoreRepository.set([
@@ -345,7 +344,7 @@ export class AdminService {
         channel.multisigAddress,
       );
 
-      if (!stateChannel.proxyFactoryAddress) {
+      if (!stateChannel.addresses.proxyFactory) {
         // add to list
         noProxyAddress.push(channel);
       } else {
@@ -354,7 +353,7 @@ export class AdminService {
         const { MinimumViableMultisig } = await this.configService.getContractAddresses();
         const generatedMultisig = await getCreate2MultisigAddress(
           stateChannel.userNeuteredExtendedKeys,
-          stateChannel.proxyFactoryAddress,
+          stateChannel.addresses.proxyFactory,
           MinimumViableMultisig,
           this.configService.getEthProvider(),
         );

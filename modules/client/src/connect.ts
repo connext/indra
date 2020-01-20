@@ -195,7 +195,8 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   } else {
     throw new Error(
       // tslint:disable-next-line:max-line-length
-      `Client must be instantiated with xpub and keyGen, or a channelProvider if not using mnemonic`,
+      "Client must be instantiated with xpub and keyGen, " +
+      "or a channelProvider if not using mnemonic",
     );
   }
 
@@ -247,7 +248,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   try {
     await client.getFreeBalance();
   } catch (e) {
-    if (e.message.includes(`StateChannel does not exist yet`)) {
+    if (e.message.includes("StateChannel does not exist yet")) {
       log.debug(`Restoring client state: ${e.stack || e.message}`);
       await client.restoreState();
     } else {
@@ -258,8 +259,8 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
 
   // 12/11/2019 make sure state is restored if there is no proxy factory in the state
   const { data: sc } = await client.getStateChannel();
-  if (!sc.proxyFactoryAddress) {
-    log.debug(`No proxy factory address found, restoring client state`);
+  if (!sc.addresses || !sc.addresses.proxyFactory || !sc.addresses.multisigMastercopy) {
+    log.debug("No critical state channel addresses found, restoring client state");
     await client.restoreState();
   }
 
