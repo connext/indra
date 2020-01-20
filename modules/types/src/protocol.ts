@@ -1,47 +1,11 @@
-import { BigNumber, BigNumberish } from "ethers/utils";
+import { AppInstanceJson, AppInstanceProposal, AppABIEncodings } from "./app";
+import { BigNumber, BigNumberish, SolidityValueType } from "./basic";
+import { OutcomeType } from "./contracts";
+import { EventName } from "./events";
+import { StateChannelJSON } from "./state";
 
-import { StateChannelJSON } from "../state";
-
-import { AppABIEncodings, AppInstanceJson, AppInstanceProposal, OutcomeType } from "./data-types";
-import { SolidityValueType } from "./simple-types";
-
-type JsonRpcProtocolV2 = {
-  jsonrpc: "2.0";
-};
-
-type RpcParameters =
-  | {
-      [key: string]: any;
-    }
-  | any[];
-
-export type JsonRpcNotification = JsonRpcProtocolV2 & {
-  result: any;
-};
-
-export type JsonRpcResponse = JsonRpcNotification & {
-  id: number;
-};
-
-export type Rpc = {
-  methodName: string;
-  parameters: RpcParameters;
-  id?: number;
-};
-
-export interface IRpcNodeProvider {
-  onMessage(callback: (message: JsonRpcResponse | JsonRpcNotification) => void): any;
-  sendMessage(message: Rpc): any;
-}
-
-export namespace CFCoreTypes {
-  /**
-   * The message type for Nodes to communicate with each other.
-   */
-  export type NodeMessage = {
-    from: string;
-    type: EventName;
-  };
+// eslint-disable-next-line @typescript-eslint/no-namespace
+export namespace ProtocolTypes {
 
   // This is used instead of the ethers `Transaction` because that type
   // requires the nonce and chain ID to be specified, when sometimes those
@@ -51,20 +15,6 @@ export namespace CFCoreTypes {
     value: BigNumberish;
     data: string;
   };
-
-/*
-  export interface ServiceFactory {
-    connect?(host: string, port: string): ServiceFactory;
-    auth?(email: string, password: string): Promise<void>;
-    createMessagingService?(messagingServiceKey: string): IMessagingService;
-    createStoreService?(storeServiceKey: string): IStoreService;
-  }
-*/
-
-  export interface IMessagingService {
-    send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void>;
-    onReceive(address: string, callback: (msg: CFCoreTypes.NodeMessage) => void): any;
-  }
 
   export interface IPrivateKeyGenerator {
     (s: string): Promise<string>;
@@ -85,7 +35,6 @@ export namespace CFCoreTypes {
     ERROR = "error"
   }
 
-  // SOURCE: https://github.com/counterfactual/monorepo/blob/master/packages/cf.js/API_REFERENCE.md#public-methods
   export enum MethodName {
     ACCEPT_STATE = "acceptState",
     GET_PROPOSED_APP_INSTANCE = "getProposedAppInstance"
@@ -119,26 +68,6 @@ export namespace CFCoreTypes {
     chan_withdrawCommitment: "chan_withdrawCommitment"
   };
   export type RpcMethodName = keyof typeof RpcMethodNames;
-
-  // SOURCE: https://github.com/counterfactual/monorepo/blob/master/packages/cf.js/API_REFERENCE.md#events
-  export const EventNames = {
-    CREATE_CHANNEL_EVENT: "CREATE_CHANNEL_EVENT",
-    DEPOSIT_CONFIRMED_EVENT: "DEPOSIT_CONFIRMED_EVENT",
-    DEPOSIT_FAILED_EVENT: "DEPOSIT_FAILED_EVENT",
-    DEPOSIT_STARTED_EVENT: "DEPOSIT_STARTED_EVENT",
-    INSTALL_EVENT: "INSTALL_EVENT",
-    INSTALL_VIRTUAL_EVENT: "INSTALL_VIRTUAL_EVENT",
-    REJECT_INSTALL_EVENT: "REJECT_INSTALL_EVENT",
-    UNINSTALL_EVENT: "UNINSTALL_EVENT",
-    UNINSTALL_VIRTUAL_EVENT: "UNINSTALL_VIRTUAL_EVENT",
-    UPDATE_STATE_EVENT: "UPDATE_STATE_EVENT",
-    WITHDRAWAL_CONFIRMED_EVENT: "WITHDRAWAL_CONFIRMED_EVENT",
-    WITHDRAWAL_FAILED_EVENT: "WITHDRAWAL_FAILED_EVENT",
-    WITHDRAWAL_STARTED_EVENT: "WITHDRAWAL_STARTED_EVENT",
-    PROPOSE_INSTALL_EVENT: "PROPOSE_INSTALL_EVENT",
-    PROTOCOL_MESSAGE_EVENT: "PROTOCOL_MESSAGE_EVENT"
-  };
-  export type EventName = keyof typeof EventNames;
 
   export type CreateChannelParams = {
     owners: string[];
@@ -469,3 +398,4 @@ export namespace CFCoreTypes {
 
   export type Message = MethodRequest | MethodResponse | Event | Error;
 }
+

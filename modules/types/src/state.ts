@@ -1,4 +1,5 @@
-import { AppInstanceProposal, AppInstanceJson, SingleAssetTwoPartyIntermediaryAgreement } from "./cf";
+import { AppInstanceProposal, AppInstanceJson } from "./app";
+import { SingleAssetTwoPartyIntermediaryAgreement } from "./contracts";
 
 export type StateChannelJSON = {
   readonly multisigAddress: string;
@@ -13,3 +14,4 @@ export type StateChannelJSON = {
   readonly freeBalanceAppInstance: AppInstanceJson | undefined;
   readonly monotonicNumProposedApps: number;
 };
+

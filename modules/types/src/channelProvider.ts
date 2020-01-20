@@ -1,6 +1,7 @@
 import EventEmitter from "events";
 
-import { CFCoreTypes, NetworkContext } from "./cf";
+import { NetworkContext } from "./contracts";
+import { ProtocolTypes } from "./protocol";
 import { Store, StorePair } from "./store";
 
 export interface IChannelProvider extends EventEmitter {
@@ -59,8 +60,8 @@ export type ChannelProviderConfig = {
 
 export interface CFChannelProviderOptions {
   ethProvider: any;
-  keyGen: CFCoreTypes.IPrivateKeyGenerator;
-  lockService?: CFCoreTypes.ILockService;
+  keyGen: ProtocolTypes.IPrivateKeyGenerator;
+  lockService?: ProtocolTypes.ILockService;
   messaging: any;
   networkContext: NetworkContext;
   nodeConfig: any;
@@ -79,10 +80,10 @@ export const ConnextRpcMethods = {
 export type ConnextRpcMethod = keyof typeof ConnextRpcMethods;
 
 export const ChannelProviderRpcMethods = {
-  ...CFCoreTypes.RpcMethodNames,
+  ...ProtocolTypes.RpcMethodNames,
   ...ConnextRpcMethods,
 };
-export type ChannelProviderRpcMethod = ConnextRpcMethod | CFCoreTypes.RpcMethodName;
+export type ChannelProviderRpcMethod = ConnextRpcMethod | ProtocolTypes.RpcMethodName;
 
 export type JsonRpcRequest = {
   id: number;
