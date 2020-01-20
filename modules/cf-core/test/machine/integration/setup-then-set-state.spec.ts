@@ -82,7 +82,7 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
 
       const stateChannel = StateChannel.setupChannel(
         network.IdentityApp,
-        network.ProxyFactory,
+        { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
         proxy, // used as multisig
         xprvs.map(extendedPrvKeyToExtendedPubKey),
         1

@@ -35,7 +35,10 @@ describe("SetupCommitment", () => {
   // State channel testing values
   const stateChannel = StateChannel.setupChannel(
     networkContext.IdentityApp,
-    networkContext.ProxyFactory,
+    {
+      proxyFactory: networkContext.ProxyFactory,
+      multisigMastercopy: networkContext.MinimumViableMultisig,
+    },
     getAddress(hexlify(randomBytes(20))),
     [interaction.sender, interaction.receiver]
   );
