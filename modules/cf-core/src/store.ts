@@ -1,4 +1,4 @@
-import { StateChannelJSON, AppInstanceJson } from "@connext/types";
+import { CriticalStateChannelAddresses, AppInstanceJson, StateChannelJSON } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import { solidityKeccak256 } from "ethers/utils";
 
@@ -278,7 +278,7 @@ export class Store {
 
   public async getOrCreateStateChannelBetweenVirtualAppParticipants(
     multisigAddress: string,
-    proxyFactoryAddress: string,
+    addresses: CriticalStateChannelAddresses,
     initiatorXpub: string,
     responderXpub: string
   ): Promise<StateChannel> {
@@ -292,7 +292,7 @@ export class Store {
       ) {
         const stateChannel = StateChannel.createEmptyChannel(
           multisigAddress,
-          proxyFactoryAddress,
+          addresses,
           [initiatorXpub, responderXpub]
         );
 

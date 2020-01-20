@@ -1,4 +1,5 @@
 import {
+  CriticalStateChannelAddresses,
   SingleAssetTwoPartyIntermediaryAgreement,
   StateChannelJSON
 } from "@connext/types";
@@ -49,7 +50,7 @@ function sortAddresses(addrs: string[]) {
 export class StateChannel {
   constructor(
     public readonly multisigAddress: string,
-    public readonly proxyFactoryAddress: string,
+    public readonly addresses: CriticalStateChannelAddresses,
     public readonly userNeuteredExtendedKeys: string[],
     readonly proposedAppInstances: ReadonlyMap<
       string,
@@ -270,7 +271,7 @@ export class StateChannel {
 
   private build(args: {
     multisigAddress?: string;
-    proxyFactoryAddress?: string;
+    addresses?: CriticalStateChannelAddresses;
     userNeuteredExtendedKeys?: string[];
     appInstances?: ReadonlyMap<string, AppInstance>;
     proposedAppInstances?: ReadonlyMap<string, AppInstanceProposal>;
@@ -283,7 +284,7 @@ export class StateChannel {
   }) {
     return new StateChannel(
       args.multisigAddress || this.multisigAddress,
-      args.proxyFactoryAddress || this.proxyFactoryAddress,
+      args.addresses || this.addresses,
       args.userNeuteredExtendedKeys || this.userNeuteredExtendedKeys,
       args.proposedAppInstances || this.proposedAppInstances,
       args.appInstances || this.appInstances,
@@ -346,14 +347,14 @@ export class StateChannel {
 
   public static setupChannel(
     freeBalanceAppAddress: string,
-    proxyFactoryAddress: string,
+    addresses: CriticalStateChannelAddresses,
     multisigAddress: string,
     userNeuteredExtendedKeys: string[],
     freeBalanceTimeout?: number
   ) {
     return new StateChannel(
       multisigAddress,
-      proxyFactoryAddress,
+      addresses,
       userNeuteredExtendedKeys,
       new Map<string, AppInstanceProposal>([]),
       new Map<string, AppInstance>([]),
@@ -369,12 +370,12 @@ export class StateChannel {
 
   public static createEmptyChannel(
     multisigAddress: string,
-    proxyFactoryAddress: string,
+    addresses: CriticalStateChannelAddresses,
     userNeuteredExtendedKeys: string[]
   ) {
     return new StateChannel(
       multisigAddress,
-      proxyFactoryAddress,
+      addresses,
       userNeuteredExtendedKeys,
       new Map<string, AppInstanceProposal>([]),
       new Map<string, AppInstance>(),
@@ -583,7 +584,7 @@ export class StateChannel {
   toJson(): StateChannelJSON {
     return {
       multisigAddress: this.multisigAddress,
-      proxyFactoryAddress: this.proxyFactoryAddress,
+      addresses: this.addresses,
       userNeuteredExtendedKeys: this.userNeuteredExtendedKeys,
       proposedAppInstances: [...this.proposedAppInstances.entries()],
       appInstances: [...this.appInstances.entries()].map((appInstanceEntry): [
@@ -592,11 +593,12 @@ export class StateChannel {
       ] => {
         return [appInstanceEntry[0], appInstanceEntry[1].toJson()];
       }),
-      freeBalanceAppInstance: !!this.freeBalanceAppInstance
+
+      // Note that this FreeBalance can be undefined because a channel technically
+      // does not have a FreeBalance before the `setup` protocol gets run
+      freeBalanceAppInstance: this.freeBalanceAppInstance
         ? this.freeBalanceAppInstance.toJson()
-        : // Note that this FreeBalance is undefined because a channel technically
-          // does not have a FreeBalance before the `setup` protocol gets run
-          undefined,
+        : undefined, 
       monotonicNumProposedApps: this.monotonicNumProposedApps,
       singleAssetTwoPartyIntermediaryAgreements: [
         ...this.singleAssetTwoPartyIntermediaryAgreements.entries()
@@ -620,7 +622,7 @@ export class StateChannel {
     try {
       return new StateChannel(
         json.multisigAddress,
-        json.proxyFactoryAddress,
+        json.addresses,
         json.userNeuteredExtendedKeys,
         new Map(
           [...Object.values(dropNulls(json.proposedAppInstances) || [])].map(

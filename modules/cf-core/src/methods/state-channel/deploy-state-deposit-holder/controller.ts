@@ -27,7 +27,8 @@ import {
   CHANNEL_CREATION_FAILED,
   NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT,
   INCORRECT_MULTISIG_ADDRESS,
-  INVALID_FACTORY_ADDRESS
+  INVALID_FACTORY_ADDRESS,
+  INVALID_MASTERCOPY_ADDRESS,
 } from "../../errors";
 
 // Estimate based on rinkeby transaction:
@@ -42,19 +43,23 @@ export default class DeployStateDepositHolderController extends NodeController {
     requestHandler: RequestHandler,
     params: CFCoreTypes.DeployStateDepositHolderParams
   ): Promise<void> {
-    const { store, provider, networkContext } = requestHandler;
+    const { store, provider } = requestHandler;
     const { multisigAddress } = params;
 
     const channel = await store.getStateChannel(multisigAddress);
 
-    if (!channel.proxyFactoryAddress) {
-      throw Error(INVALID_FACTORY_ADDRESS(channel.proxyFactoryAddress));
+    if (!channel.addresses.proxyFactory) {
+      throw Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
+    }
+
+    if (!channel.addresses.multisigMastercopy) {
+      throw Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userNeuteredExtendedKeys,
-      channel.proxyFactoryAddress,
-      networkContext.MinimumViableMultisig,
+      channel.addresses.proxyFactory,
+      channel.addresses.multisigMastercopy,
       provider
     );
 
@@ -79,8 +84,8 @@ export default class DeployStateDepositHolderController extends NodeController {
     // make sure it is deployed to the right address
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userNeuteredExtendedKeys,
-      channel.proxyFactoryAddress,
-      networkContext.MinimumViableMultisig,
+      channel.addresses.proxyFactory,
+      channel.addresses.multisigMastercopy,
       provider
     );
 
@@ -111,7 +116,7 @@ async function sendMultisigDeployTx(
   // make sure that the proxy factory used to deploy is the same as the one
   // used when the channel was created
   const proxyFactory = new Contract(
-    stateChannel.proxyFactoryAddress,
+    stateChannel.addresses.proxyFactory,
     ProxyFactory.abi,
     signer
   );

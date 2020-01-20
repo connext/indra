@@ -1059,7 +1059,11 @@ async function getOrCreateStateChannelWithUsers(
 
   return (
     stateChannelsMap.get(multisigAddress) ||
-    StateChannel.createEmptyChannel(multisigAddress, network.ProxyFactory, userXpubs)
+    StateChannel.createEmptyChannel(
+      multisigAddress,
+      { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
+      userXpubs,
+    )
   );
 }
 

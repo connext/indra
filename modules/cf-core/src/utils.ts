@@ -36,7 +36,7 @@ export function timeout(ms: number) {
  * @export
  * @param {string[]} owners - the addresses of the owners of the multisig
  * @param {string} proxyFactoryAddress - address of ProxyFactory library
- * @param {string} minimumViableMultisigAddress - address of masterCopy of multisig
+ * @param {string} multisigMastercopyAddress - address of masterCopy of multisig
  * @param {string} provider - to fetch proxyBytecode from the proxyFactoryAddress
  *
  * @returns {string} the address of the multisig
@@ -44,11 +44,12 @@ export function timeout(ms: number) {
  * NOTE: if the encoding of the multisig owners is changed YOU WILL break all
  * existing channels
  */
-// TODO: memoize
+// TODO: memoize?
+// TODO: replace addresses w CriticalStateChannelAddresses object?
 export const getCreate2MultisigAddress = async (
   owners: string[],
   proxyFactoryAddress: string,
-  minimumViableMultisigAddress: string,
+  multisigMastercopyAddress: string,
   ethProvider: Provider
 ): Promise<string> => {
   const proxyFactory = new Contract(
@@ -77,7 +78,7 @@ export const getCreate2MultisigAddress = async (
         ),
         solidityKeccak256(
           ["bytes", "uint256"],
-          [`0x${proxyBytecode.replace("0x", "")}`, minimumViableMultisigAddress]
+          [`0x${proxyBytecode.replace("0x", "")}`, multisigMastercopyAddress]
         )
       ]
     ).slice(-40)
