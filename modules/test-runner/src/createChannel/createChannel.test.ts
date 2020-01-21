@@ -8,7 +8,6 @@ import {
   getMessaging,
   SETUP_RESPONDER_RECEIVED_COUNT,
   SETUP_RESPONDER_SENT_COUNT,
-  TestMessagingService,
 } from "../util";
 
 describe("Create Channel", () => {
@@ -28,7 +27,7 @@ describe("Create Channel", () => {
   });
 
   it("Happy case: user creates channel with client and is given multisig address using test messaging service", async () => {
-    const clientA: IConnextClient = await createClient({ messaging: new TestMessagingService() });
+    const clientA: IConnextClient = await createClientWithMessagingLimits();
     expect(clientA.multisigAddress).to.be.ok;
     // verify messaging worked
     const messaging = getMessaging();
