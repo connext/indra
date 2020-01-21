@@ -1,12 +1,13 @@
 import { getCreate2MultisigAddress } from "@connext/cf-core";
-import React, { useEffect } from "react";
+import historicalData from "@connext/contracts/address-history.json";
 import Grid from "@material-ui/core/Grid";
 import { styled } from "@material-ui/core/styles";
 import { getDefaultProvider } from "ethers";
+import React, { useEffect } from "react";
+
 import {
   GetIncorrectProxyFactoryAddress, FixIncorrectProxyFactoryAddress,
 } from "./IncorrectProxyFactory/IncorrectProxyFactoryAddressView";
-import historicalData from "./historicalData";
 
 const RootGrid = styled(Grid)({
   flexGrow: 1,
@@ -48,8 +49,8 @@ const Admin = ({ messaging }) => {
             if (calculated === expectedMultisig) {
               console.log("MATCH DETECTED");
               console.log(`calculated: ${calculated}`);
-              console.log(`legacy:     ${legacy}`);
-              console.log(`multisig:   ${multisigMastercopy}`);
+              console.log(`isLegacy:   ${legacy}`);
+              console.log(`mastercopy: ${multisigMastercopy}`);
               console.log(`factory:    ${proxyFactory}`);
               console.log(`bytecode:   ${bytecode}`);
               return [legacy, multisigMastercopy, proxyFactory, bytecode];
@@ -75,5 +76,7 @@ const Admin = ({ messaging }) => {
     </RootGrid>
   );
 };
+
+Admin.propTypes = { messaging: "any" };
 
 export default Admin;

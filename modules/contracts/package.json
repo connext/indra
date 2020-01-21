@@ -3,7 +3,7 @@
   "version": "1.0.1",
   "description": "Smart contracts that power a Counterfactual State Channel platform",
   "license": "ISC",
-  "files": ["address-book.json", "build", "contracts", "index.ts"],
+  "files": ["address-book.json", "address-history.json", "build", "contracts", "index.ts"],
   "main": "./dist/index.js",
   "keywords": ["ethereum", "counterfactual", "state channels", "solidity"],
   "scripts": {
