@@ -115,11 +115,11 @@ export const createClientWithMessagingLimits = async (
 
   // no defaults specified, exit early
   if (!protocol || Object.keys(opts).length === 0) {
-    clientMessaging = new TestMessagingService();
-    expect(clientMessaging.install.ceiling).to.be.undefined;
-    expect(clientMessaging.count.received).to.be.equal(0);
-    expect(clientMessaging.count.sent).to.be.equal(0);
-    return await createClient({ messaging: clientMessaging });
+    const messaging = new TestMessagingService();
+    expect(messaging.install.ceiling).to.be.undefined;
+    expect(messaging.count.received).to.be.equal(0);
+    expect(messaging.count.sent).to.be.equal(0);
+    return await createClient({ messaging });
   }
 
   if (protocol === "any") {
@@ -135,7 +135,7 @@ export const createClientWithMessagingLimits = async (
     };
   }
 
-  clientMessaging = new TestMessagingService(messageOptions);
+  const messaging = new TestMessagingService(messageOptions);
 
   // verification of messaging settings
   const expected = {
@@ -144,9 +144,9 @@ export const createClientWithMessagingLimits = async (
     ceiling,
     delay,
   };
-  protocol && protocol === "any"
-    ? expect(clientMessaging.count).to.containSubset(expected)
-    : expect(clientMessaging[protocol]).to.containSubset(expected);
-  expect(clientMessaging.options).to.containSubset(messageOptions);
-  return await createClient({ messaging: clientMessaging });
+  !protocol || protocol === "any"
+    ? expect(messaging.count).to.containSubset(expected)
+    : expect(messaging[protocol]).to.containSubset(expected);
+  expect(messaging.options).to.containSubset(messageOptions);
+  return await createClient({ messaging });
 };
