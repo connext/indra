@@ -40,10 +40,10 @@ import {
 import {
   DepositConfirmationMessage,
   DepositStartedMessage,
-  EventEmittedMessage
+  EventEmittedMessage,
+  ProposeInstallProtocolParams,
 } from "../../src/types";
 import { deBigNumberifyJson, bigNumberifyJson } from "../../src/utils";
-import { ProposeInstallProtocolParams } from "../../src/machine/types";
 
 interface AppContext {
   appDefinition: string;

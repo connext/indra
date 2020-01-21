@@ -1,6 +1,6 @@
 import { getAddress, recoverAddress, Signature } from "ethers/utils";
 
-import { EthereumCommitment } from "../../ethereum/types";
+import { EthereumCommitment } from "../../types";
 
 export function assertIsValidSignature(
   expectedSigner: string,

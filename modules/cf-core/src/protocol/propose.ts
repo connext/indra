@@ -12,7 +12,7 @@ import {
   Context,
   ProposeInstallProtocolParams,
   ProtocolMessage
-} from "../machine/types";
+} from "../types";
 import { AppInstanceProposal, StateChannel } from "../models";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";

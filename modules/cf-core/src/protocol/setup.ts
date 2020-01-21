@@ -1,12 +1,12 @@
 import { SetupCommitment } from "../ethereum";
 import { ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
+import { StateChannel } from "../models/state-channel";
 import {
   Context,
   ProtocolMessage,
   SetupProtocolParams
-} from "../machine/types";
-import { StateChannel } from "../models/state-channel";
+} from "../types";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";

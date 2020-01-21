@@ -4,18 +4,16 @@ import { BigNumber, bigNumberify, defaultAbiCoder } from "ethers/utils";
 
 import { ConditionalTransaction, SetStateCommitment } from "../ethereum";
 import { Opcode, Protocol } from "../machine/enums";
-import {
-  Context,
-  InstallVirtualAppProtocolParams,
-  ProtocolExecutionFlow,
-  ProtocolMessage,
-} from "../machine/types";
 import { sortAddresses, xkeyKthAddress } from "../machine/xkeys";
 import { AppInstance, StateChannel } from "../models";
 import {
+  Context,
+  InstallVirtualAppProtocolParams,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   NetworkContext,
   OutcomeType,
+  ProtocolExecutionFlow,
+  ProtocolMessage,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,
   virtualAppAgreementEncoding,
