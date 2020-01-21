@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, { useState } from "react";
 import { Grid, Typography, styled, Button } from "@material-ui/core";
 
 const TopGrid = styled(Grid)({
@@ -11,6 +11,7 @@ const TopGrid = styled(Grid)({
   alignItems: "center",
 });
 
+/*
 const StatTypography = styled(Typography)({
   textAlign: "center",
   width: "90%",
@@ -18,10 +19,11 @@ const StatTypography = styled(Typography)({
   color: "#002868",
   textDecoration: "none",
 });
+*/
 
 function StatsExport({ classes, messaging }) {
 
-  const [allTransfers, setAllTransfers] = useState(null);
+  // const [allTransfers, setAllTransfers] = useState(null);
 
 
   function convertArrayOfObjectsToCSV(args) {

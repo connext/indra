@@ -1,3 +1,4 @@
+import { addressHistory } from "@connext/contracts";
 import { ConnextNodeStorePrefix, StateChannelJSON } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 
@@ -8,7 +9,7 @@ import { ChannelService } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { LinkedTransfer } from "../transfer/transfer.entity";
 import { TransferService } from "../transfer/transfer.service";
-import { CLogger, getCreate2MultisigAddress } from "../util";
+import { CLogger, getCreate2MultisigAddress, scanForCriticalAddresses } from "../util";
 
 const logger = new CLogger("AdminService");
 
@@ -403,4 +404,5 @@ export class AdminService {
     }
     return correctProxyFactoryAddress;
   }
+
 }

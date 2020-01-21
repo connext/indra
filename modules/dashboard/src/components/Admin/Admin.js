@@ -1,4 +1,4 @@
-import { getCreate2MultisigAddress } from "@connext/cf-core";
+import { scanForCriticalAddresses } from "@connext/cf-core";
 import { addressHistory } from "@connext/contracts";
 import Grid from "@material-ui/core/Grid";
 import { styled } from "@material-ui/core/styles";
@@ -18,7 +18,7 @@ const RootGrid = styled(Grid)({
 const expectedMultisig = "";
 const ownerXpubs = [];
 
-/* Example multisig we could scan for:
+/*
 const expectedMultisig = "0x1508eCF431F5DeF63d708fa657a9c8dB5d153a78";
 const ownerXpubs = [
   "xpub6Di1bLRzeR8icvPKfZxir23fE54AhgWn6bxeuDD4yGWtgHK59LDQgojdyNqtjeg134svT126JzrKR9vjn1UWdUFzTHzNMER9QpS8UuQ9L8m",
@@ -27,49 +27,30 @@ const ownerXpubs = [
 */
 
 const Admin = ({ messaging }) => {
-
-  const chainId = "1";
-  const scanForFactory = async (ownerXpubs, expectedMultisig) => {
-    console.log(`Scanning for expected multisig: ${expectedMultisig}`);
-    if (!ownerXpubs || !expectedMultisig) return;
-    const provider = getDefaultProvider("homestead");
-    for (const multisigMastercopy of addressHistory[chainId].MinimumViableMultisigAddresses) {
-      for (const proxyFactory of addressHistory[chainId].ProxyFactoryAddresses) {
-        for (const bytecode of [...addressHistory[chainId].toxicProxyBytecode, ""]) {
-          for (const legacy of [true, false]) {
-            const bc = bytecode.substring(0,8) || "0x000000";
-            let calculated = await getCreate2MultisigAddress(
-              ownerXpubs,
-              { proxyFactory, multisigMastercopy },
-              provider,
-              legacy,
-              bytecode
-            );
-            console.log(
-              `factory ${proxyFactory} + multisig ${multisigMastercopy} + bytecode ` +
-              `${bc}... + legacy ${legacy} => ${calculated}`,
-            );
-            if (calculated === expectedMultisig) {
-              console.log("MATCH DETECTED");
-              console.log(`calculated: ${calculated}`);
-              console.log(`isLegacy:   ${legacy}`);
-              console.log(`mastercopy: ${multisigMastercopy}`);
-              console.log(`factory:    ${proxyFactory}`);
-              console.log(`bytecode:   ${bytecode}`);
-              return [legacy, multisigMastercopy, proxyFactory, bytecode];
-            }
-          }
-        }
-      }
-    }
-    return "oh no none match :(";
-  };
-
   useEffect(() => {
     if (!messaging) {
       return;
     }
-    (async () => console.log(await scanForFactory(ownerXpubs, expectedMultisig)))();
+    (async () => {
+      if (!expectedMultisig || !ownerXpubs) { return; }
+      console.log(`Searching for historical addresses needed to deploy ${expectedMultisig}`);
+      const res = await scanForCriticalAddresses(
+        ownerXpubs,
+        expectedMultisig,
+        addressHistory["1"],
+        getDefaultProvider("homestead"),
+      );
+      if (res) {
+        console.log("MATCH DETECTED");
+        console.log(`calculated:    ${expectedMultisig}`);
+        console.log(`legacyKeygen:  ${res.legacyKeygen}`);
+        console.log(`mastercopy:    ${res.multisigMastercopy}`);
+        console.log(`factory:       ${res.proxyFactory}`);
+        console.log(`toxicBytecode: ${res.toxicBytecode}`);
+      } else {
+        console.log("No match detected :(");
+      }
+    })();
   });
 
   return (

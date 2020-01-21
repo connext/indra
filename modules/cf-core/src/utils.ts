@@ -116,7 +116,7 @@ export const getCreate2MultisigAddress = async (
   owners: string[],
   addresses: CriticalStateChannelAddresses,
   ethProvider: Provider,
-  useLegacyKeys?: boolean,
+  legacyKeygen?: boolean,
   toxicBytecode?: string,
 ): Promise<string> => {
   const proxyFactory = new Contract(addresses.proxyFactory, ProxyFactory.abi, ethProvider);
@@ -124,7 +124,7 @@ export const getCreate2MultisigAddress = async (
   const xkeysToSortedKthAddresses = (xkeys) =>
     xkeys
       .map((xkey) =>
-        useLegacyKeys === true
+        legacyKeygen === true
           ? fromExtendedKey(xkey).address
           : fromExtendedKey(xkey).derivePath("0").address
       )
@@ -157,4 +157,37 @@ export const getCreate2MultisigAddress = async (
       ]
     ).slice(-40)
   );
+};
+
+export const scanForCriticalAddresses = async (
+  ownerXpubs: string[],
+  expectedMultisig: string,
+  addressHistory: {
+    ProxyFactory: string[];
+    MinimumViableMultisig: string[];
+    ToxicBytecode: string[];
+  },
+  ethProvider: Provider,
+): Promise<void | { [key: string]: string|boolean }> => {
+  // Falsy toxic bytecode (ie "") causes getCreate2MultisigAddress to fetch non-toxic value
+  // from the ProxyFactory via the ethProvider
+  for (const toxicBytecode of [...addressHistory.ToxicBytecode, ""]) {
+    for (const multisigMastercopy of addressHistory.MinimumViableMultisig) {
+      for (const proxyFactory of addressHistory.ProxyFactory) {
+        for (const legacyKeygen of [true, false]) {
+          let calculated = await getCreate2MultisigAddress(
+            ownerXpubs,
+            { proxyFactory, multisigMastercopy },
+            ethProvider,
+            legacyKeygen,
+            toxicBytecode
+          );
+          if (calculated === expectedMultisig) {
+            return { legacyKeygen, multisigMastercopy, proxyFactory, toxicBytecode };
+          }
+        }
+      }
+    }
+  }
+  return;
 };

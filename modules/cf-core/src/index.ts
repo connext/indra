@@ -11,5 +11,6 @@ export * from "./private-keys-generator";
 export {
   getCreate2MultisigAddress,
   bigNumberifyJson,
-  deBigNumberifyJson
+  deBigNumberifyJson,
+  scanForCriticalAddresses,
 } from "./utils";

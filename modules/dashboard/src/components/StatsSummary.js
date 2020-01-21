@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Grid, Typography, styled, Button, CircularProgress } from "@material-ui/core";
-import { HashZero } from "ethers/constants";
 
 const TopGrid = styled(Grid)({
   display: "flex",

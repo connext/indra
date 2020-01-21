@@ -3,6 +3,7 @@ export {
   getCreate2MultisigAddress,
   JsonRpcResponse,
   Node as CFCore,
+  scanForCriticalAddresses,
   sortAddresses,
   xkeyKthAddress as xpubToAddress,
   xkeysToSortedKthAddresses,
