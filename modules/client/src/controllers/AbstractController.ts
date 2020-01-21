@@ -75,19 +75,40 @@ export abstract class AbstractController {
           `App proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
         ),
         new Promise(
-          async (res: () => any, rej: () => any): Promise<void> => {
+          async (res: () => void, rej: (msg: string | Error) => void): Promise<void> => {
+            // set up reject install event listeners
+            // must be bound to properly remove listener on clean up
             boundReject = this.rejectProposal.bind(null, rej);
+            this.listener.on(CFCoreTypes.EventNames.REJECT_INSTALL_EVENT, boundReject);
+
+            // set up proposal accepted nats subscriptions
             this.log.debug(
               `subscribing to indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
             );
-            this.connext.messaging.subscribe(
-              `indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
-              res,
-            );
-            const { appInstanceId } = await this.connext.proposeInstallApp(params);
-            appId = appInstanceId;
-            this.log.debug(`waiting for proposal acceptance of ${appInstanceId}`);
-            this.listener.on(CFCoreTypes.EventNames.REJECT_INSTALL_EVENT, boundReject);
+
+            // it is not clear whether the `proposalAccepted` (indicating
+            // the responder is done with the protocol), or the
+            // `proposeInstallApp` call (indicating the initiator is done with
+            // the protocol) will resolve first, so make sure promises
+            // example: client messaging fails on receipt of m2 in `propose.ts`
+            let proposed = false;
+            const resolveIfProposed = (): void => {
+              if (proposed) {
+                res();
+              } else {
+                proposed = true;
+              }
+            };
+            const [proposeResult, _] = await Promise.all([
+              this.connext.proposeInstallApp(params),
+              this.connext.messaging.subscribe(
+                `indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
+                resolveIfProposed,
+              ),
+            ]);
+            appId = proposeResult.appInstanceId;
+            resolveIfProposed();
+            this.log.debug(`waiting for proposal acceptance of ${appId}`);
           },
         ),
       ]);
