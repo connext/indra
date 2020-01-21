@@ -10,6 +10,7 @@ import "regenerator-runtime/runtime";
 
 import { createCFChannelProvider } from "./channelProvider";
 import { ConnextClient } from "./connext";
+import { getDefaultOptions, isWalletProvided } from "./default";
 import { delayAndThrow, Logger, stringify } from "./lib";
 import { NodeApiClient } from "./node";
 import {
@@ -74,7 +75,14 @@ const setupMultisigAddress = async (
   return channelProvider;
 };
 
-export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
+export const connect = async (
+  clientOptions: string | ClientOptions,
+  overrideOptions?: Partial<ClientOptions>,
+): Promise<IConnextClient> => {
+  const opts =
+    typeof clientOptions === "string"
+      ? await getDefaultOptions(clientOptions, overrideOptions)
+      : clientOptions;
   const {
     asyncStorage,
     logLevel,
@@ -134,7 +142,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     node.nodePublicIdentifier = config.nodePublicIdentifier;
 
     isInjected = true;
-  } else if (mnemonic || (xpub && keyGen)) {
+  } else if (isWalletProvided(opts)) {
     if (!nodeUrl) {
       throw new Error("Client must be instantiated with nodeUrl if not using a channelProvider");
     }
