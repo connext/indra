@@ -1,6 +1,6 @@
 import { connect } from "@connext/client";
 import { ConnextStore, MemoryStorage } from "@connext/store";
-import { ClientOptions, IChannelProvider, IConnextClient, IMessagingService } from "@connext/types";
+import { ClientOptions, IChannelProvider, IConnextClient } from "@connext/types";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
