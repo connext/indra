@@ -9,7 +9,7 @@ import localStorage from "localStorage";
 import { ETH_AMOUNT_MD, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
 import { ethWallet } from "./ethprovider";
-import { TestMessagingService } from "./messaging";
+import { MessageCounter, TestMessagingService } from "./messaging";
 
 let clientStore: ConnextStore;
 let clientMessaging: TestMessagingService;
@@ -50,6 +50,7 @@ export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<I
 
   expect(client.freeBalanceAddress).to.be.ok;
   expect(client.publicIdentifier).to.be.ok;
+  expect(client.multisigAddress).to.be.ok;
 
   return client;
 };
@@ -100,4 +101,52 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
   expect(client.publicIdentifier).to.be.ok;
 
   return client;
+};
+
+export const createClientWithMessagingLimits = async (
+  opts: Partial<{
+    ceiling: Partial<MessageCounter>; // set ceiling of sent/received
+    protocol: string; // use "any" to limit any messages by count
+    delay: Partial<MessageCounter>; // ms delay or sent callbacks
+  }> = {},
+): Promise<IConnextClient> => {
+  const { protocol, ceiling, delay } = opts;
+  const messageOptions: any = {};
+
+  // no defaults specified, exit early
+  if (!protocol || Object.keys(opts).length === 0) {
+    clientMessaging = new TestMessagingService();
+    expect(clientMessaging.install.ceiling).to.be.undefined;
+    expect(clientMessaging.count.received).to.be.equal(0);
+    expect(clientMessaging.count.sent).to.be.equal(0);
+    return await createClient({ messaging: clientMessaging });
+  }
+
+  if (protocol === "any") {
+    // assign the ceiling for the general message count
+    messageOptions.count = { ceiling, delay };
+  } else {
+    // assign the protocol defaults struct
+    messageOptions.protocolDefaults = {
+      [protocol]: {
+        ceiling,
+        delay,
+      },
+    };
+  }
+
+  clientMessaging = new TestMessagingService(messageOptions);
+
+  // verification of messaging settings
+  const expected = {
+    sent: 0,
+    received: 0,
+    ceiling,
+    delay,
+  };
+  protocol !== "any"
+    ? expect(clientMessaging[protocol]).to.be.deep.equal(expected)
+    : expect(clientMessaging.count).to.be.deep.equal(expected);
+
+  return await createClient({ messaging: clientMessaging });
 };

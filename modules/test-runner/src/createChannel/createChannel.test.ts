@@ -2,6 +2,7 @@ import { IConnextClient } from "@connext/types";
 
 import {
   createClient,
+  createClientWithMessagingLimits,
   createDefaultClient,
   expect,
   getMessaging,
@@ -56,15 +57,13 @@ describe("Create Channel", () => {
     );
   });
 
-  it("should fail if the client goes offline", async function() {
+  it("should fail if the client goes offline", async function(): Promise<void> {
     // @ts-ignore
     this.timeout(40_000);
-    const messaging = new TestMessagingService();
-    messaging.addCeiling("any", 0);
-    expect(messaging.count.ceiling).to.be.equal(0);
     await expect(
-      createClient({
-        messaging,
+      createClientWithMessagingLimits({
+        ceiling: { sent: 0 },
+        protocol: "any",
       }),
     ).to.be.rejectedWith(`Create channel event not fired within 30s`);
   });
