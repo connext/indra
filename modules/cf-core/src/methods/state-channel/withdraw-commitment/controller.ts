@@ -56,8 +56,7 @@ export default class WithdrawCommitmentController extends NodeController {
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userNeuteredExtendedKeys,
-      channel.addresses.proxyFactory,
-      channel.addresses.multisigMastercopy,
+      channel.addresses,
       provider
     );
 

@@ -58,8 +58,7 @@ export default class DeployStateDepositHolderController extends NodeController {
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userNeuteredExtendedKeys,
-      channel.addresses.proxyFactory,
-      channel.addresses.multisigMastercopy,
+      channel.addresses,
       provider
     );
 
@@ -84,8 +83,7 @@ export default class DeployStateDepositHolderController extends NodeController {
     // make sure it is deployed to the right address
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userNeuteredExtendedKeys,
-      channel.addresses.proxyFactory,
-      channel.addresses.multisigMastercopy,
+      channel.addresses,
       provider
     );
 

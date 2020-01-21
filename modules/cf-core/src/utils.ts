@@ -1,3 +1,4 @@
+import { CriticalStateChannelAddresses } from "@connext/types";
 import { Contract } from "ethers";
 import { Provider } from "ethers/providers";
 import {
@@ -11,10 +12,10 @@ import {
   Signature,
   solidityKeccak256
 } from "ethers/utils";
+import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { JSON_STRINGIFY_SPACE } from "./constants";
 import { MinimumViableMultisig, ProxyFactory } from "./contracts";
-import { xkeysToSortedKthAddresses } from "./machine/xkeys";
 
 export function getFirstElementInListNotEqualTo(test: string, list: string[]) {
   return list.filter(x => x !== test)[0];
@@ -23,67 +24,6 @@ export function getFirstElementInListNotEqualTo(test: string, list: string[]) {
 export function timeout(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
-
-/**
- * Computes the address of a counterfactual MinimumViableMultisig contract
- * as it would be if deployed via the `createProxyWithNonce` method on a
- * ProxyFactory contract with the bytecode of a Proxy contract pointing to
- * a `masterCopy` of a MinimumViableMultisig contract.
- *
- * See https://solidity.readthedocs.io/en/v0.5.11/assembly.html?highlight=create2
- * for information on how CREAT2 addresses are calculated.
- *
- * @export
- * @param {string[]} owners - the addresses of the owners of the multisig
- * @param {string} proxyFactoryAddress - address of ProxyFactory library
- * @param {string} multisigMastercopyAddress - address of masterCopy of multisig
- * @param {string} provider - to fetch proxyBytecode from the proxyFactoryAddress
- *
- * @returns {string} the address of the multisig
- *
- * NOTE: if the encoding of the multisig owners is changed YOU WILL break all
- * existing channels
- */
-// TODO: memoize?
-// TODO: replace addresses w CriticalStateChannelAddresses object?
-export const getCreate2MultisigAddress = async (
-  owners: string[],
-  proxyFactoryAddress: string,
-  multisigMastercopyAddress: string,
-  ethProvider: Provider
-): Promise<string> => {
-  const proxyFactory = new Contract(
-    proxyFactoryAddress,
-    ProxyFactory.abi,
-    ethProvider
-  );
-  const proxyBytecode = await proxyFactory.functions.proxyCreationCode();
-  return getAddress(
-    solidityKeccak256(
-      ["bytes1", "address", "uint256", "bytes32"],
-      [
-        "0xff",
-        proxyFactoryAddress,
-        solidityKeccak256(
-          ["bytes32", "uint256"],
-          [
-            keccak256(
-              // see encoding notes
-              new Interface(MinimumViableMultisig.abi).functions.setup.encode([
-                xkeysToSortedKthAddresses(owners, 0)
-              ])
-            ),
-            0
-          ]
-        ),
-        solidityKeccak256(
-          ["bytes", "uint256"],
-          [`0x${proxyBytecode.replace("0x", "")}`, multisigMastercopyAddress]
-        )
-      ]
-    ).slice(-40)
-  );
-};
 
 export const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 
@@ -150,3 +90,71 @@ export function prettyPrintObject(object: any) {
 export async function sleep(timeInMilliseconds: number) {
   return new Promise(resolve => setTimeout(resolve, timeInMilliseconds));
 }
+
+/**
+ * Computes the address of a counterfactual MinimumViableMultisig contract
+ * as it would be if deployed via the `createProxyWithNonce` method on a
+ * ProxyFactory contract with the bytecode of a Proxy contract pointing to
+ * a `masterCopy` of a MinimumViableMultisig contract.
+ *
+ * See https://solidity.readthedocs.io/en/v0.5.11/assembly.html?highlight=create2
+ * for information on how CREAT2 addresses are calculated.
+ *
+ * @export
+ * @param {string[]} owners - the addresses of the owners of the multisig
+ * @param {string} proxyFactoryAddress - address of ProxyFactory library
+ * @param {string} multisigMastercopyAddress - address of masterCopy of multisig
+ * @param {string} provider - to fetch proxyBytecode from the proxyFactoryAddress
+ *
+ * @returns {string} the address of the multisig
+ *
+ * NOTE: if the encoding of the multisig owners is changed YOU WILL break all
+ * existing channels
+ */
+// TODO: memoize?
+export const getCreate2MultisigAddress = async (
+  owners: string[],
+  addresses: CriticalStateChannelAddresses,
+  ethProvider: Provider,
+  useLegacyKeys?: boolean,
+  toxicBytecode?: string,
+): Promise<string> => {
+  const proxyFactory = new Contract(addresses.proxyFactory, ProxyFactory.abi, ethProvider);
+
+  const xkeysToSortedKthAddresses = (xkeys) =>
+    xkeys
+      .map((xkey) =>
+        useLegacyKeys === true
+          ? fromExtendedKey(xkey).address
+          : fromExtendedKey(xkey).derivePath("0").address
+      )
+      .sort((a, b) => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
+
+  const proxyBytecode = toxicBytecode || await proxyFactory.functions.proxyCreationCode();
+
+  return getAddress(
+    solidityKeccak256(
+      ["bytes1", "address", "uint256", "bytes32"],
+      [
+        "0xff",
+        addresses.proxyFactory,
+        solidityKeccak256(
+          ["bytes32", "uint256"],
+          [
+            keccak256(
+              // see encoding notes
+              new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+                xkeysToSortedKthAddresses(owners)
+              ])
+            ),
+            0
+          ]
+        ),
+        solidityKeccak256(
+          ["bytes", "uint256"],
+          [`0x${proxyBytecode.replace(/^0x/, "")}`, addresses.multisigMastercopy]
+        )
+      ]
+    ).slice(-40)
+  );
+};
