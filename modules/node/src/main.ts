@@ -4,6 +4,7 @@ import { Transport } from "@nestjs/microservices";
 import { version } from "../package.json";
 
 import { AppModule } from "./app.module";
+import { AdminService } from "./admin/admin.service";
 import { ConfigService } from "./config/config.service";
 import { CLogger } from "./util";
 
@@ -21,6 +22,9 @@ async function bootstrap(): Promise<void> {
     transport: Transport.NATS,
   });
   await app.startAllMicroservicesAsync();
+  // Veryify & attempt to fix critical addresses on startup before starting listeners
+  const adminService = app.get(AdminService);
+  await adminService.repairCriticalStateChannelAddresses();
   await app.listen(config.getPort());
 }
 bootstrap();
