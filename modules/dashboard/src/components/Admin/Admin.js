@@ -1,5 +1,5 @@
 import { getCreate2MultisigAddress } from "@connext/cf-core";
-import historicalData from "@connext/contracts/address-history.json";
+import { addressHistory } from "@connext/contracts";
 import Grid from "@material-ui/core/Grid";
 import { styled } from "@material-ui/core/styles";
 import { getDefaultProvider } from "ethers";
@@ -14,29 +14,32 @@ const RootGrid = styled(Grid)({
   padding: "5%",
 });
 
-/*
- * Notes re ProxyBytecode in historicalData
- * the first bytecode is ""
- * this is important bc this signals that we should use the one from the factory
- */
-
 // NOTE: edit these to scan for factory address on page load (output in console.log)
 const expectedMultisig = "";
-const owners = [];
+const ownerXpubs = [];
+
+/* Example multisig we could scan for:
+const expectedMultisig = "0x1508eCF431F5DeF63d708fa657a9c8dB5d153a78";
+const ownerXpubs = [
+  "xpub6Di1bLRzeR8icvPKfZxir23fE54AhgWn6bxeuDD4yGWtgHK59LDQgojdyNqtjeg134svT126JzrKR9vjn1UWdUFzTHzNMER9QpS8UuQ9L8m",
+  "xpub6EMezVbdgTLk3tVi4sU6RGSXuUqnTkdi78DpHcoEUemuhHEypFkUMoRo4WCD37famujT1NYspsi7h7dzZpkyx9BkCizUCP5XfAKHjtiHCcR"
+];
+*/
 
 const Admin = ({ messaging }) => {
 
-  const scanForFactory = async (owners, expectedMultisig) => {
+  const chainId = "1";
+  const scanForFactory = async (ownerXpubs, expectedMultisig) => {
     console.log(`Scanning for expected multisig: ${expectedMultisig}`);
-    if (!owners || !expectedMultisig) return;
+    if (!ownerXpubs || !expectedMultisig) return;
     const provider = getDefaultProvider("homestead");
-    for (const multisigMastercopy of historicalData.MinimumViableMultisigAddresses) {
-      for (const proxyFactory of historicalData.ProxyFactoryAddresses) {
-        for (const bytecode of historicalData.proxyBytecode) {
+    for (const multisigMastercopy of addressHistory[chainId].MinimumViableMultisigAddresses) {
+      for (const proxyFactory of addressHistory[chainId].ProxyFactoryAddresses) {
+        for (const bytecode of [...addressHistory[chainId].toxicProxyBytecode, ""]) {
           for (const legacy of [true, false]) {
             const bc = bytecode.substring(0,8) || "0x000000";
             let calculated = await getCreate2MultisigAddress(
-              owners,
+              ownerXpubs,
               { proxyFactory, multisigMastercopy },
               provider,
               legacy,
@@ -66,7 +69,7 @@ const Admin = ({ messaging }) => {
     if (!messaging) {
       return;
     }
-    (async () => console.log(await scanForFactory(owners, expectedMultisig)))();
+    (async () => console.log(await scanForFactory(ownerXpubs, expectedMultisig)))();
   });
 
   return (
@@ -76,7 +79,5 @@ const Admin = ({ messaging }) => {
     </RootGrid>
   );
 };
-
-Admin.propTypes = { messaging: "any" };
 
 export default Admin;
