@@ -1,7 +1,8 @@
 import {
   CriticalStateChannelAddresses,
   SingleAssetTwoPartyIntermediaryAgreement,
-  StateChannelJSON
+  StateChannelJSON,
+  StateSchemaVersion,
 } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 
@@ -65,7 +66,8 @@ export class StateChannel {
       SingleAssetTwoPartyIntermediaryAgreement
     > = new Map<string, SingleAssetTwoPartyIntermediaryAgreement>([]),
     private readonly freeBalanceAppInstance?: AppInstance,
-    private readonly monotonicNumProposedApps: number = 0
+    private readonly monotonicNumProposedApps: number = 0,
+    public readonly schemaVersion: number = StateSchemaVersion,
   ) {
     userNeuteredExtendedKeys.forEach(xpub => {
       if (!xpub.startsWith("xpub")) {
@@ -281,6 +283,7 @@ export class StateChannel {
     >;
     freeBalanceAppInstance?: AppInstance;
     monotonicNumProposedApps?: number;
+    schemaVersion?: number;
   }) {
     return new StateChannel(
       args.multisigAddress || this.multisigAddress,
@@ -292,6 +295,7 @@ export class StateChannel {
         this.singleAssetTwoPartyIntermediaryAgreements,
       args.freeBalanceAppInstance || this.freeBalanceAppInstance,
       args.monotonicNumProposedApps || this.monotonicNumProposedApps,
+      args.schemaVersion || this.schemaVersion,
     );
   }
 
@@ -602,7 +606,8 @@ export class StateChannel {
       monotonicNumProposedApps: this.monotonicNumProposedApps,
       singleAssetTwoPartyIntermediaryAgreements: [
         ...this.singleAssetTwoPartyIntermediaryAgreements.entries()
-      ]
+      ],
+      schemaVersion: this.schemaVersion,
     };
   }
 
@@ -645,7 +650,8 @@ export class StateChannel {
         json.freeBalanceAppInstance
           ? AppInstance.fromJson(json.freeBalanceAppInstance)
           : undefined,
-        json.monotonicNumProposedApps
+        json.monotonicNumProposedApps,
+        json.schemaVersion,
       );
     } catch (e) {
       throw new Error(
