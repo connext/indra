@@ -97,7 +97,7 @@ contract MinimumViableMultisig {
     returns (bytes32)
   {
     return keccak256(
-      abi.encodePacked(byte(0x19), _owners, to, value, data, uint8(operation), transactionCount)
+      abi.encode(byte(0x19), _owners, to, value, data, uint8(operation), transactionCount)
     );
   }
 
