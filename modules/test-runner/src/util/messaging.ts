@@ -47,23 +47,25 @@ type TestMessagingConfig = {
   count: DetailedMessageCounter;
 };
 
-const defaultOpts: TestMessagingConfig = {
-  messagingConfig: {
-    logLevel: env.logLevel,
-    messagingUrl: env.nodeUrl,
-  },
-  protocolDefaults: {
-    install: defaultCount(),
-    "install-virtual-app": defaultCount(),
-    setup: defaultCount(),
-    propose: defaultCount(),
-    takeAction: defaultCount(),
-    uninstall: defaultCount(),
-    "uninstall-virtual-app": defaultCount(),
-    update: defaultCount(),
-    withdraw: defaultCount(),
-  },
-  count: defaultCount(),
+const defaultOpts = (): TestMessagingConfig => {
+  return {
+    messagingConfig: {
+      logLevel: env.logLevel,
+      messagingUrl: env.nodeUrl,
+    },
+    protocolDefaults: {
+      install: defaultCount(),
+      "install-virtual-app": defaultCount(),
+      setup: defaultCount(),
+      propose: defaultCount(),
+      takeAction: defaultCount(),
+      uninstall: defaultCount(),
+      "uninstall-virtual-app": defaultCount(),
+      update: defaultCount(),
+      withdraw: defaultCount(),
+    },
+    count: defaultCount(),
+  };
 };
 
 const combineObjects = (overrides: any, defaults: any): any => {
@@ -102,11 +104,12 @@ export class TestMessagingService implements IMessagingService {
   private countInternal: DetailedMessageCounter;
 
   constructor(opts: Partial<TestMessagingConfig> = {}) {
+    const defaults = defaultOpts();
     // create options
     this.options = {
-      messagingConfig: combineObjects(opts.messagingConfig, defaultOpts.messagingConfig),
-      count: combineObjects(opts.count, defaultOpts.count),
-      protocolDefaults: combineObjects(opts.protocolDefaults, defaultOpts.protocolDefaults),
+      messagingConfig: combineObjects(opts.messagingConfig, defaults.messagingConfig),
+      count: combineObjects(opts.count, defaults.count),
+      protocolDefaults: combineObjects(opts.protocolDefaults, defaults.protocolDefaults),
     };
 
     const factory = new MessagingServiceFactory({
