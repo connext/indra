@@ -11,7 +11,7 @@ import "openzeppelin-solidity/contracts/cryptography/ECDSA.sol";
 /// (a) Executes arbitrary transactions using `CALL` or `DELEGATECALL`
 /// (b) Requires n-of-n unanimous consent
 /// (c) Does not use on-chain address for signature verification
-/// (d) Uses hash-based instead of nonce-based replay protection
+/// (d) Uses hash-based instead of nonce-based replay protection (update: nonce added)
 contract MinimumViableMultisig {
 
   using ECDSA for bytes32;
@@ -21,6 +21,8 @@ contract MinimumViableMultisig {
   mapping(bytes32 => bool) isExecuted;
 
   address[] private _owners;
+
+  uint256 transactionCount = 0;
 
   enum Operation {
     Call,
@@ -57,7 +59,8 @@ contract MinimumViableMultisig {
   )
     public
   {
-    bytes32 transactionHash = getTransactionHash(to, value, data, operation);
+    transactionCount += 1;
+    bytes32 transactionHash = getTransactionHash(to, value, data, operation, transactionCount);
     require(
       !isExecuted[transactionHash],
       "Transacation has already been executed"
@@ -86,14 +89,15 @@ contract MinimumViableMultisig {
     address to,
     uint256 value,
     bytes memory data,
-    Operation operation
+    Operation operation,
+    uint256 transactionCount
   )
     public
     view
     returns (bytes32)
   {
     return keccak256(
-      abi.encodePacked(byte(0x19), _owners, to, value, data, uint8(operation))
+      abi.encodePacked(byte(0x19), _owners, to, value, data, uint8(operation), transactionCount)
     );
   }
 
