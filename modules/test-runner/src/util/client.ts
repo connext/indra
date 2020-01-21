@@ -144,9 +144,9 @@ export const createClientWithMessagingLimits = async (
     ceiling,
     delay,
   };
-  protocol !== "any"
-    ? expect(clientMessaging[protocol]).to.be.deep.equal(expected)
-    : expect(clientMessaging.count).to.be.deep.equal(expected);
-
+  protocol && protocol === "any"
+    ? expect(clientMessaging.count).to.containSubset(expected)
+    : expect(clientMessaging[protocol]).to.containSubset(expected);
+  expect(clientMessaging.options).to.containSubset(messageOptions);
   return await createClient({ messaging: clientMessaging });
 };
