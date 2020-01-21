@@ -440,9 +440,9 @@ export class CFCoreService {
     const owners = [userXpub, this.cfCore.publicIdentifier];
     const addresses = await this.configService.getContractAddresses();
     const proxyFactory = addresses.ProxyFactory;
-    const mVMultisig = addresses.MinimumViableMultisig;
+    const multisigMastercopy = addresses.MinimumViableMultisig;
     const ethProvider = this.configService.getEthProvider();
-    return getCreate2MultisigAddress(owners, proxyFactory, mVMultisig, ethProvider);
+    return getCreate2MultisigAddress(owners, { proxyFactory, multisigMastercopy }, ethProvider);
   }
 
   /**

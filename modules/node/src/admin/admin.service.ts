@@ -1,11 +1,5 @@
-import MinimumViableMultisig from "@connext/contracts/build/MinimumViableMultisig.json";
-import ProxyFactory from "@connext/contracts/build/ProxyFactory.json";
 import { ConnextNodeStorePrefix, StateChannelJSON } from "@connext/types";
 import { Injectable } from "@nestjs/common";
-import { Contract } from "ethers";
-import { Provider } from "ethers/providers";
-import { getAddress, Interface, keccak256, solidityKeccak256 } from "ethers/utils";
-import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -153,14 +147,12 @@ export class AdminService {
    *
    * Related to bug described in `getNoFreeBalance`.
    */
-  async getIncorrectMultisigAddresses(): Promise<
-    {
-      oldMultisigAddress: string;
-      expectedMultisigAddress: string;
-      userXpub: string;
-      channelId: number;
-    }[]
-  > {
+  async getIncorrectMultisigAddresses(): Promise<{
+    oldMultisigAddress: string;
+    expectedMultisigAddress: string;
+    userXpub: string;
+    channelId: number;
+  }[]> {
     const channels = await this.channelService.findAll();
     const ans = [];
     for (const channel of channels) {
@@ -353,8 +345,10 @@ export class AdminService {
         const { MinimumViableMultisig } = await this.configService.getContractAddresses();
         const generatedMultisig = await getCreate2MultisigAddress(
           stateChannel.userNeuteredExtendedKeys,
-          stateChannel.addresses.proxyFactory,
-          MinimumViableMultisig,
+          {
+            proxyFactory: stateChannel.addresses.proxyFactory,
+            multisigMastercopy: MinimumViableMultisig,
+          },
           this.configService.getEthProvider(),
         );
         if (generatedMultisig !== channel.multisigAddress) {
@@ -384,22 +378,21 @@ export class AdminService {
     let correctProxyFactoryAddress = undefined;
     const ethProvider = this.configService.getEthProvider();
     const { data: stateChannel } = await this.cfCoreService.getStateChannel(multisigAddress);
-    for (const addr of proxyFactoryAddresses) {
+    for (const proxyFactory of proxyFactoryAddresses) {
       const derivedMultisig = await getCreate2MultisigAddress(
         stateChannel.userNeuteredExtendedKeys,
-        addr,
-        minimumViableMultisigAddress,
+        { proxyFactory, multisigMastercopy: minimumViableMultisigAddress },
         ethProvider,
       );
       if (derivedMultisig === stateChannel.multisigAddress) {
-        correctProxyFactoryAddress = addr;
+        correctProxyFactoryAddress = proxyFactory;
         break;
       }
-      const preKeygenMultisig = await this.legacyGetCreate2MultisigAddress(
+      const preKeygenMultisig = await getCreate2MultisigAddress(
         stateChannel.userNeuteredExtendedKeys,
-        addr,
-        minimumViableMultisigAddress,
+        { proxyFactory, multisigMastercopy: minimumViableMultisigAddress },
         ethProvider,
+        true
       );
       if (preKeygenMultisig === stateChannel.multisigAddress) {
         console.warn(
@@ -409,55 +402,5 @@ export class AdminService {
       }
     }
     return correctProxyFactoryAddress;
-  }
-
-  /**
-   * 12/13/2019
-   *
-   * Modified version of the getCreate2MultisigAddress util from cf-core.
-   * This one has a modified xpub -> address process.
-   * Hopefully this'll help us identify & eventually recover funds from
-   * channels that were deposited into before the keyGen change.
-   */
-  async legacyGetCreate2MultisigAddress(
-    owners: string[],
-    proxyFactoryAddress: string,
-    minimumViableMultisigAddress: string,
-    ethProvider: Provider,
-  ): Promise<string> {
-    const proxyFactory = new Contract(proxyFactoryAddress, ProxyFactory.abi, ethProvider);
-
-    // Calculates xpub -> address without the last "/<index>" part of the path
-    const xkeysToSortedKthAddresses = (xkeys: string[]): string[] =>
-      xkeys
-        .map((xkey: string): string => fromExtendedKey(xkey).address)
-        .sort((a: string, b: string): number => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
-
-    const proxyBytecode = await proxyFactory.functions.proxyCreationCode();
-    return getAddress(
-      solidityKeccak256(
-        ["bytes1", "address", "uint256", "bytes32"],
-        [
-          "0xff",
-          proxyFactoryAddress,
-          solidityKeccak256(
-            ["bytes32", "uint256"],
-            [
-              keccak256(
-                // see encoding notes
-                new Interface(MinimumViableMultisig.abi).functions.setup.encode([
-                  xkeysToSortedKthAddresses(owners),
-                ]),
-              ),
-              0,
-            ],
-          ),
-          solidityKeccak256(
-            ["bytes", "uint256"],
-            [`0x${proxyBytecode.replace("0x", "")}`, minimumViableMultisigAddress],
-          ),
-        ],
-      ).slice(-40),
-    );
   }
 }
