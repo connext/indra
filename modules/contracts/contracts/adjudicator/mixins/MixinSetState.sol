@@ -13,7 +13,7 @@ contract MixinSetState is
 
   struct SignedAppChallengeUpdate {
     bytes32 appStateHash;
-    uint256 versionNumber;
+    uint128 versionNumber;
     uint256 timeout;
     bytes[] signatures;
   }
@@ -60,7 +60,7 @@ contract MixinSetState is
       "Tried to call setState with an outdated versionNumber version"
     );
 
-    uint248 finalizesAt = uint248(block.number + req.timeout);
+    uint256 finalizesAt = block.number + req.timeout;
     require(finalizesAt >= req.timeout, "uint248 addition overflow");
 
     challenge.status = req.timeout > 0 ?
@@ -68,7 +68,7 @@ contract MixinSetState is
       ChallengeStatus.EXPLICITLY_FINALIZED;
 
     challenge.appStateHash = req.appStateHash;
-    challenge.versionNumber = uint128(req.versionNumber);
+    challenge.versionNumber = req.versionNumber;
     challenge.finalizesAt = finalizesAt;
     challenge.challengeCounter += 1;
     challenge.latestSubmitter = msg.sender;

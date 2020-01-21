@@ -30,12 +30,12 @@ contract LibStateChannelApp {
   // NOTE: AppChallenge is the overall state of a channelized app instance,
   // appStateHash is the hash of a state specific to the CounterfactualApp (e.g. chess position)
   struct AppChallenge {
+    ChallengeStatus status;
     address latestSubmitter;
     bytes32 appStateHash;
     uint128 challengeCounter;
     uint128 versionNumber;
-    uint248 finalizesAt;
-    ChallengeStatus status;
+    uint256 finalizesAt;
   }
 
   /// @dev Verifies signatures given the signer addresses

@@ -17,7 +17,7 @@ contract MixinSetStateWithAction is
     // NOTE: We include the full bytes of the state update,
     //       not just the hash of it as in MixinSetState.
     bytes appState;
-    uint256 versionNumber;
+    uint128 versionNumber;
     uint256 timeout;
     bytes[] signatures;
   }
@@ -79,13 +79,13 @@ contract MixinSetStateWithAction is
     );
 
 
-    uint248 finalizesAt = uint248(block.number + req.timeout);
+    uint256 finalizesAt = block.number + req.timeout;
     require(finalizesAt >= req.timeout, "uint248 addition overflow");
 
     challenge.finalizesAt = finalizesAt;
     challenge.status = ChallengeStatus.FINALIZES_AFTER_DEADLINE;
     challenge.appStateHash = keccak256(newState);
-    challenge.versionNumber = uint128(req.versionNumber);
+    challenge.versionNumber = req.versionNumber;
     challenge.challengeCounter += 1;
     challenge.latestSubmitter = msg.sender;
   }
