@@ -98,7 +98,7 @@ export class TestMessagingService implements IMessagingService {
   private protocolDefaults: {
     [protocol: string]: DetailedMessageCounter;
   };
-  private options: TestMessagingConfig;
+  public options: TestMessagingConfig;
   private countInternal: DetailedMessageCounter;
 
   constructor(opts: Partial<TestMessagingConfig> = {}) {
@@ -324,18 +324,24 @@ export class TestMessagingService implements IMessagingService {
   }
 
   private hasCeiling(opts: Partial<{ type: "sent" | "received"; protocol: string }> = {}): boolean {
-    if (!opts.protocol) {
-      if (!opts.type) {
-        return !!this.count.ceiling;
+    const { type, protocol } = opts;
+    const exists = (value: any | undefined | null): boolean => {
+      // will return true if value is null, and will
+      // return false if value is 0
+      return value !== undefined && value !== null;
+    };
+    if (!protocol) {
+      if (!type) {
+        return exists(this.count.ceiling);
       }
-      return !!this.count.ceiling && !!this.count.ceiling![opts.type!];
+      return exists(this.count.ceiling) && exists(this.count.ceiling![type]);
     }
-    if (!opts.type) {
-      return !!this.protocolDefaults[opts.protocol].ceiling;
+    if (!type) {
+      return exists(this.protocolDefaults[protocol].ceiling);
     }
     return (
-      !!this.protocolDefaults[opts.protocol].ceiling &&
-      !!this.protocolDefaults[opts.protocol].ceiling![opts.type]
+      exists(this.protocolDefaults[protocol].ceiling) &&
+      exists(this.protocolDefaults[protocol].ceiling![type!])
     );
   }
 }
