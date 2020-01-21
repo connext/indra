@@ -63,6 +63,8 @@ contract MinimumViableMultisig {
       "Transacation has already been executed"
     );
 
+    isExecuted[transactionHash] = true;
+
     address lastSigner = address(0);
     for (uint256 i = 0; i < _owners.length; i++) {
       require(
@@ -74,8 +76,6 @@ contract MinimumViableMultisig {
     }
 
     execute(to, value, data, operation);
-
-    isExecuted[transactionHash] = true;
   }
 
   /// @notice Compute a unique transaction hash for a particular (to, value, data, op) tuple
