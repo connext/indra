@@ -155,9 +155,11 @@ const StatsSummary = ({ classes, messaging }) => {
         const hourDifference = (Date.now() - createdDate.getTime()) / 3600000;
         if (hourDifference <= 24) {
           pastDayTotal++;
-        } else if (hourDifference > 24 && hourDifference <= 168) {
+        } 
+        if (hourDifference <= 168) {
           pastWeekTotal++;
-        } else if (hourDifference > 168 && hourDifference <= 720) {
+        }
+        if (hourDifference <= 720) {
           pastMonthTotal++;
         }
       }
