@@ -62,8 +62,8 @@ describe("Create Channel", () => {
     this.timeout(40_000);
     await expect(
       createClientWithMessagingLimits({
-        ceiling: { sent: 0 },
-        protocol: "any",
+        ceiling: { received: 1 },
+        protocol: "setup",
       }),
     ).to.be.rejectedWith(`Create channel event not fired within 30s`);
   });
