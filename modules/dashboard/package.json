@@ -10,8 +10,8 @@
   },
   "dependencies": {
     "@connext/contracts": "1.0.1",
-    "@connext/messaging": "3.0.0",
-    "@connext/types": "3.0.0",
+    "@connext/messaging": "3.0.1",
+    "@connext/types": "3.0.1",
     "@material-ui/core": "4.8.2",
     "@material-ui/icons": "4.5.1",
     "react": "16.12.0",
