@@ -23,7 +23,11 @@ export const fundChannel = async (
       reject(new Error(JSON.stringify(msg)));
     });
 
-    await client.deposit({ amount: amount.toString(), assetId });
+    try {
+      await client.deposit({ amount: amount.toString(), assetId });
+    } catch (e) {
+      return reject(new Error(e.stack || e.message));
+    }
   });
 
   return;
@@ -48,7 +52,11 @@ export const requestCollateral = async (
       reject(new Error(JSON.stringify(msg)));
     });
 
-    await client.requestCollateral(assetId);
+    try {
+      await client.requestCollateral(assetId);
+    } catch (e) {
+      return reject(new Error(e.stack || e.message));
+    }
   });
 
   return;
