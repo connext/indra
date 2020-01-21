@@ -49,18 +49,20 @@ contract MinimumViableMultisig {
   /// @param value The amount of ETH being forwarded in the message call
   /// @param data Any calldata being sent along with the message call
   /// @param operation Specifies whether the message call is a `CALL` or a `DELEGATECALL`
+  /// @param domainSeparator EIP712-defined hash to determine context (https://eips.ethereum.org/EIPS/eip-712)
   /// @param signatures A sorted bytes string of concatenated signatures of each owner
   function execTransaction(
     address to,
     uint256 value,
     bytes memory data,
     Operation operation,
+    bytes32 domainSeparator,
     bytes[] memory signatures
   )
     public
   {
     transactionCount += 1;
-    bytes32 transactionHash = getTransactionHash(to, value, data, operation, transactionCount);
+    bytes32 transactionHash = getTransactionHash(to, value, data, operation, domainSeparator, transactionCount);
     require(
       !isExecuted[transactionHash],
       "Transacation has already been executed"
@@ -90,6 +92,7 @@ contract MinimumViableMultisig {
     uint256 value,
     bytes memory data,
     Operation operation,
+    bytes32 domainSeparator,
     uint256 transactionCount
   )
     public
