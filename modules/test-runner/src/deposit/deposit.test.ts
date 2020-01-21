@@ -1,6 +1,6 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
-import { AddressZero, Zero } from "ethers/constants";
+import { AddressZero } from "ethers/constants";
 
 import { expect, NEGATIVE_ONE, ONE, TWO, WRONG_ADDRESS } from "../util";
 import { createClient } from "../util/client";
@@ -70,32 +70,25 @@ describe("Deposits", () => {
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
     expect(freeBalance[clientA.freeBalanceAddress].toString()).to.be.eq(ONE);
     expect(freeBalance[nodeFreeBalanceAddress].toString()).to.be.eq("0");
-    //TODO: is there any way to test to make sure deposit rights were rescinded as part of the .deposit call?
+    // TODO: is there any way to test to make sure deposit rights were rescinded
+    // as part of the .deposit call?
   });
 
-  it("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => {});
+  it.skip("client tries to deposit while node already has deposit rights but has not sent a tx to chain", async () => {});
 
-  it("client tries to deposit while node already has deposit rights and has sent tx to chain (not confirmed onchain)", async () => {});
+  it.skip("client tries to deposit while node already has deposit rights and has sent tx to chain (not confirmed onchain)", async () => {});
 
-  it("client deposits a different amount onchain than passed into the deposit fn", async () => {});
+  it.skip("client deposits a different amount onchain than passed into the deposit fn", async () => {});
 
-  it("client proposes deposit but no response from node (node doesn't receive NATS message)", async () => {});
+  it.skip("client proposes deposit but never sends tx to chain", async () => {});
 
-  it("client proposes deposit but no response from node (node receives NATS message after timeout expired)", async () => {});
+  it.skip("client proposes deposit, sends tx to chain, but deposit takes a long time to confirm", async () => {});
 
-  it("client goes offline after proposing deposit and then comes back online after timeout is over", async () => {});
+  it.skip("client proposes deposit, sends tx to chain, but deposit fails onchain", async () => {});
 
-  it("client proposes deposit then deletes its store", async () => {});
+  it.skip("client bypasses proposeDeposit flow and calls providerDeposit directly", async () => {});
 
-  it("client proposes deposit but never sends tx to chain", async () => {});
-
-  it("client proposes deposit, sends tx to chain, but deposit takes a long time to confirm", async () => {});
-
-  it("client proposes deposit, sends tx to chain, but deposit fails onchain", async () => {});
-
-  it("client bypasses proposeDeposit flow and calls providerDeposit directly", async () => {});
-
-  it("client deposits eth, withdraws, then successfully deposits eth again", async () => {
+  it.skip("client deposits eth, withdraws, then successfully deposits eth again", async () => {
     await clientA.deposit({ amount: TWO, assetId: AddressZero });
     await clientA.withdraw({ amount: TWO, assetId: AddressZero });
     await clientA.deposit({ amount: ONE, assetId: AddressZero });
