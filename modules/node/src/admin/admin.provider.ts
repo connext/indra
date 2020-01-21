@@ -9,7 +9,7 @@ import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
 import { LinkedTransfer } from "../transfer/transfer.entity";
 import { AbstractMessagingProvider, stringify } from "../util";
 
-import { AdminService } from "./admin.service";
+import { AdminService, RepairCriticalAddressesResponse } from "./admin.service";
 
 class AdminMessaging extends AbstractMessagingProvider {
   constructor(
@@ -78,6 +78,10 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getChannelsForMerging();
   }
 
+  async repairCriticalStateChannelAddresses(): Promise<RepairCriticalAddressesResponse> {
+    return await this.adminService.repairCriticalStateChannelAddresses();
+  }
+
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "admin.get-no-free-balance",
@@ -112,6 +116,11 @@ class AdminMessaging extends AbstractMessagingProvider {
     await super.connectRequestReponse(
       "admin.get-channels-for-merging",
       this.authService.useAdminToken(this.getChannelsForMerging.bind(this)),
+    );
+
+    await super.connectRequestReponse(
+      "admin.repair-critical-addresses",
+      this.authService.useAdminToken(this.repairCriticalStateChannelAddresses.bind(this)),
     );
   }
 }
