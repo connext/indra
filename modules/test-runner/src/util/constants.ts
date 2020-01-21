@@ -35,3 +35,8 @@ export const ETH_AMOUNT_SM = ZERO_ZERO_ONE_ETH;
 export const ETH_AMOUNT_MD = ZERO_ONE_ETH;
 export const ETH_AMOUNT_LG = ONE_ETH;
 export const TOKEN_AMOUNT = TEN_ETH;
+export const TOKEN_AMOUNT_SM = ONE_ETH;
+
+// Messaging constants
+export const SETUP_RESPONDER_RECEIVED_COUNT = 1;
+export const SETUP_RESPONDER_SENT_COUNT = 1;

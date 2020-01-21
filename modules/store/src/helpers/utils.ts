@@ -1,7 +1,9 @@
+import { IAsyncStorage } from "@connext/types";
 import { utils } from "ethers";
 
-import AsyncStorageWrapper from "./asyncStorage";
-import LocalStorageWrapper from "./localStorage";
+import { AsyncStorageWrapper, LocalStorageWrapper } from "../wrappers";
+
+import { ASYNC_STORAGE_TEST_KEY } from "./constants";
 import { StorageWrapper } from "./types";
 
 export function arrayify(value: string | ArrayLike<number> | utils.Hexable): Uint8Array {
@@ -39,28 +41,45 @@ export function safeJsonStringify(value: any): string {
   return typeof value === "string" ? value : JSON.stringify(value);
 }
 
-export function isAsyncStorage(storage: any): boolean {
-  const key = "__react_native_storage_test";
-  const promiseTest = storage.setItem(key, "test");
+export function removeAsyncStorageTest(
+  storage: Storage | IAsyncStorage,
+  promiseTest: Promise<void>,
+): void {
+  if (promiseTest && promiseTest.then) {
+    promiseTest.then(() => {
+      storage.removeItem(ASYNC_STORAGE_TEST_KEY);
+    });
+    return;
+  }
+  storage.removeItem(ASYNC_STORAGE_TEST_KEY);
+}
+
+export function isAsyncStorage(storage: Storage | IAsyncStorage): boolean {
+  const promiseTest = storage.setItem(ASYNC_STORAGE_TEST_KEY, "test");
   const result = !!(
     typeof promiseTest !== "undefined" &&
     typeof promiseTest.then !== "undefined" &&
-    typeof storage.length === "undefined"
+    typeof (storage as Storage).length === "undefined"
   );
-  storage.removeItem(key);
+  removeAsyncStorageTest(storage, promiseTest);
   return result;
 }
 
-export function wrapAsyncStorage(asyncStorage: any): StorageWrapper {
-  const storage: StorageWrapper = new AsyncStorageWrapper(asyncStorage);
+export function wrapAsyncStorage(
+  asyncStorage: IAsyncStorage,
+  asyncStorageKey?: string,
+): StorageWrapper {
+  const storage: StorageWrapper = new AsyncStorageWrapper(asyncStorage, asyncStorageKey);
   return storage;
 }
 
-export function wrapLocalStorage(localStorage: any): StorageWrapper {
+export function wrapLocalStorage(localStorage: Storage): StorageWrapper {
   const storage: StorageWrapper = new LocalStorageWrapper(localStorage);
   return storage;
 }
 
-export function wrapStorage(storage: any): StorageWrapper {
-  return isAsyncStorage(storage) ? wrapAsyncStorage(storage) : wrapLocalStorage(storage);
+export function wrapStorage(storage: any, asyncStorageKey?: string): StorageWrapper {
+  return isAsyncStorage(storage)
+    ? wrapAsyncStorage(storage, asyncStorageKey)
+    : wrapLocalStorage(storage);
 }

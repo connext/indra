@@ -10,6 +10,7 @@ import "regenerator-runtime/runtime";
 
 import { createCFChannelProvider } from "./channelProvider";
 import { ConnextClient } from "./connext";
+import { getDefaultOptions, isWalletProvided } from "./default";
 import { delayAndThrow, Logger, stringify } from "./lib";
 import { NodeApiClient } from "./node";
 import {
@@ -48,7 +49,8 @@ const setupMultisigAddress = async (
   let multisigAddress: string;
   if (!myChannel) {
     log.debug("no channel detected, creating channel..");
-    const creationEventData: CFCoreTypes.CreateChannelResult | {} = await Promise.race([
+    const creationEventData = await Promise.race([
+      delayAndThrow(30_000, "Create channel event not fired within 30s"),
       new Promise(
         async (res: any): Promise<any> => {
           channelProvider.once(
@@ -62,7 +64,6 @@ const setupMultisigAddress = async (
           log.debug(`created channel, transaction: ${stringify(creationData)}`);
         },
       ),
-      delayAndThrow(30_000, "Create channel event not fired within 30s"),
     ]);
     multisigAddress = (creationEventData as CFCoreTypes.CreateChannelResult).multisigAddress;
   } else {
@@ -74,15 +75,23 @@ const setupMultisigAddress = async (
   return channelProvider;
 };
 
-export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
+export const connect = async (
+  clientOptions: string | ClientOptions,
+  overrideOptions?: Partial<ClientOptions>,
+): Promise<IConnextClient> => {
+  const opts =
+    typeof clientOptions === "string"
+      ? await getDefaultOptions(clientOptions, overrideOptions)
+      : clientOptions;
   const {
+    asyncStorage,
     logLevel,
     ethProviderUrl,
     nodeUrl,
     mnemonic,
     channelProvider: providedChannelProvider,
   } = opts;
-  let { xpub, keyGen, store } = opts;
+  let { xpub, keyGen, store, messaging } = opts;
 
   const log = new Logger("ConnextConnect", logLevel);
 
@@ -101,7 +110,6 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   }
 
   // setup messaging and node api
-  let messaging: IMessagingService;
   let node: INodeApiClient;
   let config: GetConfigResponse;
 
@@ -117,7 +125,11 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
     log.debug(`Creating messaging service client ${channelProvider.config.nodeUrl}`);
-    messaging = await createMessagingService(channelProvider.config.nodeUrl, logLevel);
+    if (!messaging) {
+      messaging = await createMessagingService(channelProvider.config.nodeUrl, logLevel);
+    } else {
+      await messaging.connect();
+    }
 
     // create a new node api instance
     node = new NodeApiClient({ logLevel, messaging, channelProvider });
@@ -130,13 +142,13 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     node.nodePublicIdentifier = config.nodePublicIdentifier;
 
     isInjected = true;
-  } else if (mnemonic || (xpub && keyGen)) {
+  } else if (isWalletProvided(opts)) {
     if (!nodeUrl) {
       throw new Error("Client must be instantiated with nodeUrl if not using a channelProvider");
     }
 
     if (!store) {
-      store = new ConnextStore(window.localStorage);
+      store = new ConnextStore(asyncStorage || window.localStorage);
     }
 
     if (mnemonic) {
@@ -152,7 +164,11 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     }
 
     log.debug(`Creating messaging service client ${nodeUrl}`);
-    messaging = await createMessagingService(nodeUrl, logLevel);
+    if (!messaging) {
+      messaging = await createMessagingService(nodeUrl, logLevel);
+    } else {
+      await messaging.connect();
+    }
 
     // create a new node api instance
     node = new NodeApiClient({ logLevel, messaging });
@@ -221,6 +237,21 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     return client;
   }
 
+  // waits until the setup protocol or create channel call is completed
+  await new Promise(
+    async (resolve: any, reject: any): Promise<any> => {
+      // Wait for channel to be available
+      const channelIsAvailable = async (): Promise<boolean> => {
+        const chan = await node.getChannel();
+        return chan && chan.available;
+      };
+      while (!(await channelIsAvailable())) {
+        await new Promise((res: any): any => setTimeout((): void => res(), 100));
+      }
+      resolve();
+    },
+  );
+
   try {
     await client.getFreeBalance();
   } catch (e) {
@@ -233,7 +264,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     }
   }
 
-  // 12/11/2019 make sure state is restored if there is no state channel
+  // 12/11/2019 make sure state is restored if there is no proxy factory in the state
   const { data: sc } = await client.getStateChannel();
   if (!sc.proxyFactoryAddress) {
     log.debug(`No proxy factory address found, restoring client state`);

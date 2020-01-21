@@ -4,6 +4,7 @@ import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
+import { expect } from "../";
 import { ethProvider } from "../ethprovider";
 
 export const withdrawFromChannel = async (
@@ -30,7 +31,7 @@ export const withdrawFromChannel = async (
     const token = new Contract(client.config.contractAddresses.Token, tokenAbi, ethProvider);
     recipientBalance = await token.balanceOf(recipient);
   }
-  expect(recipientBalance).toBeBigNumberEq(amount);
-  expect(postWithdrawalBalance[client.freeBalanceAddress]).toBeBigNumberEq(expected);
+  expect(recipientBalance.toString()).to.be.eq(amount.toString());
+  expect(postWithdrawalBalance[client.freeBalanceAddress].toString()).to.be.eq(expected.toString());
   return;
 };

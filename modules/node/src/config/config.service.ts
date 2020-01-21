@@ -80,6 +80,11 @@ export class ConfigService implements OnModuleInit {
     return getAddress(ethAddressBook[chainId].Token.address);
   }
 
+  // FIXME: should be easy to add tokens
+  async getSupportedTokenAddresses(): Promise<string[]> {
+    return [await this.getTokenAddress(), AddressZero];
+  }
+
   async getDefaultAppByName(name: SupportedApplication): Promise<DefaultApp> {
     const apps = await this.getDefaultApps();
     return apps.filter((app: DefaultApp) => app.name === name)[0];

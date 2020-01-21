@@ -11,7 +11,7 @@ SHELL=/bin/bash
 commit=$(shell git rev-parse HEAD | head -c 8)
 release=$(shell cat package.json | grep '"version"' | awk -F '"' '{print $$4}')
 solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}')
-backwards_compatible_version=2.3.20 #$(shell echo $(release) | cut -d '.' -f 1).0.0
+backwards_compatible_version=$(shell echo $(release) | cut -d '.' -f 1).0.0
 
 # Pool of images to pull cached layers from during docker build steps
 cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_relay:$(commit),$(project)_relay,$(project)_bot:$(commit),$(project)_bot,$(project)_builder"; else echo ""; fi)
@@ -55,7 +55,7 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev staging release
-dev: database ethprovider node client payment-bot-staging indra-proxy test-runner-staging ws-tcp-relay
+dev: database node client payment-bot-js indra-proxy test-runner-js ws-tcp-relay
 staging: daicard-proxy database ethprovider indra-proxy-prod node-staging payment-bot-staging test-runner-staging ws-tcp-relay
 release: daicard-proxy database ethprovider indra-proxy-prod node-release payment-bot-release test-runner-release ws-tcp-relay
 
@@ -123,7 +123,7 @@ quick-reset:
 	bash ops/db.sh 'truncate table onchain_transaction cascade;'
 	bash ops/db.sh 'truncate table payment_profile cascade;'
 	bash ops/db.sh 'truncate table peer_to_peer_transfer cascade;'
-	rm -rf $(bot)/.payment-bot-db/*
+	rm -rf $(bot)/.bot-store/*
 	touch modules/node/src/main.ts
 
 reset: stop
@@ -132,7 +132,7 @@ reset: stop
 	docker volume rm $(project)_database_dev 2> /dev/null || true
 	docker secret rm $(project)_database_dev 2> /dev/null || true
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
-	rm -rf $(bot)/.payment-bot-db/*
+	rm -rf $(bot)/.bot-store/*
 	rm -rf $(flags)/deployed-contracts
 
 push-commit:
@@ -153,7 +153,7 @@ pull-release:
 pull-backwards-compatible:
 	bash ops/pull-images.sh $(backwards_compatible_version)
 
-deployed-contracts: ethprovider
+deployed-contracts: contracts
 	bash ops/deploy-contracts.sh ganache
 	touch $(flags)/$@
 
@@ -279,13 +279,15 @@ ssh-action: $(shell find $(ssh-action) $(find_options))
 	docker build --file $(ssh-action)/Dockerfile --tag $(project)_ssh_action $(ssh-action)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-test-runner-release: node-modules $(shell find $(tests)/src $(tests)/ops $(find_options))
+test-runner: test-runner-staging
+
+test-runner-release: node-modules client $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
 	$(docker_run) "export MODE=release; cd modules/test-runner && npm run build-bundle"
 	docker build --file $(tests)/ops/Dockerfile $(cache_from) --tag $(project)_test_runner:$(commit) .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-test-runner-staging: node-modules $(shell find $(tests)/src $(tests)/ops $(find_options))
+test-runner-staging: node-modules client $(shell find $(tests)/src $(tests)/ops $(find_options))
 	$(log_start)
 	$(docker_run) "export MODE=staging; cd modules/test-runner && npm run build-bundle"
 	docker build --file $(tests)/ops/Dockerfile $(cache_from) --tag $(project)_test_runner .
@@ -331,9 +333,19 @@ node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrati
 	$(docker_run) "cd modules/node && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
+payment-bot-js: client $(shell find $(bot)/src $(bot)/ops $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/payment-bot && npm run build-bundle"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
 store: node-modules types $(shell find $(store)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/store && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+test-runner-js: node-modules client $(shell find $(tests)/src $(tests)/ops $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/test-runner && npm run build-bundle"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 types: node-modules $(shell find $(types)/src $(find_options))

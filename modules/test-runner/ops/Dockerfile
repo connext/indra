@@ -11,8 +11,6 @@ RUN npm install --only=production > /dev/null 2>&1
 # https://github.com/moby/moby/issues/37965#issuecomment-426853382
 COPY modules/test-runner/ops ops
 RUN true
-COPY modules/test-runner/jest.cd.js jest.config.js
-RUN true
 COPY modules/test-runner/dist dist
 
 ENV PATH="./node_modules/.bin:${PATH}"

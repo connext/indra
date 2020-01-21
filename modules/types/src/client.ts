@@ -1,4 +1,4 @@
-import { providers, Contract } from "ethers";
+import { Contract, providers } from "ethers";
 import { BigNumber, Network } from "ethers/utils";
 
 import {
@@ -44,6 +44,7 @@ import {
   RequestCollateralResponse,
   Transfer,
 } from "./node";
+import { IAsyncStorage } from "./store";
 
 export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
@@ -72,6 +73,8 @@ export interface ClientOptions {
   xpub?: string;
   store?: Store;
   logLevel?: number;
+  asyncStorage?: IAsyncStorage;
+  messaging?: IMessagingService;
 }
 
 export interface IConnextClient {
@@ -89,7 +92,6 @@ export interface IConnextClient {
   ////////////////////////////////////////
   // Methods
 
-  isAvailable: () => Promise<void>;
   restart(): Promise<void>;
 
   ///////////////////////////////////
@@ -121,10 +123,14 @@ export interface IConnextClient {
   // TODO: do we really need to expose all of these?
   getChannel(): Promise<GetChannelResponse>;
   getLinkedTransfer(paymentId: string): Promise<Transfer>;
-  getAppRegistry(appDetails?: {
-    name: SupportedApplication;
-    network: SupportedNetwork;
-  }): Promise<AppRegistry>;
+  getAppRegistry(
+    appDetails?:
+      | {
+          name: SupportedApplication;
+          network: SupportedNetwork;
+        }
+      | { appDefinitionAddress: string },
+  ): Promise<AppRegistry>;
   getRegisteredAppDetails(appName: SupportedApplication): DefaultApp;
   createChannel(): Promise<CreateChannelResponse>;
   subscribeToSwapRates(from: string, to: string, callback: any): Promise<any>;

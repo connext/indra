@@ -5,6 +5,7 @@ import { AddressZero, Zero } from "ethers/constants";
 
 import {
   createClient,
+  expect,
   fundChannel,
   NEGATIVE_ZERO_ZERO_ONE_ETH,
   requestDepositRights,
@@ -25,77 +26,79 @@ describe("Withdrawal", () => {
     tokenAddress = client.config.contractAddresses.Token;
   }, 90_000);
 
-  test("happy case: client successfully withdraws eth and submits the tx itself", async () => {
+  it("happy case: client successfully withdraws eth and submits the tx itself", async () => {
     // fund client with eth
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
     // withdraw
     await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, true);
   });
 
-  test("happy case: client successfully withdraws tokens and submits the tx itself", async () => {
+  it("happy case: client successfully withdraws tokens and submits the tx itself", async () => {
     // fund client with tokens
     await fundChannel(client, ZERO_ZERO_TWO_ETH, tokenAddress);
     // withdraw
     await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress, true);
   });
 
-  test("happy case: client successfully withdraws eth and node submits the tx", async () => {
+  it("happy case: client successfully withdraws eth and node submits the tx", async () => {
     await fundChannel(client, ZERO_ZERO_TWO_ETH);
     // withdraw
     await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero);
   });
 
-  test("happy case: client successfully withdraws tokens and node submits the tx", async () => {
+  it("happy case: client successfully withdraws tokens and node submits the tx", async () => {
     await fundChannel(client, ZERO_ZERO_TWO_ETH, tokenAddress);
     // withdraw
     await withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
   });
 
-  test("client tries to withdraw more than it has in free balance", async () => {
+  it("client tries to withdraw more than it has in free balance", async () => {
     await fundChannel(client, ZERO_ZERO_ZERO_ONE_ETH);
-    await expect(withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero)).rejects.toThrow(
+    await expect(withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero)).to.be.rejectedWith(
       `Value (${ZERO_ZERO_ONE_ETH}) is not less than or equal to ${ZERO_ZERO_ZERO_ONE_ETH}`,
     );
   });
 
-  test("client tries to withdraw a negative amount", async () => {
+  it("client tries to withdraw a negative amount", async () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
     await expect(
       withdrawFromChannel(client, NEGATIVE_ZERO_ZERO_ONE_ETH, AddressZero),
-    ).rejects.toThrow(`Value (${NEGATIVE_ZERO_ZERO_ONE_ETH}) is not greater than or equal to 0`);
+    ).to.be.rejectedWith(`Value (${NEGATIVE_ZERO_ZERO_ONE_ETH}) is not greater than or equal to 0`);
   });
 
-  test("client tries to withdraw to an invalid recipient address", async () => {
+  it("client tries to withdraw to an invalid recipient address", async () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
+    const recipient = "0xabc";
     await expect(
-      withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, false, "0xabc"),
-    ).rejects.toThrow(`Value \"0xabc\" is not a valid eth address`);
+      withdrawFromChannel(client, ZERO_ZERO_ONE_ETH, AddressZero, false, recipient),
+    ).to.be.rejectedWith(`Value \"${recipient}\" is not a valid eth address`);
   });
 
-  test("client tries to withdraw with invalid assetId", async () => {
+  it("client tries to withdraw with invalid assetId", async () => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
     // cannot use util fn because it will check the pre withdraw free balance,
     // which will throw a separate error
+    const assetId = "0xabc";
     await expect(
       client.withdraw({
         amount: ZERO_ZERO_ONE_ETH.toString(),
-        assetId: "0xabc",
+        assetId,
         recipient: Wallet.createRandom().address,
       }),
-    ).rejects.toThrow(`Value \"0xabc\" is not a valid eth address`);
+    ).to.be.rejectedWith(`Value \"${assetId}\" is not a valid eth address`);
   });
 
   // FIXME: may have race condition! saw intermittent failures, tough to
   // consistently reproduce. appear as `validating signer` errors.
   // see issue #705
-  test.skip("client tries to withdraw while node is collateralizing", async (done: any) => {
+  it.skip("client tries to withdraw while node is collateralizing", async (done: any) => {
     await fundChannel(client, ZERO_ZERO_ONE_ETH);
 
     let eventsCaught = 0;
     client.once("DEPOSIT_CONFIRMED_EVENT", async () => {
       // make sure node free balance increases
       const freeBalance = await client.getFreeBalance(AddressZero);
-      expect(freeBalance[xpubToAddress(client.nodePublicIdentifier)].gt(Zero)).toBeTruthy();
+      expect(freeBalance[xpubToAddress(client.nodePublicIdentifier)]).to.be.above(Zero);
       eventsCaught += 1;
       if (eventsCaught === 2) {
         done();
@@ -119,7 +122,7 @@ describe("Withdrawal", () => {
   });
 
   describe("client tries to withdraw while it has active deposit rights", () => {
-    test("client has active rights in eth, withdrawing eth", async () => {
+    it("client has active rights in eth, withdrawing eth", async () => {
       await fundChannel(client, ZERO_ZERO_ONE_ETH);
       // give client eth rights
       await requestDepositRights(client);
@@ -127,7 +130,7 @@ describe("Withdrawal", () => {
       await withdrawFromChannel(client, ZERO_ZERO_ZERO_ONE_ETH, AddressZero);
     });
 
-    test("client has active rights in tokens, withdrawing eth", async () => {
+    it("client has active rights in tokens, withdrawing eth", async () => {
       await fundChannel(client, ZERO_ZERO_ONE_ETH);
       // give client eth rights
       await requestDepositRights(client, tokenAddress);
@@ -135,7 +138,7 @@ describe("Withdrawal", () => {
       await withdrawFromChannel(client, ZERO_ZERO_ZERO_ONE_ETH, AddressZero);
     });
 
-    test("client has active rights in tokens, withdrawing tokens", async () => {
+    it("client has active rights in tokens, withdrawing tokens", async () => {
       await fundChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
       // give client eth rights
       await requestDepositRights(client, tokenAddress);
@@ -143,7 +146,7 @@ describe("Withdrawal", () => {
       await withdrawFromChannel(client, ZERO_ZERO_ZERO_ONE_ETH, tokenAddress);
     });
 
-    test("client has active rights in eth, withdrawing tokens", async () => {
+    it("client has active rights in eth, withdrawing tokens", async () => {
       await fundChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
       // give client eth rights
       await requestDepositRights(client, AddressZero);
@@ -153,7 +156,7 @@ describe("Withdrawal", () => {
   });
 
   describe("client tries to withdraw while node has active deposit rights", () => {
-    test("node has active rights in eth, withdrawing eth", async () => {
+    it("node has active rights in eth, withdrawing eth", async () => {
       await fundChannel(client, ZERO_ZERO_ONE_ETH);
       // give client eth rights
       await requestDepositRights(client, AddressZero, false);
@@ -161,7 +164,7 @@ describe("Withdrawal", () => {
       await withdrawFromChannel(client, ZERO_ZERO_ZERO_ONE_ETH, AddressZero);
     });
 
-    test("node has active rights in tokens, withdrawing eth", async () => {
+    it("node has active rights in tokens, withdrawing eth", async () => {
       await fundChannel(client, ZERO_ZERO_ONE_ETH);
       // give client eth rights
       await requestDepositRights(client, tokenAddress, false);
@@ -169,7 +172,7 @@ describe("Withdrawal", () => {
       await withdrawFromChannel(client, ZERO_ZERO_ZERO_ONE_ETH, AddressZero);
     });
 
-    test("node has active rights in tokens, withdrawing tokens", async () => {
+    it("node has active rights in tokens, withdrawing tokens", async () => {
       await fundChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
       // give client eth rights
       await requestDepositRights(client, tokenAddress, false);
@@ -177,7 +180,7 @@ describe("Withdrawal", () => {
       await withdrawFromChannel(client, ZERO_ZERO_ZERO_ONE_ETH, tokenAddress);
     });
 
-    test("node has active rights in eth, withdrawing tokens", async () => {
+    it("node has active rights in eth, withdrawing tokens", async () => {
       await fundChannel(client, ZERO_ZERO_ONE_ETH, tokenAddress);
       // give client eth rights
       await requestDepositRights(client, AddressZero, false);

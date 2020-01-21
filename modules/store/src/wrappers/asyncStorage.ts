@@ -1,15 +1,23 @@
-import { REACT_NATIVE_STORE } from "./constants";
-import { AsyncStorageData, InitCallback, StorageWrapper } from "./types";
-import { safeJsonParse, safeJsonStringify } from "./utils";
+import {
+  AsyncStorageData,
+  DEFAULT_ASYNC_STORAGE_KEY,
+  IAsyncStorage,
+  InitCallback,
+  safeJsonParse,
+  safeJsonStringify,
+  StorageWrapper,
+} from "../helpers";
 
-class AsyncStorageWrapper implements StorageWrapper {
-  private asyncStorage: any;
+export class AsyncStorageWrapper implements StorageWrapper {
+  private asyncStorage: IAsyncStorage;
+  private asyncStorageKey: string = DEFAULT_ASYNC_STORAGE_KEY;
   private data: AsyncStorageData = {};
   private initializing: boolean = false;
   private initCallbacks: InitCallback[] = [];
 
-  constructor(asyncStorage: any) {
+  constructor(asyncStorage: IAsyncStorage, asyncStorageKey?: string) {
     this.asyncStorage = asyncStorage;
+    this.asyncStorageKey = asyncStorageKey || DEFAULT_ASYNC_STORAGE_KEY;
     this.loadData();
   }
 
@@ -63,16 +71,16 @@ class AsyncStorageWrapper implements StorageWrapper {
   }
 
   async persist(): Promise<void> {
-    await this.asyncStorage.setItem(REACT_NATIVE_STORE, safeJsonStringify(this.data));
+    await this.asyncStorage.setItem(this.asyncStorageKey, safeJsonStringify(this.data));
   }
 
   async fetch(): Promise<AsyncStorageData> {
-    const data = await this.asyncStorage.getItem(REACT_NATIVE_STORE);
+    const data = await this.asyncStorage.getItem(this.asyncStorageKey);
     return safeJsonParse(data) || {};
   }
 
   async clear(): Promise<void> {
-    await this.asyncStorage.removeItem(REACT_NATIVE_STORE);
+    await this.asyncStorage.removeItem(this.asyncStorageKey);
   }
 
   async getKeys(): Promise<string[]> {
@@ -83,5 +91,3 @@ class AsyncStorageWrapper implements StorageWrapper {
     return Object.entries(this.data);
   }
 }
-
-export default AsyncStorageWrapper;

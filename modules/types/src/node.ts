@@ -88,10 +88,14 @@ export interface INodeApiClient {
   nodePublicIdentifier: string | undefined;
 
   acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;
-  appRegistry(appDetails?: {
-    name: SupportedApplication;
-    network: SupportedNetwork;
-  }): Promise<AppRegistry>;
+  appRegistry(
+    appDetails?:
+      | {
+          name: SupportedApplication;
+          network: SupportedNetwork;
+        }
+      | { appDefinitionAddress: string },
+  ): Promise<AppRegistry>;
   config(): Promise<GetConfigResponse>;
   createChannel(): Promise<CreateChannelResponse>;
   clientCheckIn(): Promise<void>;

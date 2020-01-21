@@ -26,7 +26,7 @@ import {
 import { invalidXpub } from "./validation";
 
 // Include our access token when interacting with these subjects
-const guardedSubjects = ["channel", "lock", "transfer"];
+const guardedSubjects = ["channel", "client", "lock", "transfer"];
 const sendFailed = "Failed to send message";
 
 // NOTE: swap rates are given as a decimal string describing:
@@ -98,11 +98,15 @@ export class NodeApiClient implements INodeApiClient {
     return retVal;
   }
 
-  public async appRegistry(appDetails?: {
-    name: SupportedApplication;
-    network: SupportedNetwork;
-  }): Promise<AppRegistry> {
-    return (await this.send("app-registry", appDetails)) as AppRegistry;
+  public async appRegistry(
+    appDetails?:
+      | {
+          name: SupportedApplication;
+          network: SupportedNetwork;
+        }
+      | { appDefinitionAddress: string },
+  ): Promise<AppRegistry> {
+    return (await this.send("app-registry", { data: appDetails })) as AppRegistry;
   }
 
   public async config(): Promise<GetConfigResponse> {

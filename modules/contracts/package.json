@@ -3,30 +3,33 @@
   "version": "1.0.1",
   "description": "Smart contracts that power a Counterfactual State Channel platform",
   "license": "ISC",
-  "files": ["address-book.json", "build", "contracts"],
+  "files": ["address-book.json", "build", "contracts", "index.ts"],
+  "main": "./dist/index.js",
   "keywords": ["ethereum", "counterfactual", "state channels", "solidity"],
   "scripts": {
-    "build": "waffle waffle.json",
+    "build": "waffle waffle.json && ./node_modules/.bin/tsc -p tsconfig.json",
     "build-native": "waffle waffle.native.json",
     "test": "ts-mocha test/**/*",
     "lint-sol": "solium -d .",
     "lint-ts": "tslint -c tslint.json test/**/*.ts"
   },
   "dependencies": {
-    "@connext/types": "1.5.1",
+    "@connext/types": "3.0.0",
     "ethers": "4.0.41",
+    "ganache-cli": "6.7.0",
     "openzeppelin-solidity": "2.3.0"
   },
   "devDependencies": {
     "@types/chai": "4.2.7",
     "@types/mocha": "5.2.7",
-    "@types/node": "13.1.2",
+    "@types/node": "13.1.7",
     "chai": "4.2.0",
     "ethereum-waffle": "2.1.0",
     "ethlint": "1.2.5",
     "mocha": "6.2.2",
     "ts-mocha": "6.0.0",
     "ts-node": "8.5.4",
-    "tslint": "5.20.1"
+    "tslint": "5.20.1",
+    "typescript": "3.5.3"
   }
 }

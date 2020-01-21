@@ -1,38 +1,34 @@
 import {
   DEFAULT_STORE_PREFIX,
   DEFAULT_STORE_SEPARATOR,
+  IAsyncStorage,
+  IBackupServiceAPI,
   PATH_CHANNEL,
   PATH_PROPOSED_APP_INSTANCE_ID,
-} from "./constants";
-import InternalStore from "./store";
-import { PisaClient, StoreFactoryOptions, StorePair, Wallet } from "./types";
-import {
-  arrayify,
-  hexlify,
-  keccak256,
-  safeJsonParse,
-  safeJsonStringify,
-  toUtf8Bytes,
-  toUtf8String,
-} from "./utils";
+  StoreFactoryOptions,
+  StorePair,
+} from "./helpers";
+import InternalStore from "./internalStore";
 
 export class ConnextStore {
   private store: InternalStore;
 
   private prefix: string = DEFAULT_STORE_PREFIX;
   private separator: string = DEFAULT_STORE_SEPARATOR;
-  private pisaClient: PisaClient | null = null;
-  private wallet: Wallet | null = null;
+  private backupService: IBackupServiceAPI | null = null;
 
-  constructor(storage: any, opts?: StoreFactoryOptions) {
+  constructor(storage: Storage | IAsyncStorage, opts?: StoreFactoryOptions) {
+    let asyncStorageKey;
+
     if (opts) {
       this.prefix = opts.prefix || DEFAULT_STORE_PREFIX;
       this.separator = opts.separator || DEFAULT_STORE_SEPARATOR;
-      this.pisaClient = opts.pisaClient || null;
-      this.wallet = opts.wallet || null;
+      this.backupService = opts.backupService || null;
+
+      asyncStorageKey = opts.asyncStorageKey;
     }
 
-    this.store = new InternalStore(storage, this.channelPrefix);
+    this.store = new InternalStore(storage, this.channelPrefix, asyncStorageKey);
   }
 
   get channelPrefix(): string {
@@ -51,12 +47,11 @@ export class ConnextStore {
 
       if (
         shouldBackup &&
-        this.pisaClient &&
-        this.wallet &&
+        this.backupService &&
         pair.path.match(/\/xpub.*\/channel\/0x[0-9a-fA-F]{40}/) &&
         pair.value.freeBalanceAppInstance
       ) {
-        await this.pisaBackup(pair);
+        await this.backupService.backup(pair);
       }
     }
   }
@@ -65,14 +60,18 @@ export class ConnextStore {
     await this.store.clear();
   }
 
-  public async restore(): Promise<any[]> {
-    return this.pisaClient ? this.pisaRestore() : [];
+  public async restore(): Promise<StorePair[]> {
+    if (this.backupService) {
+      return await this.backupService.restore();
+    }
+    await this.reset();
+    return [];
   }
 
   /// ////////////////////////////////////////////
   /// // PRIVATE METHODS
 
-  private async getPartialMatches(path: string): Promise<any> {
+  private async getPartialMatches(path: string): Promise<any | undefined> {
     // Handle partial matches so the following line works -.-
     // https://github.com/counterfactual/monorepo/blob/master/packages/node/src/store.ts#L54
     if (path.endsWith(PATH_CHANNEL) || path.endsWith(PATH_PROPOSED_APP_INSTANCE_ID)) {
@@ -85,73 +84,8 @@ export class ConnextStore {
           partialMatches[k.replace(pathToFind, "")] = value;
         }
       }
-      return partialMatches;
+      return Object.keys(partialMatches).length === 0 ? undefined : partialMatches;
     }
-    return null;
-  }
-
-  /// ////////////////////////////////////////////
-  /// // WALLET METHODS
-
-  private getWallet(): Wallet {
-    if (!this.wallet) {
-      throw new Error("No Wallet was provided");
-    }
-    return this.wallet;
-  }
-
-  private getWalletSigner(): (digest: any) => Promise<string> {
-    const wallet = this.getWallet();
-    return (digest: any): Promise<string> => wallet.signMessage(arrayify(digest));
-  }
-
-  private getWalletAddress(): string {
-    const wallet = this.getWallet();
-    return wallet.address;
-  }
-
-  private getBlockNumber(): Promise<number> {
-    const wallet = this.getWallet();
-    return wallet.provider.getBlockNumber();
-  }
-
-  /// ////////////////////////////////////////////
-  /// // PISA METHODS
-
-  private getPisaClient(): PisaClient {
-    if (!this.pisaClient) {
-      throw new Error("No Pisa Client was provided");
-    }
-    return this.pisaClient;
-  }
-
-  private async pisaRestore(): Promise<any[]> {
-    const pisaClient = this.getPisaClient();
-    const signer = this.getWalletSigner();
-    const address = this.getWalletAddress();
-    const blockNumber = await this.getBlockNumber();
-    const backupState = await pisaClient.restore(signer, address, blockNumber);
-    return backupState.map((b: any) => safeJsonParse(toUtf8String(arrayify(b.data))));
-  }
-
-  private async pisaBackup(pair: StorePair): Promise<void> {
-    const pisaClient = this.getPisaClient();
-    const signer = this.getWalletSigner();
-    const address = this.getWalletAddress();
-    const blockNumber = await this.getBlockNumber();
-    const data = hexlify(toUtf8Bytes(safeJsonStringify(pair)));
-    const id = keccak256(toUtf8Bytes(pair.path));
-    const nonce = pair.value.freeBalanceAppInstance.latestVersionNumber;
-    try {
-      await pisaClient.backUp(signer, address, data, blockNumber, id, nonce);
-    } catch (e) {
-      // If we get a 'nonce too low' error, we'll log & ignore bc sometimes expected. See:
-      // see: https://github.com/counterfactual/monorepo/issues/2497
-      if (e.message && e.message.match(/Appointment already exists and nonce too low./)) {
-        console.warn(e);
-      } else {
-        console.error(e);
-      }
-    }
+    return undefined;
   }
 }

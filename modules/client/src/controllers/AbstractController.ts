@@ -35,6 +35,10 @@ export abstract class AbstractController {
 
     try {
       const res = await Promise.race([
+        delayAndThrow(
+          CF_METHOD_TIMEOUT,
+          `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
+        ),
         new Promise((res: () => any, rej: () => any): void => {
           boundResolve = this.resolveInstall.bind(null, res, rej, appInstanceId);
           boundReject = this.rejectInstall.bind(null, rej, appInstanceId);
@@ -47,10 +51,6 @@ export abstract class AbstractController {
           );
           this.listener.on(CFCoreTypes.EventNames.REJECT_INSTALL_EVENT, boundReject);
         }),
-        delayAndThrow(
-          CF_METHOD_TIMEOUT,
-          `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
-        ),
       ]);
 
       this.log.info(`Installed app ${appInstanceId}`);
@@ -58,7 +58,7 @@ export abstract class AbstractController {
       return appInstanceId;
     } catch (e) {
       this.log.error(`Error installing app: ${e.stack || e.message}`);
-      return appInstanceId;
+      throw new Error(e.stack || e.message);
     } finally {
       this.cleanupInstallListeners(boundReject, appInstanceId);
     }
@@ -70,6 +70,10 @@ export abstract class AbstractController {
 
     try {
       await Promise.race([
+        delayAndThrow(
+          CF_METHOD_TIMEOUT,
+          `App proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
+        ),
         new Promise(
           async (res: () => any, rej: () => any): Promise<void> => {
             boundReject = this.rejectProposal.bind(null, rej);
@@ -86,16 +90,12 @@ export abstract class AbstractController {
             this.listener.on(CFCoreTypes.EventNames.REJECT_INSTALL_EVENT, boundReject);
           },
         ),
-        delayAndThrow(
-          CF_METHOD_TIMEOUT,
-          `App proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
-        ),
       ]);
       this.log.info(`App was proposed successfully!: ${appId}`);
       return appId;
     } catch (e) {
       this.log.error(`Error proposing app: ${e.stack || e.message}`);
-      return e.message;
+      throw new Error(e.stack || e.message);
     } finally {
       this.cleanupProposalListeners(boundReject);
     }
@@ -103,7 +103,7 @@ export abstract class AbstractController {
 
   private resolveInstall = (
     res: (value?: unknown) => void,
-    rej: (message?: string) => void,
+    rej: (message?: Error) => void,
     appInstanceId: string,
     message: any,
   ): void => {
@@ -116,34 +116,34 @@ export abstract class AbstractController {
         message,
       )}, expected ${appInstanceId}. This should not happen.`;
       this.log.warn(msg);
-      rej(msg);
+      return rej(new Error(msg));
     }
     res(message);
   };
 
   private rejectInstall = (
-    rej: (message?: string) => void,
+    rej: (message?: Error) => void,
     appInstanceId: string,
     message: any,
   ): void => {
     // check app id
-    const data = message.data.data ? message.data.data : message.data;
+    const data = message.data && message.data.data ? message.data.data : message.data || message;
     if (data.appInstanceId !== appInstanceId) {
       const msg = `Caught reject install event for different app ${stringify(
         message,
       )}, expected ${appInstanceId}. This should not happen.`;
       this.log.warn(msg);
-      rej(msg);
+      return rej(new Error(msg));
     }
 
-    return rej(`Install failed. Event data: ${stringify(message)}`);
+    return rej(new Error(`Install failed. Event data: ${stringify(message)}`));
   };
 
   private rejectProposal = (
-    rej: (reason?: string) => void,
+    rej: (reason?: Error) => void,
     msg: CFCoreTypes.RejectInstallEventData,
   ): void => {
-    rej(`Proposal rejected, event data: ${stringify(msg)}`);
+    return rej(new Error(`Proposal rejected, event data: ${stringify(msg)}`));
   };
 
   private cleanupInstallListeners = (boundReject: any, appId: string): void => {
