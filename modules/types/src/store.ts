@@ -10,7 +10,7 @@ export interface StoreFactoryOptions {
   prefix?: string;
   separator?: string;
   asyncStorageKey?: string;
-  backupService?: IBackupServiceAPI | null;
+  backupService?: IBackupServiceAPI;
 }
 
 export interface StorageWrapper {
@@ -31,7 +31,7 @@ export interface IAsyncStorage {
 }
 
 export interface IBackupServiceAPI {
-  restore(): Promise<any[]>;
+  restore(): Promise<StorePair[]>;
   backup(pair: StorePair): Promise<void>;
 }
 
