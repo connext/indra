@@ -103,12 +103,13 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
   return client;
 };
 
+export type ClientTestMessagingInputOpts = {
+  ceiling: Partial<MessageCounter>; // set ceiling of sent/received
+  protocol: string; // use "any" to limit any messages by count
+  delay: Partial<MessageCounter>; // ms delay or sent callbacks
+};
 export const createClientWithMessagingLimits = async (
-  opts: Partial<{
-    ceiling: Partial<MessageCounter>; // set ceiling of sent/received
-    protocol: string; // use "any" to limit any messages by count
-    delay: Partial<MessageCounter>; // ms delay or sent callbacks
-  }> = {},
+  opts: Partial<ClientTestMessagingInputOpts> = {},
 ): Promise<IConnextClient> => {
   const { protocol, ceiling, delay } = opts;
   const messageOptions: any = {};
