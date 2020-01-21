@@ -183,7 +183,12 @@ export const scanForCriticalAddresses = async (
             toxicBytecode
           );
           if (calculated === expectedMultisig) {
-            return { legacyKeygen, multisigMastercopy, proxyFactory, toxicBytecode };
+            return {
+              legacyKeygen,
+              multisigMastercopy,
+              proxyFactory,
+              toxicBytecode,
+            };
           }
         }
       }

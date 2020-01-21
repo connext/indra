@@ -1,4 +1,3 @@
-import { StateChannel } from "@connext/cf-core";
 import { NatsMessagingService } from "@connext/messaging";
 import {
   AppActionBigNumber,
@@ -20,7 +19,6 @@ import {
   CFCore,
   CFCoreTypes,
   CLogger,
-  getCreate2MultisigAddress,
   InstallMessage,
   RejectProposalMessage,
   stringify,
@@ -186,7 +184,7 @@ export class CFCoreService {
           this.cfCore.on("REJECT_INSTALL_EVENT", boundReject);
 
           proposeRes = await this.proposeInstallApp(params);
-          logger.debug(`waiting for client to publish proposal results`);
+          logger.debug("waiting for client to publish proposal results");
         },
       );
       return proposeRes;
@@ -331,7 +329,7 @@ export class CFCoreService {
     tokenAddress: string = AddressZero,
   ): Promise<CFCoreTypes.DepositResult> {
     // check the app is actually installed
-    logger.log(`Calling rescindDepositRights`);
+    logger.log("Calling rescindDepositRights");
     const uninstallResponse = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
       methodName: CFCoreTypes.RpcMethodNames.chan_rescindDepositRights,
@@ -434,15 +432,6 @@ export class CFCoreService {
     });
 
     return stateResponse.result.result as CFCoreTypes.GetStateResult;
-  }
-
-  async getExpectedMultisigAddressFromUserXpub(userXpub: string): Promise<string> {
-    const owners = [userXpub, this.cfCore.publicIdentifier];
-    const addresses = await this.configService.getContractAddresses();
-    const proxyFactory = addresses.ProxyFactory;
-    const multisigMastercopy = addresses.MinimumViableMultisig;
-    const ethProvider = this.configService.getEthProvider();
-    return getCreate2MultisigAddress(owners, { proxyFactory, multisigMastercopy }, ethProvider);
   }
 
   /**

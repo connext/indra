@@ -1,5 +1,9 @@
 import { addressHistory } from "@connext/contracts";
-import { ConnextNodeStorePrefix, StateChannelJSON } from "@connext/types";
+import {
+  ConnextNodeStorePrefix,
+  CriticalStateChannelAddresses,
+  StateChannelJSON,
+} from "@connext/types";
 import { Injectable } from "@nestjs/common";
 
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
@@ -13,36 +17,9 @@ import { CLogger, getCreate2MultisigAddress, scanForCriticalAddresses } from "..
 
 const logger = new CLogger("AdminService");
 
-const HISTORICAL_PROXY_FACTORY_ADDRESSES = {
-  1: [
-    "0x90Bf287B6870A99E32130CED0Da8b02302a8a4dE",
-    "0xA16d9511C743d6D6177A65892DC2Eafd417BfD7A",
-    "0xc756Bf6A685573C6879D4363401940f02B4E27a1",
-    "0x6CF0c4Ab3F1e66913c0983DC0bb1202d958ABb8f",
-    "0x711C655e08aaA9081e0BDc431920507CCD96b7a0",
-    "0xF9015aA98BeBaE3e43945c48dc3fB6c0a5281986",
-  ],
-  4: [
-    "0x49f2eCa045B2372C334B6CcBB9232C48f9acA097",
-    "0x8A49B435cc3D2176B67e0D26170387EeDf135669",
-    "0xD891F41c4ba30b1FF4f604e30F64ae387DD85b4F",
-    "0x6CF0c4Ab3F1e66913c0983DC0bb1202d958ABb8f",
-    "0xc8d7Cf5638dfa5b79A070c5aC983716575bEF4B0",
-    "0xc40E9B210363163a143f454fa505ACeAA28Cd475",
-    "0x8eb543b35DE94B0E636402C7cA32947b22853eDF",
-    "0xc8d7Cf5638dfa5b79A070c5aC983716575bEF4B0",
-    "0x8eb543b35DE94B0E636402C7cA32947b22853eDF",
-  ],
-};
-
-export interface FixProxyFactoryAddressesResponse {
-  fixedChannels: string[];
-  stillBrokenChannels: string[];
-}
-
-export interface GetChannelsWithoutProxyFactoryResponse {
-  noProxyAddress: Channel[];
-  incorrectProxyAddress: Channel[];
+export interface RepairCriticalAddressesResponse {
+  fixed: string[];
+  broken: string[];
 }
 
 @Injectable()
@@ -126,79 +103,10 @@ export class AdminService {
   }
 
   /**
-   * October 31, 2019
-   *
-   * For some as of yet unidentified reason, the multisig address for some
-   * channels has changed. This results in 2 channel entries for affected
-   * channels. The first was generated around channel creation in from the
-   * event data. The second was used to store any subsequent updates.
-   *
-   * The store entry for `channel/{multisigAddr1}` will have a free balance
-   * instance, while the store entry for `channel/{multisigAddr2}` will have
-   * all subsequent information regarding channel updates (i.e proposed apps).
-   *
-   * While this may not be a problem for the functioning of *all* channels,
-   * it will be a problem for *any* channel that is restored from the hub.
-   * This is because the channels restored by the hub search for the outdated
-   * channel state stored under the path `channel/{multisigAddr1}`. It is likely
-   * that other, older channels are also affected by this bug.
-   *
-   * This method will pull out any channel that has a multisigAddress in the
-   * channel table, that is different from the expected multisigAddress.
-   *
-   * Related to bug described in `getNoFreeBalance`.
-   */
-  async getIncorrectMultisigAddresses(): Promise<{
-    oldMultisigAddress: string;
-    expectedMultisigAddress: string;
-    userXpub: string;
-    channelId: number;
-  }[]> {
-    const channels = await this.channelService.findAll();
-    const ans = [];
-    for (const channel of channels) {
-      const {
-        multisigAddress: oldMultisigAddress,
-        userPublicIdentifier: userXpub,
-        id: channelId,
-      } = channel;
-      // calculate the expected multsig address
-      const getMultisig = this.cfCoreService.getExpectedMultisigAddressFromUserXpub;
-      const expectedMultisigAddress = await getMultisig(userXpub);
-
-      // if it matches, return
-      if (expectedMultisigAddress === oldMultisigAddress) {
-        continue;
-      }
-
-      // otherwise, has incorrect channel addr. from proxy redeployment
-      ans.push({
-        channelId,
-        expectedMultisigAddress,
-        oldMultisigAddress,
-        userXpub,
-      });
-    }
-    return ans;
-  }
-
-  /**
    * November 4, 2019
    *
-   * Figure out how many channels that have the ProxyFactory/prefix bug have
+   * Figure out how many channels that have the prefix bug have
    * been updated and need manual channel state merging.
-   *
-   * There are three cases to merge together:
-   *
-   * 1. Incorrect prefix, incorrect multisig address
-   * 2. Correct prefix, incorrect multisig address
-   * 3. Correct prefix, correct multisig address
-   *
-   * (3) would be the latest `/channel/` entry for the state channel object.
-   *
-   * There is no reason there would be an incorrect prefix and a correct
-   * multisig address since the prefix was changed before the proxy factory
-   * was redeployed.
    */
   async getChannelsForMerging(): Promise<any[]> {
     const channels = await this.channelService.findAll();
@@ -206,203 +114,95 @@ export class AdminService {
     // outlined possibilities
     const toMerge = [];
     for (const chan of channels) {
-      // if the channel has the expected multisig address, assume it
-      // will have the correct prefix and will not need to be merged
-      // because it was created after latest ProxyFactory deployment
-      const expectedMultisig = await this.cfCoreService.getExpectedMultisigAddressFromUserXpub(
-        chan.userPublicIdentifier,
-      );
-      if (expectedMultisig === chan.multisigAddress) {
-        continue;
-      }
-      // otherwise, check to see if there is a channel record with
-      // the old prefix
       const oldPrefix = await this.cfCoreService.getChannelRecord(
         chan.multisigAddress,
         "ConnextHub",
       );
-
       const currPrefix = await this.cfCoreService.getChannelRecord(chan.multisigAddress);
-
-      const latestEntry = await this.cfCoreService.getChannelRecord(expectedMultisig);
-
       const mergeInfo = {
         channelId: chan.id,
-        records: { oldPrefix, currPrefix, latestEntry },
+        records: { oldPrefix, currPrefix },
         userXpub: chan.userPublicIdentifier,
       };
-
       toMerge.push(mergeInfo);
     }
-
     return toMerge;
   }
 
   /**
-   * December 9, 2019
+   * January 21, 2020
    *
-   * We added a "proxyFactoryAddress" field to the state channels. This allows channels that were
-   * created at any time to be able to be deployed, even if the proxy factory address was changed.
-   *
-   * This function will fix old channels that did not have this field. The function does the
-   * following:
-   *
-   * 1. Calculate what the multisig address should be based on our "current" proxy factory address
-   *    for the specific network.
-   *   a. If it is correct, add the "proxyFactoryAddress" field in the DB.
-   *   b. If it is not correct, try calculcating the multisig address based on historical proxy
-   *      factory addresses we have deployed before. Once we find the correct address, update it
-   *      in the DB.
-   *   c. If none of the addresses are correct, add the channel to a "still broken" list and
-   *      reconcile offline.
+   * Retrieves all the state channels with missing or invalid critical addresses
+   * Finds the critical addresses needed to deploy each broken state deposit holder
+   * Add these critical addresses to the channel's state
    */
-  async fixProxyFactoryAddresses(): Promise<FixProxyFactoryAddressesResponse> {
-    const fixProxyFactoryInCfCoreRecord = async (
-      repoPath: string,
-      pfAddress: string,
-    ): Promise<void> => {
-      logger.log("Multisig address is as expected, adding correct proxyFactory address");
-      const cfCoreRecord = await this.cfCoreRepository.get(repoPath);
-      cfCoreRecord["proxyFactoryAddress"] = pfAddress;
-      await this.cfCoreRepository.set([
-        {
-          path: repoPath,
-          value: cfCoreRecord,
-        },
-      ]);
-    };
-
-    const fixedChannels = [];
-    const stillBrokenChannels = [];
-    const { noProxyAddress, incorrectProxyAddress } = await this.getChannelsWithoutProxyFactory();
-
-    // the process for fixing no proxy address channels and incorrect proxy
-    // address channels are the same -- iterate through each possible proxy
-    // factory address until you find the one that generates the right multisig
-    // address and edit the channel entry in the db
-    const channelsToFix = noProxyAddress.concat(incorrectProxyAddress);
-    logger.log(
-      `Hold my 🍺 -- preparing to add or edit proxy factory address for ${channelsToFix.length} channels.`,
-    );
-
-    const { MinimumViableMultisig, ProxyFactory } = await this.configService.getContractAddresses();
-    const network = await this.configService.getEthNetwork();
-    const proxyFactoryAddresses: string[] =
-      HISTORICAL_PROXY_FACTORY_ADDRESSES[network.chainId] || [];
-
-    proxyFactoryAddresses.push(ProxyFactory);
-
-    for (const channel of channelsToFix) {
-      const correctProxy = await this.getCorrectProxyFactoryAddress(
-        channel.multisigAddress,
-        MinimumViableMultisig,
-        proxyFactoryAddresses,
-      );
-      if (!correctProxy) {
-        logger.error(
-          `Could not find correct proxy factory address for channel: ${channel.multisigAddress}`,
-        );
-        stillBrokenChannels.push(channel.multisigAddress);
-        continue;
-      }
-      const repoPath = `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel/${channel.multisigAddress}`;
-
-      await fixProxyFactoryInCfCoreRecord(repoPath, correctProxy);
-      fixedChannels.push(channel.multisigAddress);
-    }
-    logger.log(
-      `Fixed ${fixedChannels.length} channels, ${stillBrokenChannels.length} still broken.`,
-    );
-
-    return {
-      fixedChannels,
-      stillBrokenChannels,
-    };
-  }
-
-  /**
-   * 12/9/2019
-   *
-   * Retrieves all the state channels without a proxy factory address or with
-   * the *wrong* multisig address
-   */
-  async getChannelsWithoutProxyFactory(): Promise<GetChannelsWithoutProxyFactoryResponse> {
-    const channels = await this.getAllChannels();
-
-    const noProxyAddress: Channel[] = [];
-    const incorrectProxyAddress: Channel[] = [];
-    for (const channel of channels) {
-      // get the state channel
-      const { data: stateChannel } = await this.cfCoreService.getStateChannel(
-        channel.multisigAddress,
-      );
-
-      if (!stateChannel.addresses.proxyFactory) {
-        // add to list
-        noProxyAddress.push(channel);
-      } else {
-        // verify it is the correct proxy factory address
-        // by using it to calculate the multisig address
-        const { MinimumViableMultisig } = await this.configService.getContractAddresses();
-        const generatedMultisig = await getCreate2MultisigAddress(
-          stateChannel.userNeuteredExtendedKeys,
-          {
-            proxyFactory: stateChannel.addresses.proxyFactory,
-            multisigMastercopy: MinimumViableMultisig,
-          },
+  async repairCriticalStateChannelAddresses(): Promise<RepairCriticalAddressesResponse> {
+    const states = (await Promise.all((await this.getAllChannels()).map(channel =>
+      this.cfCoreService.getStateChannel(channel.multisigAddress)
+    ))).map(state => state.data);
+    const output: RepairCriticalAddressesResponse = { fixed: [], broken: [] };
+    logger.log(`Scanning ${states.length} channels to see if any need to be repaired..`);
+    // First loop: Identify all channels that need to be repaired
+    for (const state of states) {
+      if (
+        !state.addresses ||
+        !state.addresses.proxyFactory ||
+        !state.addresses.multisigMastercopy ||
+        state.multisigAddress !== await getCreate2MultisigAddress(
+          state.userNeuteredExtendedKeys,
+          state.addresses,
           this.configService.getEthProvider(),
-        );
-        if (generatedMultisig !== channel.multisigAddress) {
-          incorrectProxyAddress.push(channel);
-        }
+        )
+      ) {
+        output.broken.push(state.multisigAddress);
       }
     }
-    return {
-      incorrectProxyAddress,
-      noProxyAddress,
-    };
-  }
-
-  /**
-   * 12/9/2019
-   *
-   * Returns the correct proxy factory address for the given channel,
-   * and undefined if it could not find the right proxy address in the array
-   * of proxy addresses. (Right address == the one that generates the correct
-   * multisig)
-   */
-  async getCorrectProxyFactoryAddress(
-    multisigAddress: string,
-    minimumViableMultisigAddress: string,
-    proxyFactoryAddresses: string[],
-  ): Promise<string | undefined> {
-    let correctProxyFactoryAddress = undefined;
-    const ethProvider = this.configService.getEthProvider();
-    const { data: stateChannel } = await this.cfCoreService.getStateChannel(multisigAddress);
-    for (const proxyFactory of proxyFactoryAddresses) {
-      const derivedMultisig = await getCreate2MultisigAddress(
-        stateChannel.userNeuteredExtendedKeys,
-        { proxyFactory, multisigMastercopy: minimumViableMultisigAddress },
-        ethProvider,
+    if (output.broken.length === 0) {
+      logger.log("No channels need to be repaired, great!");
+      return output;
+    }
+    logger.log(`Preparing to repair ${output.broken.length} channels`);
+    const chainId = (await this.configService.getEthNetwork()).chainId;
+    // Make a copy of broken multisigs so we can edit the output while looping through it
+    const brokenMultisigs = JSON.parse(JSON.stringify(output.broken));
+    // Second loop: attempt to repair broken channels
+    for (const brokenMultisig of brokenMultisigs) {
+      const { data: state } = await this.cfCoreService.getStateChannel(brokenMultisigs);
+      logger.log(`Searching for critical addresses needed to fix channel ${brokenMultisigs}..`);
+      const criticalAddresses = await scanForCriticalAddresses(
+        state.userNeuteredExtendedKeys,
+        state.multisigAddress,
+        addressHistory[chainId],
+        this.configService.getEthProvider(),
       );
-      if (derivedMultisig === stateChannel.multisigAddress) {
-        correctProxyFactoryAddress = proxyFactory;
-        break;
-      }
-      const preKeygenMultisig = await getCreate2MultisigAddress(
-        stateChannel.userNeuteredExtendedKeys,
-        { proxyFactory, multisigMastercopy: minimumViableMultisigAddress },
-        ethProvider,
-        true
-      );
-      if (preKeygenMultisig === stateChannel.multisigAddress) {
-        console.warn(
-          `Found pre-keygen factory for ${stateChannel.multisigAddress}: ${preKeygenMultisig}`,
-        );
-        break;
+      if (!criticalAddresses) {
+        logger.warn(`Could not find critical addresses that would fix channel ${state.multisigAddress}`);
+      } else if (criticalAddresses.toxicBytecode) {
+        logger.warn(`Channel ${state.multisigAddress} was created with toxic bytecode, it is unrepairable`);
+      } else if (criticalAddresses.legacyKeygen) {
+        logger.warn(`Channel ${state.multisigAddress} was created with legacyKeygen, it needs to be repaired manually`);
+      } else {
+        logger.log(`Found critical addresses that fit, repairing channel: ${brokenMultisig}`);
+        const repoPath = `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel/${brokenMultisig}`;
+        const cfCoreRecord = await this.cfCoreRepository.get(repoPath);
+        cfCoreRecord["addresses"] = {
+          proxyFactory: criticalAddresses.proxyFactory,
+          multisigMastercopy: criticalAddresses.multisigMastercopy,
+        } as CriticalStateChannelAddresses;
+        await this.cfCoreRepository.set([
+          {
+            path: repoPath,
+            value: cfCoreRecord,
+          },
+        ]);
+        // Move this channel from broken to fixed
+        output.fixed.push(brokenMultisig);
+        output.broken = output.broken.filter(multisig => multisig === brokenMultisig);
       }
     }
-    return correctProxyFactoryAddress;
+    if (output.broken.length > 0) {
+      logger.warn(`${output.broken.length} channels could not be repaired`);
+    }
+    return output;
   }
-
 }
