@@ -1,6 +1,6 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import { ConnextStore } from "@connext/store";
-import { CF_PATH } from "@connext/types";
+import { CF_PATH, StateSchemaVersion } from "@connext/types";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -99,15 +99,6 @@ export const connect = async (
   log.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
   const network = await ethProvider.getNetwork();
-
-  // special case for ganache
-  if (network.chainId === 4447) {
-    network.name = "ganache";
-    // Enforce using provided signer, not via RPC
-    ethProvider.getSigner = (addressOrIndex?: string | number): any => {
-      throw { code: "UNSUPPORTED_OPERATION" };
-    };
-  }
 
   // setup messaging and node api
   let node: INodeApiClient;
@@ -265,10 +256,10 @@ export const connect = async (
     }
   }
 
-  // 190120 (YYMMDD): we now need to have both proxyFactory & multisigMastercopy addresses
+  // Make sure our state schema is up-to-date
   const { data: sc } = await client.getStateChannel();
-  if (!sc.addresses || !sc.addresses.proxyFactory || !sc.addresses.multisigMastercopy) {
-    log.debug("No critical state channel addresses found, restoring client state");
+  if (!sc.schemaVersion || sc.schemaVersion !== StateSchemaVersion) {
+    log.debug("State schema is out-of-date, restoring an up-to-date client state");
     await client.restoreState();
   }
 
