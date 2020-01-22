@@ -20,6 +20,7 @@ cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(p
 cwd=$(shell pwd)
 bot=$(cwd)/modules/payment-bot
 cf-core=$(cwd)/modules/cf-core
+channel-provider=$(cwd)/modules/channel-provider
 client=$(cwd)/modules/client
 contracts=$(cwd)/modules/contracts
 daicard=$(cwd)/modules/daicard
@@ -304,7 +305,7 @@ ws-tcp-relay: ops/ws-tcp-relay.dockerfile
 ########################################
 # JS & bundles
 
-client: cf-core contracts types messaging store $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
+client: cf-core contracts types messaging store channel-provider $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
@@ -312,6 +313,11 @@ client: cf-core contracts types messaging store $(shell find $(client)/src $(cli
 cf-core: node-modules types contracts $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/cf-core && npm run build:ts"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+channel-provider: node-modules types $(shell find $(channel-provider)/src $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/channel-provider && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))
