@@ -3,7 +3,6 @@ import {
   AppActionBigNumber,
   ConnextNodeStorePrefix,
   SupportedApplication,
-  SupportedNetwork,
   StateChannelJSON,
   REJECT_INSTALL_EVENT,
 } from "@connext/types";
@@ -212,7 +211,7 @@ export class CFCoreService {
     const network = await this.configService.getEthNetwork();
     const appInfo = await this.appRegistryRepository.findByNameAndNetwork(
       app,
-      network.name as SupportedNetwork,
+      network.chainId,
     );
     const {
       actionEncoding,

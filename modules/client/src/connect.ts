@@ -101,11 +101,6 @@ export const connect = async (
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
   const network = await ethProvider.getNetwork();
 
-  // special case for ganache
-  if (network.chainId === 4447) {
-    network.name = "ganache";
-  }
-
   // setup messaging and node api
   let node: INodeApiClient;
   let config: GetConfigResponse;
@@ -199,7 +194,6 @@ export const connect = async (
     node.nodePublicIdentifier = config.nodePublicIdentifier;
   } else {
     throw new Error(
-      // tslint:disable-next-line:max-line-length
       "Client must be instantiated with xpub and keyGen, " +
       "or a channelProvider if not using mnemonic",
     );

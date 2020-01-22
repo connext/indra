@@ -140,7 +140,6 @@ export default class ListenerService implements OnModuleInit {
         switch (allowedOrRejected.name) {
           case SupportedApplications.SimpleLinkedTransferApp:
             logger.debug(`Saving linked transfer`);
-            // tslint:disable-next-line: max-line-length
             const initialState = proposedAppParams.initialState as SimpleLinkedTransferAppStateBigNumber;
 
             const isResolving = proposedAppParams.responderDeposit.gt(Zero);

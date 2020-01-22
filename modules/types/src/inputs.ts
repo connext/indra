@@ -88,7 +88,6 @@ export type ResolveLinkedTransferToRecipientParameters<T = string> = Omit<
   assetId: string;
   conditionType: typeof LINKED_TRANSFER_TO_RECIPIENT;
 };
-// tslint:disable-next-line: max-line-length
 export type ResolveLinkedTransferToRecipientParametersBigNumber =
   ResolveLinkedTransferToRecipientParameters<BigNumber>;
 
