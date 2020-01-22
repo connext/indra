@@ -48,12 +48,12 @@ export const createCFChannelProvider = async ({
     signerAddress: xpubToAddress(xpub),
     userPublicIdentifier: xpub,
   };
-  const connection = new RpcConnection(cfCore, store, await keyGen(`0`));
+  const connection = new CFCoreRpcConnection(cfCore, store, await keyGen(`0`));
   const channelProvider = new ChannelProvider(connection, channelProviderConfig);
   return channelProvider;
 };
 
-export class RpcConnection extends EventEmitter implements IRpcConnection {
+export class CFCoreRpcConnection extends EventEmitter implements IRpcConnection {
   public connected: boolean = true;
   public cfCore: CFCore;
   public store: Store;
