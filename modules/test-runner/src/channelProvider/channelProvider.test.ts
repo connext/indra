@@ -27,16 +27,13 @@ describe("ChannelProvider", () => {
   let natsConnection: Client;
 
   beforeEach(async () => {
-    natsConnection = await createOrRetrieveNatsConnection();
-  });
-
-  beforeEach(async () => {
     clientA = await createClient();
     tokenAddress = clientA.config.contractAddresses.Token;
     nodePublicIdentifier = clientA.config.nodePublicIdentifier;
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
     channelProvider = await createChannelProvider(clientA);
     clientA1 = await createRemoteClient(channelProvider);
+    natsConnection = await createOrRetrieveNatsConnection();
   }, 90_000);
 
   it("Happy case: client A1 can be instantiated with a channelProvider generated from client A", async () => {
