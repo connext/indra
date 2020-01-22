@@ -15,7 +15,7 @@ const { CF_METHOD_TIMEOUT } = utils;
  * Contains any deposit tests that involve the client going offline at some
  * point in the protocol.
  */
-describe.skip("Deposit offline tests", () => {
+describe("Deposit offline tests", () => {
   /**
    * In this case, the client correctly stops processing received messages
    * so the `proposeInstallApp` call never resolves. However, the node *does*
