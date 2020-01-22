@@ -28,6 +28,7 @@ describe("ChannelProvider", () => {
 
   beforeEach(async () => {
     clientA = await createClient();
+    console.log(`Successfully created a client!`);
     tokenAddress = clientA.config.contractAddresses.Token;
     nodePublicIdentifier = clientA.config.nodePublicIdentifier;
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);

@@ -23,9 +23,8 @@ export const getMessaging = (): TestMessagingService | undefined => {
 };
 
 export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<IConnextClient> => {
-  const memoryStorage = new MemoryStorage();
 
-  clientStore = new ConnextStore(memoryStorage);
+  clientStore = new ConnextStore(new MemoryStorage());
 
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
