@@ -2,12 +2,12 @@ import { IConnextClient } from "@connext/types";
 
 import {
   createClient,
+  createClientWithMessagingLimits,
   createDefaultClient,
   expect,
   getMessaging,
   SETUP_RESPONDER_RECEIVED_COUNT,
   SETUP_RESPONDER_SENT_COUNT,
-  TestMessagingService,
 } from "../util";
 
 describe("Create Channel", () => {
@@ -27,7 +27,7 @@ describe("Create Channel", () => {
   });
 
   it("Happy case: user creates channel with client and is given multisig address using test messaging service", async () => {
-    const clientA: IConnextClient = await createClient({ messaging: new TestMessagingService() });
+    const clientA: IConnextClient = await createClientWithMessagingLimits();
     expect(clientA.multisigAddress).to.be.ok;
     // verify messaging worked
     const messaging = getMessaging();
@@ -56,15 +56,13 @@ describe("Create Channel", () => {
     );
   });
 
-  it("should fail if the client goes offline", async function() {
+  it("should fail if the client goes offline", async function(): Promise<void> {
     // @ts-ignore
     this.timeout(40_000);
-    const messaging = new TestMessagingService();
-    messaging.addCeiling("any", 0);
-    expect(messaging.count.ceiling).to.be.equal(0);
     await expect(
-      createClient({
-        messaging,
+      createClientWithMessagingLimits({
+        ceiling: { received: 0 },
+        protocol: "setup",
       }),
     ).to.be.rejectedWith(`Create channel event not fired within 30s`);
   });

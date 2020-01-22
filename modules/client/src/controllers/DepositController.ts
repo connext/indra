@@ -69,8 +69,9 @@ export class DepositController extends AbstractController {
 
       this.log.info("Deposited!");
     } catch (e) {
-      this.log.error(`Failed to deposit: ${e.stack || e.message}`);
-      throw e;
+      const msg = `Failed to deposit: ${e.stack || e.message}`;
+      this.log.error(msg);
+      throw new Error(msg);
     }
 
     return {

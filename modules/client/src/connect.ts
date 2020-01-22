@@ -85,6 +85,7 @@ export const connect = async (
       : clientOptions;
   const {
     asyncStorage,
+    backupService,
     logLevel,
     ethProviderUrl,
     nodeUrl,
@@ -144,7 +145,7 @@ export const connect = async (
     }
 
     if (!store) {
-      store = new ConnextStore(asyncStorage || window.localStorage);
+      store = new ConnextStore(asyncStorage || window.localStorage, { backupService });
     }
 
     if (mnemonic) {

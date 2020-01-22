@@ -42,7 +42,7 @@ import {
   Transfer,
 } from "./node";
 import { ProtocolTypes } from "./protocol";
-import { IAsyncStorage, Store } from "./store";
+import { IAsyncStorage, IBackupServiceAPI, Store } from "./store";
 
 export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
@@ -68,6 +68,7 @@ export interface ClientOptions {
   logLevel?: number;
   asyncStorage?: IAsyncStorage;
   messaging?: IMessagingService;
+  backupService?: IBackupServiceAPI;
 }
 
 export interface IConnextClient {
