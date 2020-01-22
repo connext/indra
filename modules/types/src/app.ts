@@ -4,7 +4,6 @@ import {
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   OutcomeType,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
-  SupportedNetwork,
   TwoPartyFixedOutcomeInterpreterParams, 
 } from "./contracts";
 
@@ -126,7 +125,7 @@ export type DefaultApp = {
   allowNodeInstall: boolean;
   appDefinitionAddress: string;
   name: SupportedApplication;
-  network: SupportedNetwork;
+  chainId: number;
   outcomeType: OutcomeType;
   stateEncoding: string;
 };
