@@ -7,6 +7,8 @@ import {
   fundChannel,
   getMessaging,
   getStore,
+  INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
+  PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
   ZERO_ZERO_ONE_ETH,
 } from "../util";
 
@@ -37,7 +39,7 @@ describe("Deposit offline tests", () => {
     // in the propose protocol, the initiator sends one message, and receives
     // one message, set the cap at 1 for `propose` in messaging of client
     const client = await createClientWithMessagingLimits({
-      ceiling: { received: 1 },
+      ceiling: { received: PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED },
       protocol: "propose",
     });
     await expect(fundChannel(client, ZERO_ZERO_ONE_ETH)).to.be.rejectedWith(
@@ -86,7 +88,7 @@ describe("Deposit offline tests", () => {
     this.timeout(105_000);
     const client = await createClientWithMessagingLimits({
       protocol: "install",
-      ceiling: { received: 1 },
+      ceiling: { received: INSTALL_SUPPORTED_APP_COUNT_RECEIVED },
     });
     await expect(fundChannel(client, ZERO_ZERO_ONE_ETH)).to.be.rejectedWith(`Failed to deposit`);
   });
@@ -94,10 +96,7 @@ describe("Deposit offline tests", () => {
   it("client proposes deposit, but then deletes their store", async function(): Promise<void> {
     // @ts-ignore
     this.timeout(105_000);
-    const client = await createClientWithMessagingLimits({
-      protocol: "install",
-      ceiling: { received: 1 },
-    });
+    const client = await createClientWithMessagingLimits();
     const messaging = getMessaging();
     expect(messaging).to.be.ok;
     // on proposal accepted message, delete the store
