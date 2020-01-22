@@ -36,9 +36,9 @@ export class NodeApiClient implements INodeApiClient {
   public latestSwapRates: { [key: string]: string } = {};
   public log: Logger;
 
-  private _userPublicIdentifier: string | undefined; // tslint:disable-line:variable-name
-  private _nodePublicIdentifier: string | undefined; // tslint:disable-line:variable-name
-  private _channelProvider: IChannelProvider | undefined; // tslint:disable-line:variable-name
+  private _userPublicIdentifier: string | undefined;
+  private _nodePublicIdentifier: string | undefined;
+  private _channelProvider: IChannelProvider | undefined;
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;

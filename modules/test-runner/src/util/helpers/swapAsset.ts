@@ -19,7 +19,6 @@ export async function swapAsset(
   const preSwap: ExistingBalancesSwap = {
     freeBalanceClientEth: ethToToken ? input.amount : Zero,
     freeBalanceNodeEth: ethToToken ? Zero : output.amount,
-    // tslint:disable-next-line:object-literal-sort-keys
     freeBalanceClientToken: ethToToken ? Zero : input.amount,
     freeBalanceNodeToken: ethToToken ? output.amount : Zero,
     ...preExistingBalances,
@@ -86,7 +85,6 @@ export async function swapAsset(
   const postSwap: ExistingBalancesSwap = {
     freeBalanceClientEth: postSwapFreeBalanceClientEth,
     freeBalanceNodeEth: postSwapFreeBalanceNodeEth,
-    // tslint:disable-next-line:object-literal-sort-keys
     freeBalanceClientToken: postSwapFreeBalanceClientToken,
     freeBalanceNodeToken: postSwapFreeBalanceNodeToken,
   };

@@ -13,8 +13,6 @@
   "scripts": {
     "build": "tsc -p . && rollup -c",
     "build:watch": "tsc -p . && rollup -c -w",
-    "lint": "tslint -c tslint.json -p .",
-    "lint:fix": "tslint -c tslint.json -p . --fix",
     "prepare": "npm run build"
   },
   "dependencies": {

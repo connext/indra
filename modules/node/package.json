@@ -15,7 +15,6 @@
     "migration:generate": "typeorm migration:generate -d migrations -n ",
     "prestart:prod": "rm -rf dist && npm run build",
     "start:prod": "node dist/main.js",
-    "lint": "tslint -p tsconfig.json -c tslint.json",
     "test": "jest --config ops/jest.config.json",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",

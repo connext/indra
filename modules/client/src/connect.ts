@@ -194,7 +194,6 @@ export const connect = async (
     node.nodePublicIdentifier = config.nodePublicIdentifier;
   } else {
     throw new Error(
-      // tslint:disable-next-line:max-line-length
       "Client must be instantiated with xpub and keyGen, " +
       "or a channelProvider if not using mnemonic",
     );
