@@ -1,3 +1,3 @@
-import { EthereumCommitment } from "../types";
+import { EthereumCommitment } from "../../types";
 
 export { EthereumCommitment };

@@ -5,20 +5,18 @@ import { SetStateCommitment } from "../ethereum";
 import { ConditionalTransaction } from "../ethereum/conditional-transaction-commitment";
 import { ProtocolExecutionFlow } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
-import {
-  Context,
-  InstallProtocolParams,
-  ProtocolMessage
-} from "../machine/types";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../methods/errors";
 import { AppInstance, StateChannel } from "../models";
 import { TokenIndexedCoinTransferMap } from "../models/free-balance";
 import {
+  Context,
+  InstallProtocolParams,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   NetworkContext,
   OutcomeType,
+  ProtocolMessage,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
-  TwoPartyFixedOutcomeInterpreterParams
+  TwoPartyFixedOutcomeInterpreterParams,
 } from "../types";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";

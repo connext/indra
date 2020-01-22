@@ -119,7 +119,7 @@ describe("Can handle correct & incorrect installs", () => {
 
     const stateChannel = StateChannel.setupChannel(
       AddressZero,
-      AddressZero, // proxy factory address
+      { proxyFactory: AddressZero, multisigMastercopy: AddressZero },
       multisigAddress,
       extendedKeys
     );

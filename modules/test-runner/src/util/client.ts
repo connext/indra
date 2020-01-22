@@ -1,6 +1,6 @@
 import { connect } from "@connext/client";
 import { ConnextStore, MemoryStorage } from "@connext/store";
-import { ClientOptions, IChannelProvider, IConnextClient, IMessagingService } from "@connext/types";
+import { ClientOptions, IChannelProvider, IConnextClient } from "@connext/types";
 import { expect } from "chai";
 import { Contract, Wallet } from "ethers";
 import tokenAbi from "human-standard-token-abi";
@@ -9,7 +9,7 @@ import localStorage from "localStorage";
 import { ETH_AMOUNT_MD, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
 import { ethWallet } from "./ethprovider";
-import { TestMessagingService } from "./messaging";
+import { MessageCounter, TestMessagingService } from "./messaging";
 
 let clientStore: ConnextStore;
 let clientMessaging: TestMessagingService;
@@ -50,6 +50,7 @@ export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<I
 
   expect(client.freeBalanceAddress).to.be.ok;
   expect(client.publicIdentifier).to.be.ok;
+  expect(client.multisigAddress).to.be.ok;
 
   return client;
 };
@@ -100,4 +101,52 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
   expect(client.publicIdentifier).to.be.ok;
 
   return client;
+};
+
+export const createClientWithMessagingLimits = async (
+  opts: Partial<{
+    ceiling: Partial<MessageCounter>; // set ceiling of sent/received
+    protocol: string; // use "any" to limit any messages by count
+    delay: Partial<MessageCounter>; // ms delay or sent callbacks
+  }> = {},
+): Promise<IConnextClient> => {
+  const { protocol, ceiling, delay } = opts;
+  const messageOptions: any = {};
+
+  // no defaults specified, exit early
+  if (!protocol || Object.keys(opts).length === 0) {
+    const messaging = new TestMessagingService();
+    expect(messaging.install.ceiling).to.be.undefined;
+    expect(messaging.count.received).to.be.equal(0);
+    expect(messaging.count.sent).to.be.equal(0);
+    return await createClient({ messaging });
+  }
+
+  if (protocol === "any") {
+    // assign the ceiling for the general message count
+    messageOptions.count = { ceiling, delay };
+  } else {
+    // assign the protocol defaults struct
+    messageOptions.protocolDefaults = {
+      [protocol]: {
+        ceiling,
+        delay,
+      },
+    };
+  }
+
+  const messaging = new TestMessagingService(messageOptions);
+
+  // verification of messaging settings
+  const expected = {
+    sent: 0,
+    received: 0,
+    ceiling,
+    delay,
+  };
+  !protocol || protocol === "any"
+    ? expect(messaging.count).to.containSubset(expected)
+    : expect(messaging[protocol]).to.containSubset(expected);
+  expect(messaging.options).to.containSubset(messageOptions);
+  return await createClient({ messaging });
 };

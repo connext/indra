@@ -97,7 +97,7 @@ do
 done
 
 ########################################
-# Have random recievers redeem the link payments
+# Have random receivers redeem the link payments
 
 for i in $(seq 1 $numLinks);
 do

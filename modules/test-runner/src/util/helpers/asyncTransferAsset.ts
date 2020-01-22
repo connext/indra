@@ -36,7 +36,7 @@ export async function asyncTransferAsset(
     ),
     new Promise(
       async (resolve: Function): Promise<void> => {
-        clientB.once("RECIEVE_TRANSFER_FINISHED_EVENT", async () => {
+        clientB.once("RECEIVE_TRANSFER_FINISHED_EVENT", async () => {
           resolve();
         });
       },
@@ -94,7 +94,6 @@ export async function asyncTransferAsset(
   const postTransfer: ExistingBalancesAsyncTransfer = {
     freeBalanceClientA: postTransferFreeBalanceClientA,
     freeBalanceNodeA: postTransferFreeBalanceNodeA,
-    // tslint:disable-next-line:object-literal-sort-keys
     freeBalanceClientB: postTransferFreeBalanceClientB,
     freeBalanceNodeB: postTransferFreeBalanceNodeB,
   };

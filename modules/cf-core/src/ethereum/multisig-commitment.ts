@@ -7,10 +7,8 @@ import {
 } from "ethers/utils";
 
 import { MinimumViableMultisig } from "../contracts";
-import { CFCoreTypes } from "../types";
+import { CFCoreTypes, EthereumCommitment, MultisigTransaction } from "../types";
 import { sortSignaturesBySignerAddress } from "../utils";
-
-import { EthereumCommitment, MultisigTransaction } from "./types";
 
 /// A commitment to make MinimumViableMultisig perform a message call
 export abstract class MultisigCommitment extends EthereumCommitment {

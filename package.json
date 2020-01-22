@@ -1,6 +1,6 @@
 {
 	"name": "indra",
-	"version": "3.0.0",
+	"version": "3.1.1",
 	"description": "",
 	"repository": {
 		"type": "git",
@@ -13,18 +13,18 @@
 	},
 	"homepage": "https://github.com/ConnextProject/indra#readme",
 	"devDependencies": {
-		"@connext/types": "1.5.0",
-		"chai-bn": "0.2.0",
-		"cypress": "3.7.0",
-		"ethers": "4.0.41",
-		"lerna": "3.19.0",
-		"openzeppelin-solidity": "2.3.0",
-		"prettier": "1.19.1",
-		"solc": "0.5.11",
-		"tslint": "5.20.1",
-		"tslint-config-airbnb": "5.11.2",
-		"tslint-config-prettier": "1.18.0",
-		"tslint-plugin-prettier": "2.1.0"
+    "@connext/types": "1.5.0",
+    "@typescript-eslint/eslint-plugin": "2.16.0",
+    "@typescript-eslint/parser": "2.16.0",
+    "chai-bn": "0.2.0",
+    "cypress": "3.7.0",
+    "eslint": "6.8.0",
+    "eslint-plugin-react": "7.18.0",
+    "ethers": "4.0.41",
+    "lerna": "3.19.0",
+    "openzeppelin-solidity": "2.3.0",
+    "prettier": "1.19.1",
+    "solc": "0.5.11"
 	},
 	"dependencies": {}
 }

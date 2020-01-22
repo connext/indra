@@ -3,15 +3,12 @@ import uuid from "uuid";
 
 import { StateChannel } from "../models";
 import { getProtocolFromName } from "../protocol";
-import { NetworkContext } from "../types";
-
-import { Opcode, Protocol } from "./enums";
-import { MiddlewareContainer } from "./middleware";
 import {
   Context,
   InstallProtocolParams,
   InstallVirtualAppProtocolParams,
   Middleware,
+  NetworkContext,
   ProposeInstallProtocolParams,
   ProtocolMessage,
   SetupProtocolParams,
@@ -19,8 +16,11 @@ import {
   UninstallProtocolParams,
   UninstallVirtualAppProtocolParams,
   UpdateProtocolParams,
-  WithdrawProtocolParams
-} from "./types";
+  WithdrawProtocolParams,
+} from "../types";
+
+import { Opcode, Protocol } from "./enums";
+import { MiddlewareContainer } from "./middleware";
 
 /**
 Type-level mapping from Protocol to Protocol Param
@@ -28,7 +28,6 @@ For e.g., ParamTypeOf<Protocol.Install> = InstallProtocolParams
 This syntax is preferred according to:
 https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-8.html#conditional-types
 **/
-// tslint:disable
 type ParamTypeOf<T extends Protocol> = T extends Protocol.Install
   ? InstallProtocolParams
   : T extends Protocol.Update
@@ -46,7 +45,6 @@ type ParamTypeOf<T extends Protocol> = T extends Protocol.Install
   : T extends Protocol.Propose
   ? ProposeInstallProtocolParams
   : never;
-// tslint:enable
 
 function firstRecipientFromProtocolName(protocolName: Protocol) {
   if (

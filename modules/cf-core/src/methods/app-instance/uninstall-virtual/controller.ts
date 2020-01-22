@@ -23,15 +23,16 @@ export default class UninstallVirtualController extends NodeController {
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { appInstanceId, intermediaryIdentifier } = params;
 
-    // safe to use network context proxy factory address directly here.
+    // safe to use network context critical state channel addresses here.
     // the `getMultisigAddressWithCounterparty` function will default
     // to using any existing multisig address for the provided
     // owners before creating one
-    const multisigAddressForStateChannelWithIntermediary = await store.getMultisigAddressWithCounterparty(
-      [publicIdentifier, intermediaryIdentifier],
-      networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
-    );
+    const multisigAddressForStateChannelWithIntermediary =
+      await store.getMultisigAddressWithCounterparty(
+        [publicIdentifier, intermediaryIdentifier],
+        networkContext.ProxyFactory,
+        networkContext.MinimumViableMultisig
+      );
 
     const stateChannelWithResponding = await store.getChannelFromAppInstanceID(
       appInstanceId
@@ -59,8 +60,8 @@ export default class UninstallVirtualController extends NodeController {
         )[0],
         intermediaryIdentifier
       ],
-      stateChannelWithResponding.proxyFactoryAddress,
-      networkContext.MinimumViableMultisig,
+      stateChannelWithResponding.addresses.proxyFactory,
+      stateChannelWithResponding.addresses.multisigMastercopy,
       networkContext.provider
     );
 

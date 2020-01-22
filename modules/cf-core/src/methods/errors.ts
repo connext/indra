@@ -48,6 +48,9 @@ export const INCORRECT_MULTISIG_ADDRESS =
 export const INVALID_FACTORY_ADDRESS = (address: string): string =>
   `Channel factory address is invalid: ${address}`;
 
+export const INVALID_MASTERCOPY_ADDRESS = (address: string): string =>
+  `Multisig master address is invalid: ${address}`;
+
 export const NO_NETWORK_PROVIDER_CREATE2 =
   "`getCreate2MultisigAddress` needs access to an eth provider within the network context";
 

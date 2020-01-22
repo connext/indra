@@ -1,45 +1,141 @@
-import { BigNumber, BigNumberish } from "ethers/utils";
+import { AppInstanceJson, AppInterface, AppInstanceProposal, AppABIEncodings } from "./app";
+import { BigNumber, BigNumberish, SolidityValueType } from "./basic";
+import { OutcomeType } from "./contracts";
+import { EventName } from "./events";
+import { StateChannelJSON } from "./state";
 
-import { AppABIEncodings, AppInstanceJson, AppInstanceProposal, OutcomeType, StateChannelJSON } from "./data-types";
-import { SolidityValueType } from "./simple-types";
-
-type JsonRpcProtocolV2 = {
-  jsonrpc: "2.0";
-};
-
-type RpcParameters =
-  | {
-      [key: string]: any;
-    }
-  | any[];
-
-export type JsonRpcNotification = JsonRpcProtocolV2 & {
-  result: any;
-};
-
-export type JsonRpcResponse = JsonRpcNotification & {
-  id: number;
-};
-
-export type Rpc = {
-  methodName: string;
-  parameters: RpcParameters;
-  id?: number;
-};
-
-export interface IRpcNodeProvider {
-  onMessage(callback: (message: JsonRpcResponse | JsonRpcNotification) => void): any;
-  sendMessage(message: Rpc): any;
+export enum Protocol {
+  Install = "install",
+  InstallVirtualApp = "install-virtual-app",
+  Setup = "setup",
+  Propose = "propose",
+  TakeAction = "takeAction",
+  Uninstall = "uninstall",
+  UninstallVirtualApp = "uninstall-virtual-app",
+  Update = "update",
+  Withdraw = "withdraw"
 }
 
-export namespace CFCoreTypes {
-  /**
-   * The message type for Nodes to communicate with each other.
-   */
-  export type NodeMessage = {
-    from: string;
-    type: EventName;
-  };
+export type ProtocolMessage = {
+  processID: string;
+  protocol: Protocol;
+  params?: ProtocolParameters;
+  toXpub: string;
+  seq: number;
+  /*
+  Additional data which depends on the protocol (or even the specific message
+  number in a protocol) lives here. Includes signatures, final outcome of a
+  virtual app instance
+  */
+  customData: { [key: string]: any };
+};
+
+export type InstallProtocolParams = {
+  initiatorXpub: string;
+  initiatorDepositTokenAddress: string;
+  responderXpub: string;
+  responderDepositTokenAddress: string;
+  multisigAddress: string;
+  initiatorBalanceDecrement: BigNumber;
+  responderBalanceDecrement: BigNumber;
+  participants: string[];
+  initialState: SolidityValueType;
+  appInterface: AppInterface;
+  defaultTimeout: number;
+  appSeqNo: number;
+  // Outcome Type returned by the app instance, as defined by `appInterface`
+  outcomeType: OutcomeType;
+  // By default, the SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER interpreter params
+  // contains a "limit" that is computed as
+  // `initiatorBalanceDecrement + responderBalanceDecrement`; setting this
+  // flag disables the limit by setting it to MAX_UINT256
+  disableLimit: boolean;
+};
+
+export type InstallVirtualAppProtocolParams = {
+  initiatorXpub: string;
+  responderXpub: string;
+  intermediaryXpub: string;
+  defaultTimeout: number;
+  appInterface: AppInterface;
+  initialState: SolidityValueType;
+  // initiator and respondor must fund the installed virtual app with the same
+  // token type `tokenAddress`, but may use different amounts
+  initiatorBalanceDecrement: BigNumber;
+  responderBalanceDecrement: BigNumber;
+  tokenAddress: string;
+  appSeqNo: number;
+  // outcomeType returned by the app instance, as defined by the app definition `appInterface`
+  outcomeType: OutcomeType;
+};
+
+export type ProposeInstallProtocolParams = {
+  multisigAddress: string;
+  initiatorXpub: string;
+  responderXpub: string;
+  appDefinition: string;
+  abiEncodings: AppABIEncodings;
+  initiatorDeposit: BigNumber;
+  initiatorDepositTokenAddress?: string;
+  responderDeposit: BigNumber;
+  responderDepositTokenAddress?: string;
+  timeout: BigNumber;
+  initialState: SolidityValueType;
+  outcomeType: OutcomeType;
+  meta?: Object;
+};
+
+export type SetupProtocolParams = {
+  initiatorXpub: string;
+  responderXpub: string;
+  multisigAddress: string;
+};
+
+export type UninstallProtocolParams = {
+  appIdentityHash: string;
+  initiatorXpub: string;
+  responderXpub: string;
+  multisigAddress: string;
+  blockNumberToUseIfNecessary?: number;
+};
+
+export type UninstallVirtualAppProtocolParams = {
+  initiatorXpub: string;
+  responderXpub: string;
+  intermediaryXpub: string;
+  targetAppIdentityHash: string;
+  targetOutcome: string;
+};
+
+export type UpdateProtocolParams = {
+  initiatorXpub: string;
+  responderXpub: string;
+  multisigAddress: string;
+  appIdentityHash: string;
+  newState: SolidityValueType;
+};
+
+export type WithdrawProtocolParams = {
+  initiatorXpub: string;
+  responderXpub: string;
+  multisigAddress: string;
+  recipient: string;
+  amount: BigNumber;
+  tokenAddress: string;
+};
+
+export type ProtocolParameters =
+  | InstallProtocolParams
+  | InstallVirtualAppProtocolParams
+  | ProposeInstallProtocolParams
+  | SetupProtocolParams
+  | UninstallProtocolParams
+  | UninstallVirtualAppProtocolParams
+  | UpdateProtocolParams
+  | WithdrawProtocolParams;
+
+// eslint-disable-next-line @typescript-eslint/no-namespace
+export namespace ProtocolTypes {
 
   // This is used instead of the ethers `Transaction` because that type
   // requires the nonce and chain ID to be specified, when sometimes those
@@ -49,35 +145,6 @@ export namespace CFCoreTypes {
     value: BigNumberish;
     data: string;
   };
-
-  export interface ServiceFactory {
-    connect?(host: string, port: string): ServiceFactory;
-    auth?(email: string, password: string): Promise<void>;
-    createMessagingService?(messagingServiceKey: string): IMessagingService;
-    createStoreService?(storeServiceKey: string): IStoreService;
-  }
-
-  export interface IMessagingService {
-    send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void>;
-    onReceive(address: string, callback: (msg: CFCoreTypes.NodeMessage) => void): any;
-  }
-
-  /**
-   * An interface for a stateful storage service with an API very similar to Firebase's API.
-   * Values are addressed by paths, which are separated by the forward slash separator `/`.
-   * `get` must return values whose paths have prefixes that match the provided path,
-   * keyed by the remaining path.
-   * `set` allows multiple values and paths to be atomically set. In Firebase, passing `null`
-   * as `value` deletes the entry at the given prefix, and passing objects with null subvalues
-   * deletes entries at the path extended by the subvalue's path within the object. `set` must
-   * have the same behaviour if the `allowDelete` flag is passed; otherwise, any null values or
-   * subvalues throws an error.
-   */
-  export interface IStoreService {
-    get(path: string): Promise<any>;
-    set(pairs: { path: string; value: any }[], allowDelete?: Boolean): Promise<void>;
-    reset?(): Promise<void>;
-  }
 
   export interface IPrivateKeyGenerator {
     (s: string): Promise<string>;
@@ -98,7 +165,6 @@ export namespace CFCoreTypes {
     ERROR = "error"
   }
 
-  // SOURCE: https://github.com/counterfactual/monorepo/blob/master/packages/cf.js/API_REFERENCE.md#public-methods
   export enum MethodName {
     ACCEPT_STATE = "acceptState",
     GET_PROPOSED_APP_INSTANCE = "getProposedAppInstance"
@@ -132,26 +198,6 @@ export namespace CFCoreTypes {
     chan_withdrawCommitment: "chan_withdrawCommitment"
   };
   export type RpcMethodName = keyof typeof RpcMethodNames;
-
-  // SOURCE: https://github.com/counterfactual/monorepo/blob/master/packages/cf.js/API_REFERENCE.md#events
-  export const EventNames = {
-    CREATE_CHANNEL_EVENT: "CREATE_CHANNEL_EVENT",
-    DEPOSIT_CONFIRMED_EVENT: "DEPOSIT_CONFIRMED_EVENT",
-    DEPOSIT_FAILED_EVENT: "DEPOSIT_FAILED_EVENT",
-    DEPOSIT_STARTED_EVENT: "DEPOSIT_STARTED_EVENT",
-    INSTALL_EVENT: "INSTALL_EVENT",
-    INSTALL_VIRTUAL_EVENT: "INSTALL_VIRTUAL_EVENT",
-    REJECT_INSTALL_EVENT: "REJECT_INSTALL_EVENT",
-    UNINSTALL_EVENT: "UNINSTALL_EVENT",
-    UNINSTALL_VIRTUAL_EVENT: "UNINSTALL_VIRTUAL_EVENT",
-    UPDATE_STATE_EVENT: "UPDATE_STATE_EVENT",
-    WITHDRAWAL_CONFIRMED_EVENT: "WITHDRAWAL_CONFIRMED_EVENT",
-    WITHDRAWAL_FAILED_EVENT: "WITHDRAWAL_FAILED_EVENT",
-    WITHDRAWAL_STARTED_EVENT: "WITHDRAWAL_STARTED_EVENT",
-    PROPOSE_INSTALL_EVENT: "PROPOSE_INSTALL_EVENT",
-    PROTOCOL_MESSAGE_EVENT: "PROTOCOL_MESSAGE_EVENT"
-  };
-  export type EventName = keyof typeof EventNames;
 
   export type CreateChannelParams = {
     owners: string[];
@@ -482,3 +528,4 @@ export namespace CFCoreTypes {
 
   export type Message = MethodRequest | MethodResponse | Event | Error;
 }
+

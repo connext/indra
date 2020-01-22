@@ -1,10 +1,9 @@
 import { Interface } from "ethers/utils";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
-import { NetworkContext } from "../types";
+import { MultisigOperation, NetworkContext } from "../types";
 
 import { MultisigCommitment } from "./multisig-commitment";
-import { MultisigOperation } from "./types";
 
 const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
 
