@@ -14,6 +14,7 @@ import {
   MockBackupService,
   setAndGet,
   setAndGetMultiple,
+  MEMORYSTORAGE,
 } from "../util";
 
 describe("Store", () => {
@@ -21,7 +22,7 @@ describe("Store", () => {
   let store: ConnextStore;
 
   beforeEach(async () => {
-    const { store: testStore, storage } = createStore("memorystorage");
+    const { store: testStore, storage } = createStore(MEMORYSTORAGE);
     memoryStorage = storage as MemoryStorage;
     store = testStore;
   }, 90_000);
@@ -55,7 +56,7 @@ describe("Store", () => {
   it("happy case: backup state when provided a backupService", async () => {
     // create store with backup service
     const backupService = new MockBackupService();
-    const { store } = createStore("memorystorage", { backupService });
+    const { store } = createStore(MEMORYSTORAGE, { backupService });
     // generate value to properly set and backup
     const pair: StorePair = {
       path: `/xpub/channel/${hexlify(randomBytes(20))}`,

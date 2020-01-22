@@ -9,11 +9,17 @@ import { expect } from "../";
 
 export const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" };
 
+export const ASYNCSTORAGE =  "ASYNCSTORAGE";
+export const FILESTORAGE =  "FILESTORAGE";
+export const LOCALSTORAGE =  "LOCALSTORAGE";
+export const MEMORYSTORAGE =  "MEMORYSTORAGE";
+
+
 const StoreTypes = {
-  asyncstorage: "asyncstorage",
-  filestorage: "filestorage",
-  localstorage: "localstorage",
-  memorystorage: "memorystorage",
+  [ASYNCSTORAGE]:ASYNCSTORAGE,
+  [FILESTORAGE]:FILESTORAGE,
+  [LOCALSTORAGE]:LOCALSTORAGE,
+  [MEMORYSTORAGE]:MEMORYSTORAGE,
 };
 type StoreType = keyof typeof StoreTypes;
 
@@ -24,20 +30,20 @@ export function createStore(
 ): { store: ConnextStore; storage: Storage | IAsyncStorage } {
   let storage;
 
-  switch (type.toLowerCase()) {
-    case "localstorage":
+  switch (type.toUpperCase()) {
+    case LOCALSTORAGE:
       storage = localStorage;
       break;
 
-    case "asyncstorage":
+    case ASYNCSTORAGE:
       storage = new MockAsyncStorage(storageOpts);
       break;
 
-    case "filestorage":
+    case FILESTORAGE:
       storage = new FileStorage(storageOpts);
       break;
 
-    case "memorystorage":
+    case MEMORYSTORAGE:
       storage = new MemoryStorage(storageOpts);
       break;
 
