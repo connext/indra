@@ -1,5 +1,5 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { IConnextClient } from "@connext/types";
+import { IConnextClient, DEPOSIT_FAILED_EVENT } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
@@ -19,7 +19,7 @@ export const fundChannel = async (
       expect(freeBalance[client.freeBalanceAddress]).to.equal(expected);
       resolve();
     });
-    client.once("DEPOSIT_FAILED_EVENT", async (msg: any) => {
+    client.once(DEPOSIT_FAILED_EVENT, async (msg: any) => {
       reject(new Error(JSON.stringify(msg)));
     });
 
@@ -48,7 +48,7 @@ export const requestCollateral = async (
       );
       resolve();
     });
-    client.once("DEPOSIT_FAILED_EVENT", async (msg: any) => {
+    client.once(DEPOSIT_FAILED_EVENT, async (msg: any) => {
       reject(new Error(JSON.stringify(msg)));
     });
 

@@ -1,5 +1,5 @@
 import { utils } from "@connext/client";
-import { IConnextClient } from "@connext/types";
+import { IConnextClient, WITHDRAWAL_CONFIRMED_EVENT } from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 
@@ -106,7 +106,7 @@ describe("Withdrawal", () => {
     });
 
     // no withdraw confirmed event thrown here...
-    client.once("WITHDRAWAL_CONFIRMED_EVENT", () => {
+    client.once(WITHDRAWAL_CONFIRMED_EVENT, () => {
       eventsCaught += 1;
       if (eventsCaught === 2) {
         done();
