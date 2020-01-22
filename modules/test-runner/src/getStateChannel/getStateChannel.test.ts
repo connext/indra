@@ -3,6 +3,7 @@ import {
   ConnextClientStorePrefix,
   IConnextClient,
   StateChannelJSON,
+  StateSchemaVersion,
   StorePair,
 } from "@connext/types";
 import { AddressZero } from "ethers/constants";
@@ -25,6 +26,12 @@ describe("Get State Channel", () => {
   it("Happy case: should return stateChannelJSON from store with multisig address", async () => {
     const stateChannel: StateChannelJSON = (await clientA.getStateChannel()).data;
     expect(stateChannel.multisigAddress).to.be.eq(clientA.multisigAddress);
+  });
+
+  it.only("Happy case: should return stateChannelJSON from store with proper version", async () => {
+    const stateChannel: StateChannelJSON = (await clientA.getStateChannel()).data;
+    console.log(`expect ${stateChannel.schemaVersion} to = ${StateSchemaVersion}`);
+    expect(stateChannel.schemaVersion).to.be.eq(StateSchemaVersion);
   });
 
   it("Store does not contain state channel", async () => {

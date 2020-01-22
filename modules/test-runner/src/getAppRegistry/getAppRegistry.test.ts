@@ -9,7 +9,7 @@ describe("Get App Registry", () => {
 
   const expectedNetwork = {
     name: "ganache",
-    chainId: "4447",
+    chainId: 4447,
   };
   const expectedAddresses = addressBook[expectedNetwork.chainId];
   beforeEach(async () => {
