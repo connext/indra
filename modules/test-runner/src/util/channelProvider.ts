@@ -1,10 +1,10 @@
-import { BasicChannelProvider } from "@connext/channel-provider";
+import { ChannelProvider } from "@connext/channel-provider";
 import { IChannelProvider, IConnextClient, IRpcConnection } from "@connext/types";
 import EventEmitter from "events";
 
 export const createChannelProvider = async (channel: IConnextClient): Promise<IChannelProvider> => {
   const connection = new MockRpcConnection(channel);
-  const channelProvider = new BasicChannelProvider(connection);
+  const channelProvider = new ChannelProvider(connection);
   await channelProvider.enable();
   return channelProvider;
 };
