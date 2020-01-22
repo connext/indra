@@ -6,7 +6,7 @@ import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
-import { formatEther, parseEther } from "ethers/utils";
+import { formatEther } from "ethers/utils";
 import interval from "interval-promise";
 import { PisaClient } from "pisa-client";
 import React from "react";
