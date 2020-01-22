@@ -2,7 +2,6 @@ import { IConnextClient } from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { HDNode, hexlify, randomBytes } from "ethers/utils";
-const tokenArtifacts = require("openzeppelin-solidity/build/contracts/ERC20Mintable.json");
 import {
   AssetOptions,
   asyncTransferAsset,
@@ -16,6 +15,7 @@ import {
   FUNDED_MNEMONICS,
   TOKEN_AMOUNT,
 } from "../util";
+const tokenArtifacts = require("openzeppelin-solidity/build/contracts/ERC20Mintable.json");
 
 describe("Async Transfers", () => {
   let clientA: IConnextClient;
@@ -115,7 +115,7 @@ describe("Async Transfers", () => {
         assetId: token.address,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`Install failed`);
+    ).to.be.rejectedWith("Install failed");
     // NOTE: you will not get a more descriptive title
     // because the node maintains the valid tokens list
   });
@@ -186,6 +186,6 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         recipient: HDNode.fromMnemonic(Wallet.createRandom().mnemonic).neuter().extendedKey,
       }),
-    ).to.be.rejectedWith(`No channel exists for recipientPublicIdentifier`);
+    ).to.be.rejectedWith("No channel exists for recipientPublicIdentifier");
   });
 });

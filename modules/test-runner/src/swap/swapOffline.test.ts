@@ -66,7 +66,7 @@ describe("Swap offline", () => {
   };
   it("Bot A tries to install swap but there’s no response from node", async function(): Promise<
     void
-  > {
+    > {
     // @ts-ignore
     this.timeout(95_000);
     // 3 app installs expected (coin balance x2, swap)
@@ -87,7 +87,7 @@ describe("Swap offline", () => {
 
   it("Bot A installs swap app successfully but then node goes offline for uninstall", async function(): Promise<
     void
-  > {
+    > {
     // @ts-ignore
     this.timeout(105_000);
     const expectedUninstallsReceived = 3 * UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED;
@@ -108,7 +108,7 @@ describe("Swap offline", () => {
 
   it("Bot A install swap app successfully but then goes offline for uninstall", async function(): Promise<
     void
-  > {
+    > {
     // @ts-ignore
     this.timeout(105_000);
     const expectedUninstallsSent = 3 * UNINSTALL_SUPPORTED_APP_COUNT_SENT;
@@ -129,7 +129,7 @@ describe("Swap offline", () => {
 
   it("Bot A installs swap app successfully but then deletes store (before uninstall)", async function(): Promise<
     void
-  > {
+    > {
     // @ts-ignore
     this.timeout(95_000);
     const providedClient = await createClientWithMessagingLimits();
@@ -152,7 +152,7 @@ describe("Swap offline", () => {
       client: providedClient,
       inputAmount: ETH_AMOUNT_SM,
       outputAmount: TOKEN_AMOUNT,
-      failsWith: `Failed to uninstall swap`,
+      failsWith: "Failed to uninstall swap",
     });
   });
 });

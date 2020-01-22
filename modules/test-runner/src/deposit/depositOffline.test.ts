@@ -30,7 +30,7 @@ describe("Deposit offline tests", () => {
    */
   it("client proposes deposit, but node doesn't receive the NATS message (or no response from node)", async function(): Promise<
     void
-  > {
+    > {
     // @ts-ignore
     this.timeout(100_000);
     // create client where the propose protocol will not complete
@@ -49,7 +49,7 @@ describe("Deposit offline tests", () => {
 
   it("client proposes deposit, but node only receives the NATS message after timeout is over", async function(): Promise<
     void
-  > {
+    > {
     // @ts-ignore
     this.timeout(105_000);
     // cf method timeout is 90s, client will send any messages with a
@@ -66,7 +66,7 @@ describe("Deposit offline tests", () => {
 
   it("client proposes deposit, but node only responds after timeout is over", async function(): Promise<
     void
-  > {
+    > {
     // @ts-ignore
     this.timeout(105_000);
     // cf method timeout is 90s, client will process any received messages
@@ -83,14 +83,14 @@ describe("Deposit offline tests", () => {
 
   it("client goes offline after proposing deposit and then comes back after timeout is over", async function(): Promise<
     void
-  > {
+    > {
     // @ts-ignore
     this.timeout(105_000);
     const client = await createClientWithMessagingLimits({
       protocol: "install",
       ceiling: { received: INSTALL_SUPPORTED_APP_COUNT_RECEIVED },
     });
-    await expect(fundChannel(client, ZERO_ZERO_ONE_ETH)).to.be.rejectedWith(`Failed to deposit`);
+    await expect(fundChannel(client, ZERO_ZERO_ONE_ETH)).to.be.rejectedWith("Failed to deposit");
   });
 
   it("client proposes deposit, but then deletes their store", async function(): Promise<void> {
@@ -108,6 +108,6 @@ describe("Deposit offline tests", () => {
         await store.reset();
       },
     );
-    await expect(fundChannel(client, ZERO_ZERO_ONE_ETH)).to.be.rejectedWith(`Failed to deposit`);
+    await expect(fundChannel(client, ZERO_ZERO_ONE_ETH)).to.be.rejectedWith("Failed to deposit");
   });
 });
