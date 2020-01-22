@@ -36,7 +36,7 @@ export async function asyncTransferAsset(
     ),
     new Promise(
       async (resolve: Function): Promise<void> => {
-        clientB.once("RECIEVE_TRANSFER_FINISHED_EVENT", async () => {
+        clientB.once("RECEIVE_TRANSFER_FINISHED_EVENT", async () => {
           resolve();
         });
       },
