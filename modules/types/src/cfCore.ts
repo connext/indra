@@ -8,18 +8,11 @@ import { IStoreService as exIStoreService } from "./store";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace CFCoreTypes {
-  export const RpcMethodNames = ProtocolTypes.RpcMethodNames;
-
   export type EventName = exEventName;
+  export type MethodName = ProtocolTypes.MethodName;
   export type NodeMessage = exNodeMessage;
   export type IStoreService = exIStoreService;
   export type IMessagingService = CFMessagingService;
-
-  // copypasta bc idk how to pass-through export enums
-  export enum MethodName {
-    ACCEPT_STATE = "acceptState",
-    GET_PROPOSED_APP_INSTANCE = "getProposedAppInstance",
-  }
 
   export type CreateChannelParams = ProtocolTypes.CreateChannelParams;
   export type CreateChannelResult = ProtocolTypes.CreateChannelResult;

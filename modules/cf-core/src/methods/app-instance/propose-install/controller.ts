@@ -6,7 +6,7 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { Protocol, xkeyKthAddress } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes } from "../../../types";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { NodeController } from "../../controller";
 import {
   INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET,
@@ -20,7 +20,7 @@ import {
  * @returns The AppInstanceId for the proposed AppInstance
  */
 export default class ProposeInstallController extends NodeController {
-  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_proposeInstall)
+  @jsonRpcMethod(ProtocolTypes.chan_proposeInstall)
   public executeMethod: (
     requestHandler: RequestHandler,
     params: CFCoreTypes.MethodParams

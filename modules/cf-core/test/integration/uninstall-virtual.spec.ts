@@ -1,6 +1,6 @@
 
 import { Node } from "../../src";
-import { NODE_EVENTS, UninstallVirtualMessage } from "../../src/types";
+import { UninstallVirtualMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 
 import { setup, SetupContext } from "./setup";

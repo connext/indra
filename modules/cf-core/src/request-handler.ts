@@ -56,7 +56,7 @@ export class RequestHandler {
     method: CFCoreTypes.MethodName,
     req: CFCoreTypes.MethodRequest
   ): Promise<CFCoreTypes.MethodResponse> {
-    const result = {
+    const result: CFCoreTypes.MethodResponse = {
       type: req.type,
       requestId: req.requestId,
       result: await this.methods.get(method)(this, req.params)
@@ -84,7 +84,7 @@ export class RequestHandler {
         };
 
         // @ts-ignore
-        this.router.emit(req.methodName, res, "outgoing");
+        this.router.emit(req.methodName, res, `outgoing`);
       });
     }
   }

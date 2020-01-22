@@ -1,13 +1,14 @@
-import { CFCoreTypes, REJECT_INSTALL_EVENT, PROPOSE_INSTALL_EVENT } from "@connext/types";
+import {
+  CFCoreTypes,
+  REJECT_INSTALL_EVENT,
+  PROPOSE_INSTALL_EVENT
+} from "@connext/types";
 
 import { Node } from "../../src";
-import { NODE_EVENTS, ProposeMessage } from "../../src/types";
+import { ProposeMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 
-import {
-  SetupContext,
-  setupWithMemoryMessagingAndSlowStore
-} from "./setup";
+import { SetupContext, setupWithMemoryMessagingAndSlowStore } from "./setup";
 import {
   confirmProposedAppInstance,
   constructRejectInstallRpc,
@@ -16,10 +17,10 @@ import {
   makeVirtualProposeCall
 } from "./utils";
 
-const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global[`networkContext`] as NetworkContextForTestSuite;
 
 // Postgres testing is pretty pointless here, since it's using a different interface
-describe("Node method follows spec - rejectInstallVirtual", () => {
+describe(`Node method follows spec - rejectInstallVirtual`, () => {
   let nodeA: Node;
   let nodeB: Node;
   let nodeC: Node;
@@ -29,16 +30,16 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
       global,
       true
     );
-    nodeA = context["A"].node;
-    nodeB = context["B"].node;
-    nodeC = context["C"].node;
+    nodeA = context[`A`].node;
+    nodeB = context[`B`].node;
+    nodeC = context[`C`].node;
   });
 
   describe(
-    "Node A makes a proposal through an intermediary Node B to install a " +
-      "Virtual AppInstance with Node C. Node C rejects proposal. Node A confirms rejection",
+    `Node A makes a proposal through an intermediary Node B to install a ` +
+      `Virtual AppInstance with Node C. Node C rejects proposal. Node A confirms rejection`,
     () => {
-      it.skip("sends proposal with non-null initial state", async done => {
+      it.skip(`sends proposal with non-null initial state`, async done => {
         await createChannel(nodeA, nodeB);
         await createChannel(nodeB, nodeC);
 

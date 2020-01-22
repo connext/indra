@@ -3,10 +3,18 @@ import { TransactionResponse } from "ethers/providers";
 import { bigNumberify, getAddress } from "ethers/utils";
 
 import { stringify, withdrawalKey } from "../lib";
-import { BigNumber, CFCoreTypes, convert, WithdrawalResponse, WithdrawParameters } from "../types";
+import {
+  BigNumber,
+  CFCoreTypes,
+  convert,
+  ProtocolTypes,
+  WithdrawalResponse,
+  WithdrawParameters,
+} from "../types";
 import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
+import { chan_storeSet } from "@connext/types";
 
 export class WithdrawalController extends AbstractController {
   public async withdraw(params: WithdrawParameters): Promise<WithdrawalResponse> {
@@ -21,7 +29,7 @@ export class WithdrawalController extends AbstractController {
     }
     const myFreeBalanceAddress = this.connext.freeBalanceAddress;
 
-    const { amount, assetId, recipient, userSubmitted } = convert.Withdraw("bignumber", params);
+    const { amount, assetId, recipient, userSubmitted } = convert.Withdraw(`bignumber`, params);
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preWithdrawalBal = freeBalance[this.connext.freeBalanceAddress];
     validate(
@@ -44,12 +52,12 @@ export class WithdrawalController extends AbstractController {
       this.log.info(`Calling this.connext.rescindDepositRights before withdrawal for ${assetId}`);
       await this.connext.rescindDepositRights({ assetId });
       if (!userSubmitted) {
-        this.log.info(`Calling ${CFCoreTypes.RpcMethodNames.chan_withdrawCommitment}`);
+        this.log.info(`Calling ${ProtocolTypes.chan_withdrawCommitment}`);
         const withdrawResponse = await this.connext.withdrawCommitment(amount, assetId, recipient);
         this.log.info(`Withdraw Response: ${stringify(withdrawResponse)}`);
         const minTx: CFCoreTypes.MinimalTransaction = withdrawResponse.transaction;
         // set the withdrawal tx in the store
-        await this.connext.channelProvider.send("chan_storeSet", {
+        await this.connext.channelProvider.send(chan_storeSet, {
           pairs: [
             { path: withdrawalKey(this.connext.publicIdentifier), value: { tx: minTx, retry: 0 } },
           ],
@@ -62,7 +70,7 @@ export class WithdrawalController extends AbstractController {
         this.log.info(`Node Withdraw Response: ${stringify(transaction)}`);
       } else {
         // first deploy the multisig
-        this.log.info(`Calling ${CFCoreTypes.RpcMethodNames.chan_deployStateDepositHolder}`);
+        this.log.info(`Calling ${ProtocolTypes.chan_deployStateDepositHolder}`);
         const deployRes = await this.connext.deployMultisig();
         this.log.debug(`Multisig deploy transaction: ${stringify(deployRes)}`);
         if (deployRes.transactionHash !== AddressZero) {
@@ -70,7 +78,7 @@ export class WithdrawalController extends AbstractController {
           // will be 0x000.. if the multisig has already been deployed.
           this.ethProvider.waitForTransaction(deployRes.transactionHash);
         }
-        this.log.info(`Calling ${CFCoreTypes.RpcMethodNames.chan_withdraw}`);
+        this.log.info(`Calling ${ProtocolTypes.chan_withdraw}`);
         // user submitting the withdrawal
         const withdrawResponse = await this.connext.providerWithdraw(
           assetId,
@@ -90,7 +98,7 @@ export class WithdrawalController extends AbstractController {
         this.log.error(`My free balance was not decreased by the expected amount.`);
       }
 
-      this.log.info("Withdrawn!");
+      this.log.info(`Withdrawn!`);
     } catch (e) {
       this.log.error(`Failed to withdraw: ${e.stack || e.message}`);
       throw new Error(e);

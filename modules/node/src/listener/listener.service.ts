@@ -17,6 +17,9 @@ import {
   WITHDRAWAL_CONFIRMED_EVENT,
   WITHDRAWAL_FAILED_EVENT,
   WITHDRAWAL_STARTED_EVENT,
+  ProtocolTypes,
+  SimpleLinkedTransferApp,
+  CoinBalanceRefundApp,
 } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -52,7 +55,7 @@ import {
   WithdrawStartedMessage,
 } from "../util/cfCore";
 
-const logger = new CLogger("ListenerService");
+const logger = new CLogger(`ListenerService`);
 
 type CallbackStruct = {
   [index in CFCoreTypes.EventName]: (data: any) => Promise<any> | void;
@@ -64,7 +67,7 @@ function logEvent(
 ): void {
   logger.debug(
     `${event} event fired from ${res && res.from ? res.from : null}, data: ${
-      res ? JSON.stringify(res.data) : "event did not have a result"
+      res ? JSON.stringify(res.data) : `event did not have a result`
     }`,
   );
 }
@@ -138,49 +141,49 @@ export default class ListenerService implements OnModuleInit {
 
         // post-install tasks
         switch (allowedOrRejected.name) {
-          case SupportedApplications.SimpleLinkedTransferApp:
-            logger.debug(`Saving linked transfer`);
-            const initialState = proposedAppParams.initialState as SimpleLinkedTransferAppStateBigNumber;
+        case SimpleLinkedTransferApp:
+          logger.debug(`Saving linked transfer`);
+          const initialState = proposedAppParams.initialState as SimpleLinkedTransferAppStateBigNumber;
 
-            const isResolving = proposedAppParams.responderDeposit.gt(Zero);
-            if (isResolving) {
-              const transfer = await this.transferService.getLinkedTransferByPaymentId(
-                initialState.paymentId,
-              );
-              transfer.receiverAppInstanceId = appInstanceId;
-              await this.linkedTransferRepository.save(transfer);
-              logger.debug(`Updated transfer with receiver appId!`);
-              return;
-            }
-            await this.transferService.saveLinkedTransfer(
-              initiatorXpub,
-              proposedAppParams.initiatorDepositTokenAddress,
-              bigNumberify(proposedAppParams.initiatorDeposit),
-              appInstanceId,
-              initialState.linkedHash,
+          const isResolving = proposedAppParams.responderDeposit.gt(Zero);
+          if (isResolving) {
+            const transfer = await this.transferService.getLinkedTransferByPaymentId(
               initialState.paymentId,
-              proposedAppParams.meta,
             );
-            logger.debug(`Linked transfer saved!`);
-            break;
+            transfer.receiverAppInstanceId = appInstanceId;
+            await this.linkedTransferRepository.save(transfer);
+            logger.debug(`Updated transfer with receiver appId!`);
+            return;
+          }
+          await this.transferService.saveLinkedTransfer(
+            initiatorXpub,
+            proposedAppParams.initiatorDepositTokenAddress,
+            bigNumberify(proposedAppParams.initiatorDeposit),
+            appInstanceId,
+            initialState.linkedHash,
+            initialState.paymentId,
+            proposedAppParams.meta,
+          );
+          logger.debug(`Linked transfer saved!`);
+          break;
           // TODO: add something for swap app? maybe for history preserving reasons.
-          case SupportedApplications.CoinBalanceRefundApp:
-            const channel = await this.channelRepository.findByUserPublicIdentifier(initiatorXpub);
-            if (!channel) {
-              throw new Error(`Channel does not exist for ${initiatorXpub}`);
-            }
-            logger.debug(
-              `sending acceptance message to indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
-            );
-            await this.messagingClient
-              .emit(
-                `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
-                proposedAppParams,
-              )
-              .toPromise();
-            break;
-          default:
-            logger.debug(`No post-install actions configured.`);
+        case CoinBalanceRefundApp:
+          const channel = await this.channelRepository.findByUserPublicIdentifier(initiatorXpub);
+          if (!channel) {
+            throw new Error(`Channel does not exist for ${initiatorXpub}`);
+          }
+          logger.debug(
+            `sending acceptance message to indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
+          );
+          await this.messagingClient
+            .emit(
+              `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
+              proposedAppParams,
+            )
+            .toPromise();
+          break;
+        default:
+          logger.debug(`No post-install actions configured.`);
         }
       },
       PROTOCOL_MESSAGE_EVENT: (data: NodeMessageWrappedProtocolMessage): void => {
@@ -252,16 +255,12 @@ export default class ListenerService implements OnModuleInit {
   onModuleInit(): void {
     Object.entries(this.getEventListeners()).forEach(
       ([event, callback]: [CFCoreTypes.EventName, () => any]): void => {
-        this.cfCoreService.registerCfCoreListener(
-          event,
-          callback,
-          logger.cxt,
-        );
+        this.cfCoreService.registerCfCoreListener(event, callback, logger.cxt);
       },
     );
 
     this.cfCoreService.registerCfCoreListener(
-      CFCoreTypes.RpcMethodNames.chan_install as any,
+      ProtocolTypes.chan_install as any,
       (data: any) => {
         const appInstance = data.result.result.appInstance;
         logger.debug(
@@ -280,7 +279,7 @@ export default class ListenerService implements OnModuleInit {
     );
 
     this.cfCoreService.registerCfCoreListener(
-      CFCoreTypes.RpcMethodNames.chan_uninstall as any,
+      ProtocolTypes.chan_uninstall as any,
       (data: any) => {
         logger.debug(
           `Emitting CFCoreTypes.RpcMethodName.UNINSTALL event: ${JSON.stringify(

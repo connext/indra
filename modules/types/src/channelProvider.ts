@@ -3,6 +3,7 @@ import EventEmitter from "events";
 import { NetworkContext } from "./contracts";
 import { ProtocolTypes } from "./protocol";
 import { Store, StorePair } from "./store";
+import { CFCoreTypes } from "./cfCore";
 
 export interface IChannelProvider extends EventEmitter {
   ////////////////////////////////////////
@@ -18,7 +19,7 @@ export interface IChannelProvider extends EventEmitter {
   // Methods
 
   enable(): Promise<ChannelProviderConfig>;
-  send(method: ChannelProviderRpcMethod | string, params: any): Promise<any>;
+  send(method: ChannelProviderRpcMethod, params: any): Promise<any>;
   close(): void;
 
   ///////////////////////////////////
@@ -45,8 +46,27 @@ export interface IChannelProvider extends EventEmitter {
 
   ///////////////////////////////////
   // PRIVATE METHODS
-  _send(method: ChannelProviderRpcMethod | string, params: any): Promise<any>;
+  _send(method: ChannelProviderRpcMethod, params: any): Promise<any>;
 }
+
+export const chan_config = `chan_config`;
+export const chan_nodeAuth = `chan_nodeAuth`;
+export const chan_restoreState = `chan_restoreState`;
+export const chan_storeGet = `chan_storeGet`;
+export const chan_storeSet = `chan_storeSet`;
+
+// TODO: merge ConnextRpcMethods and RpcMethodNames???
+
+export const ConnextRpcMethods = {
+  [chan_config]: chan_config,
+  [chan_nodeAuth]: chan_nodeAuth,
+  [chan_restoreState]: chan_restoreState,
+  [chan_storeGet]: chan_storeGet,
+  [chan_storeSet]: chan_storeSet,
+};
+export type ConnextRpcMethod = keyof typeof ConnextRpcMethods;
+
+export type ChannelProviderRpcMethod = ConnextRpcMethod | CFCoreTypes.RpcMethodName;
 
 export type ChannelProviderConfig = {
   freeBalanceAddress: string;
@@ -70,24 +90,9 @@ export interface CFChannelProviderOptions {
   store: Store;
 }
 
-export const ConnextRpcMethods = {
-  chan_config: "chan_config",
-  chan_nodeAuth: "chan_nodeAuth",
-  chan_restoreState: "chan_restoreState",
-  chan_storeGet: "chan_storeGet",
-  chan_storeSet: "chan_storeSet",
-};
-export type ConnextRpcMethod = keyof typeof ConnextRpcMethods;
-
-export const ChannelProviderRpcMethods = {
-  ...ProtocolTypes.RpcMethodNames,
-  ...ConnextRpcMethods,
-};
-export type ChannelProviderRpcMethod = ConnextRpcMethod | ProtocolTypes.RpcMethodName;
-
 export type JsonRpcRequest = {
   id: number;
-  jsonrpc: "2.0";
+  jsonrpc: `2.0`;
   method: string;
   params: any;
 };
