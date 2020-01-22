@@ -21,7 +21,7 @@ describe(`Get State Channel`, () => {
     await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
     store = getStore();
-  }, 90_000);
+  });
 
   it(`Happy case: should return stateChannelJSON from store with multisig address`, async () => {
     const stateChannel: StateChannelJSON = (await clientA.getStateChannel()).data;
