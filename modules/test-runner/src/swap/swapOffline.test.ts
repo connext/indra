@@ -17,12 +17,13 @@ import {
   APP_PROTOCOL_TOO_LONG,
   UNINSTALL_SUPPORTED_APP_COUNT_SENT,
   getStore,
+  cleanupMessaging,
 } from "../util";
 import { BigNumber } from "ethers/utils";
 
 const { xpubToAddress } = utils;
 
-describe("Swap offline", () => {
+describe(`Swap offline`, () => {
   let client: IConnextClient;
 
   const fundChannelAndSwap = async (opts: {
@@ -64,7 +65,8 @@ describe("Swap offline", () => {
       await swapAsset(client, input, output, xpubToAddress(client.nodePublicIdentifier));
     }
   };
-  it("Bot A tries to install swap but there’s no response from node", async function(): Promise<
+
+  it(`Bot A tries to install swap but there’s no response from node`, async function(): Promise<
     void
     > {
     // @ts-ignore
@@ -73,7 +75,7 @@ describe("Swap offline", () => {
     const expectedInstallsReceived = 3 * INSTALL_SUPPORTED_APP_COUNT_RECEIVED;
     const messagingConfig = {
       ceiling: { received: expectedInstallsReceived },
-      protocol: "install",
+      protocol: `install`,
     };
     // deposit eth into channel and swap for token
     // go offline during swap, should fail with swap timeout
@@ -81,11 +83,11 @@ describe("Swap offline", () => {
       messagingConfig,
       inputAmount: ETH_AMOUNT_SM,
       outputAmount: TOKEN_AMOUNT,
-      failsWith: APP_PROTOCOL_TOO_LONG("install"),
+      failsWith: APP_PROTOCOL_TOO_LONG(`install`),
     });
   });
 
-  it("Bot A installs swap app successfully but then node goes offline for uninstall", async function(): Promise<
+  it(`Bot A installs swap app successfully but then node goes offline for uninstall`, async function(): Promise<
     void
     > {
     // @ts-ignore
@@ -94,7 +96,7 @@ describe("Swap offline", () => {
     // does not receive messages, node is offline
     const messagingConfig = {
       ceiling: { received: expectedUninstallsReceived },
-      protocol: "uninstall",
+      protocol: `uninstall`,
     };
     // deposit eth into channel and swap for token
     // go offline during swap, should fail with swap timeout
@@ -102,11 +104,11 @@ describe("Swap offline", () => {
       messagingConfig,
       inputAmount: ETH_AMOUNT_SM,
       outputAmount: TOKEN_AMOUNT,
-      failsWith: `Failed to uninstall swap: Error: ${APP_PROTOCOL_TOO_LONG("uninstall")}`,
+      failsWith: `Failed to uninstall swap: Error: ${APP_PROTOCOL_TOO_LONG(`uninstall`)}`,
     });
   });
 
-  it("Bot A install swap app successfully but then goes offline for uninstall", async function(): Promise<
+  it(`Bot A install swap app successfully but then goes offline for uninstall`, async function(): Promise<
     void
     > {
     // @ts-ignore
@@ -115,7 +117,7 @@ describe("Swap offline", () => {
     // does not receive messages, node is offline
     const messagingConfig = {
       ceiling: { sent: expectedUninstallsSent },
-      protocol: "uninstall",
+      protocol: `uninstall`,
     };
     // deposit eth into channel and swap for token
     // go offline during swap, should fail with swap timeout
@@ -123,17 +125,17 @@ describe("Swap offline", () => {
       messagingConfig,
       inputAmount: ETH_AMOUNT_SM,
       outputAmount: TOKEN_AMOUNT,
-      failsWith: `Failed to uninstall swap: Error: ${APP_PROTOCOL_TOO_LONG("uninstall")}`,
+      failsWith: `Failed to uninstall swap: Error: ${APP_PROTOCOL_TOO_LONG(`uninstall`)}`,
     });
   });
 
-  it("Bot A installs swap app successfully but then deletes store (before uninstall)", async function(): Promise<
+  it(`Bot A installs swap app successfully but then deletes store (before uninstall)`, async function(): Promise<
     void
     > {
     // @ts-ignore
     this.timeout(95_000);
     const providedClient = await createClientWithMessagingLimits();
-    const messaging = getMessaging();
+    const messaging = getMessaging(providedClient.publicIdentifier);
     expect(messaging).to.be.ok;
     // deposit eth into channel and swap for token
     // go offline during swap, should fail with swap timeout
@@ -142,7 +144,7 @@ describe("Swap offline", () => {
       async () => {
         // we know client has swap app installed,
         // so delete store here
-        const store = getStore();
+        const store = getStore(providedClient.publicIdentifier);
         await store.reset();
       },
     );
@@ -152,7 +154,11 @@ describe("Swap offline", () => {
       client: providedClient,
       inputAmount: ETH_AMOUNT_SM,
       outputAmount: TOKEN_AMOUNT,
-      failsWith: "Failed to uninstall swap",
+      failsWith: `Failed to uninstall swap`,
     });
+  });
+
+  afterEach(async () => {
+    await cleanupMessaging();
   });
 });
