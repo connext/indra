@@ -43,7 +43,7 @@ describe("Deposit offline tests", () => {
       protocol: "propose",
     });
     await expect(fundChannel(client, ZERO_ZERO_ONE_ETH)).to.be.rejectedWith(
-      APP_PROTOCOL_TOO_LONG("install"),
+      APP_PROTOCOL_TOO_LONG("propose"),
     );
   });
 
@@ -60,7 +60,7 @@ describe("Deposit offline tests", () => {
       protocol: "propose",
     });
     await expect(fundChannel(client, ZERO_ZERO_ONE_ETH)).to.be.rejectedWith(
-      APP_PROTOCOL_TOO_LONG("install"),
+      APP_PROTOCOL_TOO_LONG("propose"),
     );
   });
 
@@ -77,7 +77,7 @@ describe("Deposit offline tests", () => {
       protocol: "propose",
     });
     await expect(fundChannel(client, ZERO_ZERO_ONE_ETH)).to.be.rejectedWith(
-      APP_PROTOCOL_TOO_LONG("install"),
+      APP_PROTOCOL_TOO_LONG("propose"),
     );
   });
 
