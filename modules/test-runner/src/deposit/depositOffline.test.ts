@@ -1,6 +1,7 @@
 import { utils } from "@connext/client";
 
 import {
+  APP_PROTOCOL_TOO_LONG,
   createClientWithMessagingLimits,
   expect,
   fundChannel,
@@ -40,7 +41,7 @@ describe("Deposit offline tests", () => {
       protocol: "propose",
     });
     await expect(fundChannel(client, ZERO_ZERO_ONE_ETH)).to.be.rejectedWith(
-      `App proposal took longer than 90 seconds`,
+      APP_PROTOCOL_TOO_LONG("install"),
     );
   });
 
@@ -57,7 +58,7 @@ describe("Deposit offline tests", () => {
       protocol: "propose",
     });
     await expect(fundChannel(client, ZERO_ZERO_ONE_ETH)).to.be.rejectedWith(
-      `App proposal took longer than 90 seconds`,
+      APP_PROTOCOL_TOO_LONG("install"),
     );
   });
 
@@ -74,7 +75,7 @@ describe("Deposit offline tests", () => {
       protocol: "propose",
     });
     await expect(fundChannel(client, ZERO_ZERO_ONE_ETH)).to.be.rejectedWith(
-      `App proposal took longer than 90 seconds`,
+      APP_PROTOCOL_TOO_LONG("install"),
     );
   });
 
