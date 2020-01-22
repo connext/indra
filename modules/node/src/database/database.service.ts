@@ -20,6 +20,7 @@ import { AddTransferView1571072372000 } from "../../migrations/1571072372000-add
 import { AddTransferMetas1574449936874 } from "../../migrations/1574449936874-add-transfer-metas";
 import { AddCfcoreTimestamps1574451273832 } from "../../migrations/1574451273832-add-cfcore-timestamps";
 import { EditViewTable1578621554000 } from "../../migrations/1578621554000-edit-view-table";
+import { NetworkToChainId1579686361011 } from "../../migrations/1579686361011-network-to-chain-id";
 
 export const entities = [
   AppRegistry,
@@ -43,6 +44,7 @@ export const migrations = [
   AddCfcoreTimestamps1574451273832,
   AddTransferMetas1574449936874,
   EditViewTable1578621554000,
+  NetworkToChainId1579686361011,
 ];
 
 @Injectable()
