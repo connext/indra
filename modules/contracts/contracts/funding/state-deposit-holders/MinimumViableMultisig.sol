@@ -49,20 +49,28 @@ contract MinimumViableMultisig {
   /// @param value The amount of ETH being forwarded in the message call
   /// @param data Any calldata being sent along with the message call
   /// @param operation Specifies whether the message call is a `CALL` or a `DELEGATECALL`
-  /// @param domainSeparator EIP712-defined hash to determine context (https://eips.ethereum.org/EIPS/eip-712)
+  /// @param domainName EIP712-defined hash to determine context (https://eips.ethereum.org/EIPS/eip-712)
+  /// @param domainName EIP712-defined hash to determine context (https://eips.ethereum.org/EIPS/eip-712)
+  /// @param domainVersion EIP712-defined hash to determine context (https://eips.ethereum.org/EIPS/eip-712)
+  /// @param chainId EIP712-defined hash to determine context (https://eips.ethereum.org/EIPS/eip-712)
+  /// @param domainSalt EIP712-defined hash to determine context (https://eips.ethereum.org/EIPS/eip-712)
   /// @param signatures A sorted bytes string of concatenated signatures of each owner
   function execTransaction(
     address to,
     uint256 value,
     bytes memory data,
     Operation operation,
-    bytes32 domainSeparator,
+    string memory domainName,
+    string memory domainVersion,
+    uint256 chainId,
+    bytes32 domainSalt,
     bytes[] memory signatures
   )
     public
   {
     transactionCount += 1;
-    bytes32 transactionHash = getTransactionHash(to, value, data, operation, domainSeparator, transactionCount);
+    bytes32 domainSeparatorHash = getDomainSeparatorHash(domainName, domainVersion, chainId, domainSalt);
+    bytes32 transactionHash = getTransactionHash(to, value, data, operation, domainSeparatorHash, transactionCount);
     require(
       !isExecuted[transactionHash],
       "Transacation has already been executed"
@@ -92,15 +100,30 @@ contract MinimumViableMultisig {
     uint256 value,
     bytes memory data,
     Operation operation,
-    bytes32 domainSeparator,
-    uint256 transactionCount
+    bytes32 domainSeparatorHash,
+    uint256 _transactionCount
   )
     public
     view
     returns (bytes32)
   {
     return keccak256(
-      abi.encode(byte(0x19), _owners, to, value, data, uint8(operation), transactionCount)
+      abi.encode(byte(0x19), _owners, to, value, data, uint8(operation), domainSeparatorHash, _transactionCount)
+    );
+  }
+
+  function getDomainSeparatorHash(
+    string memory domainName,
+    string memory domainVersion,
+    uint256 chainId,
+    bytes32 domainSalt
+  )
+    public
+    view
+    returns (bytes32)
+  {
+    return keccak256(
+      abi.encode(domainName, domainVersion, chainId, address(this), domainSalt)
     );
   }
 

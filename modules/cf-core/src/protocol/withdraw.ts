@@ -1,4 +1,5 @@
 import { MaxUint256 } from "ethers/constants";
+import { BaseProvider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
@@ -19,6 +20,7 @@ import {
   ProtocolMessage,
   singleAssetTwoPartyCoinTransferInterpreterParamsEncoding,
   WithdrawProtocolParams,
+  DomainSeparator,
 } from "../types";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
@@ -54,7 +56,8 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     const {
       stateChannelsMap,
       message: { params, processID },
-      network
+      network,
+      provider
     } = context;
 
     const {
@@ -609,14 +612,18 @@ function constructWithdrawalCommitment(
   postInstallRefundAppStateChannel: StateChannel,
   recipient: string,
   amount: BigNumber,
-  tokenAddress: string
+  tokenAddress: string,
+  provider: BaseProvider,
+  domainSeparator: DomainSeparator
 ) {
   if (tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
     return new WithdrawETHCommitment(
       postInstallRefundAppStateChannel.multisigAddress,
       postInstallRefundAppStateChannel.multisigOwners,
       recipient,
-      amount
+      amount,
+      domainSeparator,
+      provider.network.chainId,
     );
   }
   return new WithdrawERC20Commitment(
@@ -624,6 +631,8 @@ function constructWithdrawalCommitment(
     postInstallRefundAppStateChannel.multisigOwners,
     recipient,
     amount,
-    tokenAddress
+    tokenAddress,
+    domainSeparator,
+    provider.network.chainId,
   );
 }
