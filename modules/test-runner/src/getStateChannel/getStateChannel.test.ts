@@ -28,7 +28,7 @@ describe("Get State Channel", () => {
     expect(stateChannel.multisigAddress).to.be.eq(clientA.multisigAddress);
   });
 
-  it.only("Happy case: should return stateChannelJSON from store with proper version", async () => {
+  it("Happy case: should return stateChannelJSON from store with proper version", async () => {
     const stateChannel: StateChannelJSON = (await clientA.getStateChannel()).data;
     console.log(`expect ${stateChannel.schemaVersion} to = ${StateSchemaVersion}`);
     expect(stateChannel.schemaVersion).to.be.eq(StateSchemaVersion);
