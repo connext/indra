@@ -225,7 +225,7 @@ export class ConnextListener extends EventEmitter {
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
     const protocol =
       event === PROTOCOL_MESSAGE_EVENT ? (data.data ? data.data.protocol : data.protocol) : "";
-    this.log.info(`Recieved ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
+    this.log.info(`Received ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
     this.log.debug(`Emitted ${event} with data ${stringify(data)} at ${Date.now()}`);
     this.emit(event, data);
   };

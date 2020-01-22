@@ -1,4 +1,11 @@
-import { RECIEVE_TRANSFER_FINISHED_EVENT, RECIEVE_TRANSFER_STARTED_EVENT } from "@connext/types";
+import {
+  RECEIVE_TRANSFER_FAILED_EVENT,
+  RECEIVE_TRANSFER_FINISHED_EVENT,
+  RECEIVE_TRANSFER_STARTED_EVENT,
+  RECIEVE_TRANSFER_FAILED_EVENT,
+  RECIEVE_TRANSFER_FINISHED_EVENT,
+  RECIEVE_TRANSFER_STARTED_EVENT,
+} from "@connext/types";
 import { HashZero, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
@@ -38,7 +45,15 @@ export class ResolveConditionController extends AbstractController {
   // properly logs error and emits a receive transfer failed event
   private handleResolveErr = (paymentId: string, e: any): void => {
     this.log.error(`Failed to resolve linked transfer ${paymentId}: ${e.stack || e.message}`);
-    this.connext.emit("RECIEVE_TRANSFER_FAILED_EVENT", { paymentId });
+    this.connext.emit(RECEIVE_TRANSFER_FAILED_EVENT, {
+      paymentId,
+    });
+
+    // TODO: remove when deprecated
+    this.connext.emit(RECIEVE_TRANSFER_FAILED_EVENT, {
+      paymentId,
+      message: `This event has been deprecated in favor of ${RECEIVE_TRANSFER_FAILED_EVENT}`,
+    });
     throw e;
   };
 
@@ -127,7 +142,15 @@ export class ResolveConditionController extends AbstractController {
     );
     this.log.info(`Found link payment for ${amount} ${assetId}`);
 
-    this.connext.emit(RECIEVE_TRANSFER_STARTED_EVENT, { paymentId });
+    this.connext.emit(RECEIVE_TRANSFER_STARTED_EVENT, {
+      paymentId,
+    });
+
+    // TODO: remove when deprecated
+    this.connext.emit(RECIEVE_TRANSFER_STARTED_EVENT, {
+      paymentId,
+      message: `This event has been deprecated in favor of ${RECEIVE_TRANSFER_STARTED_EVENT}`,
+    });
 
     // convert and validate
     const amountBN = bigNumberify(amount);
@@ -179,7 +202,15 @@ export class ResolveConditionController extends AbstractController {
       );
     }
 
-    this.connext.emit(RECIEVE_TRANSFER_FINISHED_EVENT, { paymentId });
+    this.connext.emit(RECEIVE_TRANSFER_FINISHED_EVENT, {
+      paymentId,
+    });
+
+    // TODO: remove when deprecated
+    this.connext.emit(RECIEVE_TRANSFER_FINISHED_EVENT, {
+      paymentId,
+      message: `This event has been deprecated in favor of ${RECEIVE_TRANSFER_FINISHED_EVENT}`,
+    });
 
     return {
       appId,
