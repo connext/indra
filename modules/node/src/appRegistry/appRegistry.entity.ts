@@ -1,4 +1,3 @@
-import { SupportedNetwork, SupportedNetworks } from "@connext/types";
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 import { OutcomeType } from "../util/cfCore";
@@ -11,10 +10,8 @@ export class AppRegistry {
   @Column("text")
   name!: string;
 
-  @Column("enum", {
-    enum: SupportedNetworks,
-  })
-  network!: SupportedNetwork;
+  @Column("integer")
+  chainId!: number;
 
   @Column("enum", {
     enum: OutcomeType,

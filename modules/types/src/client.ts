@@ -14,7 +14,6 @@ import {
   IChannelProvider,
   KeyGen,
 } from "./channelProvider";
-import { SupportedNetwork } from "./contracts";
 import { ConnextEvent } from "./events";
 import {
   CheckDepositRightsParameters,
@@ -121,7 +120,7 @@ export interface IConnextClient {
     appDetails?:
       | {
           name: SupportedApplication;
-          network: SupportedNetwork;
+          chainId: number;
         }
       | { appDefinitionAddress: string },
   ): Promise<AppRegistry>;

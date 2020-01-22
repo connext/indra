@@ -18,9 +18,7 @@ export type ABIEncoding = string;
 export type Address = string;
 
 // This is copied from the ethers definition of how an ABI is typed.
-// tslint:disable-next-line:prefer-array-literal
 export type ContractABI = Array<string | ParamType> | string | Interface;
-
 
 export type SolidityPrimitiveType = string | BigNumberish | boolean;
 

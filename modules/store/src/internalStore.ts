@@ -7,8 +7,8 @@ import {
 } from "./helpers";
 
 class InternalStore {
-  private _store: StorageWrapper; // tslint:disable-line:variable-name
-  private _channelPrefix: string; // tslint:disable-line:variable-name
+  private _store: StorageWrapper;
+  private _channelPrefix: string;
 
   constructor(storage: Storage | IAsyncStorage, channelPrefix: string, asyncStorageKey?: string) {
     this._store = wrapStorage(storage, asyncStorageKey);

@@ -1,6 +1,6 @@
 import { AppRegistry, SupportedApplication } from "./app";
 import { BigNumber, Network, Transaction, TransactionResponse } from "./basic";
-import { NetworkContext, SupportedNetwork  } from "./contracts";
+import { NetworkContext } from "./contracts";
 import { CFCoreChannel, ChannelAppSequences, PaymentProfile } from "./channel";
 import { IChannelProvider } from "./channelProvider";
 import { ResolveLinkedTransferResponse } from "./inputs";
@@ -91,7 +91,7 @@ export interface INodeApiClient {
     appDetails?:
       | {
           name: SupportedApplication;
-          network: SupportedNetwork;
+          chainId: number;
         }
       | { appDefinitionAddress: string },
   ): Promise<AppRegistry>;

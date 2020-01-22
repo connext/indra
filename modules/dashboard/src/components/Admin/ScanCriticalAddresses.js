@@ -23,10 +23,10 @@ export const ScanCriticalAddresses = ({ messaging }) => {
     setDisabled(true);
     setResult(emptyResult);
     console.log(`Searching for historical addresses needed to deploy ${targetAddress}`);
+    console.log(`scanForCriticalAddresses is a ${typeof scanForCriticalAddresses}`);
     const res = await scanForCriticalAddresses(
       [ownerXpub1, ownerXpub2 ],
       targetAddress,
-      addressHistory["1"],
       getDefaultProvider("homestead"),
     );
     if (res) {

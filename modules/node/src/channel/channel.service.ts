@@ -282,7 +282,6 @@ export class ChannelService {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     if (!channel) {
       throw new Error(
-        // tslint:disable-next-line: max-line-length
         `Could not find channel associated with: ${userPublicIdentifier} in verifyAppSequenceNumber`,
       );
     }

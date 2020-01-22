@@ -18,7 +18,6 @@ import {
   RequestCollateralResponse,
   ResolveLinkedTransferResponse,
   SupportedApplication,
-  SupportedNetwork,
   Transfer,
 } from "../types";
 
@@ -130,7 +129,7 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public async appRegistry(appDetails?: {
     name: SupportedApplication;
-    network: SupportedNetwork;
+    chainId: number;
   }): Promise<AppRegistry> {
     return MockNodeClientApi.returnValues.appRegistry;
   }

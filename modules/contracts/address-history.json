@@ -38,6 +38,9 @@
       "0x8eb543b35DE94B0E636402C7cA32947b22853eDF",
       "0xc8d7Cf5638dfa5b79A070c5aC983716575bEF4B0",
       "0x8eb543b35DE94B0E636402C7cA32947b22853eDF"
+    ],
+    "MinimumViableMultisig": [
+      "0xe54f4EBeCE507477dFb86FA226394bdbA0b85d66"
     ]
   }
 }

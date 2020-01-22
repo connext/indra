@@ -9,6 +9,14 @@ export const createOrRetrieveNatsConnection = async (): Promise<Client> => {
     return natsConnection;
   }
 
-  natsConnection = await connect({ servers: [env.nodeUrl] });
+  try {
+    natsConnection = await connect({ servers: [env.nodeUrl] });
+  } catch (e) {
+    console.error(e);
+    console.error(`Attempting to create a nats connection again..`);
+    // Try one more time in case the first attempt timed out
+    natsConnection = await connect({ servers: [env.nodeUrl] });
+  }
+
   return natsConnection;
 };

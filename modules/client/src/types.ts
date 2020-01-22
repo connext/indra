@@ -81,7 +81,6 @@ export {
   StorePair,
   SupportedApplication,
   SupportedApplications,
-  SupportedNetwork,
   SwapParameters,
   Transfer,
   TransferCondition,

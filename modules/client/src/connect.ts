@@ -101,11 +101,6 @@ export const connect = async (
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
   const network = await ethProvider.getNetwork();
 
-  // special case for ganache
-  if (network.chainId === 4447) {
-    network.name = "ganache";
-  }
-
   // setup messaging and node api
   let node: INodeApiClient;
   let config: GetConfigResponse;
@@ -199,7 +194,6 @@ export const connect = async (
     node.nodePublicIdentifier = config.nodePublicIdentifier;
   } else {
     throw new Error(
-      // tslint:disable-next-line:max-line-length
       "Client must be instantiated with xpub and keyGen, " +
       "or a channelProvider if not using mnemonic",
     );
@@ -264,7 +258,7 @@ export const connect = async (
 
   // Make sure our state schema is up-to-date
   const { data: sc } = await client.getStateChannel();
-  if (!sc.schemaVersion || sc.schemaVersion !== StateSchemaVersion) {
+  if (!sc.schemaVersion || sc.schemaVersion !== StateSchemaVersion || !sc.addresses) {
     log.debug("State schema is out-of-date, restoring an up-to-date client state");
     await client.restoreState();
   }

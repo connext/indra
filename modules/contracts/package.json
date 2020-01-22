@@ -10,8 +10,7 @@
     "build": "waffle waffle.json && ./node_modules/.bin/tsc -p tsconfig.json",
     "build-native": "waffle waffle.native.json",
     "test": "ts-mocha test/**/*",
-    "lint-sol": "solium -d .",
-    "lint-ts": "tslint -c tslint.json test/**/*.ts"
+    "lint-sol": "solium -d ."
   },
   "dependencies": {
     "@connext/types": "3.0.1",
@@ -29,7 +28,6 @@
     "mocha": "6.2.2",
     "ts-mocha": "6.0.0",
     "ts-node": "8.5.4",
-    "tslint": "5.20.1",
     "typescript": "3.5.3"
   }
 }

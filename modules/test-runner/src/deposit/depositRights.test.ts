@@ -18,7 +18,6 @@ describe("Deposits", () => {
     clientA = await createClient();
   });
 
-  // tslint:disable-next-line:max-line-length
   it("happy case: client should request deposit rights and deposit ETH", async () => {
     await clientA.requestDepositRights({ assetId: AddressZero });
     const { [clientA.freeBalanceAddress]: preDeposit } = await clientA.getFreeBalance(AddressZero);
@@ -42,7 +41,6 @@ describe("Deposits", () => {
     );
   });
 
-  // tslint:disable-next-line:max-line-length
   it("happy case: client should request deposit rights and deposit token", async () => {
     const tokenAddress = clientA.config.contractAddresses.Token;
     await clientA.requestDepositRights({ assetId: tokenAddress });

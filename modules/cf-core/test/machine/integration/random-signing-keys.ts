@@ -4,7 +4,6 @@ import { fromExtendedKey } from "ethers/utils/hdnode";
 import { computeRandomExtendedPrvKey } from "../../../src/machine/xkeys";
 
 export function getSortedRandomSigningKeys(length: number) {
-  // tslint:disable-next-line:prefer-array-literal
   return Array(length)
     .fill(0)
     .map(_ => new SigningKey(hexlify(randomBytes(32))))
