@@ -8,7 +8,7 @@ import {
   CFChannelProviderOptions,
   CFCoreTypes,
   ChannelProviderConfig,
-  ChannelProviderRpcMethod,
+  ConnextRpcMethod,
   IChannelProvider,
   IRpcConnection,
   JsonRpcRequest,
@@ -48,7 +48,7 @@ export const createCFChannelProvider = async ({
     connection,
     channelProviderConfig,
     store,
-    await keyGen("0"),
+    await keyGen(`0`),
   );
   return channelProvider;
 };
@@ -129,27 +129,27 @@ export class ChannelProvider extends EventEmitter implements IChannelProvider {
     return this.config;
   };
 
-  public send = async (method: ChannelProviderRpcMethod, params: any = {}): Promise<any> => {
+  public send = async (method: ConnextRpcMethod, params: any = {}): Promise<any> => {
     let result;
     switch (method) {
-      case "chan_storeSet":
-        result = await this.set(params.pairs);
-        break;
-      case "chan_storeGet":
-        result = await this.get(params.path);
-        break;
-      case "chan_nodeAuth":
-        result = await this.signMessage(params.message);
-        break;
-      case "chan_config":
-        result = this.config;
-        break;
-      case "chan_restoreState":
-        result = await this.restoreState(params.path);
-        break;
-      default:
-        result = await this._send(method, params);
-        break;
+    case `chan_storeSet`:
+      result = await this.set(params.pairs);
+      break;
+    case `chan_storeGet`:
+      result = await this.get(params.path);
+      break;
+    case `chan_nodeAuth`:
+      result = await this.signMessage(params.message);
+      break;
+    case `chan_config`:
+      result = this.config;
+      break;
+    case `chan_restoreState`:
+      result = await this.restoreState(params.path);
+      break;
+    default:
+      result = await this._send(method, params);
+      break;
     }
     return result;
   };
@@ -243,7 +243,7 @@ export class ChannelProvider extends EventEmitter implements IChannelProvider {
   public _send = async (method: CFCoreTypes.RpcMethodName, params: RpcParameters): Promise<any> => {
     const payload = {
       id: Date.now(),
-      jsonrpc: "2.0",
+      jsonrpc: `2.0`,
       method,
       params,
     };

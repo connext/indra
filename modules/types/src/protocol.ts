@@ -222,6 +222,24 @@ export namespace ProtocolTypes {
   };
   export type RpcMethodName = keyof typeof RpcMethodNames;
 
+  export const chan_config = `chan_config`;
+  export const chan_nodeAuth = `chan_nodeAuth`;
+  export const chan_restoreState = `chan_restoreState`;
+  export const chan_storeGet = `chan_storeGet`;
+  export const chan_storeSet = `chan_storeSet`;
+
+  // TODO: merge ConnextRpcMethods and RpcMethodNames???
+
+  export const ConnextRpcMethods = {
+    ...ProtocolTypes.RpcMethodNames,
+    [chan_config]: chan_config,
+    [chan_nodeAuth]: chan_nodeAuth,
+    [chan_restoreState]: chan_restoreState,
+    [chan_storeGet]: chan_storeGet,
+    [chan_storeSet]: chan_storeSet,
+  };
+  export type ConnextRpcMethod = keyof typeof ConnextRpcMethods;
+
   export type CreateChannelParams = {
     owners: string[];
   };

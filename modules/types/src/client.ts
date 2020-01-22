@@ -1,19 +1,8 @@
 import { AppInstanceJson } from "./app";
-import {
-  AppActionBigNumber,
-  AppRegistry,
-  AppState,
-  DefaultApp,
-  SupportedApplication,
-} from "./app";
+import { AppActionBigNumber, AppRegistry, AppState, DefaultApp, SupportedApplication } from "./app";
 import { BigNumber, Contract, JsonRpcProvider, Network } from "./basic";
 import { CFCoreChannel, ChannelAppSequences, ChannelState, PaymentProfile } from "./channel";
-import {
-  ChannelProviderConfig,
-  ChannelProviderRpcMethod,
-  IChannelProvider,
-  KeyGen,
-} from "./channelProvider";
+import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvider";
 import { ConnextEvent } from "./events";
 import {
   CheckDepositRightsParameters,
@@ -40,7 +29,7 @@ import {
   RequestCollateralResponse,
   Transfer,
 } from "./node";
-import { ProtocolTypes } from "./protocol";
+import { ProtocolTypes, ConnextRpcMethod } from "./protocol";
 import { IAsyncStorage, IBackupServiceAPI, Store } from "./store";
 
 export type InternalClientOptions = ClientOptions & {
@@ -89,9 +78,9 @@ export interface IConnextClient {
 
   ///////////////////////////////////
   // LISTENER METHODS
-  on(event: ConnextEvent | ChannelProviderRpcMethod, callback: (...args: any[]) => void): void;
-  once(event: ConnextEvent | ChannelProviderRpcMethod, callback: (...args: any[]) => void): void;
-  emit(event: ConnextEvent | ChannelProviderRpcMethod, data: any): boolean;
+  on(event: ConnextEvent | ConnextRpcMethod, callback: (...args: any[]) => void): void;
+  once(event: ConnextEvent | ConnextRpcMethod, callback: (...args: any[]) => void): void;
+  emit(event: ConnextEvent | ConnextRpcMethod, data: any): boolean;
 
   ///////////////////////////////////
   // CORE CHANNEL METHODS
