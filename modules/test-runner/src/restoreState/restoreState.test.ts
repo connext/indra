@@ -32,7 +32,7 @@ describe(`Restore State`, () => {
     expect(freeBalanceTokenPre[nodeFreeBalanceAddress].toString()).to.be.eq(TOKEN_AMOUNT.toString());
 
     // delete store
-    const store = getStore();
+    const store = getStore(clientA.publicIdentifier);
     store.reset();
 
     // check that getting balances will now error

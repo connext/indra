@@ -20,7 +20,7 @@ describe(`Get State Channel`, () => {
     tokenAddress = clientA.config.contractAddresses.Token;
     await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
-    store = getStore();
+    store = getStore(clientA.publicIdentifier);
   });
 
   it(`Happy case: should return stateChannelJSON from store with multisig address`, async () => {
