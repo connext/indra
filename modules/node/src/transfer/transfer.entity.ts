@@ -149,8 +149,8 @@ export enum TransferType {
       "receiver_channel"."userPublicIdentifier" as "receiverPublicIdentifier",
       "peer_to_peer_transfer"."createdAt" as "createdAt",
       "peer_to_peer_transfer"."meta" as "meta",
-      "peer_to_peer_transfer"."status" as "status",
-      ${TransferType.P2P} as "type"
+      "peer_to_peer_transfer"."status"::TEXT as "status",
+      '${TransferType.P2P}' as "type"
     FROM "peer_to_peer_transfer"
     LEFT JOIN "channel" as "receiver_channel"
       ON "receiver_channel"."id" = "peer_to_peer_transfer"."receiverChannelId"
@@ -158,15 +158,15 @@ export enum TransferType {
       ON "sender_channel"."id" = "peer_to_peer_transfer"."senderChannelId"
     UNION ALL
     SELECT
-      "linked_transfer"."payment_id" as "payment_id",
+      "linked_transfer"."id" as "payment_id",
       "linked_transfer"."amount" as "amount",
       "linked_transfer"."assetId" as "assetId",
       "sender_channel"."userPublicIdentifier" as "senderPublicIdentifier",
       "receiver_channel"."userPublicIdentifier" as "receiverPublicIdentifier",
       "linked_transfer"."createdAt" as "createdAt",
       "linked_transfer"."meta" as "meta",
-      "linked_transfer"."status" as "status",
-      ${TransferType.LINKED} as "type"
+      "linked_transfer"."status"::TEXT as "status",
+      '${TransferType.LINKED}' as "type"
     FROM "linked_transfer"
     LEFT JOIN "channel" as "receiver_channel"
       ON "receiver_channel"."id" = "linked_transfer"."receiverChannelId"

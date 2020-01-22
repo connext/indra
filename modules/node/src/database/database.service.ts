@@ -1,6 +1,15 @@
 import { Injectable } from "@nestjs/common";
 import { TypeOrmModuleOptions, TypeOrmOptionsFactory } from "@nestjs/typeorm";
 
+import { AppRegistry } from "../appRegistry/appRegistry.entity";
+import { CFCoreRecord } from "../cfCore/cfCore.entity";
+import { Channel } from "../channel/channel.entity";
+import { ConfigService } from "../config/config.service";
+import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
+import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
+import { LinkedTransfer, PeerToPeerTransfer, Transfer } from "../transfer/transfer.entity";
+
+// Import Migrations
 import { InitNodeRecords1567158660577 } from "../../migrations/1567158660577-init-node-records";
 import { InitHubTables1567158805166 } from "../../migrations/1567158805166-init-hub-tables";
 import { AddCollateralizationInFlight1567601573372 } from "../../migrations/1567601573372-add-collateralization-in-flight";
@@ -11,13 +20,6 @@ import { AddTransferView1571072372000 } from "../../migrations/1571072372000-add
 import { AddTransferMetas1574449936874 } from "../../migrations/1574449936874-add-transfer-metas";
 import { AddCfcoreTimestamps1574451273832 } from "../../migrations/1574451273832-add-cfcore-timestamps";
 import { EditViewTable1578621554000 } from "../../migrations/1578621554000-edit-view-table";
-import { AppRegistry } from "../appRegistry/appRegistry.entity";
-import { CFCoreRecord } from "../cfCore/cfCore.entity";
-import { Channel } from "../channel/channel.entity";
-import { ConfigService } from "../config/config.service";
-import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
-import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
-import { LinkedTransfer, PeerToPeerTransfer, Transfer } from "../transfer/transfer.entity";
 
 export const entities = [
   AppRegistry,

@@ -357,7 +357,7 @@ types: node-modules $(shell find $(types)/src $(find_options))
 ########################################
 # Common Prerequisites
 
-contracts: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.json $(contracts)/*.json $(find_options))
+contracts: node-modules $(shell find $(contracts)/contracts $(contracts)/*.ts $(contracts)/*.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/contracts && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
