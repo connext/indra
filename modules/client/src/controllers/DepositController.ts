@@ -17,6 +17,7 @@ import {
 import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
+import { CoinBalanceRefundApp } from "@connext/types";
 
 // TODO: refactor to use unrolled version
 export class DepositController extends AbstractController {
@@ -104,9 +105,7 @@ export class DepositController extends AbstractController {
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = this.connext.getRegisteredAppDetails(
-      SupportedApplications.CoinBalanceRefundApp as SupportedApplication,
-    );
+    } = this.connext.getRegisteredAppDetails(CoinBalanceRefundApp);
 
     const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {

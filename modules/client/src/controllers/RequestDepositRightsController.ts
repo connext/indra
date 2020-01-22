@@ -16,6 +16,7 @@ import {
 import { invalidAddress, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
+import { CoinBalanceRefundApp } from "@connext/types";
 
 export class RequestDepositRightsController extends AbstractController {
   public requestDepositRights = async (
@@ -102,7 +103,7 @@ export class RequestDepositRightsController extends AbstractController {
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = this.connext.getRegisteredAppDetails(SupportedApplications.CoinBalanceRefundApp as any);
+    } = this.connext.getRegisteredAppDetails(CoinBalanceRefundApp);
 
     const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {

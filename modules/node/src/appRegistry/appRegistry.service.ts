@@ -7,6 +7,10 @@ import {
   SimpleLinkedTransferAppStateBigNumber,
   SimpleTransferAppStateBigNumber,
   SupportedApplications,
+  CoinBalanceRefundApp,
+  SimpleLinkedTransferApp,
+  SimpleTwoPartySwapApp,
+  SimpleTransferApp,
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
@@ -33,7 +37,7 @@ import { CFCoreTypes, ProposeMessage } from "../util/cfCore";
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
 
-const logger = new CLogger("AppRegistryService");
+const logger = new CLogger(`AppRegistryService`);
 
 const ALLOWED_DISCREPANCY_PCT = 5;
 
@@ -58,7 +62,7 @@ export class AppRegistryService {
   async allowOrReject(data: ProposeMessage): Promise<AppRegistry | void> {
     try {
       const registryAppInfo = await this.verifyAppProposal(data.data, data.from);
-      if (registryAppInfo.name === SupportedApplications.CoinBalanceRefundApp) {
+      if (registryAppInfo.name === CoinBalanceRefundApp) {
         logger.log(`Not installing coin balance refund app, returning registry information`);
         return registryAppInfo;
       }
@@ -281,7 +285,7 @@ export class AppRegistryService {
 
       // check that linked transfer app has been installed from sender
       const defaultApp = (await this.configService.getDefaultApps()).find(
-        (app: DefaultApp) => app.name === SupportedApplications.SimpleLinkedTransferApp,
+        (app: DefaultApp) => app.name === SimpleLinkedTransferApp,
       );
       const installedApps = await this.cfCoreService.getAppInstances();
       const senderApp = installedApps.find(
@@ -373,7 +377,7 @@ export class AppRegistryService {
     if (
       responderDeposit.isZero() &&
       initiatorDeposit.isZero() &&
-      appInfo.name !== SupportedApplications.CoinBalanceRefundApp
+      appInfo.name !== CoinBalanceRefundApp
     ) {
       throw new Error(
         `Cannot install an app with zero valued deposits for both initiator and responder.`,
@@ -443,15 +447,15 @@ export class AppRegistryService {
     await this.commonAppProposalValidation(proposedAppParams.params, initiatorIdentifier);
 
     switch (registryAppInfo.name) {
-      case SupportedApplications.SimpleTwoPartySwapApp:
-        await this.validateSwap(proposedAppParams.params);
-        break;
+    case SimpleTwoPartySwapApp:
+      await this.validateSwap(proposedAppParams.params);
+      break;
       // TODO: add validation of simple transfer validateSimpleTransfer
-      case SupportedApplications.SimpleLinkedTransferApp:
-        await this.validateSimpleLinkedTransfer(proposedAppParams.params);
-        break;
-      default:
-        break;
+    case SimpleLinkedTransferApp:
+      await this.validateSimpleLinkedTransfer(proposedAppParams.params);
+      break;
+    default:
+      break;
     }
     logger.log(`Validation completed for app ${registryAppInfo.name}`);
     return registryAppInfo;
@@ -473,7 +477,7 @@ export class AppRegistryService {
 
     const registryAppInfo = await this.appProposalMatchesRegistry(proposedAppParams.params);
 
-    if (registryAppInfo.name !== "SimpleTransferApp") {
+    if (registryAppInfo.name !== `SimpleTransferApp`) {
       logger.debug(
         `Caught propose install virtual for what should always be a regular app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
       );
@@ -511,20 +515,20 @@ export class AppRegistryService {
     }
 
     switch (registryAppInfo.name) {
-      case SupportedApplications.SimpleTransferApp:
-        // TODO: move this to install
-        // TODO: this doesn't work with the new paradigm, we won't know this info
-        await this.transferService.savePeerToPeerTransfer(
-          initiatorIdentifier,
-          proposedAppParams.params.proposedToIdentifier,
-          proposedAppParams.params.initiatorDepositTokenAddress,
-          bigNumberify(proposedAppParams.params.initiatorDeposit),
-          proposedAppParams.appInstanceId,
-          proposedAppParams.params.meta,
-        );
-        break;
-      default:
-        break;
+    case SimpleTransferApp:
+      // TODO: move this to install
+      // TODO: this doesn't work with the new paradigm, we won't know this info
+      await this.transferService.savePeerToPeerTransfer(
+        initiatorIdentifier,
+        proposedAppParams.params.proposedToIdentifier,
+        proposedAppParams.params.initiatorDepositTokenAddress,
+        bigNumberify(proposedAppParams.params.initiatorDeposit),
+        proposedAppParams.appInstanceId,
+        proposedAppParams.params.meta,
+      );
+      break;
+    default:
+      break;
     }
     logger.log(`Validation completed for app ${registryAppInfo.name}`);
   }

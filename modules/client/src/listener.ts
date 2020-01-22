@@ -42,6 +42,8 @@ import {
   WITHDRAWAL_CONFIRMED_EVENT,
   WITHDRAWAL_FAILED_EVENT,
   WITHDRAWAL_STARTED_EVENT,
+  CoinBalanceRefundApp,
+  SimpleTwoPartySwapApp,
 } from "@connext/types";
 
 // TODO: index of connext events only?
@@ -103,7 +105,7 @@ export class ConnextListener extends EventEmitter {
       await this.verifyAndInstallKnownApp(msg, matchedApp);
       // only publish for coin balance refund app
       const coinBalanceDef = this.connext.appRegistry.filter(
-        (app: DefaultApp) => app.name === SupportedApplications.CoinBalanceRefundApp,
+        (app: DefaultApp) => app.name === CoinBalanceRefundApp,
       )[0];
       if (params.appDefinition !== coinBalanceDef.appDefinitionAddress) {
         this.log.info(`not sending propose message, not the coinbalance refund app`);
@@ -296,12 +298,12 @@ export class ConnextListener extends EventEmitter {
     // to controller
     // this means the hub can only install apps, and cannot propose a swap
     // and there cant easily be an automatic install swap app between users
-    if (matchedApp.name === SupportedApplications.SimpleTwoPartySwapApp) {
+    if (matchedApp.name === SimpleTwoPartySwapApp) {
       return;
     }
 
     // dont automatically install coin balance refund app
-    if (matchedApp.name === SupportedApplications.CoinBalanceRefundApp) {
+    if (matchedApp.name === CoinBalanceRefundApp) {
       return;
     }
 

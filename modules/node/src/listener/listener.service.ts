@@ -18,6 +18,8 @@ import {
   WITHDRAWAL_FAILED_EVENT,
   WITHDRAWAL_STARTED_EVENT,
   ProtocolTypes,
+  SimpleLinkedTransferApp,
+  CoinBalanceRefundApp,
 } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -139,7 +141,7 @@ export default class ListenerService implements OnModuleInit {
 
         // post-install tasks
         switch (allowedOrRejected.name) {
-        case SupportedApplications.SimpleLinkedTransferApp:
+        case SimpleLinkedTransferApp:
           logger.debug(`Saving linked transfer`);
           const initialState = proposedAppParams.initialState as SimpleLinkedTransferAppStateBigNumber;
 
@@ -165,7 +167,7 @@ export default class ListenerService implements OnModuleInit {
           logger.debug(`Linked transfer saved!`);
           break;
           // TODO: add something for swap app? maybe for history preserving reasons.
-        case SupportedApplications.CoinBalanceRefundApp:
+        case CoinBalanceRefundApp:
           const channel = await this.channelRepository.findByUserPublicIdentifier(initiatorXpub);
           if (!channel) {
             throw new Error(`Channel does not exist for ${initiatorXpub}`);
