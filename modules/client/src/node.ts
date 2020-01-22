@@ -30,7 +30,7 @@ const guardedSubjects = ["channel", "client", "lock", "transfer"];
 const sendFailed = "Failed to send message";
 
 // NOTE: swap rates are given as a decimal string describing:
-// Given 1 unit of `from`, how many units `to` are recieved.
+// Given 1 unit of `from`, how many units `to` are received.
 // eg the rate string might be "202.02" if 1 eth can be swapped for 202.02 dai
 
 export class NodeApiClient implements INodeApiClient {

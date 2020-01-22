@@ -90,7 +90,7 @@ describe("ChannelProvider", () => {
         );
       }),
       new Promise(async resolve => {
-        clientB.once("RECIEVE_TRANSFER_FINISHED_EVENT", async () => {
+        clientB.once("RECEIVE_TRANSFER_FINISHED_EVENT", async () => {
           resolve();
         });
       }),

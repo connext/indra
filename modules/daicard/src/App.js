@@ -312,18 +312,18 @@ class App extends React.Component {
       this.setState({ swapRate: res.swapRate });
     });
 
-    channel.on("RECIEVE_TRANSFER_STARTED", data => {
-      console.log("Received RECIEVE_TRANSFER_STARTED event: ", data);
+    channel.on("RECEIVE_TRANSFER_STARTED", data => {
+      console.log("Received RECEIVE_TRANSFER_STARTED event: ", data);
       machine.send("START_RECEIVE");
     });
 
-    channel.on("RECIEVE_TRANSFER_FINISHED", data => {
-      console.log("Received RECIEVE_TRANSFER_FINISHED event: ", data);
+    channel.on("RECEIVE_TRANSFER_FINISHED", data => {
+      console.log("Received RECEIVE_TRANSFER_FINISHED event: ", data);
       machine.send("SUCCESS_RECEIVE");
     });
 
-    channel.on("RECIEVE_TRANSFER_FAILED", data => {
-      console.log("Received RECIEVE_TRANSFER_FAILED event: ", data);
+    channel.on("RECEIVE_TRANSFER_FAILED", data => {
+      console.log("Received RECEIVE_TRANSFER_FAILED event: ", data);
       machine.send("ERROR_RECEIVE");
     });
 
