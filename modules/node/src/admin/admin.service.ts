@@ -1,4 +1,3 @@
-import { addressHistory } from "@connext/contracts";
 import {
   ConnextNodeStorePrefix,
   CriticalStateChannelAddresses,
@@ -162,7 +161,6 @@ export class AdminService {
       return output;
     }
     logger.log(`Preparing to repair ${output.broken.length} channels`);
-    const chainId = (await this.configService.getEthNetwork()).chainId;
     // Make a copy of broken multisigs so we can edit the output while looping through it
     const brokenMultisigs = JSON.parse(JSON.stringify(output.broken));
     // Second loop: attempt to repair broken channels
@@ -172,7 +170,6 @@ export class AdminService {
       const criticalAddresses = await scanForCriticalAddresses(
         state.userNeuteredExtendedKeys,
         state.multisigAddress,
-        addressHistory[chainId],
         this.configService.getEthProvider(),
       );
       if (!criticalAddresses) {

@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import Button from "@material-ui/core/Button";
 import Grid from "@material-ui/core/Grid";
 import Snackbar from "@material-ui/core/Snackbar";
-import TextField from '@material-ui/core/TextField';
 
 export const RepairCriticalAddresses = ({ messaging }) => {
   const [repaired, setRepaired] = useState({ repairedChannels: [] });
@@ -32,11 +31,6 @@ export const RepairCriticalAddresses = ({ messaging }) => {
       >
         Ask Node To Repair All Channels With Incorrect Critical Addresses
       </Button>
-      <Snackbar
-        open={open}
-        autoHideDuration={6000}
-        message={`${repaired.broken ? repaired.broken.length : 0} channels are still broken`}
-      />
       <Snackbar
         open={open}
         autoHideDuration={6000}
