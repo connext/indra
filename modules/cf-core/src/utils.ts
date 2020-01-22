@@ -171,8 +171,8 @@ export const scanForCriticalAddresses = async (
   },
 ): Promise<void | { [key: string]: string|boolean }> => {
   const chainId = (await ethProvider.getNetwork()).chainId;
-
   // First, consolidate all sources of addresses to scan
+
   let toxicBytecodes: string[] = [];
   if(addressHistory[chainId] && addressHistory[chainId].ToxicBytecode) {
     toxicBytecodes = toxicBytecodes.concat(addressHistory[chainId].ToxicBytecode);
@@ -182,31 +182,34 @@ export const scanForCriticalAddresses = async (
   }
   // Falsy toxic bytecode (ie "") causes getCreate2MultisigAddress to fetch non-toxic value
   toxicBytecodes.push("");
-  console.log(`Scanning toxic bytecode: ${toxicBytecodes}`);
+  toxicBytecodes = [...new Set(toxicBytecodes)]; // de-dup
+  //console.log(`Scanning toxic bytecode: ${toxicBytecodes}`);
 
   let mastercopies: string[] = [];
   if(addressHistory[chainId] && addressHistory[chainId].MinimumViableMultisig) {
     mastercopies = mastercopies.concat(addressHistory[chainId].MinimumViableMultisig);
   }
   if(addressBook[chainId] && addressBook[chainId].MinimumViableMultisig) {
-    mastercopies.push(addressBook[chainId].MinimumViableMultisig);
+    mastercopies.push(addressBook[chainId].MinimumViableMultisig.address);
   }
   if (moreAddressHistory && moreAddressHistory.MinimumViableMultisig) {
     mastercopies = mastercopies.concat(moreAddressHistory.MinimumViableMultisig);
   }
-  console.log(`Scanning multisig mastercopies: ${mastercopies}`);
+  mastercopies = [...new Set(mastercopies)]; // de-dup
+  //console.log(`Scanning multisig mastercopies: ${mastercopies}`);
 
   let proxyFactories: string[] = [];
   if(addressHistory[chainId] && addressHistory[chainId].ProxyFactory) {
     proxyFactories = proxyFactories.concat(addressHistory[chainId].ProxyFactory);
   }
   if(addressBook[chainId] && addressBook[chainId].ProxyFactory) {
-    mastercopies.push(addressBook[chainId].ProxyFactory);
+    mastercopies.push(addressBook[chainId].ProxyFactory.address);
   }
   if (moreAddressHistory && moreAddressHistory.ProxyFactory) {
     proxyFactories = proxyFactories.concat(moreAddressHistory.ProxyFactory);
   }
-  console.log(`Scanning proxy factories: ${proxyFactories}`);
+  proxyFactories = [...new Set(proxyFactories)]; // de-dup
+  //console.log(`Scanning proxy factories: ${proxyFactories}`);
 
   // Second, scan these addresses looking for ones that match the given multisg
   for (const legacyKeygen of [false, true]) {
