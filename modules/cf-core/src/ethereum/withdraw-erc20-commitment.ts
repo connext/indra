@@ -1,9 +1,9 @@
 import { BigNumberish, Interface } from "ethers/utils";
 
 import { ERC20 } from "../contracts";
+import { MultisigOperation, MultisigTransaction } from "../types";
 
 import { MultisigCommitment } from "./multisig-commitment";
-import { MultisigOperation, MultisigTransaction } from "./types";
 
 export class WithdrawERC20Commitment extends MultisigCommitment {
   public constructor(

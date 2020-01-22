@@ -1,7 +1,6 @@
-import { TransactionResponse } from "ethers/providers";
-import { BigNumber } from "ethers/utils";
-
-import { Address, AppInstanceJson, CFCoreTypes } from "./cf";
+import { AppInstanceJson } from "./app";
+import { Address, BigNumber, TransactionResponse } from "./basic";
+import { ProtocolTypes } from "./protocol";
 
 ////////////////////////////////////
 ////// CHANNEL TYPES
@@ -40,7 +39,7 @@ export type ChannelState<T = string> = {
   apps: AppInstanceJson[]; // result of getApps()
   // TODO: CF types should all be generic, this will be
   // a BigNumber
-  freeBalance: CFCoreTypes.GetFreeBalanceStateResult;
+  freeBalance: ProtocolTypes.GetFreeBalanceStateResult;
 };
 export type ChannelStateBigNumber = ChannelState<BigNumber>;
 

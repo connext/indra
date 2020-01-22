@@ -9,10 +9,6 @@ import {
   UpdateProtocolParams,
   WithdrawProtocolParams
 } from "../machine";
-import {
-  ProposeInstallProtocolParams,
-  ProtocolParameters
-} from "../machine/types";
 import { NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../methods/errors";
 import { StateChannel } from "../models";
 import { UNASSIGNED_SEQ_NO } from "../protocol/utils/signature-forwarder";
@@ -21,11 +17,12 @@ import RpcRouter from "../rpc-router";
 import {
   EventEmittedMessage,
   NetworkContext,
-  NODE_EVENTS,
+  NodeEvent,
   NodeMessageWrappedProtocolMessage,
+  ProposeInstallProtocolParams,
+  ProtocolParameters,
   SolidityValueType,
   WithdrawStartedMessage,
-  NodeEvent
 } from "../types";
 import { bigNumberifyJson } from "../utils";
 import { Store } from "../store";

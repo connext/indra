@@ -8,7 +8,7 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
 import { Protocol, xkeyKthAddress } from "../../../../src/machine";
 import { sortAddresses } from "../../../../src/machine/xkeys";
 import { getCreate2MultisigAddress } from "../../../../src/utils";
-import { IdentityApp, Proxy } from "../../../contracts";
+import { IdentityApp } from "../../../contracts";
 import { toBeEq } from "../bignumber-jest-matcher";
 import { connectToGanache } from "../connect-ganache";
 import { MessageRouter } from "../message-router";
@@ -37,7 +37,7 @@ export class TestRunner {
   private mr!: MessageRouter;
 
   async connectToGanache(): Promise<void> {
-    const [provider, wallet, {}] = await connectToGanache();
+    const [provider, wallet] = await connectToGanache();
     this.provider = provider;
     const network = global["networkContext"];
 
@@ -51,26 +51,30 @@ export class TestRunner {
     this.mininodeB = new MiniNode(network, provider);
     this.mininodeC = new MiniNode(network, provider);
 
-    const proxyBytecode = Proxy.evm.bytecode.object;
-
     this.multisigAB = await getCreate2MultisigAddress(
       [this.mininodeA.xpub, this.mininodeB.xpub],
-      network.ProxyFactory,
-      network.MinimumViableMultisig,
+      {
+        proxyFactory: network.ProxyFactory,
+        multisigMastercopy: network.MinimumViableMultisig
+      },
       provider
     );
 
     this.multisigAC = await getCreate2MultisigAddress(
       [this.mininodeA.xpub, this.mininodeC.xpub],
-      network.ProxyFactory,
-      network.MinimumViableMultisig,
+      {
+        proxyFactory: network.ProxyFactory,
+        multisigMastercopy: network.MinimumViableMultisig
+      },
       provider
     );
 
     this.multisigBC = await getCreate2MultisigAddress(
       [this.mininodeB.xpub, this.mininodeC.xpub],
-      network.ProxyFactory,
-      network.MinimumViableMultisig,
+      {
+        proxyFactory: network.ProxyFactory,
+        multisigMastercopy: network.MinimumViableMultisig
+      },
       provider
     );
 

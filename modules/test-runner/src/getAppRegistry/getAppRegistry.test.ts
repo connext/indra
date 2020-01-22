@@ -1,4 +1,4 @@
-import { addresses } from "@connext/contracts";
+import { addressBook } from "@connext/contracts";
 import { DefaultApp, IConnextClient } from "@connext/types";
 
 import { expect } from "../util";
@@ -11,7 +11,7 @@ describe("Get App Registry", () => {
     name: "ganache",
     id: "4447",
   };
-  const expectedAddresses = addresses[expectedNetwork.id];
+  const expectedAddresses = addressBook[expectedNetwork.id];
   beforeEach(async () => {
     client = await createClient();
     expect(client.multisigAddress).to.exist;
@@ -29,7 +29,7 @@ describe("Get App Registry", () => {
     appRegistry.forEach((app: DefaultApp) => verifyApp(app));
   });
 
-  it("Happy case: user receives registry information for specific app using name and network", async () => {
+  it("Happy case: user receives registry information for specific app", async () => {
     const appRegistry = await client.getAppRegistry({
       name: "CoinBalanceRefundApp",
       network: "ganache",

@@ -1,6 +1,6 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import { ConnextStore } from "@connext/store";
-import { CF_PATH } from "@connext/types";
+import { CF_PATH, StateSchemaVersion } from "@connext/types";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -104,10 +104,6 @@ export const connect = async (
   // special case for ganache
   if (network.chainId === 4447) {
     network.name = "ganache";
-    // Enforce using provided signer, not via RPC
-    ethProvider.getSigner = (addressOrIndex?: string | number): any => {
-      throw { code: "UNSUPPORTED_OPERATION" };
-    };
   }
 
   // setup messaging and node api
@@ -204,7 +200,8 @@ export const connect = async (
   } else {
     throw new Error(
       // tslint:disable-next-line:max-line-length
-      `Client must be instantiated with xpub and keyGen, or a channelProvider if not using mnemonic`,
+      "Client must be instantiated with xpub and keyGen, " +
+      "or a channelProvider if not using mnemonic",
     );
   }
 
@@ -256,7 +253,7 @@ export const connect = async (
   try {
     await client.getFreeBalance();
   } catch (e) {
-    if (e.message.includes(`StateChannel does not exist yet`)) {
+    if (e.message.includes("StateChannel does not exist yet")) {
       log.debug(`Restoring client state: ${e.stack || e.message}`);
       await client.restoreState();
     } else {
@@ -265,10 +262,10 @@ export const connect = async (
     }
   }
 
-  // 12/11/2019 make sure state is restored if there is no proxy factory in the state
+  // Make sure our state schema is up-to-date
   const { data: sc } = await client.getStateChannel();
-  if (!sc.proxyFactoryAddress) {
-    log.debug(`No proxy factory address found, restoring client state`);
+  if (!sc.schemaVersion || sc.schemaVersion !== StateSchemaVersion) {
+    log.debug("State schema is out-of-date, restoring an up-to-date client state");
     await client.restoreState();
   }
 

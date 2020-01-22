@@ -45,7 +45,7 @@ export class MemoryStoreService implements CFCoreTypes.IStoreService {
   }
 }
 
-export class MemoryStoreServiceFactory implements CFCoreTypes.ServiceFactory {
+export class MemoryStoreServiceFactory {
   constructor(private readonly delay: number = 0) {}
   createStoreService() {
     return new MemoryStoreService(this.delay);

@@ -2,10 +2,16 @@ import {
   AppABIEncodings,
   AppInstanceJson,
   AppInstanceProposal,
-  ContractABI,
   CFCoreTypes,
+  ContractABI,
+  CreateChannelMessage,
+  InstallMessage,
+  InstallVirtualMessage,
   OutcomeType,
-  SolidityValueType
+  ProposeMessage,
+  SolidityValueType,
+  UninstallMessage,
+  UninstallVirtualMessage,
 } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
@@ -13,16 +19,9 @@ import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
 import {
-  CreateChannelMessage,
-  InstallMessage,
-  InstallVirtualMessage,
   JsonRpcResponse,
   Node,
-  NODE_EVENTS,
-  ProposeMessage,
   Rpc,
-  UninstallMessage,
-  UninstallVirtualMessage
 } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import { DolphinCoin, NetworkContextForTestSuite } from "../contracts";
@@ -41,10 +40,10 @@ import {
 import {
   DepositConfirmationMessage,
   DepositStartedMessage,
-  EventEmittedMessage
+  EventEmittedMessage,
+  ProposeInstallProtocolParams,
 } from "../../src/types";
 import { deBigNumberifyJson, bigNumberifyJson } from "../../src/utils";
-import { ProposeInstallProtocolParams } from "../../src/machine/types";
 
 interface AppContext {
   appDefinition: string;
@@ -346,7 +345,8 @@ export async function getProposeCoinBalanceRefundAppParams(
   return {
     abiEncodings: {
       actionEncoding: undefined,
-      stateEncoding: `tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)`
+      stateEncoding:
+        "tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)"
     },
     appDefinition: CoinBalanceRefundApp,
     initialState: {

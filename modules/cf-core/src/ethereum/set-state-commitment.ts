@@ -9,13 +9,13 @@ import {
 import { ChallengeRegistry } from "../contracts";
 import {
   AppIdentity,
-  NetworkContext,
   CFCoreTypes,
+  EthereumCommitment,
+  NetworkContext,
   SignedStateHashUpdate
 } from "../types";
 import { sortSignaturesBySignerAddress } from "../utils";
 
-import { EthereumCommitment } from "./types";
 import { appIdentityToHash } from "./utils/app-identity";
 
 const iface = new Interface(ChallengeRegistry.abi);

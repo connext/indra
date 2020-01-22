@@ -3,7 +3,6 @@ import { appIdentityToHash } from "../../../machine";
 import { AppInstanceProposal } from "../../../models";
 import { Store } from "../../../store";
 import { NetworkContext, CFCoreTypes } from "../../../types";
-import { NO_NETWORK_PROVIDER_CREATE2 } from "../../errors";
 
 /**
  * Creates a AppInstanceProposal to reflect the proposal received from
@@ -52,7 +51,10 @@ export async function createProposedAppInstance(
 
   const stateChannel = await store.getOrCreateStateChannelBetweenVirtualAppParticipants(
     multisigAddress,
-    networkContext.ProxyFactory,
+    {
+      proxyFactory: networkContext.ProxyFactory,
+      multisigMastercopy: networkContext.MinimumViableMultisig,
+    },
     myIdentifier,
     proposedToIdentifier
   );

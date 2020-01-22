@@ -1,10 +1,11 @@
+import { WithdrawStartedMessage } from "@connext/types";
 import { randomBytes } from "crypto";
 import { Contract, Wallet } from "ethers";
 import { One, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { getAddress, hexlify } from "ethers/utils";
 
-import { Node, NODE_EVENTS, WithdrawStartedMessage } from "../../src";
+import { Node } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import { DolphinCoin, NetworkContextForTestSuite } from "../contracts";
 import { toBeEq, toBeLt } from "../machine/integration/bignumber-jest-matcher";

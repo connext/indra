@@ -1,12 +1,7 @@
-import { CFCoreTypes } from "@connext/types";
+import { CFCoreTypes, UpdateStateMessage } from "@connext/types";
 import { One, Zero } from "ethers/constants";
 
-import {
-  NO_APP_INSTANCE_FOR_TAKE_ACTION,
-  Node,
-  NODE_EVENTS,
-  UpdateStateMessage
-} from "../../src";
+import { NO_APP_INSTANCE_FOR_TAKE_ACTION, Node } from "../../src";
 import { NetworkContextForTestSuite } from "../contracts";
 
 import { setup, SetupContext } from "./setup";

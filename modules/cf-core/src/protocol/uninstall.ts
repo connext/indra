@@ -3,13 +3,13 @@ import { BaseProvider } from "ethers/providers";
 import { SetStateCommitment } from "../ethereum";
 import { xkeyKthAddress } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
+import { StateChannel } from "../models";
 import {
   Context,
   ProtocolExecutionFlow,
   ProtocolMessage,
   UninstallProtocolParams
-} from "../machine/types";
-import { StateChannel } from "../models";
+} from "../types";
 
 import { computeTokenIndexedFreeBalanceIncrements } from "./utils/get-outcome-increments";
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
