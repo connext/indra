@@ -86,7 +86,9 @@ export async function getDefaultOptions(
   if (overrideOptions) {
     store =
       overrideOptions.store ||
-      new ConnextStore(overrideOptions.asyncStorage || window.localStorage);
+      new ConnextStore(overrideOptions.asyncStorage || window.localStorage, {
+        backupService: overrideOptions.backupService,
+      });
 
     mnemonic = shouldGenerateMnemonic(network, overrideOptions)
       ? await getDefaultMnemonic(store, log)
