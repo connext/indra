@@ -15,11 +15,7 @@ export namespace CFCoreTypes {
   export type IStoreService = exIStoreService;
   export type IMessagingService = CFMessagingService;
 
-  // copypasta bc idk how to pass-through export enums
-  export enum MethodName {
-    ACCEPT_STATE = "acceptState",
-    GET_PROPOSED_APP_INSTANCE = "getProposedAppInstance",
-  }
+  export const MethodNames = ProtocolTypes.MethodNames;
 
   export type CreateChannelParams = ProtocolTypes.CreateChannelParams;
   export type CreateChannelResult = ProtocolTypes.CreateChannelResult;

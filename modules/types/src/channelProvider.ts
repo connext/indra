@@ -70,12 +70,18 @@ export interface CFChannelProviderOptions {
   store: Store;
 }
 
+export const chan_config = `chan_config`;
+export const chan_nodeAuth = `chan_nodeAuth`;
+export const chan_restoreState = `chan_restoreState`;
+export const chan_storeGet = `chan_storeGet`;
+export const chan_storeSet = `chan_storeSet`;
+
 export const ConnextRpcMethods = {
-  chan_config: "chan_config",
-  chan_nodeAuth: "chan_nodeAuth",
-  chan_restoreState: "chan_restoreState",
-  chan_storeGet: "chan_storeGet",
-  chan_storeSet: "chan_storeSet",
+  [chan_config]: chan_config,
+  [chan_nodeAuth]: chan_nodeAuth,
+  [chan_restoreState]: chan_restoreState,
+  [chan_storeGet]: chan_storeGet,
+  [chan_storeSet]: chan_storeSet,
 };
 export type ConnextRpcMethod = keyof typeof ConnextRpcMethods;
 
@@ -87,7 +93,7 @@ export type ChannelProviderRpcMethod = ConnextRpcMethod | ProtocolTypes.RpcMetho
 
 export type JsonRpcRequest = {
   id: number;
-  jsonrpc: "2.0";
+  jsonrpc: `2.0`;
   method: string;
   params: any;
 };
