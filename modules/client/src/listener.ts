@@ -40,7 +40,7 @@ import {
   UPDATE_STATE_EVENT,
   WITHDRAWAL_CONFIRMED_EVENT,
   WITHDRAWAL_FAILED_EVENT,
-  WITHDRAWAL_STARTED_EVENT
+  WITHDRAWAL_STARTED_EVENT,
 } from "@connext/types";
 
 // TODO: index of connext events only?
@@ -105,7 +105,7 @@ export class ConnextListener extends EventEmitter {
         (app: DefaultApp) => app.name === SupportedApplications.CoinBalanceRefundApp,
       )[0];
       if (params.appDefinition !== coinBalanceDef.appDefinitionAddress) {
-        this.log.info(`not sending propose message, not the coinbalance refund app`);
+        this.log.info("not sending propose message, not the coinbalance refund app");
         return;
       }
       this.log.info(
@@ -189,7 +189,7 @@ export class ConnextListener extends EventEmitter {
 
   public registerDefaultListeners = (): void => {
     Object.entries(this.defaultCallbacks).forEach(([event, callback]: any): any => {
-      this.channelProvider.on(CFCoreTypes.EventNames[event], callback);
+      this.channelProvider.on(event, callback);
     });
 
     this.channelProvider.on(
@@ -224,11 +224,7 @@ export class ConnextListener extends EventEmitter {
 
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
     const protocol =
-      event === CFCoreTypes.EventNames.PROTOCOL_MESSAGE_EVENT
-        ? data.data
-          ? data.data.protocol
-          : data.protocol
-        : "";
+      event === PROTOCOL_MESSAGE_EVENT ? (data.data ? data.data.protocol : data.protocol) : "";
     this.log.info(`Recieved ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
     this.log.debug(`Emitted ${event} with data ${stringify(data)} at ${Date.now()}`);
     this.emit(event, data);
@@ -313,7 +309,7 @@ export class ConnextListener extends EventEmitter {
       return;
     }
 
-    this.log.debug(`Proposal for app install successful, attempting install now...`);
+    this.log.debug("Proposal for app install successful, attempting install now...");
     let res: CFCoreTypes.InstallResult;
 
     // TODO: determine virtual app in a more resilient way

@@ -254,7 +254,7 @@ export default class ListenerService implements OnModuleInit {
     Object.entries(this.getEventListeners()).forEach(
       ([event, callback]: [CFCoreTypes.EventName, () => any]): void => {
         this.cfCoreService.registerCfCoreListener(
-          CFCoreTypes.EventNames[event] as CFCoreTypes.EventName,
+          event,
           callback,
           logger.cxt,
         );

@@ -1,14 +1,13 @@
 import {
-  CFCoreTypes,
-  DepositParameters,
   LinkedTransferParameters,
   LinkedTransferToRecipientParameters,
   ResolveLinkedTransferParameters,
   ResolveLinkedTransferToRecipientParameters,
   WithdrawParameters,
-  ConnextEvent,
   LINKED_TRANSFER,
   LINKED_TRANSFER_TO_RECIPIENT,
+  WITHDRAWAL_CONFIRMED_EVENT,
+  WITHDRAWAL_FAILED_EVENT,
 } from "@connext/types";
 import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -185,7 +184,7 @@ process.on("unhandledRejection", (e: any): any => {
     const preWithdrawBal = await provider.getBalance(config.recipient || client.freeBalanceAddress);
     console.log(`Found prewithdrawal balance of ${formatEther(preWithdrawBal)}`);
     client.on(
-      CFCoreTypes.EventNames.WITHDRAWAL_CONFIRMED_EVENT as ConnextEvent,
+      WITHDRAWAL_CONFIRMED_EVENT,
       async (data: any): Promise<void> => {
         console.log(`Caught withdraw confirmed event, data: ${JSON.stringify(data, replaceBN, 2)}`);
         const postWithdrawBal = await provider.getBalance(
@@ -201,7 +200,7 @@ process.on("unhandledRejection", (e: any): any => {
       },
     );
     client.on(
-      CFCoreTypes.EventNames.WITHDRAWAL_FAILED_EVENT as ConnextEvent,
+      WITHDRAWAL_FAILED_EVENT,
       async (data: any): Promise<void> => {
         throw new Error(`Withdrawal failed with data: ${JSON.stringify(data, replaceBN, 2)}`);
       },
