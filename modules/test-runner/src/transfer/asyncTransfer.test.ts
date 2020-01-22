@@ -133,7 +133,6 @@ describe("Async Transfers", () => {
     ).to.be.rejectedWith(`Value \"${recipient}\" must start with \"xpub\"`);
   });
 
-  // tslint:disable-next-line: max-line-length
   it("Bot A tries to transfer an amount greater than they have in their free balance", async () => {
     const amount = ETH_AMOUNT_SM.toString();
     await expect(

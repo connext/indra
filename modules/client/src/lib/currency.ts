@@ -163,11 +163,9 @@ export class Currency {
       return exchangeRates[currency];
     }
     if (!this.daiRateGiven) {
-      // tslint:disable-next-line
       console.warn(
         `Provide DAI:ETH rate for accurate ${this.type} -> ${currency} conversions`
       );
-      // tslint:disable-next-line
       console.warn(
         `Using default eth price of $${this.daiRate} (amount: ${this.amount})`
       );

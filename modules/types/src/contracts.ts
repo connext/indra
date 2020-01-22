@@ -39,16 +39,6 @@ export interface DeployedContractNetworksFileEntry {
   transactionHash: string;
 }
 
-export const SupportedNetworks = {
-  ganache: "ganache",
-  goerli: "goerli",
-  homestead: "homestead",
-  kovan: "kovan",
-  rinkeby: "rinkeby",
-  ropsten: "ropsten",
-};
-export type SupportedNetwork = keyof typeof SupportedNetworks;
-
 ////////////////////////////////////////
 // Specific contract Interfaces
 

@@ -39,13 +39,9 @@ describe("ChannelProvider", () => {
     clientA1 = await createRemoteClient(channelProvider);
   }, 90_000);
 
-  // tslint:disable-next-line:max-line-length
   it("Happy case: client A1 can be instantiated with a channelProvider generated from client A", async () => {
-    // tslint:disable-next-line:variable-name
     const _tokenAddress = clientA1.config.contractAddresses.Token;
-    // tslint:disable-next-line:variable-name
     const _nodePublicIdentifier = clientA1.config.nodePublicIdentifier;
-    // tslint:disable-next-line:variable-name
     const _nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
 
     expect(_tokenAddress).to.be.eq(tokenAddress);
@@ -53,7 +49,6 @@ describe("ChannelProvider", () => {
     expect(_nodeFreeBalanceAddress).to.be.eq(nodeFreeBalanceAddress);
   });
 
-  // tslint:disable-next-line:max-line-length
   it("Happy case: Bot A1 can call the full deposit → swap → transfer → withdraw flow on Bot A", async () => {
     const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
@@ -110,7 +105,6 @@ describe("ChannelProvider", () => {
     await withdrawFromChannel(clientA1, withdraw.amount, withdraw.assetId);
   });
 
-  // tslint:disable-next-line:max-line-length
   it("Bot A1 tries to call a function when Bot A is offline", async () => {
     // close channelProvider connection
     clientA1.channelProvider.close();
@@ -120,7 +114,6 @@ describe("ChannelProvider", () => {
     );
   });
 
-  // tslint:disable-next-line:max-line-length
   it.skip("Bot A1 tries to reject installing a proposed app that bot A has already installed?", async () => {
     // TODO: add test
   });

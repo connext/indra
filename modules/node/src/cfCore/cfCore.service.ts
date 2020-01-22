@@ -3,7 +3,6 @@ import {
   AppActionBigNumber,
   ConnextNodeStorePrefix,
   SupportedApplication,
-  SupportedNetwork,
   StateChannelJSON,
 } from "@connext/types";
 import { Inject, Injectable, Logger } from "@nestjs/common";
@@ -211,7 +210,7 @@ export class CFCoreService {
     const network = await this.configService.getEthNetwork();
     const appInfo = await this.appRegistryRepository.findByNameAndNetwork(
       app,
-      network.name as SupportedNetwork,
+      network.chainId,
     );
     const {
       actionEncoding,
