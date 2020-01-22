@@ -8,14 +8,11 @@ import { IStoreService as exIStoreService } from "./store";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace CFCoreTypes {
-  export const RpcMethodNames = ProtocolTypes.RpcMethodNames;
-
   export type EventName = exEventName;
+  export type MethodName = ProtocolTypes.MethodName;
   export type NodeMessage = exNodeMessage;
   export type IStoreService = exIStoreService;
   export type IMessagingService = CFMessagingService;
-
-  export const MethodNames = ProtocolTypes.MethodNames;
 
   export type CreateChannelParams = ProtocolTypes.CreateChannelParams;
   export type CreateChannelResult = ProtocolTypes.CreateChannelResult;

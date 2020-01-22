@@ -1,11 +1,16 @@
 import {
   ChannelProviderConfig,
-  ConnextRpcMethod,
+  ChannelProviderRpcMethod,
   IChannelProvider,
   IConnextClient,
   IRpcConnection,
   JsonRpcRequest,
   StorePair,
+  chan_storeSet,
+  chan_storeGet,
+  chan_nodeAuth,
+  chan_config,
+  chan_restoreState,
 } from "@connext/types";
 import EventEmitter from "events";
 
@@ -58,7 +63,7 @@ export class MockChannelProvider extends EventEmitter implements IChannelProvide
 
   public enable(): Promise<ChannelProviderConfig> {
     return new Promise((resolve, reject): void => {
-      this._send(`chan_config`)
+      this._send(chan_config)
         .then((config: ChannelProviderConfig): void => {
           if (Object.keys(config).length > 0) {
             this.connected = true;
@@ -78,24 +83,23 @@ export class MockChannelProvider extends EventEmitter implements IChannelProvide
         .catch(reject);
     });
   }
-  // probably can remove the `| string` typing once 1.4.1 types package is
-  // published, assuming no non-channel methods are sent to the `_send` fn
-  public send = async (method: ConnextRpcMethod | string, params: any = {}): Promise<any> => {
+
+  public send = async (method: ChannelProviderRpcMethod, params: any = {}): Promise<any> => {
     let result;
     switch (method) {
-    case `chan_storeSet`:
+    case chan_storeSet:
       result = await this.set(params.pairs);
       break;
-    case `chan_storeGet`:
+    case chan_storeGet:
       result = await this.get(params.path);
       break;
-    case `chan_nodeAuth`:
+    case chan_nodeAuth:
       result = await this.signMessage(params.message);
       break;
-    case `chan_config`:
+    case chan_config:
       result = this.config;
       break;
-    case `chan_restoreState`:
+    case chan_restoreState:
       result = await this.restoreState(params.path);
       break;
     default:
@@ -156,27 +160,27 @@ export class MockChannelProvider extends EventEmitter implements IChannelProvide
   /// // SIGNING METHODS
 
   public signMessage = async (message: string): Promise<string> => {
-    return this._send(`chan_nodeAuth`, { message });
+    return this._send(chan_nodeAuth, { message });
   };
 
   /// ////////////////////////////////////////////
   /// // STORE METHODS
 
   public get = async (path: string): Promise<any> => {
-    return this._send(`chan_storeGet`, {
+    return this._send(chan_storeGet, {
       path,
     });
   };
 
   public set = async (pairs: StorePair[], allowDelete?: Boolean): Promise<void> => {
-    return this._send(`chan_storeSet`, {
+    return this._send(chan_storeSet, {
       allowDelete,
       pairs,
     });
   };
 
   public restoreState = async (path: string): Promise<void> => {
-    return this._send(`chan_restoreState`, { path });
+    return this._send(chan_restoreState, { path });
   };
 
   /// ////////////////////////////////////////////
@@ -184,7 +188,7 @@ export class MockChannelProvider extends EventEmitter implements IChannelProvide
 
   // probably can remove the `| string` typing once 1.4.1 types package is
   // published, assuming no non-channel methods are sent to the `_send` fn
-  public async _send(method: ConnextRpcMethod | string, params: any = {}): Promise<any> {
+  public async _send(method: ChannelProviderRpcMethod, params: any = {}): Promise<any> {
     const payload = { jsonrpc: `2.0`, id: Date.now(), method, params };
     const result = await this.connection.send(payload as JsonRpcRequest);
     return result;

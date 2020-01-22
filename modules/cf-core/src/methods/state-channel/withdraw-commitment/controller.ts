@@ -2,7 +2,7 @@ import { jsonRpcMethod } from "rpc-server";
 
 import { xkeyKthAddress } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes } from "../../../types";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { NodeController } from "../../controller";
 import WithdrawController from "../withdraw/controller";
 import { runWithdrawProtocol } from "../withdraw/operation";
@@ -18,7 +18,7 @@ import { AddressZero } from "ethers/constants";
 // Note: This can't extend `WithdrawController` because the `methodName` static
 // members of each class are incompatible.
 export default class WithdrawCommitmentController extends NodeController {
-  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_withdrawCommitment)
+  @jsonRpcMethod(ProtocolTypes.chan_withdrawCommitment)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(

@@ -29,8 +29,9 @@ import {
   RequestCollateralResponse,
   Transfer,
 } from "./node";
-import { ProtocolTypes, ConnextRpcMethod } from "./protocol";
+import { ProtocolTypes } from "./protocol";
 import { IAsyncStorage, IBackupServiceAPI, Store } from "./store";
+import { CFCoreTypes } from "./cfCore";
 
 export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
@@ -78,9 +79,9 @@ export interface IConnextClient {
 
   ///////////////////////////////////
   // LISTENER METHODS
-  on(event: ConnextEvent | ConnextRpcMethod, callback: (...args: any[]) => void): void;
-  once(event: ConnextEvent | ConnextRpcMethod, callback: (...args: any[]) => void): void;
-  emit(event: ConnextEvent | ConnextRpcMethod, data: any): boolean;
+  on(event: ConnextEvent | CFCoreTypes.RpcMethodName, callback: (...args: any[]) => void): void;
+  once(event: ConnextEvent | CFCoreTypes.RpcMethodName, callback: (...args: any[]) => void): void;
+  emit(event: ConnextEvent | CFCoreTypes.RpcMethodName, data: any): boolean;
 
   ///////////////////////////////////
   // CORE CHANNEL METHODS

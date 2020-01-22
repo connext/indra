@@ -9,6 +9,7 @@ import { RequestHandler } from "../../../request-handler";
 import {
   DepositConfirmationMessage,
   CFCoreTypes,
+  ProtocolTypes
 } from "../../../types";
 import { NodeController } from "../../controller";
 import {
@@ -19,7 +20,7 @@ import {
   COIN_BALANCE_NOT_PROPOSED,
   INCORRECT_MULTISIG_ADDRESS,
   INVALID_FACTORY_ADDRESS,
-  INVALID_MASTERCOPY_ADDRESS,
+  INVALID_MASTERCOPY_ADDRESS
 } from "../../errors";
 
 import {
@@ -31,7 +32,7 @@ import { getCreate2MultisigAddress } from "../../../utils";
 import { DEPOSIT_CONFIRMED_EVENT } from "@connext/types";
 
 export default class DepositController extends NodeController {
-  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_deposit)
+  @jsonRpcMethod(ProtocolTypes.chan_deposit)
   public executeMethod: (
     requestHandler: RequestHandler,
     params: CFCoreTypes.MethodParams
@@ -60,7 +61,9 @@ export default class DepositController extends NodeController {
     }
 
     if (!channel.addresses.multisigMastercopy) {
-      throw Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
+      throw Error(
+        INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy)
+      );
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(

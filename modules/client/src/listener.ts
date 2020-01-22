@@ -26,6 +26,7 @@ import {
 } from "./types";
 import { appProposalValidation } from "./validation/appProposals";
 import {
+  ProtocolTypes,
   CREATE_CHANNEL_EVENT,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
@@ -105,7 +106,7 @@ export class ConnextListener extends EventEmitter {
         (app: DefaultApp) => app.name === SupportedApplications.CoinBalanceRefundApp,
       )[0];
       if (params.appDefinition !== coinBalanceDef.appDefinitionAddress) {
-        this.log.info("not sending propose message, not the coinbalance refund app");
+        this.log.info(`not sending propose message, not the coinbalance refund app`);
         return;
       }
       this.log.info(
@@ -152,7 +153,7 @@ export class ConnextListener extends EventEmitter {
     super();
     this.channelProvider = channelProvider;
     this.connext = connext;
-    this.log = new Logger("ConnextListener", connext.log.logLevel);
+    this.log = new Logger(`ConnextListener`, connext.log.logLevel);
   }
 
   public register = async (): Promise<void> => {
@@ -193,7 +194,7 @@ export class ConnextListener extends EventEmitter {
     });
 
     this.channelProvider.on(
-      CFCoreTypes.RpcMethodNames.chan_install as CFCoreTypes.RpcMethodName,
+      ProtocolTypes.chan_install,
       async (msg: any): Promise<void> => {
         const {
           result: {
@@ -207,25 +208,20 @@ export class ConnextListener extends EventEmitter {
       },
     );
 
-    this.channelProvider.on(
-      CFCoreTypes.RpcMethodNames.chan_uninstall as CFCoreTypes.RpcMethodName,
-      (data: any): any => {
-        const result = data.result.result;
-        this.log.debug(
-          `Emitting CFCoreTypes.RpcMethodNames.chan_uninstall event: ${stringify(result)}`,
-        );
-        this.connext.messaging.publish(
-          `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
-          stringify(result),
-        );
-      },
-    );
+    this.channelProvider.on(ProtocolTypes.chan_uninstall, (data: any): any => {
+      const result = data.result.result;
+      this.log.debug(`Emitting ProtocolTypes.chan_uninstall event: ${stringify(result)}`);
+      this.connext.messaging.publish(
+        `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
+        stringify(result),
+      );
+    });
   };
 
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
     const protocol =
-      event === PROTOCOL_MESSAGE_EVENT ? (data.data ? data.data.protocol : data.protocol) : "";
-    this.log.info(`Received ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
+      event === PROTOCOL_MESSAGE_EVENT ? (data.data ? data.data.protocol : data.protocol) : ``;
+    this.log.info(`Received ${event}${protocol ? ` for ${protocol} protocol` : ``}`);
     this.log.debug(`Emitted ${event} with data ${stringify(data)} at ${Date.now()}`);
     this.emit(event, data);
   };
@@ -309,12 +305,12 @@ export class ConnextListener extends EventEmitter {
       return;
     }
 
-    this.log.debug("Proposal for app install successful, attempting install now...");
+    this.log.debug(`Proposal for app install successful, attempting install now...`);
     let res: CFCoreTypes.InstallResult;
 
     // TODO: determine virtual app in a more resilient way
     // for now only simple transfer apps are virtual apps
-    const virtualAppDefs = [this.connext.config.contractAddresses["SimpleTransferApp"]];
+    const virtualAppDefs = [this.connext.config.contractAddresses[`SimpleTransferApp`]];
     if (virtualAppDefs.includes(params.appDefinition)) {
       res = await this.connext.installVirtualApp(appInstanceId);
     } else {

@@ -9,7 +9,7 @@ import { jsonRpcMethod } from "rpc-server";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { xkeyKthAddress } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes } from "../../../types";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
@@ -24,7 +24,7 @@ import {
 import { runWithdrawProtocol } from "./operation";
 
 export default class WithdrawController extends NodeController {
-  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_withdraw)
+  @jsonRpcMethod(ProtocolTypes.chan_withdraw)
   public executeMethod = super.executeMethod;
 
   public static async getRequiredLockNames(

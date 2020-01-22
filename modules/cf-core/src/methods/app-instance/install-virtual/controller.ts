@@ -1,13 +1,13 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes } from "../../../types";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { NodeController } from "../../controller";
 
 import { installVirtual } from "./operation";
 
 export default class InstallVirtualController extends NodeController {
-  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_installVirtual)
+  @jsonRpcMethod(ProtocolTypes.chan_installVirtual)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
@@ -78,7 +78,7 @@ export default class InstallVirtualController extends NodeController {
 
     if (!intermediaryIdentifier) {
       throw Error(
-        "Cannot install virtual app: you did not provide an intermediary."
+        `Cannot install virtual app: you did not provide an intermediary.`
       );
     }
 
@@ -95,13 +95,13 @@ export default class InstallVirtualController extends NodeController {
 
     if (!stateChannelWithIntermediary) {
       throw Error(
-        "Cannot install virtual app: you do not have a channel with the intermediary provided."
+        `Cannot install virtual app: you do not have a channel with the intermediary provided.`
       );
     }
 
     if (!stateChannelWithIntermediary.freeBalance) {
       throw Error(
-        "Cannot install virtual app: channel with intermediary has no free balance app instance installed."
+        `Cannot install virtual app: channel with intermediary has no free balance app instance installed.`
       );
     }
   }
