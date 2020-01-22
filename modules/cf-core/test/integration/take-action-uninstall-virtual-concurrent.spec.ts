@@ -1,7 +1,6 @@
 import { parseEther } from "ethers/utils";
 
 import { Node } from "../../src";
-import { NODE_EVENTS } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 

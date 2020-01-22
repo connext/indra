@@ -5,8 +5,7 @@ import { RequestHandler } from "../../../request-handler";
 import {
   CreateChannelMessage,
   CFCoreTypes,
-  ProtocolTypes,
-  NodeEvent
+  ProtocolTypes
 } from "../../../types";
 import { NodeController } from "../../controller";
 import { xkeysToSortedKthAddresses } from "../../../machine";
@@ -81,7 +80,7 @@ export default class CreateChannelController extends NodeController {
 
     const msg: CreateChannelMessage = {
       from: publicIdentifier,
-      type: CREATE_CHANNEL_EVENT as NodeEvent,
+      type: CREATE_CHANNEL_EVENT,
       data: {
         multisigAddress,
         owners: addressOwners,

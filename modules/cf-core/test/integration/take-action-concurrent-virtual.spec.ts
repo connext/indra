@@ -3,8 +3,6 @@ import { parseEther } from "ethers/utils";
 import { Node } from "../../src";
 import {
   InstallVirtualMessage,
-  NODE_EVENTS,
-  UpdateStateMessage
 } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";

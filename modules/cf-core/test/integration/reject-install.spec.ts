@@ -1,6 +1,5 @@
 import { Node } from "../../src";
 import {
-  NODE_EVENTS,
   ProposeMessage,
   RejectProposalMessage
 } from "../../src/types";
