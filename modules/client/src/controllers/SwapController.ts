@@ -1,6 +1,7 @@
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
 
+import { CF_METHOD_TIMEOUT, delayAndThrow } from "../lib";
 import { xpubToAddress } from "../lib/cfCore";
 import {
   CFCoreChannel,
@@ -54,7 +55,19 @@ export class SwapController extends AbstractController {
     this.log.info(`Swap app installed! Uninstalling without updating state.`);
 
     // if app installed, that means swap was accepted now uninstall
-    await this.connext.uninstallApp(appId);
+    try {
+      await Promise.race([
+        delayAndThrow(
+          CF_METHOD_TIMEOUT,
+          `App uninstall took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
+        ),
+        this.connext.uninstallApp(appId),
+      ]);
+    } catch (e) {
+      const msg = `Failed to uninstall swap: ${e.stack || e.message}`;
+      this.log.error(msg);
+      throw new Error(msg);
+    }
 
     // Sanity check to ensure swap was executed correctly
     const postSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
