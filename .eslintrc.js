@@ -9,7 +9,7 @@ module.exports = {
       "no-unused-vars": ["error"],
       "no-var": ["error"],
       "object-curly-spacing": ["error", "always"],
-      "quotes": ["error", "double"],
+      "quotes": ["error", "backtick"],
       "semi": ["error", "always"],
       "spaced-comment": "off",
     },
