@@ -167,8 +167,8 @@ export class AdminService {
     const brokenMultisigs = JSON.parse(JSON.stringify(output.broken));
     // Second loop: attempt to repair broken channels
     for (const brokenMultisig of brokenMultisigs) {
-      const { data: state } = await this.cfCoreService.getStateChannel(brokenMultisigs);
-      logger.log(`Searching for critical addresses needed to fix channel ${brokenMultisigs}..`);
+      const { data: state } = await this.cfCoreService.getStateChannel(brokenMultisig);
+      logger.log(`Searching for critical addresses needed to fix channel ${brokenMultisig}..`);
       const criticalAddresses = await scanForCriticalAddresses(
         state.userNeuteredExtendedKeys,
         state.multisigAddress,
