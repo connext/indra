@@ -1,5 +1,5 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { IConnextClient } from "@connext/types";
+import { IConnextClient, RECIEVE_TRANSFER_FINISHED_EVENT, UNINSTALL_EVENT } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 
 import { expect } from "../";
@@ -29,14 +29,14 @@ export async function asyncTransferAsset(
   const transferFinished = Promise.all([
     new Promise(
       async (resolve: Function): Promise<void> => {
-        clientA.once("UNINSTALL_EVENT", async () => {
+        clientA.once(UNINSTALL_EVENT, async () => {
           resolve();
         });
       },
     ),
     new Promise(
       async (resolve: Function): Promise<void> => {
-        clientB.once("RECIEVE_TRANSFER_FINISHED_EVENT", async () => {
+        clientB.once(RECIEVE_TRANSFER_FINISHED_EVENT, async () => {
           resolve();
         });
       },

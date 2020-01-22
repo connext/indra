@@ -22,6 +22,7 @@ import {
   makeInstallCall,
   makeProposeCall,
 } from "./utils";
+import { UPDATE_STATE_EVENT } from "@connext/types";
 
 expect.extend({ toBeLt });
 
@@ -80,7 +81,7 @@ describe("Node method follows spec - toke action", () => {
 
       let appsTakenActionOn = 0;
 
-      nodeB.on("UPDATE_STATE_EVENT", () => {
+      nodeB.on(UPDATE_STATE_EVENT, () => {
         appsTakenActionOn += 1;
         if (appsTakenActionOn === 2) done();
       });

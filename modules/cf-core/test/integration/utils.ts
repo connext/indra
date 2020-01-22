@@ -12,6 +12,7 @@ import {
   SolidityValueType,
   UninstallMessage,
   UninstallVirtualMessage,
+  CREATE_CHANNEL_EVENT,
 } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
@@ -706,12 +707,12 @@ export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
       [nodeA.publicIdentifier, nodeB.publicIdentifier],
       0
     );
-    nodeB.once("CREATE_CHANNEL_EVENT", async (msg: CreateChannelMessage) => {
+    nodeB.once(CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
       assertNodeMessage(
         msg,
         {
           from: nodeA.publicIdentifier,
-          type: "CREATE_CHANNEL_EVENT",
+          type: CREATE_CHANNEL_EVENT,
           data: {
             owners: sortedOwners,
             counterpartyXpub: nodeA.publicIdentifier
@@ -723,12 +724,12 @@ export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
       resolve(msg.data.multisigAddress);
     });
 
-    nodeA.once("CREATE_CHANNEL_EVENT", (msg: CreateChannelMessage) => {
+    nodeA.once(CREATE_CHANNEL_EVENT, (msg: CreateChannelMessage) => {
       assertNodeMessage(
         msg,
         {
           from: nodeA.publicIdentifier,
-          type: "CREATE_CHANNEL_EVENT",
+          type: CREATE_CHANNEL_EVENT,
           data: {
             owners: sortedOwners,
             counterpartyXpub: nodeB.publicIdentifier

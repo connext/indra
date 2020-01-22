@@ -1,4 +1,4 @@
-import { CFCoreTypes, IChannelProvider } from "@connext/types";
+import { CFCoreTypes, IChannelProvider, REJECT_INSTALL_EVENT } from "@connext/types";
 import { providers } from "ethers";
 
 import { ConnextClient } from "../connext";
@@ -49,7 +49,7 @@ export abstract class AbstractController {
             `indra.node.${this.connext.nodePublicIdentifier}.install.${appInstanceId}`,
             boundResolve,
           );
-          this.listener.on(CFCoreTypes.EventNames.REJECT_INSTALL_EVENT, boundReject);
+          this.listener.on(REJECT_INSTALL_EVENT, boundReject);
         }),
       ]);
 
@@ -79,7 +79,7 @@ export abstract class AbstractController {
             // set up reject install event listeners
             // must be bound to properly remove listener on clean up
             boundReject = this.rejectProposal.bind(null, rej);
-            this.listener.on(CFCoreTypes.EventNames.REJECT_INSTALL_EVENT, boundReject);
+            this.listener.on(REJECT_INSTALL_EVENT, boundReject);
 
             // set up proposal accepted nats subscriptions
             this.log.debug(
@@ -171,13 +171,13 @@ export abstract class AbstractController {
     this.connext.messaging.unsubscribe(
       `indra.node.${this.connext.nodePublicIdentifier}.install.${appId}`,
     );
-    this.listener.removeCfListener("REJECT_INSTALL_EVENT", boundReject);
+    this.listener.removeCfListener(REJECT_INSTALL_EVENT, boundReject);
   };
 
   private cleanupProposalListeners = (boundReject: any): void => {
     this.connext.messaging.unsubscribe(
       `indra.node.${this.connext.nodePublicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
     );
-    this.listener.removeCfListener("REJECT_INSTALL_EVENT" as CFCoreTypes.EventName, boundReject);
+    this.listener.removeCfListener(REJECT_INSTALL_EVENT, boundReject);
   };
 }

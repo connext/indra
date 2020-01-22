@@ -9,7 +9,6 @@ import { RequestHandler } from "../../../request-handler";
 import {
   DepositConfirmationMessage,
   CFCoreTypes,
-  NodeEvent
 } from "../../../types";
 import { NodeController } from "../../controller";
 import {
@@ -29,6 +28,7 @@ import {
   uninstallBalanceRefundApp
 } from "./operation";
 import { getCreate2MultisigAddress } from "../../../utils";
+import { DEPOSIT_CONFIRMED_EVENT } from "@connext/types";
 
 export default class DepositController extends NodeController {
   @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_deposit)
@@ -148,12 +148,12 @@ export default class DepositController extends NodeController {
 
     const payload: DepositConfirmationMessage = {
       from: publicIdentifier,
-      type: "DEPOSIT_CONFIRMED_EVENT" as NodeEvent,
+      type: DEPOSIT_CONFIRMED_EVENT,
       data: params
     };
 
     await messagingService.send(counterpartyAddress, payload);
-    outgoing.emit("DEPOSIT_CONFIRMED_EVENT", payload);
+    outgoing.emit(DEPOSIT_CONFIRMED_EVENT, payload);
 
     const multisigBalance =
       params.tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS

@@ -1,4 +1,4 @@
-import { CFCoreTypes } from "@connext/types";
+import { CFCoreTypes, REJECT_INSTALL_EVENT, PROPOSE_INSTALL_EVENT } from "@connext/types";
 
 import { Node } from "../../src";
 import { NODE_EVENTS, ProposeMessage } from "../../src/types";
@@ -44,12 +44,12 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
 
         let proposalParams: CFCoreTypes.ProposeInstallVirtualParams;
 
-        nodeA.on("REJECT_INSTALL_EVENT", async () => {
+        nodeA.on(REJECT_INSTALL_EVENT, async () => {
           expect((await getProposedAppInstances(nodeA)).length).toEqual(0);
           done();
         });
 
-        nodeC.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
+        nodeC.on(PROPOSE_INSTALL_EVENT, async (msg: ProposeMessage) => {
           const { appInstanceId } = msg.data;
 
           const [proposedAppInstanceA] = await getProposedAppInstances(nodeA);

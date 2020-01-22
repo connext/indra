@@ -4,6 +4,7 @@ import {
   CF_PATH,
   IChannelProvider,
   LinkedTransferToRecipientParameters,
+  LINKED_TRANSFER_TO_RECIPIENT,
 } from "@connext/types";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
@@ -337,14 +338,14 @@ export class ConnextClient implements IConnextClient {
   };
 
   /**
-   * Transfer currently uses the conditionalTransfer "LINKED_TRANSFER_TO_RECIPIENT" so that
+   * Transfer currently uses the conditionalTransfer LINKED_TRANSFER_TO_RECIPIENT so that
    * async payments are the default transfer.
    */
   public transfer = async (params: TransferParameters): Promise<ConditionalTransferResponse> => {
     return await this.conditionalTransferController.conditionalTransfer({
       amount: params.amount,
       assetId: params.assetId,
-      conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
+      conditionType: LINKED_TRANSFER_TO_RECIPIENT,
       meta: params.meta,
       paymentId: hexlify(randomBytes(32)),
       preImage: hexlify(randomBytes(32)),
@@ -858,7 +859,7 @@ export class ConnextClient implements IConnextClient {
     const response = await this.resolveCondition({
       amount,
       assetId,
-      conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
+      conditionType: LINKED_TRANSFER_TO_RECIPIENT,
       paymentId,
       preImage,
     });

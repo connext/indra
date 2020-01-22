@@ -1,3 +1,4 @@
+import { RECIEVE_TRANSFER_FINISHED_EVENT, RECIEVE_TRANSFER_STARTED_EVENT } from "@connext/types";
 import { HashZero, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
@@ -126,7 +127,7 @@ export class ResolveConditionController extends AbstractController {
     );
     this.log.info(`Found link payment for ${amount} ${assetId}`);
 
-    this.connext.emit("RECIEVE_TRANSFER_STARTED_EVENT", { paymentId });
+    this.connext.emit(RECIEVE_TRANSFER_STARTED_EVENT, { paymentId });
 
     // convert and validate
     const amountBN = bigNumberify(amount);
@@ -178,7 +179,7 @@ export class ResolveConditionController extends AbstractController {
       );
     }
 
-    this.connext.emit("RECIEVE_TRANSFER_FINISHED_EVENT", { paymentId });
+    this.connext.emit(RECIEVE_TRANSFER_FINISHED_EVENT, { paymentId });
 
     return {
       appId,
@@ -215,47 +216,47 @@ export class ResolveConditionController extends AbstractController {
 
     // verify initial state params are correct
     if (!bigNumberify(amount).eq(amount)) {
-      throwErr(`incorrect amount in state`);
+      throwErr("incorrect amount in state");
     }
 
     if (assetIdParam !== assetId) {
-      throwErr(`incorrect assetId`);
+      throwErr("incorrect assetId");
     }
 
     if (paymentIdParam !== paymentId) {
-      throwErr(`incorrect paymentId`);
+      throwErr("incorrect paymentId");
     }
 
     if (linkedHash !== createLinkedHash(amountParam, assetIdParam, paymentIdParam, preImageParam)) {
-      throwErr(`incorrect linked hash`);
+      throwErr("incorrect linked hash");
     }
 
     if (HashZero !== preImage) {
-      throwErr(`non-zero preimage`);
+      throwErr("non-zero preimage");
     }
 
     // verify correct amount + sender in senders transfer object
     if (!bigNumberify(coinTransfers[0].amount).eq(amountParam)) {
-      throwErr(`incorrect initial sender amount in latest state`);
+      throwErr("incorrect initial sender amount in latest state");
     }
 
     if (coinTransfers[0].to !== xpubToAddress(this.connext.nodePublicIdentifier)) {
-      throwErr(`incorrect sender address in latest state`);
+      throwErr("incorrect sender address in latest state");
     }
 
     // verify correct amount + sender in receivers transfer object
     if (!bigNumberify(coinTransfers[1].amount).eq(Zero)) {
-      throwErr(`incorrect initial receiver amount in latest state`);
+      throwErr("incorrect initial receiver amount in latest state");
     }
 
     if (coinTransfers[1].to !== xpubToAddress(this.connext.publicIdentifier)) {
-      throwErr(`incorrect receiver address in latest state`);
+      throwErr("incorrect receiver address in latest state");
     }
 
     // TODO: how can we access / verify the `meta` here?
 
     if (appInstance.isVirtualApp) {
-      throwErr(`virtual app`);
+      throwErr("virtual app");
     }
 
     // all other general app params should be handled on the `proposeInstall`

@@ -1,10 +1,15 @@
+import {
+  WITHDRAWAL_STARTED_EVENT,
+  WITHDRAWAL_FAILED_EVENT,
+  WITHDRAWAL_CONFIRMED_EVENT
+} from "@connext/types";
 import { TransactionResponse } from "ethers/providers";
 import { jsonRpcMethod } from "rpc-server";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { xkeyKthAddress } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, NODE_EVENTS } from "../../../types";
+import { CFCoreTypes } from "../../../types";
 import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
@@ -13,7 +18,7 @@ import {
   INSUFFICIENT_FUNDS_TO_WITHDRAW,
   INVALID_FACTORY_ADDRESS,
   INVALID_MASTERCOPY_ADDRESS,
-  WITHDRAWAL_FAILED,
+  WITHDRAWAL_FAILED
 } from "../../errors";
 
 import { runWithdrawProtocol } from "./operation";
@@ -75,7 +80,9 @@ export default class WithdrawController extends NodeController {
     }
 
     if (!channel.addresses.multisigMastercopy) {
-      throw Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
+      throw Error(
+        INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy)
+      );
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
@@ -133,9 +140,9 @@ export default class WithdrawController extends NodeController {
     try {
       txResponse = await wallet.sendTransaction(tx);
 
-      outgoing.emit("WITHDRAWAL_STARTED_EVENT", {
+      outgoing.emit(WITHDRAWAL_STARTED_EVENT, {
         from: publicIdentifier,
-        type: "WITHDRAWAL_STARTED_EVENT",
+        type: WITHDRAWAL_STARTED_EVENT,
         data: {
           params,
           txHash: txResponse.hash
@@ -147,15 +154,15 @@ export default class WithdrawController extends NodeController {
         blocksNeededForConfirmation
       );
 
-      outgoing.emit("WITHDRAWAL_CONFIRMED_EVENT", {
+      outgoing.emit(WITHDRAWAL_CONFIRMED_EVENT, {
         from: publicIdentifier,
-        type: "WITHDRAWAL_CONFIRMED_EVENT",
+        type: WITHDRAWAL_CONFIRMED_EVENT,
         data: { txReceipt }
       });
     } catch (e) {
-      outgoing.emit(NODE_EVENTS.WITHDRAWAL_FAILED_EVENT, {
+      outgoing.emit(WITHDRAWAL_FAILED_EVENT, {
         from: publicIdentifier,
-        type: NODE_EVENTS.WITHDRAWAL_FAILED_EVENT,
+        type: WITHDRAWAL_FAILED_EVENT,
         data: e.toString()
       });
       throw Error(`${WITHDRAWAL_FAILED}: ${e.message}`);

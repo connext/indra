@@ -17,7 +17,6 @@ import RpcRouter from "../rpc-router";
 import {
   EventEmittedMessage,
   NetworkContext,
-  NodeEvent,
   NodeMessageWrappedProtocolMessage,
   ProposeInstallProtocolParams,
   ProtocolParameters,
@@ -26,6 +25,16 @@ import {
 } from "../types";
 import { bigNumberifyJson } from "../utils";
 import { Store } from "../store";
+import { 
+  PROPOSE_INSTALL_EVENT,
+  INSTALL_EVENT,
+  UNINSTALL_EVENT,
+  CREATE_CHANNEL_EVENT,
+  WITHDRAWAL_STARTED_EVENT,
+  UPDATE_STATE_EVENT,
+  INSTALL_VIRTUAL_EVENT,
+  UNINSTALL_VIRTUAL_EVENT
+} from "@connext/types";
 
 /**
  * Forwards all received NodeMessages that are for the machine's internal
@@ -128,7 +137,7 @@ async function getOutgoingEventDataFromProtocol(
       } = params as ProposeInstallProtocolParams;
       return {
         ...baseEvent,
-        type: "PROPOSE_INSTALL_EVENT" as NodeEvent,
+        type: PROPOSE_INSTALL_EVENT,
         data: {
           params: {
             ...emittedParams,
@@ -142,7 +151,7 @@ async function getOutgoingEventDataFromProtocol(
     case Protocol.Install:
       return {
         ...baseEvent,
-        type: "INSTALL_EVENT" as NodeEvent,
+        type: INSTALL_EVENT,
         data: {
           // TODO: It is weird that `params` is in the event data, we should
           // remove it, but after telling all consumers about this change
@@ -156,13 +165,13 @@ async function getOutgoingEventDataFromProtocol(
     case Protocol.Uninstall:
       return {
         ...baseEvent,
-        type: "UNINSTALL_EVENT" as NodeEvent,
+        type: UNINSTALL_EVENT,
         data: getUninstallEventData(params as UninstallProtocolParams)
       };
     case Protocol.Setup:
       return {
         ...baseEvent,
-        type: "CREATE_CHANNEL_EVENT" as NodeEvent,
+        type: CREATE_CHANNEL_EVENT,
         data: getSetupEventData(
           params as SetupProtocolParams,
           stateChannelsMap.get((params as SetupProtocolParams).multisigAddress)!
@@ -175,14 +184,14 @@ async function getOutgoingEventDataFromProtocol(
       // determine if the withdraw is finishing or if it is starting
       return {
         ...baseEvent,
-        type: "WITHDRAWAL_STARTED_EVENT",
+        type: WITHDRAWAL_STARTED_EVENT,
         data: getWithdrawEventData(params as WithdrawProtocolParams)
       } as WithdrawStartedMessage;
     case Protocol.TakeAction:
     case Protocol.Update:
       return {
         ...baseEvent,
-        type: "UPDATE_STATE_EVENT" as NodeEvent,
+        type: UPDATE_STATE_EVENT,
         data: getStateUpdateEventData(
           params as UpdateProtocolParams,
           stateChannelsMap
@@ -223,7 +232,7 @@ async function getOutgoingEventDataFromProtocol(
       if (stateChannelsMap.has(virtualChannel)) {
         return {
           ...baseEvent,
-          type: "INSTALL_VIRTUAL_EVENT" as NodeEvent,
+          type: INSTALL_VIRTUAL_EVENT,
           data: {
             // TODO: It is weird that `params` is in the event data, we should
             // remove it, but after telling all consumers about this change
@@ -239,7 +248,7 @@ async function getOutgoingEventDataFromProtocol(
     case Protocol.UninstallVirtualApp:
       return {
         ...baseEvent,
-        type: "UNINSTALL_VIRTUAL_EVENT" as NodeEvent,
+        type: UNINSTALL_VIRTUAL_EVENT,
         data: getUninstallVirtualAppEventData(
           params as UninstallVirtualAppProtocolParams
         )

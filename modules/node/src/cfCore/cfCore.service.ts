@@ -5,6 +5,7 @@ import {
   SupportedApplication,
   SupportedNetwork,
   StateChannelJSON,
+  REJECT_INSTALL_EVENT,
 } from "@connext/types";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
@@ -181,7 +182,7 @@ export class CFCoreService {
             `indra.client.${params.proposedToIdentifier}.proposalAccepted.${multisigAddress}`,
             res,
           );
-          this.cfCore.on("REJECT_INSTALL_EVENT", boundReject);
+          this.cfCore.on(REJECT_INSTALL_EVENT, boundReject);
 
           proposeRes = await this.proposeInstallApp(params);
           logger.debug("waiting for client to publish proposal results");
@@ -245,7 +246,7 @@ export class CFCoreService {
           `indra.client.${userPubId}.install.${proposeRes.appInstanceId}`,
           this.resolveInstallTransfer.bind(null, res),
         );
-        this.cfCore.on("REJECT_INSTALL_EVENT", boundReject);
+        this.cfCore.on(REJECT_INSTALL_EVENT, boundReject);
       });
       logger.log(`App was installed successfully!: ${stringify(proposeRes)}`);
       return proposeRes;
@@ -460,7 +461,7 @@ export class CFCoreService {
 
   private cleanupInstallListeners = (boundReject: any, appId: string, userPubId: string): void => {
     this.messagingProvider.unsubscribe(`indra.client.${userPubId}.install.${appId}`);
-    this.cfCore.off("REJECT_INSTALL_EVENT", boundReject);
+    this.cfCore.off(REJECT_INSTALL_EVENT, boundReject);
   };
 
   private cleanupProposalListeners = (
@@ -471,7 +472,7 @@ export class CFCoreService {
     this.messagingProvider.unsubscribe(
       `indra.client.${userPubId}.proposalAccepted.${multisigAddress}`,
     );
-    this.cfCore.off("REJECT_INSTALL_EVENT", boundReject);
+    this.cfCore.off(REJECT_INSTALL_EVENT, boundReject);
   };
 
   private async appNotInstalled(appInstanceId: string): Promise<string | undefined> {

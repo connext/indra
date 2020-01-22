@@ -1,8 +1,9 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, RejectProposalMessage, NodeEvent } from "../../../types";
+import { CFCoreTypes, RejectProposalMessage } from "../../../types";
 import { NodeController } from "../../controller";
+import { REJECT_INSTALL_EVENT } from "@connext/types";
 
 export default class RejectInstallController extends NodeController {
   protected async getRequiredLockNames(
@@ -33,7 +34,7 @@ export default class RejectInstallController extends NodeController {
 
     const rejectProposalMsg: RejectProposalMessage = {
       from: publicIdentifier,
-      type: "REJECT_INSTALL_EVENT" as NodeEvent,
+      type: REJECT_INSTALL_EVENT,
       data: {
         appInstanceId
       }

@@ -36,6 +36,7 @@ import {
 } from "../validation";
 
 import { AbstractController } from "./AbstractController";
+import { LINKED_TRANSFER } from "@connext/types";
 
 type ConditionalExecutors = {
   [index in TransferCondition]: (
@@ -80,7 +81,7 @@ export class ConditionalTransferController extends AbstractController {
     // wait for linked transfer
     const ret = await this.handleLinkedTransfers({
       ...params,
-      conditionType: "LINKED_TRANSFER",
+      conditionType: LINKED_TRANSFER,
     });
 
     // set recipient and encrypted pre-image on linked transfer

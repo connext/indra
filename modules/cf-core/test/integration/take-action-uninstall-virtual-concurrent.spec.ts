@@ -15,6 +15,7 @@ import {
   installApp,
   installVirtualApp
 } from "./utils";
+import { UPDATE_STATE_EVENT, UNINSTALL_VIRTUAL_EVENT } from "@connext/types";
 
 expect.extend({ toBeLt });
 
@@ -70,11 +71,11 @@ describe("Concurrently taking action on regular app and uninstallling virtual ap
       if (executedActions === 2) done();
     };
 
-    nodeC.on("UNINSTALL_VIRTUAL_EVENT", () => {
+    nodeC.on(UNINSTALL_VIRTUAL_EVENT, () => {
       incrementAndEnd();
     });
 
-    nodeB.on("UPDATE_STATE_EVENT", async () => {
+    nodeB.on(UPDATE_STATE_EVENT, async () => {
       incrementAndEnd();
     });
 

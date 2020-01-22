@@ -25,6 +25,23 @@ import {
   WithdrawStartedMessage,
 } from "./types";
 import { appProposalValidation } from "./validation/appProposals";
+import {
+  CREATE_CHANNEL_EVENT,
+  DEPOSIT_CONFIRMED_EVENT,
+  DEPOSIT_FAILED_EVENT,
+  DEPOSIT_STARTED_EVENT,
+  INSTALL_EVENT,
+  INSTALL_VIRTUAL_EVENT,
+  PROPOSE_INSTALL_EVENT,
+  PROTOCOL_MESSAGE_EVENT,
+  REJECT_INSTALL_EVENT,
+  UNINSTALL_EVENT,
+  UNINSTALL_VIRTUAL_EVENT,
+  UPDATE_STATE_EVENT,
+  WITHDRAWAL_CONFIRMED_EVENT,
+  WITHDRAWAL_FAILED_EVENT,
+  WITHDRAWAL_STARTED_EVENT
+} from "@connext/types";
 
 // TODO: index of connext events only?
 type CallbackStruct = {
@@ -40,30 +57,30 @@ export class ConnextListener extends EventEmitter {
   // to something more usable?
   private defaultCallbacks: CallbackStruct = {
     CREATE_CHANNEL_EVENT: (msg: CreateChannelMessage): void => {
-      this.emitAndLog("CREATE_CHANNEL_EVENT", msg.data);
+      this.emitAndLog(CREATE_CHANNEL_EVENT, msg.data);
     },
     DEPOSIT_CONFIRMED_EVENT: async (msg: DepositConfirmationMessage): Promise<void> => {
-      this.emitAndLog("DEPOSIT_CONFIRMED_EVENT", msg.data);
+      this.emitAndLog(DEPOSIT_CONFIRMED_EVENT, msg.data);
     },
     DEPOSIT_FAILED_EVENT: (msg: DepositFailedMessage): void => {
-      this.emitAndLog("DEPOSIT_FAILED_EVENT", msg.data);
+      this.emitAndLog(DEPOSIT_FAILED_EVENT, msg.data);
     },
     DEPOSIT_STARTED_EVENT: (msg: DepositStartedMessage): void => {
       const { value, txHash } = msg.data;
       this.log.info(`deposit for ${value.toString()} started. hash: ${txHash}`);
-      this.emitAndLog("DEPOSIT_STARTED_EVENT", msg.data);
+      this.emitAndLog(DEPOSIT_STARTED_EVENT, msg.data);
     },
     INSTALL_EVENT: (msg: InstallMessage): void => {
-      this.emitAndLog("INSTALL_EVENT", msg.data);
+      this.emitAndLog(INSTALL_EVENT, msg.data);
     },
     // TODO: make cf return app instance id and app def?
     INSTALL_VIRTUAL_EVENT: (msg: InstallVirtualMessage): void => {
-      this.emitAndLog("INSTALL_VIRTUAL_EVENT", msg.data);
+      this.emitAndLog(INSTALL_VIRTUAL_EVENT, msg.data);
     },
     PROPOSE_INSTALL_EVENT: async (msg: ProposeMessage): Promise<void> => {
       // validate and automatically install for the known and supported
       // applications
-      this.emitAndLog("PROPOSE_INSTALL_EVENT", msg.data);
+      this.emitAndLog(PROPOSE_INSTALL_EVENT, msg.data);
       // check based on supported applications
       // matched app, take appropriate default actions
       const matchedResult = await this.matchAppInstance(msg);
@@ -101,25 +118,25 @@ export class ConnextListener extends EventEmitter {
       return;
     },
     PROTOCOL_MESSAGE_EVENT: (msg: NodeMessageWrappedProtocolMessage): void => {
-      this.emitAndLog("PROTOCOL_MESSAGE_EVENT", msg.data);
+      this.emitAndLog(PROTOCOL_MESSAGE_EVENT, msg.data);
     },
     REJECT_INSTALL_EVENT: (msg: RejectProposalMessage): void => {
-      this.emitAndLog("REJECT_INSTALL_EVENT", msg.data);
+      this.emitAndLog(REJECT_INSTALL_EVENT, msg.data);
     },
     UNINSTALL_EVENT: (msg: UninstallMessage): void => {
-      this.emitAndLog("UNINSTALL_EVENT", msg.data);
+      this.emitAndLog(UNINSTALL_EVENT, msg.data);
     },
     UNINSTALL_VIRTUAL_EVENT: (msg: UninstallVirtualMessage): void => {
-      this.emitAndLog("UNINSTALL_VIRTUAL_EVENT", msg.data);
+      this.emitAndLog(UNINSTALL_VIRTUAL_EVENT, msg.data);
     },
     UPDATE_STATE_EVENT: (msg: UpdateStateMessage): void => {
-      this.emitAndLog("UPDATE_STATE_EVENT", msg.data);
+      this.emitAndLog(UPDATE_STATE_EVENT, msg.data);
     },
     WITHDRAWAL_CONFIRMED_EVENT: (msg: WithdrawConfirmationMessage): void => {
-      this.emitAndLog("WITHDRAWAL_CONFIRMED_EVENT", msg.data);
+      this.emitAndLog(WITHDRAWAL_CONFIRMED_EVENT, msg.data);
     },
     WITHDRAWAL_FAILED_EVENT: (msg: WithdrawFailedMessage): void => {
-      this.emitAndLog("WITHDRAWAL_FAILED_EVENT", msg.data);
+      this.emitAndLog(WITHDRAWAL_FAILED_EVENT, msg.data);
     },
     WITHDRAWAL_STARTED_EVENT: (msg: WithdrawStartedMessage): void => {
       const {
@@ -127,7 +144,7 @@ export class ConnextListener extends EventEmitter {
         txHash,
       } = msg.data;
       this.log.info(`withdrawal for ${amount.toString()} started. hash: ${txHash}`);
-      this.emitAndLog("WITHDRAWAL_STARTED_EVENT", msg.data);
+      this.emitAndLog(WITHDRAWAL_STARTED_EVENT, msg.data);
     },
   };
 

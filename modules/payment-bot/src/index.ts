@@ -7,6 +7,8 @@ import {
   ResolveLinkedTransferToRecipientParameters,
   WithdrawParameters,
   ConnextEvent,
+  LINKED_TRANSFER,
+  LINKED_TRANSFER_TO_RECIPIENT,
 } from "@connext/types";
 import { Contract } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -113,7 +115,7 @@ process.on("unhandledRejection", (e: any): any => {
     const linkedParams: LinkedTransferParameters = {
       amount: parseEther(config.linked).toString(),
       assetId,
-      conditionType: "LINKED_TRANSFER",
+      conditionType: LINKED_TRANSFER,
       paymentId,
       preImage,
     };
@@ -133,7 +135,7 @@ process.on("unhandledRejection", (e: any): any => {
     const linkedParams: LinkedTransferToRecipientParameters = {
       amount: parseEther(config.linkedTo).toString(),
       assetId,
-      conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
+      conditionType: LINKED_TRANSFER_TO_RECIPIENT,
       paymentId,
       preImage,
       recipient: config.counterparty,
@@ -146,7 +148,7 @@ process.on("unhandledRejection", (e: any): any => {
   if (config.redeem) {
     checkForLinkedFields(config);
     const resolveParams: ResolveLinkedTransferParameters = {
-      conditionType: "LINKED_TRANSFER",
+      conditionType: LINKED_TRANSFER,
       paymentId: config.paymentId,
       preImage: config.preImage,
     };
@@ -160,7 +162,7 @@ process.on("unhandledRejection", (e: any): any => {
     const resolveParams: ResolveLinkedTransferToRecipientParameters = {
       amount: parseEther(config.linkedTo).toString(),
       assetId: config.assetId,
-      conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
+      conditionType: LINKED_TRANSFER_TO_RECIPIENT,
       paymentId: config.paymentId,
       preImage: config.preImage,
     };

@@ -29,6 +29,7 @@ import {
   NodeEvent
 } from "../../../types";
 import { DEPOSIT_FAILED } from "../../errors";
+import { DEPOSIT_STARTED_EVENT } from "@connext/types";
 
 const DEPOSIT_RETRY_COUNT = 3;
 
@@ -162,9 +163,9 @@ export async function makeDeposit(
     }
   }
 
-  outgoing.emit("DEPOSIT_STARTED_EVENT", {
+  outgoing.emit(DEPOSIT_STARTED_EVENT, {
     from: publicIdentifier,
-    type: "DEPOSIT_STARTED_EVENT",
+    type: DEPOSIT_STARTED_EVENT,
     data: {
       value: amount,
       txHash: txResponse!.hash

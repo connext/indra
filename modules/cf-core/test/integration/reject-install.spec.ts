@@ -18,6 +18,7 @@ import {
   getProposedAppInstances,
   makeAndSendProposeCall
 } from "./utils";
+import { REJECT_INSTALL_EVENT } from "@connext/types";
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
@@ -41,10 +42,10 @@ describe("Node method follows spec - rejectInstall", () => {
       expect(await getInstalledAppInstances(nodeB)).toEqual([]);
 
       let proposedAppId: string;
-      nodeA.on("REJECT_INSTALL_EVENT", async (msg: RejectProposalMessage) => {
+      nodeA.on(REJECT_INSTALL_EVENT, async (msg: RejectProposalMessage) => {
         assertNodeMessage(msg, {
           from: nodeB.publicIdentifier,
-          type: "REJECT_INSTALL_EVENT",
+          type: REJECT_INSTALL_EVENT,
           data: {
             appInstanceId: proposedAppId
           }
@@ -83,10 +84,10 @@ describe("Node method follows spec - rejectInstall", () => {
       expect(await getInstalledAppInstances(nodeB)).toEqual([]);
 
       let proposedAppId: string;
-      nodeB.on("REJECT_INSTALL_EVENT", async (msg: RejectProposalMessage) => {
+      nodeB.on(REJECT_INSTALL_EVENT, async (msg: RejectProposalMessage) => {
         assertNodeMessage(msg, {
           from: nodeA.publicIdentifier,
-          type: "REJECT_INSTALL_EVENT",
+          type: REJECT_INSTALL_EVENT,
           data: {
             appInstanceId: proposedAppId
           }
