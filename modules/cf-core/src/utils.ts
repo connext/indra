@@ -1,4 +1,5 @@
 import { CriticalStateChannelAddresses } from "@connext/types";
+import { addressBook, addressHistory } from "@connext/contracts";
 import { Contract } from "ethers";
 import { Provider } from "ethers/providers";
 import {
@@ -162,19 +163,56 @@ export const getCreate2MultisigAddress = async (
 export const scanForCriticalAddresses = async (
   ownerXpubs: string[],
   expectedMultisig: string,
-  addressHistory: {
+  ethProvider: Provider,
+  moreAddressHistory?: {
     ProxyFactory: string[];
     MinimumViableMultisig: string[];
     ToxicBytecode: string[];
   },
-  ethProvider: Provider,
 ): Promise<void | { [key: string]: string|boolean }> => {
+  const chainId = (await ethProvider.getNetwork()).chainId;
+
+  // First, consolidate all sources of addresses to scan
+  let toxicBytecodes: string[] = [];
+  if(addressHistory[chainId] && addressHistory[chainId].ToxicBytecode) {
+    toxicBytecodes = toxicBytecodes.concat(addressHistory[chainId].ToxicBytecode);
+  }
+  if (moreAddressHistory && moreAddressHistory.ToxicBytecode) {
+    toxicBytecodes = toxicBytecodes.concat(moreAddressHistory.ToxicBytecode);
+  }
   // Falsy toxic bytecode (ie "") causes getCreate2MultisigAddress to fetch non-toxic value
-  // from the ProxyFactory via the ethProvider
-  for (const toxicBytecode of [...addressHistory.ToxicBytecode, ""]) {
-    for (const multisigMastercopy of addressHistory.MinimumViableMultisig) {
-      for (const proxyFactory of addressHistory.ProxyFactory) {
-        for (const legacyKeygen of [true, false]) {
+  toxicBytecodes.push("");
+  console.log(`Scanning toxic bytecode: ${toxicBytecodes}`);
+
+  let mastercopies: string[] = [];
+  if(addressHistory[chainId] && addressHistory[chainId].MinimumViableMultisig) {
+    mastercopies = mastercopies.concat(addressHistory[chainId].MinimumViableMultisig);
+  }
+  if(addressBook[chainId] && addressBook[chainId].MinimumViableMultisig) {
+    mastercopies.push(addressBook[chainId].MinimumViableMultisig);
+  }
+  if (moreAddressHistory && moreAddressHistory.MinimumViableMultisig) {
+    mastercopies = mastercopies.concat(moreAddressHistory.MinimumViableMultisig);
+  }
+  console.log(`Scanning multisig mastercopies: ${mastercopies}`);
+
+  let proxyFactories: string[] = [];
+  if(addressHistory[chainId] && addressHistory[chainId].ProxyFactory) {
+    proxyFactories = proxyFactories.concat(addressHistory[chainId].ProxyFactory);
+  }
+  if(addressBook[chainId] && addressBook[chainId].ProxyFactory) {
+    mastercopies.push(addressBook[chainId].ProxyFactory);
+  }
+  if (moreAddressHistory && moreAddressHistory.ProxyFactory) {
+    proxyFactories = proxyFactories.concat(moreAddressHistory.ProxyFactory);
+  }
+  console.log(`Scanning proxy factories: ${proxyFactories}`);
+
+  // Second, scan these addresses looking for ones that match the given multisg
+  for (const legacyKeygen of [false, true]) {
+    for (const toxicBytecode of toxicBytecodes) {
+      for (const multisigMastercopy of mastercopies) {
+        for (const proxyFactory of proxyFactories) {
           let calculated = await getCreate2MultisigAddress(
             ownerXpubs,
             { proxyFactory, multisigMastercopy },
