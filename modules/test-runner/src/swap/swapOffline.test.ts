@@ -33,11 +33,18 @@ describe("Swap offline", () => {
     failsWith?: string;
     client?: IConnextClient;
   }) => {
-    const { client: providedClient, inputAmount, outputAmount, failsWith, messagingConfig, tokenToEth } = opts;
+    const {
+      client: providedClient,
+      inputAmount,
+      outputAmount,
+      failsWith,
+      messagingConfig,
+      tokenToEth,
+    } = opts;
     // these tests should not have collateral issues
     // so make sure they are always properly funded
-    client = providedClient || await createClientWithMessagingLimits(messagingConfig);
-    
+    client = providedClient || (await createClientWithMessagingLimits(messagingConfig));
+
     const input = {
       amount: inputAmount,
       assetId: tokenToEth ? client.config.contractAddresses.Token : AddressZero,
