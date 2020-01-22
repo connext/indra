@@ -1,8 +1,7 @@
-import { BigNumber } from "ethers/utils";
-
 import { SimpleLinkedTransferAppState } from "./app";
-import { Address, CFCoreTypes } from "./cf";
+import { Address, BigNumber } from "./basic";
 import { AssetAmount } from "./channel";
+import { ProtocolTypes } from "./protocol";
 
 /////////////////////////////////
 ///////// SWAP
@@ -27,7 +26,7 @@ export type DepositParametersBigNumber = DepositParameters<BigNumber>;
 
 export type RequestDepositRightsParameters = Omit<DepositParameters, "amount">;
 
-export type RequestDepositRightsResponse = CFCoreTypes.RequestDepositRightsResult;
+export type RequestDepositRightsResponse = ProtocolTypes.RequestDepositRightsResult;
 
 export type CheckDepositRightsParameters = RequestDepositRightsParameters;
 
@@ -40,7 +39,7 @@ export type CheckDepositRightsResponse<T = string> = {
 
 export type RescindDepositRightsParameters = RequestDepositRightsParameters;
 
-export type RescindDepositRightsResponse = CFCoreTypes.DepositResult;
+export type RescindDepositRightsResponse = ProtocolTypes.DepositResult;
 
 ////// Transfer types
 // TODO: would we ever want to pay people in the same app with multiple currencies?
@@ -86,9 +85,8 @@ export type ResolveLinkedTransferToRecipientParameters<T = string> = Omit<
   conditionType: "LINKED_TRANSFER_TO_RECIPIENT";
 };
 // tslint:disable-next-line: max-line-length
-export type ResolveLinkedTransferToRecipientParametersBigNumber = ResolveLinkedTransferToRecipientParameters<
-  BigNumber
->;
+export type ResolveLinkedTransferToRecipientParametersBigNumber =
+  ResolveLinkedTransferToRecipientParameters<BigNumber>;
 
 // resolver union types
 export type ResolveConditionParameters<T = string> =
@@ -97,7 +95,7 @@ export type ResolveConditionParameters<T = string> =
 
 export type ResolveLinkedTransferResponse = {
   appId: string;
-  freeBalance: CFCoreTypes.GetFreeBalanceStateResult;
+  freeBalance: ProtocolTypes.GetFreeBalanceStateResult;
   paymentId: string;
 };
 
@@ -126,7 +124,7 @@ export type LinkedTransferParametersBigNumber = LinkedTransferParameters<BigNumb
 export type LinkedTransferResponse = {
   paymentId: string;
   preImage: string;
-  freeBalance: CFCoreTypes.GetFreeBalanceStateResult;
+  freeBalance: ProtocolTypes.GetFreeBalanceStateResult;
   meta?: object;
 };
 

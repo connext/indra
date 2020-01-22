@@ -12,7 +12,7 @@ import {
   Context,
   ProposeInstallProtocolParams,
   ProtocolMessage
-} from "../machine/types";
+} from "../types";
 import { AppInstanceProposal, StateChannel } from "../models";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
@@ -44,10 +44,11 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)
       ? stateChannelsMap.get(multisigAddress)!
-      : StateChannel.createEmptyChannel(multisigAddress, network.ProxyFactory, [
-          initiatorXpub,
-          responderXpub
-        ]);
+      : StateChannel.createEmptyChannel(
+        multisigAddress,
+        { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
+        [initiatorXpub, responderXpub],
+      );
 
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
@@ -159,10 +160,11 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)
       ? stateChannelsMap.get(multisigAddress)!
-      : StateChannel.createEmptyChannel(multisigAddress, network.ProxyFactory, [
-          initiatorXpub,
-          responderXpub
-        ]);
+      : StateChannel.createEmptyChannel(
+        multisigAddress,
+        { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
+        [initiatorXpub, responderXpub],
+      );
 
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,

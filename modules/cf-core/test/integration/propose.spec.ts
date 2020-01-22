@@ -1,6 +1,6 @@
-import { CFCoreTypes } from "@connext/types";
+import { CFCoreTypes, ProposeMessage } from "@connext/types";
 
-import { Node, ProposeMessage, deBigNumberifyJson } from "../../src";
+import { Node, deBigNumberifyJson } from "../../src";
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 

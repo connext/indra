@@ -7,7 +7,7 @@ import {
 } from "ethers/utils";
 
 import { SetupCommitment } from "../../../../src/ethereum";
-import { MultisigTransaction } from "../../../../src/ethereum/types";
+import { MultisigTransaction } from "../../../../src/types";
 import { appIdentityToHash } from "../../../../src/ethereum/utils/app-identity";
 import { StateChannel } from "../../../../src/models";
 import { ConditionalTransactionDelegateTarget } from "../../../contracts";
@@ -35,7 +35,10 @@ describe("SetupCommitment", () => {
   // State channel testing values
   const stateChannel = StateChannel.setupChannel(
     networkContext.IdentityApp,
-    networkContext.ProxyFactory,
+    {
+      proxyFactory: networkContext.ProxyFactory,
+      multisigMastercopy: networkContext.MinimumViableMultisig,
+    },
     getAddress(hexlify(randomBytes(20))),
     [interaction.sender, interaction.receiver]
   );

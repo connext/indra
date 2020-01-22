@@ -1,7 +1,8 @@
 import { bigNumberify, BigNumberish } from "ethers/utils";
 
+import { MultisigOperation, MultisigTransaction } from "../types";
+
 import { MultisigCommitment } from "./multisig-commitment";
-import { MultisigOperation, MultisigTransaction } from "./types";
 
 export class WithdrawETHCommitment extends MultisigCommitment {
   public constructor(

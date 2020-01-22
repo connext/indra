@@ -1,4 +1,4 @@
-import { StateChannelJSON, AppInstanceJson } from "@connext/types";
+import { CriticalStateChannelAddresses, AppInstanceJson, StateChannelJSON } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import { solidityKeccak256 } from "ethers/utils";
 
@@ -27,12 +27,11 @@ export class Store {
     private readonly storeKeyPrefix: string
   ) {}
 
-  // TODO: remove if store is added to Context type
   public static async getMultisigAddressWithCounterpartyFromMap(
     stateChannelsMap: Map<string, StateChannel>,
     owners: string[],
-    proxyFactoryAddress: string,
-    minimumViableMultisigAddress: string,
+    proxyFactory: string,
+    multisigMastercopy: string,
     provider?: BaseProvider
   ): Promise<string> {
     for (const stateChannel of stateChannelsMap.values()) {
@@ -46,8 +45,7 @@ export class Store {
     if (provider) {
       return await getCreate2MultisigAddress(
         owners,
-        proxyFactoryAddress,
-        minimumViableMultisigAddress,
+        { proxyFactory, multisigMastercopy },
         provider
       );
     }
@@ -278,7 +276,7 @@ export class Store {
 
   public async getOrCreateStateChannelBetweenVirtualAppParticipants(
     multisigAddress: string,
-    proxyFactoryAddress: string,
+    addresses: CriticalStateChannelAddresses,
     initiatorXpub: string,
     responderXpub: string
   ): Promise<StateChannel> {
@@ -292,7 +290,7 @@ export class Store {
       ) {
         const stateChannel = StateChannel.createEmptyChannel(
           multisigAddress,
-          proxyFactoryAddress,
+          addresses,
           [initiatorXpub, responderXpub]
         );
 

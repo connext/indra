@@ -19,7 +19,8 @@ import {
   INSUFFICIENT_FUNDS,
   COIN_BALANCE_NOT_PROPOSED,
   INCORRECT_MULTISIG_ADDRESS,
-  INVALID_FACTORY_ADDRESS
+  INVALID_FACTORY_ADDRESS,
+  INVALID_MASTERCOPY_ADDRESS,
 } from "../../errors";
 
 import {
@@ -54,14 +55,17 @@ export default class DepositController extends NodeController {
 
     const channel = await store.getStateChannel(multisigAddress);
 
-    if (!channel.proxyFactoryAddress) {
-      throw Error(INVALID_FACTORY_ADDRESS(channel.proxyFactoryAddress));
+    if (!channel.addresses.proxyFactory) {
+      throw Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
+    }
+
+    if (!channel.addresses.multisigMastercopy) {
+      throw Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userNeuteredExtendedKeys,
-      channel.proxyFactoryAddress,
-      networkContext.MinimumViableMultisig,
+      channel.addresses,
       provider
     );
 
@@ -158,7 +162,7 @@ export default class DepositController extends NodeController {
             tokenAddress!,
             ERC20.abi,
             provider
-          ).functions.balanceOf(multisigAddress);
+        ).functions.balanceOf(multisigAddress);
 
     return {
       multisigBalance,

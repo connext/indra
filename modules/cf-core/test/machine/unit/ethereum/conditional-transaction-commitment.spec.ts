@@ -9,7 +9,7 @@ import {
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
 import { ConditionalTransaction } from "../../../../src/ethereum";
-import { MultisigTransaction } from "../../../../src/ethereum/types";
+import { MultisigTransaction } from "../../../../src/types";
 import { appIdentityToHash } from "../../../../src/ethereum/utils/app-identity";
 import { StateChannel } from "../../../../src/models";
 import { FreeBalanceClass } from "../../../../src/models/free-balance";
@@ -33,7 +33,10 @@ describe("ConditionalTransaction", () => {
   // State channel testing values
   let stateChannel = StateChannel.setupChannel(
     networkContext.IdentityApp,
-    networkContext.ProxyFactory,
+    {
+      proxyFactory: networkContext.ProxyFactory,
+      multisigMastercopy: networkContext.MinimumViableMultisig,
+    },
     getAddress(hexlify(randomBytes(20))),
     [interaction.sender, interaction.receiver]
   );

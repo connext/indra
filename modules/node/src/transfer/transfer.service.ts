@@ -1,6 +1,6 @@
-import { DepositConfirmationMessage, NODE_EVENTS } from "@connext/cf-core";
 import {
   DefaultApp,
+  DepositConfirmationMessage,
   ResolveLinkedTransferResponse,
   SimpleLinkedTransferAppStateBigNumber,
   SimpleTransferAppStateBigNumber,

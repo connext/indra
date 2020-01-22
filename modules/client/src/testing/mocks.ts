@@ -5,12 +5,12 @@ import { BigNumber, Transaction } from "ethers/utils";
 import { Logger } from "../lib";
 import {
   AppRegistry,
-  CFCoreTypes,
   ChannelAppSequences,
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
   IChannelProvider,
+  IStoreService,
   INodeApiClient,
   NodeInitializationParameters,
   PaymentProfile,
@@ -188,7 +188,7 @@ export class MockNodeClientApi implements INodeApiClient {
   public async subscribeToSwapRates(
     from: string,
     to: string,
-    store: CFCoreTypes.IStoreService,
+    store: IStoreService,
   ): Promise<void> {}
 
   public async unsubscribeFromSwapRates(from: string, to: string): Promise<void> {}

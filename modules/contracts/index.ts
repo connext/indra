@@ -1,5 +1,7 @@
 // export all currently used addresses
-import * as addresses from "./address-book.json";
+import * as addressBook from "./address-book.json";
+import * as addressHistory from "./address-history.json";
+
 // export all build artifacts
 import * as AppWithAction from "./build/AppWithAction.json";
 import * as ChallengeRegistry from "./build/ChallengeRegistry.json";
@@ -47,9 +49,11 @@ import * as TwoPartyFixedOutcomeInterpreter from "./build/TwoPartyFixedOutcomeIn
 import * as UnidirectionalLinkedTransferApp from "./build/UnidirectionalLinkedTransferApp.json";
 import * as UnidirectionalTransferApp from "./build/UnidirectionalTransferApp.json";
 
-// FIXME: properly exporting the `contracts/` dir
+// TODO: Don't export contract dependencies or ones only used for testing?
+
 export {
-  addresses,
+  addressBook,
+  addressHistory,
   AppWithAction,
   ChallengeRegistry,
   CoinBalanceRefundApp,

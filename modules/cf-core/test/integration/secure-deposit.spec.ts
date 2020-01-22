@@ -1,22 +1,16 @@
+import { DepositConfirmationMessage, DepositStartedMessage } from "@connext/types";
 import { Contract } from "ethers";
 import { One, Two, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import log from "loglevel";
 
-import {
-  Node,
-  NODE_EVENTS,
-  DepositConfirmationMessage,
-  DepositStartedMessage
-} from "../../src";
+import { Node } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import { DolphinCoin, NetworkContextForTestSuite } from "../contracts";
-import { INSUFFICIENT_ERC20_FUNDS_TO_DEPOSIT } from "../../src/methods/errors";
 import { toBeEq } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
 import {
-  constructDepositRpc,
   createChannel,
   getFreeBalanceState,
   getTokenIndexedFreeBalanceStates,

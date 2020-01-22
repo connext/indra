@@ -12,6 +12,7 @@ import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
   INVALID_FACTORY_ADDRESS,
+  INVALID_MASTERCOPY_ADDRESS,
   INCORRECT_MULTISIG_ADDRESS
 } from "../../errors";
 import {
@@ -38,19 +39,22 @@ export default class RequestDepositRightsController extends NodeController {
     requestHandler: RequestHandler,
     params: CFCoreTypes.RequestDepositRightsParams
   ): Promise<void> {
-    const { store, provider, networkContext } = requestHandler;
+    const { store, provider } = requestHandler;
     const { multisigAddress } = params;
 
     const channel = await store.getStateChannel(multisigAddress);
 
-    if (!channel.proxyFactoryAddress) {
-      throw Error(INVALID_FACTORY_ADDRESS(channel.proxyFactoryAddress));
+    if (!channel.addresses.proxyFactory) {
+      throw Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
+    }
+
+    if (!channel.addresses.multisigMastercopy) {
+      throw Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userNeuteredExtendedKeys,
-      channel.proxyFactoryAddress,
-      networkContext.MinimumViableMultisig,
+      channel.addresses,
       provider
     );
 

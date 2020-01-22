@@ -5,20 +5,20 @@ import { fromExtendedKey } from "ethers/utils/hdnode";
 import { SetStateCommitment } from "../ethereum";
 import { ProtocolExecutionFlow } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
+import { xkeyKthAddress } from "../machine/xkeys";
+import { AppInstance, StateChannel } from "../models";
+import { Store } from "../store";
 import {
   Context,
+  NetworkContext,
   ProtocolMessage,
   ProtocolParameters,
   UninstallVirtualAppProtocolParams,
-} from "../machine/types";
-import { xkeyKthAddress } from "../machine/xkeys";
-import { AppInstance, StateChannel } from "../models";
-import { NetworkContext } from "../types";
+} from "../types";
 
 import { computeTokenIndexedFreeBalanceIncrements } from "./utils/get-outcome-increments";
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
-import { Store } from "../store";
 
 function xkeyTo0thAddress(xpub: string) {
   return fromExtendedKey(xpub).derivePath("0").address;

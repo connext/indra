@@ -23,7 +23,7 @@
   "devDependencies": {
     "@babel/polyfill": "7.7.0",
     "@types/jest": "24.0.25",
-    "@types/node": "13.1.2",
+    "@types/node": "13.1.7",
     "jest": "24.9.0",
     "ts-jest": "24.2.0",
     "typescript": "3.5.3"

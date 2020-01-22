@@ -116,7 +116,7 @@ export function makeChecksumOrEthAddress(address: string | undefined): string {
 type GenericAmountObject<T> = any & {
   amount: T;
 };
-export function convertAmountField<To extends NumericTypeName>(
+function convertAmountField<To extends NumericTypeName>(
   to: To,
   obj: GenericAmountObject<any>,
 ): GenericAmountObject<NumericTypes[To]> {
@@ -124,22 +124,22 @@ export function convertAmountField<To extends NumericTypeName>(
   return convertFields(fromType, to, ["amount"], obj);
 }
 
-export function convertAssetAmount<To extends NumericTypeName>(
+function convertAssetAmount<To extends NumericTypeName>(
   to: To,
   obj: AssetAmount<any>,
 ): AssetAmount<NumericTypes[To]>;
-export function convertAssetAmount<To extends NumericTypeName>(
+function convertAssetAmount<To extends NumericTypeName>(
   to: To,
   obj: CoinTransfer<any>,
 ): CoinTransfer<NumericTypes[To]>;
-export function convertAssetAmount<To extends NumericTypeName>(
+function convertAssetAmount<To extends NumericTypeName>(
   to: To,
   obj: AssetAmount<any> | CoinTransfer<any>,
 ): any {
   return convertAmountField(to, obj);
 }
 
-export function convertAssetAmountWithId<To extends NumericTypeName>(
+function convertAssetAmountWithId<To extends NumericTypeName>(
   to: To,
   obj: GenericAmountObject<any> & { assetId?: string },
 ): any {
@@ -150,7 +150,7 @@ export function convertAssetAmountWithId<To extends NumericTypeName>(
   return convertAssetAmount(to, asset);
 }
 
-export function convertPaymentProfile<To extends NumericTypeName>(
+function convertPaymentProfile<To extends NumericTypeName>(
   to: To,
   obj: PaymentProfile<any>,
 ): PaymentProfile<NumericTypes[To]> {
@@ -158,7 +158,7 @@ export function convertPaymentProfile<To extends NumericTypeName>(
   return convertFields(fromType, to, ["amountToCollateralize", "minimumMaintainedCollateral"], obj);
 }
 
-export function convertCoinBalanceRefund<To extends NumericTypeName>(
+function convertCoinBalanceRefund<To extends NumericTypeName>(
   to: To,
   obj: CoinBalanceRefundAppState<any>,
 ): CoinBalanceRefundAppState<NumericTypes[To]> {
@@ -173,14 +173,14 @@ export function convertCoinBalanceRefund<To extends NumericTypeName>(
  * in the proper assetId if it is left blank in the supplied parameters to the
  * empty eth address
  */
-export function convertDepositParametersToAsset<To extends NumericTypeName>(
+function convertDepositParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: DepositParameters<any>,
 ): AssetAmount<NumericTypes[To]> {
   return convertAssetAmountWithId(to, obj);
 }
 
-export function convertSwapParameters<To extends NumericTypeName>(
+function convertSwapParameters<To extends NumericTypeName>(
   to: To,
   obj: SwapParameters<any>,
 ): SwapParameters<NumericTypes[To]> {
@@ -192,35 +192,35 @@ export function convertSwapParameters<To extends NumericTypeName>(
   return convertAmountField(to, asset);
 }
 
-export function convertTransferParametersToAsset<To extends NumericTypeName>(
+function convertTransferParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: TransferParameters<any>,
 ): TransferParameters<NumericTypes[To]> {
   return convertAssetAmountWithId(to, obj);
 }
 
-export function convertLinkedTransferParametersToAsset<To extends NumericTypeName>(
+function convertLinkedTransferParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: LinkedTransferParameters<any>,
 ): LinkedTransferParameters<NumericTypes[To]> {
   return convertAssetAmountWithId(to, obj);
 }
 
-export function convertLinkedTransferToRecipientParametersToAsset<To extends NumericTypeName>(
+function convertLinkedTransferToRecipientParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: LinkedTransferToRecipientParameters<any>,
 ): LinkedTransferToRecipientParameters<NumericTypes[To]> {
   return convertAssetAmountWithId(to, obj);
 }
 
-export function convertWithdrawParametersToAsset<To extends NumericTypeName>(
+function convertWithdrawParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: WithdrawParameters<any>,
 ): WithdrawParameters<NumericTypes[To]> {
   return convertAssetAmountWithId(to, obj);
 }
 
-export function convertAppState<To extends NumericTypeName>(
+function convertAppState<To extends NumericTypeName>(
   to: To,
   obj: AppState<any>,
 ): AppState<NumericTypes[To]> {
@@ -233,7 +233,7 @@ export function convertAppState<To extends NumericTypeName>(
   };
 }
 
-export function convertLinkedTransferAppState<To extends NumericTypeName>(
+function convertLinkedTransferAppState<To extends NumericTypeName>(
   to: To,
   obj: AppState<any>,
 ): SimpleLinkedTransferAppState<NumericTypes[To]> {

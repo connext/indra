@@ -10,13 +10,15 @@ import {
 } from "../ethereum";
 import { ProtocolExecutionFlow } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
-import { Context, ProtocolMessage, WithdrawProtocolParams } from "../machine/types";
 import { AppInstance, StateChannel } from "../models";
 import {
   coinBalanceRefundStateEncoding,
+  Context,
   NetworkContext,
   OutcomeType,
+  ProtocolMessage,
   singleAssetTwoPartyCoinTransferInterpreterParamsEncoding,
+  WithdrawProtocolParams,
 } from "../types";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";

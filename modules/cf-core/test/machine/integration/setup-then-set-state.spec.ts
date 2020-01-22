@@ -8,7 +8,6 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../src/constants";
 import {
   ChallengeRegistry,
   MinimumViableMultisig,
-  Proxy,
   ProxyFactory
 } from "../../contracts";
 import { SetStateCommitment, SetupCommitment } from "../../../src/ethereum";
@@ -74,15 +73,17 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
       expect(proxy).toBe(
         await getCreate2MultisigAddress(
           xprvs,
-          network.ProxyFactory,
-          network.MinimumViableMultisig,
+          {
+            proxyFactory: network.ProxyFactory,
+            multisigMastercopy: network.MinimumViableMultisig
+          },
           provider
         )
       );
 
       const stateChannel = StateChannel.setupChannel(
         network.IdentityApp,
-        network.ProxyFactory,
+        { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
         proxy, // used as multisig
         xprvs.map(extendedPrvKeyToExtendedPubKey),
         1

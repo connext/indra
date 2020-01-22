@@ -18,7 +18,10 @@ describe("StateChannel::setupChannel", () => {
   beforeAll(() => {
     sc = StateChannel.setupChannel(
       networkContext.IdentityApp,
-      networkContext.ProxyFactory,
+      {
+        proxyFactory: networkContext.ProxyFactory,
+        multisigMastercopy: networkContext.MinimumViableMultisig,
+      },
       multisigAddress,
       xpubs
     );
