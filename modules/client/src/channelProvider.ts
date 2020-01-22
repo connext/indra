@@ -95,12 +95,12 @@ export class RpcConnection extends EventEmitter implements IRpcConnection {
     return this.cfCore;
   };
 
-  public open(): void {
-    // no-op
+  public open(): Promise<void> {
+    return Promise.resolve();
   }
 
-  public close(): void {
-    // no-op
+  public close(): Promise<void> {
+    return Promise.resolve();
   }
 }
 
@@ -113,9 +113,9 @@ export class ChannelProvider extends EventEmitter implements IChannelProvider {
   public wallet: Wallet;
 
   // shouldnt really ever be used
-  public _config: ChannelProviderConfig;
-  public _multisigAddress: string | undefined = undefined;
-  public _signerAddress: string | undefined = undefined;
+  private _config: ChannelProviderConfig;
+  private _multisigAddress: string | undefined = undefined;
+  private _signerAddress: string | undefined = undefined;
 
   constructor(
     connection: IRpcConnection,
@@ -161,8 +161,8 @@ export class ChannelProvider extends EventEmitter implements IChannelProvider {
     return result;
   };
 
-  public close(): void {
-    // no-op
+  public close(): Promise<void> {
+    return Promise.resolve();
   }
 
   ///////////////////////////////////////////////
@@ -247,7 +247,7 @@ export class ChannelProvider extends EventEmitter implements IChannelProvider {
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
 
-  public _send = async (method: CFCoreTypes.RpcMethodName, params: RpcParameters): Promise<any> => {
+  private _send = async (method: ChannelProviderRpcMethod, params: RpcParameters): Promise<any> => {
     const payload = {
       id: Date.now(),
       jsonrpc: `2.0`,

@@ -11,16 +11,13 @@ export interface IChannelProvider extends EventEmitter {
 
   connected: boolean;
   connection: IRpcConnection;
-  _config: ChannelProviderConfig | undefined;
-  _multisigAddress: string | undefined;
-  _signerAddress: string | undefined;
 
   ////////////////////////////////////////
   // Methods
 
   enable(): Promise<ChannelProviderConfig>;
   send(method: ChannelProviderRpcMethod, params: any): Promise<any>;
-  close(): void;
+  close(): Promise<void>;
 
   ///////////////////////////////////
   // GETTERS / SETTERS
@@ -43,10 +40,6 @@ export interface IChannelProvider extends EventEmitter {
   get(path: string): Promise<any>;
   set(pairs: StorePair[], allowDelete?: Boolean): Promise<void>;
   restoreState(path: string): Promise<void>;
-
-  ///////////////////////////////////
-  // PRIVATE METHODS
-  _send(method: ChannelProviderRpcMethod, params: any): Promise<any>;
 }
 
 export const chan_config = `chan_config`;
@@ -107,6 +100,6 @@ export interface IRpcConnection extends EventEmitter {
   ////////////////////////////////////////
   // Methods
   send(payload: JsonRpcRequest): Promise<any>;
-  open(): void;
-  close(): void;
+  open(): Promise<void>;
+  close(): Promise<void>;
 }
