@@ -258,7 +258,7 @@ export const connect = async (
 
   // Make sure our state schema is up-to-date
   const { data: sc } = await client.getStateChannel();
-  if (!sc.schemaVersion || sc.schemaVersion !== StateSchemaVersion) {
+  if (!sc.schemaVersion || sc.schemaVersion !== StateSchemaVersion || !sc.addresses) {
     log.debug("State schema is out-of-date, restoring an up-to-date client state");
     await client.restoreState();
   }
