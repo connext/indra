@@ -27,8 +27,9 @@ describe(`ChannelProvider`, () => {
   let natsConnection: Client;
 
   beforeEach(async function () {
+    // Need a longer timeout here bc it's the very first test to run & node might not be awake yet
     // @ts-ignore
-    this.timeout(90_000);
+    this.timeout(120_000);
     clientA = await createClient();
     tokenAddress = clientA.config.contractAddresses.Token;
     nodePublicIdentifier = clientA.config.nodePublicIdentifier;
