@@ -1,4 +1,5 @@
 import { Wallet } from "ethers";
+import { HashZero } from "ethers/constants";
 import { arrayify } from "ethers/utils";
 import EventEmitter from "events";
 import { RpcParameters } from "rpc-server";
@@ -33,6 +34,7 @@ export const createCFChannelProvider = async ({
     networkContext,
     nodeConfig,
     ethProvider,
+    { domainName: "Connext", domainVersion: "0.0.1", domainSalt: HashZero },
     lockService,
     xpub,
     keyGen,
