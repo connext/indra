@@ -419,7 +419,6 @@ export namespace ProtocolTypes {
     recipient?: string;
     amount: BigNumber;
     tokenAddress?: string;
-    multisigTxCount?: number;
   };
 
   export type WithdrawResult = {

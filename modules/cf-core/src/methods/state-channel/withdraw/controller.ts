@@ -1,5 +1,4 @@
-import { MinimumViableMultisig } from "@connext/contracts";
-import { BaseProvider, TransactionResponse } from "ethers/providers";
+import { TransactionResponse } from "ethers/providers";
 import { jsonRpcMethod } from "rpc-server";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
@@ -18,13 +17,6 @@ import {
 } from "../../errors";
 
 import { runWithdrawProtocol } from "./operation";
-import { Contract } from "ethers";
-
-export const getMultisigTransactionCount = async (multisigAddress: string, provider: BaseProvider) => {
-  const multisigContract = await new Contract(multisigAddress, MinimumViableMultisig.abi, provider);
-  const txCount = await multisigContract.functions.transactionCount();
-  return txCount.toNumber();
-}
 
 export default class WithdrawController extends NodeController {
   @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_withdraw)
@@ -115,9 +107,6 @@ export default class WithdrawController extends NodeController {
     const signer = await requestHandler.getSigner();
     const signerAddress = await signer.getAddress();
     const nonce = await provider.getTransactionCount(signerAddress);
-    
-    const txCount = await getMultisigTransactionCount(multisigAddress, provider);
-    params.multisigTxCount = txCount;
 
     params.recipient = recipient || xkeyKthAddress(publicIdentifier, 0);
 

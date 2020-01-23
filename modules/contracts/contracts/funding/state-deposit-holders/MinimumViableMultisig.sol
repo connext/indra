@@ -22,8 +22,6 @@ contract MinimumViableMultisig {
 
   address[] private _owners;
 
-  uint256 transactionCount = 0;
-
   enum Operation {
     Call,
     DelegateCall
@@ -54,6 +52,7 @@ contract MinimumViableMultisig {
   /// @param domainVersion EIP712-defined hash to determine context (https://eips.ethereum.org/EIPS/eip-712)
   /// @param chainId EIP712-defined hash to determine context (https://eips.ethereum.org/EIPS/eip-712)
   /// @param domainSalt EIP712-defined hash to determine context (https://eips.ethereum.org/EIPS/eip-712)
+  /// @param nonce Replay protection
   /// @param signatures A sorted bytes string of concatenated signatures of each owner
   function execTransaction(
     address to,
@@ -64,13 +63,13 @@ contract MinimumViableMultisig {
     string memory domainVersion,
     uint256 chainId,
     bytes32 domainSalt,
+    uint256 nonce,
     bytes[] memory signatures
   )
     public
   {
-    transactionCount += 1;
     bytes32 domainSeparatorHash = getDomainSeparatorHash(domainName, domainVersion, chainId, domainSalt);
-    bytes32 transactionHash = getTransactionHash(to, value, data, operation, domainSeparatorHash, transactionCount);
+    bytes32 transactionHash = getTransactionHash(to, value, data, operation, domainSeparatorHash, nonce);
     require(
       !isExecuted[transactionHash],
       "Transacation has already been executed"
@@ -101,14 +100,14 @@ contract MinimumViableMultisig {
     bytes memory data,
     Operation operation,
     bytes32 domainSeparatorHash,
-    uint256 _transactionCount
+    uint256 nonce
   )
     public
     view
     returns (bytes32)
   {
     return keccak256(
-      abi.encode(byte(0x19), _owners, to, value, data, uint8(operation), domainSeparatorHash, _transactionCount)
+      abi.encode(byte(0x19), _owners, to, value, data, uint8(operation), domainSeparatorHash, nonce)
     );
   }
 
