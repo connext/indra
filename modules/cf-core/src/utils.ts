@@ -1,6 +1,4 @@
 import { CriticalStateChannelAddresses } from "@connext/types";
-import * as addressBook from "@connext/contracts/address-book.json";
-import * as addressHistory from "@connext/contracts/address-history.json";
 import { Contract } from "ethers";
 import { Provider } from "ethers/providers";
 import {
@@ -17,7 +15,7 @@ import {
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { JSON_STRINGIFY_SPACE } from "./constants";
-import { MinimumViableMultisig, ProxyFactory } from "./contracts";
+import { addressBook, addressHistory, MinimumViableMultisig, ProxyFactory } from "./contracts";
 
 export function getFirstElementInListNotEqualTo(test: string, list: string[]) {
   return list.filter(x => x !== test)[0];
