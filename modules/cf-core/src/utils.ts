@@ -1,5 +1,6 @@
 import { CriticalStateChannelAddresses } from "@connext/types";
-import { addressBook, addressHistory } from "@connext/contracts";
+import * as addressBook from "@connext/contracts/address-book.json";
+import * as addressHistory from "@connext/contracts/address-history.json";
 import { Contract } from "ethers";
 import { Provider } from "ethers/providers";
 import {
@@ -173,15 +174,14 @@ export const scanForCriticalAddresses = async (
   const chainId = (await ethProvider.getNetwork()).chainId;
   // First, consolidate all sources of addresses to scan
 
-  let toxicBytecodes: string[] = [];
+  // Falsy toxic bytecode (ie "") causes getCreate2MultisigAddress to fetch non-toxic value
+  let toxicBytecodes: string[] = [``];
   if(addressHistory[chainId] && addressHistory[chainId].ToxicBytecode) {
     toxicBytecodes = toxicBytecodes.concat(addressHistory[chainId].ToxicBytecode);
   }
   if (moreAddressHistory && moreAddressHistory.ToxicBytecode) {
     toxicBytecodes = toxicBytecodes.concat(moreAddressHistory.ToxicBytecode);
   }
-  // Falsy toxic bytecode (ie "") causes getCreate2MultisigAddress to fetch non-toxic value
-  toxicBytecodes.push("");
   toxicBytecodes = [...new Set(toxicBytecodes)]; // de-dup
   //console.log(`Scanning toxic bytecode: ${toxicBytecodes}`);
 
