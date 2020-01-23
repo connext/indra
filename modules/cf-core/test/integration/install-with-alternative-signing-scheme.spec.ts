@@ -5,7 +5,7 @@ import log from "loglevel";
 
 import { generatePrivateKeyGeneratorAndXPubPair, Node } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
-import { NODE_EVENTS, ProposeMessage } from "../../src/types";
+import { ProposeMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 import MemoryLockService from "../services/memory-lock-service";
@@ -29,20 +29,20 @@ expect.extend({ toBeLt });
 
 log.disableAll();
 
-describe("Uses a provided signing key generation function to sign channel state updates", () => {
+describe(`Uses a provided signing key generation function to sign channel state updates`, () => {
   let multisigAddress: string;
   jest.setTimeout(10000);
   let nodeA: Node;
   let nodeB: Node;
 
   describe(
-    "Node A gets app install proposal, sends to node B, B approves it, installs it, " +
-      "sends acks back to A, A installs it, both nodes have the same app instance",
+    `Node A gets app install proposal, sends to node B, B approves it, installs it, ` +
+      `sends acks back to A, A installs it, both nodes have the same app instance`,
     () => {
       beforeEach(async () => {
-        const provider = new JsonRpcProvider(global["ganacheURL"]);
+        const provider = new JsonRpcProvider(global[`ganacheURL`]);
         const messagingService = new MemoryMessagingService();
-        const nodeConfig = { STORE_KEY_PREFIX: "test" };
+        const nodeConfig = { STORE_KEY_PREFIX: `test` };
 
         const lockService = new MemoryLockService();
 
@@ -54,7 +54,7 @@ describe("Uses a provided signing key generation function to sign channel state 
         nodeA = await Node.create(
           messagingService,
           storeServiceA,
-          global["networkContext"],
+          global[`networkContext`],
           nodeConfig,
           provider,
           lockService,
@@ -70,7 +70,7 @@ describe("Uses a provided signing key generation function to sign channel state 
         nodeB = await Node.create(
           messagingService,
           storeServiceB,
-          global["networkContext"],
+          global[`networkContext`],
           nodeConfig,
           provider,
           lockService,
@@ -81,7 +81,7 @@ describe("Uses a provided signing key generation function to sign channel state 
         multisigAddress = await createChannel(nodeA, nodeB);
       });
 
-      it("install app with ETH", async done => {
+      it(`install app with ETH`, async done => {
         await collateralizeChannel(multisigAddress, nodeA, nodeB);
 
         let preInstallETHBalanceNodeA: BigNumber;
@@ -89,7 +89,7 @@ describe("Uses a provided signing key generation function to sign channel state 
         let preInstallETHBalanceNodeB: BigNumber;
         let postInstallETHBalanceNodeB: BigNumber;
 
-        nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
+        nodeB.on(`PROPOSE_INSTALL_EVENT`, async (msg: ProposeMessage) => {
           [
             preInstallETHBalanceNodeA,
             preInstallETHBalanceNodeB
@@ -102,7 +102,7 @@ describe("Uses a provided signing key generation function to sign channel state 
           makeInstallCall(nodeB, msg.data.appInstanceId);
         });
 
-        nodeA.on("INSTALL_EVENT", async () => {
+        nodeA.on(`INSTALL_EVENT`, async () => {
           const [appInstanceNodeA] = await getInstalledAppInstances(nodeA);
           const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
           expect(appInstanceNodeA).toBeDefined();
@@ -128,7 +128,7 @@ describe("Uses a provided signing key generation function to sign channel state 
         nodeA.rpcRouter.dispatch(
           await makeProposeCall(
             nodeB,
-            (global["networkContext"] as NetworkContextForTestSuite)
+            (global[`networkContext`] as NetworkContextForTestSuite)
               .TicTacToeApp,
             undefined,
             One,

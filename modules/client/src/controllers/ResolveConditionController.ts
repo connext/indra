@@ -1,3 +1,11 @@
+import {
+  RECEIVE_TRANSFER_FAILED_EVENT,
+  RECEIVE_TRANSFER_FINISHED_EVENT,
+  RECEIVE_TRANSFER_STARTED_EVENT,
+  RECIEVE_TRANSFER_FAILED_EVENT,
+  RECIEVE_TRANSFER_FINISHED_EVENT,
+  RECIEVE_TRANSFER_STARTED_EVENT,
+} from "@connext/types";
 import { HashZero, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
@@ -37,12 +45,14 @@ export class ResolveConditionController extends AbstractController {
   // properly logs error and emits a receive transfer failed event
   private handleResolveErr = (paymentId: string, e: any): void => {
     this.log.error(`Failed to resolve linked transfer ${paymentId}: ${e.stack || e.message}`);
-    this.connext.emit("RECEIVE_TRANSFER_FAILED_EVENT", { paymentId });
-
-    // TODO: remove
-    this.connext.emit("RECIEVE_TRANSFER_FAILED_EVENT", {
+    this.connext.emit(RECEIVE_TRANSFER_FAILED_EVENT, {
       paymentId,
-      message: "This event has been deprecated in favor of RECEIVE_TRANSFER_FAILED_EVENT",
+    });
+
+    // TODO: remove when deprecated
+    this.connext.emit(RECIEVE_TRANSFER_FAILED_EVENT, {
+      paymentId,
+      message: `This event has been deprecated in favor of ${RECEIVE_TRANSFER_FAILED_EVENT}`,
     });
     throw e;
   };
@@ -132,14 +142,14 @@ export class ResolveConditionController extends AbstractController {
     );
     this.log.info(`Found link payment for ${amount} ${assetId}`);
 
-    this.connext.emit("RECEIVE_TRANSFER_STARTED_EVENT", {
+    this.connext.emit(RECEIVE_TRANSFER_STARTED_EVENT, {
       paymentId,
     });
 
-    // TODO: remove
-    this.connext.emit("RECIEVE_TRANSFER_STARTED_EVENT", {
+    // TODO: remove when deprecated
+    this.connext.emit(RECIEVE_TRANSFER_STARTED_EVENT, {
       paymentId,
-      message: "This event has been deprecated in favor of RECEIVE_TRANSFER_STARTED_EVENT",
+      message: `This event has been deprecated in favor of ${RECEIVE_TRANSFER_STARTED_EVENT}`,
     });
 
     // convert and validate
@@ -192,14 +202,14 @@ export class ResolveConditionController extends AbstractController {
       );
     }
 
-    this.connext.emit("RECEIVE_TRANSFER_FINISHED_EVENT", {
+    this.connext.emit(RECEIVE_TRANSFER_FINISHED_EVENT, {
       paymentId,
     });
 
-    // TODO: remove
-    this.connext.emit("RECIEVE_TRANSFER_FINISHED_EVENT", {
+    // TODO: remove when deprecated
+    this.connext.emit(RECIEVE_TRANSFER_FINISHED_EVENT, {
       paymentId,
-      message: "This event has been deprecated in favor of RECEIVE_TRANSFER_FINISHED_EVENT",
+      message: `This event has been deprecated in favor of ${RECEIVE_TRANSFER_FINISHED_EVENT}`,
     });
 
     return {
@@ -237,47 +247,47 @@ export class ResolveConditionController extends AbstractController {
 
     // verify initial state params are correct
     if (!bigNumberify(amount).eq(amount)) {
-      throwErr(`incorrect amount in state`);
+      throwErr("incorrect amount in state");
     }
 
     if (assetIdParam !== assetId) {
-      throwErr(`incorrect assetId`);
+      throwErr("incorrect assetId");
     }
 
     if (paymentIdParam !== paymentId) {
-      throwErr(`incorrect paymentId`);
+      throwErr("incorrect paymentId");
     }
 
     if (linkedHash !== createLinkedHash(amountParam, assetIdParam, paymentIdParam, preImageParam)) {
-      throwErr(`incorrect linked hash`);
+      throwErr("incorrect linked hash");
     }
 
     if (HashZero !== preImage) {
-      throwErr(`non-zero preimage`);
+      throwErr("non-zero preimage");
     }
 
     // verify correct amount + sender in senders transfer object
     if (!bigNumberify(coinTransfers[0].amount).eq(amountParam)) {
-      throwErr(`incorrect initial sender amount in latest state`);
+      throwErr("incorrect initial sender amount in latest state");
     }
 
     if (coinTransfers[0].to !== xpubToAddress(this.connext.nodePublicIdentifier)) {
-      throwErr(`incorrect sender address in latest state`);
+      throwErr("incorrect sender address in latest state");
     }
 
     // verify correct amount + sender in receivers transfer object
     if (!bigNumberify(coinTransfers[1].amount).eq(Zero)) {
-      throwErr(`incorrect initial receiver amount in latest state`);
+      throwErr("incorrect initial receiver amount in latest state");
     }
 
     if (coinTransfers[1].to !== xpubToAddress(this.connext.publicIdentifier)) {
-      throwErr(`incorrect receiver address in latest state`);
+      throwErr("incorrect receiver address in latest state");
     }
 
     // TODO: how can we access / verify the `meta` here?
 
     if (appInstance.isVirtualApp) {
-      throwErr(`virtual app`);
+      throwErr("virtual app");
     }
 
     // all other general app params should be handled on the `proposeInstall`

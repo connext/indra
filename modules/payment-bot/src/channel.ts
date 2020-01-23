@@ -1,6 +1,6 @@
 import * as connext from "@connext/client";
 import { ConnextStore, FileStorage } from "@connext/store";
-import { ClientOptions, IConnextClient, IBackupServiceAPI } from "@connext/types";
+import { ClientOptions, IConnextClient, IBackupServiceAPI, WITHDRAWAL_CONFIRMED_EVENT, UNINSTALL_VIRTUAL_EVENT } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 
 import { config } from "./config";
@@ -30,9 +30,9 @@ export const getOrCreateChannel = async (): Promise<IConnextClient> => {
   console.log(` - token address: ${client.config.contractAddresses.Token}`);
 
   client.on(
-    "UNINSTALL_VIRTUAL_EVENT",
+    UNINSTALL_VIRTUAL_EVENT,
     async (): Promise<void> => {
-      console.log(`Bot event caught: "UNINSTALL_VIRTUAL_EVENT"`);
+      console.log(`Bot event caught: ${UNINSTALL_VIRTUAL_EVENT}`);
       logEthFreeBalance(AddressZero, await client.getFreeBalance());
       logEthFreeBalance(
         client.config.contractAddresses.Token,
@@ -42,9 +42,9 @@ export const getOrCreateChannel = async (): Promise<IConnextClient> => {
   );
 
   client.on(
-    "WITHDRAWAL_CONFIRMED_EVENT",
+    WITHDRAWAL_CONFIRMED_EVENT,
     async (): Promise<void> => {
-      console.log(`Bot event caught: "WITHDRAWAL_CONFIRMED_EVENT"`);
+      console.log(`Bot event caught: ${WITHDRAWAL_CONFIRMED_EVENT}`);
       logEthFreeBalance(AddressZero, await client.getFreeBalance());
       logEthFreeBalance(
         client.config.contractAddresses.Token,

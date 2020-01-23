@@ -169,16 +169,8 @@ const sendGift = async (address, token) => {
 
   // Sanity check: Is our eth provider serving us the correct network?
   const net = process.env.ETH_NETWORK;
-  if (((net === `mainnet` || net === `live`) && chainId === 1) ||
-      (net === `ropsten` && chainId === 3) ||
-      ((net === `rinkeby` || net === `staging`) && chainId === 4) ||
-      (net === `kovan` && chainId === 42) ||
-      (net === `ganache` && chainId === ganacheId)) {
-    console.log(`\nPreparing to migrate contracts to ${net} network (${chainId})`);
-    console.log(`Deployer Wallet: address=${wallet.address} nonce=${nonce} balance=${balance}`);
-  } else {
-    console.error(`Warning: given network (${net}) doesn't match the network ID from provider: ${chainId}`);
-  }
+  console.log(`\nPreparing to migrate contracts to ${net} network (${chainId})`);
+  console.log(`Deployer Wallet: address=${wallet.address} nonce=${nonce} balance=${balance}`);
 
   ////////////////////////////////////////
   // Deploy contracts

@@ -3,8 +3,6 @@ import { parseEther } from "ethers/utils";
 import { Node } from "../../src";
 import {
   InstallVirtualMessage,
-  NODE_EVENTS,
-  UpdateStateMessage
 } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
@@ -17,6 +15,7 @@ import {
   createChannel,
   installVirtualApp
 } from "./utils";
+import { UPDATE_STATE_EVENT, INSTALL_VIRTUAL_EVENT } from "@connext/types";
 
 expect.extend({ toBeLt });
 
@@ -59,7 +58,7 @@ describe("Concurrently taking action on virtual apps without issue", () => {
     const INSTALLED_APPS = 2;
     const appIds: string[] = [];
 
-    nodeA.on("INSTALL_VIRTUAL_EVENT", (msg: InstallVirtualMessage) => {
+    nodeA.on(INSTALL_VIRTUAL_EVENT, (msg: InstallVirtualMessage) => {
       expect(msg.data.params.appInstanceId).toBeTruthy();
       appIds.push(msg.data.params.appInstanceId);
     });
@@ -74,7 +73,7 @@ describe("Concurrently taking action on virtual apps without issue", () => {
 
     let appsTakenActionOn = 0;
 
-    nodeC.on("UPDATE_STATE_EVENT", () => {
+    nodeC.on(UPDATE_STATE_EVENT, () => {
       appsTakenActionOn += 1;
       if (appsTakenActionOn === 2) done();
     });

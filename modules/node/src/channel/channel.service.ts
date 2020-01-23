@@ -3,6 +3,7 @@ import {
   StateChannelJSON,
   SupportedApplication,
   SupportedApplications,
+  CoinBalanceRefundApp,
 } from "@connext/types";
 import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { Contract } from "ethers";
@@ -23,7 +24,7 @@ import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
 
-const logger = new CLogger("ChannelService");
+const logger = new CLogger(`ChannelService`);
 
 @Injectable()
 export class ChannelService {
@@ -76,7 +77,7 @@ export class ChannelService {
     );
     if (
       balanceRefundApp &&
-      balanceRefundApp.latestState["recipient"] === xpubToAddress(channel.userPublicIdentifier)
+      balanceRefundApp.latestState[`recipient`] === xpubToAddress(channel.userPublicIdentifier)
     ) {
       throw new Error(
         `Cannot deposit, user's CoinBalanceRefundApp is installed for ${channel.userPublicIdentifier}`,
@@ -85,7 +86,7 @@ export class ChannelService {
 
     if (
       balanceRefundApp &&
-      balanceRefundApp.latestState["recipient"] === this.cfCoreService.cfCore.freeBalanceAddress
+      balanceRefundApp.latestState[`recipient`] === this.cfCoreService.cfCore.freeBalanceAddress
     ) {
       logger.log(`Node's CoinBalanceRefundApp is installed, removing first.`);
       await this.cfCoreService.rescindDepositRights(channel.multisigAddress, assetId);
@@ -103,8 +104,8 @@ export class ChannelService {
       assetId === AddressZero
         ? await ethProvider.getBalance(channel.multisigAddress)
         : await new Contract(assetId!, tokenAbi, ethProvider).functions.balanceOf(
-            channel.multisigAddress,
-          );
+          channel.multisigAddress,
+        );
 
     const initialState = {
       multisig: channel.multisigAddress,
@@ -118,9 +119,7 @@ export class ChannelService {
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = await this.configService.getDefaultAppByName(
-      SupportedApplications.CoinBalanceRefundApp as SupportedApplication,
-    );
+    } = await this.configService.getDefaultAppByName(CoinBalanceRefundApp);
 
     const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {

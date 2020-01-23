@@ -3,18 +3,18 @@
   "version": "0.2.4",
   "private": true,
   "scripts": {
-    "start": "react-scripts start",
+    "start": "./node_modules/.bin/react-scripts start",
     "test": "make test",
     "start-test": "make start-test",
-    "build": "react-scripts build",
-    "eject": "react-scripts eject",
+    "build": "./node_modules/.bin/react-scripts --max_old_space_size=4096 build",
+    "eject": "./node_modules/.bin/react-scripts eject",
     "logs": "bash ops/logs.sh",
     "format": "prettier --write \"src/**/*.js\""
   },
   "dependencies": {
-    "@connext/client": "4.0.3",
-    "@connext/store": "4.0.3",
-    "@connext/types": "4.0.3",
+    "@connext/client": "4.0.5",
+    "@connext/store": "4.0.5",
+    "@connext/types": "4.0.5",
     "@material-ui/core": "4.8.2",
     "@material-ui/icons": "4.5.1",
     "@walletconnect/browser": "1.0.0-beta.41",
@@ -41,7 +41,7 @@
     "xstate": "4.7.5"
   },
   "devDependencies": {
-    "@connext/types": "4.0.3",
+    "@connext/types": "4.0.5",
     "bn.js": "5.1.1",
     "chai-bn": "0.2.0"
   },

@@ -2,7 +2,7 @@ import { One, Two, Zero } from "ethers/constants";
 
 import { Node } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
-import { NODE_EVENTS, UninstallMessage } from "../../src/types";
+import { UninstallMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeEq } from "../machine/integration/bignumber-jest-matcher";
 

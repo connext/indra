@@ -1,7 +1,7 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes } from "../../../types";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { NodeController } from "../../controller";
 
 /**
@@ -9,7 +9,7 @@ import { NodeController } from "../../controller";
  * this Node.
  */
 export default class GetAppInstancesController extends NodeController {
-  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_getAppInstances)
+  @jsonRpcMethod(ProtocolTypes.chan_getAppInstances)
   public executeMethod = super.executeMethod;
 
   protected async executeMethodImplementation(

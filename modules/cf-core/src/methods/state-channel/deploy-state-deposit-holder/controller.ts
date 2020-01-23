@@ -16,7 +16,7 @@ import {
 } from "../../../machine/xkeys";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
-import { NetworkContext, CFCoreTypes } from "../../../types";
+import { NetworkContext, CFCoreTypes, ProtocolTypes } from "../../../types";
 import {
   getCreate2MultisigAddress,
   prettyPrintObject,
@@ -28,7 +28,7 @@ import {
   NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT,
   INCORRECT_MULTISIG_ADDRESS,
   INVALID_FACTORY_ADDRESS,
-  INVALID_MASTERCOPY_ADDRESS,
+  INVALID_MASTERCOPY_ADDRESS
 } from "../../errors";
 
 // Estimate based on rinkeby transaction:
@@ -36,7 +36,7 @@ import {
 const CREATE_PROXY_AND_SETUP_GAS = 500_000;
 
 export default class DeployStateDepositHolderController extends NodeController {
-  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_deployStateDepositHolder)
+  @jsonRpcMethod(ProtocolTypes.chan_deployStateDepositHolder)
   public executeMethod = super.executeMethod;
 
   protected async beforeExecution(
@@ -53,7 +53,9 @@ export default class DeployStateDepositHolderController extends NodeController {
     }
 
     if (!channel.addresses.multisigMastercopy) {
-      throw Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
+      throw Error(
+        INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy)
+      );
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
@@ -92,7 +94,7 @@ export default class DeployStateDepositHolderController extends NodeController {
     }
 
     // Check if the contract has already been deployed on-chain
-    if ((await provider.getCode(multisigAddress)) === "0x") {
+    if ((await provider.getCode(multisigAddress)) === `0x`) {
       tx = await sendMultisigDeployTx(
         wallet,
         channel,
@@ -124,7 +126,7 @@ async function sendMultisigDeployTx(
   const provider = signer.provider as JsonRpcProvider;
 
   if (!provider) {
-    throw Error("wallet must have a provider");
+    throw Error(`wallet must have a provider`);
   }
 
   const signerAddress = await signer.getAddress();
