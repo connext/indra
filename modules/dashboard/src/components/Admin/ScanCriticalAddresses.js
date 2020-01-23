@@ -1,5 +1,4 @@
 import { scanForCriticalAddresses } from "@connext/cf-core";
-import { addressHistory } from "@connext/contracts";
 import { getDefaultProvider } from "ethers";
 import React, { useState } from "react";
 import Button from "@material-ui/core/Button";
