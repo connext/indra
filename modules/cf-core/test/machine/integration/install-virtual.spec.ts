@@ -21,7 +21,7 @@ import {
   ProxyFactory,
   TwoPartyFixedOutcomeApp,
 } from "../../contracts";
-import { transferERC20Tokens } from "../../integration/utils";
+import { transferERC20Tokens, testDomainSeparator } from "../../integration/utils";
 
 import { toBeEq } from "./bignumber-jest-matcher";
 import { connectToGanache } from "./connect-ganache";
@@ -306,7 +306,10 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
         targetAppInstance.identityHash, // target
         stateChannel.freeBalance.identityHash, // fb
         network.TwoPartyFixedOutcomeFromVirtualAppInterpreter,
-        encodeSingleAssetTwoPartyIntermediaryAgreementParams(agreement)
+        encodeSingleAssetTwoPartyIntermediaryAgreementParams(agreement),
+        testDomainSeparator,
+        provider.network.chainId,
+        stateChannel.numProposedApps
       );
 
       await wallet.sendTransaction({
@@ -370,7 +373,10 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
         targetAppInstance.identityHash, // target
         stateChannel.freeBalance.identityHash, // fb
         network.TwoPartyFixedOutcomeFromVirtualAppInterpreter,
-        encodeSingleAssetTwoPartyIntermediaryAgreementParams(agreement)
+        encodeSingleAssetTwoPartyIntermediaryAgreementParams(agreement),
+        testDomainSeparator,
+        provider.network.chainId,
+        stateChannel.numProposedApps
       );
 
       await wallet.sendTransaction({

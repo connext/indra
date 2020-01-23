@@ -19,6 +19,7 @@ import {
   B_EXTENDED_PRIVATE_KEY,
   C_EXTENDED_PRIVATE_KEY,
 } from "../test-constants.jest";
+import { testDomainSeparator } from "./utils";
 
 export interface NodeContext {
   node: Node;
@@ -80,6 +81,7 @@ export async function setup(
     global["networkContext"],
     nodeConfig,
     provider,
+    testDomainSeparator,
     lockService,
     hdNodeA.neuter().extendedKey,
     (index: string): Promise<string> => Promise.resolve(hdNodeA.derivePath(index).privateKey),
@@ -98,6 +100,7 @@ export async function setup(
     global["networkContext"],
     nodeConfig,
     provider,
+    testDomainSeparator,
     lockService,
     hdNodeB.neuter().extendedKey,
     (index: string): Promise<string> => Promise.resolve(hdNodeB.derivePath(index).privateKey),
@@ -117,6 +120,7 @@ export async function setup(
       global["networkContext"],
       nodeConfig,
       provider,
+      testDomainSeparator,
       lockService,
       hdNodeC.neuter().extendedKey,
       (index: string): Promise<string> => Promise.resolve(hdNodeC.derivePath(index).privateKey),

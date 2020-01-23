@@ -14,7 +14,7 @@ import {
   UninstallVirtualMessage,
 } from "@connext/types";
 import { Contract, Wallet } from "ethers";
-import { AddressZero, One, Zero } from "ethers/constants";
+import { AddressZero, One, Zero, HashZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
@@ -42,6 +42,7 @@ import {
   DepositStartedMessage,
   EventEmittedMessage,
   ProposeInstallProtocolParams,
+  DomainSeparator,
 } from "../../src/types";
 import { deBigNumberifyJson, bigNumberifyJson } from "../../src/utils";
 
@@ -59,6 +60,12 @@ const {
   UnidirectionalLinkedTransferApp,
   UnidirectionalTransferApp
 } = global["networkContext"] as NetworkContextForTestSuite;
+
+export const testDomainSeparator: DomainSeparator = {
+  domainName: "CounterFactual Test",
+  domainVersion: "0.0.1",
+  domainSalt: HashZero
+}
 
 export async function requestDepositRights(
   node: Node,

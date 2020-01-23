@@ -22,6 +22,7 @@ import {
   extendedPrvKeyToExtendedPubKey,
   getRandomExtendedPrvKeys
 } from "./random-signing-keys";
+import { testDomainSeparator } from "../../integration/utils";
 
 // ProxyFactory.createProxy uses assembly `call` so we can't estimate
 // gas needed, so we hard-code this number to ensure the tx completes
@@ -128,7 +129,10 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
         network,
         stateChannel.multisigAddress,
         stateChannel.multisigOwners,
-        stateChannel.freeBalance.identity
+        stateChannel.freeBalance.identity,
+        testDomainSeparator,
+        provider.network.chainId,
+        stateChannel.numProposedApps
       );
 
       const setupTx = setupCommitment.getSignedTransaction([

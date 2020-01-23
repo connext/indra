@@ -30,7 +30,7 @@ import {
   NetworkContextForTestSuite,
   ProxyFactory,
 } from "../../contracts";
-import { transferERC20Tokens } from "../../integration/utils";
+import { transferERC20Tokens, testDomainSeparator } from "../../integration/utils";
 
 import { toBeEq } from "./bignumber-jest-matcher";
 import { connectToGanache } from "./connect-ganache";
@@ -227,7 +227,10 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
           [
             identityAppInstance.multiAssetMultiPartyCoinTransferInterpreterParams!
           ]
-        )
+        ),
+        testDomainSeparator,
+        provider.network.chainId,
+        stateChannel.numProposedApps
       );
 
       const multisigDelegateCallTx = conditionalTransaction.getSignedTransaction(
@@ -282,7 +285,10 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         network,
         stateChannel.multisigAddress,
         stateChannel.multisigOwners,
-        stateChannel.freeBalance.identity
+        stateChannel.freeBalance.identity,
+        testDomainSeparator,
+        provider.network.chainId,
+        stateChannel.numProposedApps
       );
 
       const multisigDelegateCallTx2 = freeBalanceConditionalTransaction.getSignedTransaction(
