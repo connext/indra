@@ -1,4 +1,4 @@
-import { IConnextClient } from "@connext/types";
+import { IConnextClient, LINKED_TRANSFER, LINKED_TRANSFER_TO_RECIPIENT } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
 import { hexlify, randomBytes } from "ethers/utils";
 
@@ -21,7 +21,7 @@ describe("Async Transfers", () => {
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       assetId: AddressZero,
-      conditionType: "LINKED_TRANSFER",
+      conditionType: LINKED_TRANSFER,
       paymentId,
       preImage,
     });
@@ -49,7 +49,7 @@ describe("Async Transfers", () => {
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       assetId: AddressZero,
-      conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
+      conditionType: LINKED_TRANSFER_TO_RECIPIENT,
       paymentId,
       preImage,
       recipient: clientB.publicIdentifier,
@@ -74,7 +74,7 @@ describe("Async Transfers", () => {
     await clientA.conditionalTransfer({
       amount: transfer.amount.toString(),
       assetId: AddressZero,
-      conditionType: "LINKED_TRANSFER_TO_RECIPIENT",
+      conditionType: LINKED_TRANSFER_TO_RECIPIENT,
       paymentId,
       preImage,
       recipient: clientB.publicIdentifier,

@@ -1,4 +1,4 @@
-import { CreateChannelMessage } from "@connext/types";
+import { CreateChannelMessage, CREATE_CHANNEL_EVENT } from "@connext/types";
 import { isHexString } from "ethers/utils";
 
 import { Node } from "../../src";
@@ -32,7 +32,7 @@ describe("Node can create multisig, other owners get notified", () => {
 
     const expectedMsg = {
       from: nodeB.publicIdentifier,
-      type: "CREATE_CHANNEL_EVENT",
+      type: CREATE_CHANNEL_EVENT,
       data: {
         owners: [
           nodeB.freeBalanceAddress,
@@ -44,13 +44,13 @@ describe("Node can create multisig, other owners get notified", () => {
 
     let assertionCount = 0;
 
-    nodeA.once("CREATE_CHANNEL_EVENT", async (msg: CreateChannelMessage) => {
+    nodeA.once(CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
       assertNodeMessage(msg, expectedMsg, ["data.multisigAddress"]);
       assertionCount += 1;
       if (assertionCount === 2) done();
     });
 
-    nodeB.once("CREATE_CHANNEL_EVENT", async (msg: CreateChannelMessage) => {
+    nodeB.once(CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
       assertNodeMessage(msg, {
         ...expectedMsg,
         data: {
@@ -92,7 +92,7 @@ describe("Node can create multisig, other owners get notified", () => {
       ];
 
       nodeA.on(
-        "CREATE_CHANNEL_EVENT",
+        CREATE_CHANNEL_EVENT,
         async (msg: CreateChannelMessage) => {
           if (msg.data.owners === ownersABPublicIdentifiers) {
             const openChannelsNodeA = await getChannelAddresses(nodeA);

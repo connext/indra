@@ -2,7 +2,7 @@ import {
   CFCoreTypes,
   NetworkContext,
   ProtocolMessage,
-  SolidityValueType,
+  SolidityValueType
 } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import { Signature } from "ethers/utils";
@@ -21,7 +21,7 @@ export abstract class EthereumCommitment {
   public abstract hashToSign(signerIsIntermediary?: boolean): string;
   public abstract getSignedTransaction(
     signatures: Signature[],
-    intermediarySignature?: Signature,
+    intermediarySignature?: Signature
   ): CFCoreTypes.MinimalTransaction;
 }
 
@@ -32,7 +32,7 @@ export enum MultisigOperation {
   // make use of it in our code. Still, I put this here to be
   // maximally explicit that we based the data structure on
   // Gnosis's implementation of a Multisig
-  Create = 2,
+  Create = 2
 }
 
 export type MultisigTransaction = CFCoreTypes.MinimalTransaction & {
@@ -98,6 +98,7 @@ export {
   Protocol,
   ProtocolMessage,
   ProtocolParameters,
+  ProtocolTypes,
   RejectInstallVirtualMessage,
   RejectProposalMessage,
   SetupProtocolParams,
@@ -118,5 +119,5 @@ export {
   WithdrawConfirmationMessage,
   WithdrawFailedMessage,
   WithdrawProtocolParams,
-  WithdrawStartedMessage,
+  WithdrawStartedMessage
 } from "@connext/types";

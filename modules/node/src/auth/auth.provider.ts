@@ -5,6 +5,8 @@ import { AuthProviderId, MessagingProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
 
 import { AuthService } from "./auth.service";
+import { RpcException } from "@nestjs/microservices";
+import { stringify } from "querystring";
 
 class AuthMessaging extends AbstractMessagingProvider {
   constructor(messaging: IMessagingService, private readonly authService: AuthService) {
@@ -12,11 +14,14 @@ class AuthMessaging extends AbstractMessagingProvider {
   }
 
   async getNonce(subject: string, data: { address: string }): Promise<string> {
+    if (!data.address) {
+      throw new RpcException(`No address found in data: ${stringify(data)}`);
+    }
     return this.authService.getNonce(data.address);
   }
 
   async setupSubscriptions(): Promise<void> {
-    super.connectRequestReponse("auth.getNonce", this.getNonce.bind(this));
+    super.connectRequestReponse(`auth.getNonce`, this.getNonce.bind(this));
   }
 }
 

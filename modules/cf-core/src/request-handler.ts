@@ -10,6 +10,7 @@ import RpcRouter from "./rpc-router";
 import { Store } from "./store";
 import { NetworkContext, CFCoreTypes, NODE_EVENTS, NodeEvent } from "./types";
 import { bigNumberifyJson } from "./utils";
+import { DEPOSIT_CONFIRMED_EVENT } from "@connext/types";
 
 /**
  * This class registers handlers for requests to get or set some information
@@ -55,7 +56,7 @@ export class RequestHandler {
     method: CFCoreTypes.MethodName,
     req: CFCoreTypes.MethodRequest
   ): Promise<CFCoreTypes.MethodResponse> {
-    const result = {
+    const result: CFCoreTypes.MethodResponse = {
       type: req.type,
       requestId: req.requestId,
       result: await this.methods.get(method)(this, req.params)
@@ -83,7 +84,7 @@ export class RequestHandler {
         };
 
         // @ts-ignore
-        this.router.emit(req.methodName, res, "outgoing");
+        this.router.emit(req.methodName, res, `outgoing`);
       });
     }
   }
@@ -111,7 +112,7 @@ export class RequestHandler {
     const controllerCount = this.router.eventListenerCount(event);
 
     if (!controllerExecutionMethod && controllerCount === 0) {
-      if (event === "DEPOSIT_CONFIRMED_EVENT") {
+      if (event === DEPOSIT_CONFIRMED_EVENT) {
         log.info(
           `No event handler for counter depositing into channel: ${JSON.stringify(
             msg,

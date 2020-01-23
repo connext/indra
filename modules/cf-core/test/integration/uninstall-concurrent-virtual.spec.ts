@@ -3,7 +3,6 @@ import { parseEther } from "ethers/utils";
 import { Node } from "../../src";
 import {
   InstallVirtualMessage,
-  NODE_EVENTS,
   UninstallVirtualMessage
 } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";

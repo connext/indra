@@ -1,5 +1,5 @@
 import { Node } from "../../src";
-import { NODE_EVENTS, UninstallMessage } from "../../src/types";
+import { UninstallMessage } from "../../src/types";
 import { timeout } from "../../src/utils";
 import { NetworkContextForTestSuite } from "../contracts";
 

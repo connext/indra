@@ -7,7 +7,7 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { ERC20 } from "../../../contracts";
 import { xkeyKthAddress } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes } from "../../../types";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
@@ -22,7 +22,7 @@ import {
 
 // TODO: maybe a better name? since it's a little smarter than just a plain install
 export default class RequestDepositRightsController extends NodeController {
-  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_requestDepositRights)
+  @jsonRpcMethod(ProtocolTypes.chan_requestDepositRights)
   public executeMethod: (
     requestHandler: RequestHandler,
     params: CFCoreTypes.MethodParams

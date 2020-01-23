@@ -14,6 +14,7 @@ import {
   makeVirtualProposeCall,
   assertNodeMessage
 } from "./utils";
+import { REJECT_INSTALL_EVENT } from "@connext/types";
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
@@ -40,7 +41,7 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
         let appInstanceId: string;
 
         nodeA.on(
-          "REJECT_INSTALL_EVENT",
+          REJECT_INSTALL_EVENT,
           async (msg: RejectInstallVirtualMessage) => {
             expect((await getProposedAppInstances(nodeA)).length).toEqual(0);
             assertNodeMessage(msg, {
@@ -48,7 +49,7 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
               data: {
                 appInstanceId
               },
-              type: "REJECT_INSTALL_EVENT"
+              type: REJECT_INSTALL_EVENT
             });
             done();
           }

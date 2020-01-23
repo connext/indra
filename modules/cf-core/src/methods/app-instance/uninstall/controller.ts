@@ -1,7 +1,7 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes } from "../../../types";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
@@ -13,7 +13,7 @@ import {
 import { uninstallAppInstanceFromChannel } from "./operation";
 
 export default class UninstallController extends NodeController {
-  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_uninstall)
+  @jsonRpcMethod(ProtocolTypes.chan_uninstall)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
