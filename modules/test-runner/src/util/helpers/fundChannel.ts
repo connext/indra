@@ -1,5 +1,5 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { IConnextClient, DEPOSIT_FAILED_EVENT } from "@connext/types";
+import { IConnextClient, DEPOSIT_CONFIRMED_EVENT, DEPOSIT_FAILED_EVENT } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
@@ -12,7 +12,7 @@ export const fundChannel = async (
 ): Promise<void> => {
   const prevFreeBalance = await client.getFreeBalance(assetId);
   await new Promise(async (resolve, reject) => {
-    client.once("DEPOSIT_CONFIRMED_EVENT", async () => {
+    client.once(DEPOSIT_CONFIRMED_EVENT, async () => {
       const freeBalance = await client.getFreeBalance(assetId);
       // verify free balance increased as expected
       const expected = prevFreeBalance[client.freeBalanceAddress].add(amount);
@@ -40,7 +40,7 @@ export const requestCollateral = async (
   const nodeFreeBalanceAddress = xkeyKthAddress(client.nodePublicIdentifier);
   const prevFreeBalance = await client.getFreeBalance(assetId);
   await new Promise(async (resolve, reject) => {
-    client.once("DEPOSIT_CONFIRMED_EVENT", async data => {
+    client.once(`DEPOSIT_CONFIRMED_EVENT`, async data => {
       const freeBalance = await client.getFreeBalance(assetId);
       // verify free balance increased as expected
       expect(freeBalance[nodeFreeBalanceAddress]).to.be.above(

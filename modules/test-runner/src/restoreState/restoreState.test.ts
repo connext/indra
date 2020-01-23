@@ -5,7 +5,7 @@ import { AddressZero, Zero } from "ethers/constants";
 import { expect } from "../util";
 import { createClient, ETH_AMOUNT_SM, getStore, TOKEN_AMOUNT } from "../util";
 
-describe("Restore State", () => {
+describe(`Restore State`, () => {
   let clientA: IConnextClient;
   let tokenAddress: string;
   let nodeFreeBalanceAddress: string;
@@ -16,9 +16,9 @@ describe("Restore State", () => {
     tokenAddress = clientA.config.contractAddresses.Token;
     nodePublicIdentifier = clientA.config.nodePublicIdentifier;
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
-  }, 90_000);
+  });
 
-  it("happy case: client can delete its store and restore from a remote backup", async () => {
+  it(`happy case: client can delete its store and restore from a remote backup`, async () => {
     // client deposit and request node collateral
     await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
@@ -32,15 +32,15 @@ describe("Restore State", () => {
     expect(freeBalanceTokenPre[nodeFreeBalanceAddress].toString()).to.be.eq(TOKEN_AMOUNT.toString());
 
     // delete store
-    const store = getStore();
+    const store = getStore(clientA.publicIdentifier);
     store.reset();
 
     // check that getting balances will now error
     await expect(clientA.getFreeBalance(AddressZero)).to.be.rejectedWith(
-      "Call to getStateChannel failed when searching for multisig address",
+      `Call to getStateChannel failed when searching for multisig address`,
     );
     await expect(clientA.getFreeBalance(tokenAddress)).to.be.rejectedWith(
-      "Call to getStateChannel failed when searching for multisig address",
+      `Call to getStateChannel failed when searching for multisig address`,
     );
 
     await clientA.restoreState();
