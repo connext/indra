@@ -220,6 +220,11 @@
       "address": "0x40cd4292438642bAc4b5733ED4ec45509bf164Bb",
       "bytecode": "0x401c9743f9b231490322bcca4301d75e5d0b39745d9fc8b90f8cd5b779852225",
       "txHash": "0x4bdba42fa5cc00add4b0774e2a4154b31207dc8d0a26d7f16e3fbd1e30cd9243"
+    },
+    "Token": {
+      "address": "0xc5f89a4DfB8947F90f79E3d34EC05C07B7E64265",
+      "bytecode": "0xf97398131762b89df0289198fa30b8da8776d0afc8662aefc397a0b6b31ceb44",
+      "txHash": "0x3217505ee0b45b53dd492272f683d8ed68fe9453c36dc612bd1dd3c356c08afb"
     }
   },
   "4447": {
