@@ -1,5 +1,6 @@
 import { CriticalStateChannelAddresses } from "@connext/types";
-import { addressBook, addressHistory } from "@connext/contracts";
+import * as addressBook from "@connext/contracts/address-book.json";
+import * as addressHistory from "@connext/contracts/address-history.json";
 import { Contract } from "ethers";
 import { Provider } from "ethers/providers";
 import {
