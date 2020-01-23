@@ -11,7 +11,9 @@ SHELL=/bin/bash
 commit=$(shell git rev-parse HEAD | head -c 8)
 release=$(shell cat package.json | grep '"version"' | awk -F '"' '{print $$4}')
 solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}')
-backwards_compatible_version=$(shell echo $(release) | cut -d '.' -f 1).0.0
+
+# version that will be tested against for backwards compatibility checks
+backwards_compatible_version=$(shell echo $(release) | cut -d '.' -f 1).0.1
 
 # Pool of images to pull cached layers from during docker build steps
 cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_relay:$(commit),$(project)_relay,$(project)_bot:$(commit),$(project)_bot,$(project)_builder"; else echo ""; fi)

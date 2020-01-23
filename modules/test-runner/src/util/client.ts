@@ -11,32 +11,47 @@ import { env } from "./env";
 import { ethWallet } from "./ethprovider";
 import { MessageCounter, TestMessagingService } from "./messaging";
 
-let clientStore: ConnextStore;
-let clientMessaging: TestMessagingService;
+let clientStore: { [xpub: string]: ConnextStore } = {};
+let clientMessaging: { [xpub: string]: TestMessagingService | undefined } = {};
 
-export const getStore = (): ConnextStore => {
-  return clientStore;
+export const getStore = (xpub: string): ConnextStore => {
+  return clientStore[xpub];
 };
 
-export const getMessaging = (): TestMessagingService | undefined => {
-  return (clientMessaging as TestMessagingService) || undefined;
+export const getMessaging = (xpub: string): TestMessagingService | undefined => {
+  return clientMessaging[xpub];
 };
+
+export const cleanupMessaging = async (xpub?: string): Promise<void> => {
+  const toRemove = xpub ? [xpub] : Object.keys(clientMessaging);
+  for (const pubId of toRemove) {
+    if (clientMessaging[pubId]) {
+      await clientMessaging[pubId]!.unsubscribe(`indra.>`);
+    }
+  }
+  return;
+};
+
+
 
 export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<IConnextClient> => {
-  const memoryStorage = new MemoryStorage();
 
-  clientStore = new ConnextStore(memoryStorage);
+  const store = new ConnextStore(new MemoryStorage());
 
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
     logLevel: env.logLevel,
     mnemonic: Wallet.createRandom().mnemonic,
     nodeUrl: env.nodeUrl,
-    store: clientStore,
+    store,
     ...opts,
   };
-  clientMessaging = (clientOpts.messaging as TestMessagingService) || undefined;
   const client = await connect(clientOpts);
+
+  // set client store and messaging
+  clientMessaging[client.publicIdentifier] = (clientOpts.messaging as TestMessagingService) || undefined;
+  clientStore[client.publicIdentifier] = store;
+
   // TODO: add client endpoint to get node config, so we can easily have its xpub etc
 
   const ethTx = await ethWallet.sendTransaction({
@@ -88,7 +103,7 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
     store,
   };
 
-  if (network === "mainnet") {
+  if (network === `mainnet`) {
     clientOpts = {
       mnemonic: Wallet.createRandom().mnemonic,
 
@@ -103,12 +118,13 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
   return client;
 };
 
+export type ClientTestMessagingInputOpts = {
+  ceiling: Partial<MessageCounter>; // set ceiling of sent/received
+  protocol: string; // use "any" to limit any messages by count
+  delay: Partial<MessageCounter>; // ms delay or sent callbacks
+};
 export const createClientWithMessagingLimits = async (
-  opts: Partial<{
-    ceiling: Partial<MessageCounter>; // set ceiling of sent/received
-    protocol: string; // use "any" to limit any messages by count
-    delay: Partial<MessageCounter>; // ms delay or sent callbacks
-  }> = {},
+  opts: Partial<ClientTestMessagingInputOpts> = {},
 ): Promise<IConnextClient> => {
   const { protocol, ceiling, delay } = opts;
   const messageOptions: any = {};
@@ -122,7 +138,7 @@ export const createClientWithMessagingLimits = async (
     return await createClient({ messaging });
   }
 
-  if (protocol === "any") {
+  if (protocol === `any`) {
     // assign the ceiling for the general message count
     messageOptions.count = { ceiling, delay };
   } else {
@@ -144,7 +160,7 @@ export const createClientWithMessagingLimits = async (
     ceiling,
     delay,
   };
-  !protocol || protocol === "any"
+  !protocol || protocol === `any`
     ? expect(messaging.count).to.containSubset(expected)
     : expect(messaging[protocol]).to.containSubset(expected);
   expect(messaging.options).to.containSubset(messageOptions);

@@ -12,14 +12,14 @@ export const fundChannel = async (
 ): Promise<void> => {
   const prevFreeBalance = await client.getFreeBalance(assetId);
   await new Promise(async (resolve, reject) => {
-    client.once("DEPOSIT_CONFIRMED_EVENT", async () => {
+    client.once(`DEPOSIT_CONFIRMED_EVENT`, async () => {
       const freeBalance = await client.getFreeBalance(assetId);
       // verify free balance increased as expected
       const expected = prevFreeBalance[client.freeBalanceAddress].add(amount);
       expect(freeBalance[client.freeBalanceAddress]).to.equal(expected);
       resolve();
     });
-    client.once("DEPOSIT_FAILED_EVENT", async (msg: any) => {
+    client.once(`DEPOSIT_FAILED_EVENT`, async (msg: any) => {
       reject(new Error(JSON.stringify(msg)));
     });
 
@@ -40,7 +40,7 @@ export const requestCollateral = async (
   const nodeFreeBalanceAddress = xkeyKthAddress(client.nodePublicIdentifier);
   const prevFreeBalance = await client.getFreeBalance(assetId);
   await new Promise(async (resolve, reject) => {
-    client.once("DEPOSIT_CONFIRMED_EVENT", async data => {
+    client.once(`DEPOSIT_CONFIRMED_EVENT`, async data => {
       const freeBalance = await client.getFreeBalance(assetId);
       // verify free balance increased as expected
       expect(freeBalance[nodeFreeBalanceAddress]).to.be.above(
@@ -48,7 +48,7 @@ export const requestCollateral = async (
       );
       resolve();
     });
-    client.once("DEPOSIT_FAILED_EVENT", async (msg: any) => {
+    client.once(`DEPOSIT_FAILED_EVENT`, async (msg: any) => {
       reject(new Error(JSON.stringify(msg)));
     });
 

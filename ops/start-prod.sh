@@ -128,6 +128,8 @@ if [[ "$chainId" == "1" ]]
 then eth_network_name="mainnet"
 elif [[ "$chainId" == "4" ]]
 then eth_network_name="rinkeby"
+elif [[ "$chainId" == "6" ]]
+then eth_network_name="kotti"
 elif [[ "$chainId" == "42" ]]
 then eth_network_name="kovan"
 elif [[ "$chainId" == "$ganache_chain_id" ]]

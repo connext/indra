@@ -1,4 +1,3 @@
-import { addressHistory } from "@connext/contracts";
 import {
   ConnextNodeStorePrefix,
   CriticalStateChannelAddresses,
@@ -162,43 +161,42 @@ export class AdminService {
       return output;
     }
     logger.log(`Preparing to repair ${output.broken.length} channels`);
-    const chainId = (await this.configService.getEthNetwork()).chainId;
     // Make a copy of broken multisigs so we can edit the output while looping through it
     const brokenMultisigs = JSON.parse(JSON.stringify(output.broken));
     // Second loop: attempt to repair broken channels
     for (const brokenMultisig of brokenMultisigs) {
-      const { data: state } = await this.cfCoreService.getStateChannel(brokenMultisigs);
-      logger.log(`Searching for critical addresses needed to fix channel ${brokenMultisigs}..`);
+      const { data: state } = await this.cfCoreService.getStateChannel(brokenMultisig);
+      logger.log(`Searching for critical addresses needed to fix channel ${brokenMultisig}..`);
       const criticalAddresses = await scanForCriticalAddresses(
         state.userNeuteredExtendedKeys,
         state.multisigAddress,
-        addressHistory[chainId],
         this.configService.getEthProvider(),
       );
       if (!criticalAddresses) {
         logger.warn(`Could not find critical addresses that would fix channel ${state.multisigAddress}`);
-      } else if (criticalAddresses.toxicBytecode) {
+        continue;
+      }
+      if (criticalAddresses.toxicBytecode) {
         logger.warn(`Channel ${state.multisigAddress} was created with toxic bytecode, it is unrepairable`);
       } else if (criticalAddresses.legacyKeygen) {
         logger.warn(`Channel ${state.multisigAddress} was created with legacyKeygen, it needs to be repaired manually`);
-      } else {
-        logger.log(`Found critical addresses that fit, repairing channel: ${brokenMultisig}`);
-        const repoPath = `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel/${brokenMultisig}`;
-        const cfCoreRecord = await this.cfCoreRepository.get(repoPath);
-        cfCoreRecord["addresses"] = {
-          proxyFactory: criticalAddresses.proxyFactory,
-          multisigMastercopy: criticalAddresses.multisigMastercopy,
-        } as CriticalStateChannelAddresses;
-        await this.cfCoreRepository.set([
-          {
-            path: repoPath,
-            value: cfCoreRecord,
-          },
-        ]);
-        // Move this channel from broken to fixed
-        output.fixed.push(brokenMultisig);
-        output.broken = output.broken.filter(multisig => multisig === brokenMultisig);
       }
+      logger.log(`Found critical addresses that fit, repairing channel: ${brokenMultisig}`);
+      const repoPath = `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel/${brokenMultisig}`;
+      const cfCoreRecord = await this.cfCoreRepository.get(repoPath);
+      cfCoreRecord["addresses"] = {
+        proxyFactory: criticalAddresses.proxyFactory,
+        multisigMastercopy: criticalAddresses.multisigMastercopy,
+      } as CriticalStateChannelAddresses;
+      await this.cfCoreRepository.set([
+        {
+          path: repoPath,
+          value: cfCoreRecord,
+        },
+      ]);
+      // Move this channel from broken to fixed
+      output.fixed.push(brokenMultisig);
+      output.broken = output.broken.filter(multisig => multisig === brokenMultisig);
     }
     if (output.broken.length > 0) {
       logger.warn(`${output.broken.length} channels could not be repaired`);
