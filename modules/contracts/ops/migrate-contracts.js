@@ -194,7 +194,7 @@ const sendGift = async (address, token) => {
   }
 
   // If this network has not token yet, deploy one
-  if (!getSavedData(`Token`, `address`)) {
+  if (chainId === ganacheId || !getSavedData(`Token`, `address`)) {
     token = await deployContract(`Token`, tokenArtifacts, []);
   }
 
