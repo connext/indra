@@ -20,11 +20,11 @@ import RpcRouter from "./rpc-router";
 import {
   NetworkContext,
   CFCoreTypes,
-  NODE_EVENTS,
   NodeMessageWrappedProtocolMessage
 } from "./types";
 import { timeout } from "./utils";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
+import { PROTOCOL_MESSAGE_EVENT, NODE_EVENTS } from "@connext/types";
 
 export interface NodeConfig {
   // The prefix for any keys used in the store by this Node depends on the
@@ -114,7 +114,7 @@ export class Node {
   private async asynchronouslySetupUsingRemoteServices(): Promise<Node> {
     // TODO: is "0" a reasonable path to derive `signer` private key from?
     this.signer = new SigningKey(
-      await this.privateKeyGetter.getPrivateKey("0")
+      await this.privateKeyGetter.getPrivateKey(`0`)
     );
     log.info(`Node signer address: ${this.signer.address}`);
     log.info(`Node public identifier: ${this.publicIdentifier}`);
@@ -166,7 +166,7 @@ export class Node {
 
     protocolRunner.register(Opcode.OP_SIGN, async (args: any[]) => {
       if (args.length !== 1 && args.length !== 2) {
-        throw Error("OP_SIGN middleware received wrong number of arguments.");
+        throw Error(`OP_SIGN middleware received wrong number of arguments.`);
       }
 
       const [commitment, overrideKeyIndex] = args;
@@ -187,7 +187,7 @@ export class Node {
       await this.messagingService.send(to, {
         data,
         from: fromXpub,
-        type: NODE_EVENTS.PROTOCOL_MESSAGE_EVENT
+        type: PROTOCOL_MESSAGE_EVENT
       } as NodeMessageWrappedProtocolMessage);
     });
 
@@ -206,7 +206,7 @@ export class Node {
         await this.messagingService.send(to, {
           data,
           from: this.publicIdentifier,
-          type: NODE_EVENTS.PROTOCOL_MESSAGE_EVENT
+          type: PROTOCOL_MESSAGE_EVENT
         } as NodeMessageWrappedProtocolMessage);
 
         // 90 seconds is the default lock acquiring time time
@@ -215,7 +215,7 @@ export class Node {
           timeout(IO_SEND_AND_WAIT_TIMEOUT)
         ]);
 
-        if (!msg || !("data" in (msg as NodeMessageWrappedProtocolMessage))) {
+        if (!msg || !(`data` in (msg as NodeMessageWrappedProtocolMessage))) {
           throw Error(
             `IO_SEND_AND_WAIT timed out after 90s waiting for counterparty reply in ${data.protocol}`
           );
@@ -339,7 +339,7 @@ export class Node {
       this.publicIdentifier,
       async (msg: CFCoreTypes.NodeMessage) => {
         await this.handleReceivedMessage(msg);
-        this.rpcRouter.emit(msg.type, msg, "outgoing");
+        this.rpcRouter.emit(msg.type, msg, `outgoing`);
       }
     );
   }
@@ -366,7 +366,7 @@ export class Node {
     }
 
     const isProtocolMessage = (msg: CFCoreTypes.NodeMessage) =>
-      msg.type === NODE_EVENTS.PROTOCOL_MESSAGE_EVENT;
+      msg.type === PROTOCOL_MESSAGE_EVENT;
 
     const isExpectingResponse = (msg: NodeMessageWrappedProtocolMessage) =>
       this.ioSendDeferrals.has(msg.data.processID);
@@ -387,7 +387,7 @@ export class Node {
 
     if (!this.ioSendDeferrals.has(key)) {
       throw Error(
-        "Node received message intended for machine but no handler was present"
+        `Node received message intended for machine but no handler was present`
       );
     }
 

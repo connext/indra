@@ -4,14 +4,14 @@ import { jsonRpcMethod } from "rpc-server";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { ERC20 } from "../../../contracts";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes } from "../../../types";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { NodeController } from "../../controller";
 import { uninstallBalanceRefundApp } from "../deposit/operation";
 import { BigNumber } from "ethers/utils";
 import { Contract } from "ethers";
 
 export default class RescindDepositRightsController extends NodeController {
-  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_rescindDepositRights)
+  @jsonRpcMethod(ProtocolTypes.chan_rescindDepositRights)
   public executeMethod: (
     requestHandler: RequestHandler,
     params: CFCoreTypes.MethodParams

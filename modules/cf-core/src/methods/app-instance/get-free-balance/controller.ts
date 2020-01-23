@@ -2,11 +2,11 @@ import { jsonRpcMethod } from "rpc-server";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes } from "../../../types";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { NodeController } from "../../controller";
 
 export default class GetFreeBalanceController extends NodeController {
-  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_getFreeBalanceState)
+  @jsonRpcMethod(ProtocolTypes.chan_getFreeBalanceState)
   public executeMethod = super.executeMethod;
 
   protected async executeMethodImplementation(

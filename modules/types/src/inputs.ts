@@ -3,6 +3,7 @@ import { Address, BigNumber } from "./basic";
 import { AssetAmount } from "./channel";
 import { ProtocolTypes } from "./protocol";
 
+
 /////////////////////////////////
 ///////// SWAP
 export type AllowedSwap = {
@@ -42,6 +43,9 @@ export type RescindDepositRightsParameters = RequestDepositRightsParameters;
 export type RescindDepositRightsResponse = ProtocolTypes.DepositResult;
 
 ////// Transfer types
+export const LINKED_TRANSFER = "LINKED_TRANSFER";
+export const LINKED_TRANSFER_TO_RECIPIENT = "LINKED_TRANSFER_TO_RECIPIENT";
+
 // TODO: would we ever want to pay people in the same app with multiple currencies?
 export type TransferParameters<T = string> = DepositParameters<T> & {
   recipient: Address;
@@ -82,7 +86,7 @@ export type ResolveLinkedTransferToRecipientParameters<T = string> = Omit<
 > & {
   amount: T;
   assetId: string;
-  conditionType: "LINKED_TRANSFER_TO_RECIPIENT";
+  conditionType: typeof LINKED_TRANSFER_TO_RECIPIENT;
 };
 export type ResolveLinkedTransferToRecipientParametersBigNumber =
   ResolveLinkedTransferToRecipientParameters<BigNumber>;
@@ -104,14 +108,14 @@ export type ResolveConditionResponse = ResolveLinkedTransferResponse;
 ///// Conditional transfer types
 
 export const TransferConditions = {
-  LINKED_TRANSFER: "LINKED_TRANSFER",
-  LINKED_TRANSFER_TO_RECIPIENT: "LINKED_TRANSFER_TO_RECIPIENT",
+  [LINKED_TRANSFER]: LINKED_TRANSFER,
+  [LINKED_TRANSFER_TO_RECIPIENT]: LINKED_TRANSFER_TO_RECIPIENT,
 };
 export type TransferCondition = keyof typeof TransferConditions;
 
 // linked transfer types
 export type LinkedTransferParameters<T = string> = {
-  conditionType: "LINKED_TRANSFER";
+  conditionType: typeof LINKED_TRANSFER;
   amount: T;
   assetId?: Address;
   paymentId: string;
@@ -131,7 +135,7 @@ export type LinkedTransferToRecipientParameters<T = string> = Omit<
   LinkedTransferParameters<T>,
   "conditionType"
 > & {
-  conditionType: "LINKED_TRANSFER_TO_RECIPIENT";
+  conditionType: typeof LINKED_TRANSFER_TO_RECIPIENT;
   recipient: string;
 };
 export type LinkedTransferToRecipientParametersBigNumber = LinkedTransferToRecipientParameters<

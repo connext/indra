@@ -1,5 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { CF_PATH, StateSchemaVersion } from "@connext/types";
+import { CF_PATH, CREATE_CHANNEL_EVENT, StateSchemaVersion } from "@connext/types";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -53,7 +53,7 @@ const setupMultisigAddress = async (
       new Promise(
         async (res: any): Promise<any> => {
           channelProvider.once(
-            CFCoreTypes.EventNames.CREATE_CHANNEL_EVENT as CFCoreTypes.EventName,
+            CREATE_CHANNEL_EVENT,
             (data: CreateChannelMessage): void => {
               res(data.data);
             },

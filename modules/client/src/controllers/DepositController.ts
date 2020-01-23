@@ -9,6 +9,7 @@ import {
   ChannelState,
   CoinBalanceRefundAppStateBigNumber,
   convert,
+  ProtocolTypes,
   DepositParameters,
   SupportedApplication,
   SupportedApplications,
@@ -16,13 +17,14 @@ import {
 import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
+import { CoinBalanceRefundApp } from "@connext/types";
 
 // TODO: refactor to use unrolled version
 export class DepositController extends AbstractController {
   public deposit = async (params: DepositParameters): Promise<ChannelState> => {
     const myFreeBalanceAddress = this.connext.freeBalanceAddress;
 
-    const { assetId, amount } = convert.Deposit("bignumber", params);
+    const { assetId, amount } = convert.Deposit(`bignumber`, params);
 
     // check asset balance of address
     let bal: BigNumber;
@@ -50,7 +52,7 @@ export class DepositController extends AbstractController {
     this.log.debug(`Coin balance refund app proposed with id: ${appId}`);
 
     try {
-      this.log.info(`Calling ${CFCoreTypes.RpcMethodNames.chan_deposit}`);
+      this.log.info(`Calling ${ProtocolTypes.chan_deposit}`);
       await this.connext.rescindDepositRights({ assetId });
       const depositResponse = await this.connext.providerDeposit(amount, assetId);
       this.log.info(`Deposit Response: ${stringify(depositResponse)}`);
@@ -64,10 +66,10 @@ export class DepositController extends AbstractController {
       // changing this from !eq to lt. now that we have async deposits there is an edge case
       // where it could be more than amount
       if (diff.lt(amount)) {
-        throw new Error("My balance was not increased by the deposit amount.");
+        throw new Error(`My balance was not increased by the deposit amount.`);
       }
 
-      this.log.info("Deposited!");
+      this.log.info(`Deposited!`);
     } catch (e) {
       const msg = `Failed to deposit: ${e.stack || e.message}`;
       this.log.error(msg);
@@ -88,8 +90,8 @@ export class DepositController extends AbstractController {
       assetId === AddressZero
         ? await this.ethProvider.getBalance(this.connext.multisigAddress)
         : await new Contract(assetId!, tokenAbi, this.ethProvider).functions.balanceOf(
-            this.connext.multisigAddress,
-          );
+          this.connext.multisigAddress,
+        );
 
     const initialState: CoinBalanceRefundAppStateBigNumber = {
       multisig: this.connext.multisigAddress,
@@ -103,9 +105,7 @@ export class DepositController extends AbstractController {
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = this.connext.getRegisteredAppDetails(
-      SupportedApplications.CoinBalanceRefundApp as SupportedApplication,
-    );
+    } = this.connext.getRegisteredAppDetails(CoinBalanceRefundApp);
 
     const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {

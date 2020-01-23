@@ -5,7 +5,12 @@ import { Protocol, ProtocolRunner } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { Store } from "../../../store";
-import { CFCoreTypes, NODE_EVENTS, SolidityValueType, UpdateStateMessage } from "../../../types";
+import {
+  CFCoreTypes,
+  ProtocolTypes,
+  SolidityValueType,
+  UpdateStateMessage
+} from "../../../types";
 import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
@@ -14,9 +19,10 @@ import {
   NO_APP_INSTANCE_FOR_TAKE_ACTION,
   STATE_OBJECT_NOT_ENCODABLE
 } from "../../errors";
+import { UPDATE_STATE_EVENT } from "@connext/types";
 
 export default class TakeActionController extends NodeController {
-  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_takeAction)
+  @jsonRpcMethod(ProtocolTypes.chan_takeAction)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
@@ -92,11 +98,11 @@ export default class TakeActionController extends NodeController {
 
     const msg = {
       from: publicIdentifier,
-      type: "UPDATE_STATE_EVENT",
+      type: UPDATE_STATE_EVENT,
       data: { appInstanceId, action, newState: appInstance.state }
     } as UpdateStateMessage;
 
-    await router.emit(msg.type, msg, "outgoing");
+    await router.emit(msg.type, msg, `outgoing`);
   }
 }
 
@@ -127,7 +133,7 @@ async function runTakeActionProtocol(
       }
     );
   } catch (e) {
-    if (e.toString().indexOf("VM Exception") !== -1) {
+    if (e.toString().indexOf(`VM Exception`) !== -1) {
       // TODO: Fetch the revert reason
       throw Error(`${INVALID_ACTION}: ${e.message}`);
     }
