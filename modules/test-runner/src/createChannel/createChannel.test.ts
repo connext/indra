@@ -44,7 +44,7 @@ describe(`Create Channel`, () => {
 
   it(`Creating a channel with mainnet network string fails if no mnemonic is provided`, async () => {
     await expect(createDefaultClient(`mainnet`, { mnemonic: undefined })).to.be.rejectedWith(
-      `Client must be instantiated with xpub and keyGen, or a channelProvider if not using mnemonic`,
+      `Must provide mnemonic or xpub + keygen`,
     );
   });
 
