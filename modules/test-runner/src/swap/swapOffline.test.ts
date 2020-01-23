@@ -1,6 +1,7 @@
 import { utils } from "@connext/client";
 import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
+import { useFakeTimers } from "sinon";
 
 import {
   createClientWithMessagingLimits,
@@ -66,7 +67,13 @@ describe(`Swap offline`, () => {
     }
   };
 
-  it(`Bot A tries to install swap but there’s no response from node`, async function(): Promise<
+  let clock: any;
+
+  beforeEach(() => {
+    clock = useFakeTimers();
+  });
+
+  it.only(`Bot A tries to install swap but there’s no response from node`, async function(): Promise<
     void
     > {
     // @ts-ignore
@@ -77,6 +84,9 @@ describe(`Swap offline`, () => {
       ceiling: { received: expectedInstallsReceived },
       protocol: `install`,
     };
+
+    await clock.tickAsync(89_000);
+
     // deposit eth into channel and swap for token
     // go offline during swap, should fail with swap timeout
     await fundChannelAndSwap({
@@ -160,5 +170,6 @@ describe(`Swap offline`, () => {
 
   afterEach(async () => {
     await cleanupMessaging();
+    clock.restore();
   });
 });
