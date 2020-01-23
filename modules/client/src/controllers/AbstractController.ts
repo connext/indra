@@ -28,7 +28,14 @@ export abstract class AbstractController {
   proposeAndInstallLedgerApp = async (
     params: CFCoreTypes.ProposeInstallParams,
   ): Promise<string> => {
-    const { appInstanceId } = await this.connext.proposeInstallApp(params);
+    const proposeRes = await Promise.race([
+      this.connext.proposeInstallApp(params),
+      delayAndThrow(
+        CF_METHOD_TIMEOUT,
+        `App proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
+      ),
+    ]);
+    const { appInstanceId } = proposeRes as CFCoreTypes.ProposeInstallResult;
 
     let boundResolve: (value?: any) => void;
     let boundReject: (reason?: any) => void;

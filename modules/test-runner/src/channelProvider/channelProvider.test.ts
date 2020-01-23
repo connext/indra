@@ -17,7 +17,7 @@ import {
 } from "../util";
 import { createOrRetrieveNatsConnection } from "../util/nats";
 
-describe("ChannelProvider", () => {
+describe(`ChannelProvider`, () => {
   let clientA: IConnextClient;
   let clientA1: IConnextClient;
   let tokenAddress: string;
@@ -35,9 +35,9 @@ describe("ChannelProvider", () => {
     channelProvider = await createChannelProvider(clientA);
     clientA1 = await createRemoteClient(channelProvider);
     natsConnection = await createOrRetrieveNatsConnection();
-  }, 90_000);
+  });
 
-  it("Happy case: client A1 can be instantiated with a channelProvider generated from client A", async () => {
+  it(`Happy case: client A1 can be instantiated with a channelProvider generated from client A`, async () => {
     const _tokenAddress = clientA1.config.contractAddresses.Token;
     const _nodePublicIdentifier = clientA1.config.nodePublicIdentifier;
     const _nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
@@ -47,7 +47,7 @@ describe("ChannelProvider", () => {
     expect(_nodeFreeBalanceAddress).to.be.eq(nodeFreeBalanceAddress);
   });
 
-  it("Happy case: Bot A1 can call the full deposit → swap → transfer → withdraw flow on Bot A", async () => {
+  it(`Happy case: Bot A1 can call the full deposit → swap → transfer → withdraw flow on Bot A`, async () => {
     const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
 
@@ -83,7 +83,7 @@ describe("ChannelProvider", () => {
         );
       }),
       new Promise(async resolve => {
-        clientB.once("RECEIVE_TRANSFER_FINISHED_EVENT", async () => {
+        clientB.once(`RECEIVE_TRANSFER_FINISHED_EVENT`, async () => {
           resolve();
         });
       }),
@@ -103,16 +103,16 @@ describe("ChannelProvider", () => {
     await withdrawFromChannel(clientA1, withdraw.amount, withdraw.assetId);
   });
 
-  it("Bot A1 tries to call a function when Bot A is offline", async () => {
+  it(`Bot A1 tries to call a function when Bot A is offline`, async () => {
     // close channelProvider connection
     clientA1.channelProvider.close();
 
     await expect(clientA1.getFreeBalance(AddressZero)).to.be.rejectedWith(
-      "RpcConnection: Timeout - JSON-RPC not responded within 30s",
+      `RpcConnection: Timeout - JSON-RPC not responded within 30s`,
     );
   });
 
-  it.skip("Bot A1 tries to reject installing a proposed app that bot A has already installed?", async () => {
+  it.skip(`Bot A1 tries to reject installing a proposed app that bot A has already installed?`, async () => {
     // TODO: add test
   });
 });

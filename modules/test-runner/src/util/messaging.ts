@@ -2,10 +2,10 @@ import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import { CFCoreTypes, MessagingConfig } from "@connext/types";
 
 import { env } from "./env";
-import { delay } from "./misc";
+import { combineObjects, delay } from "./misc";
 
 const defaultCount = (details: string[] = []): MessageCounter | DetailedMessageCounter => {
-  if (details.includes("delay") && details.includes("ceiling")) {
+  if (details.includes(`delay`) && details.includes(`ceiling`)) {
     return {
       ...zeroCounter(),
       ceiling: undefined,
@@ -13,7 +13,7 @@ const defaultCount = (details: string[] = []): MessageCounter | DetailedMessageC
     };
   }
 
-  if (details.includes("delay")) {
+  if (details.includes(`delay`)) {
     return {
       ...zeroCounter(),
       delay: zeroCounter(),
@@ -68,33 +68,6 @@ const defaultOpts = (): TestMessagingConfig => {
   };
 };
 
-const combineObjects = (overrides: any, defaults: any): any => {
-  if (!overrides && defaults) {
-    return { ...defaults };
-  }
-  const ret = { ...defaults };
-  Object.entries(defaults).forEach(([key, value]) => {
-    // if there is non override, return without updating defaults
-    if (!overrides[key]) {
-      // no comparable value, return
-      return;
-    }
-
-    if (overrides[key] && typeof overrides[key] === "object") {
-      ret[key] = { ...(value as any), ...overrides[key] };
-      return;
-    }
-
-    if (overrides[key] && typeof overrides[key] !== "object") {
-      ret[key] = overrides[key];
-    }
-
-    // otherwise leave as default
-    return;
-  });
-  return ret;
-};
-
 export class TestMessagingService implements IMessagingService {
   private connection: IMessagingService;
   private protocolDefaults: {
@@ -116,7 +89,7 @@ export class TestMessagingService implements IMessagingService {
       logLevel: this.options.messagingConfig.logLevel,
       messagingUrl: this.options.messagingConfig.messagingUrl,
     });
-    this.connection = factory.createService("messaging");
+    this.connection = factory.createService(`messaging`);
     // set protocol coounts
     this.protocolDefaults = this.options.protocolDefaults;
     // setup count
@@ -135,7 +108,7 @@ export class TestMessagingService implements IMessagingService {
   }
 
   get installVirtual(): DetailedMessageCounter {
-    return this.protocolDefaults["install-virtual-app"];
+    return this.protocolDefaults[`install-virtual-app`];
   }
 
   get propose(): DetailedMessageCounter {
@@ -151,7 +124,7 @@ export class TestMessagingService implements IMessagingService {
   }
 
   get uninstallVirtual(): DetailedMessageCounter {
-    return this.protocolDefaults["uninstall-virtual-app"];
+    return this.protocolDefaults[`uninstall-virtual-app`];
   }
 
   get update(): DetailedMessageCounter {
@@ -177,7 +150,7 @@ export class TestMessagingService implements IMessagingService {
     // wait out delay
     await this.awaitDelay();
     if (
-      this.hasCeiling({ type: "received" }) &&
+      this.hasCeiling({ type: `received` }) &&
       this.count.ceiling!.received! <= this.count.received
     ) {
       console.log(
@@ -202,14 +175,14 @@ export class TestMessagingService implements IMessagingService {
       await this.awaitDelay(false, protocol);
       // verify ceiling exists and has not been reached
       if (
-        this.hasCeiling({ protocol, type: "received" }) &&
+        this.hasCeiling({ protocol, type: `received` }) &&
         this.protocolDefaults[protocol].ceiling!.received! <=
           this.protocolDefaults[protocol].received
       ) {
         const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached. ${this
           .protocolDefaults[protocol].received - 1} received, ceiling: ${this.protocolDefaults[
-          protocol
-        ].ceiling!.received!}`;
+            protocol
+          ].ceiling!.received!}`;
         console.log(msg);
         return;
       }
@@ -224,7 +197,7 @@ export class TestMessagingService implements IMessagingService {
     this.count.sent += 1;
     // wait out delay
     await this.awaitDelay(true);
-    if (this.hasCeiling({ type: "sent" }) && this.count.sent >= this.count.ceiling!.sent!) {
+    if (this.hasCeiling({ type: `sent` }) && this.count.sent >= this.count.ceiling!.sent!) {
       console.log(
         `Reached ceiling (${this.count.ceiling!
           .sent!}), refusing to send any more messages. Sent ${this.count.sent - 1} messages`,
@@ -243,12 +216,12 @@ export class TestMessagingService implements IMessagingService {
     // wait out delay
     await this.awaitDelay(true, protocol);
     if (
-      this.hasCeiling({ type: "sent", protocol }) &&
+      this.hasCeiling({ type: `sent`, protocol }) &&
       this.protocolDefaults[protocol].sent >= this.protocolDefaults[protocol].ceiling!.sent!
     ) {
       const msg = `Refusing to send any more messages, ceiling for ${protocol} has been reached. ${this
         .protocolDefaults[protocol].sent - 1} sent, ceiling: ${this.protocolDefaults[protocol]
-        .ceiling!.sent!}`;
+          .ceiling!.sent!}`;
       console.log(msg);
       return;
     }
@@ -258,14 +231,14 @@ export class TestMessagingService implements IMessagingService {
   }
 
   private awaitDelay = async (isSend: boolean = false, protocol?: string): Promise<any> => {
-    const key = isSend ? "sent" : "received";
+    const key = isSend ? `sent` : `received`;
     if (!protocol) {
       if (!this.count.delay) {
         return;
       }
       return await delay(this.count.delay[key] || 0);
     }
-    if (!this.protocolDefaults[protocol] || !this.protocolDefaults[protocol]["delay"]) {
+    if (!this.protocolDefaults[protocol] || !this.protocolDefaults[protocol][`delay`]) {
       return;
     }
     return await delay(this.protocolDefaults[protocol]!.delay![key] || 0);
@@ -326,7 +299,7 @@ export class TestMessagingService implements IMessagingService {
     return protocol;
   }
 
-  private hasCeiling(opts: Partial<{ type: "sent" | "received"; protocol: string }> = {}): boolean {
+  private hasCeiling(opts: Partial<{ type: `sent` | `received`; protocol: string }> = {}): boolean {
     const { type, protocol } = opts;
     const exists = (value: any | undefined | null): boolean => {
       // will return true if value is null, and will

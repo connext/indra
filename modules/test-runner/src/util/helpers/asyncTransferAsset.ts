@@ -29,14 +29,14 @@ export async function asyncTransferAsset(
   const transferFinished = Promise.all([
     new Promise(
       async (resolve: Function): Promise<void> => {
-        clientA.once("UNINSTALL_EVENT", async () => {
+        clientA.once(`UNINSTALL_EVENT`, async () => {
           resolve();
         });
       },
     ),
     new Promise(
       async (resolve: Function): Promise<void> => {
-        clientB.once("RECEIVE_TRANSFER_FINISHED_EVENT", async () => {
+        clientB.once(`RECEIVE_TRANSFER_FINISHED_EVENT`, async () => {
           resolve();
         });
       },
@@ -46,7 +46,7 @@ export async function asyncTransferAsset(
   const { paymentId: senderPaymentId } = await clientA.transfer({
     amount: transferAmount.toString(),
     assetId,
-    meta: { hello: "world" },
+    meta: { hello: `world` },
     recipient: clientB.publicIdentifier,
   });
   paymentId = senderPaymentId;
@@ -82,12 +82,12 @@ export async function asyncTransferAsset(
   expect(paymentA).to.deep.include({
     amount: transferAmount.toString(),
     assetId,
-    meta: { hello: "world" },
+    meta: { hello: `world` },
     paymentId,
     receiverPublicIdentifier: clientB.publicIdentifier,
     senderPublicIdentifier: clientA.publicIdentifier,
-    status: "RECLAIMED",
-    type: "LINKED",
+    status: `RECLAIMED`,
+    type: `LINKED`,
   });
   expect(paymentA).to.deep.include(paymentB);
 
