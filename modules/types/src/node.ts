@@ -1,12 +1,11 @@
-import { TransactionResponse } from "ethers/providers";
-import { BigNumber, Network, Transaction } from "ethers/utils";
-
-import { AppRegistry, SupportedApplication, SupportedNetwork } from "./app";
-import { CFCoreTypes, NetworkContext } from "./cf";
+import { AppRegistry, SupportedApplication } from "./app";
+import { BigNumber, Network, Transaction, TransactionResponse } from "./basic";
+import { NetworkContext } from "./contracts";
 import { CFCoreChannel, ChannelAppSequences, PaymentProfile } from "./channel";
 import { IChannelProvider } from "./channelProvider";
 import { ResolveLinkedTransferResponse } from "./inputs";
 import { IMessagingService, MessagingConfig } from "./messaging";
+import { ProtocolTypes } from "./protocol";
 
 ////////////////////////////////////
 ///////// NODE RESPONSE TYPES
@@ -61,7 +60,7 @@ export type CreateChannelResponse = {
 };
 
 // TODO: why was this changed?
-export type RequestCollateralResponse = CFCoreTypes.DepositResult | undefined;
+export type RequestCollateralResponse = ProtocolTypes.DepositResult | undefined;
 
 ////////////////////////////////////
 ///////// NODE API CLIENT
@@ -88,10 +87,14 @@ export interface INodeApiClient {
   nodePublicIdentifier: string | undefined;
 
   acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;
-  appRegistry(appDetails?: {
-    name: SupportedApplication;
-    network: SupportedNetwork;
-  }): Promise<AppRegistry>;
+  appRegistry(
+    appDetails?:
+      | {
+          name: SupportedApplication;
+          chainId: number;
+        }
+      | { appDefinitionAddress: string },
+  ): Promise<AppRegistry>;
   config(): Promise<GetConfigResponse>;
   createChannel(): Promise<CreateChannelResponse>;
   clientCheckIn(): Promise<void>;
@@ -102,7 +105,7 @@ export interface INodeApiClient {
   getTransferHistory(publicIdentifier?: string): Promise<Transfer[]>;
   getLatestWithdrawal(): Promise<Transaction>;
   requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
-  withdraw(tx: CFCoreTypes.MinimalTransaction): Promise<TransactionResponse>;
+  withdraw(tx: ProtocolTypes.MinimalTransaction): Promise<TransactionResponse>;
   fetchLinkedTransfer(paymentId: string): Promise<any>;
   resolveLinkedTransfer(
     paymentId: string,

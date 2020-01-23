@@ -19,15 +19,15 @@ export const appRegistryProviderFactory: Provider = {
     configService: ConfigService,
   ): Promise<void> => {
     for (const app of await configService.getDefaultApps()) {
-      let appRegistry = await appRegistryRepository.findByNameAndNetwork(app.name, app.network);
+      let appRegistry = await appRegistryRepository.findByNameAndNetwork(app.name, app.chainId);
       if (!appRegistry) {
         appRegistry = new AppRegistry();
       }
-      logger.log(`Creating app ${app.name} on ${app.network} at: ${app.appDefinitionAddress}`);
+      logger.log(`Creating ${app.name} app on chain ${app.chainId}: ${app.appDefinitionAddress}`);
       appRegistry.actionEncoding = app.actionEncoding;
       appRegistry.appDefinitionAddress = app.appDefinitionAddress;
       appRegistry.name = app.name;
-      appRegistry.network = app.network;
+      appRegistry.chainId = app.chainId;
       appRegistry.outcomeType = app.outcomeType;
       appRegistry.stateEncoding = app.stateEncoding;
       appRegistry.allowNodeInstall = app.allowNodeInstall;

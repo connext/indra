@@ -7,7 +7,7 @@ import {
   SigningKey
 } from "ethers/utils";
 
-import { EthereumCommitment } from "../../../../src/ethereum/types";
+import { EthereumCommitment } from "../../../../src/types";
 import { assertIsValidSignature } from "../../../../src/protocol/utils/signature-validator";
 
 describe("Signature Validator Helper", () => {

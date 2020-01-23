@@ -47,10 +47,9 @@ export class MockChannelProvider extends EventEmitter implements IChannelProvide
   public connected: boolean = false;
   public connection: IRpcConnection;
 
-  // tslint:disable-next-line:variable-name
   public _config: ChannelProviderConfig | undefined = undefined;
-  public _multisigAddress: string | undefined = undefined; // tslint:disable-line:variable-name
-  public _signerAddress: string | undefined = undefined; // tslint:disable-line:variable-name
+  public _multisigAddress: string | undefined = undefined;
+  public _signerAddress: string | undefined = undefined;
 
   constructor(connection: IRpcConnection) {
     super();
@@ -188,7 +187,6 @@ export class MockChannelProvider extends EventEmitter implements IChannelProvide
 
   // probably can remove the `| string` typing once 1.4.1 types package is
   // published, assuming no non-channel methods are sent to the `_send` fn
-  // tslint:disable-next-line:function-name
   public async _send(method: ChannelProviderRpcMethod | string, params: any = {}): Promise<any> {
     const payload = { jsonrpc: "2.0", id: Date.now(), method, params };
     const result = await this.connection.send(payload as JsonRpcRequest);

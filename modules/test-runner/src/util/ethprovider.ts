@@ -14,7 +14,7 @@ export const ethWallet = Wallet.fromMnemonic(env.mnemonic).connect(ethProvider);
  */
 export const takeEVMSnapshot = async (): Promise<string> => {
   const res = await ethProvider.send("evm_snapshot", []);
-  console.log(`evm_snapshot, res: ${res}`);
+  // console.log(`evm_snapshot, res: ${res}`);
   return res;
 };
 
@@ -23,7 +23,7 @@ export const revertEVMSnapshot = async (snapshotId: string): Promise<void> => {
   if (res !== true) {
     throw new Error(`evm_revert failed, res: ${res}`);
   }
-  console.log(`evm_revert, res: ${res}`);
+  // console.log(`evm_revert, res: ${res}`);
 };
 
 export const sendOnchainValue = async (
@@ -34,16 +34,16 @@ export const sendOnchainValue = async (
   let res;
   if (assetId === AddressZero) {
     res = await ethWallet.sendTransaction({ to, value });
-    console.log("Sent value ", res);
+    // console.log("Sent value ", res);
   } else {
     const tokenContract = new Contract(assetId, abi, ethWallet);
     res = await tokenContract.functions.transfer(to, value);
   }
+  /*
   console.log(
-    `Sent ${bigNumberify(value).toString()} to ${to}, assetId ${assetId}, result: ${JSON.stringify(
-      res,
-    )}`,
+    `Sent ${bigNumberify(value).toString()} to ${to}, assetId ${assetId}: ${JSON.stringify(res)}`,
   );
+  */
 };
 
 export const getOnchainBalance = async (

@@ -10,7 +10,7 @@ const pubKey = computePublicKey(prvKey).replace(/^0x/, "");
 const shortMessage = `123456789012345`;
 const longMessage = `1234567890123456`;
 
-// Mnemonic was pulled from the testnet daicard that recieved a test async transfer
+// Mnemonic was pulled from the testnet daicard that received a test async transfer
 const wallet = Wallet.fromMnemonic(
   "rely effort talent genuine pumpkin wire caught coil type alien offer obtain",
   `${CF_PATH}/0`,

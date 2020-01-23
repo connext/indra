@@ -1,6 +1,8 @@
 import { BigNumber, bigNumberify, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
 
+export const toBN = (n: any) => bigNumberify(n.toString());
+
 // Give abrv = true to abbreviate hex strings and xpubs to look like "xpub6FEC..kuQk"
 export const stringify = (obj: object, abrv: boolean = false): string =>
   JSON.stringify(
@@ -62,7 +64,7 @@ export const delay = (ms: number): Promise<void> =>
   new Promise((res: any): any => setTimeout(res, ms));
 
 export const delayAndThrow = (ms: number, msg: string = ""): Promise<void> =>
-  new Promise((res: any, rej: any): any => setTimeout((): void => rej(msg), ms));
+  new Promise((res: any, rej: any): any => setTimeout((): void => rej(new Error(msg)), ms));
 
 export const createLinkedHash = (
   amount: BigNumber,

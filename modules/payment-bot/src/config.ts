@@ -13,8 +13,8 @@ if (!process.env.MNEMONIC) {
   throw Error("No mnemonic specified in env. Exiting.");
 }
 
-if (!process.env.DB_FILENAME) {
-  throw Error("No dbFile specified in env. Exiting.");
+if (!process.env.STORE_DIR) {
+  throw Error("No storeDir specified in env. Exiting.");
 }
 
 const program = new commander.Command();
@@ -48,7 +48,7 @@ program
 program.parse(process.argv);
 
 export const config: any = {
-  dbFile: process.env.DB_FILENAME!,
+  storeDir: process.env.STORE_DIR!,
   ethProviderUrl: process.env.ETH_RPC_URL!,
   logLevel: 3,
   mnemonic: process.env.MNEMONIC!,

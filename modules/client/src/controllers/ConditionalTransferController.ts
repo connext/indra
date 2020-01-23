@@ -2,9 +2,7 @@ import { HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import {
-  CF_METHOD_TIMEOUT,
   createLinkedHash,
-  delayAndThrow,
   stringify,
   xpubToAddress,
 } from "../lib";
@@ -20,7 +18,6 @@ import {
   LinkedTransferResponse,
   LinkedTransferToRecipientParameters,
   LinkedTransferToRecipientResponse,
-  RejectInstallVirtualMessage,
   SimpleLinkedTransferAppStateBigNumber,
   SupportedApplication,
   SupportedApplications,

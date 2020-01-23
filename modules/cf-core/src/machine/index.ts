@@ -16,7 +16,7 @@ import {
   UninstallVirtualAppProtocolParams,
   UpdateProtocolParams,
   WithdrawProtocolParams
-} from "./types";
+} from "../types";
 import {
   sortAddresses,
   xkeyKthAddress,

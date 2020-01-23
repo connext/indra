@@ -1,110 +1,99 @@
+import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
-import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
+import { expect } from "../";
+import { delay } from "../misc";
 import { ExistingBalancesAsyncTransfer } from "../types";
 
+// NOTE: will fail if not collateralized by transfer amount exactly
+// when pretransfer balances are not supplied.
 export async function asyncTransferAsset(
   clientA: IConnextClient,
   clientB: IConnextClient,
   transferAmount: BigNumber,
   assetId: string,
-  nodeFreeBalanceAddress: string,
-  preExistingBalances: Partial<ExistingBalancesAsyncTransfer> = {},
 ): Promise<ExistingBalancesAsyncTransfer> {
-  const preTransfer: ExistingBalancesAsyncTransfer = {
-    freeBalanceClientA: transferAmount,
-    freeBalanceNodeA: Zero,
-    // tslint:disable-next-line:object-literal-sort-keys
-    freeBalanceClientB: Zero,
-    freeBalanceNodeB: transferAmount,
-    ...preExistingBalances,
-  };
-
+  const nodeFreeBalanceAddress = xkeyKthAddress(clientA.nodePublicIdentifier);
   const {
     [clientA.freeBalanceAddress]: preTransferFreeBalanceClientA,
     [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeA,
   } = await clientA.getFreeBalance(assetId);
-  expect(preTransferFreeBalanceClientA).toBeBigNumberEq(preTransfer.freeBalanceClientA);
-  expect(preTransferFreeBalanceNodeA).toBeBigNumberEq(preTransfer.freeBalanceNodeA);
-
   const {
     [clientB.freeBalanceAddress]: preTransferFreeBalanceClientB,
     [nodeFreeBalanceAddress]: preTransferFreeBalanceNodeB,
   } = await clientB.getFreeBalance(assetId);
-  expect(preTransferFreeBalanceClientB).toBeBigNumberEq(preTransfer.freeBalanceClientB);
-  expect(preTransferFreeBalanceNodeB).toBeBigNumberGte(preTransfer.freeBalanceNodeB);
 
-  let paymentId;
-  await new Promise(async resolve => {
-    let count = 0;
-    clientA.once("UNINSTALL_EVENT", async () => {
-      console.error(`Caught sender uninstall event!!!!!`);
-      count += 1;
-      if (count === 2) {
-        console.error(`resolving promise!`);
-        resolve();
-      }
-    });
+  let paymentId: string;
 
-    clientB.once("RECIEVE_TRANSFER_FINISHED_EVENT", async () => {
-      count += 1;
-      if (count === 2) {
-        resolve();
-      }
-    });
+  const transferFinished = Promise.all([
+    new Promise(
+      async (resolve: Function): Promise<void> => {
+        clientA.once(`UNINSTALL_EVENT`, async () => {
+          resolve();
+        });
+      },
+    ),
+    new Promise(
+      async (resolve: Function): Promise<void> => {
+        clientB.once(`RECEIVE_TRANSFER_FINISHED_EVENT`, async () => {
+          resolve();
+        });
+      },
+    ),
+  ]);
 
-    const { paymentId: senderPaymentId } = await clientA.transfer({
-      amount: transferAmount.toString(),
-      assetId,
-      meta: { hello: "world" },
-      recipient: clientB.publicIdentifier,
-    });
-    paymentId = senderPaymentId;
+  const { paymentId: senderPaymentId } = await clientA.transfer({
+    amount: transferAmount.toString(),
+    assetId,
+    meta: { hello: `world` },
+    recipient: clientB.publicIdentifier,
   });
-  expect((await clientB.getAppInstances()).length).toEqual(Zero.toNumber());
-  expect((await clientA.getAppInstances()).length).toEqual(Zero.toNumber());
+  paymentId = senderPaymentId;
+
+  await transferFinished;
+  expect((await clientB.getAppInstances()).length).to.be.eq(0);
+  expect((await clientA.getAppInstances()).length).to.be.eq(0);
 
   const {
     [clientA.freeBalanceAddress]: postTransferFreeBalanceClientA,
     [nodeFreeBalanceAddress]: postTransferFreeBalanceNodeA,
   } = await clientA.getFreeBalance(assetId);
-  expect(postTransferFreeBalanceClientA).toBeBigNumberEq(
+  expect(postTransferFreeBalanceClientA).to.equal(
     preTransferFreeBalanceClientA.sub(transferAmount),
   );
-  expect(postTransferFreeBalanceNodeA).toBeBigNumberEq(
-    preTransferFreeBalanceNodeA.add(transferAmount),
-  );
+  expect(postTransferFreeBalanceNodeA).equal(preTransferFreeBalanceNodeA.add(transferAmount));
 
   const {
     [clientB.freeBalanceAddress]: postTransferFreeBalanceClientB,
     [nodeFreeBalanceAddress]: postTransferFreeBalanceNodeB,
   } = await clientB.getFreeBalance(assetId);
-  expect(postTransferFreeBalanceClientB).toBeBigNumberEq(
-    preTransferFreeBalanceClientB.add(transferAmount),
-  );
-  expect(postTransferFreeBalanceNodeB).toBeBigNumberEq(
-    preTransferFreeBalanceNodeB.sub(transferAmount),
-  );
+  expect(postTransferFreeBalanceClientB).equal(preTransferFreeBalanceClientB.add(transferAmount));
+
+  if (!preTransferFreeBalanceNodeB.isZero()) {
+    expect(postTransferFreeBalanceNodeB).equal(preTransferFreeBalanceNodeB.sub(transferAmount));
+  }
+
+  // TODO: explicitly await for status redeemed -> reclaimed
+  await delay(1000);
 
   const paymentA = await clientA.getLinkedTransfer(paymentId);
   const paymentB = await clientB.getLinkedTransfer(paymentId);
-  expect(paymentA).toMatchObject({
+  expect(paymentA).to.deep.include({
     amount: transferAmount.toString(),
     assetId,
-    meta: { hello: "world" },
+    meta: { hello: `world` },
     paymentId,
     receiverPublicIdentifier: clientB.publicIdentifier,
     senderPublicIdentifier: clientA.publicIdentifier,
-    status: "RECLAIMED",
-    type: "LINKED",
+    status: `RECLAIMED`,
+    type: `LINKED`,
   });
-  expect(paymentB).toMatchObject(paymentA);
+  expect(paymentA).to.deep.include(paymentB);
 
   const postTransfer: ExistingBalancesAsyncTransfer = {
     freeBalanceClientA: postTransferFreeBalanceClientA,
     freeBalanceNodeA: postTransferFreeBalanceNodeA,
-    // tslint:disable-next-line:object-literal-sort-keys
     freeBalanceClientB: postTransferFreeBalanceClientB,
     freeBalanceNodeB: postTransferFreeBalanceNodeB,
   };

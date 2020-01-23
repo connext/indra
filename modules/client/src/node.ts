@@ -1,8 +1,7 @@
 import { IMessagingService } from "@connext/messaging";
 import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
-import uuid = require("uuid");
-
+import uuid from "uuid";
 import { Logger, NATS_ATTEMPTS, NATS_TIMEOUT, stringify } from "./lib";
 import {
   AppRegistry,
@@ -20,17 +19,16 @@ import {
   RequestCollateralResponse,
   ResolveLinkedTransferResponse,
   SupportedApplication,
-  SupportedNetwork,
   Transfer,
 } from "./types";
 import { invalidXpub } from "./validation";
 
 // Include our access token when interacting with these subjects
-const guardedSubjects = ["channel", "lock", "transfer"];
+const guardedSubjects = ["channel", "client", "lock", "transfer"];
 const sendFailed = "Failed to send message";
 
 // NOTE: swap rates are given as a decimal string describing:
-// Given 1 unit of `from`, how many units `to` are recieved.
+// Given 1 unit of `from`, how many units `to` are received.
 // eg the rate string might be "202.02" if 1 eth can be swapped for 202.02 dai
 
 export class NodeApiClient implements INodeApiClient {
@@ -38,9 +36,9 @@ export class NodeApiClient implements INodeApiClient {
   public latestSwapRates: { [key: string]: string } = {};
   public log: Logger;
 
-  private _userPublicIdentifier: string | undefined; // tslint:disable-line:variable-name
-  private _nodePublicIdentifier: string | undefined; // tslint:disable-line:variable-name
-  private _channelProvider: IChannelProvider | undefined; // tslint:disable-line:variable-name
+  private _userPublicIdentifier: string | undefined;
+  private _nodePublicIdentifier: string | undefined;
+  private _channelProvider: IChannelProvider | undefined;
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
@@ -98,11 +96,15 @@ export class NodeApiClient implements INodeApiClient {
     return retVal;
   }
 
-  public async appRegistry(appDetails?: {
-    name: SupportedApplication;
-    network: SupportedNetwork;
-  }): Promise<AppRegistry> {
-    return (await this.send("app-registry", appDetails)) as AppRegistry;
+  public async appRegistry(
+    appDetails?:
+      | {
+          name: SupportedApplication;
+          chainId: number;
+        }
+      | { appDefinitionAddress: string },
+  ): Promise<AppRegistry> {
+    return (await this.send("app-registry", { data: appDetails })) as AppRegistry;
   }
 
   public async config(): Promise<GetConfigResponse> {
@@ -140,7 +142,7 @@ export class NodeApiClient implements INodeApiClient {
     } catch (e) {
       // TODO: node should return once deposit starts
       if (e.message.startsWith("Request timed out")) {
-        this.log.warn(`request collateral message timed out`);
+        this.log.warn("request collateral message timed out");
         return;
       }
       throw e;
@@ -250,7 +252,7 @@ export class NodeApiClient implements INodeApiClient {
   private async getAuthToken(): Promise<string> {
     if (!this.channelProvider) {
       throw new Error(
-        `Must have instantiated a channel provider (ie a signing thing) before setting auth token`,
+        "Must have instantiated a channel provider (ie a signing thing) before setting auth token",
       );
     }
     const nonce = await this.send("auth.getNonce", {
@@ -288,7 +290,7 @@ export class NodeApiClient implements INodeApiClient {
 
   private async sendAttempt(subject: string, data?: any): Promise<any | undefined> {
     this.log.debug(
-      `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : `without data`}`,
+      `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : "without data"}`,
     );
     const payload = {
       ...data,
@@ -305,7 +307,7 @@ export class NodeApiClient implements INodeApiClient {
     }
     let error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     if (error && error.startsWith("Invalid token")) {
-      this.log.info(`Auth error, token might have expired. Let's get a fresh token & try again.`);
+      this.log.info("Auth error, token might have expired. Let's get a fresh token & try again.");
       payload.token = await this.getAuthToken();
       msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
       error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
@@ -314,7 +316,7 @@ export class NodeApiClient implements INodeApiClient {
       this.log.info(`Maybe this message is malformed: ${stringify(msg)}`);
       return undefined;
     }
-    const { err, response, ...rest } = msg.data;
+    const { err, response } = msg.data;
     if (err || error) {
       throw new Error(`Error sending request. Message: ${stringify(msg)}`);
     }

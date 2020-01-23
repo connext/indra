@@ -8,9 +8,10 @@ import WithdrawController from "../withdraw/controller";
 import { runWithdrawProtocol } from "../withdraw/operation";
 import { getCreate2MultisigAddress } from "../../../utils";
 import {
+  CANNOT_WITHDRAW,
   INCORRECT_MULTISIG_ADDRESS,
   INVALID_FACTORY_ADDRESS,
-  CANNOT_WITHDRAW
+  INVALID_MASTERCOPY_ADDRESS,
 } from "../../errors";
 import { AddressZero } from "ethers/constants";
 
@@ -36,8 +37,12 @@ export default class WithdrawCommitmentController extends NodeController {
 
     const channel = await store.getStateChannel(multisigAddress);
 
-    if (!channel.proxyFactoryAddress) {
-      throw Error(INVALID_FACTORY_ADDRESS(channel.proxyFactoryAddress));
+    if (!channel.addresses.proxyFactory) {
+      throw Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
+    }
+
+    if (!channel.addresses.multisigMastercopy) {
+      throw Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
     }
 
     if (
@@ -51,8 +56,7 @@ export default class WithdrawCommitmentController extends NodeController {
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userNeuteredExtendedKeys,
-      channel.proxyFactoryAddress,
-      networkContext.MinimumViableMultisig,
+      channel.addresses,
       provider
     );
 

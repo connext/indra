@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Grid, Typography, styled, Button, CircularProgress } from "@material-ui/core";
-import { HashZero } from "ethers/constants";
 
 const TopGrid = styled(Grid)({
   display: "flex",
@@ -8,27 +7,40 @@ const TopGrid = styled(Grid)({
   flexDirection: "row",
   width: "100%",
   height: "100%",
-  justifyContent: "center",
+  justifyContent: "flex-start",
   alignItems: "center",
-})
+});
 
-const StatTypography = styled(Typography)({
-  textAlign: "center",
-  width: "90%",
+const StatLabelTypography = styled(Typography)({
+  alignSelf: "center",
+  textAlign: "left",
   fontSize: "24px",
+  fontWeight: "600",
   color: "#002868",
   textDecoration: "none",
-})
+});
+
+const StatTypography = styled(Typography)({
+  fontSize: "24px",
+  fontWeight: "400",
+});
 
 const ErrorTypography = styled(Typography)({
   color: "red",
-})
+});
 
+const RefreshButton = styled(Button)({
+  marginLeft: "5%",
+});
+
+const SectionGrid = styled(Grid)({
+  marginLeft:"5%"
+})
 
 const address = {
   mainnet: "0xf3f722f6ca6026fb7cc9b63523bbc6a73d3aad39", //"0xF80fd6F5eF91230805508bB28d75248024E50F6F", //,
-  // staging: "0x0f41a9aaee33d3520f853cb706c24ca75cac874e",
-  // rinkeby: "0x5307b4f67ca8746562a4a9fdeb0714033008ef4a",
+  staging: "0x5307B4F67ca8746562A4a9fdEb0714033008Ef4A",
+  // rinkeby: "0xDA3CCBa9F3e3a9fE7D0Ed9F699Ca2BEF78Ba7A6c",
 };
 
 const StatsSummary = ({ classes, messaging }) => {
@@ -39,6 +51,7 @@ const StatsSummary = ({ classes, messaging }) => {
   const [averageTransfer, setAverageTransfer] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState(null);
+  const [transferWindows, setTransferWindows] = useState({});
 
   useEffect(() => {
     if (!messaging) {
@@ -56,13 +69,10 @@ const StatsSummary = ({ classes, messaging }) => {
     setLoading(true);
     try {
       const res = await messaging.getAllChannelStates();
-      console.log("res", res);
       let xPubsToSearch = [];
       for (let row of res) {
         xPubsToSearch.push(row.userPublicIdentifier);
       }
-
-      console.log(xPubsToSearch);
 
       setAllChannels(xPubsToSearch);
       let channelTotalArr = [];
@@ -97,7 +107,7 @@ const StatsSummary = ({ classes, messaging }) => {
       const res = await messaging.getStateChannelByUserPubId(xPub);
       let balanceArr = [];
       res.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
-        if (balance.to !== address.mainnet) {
+        if (balance.to !== address.staging) {
           balanceArr.push(parseInt(balance.amount._hex, 16));
         }
       });
@@ -116,7 +126,7 @@ const StatsSummary = ({ classes, messaging }) => {
       const res = await messaging.getStateChannelByUserPubId(xPub);
       let balanceArr = [];
       res.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
-        if (balance.to === address.mainnet) {
+        if (balance.to === address.staging) {
           balanceArr.push(parseInt(balance.amount._hex, 16));
         }
       });
@@ -124,7 +134,6 @@ const StatsSummary = ({ classes, messaging }) => {
       const balanceArrReduced = balanceArr.reduce((a, b) => {
         return a + b;
       }, 0);
-
       return balanceArrReduced;
     } catch (e) {
       setSearchError(`error getting channel: ${e}`);
@@ -132,62 +141,111 @@ const StatsSummary = ({ classes, messaging }) => {
   };
 
   const getTransfers = async () => {
-    const res = await messaging.getAllLinkedTransfers() || [];
+    const res = (await messaging.getAllLinkedTransfers()) || [];
 
     let totalTransfers = [];
+    let pastDayTotal = 0,
+      pastWeekTotal = 0,
+      pastMonthTotal = 0;
     if (res) {
       for (let transfer of res) {
         totalTransfers.push(parseInt(transfer.amount._hex, 16));
+        const createdDate = new Date(transfer.createdAt);
+        const hourDifference = (Date.now() - createdDate.getTime()) / 3600000;
+        if (hourDifference <= 24) {
+          pastDayTotal++;
+        } 
+        if (hourDifference <= 168) {
+          pastWeekTotal++;
+        }
+        if (hourDifference <= 720) {
+          pastMonthTotal++;
+        }
       }
       var totalTransfersReduced = totalTransfers.reduce((a, b) => {
         return a + b;
       }, 0);
     }
     var averageTransfer = totalTransfersReduced / res.length / 1000000000000000000;
-
+    setTransferWindows({ pastDayTotal, pastWeekTotal, pastMonthTotal });
     setAverageTransfer(averageTransfer);
     setAllTransfers(res);
   };
 
   return (
-    <TopGrid  container>
-      <Button
+    <TopGrid container>
+      <RefreshButton
         onClick={async () => {
           await onRefresh();
         }}
       >
         Refresh stats
-      </Button>
+      </RefreshButton>
       <Grid>
-        <ErrorTypography >{searchError}</ErrorTypography>
+        <ErrorTypography>{searchError}</ErrorTypography>
       </Grid>
       {loading ? (
         <CircularProgress color="secondary" />
       ) : (
-        <Grid container>
-          <StatTypography>
-            total channels: {allChannels ? allChannels.length : 0}
-          </StatTypography>
-          <StatTypography >
-            collateral ratio: {JSON.stringify(nodeTotal / channelTotal)}
-          </StatTypography>
-          <StatTypography >
-            TVL:payment volume:{" "}
-            {nodeTotal && allTransfers && allTransfers.length > 0
-              ? (nodeTotal/1000000000000000000) / allTransfers.length
-              : 0}
-          </StatTypography>
-
-          <StatTypography>
-            total user balances: {JSON.stringify(channelTotal / 1000000000000000000)}
-          </StatTypography>
-          <StatTypography>
-            average transfer: {averageTransfer}
-          </StatTypography>
-          <StatTypography >
-            total node balances: {JSON.stringify(nodeTotal / 1000000000000000000)}
-          </StatTypography>
-        </Grid>
+        <SectionGrid container xs={12}>
+          <Grid xs={3}>
+            <StatLabelTypography>
+              total channels:{" "}
+              <StatTypography>{allChannels ? allChannels.length : 0}</StatTypography>
+            </StatLabelTypography>
+            <StatLabelTypography>
+              collateral ratio:{" "}
+              <StatTypography>{(nodeTotal / channelTotal).toFixed(2)}</StatTypography>
+            </StatLabelTypography>
+          </Grid>
+          <Grid xs={4}>
+            <StatLabelTypography>
+              TVL:payment volume (all time):{" "}
+              <StatTypography>
+                {nodeTotal && allTransfers && allTransfers.length > 0
+                  ? (nodeTotal / 1000000000000000000 / allTransfers.length).toFixed(2)
+                  : 0}
+              </StatTypography>
+            </StatLabelTypography>
+            <StatLabelTypography>
+              TVL:payment volume (trailing day):{" "}
+              <StatTypography>
+                {nodeTotal && transferWindows && transferWindows.pastDayTotal > 0
+                  ? (nodeTotal / 1000000000000000000 / transferWindows.pastDayTotal).toFixed(2)
+                  : 0}
+              </StatTypography>
+            </StatLabelTypography>
+            <StatLabelTypography>
+              TVL:payment volume (trailing week):{" "}
+              <StatTypography>
+                {nodeTotal && transferWindows && transferWindows.pastWeekTotal > 0
+                  ? (nodeTotal / 1000000000000000000 / transferWindows.pastWeekTotal).toFixed(2)
+                  : 0}
+              </StatTypography>
+            </StatLabelTypography>
+            <StatLabelTypography>
+              TVL:payment volume (trailing month):{" "}
+              <StatTypography>
+                {nodeTotal && transferWindows && transferWindows.pastMonthTotal > 0
+                  ? (nodeTotal / 1000000000000000000 / transferWindows.pastMonthTotal).toFixed(2)
+                  : 0}
+              </StatTypography>
+            </StatLabelTypography>
+          </Grid>
+          <Grid xs={4}>
+            <StatLabelTypography>
+              total user balances:{" "}
+              <StatTypography>{(channelTotal / 1000000000000000000).toFixed(2)}</StatTypography>
+            </StatLabelTypography>
+            <StatLabelTypography>
+              average transfer: <StatTypography>{averageTransfer.toFixed(2)}</StatTypography>
+            </StatLabelTypography>
+            <StatLabelTypography>
+              total node balances:{" "}
+              <StatTypography>{(nodeTotal / 1000000000000000000).toFixed(2)}</StatTypography>
+            </StatLabelTypography>
+          </Grid>
+        </SectionGrid>
       )}
     </TopGrid>
   );

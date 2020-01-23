@@ -2,7 +2,6 @@ import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
 import { CFCoreTypes } from "../../../types";
-import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
 import { NO_NETWORK_PROVIDER_CREATE2 } from "../../errors";
 

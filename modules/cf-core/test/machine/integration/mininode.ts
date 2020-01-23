@@ -3,7 +3,7 @@ import { JsonRpcProvider } from "ethers/providers";
 import { SigningKey } from "ethers/utils";
 import { HDNode } from "ethers/utils/hdnode";
 
-import { EthereumCommitment } from "../../../src/ethereum/types";
+import { EthereumCommitment } from "../../../src/types";
 import { Opcode, ProtocolRunner } from "../../../src/machine";
 import { StateChannel } from "../../../src/models";
 

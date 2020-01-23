@@ -95,7 +95,7 @@ export default class ListenerService implements OnModuleInit {
       },
       PROPOSE_INSTALL_EVENT: async (data: ProposeMessage): Promise<void> => {
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
-          logger.debug(`Recieved proposal from our own node. Doing nothing.`);
+          logger.debug(`Received proposal from our own node. Doing nothing.`);
           return;
         }
         logEvent("PROPOSE_INSTALL_EVENT", data);
@@ -125,7 +125,6 @@ export default class ListenerService implements OnModuleInit {
         switch (allowedOrRejected.name) {
           case SupportedApplications.SimpleLinkedTransferApp:
             logger.debug(`Saving linked transfer`);
-            // tslint:disable-next-line: max-line-length
             const initialState = proposedAppParams.initialState as SimpleLinkedTransferAppStateBigNumber;
 
             const isResolving = proposedAppParams.responderDeposit.gt(Zero);

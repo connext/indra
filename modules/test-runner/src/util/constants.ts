@@ -6,6 +6,8 @@ export const FUNDED_MNEMONICS = [
 ];
 
 export const WRONG_ADDRESS = "0xdeadbeef";
+export const APP_PROTOCOL_TOO_LONG = (protocol: string): string =>
+  `App ${protocol} took longer than 90 seconds`;
 
 export const NEGATIVE_ONE = "-1";
 export const NEGATIVE_ZERO_ZERO_ONE = "-0.01";
@@ -35,3 +37,17 @@ export const ETH_AMOUNT_SM = ZERO_ZERO_ONE_ETH;
 export const ETH_AMOUNT_MD = ZERO_ONE_ETH;
 export const ETH_AMOUNT_LG = ONE_ETH;
 export const TOKEN_AMOUNT = TEN_ETH;
+export const TOKEN_AMOUNT_SM = ONE_ETH;
+
+// Messaging constants
+export const SETUP_RESPONDER_RECEIVED_COUNT = 1;
+export const SETUP_RESPONDER_SENT_COUNT = 1;
+// - propose 1 sent, 1 received (initiator)
+export const PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED = 1;
+export const PROPOSE_INSTALL_SUPPORTED_APP_COUNT_SENT = 1;
+// - install 2 sent, 2 received (responder)
+export const INSTALL_SUPPORTED_APP_COUNT_RECEIVED = 2;
+export const INSTALL_SUPPORTED_APP_COUNT_SENT = 2;
+// - install 1 sent, 1 received (initiator)
+export const UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED = 1;
+export const UNINSTALL_SUPPORTED_APP_COUNT_SENT = 1;

@@ -51,8 +51,7 @@ function Stats({ classes, messaging, prefix }) {
     <TopGrid  container>
       <AppBar  container>
         <AppBarButton component={Link} to={`${prefix}`}>
-          <HomeIcon  />
-        </AppBarButton>
+        <HomeIcon color="primary"/>        </AppBarButton>
         <AppBarButton component={Link} to={`${prefix}/stats/summary`}>
           <AppBarButtonTypography >Summary</AppBarButtonTypography>
         </AppBarButton>

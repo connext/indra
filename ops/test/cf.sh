@@ -44,7 +44,8 @@ docker network create --attachable $network 2> /dev/null || true
 
 # If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
 if [[ -t 0 && -t 1 && -t 2 ]]
-then interactive="--interactive"
+then interactive="--interactive --tty"
+else echo "Running in non-interactive mode"
 fi
 
 ########################################
@@ -80,7 +81,6 @@ docker run \
   --name="${project}_test_cf_core" \
   --network="$network" \
   --rm \
-  --tty \
   --volume="`pwd`:/root" \
   ${project}_builder -c '
     set -e

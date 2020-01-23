@@ -5,18 +5,19 @@ import { Client } from "ts-nats";
 
 import {
   AssetOptions,
-  // asyncTransferAsset,
   createChannelProvider,
   createClient,
   createRemoteClient,
   ETH_AMOUNT_SM,
+  expect,
+  fundChannel,
   swapAsset,
   TOKEN_AMOUNT,
   withdrawFromChannel,
 } from "../util";
 import { createOrRetrieveNatsConnection } from "../util/nats";
 
-describe("ChannelProvider", () => {
+describe(`ChannelProvider`, () => {
   let clientA: IConnextClient;
   let clientA1: IConnextClient;
   let tokenAddress: string;
@@ -25,46 +26,44 @@ describe("ChannelProvider", () => {
   let channelProvider: IChannelProvider;
   let natsConnection: Client;
 
-  beforeAll(async () => {
-    natsConnection = await createOrRetrieveNatsConnection();
-  });
-
-  beforeEach(async () => {
+  beforeEach(async function () {
+    // Need a longer timeout here bc it's the very first test to run & node might not be awake yet
+    // @ts-ignore
+    this.timeout(120_000);
     clientA = await createClient();
     tokenAddress = clientA.config.contractAddresses.Token;
     nodePublicIdentifier = clientA.config.nodePublicIdentifier;
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
     channelProvider = await createChannelProvider(clientA);
     clientA1 = await createRemoteClient(channelProvider);
-  }, 90_000);
-
-  // tslint:disable-next-line:max-line-length
-  test("Happy case: client A1 can be instantiated with a channelProvider generated from client A", async () => {
-    // tslint:disable-next-line:variable-name
-    const _tokenAddress = clientA1.config.contractAddresses.Token;
-    // tslint:disable-next-line:variable-name
-    const _nodePublicIdentifier = clientA1.config.nodePublicIdentifier;
-    // tslint:disable-next-line:variable-name
-    const _nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
-
-    expect(_tokenAddress).toBe(tokenAddress);
-    expect(_nodePublicIdentifier).toBe(nodePublicIdentifier);
-    expect(_nodeFreeBalanceAddress).toBe(nodeFreeBalanceAddress);
+    natsConnection = await createOrRetrieveNatsConnection();
   });
 
-  // tslint:disable-next-line:max-line-length
-  test("Happy case: Bot A1 can call the full deposit → swap → transfer → withdraw flow on Bot A", async () => {
+  it(`Happy case: client A1 can be instantiated with a channelProvider generated from client A`, async function () {
+    const _tokenAddress = clientA1.config.contractAddresses.Token;
+    const _nodePublicIdentifier = clientA1.config.nodePublicIdentifier;
+    const _nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
+
+    expect(_tokenAddress).to.be.eq(tokenAddress);
+    expect(_nodePublicIdentifier).to.be.eq(nodePublicIdentifier);
+    expect(_nodeFreeBalanceAddress).to.be.eq(nodeFreeBalanceAddress);
+  });
+
+  it(`Happy case: Bot A1 can call the full deposit → swap → transfer → withdraw flow on Bot A`, async function () {
+    // @ts-ignore
+    this.timeout(90_000);
+
     const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
 
     ////////////////////////////////////////
     // DEPOSIT FLOW
-    await clientA1.deposit({ amount: input.amount.toString(), assetId: input.assetId });
+    await fundChannel(clientA, input.amount, input.assetId);
     await clientA1.requestCollateral(output.assetId);
 
     ////////////////////////////////////////
     // SWAP FLOW
-    const { freeBalanceClientToken, freeBalanceNodeToken } = await swapAsset(
+    await swapAsset(
       clientA1,
       input,
       output,
@@ -89,8 +88,7 @@ describe("ChannelProvider", () => {
         );
       }),
       new Promise(async resolve => {
-        clientB.once("RECIEVE_TRANSFER_FINISHED_EVENT", async () => {
-          console.error(`Caught receive finished event!!!!!`);
+        clientB.once(`RECEIVE_TRANSFER_FINISHED_EVENT`, async () => {
           resolve();
         });
       }),
@@ -110,18 +108,16 @@ describe("ChannelProvider", () => {
     await withdrawFromChannel(clientA1, withdraw.amount, withdraw.assetId);
   });
 
-  // tslint:disable-next-line:max-line-length
-  test("Bot A1 tries to call a function when Bot A is offline", async () => {
+  it(`Bot A1 tries to call a function when Bot A is offline`, async () => {
     // close channelProvider connection
     clientA1.channelProvider.close();
 
-    await expect(clientA1.getFreeBalance(AddressZero)).rejects.toThrowError(
-      "RpcConnection: Timeout - JSON-RPC not responded within 30s",
+    await expect(clientA1.getFreeBalance(AddressZero)).to.be.rejectedWith(
+      `RpcConnection: Timeout - JSON-RPC not responded within 30s`,
     );
   });
 
-  // tslint:disable-next-line:max-line-length
-  test.skip("Bot A1 tries to reject installing a proposed app that bot A has already installed?", async () => {
+  it.skip(`Bot A1 tries to reject installing a proposed app that bot A has already installed?`, async () => {
     // TODO: add test
   });
 });

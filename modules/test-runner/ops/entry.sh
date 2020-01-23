@@ -3,7 +3,8 @@ set -e
 
 project="indra"
 
-export INDRA_CLIENT_LOG_LEVEL="${INDRA_CLIENT_LOG_LEVEL:-3}"
+export STORE_DIR="./.test-store"
+export INDRA_CLIENT_LOG_LEVEL="${INDRA_CLIENT_LOG_LEVEL:-2}"
 export INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://172.17.0.1:8545}"
 export INDRA_ETH_MNEMONIC="${INDRA_ETH_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
 export INDRA_NODE_URL="${INDRA_NODE_URL:-nats://172.17.0.1:4222}"
@@ -22,13 +23,23 @@ function finish {
 }
 trap finish SIGTERM SIGINT
 
-if [[ "$MODE" == "watch" ]]
-then command="exec jest --config jest.config.js --runInBand"
-else command="jest --config jest.config.js --forceExit --runInBand"
-fi
-
 bash ops/wait-for.sh $INDRA_PG_HOST:$INDRA_PG_PORT
 bash ops/wait-for.sh ${INDRA_ETH_RPC_URL#*://}
 bash ops/wait-for.sh ${INDRA_NODE_URL#*://}
 
-$command $@
+bundle=dist/tests.bundle.js
+
+if [[ ! -f "$bundle" || "$NODE_ENV" == "development" ]]
+then webpack --config ops/webpack.config.js
+fi
+
+if [[ $1 == "--watch" ]]
+then
+  webpack --watch --config ops/webpack.config.js &
+  sleep 5 # give webpack a sec to finish the first watch-mode build
+  mocha --watch --timeout 30000 $bundle
+else
+  mocha --exit --timeout 30000 $bundle
+fi
+
+rm -rf $STORE_DIR

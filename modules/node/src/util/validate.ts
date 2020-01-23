@@ -6,7 +6,6 @@ export const isValidHex = (hex: string, bytes: number): boolean =>
 
 export const isEthAddress = (address: string): boolean => isValidHex(address, 20);
 
-// tslint:disable-next-line:function-name
 export function IsEthAddress(validationOptions?: ValidationOptions): Function {
   return function(object: Object, propertyName: string): void {
     registerDecorator({
@@ -25,7 +24,6 @@ export function IsEthAddress(validationOptions?: ValidationOptions): Function {
 
 export const isXpub = (xpub: string): boolean => /^xpub[a-zA-Z0-9]{107}$/.test(xpub);
 
-// tslint:disable-next-line:function-name
 export function IsXpub(validationOptions?: ValidationOptions): Function {
   return function(object: Object, propertyName: string): void {
     registerDecorator({

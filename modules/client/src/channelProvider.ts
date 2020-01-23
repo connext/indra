@@ -106,9 +106,9 @@ export class ChannelProvider extends EventEmitter implements IChannelProvider {
   public wallet: Wallet;
 
   // shouldnt really ever be used
-  public _config: ChannelProviderConfig; // tslint:disable-line:variable-name
-  public _multisigAddress: string | undefined = undefined; // tslint:disable-line:variable-name
-  public _signerAddress: string | undefined = undefined; // tslint:disable-line:variable-name
+  public _config: ChannelProviderConfig;
+  public _multisigAddress: string | undefined = undefined;
+  public _signerAddress: string | undefined = undefined;
 
   constructor(
     connection: IRpcConnection,
@@ -223,7 +223,10 @@ export class ChannelProvider extends EventEmitter implements IChannelProvider {
     return await this.store.reset();
   };
 
+  // TODO: clean up types from restore, without the any typing things
+  // get messed up. will likely be a breaking change
   public restoreState = async (path: string): Promise<void> => {
+    // TODO: remove when using only store package
     this.reset();
     let state;
     state = await this.restore();
@@ -237,7 +240,6 @@ export class ChannelProvider extends EventEmitter implements IChannelProvider {
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
 
-  // tslint:disable-next-line:variable-name
   public _send = async (method: CFCoreTypes.RpcMethodName, params: RpcParameters): Promise<any> => {
     const payload = {
       id: Date.now(),

@@ -1,12 +1,12 @@
 import * as connext from "@connext/client";
-import { ConnextStore } from "@connext/store";
+import { ConnextStore, PisaClientBackupAPI } from "@connext/store";
 import { CF_PATH, ConnextClientStorePrefix } from "@connext/types";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
-import { formatEther, parseEther } from "ethers/utils";
+import { formatEther } from "ethers/utils";
 import interval from "interval-promise";
 import { PisaClient } from "pisa-client";
 import React from "react";
@@ -222,13 +222,14 @@ class App extends React.Component {
       const pisaUrl = urls.pisaUrl(network.chainId);
       if (pisaUrl) {
         console.log(`Using external state backup service: ${pisaUrl}`);
-        store = new ConnextStore(window.localStorage, {
+        const backupService = new PisaClientBackupAPI({
           wallet,
           pisaClient: new PisaClient(
             pisaUrl,
             "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3", // TODO: Don't hardcode
           ),
         });
+        store = new ConnextStore(window.localStorage, { backupService });
       } else {
         store = new ConnextStore(window.localStorage);
       }
@@ -311,18 +312,18 @@ class App extends React.Component {
       this.setState({ swapRate: res.swapRate });
     });
 
-    channel.on("RECIEVE_TRANSFER_STARTED", data => {
-      console.log("Received RECIEVE_TRANSFER_STARTED event: ", data);
+    channel.on("RECEIVE_TRANSFER_STARTED", data => {
+      console.log("Received RECEIVE_TRANSFER_STARTED event: ", data);
       machine.send("START_RECEIVE");
     });
 
-    channel.on("RECIEVE_TRANSFER_FINISHED", data => {
-      console.log("Received RECIEVE_TRANSFER_FINISHED event: ", data);
+    channel.on("RECEIVE_TRANSFER_FINISHED", data => {
+      console.log("Received RECEIVE_TRANSFER_FINISHED event: ", data);
       machine.send("SUCCESS_RECEIVE");
     });
 
-    channel.on("RECIEVE_TRANSFER_FAILED", data => {
-      console.log("Received RECIEVE_TRANSFER_FAILED event: ", data);
+    channel.on("RECEIVE_TRANSFER_FAILED", data => {
+      console.log("Received RECEIVE_TRANSFER_FAILED event: ", data);
       machine.send("ERROR_RECEIVE");
     });
 

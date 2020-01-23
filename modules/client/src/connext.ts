@@ -59,7 +59,6 @@ import {
   ResolveLinkedTransferResponse,
   Store,
   SupportedApplication,
-  SupportedNetwork,
   SwapParameters,
   Transfer,
   TransferParameters,
@@ -249,10 +248,14 @@ export class ConnextClient implements IConnextClient {
     return await this.node.fetchLinkedTransfer(paymentId);
   };
 
-  public getAppRegistry = async (appDetails?: {
-    name: SupportedApplication;
-    network: SupportedNetwork;
-  }): Promise<AppRegistry> => {
+  public getAppRegistry = async (
+    appDetails?:
+      | {
+          name: SupportedApplication;
+          chainId: number;
+        }
+      | { appDefinitionAddress: string },
+  ): Promise<AppRegistry> => {
     return await this.node.appRegistry(appDetails);
   };
 
@@ -867,15 +870,15 @@ export class ConnextClient implements IConnextClient {
 
   public getRegisteredAppDetails = (appName: SupportedApplication): DefaultApp => {
     const appInfo = this.appRegistry.filter((app: DefaultApp): boolean => {
-      return app.name === appName && app.network === this.network.name;
+      return app.name === appName && app.chainId === this.network.chainId;
     });
 
     if (!appInfo || appInfo.length === 0) {
-      throw new Error(`Could not find ${appName} app details on ${this.network.name} network`);
+      throw new Error(`Could not find ${appName} app details on chain ${this.network.chainId}`);
     }
 
     if (appInfo.length > 1) {
-      throw new Error(`Found multiple ${appName} app details on ${this.network.name} network`);
+      throw new Error(`Found multiple ${appName} app details on chain ${this.network.chainId}`);
     }
     return appInfo[0];
   };

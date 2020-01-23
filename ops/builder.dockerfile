@@ -9,6 +9,8 @@ RUN npm install -g npm@6.12.0
 RUN npm install -g lerna@3.19.0
 COPY --from=solc /usr/local/bin/solc /usr/local/bin/solc
 RUN true
+COPY ops/wait-for.sh /wait-for.sh
+RUN true
 COPY ops /ops
 ENV PATH="./node_modules/.bin:${PATH}"
 ENTRYPOINT ["bash", "/ops/permissions-fixer.sh"]
