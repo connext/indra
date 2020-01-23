@@ -145,7 +145,8 @@ export class ProtocolRunner {
       message,
       stateChannelsMap,
       network: this.network,
-      provider: this.provider
+      provider: this.provider,
+      domainSeparator: this.domainSeparator
     };
 
     let lastMiddlewareRet: any = undefined;

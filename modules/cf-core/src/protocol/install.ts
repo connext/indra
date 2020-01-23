@@ -17,6 +17,7 @@ import {
   ProtocolMessage,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,
+  DomainSeparator
 } from "../types";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
@@ -52,7 +53,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     const {
       stateChannelsMap,
       message: { params, processID },
-      network
+      network,
+      provider,
+      domainSeparator
     } = context;
 
     const { responderXpub, multisigAddress } = params as InstallProtocolParams;
@@ -68,7 +71,10 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const conditionalTransactionData = constructConditionalTransactionData(
       network,
-      postProtocolStateChannel
+      postProtocolStateChannel,
+      domainSeparator,
+      provider.network.chainId,
+      postProtocolStateChannel.numProposedApps
     );
 
     const mySignatureOnConditionalTransaction = yield [
@@ -186,7 +192,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         processID,
         customData: { signature }
       },
-      network
+      network,
+      provider,
+      domainSeparator
     } = context;
 
     // Aliasing `signature` to this variable name for code clarity
@@ -205,7 +213,10 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const conditionalTransactionData = constructConditionalTransactionData(
       network,
-      postProtocolStateChannel
+      postProtocolStateChannel,
+      domainSeparator,
+      provider.network.chainId,
+      postProtocolStateChannel.numProposedApps
     );
 
     assertIsValidSignature(
@@ -509,7 +520,10 @@ function computeInterpreterParameters(
  */
 function constructConditionalTransactionData(
   networkContext: NetworkContext,
-  stateChannel: StateChannel
+  stateChannel: StateChannel,
+  domainSeparator: DomainSeparator,
+  chainId: number,
+  multisigTxCount: number
 ): ConditionalTransaction {
   const appInstance = stateChannel.mostRecentlyInstalledAppInstance();
   return new ConditionalTransaction(
@@ -522,7 +536,10 @@ function constructConditionalTransactionData(
       appInstance.outcomeType,
       networkContext
     ),
-    appInstance.encodedInterpreterParams
+    appInstance.encodedInterpreterParams,
+    domainSeparator,
+    chainId,
+    multisigTxCount
   );
 }
 

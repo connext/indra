@@ -1,7 +1,7 @@
 import { Interface } from "ethers/utils";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
-import { MultisigOperation, NetworkContext } from "../types";
+import { MultisigOperation, NetworkContext, DomainSeparator } from "../types";
 
 import { MultisigCommitment } from "./multisig-commitment";
 
@@ -22,7 +22,10 @@ export class ConditionalTransaction extends MultisigCommitment {
     public readonly appIdentityHash: string,
     public readonly freeBalanceAppIdentityHash: string,
     public readonly interpreterAddr: string,
-    public readonly interpreterParams: string
+    public readonly interpreterParams: string,
+    public readonly domainSeparator: DomainSeparator,
+    public readonly chainId: number,
+    public readonly transactionCount: number
   ) {
     super(multisig, multisigOwners);
   }
@@ -43,9 +46,14 @@ export class ConditionalTransaction extends MultisigCommitment {
         this.freeBalanceAppIdentityHash,
         this.appIdentityHash,
         this.interpreterAddr,
-        this.interpreterParams
+        this.interpreterParams,
       ]),
-      operation: MultisigOperation.DelegateCall
+      operation: MultisigOperation.DelegateCall,
+      domainName: this.domainSeparator.domainName,
+      domainVersion: this.domainSeparator.domainVersion,
+      chainId: this.chainId,
+      domainSalt: this.domainSeparator.domainSalt,
+      transactionCount: this.transactionCount
     };
   }
 }

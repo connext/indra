@@ -37,6 +37,11 @@ export abstract class MultisigCommitment extends EthereumCommitment {
       multisigInput.value,
       multisigInput.data,
       multisigInput.operation,
+      multisigInput.domainName,
+      multisigInput.domainVersion,
+      multisigInput.chainId,
+      multisigInput.domainSalt,
+      multisigInput.transactionCount,
       signaturesList
     ]);
 
