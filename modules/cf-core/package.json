@@ -1,6 +1,6 @@
 {
   "name": "@connext/cf-core",
-  "version": "4.0.2",
+  "version": "4.0.4",
   "main": "dist/src/index.js",
   "iife": "dist/src/index.iife.js",
   "types": "dist/src/index.d.ts",
@@ -15,8 +15,8 @@
     "test:coverage": "jest --runInBand --detectOpenHandles --bail --coverage"
   },
   "dependencies": {
-    "@connext/contracts": "1.0.1",
-    "@connext/types": "4.0.2",
+    "@connext/contracts": "1.0.2",
+    "@connext/types": "4.0.4",
     "ethers": "4.0.41",
     "eventemitter3": "4.0.0",
     "loglevel": "1.6.6",

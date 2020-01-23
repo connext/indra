@@ -1,6 +1,6 @@
 {
   "name": "@connext/contracts",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Smart contracts that power a Counterfactual State Channel platform",
   "license": "ISC",
   "files": ["address-book.json", "address-history.json", "build", "contracts", "index.ts"],
@@ -13,7 +13,7 @@
     "lint-sol": "solium -d ."
   },
   "dependencies": {
-    "@connext/types": "4.0.2",
+    "@connext/types": "4.0.4",
     "ethers": "4.0.41",
     "ganache-cli": "6.7.0",
     "openzeppelin-solidity": "2.3.0"
