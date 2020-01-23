@@ -12,6 +12,7 @@
   "dependencies": {
     "@connext/cf-core": "4.0.0",
     "@connext/client": "4.0.0",
+    "@connext/channel-provider": "3.0.1",
     "@connext/contracts": "1.0.1",
     "@connext/messaging": "4.0.0",
     "@connext/store": "4.0.0",
