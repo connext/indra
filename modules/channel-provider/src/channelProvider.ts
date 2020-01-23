@@ -19,7 +19,6 @@ export class ChannelProvider extends EventEmitter implements IChannelProvider {
 
   private _config: ChannelProviderConfig | undefined = undefined;
   private _multisigAddress: string | undefined = undefined;
-  private _signerAddress: string | undefined = undefined;
 
   constructor(connection: IRpcConnection, config?: ChannelProviderConfig) {
     super();
@@ -36,7 +35,6 @@ export class ChannelProvider extends EventEmitter implements IChannelProvider {
           this.connected = true;
           this._config = config;
           this._multisigAddress = config.multisigAddress;
-          this._signerAddress = config.signerAddress;
           this.emit(`connect`);
           resolve(config);
         } else {
@@ -104,11 +102,11 @@ export class ChannelProvider extends EventEmitter implements IChannelProvider {
   }
 
   get signerAddress(): string | undefined {
-    return this._signerAddress;
+    return this.config.signerAddress;
   }
 
   set signerAddress(signerAddress: string | undefined) {
-    this._signerAddress = signerAddress;
+    this.config.signerAddress = signerAddress;
   }
 
   ///////////////////////////////////////////////
