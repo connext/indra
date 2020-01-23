@@ -5,7 +5,11 @@
   "iife": "dist/src/index.iife.js",
   "types": "dist/src/index.d.ts",
   "license": "MIT",
-  "files": ["dist", "docs", "src"],
+  "files": [
+    "dist",
+    "docs",
+    "src"
+  ],
   "scripts": {
     "build": "node_modules/.bin/tsc -b . && rollup -c",
     "build:ts": "node_modules/.bin/tsc -b .",
@@ -15,7 +19,7 @@
     "test:coverage": "jest --runInBand --detectOpenHandles --bail --coverage"
   },
   "dependencies": {
-    "@connext/contracts": "1.0.2",
+    "@connext/contracts": "1.0.4",
     "@connext/types": "4.0.4",
     "ethers": "4.0.41",
     "eventemitter3": "4.0.0",

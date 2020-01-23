@@ -1,11 +1,23 @@
 {
   "name": "@connext/contracts",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "Smart contracts that power a Counterfactual State Channel platform",
   "license": "ISC",
-  "files": ["address-book.json", "address-history.json", "build", "contracts", "index.ts"],
+  "files": [
+    "dist/address-book.json",
+    "dist/address-history.json",
+    "dist/build",
+    "dist/contracts",
+    "dist/index.js",
+    "dist/index.d.ts"
+  ],
   "main": "./dist/index.js",
-  "keywords": ["ethereum", "counterfactual", "state channels", "solidity"],
+  "keywords": [
+    "ethereum",
+    "counterfactual",
+    "state channels",
+    "solidity"
+  ],
   "scripts": {
     "build": "waffle waffle.json && ./node_modules/.bin/tsc -p tsconfig.json",
     "build-native": "waffle waffle.native.json",
