@@ -70,6 +70,7 @@ contract MinimumViableMultisig {
   {
     bytes32 domainSeparatorHash = getDomainSeparatorHash(domainName, domainVersion, chainId, domainSalt);
     bytes32 transactionHash = getTransactionHash(to, value, data, operation, domainSeparatorHash, nonce);
+
     require(
       !isExecuted[transactionHash],
       "Transacation has already been executed"
@@ -107,7 +108,7 @@ contract MinimumViableMultisig {
     returns (bytes32)
   {
     return keccak256(
-      abi.encode(byte(0x19), _owners, to, value, data, uint8(operation), domainSeparatorHash, nonce)
+      abi.encodePacked(byte(0x19), _owners, to, value, data, uint8(operation), domainSeparatorHash, nonce)
     );
   }
 
@@ -122,7 +123,7 @@ contract MinimumViableMultisig {
     returns (bytes32)
   {
     return keccak256(
-      abi.encode(domainName, domainVersion, chainId, address(this), domainSalt)
+      abi.encodePacked(domainName, domainVersion, chainId, address(this), domainSalt)
     );
   }
 
