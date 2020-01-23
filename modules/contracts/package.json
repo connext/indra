@@ -25,7 +25,7 @@
     "lint-sol": "solium -d ."
   },
   "dependencies": {
-    "@connext/types": "4.0.4",
+    "@connext/types": "4.0.5",
     "ethers": "4.0.41",
     "ganache-cli": "6.7.0",
     "openzeppelin-solidity": "2.3.0"
