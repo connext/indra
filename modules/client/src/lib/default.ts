@@ -7,18 +7,18 @@ import { ClientOptions } from "../types";
 
 // constants
 
-const MNEMONIC_KEY = `CONNEXT_MNEMONIC`;
-const MAINNET = `mainnet`;
-const RINKEBY = `rinkeby`;
+export const MNEMONIC_KEY = `CONNEXT_MNEMONIC`;
+export const MAINNET_NETWORK = `mainnet`;
+export const RINKEBY_NETWORK = `rinkeby`;
 
 // helpers
 
 export function isMainnet(network: string): boolean {
-  return network.toLowerCase() === MAINNET;
+  return network.toLowerCase() === MAINNET_NETWORK.toLowerCase();
 }
 
 export function isRinkeby(network: string): boolean {
-  return network.toLowerCase() === RINKEBY;
+  return network.toLowerCase() === RINKEBY_NETWORK.toLowerCase();
 }
 
 export function isWalletProvided(opts?: Partial<ClientOptions>): boolean {
@@ -52,10 +52,14 @@ export async function getDefaultMnemonic(store: Store, log: Logger): Promise<str
   return mnemonic;
 }
 
+export function getOptionIfAvailable(option: string, opts?: Partial<ClientOptions>) {
+  return opts && opts[option] ? opts[option] : undefined;
+}
+
 export function getDefaultStore(opts?: Partial<ClientOptions>): ConnextStore {
-  return new ConnextStore(opts.asyncStorage || window.localStorage, {
-    backupService: opts.backupService,
-  });
+  const asyncStorage = getOptionIfAvailable(`asyncStorage`, opts);
+  const backupService = getOptionIfAvailable(`backupService`, opts);
+  return new ConnextStore(asyncStorage || window.localStorage, { backupService });
 }
 
 export async function getDefaultOptions(
@@ -84,16 +88,11 @@ export async function getDefaultOptions(
 
   log.debug(`Using default urlOptions: ${JSON.stringify(urlOptions, null, 2)}`);
 
-  let store;
-  let mnemonic;
+  const store = getOptionIfAvailable(`store`, overrideOptions) || getDefaultStore(overrideOptions);
 
-  if (overrideOptions) {
-    store = overrideOptions.store || getDefaultStore(overrideOptions);
-
-    mnemonic = shouldGenerateMnemonic(network, overrideOptions)
-      ? await getDefaultMnemonic(store, log)
-      : undefined;
-  }
+  const mnemonic = shouldGenerateMnemonic(network, overrideOptions)
+    ? await getDefaultMnemonic(store, log)
+    : undefined;
 
   log.debug(`Using default store: ${JSON.stringify(store, null, 2)}`);
 

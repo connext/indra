@@ -190,10 +190,7 @@ export const connect = async (
     node.userPublicIdentifier = channelProvider.config.userPublicIdentifier;
     node.nodePublicIdentifier = config.nodePublicIdentifier;
   } else {
-    throw new Error(
-      `Client must be instantiated with xpub and keyGen, ` +
-        `or a channelProvider if not using mnemonic`,
-    );
+    throw new Error(`Must provide mnemonic or xpub + keygen`);
   }
 
   // setup multisigAddress + assign to channelProvider
