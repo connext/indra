@@ -11,7 +11,7 @@ const MNEMONIC_KEY = `CONNEXT_MNEMONIC`;
 const MAINNET = `mainnet`;
 const RINKEBY = `rinkeby`;
 
-// validators
+// helpers
 
 export function isMainnet(network: string): boolean {
   return network.toLowerCase() === MAINNET;
@@ -32,13 +32,13 @@ export function shouldGenerateMnemonic(network: string, opts?: Partial<ClientOpt
   return !isMainnet(network) && !isWalletProvided(opts);
 }
 
-// helpers
-
 export function generateMnemonic(): string {
   const entropy = ethers.utils.randomBytes(16);
   const mnemonic = ethers.utils.HDNode.entropyToMnemonic(entropy);
   return mnemonic;
 }
+
+// getters
 
 export async function getDefaultMnemonic(store: Store, log: Logger): Promise<string> {
   log.warn(`Using mnemonic stored insecurely - DO NOT USE IN PRODUCTION!`);
@@ -57,8 +57,6 @@ export function getDefaultStore(opts?: Partial<ClientOptions>): ConnextStore {
     backupService: opts.backupService,
   });
 }
-
-// main
 
 export async function getDefaultOptions(
   network: string,
