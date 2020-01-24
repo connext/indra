@@ -30,7 +30,7 @@ export const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
   "SingleAssetTwoPartyCoinTransferInterpreter",
   "TimeLockedPassThrough",
   "TwoPartyFixedOutcomeInterpreter",
-  "TwoPartyFixedOutcomeFromVirtualAppInterpreter"
+  "TwoPartyFixedOutcomeFromVirtualAppInterpreter",
 ];
 
 export interface DeployedContractNetworksFileEntry {

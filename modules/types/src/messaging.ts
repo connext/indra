@@ -173,4 +173,3 @@ export type EventEmittedMessage =
   | DepositFailedMessage
   | CreateChannelMessage
   | NodeMessageWrappedProtocolMessage;
-

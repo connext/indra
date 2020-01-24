@@ -115,10 +115,10 @@ export type MatchAppInstanceResponse = {
 ////////////////////////////////////
 ////// App Registry
 
-export const CoinBalanceRefundApp = `CoinBalanceRefundApp`;
-export const SimpleLinkedTransferApp = `SimpleLinkedTransferApp`;
-export const SimpleTransferApp = `SimpleTransferApp`;
-export const SimpleTwoPartySwapApp = `SimpleTwoPartySwapApp`;
+export const CoinBalanceRefundApp = "CoinBalanceRefundApp";
+export const SimpleLinkedTransferApp = "SimpleLinkedTransferApp";
+export const SimpleTransferApp = "SimpleTransferApp";
+export const SimpleTwoPartySwapApp = "SimpleTwoPartySwapApp";
 
 export const SupportedApplications = {
   [CoinBalanceRefundApp]: CoinBalanceRefundApp,
