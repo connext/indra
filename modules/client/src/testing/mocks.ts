@@ -41,11 +41,11 @@ export class MockMessagingService implements IMessagingService {
   }
 
   async connect(): Promise<void> {
-    this.log.info(`Connect`);
+    this.log.info("Connect");
   }
 
   async disconnect(): Promise<void> {
-    this.log.info(`Disconnect`);
+    this.log.info("Disconnect");
   }
 
   async onReceive(subject: string, callback: (msg: any) => void): Promise<void> {
@@ -74,7 +74,7 @@ export class MockMessagingService implements IMessagingService {
   }
 
   async flush(): Promise<void> {
-    this.log.info(`Flushing messaging connection`);
+    this.log.info("Flushing messaging connection");
   }
 
   public patch(subject: string, returnValue: any): any {
@@ -107,7 +107,7 @@ export class MockNodeClientApi implements INodeApiClient {
     callback: (...args: any[]) => any,
     timeout: number,
   ): Promise<any> {
-    this.log.info(`acquireLock`);
+    this.log.info("acquireLock");
   }
 
   // should have keys same as the message passed in to fake messaging client

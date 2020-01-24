@@ -33,7 +33,10 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
     const { message, provider, stateChannelsMap, network } = context;
     const { params, processID } = message;
-    const { responderXpub, appIdentityHash } = params as UninstallProtocolParams;
+    const {
+      responderXpub,
+      appIdentityHash
+    } = params as UninstallProtocolParams;
 
     const responderAddress = xkeyKthAddress(responderXpub, 0);
 
@@ -91,7 +94,10 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
   1 /* Responding */: async function*(context: Context) {
     const { message, provider, stateChannelsMap, network } = context;
     const { params, processID } = message;
-    const { initiatorXpub, appIdentityHash } = params as UninstallProtocolParams;
+    const {
+      initiatorXpub,
+      appIdentityHash
+    } = params as UninstallProtocolParams;
 
     const initiatorAddress = xkeyKthAddress(initiatorXpub, 0);
 

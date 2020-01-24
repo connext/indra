@@ -13,10 +13,10 @@ import {
   IChannelProvider,
   InstallMessage,
   InstallVirtualMessage,
+  MatchAppInstanceResponse,
   NodeMessageWrappedProtocolMessage,
   ProposeMessage,
   RejectProposalMessage,
-  SupportedApplications,
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
@@ -108,7 +108,7 @@ export class ConnextListener extends EventEmitter {
         (app: DefaultApp) => app.name === CoinBalanceRefundApp,
       )[0];
       if (params.appDefinition !== coinBalanceDef.appDefinitionAddress) {
-        this.log.info(`not sending propose message, not the coinbalance refund app`);
+        this.log.info("not sending propose message, not the coinbalance refund app");
         return;
       }
       this.log.info(
@@ -155,7 +155,7 @@ export class ConnextListener extends EventEmitter {
     super();
     this.channelProvider = channelProvider;
     this.connext = connext;
-    this.log = new Logger(`ConnextListener`, connext.log.logLevel);
+    this.log = new Logger("ConnextListener", connext.log.logLevel);
   }
 
   public register = async (): Promise<void> => {
@@ -222,22 +222,15 @@ export class ConnextListener extends EventEmitter {
 
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
     const protocol =
-      event === PROTOCOL_MESSAGE_EVENT ? (data.data ? data.data.protocol : data.protocol) : ``;
-    this.log.info(`Received ${event}${protocol ? ` for ${protocol} protocol` : ``}`);
+      event === PROTOCOL_MESSAGE_EVENT ? (data.data ? data.data.protocol : data.protocol) : "";
+    this.log.info(`Received ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
     this.log.debug(`Emitted ${event} with data ${stringify(data)} at ${Date.now()}`);
     this.emit(event, data);
   };
 
   private matchAppInstance = async (
     msg: ProposeMessage,
-  ): Promise<
-    | undefined
-    | {
-        matchedApp: DefaultApp;
-        proposeParams: CFCoreTypes.ProposeInstallParams;
-        appInstanceId: string;
-      }
-  > => {
+  ): Promise<MatchAppInstanceResponse | undefined> => {
     const filteredApps = this.connext.appRegistry.filter((app: DefaultApp): boolean => {
       return app.appDefinitionAddress === msg.data.params.appDefinition;
     });
@@ -307,12 +300,12 @@ export class ConnextListener extends EventEmitter {
       return;
     }
 
-    this.log.debug(`Proposal for app install successful, attempting install now...`);
+    this.log.debug("Proposal for app install successful, attempting install now...");
     let res: CFCoreTypes.InstallResult;
 
     // TODO: determine virtual app in a more resilient way
     // for now only simple transfer apps are virtual apps
-    const virtualAppDefs = [this.connext.config.contractAddresses[`SimpleTransferApp`]];
+    const virtualAppDefs = [this.connext.config.contractAddresses["SimpleTransferApp"]];
     if (virtualAppDefs.includes(params.appDefinition)) {
       res = await this.connext.installVirtualApp(appInstanceId);
     } else {
@@ -349,7 +342,10 @@ export class ConnextListener extends EventEmitter {
       if (!msg.paymentId && !msg.data) {
         throw new Error(`Could not parse data from message: ${stringify(msg)}`);
       }
-      const data = msg.paymentId ? msg : JSON.parse(msg.data);
+      let data = msg.paymentId ? msg : msg.data;
+      if (typeof data === `string`) {
+        data = JSON.parse(data);
+      }
       const { paymentId, encryptedPreImage, amount, assetId } = data;
       if (!paymentId || !encryptedPreImage || !amount || !assetId) {
         throw new Error(`Unable to parse transfer details from message ${stringify(data)}`);

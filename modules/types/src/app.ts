@@ -6,6 +6,7 @@ import {
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "./contracts";
+import { CFCoreTypes } from "./cfCore";
 
 ////////////////////////////////////
 ////// App Instances
@@ -105,13 +106,19 @@ export type AppInstanceProposal = {
   singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
 };
 
+export type MatchAppInstanceResponse = {
+  matchedApp: DefaultApp;
+  proposeParams: CFCoreTypes.ProposeInstallParams;
+  appInstanceId: string;
+};
+
 ////////////////////////////////////
 ////// App Registry
 
-export const CoinBalanceRefundApp = `CoinBalanceRefundApp`;
-export const SimpleLinkedTransferApp = `SimpleLinkedTransferApp`;
-export const SimpleTransferApp = `SimpleTransferApp`;
-export const SimpleTwoPartySwapApp = `SimpleTwoPartySwapApp`;
+export const CoinBalanceRefundApp = "CoinBalanceRefundApp";
+export const SimpleLinkedTransferApp = "SimpleLinkedTransferApp";
+export const SimpleTransferApp = "SimpleTransferApp";
+export const SimpleTwoPartySwapApp = "SimpleTwoPartySwapApp";
 
 export const SupportedApplications = {
   [CoinBalanceRefundApp]: CoinBalanceRefundApp,

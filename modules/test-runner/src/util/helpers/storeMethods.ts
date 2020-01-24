@@ -7,12 +7,12 @@ import uuid from "uuid";
 
 import { expect } from "../";
 
-export const TEST_STORE_PAIR: StorePair = { path: `testing`, value: `something` };
+export const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" };
 
-export const ASYNCSTORAGE = `ASYNCSTORAGE`;
-export const FILESTORAGE = `FILESTORAGE`;
-export const LOCALSTORAGE = `LOCALSTORAGE`;
-export const MEMORYSTORAGE = `MEMORYSTORAGE`;
+export const ASYNCSTORAGE = "ASYNCSTORAGE";
+export const FILESTORAGE = "FILESTORAGE";
+export const LOCALSTORAGE = "LOCALSTORAGE";
+export const MEMORYSTORAGE = "MEMORYSTORAGE";
 
 const StoreTypes = {
   [ASYNCSTORAGE]: ASYNCSTORAGE,
@@ -57,7 +57,7 @@ export function createStore(
 }
 
 export function createArray(length: number = 10): string[] {
-  return Array(length).fill(``);
+  return Array(length).fill("");
 }
 
 export function generateStorePairs(length: number = 10): StorePair[] {
@@ -73,7 +73,7 @@ export async function setAndGet(
 ): Promise<void> {
   await store.set([pair]);
   const value = await store.get(pair.path);
-  if (typeof pair.value === `object` && !BigNumber.isBigNumber(pair.value)) {
+  if (typeof pair.value === "object" && !BigNumber.isBigNumber(pair.value)) {
     expect(value).to.be.deep.equal(pair.value);
     return;
   }

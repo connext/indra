@@ -35,10 +35,10 @@ export class ChannelProvider extends EventEmitter implements IChannelProvider {
           this.connected = true;
           this._config = config;
           this._multisigAddress = config.multisigAddress;
-          this.emit(`connect`);
+          this.emit("connect");
           resolve(config);
         } else {
-          const err: any = new Error(`User Denied Channel Config`);
+          const err: any = new Error("User Denied Channel Config");
           err.code = 4001;
           this.connected = false;
           await this.connection.close();
@@ -152,7 +152,7 @@ export class ChannelProvider extends EventEmitter implements IChannelProvider {
   /// // PRIVATE METHODS
 
   private async _send(method: ChannelProviderRpcMethod, params: any = {}): Promise<any> {
-    const payload = { jsonrpc: `2.0`, id: Date.now(), method, params };
+    const payload = { jsonrpc: "2.0", id: Date.now(), method, params };
     const result = await this.connection.send(payload as JsonRpcRequest);
     return result;
   }

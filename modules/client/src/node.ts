@@ -25,8 +25,8 @@ import { invalidXpub } from "./validation";
 import { chan_nodeAuth } from "@connext/types";
 
 // Include our access token when interacting with these subjects
-const guardedSubjects = [`channel`, `client`, `lock`, `transfer`];
-const sendFailed = `Failed to send message`;
+const guardedSubjects = ["channel", "client", "lock", "transfer"];
+const sendFailed = "Failed to send message";
 
 // NOTE: swap rates are given as a decimal string describing:
 // Given 1 unit of `from`, how many units `to` are received.
@@ -43,7 +43,7 @@ export class NodeApiClient implements INodeApiClient {
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
-    this.log = new Logger(`NodeApiClient`, opts.logLevel);
+    this.log = new Logger("NodeApiClient", opts.logLevel);
     this._userPublicIdentifier = opts.userPublicIdentifier;
     this._nodePublicIdentifier = opts.nodePublicIdentifier;
     this._channelProvider = opts.channelProvider;
@@ -105,11 +105,11 @@ export class NodeApiClient implements INodeApiClient {
         }
       | { appDefinitionAddress: string },
   ): Promise<AppRegistry> {
-    return (await this.send(`app-registry`, { data: appDetails })) as AppRegistry;
+    return (await this.send("app-registry", { data: appDetails })) as AppRegistry;
   }
 
   public async config(): Promise<GetConfigResponse> {
-    return (await this.send(`config.get`)) as GetConfigResponse;
+    return (await this.send("config.get")) as GetConfigResponse;
   }
 
   public async createChannel(): Promise<CreateChannelResponse> {
@@ -142,8 +142,8 @@ export class NodeApiClient implements INodeApiClient {
       });
     } catch (e) {
       // TODO: node should return once deposit starts
-      if (e.message.startsWith(`Request timed out`)) {
-        this.log.warn(`request collateral message timed out`);
+      if (e.message.startsWith("Request timed out")) {
+        this.log.warn("request collateral message timed out");
         return;
       }
       throw e;
@@ -203,7 +203,7 @@ export class NodeApiClient implements INodeApiClient {
     try {
       return await this.send(`online.${recipientPublicIdentifier}`);
     } catch (e) {
-      if (e.message.startsWith(`Request timed out`)) {
+      if (e.message.startsWith("Request timed out")) {
         return false;
       }
       throw e;
@@ -253,10 +253,10 @@ export class NodeApiClient implements INodeApiClient {
   private async getAuthToken(): Promise<string> {
     if (!this.channelProvider) {
       throw new Error(
-        `Must have instantiated a channel provider (ie a signing thing) before setting auth token`,
+        "Must have instantiated a channel provider (ie a signing thing) before setting auth token",
       );
     }
-    const nonce = await this.send(`auth.getNonce`, {
+    const nonce = await this.send("auth.getNonce", {
       address: this.channelProvider.signerAddress,
     });
     const sig = await this.channelProvider.send(chan_nodeAuth, { message: nonce });
@@ -291,13 +291,13 @@ export class NodeApiClient implements INodeApiClient {
 
   private async sendAttempt(subject: string, data?: any): Promise<any | undefined> {
     this.log.debug(
-      `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : `without data`}`,
+      `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : "without data"}`,
     );
     const payload = {
       ...data,
       id: uuid.v4(),
     };
-    if (guardedSubjects.includes(subject.split(`.`)[0])) {
+    if (guardedSubjects.includes(subject.split(".")[0])) {
       payload.token = await this.getAuthToken();
     }
     let msg;
@@ -306,12 +306,12 @@ export class NodeApiClient implements INodeApiClient {
     } catch (e) {
       throw new Error(`${sendFailed}: ${e.message}`);
     }
-    let error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : ``) : ``) : ``;
-    if (error && error.startsWith(`Invalid token`)) {
-      this.log.info(`Auth error, token might have expired. Let's get a fresh token & try again.`);
+    let error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
+    if (error && error.startsWith("Invalid token")) {
+      this.log.info("Auth error, token might have expired. Let's get a fresh token & try again.");
       payload.token = await this.getAuthToken();
       msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
-      error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : ``) : ``) : ``;
+      error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     }
     if (!msg.data) {
       this.log.info(`Maybe this message is malformed: ${stringify(msg)}`);
@@ -321,7 +321,7 @@ export class NodeApiClient implements INodeApiClient {
     if (err || error || msg.data.err) {
       throw new Error(`Error sending request. Message: ${stringify(msg)}`);
     }
-    const isEmptyObj = typeof response === `object` && Object.keys(response).length === 0;
+    const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
     return !response || isEmptyObj ? undefined : response;
   }
 }

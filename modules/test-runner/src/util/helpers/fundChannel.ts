@@ -40,7 +40,7 @@ export const requestCollateral = async (
   const nodeFreeBalanceAddress = xkeyKthAddress(client.nodePublicIdentifier);
   const prevFreeBalance = await client.getFreeBalance(assetId);
   await new Promise(async (resolve, reject) => {
-    client.once(`DEPOSIT_CONFIRMED_EVENT`, async data => {
+    client.once("DEPOSIT_CONFIRMED_EVENT", async data => {
       const freeBalance = await client.getFreeBalance(assetId);
       // verify free balance increased as expected
       expect(freeBalance[nodeFreeBalanceAddress]).to.be.above(

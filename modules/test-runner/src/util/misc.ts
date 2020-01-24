@@ -12,16 +12,16 @@ export const combineObjects = (overrides: any, defaults: any): any => {
       // no comparable value, return
       return;
     }
-  
-    if (overrides[key] && typeof overrides[key] === `object`) {
+
+    if (overrides[key] && typeof overrides[key] === "object") {
       ret[key] = { ...(value as any), ...overrides[key] };
       return;
     }
-  
-    if (overrides[key] && typeof overrides[key] !== `object`) {
+
+    if (overrides[key] && typeof overrides[key] !== "object") {
       ret[key] = overrides[key];
     }
-  
+
     // otherwise leave as default
     return;
   });

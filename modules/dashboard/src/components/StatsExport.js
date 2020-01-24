@@ -22,9 +22,7 @@ const StatTypography = styled(Typography)({
 */
 
 function StatsExport({ classes, messaging }) {
-
   // const [allTransfers, setAllTransfers] = useState(null);
-
 
   function convertArrayOfObjectsToCSV(args) {
     var result, ctr, keys, columnDelimiter, lineDelimiter, data;
@@ -77,25 +75,30 @@ function StatsExport({ classes, messaging }) {
     link.click();
   }
 
-  async function getTransferDataAndDownload(){
-      if (!messaging) {
-        return;
+  async function getTransferDataAndDownload() {
+    if (!messaging) {
+      return;
+    }
+    const res = await messaging.getAllLinkedTransfers();
+    if (res) {
+      for (let i = 0; i < res.length; i++) {
+        if (res[i].amount) {
+          res[i].amount_clean = parseInt(res[i].amount._hex, 16);
+        }
       }
-      const res = await messaging.getAllLinkedTransfers();
-      if(res){
-        downloadCSV({ data: res, filename: "transfer-data.csv" })
-      }
+      downloadCSV({ data: res, filename: "transfer-data.csv" });
+    }
   }
 
-  async function getChannelDataAndDownload(){
+  async function getChannelDataAndDownload() {
     if (!messaging) {
       return;
     }
     const res = await messaging.getAllChannelStates();
-    if(res){
-      downloadCSV({ data: res, filename: "channel-data.csv" })
+    if (res) {
+      downloadCSV({ data: res, filename: "channel-data.csv" });
     }
-}
+  }
 
   return (
     <TopGrid container>

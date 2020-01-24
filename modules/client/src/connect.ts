@@ -1,5 +1,4 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { ConnextStore } from "@connext/store";
 import { CF_PATH, CREATE_CHANNEL_EVENT, StateSchemaVersion } from "@connext/types";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
@@ -10,7 +9,7 @@ import "regenerator-runtime/runtime";
 
 import { createCFChannelProvider } from "./channelProvider";
 import { ConnextClient } from "./connext";
-import { getDefaultOptions, isWalletProvided } from "./default";
+import { getDefaultOptions, isWalletProvided, getDefaultStore } from "./lib/default";
 import { delayAndThrow, Logger, stringify } from "./lib";
 import { NodeApiClient } from "./node";
 import {
@@ -53,12 +52,9 @@ const setupMultisigAddress = async (
       delayAndThrow(30_000, "Create channel event not fired within 30s"),
       new Promise(
         async (res: any): Promise<any> => {
-          channelProvider.once(
-            CREATE_CHANNEL_EVENT,
-            (data: CreateChannelMessage): void => {
-              res(data.data);
-            },
-          );
+          channelProvider.once(CREATE_CHANNEL_EVENT, (data: CreateChannelMessage): void => {
+            res(data.data);
+          });
 
           const creationData = await node.createChannel();
           log.debug(`created channel, transaction: ${stringify(creationData)}`);
@@ -84,8 +80,6 @@ export const connect = async (
       ? await getDefaultOptions(clientOptions, overrideOptions)
       : clientOptions;
   const {
-    asyncStorage,
-    backupService,
     logLevel,
     ethProviderUrl,
     nodeUrl,
@@ -140,7 +134,7 @@ export const connect = async (
     }
 
     if (!store) {
-      store = new ConnextStore(asyncStorage || window.localStorage, { backupService });
+      store = getDefaultStore(opts);
     }
 
     if (mnemonic) {
@@ -193,10 +187,7 @@ export const connect = async (
     node.userPublicIdentifier = channelProvider.config.userPublicIdentifier;
     node.nodePublicIdentifier = config.nodePublicIdentifier;
   } else {
-    throw new Error(
-      "Client must be instantiated with xpub and keyGen, " +
-      "or a channelProvider if not using mnemonic",
-    );
+    throw new Error("Must provide mnemonic or xpub + keygen");
   }
 
   // setup multisigAddress + assign to channelProvider
@@ -290,6 +281,10 @@ export const connect = async (
   // check in with node to do remaining work
   await client.clientCheckIn();
 
+  // check if client is available
+  await client.isAvailable();
+
   log.debug("Done creating channel client");
+
   return client;
 };

@@ -121,25 +121,25 @@ export class ConnextClient implements IConnextClient {
     this.publicIdentifier = this.channelProvider.config.userPublicIdentifier;
     this.multisigAddress = this.channelProvider.config.multisigAddress;
     this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
-    this.log = new Logger(`ConnextClient`, opts.logLevel);
+    this.log = new Logger("ConnextClient", opts.logLevel);
 
     // establish listeners
     this.listener = new ConnextListener(opts.channelProvider, this);
 
     // instantiate controllers with log and cf
-    this.depositController = new DepositController(`DepositController`, this);
-    this.swapController = new SwapController(`SwapController`, this);
-    this.withdrawalController = new WithdrawalController(`WithdrawalController`, this);
+    this.depositController = new DepositController("DepositController", this);
+    this.swapController = new SwapController("SwapController", this);
+    this.withdrawalController = new WithdrawalController("WithdrawalController", this);
     this.resolveConditionController = new ResolveConditionController(
-      `ResolveConditionController`,
+      "ResolveConditionController",
       this,
     );
     this.conditionalTransferController = new ConditionalTransferController(
-      `ConditionalTransferController`,
+      "ConditionalTransferController",
       this,
     );
     this.requestDepositRightsController = new RequestDepositRightsController(
-      `RequestDepositRightsController`,
+      "RequestDepositRightsController",
       this,
     );
   }
@@ -148,7 +148,7 @@ export class ConnextClient implements IConnextClient {
    * Creates a promise that returns when the channel is available,
    * ie. when the setup protocol or create channel call is completed
    */
-  private isAvailable = async (): Promise<void> => {
+  public isAvailable = async (): Promise<void> => {
     return new Promise(
       async (resolve: any, reject: any): Promise<any> => {
         // Wait for channel to be available
@@ -176,7 +176,7 @@ export class ConnextClient implements IConnextClient {
     const filtered = apps.filter(
       (app: AppInstanceJson) =>
         app.appInterface.addr === this.config.contractAddresses.CoinBalanceRefundApp &&
-        app.latestState[`tokenAddress`] === assetId,
+        app.latestState["tokenAddress"] === assetId,
     );
     return filtered.length === 0 ? undefined : filtered[0];
   };
@@ -191,14 +191,14 @@ export class ConnextClient implements IConnextClient {
 
   public restart = async (): Promise<void> => {
     if (!this.channelProvider.isSigner) {
-      this.log.warn(`Cannot restart with an injected provider.`);
+      this.log.warn("Cannot restart with an injected provider.");
       return;
     }
 
     // ensure that node and user xpub are different
     if (this.nodePublicIdentifier === this.publicIdentifier) {
       throw new Error(
-        `Client must be instantiated with a mnemonic that is different from the node's mnemonic`,
+        "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
       );
     }
 
@@ -315,21 +315,21 @@ export class ConnextClient implements IConnextClient {
   ): Promise<CheckDepositRightsResponse> => {
     const refundApp = await this.getBalanceRefundApp(params.assetId);
     const multisigBalance =
-      !refundApp.latestState[`tokenAddress`] &&
-      refundApp.latestState[`tokenAddress`] !== AddressZero
+      !refundApp.latestState["tokenAddress"] &&
+      refundApp.latestState["tokenAddress"] !== AddressZero
         ? await this.ethProvider.getBalance(this.multisigAddress)
         : await new Contract(
-          refundApp.latestState[`tokenAddress`],
-          tokenAbi,
-          this.ethProvider,
-        ).functions.balanceOf(this.multisigAddress);
+            refundApp.latestState["tokenAddress"],
+            tokenAbi,
+            this.ethProvider,
+          ).functions.balanceOf(this.multisigAddress);
     return refundApp
       ? {
-        assetId: refundApp.latestState[`tokenAddress`],
-        multisigBalance: multisigBalance.toString(),
-        recipient: refundApp.latestState[`recipient`],
-        threshold: refundApp.latestState[`threshold`],
-      }
+          assetId: refundApp.latestState["tokenAddress"],
+          multisigBalance: multisigBalance.toString(),
+          recipient: refundApp.latestState["recipient"],
+          threshold: refundApp.latestState["threshold"],
+        }
       : undefined;
   };
 
@@ -375,7 +375,7 @@ export class ConnextClient implements IConnextClient {
     const path = withdrawalKey(this.publicIdentifier);
     const value = await this.channelProvider.send(chan_storeGet, { path });
 
-    if (!value || value === `undefined`) {
+    if (!value || value === "undefined") {
       return undefined;
     }
 
@@ -400,18 +400,18 @@ export class ConnextClient implements IConnextClient {
     try {
       await new Promise((resolve: any, reject: any): any => {
         this.ethProvider.on(
-          `block`,
+          "block",
           async (blockNumber: number): Promise<void> => {
             const found = await this.checkForUserWithdrawal(blockNumber);
             if (found) {
               await this.channelProvider.send(chan_storeSet, {
                 pairs: [{ path: withdrawalKey(this.publicIdentifier), value: undefined }],
               });
-              this.ethProvider.removeAllListeners(`block`);
+              this.ethProvider.removeAllListeners("block");
               resolve();
             }
             if (blockNumber - startingBlock >= maxBlocks) {
-              this.ethProvider.removeAllListeners(`block`);
+              this.ethProvider.removeAllListeners("block");
               reject(`More than ${maxBlocks} have passed: ${blockNumber - startingBlock}`);
             }
           },
@@ -419,7 +419,7 @@ export class ConnextClient implements IConnextClient {
       });
     } catch (e) {
       if (e.includes(`More than ${maxBlocks} have passed`)) {
-        this.log.debug(`Retrying node submission`);
+        this.log.debug("Retrying node submission");
         await this.retryNodeSubmittedWithdrawal();
       }
     }
@@ -521,7 +521,7 @@ export class ConnextClient implements IConnextClient {
   public getFreeBalance = async (
     assetId: string = AddressZero,
   ): Promise<CFCoreTypes.GetFreeBalanceStateResult> => {
-    if (typeof assetId !== `string`) {
+    if (typeof assetId !== "string") {
       throw new Error(`Asset id must be a string: ${stringify(assetId)}`);
     }
     const normalizedAssetId = makeChecksum(assetId);
@@ -603,7 +603,7 @@ export class ConnextClient implements IConnextClient {
     const state: CFCoreTypes.GetStateResult = await this.getAppState(appInstanceId);
     // FIXME: casting?
     if ((state.state as any).finalized) {
-      throw new Error(`Cannot take action on an app with a finalized state.`);
+      throw new Error("Cannot take action on an app with a finalized state.");
     }
     return await this.channelProvider.send(ProtocolTypes.chan_takeAction, {
       action,
@@ -626,7 +626,7 @@ export class ConnextClient implements IConnextClient {
     const state: CFCoreTypes.GetStateResult = await this.getAppState(appInstanceId);
     // FIXME: casting?
     if ((state.state as any).finalized) {
-      throw new Error(`Cannot take action on an app with a finalized state.`);
+      throw new Error("Cannot take action on an app with a finalized state.");
     }
     return await this.channelProvider.send(ProtocolTypes.chan_updateState, {
       appInstanceId,
@@ -769,7 +769,7 @@ export class ConnextClient implements IConnextClient {
     try {
       appSequenceNumber = (await sc.mostRecentlyInstalledAppInstance()).appSeqNo;
     } catch (e) {
-      if (e.message.includes(`There are no installed AppInstances in this StateChannel`)) {
+      if (e.message.includes("There are no installed AppInstances in this StateChannel")) {
         appSequenceNumber = 0;
       } else {
         throw e;
@@ -798,12 +798,12 @@ export class ConnextClient implements IConnextClient {
     if (this.opts.mnemonic) {
       privateKey = fromMnemonic(this.opts.mnemonic)
         .derivePath(CF_PATH)
-        .derivePath(`0`).privateKey;
+        .derivePath("0").privateKey;
     } else if (this.keyGen) {
       // TODO: make this use app key?
-      privateKey = await this.keyGen(`0`);
+      privateKey = await this.keyGen("0");
     } else {
-      throw new Error(`No way to decode transfer, this should never happen!`);
+      throw new Error("No way to decode transfer, this should never happen!");
     }
 
     const preImage = await decryptWithPrivateKey(privateKey, encryptedPreImage);
@@ -866,10 +866,10 @@ export class ConnextClient implements IConnextClient {
    */
   public cleanupRegistryApps = async (): Promise<void> => {
     const swapAppRegistryInfo = this.appRegistry.filter(
-      (app: DefaultApp) => app.name === `SimpleTwoPartySwapApp`,
+      (app: DefaultApp) => app.name === "SimpleTwoPartySwapApp",
     )[0];
     const linkedRegistryInfo = this.appRegistry.filter(
-      (app: DefaultApp) => app.name === `SimpleLinkedTransferApp`,
+      (app: DefaultApp) => app.name === "SimpleLinkedTransferApp",
     )[0];
 
     await this.removeHangingProposalsByDefinition([
@@ -914,44 +914,44 @@ export class ConnextClient implements IConnextClient {
     // check if there is a coin refund app installed
     const coinRefund = await this.getBalanceRefundApp(assetId);
     if (!coinRefund) {
-      this.log.debug(`No coin balance refund app found`);
+      this.log.debug("No coin balance refund app found");
       return undefined;
     }
 
     const latestState = coinRefund.latestState;
-    const threshold = bigNumberify(latestState[`threshold`]);
+    const threshold = bigNumberify(latestState["threshold"]);
     const isTokenDeposit =
-      latestState[`tokenAddress`] && latestState[`tokenAddress`] !== AddressZero;
-    const isClientDeposit = latestState[`recipient`] === this.freeBalanceAddress;
+      latestState["tokenAddress"] && latestState["tokenAddress"] !== AddressZero;
+    const isClientDeposit = latestState["recipient"] === this.freeBalanceAddress;
 
     const multisigBalance = !isTokenDeposit
       ? await this.ethProvider.getBalance(this.multisigAddress)
       : await new Contract(
-        latestState[`tokenAddress`],
-        tokenAbi,
-        this.ethProvider,
-      ).functions.balanceOf(this.multisigAddress);
+          latestState["tokenAddress"],
+          tokenAbi,
+          this.ethProvider,
+        ).functions.balanceOf(this.multisigAddress);
 
     if (multisigBalance.lt(threshold)) {
       throw new Error(
-        `Something is wrong! multisig balance is less than the threshold of the installed coin balance refund app.`,
+        "Something is wrong! multisig balance is less than the threshold of the installed coin balance refund app.",
       );
     }
 
     // define helper fn to uninstall coin balance refund
     const uninstallRefund = async (): Promise<void> => {
-      this.log.debug(`Deposit has been executed, uninstalling refund app`);
+      this.log.debug("Deposit has been executed, uninstalling refund app");
       // deposit has been executed, uninstall
       await this.uninstallApp(coinRefund.identityHash);
-      this.log.debug(`Successfully uninstalled`);
+      this.log.debug("Successfully uninstalled");
     };
 
     // deposit still needs to be executed, wait to uninstall
     if (multisigBalance.eq(threshold)) {
       this.log.warn(
         `Coin balance refund app found installed, but no deposit successfully executed. Leaving app installed and waiting for deposit of ${
-          latestState[`tokenAddress`]
-        } from ${isClientDeposit ? `client` : `node`}`,
+          latestState["tokenAddress"]
+        } from ${isClientDeposit ? "client" : "node"}`,
       );
       // if the deposit is from the user, register a listener to wait for
       // for successful uninstalling since their queued uninstall request
@@ -960,10 +960,10 @@ export class ConnextClient implements IConnextClient {
       if (isClientDeposit) {
         if (isTokenDeposit) {
           new Contract(assetId, tokenAbi, this.ethProvider).once(
-            `Transfer`,
+            "Transfer",
             async (sender: string, recipient: string, amount: BigNumber) => {
               if (recipient === this.multisigAddress && amount.gt(0)) {
-                this.log.info(`Multisig transfer was for our channel, uninstalling refund app`);
+                this.log.info("Multisig transfer was for our channel, uninstalling refund app");
                 await uninstallRefund();
               }
             },
@@ -983,7 +983,7 @@ export class ConnextClient implements IConnextClient {
     const path = withdrawalKey(this.publicIdentifier);
     const withdrawal = await this.channelProvider.send(chan_storeGet, { path });
 
-    if (!withdrawal || withdrawal === `undefined`) {
+    if (!withdrawal || withdrawal === "undefined") {
       // No active withdrawal, nothing to do
       return;
     }
@@ -1026,7 +1026,7 @@ export class ConnextClient implements IConnextClient {
   public retryNodeSubmittedWithdrawal = async (): Promise<void> => {
     const val = await this.getLatestNodeSubmittedWithdrawal();
     if (!val) {
-      this.log.error(`No transaction found to retry`);
+      this.log.error("No transaction found to retry");
       return;
     }
     let { retry } = val;
@@ -1063,7 +1063,7 @@ export class ConnextClient implements IConnextClient {
     }
     if (app.length > 1) {
       return (
-        `CRITICAL ERROR: found multiple apps with the same id. ` +
+        "CRITICAL ERROR: found multiple apps with the same id. " +
         `Installed apps: ${stringify(apps)}.`
       );
     }
@@ -1085,7 +1085,7 @@ export class ConnextClient implements IConnextClient {
   private checkForUserWithdrawal = async (inBlock: number): Promise<boolean> => {
     const val = await this.getLatestNodeSubmittedWithdrawal();
     if (!val) {
-      this.log.error(`No transaction found in store.`);
+      this.log.error("No transaction found in store.");
       return false;
     }
 
