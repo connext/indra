@@ -48,7 +48,7 @@ export const createCFChannelProvider = async ({
     signerAddress: xpubToAddress(xpub),
     userPublicIdentifier: xpub,
   };
-  const connection = new CFCoreRpcConnection(cfCore, store, await keyGen(`0`));
+  const connection = new CFCoreRpcConnection(cfCore, store, await keyGen("0"));
   const channelProvider = new ChannelProvider(connection, channelProviderConfig);
   return channelProvider;
 };
@@ -145,7 +145,7 @@ export class CFCoreRpcConnection extends EventEmitter implements IRpcConnection 
     let state;
     state = await this.storeRestore();
     if (!state || !state.path) {
-      throw new Error(`No matching paths found in store backup's state`);
+      throw new Error("No matching paths found in store backup's state");
     }
     state = state.path;
     return state;

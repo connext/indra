@@ -9,23 +9,18 @@ export class Currency {
   ////////////////////////////////////////
   // Static Properties/Methods
 
-  public static DAI = (amount: any, daiRate?: any) =>
-    new Currency("DAI", amount, daiRate);
-  public static DEI = (amount: any, daiRate?: any) =>
-    new Currency("DEI", amount, daiRate);
-  public static ETH = (amount: any, daiRate?: any) =>
-    new Currency("ETH", amount, daiRate);
-  public static FIN = (amount: any, daiRate?: any) =>
-    new Currency("FIN", amount, daiRate);
-  public static WEI = (amount: any, daiRate?: any) =>
-    new Currency("WEI", amount, daiRate);
+  public static DAI = (amount: any, daiRate?: any) => new Currency("DAI", amount, daiRate);
+  public static DEI = (amount: any, daiRate?: any) => new Currency("DEI", amount, daiRate);
+  public static ETH = (amount: any, daiRate?: any) => new Currency("ETH", amount, daiRate);
+  public static FIN = (amount: any, daiRate?: any) => new Currency("FIN", amount, daiRate);
+  public static WEI = (amount: any, daiRate?: any) => new Currency("WEI", amount, daiRate);
 
   public typeToSymbol = {
     DAI: "$",
     DEI: "DEI ",
     ETH: eth.constants.EtherSymbol,
     FIN: "FIN ",
-    WEI: "WEI "
+    WEI: "WEI ",
   };
 
   public defaultOptions = {
@@ -33,7 +28,7 @@ export class Currency {
     DEI: { commas: false, decimals: 0, symbol: false, round: true },
     ETH: { commas: false, decimals: 3, symbol: true, round: true },
     FIN: { commas: false, decimals: 3, symbol: false, round: true },
-    WEI: { commas: false, decimals: 0, symbol: false, round: true }
+    WEI: { commas: false, decimals: 0, symbol: false, round: true },
   };
 
   ////////////////////////////////////////
@@ -76,7 +71,7 @@ export class Currency {
   get currency() {
     return {
       amount: this.amount,
-      type: this.type
+      type: this.type,
     };
   }
 
@@ -111,7 +106,7 @@ export class Currency {
     const amt = this.amount;
     const options = {
       ...this.defaultOptions[this.type],
-      ...(_options || {})
+      ...(_options || {}),
     };
     const symbol = options.symbol ? `${this.symbol}` : "";
     const nDecimals = amt.length - amt.indexOf(".") - 1;
@@ -138,9 +133,7 @@ export class Currency {
     if (typeof decimals === "number" && decimals < nDecimals) {
       const roundUp = toBN(`5${"0".repeat(18 - decimals - 1)}`);
       const rounded = this.fromWad(this.wad.add(roundUp));
-      return rounded
-        .slice(0, amt.length - (nDecimals - decimals))
-        .replace(/\.$/, "");
+      return rounded.slice(0, amt.length - (nDecimals - decimals)).replace(/\.$/, "");
     }
     // rounding to same decimals as are available: return amount w no changes
     return this.amount;
@@ -154,7 +147,7 @@ export class Currency {
       DEI: this.toRay(parseUnits(this.daiRate, 18).toString()),
       ETH: this.toRay("1"),
       FIN: this.toRay(parseUnits("1", 3).toString()),
-      WEI: this.toRay(parseUnits("1", 18).toString())
+      WEI: this.toRay(parseUnits("1", 18).toString()),
     };
     if (
       (this.isEthType() && this.isEthType(currency)) ||
@@ -163,12 +156,8 @@ export class Currency {
       return exchangeRates[currency];
     }
     if (!this.daiRateGiven) {
-      console.warn(
-        `Provide DAI:ETH rate for accurate ${this.type} -> ${currency} conversions`
-      );
-      console.warn(
-        `Using default eth price of $${this.daiRate} (amount: ${this.amount})`
-      );
+      console.warn(`Provide DAI:ETH rate for accurate ${this.type} -> ${currency} conversions`);
+      console.warn(`Using default eth price of $${this.daiRate} (amount: ${this.amount})`);
     }
     return exchangeRates[currency];
   };
@@ -187,25 +176,19 @@ export class Currency {
       this.daiRate = daiRate;
       this.daiRateGiven = true;
     }
-    const thisToTargetRate = this.toRay(this.getRate(targetType)).div(
-      this.getRate(this.type)
-    );
-    const targetAmount = this.fromRay(
-      this.fromRoundRay(this.ray.mul(thisToTargetRate))
-    );
+    const thisToTargetRate = this.toRay(this.getRate(targetType)).div(this.getRate(this.type));
+    const targetAmount = this.fromRay(this.fromRoundRay(this.ray.mul(thisToTargetRate)));
     // console.debug(`Converted: ${this.amount} ${this.type} => ${targetAmount} ${targetType}`)
     return new Currency(
       targetType,
       targetAmount.toString(),
-      this.daiRateGiven ? this.daiRate : undefined
+      this.daiRateGiven ? this.daiRate : undefined,
     );
   };
 
   // convert to wad, add 0.5 wad, convert back to dec string, then truncate decimal
   public _round = (decStr: any) =>
-    this._floor(
-      this.fromWad(this.toWad(decStr).add(this.toWad("0.5"))).toString()
-    );
+    this._floor(this.fromWad(this.toWad(decStr).add(this.toWad("0.5"))).toString());
 
   public _floor = (decStr: any) => decStr.substring(0, decStr.indexOf("."));
 
@@ -217,6 +200,5 @@ export class Currency {
 
   public fromRoundRay = (n: any) => this._round(this.fromRay(n));
 
-  public fromRay = (n: any) =>
-    this.fromWad(this._round(this.fromWad(n.toString())));
+  public fromRay = (n: any) => this.fromWad(this._round(this.fromWad(n.toString())));
 }

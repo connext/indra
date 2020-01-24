@@ -3,7 +3,6 @@ import { Address, BigNumber } from "./basic";
 import { AssetAmount } from "./channel";
 import { ProtocolTypes } from "./protocol";
 
-
 /////////////////////////////////
 ///////// SWAP
 export type AllowedSwap = {
@@ -88,8 +87,10 @@ export type ResolveLinkedTransferToRecipientParameters<T = string> = Omit<
   assetId: string;
   conditionType: typeof LINKED_TRANSFER_TO_RECIPIENT;
 };
-export type ResolveLinkedTransferToRecipientParametersBigNumber =
-  ResolveLinkedTransferToRecipientParameters<BigNumber>;
+
+export type ResolveLinkedTransferToRecipientParametersBigNumber = ResolveLinkedTransferToRecipientParameters<
+  BigNumber
+>;
 
 // resolver union types
 export type ResolveConditionParameters<T = string> =

@@ -50,12 +50,12 @@ export default class ProcessQueue {
         lockName,
         this.lockingService
           ? new QueueWithLockingServiceConnection(
-              lockName,
-              this.lockingService,
-              {
-                concurrency: 1
-              }
-            )
+            lockName,
+            this.lockingService,
+            {
+              concurrency: 1
+            }
+          )
           : new Queue({ concurrency: 1 })
       );
     }
