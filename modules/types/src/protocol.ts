@@ -13,7 +13,7 @@ export enum Protocol {
   Uninstall = "uninstall",
   UninstallVirtualApp = "uninstall-virtual-app",
   Update = "update",
-  Withdraw = "withdraw"
+  Withdraw = "withdraw",
 }
 
 export type ProtocolMessage = {
@@ -136,7 +136,6 @@ export type ProtocolParameters =
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace ProtocolTypes {
-
   // This is used instead of the ethers `Transaction` because that type
   // requires the nonce and chain ID to be specified, when sometimes those
   // arguments are not known at the time of creating a transaction.
@@ -154,48 +153,72 @@ export namespace ProtocolTypes {
    * Centralized locking service (i.e. redis)
    */
   export interface ILockService {
-    acquireLock(
-      lockName: string,
-      callback: (...args: any[]) => any,
-      timeout: number
-    ): Promise<any>;
+    acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;
   }
 
   export enum ErrorType {
-    ERROR = "error"
+    ERROR = "error",
   }
 
-  export enum MethodName {
-    ACCEPT_STATE = "acceptState",
-    GET_PROPOSED_APP_INSTANCE = "getProposedAppInstance"
-  }
+  export const acceptState = "acceptState";
+  export const getProposedAppInstance = "getProposedAppInstance";
+
+  export const MethodNames = {
+    [acceptState]: acceptState,
+    [getProposedAppInstance]: getProposedAppInstance,
+  };
+  export type MethodName = keyof typeof MethodNames;
+
+  export const chan_create = "chan_create";
+  export const chan_deposit = "chan_deposit";
+  export const chan_deployStateDepositHolder = "chan_deployStateDepositHolder";
+  export const chan_getChannelAddresses = "chan_getChannelAddresses";
+  export const chan_getAppInstance = "chan_getAppInstance";
+  export const chan_getAppInstances = "chan_getAppInstances";
+  export const chan_getStateDepositHolderAddress = "chan_getStateDepositHolderAddress";
+  export const chan_getFreeBalanceState = "chan_getFreeBalanceState";
+  export const chan_getTokenIndexedFreeBalanceStates = "chan_getTokenIndexedFreeBalanceStates";
+  export const chan_getProposedAppInstances = "chan_getProposedAppInstances";
+  export const chan_getState = "chan_getState";
+  export const chan_getStateChannel = "chan_getStateChannel";
+  export const chan_install = "chan_install";
+  export const chan_requestDepositRights = "chan_requestDepositRights";
+  export const chan_installVirtual = "chan_installVirtual";
+  export const chan_proposeInstall = "chan_proposeInstall";
+  export const chan_rejectInstall = "chan_rejectInstall";
+  export const chan_updateState = "chan_updateState";
+  export const chan_takeAction = "chan_takeAction";
+  export const chan_uninstall = "chan_uninstall";
+  export const chan_uninstallVirtual = "chan_uninstallVirtual";
+  export const chan_rescindDepositRights = "chan_rescindDepositRights";
+  export const chan_withdraw = "chan_withdraw";
+  export const chan_withdrawCommitment = "chan_withdrawCommitment";
 
   export const RpcMethodNames = {
-    chan_create: "chan_create",
-    chan_deposit: "chan_deposit",
-    chan_deployStateDepositHolder: "chan_deployStateDepositHolder",
-    chan_getChannelAddresses: "chan_getChannelAddresses",
-    chan_getAppInstance: "chan_getAppInstance",
-    chan_getAppInstances: "chan_getAppInstances",
-    chan_getStateDepositHolderAddress: "chan_getStateDepositHolderAddress",
-    chan_getFreeBalanceState: "chan_getFreeBalanceState",
-    chan_getTokenIndexedFreeBalanceStates:
-      "chan_getTokenIndexedFreeBalanceStates",
-    chan_getProposedAppInstances: "chan_getProposedAppInstances",
-    chan_getState: "chan_getState",
-    chan_getStateChannel: "chan_getStateChannel",
-    chan_install: "chan_install",
-    chan_requestDepositRights: "chan_requestDepositRights",
-    chan_installVirtual: "chan_installVirtual",
-    chan_proposeInstall: "chan_proposeInstall",
-    chan_rejectInstall: "chan_rejectInstall",
-    chan_updateState: "chan_updateState",
-    chan_takeAction: "chan_takeAction",
-    chan_uninstall: "chan_uninstall",
-    chan_uninstallVirtual: "chan_uninstallVirtual",
-    chan_rescindDepositRights: "chan_rescindDepositRights",
-    chan_withdraw: "chan_withdraw",
-    chan_withdrawCommitment: "chan_withdrawCommitment"
+    [chan_create]: chan_create,
+    [chan_deposit]: chan_deposit,
+    [chan_deployStateDepositHolder]: chan_deployStateDepositHolder,
+    [chan_getChannelAddresses]: chan_getChannelAddresses,
+    [chan_getAppInstance]: chan_getAppInstance,
+    [chan_getAppInstances]: chan_getAppInstances,
+    [chan_getStateDepositHolderAddress]: chan_getStateDepositHolderAddress,
+    [chan_getFreeBalanceState]: chan_getFreeBalanceState,
+    [chan_getTokenIndexedFreeBalanceStates]: chan_getTokenIndexedFreeBalanceStates,
+    [chan_getProposedAppInstances]: chan_getProposedAppInstances,
+    [chan_getState]: chan_getState,
+    [chan_getStateChannel]: chan_getStateChannel,
+    [chan_install]: chan_install,
+    [chan_requestDepositRights]: chan_requestDepositRights,
+    [chan_installVirtual]: chan_installVirtual,
+    [chan_proposeInstall]: chan_proposeInstall,
+    [chan_rejectInstall]: chan_rejectInstall,
+    [chan_updateState]: chan_updateState,
+    [chan_takeAction]: chan_takeAction,
+    [chan_uninstall]: chan_uninstall,
+    [chan_uninstallVirtual]: chan_uninstallVirtual,
+    [chan_rescindDepositRights]: chan_rescindDepositRights,
+    [chan_withdraw]: chan_withdraw,
+    [chan_withdrawCommitment]: chan_withdrawCommitment,
   };
   export type RpcMethodName = keyof typeof RpcMethodNames;
 
@@ -528,4 +551,3 @@ export namespace ProtocolTypes {
 
   export type Message = MethodRequest | MethodResponse | Event | Error;
 }
-

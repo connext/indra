@@ -47,29 +47,29 @@ export async function computeTokenIndexedFreeBalanceIncrements(
   }
 
   switch (outcomeType) {
-    case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
-      return handleTwoPartyFixedOutcome(
-        encodedOutcome,
-        appInstance.twoPartyOutcomeInterpreterParams
-      );
-    }
-    case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
-      return handleSingleAssetTwoPartyCoinTransfer(
-        encodedOutcome,
-        appInstance.singleAssetTwoPartyCoinTransferInterpreterParams
-      );
-    }
-    case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
-      return handleMultiAssetMultiPartyCoinTransfer(
-        encodedOutcome,
-        appInstance.multiAssetMultiPartyCoinTransferInterpreterParams
-      );
-    }
-    default: {
-      throw Error(
-        "computeTokenIndexedFreeBalanceIncrements received an AppInstance with unknown OutcomeType"
-      );
-    }
+  case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
+    return handleTwoPartyFixedOutcome(
+      encodedOutcome,
+      appInstance.twoPartyOutcomeInterpreterParams
+    );
+  }
+  case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
+    return handleSingleAssetTwoPartyCoinTransfer(
+      encodedOutcome,
+      appInstance.singleAssetTwoPartyCoinTransferInterpreterParams
+    );
+  }
+  case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
+    return handleMultiAssetMultiPartyCoinTransfer(
+      encodedOutcome,
+      appInstance.multiAssetMultiPartyCoinTransferInterpreterParams
+    );
+  }
+  default: {
+    throw Error(
+      "computeTokenIndexedFreeBalanceIncrements received an AppInstance with unknown OutcomeType"
+    );
+  }
   }
 }
 
@@ -129,26 +129,26 @@ function handleTwoPartyFixedOutcome(
   const { amount, playerAddrs, tokenAddress } = interpreterParams;
 
   switch (decodeTwoPartyFixedOutcome(encodedOutcome)) {
-    case TwoPartyFixedOutcome.SEND_TO_ADDR_ONE:
-      return {
-        [tokenAddress]: {
-          [playerAddrs[0]]: amount
-        }
-      };
-    case TwoPartyFixedOutcome.SEND_TO_ADDR_TWO:
-      return {
-        [tokenAddress]: {
-          [playerAddrs[1]]: amount
-        }
-      };
-    case TwoPartyFixedOutcome.SPLIT_AND_SEND_TO_BOTH_ADDRS:
-    default:
-      return {
-        [tokenAddress]: {
-          [playerAddrs[0]]: amount.div(2),
-          [playerAddrs[1]]: amount.sub(amount.div(2))
-        }
-      };
+  case TwoPartyFixedOutcome.SEND_TO_ADDR_ONE:
+    return {
+      [tokenAddress]: {
+        [playerAddrs[0]]: amount
+      }
+    };
+  case TwoPartyFixedOutcome.SEND_TO_ADDR_TWO:
+    return {
+      [tokenAddress]: {
+        [playerAddrs[1]]: amount
+      }
+    };
+  case TwoPartyFixedOutcome.SPLIT_AND_SEND_TO_BOTH_ADDRS:
+  default:
+    return {
+      [tokenAddress]: {
+        [playerAddrs[0]]: amount.div(2),
+        [playerAddrs[1]]: amount.sub(amount.div(2))
+      }
+    };
   }
 }
 

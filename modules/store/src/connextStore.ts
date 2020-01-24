@@ -81,7 +81,7 @@ export class ConnextStore {
         const pathToFind = `${path}${this.separator}`;
         if (k.includes(pathToFind)) {
           const value = await this.store.getItem(k);
-          partialMatches[k.replace(pathToFind, ``)] = value;
+          partialMatches[k.replace(pathToFind, "")] = value;
         }
       }
       return Object.keys(partialMatches).length === 0 ? undefined : partialMatches;

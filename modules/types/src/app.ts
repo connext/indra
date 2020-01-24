@@ -4,8 +4,9 @@ import {
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   OutcomeType,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
-  TwoPartyFixedOutcomeInterpreterParams, 
+  TwoPartyFixedOutcomeInterpreterParams,
 } from "./contracts";
+import { CFCoreTypes } from "./cfCore";
 
 ////////////////////////////////////
 ////// App Instances
@@ -49,10 +50,8 @@ export type AppInstanceInfo = {
   intermediaryIdentifier?: string;
   // Interpreter-related Fields:
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
-  multiAssetMultiPartyCoinTransferInterpreterParams?:
-    MultiAssetMultiPartyCoinTransferInterpreterParams;
-  singleAssetTwoPartyCoinTransferInterpreterParams?:
-    SingleAssetTwoPartyCoinTransferInterpreterParams;
+  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
+  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
 };
 
 export type AppInstanceJson = {
@@ -103,20 +102,29 @@ export type AppInstanceProposal = {
   timeout: string;
   // Interpreter-related Fields
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
-  multiAssetMultiPartyCoinTransferInterpreterParams?:
-    MultiAssetMultiPartyCoinTransferInterpreterParams;
-  singleAssetTwoPartyCoinTransferInterpreterParams?:
-    SingleAssetTwoPartyCoinTransferInterpreterParams;
+  multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
+  singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
+};
+
+export type MatchAppInstanceResponse = {
+  matchedApp: DefaultApp;
+  proposeParams: CFCoreTypes.ProposeInstallParams;
+  appInstanceId: string;
 };
 
 ////////////////////////////////////
 ////// App Registry
 
+export const CoinBalanceRefundApp = "CoinBalanceRefundApp";
+export const SimpleLinkedTransferApp = "SimpleLinkedTransferApp";
+export const SimpleTransferApp = "SimpleTransferApp";
+export const SimpleTwoPartySwapApp = "SimpleTwoPartySwapApp";
+
 export const SupportedApplications = {
-  CoinBalanceRefundApp: "CoinBalanceRefundApp",
-  SimpleLinkedTransferApp: "SimpleLinkedTransferApp",
-  SimpleTransferApp: "SimpleTransferApp",
-  SimpleTwoPartySwapApp: "SimpleTwoPartySwapApp",
+  [CoinBalanceRefundApp]: CoinBalanceRefundApp,
+  [SimpleLinkedTransferApp]: SimpleLinkedTransferApp,
+  [SimpleTransferApp]: SimpleTransferApp,
+  [SimpleTwoPartySwapApp]: SimpleTwoPartySwapApp,
 };
 export type SupportedApplication = keyof typeof SupportedApplications;
 

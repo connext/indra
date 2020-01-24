@@ -3,15 +3,16 @@ module.exports = {
       "@typescript-eslint/no-unused-expressions": "off",
       "comma-dangle": ["error", "only-multiline"],
       "indent": ["error", 2],
-      "max-len": ["error", { "code": 100, "ignoreTemplateLiterals": true }],
+      "max-len": ["warn", { "code": 100, "ignoreTemplateLiterals": true }],
       "no-async-promise-executor": "off",
       "no-undef": ["error"],
       "no-unused-vars": ["error"],
       "no-var": ["error"],
       "object-curly-spacing": ["error", "always"],
-      "quotes": ["error", "backtick"],
+      "quotes": ["error", "double", { "allowTemplateLiterals": true }],
       "semi": ["error", "always"],
       "spaced-comment": "off",
+      "no-prototype-builtins": "off"
     },
     settings: {
       react: {
@@ -27,6 +28,7 @@ module.exports = {
       "eslint:recommended",
       "plugin:react/recommended",
       "plugin:@typescript-eslint/eslint-recommended",
+      "plugin:prettier/recommended"
     ],
     parser: "@typescript-eslint/parser",
     parserOptions: {

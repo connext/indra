@@ -1,4 +1,4 @@
-import { CFCoreTypes, UpdateStateMessage } from "@connext/types";
+import { CFCoreTypes, UpdateStateMessage, UPDATE_STATE_EVENT } from "@connext/types";
 import { One, Zero } from "ethers/constants";
 
 import { NO_APP_INSTANCE_FOR_TAKE_ACTION, Node } from "../../src";
@@ -23,13 +23,13 @@ const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 function confirmMessages(initiator: Node, responder: Node, expectedData: CFCoreTypes.UpdateStateEventData) {
   const expected = {
     from: initiator.publicIdentifier,
-    type: "UPDATE_STATE_EVENT",
+    type: UPDATE_STATE_EVENT,
     data: expectedData,
   };
-  // initiator.once("UPDATE_STATE_EVENT", (msg: UpdateStateMessage) => {
+  // initiator.once(UPDATE_STATE_EVENT, (msg: UpdateStateMessage) => {
   //   assertNodeMessage(msg, expected);
   // });
-  responder.once("UPDATE_STATE_EVENT", (msg: UpdateStateMessage) => {
+  responder.once(UPDATE_STATE_EVENT, (msg: UpdateStateMessage) => {
     assertNodeMessage(msg, expected);
   });
 }
@@ -78,7 +78,7 @@ describe("Node method follows spec - takeAction virtual", () => {
         };
 
         nodeC.once(
-          "UPDATE_STATE_EVENT",
+          UPDATE_STATE_EVENT,
           async () => {
             const req = constructGetStateRpc(appInstanceId);
 

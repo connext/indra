@@ -6,6 +6,8 @@ import {
   SimpleTransferAppStateBigNumber,
   SupportedApplication,
   SupportedApplications,
+  SimpleLinkedTransferApp,
+  SimpleTransferApp,
 } from "@connext/types";
 import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
@@ -31,7 +33,7 @@ import {
   TransferRepository,
 } from "./transfer.repository";
 
-const logger = new CLogger("TransferService");
+const logger = new CLogger(`TransferService`);
 
 @Injectable()
 export class TransferService {
@@ -194,7 +196,7 @@ export class TransferService {
 
     // check that linked transfer app has been installed from sender
     const defaultApp = (await this.configService.getDefaultApps()).find(
-      (app: DefaultApp) => app.name === SupportedApplications.SimpleLinkedTransferApp,
+      (app: DefaultApp) => app.name === SimpleLinkedTransferApp,
     );
     const installedApps = await this.cfCoreService.getAppInstances();
     const senderApp = installedApps.find(
@@ -219,7 +221,7 @@ export class TransferService {
       // TODO: expose remove listener
       await new Promise(async (resolve, reject) => {
         this.cfCoreService.cfCore.on(
-          "DEPOSIT_CONFIRMED_EVENT",
+          `DEPOSIT_CONFIRMED_EVENT`,
           async (msg: DepositConfirmationMessage) => {
             if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
               // do not reject promise here, since theres a chance the event is
@@ -287,7 +289,7 @@ export class TransferService {
       transfer.assetId,
       Zero,
       transfer.assetId,
-      SupportedApplications.SimpleLinkedTransferApp as SupportedApplication,
+      SimpleLinkedTransferApp,
       meta,
     );
 
@@ -344,7 +346,7 @@ export class TransferService {
       assetId,
       Zero,
       assetId,
-      SupportedApplications.SimpleTransferApp as SupportedApplication,
+      SimpleTransferApp,
     );
 
     if (!res || !res.appInstanceId) {

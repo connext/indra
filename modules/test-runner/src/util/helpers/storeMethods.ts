@@ -9,11 +9,16 @@ import { expect } from "../";
 
 export const TEST_STORE_PAIR: StorePair = { path: "testing", value: "something" };
 
+export const ASYNCSTORAGE = "ASYNCSTORAGE";
+export const FILESTORAGE = "FILESTORAGE";
+export const LOCALSTORAGE = "LOCALSTORAGE";
+export const MEMORYSTORAGE = "MEMORYSTORAGE";
+
 const StoreTypes = {
-  asyncstorage: "asyncstorage",
-  filestorage: "filestorage",
-  localstorage: "localstorage",
-  memorystorage: "memorystorage",
+  [ASYNCSTORAGE]: ASYNCSTORAGE,
+  [FILESTORAGE]: FILESTORAGE,
+  [LOCALSTORAGE]: LOCALSTORAGE,
+  [MEMORYSTORAGE]: MEMORYSTORAGE,
 };
 type StoreType = keyof typeof StoreTypes;
 
@@ -24,25 +29,25 @@ export function createStore(
 ): { store: ConnextStore; storage: Storage | IAsyncStorage } {
   let storage;
 
-  switch (type.toLowerCase()) {
-    case "localstorage":
-      storage = localStorage;
-      break;
+  switch (type.toUpperCase()) {
+  case LOCALSTORAGE:
+    storage = localStorage;
+    break;
 
-    case "asyncstorage":
-      storage = new MockAsyncStorage(storageOpts);
-      break;
+  case ASYNCSTORAGE:
+    storage = new MockAsyncStorage(storageOpts);
+    break;
 
-    case "filestorage":
-      storage = new FileStorage(storageOpts);
-      break;
+  case FILESTORAGE:
+    storage = new FileStorage(storageOpts);
+    break;
 
-    case "memorystorage":
-      storage = new MemoryStorage(storageOpts);
-      break;
+  case MEMORYSTORAGE:
+    storage = new MemoryStorage(storageOpts);
+    break;
 
-    default:
-      throw new Error(`Unable to create test store of type: ${type}`);
+  default:
+    throw new Error(`Unable to create test store of type: ${type}`);
   }
 
   const store = new ConnextStore(storage, opts);

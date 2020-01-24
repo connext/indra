@@ -1,9 +1,9 @@
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes } from "../../../types";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { NodeController } from "../../controller";
 
 export default class GetProposedAppInstanceController extends NodeController {
-  public static readonly methodName = CFCoreTypes.MethodName.GET_PROPOSED_APP_INSTANCE;
+  public static readonly methodName = ProtocolTypes.getProposedAppInstance;
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,

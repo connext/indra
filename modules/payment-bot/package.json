@@ -12,9 +12,9 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@connext/client": "4.0.5",
-    "@connext/store": "4.0.5",
-    "@connext/types": "4.0.5",
+    "@connext/client": "4.0.6",
+    "@connext/store": "4.0.6",
+    "@connext/types": "4.0.6",
     "commander": "4.0.1",
     "dotenv": "8.2.0",
     "ethers": "4.0.41",
