@@ -57,7 +57,7 @@ export class ConditionalTransferController extends AbstractController {
   private handleLinkedTransferToRecipient = async (
     params: LinkedTransferToRecipientParameters,
   ): Promise<LinkedTransferToRecipientResponse> => {
-    const { amount, assetId, paymentId, preImage, recipient } = convert.LinkedTransferToRecipient(
+    const { amount, assetId, paymentId, preImage, recipient, meta } = convert.LinkedTransferToRecipient(
       `bignumber`,
       params,
     );
@@ -107,6 +107,7 @@ export class ConditionalTransferController extends AbstractController {
         assetId,
         encryptedPreImage,
         paymentId,
+        meta
       }),
     );
 
