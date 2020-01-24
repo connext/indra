@@ -104,6 +104,7 @@ export interface IConnextClient {
   ///////////////////////////////////
   // NODE EASY ACCESS METHODS
   // TODO: do we really need to expose all of these?
+  isAvailable(): Promise<void>;
   getChannel(): Promise<GetChannelResponse>;
   getLinkedTransfer(paymentId: string): Promise<Transfer>;
   getAppRegistry(
