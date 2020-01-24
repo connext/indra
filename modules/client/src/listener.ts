@@ -349,7 +349,10 @@ export class ConnextListener extends EventEmitter {
       if (!msg.paymentId && !msg.data) {
         throw new Error(`Could not parse data from message: ${stringify(msg)}`);
       }
-      const data = msg.paymentId ? msg : JSON.parse(msg.data);
+      let data = msg.paymentId ? msg : msg.data;
+      if (typeof data === `string`) {
+        data = JSON.parse(data);
+      }
       const { paymentId, encryptedPreImage, amount, assetId } = data;
       if (!paymentId || !encryptedPreImage || !amount || !assetId) {
         throw new Error(`Unable to parse transfer details from message ${stringify(data)}`);
