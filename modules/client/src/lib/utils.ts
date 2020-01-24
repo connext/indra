@@ -1,8 +1,6 @@
 import { BigNumber, bigNumberify, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
 
-export const toBN = (n: any) => bigNumberify(n.toString());
-
 // Give abrv = true to abbreviate hex strings and xpubs to look like "xpub6FEC..kuQk"
 export const stringify = (obj: object, abrv: boolean = false): string =>
   JSON.stringify(

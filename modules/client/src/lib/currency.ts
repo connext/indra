@@ -1,6 +1,6 @@
 import { ethers as eth } from "ethers";
 
-import { toBN } from "./utils";
+import { toBN } from "./bn";
 import { BigNumber } from "ethers/utils";
 
 const { commify, formatUnits, parseUnits } = eth.utils;
