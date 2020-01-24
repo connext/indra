@@ -148,7 +148,7 @@ export class ConnextClient implements IConnextClient {
    * Creates a promise that returns when the channel is available,
    * ie. when the setup protocol or create channel call is completed
    */
-  private isAvailable = async (): Promise<void> => {
+  public isAvailable = async (): Promise<void> => {
     return new Promise(
       async (resolve: any, reject: any): Promise<any> => {
         // Wait for channel to be available
@@ -319,17 +319,17 @@ export class ConnextClient implements IConnextClient {
       refundApp.latestState["tokenAddress"] !== AddressZero
         ? await this.ethProvider.getBalance(this.multisigAddress)
         : await new Contract(
-          refundApp.latestState["tokenAddress"],
-          tokenAbi,
-          this.ethProvider,
-        ).functions.balanceOf(this.multisigAddress);
+            refundApp.latestState["tokenAddress"],
+            tokenAbi,
+            this.ethProvider,
+          ).functions.balanceOf(this.multisigAddress);
     return refundApp
       ? {
-        assetId: refundApp.latestState["tokenAddress"],
-        multisigBalance: multisigBalance.toString(),
-        recipient: refundApp.latestState["recipient"],
-        threshold: refundApp.latestState["threshold"],
-      }
+          assetId: refundApp.latestState["tokenAddress"],
+          multisigBalance: multisigBalance.toString(),
+          recipient: refundApp.latestState["recipient"],
+          threshold: refundApp.latestState["threshold"],
+        }
       : undefined;
   };
 
@@ -927,10 +927,10 @@ export class ConnextClient implements IConnextClient {
     const multisigBalance = !isTokenDeposit
       ? await this.ethProvider.getBalance(this.multisigAddress)
       : await new Contract(
-        latestState["tokenAddress"],
-        tokenAbi,
-        this.ethProvider,
-      ).functions.balanceOf(this.multisigAddress);
+          latestState["tokenAddress"],
+          tokenAbi,
+          this.ethProvider,
+        ).functions.balanceOf(this.multisigAddress);
 
     if (multisigBalance.lt(threshold)) {
       throw new Error(

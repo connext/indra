@@ -281,6 +281,10 @@ export const connect = async (
   // check in with node to do remaining work
   await client.clientCheckIn();
 
+  // check if client is available
+  await client.isAvailable();
+
   log.debug("Done creating channel client");
+
   return client;
 };
