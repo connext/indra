@@ -27,7 +27,6 @@
     "human-standard-token-abi": "2.0.0",
     "localStorage": "1.0.4",
     "mocha": "6.2.2",
-    "openzeppelin-solidity": "2.3.0",
     "pg": "7.17.0",
     "mock-async-storage": "2.2.0",
     "ts-jest": "24.2.0",

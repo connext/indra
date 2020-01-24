@@ -1,6 +1,6 @@
 import * as connext from "@connext/client";
 import { ConnextStore, PisaClientBackupAPI } from "@connext/store";
-import { CF_PATH, ConnextClientStorePrefix } from "@connext/types";
+import { ERC20TokenArtifacts, CF_PATH, ConnextClientStorePrefix } from "@connext/types";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
@@ -11,7 +11,6 @@ import interval from "interval-promise";
 import { PisaClient } from "pisa-client";
 import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
-import tokenArtifacts from "openzeppelin-solidity/build/contracts/ERC20Mintable.json";
 import { interpret } from "xstate";
 
 import "./App.css";
@@ -293,7 +292,7 @@ class App extends React.Component {
 
     const token = new Contract(
       channel.config.contractAddresses.Token,
-      tokenArtifacts.abi,
+      ERC20TokenArtifacts.abi,
       ethProvider,
     );
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
@@ -352,7 +351,7 @@ class App extends React.Component {
     }
     const saiToken = new Contract(
       channel.config.contractAddresses.SAIToken,
-      tokenArtifacts.abi,
+      ERC20TokenArtifacts.abi,
       wallet,
     );
     const freeSaiBalance = await channel.getFreeBalance(saiToken.address);
