@@ -15,7 +15,12 @@ import {
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { JSON_STRINGIFY_SPACE } from "./constants";
-import { addressBook, addressHistory, MinimumViableMultisig, ProxyFactory } from "./contracts";
+import {
+  addressBook,
+  addressHistory,
+  MinimumViableMultisig,
+  ProxyFactory
+} from "./contracts";
 
 export function getFirstElementInListNotEqualTo(test: string, list: string[]) {
   return list.filter(x => x !== test)[0];
@@ -117,20 +122,25 @@ export const getCreate2MultisigAddress = async (
   addresses: CriticalStateChannelAddresses,
   ethProvider: Provider,
   legacyKeygen?: boolean,
-  toxicBytecode?: string,
+  toxicBytecode?: string
 ): Promise<string> => {
-  const proxyFactory = new Contract(addresses.proxyFactory, ProxyFactory.abi, ethProvider);
+  const proxyFactory = new Contract(
+    addresses.proxyFactory,
+    ProxyFactory.abi,
+    ethProvider
+  );
 
-  const xkeysToSortedKthAddresses = (xkeys) =>
+  const xkeysToSortedKthAddresses = xkeys =>
     xkeys
-      .map((xkey) =>
+      .map(xkey =>
         legacyKeygen === true
           ? fromExtendedKey(xkey).address
           : fromExtendedKey(xkey).derivePath("0").address
       )
       .sort((a, b) => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
 
-  const proxyBytecode = toxicBytecode || await proxyFactory.functions.proxyCreationCode();
+  const proxyBytecode =
+    toxicBytecode || (await proxyFactory.functions.proxyCreationCode());
 
   return getAddress(
     solidityKeccak256(
@@ -152,7 +162,10 @@ export const getCreate2MultisigAddress = async (
         ),
         solidityKeccak256(
           ["bytes", "uint256"],
-          [`0x${proxyBytecode.replace(/^0x/, "")}`, addresses.multisigMastercopy]
+          [
+            `0x${proxyBytecode.replace(/^0x/, "")}`,
+            addresses.multisigMastercopy
+          ]
         )
       ]
     ).slice(-40)
@@ -167,15 +180,17 @@ export const scanForCriticalAddresses = async (
     ProxyFactory: string[];
     MinimumViableMultisig: string[];
     ToxicBytecode: string[];
-  },
-): Promise<void | { [key: string]: string|boolean }> => {
+  }
+): Promise<void | { [key: string]: string | boolean }> => {
   const chainId = (await ethProvider.getNetwork()).chainId;
   // First, consolidate all sources of addresses to scan
 
   // Falsy toxic bytecode (ie "") causes getCreate2MultisigAddress to fetch non-toxic value
-  let toxicBytecodes: string[] = [``];
-  if(addressHistory[chainId] && addressHistory[chainId].ToxicBytecode) {
-    toxicBytecodes = toxicBytecodes.concat(addressHistory[chainId].ToxicBytecode);
+  let toxicBytecodes: string[] = [""];
+  if (addressHistory[chainId] && addressHistory[chainId].ToxicBytecode) {
+    toxicBytecodes = toxicBytecodes.concat(
+      addressHistory[chainId].ToxicBytecode
+    );
   }
   if (moreAddressHistory && moreAddressHistory.ToxicBytecode) {
     toxicBytecodes = toxicBytecodes.concat(moreAddressHistory.ToxicBytecode);
@@ -184,23 +199,32 @@ export const scanForCriticalAddresses = async (
   //console.log(`Scanning toxic bytecode: ${toxicBytecodes}`);
 
   let mastercopies: string[] = [];
-  if(addressHistory[chainId] && addressHistory[chainId].MinimumViableMultisig) {
-    mastercopies = mastercopies.concat(addressHistory[chainId].MinimumViableMultisig);
+  if (
+    addressHistory[chainId] &&
+    addressHistory[chainId].MinimumViableMultisig
+  ) {
+    mastercopies = mastercopies.concat(
+      addressHistory[chainId].MinimumViableMultisig
+    );
   }
-  if(addressBook[chainId] && addressBook[chainId].MinimumViableMultisig) {
+  if (addressBook[chainId] && addressBook[chainId].MinimumViableMultisig) {
     mastercopies.push(addressBook[chainId].MinimumViableMultisig.address);
   }
   if (moreAddressHistory && moreAddressHistory.MinimumViableMultisig) {
-    mastercopies = mastercopies.concat(moreAddressHistory.MinimumViableMultisig);
+    mastercopies = mastercopies.concat(
+      moreAddressHistory.MinimumViableMultisig
+    );
   }
   mastercopies = [...new Set(mastercopies)]; // de-dup
   //console.log(`Scanning multisig mastercopies: ${mastercopies}`);
 
   let proxyFactories: string[] = [];
-  if(addressHistory[chainId] && addressHistory[chainId].ProxyFactory) {
-    proxyFactories = proxyFactories.concat(addressHistory[chainId].ProxyFactory);
+  if (addressHistory[chainId] && addressHistory[chainId].ProxyFactory) {
+    proxyFactories = proxyFactories.concat(
+      addressHistory[chainId].ProxyFactory
+    );
   }
-  if(addressBook[chainId] && addressBook[chainId].ProxyFactory) {
+  if (addressBook[chainId] && addressBook[chainId].ProxyFactory) {
     mastercopies.push(addressBook[chainId].ProxyFactory.address);
   }
   if (moreAddressHistory && moreAddressHistory.ProxyFactory) {
@@ -226,7 +250,7 @@ export const scanForCriticalAddresses = async (
               legacyKeygen,
               multisigMastercopy,
               proxyFactory,
-              toxicBytecode,
+              toxicBytecode
             };
           }
         }

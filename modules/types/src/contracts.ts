@@ -70,17 +70,22 @@ export type SingleAssetTwoPartyCoinTransferInterpreterParams = {
   tokenAddress: string;
 };
 
-export const multiAssetMultiPartyCoinTransferInterpreterParamsEncoding = `tuple(uint256[] limit, address[] tokenAddresses)`;
+export const multiAssetMultiPartyCoinTransferInterpreterParamsEncoding =
+  "tuple(uint256[] limit, address[] tokenAddresses)";
 
-export const singleAssetTwoPartyCoinTransferInterpreterParamsEncoding = `tuple(uint256 limit, address tokenAddress)`;
+export const singleAssetTwoPartyCoinTransferInterpreterParamsEncoding =
+  "tuple(uint256 limit, address tokenAddress)";
 
-export const twoPartyFixedOutcomeInterpreterParamsEncoding = `tuple(address[2] playerAddrs, uint256 amount)`;
+export const twoPartyFixedOutcomeInterpreterParamsEncoding =
+  "tuple(address[2] playerAddrs, uint256 amount)";
 
-export const virtualAppAgreementEncoding = `tuple(uint256 capitalProvided, address capitalProvider, address virtualAppUser, address tokenAddress)`;
+export const virtualAppAgreementEncoding =
+  "tuple(uint256 capitalProvided, address capitalProvider, address virtualAppUser, address tokenAddress)";
 
-export const multiAssetMultiPartyCoinTransferEncoding = `tuple(address to, uint256 amount)[][]`;
+export const multiAssetMultiPartyCoinTransferEncoding = "tuple(address to, uint256 amount)[][]";
 
-export const coinBalanceRefundStateEncoding = `tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)`;
+export const coinBalanceRefundStateEncoding =
+  "tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)";
 
 export enum OutcomeType {
   // uint8

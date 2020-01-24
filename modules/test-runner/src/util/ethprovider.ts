@@ -1,7 +1,7 @@
 import { Contract, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { BigNumber, bigNumberify, BigNumberish } from "ethers/utils";
+import { BigNumber, BigNumberish } from "ethers/utils";
 import abi from "human-standard-token-abi";
 
 import { env } from "./env";

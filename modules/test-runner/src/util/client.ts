@@ -26,16 +26,13 @@ export const cleanupMessaging = async (xpub?: string): Promise<void> => {
   const toRemove = xpub ? [xpub] : Object.keys(clientMessaging);
   for (const pubId of toRemove) {
     if (clientMessaging[pubId]) {
-      await clientMessaging[pubId]!.unsubscribe(`indra.>`);
+      await clientMessaging[pubId]!.unsubscribe("indra.>");
     }
   }
   return;
 };
 
-
-
 export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<IConnextClient> => {
-
   const store = new ConnextStore(new MemoryStorage());
 
   const clientOpts: ClientOptions = {
@@ -49,7 +46,8 @@ export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<I
   const client = await connect(clientOpts);
 
   // set client store and messaging
-  clientMessaging[client.publicIdentifier] = (clientOpts.messaging as TestMessagingService) || undefined;
+  clientMessaging[client.publicIdentifier] =
+    (clientOpts.messaging as TestMessagingService) || undefined;
   clientStore[client.publicIdentifier] = store;
 
   // TODO: add client endpoint to get node config, so we can easily have its xpub etc
@@ -103,7 +101,7 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
     store,
   };
 
-  if (network === `mainnet`) {
+  if (network === "mainnet") {
     clientOpts = {
       mnemonic: Wallet.createRandom().mnemonic,
 
@@ -138,7 +136,7 @@ export const createClientWithMessagingLimits = async (
     return await createClient({ messaging });
   }
 
-  if (protocol === `any`) {
+  if (protocol === "any") {
     // assign the ceiling for the general message count
     messageOptions.count = { ceiling, delay };
   } else {
@@ -160,7 +158,7 @@ export const createClientWithMessagingLimits = async (
     ceiling,
     delay,
   };
-  !protocol || protocol === `any`
+  !protocol || protocol === "any"
     ? expect(messaging.count).to.containSubset(expected)
     : expect(messaging[protocol]).to.containSubset(expected);
   expect(messaging.options).to.containSubset(messageOptions);

@@ -12,5 +12,5 @@ export {
   getCreate2MultisigAddress,
   bigNumberifyJson,
   deBigNumberifyJson,
-  scanForCriticalAddresses,
+  scanForCriticalAddresses
 } from "./utils";

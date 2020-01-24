@@ -12,23 +12,23 @@ import {
 } from "../util";
 import { afterEach } from "mocha";
 
-describe(`Create Channel`, () => {
-  it(`Happy case: user creates channel with mainnet network string`, async () => {
-    const clientA: IConnextClient = await createDefaultClient(`mainnet`);
+describe("Create Channel", () => {
+  it("Happy case: user creates channel with mainnet network string", async () => {
+    const clientA: IConnextClient = await createDefaultClient("mainnet");
     expect(clientA.multisigAddress).to.be.ok;
   });
 
-  it(`Happy case: user creates channel with rinkeby network string`, async () => {
-    const clientA: IConnextClient = await createDefaultClient(`rinkeby`);
+  it("Happy case: user creates channel with rinkeby network string", async () => {
+    const clientA: IConnextClient = await createDefaultClient("rinkeby");
     expect(clientA.multisigAddress).to.be.ok;
   });
 
-  it(`Happy case: user creates channel with node and is given multisig address`, async () => {
+  it("Happy case: user creates channel with node and is given multisig address", async () => {
     const clientA: IConnextClient = await createClient();
     expect(clientA.multisigAddress).to.be.ok;
   });
 
-  it(`Happy case: user creates channel with client and is given multisig address using test messaging service`, async () => {
+  it("Happy case: user creates channel with client and is given multisig address using test messaging service", async () => {
     const clientA: IConnextClient = await createClientWithMessagingLimits();
     expect(clientA.multisigAddress).to.be.ok;
     // verify messaging worked
@@ -42,29 +42,28 @@ describe(`Create Channel`, () => {
     expect(messaging!.installVirtual.sent).to.be.equal(0);
   });
 
-  it(`Creating a channel with mainnet network string fails if no mnemonic is provided`, async () => {
-    await expect(createDefaultClient(`mainnet`, { mnemonic: undefined })).to.be.rejectedWith(
-      `Must provide mnemonic or xpub + keygen`,
+  it("Creating a channel with mainnet network string fails if no mnemonic is provided", async () => {
+    await expect(createDefaultClient("mainnet", { mnemonic: undefined })).to.be.rejectedWith(
+      "Must provide mnemonic or xpub + keygen",
     );
   });
 
-  it(`Creating a channel fails if user xpub and node xpub are the same`, async () => {
-    const nodeMnemonic: string =
-      `candy maple cake sugar pudding cream honey rich smooth crumble sweet treat`;
+  it("Creating a channel fails if user xpub and node xpub are the same", async () => {
+    const nodeMnemonic: string = "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat";
     await expect(createClient({ mnemonic: nodeMnemonic })).to.be.rejectedWith(
-      `Client must be instantiated with a mnemonic that is different from the node's mnemonic`,
+      "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
     );
   });
 
-  it(`should fail if the client goes offline`, async function(): Promise<void> {
+  it("should fail if the client goes offline", async function(): Promise<void> {
     // @ts-ignore
     this.timeout(40_000);
     await expect(
       createClientWithMessagingLimits({
         ceiling: { received: 0 },
-        protocol: `setup`,
+        protocol: "setup",
       }),
-    ).to.be.rejectedWith(`Create channel event not fired within 30s`);
+    ).to.be.rejectedWith("Create channel event not fired within 30s");
   });
 
   afterEach(async () => {

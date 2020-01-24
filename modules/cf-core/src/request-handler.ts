@@ -1,5 +1,5 @@
 import { Signer } from "ethers";
-import { BaseProvider, JsonRpcProvider } from "ethers/providers";
+import { BaseProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
 import log from "loglevel";
 
@@ -84,7 +84,7 @@ export class RequestHandler {
         };
 
         // @ts-ignore
-        this.router.emit(req.methodName, res, `outgoing`);
+        this.router.emit(req.methodName, res, "outgoing");
       });
     }
   }

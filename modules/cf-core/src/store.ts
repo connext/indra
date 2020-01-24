@@ -1,4 +1,8 @@
-import { CriticalStateChannelAddresses, AppInstanceJson, StateChannelJSON } from "@connext/types";
+import {
+  CriticalStateChannelAddresses,
+  AppInstanceJson,
+  StateChannelJSON
+} from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import { solidityKeccak256 } from "ethers/utils";
 
@@ -253,7 +257,10 @@ export class Store {
     ]);
   }
 
-  public async setCommitment(args: any[], commitment: CFCoreTypes.MinimalTransaction) {
+  public async setCommitment(
+    args: any[],
+    commitment: CFCoreTypes.MinimalTransaction
+  ) {
     return this.storeService.set([
       {
         path: [

@@ -16,7 +16,7 @@ export class MockBackupService implements IBackupServiceAPI {
   private prefix: string;
   private storage: MemoryStorage = new MemoryStorage();
 
-  constructor(prefix: string = `backup/`) {
+  constructor(prefix: string = "backup/") {
     this.prefix = prefix;
   }
 

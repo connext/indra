@@ -5,15 +5,15 @@ import { EventName } from "./events";
 import { StateChannelJSON } from "./state";
 
 export enum Protocol {
-  Install = "install", // eslint-disable-line
-  InstallVirtualApp = "install-virtual-app", // eslint-disable-line
-  Setup = "setup", // eslint-disable-line
-  Propose = "propose", // eslint-disable-line
-  TakeAction = "takeAction", // eslint-disable-line
-  Uninstall = "uninstall", // eslint-disable-line
-  UninstallVirtualApp = "uninstall-virtual-app", // eslint-disable-line
-  Update = "update", // eslint-disable-line
-  Withdraw = "withdraw", // eslint-disable-line
+  Install = "install",
+  InstallVirtualApp = "install-virtual-app",
+  Setup = "setup",
+  Propose = "propose",
+  TakeAction = "takeAction",
+  Uninstall = "uninstall",
+  UninstallVirtualApp = "uninstall-virtual-app",
+  Update = "update",
+  Withdraw = "withdraw",
 }
 
 export type ProtocolMessage = {
@@ -157,11 +157,11 @@ export namespace ProtocolTypes {
   }
 
   export enum ErrorType {
-    ERROR = "error", // eslint-disable-line
+    ERROR = "error",
   }
 
-  export const acceptState = `acceptState`;
-  export const getProposedAppInstance = `getProposedAppInstance`;
+  export const acceptState = "acceptState";
+  export const getProposedAppInstance = "getProposedAppInstance";
 
   export const MethodNames = {
     [acceptState]: acceptState,
@@ -169,30 +169,30 @@ export namespace ProtocolTypes {
   };
   export type MethodName = keyof typeof MethodNames;
 
-  export const chan_create = `chan_create`;
-  export const chan_deposit = `chan_deposit`;
-  export const chan_deployStateDepositHolder = `chan_deployStateDepositHolder`;
-  export const chan_getChannelAddresses = `chan_getChannelAddresses`;
-  export const chan_getAppInstance = `chan_getAppInstance`;
-  export const chan_getAppInstances = `chan_getAppInstances`;
-  export const chan_getStateDepositHolderAddress = `chan_getStateDepositHolderAddress`;
-  export const chan_getFreeBalanceState = `chan_getFreeBalanceState`;
-  export const chan_getTokenIndexedFreeBalanceStates = `chan_getTokenIndexedFreeBalanceStates`;
-  export const chan_getProposedAppInstances = `chan_getProposedAppInstances`;
-  export const chan_getState = `chan_getState`;
-  export const chan_getStateChannel = `chan_getStateChannel`;
-  export const chan_install = `chan_install`;
-  export const chan_requestDepositRights = `chan_requestDepositRights`;
-  export const chan_installVirtual = `chan_installVirtual`;
-  export const chan_proposeInstall = `chan_proposeInstall`;
-  export const chan_rejectInstall = `chan_rejectInstall`;
-  export const chan_updateState = `chan_updateState`;
-  export const chan_takeAction = `chan_takeAction`;
-  export const chan_uninstall = `chan_uninstall`;
-  export const chan_uninstallVirtual = `chan_uninstallVirtual`;
-  export const chan_rescindDepositRights = `chan_rescindDepositRights`;
-  export const chan_withdraw = `chan_withdraw`;
-  export const chan_withdrawCommitment = `chan_withdrawCommitment`;
+  export const chan_create = "chan_create";
+  export const chan_deposit = "chan_deposit";
+  export const chan_deployStateDepositHolder = "chan_deployStateDepositHolder";
+  export const chan_getChannelAddresses = "chan_getChannelAddresses";
+  export const chan_getAppInstance = "chan_getAppInstance";
+  export const chan_getAppInstances = "chan_getAppInstances";
+  export const chan_getStateDepositHolderAddress = "chan_getStateDepositHolderAddress";
+  export const chan_getFreeBalanceState = "chan_getFreeBalanceState";
+  export const chan_getTokenIndexedFreeBalanceStates = "chan_getTokenIndexedFreeBalanceStates";
+  export const chan_getProposedAppInstances = "chan_getProposedAppInstances";
+  export const chan_getState = "chan_getState";
+  export const chan_getStateChannel = "chan_getStateChannel";
+  export const chan_install = "chan_install";
+  export const chan_requestDepositRights = "chan_requestDepositRights";
+  export const chan_installVirtual = "chan_installVirtual";
+  export const chan_proposeInstall = "chan_proposeInstall";
+  export const chan_rejectInstall = "chan_rejectInstall";
+  export const chan_updateState = "chan_updateState";
+  export const chan_takeAction = "chan_takeAction";
+  export const chan_uninstall = "chan_uninstall";
+  export const chan_uninstallVirtual = "chan_uninstallVirtual";
+  export const chan_rescindDepositRights = "chan_rescindDepositRights";
+  export const chan_withdraw = "chan_withdraw";
+  export const chan_withdrawCommitment = "chan_withdrawCommitment";
 
   export const RpcMethodNames = {
     [chan_create]: chan_create,
