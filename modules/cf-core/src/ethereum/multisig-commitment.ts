@@ -62,7 +62,7 @@ export abstract class MultisigCommitment extends EthereumCommitment {
       transactionCount
     } = this.getTransactionDetails();
     const domainSeparatorHash = solidityKeccak256(
-      ["string", "string", "uint256", "address", "string"],
+      ["string", "string", "uint256", "address", "bytes32"],
       [domainName, domainVersion, chainId, this.multisigAddress, domainSalt]
     );
     return solidityKeccak256(
