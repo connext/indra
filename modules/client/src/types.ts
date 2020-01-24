@@ -53,6 +53,7 @@ export {
   LinkedTransferToRecipientResponse,
   makeChecksum,
   makeChecksumOrEthAddress,
+  MatchAppInstanceResponse,
   NodeInitializationParameters,
   NodeMessageWrappedProtocolMessage,
   PaymentProfile,

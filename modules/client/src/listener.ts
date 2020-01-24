@@ -13,10 +13,10 @@ import {
   IChannelProvider,
   InstallMessage,
   InstallVirtualMessage,
+  MatchAppInstanceResponse,
   NodeMessageWrappedProtocolMessage,
   ProposeMessage,
   RejectProposalMessage,
-  SupportedApplications,
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
@@ -44,6 +44,7 @@ import {
   WITHDRAWAL_STARTED_EVENT,
   CoinBalanceRefundApp,
   SimpleTwoPartySwapApp,
+  NodeMessage,
 } from "@connext/types";
 
 // TODO: index of connext events only?
@@ -230,14 +231,7 @@ export class ConnextListener extends EventEmitter {
 
   private matchAppInstance = async (
     msg: ProposeMessage,
-  ): Promise<
-    | undefined
-    | {
-        matchedApp: DefaultApp;
-        proposeParams: CFCoreTypes.ProposeInstallParams;
-        appInstanceId: string;
-      }
-  > => {
+  ): Promise<MatchAppInstanceResponse | undefined> => {
     const filteredApps = this.connext.appRegistry.filter((app: DefaultApp): boolean => {
       return app.appDefinitionAddress === msg.data.params.appDefinition;
     });

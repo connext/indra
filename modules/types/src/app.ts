@@ -6,6 +6,7 @@ import {
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,
 } from "./contracts";
+import { CFCoreTypes } from "./cfCore";
 
 ////////////////////////////////////
 ////// App Instances
@@ -103,6 +104,12 @@ export type AppInstanceProposal = {
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
   multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
   singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
+};
+
+export type MatchAppInstanceResponse = {
+  matchedApp: DefaultApp;
+  proposeParams: CFCoreTypes.ProposeInstallParams;
+  appInstanceId: string;
 };
 
 ////////////////////////////////////

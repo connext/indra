@@ -1,8 +1,8 @@
-import { SimpleLinkedTransferAppState } from "./app";
+import { SimpleLinkedTransferAppState, DefaultApp } from "./app";
 import { Address, BigNumber } from "./basic";
 import { AssetAmount } from "./channel";
 import { ProtocolTypes } from "./protocol";
-
+import { CFCoreTypes } from "./cfCore";
 
 /////////////////////////////////
 ///////// SWAP
@@ -20,12 +20,12 @@ export type SwapRate = AllowedSwap & {
 
 ////// Deposit types
 // TODO: we should have a way to deposit multiple things
-export type DepositParameters<T = string> = Omit<AssetAmount<T>, "assetId"> & {
+export type DepositParameters<T = string> = Omit<AssetAmount<T>, `assetId`> & {
   assetId?: Address; // if not supplied, assume it is eth
 };
 export type DepositParametersBigNumber = DepositParameters<BigNumber>;
 
-export type RequestDepositRightsParameters = Omit<DepositParameters, "amount">;
+export type RequestDepositRightsParameters = Omit<DepositParameters, `amount`>;
 
 export type RequestDepositRightsResponse = ProtocolTypes.RequestDepositRightsResult;
 
@@ -43,8 +43,8 @@ export type RescindDepositRightsParameters = RequestDepositRightsParameters;
 export type RescindDepositRightsResponse = ProtocolTypes.DepositResult;
 
 ////// Transfer types
-export const LINKED_TRANSFER = "LINKED_TRANSFER";
-export const LINKED_TRANSFER_TO_RECIPIENT = "LINKED_TRANSFER_TO_RECIPIENT";
+export const LINKED_TRANSFER = `LINKED_TRANSFER`;
+export const LINKED_TRANSFER_TO_RECIPIENT = `LINKED_TRANSFER_TO_RECIPIENT`;
 
 // TODO: would we ever want to pay people in the same app with multiple currencies?
 export type TransferParameters<T = string> = DepositParameters<T> & {
@@ -76,20 +76,21 @@ export type WithdrawParametersBigNumber = WithdrawParameters<BigNumber>;
 // linked transfer
 export type ResolveLinkedTransferParameters<T = string> = Omit<
   LinkedTransferParameters<T>,
-  "amount" | "assetId"
+  `amount` | `assetId`
 >;
 export type ResolveLinkedTransferParametersBigNumber = ResolveLinkedTransferParameters<BigNumber>;
 
 export type ResolveLinkedTransferToRecipientParameters<T = string> = Omit<
   ResolveLinkedTransferParameters<T>,
-  "recipient" | "conditionType"
+  `recipient` | `conditionType`
 > & {
   amount: T;
   assetId: string;
   conditionType: typeof LINKED_TRANSFER_TO_RECIPIENT;
 };
-export type ResolveLinkedTransferToRecipientParametersBigNumber =
-  ResolveLinkedTransferToRecipientParameters<BigNumber>;
+export type ResolveLinkedTransferToRecipientParametersBigNumber = ResolveLinkedTransferToRecipientParameters<
+  BigNumber
+>;
 
 // resolver union types
 export type ResolveConditionParameters<T = string> =
@@ -133,7 +134,7 @@ export type LinkedTransferResponse = {
 
 export type LinkedTransferToRecipientParameters<T = string> = Omit<
   LinkedTransferParameters<T>,
-  "conditionType"
+  `conditionType`
 > & {
   conditionType: typeof LINKED_TRANSFER_TO_RECIPIENT;
   recipient: string;
@@ -159,3 +160,9 @@ export type ConditionalTransferResponse =
 export type ConditionalTransferInitialState<T = string> = SimpleLinkedTransferAppState<T>;
 // FIXME: should be union type of all supported conditions
 export type ConditionalTransferInitialStateBigNumber = ConditionalTransferInitialState<BigNumber>;
+
+export type MatchAppInstanceResponse = {
+  matchedApp: DefaultApp;
+  proposeParams: CFCoreTypes.ProposeInstallParams;
+  appInstanceId: string;
+};
