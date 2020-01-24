@@ -12,7 +12,7 @@ export const StateSchemaVersion = 1;
 export type CriticalStateChannelAddresses = {
   proxyFactory: string;
   multisigMastercopy: string;
-}
+};
 
 export type StateChannelJSON = {
   readonly schemaVersion: number;
@@ -23,9 +23,8 @@ export type StateChannelJSON = {
   readonly appInstances: [string, AppInstanceJson][];
   readonly singleAssetTwoPartyIntermediaryAgreements: [
     string,
-    SingleAssetTwoPartyIntermediaryAgreement
+    SingleAssetTwoPartyIntermediaryAgreement,
   ][];
   readonly freeBalanceAppInstance: AppInstanceJson | undefined;
   readonly monotonicNumProposedApps: number;
 };
-

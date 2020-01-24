@@ -59,7 +59,7 @@ export const convertFields = (
 
   let key;
   if (fromType === "number" && toType === "str") {
-    key = `bignumber-str`;
+    key = "bignumber-str";
   } else if (fromType === "number") {
     key = `str-${toType}`;
   }

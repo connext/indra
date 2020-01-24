@@ -71,13 +71,13 @@ process.on("unhandledRejection", (e: any): any => {
     const receipt = await tx.wait();
     console.log(`Deposit tx receipt: ${JSON.stringify(receipt)}`);
     await client.rescindDepositRights({ assetId });
-    console.log(`Successfully deposited!`);
+    console.log("Successfully deposited!");
   }
 
   if (config.requestCollateral) {
-    console.log(`Requesting collateral...`);
+    console.log("Requesting collateral...");
     await client.requestCollateral(assetId);
-    console.log(`Successfully received collateral!`);
+    console.log("Successfully received collateral!");
   }
 
   if (config.transfer) {
@@ -87,7 +87,7 @@ process.on("unhandledRejection", (e: any): any => {
       assetId,
       recipient: config.counterparty,
     });
-    console.log(`Successfully transferred!`);
+    console.log("Successfully transferred!");
   }
 
   if (config.swap) {
@@ -100,7 +100,7 @@ process.on("unhandledRejection", (e: any): any => {
       swapRate: swapRate.toString(),
       toAssetId: assetId,
     });
-    console.log(`Successfully swapped!`);
+    console.log("Successfully swapped!");
   }
 
   if (config.linked) {
@@ -210,7 +210,7 @@ process.on("unhandledRejection", (e: any): any => {
         `${withdrawParams.assetId} to address ${withdrawParams.recipient}...`,
     );
     await client.withdraw(withdrawParams);
-    console.log(`Successfully withdrawn!`);
+    console.log("Successfully withdrawn!");
   }
 
   if (config.uninstall) {

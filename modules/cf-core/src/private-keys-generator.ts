@@ -42,16 +42,16 @@ export class PrivateKeysGetter {
       throw new Error(`
         Invalid private key retrieved from wallet-provided
         callback given AppInstance ID ${appInstanceIdentityHash}: ${JSON.stringify(
-        e,
-        null,
-        4
-      )}
+  e,
+  null,
+  4
+)}
       `);
     }
 
     if (this.privateKeys.has(privateKey)) {
       throw new Error(
-        `Wallet-provided callback function returned a colliding private key for two different AppInstance IDs`
+        "Wallet-provided callback function returned a colliding private key for two different AppInstance IDs"
       );
     }
 

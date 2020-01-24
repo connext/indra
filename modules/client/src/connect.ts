@@ -33,7 +33,7 @@ const createMessagingService = async (
 ): Promise<IMessagingService> => {
   // create a messaging service client
   const messagingFactory = new MessagingServiceFactory({ logLevel, messagingUrl });
-  const messaging = messagingFactory.createService(`messaging`);
+  const messaging = messagingFactory.createService("messaging");
   await messaging.connect();
   return messaging;
 };
@@ -47,17 +47,14 @@ const setupMultisigAddress = async (
 
   let multisigAddress: string;
   if (!myChannel) {
-    log.debug(`no channel detected, creating channel..`);
+    log.debug("no channel detected, creating channel..");
     const creationEventData = await Promise.race([
-      delayAndThrow(30_000, `Create channel event not fired within 30s`),
+      delayAndThrow(30_000, "Create channel event not fired within 30s"),
       new Promise(
         async (res: any): Promise<any> => {
-          channelProvider.once(
-            CREATE_CHANNEL_EVENT,
-            (data: CreateChannelMessage): void => {
-              res(data.data);
-            },
-          );
+          channelProvider.once(CREATE_CHANNEL_EVENT, (data: CreateChannelMessage): void => {
+            res(data.data);
+          });
 
           const creationData = await node.createChannel();
           log.debug(`created channel, transaction: ${stringify(creationData)}`);
@@ -79,7 +76,7 @@ export const connect = async (
   overrideOptions?: Partial<ClientOptions>,
 ): Promise<IConnextClient> => {
   const opts =
-    typeof clientOptions === `string`
+    typeof clientOptions === "string"
       ? await getDefaultOptions(clientOptions, overrideOptions)
       : clientOptions;
   const {
@@ -91,7 +88,7 @@ export const connect = async (
   } = opts;
   let { xpub, keyGen, store, messaging } = opts;
 
-  const log = new Logger(`ConnextConnect`, logLevel);
+  const log = new Logger("ConnextConnect", logLevel);
 
   // setup ethProvider + network information
   log.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
@@ -133,7 +130,7 @@ export const connect = async (
     isInjected = true;
   } else if (isWalletProvided(opts)) {
     if (!nodeUrl) {
-      throw new Error(`Client must be instantiated with nodeUrl if not using a channelProvider`);
+      throw new Error("Client must be instantiated with nodeUrl if not using a channelProvider");
     }
 
     if (!store) {
@@ -167,7 +164,7 @@ export const connect = async (
     // ensure that node and user xpub are different
     if (config.nodePublicIdentifier === xpub) {
       throw new Error(
-        `Client must be instantiated with a mnemonic that is different from the node's mnemonic`,
+        "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
       );
     }
 
@@ -190,7 +187,7 @@ export const connect = async (
     node.userPublicIdentifier = channelProvider.config.userPublicIdentifier;
     node.nodePublicIdentifier = config.nodePublicIdentifier;
   } else {
-    throw new Error(`Must provide mnemonic or xpub + keygen`);
+    throw new Error("Must provide mnemonic or xpub + keygen");
   }
 
   // setup multisigAddress + assign to channelProvider
@@ -241,7 +238,7 @@ export const connect = async (
   try {
     await client.getFreeBalance();
   } catch (e) {
-    if (e.message.includes(`StateChannel does not exist yet`)) {
+    if (e.message.includes("StateChannel does not exist yet")) {
       log.debug(`Restoring client state: ${e.stack || e.message}`);
       await client.restoreState();
     } else {
@@ -253,11 +250,11 @@ export const connect = async (
   // Make sure our state schema is up-to-date
   const { data: sc } = await client.getStateChannel();
   if (!sc.schemaVersion || sc.schemaVersion !== StateSchemaVersion || !sc.addresses) {
-    log.debug(`State schema is out-of-date, restoring an up-to-date client state`);
+    log.debug("State schema is out-of-date, restoring an up-to-date client state");
     await client.restoreState();
   }
 
-  log.debug(`Registering subscriptions`);
+  log.debug("Registering subscriptions");
   await client.registerSubscriptions();
 
   // cleanup any hanging registry apps
@@ -268,12 +265,12 @@ export const connect = async (
   await client.uninstallCoinBalanceIfNeeded(config.contractAddresses.Token);
 
   // make sure there is not an active withdrawal with >= MAX_WITHDRAWAL_RETRIES
-  log.debug(`Resubmitting active withdrawals`);
+  log.debug("Resubmitting active withdrawals");
   await client.resubmitActiveWithdrawal();
 
   // wait for wd verification to reclaim any pending async transfers
   // since if the hub never submits you should not continue interacting
-  log.debug(`Reclaiming pending async transfers`);
+  log.debug("Reclaiming pending async transfers");
   // NOTE: Removing the following await results in a subtle race condition during bot tests.
   //       Don't remove this await again unless you really know what you're doing & bot tests pass
   // no need to await this if it needs collateral
@@ -284,6 +281,6 @@ export const connect = async (
   // check in with node to do remaining work
   await client.clientCheckIn();
 
-  log.debug(`Done creating channel client`);
+  log.debug("Done creating channel client");
   return client;
 };

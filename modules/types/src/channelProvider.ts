@@ -42,11 +42,11 @@ export interface IChannelProvider extends EventEmitter {
   restoreState(path: string): Promise<void>;
 }
 
-export const chan_config = `chan_config`;
-export const chan_nodeAuth = `chan_nodeAuth`;
-export const chan_restoreState = `chan_restoreState`;
-export const chan_storeGet = `chan_storeGet`;
-export const chan_storeSet = `chan_storeSet`;
+export const chan_config = "chan_config";
+export const chan_nodeAuth = "chan_nodeAuth";
+export const chan_restoreState = "chan_restoreState";
+export const chan_storeGet = "chan_storeGet";
+export const chan_storeSet = "chan_storeSet";
 
 // TODO: merge ConnextRpcMethods and RpcMethodNames???
 
@@ -85,7 +85,7 @@ export interface CFChannelProviderOptions {
 
 export type JsonRpcRequest = {
   id: number;
-  jsonrpc: `2.0`;
+  jsonrpc: "2.0";
   method: string;
   params: any;
 };

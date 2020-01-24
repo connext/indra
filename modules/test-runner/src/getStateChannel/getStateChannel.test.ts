@@ -10,7 +10,7 @@ import { AddressZero } from "ethers/constants";
 
 import { createClient, ETH_AMOUNT_SM, expect, getStore } from "../util";
 
-describe(`Get State Channel`, () => {
+describe("Get State Channel", () => {
   let clientA: IConnextClient;
   let tokenAddress: string;
   let store: ConnextStore;
@@ -23,25 +23,25 @@ describe(`Get State Channel`, () => {
     store = getStore(clientA.publicIdentifier);
   });
 
-  it(`Happy case: should return stateChannelJSON from store with multisig address`, async () => {
+  it("Happy case: should return stateChannelJSON from store with multisig address", async () => {
     const stateChannel: StateChannelJSON = (await clientA.getStateChannel()).data;
     expect(stateChannel.multisigAddress).to.be.eq(clientA.multisigAddress);
   });
 
-  it(`Happy case: should return stateChannelJSON from store with proper version`, async () => {
+  it("Happy case: should return stateChannelJSON from store with proper version", async () => {
     const stateChannel: StateChannelJSON = (await clientA.getStateChannel()).data;
     console.log(`expect ${stateChannel.schemaVersion} to = ${StateSchemaVersion}`);
     expect(stateChannel.schemaVersion).to.be.eq(StateSchemaVersion);
   });
 
-  it(`Store does not contain state channel`, async () => {
+  it("Store does not contain state channel", async () => {
     store.reset();
     await expect(clientA.getStateChannel()).to.be.rejectedWith(
-      `Call to getStateChannel failed when searching for multisig address`,
+      "Call to getStateChannel failed when searching for multisig address",
     );
   });
 
-  it(`Store contains multiple state channels`, async () => {
+  it("Store contains multiple state channels", async () => {
     // Client with same store and new mnemonic
     const clientB = await createClient({ store });
     await clientB.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
@@ -61,8 +61,8 @@ describe(`Get State Channel`, () => {
     Otherwise, we can just delete the following:
   */
 
-  it.skip(`Store contains state channel on wrong multisig address`, async () => {
-    const wrongAddress: string = `0xe8f67a5b66B01b301dF0ED1fC91F6F29B78ccf8C`;
+  it.skip("Store contains state channel on wrong multisig address", async () => {
+    const wrongAddress: string = "0xe8f67a5b66B01b301dF0ED1fC91F6F29B78ccf8C";
     const path: string = `${ConnextClientStorePrefix}/${clientA.publicIdentifier}/channel/${clientA.multisigAddress}`;
     const value: any = await store.get(path);
 
@@ -73,10 +73,10 @@ describe(`Get State Channel`, () => {
     await store.set(pair);
 
     // Expect to error in case we keep this test
-    await expect(clientA.getStateChannel()).to.be.rejectedWith(``);
+    await expect(clientA.getStateChannel()).to.be.rejectedWith("");
   });
 
-  it.skip(`State channel under multisig key has no proxy factory address`, async () => {
+  it.skip("State channel under multisig key has no proxy factory address", async () => {
     const path: string = `${ConnextClientStorePrefix}/${clientA.publicIdentifier}/channel/${clientA.multisigAddress}`;
     const value: any = await store.get(path);
 
@@ -91,7 +91,7 @@ describe(`Get State Channel`, () => {
     await expect(clientA.getStateChannel()).to.be.rejected;
   });
 
-  it.skip(`State channel under multisig key has freeBalanceAppInstance`, async () => {
+  it.skip("State channel under multisig key has freeBalanceAppInstance", async () => {
     const path: string = `${ConnextClientStorePrefix}/${clientA.publicIdentifier}/channel/${clientA.multisigAddress}`;
     const value: any = await store.get(path);
 

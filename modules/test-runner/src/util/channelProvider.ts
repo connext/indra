@@ -21,7 +21,7 @@ export class MockRpcConnection extends EventEmitter implements IRpcConnection {
   public async send(payload: any): Promise<any> {
     if (!this.connected) {
       // IRL this would take 30s to throw
-      throw new Error(`RpcConnection: Timeout - JSON-RPC not responded within 30s`);
+      throw new Error("RpcConnection: Timeout - JSON-RPC not responded within 30s");
     }
     const result = await this.channel.channelProvider.send(payload.method, payload.params);
     return result;

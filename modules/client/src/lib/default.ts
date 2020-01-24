@@ -7,9 +7,9 @@ import { ClientOptions } from "../types";
 
 // constants
 
-export const MNEMONIC_KEY = `CONNEXT_MNEMONIC`;
-export const MAINNET_NETWORK = `mainnet`;
-export const RINKEBY_NETWORK = `rinkeby`;
+export const MNEMONIC_KEY = "CONNEXT_MNEMONIC";
+export const MAINNET_NETWORK = "mainnet";
+export const RINKEBY_NETWORK = "rinkeby";
 
 // helpers
 
@@ -41,7 +41,7 @@ export function generateMnemonic(): string {
 // getters
 
 export async function getDefaultMnemonic(store: Store, log: Logger): Promise<string> {
-  log.warn(`Using mnemonic stored insecurely - DO NOT USE IN PRODUCTION!`);
+  log.warn("Using mnemonic stored insecurely - DO NOT USE IN PRODUCTION!");
 
   let mnemonic = await store.get(MNEMONIC_KEY);
 
@@ -57,8 +57,8 @@ export function getOptionIfAvailable(option: string, opts?: Partial<ClientOption
 }
 
 export function getDefaultStore(opts?: Partial<ClientOptions>): ConnextStore {
-  const asyncStorage = getOptionIfAvailable(`asyncStorage`, opts);
-  const backupService = getOptionIfAvailable(`backupService`, opts);
+  const asyncStorage = getOptionIfAvailable("asyncStorage", opts);
+  const backupService = getOptionIfAvailable("backupService", opts);
   return new ConnextStore(asyncStorage || window.localStorage, { backupService });
 }
 
@@ -67,12 +67,12 @@ export async function getDefaultOptions(
   overrideOptions?: Partial<ClientOptions>,
 ): Promise<ClientOptions> {
   const logLevel = overrideOptions ? overrideOptions.logLevel : undefined;
-  const log = new Logger(`ConnextConnect`, logLevel);
+  const log = new Logger("ConnextConnect", logLevel);
 
   const baseUrl = isMainnet(network)
-    ? `indra.connext.network/api`
+    ? "indra.connext.network/api"
     : isRinkeby(network)
-      ? `rinkeby.indra.connext.network/api`
+      ? "rinkeby.indra.connext.network/api"
       : null;
 
   log.debug(`Using default baseUrl: ${baseUrl}`);
@@ -88,7 +88,7 @@ export async function getDefaultOptions(
 
   log.debug(`Using default urlOptions: ${JSON.stringify(urlOptions, null, 2)}`);
 
-  const store = getOptionIfAvailable(`store`, overrideOptions) || getDefaultStore(overrideOptions);
+  const store = getOptionIfAvailable("store", overrideOptions) || getDefaultStore(overrideOptions);
 
   const mnemonic = shouldGenerateMnemonic(network, overrideOptions)
     ? await getDefaultMnemonic(store, log)
