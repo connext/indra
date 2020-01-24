@@ -44,7 +44,6 @@ import {
   WITHDRAWAL_STARTED_EVENT,
   CoinBalanceRefundApp,
   SimpleTwoPartySwapApp,
-  NodeMessage,
 } from "@connext/types";
 
 // TODO: index of connext events only?
