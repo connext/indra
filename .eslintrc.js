@@ -9,7 +9,7 @@ module.exports = {
       "no-unused-vars": ["error"],
       "no-var": ["error"],
       "object-curly-spacing": ["error", "always"],
-      "quotes": ["error", "backtick"],
+      "quotes": ["warn", "backtick"],
       "semi": ["error", "always"],
       "spaced-comment": "off",
     },
@@ -27,6 +27,7 @@ module.exports = {
       "eslint:recommended",
       "plugin:react/recommended",
       "plugin:@typescript-eslint/eslint-recommended",
+      "plugin:prettier/recommended"
     ],
     parser: "@typescript-eslint/parser",
     parserOptions: {
