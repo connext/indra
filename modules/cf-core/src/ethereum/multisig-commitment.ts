@@ -3,7 +3,9 @@ import {
   Interface,
   joinSignature,
   Signature,
-  solidityKeccak256
+  solidityKeccak256,
+  id,
+  keccak256
 } from "ethers/utils";
 
 import { CFCoreTypes, EthereumCommitment, MultisigTransaction } from "../types";
@@ -62,8 +64,8 @@ export abstract class MultisigCommitment extends EthereumCommitment {
       transactionCount
     } = this.getTransactionDetails();
     const domainSeparatorHash = solidityKeccak256(
-      ["string", "string", "uint256", "address", "bytes32"],
-      [domainName, domainVersion, chainId, this.multisigAddress, domainSalt]
+      ["bytes32", "bytes32", "uint256", "address", "bytes32"],
+      [id(domainName), id(domainVersion), chainId, this.multisigAddress, domainSalt]
     );
     return solidityKeccak256(
       [
@@ -71,7 +73,7 @@ export abstract class MultisigCommitment extends EthereumCommitment {
         "address[]",
         "address",
         "uint256",
-        "bytes",
+        "bytes32",
         "uint8",
         "bytes32",
         "uint256"
@@ -81,7 +83,7 @@ export abstract class MultisigCommitment extends EthereumCommitment {
         this.multisigOwners,
         to,
         value,
-        data,
+        keccak256(data),
         operation,
         domainSeparatorHash,
         transactionCount

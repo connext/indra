@@ -11,6 +11,8 @@ import {
   BigNumber,
   joinSignature,
   SigningKey,
+  id,
+  keccak256,
 } from "ethers/utils";
 
 import DolphinCoin from "../../build/DolphinCoin.json";
@@ -32,10 +34,16 @@ const getHashToSign = (
   operation: number,
   transactionCount: number,
 ) => {
-  const domainSeparatorHash = getDomainSeparatorHash(domainName, domainVersion, chainId, verifyingContract, domainSalt);
+  const domainSeparatorHash = getDomainSeparatorHash(
+    domainName,
+    domainVersion,
+    chainId,
+    verifyingContract,
+    domainSalt,
+  );
   return solidityKeccak256(
-    ["bytes1", "address[]", "address", "uint256", "bytes", "uint8", "bytes32", "uint256"],
-    ["0x19", owners, to, value, data, operation, domainSeparatorHash, transactionCount],
+    ["bytes1", "address[]", "address", "uint256", "bytes32", "uint8", "bytes32", "uint256"],
+    ["0x19", owners, to, value, keccak256(data), operation, domainSeparatorHash, transactionCount],
   );
 };
 
@@ -47,10 +55,10 @@ const getDomainSeparatorHash = (
   domainSalt: string,
 ) => {
   return solidityKeccak256(
-    ["string", "string", "uint256", "address", "bytes32"],
-    [domainName, domainVersion, chainId, verifyingContract, domainSalt],
+    ["bytes32", "bytes32", "uint256", "address", "bytes32"],
+    [id(domainName), id(domainVersion), chainId, verifyingContract, domainSalt],
   );
-}
+};
 
 const sortSignaturesBySignerAddress = (digest: string, signatures: Signature[]): Signature[] => {
   const ret = signatures.slice();
@@ -130,9 +138,7 @@ describe("MinimumViableMultisig", () => {
       4447,
       HashZero,
       0,
-      sortSignaturesBySignerAddress(hashToSign, [sig0, sig1]).map(
-        joinSignature,
-      )
+      sortSignaturesBySignerAddress(hashToSign, [sig0, sig1]).map(joinSignature),
     );
 
     balance = await erc20.functions.balanceOf(multisig.address);
