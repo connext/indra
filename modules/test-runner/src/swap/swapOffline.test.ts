@@ -1,7 +1,6 @@
 import { utils } from "@connext/client";
 import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
-import { useFakeTimers } from "sinon";
 
 import {
   createClientWithMessagingLimits,
@@ -19,8 +18,11 @@ import {
   UNINSTALL_SUPPORTED_APP_COUNT_SENT,
   getStore,
   cleanupMessaging,
+  fastForwardDuringCall,
 } from "../util";
 import { BigNumber } from "ethers/utils";
+
+import * as lolex from "lolex";
 
 const { xpubToAddress } = utils;
 
@@ -34,6 +36,7 @@ describe("Swap offline", () => {
     tokenToEth?: boolean;
     failsWith?: string;
     client?: IConnextClient;
+    fastForward?: boolean;
   }) => {
     const {
       client: providedClient,
@@ -42,6 +45,7 @@ describe("Swap offline", () => {
       failsWith,
       messagingConfig,
       tokenToEth,
+      fastForward,
     } = opts;
     // these tests should not have collateral issues
     // so make sure they are always properly funded
@@ -57,20 +61,34 @@ describe("Swap offline", () => {
     };
     await fundChannel(client, input.amount, input.assetId);
     await requestCollateral(client, output.assetId);
-    // try to swap
-    if (failsWith) {
-      await expect(
-        swapAsset(client, input, output, xpubToAddress(client.nodePublicIdentifier)),
-      ).to.be.rejectedWith(failsWith);
-    } else {
+    // swap call back
+    const swapCb = async () =>
       await swapAsset(client, input, output, xpubToAddress(client.nodePublicIdentifier));
+    // try to swap, first check if test must be fast forwarded
+    if (fastForward) {
+      // fast forward the clock for tests with delay
+      // after swapping
+      await fastForwardDuringCall(89_000, swapCb, clock, failsWith);
+      return;
     }
+
+    // check if its a failure case
+    if (failsWith) {
+      await expect(swapCb).to.be.rejectedWith(failsWith);
+    }
+
+    // otherwise execute cb
+    await swapCb();
   };
 
   let clock: any;
 
   beforeEach(() => {
-    clock = useFakeTimers();
+    clock = lolex.install({
+      shouldAdvanceTime: true,
+      advanceTimeDelta: 1,
+      now: Date.now(),
+    });
   });
 
   it.only("Bot A tries to install swap but there’s no response from node", async function(): Promise<
@@ -85,8 +103,6 @@ describe("Swap offline", () => {
       protocol: "install",
     };
 
-    await clock.tickAsync(89_000);
-
     // deposit eth into channel and swap for token
     // go offline during swap, should fail with swap timeout
     await fundChannelAndSwap({
@@ -94,6 +110,7 @@ describe("Swap offline", () => {
       inputAmount: ETH_AMOUNT_SM,
       outputAmount: TOKEN_AMOUNT,
       failsWith: APP_PROTOCOL_TOO_LONG("install"),
+      fastForward: true,
     });
   });
 
@@ -170,6 +187,8 @@ describe("Swap offline", () => {
 
   afterEach(async () => {
     await cleanupMessaging();
-    clock.restore();
+    if (clock) {
+      clock.reset();
+    }
   });
 });
