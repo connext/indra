@@ -29,7 +29,7 @@ contract MixinSetOutcome is
 
     require(
       app.status == ChallengeStatus.EXPLICITLY_FINALIZED ||
-      (app.status == ChallengeStatus.FINALIZES_AFTER_DEADLINE && block.number > app.finalizesAt),
+      (app.status == ChallengeStatus.FINALIZES_AFTER_DEADLINE && block.number >= app.finalizesAt),
       "setOutcome can only be called after a challenge has been finalized"
     );
 
