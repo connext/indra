@@ -1,5 +1,6 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
 import { CFCoreTypes, MessagingConfig } from "@connext/types";
+import { EventEmitter } from "events";
 
 import { env } from "./env";
 import { combineObjects, delay } from "./misc";
@@ -70,7 +71,7 @@ const defaultOpts = (): TestMessagingConfig => {
   };
 };
 
-export class TestMessagingService implements IMessagingService {
+export class TestMessagingService extends EventEmitter implements IMessagingService {
   private connection: IMessagingService;
   private protocolDefaults: {
     [protocol: string]: DetailedMessageCounter;
@@ -80,6 +81,7 @@ export class TestMessagingService implements IMessagingService {
   private forbiddenSubjects: string[];
 
   constructor(opts: Partial<TestMessagingConfig> = {}) {
+    super();
     const defaults = defaultOpts();
     // create options
     this.options = {
@@ -152,12 +154,7 @@ export class TestMessagingService implements IMessagingService {
     callback: (msg: CFCoreTypes.NodeMessage) => void,
   ): Promise<void> {
     // make sure that client is allowed to send message
-    if (this.subjectForbidden(subject)) {
-      console.log(
-        `Subject is in forbidden URLs, refusing to process any message to subject: ${subject}`,
-      );
-      return;
-    }
+    this.subjectForbidden(subject, "receive");
 
     // handle overall protocol count
     this.count.received += 1;
@@ -208,10 +205,7 @@ export class TestMessagingService implements IMessagingService {
 
   async send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void> {
     // make sure that client is allowed to send message
-    if (this.subjectForbidden(to)) {
-      console.log(`Subject is in forbidden URLs, refusing to send message to subject: ${to}`);
-      return;
-    }
+    this.subjectForbidden(to, "send");
     // handle ceiling count
     this.count.sent += 1;
     // wait out delay
@@ -280,10 +274,7 @@ export class TestMessagingService implements IMessagingService {
 
   async publish(subject: string, data: any): Promise<void> {
     // make sure that client is allowed to send message
-    if (this.subjectForbidden(subject)) {
-      console.log(`Subject is in forbidden URLs, refusing to publish data to subject: ${subject}`);
-      return;
-    }
+    this.subjectForbidden(subject, "publish");
     return await this.connection.publish(subject, data);
   }
 
@@ -298,10 +289,8 @@ export class TestMessagingService implements IMessagingService {
     // make sure that client is allowed to send message
 
     // TODO: erroring here same as offline?
-    if (this.subjectForbidden(subject)) {
-      const msg = `Subject is in forbidden URLs, refusing to publish data to subject: ${subject}`;
-      throw new Error(msg);
-    }
+    this.emit(subject, { data, subject });
+    this.subjectForbidden(subject, "request");
     return await this.connection.request(subject, timeout, data, callback);
   }
 
@@ -318,7 +307,7 @@ export class TestMessagingService implements IMessagingService {
 
   ////////////////////////////////////////
   // Private methods
-  private subjectForbidden(to: string): boolean {
+  private subjectForbidden(to: string, operation?: string): boolean {
     let hasSubject = false;
     this.forbiddenSubjects.forEach(subject => {
       if (hasSubject) {
@@ -329,6 +318,10 @@ export class TestMessagingService implements IMessagingService {
       // is `transfer.recipient.${client.publicIdentifier}`
       hasSubject = to.includes(subject);
     });
+    if (hasSubject) {
+      const msg = `Subject is forbidden, refusing to ${operation || "send"} data to subject: ${to}`;
+      throw new Error(msg);
+    }
     return hasSubject;
   }
 
