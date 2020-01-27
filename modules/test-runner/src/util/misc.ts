@@ -35,6 +35,7 @@ export const fastForwardDuringCall = async (
   cb: () => Promise<any> /* function to call*/,
   clock: any /* sinon fake timer */,
   failsWith?: string /* failure message */,
+  delay?: number /* delay before clock is fast forwarded */,
 ): Promise<any> => {
   if (!clock) {
     throw new Error(`clock must be set before calling fast forward`);
@@ -44,7 +45,7 @@ export const fastForwardDuringCall = async (
   // so the timers can all be set properly
   setTimeout(() => {
     clock.tick(ms);
-  }, 500);
+  }, delay || 2500);
 
   if (failsWith) {
     await expect(cb()).to.be.rejectedWith(failsWith);
