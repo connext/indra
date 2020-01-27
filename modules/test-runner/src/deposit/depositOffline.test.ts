@@ -70,8 +70,6 @@ describe("Deposit offline tests", () => {
   it("client proposes deposit, but node doesn't receive the NATS message (or no response from node)", async function(): Promise<
     void
     > {
-    // @ts-ignore
-    this.timeout(100_000);
     // create client where the propose protocol will not complete
     // in deposit, client will propose the `CoinBalanceRefund` app (is the
     // initiator in the `propose` protocol)
@@ -90,8 +88,6 @@ describe("Deposit offline tests", () => {
   it("client proposes deposit, but node only receives the NATS message after timeout is over", async function(): Promise<
     void
     > {
-    // @ts-ignore
-    this.timeout(105_000);
     // cf method timeout is 90s, client will send any messages with a
     // preconfigured delay
     const CLIENT_DELAY = CF_METHOD_TIMEOUT + 1_000;
@@ -108,8 +104,6 @@ describe("Deposit offline tests", () => {
   it("client proposes deposit, but node only responds after timeout is over", async function(): Promise<
     void
     > {
-    // @ts-ignore
-    this.timeout(105_000);
     // cf method timeout is 90s, client will process any received messages
     // with a preconfigured delay
     const CLIENT_DELAY = CF_METHOD_TIMEOUT + 1_000;
@@ -126,8 +120,6 @@ describe("Deposit offline tests", () => {
   it("client goes offline after proposing deposit and then comes back after timeout is over", async function(): Promise<
     void
     > {
-    // @ts-ignore
-    this.timeout(105_000);
     client = await createClientWithMessagingLimits({
       protocol: "install",
       ceiling: { received: INSTALL_SUPPORTED_APP_COUNT_RECEIVED },
@@ -139,8 +131,6 @@ describe("Deposit offline tests", () => {
   });
 
   it("client proposes deposit, but then deletes their store", async function(): Promise<void> {
-    // @ts-ignore
-    this.timeout(105_000);
     client = await createClientWithMessagingLimits();
     const messaging = getMessaging(client.publicIdentifier);
     expect(messaging).to.be.ok;
