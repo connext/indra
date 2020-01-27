@@ -12,6 +12,7 @@ import {
   asyncTransferAsset,
   TOKEN_AMOUNT_SM,
   MESSAGE_FAILED_TO_SEND,
+  FORBIDDEN_SUBJECT,
 } from "../util";
 import { BigNumber } from "ethers/utils";
 
@@ -93,7 +94,7 @@ describe.only("Async transfer offline tests", () => {
       89_000,
       () => asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
       clock,
-      MESSAGE_FAILED_TO_SEND(`Subject is in forbidden URLs, refusing to publish data`),
+      MESSAGE_FAILED_TO_SEND(FORBIDDEN_SUBJECT),
     );
 
     // make sure that the app is installed with the hub/sender
@@ -112,7 +113,48 @@ describe.only("Async transfer offline tests", () => {
     expect(receiverLinkedApp.length).to.equal(0);
   });
 
-  it("sender successfully installs transfer, goes offline before sending paymentId/preimage, and stays offline", async () => {});
+  it.only("sender successfully installs transfer, goes offline before sending paymentId/preimage, and stays offline", async () => {
+    /**
+     * Will have a transfer saved on the hub, but nothing sent to recipient.
+     *
+     * Recipient should be able to claim payment regardless.
+     */
+
+    // create the sender client and receiver clients + fund
+    senderClient = await createClientWithMessagingLimits({
+      forbiddenSubjects: [`transfer.send-async.`],
+    });
+    receiverClient = await createClientWithMessagingLimits();
+    await fundForTransfers();
+
+    // make the transfer call, should fail when sending info to node, but
+    // will retry. fast forward through NATS_TIMEOUT
+    await fastForwardDuringCall(
+      89_000,
+      () => asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
+      clock,
+      FORBIDDEN_SUBJECT,
+    );
+    // make sure that the app is installed with the hub/sender
+    const senderLinkedApp = await getLinkedApp(senderClient);
+    const { paymentId } = senderLinkedApp.latestState as any;
+    // verify the saved transfer information
+    const expectedTransfer = {
+      amount: TOKEN_AMOUNT_SM.toString(),
+      receiverPublicIdentifier: receiverClient.publicIdentifier,
+      paymentId,
+      senderPublicIdentifier: senderClient.publicIdentifier,
+      status: "PENDING",
+      type: "LINKED",
+    };
+    await verifyTransfer(senderClient, expectedTransfer);
+    const receiverLinkedApp = await getLinkedApp(receiverClient, false);
+    expect(receiverLinkedApp.length).to.equal(0);
+
+    // make sure recipient can still redeem payment
+    await receiverClient.reclaimPendingAsyncTransfers();
+    await verifyTransfer(receiverClient, { ...expectedTransfer, status: "REDEEMED" });
+  });
 
   it("sender installs transfer successfully, receiver proposes install but node is offline", async () => {});
 
