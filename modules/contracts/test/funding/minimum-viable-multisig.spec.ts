@@ -99,7 +99,7 @@ describe("MinimumViableMultisig", () => {
     erc20 = await waffle.deployContract(wallet0, DolphinCoin);
   });
 
-  it.only("allows the multisig to execute a transaction", async () => {
+  it("allows the multisig to execute a transaction", async () => {
     await erc20.functions.transfer(multisig.address, parseEther("0.1"));
     let balance = await erc20.functions.balanceOf(multisig.address);
     expect(balance).to.eq(parseEther("0.1"));
