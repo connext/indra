@@ -74,7 +74,8 @@ describe("Swap offline", () => {
 
     // check if its a failure case
     if (failsWith) {
-      await expect(swapCb).to.be.rejectedWith(failsWith);
+      await expect(swapCb()).to.be.rejectedWith(failsWith);
+      return;
     }
 
     // otherwise execute cb
@@ -91,7 +92,7 @@ describe("Swap offline", () => {
     });
   });
 
-  it.only("Bot A tries to install swap but there’s no response from node", async function(): Promise<
+  it("Bot A tries to install swap but there’s no response from node", async function(): Promise<
     void
     > {
     // @ts-ignore
@@ -132,6 +133,7 @@ describe("Swap offline", () => {
       inputAmount: ETH_AMOUNT_SM,
       outputAmount: TOKEN_AMOUNT,
       failsWith: `Failed to uninstall swap: Error: ${APP_PROTOCOL_TOO_LONG("uninstall")}`,
+      fastForward: true,
     });
   });
 
@@ -153,6 +155,7 @@ describe("Swap offline", () => {
       inputAmount: ETH_AMOUNT_SM,
       outputAmount: TOKEN_AMOUNT,
       failsWith: `Failed to uninstall swap: Error: ${APP_PROTOCOL_TOO_LONG("uninstall")}`,
+      fastForward: true,
     });
   });
 
