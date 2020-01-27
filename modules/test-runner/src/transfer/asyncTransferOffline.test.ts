@@ -11,6 +11,7 @@ import {
   fastForwardDuringCall,
   asyncTransferAsset,
   TOKEN_AMOUNT_SM,
+  MESSAGE_FAILED_TO_SEND,
 } from "../util";
 import { BigNumber } from "ethers/utils";
 
@@ -20,6 +21,8 @@ describe.only("Async transfer offline tests", () => {
   let receiverClient: IConnextClient;
   let tokenAddress: string;
 
+  /////////////////////////////////
+  /// TEST SPECIFIC HELPERS
   const fundForTransfers = async (
     amount: BigNumber = TOKEN_AMOUNT,
     assetId?: string,
@@ -28,6 +31,32 @@ describe.only("Async transfer offline tests", () => {
     tokenAddress = senderClient.config.contractAddresses.Token;
     await fundChannel(senderClient, amount, assetId || tokenAddress);
     await requestCollateral(receiverClient, assetId || tokenAddress);
+  };
+
+  const getLinkedApp = async (client: IConnextClient, onlyOne: boolean = true): Promise<any> => {
+    const registeredApp = client.appRegistry.filter(
+      (app: DefaultApp) => app.name === "SimpleLinkedTransferApp",
+    )[0];
+    const linkedApps = (await client.getAppInstances()).filter(
+      app => app.appInterface.addr === registeredApp.appDefinitionAddress,
+    );
+    // make sure the state is correct
+    if (onlyOne) {
+      expect(linkedApps.length).to.be.equal(1);
+      return linkedApps[0];
+    }
+    expect(linkedApps).to.be.ok;
+    return linkedApps;
+  };
+
+  const verifyTransfer = async (
+    client: IConnextClient,
+    expected: any, //Partial<Transfer> type uses `null` not `undefined`
+  ): Promise<void> => {
+    expect(expected.paymentId).to.be.ok;
+    const transfer = await client.getLinkedTransfer(expected.paymentId!);
+    // verify the saved transfer information
+    expect(transfer).to.containSubset(expected);
   };
 
   beforeEach(async () => {
@@ -41,7 +70,7 @@ describe.only("Async transfer offline tests", () => {
 
   it("sender successfully installs transfer, goes offline before sending paymentId or preimage, then comes online and has the pending installed transfer", async () => {
     /**
-     * Means that the node will not know the recipient or encrypted preimage,
+     * In this case, node will not know the recipient or encrypted preimage,
      * the transfer to recipient is essentially installed as an unclaimable
      * (i.e. preImage lost) linked transfer without a specified recipient.
      *
@@ -64,32 +93,16 @@ describe.only("Async transfer offline tests", () => {
       89_000,
       () => asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
       clock,
-      `Subject is in forbidden URLs, refusing to publish data`,
+      MESSAGE_FAILED_TO_SEND(`Subject is in forbidden URLs, refusing to publish data`),
     );
 
     // make sure that the app is installed with the hub/sender
-    const simpleTransferApp = senderClient.appRegistry.filter(
-      (app: DefaultApp) => app.name === "SimpleLinkedTransferApp",
-    )[0];
-    const getLinkedApp = async (client: IConnextClient, onlyOne: boolean = true): Promise<any> => {
-      const linkedApps = (await client.getAppInstances()).filter(
-        app => app.appInterface.addr === simpleTransferApp.appDefinitionAddress,
-      );
-      // make sure the state is correct
-      if (onlyOne) {
-        expect(linkedApps.length).to.be.equal(1);
-        return linkedApps[0];
-      }
-      expect(linkedApps).to.be.ok;
-      return linkedApps;
-    };
     const senderLinkedApp = await getLinkedApp(senderClient);
     const { paymentId } = senderLinkedApp.latestState as any;
-    const transfer = await senderClient.getLinkedTransfer(paymentId);
     // verify the saved transfer information
-    expect(transfer).to.containSubset({
+    await verifyTransfer(senderClient, {
       amount: TOKEN_AMOUNT_SM.toString(),
-      recipientPublicIdentifier: null,
+      receiverPublicIdentifier: null,
       paymentId,
       senderPublicIdentifier: senderClient.publicIdentifier,
       status: "PENDING",
