@@ -45,6 +45,7 @@ type TestMessagingConfig = {
     [protocol: string]: DetailedMessageCounter;
   };
   count: DetailedMessageCounter;
+  forbiddenSubjects: string[];
 };
 
 const defaultOpts = (): TestMessagingConfig => {
@@ -65,6 +66,7 @@ const defaultOpts = (): TestMessagingConfig => {
       withdraw: defaultCount(),
     },
     count: defaultCount(),
+    forbiddenSubjects: [],
   };
 };
 
@@ -75,6 +77,7 @@ export class TestMessagingService implements IMessagingService {
   };
   public options: TestMessagingConfig;
   private countInternal: DetailedMessageCounter;
+  private forbiddenSubjects: string[];
 
   constructor(opts: Partial<TestMessagingConfig> = {}) {
     const defaults = defaultOpts();
@@ -83,6 +86,7 @@ export class TestMessagingService implements IMessagingService {
       messagingConfig: combineObjects(opts.messagingConfig, defaults.messagingConfig),
       count: combineObjects(opts.count, defaults.count),
       protocolDefaults: combineObjects(opts.protocolDefaults, defaults.protocolDefaults),
+      forbiddenSubjects: opts.forbiddenSubjects || defaults.forbiddenSubjects,
     };
 
     const factory = new MessagingServiceFactory({
@@ -94,6 +98,8 @@ export class TestMessagingService implements IMessagingService {
     this.protocolDefaults = this.options.protocolDefaults;
     // setup count
     this.countInternal = this.options.count;
+    // setup forbidden subjects
+    this.forbiddenSubjects = this.options.forbiddenSubjects;
   }
 
   ////////////////////////////////////////
@@ -145,6 +151,14 @@ export class TestMessagingService implements IMessagingService {
     subject: string,
     callback: (msg: CFCoreTypes.NodeMessage) => void,
   ): Promise<void> {
+    // make sure that client is allowed to send message
+    if (this.subjectForbidden(subject)) {
+      console.log(
+        `Subject is in forbidden URLs, refusing to process any message to subject: ${subject}`,
+      );
+      return;
+    }
+
     // handle overall protocol count
     this.count.received += 1;
     // wait out delay
@@ -193,6 +207,11 @@ export class TestMessagingService implements IMessagingService {
   }
 
   async send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void> {
+    // make sure that client is allowed to send message
+    if (this.subjectForbidden(to)) {
+      console.log(`Subject is in forbidden URLs, refusing to send message to subject: ${to}`);
+      return;
+    }
     // handle ceiling count
     this.count.sent += 1;
     // wait out delay
@@ -260,6 +279,11 @@ export class TestMessagingService implements IMessagingService {
   }
 
   async publish(subject: string, data: any): Promise<void> {
+    // make sure that client is allowed to send message
+    if (this.subjectForbidden(subject)) {
+      console.log(`Subject is in forbidden URLs, refusing to publish data to subject: ${subject}`);
+      return;
+    }
     return await this.connection.publish(subject, data);
   }
 
@@ -269,6 +293,15 @@ export class TestMessagingService implements IMessagingService {
     data: object,
     callback?: (response: any) => any,
   ): Promise<any> {
+    // make sure that client is allowed to send message
+    // note: when sending via node.ts uses request
+    // make sure that client is allowed to send message
+
+    // TODO: erroring here same as offline?
+    if (this.subjectForbidden(subject)) {
+      const msg = `Subject is in forbidden URLs, refusing to publish data to subject: ${subject}`;
+      throw new Error(msg);
+    }
     return await this.connection.request(subject, timeout, data, callback);
   }
 
@@ -285,6 +318,20 @@ export class TestMessagingService implements IMessagingService {
 
   ////////////////////////////////////////
   // Private methods
+  private subjectForbidden(to: string): boolean {
+    let hasSubject = false;
+    this.forbiddenSubjects.forEach(subject => {
+      if (hasSubject) {
+        return;
+      }
+      // this.forbiddenSubjects may include prefixes, ie it could be
+      // `transfer.recipient` when the subject the client uses in `node.ts`
+      // is `transfer.recipient.${client.publicIdentifier}`
+      hasSubject = to.includes(subject);
+    });
+    return hasSubject;
+  }
+
   private getProtocol(msg: any): string | undefined {
     if (!msg.data) {
       // no .data field found, cannot find protocol of msg

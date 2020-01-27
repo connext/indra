@@ -120,15 +120,16 @@ export type ClientTestMessagingInputOpts = {
   ceiling: Partial<MessageCounter>; // set ceiling of sent/received
   protocol: string; // use "any" to limit any messages by count
   delay: Partial<MessageCounter>; // ms delay or sent callbacks
+  forbiddenSubjects: string[];
 };
 export const createClientWithMessagingLimits = async (
   opts: Partial<ClientTestMessagingInputOpts> = {},
 ): Promise<IConnextClient> => {
-  const { protocol, ceiling, delay } = opts;
-  const messageOptions: any = {};
+  const { protocol, ceiling, delay, forbiddenSubjects } = opts;
+  const messageOptions: any = { forbiddenSubjects: forbiddenSubjects || [] };
 
   // no defaults specified, exit early
-  if (!protocol || Object.keys(opts).length === 0) {
+  if (Object.keys(opts).length === 0) {
     const messaging = new TestMessagingService();
     expect(messaging.install.ceiling).to.be.undefined;
     expect(messaging.count.received).to.be.equal(0);
@@ -139,7 +140,7 @@ export const createClientWithMessagingLimits = async (
   if (protocol === "any") {
     // assign the ceiling for the general message count
     messageOptions.count = { ceiling, delay };
-  } else {
+  } else if (protocol && typeof protocol === "string") {
     // assign the protocol defaults struct
     messageOptions.protocolDefaults = {
       [protocol]: {
