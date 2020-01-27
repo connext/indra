@@ -12,6 +12,7 @@ export const APP_PROTOCOL_TOO_LONG = (protocol: string): string =>
   `App ${protocol} took longer than 90 seconds`;
 export const MESSAGE_FAILED_TO_SEND = (reason?: string): string =>
   `Failed to send message: ${reason}`;
+export const FORBIDDEN_SUBJECT = `Subject is forbidden`;
 
 export const NEGATIVE_ONE = "-1";
 export const NEGATIVE_ZERO_ZERO_ONE = "-0.01";
