@@ -1,3 +1,4 @@
+import { IConnextClient } from "@connext/types";
 import { utils } from "@connext/client";
 import * as lolex from "lolex";
 
@@ -26,7 +27,7 @@ const { CF_METHOD_TIMEOUT } = utils;
  */
 describe("Deposit offline tests", () => {
   let clock: any;
-  let client: any;
+  let client: IConnextClient;
 
   beforeEach(() => {
     clock = lolex.install({
