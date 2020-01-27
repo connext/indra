@@ -122,5 +122,5 @@ export interface INodeApiClient {
     recipient: string,
     encryptedPreImage: string,
     linkedHash: string,
-  ): Promise<any>;
+  ): Promise<{ linkedHash: string }>;
 }
