@@ -4,8 +4,6 @@ import {
   ResolveLinkedTransferResponse,
   SimpleLinkedTransferAppStateBigNumber,
   SimpleTransferAppStateBigNumber,
-  SupportedApplication,
-  SupportedApplications,
   SimpleLinkedTransferApp,
   SimpleTransferApp,
 } from "@connext/types";
