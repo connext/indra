@@ -1,11 +1,8 @@
+import { LINKED_TRANSFER, SimpleLinkedTransferApp } from "@connext/types";
 import { HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
-import {
-  createLinkedHash,
-  stringify,
-  xpubToAddress,
-} from "../lib";
+import { createLinkedHash, stringify, xpubToAddress } from "../lib";
 import { encryptWithPublicKey } from "../lib/crypto";
 import {
   BigNumber,
@@ -19,8 +16,6 @@ import {
   LinkedTransferToRecipientParameters,
   LinkedTransferToRecipientResponse,
   SimpleLinkedTransferAppStateBigNumber,
-  SupportedApplication,
-  SupportedApplications,
   TransferCondition,
 } from "../types";
 import {
@@ -33,7 +28,6 @@ import {
 } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-import { LINKED_TRANSFER, SimpleLinkedTransferApp } from "@connext/types";
 
 type ConditionalExecutors = {
   [index in TransferCondition]: (
@@ -57,10 +51,14 @@ export class ConditionalTransferController extends AbstractController {
   private handleLinkedTransferToRecipient = async (
     params: LinkedTransferToRecipientParameters,
   ): Promise<LinkedTransferToRecipientResponse> => {
-    const { amount, assetId, paymentId, preImage, recipient, meta } = convert.LinkedTransferToRecipient(
-      `bignumber`,
-      params,
-    );
+    const {
+      amount,
+      assetId,
+      paymentId,
+      preImage,
+      recipient,
+      meta,
+    } = convert.LinkedTransferToRecipient(`bignumber`, params);
 
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
@@ -107,7 +105,7 @@ export class ConditionalTransferController extends AbstractController {
         assetId,
         encryptedPreImage,
         paymentId,
-        meta
+        meta,
       }),
     );
 
