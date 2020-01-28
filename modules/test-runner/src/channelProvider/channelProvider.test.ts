@@ -50,7 +50,6 @@ describe("ChannelProvider", () => {
   });
 
   it("Happy case: Bot A1 can call the full deposit → swap → transfer → withdraw flow on Bot A", async function() {
-    // @ts-ignore
     this.timeout(90_000);
 
     const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
