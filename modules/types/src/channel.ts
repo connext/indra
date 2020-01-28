@@ -23,7 +23,7 @@ export type PaymentProfileBigNumber = PaymentProfile<BigNumber>;
 export type AssetAmount<T = string> = {
   amount: T;
   assetId: Address; // empty address if eth
-}
+};
 export type AssetAmountBigNumber = AssetAmount<BigNumber>;
 
 export type CFCoreChannel = {

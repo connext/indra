@@ -33,6 +33,7 @@ import {
 } from "../validation";
 
 import { AbstractController } from "./AbstractController";
+import { LINKED_TRANSFER, SimpleLinkedTransferApp } from "@connext/types";
 
 type ConditionalExecutors = {
   [index in TransferCondition]: (
@@ -56,8 +57,8 @@ export class ConditionalTransferController extends AbstractController {
   private handleLinkedTransferToRecipient = async (
     params: LinkedTransferToRecipientParameters,
   ): Promise<LinkedTransferToRecipientResponse> => {
-    const { amount, assetId, paymentId, preImage, recipient } = convert.LinkedTransferToRecipient(
-      "bignumber",
+    const { amount, assetId, paymentId, preImage, recipient, meta } = convert.LinkedTransferToRecipient(
+      `bignumber`,
       params,
     );
 
@@ -77,14 +78,14 @@ export class ConditionalTransferController extends AbstractController {
     // wait for linked transfer
     const ret = await this.handleLinkedTransfers({
       ...params,
-      conditionType: "LINKED_TRANSFER",
+      conditionType: LINKED_TRANSFER,
     });
 
     // set recipient and encrypted pre-image on linked transfer
     // TODO: use app path instead?
-    const recipientPublicKey = fromExtendedKey(recipient).derivePath("0").publicKey;
+    const recipientPublicKey = fromExtendedKey(recipient).derivePath(`0`).publicKey;
     const encryptedPreImage = await encryptWithPublicKey(
-      recipientPublicKey.replace(/^0x/, ""),
+      recipientPublicKey.replace(/^0x/, ``),
       preImage,
     );
     // TODO: if this fails for ANY REASON, uninstall the app to make sure that
@@ -106,6 +107,7 @@ export class ConditionalTransferController extends AbstractController {
         assetId,
         encryptedPreImage,
         paymentId,
+        meta
       }),
     );
 
@@ -120,7 +122,7 @@ export class ConditionalTransferController extends AbstractController {
   ): Promise<LinkedTransferResponse> => {
     // convert params + validate
     const { amount, assetId, paymentId, preImage, meta } = convert.LinkedTransfer(
-      "bignumber",
+      `bignumber`,
       params,
     );
 
@@ -134,9 +136,7 @@ export class ConditionalTransferController extends AbstractController {
       invalid32ByteHexString(preImage),
     );
 
-    const appInfo = this.connext.getRegisteredAppDetails(
-      SupportedApplications.SimpleLinkedTransferApp as SupportedApplication,
-    );
+    const appInfo = this.connext.getRegisteredAppDetails(SimpleLinkedTransferApp);
 
     // install the transfer application
     const linkedHash = createLinkedHash(amount, assetId, paymentId, preImage);

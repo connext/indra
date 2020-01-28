@@ -2,23 +2,23 @@ import { ConnextStore } from "@connext/store";
 import { Store } from "@connext/types";
 import { ethers } from "ethers";
 
-import { Logger } from "./lib";
-import { ClientOptions } from "./types";
+import { Logger } from "./logger";
+import { ClientOptions } from "../types";
 
 // constants
 
-const MNEMONIC_KEY = "MNEMONIC";
-const MAINNET = "mainnet";
-const RINKEBY = "rinkeby";
+export const MNEMONIC_KEY = "CONNEXT_MNEMONIC";
+export const MAINNET_NETWORK = "mainnet";
+export const RINKEBY_NETWORK = "rinkeby";
 
-// validators
+// helpers
 
 export function isMainnet(network: string): boolean {
-  return network.toLowerCase() === MAINNET;
+  return network.toLowerCase() === MAINNET_NETWORK.toLowerCase();
 }
 
 export function isRinkeby(network: string): boolean {
-  return network.toLowerCase() === RINKEBY;
+  return network.toLowerCase() === RINKEBY_NETWORK.toLowerCase();
 }
 
 export function isWalletProvided(opts?: Partial<ClientOptions>): boolean {
@@ -28,13 +28,17 @@ export function isWalletProvided(opts?: Partial<ClientOptions>): boolean {
   return !!(opts.mnemonic || (opts.xpub && opts.keyGen));
 }
 
-// helpers
+export function shouldGenerateMnemonic(network: string, opts?: Partial<ClientOptions>): boolean {
+  return !isMainnet(network) && !isWalletProvided(opts);
+}
 
 export function generateMnemonic(): string {
   const entropy = ethers.utils.randomBytes(16);
   const mnemonic = ethers.utils.HDNode.entropyToMnemonic(entropy);
   return mnemonic;
 }
+
+// getters
 
 export async function getDefaultMnemonic(store: Store, log: Logger): Promise<string> {
   log.warn("Using mnemonic stored insecurely - DO NOT USE IN PRODUCTION!");
@@ -43,16 +47,20 @@ export async function getDefaultMnemonic(store: Store, log: Logger): Promise<str
 
   if (!mnemonic) {
     mnemonic = generateMnemonic();
-    store.set([{ path: MNEMONIC_KEY, value: mnemonic }]);
+    await store.set([{ path: MNEMONIC_KEY, value: mnemonic }]);
   }
   return mnemonic;
 }
 
-export function shouldGenerateMnemonic(network: string, opts?: Partial<ClientOptions>): boolean {
-  return !isMainnet(network) && !isWalletProvided(opts);
+export function getOptionIfAvailable(option: string, opts?: Partial<ClientOptions>) {
+  return opts && opts[option] ? opts[option] : undefined;
 }
 
-// main
+export function getDefaultStore(opts?: Partial<ClientOptions>): ConnextStore {
+  const asyncStorage = getOptionIfAvailable("asyncStorage", opts);
+  const backupService = getOptionIfAvailable("backupService", opts);
+  return new ConnextStore(asyncStorage || window.localStorage, { backupService });
+}
 
 export async function getDefaultOptions(
   network: string,
@@ -64,8 +72,8 @@ export async function getDefaultOptions(
   const baseUrl = isMainnet(network)
     ? "indra.connext.network/api"
     : isRinkeby(network)
-    ? "rinkeby.indra.connext.network/api"
-    : null;
+      ? "rinkeby.indra.connext.network/api"
+      : null;
 
   log.debug(`Using default baseUrl: ${baseUrl}`);
 
@@ -80,20 +88,11 @@ export async function getDefaultOptions(
 
   log.debug(`Using default urlOptions: ${JSON.stringify(urlOptions, null, 2)}`);
 
-  let store;
-  let mnemonic;
+  const store = getOptionIfAvailable("store", overrideOptions) || getDefaultStore(overrideOptions);
 
-  if (overrideOptions) {
-    store =
-      overrideOptions.store ||
-      new ConnextStore(overrideOptions.asyncStorage || window.localStorage, {
-        backupService: overrideOptions.backupService,
-      });
-
-    mnemonic = shouldGenerateMnemonic(network, overrideOptions)
-      ? await getDefaultMnemonic(store, log)
-      : undefined;
-  }
+  const mnemonic = shouldGenerateMnemonic(network, overrideOptions)
+    ? await getDefaultMnemonic(store, log)
+    : undefined;
 
   log.debug(`Using default store: ${JSON.stringify(store, null, 2)}`);
 

@@ -8,6 +8,10 @@ import {
   setAndGet,
   setAndGetMultiple,
   testAsyncStorageKey,
+  LOCALSTORAGE,
+  ASYNCSTORAGE,
+  MEMORYSTORAGE,
+  FILESTORAGE,
 } from "../util";
 
 describe("Storage", () => {
@@ -17,31 +21,31 @@ describe("Storage", () => {
   const testValue = "something";
 
   it("happy case: instantiate with localStorage", async () => {
-    const { store, storage } = createStore("localstorage");
+    const { store, storage } = createStore(LOCALSTORAGE);
     await setAndGet(store);
     await storage.clear();
   });
 
   it("happy case: instantiate with AsyncStorage", async () => {
-    const { store, storage } = createStore("asyncstorage");
+    const { store, storage } = createStore(ASYNCSTORAGE);
     await setAndGet(store);
     await storage.clear();
   });
 
   it("happy case: instantiate with MemoryStorage", async () => {
-    const { store, storage } = createStore("memorystorage");
+    const { store, storage } = createStore(MEMORYSTORAGE);
     await setAndGet(store);
     await storage.clear();
   });
 
   it("happy case: instantiate with FileStorage", async () => {
-    const { store, storage } = createStore("filestorage", { asyncStorageKey }, { fileDir });
+    const { store, storage } = createStore(FILESTORAGE, { asyncStorageKey }, { fileDir });
     await setAndGet(store);
     await storage.clear();
   });
 
   it("happy case: localStorage should include multiple keys", async () => {
-    const { store, storage } = createStore("localstorage");
+    const { store, storage } = createStore(LOCALSTORAGE);
 
     await setAndGetMultiple(store, length);
 
@@ -50,7 +54,7 @@ describe("Storage", () => {
   });
 
   it("happy case: AsyncStorage should include a single key matching asyncStorageKey", async () => {
-    const { store, storage } = createStore("asyncstorage", { asyncStorageKey });
+    const { store, storage } = createStore(ASYNCSTORAGE, { asyncStorageKey });
 
     await setAndGetMultiple(store, length);
 
@@ -59,7 +63,7 @@ describe("Storage", () => {
   });
 
   it("happy case: MemoryStorage should include a single key matching asyncStorageKey", async () => {
-    const { store, storage } = createStore("memorystorage", { asyncStorageKey });
+    const { store, storage } = createStore(MEMORYSTORAGE, { asyncStorageKey });
 
     await setAndGetMultiple(store, length);
 
@@ -68,7 +72,7 @@ describe("Storage", () => {
   });
 
   it("happy case: FileStorage should include a single key matching asyncStorageKey", async () => {
-    const { store, storage } = createStore("filestorage", { asyncStorageKey }, { fileDir });
+    const { store, storage } = createStore(FILESTORAGE, { asyncStorageKey }, { fileDir });
 
     await setAndGetMultiple(store, length);
 
@@ -77,14 +81,14 @@ describe("Storage", () => {
   });
 
   it("happy case: FileStorage should create a store directory", async () => {
-    const { storage } = createStore("filestorage", { asyncStorageKey }, { fileDir });
+    const { storage } = createStore(FILESTORAGE, { asyncStorageKey }, { fileDir });
 
     expect(isDirectorySync(fileDir)).to.be.true;
     await storage.clear();
   });
 
   it("happy case: FileStorage should create a file per key inside directory", async () => {
-    const { storage } = createStore("filestorage", { asyncStorageKey }, { fileDir });
+    const { storage } = createStore(FILESTORAGE, { asyncStorageKey }, { fileDir });
 
     const key1 = uuid.v4();
     const key2 = uuid.v4();
@@ -102,8 +106,8 @@ describe("Storage", () => {
   });
 
   it("happy case: FileStorage should create a files with unique name", async () => {
-    const { storage: storageA } = createStore("filestorage", { asyncStorageKey }, { fileDir });
-    const { storage: storageB } = createStore("filestorage", { asyncStorageKey }, { fileDir });
+    const { storage: storageA } = createStore(FILESTORAGE, { asyncStorageKey }, { fileDir });
+    const { storage: storageB } = createStore(FILESTORAGE, { asyncStorageKey }, { fileDir });
 
     const key = uuid.v4();
     await Promise.all([storageA.setItem(key, testValue), storageB.setItem(key, testValue)]);

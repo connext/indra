@@ -20,12 +20,12 @@ import RpcRouter from "./rpc-router";
 import {
   NetworkContext,
   CFCoreTypes,
-  NODE_EVENTS,
   NodeMessageWrappedProtocolMessage,
   DomainSeparator
 } from "./types";
 import { timeout } from "./utils";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
+import { PROTOCOL_MESSAGE_EVENT, NODE_EVENTS } from "@connext/types";
 
 export interface NodeConfig {
   // The prefix for any keys used in the store by this Node depends on the
@@ -192,7 +192,7 @@ export class Node {
       await this.messagingService.send(to, {
         data,
         from: fromXpub,
-        type: NODE_EVENTS.PROTOCOL_MESSAGE_EVENT
+        type: PROTOCOL_MESSAGE_EVENT
       } as NodeMessageWrappedProtocolMessage);
     });
 
@@ -211,7 +211,7 @@ export class Node {
         await this.messagingService.send(to, {
           data,
           from: this.publicIdentifier,
-          type: NODE_EVENTS.PROTOCOL_MESSAGE_EVENT
+          type: PROTOCOL_MESSAGE_EVENT
         } as NodeMessageWrappedProtocolMessage);
 
         // 90 seconds is the default lock acquiring time time
@@ -371,7 +371,7 @@ export class Node {
     }
 
     const isProtocolMessage = (msg: CFCoreTypes.NodeMessage) =>
-      msg.type === NODE_EVENTS.PROTOCOL_MESSAGE_EVENT;
+      msg.type === PROTOCOL_MESSAGE_EVENT;
 
     const isExpectingResponse = (msg: NodeMessageWrappedProtocolMessage) =>
       this.ioSendDeferrals.has(msg.data.processID);
@@ -402,7 +402,7 @@ export class Node {
       promise.resolve(msg);
     } catch (error) {
       console.error(
-        `Error while executing callback registered by IO_SEND_AND_WAIT middleware hook`,
+        "Error while executing callback registered by IO_SEND_AND_WAIT middleware hook",
         { error, msg }
       );
     }

@@ -13,10 +13,10 @@ import {
   IChannelProvider,
   InstallMessage,
   InstallVirtualMessage,
+  MatchAppInstanceResponse,
   NodeMessageWrappedProtocolMessage,
   ProposeMessage,
   RejectProposalMessage,
-  SupportedApplications,
   UninstallMessage,
   UninstallVirtualMessage,
   UpdateStateMessage,
@@ -25,6 +25,26 @@ import {
   WithdrawStartedMessage,
 } from "./types";
 import { appProposalValidation } from "./validation/appProposals";
+import {
+  ProtocolTypes,
+  CREATE_CHANNEL_EVENT,
+  DEPOSIT_CONFIRMED_EVENT,
+  DEPOSIT_FAILED_EVENT,
+  DEPOSIT_STARTED_EVENT,
+  INSTALL_EVENT,
+  INSTALL_VIRTUAL_EVENT,
+  PROPOSE_INSTALL_EVENT,
+  PROTOCOL_MESSAGE_EVENT,
+  REJECT_INSTALL_EVENT,
+  UNINSTALL_EVENT,
+  UNINSTALL_VIRTUAL_EVENT,
+  UPDATE_STATE_EVENT,
+  WITHDRAWAL_CONFIRMED_EVENT,
+  WITHDRAWAL_FAILED_EVENT,
+  WITHDRAWAL_STARTED_EVENT,
+  CoinBalanceRefundApp,
+  SimpleTwoPartySwapApp,
+} from "@connext/types";
 
 // TODO: index of connext events only?
 type CallbackStruct = {
@@ -40,30 +60,30 @@ export class ConnextListener extends EventEmitter {
   // to something more usable?
   private defaultCallbacks: CallbackStruct = {
     CREATE_CHANNEL_EVENT: (msg: CreateChannelMessage): void => {
-      this.emitAndLog("CREATE_CHANNEL_EVENT", msg.data);
+      this.emitAndLog(CREATE_CHANNEL_EVENT, msg.data);
     },
     DEPOSIT_CONFIRMED_EVENT: async (msg: DepositConfirmationMessage): Promise<void> => {
-      this.emitAndLog("DEPOSIT_CONFIRMED_EVENT", msg.data);
+      this.emitAndLog(DEPOSIT_CONFIRMED_EVENT, msg.data);
     },
     DEPOSIT_FAILED_EVENT: (msg: DepositFailedMessage): void => {
-      this.emitAndLog("DEPOSIT_FAILED_EVENT", msg.data);
+      this.emitAndLog(DEPOSIT_FAILED_EVENT, msg.data);
     },
     DEPOSIT_STARTED_EVENT: (msg: DepositStartedMessage): void => {
       const { value, txHash } = msg.data;
       this.log.info(`deposit for ${value.toString()} started. hash: ${txHash}`);
-      this.emitAndLog("DEPOSIT_STARTED_EVENT", msg.data);
+      this.emitAndLog(DEPOSIT_STARTED_EVENT, msg.data);
     },
     INSTALL_EVENT: (msg: InstallMessage): void => {
-      this.emitAndLog("INSTALL_EVENT", msg.data);
+      this.emitAndLog(INSTALL_EVENT, msg.data);
     },
     // TODO: make cf return app instance id and app def?
     INSTALL_VIRTUAL_EVENT: (msg: InstallVirtualMessage): void => {
-      this.emitAndLog("INSTALL_VIRTUAL_EVENT", msg.data);
+      this.emitAndLog(INSTALL_VIRTUAL_EVENT, msg.data);
     },
     PROPOSE_INSTALL_EVENT: async (msg: ProposeMessage): Promise<void> => {
       // validate and automatically install for the known and supported
       // applications
-      this.emitAndLog("PROPOSE_INSTALL_EVENT", msg.data);
+      this.emitAndLog(PROPOSE_INSTALL_EVENT, msg.data);
       // check based on supported applications
       // matched app, take appropriate default actions
       const matchedResult = await this.matchAppInstance(msg);
@@ -85,10 +105,10 @@ export class ConnextListener extends EventEmitter {
       await this.verifyAndInstallKnownApp(msg, matchedApp);
       // only publish for coin balance refund app
       const coinBalanceDef = this.connext.appRegistry.filter(
-        (app: DefaultApp) => app.name === SupportedApplications.CoinBalanceRefundApp,
+        (app: DefaultApp) => app.name === CoinBalanceRefundApp,
       )[0];
       if (params.appDefinition !== coinBalanceDef.appDefinitionAddress) {
-        this.log.info(`not sending propose message, not the coinbalance refund app`);
+        this.log.info("not sending propose message, not the coinbalance refund app");
         return;
       }
       this.log.info(
@@ -101,25 +121,25 @@ export class ConnextListener extends EventEmitter {
       return;
     },
     PROTOCOL_MESSAGE_EVENT: (msg: NodeMessageWrappedProtocolMessage): void => {
-      this.emitAndLog("PROTOCOL_MESSAGE_EVENT", msg.data);
+      this.emitAndLog(PROTOCOL_MESSAGE_EVENT, msg.data);
     },
     REJECT_INSTALL_EVENT: (msg: RejectProposalMessage): void => {
-      this.emitAndLog("REJECT_INSTALL_EVENT", msg.data);
+      this.emitAndLog(REJECT_INSTALL_EVENT, msg.data);
     },
     UNINSTALL_EVENT: (msg: UninstallMessage): void => {
-      this.emitAndLog("UNINSTALL_EVENT", msg.data);
+      this.emitAndLog(UNINSTALL_EVENT, msg.data);
     },
     UNINSTALL_VIRTUAL_EVENT: (msg: UninstallVirtualMessage): void => {
-      this.emitAndLog("UNINSTALL_VIRTUAL_EVENT", msg.data);
+      this.emitAndLog(UNINSTALL_VIRTUAL_EVENT, msg.data);
     },
     UPDATE_STATE_EVENT: (msg: UpdateStateMessage): void => {
-      this.emitAndLog("UPDATE_STATE_EVENT", msg.data);
+      this.emitAndLog(UPDATE_STATE_EVENT, msg.data);
     },
     WITHDRAWAL_CONFIRMED_EVENT: (msg: WithdrawConfirmationMessage): void => {
-      this.emitAndLog("WITHDRAWAL_CONFIRMED_EVENT", msg.data);
+      this.emitAndLog(WITHDRAWAL_CONFIRMED_EVENT, msg.data);
     },
     WITHDRAWAL_FAILED_EVENT: (msg: WithdrawFailedMessage): void => {
-      this.emitAndLog("WITHDRAWAL_FAILED_EVENT", msg.data);
+      this.emitAndLog(WITHDRAWAL_FAILED_EVENT, msg.data);
     },
     WITHDRAWAL_STARTED_EVENT: (msg: WithdrawStartedMessage): void => {
       const {
@@ -127,7 +147,7 @@ export class ConnextListener extends EventEmitter {
         txHash,
       } = msg.data;
       this.log.info(`withdrawal for ${amount.toString()} started. hash: ${txHash}`);
-      this.emitAndLog("WITHDRAWAL_STARTED_EVENT", msg.data);
+      this.emitAndLog(WITHDRAWAL_STARTED_EVENT, msg.data);
     },
   };
 
@@ -172,11 +192,11 @@ export class ConnextListener extends EventEmitter {
 
   public registerDefaultListeners = (): void => {
     Object.entries(this.defaultCallbacks).forEach(([event, callback]: any): any => {
-      this.channelProvider.on(CFCoreTypes.EventNames[event], callback);
+      this.channelProvider.on(event, callback);
     });
 
     this.channelProvider.on(
-      CFCoreTypes.RpcMethodNames.chan_install as CFCoreTypes.RpcMethodName,
+      ProtocolTypes.chan_install,
       async (msg: any): Promise<void> => {
         const {
           result: {
@@ -190,28 +210,19 @@ export class ConnextListener extends EventEmitter {
       },
     );
 
-    this.channelProvider.on(
-      CFCoreTypes.RpcMethodNames.chan_uninstall as CFCoreTypes.RpcMethodName,
-      (data: any): any => {
-        const result = data.result.result;
-        this.log.debug(
-          `Emitting CFCoreTypes.RpcMethodNames.chan_uninstall event: ${stringify(result)}`,
-        );
-        this.connext.messaging.publish(
-          `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
-          stringify(result),
-        );
-      },
-    );
+    this.channelProvider.on(ProtocolTypes.chan_uninstall, (data: any): any => {
+      const result = data.result.result;
+      this.log.debug(`Emitting ProtocolTypes.chan_uninstall event: ${stringify(result)}`);
+      this.connext.messaging.publish(
+        `indra.client.${this.connext.publicIdentifier}.uninstall.${result.appInstanceId}`,
+        stringify(result),
+      );
+    });
   };
 
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
     const protocol =
-      event === CFCoreTypes.EventNames.PROTOCOL_MESSAGE_EVENT
-        ? data.data
-          ? data.data.protocol
-          : data.protocol
-        : "";
+      event === PROTOCOL_MESSAGE_EVENT ? (data.data ? data.data.protocol : data.protocol) : "";
     this.log.info(`Received ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
     this.log.debug(`Emitted ${event} with data ${stringify(data)} at ${Date.now()}`);
     this.emit(event, data);
@@ -219,14 +230,7 @@ export class ConnextListener extends EventEmitter {
 
   private matchAppInstance = async (
     msg: ProposeMessage,
-  ): Promise<
-    | undefined
-    | {
-        matchedApp: DefaultApp;
-        proposeParams: CFCoreTypes.ProposeInstallParams;
-        appInstanceId: string;
-      }
-  > => {
+  ): Promise<MatchAppInstanceResponse | undefined> => {
     const filteredApps = this.connext.appRegistry.filter((app: DefaultApp): boolean => {
       return app.appDefinitionAddress === msg.data.params.appDefinition;
     });
@@ -287,16 +291,16 @@ export class ConnextListener extends EventEmitter {
     // to controller
     // this means the hub can only install apps, and cannot propose a swap
     // and there cant easily be an automatic install swap app between users
-    if (matchedApp.name === SupportedApplications.SimpleTwoPartySwapApp) {
+    if (matchedApp.name === SimpleTwoPartySwapApp) {
       return;
     }
 
     // dont automatically install coin balance refund app
-    if (matchedApp.name === SupportedApplications.CoinBalanceRefundApp) {
+    if (matchedApp.name === CoinBalanceRefundApp) {
       return;
     }
 
-    this.log.debug(`Proposal for app install successful, attempting install now...`);
+    this.log.debug("Proposal for app install successful, attempting install now...");
     let res: CFCoreTypes.InstallResult;
 
     // TODO: determine virtual app in a more resilient way
@@ -338,7 +342,10 @@ export class ConnextListener extends EventEmitter {
       if (!msg.paymentId && !msg.data) {
         throw new Error(`Could not parse data from message: ${stringify(msg)}`);
       }
-      const data = msg.paymentId ? msg : JSON.parse(msg.data);
+      let data = msg.paymentId ? msg : msg.data;
+      if (typeof data === `string`) {
+        data = JSON.parse(data);
+      }
       const { paymentId, encryptedPreImage, amount, assetId } = data;
       if (!paymentId || !encryptedPreImage || !amount || !assetId) {
         throw new Error(`Unable to parse transfer details from message ${stringify(data)}`);

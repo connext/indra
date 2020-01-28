@@ -1,4 +1,4 @@
-import { WithdrawStartedMessage } from "@connext/types";
+import { WithdrawStartedMessage, WITHDRAWAL_CONFIRMED_EVENT, WITHDRAWAL_STARTED_EVENT } from "@connext/types";
 import { randomBytes } from "crypto";
 import { Contract, Wallet } from "ethers";
 import { One, Zero } from "ethers/constants";
@@ -34,13 +34,13 @@ function confirmWithdrawalMessages(
 ) {
   // initiator messages
   initiator.once(
-    "WITHDRAWAL_CONFIRMED_EVENT",
+    WITHDRAWAL_CONFIRMED_EVENT,
     (msg: WithdrawConfirmationMessage) => {
       assertNodeMessage(
         msg,
         {
           from: initiator.publicIdentifier,
-          type: "WITHDRAWAL_CONFIRMED_EVENT",
+          type: WITHDRAWAL_CONFIRMED_EVENT,
           data: {
             txReceipt: {
               from: initiator.freeBalanceAddress,
@@ -68,15 +68,15 @@ function confirmWithdrawalMessages(
 
   const startedMsg = {
     from: initiator.publicIdentifier,
-    type: "WITHDRAWAL_STARTED_EVENT",
+    type: WITHDRAWAL_STARTED_EVENT,
     data: { params }
   };
-  initiator.once("WITHDRAWAL_STARTED_EVENT", (msg: any) => {
+  initiator.once(WITHDRAWAL_STARTED_EVENT, (msg: any) => {
     assertNodeMessage(msg, startedMsg, ["data.txHash"]);
   });
 
   responder.once(
-    "WITHDRAWAL_STARTED_EVENT",
+    WITHDRAWAL_STARTED_EVENT,
     (msg: WithdrawStartedMessage) => {
       assertNodeMessage(msg, startedMsg);
     }

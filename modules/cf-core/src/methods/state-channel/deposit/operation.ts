@@ -23,12 +23,11 @@ import {
   DepositFailedMessage,
   NetworkContext,
   CFCoreTypes,
-  NODE_EVENTS,
   OutcomeType,
-  SolidityValueType,
-  NodeEvent
+  SolidityValueType
 } from "../../../types";
 import { DEPOSIT_FAILED } from "../../errors";
+import { DEPOSIT_STARTED_EVENT, DEPOSIT_FAILED_EVENT } from "@connext/types";
 
 const DEPOSIT_RETRY_COUNT = 3;
 
@@ -126,7 +125,7 @@ export async function makeDeposit(
           value: bigNumberify(amount),
           gasLimit: 30000,
           gasPrice: await provider.getGasPrice(),
-          nonce: provider.getTransactionCount(signerAddress, "pending"),
+          nonce: provider.getTransactionCount(signerAddress, `pending`)
         };
 
         txResponse = await signer.sendTransaction(tx);
@@ -136,7 +135,7 @@ export async function makeDeposit(
           multisigAddress,
           bigNumberify(amount),
           {
-            nonce: provider.getTransactionCount(signerAddress, "pending"),
+            nonce: provider.getTransactionCount(signerAddress, `pending`)
           }
         );
       }
@@ -145,26 +144,26 @@ export async function makeDeposit(
       errors.push(e.toString());
       const failMsg: DepositFailedMessage = {
         from: publicIdentifier,
-        type: NODE_EVENTS.DEPOSIT_FAILED_EVENT as NodeEvent,
+        type: DEPOSIT_FAILED_EVENT,
         data: { errors, params }
       };
-      if (e.toString().includes("reject") || e.toString().includes("denied")) {
-        outgoing.emit(NODE_EVENTS.DEPOSIT_FAILED_EVENT, failMsg);
+      if (e.toString().includes(`reject`) || e.toString().includes(`denied`)) {
+        outgoing.emit(DEPOSIT_FAILED_EVENT, failMsg);
         throw Error(`${DEPOSIT_FAILED}: ${e.message}`);
       }
 
       retryCount -= 1;
 
       if (retryCount === 0) {
-        outgoing.emit(NODE_EVENTS.DEPOSIT_FAILED_EVENT, failMsg);
+        outgoing.emit(DEPOSIT_FAILED_EVENT, failMsg);
         throw Error(`${DEPOSIT_FAILED}: ${e.message}`);
       }
     }
   }
 
-  outgoing.emit("DEPOSIT_STARTED_EVENT", {
+  outgoing.emit(DEPOSIT_STARTED_EVENT, {
     from: publicIdentifier,
-    type: "DEPOSIT_STARTED_EVENT",
+    type: DEPOSIT_STARTED_EVENT,
     data: {
       value: amount,
       txHash: txResponse!.hash
@@ -243,7 +242,7 @@ async function getDepositContext(
           tokenAddress!,
           ERC20.abi,
           provider
-        ).functions.balanceOf(multisigAddress);
+      ).functions.balanceOf(multisigAddress);
 
   const initialState = {
     threshold,

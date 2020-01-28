@@ -19,8 +19,8 @@ export const requestDepositRights = async (
     assetId === AddressZero
       ? await ethProvider.getBalance(client.multisigAddress)
       : await new Contract(assetId, tokenAbi, ethProvider).functions.balanceOf(
-          client.multisigAddress,
-        );
+        client.multisigAddress,
+      );
   // get coin balance app details
   const {
     actionEncoding,

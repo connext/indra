@@ -1,31 +1,32 @@
 {
-	"name": "indra",
-	"version": "4.0.5",
-	"description": "",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/ConnextProject/indra.git"
-	},
-	"author": "Connext & Friends",
-	"license": "MIT",
-	"bugs": {
-		"url": "https://github.com/ConnextProject/indra/issues"
-	},
-	"homepage": "https://github.com/ConnextProject/indra#readme",
-	"devDependencies": {
-		"@connext/types": "1.5.0",
-		"@typescript-eslint/eslint-plugin": "2.16.0",
-		"@typescript-eslint/parser": "2.16.0",
-		"chai-bn": "0.2.0",
-		"cypress": "3.7.0",
-		"eslint": "6.8.0",
-		"eslint-plugin-react": "7.18.0",
-		"ethers": "4.0.41",
-		"husky": "^4.2.0",
-		"lerna": "3.19.0",
-		"openzeppelin-solidity": "2.3.0",
-		"prettier": "1.19.1",
-		"solc": "0.5.11"
-	},
-	"dependencies": {}
+  "name": "indra",
+  "version": "4.0.6",
+  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ConnextProject/indra.git"
+  },
+  "author": "Connext & Friends",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ConnextProject/indra/issues"
+  },
+  "homepage": "https://github.com/ConnextProject/indra#readme",
+  "devDependencies": {
+    "@connext/types": "1.5.0",
+    "@typescript-eslint/eslint-plugin": "2.16.0",
+    "@typescript-eslint/parser": "2.16.0",
+    "chai-bn": "0.2.0",
+    "cypress": "3.7.0",
+    "eslint": "6.8.0",
+    "eslint-config-prettier": "^6.9.0",
+    "eslint-plugin-prettier": "^3.1.2",
+    "eslint-plugin-react": "7.18.0",
+    "ethers": "4.0.41",
+    "husky": "^4.2.0",
+    "lerna": "3.19.0",
+    "openzeppelin-solidity": "2.3.0",
+    "prettier": "1.19.1",
+    "solc": "0.5.11"
+  }
 }

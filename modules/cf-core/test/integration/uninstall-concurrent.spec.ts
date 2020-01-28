@@ -5,7 +5,6 @@ import { Node } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import {
   InstallMessage,
-  NODE_EVENTS,
   ProposeMessage,
   UninstallMessage
 } from "../../src/types";

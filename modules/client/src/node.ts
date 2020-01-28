@@ -22,6 +22,7 @@ import {
   Transfer,
 } from "./types";
 import { invalidXpub } from "./validation";
+import { chan_nodeAuth } from "@connext/types";
 
 // Include our access token when interacting with these subjects
 const guardedSubjects = ["channel", "client", "lock", "transfer"];
@@ -258,7 +259,7 @@ export class NodeApiClient implements INodeApiClient {
     const nonce = await this.send("auth.getNonce", {
       address: this.channelProvider.signerAddress,
     });
-    const sig = await this.channelProvider.send("chan_nodeAuth", { message: nonce });
+    const sig = await this.channelProvider.send(chan_nodeAuth, { message: nonce });
     const token = `${nonce}:${sig}`;
     return token;
   }
@@ -317,7 +318,7 @@ export class NodeApiClient implements INodeApiClient {
       return undefined;
     }
     const { err, response } = msg.data;
-    if (err || error) {
+    if (err || error || msg.data.err) {
       throw new Error(`Error sending request. Message: ${stringify(msg)}`);
     }
     const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;

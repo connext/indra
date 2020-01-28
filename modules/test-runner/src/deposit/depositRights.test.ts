@@ -1,14 +1,7 @@
 import { IConnextClient } from "@connext/types";
-import { AddressZero, One } from "ethers/constants";
+import { AddressZero } from "ethers/constants";
 
-import {
-  createClient,
-  ethProvider,
-  ethWallet,
-  expect,
-  getOnchainBalance,
-  sendOnchainValue,
-} from "../util";
+import { createClient, ethProvider, expect, getOnchainBalance, sendOnchainValue } from "../util";
 
 // TODO: fix errors here
 describe("Deposits", () => {

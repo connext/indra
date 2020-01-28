@@ -6,6 +6,7 @@ export * from "./channelProvider";
 export * from "./client";
 export * from "./constants";
 export * from "./contracts";
+export * from "./contractArtifacts";
 export * from "./convert";
 export * from "./events";
 export * from "./inputs";

@@ -3,7 +3,7 @@ import { parseEther } from "ethers/utils";
 
 import { Node } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
-import { NODE_EVENTS, ProposeMessage } from "../../src/types";
+import { ProposeMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
@@ -19,21 +19,21 @@ expect.extend({ toBeLt });
 
 jest.setTimeout(7500);
 
-const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global[`networkContext`] as NetworkContextForTestSuite;
 
-describe("Node method follows spec - install", () => {
+describe(`Node method follows spec - install`, () => {
   let multisigAddress: string;
   let nodeA: Node;
   let nodeB: Node;
 
   describe(
-    "Node A gets app install proposal, sends to node B, B approves it, installs it, " +
-      "sends acks back to A, A installs it, both nodes have the same app instance",
+    `Node A gets app install proposal, sends to node B, B approves it, installs it, ` +
+      `sends acks back to A, A installs it, both nodes have the same app instance`,
     () => {
       beforeEach(async () => {
         const context: SetupContext = await setup(global);
-        nodeA = context["A"].node;
-        nodeB = context["B"].node;
+        nodeA = context[`A`].node;
+        nodeB = context[`B`].node;
 
         multisigAddress = await createChannel(nodeA, nodeB);
 
@@ -41,18 +41,18 @@ describe("Node method follows spec - install", () => {
           multisigAddress,
           nodeA,
           nodeB,
-          parseEther("2") // We are depositing in 2 and use 1 for each concurrent app
+          parseEther(`2`) // We are depositing in 2 and use 1 for each concurrent app
         );
       });
 
-      it("install app with ETH", done => {
+      it(`install app with ETH`, done => {
         let completedInstalls = 0;
 
-        nodeB.on("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
+        nodeB.on(`PROPOSE_INSTALL_EVENT`, (msg: ProposeMessage) => {
           makeInstallCall(nodeB, msg.data.appInstanceId);
         });
 
-        nodeA.on("INSTALL_EVENT", () => {
+        nodeA.on(`INSTALL_EVENT`, () => {
           completedInstalls += 1;
           if (completedInstalls === 2) {
             done();
