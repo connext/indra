@@ -188,7 +188,7 @@ export class ConfigService implements OnModuleInit {
       };
     case tokenAddress:
       return {
-        amountToCollateralize: parseEther(`10`),
+        amountToCollateralize: parseEther(`20`),
         assetId: AddressZero,
         channels: [],
         id: 0,
