@@ -462,6 +462,10 @@ export class ConnextClient implements IConnextClient {
     return this.listener.emit(event, data);
   };
 
+  public removeListener = (event: ConnextEvent, callback: (...args: any[]) => void): ConnextListener => {
+    return this.listener.removeListener(event, callback);
+  };
+
   ///////////////////////////////////
   // PROVIDER/ROUTER METHODS
 
