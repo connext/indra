@@ -8,8 +8,12 @@ export const FUNDED_MNEMONICS = [
 export const WRONG_ADDRESS = "0xdeadbeef";
 
 // error messages
-export const APP_PROTOCOL_TOO_LONG = (protocol: string): string =>
-  `App ${protocol} took longer than 90 seconds`;
+export const APP_PROTOCOL_TOO_LONG = (protocol: string): string => {
+  if (protocol === `takeAction`) {
+    return `Couldn't run TakeAction protocol: IO_SEND_AND_WAIT timed out after 90s`;
+  }
+  return `App ${protocol} took longer than 90 seconds`;
+};
 export const MESSAGE_FAILED_TO_SEND = (reason?: string): string =>
   `Failed to send message: ${reason}`;
 export const FORBIDDEN_SUBJECT = `Subject is forbidden`;
