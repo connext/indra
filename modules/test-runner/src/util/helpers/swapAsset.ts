@@ -29,14 +29,14 @@ export async function swapAsset(
     [nodeFreeBalanceAddress]: preSwapFreeBalanceNodeEth,
   } = await client.getFreeBalance(ethAssetId);
   expect(preSwapFreeBalanceClientEth).to.be.eq(preSwap.freeBalanceClientEth);
-  expect(preSwapFreeBalanceNodeEth).to.be.eq(preSwap.freeBalanceNodeEth);
+  expect(preSwapFreeBalanceNodeEth).to.be.least(preSwap.freeBalanceNodeEth);
 
   const {
     [client.freeBalanceAddress]: preSwapFreeBalanceClientToken,
     [nodeFreeBalanceAddress]: preSwapFreeBalanceNodeToken,
   } = await client.getFreeBalance(tokenAssetId);
   expect(preSwapFreeBalanceClientToken).to.be.eq(preSwap.freeBalanceClientToken);
-  expect(preSwapFreeBalanceNodeToken).to.be.above(0);
+  expect(preSwapFreeBalanceNodeToken).to.be.least(preSwap.freeBalanceNodeToken);
 
   const rate = await client.getLatestSwapRate(ethAssetId, tokenAssetId);
   const swapRate = ethToToken ? rate : inverse(rate);

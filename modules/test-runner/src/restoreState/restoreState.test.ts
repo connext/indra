@@ -2,8 +2,8 @@ import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 
-import { expect } from "../util";
-import { createClient, ETH_AMOUNT_SM, getStore, TOKEN_AMOUNT } from "../util";
+import { expect, COLLATERAL_AMOUNT_TOKEN } from "../util";
+import { createClient, ETH_AMOUNT_SM, getStore } from "../util";
 
 describe("Restore State", () => {
   let clientA: IConnextClient;
@@ -26,14 +26,10 @@ describe("Restore State", () => {
     // check balances pre
     const freeBalanceEthPre = await clientA.getFreeBalance(AddressZero);
     const freeBalanceTokenPre = await clientA.getFreeBalance(tokenAddress);
-    expect(freeBalanceEthPre[clientA.freeBalanceAddress].toString()).to.be.eq(
-      ETH_AMOUNT_SM.toString(),
-    );
-    expect(freeBalanceEthPre[nodeFreeBalanceAddress].toString()).to.be.eq(Zero.toString());
-    expect(freeBalanceTokenPre[clientA.freeBalanceAddress].toString()).to.be.eq(Zero.toString());
-    expect(freeBalanceTokenPre[nodeFreeBalanceAddress].toString()).to.be.eq(
-      TOKEN_AMOUNT.toString(),
-    );
+    expect(freeBalanceEthPre[clientA.freeBalanceAddress]).to.be.eq(ETH_AMOUNT_SM);
+    expect(freeBalanceEthPre[nodeFreeBalanceAddress]).to.be.eq(Zero);
+    expect(freeBalanceTokenPre[clientA.freeBalanceAddress]).to.be.eq(Zero);
+    expect(freeBalanceTokenPre[nodeFreeBalanceAddress]).to.be.eq(COLLATERAL_AMOUNT_TOKEN);
 
     // delete store
     const store = getStore(clientA.publicIdentifier);
@@ -52,13 +48,9 @@ describe("Restore State", () => {
     // check balances post
     const freeBalanceEthPost = await clientA.getFreeBalance(AddressZero);
     const freeBalanceTokenPost = await clientA.getFreeBalance(tokenAddress);
-    expect(freeBalanceEthPost[clientA.freeBalanceAddress].toString()).to.be.eq(
-      ETH_AMOUNT_SM.toString(),
-    );
-    expect(freeBalanceEthPost[nodeFreeBalanceAddress].toString()).to.be.eq(Zero.toString());
-    expect(freeBalanceTokenPost[clientA.freeBalanceAddress].toString()).to.be.eq(Zero.toString());
-    expect(freeBalanceTokenPost[nodeFreeBalanceAddress].toString().toString()).to.be.eq(
-      TOKEN_AMOUNT.toString().toString(),
-    );
+    expect(freeBalanceEthPost[clientA.freeBalanceAddress]).to.be.eq(ETH_AMOUNT_SM);
+    expect(freeBalanceEthPost[nodeFreeBalanceAddress]).to.be.eq(Zero);
+    expect(freeBalanceTokenPost[clientA.freeBalanceAddress]).to.be.eq(Zero);
+    expect(freeBalanceTokenPost[nodeFreeBalanceAddress]).to.be.eq(COLLATERAL_AMOUNT_TOKEN);
   });
 });

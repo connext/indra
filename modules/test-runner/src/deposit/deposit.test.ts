@@ -17,8 +17,8 @@ describe("Deposits", () => {
     await clientA.deposit({ amount: ONE, assetId: AddressZero });
     const freeBalance = await clientA.getFreeBalance(AddressZero);
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress].toString()).to.equal(ONE);
-    expect(freeBalance[nodeFreeBalanceAddress].toString()).to.equal("0");
+    expect(freeBalance[clientA.freeBalanceAddress]).to.equal(ONE);
+    expect(freeBalance[nodeFreeBalanceAddress]).to.equal("0");
     // TODO: assert node's version of free balance also?
   });
 
@@ -29,8 +29,8 @@ describe("Deposits", () => {
     const freeBalance = await clientA.getFreeBalance(tokenAddress);
 
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress].toString()).to.be.eq(ONE);
-    expect(freeBalance[nodeFreeBalanceAddress].toString()).to.be.eq("0");
+    expect(freeBalance[clientA.freeBalanceAddress]).to.be.eq(ONE);
+    expect(freeBalance[nodeFreeBalanceAddress]).to.be.eq("0");
 
     // TODO: assert node's version of free balance also?
   });
@@ -68,8 +68,8 @@ describe("Deposits", () => {
     const freeBalance = await clientA.getFreeBalance(clientA.config.contractAddresses.Token);
 
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress].toString()).to.be.eq(ONE);
-    expect(freeBalance[nodeFreeBalanceAddress].toString()).to.be.eq("0");
+    expect(freeBalance[clientA.freeBalanceAddress]).to.be.eq(ONE);
+    expect(freeBalance[nodeFreeBalanceAddress]).to.be.eq("0");
     // TODO: is there any way to test to make sure deposit rights were rescinded
     // as part of the .deposit call?
   });
@@ -95,8 +95,8 @@ describe("Deposits", () => {
 
     const freeBalance = await clientA.getFreeBalance(AddressZero);
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress].toString()).to.be.eq(ONE);
-    expect(freeBalance[nodeFreeBalanceAddress].toString()).to.be.eq("0");
+    expect(freeBalance[clientA.freeBalanceAddress]).to.be.eq(ONE);
+    expect(freeBalance[nodeFreeBalanceAddress]).to.be.eq("0");
   });
 
   it("client deposits eth, withdraws, then successfully deposits tokens", async () => {
@@ -109,9 +109,9 @@ describe("Deposits", () => {
     const freeBalanceToken = await clientA.getFreeBalance(tokenAddress);
     const freeBalanceEth = await clientA.getFreeBalance(AddressZero);
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalanceEth[clientA.freeBalanceAddress].toString()).to.be.eq("0");
-    expect(freeBalanceEth[nodeFreeBalanceAddress].toString()).to.be.eq("0");
-    expect(freeBalanceToken[clientA.freeBalanceAddress].toString()).to.be.eq(ONE);
-    expect(freeBalanceToken[nodeFreeBalanceAddress].toString()).to.be.eq("0");
+    expect(freeBalanceEth[clientA.freeBalanceAddress]).to.be.eq("0");
+    expect(freeBalanceEth[nodeFreeBalanceAddress]).to.be.eq("0");
+    expect(freeBalanceToken[clientA.freeBalanceAddress]).to.be.eq(ONE);
+    expect(freeBalanceToken[nodeFreeBalanceAddress]).to.be.eq("0");
   });
 });
