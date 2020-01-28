@@ -2,7 +2,7 @@ import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 
-import { expect, COLLATERAL_AMOUNT_TOKEN } from "../util";
+import { expect, COLLATERAL_AMOUNT_TOKEN, TOKEN_AMOUNT } from "../util";
 import { createClient, ETH_AMOUNT_SM, getStore } from "../util";
 
 describe("Restore State", () => {
@@ -29,7 +29,7 @@ describe("Restore State", () => {
     expect(freeBalanceEthPre[clientA.freeBalanceAddress]).to.be.eq(ETH_AMOUNT_SM);
     expect(freeBalanceEthPre[nodeFreeBalanceAddress]).to.be.eq(Zero);
     expect(freeBalanceTokenPre[clientA.freeBalanceAddress]).to.be.eq(Zero);
-    expect(freeBalanceTokenPre[nodeFreeBalanceAddress]).to.be.eq(COLLATERAL_AMOUNT_TOKEN);
+    expect(freeBalanceTokenPre[nodeFreeBalanceAddress]).to.be.least(TOKEN_AMOUNT);
 
     // delete store
     const store = getStore(clientA.publicIdentifier);
@@ -51,6 +51,6 @@ describe("Restore State", () => {
     expect(freeBalanceEthPost[clientA.freeBalanceAddress]).to.be.eq(ETH_AMOUNT_SM);
     expect(freeBalanceEthPost[nodeFreeBalanceAddress]).to.be.eq(Zero);
     expect(freeBalanceTokenPost[clientA.freeBalanceAddress]).to.be.eq(Zero);
-    expect(freeBalanceTokenPost[nodeFreeBalanceAddress]).to.be.eq(COLLATERAL_AMOUNT_TOKEN);
+    expect(freeBalanceTokenPost[nodeFreeBalanceAddress]).to.be.least(TOKEN_AMOUNT);
   });
 });
