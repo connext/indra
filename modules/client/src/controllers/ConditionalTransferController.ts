@@ -98,7 +98,7 @@ export class ConditionalTransferController extends AbstractController {
     // TODO: should we move this to its own file?
     // TODO: if this fails for ANY REASON, uninstall the app to make sure that
     // the sender doesnt lose any money (retry logic?)
-    this.connext.messaging.publish(
+    await this.connext.messaging.publish(
       `transfer.send-async.${recipient}`,
       stringify({
         amount: amount.toString(),
