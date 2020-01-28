@@ -83,14 +83,14 @@ contract MChallengeRegistryCore {
   }
 
   function isChallengeFinalized(
-    ChallengeStatus status,
+    LibStateChannelApp.ChallengeStatus status,
     uint256 finalizesAt
   )
     internal
     view
     returns (bool)
   {
-    return app.status == ChallengeStatus.FINALIZES_AFTER_DEADLINE && block.number >= app.finalizesAt);
+    return status == LibStateChannelApp.ChallengeStatus.FINALIZES_AFTER_DEADLINE && block.number >= finalizesAt;
   }
 
 }

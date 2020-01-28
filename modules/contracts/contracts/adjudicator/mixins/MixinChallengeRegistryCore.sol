@@ -47,6 +47,7 @@ contract MixinChallengeRegistryCore is MChallengeRegistryCore {
     view
     returns (bytes memory)
   {
+    require(appChallenges[identityHash].status == LibStateChannelApp.ChallengeStatus.OUTCOME_SET, "Outcome must be set.");
     return appOutcomes[identityHash];
   }
 

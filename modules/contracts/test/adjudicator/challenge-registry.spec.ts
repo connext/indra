@@ -105,8 +105,8 @@ describe("ChallengeRegistry", () => {
       await appRegistry.functions.cancelChallenge(
         appIdentityTestObject.appIdentity,
         sortSignaturesBySignerAddress(digest, [
-          await new SigningKey(ALICE.privateKey).signDigest(digest),
-          await new SigningKey(BOB.privateKey).signDigest(digest)
+          new SigningKey(ALICE.privateKey).signDigest(digest),
+          new SigningKey(BOB.privateKey).signDigest(digest)
         ]).map(joinSignature)
       );
     };
@@ -128,8 +128,8 @@ describe("ChallengeRegistry", () => {
         versionNumber,
         appStateHash: stateHash,
         signatures: sortSignaturesBySignerAddress(digest, [
-          await new SigningKey(ALICE.privateKey).signDigest(digest),
-          await new SigningKey(BOB.privateKey).signDigest(digest)
+          new SigningKey(ALICE.privateKey).signDigest(digest),
+          new SigningKey(BOB.privateKey).signDigest(digest)
         ]).map(joinSignature)
       });
     };
