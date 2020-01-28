@@ -29,9 +29,7 @@ contract MixinCancelChallenge is
     AppChallenge storage challenge = appChallenges[identityHash];
 
     require(
-      (
-        challenge.status == ChallengeStatus.FINALIZES_AFTER_DEADLINE
-      ) && challenge.finalizesAt >= block.number,
+      isChallengeFinalized(challenge.status, challenge.finalizesAt),
       "cancelChallenge called on app not in FINALIZES_AFTER_DEADLINE state"
     );
 

@@ -15,7 +15,8 @@ contract LibStateChannelApp {
   enum ChallengeStatus {
     NO_CHALLENGE,
     FINALIZES_AFTER_DEADLINE,
-    EXPLICITLY_FINALIZED
+    EXPLICITLY_FINALIZED,
+    OUTCOME_SET
   }
 
   // A minimal structure that uniquely identifies a single instance of an App

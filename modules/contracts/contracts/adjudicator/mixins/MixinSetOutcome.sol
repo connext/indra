@@ -29,7 +29,7 @@ contract MixinSetOutcome is
 
     require(
       app.status == ChallengeStatus.EXPLICITLY_FINALIZED ||
-      (app.status == ChallengeStatus.FINALIZES_AFTER_DEADLINE && block.number >= app.finalizesAt),
+      isChallengeFinalized(app.status, app.finalizesAt),
       "setOutcome can only be called after a challenge has been finalized"
     );
 
@@ -42,6 +42,8 @@ contract MixinSetOutcome is
       appIdentity.appDefinition,
       finalState
     );
+
+    app.status = ChallengeStatus.OUTCOME_SET;
   }
 
 }

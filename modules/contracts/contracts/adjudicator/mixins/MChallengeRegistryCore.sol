@@ -82,4 +82,15 @@ contract MChallengeRegistryCore {
     );
   }
 
+  function isChallengeFinalized(
+    ChallengeStatus status,
+    uint256 finalizesAt
+  )
+    internal
+    view
+    returns (bool)
+  {
+    return app.status == ChallengeStatus.FINALIZES_AFTER_DEADLINE && block.number >= app.finalizesAt);
+  }
+
 }

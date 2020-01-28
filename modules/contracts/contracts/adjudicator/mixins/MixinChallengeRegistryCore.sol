@@ -35,13 +35,7 @@ contract MixinChallengeRegistryCore is MChallengeRegistryCore {
         appChallenges[identityHash].status ==
         LibStateChannelApp.ChallengeStatus.EXPLICITLY_FINALIZED
       ) ||
-      (
-        (
-          appChallenges[identityHash].status ==
-          LibStateChannelApp.ChallengeStatus.FINALIZES_AFTER_DEADLINE
-        ) &&
-        appChallenges[identityHash].finalizesAt <= block.number
-      )
+      isChallengeFinalized(appChallenges[identityHash].status, appChallenges[identityHash].finalizesAt)
     );
   }
 
