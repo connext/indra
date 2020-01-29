@@ -21,6 +21,8 @@ export interface NodeConfig {
   nodeUrl: string;
 }
 
+// TODO: is this the type that is actually returned?
+// i think you get status, etc.
 export type Transfer<T = string> = {
   paymentId: string;
   amount: T;
