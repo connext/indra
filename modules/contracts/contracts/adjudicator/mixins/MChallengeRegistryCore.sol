@@ -90,7 +90,18 @@ contract MChallengeRegistryCore {
     view
     returns (bool)
   {
-    return status == LibStateChannelApp.ChallengeStatus.FINALIZES_AFTER_DEADLINE && block.number >= finalizesAt;
+    return (status == LibStateChannelApp.ChallengeStatus.FINALIZES_AFTER_DEADLINE && block.number >= finalizesAt);
+  }
+
+  function isChallengeNotFinalized(
+    LibStateChannelApp.ChallengeStatus status,
+    uint256 finalizesAt
+  )
+    internal
+    view
+    returns (bool)
+  {
+    return (status == LibStateChannelApp.ChallengeStatus.FINALIZES_AFTER_DEADLINE && block.number < finalizesAt);
   }
 
 }
