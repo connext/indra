@@ -104,8 +104,8 @@ export class ChannelService {
       assetId === AddressZero
         ? await ethProvider.getBalance(channel.multisigAddress)
         : await new Contract(assetId!, tokenAbi, ethProvider).functions.balanceOf(
-          channel.multisigAddress,
-        );
+            channel.multisigAddress,
+          );
 
     const initialState = {
       multisig: channel.multisigAddress,
