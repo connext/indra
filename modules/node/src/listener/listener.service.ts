@@ -1,7 +1,6 @@
 import {
   SimpleLinkedTransferAppState,
   SimpleLinkedTransferAppStateBigNumber,
-  SupportedApplications,
   CREATE_CHANNEL_EVENT,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
