@@ -76,3 +76,5 @@ modules/client/docs
 
 # .env
 modules/**/.env
+
+modules/contracts/cache/
