@@ -28,7 +28,7 @@ import {
 } from "../util";
 import { BigNumber } from "ethers/utils";
 
-describe.only("Async transfer offline tests", () => {
+describe("Async transfer offline tests", () => {
   let clock: any;
   let senderClient: IConnextClient;
   let receiverClient: IConnextClient;
@@ -177,10 +177,9 @@ describe.only("Async transfer offline tests", () => {
      */
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits();
-    // 2 app proposals expected (coin balance x1, transfer)
-    const expectedProposalsReceived = 2 * PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED;
+    // 1 successful proposal
     receiverClient = await createClientWithMessagingLimits({
-      ceiling: { sent: expectedProposalsReceived },
+      ceiling: { received: PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED },
       protocol: "propose",
     });
     await fundForTransfers();
@@ -201,10 +200,8 @@ describe.only("Async transfer offline tests", () => {
      */
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits();
-    // 2 app proposals expected (coin balance x1, transfer)
-    const expectedInstallsReceived = 2 * INSTALL_SUPPORTED_APP_COUNT_RECEIVED;
     receiverClient = await createClientWithMessagingLimits({
-      ceiling: { received: expectedInstallsReceived },
+      ceiling: { received: INSTALL_SUPPORTED_APP_COUNT_RECEIVED },
       protocol: "install",
     });
     await fundForTransfers();
