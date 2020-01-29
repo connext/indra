@@ -5,6 +5,7 @@ import { BigNumber } from "ethers/utils";
 import { expect } from "../";
 import { delay } from "../misc";
 import { ExistingBalancesAsyncTransfer } from "../types";
+import { RECEIVE_TRANSFER_FAILED_EVENT } from "@connext/types";
 
 // NOTE: will fail if not collateralized by transfer amount exactly
 // when pretransfer balances are not supplied.
@@ -27,20 +28,21 @@ export async function asyncTransferAsset(
   let paymentId: string;
 
   const transferFinished = Promise.all([
-    new Promise(
-      async (resolve: Function): Promise<void> => {
-        clientA.once(UNINSTALL_EVENT, async () => {
+    Promise.race([
+      new Promise((resolve: Function): void => {
+        clientB.once(RECEIVE_TRANSFER_FINISHED_EVENT, () => {
           resolve();
         });
-      },
-    ),
-    new Promise(
-      async (resolve: Function): Promise<void> => {
-        clientB.once(RECEIVE_TRANSFER_FINISHED_EVENT, async () => {
-          resolve();
+      }),
+      new Promise((resolve: Function, reject: Function): void => {
+        clientB.once(RECEIVE_TRANSFER_FAILED_EVENT, (msg: any) => {
+          reject(msg.error);
         });
-      },
-    ),
+      }),
+    ]),
+    new Promise((resolve: Function): void => {
+      clientA.once(UNINSTALL_EVENT, () => resolve());
+    }),
   ]);
 
   const { paymentId: senderPaymentId } = await clientA.transfer({
