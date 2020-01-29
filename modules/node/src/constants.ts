@@ -32,12 +32,3 @@ export const RedisProviderId = "REDIS";
 export const RedlockProviderId = "REDLOCK";
 export const SwapRateProviderId = "SWAP_RATE";
 export const TransferProviderId = "TRANSFER";
-
-// PROFILE
-export const defaultPaymentProfileEth: PaymentProfile = {
-  amountToCollateralize: parseEther("0.1"),
-  assetId: AddressZero,
-  channels: [],
-  id: 0,
-  minimumMaintainedCollateral: parseEther("0.05"),
-};
