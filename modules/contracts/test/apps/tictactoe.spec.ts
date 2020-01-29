@@ -1,3 +1,4 @@
+import { ethers } from "@nomiclabs/buidler";
 import { SolidityValueType } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
@@ -75,7 +76,7 @@ describe("TicTacToeApp", () => {
   }
 
   before(async () => {
-    const provider = waffle.createMockProvider();
+    const provider = ethers.provider;
     const wallet = (await waffle.getWallets(provider))[0];
     ticTacToe = await waffle.deployContract(wallet, TicTacToeApp);
   });

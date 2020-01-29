@@ -1,9 +1,10 @@
+import { ethers } from "@nomiclabs/buidler";
 import DolphinCoin from "../../build/DolphinCoin.json";
 import MultiAssetMultiPartyCoinTransferInterpreter from "../../build/MultiAssetMultiPartyCoinTransferInterpreter.json";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { AddressZero, One } from "ethers/constants";
-import { Web3Provider } from "ethers/providers";
+import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder, hexlify, randomBytes } from "ethers/utils";
 
 import { expect } from "./utils/index";
@@ -38,7 +39,7 @@ function encodeOutcome(state: CoinTransfer[][]) {
 }
 
 describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
-  let provider: Web3Provider;
+  let provider: JsonRpcProvider;
   let wallet: Wallet;
   let erc20: Contract;
   let multiAssetMultiPartyCoinTransferInterpreter: Contract;
@@ -54,7 +55,7 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
   }
 
   before(async () => {
-    provider = waffle.createMockProvider();
+    provider = provider = ethers.provider;
     wallet = (await waffle.getWallets(provider))[0];
     erc20 = await waffle.deployContract(wallet, DolphinCoin);
 

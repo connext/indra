@@ -1,6 +1,7 @@
+import { ethers } from "@nomiclabs/buidler";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
-import { Web3Provider } from "ethers/providers";
+import { JsonRpcProvider } from "ethers/providers";
 import {
   parseEther,
   Interface,
@@ -78,14 +79,14 @@ const signaturesToBytes = (...signatures: Signature[]): string => {
 };
 
 describe("MinimumViableMultisig", () => {
-  let provider: Web3Provider;
+  let provider;
   let wallet0: Wallet;
   let wallet1: Wallet;
   let multisig: Contract;
   let erc20: Contract;
 
   before(async () => {
-    provider = waffle.createMockProvider();
+    provider = ethers.provider;
     const wallets = waffle.getWallets(provider);
     wallet0 = wallets[0];
     wallet1 = wallets[1];

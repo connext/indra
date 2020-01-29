@@ -1,4 +1,4 @@
-import { SolidityABIEncoderV2Type } from "@connext/types";
+import { ethers } from "@nomiclabs/buidler";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
@@ -62,23 +62,23 @@ const unidirectionalTransferAppActionEncoding = `
 const decodeAppState = (encodedAppState: string): UnidirectionalTransferAppState =>
   defaultAbiCoder.decode([unidirectionalTransferAppStateEncoding], encodedAppState)[0];
 
-const encodeAppState = (state: SolidityABIEncoderV2Type): string =>
+const encodeAppState = (state: any): string =>
   defaultAbiCoder.encode([unidirectionalTransferAppStateEncoding], [state]);
 
-const encodeAppAction = (state: SolidityABIEncoderV2Type): string =>
+const encodeAppAction = (state: any): string =>
   defaultAbiCoder.encode([unidirectionalTransferAppActionEncoding], [state]);
 
 describe("UnidirectionalTransferApp", () => {
   let unidirectionalTransferApp: Contract;
 
-  const applyAction = (state: SolidityABIEncoderV2Type, action: SolidityABIEncoderV2Type): any =>
+  const applyAction = (state: any, action: any): any =>
     unidirectionalTransferApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
 
-  const computeOutcome = (state: SolidityABIEncoderV2Type): any =>
+  const computeOutcome = (state: any): any =>
     unidirectionalTransferApp.functions.computeOutcome(encodeAppState(state));
 
   before(async () => {
-    const provider = waffle.createMockProvider();
+    const provider = ethers.provider;
     const wallet = (await waffle.getWallets(provider))[0];
     unidirectionalTransferApp = await waffle.deployContract(wallet, UnidirectionalTransferApp);
   });

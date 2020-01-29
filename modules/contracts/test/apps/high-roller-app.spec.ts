@@ -1,3 +1,4 @@
+import { ethers } from "@nomiclabs/buidler";
 import { SolidityValueType, TwoPartyFixedOutcome } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
@@ -99,7 +100,7 @@ describe("HighRollerApp", () => {
   }
 
   before(async () => {
-    const provider = waffle.createMockProvider();
+    const provider = ethers.provider;
     const wallet = (await waffle.getWallets(provider))[0];
     highRollerApp = await waffle.deployContract(wallet, HighRollerApp);
   });

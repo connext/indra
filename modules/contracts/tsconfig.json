@@ -5,7 +5,11 @@
     "noImplicitAny": true,
     "outDir": "dist",
     "resolveJsonModule": true,
-    "esModuleInterop": true,
+    "esModuleInterop": true
   },
-  "exclude": ["test", "dist", "node_modules"]
+  "exclude": ["test", "dist", "node_modules"],
+  "files": [
+    "./buidler.config.ts",
+    "../../node_modules/@nomiclabs/buidler-ethers/src/type-extensions.d.ts"
+  ]
 }
