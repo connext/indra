@@ -49,6 +49,7 @@ export {
   KeyGen,
   LinkedTransferParameters,
   LinkedTransferResponse,
+  LINKED_TRANSFER_TO_RECIPIENT,
   LinkedTransferToRecipientParameters,
   LinkedTransferToRecipientResponse,
   makeChecksum,
