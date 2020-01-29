@@ -156,8 +156,6 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
     // make sure that client is allowed to send message
     this.subjectForbidden(subject, "receive");
 
-    // handle overall protocol count
-    this.count.received += 1;
     // wait out delay
     await this.awaitDelay();
     if (
@@ -172,6 +170,9 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
       return;
     }
 
+    // handle overall protocol count
+    this.count.received += 1;
+
     // return connection callback
     return await this.connection.onReceive(subject, async (msg: CFCoreTypes.NodeMessage) => {
       // check if any protocol messages are increased
@@ -181,7 +182,6 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
         // proceeding with callback
         return callback(msg);
       }
-      this.protocolDefaults[protocol].received += 1;
       // wait out delay
       await this.awaitDelay(false, protocol);
       // verify ceiling exists and has not been reached
@@ -190,14 +190,13 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
         this.protocolDefaults[protocol].ceiling!.received! <=
           this.protocolDefaults[protocol].received
       ) {
-        const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached. ${this
-          .protocolDefaults[protocol].received - 1} received, ceiling: ${this.protocolDefaults[
-            protocol
-          ].ceiling!.received!}`;
+        const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached. ${
+          this.protocolDefaults[protocol].received
+        } received, ceiling: ${this.protocolDefaults[protocol].ceiling!.received!}`;
         console.log(msg);
         return;
       }
-
+      this.protocolDefaults[protocol].received += 1;
       // perform callback
       return callback(msg);
     });
@@ -206,14 +205,14 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
   async send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void> {
     // make sure that client is allowed to send message
     this.subjectForbidden(to, "send");
-    // handle ceiling count
-    this.count.sent += 1;
+
     // wait out delay
     await this.awaitDelay(true);
     if (this.hasCeiling({ type: "sent" }) && this.count.sent >= this.count.ceiling!.sent!) {
       console.log(
-        `Reached ceiling (${this.count.ceiling!
-          .sent!}), refusing to send any more messages. Sent ${this.count.sent - 1} messages`,
+        `Reached ceiling (${this.count.ceiling!.sent!}), refusing to send any more messages. Sent ${
+          this.count.sent
+        } messages`,
       );
       return;
     }
@@ -225,7 +224,6 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
       // proceeding with sending
       return await this.connection.send(to, msg);
     }
-    this.protocolDefaults[protocol].sent += 1;
     // wait out delay
     await this.awaitDelay(true, protocol);
     if (
@@ -238,6 +236,9 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
       console.log(msg);
       return;
     }
+    // handle counts
+    this.count.sent += 1;
+    this.protocolDefaults[protocol].sent += 1;
 
     // send message
     return await this.connection.send(to, msg);
