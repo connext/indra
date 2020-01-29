@@ -16,8 +16,8 @@ describe("Collateral", () => {
     const freeBalance = await clientA.getFreeBalance(AddressZero);
 
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress].toString()).to.be.eq("0");
-    expect(freeBalance[nodeFreeBalanceAddress].toString()).to.be.eq(ETH_AMOUNT_MD.toString());
+    expect(freeBalance[clientA.freeBalanceAddress]).to.be.eq("0");
+    expect(freeBalance[nodeFreeBalanceAddress]).to.be.eq(ETH_AMOUNT_MD);
   });
 
   it("happy case: node should collateralize tokens", async () => {
@@ -27,7 +27,7 @@ describe("Collateral", () => {
     const freeBalance = await clientA.getFreeBalance(tokenAddress);
 
     const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress].toString()).to.be.eq(Zero.toString());
-    expect(freeBalance[nodeFreeBalanceAddress].toString()).to.be.eq(TOKEN_AMOUNT.toString());
+    expect(freeBalance[clientA.freeBalanceAddress]).to.be.eq(Zero);
+    expect(freeBalance[nodeFreeBalanceAddress]).to.be.least(TOKEN_AMOUNT);
   });
 });
