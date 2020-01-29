@@ -13,6 +13,7 @@ import { MessageCounter, TestMessagingService } from "./messaging";
 
 let clientStore: { [xpub: string]: ConnextStore } = {};
 let clientMessaging: { [xpub: string]: TestMessagingService | undefined } = {};
+let clientOptions: { [xpub: string]: ClientOptions } = {};
 
 export const getStore = (xpub: string): ConnextStore => {
   return clientStore[xpub];
@@ -20,6 +21,10 @@ export const getStore = (xpub: string): ConnextStore => {
 
 export const getMessaging = (xpub: string): TestMessagingService | undefined => {
   return clientMessaging[xpub];
+};
+
+export const getOpts = (xpub: string): ClientOptions => {
+  return clientOptions[xpub];
 };
 
 export const cleanupMessaging = async (xpub?: string): Promise<void> => {
@@ -45,10 +50,11 @@ export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<I
   };
   const client = await connect(clientOpts);
 
-  // set client store and messaging
+  // set client store, messaging, and opts
   clientMessaging[client.publicIdentifier] =
     (clientOpts.messaging as TestMessagingService) || undefined;
   clientStore[client.publicIdentifier] = store;
+  clientOptions[client.publicIdentifier] = clientOpts;
 
   // TODO: add client endpoint to get node config, so we can easily have its xpub etc
 
