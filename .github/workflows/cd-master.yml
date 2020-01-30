@@ -106,7 +106,7 @@ jobs:
     - run: make test-backwards-compatibility
 
   test-daicard:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-16.04
     needs: [build]
     steps:
     - uses: actions/checkout@v1
@@ -119,7 +119,7 @@ jobs:
       INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
       RINKEBY_DOMAINNAME: rinkeby.indra.connext.network
       RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
-    needs: [test-cf, test-client, test-contracts, test-integration, test-node, test-ssh]
+    needs: [test-backwards-compatibility, test-cf, test-client, test-contracts, test-daicard, test-integration, test-node, test-ssh]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -145,7 +145,7 @@ jobs:
       INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
       MAINNET_DOMAINNAME: indra.connext.network
       MAINNET_ETH_PROVIDER: ${{ secrets.MAINNET_ETH_PROVIDER }}
-    needs: [test-cf, test-client, test-contracts, test-integration, test-node, test-ssh]
+    needs: [test-backwards-compatibility, test-cf, test-client, test-contracts, test-daicard, test-integration, test-node, test-ssh]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1

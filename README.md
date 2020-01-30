@@ -44,6 +44,15 @@ make start
 
 Beware! The first time `make start` is run, it will take a very long time (maybe as long as 5 minutes depending on your internet speed) but have no fear: downloads will be cached & most build steps won't ever need to be repeated again so subsequent `make start` runs will go much more quickly. Get this started asap & browse the rest of the README while the first build/deploy completes.
 
+### Interacting with your Local Node
+You can interact with the node by browsing to our reference implementation, the Dai Card, available at `localhost:3000`.
+
+Note that the local node runs on a local blockchain (ganache) in a docker container. To test your node, point a wallet to your local chain at `localhost:8545` and then recover the following "sugar daddy" mnemonic:
+
+`candy maple cake sugar pudding cream honey rich smooth crumble sweet treat`
+
+Then, try sending some Eth to the Dai Card's deposit address (top left of the app).
+
 ### Useful Commands
 
  - `make start`: Builds everything & then starts the app
