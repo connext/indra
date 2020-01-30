@@ -10,7 +10,6 @@ import {
   getMessaging,
   getStore,
   INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
-  PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
   ZERO_ZERO_ONE_ETH,
   cleanupMessaging,
   fastForwardDuringCall,
@@ -76,7 +75,7 @@ describe("Deposit offline tests", () => {
     // in the propose protocol, the initiator sends one message, and receives
     // one message, set the cap at 1 for `propose` in messaging of client
     client = await createClientWithMessagingLimits({
-      ceiling: { received: PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED },
+      ceiling: { received: 0 },
       protocol: "propose",
     });
 
