@@ -1,5 +1,5 @@
-import { MaxUint256, Zero } from "ethers/constants";
-import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
+import { BigNumber, bigNumberify, parseEther, formatEther } from "ethers/utils";
+import { Zero, MaxUint256 } from "ethers/constants";
 
 export const isBN = BigNumber.isBigNumber;
 

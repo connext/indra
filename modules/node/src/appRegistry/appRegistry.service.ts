@@ -1,6 +1,7 @@
 import {
   AllowedSwap,
   AppInstanceJson,
+  calculateExchange,
   CoinTransfer,
   CoinTransferBigNumber,
   DefaultApp,
@@ -13,7 +14,7 @@ import {
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
-import { BigNumber, bigNumberify, formatEther } from "ethers/utils";
+import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -30,7 +31,6 @@ import {
   normalizeEthAddresses,
   stringify,
   xpubToAddress,
-  calculateExchange,
 } from "../util";
 import { CFCoreTypes, ProposeMessage } from "../util/cfCore";
 

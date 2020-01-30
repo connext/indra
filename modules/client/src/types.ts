@@ -7,6 +7,7 @@ export {
   AppRegistry,
   AppStateBigNumber,
   BigNumber,
+  calculateExchange,
   CFChannelProviderOptions,
   CFCoreChannel,
   CFCoreTypes,

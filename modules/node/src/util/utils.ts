@@ -36,7 +36,3 @@ export const normalizeEthAddresses = (obj: any): any => {
   });
   return res;
 };
-
-export const calculateExchange = (amount: BigNumber, swapRate: string): BigNumber => {
-  return bigNumberify(formatEther(amount.mul(parseEther(swapRate))).replace(/\.[0-9]*$/, ""));
-};

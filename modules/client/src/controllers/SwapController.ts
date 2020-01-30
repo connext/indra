@@ -1,9 +1,10 @@
 import { Zero } from "ethers/constants";
 import { BigNumber, parseEther } from "ethers/utils";
 
-import { calculateExchange, CF_METHOD_TIMEOUT, delayAndThrow } from "../lib";
+import { CF_METHOD_TIMEOUT, delayAndThrow } from "../lib";
 import { xpubToAddress } from "../lib/cfCore";
 import {
+  calculateExchange,
   CFCoreChannel,
   CFCoreTypes,
   convert,
