@@ -13,7 +13,7 @@
     "rebuild": "npm run clean && npm run build",
     "clean": "rm -rf ./dist",
     "prepare": "npm run build",
-    "test": "./node_modules/.bin/jest"
+    "test": "./node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
     "@connext/cf-core": "4.0.6",
