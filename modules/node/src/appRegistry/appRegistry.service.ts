@@ -181,9 +181,10 @@ export class AppRegistryService {
     const calculated = calculateExchange(initiatorDeposit, ourRate);
 
     // make sure calculated within allowed amount
-    const discrepancyPct = calculated
-      .div(responderDeposit)
-      .mul(100)
+    const ratioOfCalculatedToActual = calculated.div(responderDeposit);
+    const discrepancyPct = ratioOfCalculatedToActual
+      .mul(100) // ratio will be between 0 and 1 or between 1 and 2 depending which is higher
+      .sub(100) // subtract 100 to get the actual discrepancy
       .abs();
 
     if (discrepancyPct.gt(ALLOWED_DISCREPANCY_PCT)) {
