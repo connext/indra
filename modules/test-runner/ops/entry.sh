@@ -37,9 +37,9 @@ if [[ $1 == "--watch" ]]
 then
   webpack --watch --config ops/webpack.config.js &
   sleep 5 # give webpack a sec to finish the first watch-mode build
-  mocha --config ".mocharc.json" --watch $bundle
+  mocha --timeout 60000 --bail --check-leaks --watch $bundle
 else
-  mocha --config ".mocharc.json" --exit $bundle
+  mocha --timeout 60000 --bail --check-leaks --exit $bundle
 fi
 
 rm -rf $STORE_DIR

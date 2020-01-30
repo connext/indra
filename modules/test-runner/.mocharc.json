@@ -1,5 +1,0 @@
-{
-  "timeout": 60000,
-  "bail": true,
-  "checkLeaks": true
-}
