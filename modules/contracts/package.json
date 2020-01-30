@@ -25,7 +25,8 @@
     "lint-sol": "solium -d ."
   },
   "dependencies": {
-    "@connext/types": "4.0.6",
+    "@connext/types": "4.0.7",
+    "ethers": "4.0.41",
     "ganache-cli": "6.7.0",
     "openzeppelin-solidity": "2.3.0"
   },
@@ -37,7 +38,6 @@
     "@types/node": "13.1.7",
     "chai": "4.2.0",
     "ethereum-waffle": "2.1.0",
-    "ethers": "4.0.41",
     "ethlint": "1.2.5",
     "mocha": "6.2.2",
     "ts-mocha": "6.0.0",
