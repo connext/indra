@@ -21,3 +21,7 @@ export const minBN = (lobn: any) =>
   lobn.reduce((min: any, current: any) => (min.lt(current) ? min : current), MaxUint256);
 
 export const inverse = (bn: any) => formatEther(toWei(toWei(`1`)).div(toWei(bn)));
+
+export const calculateExchange = (amount: BigNumber, swapRate: string): BigNumber => {
+  return bigNumberify(formatEther(amount.mul(parseEther(swapRate))).replace(/\.[0-9]*$/, ""));
+};
