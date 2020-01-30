@@ -47,6 +47,7 @@ export const ETH_AMOUNT_MD = ZERO_ONE_ETH;
 export const ETH_AMOUNT_LG = ONE_ETH;
 export const TOKEN_AMOUNT = TEN_ETH;
 export const TOKEN_AMOUNT_SM = ONE_ETH;
+export const COLLATERAL_AMOUNT_TOKEN = TEN_ETH.mul(TWO);
 
 // Messaging constants
 export const SETUP_RESPONDER_RECEIVED_COUNT = 1;

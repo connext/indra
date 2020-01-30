@@ -2,7 +2,6 @@ import { NotFoundException } from "@nestjs/common";
 import { AddressZero } from "ethers/constants";
 import { EntityManager, EntityRepository, Repository } from "typeorm";
 
-import { defaultPaymentProfileEth } from "../constants";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { CLogger } from "../util";
 
