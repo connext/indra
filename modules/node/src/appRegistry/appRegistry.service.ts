@@ -6,7 +6,6 @@ import {
   DefaultApp,
   SimpleLinkedTransferAppStateBigNumber,
   SimpleTransferAppStateBigNumber,
-  SupportedApplications,
   CoinBalanceRefundApp,
   SimpleLinkedTransferApp,
   SimpleTwoPartySwapApp,
@@ -31,6 +30,7 @@ import {
   normalizeEthAddresses,
   stringify,
   xpubToAddress,
+  calculateExchange,
 } from "../util";
 import { CFCoreTypes, ProposeMessage } from "../util/cfCore";
 
@@ -173,29 +173,27 @@ export class AppRegistryService {
       );
     }
 
-    // |our rate - derived rate| / our rate = discrepancy
-    const derivedRate =
-      parseFloat(formatEther(responderDeposit)) / parseFloat(formatEther(initiatorDeposit));
-
-    const ourRate = parseFloat(
-      await this.swapRateService.getOrFetchRate(
-        initiatorDepositTokenAddress,
-        responderDepositTokenAddress,
-      ),
+    // calculate our expected exchange using our rate and deposit
+    const ourRate = await this.swapRateService.getOrFetchRate(
+      initiatorDepositTokenAddress,
+      responderDepositTokenAddress,
     );
-    const discrepancy = Math.abs(ourRate - derivedRate);
-    const discrepancyPct = (discrepancy * 100) / ourRate;
+    const calculated = calculateExchange(initiatorDeposit, ourRate);
 
-    if (discrepancyPct > ALLOWED_DISCREPANCY_PCT) {
+    // make sure calculated within allowed amount
+    const discrepancyPct = calculated
+      .div(responderDeposit)
+      .mul(100)
+      .abs();
+
+    if (discrepancyPct.gt(ALLOWED_DISCREPANCY_PCT)) {
       throw new Error(
-        `Derived rate is ${derivedRate.toString()} (vs ${ourRate}), more than ${ALLOWED_DISCREPANCY_PCT}% ` +
-          `larger discrepancy than our rate of ${ourRate.toString()}`,
+        `Responder deposit (${responderDeposit.toString()}) is greater than our expected deposit (${calculated.toString()}) based on our swap rate ${ourRate} by more than ${ALLOWED_DISCREPANCY_PCT}% (discrepancy: ${discrepancyPct.toString()})`,
       );
     }
 
     logger.log(
-      `Derived rate is ${derivedRate.toString()}, within ${ALLOWED_DISCREPANCY_PCT}% ` +
-        `of our rate ${ourRate.toString()}`,
+      `Exchange amounts are within ${ALLOWED_DISCREPANCY_PCT}% of our rate ${ourRate.toString()}`,
     );
   }
 

@@ -1,4 +1,4 @@
-import { bigNumberify, getAddress, HDNode } from "ethers/utils";
+import { bigNumberify, getAddress, HDNode, formatEther, parseEther, BigNumber } from "ethers/utils";
 
 import { isEthAddress } from "./validate";
 
@@ -35,4 +35,8 @@ export const normalizeEthAddresses = (obj: any): any => {
     return;
   });
   return res;
+};
+
+export const calculateExchange = (amount: BigNumber, swapRate: string): BigNumber => {
+  return bigNumberify(formatEther(amount.mul(parseEther(swapRate))).replace(/\.[0-9]*$/, ""));
 };
