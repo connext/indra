@@ -2,7 +2,7 @@ import { calculateExchange } from "../types";
 import { One } from "ethers/constants";
 
 describe("calculateExchange", () => {
-  it.only("should work with small amounts", () => {
+  it("should work with small amounts", () => {
     const toExchange = One;
     const swapRate = "185.56";
     const ret = calculateExchange(toExchange, swapRate);
