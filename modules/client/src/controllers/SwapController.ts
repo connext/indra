@@ -1,9 +1,10 @@
 import { Zero } from "ethers/constants";
-import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
+import { BigNumber, parseEther } from "ethers/utils";
 
 import { CF_METHOD_TIMEOUT, delayAndThrow } from "../lib";
 import { xpubToAddress } from "../lib/cfCore";
 import {
+  calculateExchange,
   CFCoreChannel,
   CFCoreTypes,
   convert,
@@ -20,10 +21,6 @@ import {
 } from "../validation";
 
 import { AbstractController } from "./AbstractController";
-
-export const calculateExchange = (amount: BigNumber, swapRate: string): BigNumber => {
-  return bigNumberify(formatEther(amount.mul(parseEther(swapRate))).replace(/\.[0-9]*$/, ""));
-};
 
 export class SwapController extends AbstractController {
   public async swap(params: SwapParameters): Promise<CFCoreChannel> {

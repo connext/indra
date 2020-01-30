@@ -1,7 +1,7 @@
 import { CF_PATH } from "@connext/types";
 import * as EthCrypto from "eth-crypto";
 import { Wallet } from "ethers";
-import { computeAddress, computePublicKey, HDNode } from "ethers/utils";
+import { computePublicKey } from "ethers/utils";
 
 import { decryptWithPrivateKey, encryptWithPublicKey } from "./crypto";
 

@@ -99,7 +99,7 @@ jobs:
     - run: make test-backwards-compatibility
 
   test-daicard:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-16.04
     needs: [build]
     steps:
     - uses: actions/checkout@v1
