@@ -5,6 +5,65 @@ import { EventEmitter } from "events";
 import { env } from "./env";
 import { combineObjects, delay } from "./misc";
 
+// TYPES
+export type MessageCounter = {
+  sent: number;
+  received: number;
+};
+
+type DetailedMessageCounter = MessageCounter & {
+  ceiling?: Partial<MessageCounter>;
+  delay?: Partial<MessageCounter>;
+};
+
+export type TestMessagingConfig = {
+  messagingConfig: MessagingConfig;
+  protocolDefaults: {
+    [protocol: string]: DetailedMessageCounter;
+  };
+  count: DetailedMessageCounter;
+  forbiddenSubjects: string[];
+};
+
+export const RECEIVED = "RECEIVED";
+export const SEND = "SEND";
+export const CONNECT = "CONNECT";
+export const DISCONNECT = "DISCONNECT";
+export const FLUSH = "FLUSH";
+export const PUBLISH = "PUBLISH";
+export const REQUEST = "REQUEST";
+export const SUBSCRIBE = "SUBSCRIBE";
+export const UNSUBSCRIBE = "UNSUBSCRIBE";
+export const SUBJECT_FORBIDDEN = "SUBJECT_FORBIDDEN";
+export const MessagingEvents = {
+  [RECEIVED]: RECEIVED,
+  [SEND]: SEND,
+  [CONNECT]: CONNECT,
+  [DISCONNECT]: DISCONNECT,
+  [FLUSH]: FLUSH,
+  [PUBLISH]: PUBLISH,
+  [REQUEST]: REQUEST,
+  [SUBSCRIBE]: SUBSCRIBE,
+  [UNSUBSCRIBE]: UNSUBSCRIBE,
+  [SUBJECT_FORBIDDEN]: SUBJECT_FORBIDDEN,
+};
+export type MessagingEvent = keyof typeof MessagingEvents;
+export type MesssagingEventData = {
+  subject?: string;
+  data?: any;
+};
+
+export const getProtocolFromData = (msg: MesssagingEventData) => {
+  const { subject, data } = msg;
+  if (!data || !subject) {
+    return;
+  }
+  if (data.data && data.data.protocol) {
+    // fast forward
+    return data.data.protocol;
+  }
+};
+
 const defaultCount = (details: string[] = []): MessageCounter | DetailedMessageCounter => {
   if (details.includes("delay") && details.includes("ceiling")) {
     return {
@@ -28,25 +87,6 @@ const defaultCount = (details: string[] = []): MessageCounter | DetailedMessageC
 
 const zeroCounter = (): MessageCounter => {
   return { sent: 0, received: 0 };
-};
-
-export type MessageCounter = {
-  sent: number;
-  received: number;
-};
-
-type DetailedMessageCounter = MessageCounter & {
-  ceiling?: Partial<MessageCounter>;
-  delay?: Partial<MessageCounter>;
-};
-
-type TestMessagingConfig = {
-  messagingConfig: MessagingConfig;
-  protocolDefaults: {
-    [protocol: string]: DetailedMessageCounter;
-  };
-  count: DetailedMessageCounter;
-  forbiddenSubjects: string[];
 };
 
 const defaultOpts = (): TestMessagingConfig => {
@@ -153,28 +193,27 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
     subject: string,
     callback: (msg: CFCoreTypes.NodeMessage) => void,
   ): Promise<void> {
-    // make sure that client is allowed to send message
-    this.subjectForbidden(subject, "receive");
-
-    // wait out delay
-    await this.awaitDelay();
-    if (
-      this.hasCeiling({ type: "received" }) &&
-      this.count.ceiling!.received! <= this.count.received
-    ) {
-      console.log(
-        `Reached ceiling (${
-          this.count.ceiling!.received
-        }), refusing to process any more messages. Received ${this.count.received - 1} messages`,
-      );
-      return;
-    }
-
-    // handle overall protocol count
-    this.count.received += 1;
-
     // return connection callback
     return await this.connection.onReceive(subject, async (msg: CFCoreTypes.NodeMessage) => {
+      this.emit(RECEIVED, { subject, data: msg } as MesssagingEventData);
+      // make sure that client is allowed to send message
+      this.subjectForbidden(subject, "receive");
+      // wait out delay
+      await this.awaitDelay();
+      if (
+        this.hasCeiling({ type: "received" }) &&
+        this.count.ceiling!.received! <= this.count.received
+      ) {
+        console.log(
+          `Reached ceiling (${
+            this.count.ceiling!.received
+          }), refusing to process any more messages. Received ${this.count.received} messages`,
+        );
+        return;
+      }
+      // handle overall protocol count
+      this.count.received += 1;
+
       // check if any protocol messages are increased
       const protocol = this.getProtocol(msg);
       if (!protocol || !this.protocolDefaults[protocol]) {
@@ -203,6 +242,7 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
   }
 
   async send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void> {
+    this.emit(SEND, { subject: to, data: msg } as MesssagingEventData);
     // make sure that client is allowed to send message
     this.subjectForbidden(to, "send");
 
@@ -230,9 +270,9 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
       this.hasCeiling({ type: "sent", protocol }) &&
       this.protocolDefaults[protocol].sent >= this.protocolDefaults[protocol].ceiling!.sent!
     ) {
-      const msg = `Refusing to send any more messages, ceiling for ${protocol} has been reached. ${this
-        .protocolDefaults[protocol].sent - 1} sent, ceiling: ${this.protocolDefaults[protocol]
-          .ceiling!.sent!}`;
+      const msg = `Refusing to send any more messages, ceiling for ${protocol} has been reached. ${
+        this.protocolDefaults[protocol].sent
+      } sent, ceiling: ${this.protocolDefaults[protocol].ceiling!.sent!}`;
       console.log(msg);
       return;
     }
@@ -240,7 +280,7 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
     this.count.sent += 1;
     this.protocolDefaults[protocol].sent += 1;
 
-    // send message
+    // send message, if its a stale connection, retry
     return await this.connection.send(to, msg);
   }
 
@@ -262,20 +302,24 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
   // More generic methods
 
   async connect(): Promise<void> {
+    this.emit(CONNECT, {} as MesssagingEventData);
     await this.connection.connect();
   }
 
   async disconnect(): Promise<void> {
+    this.emit(DISCONNECT, {} as MesssagingEventData);
     await this.connection.disconnect();
   }
 
   async flush(): Promise<void> {
+    this.emit(FLUSH, {} as MesssagingEventData);
     return await this.connection.flush();
   }
 
   async publish(subject: string, data: any): Promise<void> {
     // make sure that client is allowed to send message
     this.subjectForbidden(subject, "publish");
+    this.emit(PUBLISH, { data, subject } as MesssagingEventData);
     return await this.connection.publish(subject, data);
   }
 
@@ -289,8 +333,7 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
     // note: when sending via node.ts uses request
     // make sure that client is allowed to send message
 
-    // TODO: erroring here same as offline?
-    this.emit(subject, { data, subject });
+    this.emit(REQUEST, { data, subject } as MesssagingEventData);
     this.subjectForbidden(subject, "request");
     return await this.connection.request(subject, timeout, data, callback);
   }
@@ -321,6 +364,7 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
     });
     if (hasSubject) {
       const msg = `Subject is forbidden, refusing to ${operation || "send"} data to subject: ${to}`;
+      this.emit(SUBJECT_FORBIDDEN, { subject: to } as MesssagingEventData);
       throw new Error(msg);
     }
     return hasSubject;
