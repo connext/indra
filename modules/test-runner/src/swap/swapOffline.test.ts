@@ -92,7 +92,7 @@ describe("Swap offline", () => {
     });
   });
 
-  it.only("Bot A tries to install swap but there’s no response from node", async function(): Promise<
+  it("Bot A tries to install swap but there’s no response from node", async function(): Promise<
     void
     > {
     // 3 app installs expected (coin balance x2, swap)
