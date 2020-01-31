@@ -30,7 +30,7 @@ import * as lolex from "lolex";
 
 const { xpubToAddress } = utils;
 
-describe.only("Swap offline", () => {
+describe("Swap offline", () => {
   let client: IConnextClient;
 
   const fundChannelAndSwap = async (opts: {
