@@ -1,4 +1,5 @@
 import { expect } from ".";
+import { TestMessagingService } from "./messaging";
 
 export const delay = async (ms: number) =>
   new Promise((res: Function): number => setTimeout(res, ms));
@@ -28,29 +29,4 @@ export const combineObjects = (overrides: any, defaults: any): any => {
     return;
   });
   return ret;
-};
-
-export const fastForwardDuringCall = async (
-  ms: number,
-  cb: () => Promise<any> /* function to call*/,
-  clock: any /* sinon fake timer */,
-  failsWith?: string /* failure message */,
-  delay?: number /* delay before clock is fast forwarded */,
-): Promise<any> => {
-  if (!clock) {
-    throw new Error(`clock must be set before calling fast forward`);
-  }
-
-  // advance clock after the callback has been called,
-  // so the timers can all be set properly
-  setTimeout(() => {
-    clock.tick(ms);
-  }, delay || 2500);
-
-  if (failsWith) {
-    await expect(cb()).to.be.rejectedWith(failsWith);
-    return;
-  }
-
-  return await cb();
 };

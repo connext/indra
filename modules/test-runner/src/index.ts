@@ -13,5 +13,6 @@ import "./store/store.test";
 import "./swap/swap.test";
 import "./swap/swapOffline.test";
 import "./transfer/asyncTransfer.test";
+import "./transfer/asyncTransferOffline.test";
 import "./transfer/getLinkedTransfer.test";
 import "./withdraw/withdraw.test";

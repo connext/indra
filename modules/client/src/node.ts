@@ -184,7 +184,7 @@ export class NodeApiClient implements INodeApiClient {
     recipientPublicIdentifier: string,
     encryptedPreImage: string,
     linkedHash: string,
-  ): Promise<any> {
+  ): Promise<{ linkedHash: string }> {
     return await this.send(`transfer.set-recipient.${this.userPublicIdentifier}`, {
       encryptedPreImage,
       linkedHash,

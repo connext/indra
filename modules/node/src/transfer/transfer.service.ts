@@ -6,6 +6,7 @@ import {
   SimpleTransferAppStateBigNumber,
   SimpleLinkedTransferApp,
   SimpleTransferApp,
+  SimpleLinkedTransferAppState,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
   DepositFailedMessage,
@@ -368,15 +369,31 @@ export class TransferService {
       );
     }
 
+    const uninstall = async (): Promise<void> => {
+      logger.debug(`Action taken, uninstalling app. ${Date.now()}`);
+      await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
+      await this.linkedTransferRepository.markAsReclaimed(transfer);
+    };
+
+    // if action has been taken on the app, then there will be a preimage
+    // in the latest state, an you just have to uninstall
+    const app = await this.cfCoreService.getAppInstanceDetails(transfer.senderAppInstanceId);
+    if ((app.latestState as SimpleLinkedTransferAppState).preImage === transfer.preImage) {
+      // just uninstall
+      logger.debug(
+        `Action has already been taken on app ${transfer.senderAppInstanceId}, uninstalling`,
+      );
+      await uninstall();
+      return;
+    }
+
     logger.log(
       `Taking action with preImage ${transfer.preImage} and uninstalling app ${transfer.senderAppInstanceId} to reclaim collateral`,
     );
     await this.cfCoreService.takeAction(transfer.senderAppInstanceId, {
       preImage: transfer.preImage,
     });
-    logger.debug(`Action taken, uninstalling app.`);
-    await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
-    await this.linkedTransferRepository.markAsReclaimed(transfer);
+    await uninstall();
   }
 
   async getLinkedTransfersForReclaim(userPublicIdentifier: string): Promise<LinkedTransfer[]> {

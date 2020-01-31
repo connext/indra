@@ -237,7 +237,7 @@ export class ConnextClient implements IConnextClient {
     recipient: string,
     encryptedPreImage: string,
     linkedHash: string,
-  ): Promise<any> => {
+  ): Promise<{ linkedHash: string }> => {
     return await this.node.setRecipientAndEncryptedPreImageForLinkedTransfer(
       recipient,
       encryptedPreImage,
