@@ -1,16 +1,20 @@
+import { CoinBalanceRefundAppState } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
-import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, ProtocolTypes } from "../../../types";
-import { getFirstElementInListNotEqualTo } from "../../../utils";
-import { NodeController } from "../../controller";
+import { uninstallAppInstanceFromChannel } from "./operation";
+
 import {
   APP_ALREADY_UNINSTALLED,
   CANNOT_UNINSTALL_FREE_BALANCE,
   NO_APP_INSTANCE_ID_TO_UNINSTALL,
+  NOT_YOUR_BALANCE_REFUND_APP
 } from "../../errors";
 
-import { uninstallAppInstanceFromChannel } from "./operation";
+import { xkeyKthAddress } from "../../../machine";
+import { RequestHandler } from "../../../request-handler";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
+import { getFirstElementInListNotEqualTo } from "../../../utils";
+import { NodeController } from "../../controller";
 
 export default class UninstallController extends NodeController {
   @jsonRpcMethod(ProtocolTypes.chan_uninstall)
@@ -37,10 +41,23 @@ export default class UninstallController extends NodeController {
     requestHandler: RequestHandler,
     params: CFCoreTypes.UninstallParams
   ) {
+    const { store, publicIdentifier, networkContext } = requestHandler;
     const { appInstanceId } = params;
 
     if (!appInstanceId) {
       throw Error(NO_APP_INSTANCE_ID_TO_UNINSTALL);
+    }
+
+    // check if its the balance refund app
+    const app = await store.getAppInstance(appInstanceId);
+    if (app.appInterface.addr !== networkContext.CoinBalanceRefundApp) {
+      return;
+    }
+
+    // make sure its your app
+    const { recipient } = app.latestState as CoinBalanceRefundAppState;
+    if (recipient !== xkeyKthAddress(publicIdentifier)) {
+      throw new Error(NOT_YOUR_BALANCE_REFUND_APP);
     }
   }
 

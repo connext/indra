@@ -1,4 +1,4 @@
-import { Zero } from "ethers/constants";
+import { Zero, AddressZero } from "ethers/constants";
 import { jsonRpcMethod } from "rpc-server";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
@@ -9,6 +9,9 @@ import { NodeController } from "../../controller";
 import { uninstallBalanceRefundApp } from "../deposit/operation";
 import { BigNumber } from "ethers/utils";
 import { Contract } from "ethers";
+import { CoinBalanceRefundAppState } from "@connext/types";
+import { xkeyKthAddress } from "../../../machine";
+import { NOT_YOUR_BALANCE_REFUND_APP } from "../../errors";
 
 export default class RescindDepositRightsController extends NodeController {
   @jsonRpcMethod(ProtocolTypes.chan_rescindDepositRights)
@@ -24,7 +27,27 @@ export default class RescindDepositRightsController extends NodeController {
     return [params.multisigAddress];
   }
 
-  protected async beforeExecution(): Promise<void> {}
+  protected async beforeExecution(
+    requestHandler: RequestHandler,
+    params: CFCoreTypes.RescindDepositRightsParams
+  ): Promise<void> {
+    const { store, publicIdentifier } = requestHandler;
+    const { multisigAddress, tokenAddress } = params;
+    const stateChannel = await store.getStateChannel(multisigAddress);
+    const refundApp = stateChannel.getBalanceRefundAppInstance(
+      tokenAddress || AddressZero
+    );
+
+    if (!refundApp) {
+      return;
+    }
+
+    // make sure its your app
+    const { recipient } = refundApp.latestState as CoinBalanceRefundAppState;
+    if (recipient !== xkeyKthAddress(publicIdentifier)) {
+      throw new Error(NOT_YOUR_BALANCE_REFUND_APP);
+    }
+  }
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
