@@ -113,7 +113,7 @@ describe(`Node method follows spec - install balance refund`, () => {
 
       await transferERC20Tokens(multisigAddress, erc20TokenAddress);
 
-      await rescindDepositRights(nodeB, multisigAddress, erc20TokenAddress);
+      await rescindDepositRights(nodeA, multisigAddress, erc20TokenAddress);
 
       const [postSendBalA, postSendBalB] = await getBalances(
         nodeA,
@@ -166,7 +166,7 @@ describe(`Node method follows spec - install balance refund`, () => {
 
       await transferERC20Tokens(multisigAddress, erc20TokenAddress);
 
-      await rescindDepositRights(nodeB, multisigAddress, erc20TokenAddress);
+      await rescindDepositRights(nodeA, multisigAddress, erc20TokenAddress);
 
       const [postSendBalAToken, postSendBalBToken] = await getBalances(
         nodeA,
@@ -196,7 +196,7 @@ describe(`Node method follows spec - install balance refund`, () => {
       const multisigBalance = await provider.getBalance(multisigAddress);
       expect(multisigBalance).toBeEq(preDepositMultisig.add(One));
 
-      await rescindDepositRights(nodeB, multisigAddress);
+      await rescindDepositRights(nodeA, multisigAddress);
 
       const [postSendBalAEth, postSendBalBEth] = await getBalances(
         nodeA,
@@ -262,12 +262,13 @@ describe(`Node method follows spec - install balance refund`, () => {
     await requestDepositRights(nodeA, multisigAddress);
   });
 
-  it(`uninstall does error if caller is not recipient`, async () => {
+  it(`uninstall does error if caller is not recipient`, async done => {
     await requestDepositRights(nodeA, multisigAddress);
     nodeB.once(INSTALL_EVENT, async () => {
       await expect(
         rescindDepositRights(nodeB, multisigAddress)
       ).rejects.toThrowError(NOT_YOUR_BALANCE_REFUND_APP);
+      done();
     });
   });
 
