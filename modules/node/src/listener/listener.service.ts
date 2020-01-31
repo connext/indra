@@ -120,7 +120,7 @@ export default class ListenerService implements OnModuleInit {
 
         // TODO: separate install from validation, do both at this level
         // install if possible
-        const allowedOrRejected: AppRegistry | void = await this.appRegistryService.allowOrReject(data);
+        let allowedOrRejected: AppRegistry | void;
         try {
           allowedOrRejected = await this.appRegistryService.allowOrReject(data);
         } catch (e) {
