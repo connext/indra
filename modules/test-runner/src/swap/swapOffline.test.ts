@@ -16,9 +16,13 @@ import {
   UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED,
   APP_PROTOCOL_TOO_LONG,
   UNINSTALL_SUPPORTED_APP_COUNT_SENT,
-  getStore,
   cleanupMessaging,
-  fastForwardDuringCall,
+  MessagingEvent,
+  MesssagingEventData,
+  getProtocolFromData,
+  RECEIVED,
+  SEND,
+  getStore,
 } from "../util";
 import { BigNumber } from "ethers/utils";
 
@@ -26,7 +30,7 @@ import * as lolex from "lolex";
 
 const { xpubToAddress } = utils;
 
-describe("Swap offline", () => {
+describe.only("Swap offline", () => {
   let client: IConnextClient;
 
   const fundChannelAndSwap = async (opts: {
@@ -36,7 +40,8 @@ describe("Swap offline", () => {
     tokenToEth?: boolean;
     failsWith?: string;
     client?: IConnextClient;
-    fastForward?: boolean;
+    fastForward?: MessagingEvent;
+    protocol?: string;
   }) => {
     const {
       client: providedClient,
@@ -46,6 +51,7 @@ describe("Swap offline", () => {
       messagingConfig,
       tokenToEth,
       fastForward,
+      protocol,
     } = opts;
     // these tests should not have collateral issues
     // so make sure they are always properly funded
@@ -68,7 +74,19 @@ describe("Swap offline", () => {
     if (fastForward) {
       // fast forward the clock for tests with delay
       // after swapping
-      await fastForwardDuringCall(89_000, swapCb, clock, failsWith, [4000]);
+      const clientMessaging = getMessaging(client.publicIdentifier);
+      clientMessaging!.on(fastForward, async (msg: MesssagingEventData) => {
+        // check if you should fast forward on specific protocol, or
+        // just on specfic subject
+        if (!protocol) {
+          clock.tick(89_000);
+          return;
+        }
+        if (getProtocolFromData(msg) === protocol) {
+          clock.tick(89_000);
+          return;
+        }
+      });
       return;
     }
 
@@ -109,7 +127,8 @@ describe("Swap offline", () => {
       inputAmount: ETH_AMOUNT_SM,
       outputAmount: TOKEN_AMOUNT,
       failsWith: APP_PROTOCOL_TOO_LONG("install"),
-      fastForward: true,
+      fastForward: RECEIVED,
+      protocol: "install",
     });
   });
 
@@ -129,7 +148,8 @@ describe("Swap offline", () => {
       inputAmount: ETH_AMOUNT_SM,
       outputAmount: TOKEN_AMOUNT,
       failsWith: `Failed to uninstall swap: Error: ${APP_PROTOCOL_TOO_LONG("uninstall")}`,
-      fastForward: true,
+      fastForward: RECEIVED,
+      protocol: "uninstall",
     });
   });
 
@@ -149,13 +169,12 @@ describe("Swap offline", () => {
       inputAmount: ETH_AMOUNT_SM,
       outputAmount: TOKEN_AMOUNT,
       failsWith: `Failed to uninstall swap: Error: ${APP_PROTOCOL_TOO_LONG("uninstall")}`,
-      fastForward: true,
+      fastForward: SEND,
+      protocol: "uninstall",
     });
   });
 
-  it("Bot A installs swap app successfully but then deletes store (before uninstall)", async function(): Promise<
-    void
-    > {
+  it("Bot A installs swap app successfully but then deletes store (before uninstall)", async () => {
     const providedClient = await createClientWithMessagingLimits();
     const messaging = getMessaging(providedClient.publicIdentifier);
     expect(messaging).to.be.ok;
