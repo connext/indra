@@ -68,7 +68,7 @@ describe("Swap offline", () => {
     if (fastForward) {
       // fast forward the clock for tests with delay
       // after swapping
-      await fastForwardDuringCall(89_000, swapCb, clock, failsWith, 3000);
+      await fastForwardDuringCall(89_000, swapCb, clock, failsWith, [3000]);
       return;
     }
 
