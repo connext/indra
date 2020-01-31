@@ -22,6 +22,7 @@ import {
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
 import { Store } from "../store";
+import { assertSufficientFundsWithinFreeBalance } from "../../assertSufficientFreeBalance";
 
 export const encodeSingleAssetTwoPartyIntermediaryAgreementParams = params =>
   defaultAbiCoder.encode([virtualAppAgreementEncoding], [params]);
@@ -58,29 +59,73 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     } = context;
 
     const {
+      initiatorXpub,
       intermediaryXpub,
-      responderXpub
+      responderXpub,
+      initiatorBalanceDecrement,
+      responderBalanceDecrement,
+      tokenAddress,
     } = params as InstallVirtualAppProtocolParams;
 
     const [
-      stateChannelWithInitiatingAndIntermediary,
+      stateChannelWithRespondingAndIntermediary,
       stateChannelWithResponding,
-      stateChannelWithIntermediary,
+      oldStateChannelWithIntermediary,
       virtualAppInstance,
       timeLockedPassThroughAppInstance
     ] = await getUpdatedStateChannelAndVirtualAppObjectsForInitiating(
       params as InstallVirtualAppProtocolParams,
       stateChannelsMap,
       network,
-      provider,
+      provider
     );
 
-    const intermediaryAddress = stateChannelWithIntermediary.getMultisigOwnerAddrOf(
+    // make sure sufficient balance available in channnel for initiator
+    // and for responder
+    assertSufficientFundsWithinFreeBalance(
+      oldStateChannelWithIntermediary,
+      initiatorXpub,
+      tokenAddress,
+      initiatorBalanceDecrement
+    );
+
+    // intermediary should be able to conver responders deposit
+    // into virtual app with funds from this channel
+    assertSufficientFundsWithinFreeBalance(
+      oldStateChannelWithIntermediary,
+      intermediaryXpub,
+      tokenAddress,
+      responderBalanceDecrement
+    );
+
+    const intermediaryAddress = oldStateChannelWithIntermediary.getMultisigOwnerAddrOf(
       intermediaryXpub
     );
 
     const responderAddress = stateChannelWithResponding.getMultisigOwnerAddrOf(
       responderXpub
+    );
+
+    const initiatorAddress = oldStateChannelWithIntermediary.getMultisigOwnerAddrOf(initiatorXpub);
+
+    // create new state channel with updated objs
+    const stateChannelWithIntermediary = oldStateChannelWithIntermediary.addSingleAssetTwoPartyIntermediaryAgreement(
+      virtualAppInstance.identityHash,
+      {
+        tokenAddress,
+        timeLockedPassThroughIdentityHash:
+          timeLockedPassThroughAppInstance.identityHash,
+        capitalProvided: bigNumberify(initiatorBalanceDecrement)
+          .add(responderBalanceDecrement)
+          .toHexString(),
+        capitalProvider: intermediaryAddress,
+        virtualAppUser: initiatorAddress
+      },
+      {
+        [initiatorAddress]: initiatorBalanceDecrement,
+        [intermediaryAddress]: responderBalanceDecrement
+      },
+      tokenAddress
     );
 
     const presignedMultisigTxForAliceIngridVirtualAppAgreement = new ConditionalTransaction(
@@ -269,7 +314,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       [
         stateChannelWithIntermediary,
         stateChannelWithResponding,
-        stateChannelWithInitiatingAndIntermediary
+        stateChannelWithRespondingAndIntermediary
       ]
     ];
 
@@ -284,8 +329,8 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     context.stateChannelsMap.set(
-      stateChannelWithInitiatingAndIntermediary.multisigAddress,
-      stateChannelWithInitiatingAndIntermediary
+      stateChannelWithRespondingAndIntermediary.multisigAddress,
+      stateChannelWithRespondingAndIntermediary
     );
   },
 
@@ -1074,9 +1119,6 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForInitiating(
   [StateChannel, StateChannel, StateChannel, AppInstance, AppInstance]
 > {
   const {
-    initiatorBalanceDecrement,
-    responderBalanceDecrement,
-    tokenAddress,
     initiatorXpub,
     intermediaryXpub,
     responderXpub
@@ -1104,9 +1146,6 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForInitiating(
     params
   );
 
-  const initiatorAddress = xkeyKthAddress(initiatorXpub, 0);
-  const intermediaryAddress = xkeyKthAddress(intermediaryXpub, 0);
-
   const multisigAddressWithIntermediary = await Store.getMultisigAddressWithCounterpartyFromMap(
     stateChannelsMap,
     [initiatorXpub, intermediaryXpub],
@@ -1124,31 +1163,12 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForInitiating(
     );
   }
 
-  const newStateChannelWithIntermediary = stateChannelWithIntermediary.addSingleAssetTwoPartyIntermediaryAgreement(
-    virtualAppInstance.identityHash,
-    {
-      tokenAddress,
-      timeLockedPassThroughIdentityHash:
-        timeLockedPassThroughAppInstance.identityHash,
-      capitalProvided: bigNumberify(initiatorBalanceDecrement)
-        .add(responderBalanceDecrement)
-        .toHexString(),
-      capitalProvider: intermediaryAddress,
-      virtualAppUser: initiatorAddress
-    },
-    {
-      [initiatorAddress]: initiatorBalanceDecrement,
-      [intermediaryAddress]: responderBalanceDecrement
-    },
-    tokenAddress
-  );
-
   return [
     stateChannelWithAllThreeParties.addAppInstance(
       timeLockedPassThroughAppInstance
     ),
     stateChannelWithResponding.addAppInstance(virtualAppInstance),
-    newStateChannelWithIntermediary,
+    stateChannelWithIntermediary,
     virtualAppInstance,
     timeLockedPassThroughAppInstance
   ];
