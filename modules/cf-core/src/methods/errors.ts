@@ -12,6 +12,9 @@ export const CANNOT_DEPOSIT =
 export const COIN_BALANCE_NOT_PROPOSED =
   "No coin balance refund app proposed in channel.";
 
+export const NOT_YOUR_BALANCE_REFUND_APP =
+  "Cannot uninstall a balance refund app without being the recipient";
+
 export const BALANCE_REFUND_APP_ALREADY_INSTALLED =
   "Balance refund app is installed, please uninstall first.";
 
