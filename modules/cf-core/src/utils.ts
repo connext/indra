@@ -21,6 +21,10 @@ import {
   MinimumViableMultisig,
   ProxyFactory
 } from "./contracts";
+import { StateChannel } from "./models";
+import { xkeyKthAddress } from "./machine";
+import { Zero } from "ethers/constants";
+import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./methods/errors";
 
 export function getFirstElementInListNotEqualTo(test: string, list: string[]) {
   return list.filter(x => x !== test)[0];
@@ -259,3 +263,32 @@ export const scanForCriticalAddresses = async (
   }
   return;
 };
+
+// NOTE: will not fail if there is no free balance class. there is
+// no free balance in the case of a channel between virtual
+// participants
+export function assertSufficientFundsWithinFreeBalance(
+  channel: StateChannel,
+  publicIdentifier: string,
+  tokenAddress: string,
+  depositAmount: BigNumber
+): void {
+  if (!channel.hasFreeBalance) return;
+
+  const freeBalanceForToken =
+    channel
+      .getFreeBalanceClass()
+      .getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0)) || Zero;
+
+  if (freeBalanceForToken.lt(depositAmount)) {
+    throw Error(
+      INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET(
+        publicIdentifier,
+        channel.multisigAddress,
+        tokenAddress,
+        freeBalanceForToken,
+        depositAmount
+      )
+    );
+  }
+}
