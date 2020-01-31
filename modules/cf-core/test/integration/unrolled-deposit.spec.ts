@@ -1,7 +1,7 @@
 import { AddressZero, One } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 
-import { Node } from "../../src";
+import { Node, NOT_YOUR_BALANCE_REFUND_APP } from "../../src";
 import { CoinBalanceRefundState, ProtocolTypes } from "../../src/types";
 import { toBeLt, toBeEq } from "../machine/integration/bignumber-jest-matcher";
 
@@ -18,6 +18,7 @@ import {
 } from "./utils";
 import { xkeyKthAddress } from "../../src/machine";
 import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
+import { INSTALL_EVENT } from "@connext/types";
 
 expect.extend({ toBeLt, toBeEq });
 
@@ -259,6 +260,15 @@ describe(`Node method follows spec - install balance refund`, () => {
     });
 
     await requestDepositRights(nodeA, multisigAddress);
+  });
+
+  it(`uninstall does error if caller is not recipient`, async () => {
+    await requestDepositRights(nodeA, multisigAddress);
+    nodeB.once(INSTALL_EVENT, async () => {
+      await expect(
+        rescindDepositRights(nodeB, multisigAddress)
+      ).rejects.toThrowError(NOT_YOUR_BALANCE_REFUND_APP);
+    });
   });
 
   it(`can uninstall with no changes`, async done => {
