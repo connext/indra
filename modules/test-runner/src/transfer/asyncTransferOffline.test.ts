@@ -107,6 +107,7 @@ describe("Async transfer offline tests", () => {
       () => asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
       clock,
       MESSAGE_FAILED_TO_SEND(FORBIDDEN_SUBJECT),
+      [4000],
     );
 
     // make sure that the app is installed with the hub/sender
