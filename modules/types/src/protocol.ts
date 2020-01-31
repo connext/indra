@@ -63,7 +63,7 @@ export type InstallVirtualAppProtocolParams = {
   // token type `tokenAddress`, but may use different amounts
   initiatorBalanceDecrement: BigNumber;
   responderBalanceDecrement: BigNumber;
-  tokenAddress: string;
+  tokenAddress: string; // TODO: why only one token allowed in virtual?
   appSeqNo: number;
   // outcomeType returned by the app instance, as defined by the app definition `appInterface`
   outcomeType: OutcomeType;
