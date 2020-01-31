@@ -59,18 +59,14 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     } = context;
 
     const {
-      initiatorXpub,
       intermediaryXpub,
       responderXpub,
-      initiatorBalanceDecrement,
-      responderBalanceDecrement,
-      tokenAddress,
     } = params as InstallVirtualAppProtocolParams;
 
     const [
       stateChannelWithRespondingAndIntermediary,
       stateChannelWithResponding,
-      oldStateChannelWithIntermediary,
+      stateChannelWithIntermediary,
       virtualAppInstance,
       timeLockedPassThroughAppInstance
     ] = await getUpdatedStateChannelAndVirtualAppObjectsForInitiating(
@@ -80,45 +76,12 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       provider
     );
 
-    // make sure sufficient balance available in channnel for initiator
-    // and for responder
-    assertSufficientFundsWithinFreeBalance(
-      oldStateChannelWithIntermediary,
-      initiatorXpub,
-      tokenAddress,
-      initiatorBalanceDecrement
-    );
-
-    // intermediary checks their own free balance obligations
-
-    const intermediaryAddress = oldStateChannelWithIntermediary.getMultisigOwnerAddrOf(
+    const intermediaryAddress = stateChannelWithIntermediary.getMultisigOwnerAddrOf(
       intermediaryXpub
     );
 
     const responderAddress = stateChannelWithResponding.getMultisigOwnerAddrOf(
       responderXpub
-    );
-
-    const initiatorAddress = oldStateChannelWithIntermediary.getMultisigOwnerAddrOf(initiatorXpub);
-
-    // create new state channel with updated objs
-    const stateChannelWithIntermediary = oldStateChannelWithIntermediary.addSingleAssetTwoPartyIntermediaryAgreement(
-      virtualAppInstance.identityHash,
-      {
-        tokenAddress,
-        timeLockedPassThroughIdentityHash:
-          timeLockedPassThroughAppInstance.identityHash,
-        capitalProvided: bigNumberify(initiatorBalanceDecrement)
-          .add(responderBalanceDecrement)
-          .toHexString(),
-        capitalProvider: intermediaryAddress,
-        virtualAppUser: initiatorAddress
-      },
-      {
-        [initiatorAddress]: initiatorBalanceDecrement,
-        [intermediaryAddress]: responderBalanceDecrement
-      },
-      tokenAddress
     );
 
     const presignedMultisigTxForAliceIngridVirtualAppAgreement = new ConditionalTransaction(
@@ -357,22 +320,6 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       (virtualAppInstanceIdentityHash as unknown) as string,
       (virtualAppInstanceDefaultOutcome as unknown) as string,
       network,
-    );
-
-    // intermediary should be able to cover virtual app
-    // counterparty's deposits from its free balance
-    assertSufficientFundsWithinFreeBalance(
-      stateChannelWithInitiating,
-      intermediaryXpub,
-      tokenAddress,
-      responderBalanceDecrement
-    );
-
-    assertSufficientFundsWithinFreeBalance(
-      stateChannelWithResponding,
-      intermediaryXpub,
-      tokenAddress,
-      initiatorBalanceDecrement
     );
 
     const initiatorAddress = stateChannelWithInitiating.getMultisigOwnerAddrOf(
@@ -1130,7 +1077,10 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForInitiating(
   const {
     initiatorXpub,
     intermediaryXpub,
-    responderXpub
+    responderXpub,
+    tokenAddress,
+    initiatorBalanceDecrement,
+    responderBalanceDecrement,
   } = params as InstallVirtualAppProtocolParams;
 
   const stateChannelWithAllThreeParties = await getOrCreateStateChannelWithUsers(
@@ -1172,12 +1122,65 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForInitiating(
     );
   }
 
+  // initiator should have sufficient funds to cover their deposits
+  // in channel with intermediary
+  assertSufficientFundsWithinFreeBalance(
+    stateChannelWithIntermediary,
+    initiatorXpub,
+    tokenAddress,
+    initiatorBalanceDecrement
+  );
+
+  // initiator should have sufficient funds to cover their deposits
+  // in channel with responding (if exists)
+  // see note in fn, will not fail if no `FreeBalance` class
+  assertSufficientFundsWithinFreeBalance(
+    stateChannelWithResponding,
+    initiatorXpub,
+    tokenAddress,
+    initiatorBalanceDecrement
+  );
+
+  // intermediary should have sufficient funds in its channel with
+  // initiator to cover the counterpartys deposit 
+  assertSufficientFundsWithinFreeBalance(
+    stateChannelWithIntermediary,
+    intermediaryXpub,
+    tokenAddress,
+    responderBalanceDecrement
+  );
+
+  const intermediaryAddress = stateChannelWithIntermediary.getMultisigOwnerAddrOf(
+    intermediaryXpub
+  );
+
+  const initiatorAddress = stateChannelWithIntermediary.getMultisigOwnerAddrOf(initiatorXpub);
+
+  const newStateChannelWithIntermediary = stateChannelWithIntermediary.addSingleAssetTwoPartyIntermediaryAgreement(
+    virtualAppInstance.identityHash,
+    {
+      tokenAddress,
+      timeLockedPassThroughIdentityHash:
+        timeLockedPassThroughAppInstance.identityHash,
+      capitalProvided: bigNumberify(initiatorBalanceDecrement)
+        .add(responderBalanceDecrement)
+        .toHexString(),
+      capitalProvider: intermediaryAddress,
+      virtualAppUser: initiatorAddress
+    },
+    {
+      [initiatorAddress]: initiatorBalanceDecrement,
+      [intermediaryAddress]: responderBalanceDecrement
+    },
+    tokenAddress
+  );
+
   return [
     stateChannelWithAllThreeParties.addAppInstance(
       timeLockedPassThroughAppInstance
     ),
     stateChannelWithResponding.addAppInstance(virtualAppInstance),
-    stateChannelWithIntermediary,
+    newStateChannelWithIntermediary,
     virtualAppInstance,
     timeLockedPassThroughAppInstance
   ];
@@ -1246,6 +1249,25 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForIntermediary(
       "Cannot mediate InstallVirtualAppProtocol without mediation channel to responder"
     );
   }
+
+  // intermediary should be able to cover virtual app
+  // counterparty's deposits from its free balance
+  assertSufficientFundsWithinFreeBalance(
+    channelWithInitiating,
+    intermediaryXpub,
+    tokenAddress,
+    responderBalanceDecrement
+  );
+
+  assertSufficientFundsWithinFreeBalance(
+    channelWithResponding,
+    intermediaryXpub,
+    tokenAddress,
+    initiatorBalanceDecrement
+  );
+
+  // TODO: should the intermediary have sufficient funds
+  // in the three way channel?
 
   const initiatorAddress = xkeyKthAddress(initiatorXpub, 0);
   const intermediaryAddress = xkeyKthAddress(intermediaryXpub, 0);
@@ -1352,6 +1374,34 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForResponding(
       "Cannot run InstallVirtualAppProtocol without existing channel with intermediary"
     );
   }
+
+  // responder should have sufficient funds to cover their deposits
+  // in channel with intermediary
+  assertSufficientFundsWithinFreeBalance(
+    stateChannelWithIntermediary,
+    responderXpub,
+    tokenAddress,
+    responderBalanceDecrement
+  );
+
+  // intermediary should have sufficient funds in its channel with
+  // responder to cover the counterpartys deposit 
+  assertSufficientFundsWithinFreeBalance(
+    stateChannelWithIntermediary,
+    intermediaryXpub,
+    tokenAddress,
+    initiatorBalanceDecrement
+  );
+
+  // initiator should have sufficient funds to cover their deposits
+  // in channel with responding (if exists)
+  // see note in fn, will not fail if no `FreeBalance` class
+  assertSufficientFundsWithinFreeBalance(
+    stateChannelWithInitiating,
+    responderXpub,
+    tokenAddress,
+    responderBalanceDecrement
+  );
 
   const intermediaryAddress = xkeyKthAddress(intermediaryXpub, 0);
   const responderAddress = xkeyKthAddress(responderXpub, 0);
