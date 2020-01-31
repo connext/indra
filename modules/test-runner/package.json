@@ -26,6 +26,7 @@
     "@ethereum-waffle/chai": "2.3.0",
     "human-standard-token-abi": "2.0.0",
     "localStorage": "1.0.4",
+    "lolex": "5.1.2",
     "mocha": "6.2.2",
     "pg": "7.17.0",
     "mock-async-storage": "2.2.0",
