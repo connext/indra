@@ -1,10 +1,8 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, AppInstanceJson, ProtocolTypes } from "../../../types";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { NodeController } from "../../controller";
-import { StateChannel } from "../../../models";
-import { prettyPrintObject } from "../../../utils";
 
 /**
  * Gets all installed appInstances across all of the channels open on

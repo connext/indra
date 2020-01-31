@@ -1,9 +1,10 @@
 import { Zero } from "ethers/constants";
-import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
+import { BigNumber, parseEther } from "ethers/utils";
 
 import { CF_METHOD_TIMEOUT, delayAndThrow } from "../lib";
 import { xpubToAddress } from "../lib/cfCore";
 import {
+  calculateExchange,
   CFCoreChannel,
   CFCoreTypes,
   convert,
@@ -21,10 +22,6 @@ import {
 
 import { AbstractController } from "./AbstractController";
 
-export const calculateExchange = (amount: BigNumber, swapRate: string): BigNumber => {
-  return bigNumberify(formatEther(amount.mul(parseEther(swapRate))).replace(/\.[0-9]*$/, ""));
-};
-
 export class SwapController extends AbstractController {
   public async swap(params: SwapParameters): Promise<CFCoreChannel> {
     // convert params + validate
@@ -35,14 +32,12 @@ export class SwapController extends AbstractController {
     const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
     const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
     const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
-    const nodeBal = preSwapToBal[xpubToAddress(this.connext.nodePublicIdentifier)];
     const swappedAmount = calculateExchange(amount, swapRate);
     validate(
       invalidAddress(fromAssetId),
       invalidAddress(toAssetId),
       notLessThanOrEqualTo(amount, userBal),
       notGreaterThan(amount, Zero),
-      notLessThanOrEqualTo(swappedAmount, nodeBal),
       notPositive(parseEther(swapRate)),
     );
 
