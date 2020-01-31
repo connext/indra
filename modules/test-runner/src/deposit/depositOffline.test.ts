@@ -4,12 +4,13 @@ import * as lolex from "lolex";
 
 import {
   APP_PROTOCOL_TOO_LONG,
+  createClient,
   createClientWithMessagingLimits,
   expect,
   fundChannel,
   getMessaging,
+  getOpts,
   getStore,
-  INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
   ZERO_ZERO_ONE_ETH,
   cleanupMessaging,
   fastForwardDuringCall,
@@ -121,12 +122,15 @@ describe("Deposit offline tests", () => {
     > {
     client = await createClientWithMessagingLimits({
       protocol: "install",
-      ceiling: { received: INSTALL_SUPPORTED_APP_COUNT_RECEIVED },
+      ceiling: { received: 0 },
     });
 
     await makeDepositCall({
       failsWith: "Failed to deposit",
     });
+
+    const { mnemonic } = getOpts(client.publicIdentifier);
+    await createClient({ mnemonic });
   });
 
   it("client proposes deposit, but then deletes their store", async function(): Promise<void> {
