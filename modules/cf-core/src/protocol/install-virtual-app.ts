@@ -89,14 +89,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       initiatorBalanceDecrement
     );
 
-    // intermediary should be able to conver responders deposit
-    // into virtual app with funds from this channel
-    assertSufficientFundsWithinFreeBalance(
-      oldStateChannelWithIntermediary,
-      intermediaryXpub,
-      tokenAddress,
-      responderBalanceDecrement
-    );
+    // intermediary checks their own free balance obligations
 
     const intermediaryAddress = oldStateChannelWithIntermediary.getMultisigOwnerAddrOf(
       intermediaryXpub
@@ -351,7 +344,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       }
     } = m1;
 
-    const { initiatorXpub, responderXpub } = params as InstallVirtualAppProtocolParams;
+    const { initiatorXpub, responderXpub, intermediaryXpub, tokenAddress, responderBalanceDecrement, initiatorBalanceDecrement } = params as InstallVirtualAppProtocolParams;
 
     const [
       stateChannelBetweenVirtualAppUsers,
@@ -364,6 +357,22 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       (virtualAppInstanceIdentityHash as unknown) as string,
       (virtualAppInstanceDefaultOutcome as unknown) as string,
       network,
+    );
+
+    // intermediary should be able to cover virtual app
+    // counterparty's deposits from its free balance
+    assertSufficientFundsWithinFreeBalance(
+      stateChannelWithInitiating,
+      intermediaryXpub,
+      tokenAddress,
+      responderBalanceDecrement
+    );
+
+    assertSufficientFundsWithinFreeBalance(
+      stateChannelWithResponding,
+      intermediaryXpub,
+      tokenAddress,
+      initiatorBalanceDecrement
     );
 
     const initiatorAddress = stateChannelWithInitiating.getMultisigOwnerAddrOf(
@@ -1333,7 +1342,7 @@ async function getUpdatedStateChannelAndVirtualAppObjectsForResponding(
     [responderXpub, intermediaryXpub],
     network.ProxyFactory,
     network.MinimumViableMultisig
-  )
+  );
   const stateChannelWithIntermediary = stateChannelsMap.get(
     multisigAddressWithIntermediary
   );
