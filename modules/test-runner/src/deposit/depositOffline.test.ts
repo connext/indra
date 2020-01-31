@@ -4,16 +4,21 @@ import * as lolex from "lolex";
 
 import {
   APP_PROTOCOL_TOO_LONG,
+  createClient,
   createClientWithMessagingLimits,
   expect,
   fundChannel,
   getMessaging,
+  getOpts,
   getStore,
-  INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
   ZERO_ZERO_ONE_ETH,
   cleanupMessaging,
-  fastForwardDuringCall,
   TOKEN_AMOUNT,
+  MessagingEvent,
+  MesssagingEventData,
+  getProtocolFromData,
+  RECEIVED,
+  SEND,
 } from "../util";
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -47,28 +52,47 @@ describe("Deposit offline tests", () => {
 
   const makeDepositCall = async (opts: {
     failsWith?: string;
+    protocol?: string;
+    subjectToFastforward?: MessagingEvent;
     amount?: BigNumber;
     assetId?: string;
   }) => {
-    const { amount, assetId, failsWith } = opts;
+    const { amount, assetId, failsWith, protocol, subjectToFastforward } = opts;
     const defaultAmount = assetId && assetId !== AddressZero ? TOKEN_AMOUNT : ZERO_ZERO_ONE_ETH;
 
-    if (failsWith) {
-      await fastForwardDuringCall(
-        89_000,
-        () => fundChannel(client, amount || defaultAmount, assetId),
-        clock,
-        failsWith,
+    if (!failsWith) {
+      await fundChannel(client, amount || defaultAmount, assetId);
+      return;
+    }
+
+    if (!subjectToFastforward) {
+      await expect(fundChannel(client, amount || defaultAmount, assetId)).to.be.rejectedWith(
+        failsWith!,
       );
       return;
     }
 
-    await fundChannel(client, amount || defaultAmount, assetId);
+    // get messaging of client
+    const messaging = getMessaging(client.publicIdentifier);
+    messaging!.on(subjectToFastforward, async (msg: MesssagingEventData) => {
+      // check if you should fast forward on specific protocol, or
+      // just on specfic subject
+      if (!protocol) {
+        clock.tick(89_000);
+        return;
+      }
+      if (getProtocolFromData(msg) === protocol) {
+        clock.tick(89_000);
+        return;
+      }
+    });
+    await expect(fundChannel(client, amount || defaultAmount, assetId)).to.be.rejectedWith(
+      failsWith!,
+    );
+    return;
   };
 
-  it("client proposes deposit, but node doesn't receive the NATS message (or no response from node)", async function(): Promise<
-    void
-    > {
+  it("client proposes deposit, but node doesn't receive the NATS message (or no response from node)", async () => {
     // create client where the propose protocol will not complete
     // in deposit, client will propose the `CoinBalanceRefund` app (is the
     // initiator in the `propose` protocol)
@@ -81,12 +105,12 @@ describe("Deposit offline tests", () => {
 
     await makeDepositCall({
       failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
+      subjectToFastforward: RECEIVED,
+      protocol: "propose",
     });
   });
 
-  it("client proposes deposit, but node only receives the NATS message after timeout is over", async function(): Promise<
-    void
-    > {
+  it("client proposes deposit, but node only receives the NATS message after timeout is over", async () => {
     // cf method timeout is 90s, client will send any messages with a
     // preconfigured delay
     const CLIENT_DELAY = CF_METHOD_TIMEOUT + 1_000;
@@ -97,6 +121,8 @@ describe("Deposit offline tests", () => {
 
     await makeDepositCall({
       failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
+      subjectToFastforward: SEND,
+      protocol: "propose",
     });
   });
 
@@ -113,20 +139,25 @@ describe("Deposit offline tests", () => {
 
     await makeDepositCall({
       failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
+      subjectToFastforward: RECEIVED,
+      protocol: "propose",
     });
   });
 
-  it("client goes offline after proposing deposit and then comes back after timeout is over", async function(): Promise<
-    void
-    > {
+  it("client goes offline after proposing deposit and then comes back after timeout is over", async () => {
     client = await createClientWithMessagingLimits({
       protocol: "install",
-      ceiling: { received: INSTALL_SUPPORTED_APP_COUNT_RECEIVED },
+      ceiling: { received: 0 },
     });
 
     await makeDepositCall({
       failsWith: "Failed to deposit",
+      subjectToFastforward: RECEIVED,
+      protocol: "install",
     });
+
+    const { mnemonic } = getOpts(client.publicIdentifier);
+    await createClient({ mnemonic });
   });
 
   it("client proposes deposit, but then deletes their store", async function(): Promise<void> {

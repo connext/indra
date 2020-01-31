@@ -1,12 +1,12 @@
 import {
   AllowedSwap,
   AppInstanceJson,
+  calculateExchange,
   CoinTransfer,
   CoinTransferBigNumber,
   DefaultApp,
   SimpleLinkedTransferAppStateBigNumber,
   SimpleTransferAppStateBigNumber,
-  SupportedApplications,
   CoinBalanceRefundApp,
   SimpleLinkedTransferApp,
   SimpleTwoPartySwapApp,
@@ -14,7 +14,7 @@ import {
 } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 import { Zero } from "ethers/constants";
-import { BigNumber, bigNumberify, formatEther } from "ethers/utils";
+import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -60,19 +60,13 @@ export class AppRegistryService {
    * @param data Data from CF event PROPOSE_INSTALL
    */
   async allowOrReject(data: ProposeMessage): Promise<AppRegistry | void> {
-    try {
-      const registryAppInfo = await this.verifyAppProposal(data.data, data.from);
-      if (registryAppInfo.name === CoinBalanceRefundApp) {
-        logger.log(`Not installing coin balance refund app, returning registry information`);
-        return registryAppInfo;
-      }
-      await this.cfCoreService.installApp(data.data.appInstanceId);
+    const registryAppInfo = await this.verifyAppProposal(data.data, data.from);
+    if (registryAppInfo.name === CoinBalanceRefundApp) {
+      logger.log(`Not installing coin balance refund app, returning registry information`);
       return registryAppInfo;
-    } catch (e) {
-      logger.error(`Failed to verify app, rejecting install: ${e.message}`, e.stack);
-      await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
-      return;
     }
+    await this.cfCoreService.installApp(data.data.appInstanceId);
+    return registryAppInfo;
   }
 
   async appProposalMatchesRegistry(
@@ -173,29 +167,28 @@ export class AppRegistryService {
       );
     }
 
-    // |our rate - derived rate| / our rate = discrepancy
-    const derivedRate =
-      parseFloat(formatEther(responderDeposit)) / parseFloat(formatEther(initiatorDeposit));
-
-    const ourRate = parseFloat(
-      await this.swapRateService.getOrFetchRate(
-        initiatorDepositTokenAddress,
-        responderDepositTokenAddress,
-      ),
+    // calculate our expected exchange using our rate and deposit
+    const ourRate = await this.swapRateService.getOrFetchRate(
+      initiatorDepositTokenAddress,
+      responderDepositTokenAddress,
     );
-    const discrepancy = Math.abs(ourRate - derivedRate);
-    const discrepancyPct = (discrepancy * 100) / ourRate;
+    const calculated = calculateExchange(initiatorDeposit, ourRate);
 
-    if (discrepancyPct > ALLOWED_DISCREPANCY_PCT) {
+    // make sure calculated within allowed amount
+    const ratioOfCalculatedToActual = calculated.div(responderDeposit);
+    const discrepancyPct = ratioOfCalculatedToActual
+      .mul(100) // ratio will be between 0 and 1 or between 1 and 2 depending which is higher
+      .sub(100) // subtract 100 to get the actual discrepancy
+      .abs();
+
+    if (discrepancyPct.gt(ALLOWED_DISCREPANCY_PCT)) {
       throw new Error(
-        `Derived rate is ${derivedRate.toString()} (vs ${ourRate}), more than ${ALLOWED_DISCREPANCY_PCT}% ` +
-          `larger discrepancy than our rate of ${ourRate.toString()}`,
+        `Responder deposit (${responderDeposit.toString()}) is greater than our expected deposit (${calculated.toString()}) based on our swap rate ${ourRate} by more than ${ALLOWED_DISCREPANCY_PCT}% (discrepancy: ${discrepancyPct.toString()})`,
       );
     }
 
     logger.log(
-      `Derived rate is ${derivedRate.toString()}, within ${ALLOWED_DISCREPANCY_PCT}% ` +
-        `of our rate ${ourRate.toString()}`,
+      `Exchange amounts are within ${ALLOWED_DISCREPANCY_PCT}% of our rate ${ourRate.toString()}`,
     );
   }
 

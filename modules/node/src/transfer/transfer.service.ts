@@ -7,6 +7,9 @@ import {
   SimpleLinkedTransferApp,
   SimpleTransferApp,
   SimpleLinkedTransferAppState,
+  DEPOSIT_CONFIRMED_EVENT,
+  DEPOSIT_FAILED_EVENT,
+  DepositFailedMessage,
 } from "@connext/types";
 import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
@@ -220,7 +223,7 @@ export class TransferService {
       // TODO: expose remove listener
       await new Promise(async (resolve, reject) => {
         this.cfCoreService.cfCore.on(
-          `DEPOSIT_CONFIRMED_EVENT`,
+          DEPOSIT_CONFIRMED_EVENT,
           async (msg: DepositConfirmationMessage) => {
             if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
               // do not reject promise here, since theres a chance the event is
@@ -245,17 +248,20 @@ export class TransferService {
               assetId,
             );
             if (fb[freeBalanceAddr].lt(amountBN)) {
-              reject(
+              return reject(
                 `Free balance associated with ${freeBalanceAddr} is less than transfer amount: ${amountBN}`,
               );
             }
             resolve();
           },
         );
+        this.cfCoreService.cfCore.on(DEPOSIT_FAILED_EVENT, (msg: DepositFailedMessage) => {
+          return reject(JSON.stringify(msg, null, 2));
+        });
         try {
           await this.channelService.requestCollateral(userPubId, assetId, amountBN);
         } catch (e) {
-          reject(e);
+          return reject(e);
         }
       });
     } else {

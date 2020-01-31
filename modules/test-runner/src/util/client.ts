@@ -32,6 +32,7 @@ export const cleanupMessaging = async (xpub?: string): Promise<void> => {
   for (const pubId of toRemove) {
     if (clientMessaging[pubId]) {
       await clientMessaging[pubId]!.unsubscribe("indra.>");
+      await clientMessaging[pubId]!.removeAllListeners();
     }
   }
   return;
