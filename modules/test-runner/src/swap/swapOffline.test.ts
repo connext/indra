@@ -92,11 +92,11 @@ describe("Swap offline", () => {
     });
   });
 
-  it("Bot A tries to install swap but there’s no response from node", async function(): Promise<
+  it.only("Bot A tries to install swap but there’s no response from node", async function(): Promise<
     void
     > {
     // 3 app installs expected (coin balance x2, swap)
-    const expectedInstallsReceived = 3 * INSTALL_SUPPORTED_APP_COUNT_RECEIVED;
+    const expectedInstallsReceived = 2 * INSTALL_SUPPORTED_APP_COUNT_RECEIVED;
     const messagingConfig = {
       ceiling: { received: expectedInstallsReceived },
       protocol: "install",
