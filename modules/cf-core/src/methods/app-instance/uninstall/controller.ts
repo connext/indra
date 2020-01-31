@@ -1,4 +1,3 @@
-import { CoinBalanceRefundAppState } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { uninstallAppInstanceFromChannel } from "./operation";
@@ -7,10 +6,9 @@ import {
   APP_ALREADY_UNINSTALLED,
   CANNOT_UNINSTALL_FREE_BALANCE,
   NO_APP_INSTANCE_ID_TO_UNINSTALL,
-  NOT_YOUR_BALANCE_REFUND_APP
+  USE_RESCIND_DEPOSIT_RIGHTS
 } from "../../errors";
 
-import { xkeyKthAddress } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
 import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { getFirstElementInListNotEqualTo } from "../../../utils";
@@ -37,11 +35,10 @@ export default class UninstallController extends NodeController {
   }
 
   protected async beforeExecution(
-    // @ts-ignore
     requestHandler: RequestHandler,
     params: CFCoreTypes.UninstallParams
   ) {
-    const { store, publicIdentifier, networkContext } = requestHandler;
+    const { store, networkContext } = requestHandler;
     const { appInstanceId } = params;
 
     if (!appInstanceId) {
@@ -50,14 +47,8 @@ export default class UninstallController extends NodeController {
 
     // check if its the balance refund app
     const app = await store.getAppInstance(appInstanceId);
-    if (app.appInterface.addr !== networkContext.CoinBalanceRefundApp) {
-      return;
-    }
-
-    // make sure its your app
-    const { recipient } = app.latestState as CoinBalanceRefundAppState;
-    if (recipient !== xkeyKthAddress(publicIdentifier)) {
-      throw new Error(NOT_YOUR_BALANCE_REFUND_APP);
+    if (app.appInterface.addr === networkContext.CoinBalanceRefundApp) {
+      throw Error(USE_RESCIND_DEPOSIT_RIGHTS);
     }
   }
 

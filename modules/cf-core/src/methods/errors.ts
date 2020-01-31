@@ -15,6 +15,9 @@ export const COIN_BALANCE_NOT_PROPOSED =
 export const NOT_YOUR_BALANCE_REFUND_APP =
   "Cannot uninstall a balance refund app without being the recipient";
 
+export const USE_RESCIND_DEPOSIT_RIGHTS =
+  "Use `rescindDepositRights` to uninstall coin balance refund app.";
+
 export const BALANCE_REFUND_APP_ALREADY_INSTALLED =
   "Balance refund app is installed, please uninstall first.";
 
