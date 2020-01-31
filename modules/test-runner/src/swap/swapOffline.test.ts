@@ -68,7 +68,7 @@ describe("Swap offline", () => {
     if (fastForward) {
       // fast forward the clock for tests with delay
       // after swapping
-      await fastForwardDuringCall(89_000, swapCb, clock, failsWith, [3000]);
+      await fastForwardDuringCall(89_000, swapCb, clock, failsWith, [4000]);
       return;
     }
 
@@ -116,7 +116,7 @@ describe("Swap offline", () => {
   it("Bot A installs swap app successfully but then node goes offline for uninstall", async function(): Promise<
     void
     > {
-    const expectedUninstallsReceived = 3 * UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED;
+    const expectedUninstallsReceived = 2 * UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED;
     // does not receive messages, node is offline
     const messagingConfig = {
       ceiling: { received: expectedUninstallsReceived },
@@ -136,7 +136,7 @@ describe("Swap offline", () => {
   it("Bot A install swap app successfully but then goes offline for uninstall", async function(): Promise<
     void
     > {
-    const expectedUninstallsSent = 3 * UNINSTALL_SUPPORTED_APP_COUNT_SENT;
+    const expectedUninstallsSent = 2 * UNINSTALL_SUPPORTED_APP_COUNT_SENT;
     // does not receive messages, node is offline
     const messagingConfig = {
       ceiling: { sent: expectedUninstallsSent },
