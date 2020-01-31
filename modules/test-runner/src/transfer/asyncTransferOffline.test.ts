@@ -14,17 +14,20 @@ import {
   TOKEN_AMOUNT,
   fundChannel,
   requestCollateral,
-  fastForwardDuringCall,
   asyncTransferAsset,
   TOKEN_AMOUNT_SM,
-  MESSAGE_FAILED_TO_SEND,
-  FORBIDDEN_SUBJECT,
-  INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
+  FORBIDDEN_SUBJECT_ERROR,
   PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
   getMessaging,
   getOpts,
   createClient,
   getStore,
+  RECEIVED,
+  MesssagingEventData,
+  getProtocolFromData,
+  REQUEST,
+  delay,
+  SUBJECT_FORBIDDEN,
 } from "../util";
 import { BigNumber } from "ethers/utils";
 
@@ -102,13 +105,14 @@ describe("Async transfer offline tests", () => {
 
     // make the transfer call, should fail when sending info to node, but
     // will retry. fast forward through NATS_TIMEOUT
-    await fastForwardDuringCall(
-      89_000,
-      () => asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
-      clock,
-      MESSAGE_FAILED_TO_SEND(FORBIDDEN_SUBJECT),
-      [4000],
-    );
+    const senderMessaging = getMessaging(senderClient.publicIdentifier);
+    senderMessaging!.on(SUBJECT_FORBIDDEN, () => {
+      // fast forward here
+      clock.tick(89_000);
+    });
+    await expect(
+      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
+    ).to.be.rejectedWith(FORBIDDEN_SUBJECT_ERROR);
 
     // make sure that the app is installed with the hub/sender
     const senderLinkedApp = await getLinkedApp(senderClient);
@@ -142,12 +146,15 @@ describe("Async transfer offline tests", () => {
 
     // make the transfer call, should fail when sending info to node, but
     // will retry. fast forward through NATS_TIMEOUT
-    await fastForwardDuringCall(
-      89_000,
-      () => asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
-      clock,
-      FORBIDDEN_SUBJECT,
-    );
+    const senderMessaging = getMessaging(senderClient.publicIdentifier);
+    senderMessaging!.on(SUBJECT_FORBIDDEN, () => {
+      // fast forward here
+      clock.tick(89_000);
+    });
+    await expect(
+      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
+    ).to.be.rejectedWith(FORBIDDEN_SUBJECT_ERROR);
+
     // make sure that the app is installed with the hub/sender
     const senderLinkedApp = await getLinkedApp(senderClient);
     const { paymentId } = senderLinkedApp.latestState as any;
@@ -178,66 +185,50 @@ describe("Async transfer offline tests", () => {
      */
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits();
-    // 1 successful proposal
+    // 1 successful proposal (balance refund)
     receiverClient = await createClientWithMessagingLimits({
       ceiling: { received: PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED },
       protocol: "propose",
     });
     await fundForTransfers();
+    const receiverMessaging = getMessaging(receiverClient.publicIdentifier);
+    receiverMessaging!.on(REQUEST, async (msg: MesssagingEventData) => {
+      const { subject } = msg;
+      if (subject!.includes(`resolve`)) {
+        // wait for message to be sent, event is fired first
+        await delay(500);
+        clock.tick(89_000);
+      }
+    });
 
     // make the transfer call, should timeout in propose protocol
-    await fastForwardDuringCall(
-      89_000,
-      () => asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
-      clock,
-      `Failed to send message: Request timed out`,
-      [3000, 6000],
-    );
+    await expect(
+      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
+    ).to.be.rejectedWith(`Failed to send message: Request timed out`);
   });
 
-  it("sender installs transfer successfully, receiver installs successfully, but node is offline", async () => {
+  it("sender installs transfer successfully, receiver installs successfully, but node is offline for take action (times out)", async () => {
     /**
      * Should get timeout errors
      */
     // create the sender client and receiver clients + fund
     senderClient = await createClientWithMessagingLimits();
     receiverClient = await createClientWithMessagingLimits({
-      ceiling: { received: INSTALL_SUPPORTED_APP_COUNT_RECEIVED },
-      protocol: "install",
-    });
-    await fundForTransfers();
-
-    // make the transfer call, should timeout in propose protocol
-    await fastForwardDuringCall(
-      89_000,
-      () => asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
-      clock,
-      `Failed to send message: Request timed out`,
-      [3000, 6000],
-    );
-  });
-
-  it("sender installs transfer successfully, receiver install succesfully, takesAction, then goes offline", async () => {
-    /**
-     * Receiver will not uninstall app, but this is not a true protocol, so the
-     * app should be removed from the receivers store anyways
-     */
-    // create the sender client and receiver clients + fund
-    senderClient = await createClientWithMessagingLimits();
-    // 2 app proposals expected (coin balance x1, transfer)
-    receiverClient = await createClientWithMessagingLimits({
       ceiling: { received: 0 },
       protocol: "takeAction",
     });
     await fundForTransfers();
 
-    // make the transfer call, should timeout in propose protocol
-    await fastForwardDuringCall(
-      89_000,
-      () => asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
-      clock,
-      APP_PROTOCOL_TOO_LONG("takeAction"),
-    );
+    const receiverMessaging = getMessaging(receiverClient.publicIdentifier);
+    receiverMessaging!.on(RECEIVED, async (msg: MesssagingEventData) => {
+      if (getProtocolFromData(msg) === "takeAction") {
+        clock.tick(89_000);
+      }
+    });
+
+    await expect(
+      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
+    ).to.be.rejectedWith(APP_PROTOCOL_TOO_LONG("takeAction"));
   });
 
   it("sender installs, receiver installs, takesAction, then uninstalls. Node tries to take action with sender but sender is offline but then comes online later", async function() {
@@ -267,11 +258,11 @@ describe("Async transfer offline tests", () => {
       recipient: receiverClient.publicIdentifier,
     });
     // immediately take sender offline
-    const messaging = getMessaging(senderClient.publicIdentifier);
-    await messaging!.disconnect();
+    const senderMessaging = getMessaging(senderClient.publicIdentifier);
+    await senderMessaging!.disconnect();
     // wait for transfer to finish
     await received;
-    // fast forward 5 min
+    // fast forward 5 min, so any protocols are expired for the client
     clock.tick(60_000 * 5);
     // verify transfer
     const expected = {
@@ -291,6 +282,11 @@ describe("Async transfer offline tests", () => {
       mnemonic,
       store: getStore(senderClient.publicIdentifier),
     });
+    // NOTE: fast forwarding does not propagate to node timers
+    // so when `reconnected comes online, there is still a 90s
+    // timer locked on the multisig address + appId (trying to
+    // take action) and uninstall app (this is why this test has
+    // an extended timeout)
     expect(reconnected.publicIdentifier).to.be.equal(senderClient.publicIdentifier);
     expect(reconnected.multisigAddress).to.be.equal(senderClient.multisigAddress);
     expect(reconnected.freeBalanceAddress).to.be.equal(senderClient.freeBalanceAddress);
@@ -328,7 +324,7 @@ describe("Async transfer offline tests", () => {
         await received;
         const messaging = getMessaging(senderClient.publicIdentifier);
         await messaging!.disconnect();
-        // fast forward 5 min
+        // fast forward 5 min so protocols are stale on client
         clock.tick(60_000 * 5);
         resolve();
       });
