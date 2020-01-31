@@ -120,9 +120,16 @@ export default class ListenerService implements OnModuleInit {
 
         // TODO: separate install from validation, do both at this level
         // install if possible
-        const allowedOrRejected: AppRegistry | void = await this.appRegistryService.allowOrReject(
-          data,
-        );
+        const allowedOrRejected: AppRegistry | void = await this.appRegistryService.allowOrReject(data);
+        try {
+          allowedOrRejected = await this.appRegistryService.allowOrReject(data);
+        } catch (e) {
+          if (e.message.includes(`Node has insufficient balance`)) {
+            // try to deposit and reinstall the app
+            await this.addCollateral(data);
+            allowedOrRejected = await this.appRegistryService.allowOrReject(data);
+          }
+        }
         if (!allowedOrRejected) {
           logger.log(`No data from appRegistryService.allowOrReject, nothing was installed.`);
           return;
