@@ -273,7 +273,7 @@ describe(`Node method follows spec - install balance refund`, () => {
 
   it(`can uninstall with no changes`, async done => {
     nodeB.on(`INSTALL_EVENT`, async () => {
-      await rescindDepositRights(nodeB, multisigAddress);
+      await rescindDepositRights(nodeA, multisigAddress);
       const appInstancesNodeA = await getInstalledAppInstances(nodeA);
       const appInstancesNodeB = await getInstalledAppInstances(nodeB);
       expect(appInstancesNodeA.length).toBe(0);
