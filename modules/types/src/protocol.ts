@@ -37,9 +37,7 @@ export type InstallProtocolParams = {
   responderDepositTokenAddress: string;
   multisigAddress: string;
   initiatorBalanceDecrement: BigNumber;
-  initiatorTokenAddress: string;
   responderBalanceDecrement: BigNumber;
-  responderTokenAddress: string;
   participants: string[];
   initialState: SolidityValueType;
   appInterface: AppInterface;
