@@ -4,6 +4,9 @@ import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./errors";
 import { StateChannel } from "../models";
 import { BigNumber } from "ethers/utils";
 
+// NOTE: will not fail if there is no free balance class. there is
+// no free balance in the case of a channel between virtual
+// participants
 export function assertSufficientFundsWithinFreeBalance(
   channel: StateChannel,
   publicIdentifier: string,
