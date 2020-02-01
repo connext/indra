@@ -1,10 +1,4 @@
-import {
-  ChannelAppSequences,
-  StateChannelJSON,
-  SupportedApplication,
-  SupportedApplications,
-  CoinBalanceRefundApp,
-} from "@connext/types";
+import { ChannelAppSequences, StateChannelJSON, CoinBalanceRefundApp } from "@connext/types";
 import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { Contract } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
@@ -94,7 +88,8 @@ export class ChannelService {
 
     await this.proposeCoinBalanceRefund(assetId, channel);
 
-    return await this.cfCoreService.deposit(multisigAddress, amount, getAddress(assetId));
+    const res = await this.cfCoreService.deposit(multisigAddress, amount, getAddress(assetId));
+    
   }
 
   async proposeCoinBalanceRefund(assetId: string, channel: Channel): Promise<void> {
