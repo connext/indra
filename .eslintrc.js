@@ -11,6 +11,7 @@ module.exports = {
     semi: ["error", "always"],
     "spaced-comment": "off",
     "no-prototype-builtins": "off",
+    "sort-keys": ["error"],
   },
   settings: {
     react: {
