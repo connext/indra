@@ -54,4 +54,23 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     onchain.channel = channel;
     return await this.save(onchain);
   }
+
+  async addCollateralization(tx: Transaction, channel: Channel): Promise<OnchainTransaction> {
+    const onchain = new OnchainTransaction();
+    onchain.reason = TransactionReason.COLLATERALIZATION;
+    onchain.value = tx.value;
+    onchain.gasPrice = tx.gasPrice;
+    onchain.gasLimit = tx.gasLimit;
+    onchain.nonce = tx.nonce;
+    onchain.to = tx.to;
+    onchain.from = tx.from;
+    onchain.hash = tx.hash;
+    onchain.data = tx.data;
+    onchain.v = tx.v;
+    onchain.r = tx.r;
+    onchain.s = tx.s;
+
+    onchain.channel = channel;
+    return await this.save(onchain);
+  }
 }
