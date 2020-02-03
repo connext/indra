@@ -101,8 +101,8 @@ describe("SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter", () => {
       ],
       {
         capitalProvided,
-        capitalProvider: to,
-        virtualAppUser: lender,
+        capitalProvider: lender,
+        virtualAppUser: to,
         tokenAddress: AddressZero,
       },
     );
@@ -111,25 +111,22 @@ describe("SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter", () => {
     expect(await provider.getBalance(lender)).to.eq(Zero);
   });
 
-  // FIXME: This test fails because `lender` has Zero amount. I think probably
-  //        has something to do with the fact that `address payable` is used but
-  //        I'm not entirely sure.
-  it.skip("Can distribute ETH coins correctly partially", async () => {
+  it("Can distribute ETH coins correctly partially", async () => {
     const to = hexlify(randomBytes(20));
     const randomAddress = hexlify(randomBytes(20));
     const lender = hexlify(randomBytes(20));
-    const capitalProvided = One;
+    const capitalProvided = One.add(One);
     const amount = capitalProvided.div(2);
 
     await interpretOutcomeAndExecuteEffect(
       [
-        { to, amount: capitalProvided },
-        { to: randomAddress, amount: Zero },
+        { to, amount },
+        { to: randomAddress, amount },
       ],
       {
         capitalProvided,
-        capitalProvider: to,
-        virtualAppUser: lender,
+        capitalProvider: lender,
+        virtualAppUser: to,
         tokenAddress: AddressZero,
       },
     );
@@ -151,8 +148,8 @@ describe("SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter", () => {
       ],
       {
         capitalProvided,
-        capitalProvider: to,
-        virtualAppUser: lender,
+        capitalProvider: lender,
+        virtualAppUser: to,
         tokenAddress: erc20.address,
       },
     );
@@ -161,25 +158,22 @@ describe("SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter", () => {
     expect(await erc20.functions.balanceOf(lender)).to.eq(Zero);
   });
 
-  // FIXME: This test fails because `lender` has Zero amount. I think probably
-  //        has something to do with the fact that `address payable` is used but
-  //        I'm not entirely sure.
-  it.skip("Can distribute ERC20 coins correctly partially", async () => {
+  it("Can distribute ERC20 coins correctly partially", async () => {
     const to = hexlify(randomBytes(20));
     const randomAddress = hexlify(randomBytes(20));
     const lender = hexlify(randomBytes(20));
-    const capitalProvided = One;
+    const capitalProvided = One.mul(2);
     const amount = capitalProvided.div(2);
 
     await interpretOutcomeAndExecuteEffect(
       [
-        { to, amount: capitalProvided },
-        { to: randomAddress, amount: Zero },
+        { to, amount },
+        { to: randomAddress, amount },
       ],
       {
         capitalProvided,
-        capitalProvider: to,
-        virtualAppUser: lender,
+        capitalProvider: lender,
+        virtualAppUser: to,
         tokenAddress: erc20.address,
       },
     );
