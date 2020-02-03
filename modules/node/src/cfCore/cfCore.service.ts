@@ -146,6 +146,39 @@ export class CFCoreService {
     return depositRes.result.result as CFCoreTypes.DepositResult;
   }
 
+  async withdraw(
+    multisigAddress: string,
+    amount: BigNumber,
+    assetId: string = AddressZero,
+    recipient: string = this.cfCore.freeBalanceAddress,
+  ): Promise<CFCoreTypes.WithdrawResult> {
+    logger.debug(
+      `Calling ${ProtocolTypes.chan_withdraw} with params: ${stringify({
+        amount,
+        multisigAddress,
+        tokenAddress: assetId,
+      })}`,
+    );
+    const withdrawRes = await this.cfCore.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: ProtocolTypes.chan_deposit,
+      parameters: {
+        amount,
+        multisigAddress,
+        recipient,
+        tokenAddress: assetId,
+      } as CFCoreTypes.WithdrawParams,
+    });
+    logger.debug(`withdraw called with result ${stringify(withdrawRes.result.result)}`);
+    const multisig = bigNumberify(withdrawRes.result.result.multisigBalance);
+    if (multisig.lt(amount)) {
+      logger.error(
+        `multisig balance is lt deposit amount. deposited: ${multisig.toString()}, requested: ${amount.toString()}`,
+      );
+    }
+    return withdrawRes.result.result as CFCoreTypes.WithdrawResult;
+  }
+
   async proposeInstallApp(params: CFCoreTypes.ProposeInstallParams): Promise<CFCoreTypes.ProposeInstallResult> {
     logger.debug(`Calling ${ProtocolTypes.chan_proposeInstall} with params: ${stringify(params)}`);
     const proposeRes = await this.cfCore.rpcRouter.dispatch({

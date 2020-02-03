@@ -81,6 +81,38 @@ export class ChannelService {
     return res;
   }
 
+  async withdraw(
+    multisigAddress: string,
+    amount: BigNumber,
+    assetId: string = AddressZero,
+  ): Promise<CFCoreTypes.WithdrawResult> {
+    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
+    if (!channel) {
+      throw new Error(`No channel exists for multisigAddress ${multisigAddress}`);
+    }
+
+    // don't allow deposit if user's balance refund app is installed
+    const balanceRefundApp = await this.cfCoreService.getCoinBalanceRefundApp(multisigAddress, assetId);
+    if (balanceRefundApp && balanceRefundApp.latestState[`recipient`] === xpubToAddress(channel.userPublicIdentifier)) {
+      throw new Error(`Cannot withdraw, user's CoinBalanceRefundApp is installed for ${channel.userPublicIdentifier}`);
+    }
+
+    if (
+      balanceRefundApp &&
+      balanceRefundApp.latestState[`recipient`] === this.cfCoreService.cfCore.freeBalanceAddress
+    ) {
+      logger.log(`Node's CoinBalanceRefundApp is installed, removing first.`);
+      await this.cfCoreService.rescindDepositRights(channel.multisigAddress, assetId);
+    }
+
+    await this.proposeCoinBalanceRefund(assetId, channel);
+
+    const res = await this.cfCoreService.withdraw(multisigAddress, amount, getAddress(assetId));
+    const withdrawalTx = await this.configService.getEthProvider().getTransaction(res.txHash);
+    await this.onchainRepository.addCollateralization(withdrawalTx, channel);
+    return res;
+  }
+
   async proposeCoinBalanceRefund(assetId: string, channel: Channel): Promise<void> {
     // any deposit has to first propose the balance refund app
     const ethProvider = this.configService.getEthProvider();
