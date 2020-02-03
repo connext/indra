@@ -109,7 +109,7 @@ export class ChannelService {
 
     const res = await this.cfCoreService.withdraw(multisigAddress, amount, getAddress(assetId));
     const withdrawalTx = await this.configService.getEthProvider().getTransaction(res.txHash);
-    await this.onchainRepository.addCollateralization(withdrawalTx, channel);
+    await this.onchainRepository.addNodeWithdrawal(withdrawalTx, channel);
     return res;
   }
 
