@@ -77,7 +77,7 @@ export class NatsMessagingService implements IMessagingService {
   }
 
   async subscribe(
-  subject: string,
+    subject: string,
     callback: (msg: CFCoreTypes.NodeMessage) => void,
   ): Promise<void> {
     this.assertConnected();

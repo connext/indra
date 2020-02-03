@@ -22,6 +22,7 @@ import {
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
+import { assertSufficientFundsWithinFreeBalance } from "../utils";
 
 const {
   OP_SIGN,
@@ -58,9 +59,31 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       domainSeparator
     } = context;
 
-    const { responderXpub, multisigAddress } = params as InstallProtocolParams;
+    const {
+      responderXpub,
+      multisigAddress,
+      initiatorDepositTokenAddress,
+      responderDepositTokenAddress,
+      initiatorBalanceDecrement,
+      responderBalanceDecrement,
+      initiatorXpub
+    } = params as InstallProtocolParams;
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)!;
+
+    assertSufficientFundsWithinFreeBalance(
+      preProtocolStateChannel,
+      initiatorXpub,
+      initiatorDepositTokenAddress,
+      initiatorBalanceDecrement
+    );
+
+    assertSufficientFundsWithinFreeBalance(
+      preProtocolStateChannel,
+      responderXpub,
+      responderDepositTokenAddress,
+      responderBalanceDecrement
+    );
 
     const postProtocolStateChannel = computeStateChannelTransition(
       preProtocolStateChannel,
@@ -200,9 +223,31 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     // Aliasing `signature` to this variable name for code clarity
     const counterpartySignatureOnConditionalTransaction = signature;
 
-    const { initiatorXpub, multisigAddress } = params as InstallProtocolParams;
+    const {
+      initiatorXpub,
+      multisigAddress,
+      responderBalanceDecrement,
+      responderXpub,
+      responderDepositTokenAddress,
+      initiatorBalanceDecrement,
+      initiatorDepositTokenAddress
+    } = params as InstallProtocolParams;
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)!;
+
+    assertSufficientFundsWithinFreeBalance(
+      preProtocolStateChannel,
+      initiatorXpub,
+      initiatorDepositTokenAddress,
+      initiatorBalanceDecrement
+    );
+
+    assertSufficientFundsWithinFreeBalance(
+      preProtocolStateChannel,
+      responderXpub,
+      responderDepositTokenAddress,
+      responderBalanceDecrement
+    );
 
     const postProtocolStateChannel = computeStateChannelTransition(
       preProtocolStateChannel,

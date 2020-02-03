@@ -13,7 +13,8 @@ import {
   SolidityValueType,
   UninstallMessage,
   UninstallVirtualMessage,
-  CREATE_CHANNEL_EVENT
+  CREATE_CHANNEL_EVENT,
+  UNINSTALL_EVENT
 } from "@connext/types";
 import { Contract, Wallet } from "ethers";
 import { AddressZero, One, Zero, HashZero } from "ethers/constants";
@@ -1163,16 +1164,20 @@ export async function takeAppAction(node: Node, appId: string, action: any) {
   return res.result.result;
 }
 
-export async function uninstallApp(
+export function uninstallApp(
   node: Node,
   counterparty: Node,
   appId: string
 ): Promise<string> {
-  return new Promise(async resolve => {
-    counterparty.once(`UNINSTALL_EVENT`, (msg: UninstallMessage) => {
+  return new Promise(async (resolve, reject) => {
+    counterparty.once(UNINSTALL_EVENT, (msg: UninstallMessage) => {
       resolve(msg.data.appInstanceId);
     });
-    await node.rpcRouter.dispatch(constructUninstallRpc(appId));
+    try {
+      await node.rpcRouter.dispatch(constructUninstallRpc(appId));
+    } catch (e) {
+      return reject(e.message);
+    }
   });
 }
 

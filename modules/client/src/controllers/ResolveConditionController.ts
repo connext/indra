@@ -47,6 +47,7 @@ export class ResolveConditionController extends AbstractController {
     this.log.error(`Failed to resolve linked transfer ${paymentId}: ${e.stack || e.message}`);
     this.connext.emit(RECEIVE_TRANSFER_FAILED_EVENT, {
       paymentId,
+      error: e.stack || e.message,
     });
 
     // TODO: remove when deprecated
@@ -165,11 +166,17 @@ export class ResolveConditionController extends AbstractController {
 
     // handle collateral issues by pinging the node to see if the app can be
     // properly installed.
-    const { appId } = await this.node.resolveLinkedTransfer(
-      paymentId,
-      createLinkedHash(amountBN, assetId, paymentId, preImage),
-      meta,
-    );
+    let appId;
+    try {
+      const res = await this.node.resolveLinkedTransfer(
+        paymentId,
+        createLinkedHash(amountBN, assetId, paymentId, preImage),
+        meta,
+      );
+      appId = res.appId;
+    } catch (e) {
+      this.handleResolveErr(paymentId, e);
+    }
 
     // verify and uninstall if there is an error
     try {

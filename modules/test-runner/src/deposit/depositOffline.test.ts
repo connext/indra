@@ -1,17 +1,27 @@
+import { IConnextClient } from "@connext/types";
 import { utils } from "@connext/client";
+import * as lolex from "lolex";
 
 import {
   APP_PROTOCOL_TOO_LONG,
+  createClient,
   createClientWithMessagingLimits,
   expect,
   fundChannel,
   getMessaging,
+  getOpts,
   getStore,
-  INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
-  PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
   ZERO_ZERO_ONE_ETH,
   cleanupMessaging,
+  TOKEN_AMOUNT,
+  MessagingEvent,
+  MesssagingEventData,
+  getProtocolFromData,
+  RECEIVED,
+  SEND,
 } from "../util";
+import { AddressZero } from "ethers/constants";
+import { BigNumber } from "ethers/utils";
 
 const { CF_METHOD_TIMEOUT } = utils;
 
@@ -20,6 +30,16 @@ const { CF_METHOD_TIMEOUT } = utils;
  * point in the protocol.
  */
 describe("Deposit offline tests", () => {
+  let clock: any;
+  let client: IConnextClient;
+
+  beforeEach(() => {
+    clock = lolex.install({
+      shouldAdvanceTime: true,
+      advanceTimeDelta: 1,
+      now: Date.now(),
+    });
+  });
   /**
    * In this case, the client correctly stops processing received messages
    * so the `proposeInstallApp` call never resolves. However, the node *does*
@@ -29,75 +49,119 @@ describe("Deposit offline tests", () => {
    * before it is completed by both parties) if the `initiator` goes offline
    * after sending m1
    */
-  it("client proposes deposit, but node doesn't receive the NATS message (or no response from node)", async function(): Promise<
-    void
-    > {
-    // @ts-ignore
-    this.timeout(100_000);
+
+  const makeDepositCall = async (opts: {
+    failsWith?: string;
+    protocol?: string;
+    subjectToFastforward?: MessagingEvent;
+    amount?: BigNumber;
+    assetId?: string;
+  }) => {
+    const { amount, assetId, failsWith, protocol, subjectToFastforward } = opts;
+    const defaultAmount = assetId && assetId !== AddressZero ? TOKEN_AMOUNT : ZERO_ZERO_ONE_ETH;
+
+    if (!failsWith) {
+      await fundChannel(client, amount || defaultAmount, assetId);
+      return;
+    }
+
+    if (!subjectToFastforward) {
+      await expect(fundChannel(client, amount || defaultAmount, assetId)).to.be.rejectedWith(
+        failsWith!,
+      );
+      return;
+    }
+
+    // get messaging of client
+    const messaging = getMessaging(client.publicIdentifier);
+    messaging!.on(subjectToFastforward, async (msg: MesssagingEventData) => {
+      // check if you should fast forward on specific protocol, or
+      // just on specfic subject
+      if (!protocol) {
+        clock.tick(89_000);
+        return;
+      }
+      if (getProtocolFromData(msg) === protocol) {
+        clock.tick(89_000);
+        return;
+      }
+    });
+    await expect(fundChannel(client, amount || defaultAmount, assetId)).to.be.rejectedWith(
+      failsWith!,
+    );
+    return;
+  };
+
+  it("client proposes deposit, but node doesn't receive the NATS message (or no response from node)", async () => {
     // create client where the propose protocol will not complete
     // in deposit, client will propose the `CoinBalanceRefund` app (is the
     // initiator in the `propose` protocol)
     // in the propose protocol, the initiator sends one message, and receives
     // one message, set the cap at 1 for `propose` in messaging of client
-    const client = await createClientWithMessagingLimits({
-      ceiling: { received: PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED },
+    client = await createClientWithMessagingLimits({
+      ceiling: { received: 0 },
       protocol: "propose",
     });
-    await expect(fundChannel(client, ZERO_ZERO_ONE_ETH)).to.be.rejectedWith(
-      APP_PROTOCOL_TOO_LONG("proposal"),
-    );
+
+    await makeDepositCall({
+      failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
+      subjectToFastforward: RECEIVED,
+      protocol: "propose",
+    });
   });
 
-  it("client proposes deposit, but node only receives the NATS message after timeout is over", async function(): Promise<
-    void
-    > {
-    // @ts-ignore
-    this.timeout(105_000);
+  it("client proposes deposit, but node only receives the NATS message after timeout is over", async () => {
     // cf method timeout is 90s, client will send any messages with a
     // preconfigured delay
     const CLIENT_DELAY = CF_METHOD_TIMEOUT + 1_000;
-    const client = await createClientWithMessagingLimits({
+    client = await createClientWithMessagingLimits({
       delay: { sent: CLIENT_DELAY },
       protocol: "propose",
     });
-    await expect(fundChannel(client, ZERO_ZERO_ONE_ETH)).to.be.rejectedWith(
-      APP_PROTOCOL_TOO_LONG("proposal"),
-    );
+
+    await makeDepositCall({
+      failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
+      subjectToFastforward: SEND,
+      protocol: "propose",
+    });
   });
 
   it("client proposes deposit, but node only responds after timeout is over", async function(): Promise<
     void
     > {
-    // @ts-ignore
-    this.timeout(105_000);
     // cf method timeout is 90s, client will process any received messages
     // with a preconfigured delay
     const CLIENT_DELAY = CF_METHOD_TIMEOUT + 1_000;
-    const client = await createClientWithMessagingLimits({
+    client = await createClientWithMessagingLimits({
       delay: { received: CLIENT_DELAY },
       protocol: "propose",
     });
-    await expect(fundChannel(client, ZERO_ZERO_ONE_ETH)).to.be.rejectedWith(
-      APP_PROTOCOL_TOO_LONG("proposal"),
-    );
+
+    await makeDepositCall({
+      failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
+      subjectToFastforward: RECEIVED,
+      protocol: "propose",
+    });
   });
 
-  it("client goes offline after proposing deposit and then comes back after timeout is over", async function(): Promise<
-    void
-    > {
-    // @ts-ignore
-    this.timeout(105_000);
-    const client = await createClientWithMessagingLimits({
+  it("client goes offline after proposing deposit and then comes back after timeout is over", async () => {
+    client = await createClientWithMessagingLimits({
       protocol: "install",
-      ceiling: { received: INSTALL_SUPPORTED_APP_COUNT_RECEIVED },
+      ceiling: { received: 0 },
     });
-    await expect(fundChannel(client, ZERO_ZERO_ONE_ETH)).to.be.rejectedWith("Failed to deposit");
+
+    await makeDepositCall({
+      failsWith: "Failed to deposit",
+      subjectToFastforward: RECEIVED,
+      protocol: "install",
+    });
+
+    const { mnemonic } = getOpts(client.publicIdentifier);
+    await createClient({ mnemonic });
   });
 
   it("client proposes deposit, but then deletes their store", async function(): Promise<void> {
-    // @ts-ignore
-    this.timeout(105_000);
-    const client = await createClientWithMessagingLimits();
+    client = await createClientWithMessagingLimits();
     const messaging = getMessaging(client.publicIdentifier);
     expect(messaging).to.be.ok;
     // on proposal accepted message, delete the store
@@ -109,10 +173,15 @@ describe("Deposit offline tests", () => {
         await store.reset();
       },
     );
-    await expect(fundChannel(client, ZERO_ZERO_ONE_ETH)).to.be.rejectedWith("Failed to deposit");
+    await makeDepositCall({
+      failsWith: "Failed to deposit",
+    });
   });
 
   afterEach(async () => {
     await cleanupMessaging();
+    if (clock) {
+      clock.reset();
+    }
   });
 });

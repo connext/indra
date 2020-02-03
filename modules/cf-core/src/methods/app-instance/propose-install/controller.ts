@@ -65,8 +65,6 @@ export default class ProposeInstallController extends NodeController {
 
     const {
       proposedToIdentifier,
-      initiatorDeposit,
-      responderDeposit,
       initiatorDepositTokenAddress: initiatorDepositTokenAddressParam,
       responderDepositTokenAddress: responderDepositTokenAddressParam
     } = params;
@@ -97,25 +95,6 @@ export default class ProposeInstallController extends NodeController {
       proposedToIdentifier
     );
 
-    // NOTE: will not fail if there is no free balance class. there is
-    // no free balance in the case of a channel between virtual
-    // participants
-    assertSufficientFundsWithinFreeBalance(
-      stateChannel,
-      myIdentifier,
-      initiatorDepositTokenAddress,
-      initiatorDeposit
-    );
-
-    // NOTE: will not fail if there is no free balance class. there is
-    // no free balance in the case of a channel between virtual
-    // participants
-    assertSufficientFundsWithinFreeBalance(
-      stateChannel,
-      proposedToIdentifier,
-      responderDepositTokenAddress,
-      responderDeposit
-    );
 
     params.initiatorDepositTokenAddress = initiatorDepositTokenAddress;
     params.responderDepositTokenAddress = responderDepositTokenAddress;

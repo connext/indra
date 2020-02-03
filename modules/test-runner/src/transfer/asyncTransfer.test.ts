@@ -16,6 +16,7 @@ import {
   TOKEN_AMOUNT,
   requestCollateral,
 } from "../util";
+import { xpubToAddress } from "@connext/client/dist/lib";
 
 describe("Async Transfers", () => {
   let clientA: IConnextClient;
@@ -46,6 +47,9 @@ describe("Async Transfers", () => {
   it("client A transfers eth to client B without collateralizing", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
+
+    const receiverBal = await clientB.getFreeBalance(transfer.assetId);
+    expect(receiverBal[xpubToAddress(clientB.nodePublicIdentifier)].lt(transfer.amount)).to.be.true;
 
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId);
   });
