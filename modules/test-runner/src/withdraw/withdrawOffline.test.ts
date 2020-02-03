@@ -28,7 +28,7 @@ import {
 
 const { withdrawalKey } = utils;
 
-describe.only("Withdraw offline tests", () => {
+describe("Withdraw offline tests", () => {
   let clock: any;
   let client: IConnextClient;
 
