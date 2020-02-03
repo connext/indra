@@ -39,6 +39,7 @@
     "chai": "4.2.0",
     "ethereum-waffle": "2.1.0",
     "ethlint": "1.2.5",
+    "event-target-shim": "5.0.1",
     "mocha": "6.2.2",
     "ts-mocha": "6.0.0",
     "ts-node": "8.5.4",
