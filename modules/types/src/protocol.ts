@@ -262,6 +262,12 @@ export namespace ProtocolTypes {
   export type DepositResult = {
     multisigBalance: BigNumber;
     tokenAddress: string;
+    transactionHash: string;
+  };
+
+  export type RescindDepositRightsResult = {
+    multisigBalance: BigNumber;
+    tokenAddress: string;
   };
 
   export type RequestDepositRightsResult = {
