@@ -16,9 +16,13 @@ import {
   UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED,
   APP_PROTOCOL_TOO_LONG,
   UNINSTALL_SUPPORTED_APP_COUNT_SENT,
-  getStore,
   cleanupMessaging,
-  fastForwardDuringCall,
+  MessagingEvent,
+  MesssagingEventData,
+  getProtocolFromData,
+  RECEIVED,
+  SEND,
+  getStore,
 } from "../util";
 import { BigNumber } from "ethers/utils";
 
@@ -36,7 +40,8 @@ describe("Swap offline", () => {
     tokenToEth?: boolean;
     failsWith?: string;
     client?: IConnextClient;
-    fastForward?: boolean;
+    fastForward?: MessagingEvent;
+    protocol?: string;
   }) => {
     const {
       client: providedClient,
@@ -46,6 +51,7 @@ describe("Swap offline", () => {
       messagingConfig,
       tokenToEth,
       fastForward,
+      protocol,
     } = opts;
     // these tests should not have collateral issues
     // so make sure they are always properly funded
@@ -68,7 +74,19 @@ describe("Swap offline", () => {
     if (fastForward) {
       // fast forward the clock for tests with delay
       // after swapping
-      await fastForwardDuringCall(89_000, swapCb, clock, failsWith, 3000);
+      const clientMessaging = getMessaging(client.publicIdentifier);
+      clientMessaging!.on(fastForward, async (msg: MesssagingEventData) => {
+        // check if you should fast forward on specific protocol, or
+        // just on specfic subject
+        if (!protocol) {
+          clock.tick(89_000);
+          return;
+        }
+        if (getProtocolFromData(msg) === protocol) {
+          clock.tick(89_000);
+          return;
+        }
+      });
       return;
     }
 
@@ -96,7 +114,7 @@ describe("Swap offline", () => {
     void
     > {
     // 3 app installs expected (coin balance x2, swap)
-    const expectedInstallsReceived = 3 * INSTALL_SUPPORTED_APP_COUNT_RECEIVED;
+    const expectedInstallsReceived = 2 * INSTALL_SUPPORTED_APP_COUNT_RECEIVED;
     const messagingConfig = {
       ceiling: { received: expectedInstallsReceived },
       protocol: "install",
@@ -109,14 +127,15 @@ describe("Swap offline", () => {
       inputAmount: ETH_AMOUNT_SM,
       outputAmount: TOKEN_AMOUNT,
       failsWith: APP_PROTOCOL_TOO_LONG("install"),
-      fastForward: true,
+      fastForward: RECEIVED,
+      protocol: "install",
     });
   });
 
   it("Bot A installs swap app successfully but then node goes offline for uninstall", async function(): Promise<
     void
     > {
-    const expectedUninstallsReceived = 3 * UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED;
+    const expectedUninstallsReceived = 2 * UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED;
     // does not receive messages, node is offline
     const messagingConfig = {
       ceiling: { received: expectedUninstallsReceived },
@@ -129,14 +148,15 @@ describe("Swap offline", () => {
       inputAmount: ETH_AMOUNT_SM,
       outputAmount: TOKEN_AMOUNT,
       failsWith: `Failed to uninstall swap: Error: ${APP_PROTOCOL_TOO_LONG("uninstall")}`,
-      fastForward: true,
+      fastForward: RECEIVED,
+      protocol: "uninstall",
     });
   });
 
   it("Bot A install swap app successfully but then goes offline for uninstall", async function(): Promise<
     void
     > {
-    const expectedUninstallsSent = 3 * UNINSTALL_SUPPORTED_APP_COUNT_SENT;
+    const expectedUninstallsSent = 2 * UNINSTALL_SUPPORTED_APP_COUNT_SENT;
     // does not receive messages, node is offline
     const messagingConfig = {
       ceiling: { sent: expectedUninstallsSent },
@@ -149,13 +169,12 @@ describe("Swap offline", () => {
       inputAmount: ETH_AMOUNT_SM,
       outputAmount: TOKEN_AMOUNT,
       failsWith: `Failed to uninstall swap: Error: ${APP_PROTOCOL_TOO_LONG("uninstall")}`,
-      fastForward: true,
+      fastForward: SEND,
+      protocol: "uninstall",
     });
   });
 
-  it("Bot A installs swap app successfully but then deletes store (before uninstall)", async function(): Promise<
-    void
-    > {
+  it("Bot A installs swap app successfully but then deletes store (before uninstall)", async () => {
     const providedClient = await createClientWithMessagingLimits();
     const messaging = getMessaging(providedClient.publicIdentifier);
     expect(messaging).to.be.ok;

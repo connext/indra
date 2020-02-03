@@ -32,14 +32,12 @@ export class SwapController extends AbstractController {
     const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
     const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
     const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
-    const nodeBal = preSwapToBal[xpubToAddress(this.connext.nodePublicIdentifier)];
     const swappedAmount = calculateExchange(amount, swapRate);
     validate(
       invalidAddress(fromAssetId),
       invalidAddress(toAssetId),
       notLessThanOrEqualTo(amount, userBal),
       notGreaterThan(amount, Zero),
-      notLessThanOrEqualTo(swappedAmount, nodeBal),
       notPositive(parseEther(swapRate)),
     );
 

@@ -13,6 +13,7 @@ import { MessageCounter, TestMessagingService } from "./messaging";
 
 let clientStore: { [xpub: string]: ConnextStore } = {};
 let clientMessaging: { [xpub: string]: TestMessagingService | undefined } = {};
+let clientOptions: { [xpub: string]: ClientOptions } = {};
 
 export const getStore = (xpub: string): ConnextStore => {
   return clientStore[xpub];
@@ -22,11 +23,16 @@ export const getMessaging = (xpub: string): TestMessagingService | undefined => 
   return clientMessaging[xpub];
 };
 
+export const getOpts = (xpub: string): ClientOptions => {
+  return clientOptions[xpub];
+};
+
 export const cleanupMessaging = async (xpub?: string): Promise<void> => {
   const toRemove = xpub ? [xpub] : Object.keys(clientMessaging);
   for (const pubId of toRemove) {
     if (clientMessaging[pubId]) {
       await clientMessaging[pubId]!.unsubscribe("indra.>");
+      await clientMessaging[pubId]!.removeAllListeners();
     }
   }
   return;
@@ -45,10 +51,11 @@ export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<I
   };
   const client = await connect(clientOpts);
 
-  // set client store and messaging
+  // set client store, messaging, and opts
   clientMessaging[client.publicIdentifier] =
     (clientOpts.messaging as TestMessagingService) || undefined;
   clientStore[client.publicIdentifier] = store;
+  clientOptions[client.publicIdentifier] = clientOpts;
 
   // TODO: add client endpoint to get node config, so we can easily have its xpub etc
 
@@ -120,15 +127,16 @@ export type ClientTestMessagingInputOpts = {
   ceiling: Partial<MessageCounter>; // set ceiling of sent/received
   protocol: string; // use "any" to limit any messages by count
   delay: Partial<MessageCounter>; // ms delay or sent callbacks
+  forbiddenSubjects: string[];
 };
 export const createClientWithMessagingLimits = async (
   opts: Partial<ClientTestMessagingInputOpts> = {},
 ): Promise<IConnextClient> => {
-  const { protocol, ceiling, delay } = opts;
-  const messageOptions: any = {};
+  const { protocol, ceiling, delay, forbiddenSubjects } = opts;
+  const messageOptions: any = { forbiddenSubjects: forbiddenSubjects || [] };
 
   // no defaults specified, exit early
-  if (!protocol || Object.keys(opts).length === 0) {
+  if (Object.keys(opts).length === 0) {
     const messaging = new TestMessagingService();
     expect(messaging.install.ceiling).to.be.undefined;
     expect(messaging.count.received).to.be.equal(0);
@@ -139,7 +147,7 @@ export const createClientWithMessagingLimits = async (
   if (protocol === "any") {
     // assign the ceiling for the general message count
     messageOptions.count = { ceiling, delay };
-  } else {
+  } else if (protocol && typeof protocol === "string") {
     // assign the protocol defaults struct
     messageOptions.protocolDefaults = {
       [protocol]: {
