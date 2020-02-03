@@ -278,12 +278,6 @@ export class Store {
 
   public async getAppInstance(appInstanceId: string): Promise<AppInstance> {
     const channel = await this.getChannelFromAppInstanceID(appInstanceId);
-    if (
-      channel.hasFreeBalance &&
-      appInstanceId === channel.freeBalance.identityHash
-    ) {
-      return channel.freeBalance;
-    }
     return channel.getAppInstance(appInstanceId);
   }
 
