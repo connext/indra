@@ -1,3 +1,4 @@
+import { utils } from "@connext/client";
 import { IConnextClient } from "@connext/types";
 import { BigNumber } from "ethers/utils";
 import { AddressZero, Zero } from "ethers/constants";
@@ -8,21 +9,26 @@ import {
   createClientWithMessagingLimits,
   ETH_AMOUNT_SM,
   expect,
-  fastForwardDuringCall,
   fundChannel,
   withdrawFromChannel,
   ZERO_ZERO_ZERO_FIVE_ETH,
-  FORBIDDEN_SUBJECT,
   getStore,
   getOpts,
   createClient,
   ethProvider,
+  getMessaging,
+  RECEIVED,
+  getProtocolFromData,
+  MesssagingEventData,
+  SEND,
+  delay,
+  SUBJECT_FORBIDDEN,
+  FORBIDDEN_SUBJECT_ERROR,
 } from "../util";
-import { utils } from "@connext/client";
 
 const { withdrawalKey } = utils;
 
-describe("Withdraw offline tests", () => {
+describe.only("Withdraw offline tests", () => {
   let clock: any;
   let client: IConnextClient;
 
@@ -55,12 +61,16 @@ describe("Withdraw offline tests", () => {
       protocol: "withdraw",
     });
 
-    await fastForwardDuringCall(
-      89_000,
-      () => withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
-      clock,
-      `timed out after 90s waiting for counterparty reply in withdraw`,
-    );
+    const messaging = getMessaging(client.publicIdentifier);
+    messaging!.on(RECEIVED, (msg: MesssagingEventData) => {
+      if (getProtocolFromData(msg) === "withdraw") {
+        clock.tick(89_000);
+      }
+    });
+
+    await expect(
+      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
+    ).to.be.rejectedWith(`timed out after 90s waiting for counterparty reply in withdraw`);
   });
 
   it("client proposes withdrawal and then goes offline before node responds", async () => {
@@ -69,12 +79,20 @@ describe("Withdraw offline tests", () => {
       protocol: "withdraw",
     });
 
-    await fastForwardDuringCall(
-      89_000,
-      () => withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
-      clock,
-      `timed out after 90s waiting for counterparty reply in withdraw`,
-    );
+    const messaging = getMessaging(client.publicIdentifier);
+    let eventCount = 0;
+    messaging!.on(SEND, async (msg: MesssagingEventData) => {
+      eventCount += 1;
+      if (getProtocolFromData(msg) === "withdraw" && eventCount === 1) {
+        // wait for message to be sent (happens after event thrown)
+        await delay(500);
+        clock.tick(89_000);
+      }
+    });
+
+    await expect(
+      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
+    ).to.be.rejectedWith(`timed out after 90s waiting for counterparty reply in withdraw`);
   });
 
   it("client proposes a node submitted withdrawal but node is offline for one message (commitment should be written to store and retried)", async () => {
@@ -82,13 +100,13 @@ describe("Withdraw offline tests", () => {
       forbiddenSubjects: ["channel.withdraw"],
     });
 
-    // make call, should fail
-    await fastForwardDuringCall(
-      89_000,
-      () => withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
-      clock,
-      FORBIDDEN_SUBJECT,
-    );
+    const messaging = getMessaging(client.publicIdentifier);
+    messaging!.on(SUBJECT_FORBIDDEN, () => {
+      clock.tick(89_000);
+    });
+    await expect(
+      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
+    ).to.be.rejectedWith(FORBIDDEN_SUBJECT_ERROR);
 
     // make sure withdrawal is in the store
     const store = getStore(client.publicIdentifier);
