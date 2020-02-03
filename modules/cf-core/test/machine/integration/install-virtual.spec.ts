@@ -1,4 +1,7 @@
-import { OutcomeType, SingleAssetTwoPartyIntermediaryAgreement } from "@connext/types";
+import {
+  OutcomeType,
+  SingleAssetTwoPartyIntermediaryAgreement
+} from "@connext/types";
 import { Contract, ContractFactory, Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -19,9 +22,12 @@ import {
   MinimumViableMultisig,
   NetworkContextForTestSuite,
   ProxyFactory,
-  TwoPartyFixedOutcomeApp,
+  TwoPartyFixedOutcomeApp
 } from "../../contracts";
-import { transferERC20Tokens, testDomainSeparator } from "../../integration/utils";
+import {
+  transferERC20Tokens,
+  testDomainSeparator
+} from "../../integration/utils";
 
 import { toBeEq } from "./bignumber-jest-matcher";
 import { connectToGanache } from "./connect-ganache";
@@ -168,7 +174,10 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
     ) {
       return StateChannel.setupChannel(
         network.IdentityApp,
-        { proxyFactory: proxyFactory.address, multisigMastercopy: network.MinimumViableMultisig },
+        {
+          proxyFactory: proxyFactory.address,
+          multisigMastercopy: network.MinimumViableMultisig
+        },
         proxyAddress, // used as multisigAddress
         xpubs
       ).setFreeBalance(
