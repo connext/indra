@@ -24,7 +24,10 @@ export default class RescindDepositRightsController extends NodeController {
     return [params.multisigAddress];
   }
 
-  protected async beforeExecution(): Promise<void> {}
+  protected async beforeExecution(
+    requestHandler: RequestHandler,
+    params: CFCoreTypes.RescindDepositRightsParams
+  ): Promise<void> {}
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
