@@ -12,7 +12,7 @@ import { asyncTransferAsset } from "../util/helpers/asyncTransferAsset";
 
 describe("Full Flow: Transfer", function(): void {
   // @ts-ignore
-  this.timeout(60_000);
+  this.timeout(90_000);
   let clientA: IConnextClient;
   let tokenAddress: string;
 
