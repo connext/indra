@@ -22,7 +22,8 @@ export class NatsMessagingService implements IMessagingService {
     const config = this.config as nats.NatsConnectionOptions;
     config.servers = typeof messagingUrl === `string` ? [messagingUrl] : messagingUrl;
     config.payload = nats.Payload.JSON;
-    this.connection = await nats.connect(config);
+    // NOTE: high maxPingOut (default=2) to prevent errors while time-travelling during tests
+    this.connection = await nats.connect({ ...config, maxPingOut: 1000000 });
     this.log.debug(`Connected!`);
   }
 
