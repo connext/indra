@@ -163,9 +163,9 @@ describe("Withdrawal", () => {
       // give client eth rights
       await requestDepositRights(client, AddressZero, false);
       // try to withdraw
-      await expect(
-        withdrawFromChannel(client, ZERO_ZERO_ZERO_ONE_ETH, AddressZero),
-      ).to.be.rejectedWith(NODE_HAS_RIGHTS_ERROR);
+      await expect(withdrawFromChannel(client, ZERO_ZERO_ZERO_ONE_ETH, AddressZero)).to.be.rejectedWith(
+        NODE_HAS_RIGHTS_ERROR,
+      );
     });
 
     it("node has active rights in tokens, withdrawing eth", async () => {
@@ -181,9 +181,9 @@ describe("Withdrawal", () => {
       // give client eth rights
       await requestDepositRights(client, tokenAddress, false);
       // try to withdraw
-      await expect(
-        withdrawFromChannel(client, ZERO_ZERO_ZERO_ONE_ETH, tokenAddress),
-      ).to.be.rejectedWith(NODE_HAS_RIGHTS_ERROR);
+      await expect(withdrawFromChannel(client, ZERO_ZERO_ZERO_ONE_ETH, tokenAddress)).to.be.rejectedWith(
+        NODE_HAS_RIGHTS_ERROR,
+      );
     });
 
     it("node has active rights in eth, withdrawing tokens", async () => {
