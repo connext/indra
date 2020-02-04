@@ -93,7 +93,7 @@ jobs:
     - run: make pull-release
     - run: make start-test-release
     - run: sleep 15 && make dls
-    - run: TEST_MODE=release make test-integration
+    - run: TEST_MODE=release make test-integration || docker service logs --tail 1000 indra_node
 
   test-backwards-compatibility:
     runs-on: ubuntu-latest
@@ -103,7 +103,7 @@ jobs:
     - run: make pull-release
     - run: make start-test-release
     - run: sleep 15 && make dls
-    - run: make test-backwards-compatibility
+    - run: make test-backwards-compatibility || docker service logs --tail 1000 indra_node
 
   test-daicard:
     runs-on: ubuntu-16.04
@@ -112,7 +112,7 @@ jobs:
     - uses: actions/checkout@v1
     - run: make pull-release
     - run: make start-test-release
-    - run: make test-daicard
+    - run: make test-daicard || docker service logs --tail 1000 indra_node
 
   deploy-rinkeby:
     env:
