@@ -1,3 +1,11 @@
-import { Assertion, expect } from "chai";
+import { connectDb, disconnectDb } from "./util";
 
-export { Assertion, expect };
+before("Global Setup", async () => {
+  await connectDb();
+  console.log("DB Connected!");
+});
+
+after("Global Teardown", async () => {
+  await disconnectDb();
+  console.log("DB Disconnected!");
+});
