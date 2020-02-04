@@ -15,6 +15,7 @@ import {
   FUNDED_MNEMONICS,
   TOKEN_AMOUNT,
   requestCollateral,
+  delay,
 } from "../util";
 import { xpubToAddress } from "@connext/client/dist/lib";
 
@@ -42,6 +43,23 @@ describe("Async Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await clientB.requestCollateral(transfer.assetId);
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId);
+  });
+
+  it.only("latency test: client A transfers eth to client B through node", async () => {
+    const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+    await fundChannel(clientA, transfer.amount, transfer.assetId);
+    await requestCollateral(clientB, transfer.assetId);
+    const hrstart = process.hrtime()
+    clientB.on("RECEIVE_TRANSFER_FINISHED_EVENT", () => {
+        const hrend = process.hrtime(hrstart)
+        console.log('Execution time (hr): %ds %dms', hrend[0], hrend[1] / 1000000)
+    })
+    await clientA.transfer({
+        assetId: AddressZero,
+        recipient: clientB.publicIdentifier,
+        amount: transfer.amount.toString()
+    })
+    await delay(20000)
   });
 
   it("client A transfers eth to client B without collateralizing", async () => {
