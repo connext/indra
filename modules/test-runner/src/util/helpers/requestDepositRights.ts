@@ -62,7 +62,6 @@ export const requestDepositRights = async (
       responderDepositTokenAddress: assetId,
       timeout: Zero,
     };
-    console.log("HEREEEEEEE");
     const { appInstanceId } = await client.proposeInstallApp(params);
     // hub will not automatically install, so manually install app
     const { appInstance } = await client.installApp(appInstanceId);
