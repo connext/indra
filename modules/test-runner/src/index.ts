@@ -17,3 +17,4 @@ import "./transfer/asyncTransfer.test";
 import "./transfer/asyncTransferOffline.test";
 import "./transfer/getLinkedTransfer.test";
 import "./withdraw/withdraw.test";
+import "./withdraw/withdrawOffline.test";

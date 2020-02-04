@@ -1,3 +1,4 @@
+import { DEPOSIT_STARTED_EVENT, DEPOSIT_FAILED_EVENT } from "@connext/types";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { BaseProvider, TransactionRequest, TransactionResponse } from "ethers/providers";
@@ -18,8 +19,7 @@ import {
   OutcomeType,
   SolidityValueType,
 } from "../../../types";
-import { DEPOSIT_FAILED } from "../../errors";
-import { DEPOSIT_STARTED_EVENT, DEPOSIT_FAILED_EVENT } from "@connext/types";
+import { DEPOSIT_FAILED, NOT_YOUR_BALANCE_REFUND_APP } from "../../errors";
 
 const DEPOSIT_RETRY_COUNT = 3;
 
@@ -155,6 +155,13 @@ export async function uninstallBalanceRefundApp(
       // no need to unintall, already uninstalled
       return;
     }
+    throw new Error(e.stack || e.message);
+  }
+
+  // make sure its your app
+  const { recipient } = refundApp.latestState;
+  if (recipient !== xkeyKthAddress(publicIdentifier)) {
+    throw new Error(NOT_YOUR_BALANCE_REFUND_APP);
   }
 
   await protocolRunner.initiateProtocol(
