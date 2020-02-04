@@ -26,7 +26,7 @@ export default class RescindDepositRightsController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.RescindDepositRightsParams
+    params: CFCoreTypes.RescindDepositRightsParams,
   ): Promise<void> {}
 
   protected async executeMethodImplementation(
@@ -58,8 +58,8 @@ export default class RescindDepositRightsController extends NodeController {
       {
         ...params,
         // unused params to make types happy
-        tokenAddress,
         amount: Zero,
+        tokenAddress,
       },
       await provider.getBlockNumber(),
     );

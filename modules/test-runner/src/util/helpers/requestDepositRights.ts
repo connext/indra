@@ -18,9 +18,7 @@ export const requestDepositRights = async (
   const multisigBalance =
     assetId === AddressZero
       ? await ethProvider.getBalance(client.multisigAddress)
-      : await new Contract(assetId, tokenAbi, ethProvider).functions.balanceOf(
-        client.multisigAddress,
-      );
+      : await new Contract(assetId, tokenAbi, ethProvider).functions.balanceOf(client.multisigAddress);
   // get coin balance app details
   const {
     actionEncoding,
@@ -64,6 +62,7 @@ export const requestDepositRights = async (
       responderDepositTokenAddress: assetId,
       timeout: Zero,
     };
+    console.log("HEREEEEEEE");
     const { appInstanceId } = await client.proposeInstallApp(params);
     // hub will not automatically install, so manually install app
     const { appInstance } = await client.installApp(appInstanceId);
