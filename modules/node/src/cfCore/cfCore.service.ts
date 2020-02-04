@@ -161,7 +161,7 @@ export class CFCoreService {
     );
     const withdrawRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
-      methodName: ProtocolTypes.chan_deposit,
+      methodName: ProtocolTypes.chan_withdraw,
       parameters: {
         amount,
         multisigAddress,
