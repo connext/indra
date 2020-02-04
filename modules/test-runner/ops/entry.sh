@@ -40,7 +40,9 @@ then
   mocha --timeout 60000 --bail --check-leaks --bail --watch $bundle
 elif [[ $1 == "--flamegraph" ]]
 then
-  0x dist/flamegraph.bundle.js
+  node dist/flamegraphPrep.bundle.js
+  sleep 2
+  0x -o dist/flamegraph.bundle.js
 else
   mocha --timeout 60000 --bail --check-leaks --bail --exit $bundle
 fi
