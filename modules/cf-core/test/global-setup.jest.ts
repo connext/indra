@@ -35,7 +35,6 @@ const fundAddress = async (
 
 export default async function globalSetup(): Promise<void> {
   const ethProvider = new JsonRpcProvider(env.ETHPROVIDER_URL) as any;
-  const network = await ethProvider.getNetwork();
   const fundedAccount = Wallet.createRandom().connect(ethProvider);
   const addresses = [
     A_EXTENDED_PRIVATE_KEY,
