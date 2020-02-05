@@ -211,9 +211,10 @@ export class ResolveConditionController extends AbstractController {
     }
 
     this.connext.emit(RECEIVE_TRANSFER_FINISHED_EVENT, {
-      paymentId,
       amount,
+      assetId,
       meta,
+      paymentId,
     });
 
     // TODO: remove when deprecated
