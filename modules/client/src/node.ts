@@ -25,7 +25,7 @@ import { invalidXpub } from "./validation";
 import { chan_nodeAuth } from "@connext/types";
 
 // Include our access token when interacting with these subjects
-const guardedSubjects = ["channel", "client", "lock", "transfer"];
+const guardedSubjects = ["channel", "client", "lock"];
 const sendFailed = "Failed to send message";
 
 // NOTE: swap rates are given as a decimal string describing:
@@ -40,6 +40,7 @@ export class NodeApiClient implements INodeApiClient {
   private _userPublicIdentifier: string | undefined;
   private _nodePublicIdentifier: string | undefined;
   private _channelProvider: IChannelProvider | undefined;
+  private _authToken: any;
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
@@ -256,12 +257,26 @@ export class NodeApiClient implements INodeApiClient {
         "Must have instantiated a channel provider (ie a signing thing) before setting auth token",
       );
     }
-    const nonce = await this.send("auth.getNonce", {
-      address: this.channelProvider.signerAddress,
-    });
-    const sig = await this.channelProvider.send(chan_nodeAuth, { message: nonce });
-    const token = `${nonce}:${sig}`;
-    return token;
+    let token;
+    // If we have a cached token, use it. Otherwise, get a new one.
+    if (this._authToken && this._authToken.expiry < Date.now()) {
+      token = this._authToken;
+    } else {
+      const unsignedToken = await this.send("auth.getNonce", {
+        address: this.channelProvider.signerAddress,
+      });
+      if (unsignedToken.expiry < Date.now()) {
+        throw new Error(
+          "Got expired authentication nonce from hub - this shouldnt happen!"
+        )
+      }
+      const sig = await this.channelProvider.send(chan_nodeAuth, { message: unsignedToken.nonce });
+      this._authToken = token = {
+        value: `${unsignedToken.nonce}:${sig}`,
+        expiry: unsignedToken.expiry
+      };
+    }
+    return token.value;
   }
 
   private async send(subject: string, data?: any): Promise<any | undefined> {
