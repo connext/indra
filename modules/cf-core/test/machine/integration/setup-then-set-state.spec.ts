@@ -130,7 +130,7 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
         stateChannel.multisigAddress,
         stateChannel.multisigOwners,
         stateChannel.freeBalance.identity,
-        testDomainSeparator,
+        testDomainSeparator(),
         provider.network.chainId,
         stateChannel.numProposedApps
       );

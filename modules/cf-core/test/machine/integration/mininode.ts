@@ -41,7 +41,11 @@ export class MiniNode {
     [this.hdNode] = getRandomHDNodes(1);
     this.xpub = this.hdNode.neuter().extendedKey;
     this.scm = new Map<string, StateChannel>();
-    this.protocolRunner = new ProtocolRunner(networkContext, provider, testDomainSeparator);
+    this.protocolRunner = new ProtocolRunner(
+      networkContext,
+      provider,
+      testDomainSeparator()
+    );
     this.protocolRunner.register(Opcode.OP_SIGN, makeSigner(this.hdNode));
     this.protocolRunner.register(Opcode.WRITE_COMMITMENT, () => {});
     this.protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, () => {});

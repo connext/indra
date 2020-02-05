@@ -27,7 +27,7 @@ describe("Withdraw ETH Commitment", () => {
       multisigOwners,
       to,
       value,
-      testDomainSeparator,
+      testDomainSeparator(),
       4447,
       0
     );

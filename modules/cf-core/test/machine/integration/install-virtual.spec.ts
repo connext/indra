@@ -316,7 +316,7 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
         stateChannel.freeBalance.identityHash, // fb
         network.TwoPartyFixedOutcomeFromVirtualAppInterpreter,
         encodeSingleAssetTwoPartyIntermediaryAgreementParams(agreement),
-        testDomainSeparator,
+        testDomainSeparator(),
         provider.network.chainId,
         stateChannel.numProposedApps
       );
@@ -383,7 +383,7 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
         stateChannel.freeBalance.identityHash, // fb
         network.TwoPartyFixedOutcomeFromVirtualAppInterpreter,
         encodeSingleAssetTwoPartyIntermediaryAgreementParams(agreement),
-        testDomainSeparator,
+        testDomainSeparator(),
         provider.network.chainId,
         stateChannel.numProposedApps
       );

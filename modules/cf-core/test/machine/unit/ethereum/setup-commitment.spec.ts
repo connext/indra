@@ -52,7 +52,7 @@ describe("SetupCommitment", () => {
       stateChannel.multisigAddress,
       stateChannel.multisigOwners,
       freeBalance.identity,
-      testDomainSeparator,
+      testDomainSeparator(),
       4447,
       stateChannel.numProposedApps
     ).getTransactionDetails();

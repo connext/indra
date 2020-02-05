@@ -28,9 +28,12 @@ import {
   DolphinCoin,
   MinimumViableMultisig,
   NetworkContextForTestSuite,
-  ProxyFactory,
+  ProxyFactory
 } from "../../contracts";
-import { transferERC20Tokens, testDomainSeparator } from "../../integration/utils";
+import {
+  transferERC20Tokens,
+  testDomainSeparator
+} from "../../integration/utils";
 
 import { toBeEq } from "./bignumber-jest-matcher";
 import { connectToGanache } from "./connect-ganache";
@@ -80,7 +83,7 @@ beforeAll(async () => {
  * the balances have been updated on-chain.
  */
 describe("Scenario: install AppInstance, set state, put on-chain", () => {
-  it("returns the funds the app had locked up for both ETH and ERC20 in app and free balance", async done => {
+  it.only("returns the funds the app had locked up for both ETH and ERC20 in app and free balance", async done => {
     const xprvs = getRandomExtendedPrvKeys(2);
 
     const multisigOwnerKeys = xkeysToSortedKthSigningKeys(xprvs, 0);
@@ -100,7 +103,10 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
     proxyFactory.once("ProxyCreation", async (proxyAddress: string) => {
       let stateChannel = StateChannel.setupChannel(
         network.IdentityApp,
-        { proxyFactory: proxyFactory.address, multisigMastercopy: network.MinimumViableMultisig },
+        {
+          proxyFactory: proxyFactory.address,
+          multisigMastercopy: network.MinimumViableMultisig
+        },
         proxyAddress, // used as multisigAddress
         xpubs,
         1
