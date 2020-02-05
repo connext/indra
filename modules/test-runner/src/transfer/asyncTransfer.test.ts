@@ -46,6 +46,7 @@ describe("Async Transfers", () => {
   });
 
   it.only("latency test: client A transfers eth to client B through node", async function (done) {
+    this.timeout(1200000)
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
@@ -53,8 +54,8 @@ describe("Async Transfers", () => {
     let y = 0;
     clientB.on("RECEIVE_TRANSFER_FINISHED_EVENT", (data) => {
       // console.log(data)
-      const duration = Date.now() - startTime[y];
-      console.log("Caught #: " + y + ". Time: " + duration / 1000)
+      const duration = Date.now() - startTime[data.meta.index];
+      console.log("Caught #: " + y + ". Index: " + data.meta.index + ". Time: " + duration / 1000)
       console.log("===========================")
       y++
       if(y==5){
@@ -70,6 +71,7 @@ describe("Async Transfers", () => {
         amount: transfer.amount.div(toBN(10)).toString(),
         meta: {index: i}
       })
+      delay(30000)
       console.log("i: " + i)
     }
   });
