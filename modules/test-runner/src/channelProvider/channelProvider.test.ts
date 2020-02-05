@@ -1,7 +1,6 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IChannelProvider, IConnextClient, RECEIVE_TRANSFER_FINISHED_EVENT } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
-import { Client } from "ts-nats";
 
 import {
   AssetOptions,
@@ -15,7 +14,6 @@ import {
   TOKEN_AMOUNT,
   withdrawFromChannel,
 } from "../util";
-import { createOrRetrieveNatsConnection } from "../util/nats";
 
 describe("ChannelProvider", () => {
   let clientA: IConnextClient;
@@ -24,22 +22,17 @@ describe("ChannelProvider", () => {
   let nodeFreeBalanceAddress: string;
   let nodePublicIdentifier: string;
   let channelProvider: IChannelProvider;
-  let natsConnection: Client;
 
-  beforeEach(async function() {
-    // Need a longer timeout here bc it's the very first test to run & node might not be awake yet
-    // @ts-ignore
-    this.timeout(120_000);
+  beforeEach(async () => {
     clientA = await createClient();
     tokenAddress = clientA.config.contractAddresses.Token;
     nodePublicIdentifier = clientA.config.nodePublicIdentifier;
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
     channelProvider = await createChannelProvider(clientA);
     clientA1 = await createRemoteClient(channelProvider);
-    natsConnection = await createOrRetrieveNatsConnection();
   });
 
-  it("Happy case: client A1 can be instantiated with a channelProvider generated from client A", async function() {
+  it("Happy case: client A1 can be instantiated with a channelProvider generated from client A", async () => {
     const _tokenAddress = clientA1.config.contractAddresses.Token;
     const _nodePublicIdentifier = clientA1.config.nodePublicIdentifier;
     const _nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
@@ -49,9 +42,7 @@ describe("ChannelProvider", () => {
     expect(_nodeFreeBalanceAddress).to.be.eq(nodeFreeBalanceAddress);
   });
 
-  it("Happy case: Bot A1 can call the full deposit → swap → transfer → withdraw flow on Bot A", async function() {
-    this.timeout(90_000);
-
+  it("Happy case: Bot A1 can call the full deposit → swap → transfer → withdraw flow on Bot A", async () => {
     const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
 
@@ -70,15 +61,11 @@ describe("ChannelProvider", () => {
     const clientB = await createClient();
     await clientB.requestCollateral(tokenAddress);
 
-    // TODO: Move natsConnection to MockChannelProvider and use asyncTransferAsset test
     const transferFinished = Promise.all([
       new Promise(async resolve => {
-        const sub = await natsConnection.subscribe(
+        await clientB.messaging.subscribe(
           `indra.node.${clientA.nodePublicIdentifier}.uninstall.>`,
-          () => {
-            resolve();
-            sub.unsubscribe();
-          },
+          resolve,
         );
       }),
       new Promise(async resolve => {

@@ -51,7 +51,7 @@ describe("Swaps", () => {
     await swapAsset(clientA, input, output, nodeFreeBalanceAddress);
   });
 
-  it("happy case: bot A tries to swap with insufficient collateral on node", async function() {
+  it("happy case: bot A tries to swap with insufficient collateral on node", async () => {
     const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     // client deposit and request node collateral

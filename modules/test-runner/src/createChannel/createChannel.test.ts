@@ -14,17 +14,17 @@ import {
 
 describe("Create Channel", () => {
   it("Happy case: user creates channel with mainnet network string", async () => {
-    const clientA: IConnextClient = await createDefaultClient("mainnet");
+    const clientA = await createDefaultClient("mainnet");
     expect(clientA.multisigAddress).to.be.ok;
   });
 
   it("Happy case: user creates channel with rinkeby network string", async () => {
-    const clientA: IConnextClient = await createDefaultClient("rinkeby");
+    const clientA = await createDefaultClient("rinkeby");
     expect(clientA.multisigAddress).to.be.ok;
   });
 
   it("Happy case: user creates channel with node and is given multisig address", async () => {
-    const clientA: IConnextClient = await createClient();
+    const clientA = await createClient();
     expect(clientA.multisigAddress).to.be.ok;
   });
 
@@ -56,9 +56,7 @@ describe("Create Channel", () => {
     );
   });
 
-  it("should fail if the client goes offline", async function(): Promise<void> {
-    // @ts-ignore
-    this.timeout(40_000);
+  it("should fail if the client goes offline", async () => {
     await expect(
       createClientWithMessagingLimits({
         ceiling: { received: 0 },
