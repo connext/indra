@@ -42,9 +42,10 @@ export interface IRpcNodeProvider {
 
 export interface MessagingConfig {
   clusterId?: string;
-  messagingUrl: string | string[];
-  token?: string;
   logLevel: number;
+  messagingUrl: string | string[];
+  options?: any;
+  token?: string;
 }
 
 export interface CFMessagingService {

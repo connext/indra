@@ -6,8 +6,18 @@ export const FUNDED_MNEMONICS = [
 ];
 
 export const WRONG_ADDRESS = "0xdeadbeef";
-export const APP_PROTOCOL_TOO_LONG = (protocol: string): string =>
-  `App ${protocol} took longer than 90 seconds`;
+
+// error messages
+export const APP_PROTOCOL_TOO_LONG = (protocol: string): string => {
+  if (protocol === `takeAction`) {
+    return `Couldn't run TakeAction protocol: IO_SEND_AND_WAIT timed out after 90s`;
+  }
+  return `App ${protocol} took longer than 90 seconds`;
+};
+export const MESSAGE_FAILED_TO_SEND = (reason?: string): string =>
+  `Failed to send message: ${reason}`;
+export const FORBIDDEN_SUBJECT_ERROR = `Subject is forbidden`;
+export const NODE_HAS_RIGHTS_ERROR = `Cannot uninstall a balance refund app without being the recipient`;
 
 export const NEGATIVE_ONE = "-1";
 export const NEGATIVE_ZERO_ZERO_ONE = "-0.01";

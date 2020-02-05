@@ -94,6 +94,9 @@ jobs:
     - run: make start-test-release
     - run: sleep 15 && make dls
     - run: TEST_MODE=release make test-integration
+    - name: Print node logs
+      if: failure()
+      run: docker service logs --tail 200 indra_node
 
   test-backwards-compatibility:
     runs-on: ubuntu-latest
@@ -104,6 +107,9 @@ jobs:
     - run: make start-test-release
     - run: sleep 15 && make dls
     - run: make test-backwards-compatibility
+    - name: Print node logs
+      if: failure()
+      run: docker service logs --tail 200 indra_node
 
   test-daicard:
     runs-on: ubuntu-16.04
@@ -113,13 +119,17 @@ jobs:
     - run: make pull-release
     - run: make start-test-release
     - run: make test-daicard
+    - name: Print node logs
+      if: failure()
+      run: docker service logs --tail 200 indra_node
 
   deploy-rinkeby:
     env:
       INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
       RINKEBY_DOMAINNAME: rinkeby.indra.connext.network
       RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
-    needs: [test-backwards-compatibility, test-cf, test-client, test-contracts, test-daicard, test-integration, test-node, test-ssh]
+    # needs: [test-backwards-compatibility, test-cf, test-client, test-contracts, test-daicard, test-integration, test-node, test-ssh]
+    needs: [test-cf, test-client, test-contracts, test-daicard, test-integration, test-node, test-ssh]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
@@ -145,7 +155,8 @@ jobs:
       INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
       MAINNET_DOMAINNAME: indra.connext.network
       MAINNET_ETH_PROVIDER: ${{ secrets.MAINNET_ETH_PROVIDER }}
-    needs: [test-backwards-compatibility, test-cf, test-client, test-contracts, test-daicard, test-integration, test-node, test-ssh]
+    # needs: [test-backwards-compatibility, test-cf, test-client, test-contracts, test-daicard, test-integration, test-node, test-ssh]
+    needs: [test-cf, test-client, test-contracts, test-daicard, test-integration, test-node, test-ssh]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1

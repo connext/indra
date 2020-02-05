@@ -7,68 +7,66 @@ import { createClient } from "../util/client";
 import { getOnchainBalance } from "../util/ethprovider";
 
 describe("Deposits", () => {
-  let clientA: IConnextClient;
+  let client: IConnextClient;
+  let tokenAddress: string;
+  let nodeFreeBalanceAddress: string;
 
   beforeEach(async () => {
-    clientA = await createClient();
+    client = await createClient();
+    tokenAddress = client.config.contractAddresses.Token;
+    nodeFreeBalanceAddress = xkeyKthAddress(client.config.nodePublicIdentifier);
+  });
+
+  afterEach(async () => {
+    await client.messaging.disconnect();
   });
 
   it("happy case: client should deposit ETH", async () => {
-    await clientA.deposit({ amount: ONE, assetId: AddressZero });
-    const freeBalance = await clientA.getFreeBalance(AddressZero);
-    const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress]).to.equal(ONE);
+    await client.deposit({ amount: ONE, assetId: AddressZero });
+    const freeBalance = await client.getFreeBalance(AddressZero);
+    expect(freeBalance[client.freeBalanceAddress]).to.equal(ONE);
     expect(freeBalance[nodeFreeBalanceAddress]).to.equal("0");
     // TODO: assert node's version of free balance also?
   });
 
   it("happy case: client should deposit tokens", async () => {
-    const tokenAddress = clientA.config.contractAddresses.Token;
-
-    await clientA.deposit({ amount: ONE, assetId: tokenAddress });
-    const freeBalance = await clientA.getFreeBalance(tokenAddress);
-
-    const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress]).to.be.eq(ONE);
+    await client.deposit({ amount: ONE, assetId: tokenAddress });
+    const freeBalance = await client.getFreeBalance(tokenAddress);
+    expect(freeBalance[client.freeBalanceAddress]).to.be.eq(ONE);
     expect(freeBalance[nodeFreeBalanceAddress]).to.be.eq("0");
-
     // TODO: assert node's version of free balance also?
   });
 
   it("client should not be able to deposit with invalid token address", async () => {
-    await expect(clientA.deposit({ amount: ONE, assetId: WRONG_ADDRESS })).to.be.rejected;
+    await expect(client.deposit({ amount: ONE, assetId: WRONG_ADDRESS })).to.be.rejected;
     // TODO: assert error message
   });
 
   it("client should not be able to deposit with negative amount", async () => {
-    await expect(
-      clientA.deposit({ amount: NEGATIVE_ONE, assetId: AddressZero }),
-    ).to.be.rejectedWith("is not greater than or equal to 0");
+    await expect(client.deposit({ amount: NEGATIVE_ONE, assetId: AddressZero })).to.be.rejectedWith(
+      "is not greater than or equal to 0",
+    );
   });
 
   it("client should not be able to propose deposit with value it doesn't have", async () => {
-    const tokenAddress = clientA.config.contractAddresses.Token;
     await expect(
-      clientA.deposit({
-        amount: (await getOnchainBalance(clientA.freeBalanceAddress, tokenAddress))
+      client.deposit({
+        amount: (await getOnchainBalance(client.freeBalanceAddress, tokenAddress))
           .add(1)
           .toString(),
-        assetId: clientA.config.contractAddresses.Token,
+        assetId: client.config.contractAddresses.Token,
       }),
     ).to.be.rejectedWith("is not less than or equal to");
   });
 
   it("client has already requested deposit rights before calling deposit", async () => {
-    await clientA.requestDepositRights({ assetId: clientA.config.contractAddresses.Token });
-
-    await clientA.deposit({
+    await client.requestDepositRights({ assetId: client.config.contractAddresses.Token });
+    await client.deposit({
       amount: ONE,
-      assetId: clientA.config.contractAddresses.Token,
+      assetId: client.config.contractAddresses.Token,
     });
-    const freeBalance = await clientA.getFreeBalance(clientA.config.contractAddresses.Token);
-
-    const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress]).to.be.eq(ONE);
+    const freeBalance = await client.getFreeBalance(client.config.contractAddresses.Token);
+    expect(freeBalance[client.freeBalanceAddress]).to.be.eq(ONE);
     expect(freeBalance[nodeFreeBalanceAddress]).to.be.eq("0");
     // TODO: is there any way to test to make sure deposit rights were rescinded
     // as part of the .deposit call?
@@ -89,29 +87,23 @@ describe("Deposits", () => {
   it.skip("client bypasses proposeDeposit flow and calls providerDeposit directly", async () => {});
 
   it.skip("client deposits eth, withdraws, then successfully deposits eth again", async () => {
-    await clientA.deposit({ amount: TWO, assetId: AddressZero });
-    await clientA.withdraw({ amount: TWO, assetId: AddressZero });
-    await clientA.deposit({ amount: ONE, assetId: AddressZero });
-
-    const freeBalance = await clientA.getFreeBalance(AddressZero);
-    const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalance[clientA.freeBalanceAddress]).to.be.eq(ONE);
+    await client.deposit({ amount: TWO, assetId: AddressZero });
+    await client.withdraw({ amount: TWO, assetId: AddressZero });
+    await client.deposit({ amount: ONE, assetId: AddressZero });
+    const freeBalance = await client.getFreeBalance(AddressZero);
+    expect(freeBalance[client.freeBalanceAddress]).to.be.eq(ONE);
     expect(freeBalance[nodeFreeBalanceAddress]).to.be.eq("0");
   });
 
   it("client deposits eth, withdraws, then successfully deposits tokens", async () => {
-    const tokenAddress = clientA.config.contractAddresses.Token;
-
-    await clientA.deposit({ amount: TWO, assetId: AddressZero });
-    await clientA.withdraw({ amount: TWO, assetId: AddressZero });
-    await clientA.deposit({ amount: ONE, assetId: tokenAddress });
-
-    const freeBalanceToken = await clientA.getFreeBalance(tokenAddress);
-    const freeBalanceEth = await clientA.getFreeBalance(AddressZero);
-    const nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
-    expect(freeBalanceEth[clientA.freeBalanceAddress]).to.be.eq("0");
+    await client.deposit({ amount: TWO, assetId: AddressZero });
+    await client.withdraw({ amount: TWO, assetId: AddressZero });
+    await client.deposit({ amount: ONE, assetId: tokenAddress });
+    const freeBalanceToken = await client.getFreeBalance(tokenAddress);
+    const freeBalanceEth = await client.getFreeBalance(AddressZero);
+    expect(freeBalanceEth[client.freeBalanceAddress]).to.be.eq("0");
     expect(freeBalanceEth[nodeFreeBalanceAddress]).to.be.eq("0");
-    expect(freeBalanceToken[clientA.freeBalanceAddress]).to.be.eq(ONE);
+    expect(freeBalanceToken[client.freeBalanceAddress]).to.be.eq(ONE);
     expect(freeBalanceToken[nodeFreeBalanceAddress]).to.be.eq("0");
   });
 });

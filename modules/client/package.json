@@ -1,6 +1,6 @@
 {
   "name": "@connext/client",
-  "version": "4.0.7",
+  "version": "4.0.9",
   "description": "Client for Connext Network",
   "main": "dist/index.js",
   "files": [
@@ -16,11 +16,11 @@
     "test": "./node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
-    "@connext/cf-core": "4.0.7",
-    "@connext/channel-provider": "4.0.7",
-    "@connext/messaging": "4.0.7",
-    "@connext/store": "4.0.7",
-    "@connext/types": "4.0.7",
+    "@connext/cf-core": "4.0.9",
+    "@connext/channel-provider": "4.0.9",
+    "@connext/messaging": "4.0.9",
+    "@connext/store": "4.0.9",
+    "@connext/types": "4.0.9",
     "core-js": "3.6.1",
     "eccrypto": "1.1.3",
     "ethers": "4.0.41",

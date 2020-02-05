@@ -1,7 +1,6 @@
 import {
   SimpleLinkedTransferAppState,
   SimpleLinkedTransferAppStateBigNumber,
-  SupportedApplications,
   CREATE_CHANNEL_EVENT,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
@@ -121,13 +120,26 @@ export default class ListenerService implements OnModuleInit {
         // TODO: separate install from validation, do both at this level
         // install if possible
         let allowedOrRejected: AppRegistry | void;
-        try {
+        const install = async () => {
           allowedOrRejected = await this.appRegistryService.allowOrReject(data);
+        };
+        const reject = async (error: Error) => {
+          logger.warn(`App validation failed, . Error: ${error.stack || error.message}`);
+          await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
+        };
+        try {
+          await install();
         } catch (e) {
-          if (e.message.includes(`Node has insufficient balance`)) {
-            // try to deposit and reinstall the app
-            await this.addCollateral(data);
-            allowedOrRejected = await this.appRegistryService.allowOrReject(data);
+          if (!e.message.includes(`Node has insufficient balance`)) {
+            await reject(e);
+            return;
+          }
+          // try to collateralize, and re-install
+          await this.addCollateral(data);
+          try {
+            await install();
+          } catch (e) {
+            await reject(e);
           }
         }
         if (!allowedOrRejected) {

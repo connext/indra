@@ -19,10 +19,12 @@ export class NatsMessagingService implements IMessagingService {
 
   async connect(): Promise<void> {
     const messagingUrl = this.config.messagingUrl;
-    const config = this.config as nats.NatsConnectionOptions;
-    config.servers = typeof messagingUrl === `string` ? [messagingUrl] : messagingUrl;
-    config.payload = nats.Payload.JSON;
-    this.connection = await nats.connect(config);
+    this.connection = await nats.connect({
+      ...this.config,
+      ...this.config.options,
+      servers: typeof messagingUrl === `string` ? [messagingUrl] : messagingUrl,
+      payload: nats.Payload.JSON,
+    } as nats.NatsConnectionOptions);
     this.log.debug(`Connected!`);
   }
 
@@ -77,7 +79,7 @@ export class NatsMessagingService implements IMessagingService {
   }
 
   async subscribe(
-  subject: string,
+    subject: string,
     callback: (msg: CFCoreTypes.NodeMessage) => void,
   ): Promise<void> {
     this.assertConnected();
@@ -123,6 +125,9 @@ export class NatsMessagingService implements IMessagingService {
   private assertConnected(): void {
     if (!this.connection) {
       throw new Error(`No connection exists, NatsMessagingService is uninitialized.`);
+    }
+    if (!this.connection.isClosed) {
+      throw new Error(`Connection is closed, try reconnecting.`);
     }
   }
 

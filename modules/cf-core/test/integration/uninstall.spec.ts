@@ -1,6 +1,7 @@
+import { AppInstanceJson } from "@connext/types";
 import { One, Two, Zero } from "ethers/constants";
 
-import { Node } from "../../src";
+import { Node, USE_RESCIND_DEPOSIT_RIGHTS } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 import { UninstallMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
@@ -14,22 +15,63 @@ import {
   createChannel,
   getFreeBalanceState,
   getInstalledAppInstances,
-  installApp
+  installApp,
+  getApps,
+  requestDepositRights
 } from "./utils";
 
 expect.extend({ toBeEq });
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
-function assertUninstallMessage(senderId: string, appInstanceId: string, msg: UninstallMessage) {
+function assertUninstallMessage(
+  senderId: string,
+  appInstanceId: string,
+  msg: UninstallMessage
+) {
   assertNodeMessage(msg, {
     from: senderId,
     type: "UNINSTALL_EVENT",
     data: {
       appInstanceId
-    },
+    }
   });
 }
+
+describe("Uninstalling coin balance refund app", () => {
+  let nodeA: Node;
+  let nodeB: Node;
+
+  let multisigAddress: string;
+  let coinBalanceAppId: string;
+
+  const assertAppsPresent = async (expected: number) => {
+    const appsA = await getApps(nodeA);
+    const appsB = await getApps(nodeB);
+    expect(appsA.length).toEqual(expected);
+    expect(appsB.length).toEqual(expected);
+    return appsA.map((app: AppInstanceJson) => app.identityHash);
+  };
+
+  beforeAll(async () => {
+    const context: SetupContext = await setup(global);
+    nodeA = context["A"].node;
+    nodeB = context["B"].node;
+
+    multisigAddress = await createChannel(nodeA, nodeB);
+
+    await requestDepositRights(nodeA, multisigAddress);
+    [coinBalanceAppId] = await assertAppsPresent(1);
+  });
+
+  // will timeout if it goes through this path, params are incorrect
+  it("should fail if you trying to uninstall coin balance refund app", async () => {
+    await expect(
+      nodeB.rpcRouter.dispatch(constructUninstallRpc(coinBalanceAppId))
+    ).rejects.toThrowError(USE_RESCIND_DEPOSIT_RIGHTS);
+    await assertAppsPresent(1);
+  });
+});
 
 describe("Node A and B install apps of different outcome types, then uninstall them to test outcomes types and interpreters", () => {
   let nodeA: Node;
@@ -43,7 +85,11 @@ describe("Node A and B install apps of different outcome types, then uninstall t
     const initialState = {
       versionNumber: 0,
       winner: 2, // Hard-coded winner for test
-      board: [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+      board: [
+        [0, 0, 0],
+        [0, 0, 0],
+        [0, 0, 0]
+      ]
     };
 
     beforeEach(async () => {

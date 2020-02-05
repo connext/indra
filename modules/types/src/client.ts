@@ -32,6 +32,7 @@ import {
 import { ProtocolTypes } from "./protocol";
 import { IAsyncStorage, IBackupServiceAPI, Store } from "./store";
 import { CFCoreTypes } from "./cfCore";
+import { providers } from "ethers";
 
 export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
@@ -64,13 +65,19 @@ export interface IConnextClient {
   ////////////////////////////////////////
   // Properties
 
+  appRegistry: AppRegistry;
   config: GetConfigResponse;
+  channelProvider: IChannelProvider;
+  ethProvider: providers.JsonRpcProvider;
   freeBalanceAddress: string;
   multisigAddress: string;
   nodePublicIdentifier: string;
   publicIdentifier: string;
   signerAddress: string;
-  channelProvider: IChannelProvider;
+
+  // Expose some internal machineary for easier debugging
+  messaging: IMessagingService;
+  store: Store;
 
   ////////////////////////////////////////
   // Methods

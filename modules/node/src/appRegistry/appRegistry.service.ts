@@ -60,19 +60,13 @@ export class AppRegistryService {
    * @param data Data from CF event PROPOSE_INSTALL
    */
   async allowOrReject(data: ProposeMessage): Promise<AppRegistry | void> {
-    try {
-      const registryAppInfo = await this.verifyAppProposal(data.data, data.from);
-      if (registryAppInfo.name === CoinBalanceRefundApp) {
-        logger.log(`Not installing coin balance refund app, returning registry information`);
-        return registryAppInfo;
-      }
-      await this.cfCoreService.installApp(data.data.appInstanceId);
+    const registryAppInfo = await this.verifyAppProposal(data.data, data.from);
+    if (registryAppInfo.name === CoinBalanceRefundApp) {
+      logger.log(`Not installing coin balance refund app, returning registry information`);
       return registryAppInfo;
-    } catch (e) {
-      logger.error(`Failed to verify app, rejecting install: ${e.message}`, e.stack);
-      await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
-      return;
     }
+    await this.cfCoreService.installApp(data.data.appInstanceId);
+    return registryAppInfo;
   }
 
   async appProposalMatchesRegistry(
