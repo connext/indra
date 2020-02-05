@@ -1,30 +1,18 @@
-import { utils } from "ethers";
+import { arrayify, isHexString } from "ethers/utils";
 
-// contains all of the address-based verification functions
-function isValidAddress(value: any): boolean {
-  if (typeof value !== "string") {
-    return false;
-  }
-  try {
-    utils.getAddress(value);
-  } catch (e) {
-    return false;
-  }
-  return true;
-}
+export const isValidAddress = (address: any): boolean =>
+  typeof address === "string" && isHexString(address) && arrayify(address).length === 20;
 
-export function invalidXpub(value: string): string | undefined {
+export const invalidXpub = (value: string): string | undefined => {
   if (!value || !value.startsWith("xpub")) {
     return `Value "${value}" must start with "xpub"`;
   }
-
   return undefined;
-}
+};
 
-export function invalidAddress(value: string): string | undefined {
+export const invalidAddress = (value: string): string | undefined => {
   if (!value || !isValidAddress(value)) {
     return `Value "${value}" is not a valid eth address`;
   }
-
   return undefined;
-}
+};

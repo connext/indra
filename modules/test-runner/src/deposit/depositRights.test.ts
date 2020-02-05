@@ -1,59 +1,60 @@
-import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 
 import { createClient, ethProvider, expect, getOnchainBalance, sendOnchainValue } from "../util";
+import { IConnextClient } from "@connext/types";
 
-// TODO: fix errors here
 describe("Deposits", () => {
-  let clientA: IConnextClient;
+  let client: IConnextClient;
 
-  beforeEach(async () => {
-    clientA = await createClient();
+  afterEach(async () => {
+    await client.messaging.disconnect();
   });
 
   it("happy case: client should request deposit rights and deposit ETH", async () => {
-    await clientA.requestDepositRights({ assetId: AddressZero });
-    const { [clientA.freeBalanceAddress]: preDeposit } = await clientA.getFreeBalance(AddressZero);
+    client = await createClient();
+    await client.requestDepositRights({ assetId: AddressZero });
+    const { [client.freeBalanceAddress]: preDeposit } = await client.getFreeBalance(AddressZero);
     expect(preDeposit).to.be.eq("0");
-    const balance = await getOnchainBalance(clientA.multisigAddress);
+    const balance = await getOnchainBalance(client.multisigAddress);
     expect(balance).to.be.eq("0");
     await new Promise(
       async (res: any): Promise<any> => {
-        ethProvider.on(clientA.multisigAddress, async () => {
-          const balance = await getOnchainBalance(clientA.multisigAddress);
+        ethProvider.on(client.multisigAddress, async () => {
+          const balance = await getOnchainBalance(client.multisigAddress);
           expect(balance).to.be.eq("1");
-          await clientA.rescindDepositRights({ assetId: AddressZero });
-          const { [clientA.freeBalanceAddress]: postDeposit } = await clientA.getFreeBalance(
+          await client.rescindDepositRights({ assetId: AddressZero });
+          const { [client.freeBalanceAddress]: postDeposit } = await client.getFreeBalance(
             AddressZero,
           );
           expect(postDeposit).to.be.eq("1");
           res();
         });
-        await sendOnchainValue(clientA.multisigAddress, 1);
+        await sendOnchainValue(client.multisigAddress, 1);
       },
     );
   });
 
   it("happy case: client should request deposit rights and deposit token", async () => {
-    const tokenAddress = clientA.config.contractAddresses.Token;
-    await clientA.requestDepositRights({ assetId: tokenAddress });
-    const { [clientA.freeBalanceAddress]: preDeposit } = await clientA.getFreeBalance(tokenAddress);
+    client = await createClient();
+    const tokenAddress = client.config.contractAddresses.Token;
+    await client.requestDepositRights({ assetId: tokenAddress });
+    const { [client.freeBalanceAddress]: preDeposit } = await client.getFreeBalance(tokenAddress);
     expect(preDeposit).to.be.eq("0");
-    const balance = await getOnchainBalance(clientA.multisigAddress, tokenAddress);
+    const balance = await getOnchainBalance(client.multisigAddress, tokenAddress);
     expect(balance).to.be.eq("0");
     await new Promise(
       async (res: any, rej: any): Promise<any> => {
-        ethProvider.on(clientA.multisigAddress, async () => {
-          const balance = await getOnchainBalance(clientA.multisigAddress, tokenAddress);
+        ethProvider.on(client.multisigAddress, async () => {
+          const balance = await getOnchainBalance(client.multisigAddress, tokenAddress);
           expect(balance).to.be.eq("1");
-          await clientA.rescindDepositRights({ assetId: tokenAddress });
-          const { [clientA.freeBalanceAddress]: postDeposit } = await clientA.getFreeBalance(
+          await client.rescindDepositRights({ assetId: tokenAddress });
+          const { [client.freeBalanceAddress]: postDeposit } = await client.getFreeBalance(
             tokenAddress,
           );
           expect(postDeposit).to.be.eq("1");
           res();
         });
-        await sendOnchainValue(clientA.multisigAddress, 1, tokenAddress);
+        await sendOnchainValue(client.multisigAddress, 1, tokenAddress);
       },
     );
   });
