@@ -25,7 +25,7 @@ import { invalidXpub } from "./validation";
 import { chan_nodeAuth } from "@connext/types";
 
 // Include our access token when interacting with these subjects
-const guardedSubjects = ["channel", "client", "lock"];
+const guardedSubjects = [];
 const sendFailed = "Failed to send message";
 
 // NOTE: swap rates are given as a decimal string describing:
@@ -313,7 +313,7 @@ export class NodeApiClient implements INodeApiClient {
       id: uuid.v4(),
     };
     if (guardedSubjects.includes(subject.split(".")[0])) {
-      payload.token = await this.getAuthToken();
+      // payload.token = await this.getAuthToken();
     }
     let msg;
     try {
@@ -324,7 +324,7 @@ export class NodeApiClient implements INodeApiClient {
     let error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     if (error && error.startsWith("Invalid token")) {
       this.log.info("Auth error, token might have expired. Let's get a fresh token & try again.");
-      payload.token = await this.getAuthToken();
+      // payload.token = await this.getAuthToken();
       msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
       error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     }
