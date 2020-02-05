@@ -137,7 +137,7 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
       messagingUrl: this.options.messagingConfig.messagingUrl,
       options: {
         maxPingOut: 1_000_000_000,
-        pingInterval: 120_000,
+        pingInterval: 120_000_000,
       },
     }).createService("messaging");
     this.protocolDefaults = this.options.protocolDefaults;
