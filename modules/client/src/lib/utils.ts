@@ -86,3 +86,19 @@ export const createRandom32ByteHexString = (): string => {
 
 export const createPaymentId = createRandom32ByteHexString;
 export const createPreImage = createRandom32ByteHexString;
+
+export function removeTrailing0x(str: string) {
+  if (str.startsWith("0x")) {
+    return str.substring(2);
+  } else {
+    return str;
+  }
+}
+
+export function addTrailing0x(str: string) {
+  if (!str.startsWith("0x")) {
+    return "0x" + str;
+  } else {
+    return str;
+  }
+}

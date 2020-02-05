@@ -1,9 +1,9 @@
+import * as secp256k1 from "secp256k1"
 import { ChannelProvider } from "@connext/channel-provider";
 import { Wallet } from "ethers";
-import { arrayify } from "ethers/utils";
 import EventEmitter from "events";
 
-import { CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
+import { addTrailing0x, CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
 import {
   CFChannelProviderOptions,
   CFCoreTypes,
@@ -118,7 +118,9 @@ export class CFCoreRpcConnection extends EventEmitter implements IRpcConnection 
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
   private walletSign = async (message: string): Promise<string> => {
-    return await this.wallet.signMessage(arrayify(message));
+    const privateKey = Buffer.from(this.wallet.privateKey, "hex")
+    const {signature} = secp256k1.sign(Buffer.from(message), privateKey)
+    return addTrailing0x(signature.toString("hex"))
   };
 
   private storeGet = async (path: string): Promise<any> => {
@@ -145,7 +147,7 @@ export class CFCoreRpcConnection extends EventEmitter implements IRpcConnection 
     let state;
     state = await this.storeRestore();
     if (!state || !state.path) {
-      throw new Error("No matching paths found in store backup's state");
+      throw new Error("No matching paths found in store backup"s state");
     }
     state = state.path;
     return state;
