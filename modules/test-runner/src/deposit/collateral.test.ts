@@ -15,6 +15,10 @@ describe("Collateral", () => {
     nodeFreeBalanceAddress = xkeyKthAddress(client.config.nodePublicIdentifier);
   });
 
+  afterEach(async () => {
+    await client.messaging.disconnect();
+  });
+
   it("happy case: node should collateralize ETH", async () => {
     await client.requestCollateral(AddressZero);
     const freeBalance = await client.getFreeBalance(AddressZero);

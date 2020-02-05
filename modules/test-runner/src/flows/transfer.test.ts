@@ -25,6 +25,13 @@ describe("Full Flow: Transfer", () => {
     tokenAddress = clientA.config.contractAddresses.Token;
   });
 
+  afterEach(async () => {
+    await clientA.messaging.disconnect();
+    await clientB.messaging.disconnect();
+    await clientC.messaging.disconnect();
+    await clientD.messaging.disconnect();
+  });
+
   it("User transfers ETH to multiple clients", async () => {
     await fundChannel(clientA, ETH_AMOUNT_SM.mul(4), AddressZero);
     await requestCollateral(clientB, AddressZero);

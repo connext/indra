@@ -31,6 +31,10 @@ describe("Swaps", () => {
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
   });
 
+  afterEach(async () => {
+    await client.messaging.disconnect();
+  });
+
   it("happy case: client swaps eth for tokens successfully", async () => {
     const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };

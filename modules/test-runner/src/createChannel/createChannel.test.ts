@@ -11,23 +11,28 @@ import {
 } from "../util";
 
 describe("Create Channel", () => {
+  let client: IConnextClient;
+  afterEach(async () => {
+    await client.messaging.disconnect();
+  });
+
   it("Happy case: user creates channel with mainnet network string", async () => {
-    const client = await createDefaultClient("mainnet");
+    client = await createDefaultClient("mainnet");
     expect(client.multisigAddress).to.be.ok;
   });
 
   it("Happy case: user creates channel with rinkeby network string", async () => {
-    const client = await createDefaultClient("rinkeby");
+    client = await createDefaultClient("rinkeby");
     expect(client.multisigAddress).to.be.ok;
   });
 
   it("Happy case: user creates channel with node and is given multisig address", async () => {
-    const client = await createClient();
+    client = await createClient();
     expect(client.multisigAddress).to.be.ok;
   });
 
   it("Happy case: user creates channel with client and is given multisig address using test messaging service", async () => {
-    const client: IConnextClient = await createClientWithMessagingLimits();
+    client = await createClientWithMessagingLimits();
     expect(client.multisigAddress).to.be.ok;
     const messaging = client.messaging as TestMessagingService;
     expect(messaging).to.be.ok;

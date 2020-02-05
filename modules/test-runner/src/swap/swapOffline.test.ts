@@ -29,6 +29,7 @@ import * as lolex from "lolex";
 const { xpubToAddress } = utils;
 
 let clock: any;
+let client: IConnextClient;
 
 const fundChannelAndSwap = async (opts: {
   messagingConfig?: Partial<ClientTestMessagingInputOpts>;
@@ -52,7 +53,7 @@ const fundChannelAndSwap = async (opts: {
   } = opts;
   // these tests should not have collateral issues
   // so make sure they are always properly funded
-  const client = providedClient || (await createClientWithMessagingLimits(messagingConfig));
+  client = providedClient || (await createClientWithMessagingLimits(messagingConfig));
 
   const input = {
     amount: inputAmount,
@@ -110,6 +111,7 @@ describe("Swap offline", () => {
 
   afterEach(async () => {
     clock && clock.reset && clock.reset();
+    await client.messaging.disconnect();
   });
 
   it("Bot A tries to install swap but there’s no response from node", async () => {

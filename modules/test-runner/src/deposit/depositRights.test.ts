@@ -1,10 +1,17 @@
 import { AddressZero } from "ethers/constants";
 
 import { createClient, ethProvider, expect, getOnchainBalance, sendOnchainValue } from "../util";
+import { IConnextClient } from "@connext/types";
 
 describe("Deposits", () => {
+  let client: IConnextClient;
+
+  afterEach(async () => {
+    await client.messaging.disconnect();
+  });
+
   it("happy case: client should request deposit rights and deposit ETH", async () => {
-    const client = await createClient();
+    client = await createClient();
     await client.requestDepositRights({ assetId: AddressZero });
     const { [client.freeBalanceAddress]: preDeposit } = await client.getFreeBalance(AddressZero);
     expect(preDeposit).to.be.eq("0");
@@ -28,7 +35,7 @@ describe("Deposits", () => {
   });
 
   it("happy case: client should request deposit rights and deposit token", async () => {
-    const client = await createClient();
+    client = await createClient();
     const tokenAddress = client.config.contractAddresses.Token;
     await client.requestDepositRights({ assetId: tokenAddress });
     const { [client.freeBalanceAddress]: preDeposit } = await client.getFreeBalance(tokenAddress);

@@ -73,6 +73,7 @@ const makeDepositCall = async (opts: {
 
 describe("Deposit offline tests", () => {
   let clock: any;
+  let client: IConnextClient;
 
   beforeEach(() => {
     clock = lolex.install({
@@ -82,8 +83,9 @@ describe("Deposit offline tests", () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     clock && clock.reset && clock.reset();
+    await client.messaging.disconnect();
   });
 
   /**
@@ -101,7 +103,7 @@ describe("Deposit offline tests", () => {
     // initiator in the `propose` protocol)
     // in the propose protocol, the initiator sends one message, and receives
     // one message, set the cap at 1 for `propose` in messaging of client
-    const client = await createClientWithMessagingLimits({
+    client = await createClientWithMessagingLimits({
       ceiling: { received: 0 },
       protocol: "propose",
     });
@@ -119,7 +121,7 @@ describe("Deposit offline tests", () => {
     // cf method timeout is 90s, client will send any messages with a
     // preconfigured delay
     const CLIENT_DELAY = CF_METHOD_TIMEOUT + 1_000;
-    const client = await createClientWithMessagingLimits({
+    client = await createClientWithMessagingLimits({
       delay: { sent: CLIENT_DELAY },
       protocol: "propose",
     });
@@ -137,7 +139,7 @@ describe("Deposit offline tests", () => {
     // cf method timeout is 90s, client will process any received messages
     // with a preconfigured delay
     const CLIENT_DELAY = CF_METHOD_TIMEOUT + 1_000;
-    const client = await createClientWithMessagingLimits({
+    client = await createClientWithMessagingLimits({
       delay: { received: CLIENT_DELAY },
       protocol: "propose",
     });
@@ -152,7 +154,7 @@ describe("Deposit offline tests", () => {
   });
 
   it("client goes offline after proposing deposit and then comes back after timeout is over", async () => {
-    const client = await createClientWithMessagingLimits({
+    client = await createClientWithMessagingLimits({
       protocol: "install",
       ceiling: { received: 0 },
     });
@@ -169,7 +171,7 @@ describe("Deposit offline tests", () => {
   });
 
   it("client proposes deposit, but then deletes their store", async function(): Promise<void> {
-    const client = await createClientWithMessagingLimits();
+    client = await createClientWithMessagingLimits();
     expect(client.messaging).to.be.ok;
     // on proposal accepted message, delete the store
     await (client.messaging as TestMessagingService).subscribe(

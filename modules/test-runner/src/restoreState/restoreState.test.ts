@@ -18,6 +18,10 @@ describe("Restore State", () => {
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
   });
 
+  afterEach(async () => {
+    await clientA.messaging.disconnect();
+  });
+
   it("happy case: client can delete its store and restore from a remote backup", async () => {
     // client deposit and request node collateral
     await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });

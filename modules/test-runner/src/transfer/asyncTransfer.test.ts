@@ -29,6 +29,11 @@ describe("Async Transfers", () => {
     tokenAddress = clientA.config.contractAddresses.Token;
   });
 
+  afterEach(async () => {
+    await clientA.messaging.disconnect();
+    await clientB.messaging.disconnect();
+  });
+
   it("happy case: client A transfers eth to client B through node", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);

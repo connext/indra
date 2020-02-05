@@ -30,6 +30,10 @@ describe("ChannelProvider", () => {
     tokenAddress = client.config.contractAddresses.Token;
   });
 
+  afterEach(async () => {
+    await client.messaging.disconnect();
+  })
+
   it("Happy case: remote client can be instantiated with a channelProvider", async () => {
     const _tokenAddress = remoteClient.config.contractAddresses.Token;
     const _nodePublicIdentifier = remoteClient.config.nodePublicIdentifier;

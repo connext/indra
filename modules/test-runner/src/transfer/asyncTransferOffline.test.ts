@@ -69,6 +69,8 @@ const verifyTransfer = async (
 
 describe("Async transfer offline tests", () => {
   let clock: any;
+  let senderClient: IConnextClient;
+  let receiverClient: IConnextClient;
 
   beforeEach(async () => {
     clock = lolex.install({
@@ -80,6 +82,8 @@ describe("Async transfer offline tests", () => {
 
   afterEach(async () => {
     clock && clock.reset && clock.reset();
+    await senderClient.messaging.disconnect();
+    await receiverClient.messaging.disconnect();
   });
 
   /**
@@ -92,10 +96,10 @@ describe("Async transfer offline tests", () => {
    */
   it("sender successfully installs transfer, goes offline before sending paymentId or preimage, then comes online and has the pending installed transfer", async () => {
     // create the sender client and receiver clients
-    const senderClient = await createClientWithMessagingLimits({
+    senderClient = await createClientWithMessagingLimits({
       forbiddenSubjects: [`transfer.set-recipient`],
     });
-    const receiverClient = await createClientWithMessagingLimits();
+    receiverClient = await createClientWithMessagingLimits();
     const tokenAddress = senderClient.config.contractAddresses.Token;
     // fund the channels
     await fundForTransfers(receiverClient, senderClient);
@@ -130,10 +134,10 @@ describe("Async transfer offline tests", () => {
    */
   it("sender successfully installs transfer, goes offline before sending paymentId/preimage, and stays offline", async () => {
     // create the sender client and receiver clients + fund
-    const senderClient = await createClientWithMessagingLimits({
+    senderClient = await createClientWithMessagingLimits({
       forbiddenSubjects: [`transfer.send-async.`],
     });
-    const receiverClient = await createClientWithMessagingLimits();
+    receiverClient = await createClientWithMessagingLimits();
     const tokenAddress = senderClient.config.contractAddresses.Token;
     await fundForTransfers(receiverClient, senderClient);
     // make the transfer call, should fail when sending info to node, but
@@ -173,9 +177,9 @@ describe("Async transfer offline tests", () => {
    */
   it("sender installs transfer successfully, receiver proposes install but node is offline", async () => {
     // create the sender client and receiver clients + fund
-    const senderClient = await createClientWithMessagingLimits();
+    senderClient = await createClientWithMessagingLimits();
     // 1 successful proposal (balance refund)
-    const receiverClient = await createClientWithMessagingLimits({
+    receiverClient = await createClientWithMessagingLimits({
       ceiling: { received: PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED },
       protocol: "propose",
     });
@@ -203,8 +207,8 @@ describe("Async transfer offline tests", () => {
    */
   it("sender installs transfer successfully, receiver installs successfully, but node is offline for take action (times out)", async () => {
     // create the sender client and receiver clients + fund
-    const senderClient = await createClientWithMessagingLimits();
-    const receiverClient = await createClientWithMessagingLimits({
+    senderClient = await createClientWithMessagingLimits();
+    receiverClient = await createClientWithMessagingLimits({
       ceiling: { received: 0 },
       protocol: "takeAction",
     });
@@ -232,8 +236,8 @@ describe("Async transfer offline tests", () => {
    */
   it("sender installs, receiver installs, takesAction, then uninstalls. Node tries to take action with sender but sender is offline but then comes online later", async () => {
     // create the sender client and receiver clients + fund
-    const senderClient = await createClientWithMessagingLimits();
-    const receiverClient = await createClientWithMessagingLimits();
+    senderClient = await createClientWithMessagingLimits();
+    receiverClient = await createClientWithMessagingLimits();
     const tokenAddress = senderClient.config.contractAddresses.Token;
     await fundForTransfers(receiverClient, senderClient);
     // transfer from the sender to the receiver, then take the
@@ -291,11 +295,11 @@ describe("Async transfer offline tests", () => {
    */
   it("sender installs, receiver installs, takesAction, then uninstalls. Node tries to take action, with sender but sender is offline but then comes online later", async () => {
     // create the sender client and receiver clients + fund
-    const senderClient = await createClientWithMessagingLimits({
+    senderClient = await createClientWithMessagingLimits({
       ceiling: { sent: 1 }, // for deposit app
       protocol: "uninstall",
     });
-    const receiverClient = await createClientWithMessagingLimits();
+    receiverClient = await createClientWithMessagingLimits();
     const tokenAddress = senderClient.config.contractAddresses.Token;
     await fundForTransfers(receiverClient, senderClient);
     // transfer from the sender to the receiver, then take the

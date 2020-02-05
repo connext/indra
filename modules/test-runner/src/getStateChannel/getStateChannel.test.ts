@@ -20,6 +20,10 @@ describe("Get State Channel", () => {
     await clientA.requestCollateral(tokenAddress);
   });
 
+  afterEach(async () => {
+    await clientA.messaging.disconnect();
+  });
+
   it("Happy case: should return stateChannelJSON from store with multisig address", async () => {
     const stateChannel: StateChannelJSON = (await clientA.getStateChannel()).data;
     expect(stateChannel.multisigAddress).to.be.eq(clientA.multisigAddress);

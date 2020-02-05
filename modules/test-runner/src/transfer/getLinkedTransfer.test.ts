@@ -12,6 +12,10 @@ describe("Async Transfers", () => {
     clientA = await createClient();
   });
 
+  afterEach(async () => {
+    await clientA.messaging.disconnect();
+  });
+
   it.skip("happy case: get linked transfer by payment id", async () => {
     const paymentId = hexlify(randomBytes(32));
     const preImage = hexlify(randomBytes(32));
