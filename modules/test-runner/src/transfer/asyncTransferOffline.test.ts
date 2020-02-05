@@ -263,7 +263,7 @@ describe("Async transfer offline tests", () => {
     // wait for transfer to finish
     await received;
     // fast forward 3 min, so any protocols are expired for the client
-    clock.tick(60_000 * 3);
+    clock.tick(60_000 * 2);
     // verify transfer
     const expected = {
       amount: TOKEN_AMOUNT_SM.toString(),
@@ -325,7 +325,7 @@ describe("Async transfer offline tests", () => {
         const messaging = getMessaging(senderClient.publicIdentifier);
         await messaging!.disconnect();
         // fast forward 3 min so protocols are stale on client
-        clock.tick(60_000 * 3);
+        clock.tick(60_000 * 2);
         resolve();
       });
     });
