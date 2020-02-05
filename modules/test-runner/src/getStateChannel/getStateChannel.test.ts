@@ -1,4 +1,3 @@
-import { ConnextStore } from "@connext/store";
 import {
   ConnextClientStorePrefix,
   IConnextClient,
@@ -8,19 +7,17 @@ import {
 } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 
-import { createClient, ETH_AMOUNT_SM, expect, getStore } from "../util";
+import { createClient, ETH_AMOUNT_SM, expect } from "../util";
 
 describe("Get State Channel", () => {
   let clientA: IConnextClient;
   let tokenAddress: string;
-  let store: ConnextStore;
 
   beforeEach(async () => {
     clientA = await createClient();
     tokenAddress = clientA.config.contractAddresses.Token;
     await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
-    store = getStore(clientA.publicIdentifier);
   });
 
   it("Happy case: should return stateChannelJSON from store with multisig address", async () => {
@@ -30,12 +27,11 @@ describe("Get State Channel", () => {
 
   it("Happy case: should return stateChannelJSON from store with proper version", async () => {
     const stateChannel: StateChannelJSON = (await clientA.getStateChannel()).data;
-    console.log(`expect ${stateChannel.schemaVersion} to = ${StateSchemaVersion}`);
     expect(stateChannel.schemaVersion).to.be.eq(StateSchemaVersion);
   });
 
   it("Store does not contain state channel", async () => {
-    store.reset();
+    clientA.store.reset!();
     await expect(clientA.getStateChannel()).to.be.rejectedWith(
       "Call to getStateChannel failed when searching for multisig address",
     );
@@ -43,7 +39,7 @@ describe("Get State Channel", () => {
 
   it("Store contains multiple state channels", async () => {
     // Client with same store and new mnemonic
-    const clientB = await createClient({ store });
+    const clientB = await createClient({ store: clientA.store });
     await clientB.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
     await clientB.requestCollateral(tokenAddress);
 
@@ -64,13 +60,13 @@ describe("Get State Channel", () => {
   it.skip("Store contains state channel on wrong multisig address", async () => {
     const wrongAddress: string = "0xe8f67a5b66B01b301dF0ED1fC91F6F29B78ccf8C";
     const path: string = `${ConnextClientStorePrefix}/${clientA.publicIdentifier}/channel/${clientA.multisigAddress}`;
-    const value: any = await store.get(path);
+    const value: any = await clientA.store.get(path);
 
     expect(value.multisigAddress).to.be.eq((await clientA.getStateChannel()).data.multisigAddress);
 
     value.multisigAddress = wrongAddress;
     const pair: StorePair[] = [{ path, value }];
-    await store.set(pair);
+    await clientA.store.set(pair);
 
     // Expect to error in case we keep this test
     await expect(clientA.getStateChannel()).to.be.rejectedWith("");
@@ -78,7 +74,7 @@ describe("Get State Channel", () => {
 
   it.skip("State channel under multisig key has no proxy factory address", async () => {
     const path: string = `${ConnextClientStorePrefix}/${clientA.publicIdentifier}/channel/${clientA.multisigAddress}`;
-    const value: any = await store.get(path);
+    const value: any = await clientA.store.get(path);
 
     expect(value.addresses.proxyFactory).to.be.eq(
       (await clientA.getStateChannel()).data.addresses.proxyFactory,
@@ -86,20 +82,20 @@ describe("Get State Channel", () => {
 
     value.addresses.proxyFactory = null;
     const pair: StorePair[] = [{ path, value }];
-    await store.set(pair);
+    await clientA.store.set(pair);
 
     await expect(clientA.getStateChannel()).to.be.rejected;
   });
 
   it.skip("State channel under multisig key has freeBalanceAppInstance", async () => {
     const path: string = `${ConnextClientStorePrefix}/${clientA.publicIdentifier}/channel/${clientA.multisigAddress}`;
-    const value: any = await store.get(path);
+    const value: any = await clientA.store.get(path);
 
     // expect(value.freeBalanceAppInstance).to.be.eqDefined();
 
     value.freeBalanceAppInstance = null;
     const pair: StorePair[] = [{ path, value }];
-    await store.set(pair);
+    await clientA.store.set(pair);
 
     await expect(clientA.getStateChannel()).to.be.rejected;
   });

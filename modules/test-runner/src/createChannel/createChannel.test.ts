@@ -5,34 +5,31 @@ import {
   createClientWithMessagingLimits,
   createDefaultClient,
   expect,
-  getMessaging,
   SETUP_RESPONDER_RECEIVED_COUNT,
   SETUP_RESPONDER_SENT_COUNT,
-  cleanupMessaging,
+  TestMessagingService,
 } from "../util";
-import { afterEach } from "mocha";
 
 describe("Create Channel", () => {
   it("Happy case: user creates channel with mainnet network string", async () => {
-    const clientA: IConnextClient = await createDefaultClient("mainnet");
-    expect(clientA.multisigAddress).to.be.ok;
+    const client = await createDefaultClient("mainnet");
+    expect(client.multisigAddress).to.be.ok;
   });
 
   it("Happy case: user creates channel with rinkeby network string", async () => {
-    const clientA: IConnextClient = await createDefaultClient("rinkeby");
-    expect(clientA.multisigAddress).to.be.ok;
+    const client = await createDefaultClient("rinkeby");
+    expect(client.multisigAddress).to.be.ok;
   });
 
   it("Happy case: user creates channel with node and is given multisig address", async () => {
-    const clientA: IConnextClient = await createClient();
-    expect(clientA.multisigAddress).to.be.ok;
+    const client = await createClient();
+    expect(client.multisigAddress).to.be.ok;
   });
 
   it("Happy case: user creates channel with client and is given multisig address using test messaging service", async () => {
-    const clientA: IConnextClient = await createClientWithMessagingLimits();
-    expect(clientA.multisigAddress).to.be.ok;
-    // verify messaging worked
-    const messaging = getMessaging(clientA.publicIdentifier);
+    const client: IConnextClient = await createClientWithMessagingLimits();
+    expect(client.multisigAddress).to.be.ok;
+    const messaging = client.messaging as TestMessagingService;
     expect(messaging).to.be.ok;
     expect(messaging!.count.sent).to.be.gte(SETUP_RESPONDER_SENT_COUNT);
     expect(messaging!.count.received).to.be.gte(SETUP_RESPONDER_RECEIVED_COUNT);
@@ -49,24 +46,19 @@ describe("Create Channel", () => {
   });
 
   it("Creating a channel fails if user xpub and node xpub are the same", async () => {
-    const nodeMnemonic: string = "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat";
+    const nodeMnemonic: string =
+      "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat";
     await expect(createClient({ mnemonic: nodeMnemonic })).to.be.rejectedWith(
       "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
     );
   });
 
-  it("should fail if the client goes offline", async function(): Promise<void> {
-    // @ts-ignore
-    this.timeout(40_000);
+  it("should fail if the client goes offline", async () => {
     await expect(
       createClientWithMessagingLimits({
         ceiling: { received: 0 },
         protocol: "setup",
       }),
     ).to.be.rejectedWith("Create channel event not fired within 30s");
-  });
-
-  afterEach(async () => {
-    await cleanupMessaging();
   });
 });
