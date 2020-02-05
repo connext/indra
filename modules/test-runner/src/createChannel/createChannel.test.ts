@@ -1,8 +1,6 @@
 import { IConnextClient } from "@connext/types";
-import { afterEach } from "mocha";
 
 import {
-  cleanupMessaging,
   createClient,
   createClientWithMessagingLimits,
   createDefaultClient,
@@ -14,25 +12,24 @@ import {
 
 describe("Create Channel", () => {
   it("Happy case: user creates channel with mainnet network string", async () => {
-    const clientA = await createDefaultClient("mainnet");
-    expect(clientA.multisigAddress).to.be.ok;
+    const client = await createDefaultClient("mainnet");
+    expect(client.multisigAddress).to.be.ok;
   });
 
   it("Happy case: user creates channel with rinkeby network string", async () => {
-    const clientA = await createDefaultClient("rinkeby");
-    expect(clientA.multisigAddress).to.be.ok;
+    const client = await createDefaultClient("rinkeby");
+    expect(client.multisigAddress).to.be.ok;
   });
 
   it("Happy case: user creates channel with node and is given multisig address", async () => {
-    const clientA = await createClient();
-    expect(clientA.multisigAddress).to.be.ok;
+    const client = await createClient();
+    expect(client.multisigAddress).to.be.ok;
   });
 
   it("Happy case: user creates channel with client and is given multisig address using test messaging service", async () => {
-    const clientA: IConnextClient = await createClientWithMessagingLimits();
-    expect(clientA.multisigAddress).to.be.ok;
-    // verify messaging worked
-    const messaging = clientA.messaging as TestMessagingService;
+    const client: IConnextClient = await createClientWithMessagingLimits();
+    expect(client.multisigAddress).to.be.ok;
+    const messaging = client.messaging as TestMessagingService;
     expect(messaging).to.be.ok;
     expect(messaging!.count.sent).to.be.gte(SETUP_RESPONDER_SENT_COUNT);
     expect(messaging!.count.received).to.be.gte(SETUP_RESPONDER_RECEIVED_COUNT);
@@ -63,9 +60,5 @@ describe("Create Channel", () => {
         protocol: "setup",
       }),
     ).to.be.rejectedWith("Create channel event not fired within 30s");
-  });
-
-  afterEach(async () => {
-    await cleanupMessaging();
   });
 });

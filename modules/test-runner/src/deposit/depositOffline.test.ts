@@ -8,7 +8,7 @@ import {
   createClientWithMessagingLimits,
   expect,
   fundChannel,
-  getOpts,
+  getMnemonic,
   getProtocolFromData,
   MessagingEvent,
   MesssagingEventData,
@@ -23,31 +23,27 @@ import { BigNumber } from "ethers/utils";
 
 const { CF_METHOD_TIMEOUT } = utils;
 
-let clock: any;
-let client: IConnextClient;
-
 const makeDepositCall = async (opts: {
+  client: IConnextClient;
+  clock: any;
   failsWith?: string;
   protocol?: string;
   subjectToFastforward?: MessagingEvent;
   amount?: BigNumber;
   assetId?: string;
 }) => {
-  const { amount, assetId, failsWith, protocol, subjectToFastforward } = opts;
+  const { client, clock, amount, assetId, failsWith, protocol, subjectToFastforward } = opts;
   const defaultAmount = assetId && assetId !== AddressZero ? TOKEN_AMOUNT : ZERO_ZERO_ONE_ETH;
-
   if (!failsWith) {
     await fundChannel(client, amount || defaultAmount, assetId);
     return;
   }
-
   if (!subjectToFastforward) {
     await expect(fundChannel(client, amount || defaultAmount, assetId)).to.be.rejectedWith(
       failsWith!,
     );
     return;
   }
-
   // get messaging of client
   (client.messaging as TestMessagingService).on(
     subjectToFastforward,
@@ -76,6 +72,8 @@ const makeDepositCall = async (opts: {
  */
 
 describe("Deposit offline tests", () => {
+  let clock: any;
+
   beforeEach(() => {
     clock = lolex.install({
       shouldAdvanceTime: true,
@@ -103,12 +101,14 @@ describe("Deposit offline tests", () => {
     // initiator in the `propose` protocol)
     // in the propose protocol, the initiator sends one message, and receives
     // one message, set the cap at 1 for `propose` in messaging of client
-    client = await createClientWithMessagingLimits({
+    const client = await createClientWithMessagingLimits({
       ceiling: { received: 0 },
       protocol: "propose",
     });
 
     await makeDepositCall({
+      client,
+      clock,
       failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
       subjectToFastforward: RECEIVED,
       protocol: "propose",
@@ -119,12 +119,14 @@ describe("Deposit offline tests", () => {
     // cf method timeout is 90s, client will send any messages with a
     // preconfigured delay
     const CLIENT_DELAY = CF_METHOD_TIMEOUT + 1_000;
-    client = await createClientWithMessagingLimits({
+    const client = await createClientWithMessagingLimits({
       delay: { sent: CLIENT_DELAY },
       protocol: "propose",
     });
 
     await makeDepositCall({
+      client,
+      clock,
       failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
       subjectToFastforward: SEND,
       protocol: "propose",
@@ -135,12 +137,14 @@ describe("Deposit offline tests", () => {
     // cf method timeout is 90s, client will process any received messages
     // with a preconfigured delay
     const CLIENT_DELAY = CF_METHOD_TIMEOUT + 1_000;
-    client = await createClientWithMessagingLimits({
+    const client = await createClientWithMessagingLimits({
       delay: { received: CLIENT_DELAY },
       protocol: "propose",
     });
 
     await makeDepositCall({
+      client,
+      clock,
       failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
       subjectToFastforward: RECEIVED,
       protocol: "propose",
@@ -148,23 +152,24 @@ describe("Deposit offline tests", () => {
   });
 
   it("client goes offline after proposing deposit and then comes back after timeout is over", async () => {
-    client = await createClientWithMessagingLimits({
+    const client = await createClientWithMessagingLimits({
       protocol: "install",
       ceiling: { received: 0 },
     });
 
     await makeDepositCall({
+      client,
+      clock,
       failsWith: "Failed to deposit",
       subjectToFastforward: RECEIVED,
       protocol: "install",
     });
 
-    const { mnemonic } = getOpts(client.publicIdentifier);
-    await createClient({ mnemonic });
+    await createClient({ mnemonic: getMnemonic(client.publicIdentifier) });
   });
 
   it("client proposes deposit, but then deletes their store", async function(): Promise<void> {
-    client = await createClientWithMessagingLimits();
+    const client = await createClientWithMessagingLimits();
     expect(client.messaging).to.be.ok;
     // on proposal accepted message, delete the store
     await (client.messaging as TestMessagingService).subscribe(
@@ -175,6 +180,8 @@ describe("Deposit offline tests", () => {
       },
     );
     await makeDepositCall({
+      client,
+      clock,
       failsWith: "Failed to deposit",
     });
   });

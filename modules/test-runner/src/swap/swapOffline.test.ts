@@ -29,7 +29,6 @@ import * as lolex from "lolex";
 const { xpubToAddress } = utils;
 
 let clock: any;
-let client: IConnextClient;
 
 const fundChannelAndSwap = async (opts: {
   messagingConfig?: Partial<ClientTestMessagingInputOpts>;
@@ -53,7 +52,7 @@ const fundChannelAndSwap = async (opts: {
   } = opts;
   // these tests should not have collateral issues
   // so make sure they are always properly funded
-  client = providedClient || (await createClientWithMessagingLimits(messagingConfig));
+  const client = providedClient || (await createClientWithMessagingLimits(messagingConfig));
 
   const input = {
     amount: inputAmount,

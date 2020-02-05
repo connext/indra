@@ -21,7 +21,6 @@ module.exports = {
 
   entry: {
     tests: path.join(__dirname, '../src/index.ts'),
-    setup: path.join(__dirname, '../src/setup.ts'),
   },
 
   output: {

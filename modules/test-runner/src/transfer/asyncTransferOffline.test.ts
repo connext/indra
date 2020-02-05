@@ -15,7 +15,7 @@ import {
   expect,
   FORBIDDEN_SUBJECT_ERROR,
   fundChannel,
-  getOpts,
+  getMnemonic,
   getProtocolFromData,
   MesssagingEventData,
   PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
@@ -266,9 +266,8 @@ describe("Async transfer offline tests", () => {
     };
     await verifyTransfer(receiverClient, expected);
     // reconnect the sender
-    const { mnemonic } = getOpts(senderClient.publicIdentifier);
     const reconnected = await createClient({
-      mnemonic,
+      mnemonic: getMnemonic(senderClient.publicIdentifier),
       store: senderClient.store,
     });
     // NOTE: fast forwarding does not propagate to node timers
@@ -334,9 +333,8 @@ describe("Async transfer offline tests", () => {
     };
     await verifyTransfer(receiverClient, expected);
     // reconnect the sender
-    const { mnemonic } = getOpts(senderClient.publicIdentifier);
     const reconnected = await createClient({
-      mnemonic,
+      mnemonic: getMnemonic(senderClient.publicIdentifier),
     });
     expect(reconnected.publicIdentifier).to.be.equal(senderClient.publicIdentifier);
     expect(reconnected.multisigAddress).to.be.equal(senderClient.multisigAddress);

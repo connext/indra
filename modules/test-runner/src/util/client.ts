@@ -11,57 +11,34 @@ import { env } from "./env";
 import { ethWallet } from "./ethprovider";
 import { MessageCounter, TestMessagingService } from "./messaging";
 
-let clientMessaging: { [xpub: string]: TestMessagingService | undefined } = {};
-let clientOptions: { [xpub: string]: ClientOptions } = {};
-
-export const getOpts = (xpub: string): ClientOptions => {
-  return clientOptions[xpub];
-};
-
-export const cleanupMessaging = async (xpub?: string): Promise<void> => {
-  const toRemove = xpub ? [xpub] : Object.keys(clientMessaging);
-  for (const pubId of toRemove) {
-    if (clientMessaging[pubId]) {
-      await clientMessaging[pubId]!.unsubscribe("indra.>");
-      await clientMessaging[pubId]!.removeAllListeners();
-    }
-  }
-  return;
+let mnemonics: { [xpub: string]: string } = {};
+export const getMnemonic = (xpub: string): string => {
+  return mnemonics[xpub] || "";
 };
 
 export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<IConnextClient> => {
-  const store = new ConnextStore(new MemoryStorage());
-
+  const store = opts.store || new ConnextStore(new MemoryStorage());
+  const mnemonic = Wallet.createRandom().mnemonic;
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
     logLevel: env.logLevel,
-    mnemonic: Wallet.createRandom().mnemonic,
+    mnemonic,
     nodeUrl: env.nodeUrl,
     store,
     ...opts,
   };
   const client = await connect(clientOpts);
-
-  // set client store, messaging, and opts
-  clientMessaging[client.publicIdentifier] =
-    (clientOpts.messaging as TestMessagingService) || undefined;
-  clientOptions[client.publicIdentifier] = clientOpts;
-
-  // TODO: add client endpoint to get node config, so we can easily have its xpub etc
-
+  mnemonics[client.publicIdentifier] = mnemonic;
   const ethTx = await ethWallet.sendTransaction({
     to: client.signerAddress,
     value: ETH_AMOUNT_MD,
   });
   const token = new Contract(client.config.contractAddresses.Token, tokenAbi, ethWallet);
   const tokenTx = await token.functions.transfer(client.signerAddress, TOKEN_AMOUNT);
-
   await Promise.all([ethTx.wait(), tokenTx.wait()]);
-
   expect(client.freeBalanceAddress).to.be.ok;
   expect(client.publicIdentifier).to.be.ok;
   expect(client.multisigAddress).to.be.ok;
-
   return client;
 };
 
@@ -73,44 +50,33 @@ export const createRemoteClient = async (
     ethProviderUrl: env.ethProviderUrl,
     logLevel: env.logLevel,
   };
-
   const client = await connect(clientOpts);
-
   expect(client.freeBalanceAddress).to.be.ok;
   expect(client.publicIdentifier).to.be.ok;
-
   return client;
 };
 
 export const createDefaultClient = async (network: string, opts?: Partial<ClientOptions>) => {
-  // TODO: replace with polyfilled window.localStorage
-  const store = new ConnextStore(localStorage);
-
   // TODO: allow test-runner to access external urls
   const urlOptions = {
     ethProviderUrl: env.ethProviderUrl,
     nodeUrl: env.nodeUrl,
   };
-
   let clientOpts: Partial<ClientOptions> = {
     ...opts,
     ...urlOptions,
     logLevel: env.logLevel,
-    store,
+    store: new ConnextStore(localStorage), // TODO: replace with polyfilled window.localStorage
   };
-
   if (network === "mainnet") {
     clientOpts = {
       mnemonic: Wallet.createRandom().mnemonic,
-
       ...clientOpts,
     };
   }
   const client = await connect(network, clientOpts);
-
   expect(client.freeBalanceAddress).to.be.ok;
   expect(client.publicIdentifier).to.be.ok;
-
   return client;
 };
 
@@ -120,12 +86,12 @@ export type ClientTestMessagingInputOpts = {
   delay: Partial<MessageCounter>; // ms delay or sent callbacks
   forbiddenSubjects: string[];
 };
+
 export const createClientWithMessagingLimits = async (
   opts: Partial<ClientTestMessagingInputOpts> = {},
 ): Promise<IConnextClient> => {
   const { protocol, ceiling, delay, forbiddenSubjects } = opts;
   const messageOptions: any = { forbiddenSubjects: forbiddenSubjects || [] };
-
   // no defaults specified, exit early
   if (Object.keys(opts).length === 0) {
     const messaging = new TestMessagingService();
@@ -134,7 +100,6 @@ export const createClientWithMessagingLimits = async (
     expect(messaging.count.sent).to.be.equal(0);
     return await createClient({ messaging });
   }
-
   if (protocol === "any") {
     // assign the ceiling for the general message count
     messageOptions.count = { ceiling, delay };
@@ -147,9 +112,7 @@ export const createClientWithMessagingLimits = async (
       },
     };
   }
-
   const messaging = new TestMessagingService(messageOptions);
-
   // verification of messaging settings
   const expected = {
     sent: 0,

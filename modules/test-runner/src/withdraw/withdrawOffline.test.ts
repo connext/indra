@@ -13,7 +13,7 @@ import {
   expect,
   FORBIDDEN_SUBJECT_ERROR,
   fundChannel,
-  getOpts,
+  getMnemonic,
   getProtocolFromData,
   MesssagingEventData,
   RECEIVED,
@@ -25,7 +25,6 @@ import {
 } from "../util";
 
 const { withdrawalKey } = utils;
-let clock: any;
 
 const createAndFundChannel = async (
   messagingConfig: Partial<ClientTestMessagingInputOpts> = {},
@@ -39,6 +38,7 @@ const createAndFundChannel = async (
 };
 
 describe("Withdraw offline tests", () => {
+  let clock: any;
   beforeEach(async () => {
     // create the clock
     clock = lolex.install({
@@ -110,8 +110,10 @@ describe("Withdraw offline tests", () => {
     expect(retry).to.be.equal(0);
 
     // restart the client
-    const { mnemonic } = getOpts(client.publicIdentifier);
-    const reconnected = await createClient({ mnemonic, store: client.store });
+    const reconnected = await createClient({
+      mnemonic: getMnemonic(client.publicIdentifier),
+      store: client.store,
+    });
     expect(reconnected.publicIdentifier).to.be.equal(client.publicIdentifier);
     expect(reconnected.multisigAddress).to.be.equal(client.multisigAddress);
     expect(reconnected.freeBalanceAddress).to.be.equal(client.freeBalanceAddress);
