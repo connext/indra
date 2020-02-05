@@ -167,7 +167,6 @@ export class TransferService {
     userPubId: string,
     paymentId: string,
     linkedHash: string,
-    meta: object,
   ): Promise<ResolveLinkedTransferResponse> {
     logger.debug(`resolveLinkedTransfer(${userPubId}, ${paymentId}, ${linkedHash})`);
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
@@ -295,7 +294,6 @@ export class TransferService {
       Zero,
       transfer.assetId,
       SimpleLinkedTransferApp,
-      meta,
     );
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {
@@ -316,6 +314,7 @@ export class TransferService {
         channel.multisigAddress,
         assetId,
       ),
+      meta: transfer.meta,
       paymentId,
     };
   }
