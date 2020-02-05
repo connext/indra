@@ -59,9 +59,9 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev staging release
-dev: database node client payment-bot-js indra-proxy test-runner-js ws-tcp-relay
-staging: daicard-proxy database ethprovider indra-proxy-prod node-staging payment-bot-staging test-runner-staging ws-tcp-relay
-release: daicard-proxy database ethprovider indra-proxy-prod node-release payment-bot-release test-runner-release ws-tcp-relay
+dev: database node client indra-proxy test-runner-js ws-tcp-relay
+staging: daicard-proxy database ethprovider indra-proxy-prod node-staging test-runner-staging ws-tcp-relay
+release: daicard-proxy database ethprovider indra-proxy-prod node-release test-runner-release ws-tcp-relay
 
 start: start-daicard
 
