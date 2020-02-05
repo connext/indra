@@ -62,12 +62,12 @@ export class ResolveConditionController extends AbstractController {
     params: ResolveLinkedTransferParameters,
   ): Promise<ResolveLinkedTransferResponse> => {
     this.log.info(`Resolving link: ${stringify(params)}`);
-    const { paymentId, preImage, meta } = params;
+    const { paymentId, preImage } = params;
 
     // convert and validate
     // get assetId and amount from node so that this doesnt have to be sent
     // to the user or used in the API
-    const { assetId, amount } = await this.node.fetchLinkedTransfer(params.paymentId);
+    const { assetId, amount, meta } = await this.node.fetchLinkedTransfer(params.paymentId);
     validate(
       notNegative(amount),
       invalidAddress(assetId),
@@ -77,8 +77,8 @@ export class ResolveConditionController extends AbstractController {
     this.log.info(`Found link payment for ${amount} ${assetId}`);
     const amountBN = bigNumberify(amount);
 
-    const freeBal = await this.connext.getFreeBalance(assetId);
-    const preTransferBal = freeBal[this.connext.freeBalanceAddress];
+    // const freeBal = await this.connext.getFreeBalance(assetId);
+    // const preTransferBal = freeBal[this.connext.freeBalanceAddress];
 
     // TODO: dont listen to linked transfer app in default listener, only listen for it here
 
@@ -107,19 +107,19 @@ export class ResolveConditionController extends AbstractController {
     }
 
     // sanity check, free balance increased by payment amount
-    const postTransferBal = await this.connext.getFreeBalance(assetId);
-    const diff = postTransferBal[this.connext.freeBalanceAddress].sub(preTransferBal);
-    if (!diff.eq(amountBN)) {
-      this.log.error(
-        "Welp it appears the difference of the free balance before and after " +
-          "uninstalling is not what we expected......",
-      );
-    } else if (postTransferBal[this.connext.freeBalanceAddress].lte(preTransferBal)) {
-      this.log.info(
-        "Free balance after transfer is lte free balance " +
-          "before transfer..... That's not great..",
-      );
-    }
+    // const postTransferBal = await this.connext.getFreeBalance(assetId);
+    // const diff = postTransferBal[this.connext.freeBalanceAddress].sub(preTransferBal);
+    // if (!diff.eq(amountBN)) {
+    //   this.log.error(
+    //     "Welp it appears the difference of the free balance before and after " +
+    //       "uninstalling is not what we expected......",
+    //   );
+    // } else if (postTransferBal[this.connext.freeBalanceAddress].lte(preTransferBal)) {
+    //   this.log.info(
+    //     "Free balance after transfer is lte free balance " +
+    //       "before transfer..... That's not great..",
+    //   );
+    // }
 
     return {
       appId,
@@ -156,8 +156,8 @@ export class ResolveConditionController extends AbstractController {
     // convert and validate
     const amountBN = bigNumberify(amount);
 
-    const freeBal = await this.connext.getFreeBalance(assetId);
-    const preTransferBal = freeBal[this.connext.freeBalanceAddress];
+    // const freeBal = await this.connext.getFreeBalance(assetId);
+    // const preTransferBal = freeBal[this.connext.freeBalanceAddress];
 
     // TODO: dont listen to linked transfer app in default listener, only
     // listen for it here
@@ -195,22 +195,25 @@ export class ResolveConditionController extends AbstractController {
     }
 
     // sanity check, free balance increased by payment amount
-    const postTransferBal = await this.connext.getFreeBalance(assetId);
-    const diff = postTransferBal[this.connext.freeBalanceAddress].sub(preTransferBal);
-    if (!diff.eq(amountBN)) {
-      this.log.error(
-        "Welp it appears the difference of the free balance before and after " +
-          "uninstalling is not what we expected......",
-      );
-    } else if (postTransferBal[this.connext.freeBalanceAddress].lte(preTransferBal)) {
-      this.log.warn(
-        "Free balance after transfer is lte free balance " +
-          "before transfer..... That's not great..",
-      );
-    }
+    // const postTransferBal = await this.connext.getFreeBalance(assetId);
+    // const diff = postTransferBal[this.connext.freeBalanceAddress].sub(preTransferBal);
+    // if (!diff.eq(amountBN)) {
+    //   this.log.error(
+    //     "Welp it appears the difference of the free balance before and after " +
+    //       "uninstalling is not what we expected......",
+    //   );
+    // } else if (postTransferBal[this.connext.freeBalanceAddress].lte(preTransferBal)) {
+    //   this.log.warn(
+    //     "Free balance after transfer is lte free balance " +
+    //       "before transfer..... That's not great..",
+    //   );
+    // }
 
     this.connext.emit(RECEIVE_TRANSFER_FINISHED_EVENT, {
       paymentId,
+      meta,
+      amount,
+      appId,
     });
 
     // TODO: remove when deprecated
