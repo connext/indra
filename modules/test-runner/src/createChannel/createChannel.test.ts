@@ -1,16 +1,16 @@
 import { IConnextClient } from "@connext/types";
+import { afterEach } from "mocha";
 
 import {
+  cleanupMessaging,
   createClient,
   createClientWithMessagingLimits,
   createDefaultClient,
   expect,
-  getMessaging,
   SETUP_RESPONDER_RECEIVED_COUNT,
   SETUP_RESPONDER_SENT_COUNT,
-  cleanupMessaging,
+  TestMessagingService,
 } from "../util";
-import { afterEach } from "mocha";
 
 describe("Create Channel", () => {
   it("Happy case: user creates channel with mainnet network string", async () => {
@@ -32,7 +32,7 @@ describe("Create Channel", () => {
     const clientA: IConnextClient = await createClientWithMessagingLimits();
     expect(clientA.multisigAddress).to.be.ok;
     // verify messaging worked
-    const messaging = getMessaging(clientA.publicIdentifier);
+    const messaging = clientA.messaging as TestMessagingService;
     expect(messaging).to.be.ok;
     expect(messaging!.count.sent).to.be.gte(SETUP_RESPONDER_SENT_COUNT);
     expect(messaging!.count.received).to.be.gte(SETUP_RESPONDER_RECEIVED_COUNT);
@@ -49,7 +49,8 @@ describe("Create Channel", () => {
   });
 
   it("Creating a channel fails if user xpub and node xpub are the same", async () => {
-    const nodeMnemonic: string = "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat";
+    const nodeMnemonic: string =
+      "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat";
     await expect(createClient({ mnemonic: nodeMnemonic })).to.be.rejectedWith(
       "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
     );

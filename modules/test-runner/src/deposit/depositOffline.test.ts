@@ -4,21 +4,21 @@ import * as lolex from "lolex";
 
 import {
   APP_PROTOCOL_TOO_LONG,
+  cleanupMessaging,
   createClient,
   createClientWithMessagingLimits,
   expect,
   fundChannel,
-  getMessaging,
   getOpts,
+  getProtocolFromData,
   getStore,
-  ZERO_ZERO_ONE_ETH,
-  cleanupMessaging,
-  TOKEN_AMOUNT,
   MessagingEvent,
   MesssagingEventData,
-  getProtocolFromData,
   RECEIVED,
   SEND,
+  TestMessagingService,
+  TOKEN_AMOUNT,
+  ZERO_ZERO_ONE_ETH,
 } from "../util";
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
@@ -73,19 +73,21 @@ describe("Deposit offline tests", () => {
     }
 
     // get messaging of client
-    const messaging = getMessaging(client.publicIdentifier);
-    messaging!.on(subjectToFastforward, async (msg: MesssagingEventData) => {
-      // check if you should fast forward on specific protocol, or
-      // just on specfic subject
-      if (!protocol) {
-        clock.tick(89_000);
-        return;
-      }
-      if (getProtocolFromData(msg) === protocol) {
-        clock.tick(89_000);
-        return;
-      }
-    });
+    (client.messaging as TestMessagingService).on(
+      subjectToFastforward,
+      async (msg: MesssagingEventData) => {
+        // check if you should fast forward on specific protocol, or
+        // just on specfic subject
+        if (!protocol) {
+          clock.tick(89_000);
+          return;
+        }
+        if (getProtocolFromData(msg) === protocol) {
+          clock.tick(89_000);
+          return;
+        }
+      },
+    );
     await expect(fundChannel(client, amount || defaultAmount, assetId)).to.be.rejectedWith(
       failsWith!,
     );
@@ -162,10 +164,9 @@ describe("Deposit offline tests", () => {
 
   it("client proposes deposit, but then deletes their store", async function(): Promise<void> {
     client = await createClientWithMessagingLimits();
-    const messaging = getMessaging(client.publicIdentifier);
-    expect(messaging).to.be.ok;
+    expect(client.messaging).to.be.ok;
     // on proposal accepted message, delete the store
-    await messaging!.subscribe(
+    await (client.messaging as TestMessagingService).subscribe(
       `indra.node.${client.nodePublicIdentifier}.proposalAccepted.${client.multisigAddress}`,
       async () => {
         // delete the client store

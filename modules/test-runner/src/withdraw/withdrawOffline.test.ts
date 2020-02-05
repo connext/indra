@@ -4,26 +4,26 @@ import { BigNumber } from "ethers/utils";
 import { AddressZero, Zero } from "ethers/constants";
 import * as lolex from "lolex";
 import {
-  ClientTestMessagingInputOpts,
   cleanupMessaging,
+  ClientTestMessagingInputOpts,
+  createClient,
   createClientWithMessagingLimits,
+  delay,
   ETH_AMOUNT_SM,
+  ethProvider,
   expect,
+  FORBIDDEN_SUBJECT_ERROR,
   fundChannel,
+  getOpts,
+  getProtocolFromData,
+  getStore,
+  MesssagingEventData,
+  RECEIVED,
+  SEND,
+  SUBJECT_FORBIDDEN,
+  TestMessagingService,
   withdrawFromChannel,
   ZERO_ZERO_ZERO_FIVE_ETH,
-  getStore,
-  getOpts,
-  createClient,
-  ethProvider,
-  getMessaging,
-  RECEIVED,
-  getProtocolFromData,
-  MesssagingEventData,
-  SEND,
-  delay,
-  SUBJECT_FORBIDDEN,
-  FORBIDDEN_SUBJECT_ERROR,
 } from "../util";
 
 const { withdrawalKey } = utils;
@@ -61,8 +61,7 @@ describe("Withdraw offline tests", () => {
       protocol: "withdraw",
     });
 
-    const messaging = getMessaging(client.publicIdentifier);
-    messaging!.on(RECEIVED, (msg: MesssagingEventData) => {
+    (client.messaging as TestMessagingService).on(RECEIVED, (msg: MesssagingEventData) => {
       if (getProtocolFromData(msg) === "withdraw") {
         clock.tick(89_000);
       }
@@ -79,9 +78,8 @@ describe("Withdraw offline tests", () => {
       protocol: "withdraw",
     });
 
-    const messaging = getMessaging(client.publicIdentifier);
     let eventCount = 0;
-    messaging!.on(SEND, async (msg: MesssagingEventData) => {
+    (client.messaging as TestMessagingService).on(SEND, async (msg: MesssagingEventData) => {
       eventCount += 1;
       if (getProtocolFromData(msg) === "withdraw" && eventCount === 1) {
         // wait for message to be sent (happens after event thrown)
@@ -100,8 +98,7 @@ describe("Withdraw offline tests", () => {
       forbiddenSubjects: ["channel.withdraw"],
     });
 
-    const messaging = getMessaging(client.publicIdentifier);
-    messaging!.on(SUBJECT_FORBIDDEN, () => {
+    (client.messaging as TestMessagingService).on(SUBJECT_FORBIDDEN, () => {
       clock.tick(89_000);
     });
     await expect(

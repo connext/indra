@@ -3,26 +3,26 @@ import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 
 import {
+  APP_PROTOCOL_TOO_LONG,
+  cleanupMessaging,
+  ClientTestMessagingInputOpts,
   createClientWithMessagingLimits,
+  ETH_AMOUNT_SM,
   expect,
   fundChannel,
-  ETH_AMOUNT_SM,
-  swapAsset,
-  TOKEN_AMOUNT,
-  requestCollateral,
-  ClientTestMessagingInputOpts,
-  getMessaging,
+  getProtocolFromData,
+  getStore,
   INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
-  UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED,
-  APP_PROTOCOL_TOO_LONG,
-  UNINSTALL_SUPPORTED_APP_COUNT_SENT,
-  cleanupMessaging,
   MessagingEvent,
   MesssagingEventData,
-  getProtocolFromData,
   RECEIVED,
+  requestCollateral,
   SEND,
-  getStore,
+  swapAsset,
+  TestMessagingService,
+  TOKEN_AMOUNT,
+  UNINSTALL_SUPPORTED_APP_COUNT_RECEIVED,
+  UNINSTALL_SUPPORTED_APP_COUNT_SENT,
 } from "../util";
 import { BigNumber } from "ethers/utils";
 
@@ -74,8 +74,7 @@ describe("Swap offline", () => {
     if (fastForward) {
       // fast forward the clock for tests with delay
       // after swapping
-      const clientMessaging = getMessaging(client.publicIdentifier);
-      clientMessaging!.on(fastForward, async (msg: MesssagingEventData) => {
+      (client.messaging as TestMessagingService)!.on(fastForward, async (msg: MesssagingEventData) => {
         // check if you should fast forward on specific protocol, or
         // just on specfic subject
         if (!protocol) {
@@ -176,11 +175,10 @@ describe("Swap offline", () => {
 
   it("Bot A installs swap app successfully but then deletes store (before uninstall)", async () => {
     const providedClient = await createClientWithMessagingLimits();
-    const messaging = getMessaging(providedClient.publicIdentifier);
-    expect(messaging).to.be.ok;
+    expect(providedClient.messaging).to.be.ok;
     // deposit eth into channel and swap for token
     // go offline during swap, should fail with swap timeout
-    await messaging!.subscribe(
+    await (providedClient.messaging as TestMessagingService)!.subscribe(
       `indra.node.${providedClient.nodePublicIdentifier}.install.*`,
       async () => {
         // we know client has swap app installed,

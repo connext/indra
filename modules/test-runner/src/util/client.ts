@@ -19,10 +19,6 @@ export const getStore = (xpub: string): ConnextStore => {
   return clientStore[xpub];
 };
 
-export const getMessaging = (xpub: string): TestMessagingService | undefined => {
-  return clientMessaging[xpub];
-};
-
 export const getOpts = (xpub: string): ClientOptions => {
   return clientOptions[xpub];
 };
@@ -105,6 +101,7 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
   let clientOpts: Partial<ClientOptions> = {
     ...opts,
     ...urlOptions,
+    logLevel: env.logLevel,
     store,
   };
 

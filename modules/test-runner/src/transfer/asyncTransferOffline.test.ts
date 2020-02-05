@@ -8,73 +8,73 @@ import * as lolex from "lolex";
 
 import {
   APP_PROTOCOL_TOO_LONG,
-  expect,
-  cleanupMessaging,
-  createClientWithMessagingLimits,
-  TOKEN_AMOUNT,
-  fundChannel,
-  requestCollateral,
   asyncTransferAsset,
-  TOKEN_AMOUNT_SM,
-  FORBIDDEN_SUBJECT_ERROR,
-  PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
-  getMessaging,
-  getOpts,
+  cleanupMessaging,
   createClient,
-  getStore,
-  RECEIVED,
-  MesssagingEventData,
-  getProtocolFromData,
-  REQUEST,
+  createClientWithMessagingLimits,
   delay,
+  expect,
+  FORBIDDEN_SUBJECT_ERROR,
+  fundChannel,
+  getOpts,
+  getProtocolFromData,
+  getStore,
+  MesssagingEventData,
+  PROPOSE_INSTALL_SUPPORTED_APP_COUNT_RECEIVED,
+  RECEIVED,
+  REQUEST,
+  requestCollateral,
   SUBJECT_FORBIDDEN,
+  TestMessagingService,
+  TOKEN_AMOUNT,
+  TOKEN_AMOUNT_SM,
 } from "../util";
 import { BigNumber } from "ethers/utils";
 
+let clock: any;
+let senderClient: IConnextClient;
+let receiverClient: IConnextClient;
+let tokenAddress: string;
+
+/////////////////////////////////
+/// TEST SPECIFIC HELPERS
+const fundForTransfers = async (
+  amount: BigNumber = TOKEN_AMOUNT,
+  assetId?: string,
+): Promise<void> => {
+  // make sure the tokenAddress is set
+  tokenAddress = senderClient.config.contractAddresses.Token;
+  await fundChannel(senderClient, amount, assetId || tokenAddress);
+  await requestCollateral(receiverClient, assetId || tokenAddress);
+};
+
+const getLinkedApp = async (client: IConnextClient, onlyOne: boolean = true): Promise<any> => {
+  const registeredApp = client.appRegistry.filter(
+    (app: DefaultApp) => app.name === "SimpleLinkedTransferApp",
+  )[0];
+  const linkedApps = (await client.getAppInstances()).filter(
+    app => app.appInterface.addr === registeredApp.appDefinitionAddress,
+  );
+  // make sure the state is correct
+  if (onlyOne) {
+    expect(linkedApps.length).to.be.equal(1);
+    return linkedApps[0];
+  }
+  expect(linkedApps).to.be.ok;
+  return linkedApps;
+};
+
+const verifyTransfer = async (
+  client: IConnextClient,
+  expected: any, //Partial<Transfer> type uses `null` not `undefined`
+): Promise<void> => {
+  expect(expected.paymentId).to.be.ok;
+  const transfer = await client.getLinkedTransfer(expected.paymentId!);
+  // verify the saved transfer information
+  expect(transfer).to.containSubset(expected);
+};
+
 describe("Async transfer offline tests", () => {
-  let clock: any;
-  let senderClient: IConnextClient;
-  let receiverClient: IConnextClient;
-  let tokenAddress: string;
-
-  /////////////////////////////////
-  /// TEST SPECIFIC HELPERS
-  const fundForTransfers = async (
-    amount: BigNumber = TOKEN_AMOUNT,
-    assetId?: string,
-  ): Promise<void> => {
-    // make sure the tokenAddress is set
-    tokenAddress = senderClient.config.contractAddresses.Token;
-    await fundChannel(senderClient, amount, assetId || tokenAddress);
-    await requestCollateral(receiverClient, assetId || tokenAddress);
-  };
-
-  const getLinkedApp = async (client: IConnextClient, onlyOne: boolean = true): Promise<any> => {
-    const registeredApp = client.appRegistry.filter(
-      (app: DefaultApp) => app.name === "SimpleLinkedTransferApp",
-    )[0];
-    const linkedApps = (await client.getAppInstances()).filter(
-      app => app.appInterface.addr === registeredApp.appDefinitionAddress,
-    );
-    // make sure the state is correct
-    if (onlyOne) {
-      expect(linkedApps.length).to.be.equal(1);
-      return linkedApps[0];
-    }
-    expect(linkedApps).to.be.ok;
-    return linkedApps;
-  };
-
-  const verifyTransfer = async (
-    client: IConnextClient,
-    expected: any, //Partial<Transfer> type uses `null` not `undefined`
-  ): Promise<void> => {
-    expect(expected.paymentId).to.be.ok;
-    const transfer = await client.getLinkedTransfer(expected.paymentId!);
-    // verify the saved transfer information
-    expect(transfer).to.containSubset(expected);
-  };
-
   beforeEach(async () => {
     // create the clock
     clock = lolex.install({
@@ -105,9 +105,7 @@ describe("Async transfer offline tests", () => {
 
     // make the transfer call, should fail when sending info to node, but
     // will retry. fast forward through NATS_TIMEOUT
-    const senderMessaging = getMessaging(senderClient.publicIdentifier);
-    senderMessaging!.on(SUBJECT_FORBIDDEN, () => {
-      // fast forward here
+    (senderClient.messaging as TestMessagingService).on(SUBJECT_FORBIDDEN, () => {
       clock.tick(89_000);
     });
     await expect(
@@ -146,8 +144,7 @@ describe("Async transfer offline tests", () => {
 
     // make the transfer call, should fail when sending info to node, but
     // will retry. fast forward through NATS_TIMEOUT
-    const senderMessaging = getMessaging(senderClient.publicIdentifier);
-    senderMessaging!.on(SUBJECT_FORBIDDEN, () => {
+    (senderClient.messaging as TestMessagingService).on(SUBJECT_FORBIDDEN, () => {
       // fast forward here
       clock.tick(89_000);
     });
@@ -191,15 +188,17 @@ describe("Async transfer offline tests", () => {
       protocol: "propose",
     });
     await fundForTransfers();
-    const receiverMessaging = getMessaging(receiverClient.publicIdentifier);
-    receiverMessaging!.on(REQUEST, async (msg: MesssagingEventData) => {
-      const { subject } = msg;
-      if (subject!.includes(`resolve`)) {
-        // wait for message to be sent, event is fired first
-        await delay(500);
-        clock.tick(89_000);
-      }
-    });
+    (receiverClient.messaging as TestMessagingService).on(
+      REQUEST,
+      async (msg: MesssagingEventData) => {
+        const { subject } = msg;
+        if (subject!.includes(`resolve`)) {
+          // wait for message to be sent, event is fired first
+          await delay(500);
+          clock.tick(89_000);
+        }
+      },
+    );
 
     // make the transfer call, should timeout in propose protocol
     await expect(
@@ -219,12 +218,14 @@ describe("Async transfer offline tests", () => {
     });
     await fundForTransfers();
 
-    const receiverMessaging = getMessaging(receiverClient.publicIdentifier);
-    receiverMessaging!.on(RECEIVED, async (msg: MesssagingEventData) => {
-      if (getProtocolFromData(msg) === "takeAction") {
-        clock.tick(89_000);
-      }
-    });
+    (receiverClient.messaging as TestMessagingService).on(
+      RECEIVED,
+      async (msg: MesssagingEventData) => {
+        if (getProtocolFromData(msg) === "takeAction") {
+          clock.tick(89_000);
+        }
+      },
+    );
 
     await expect(
       asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
@@ -258,8 +259,7 @@ describe("Async transfer offline tests", () => {
       recipient: receiverClient.publicIdentifier,
     });
     // immediately take sender offline
-    const senderMessaging = getMessaging(senderClient.publicIdentifier);
-    await senderMessaging!.disconnect();
+    await (senderClient.messaging as TestMessagingService).disconnect();
     // wait for transfer to finish
     await received;
     // fast forward 3 min, so any protocols are expired for the client
@@ -322,8 +322,7 @@ describe("Async transfer offline tests", () => {
     const actionTaken = new Promise((resolve: Function) => {
       senderClient.once(UPDATE_STATE_EVENT, async () => {
         await received;
-        const messaging = getMessaging(senderClient.publicIdentifier);
-        await messaging!.disconnect();
+        await (senderClient.messaging as TestMessagingService).disconnect();
         // fast forward 3 min so protocols are stale on client
         clock.tick(60_000 * 3);
         resolve();
