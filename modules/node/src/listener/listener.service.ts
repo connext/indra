@@ -228,7 +228,7 @@ export default class ListenerService implements OnModuleInit {
           return;
         }
         logger.debug(`Found transfer that needs collateral redeemed: ${JSON.stringify(transfer)}`);
-        await this.transferService.reclaimLinkedTransferCollateral(transfer.paymentId);
+        // await this.transferService.reclaimLinkedTransferCollateral(transfer.paymentId);
       },
       UNINSTALL_VIRTUAL_EVENT: (data: UninstallVirtualMessage): void => {
         logEvent(UNINSTALL_VIRTUAL_EVENT, data);
