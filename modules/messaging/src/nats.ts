@@ -25,8 +25,9 @@ export class NatsMessagingService implements IMessagingService {
     // NOTE: high maxPingOut (default=2) to prevent errors while time-travelling during tests
     this.connection = await nats.connect({
       ...config,
-      maxReconnectAttempts: -1,
-      maxPingOut: 1000,
+      // maxReconnectAttempts: -1,
+      // maxPingOut: 1000,
+      pingInterval: 60_000,
     });
     this.log.debug(`Connected!`);
   }
