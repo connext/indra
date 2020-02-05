@@ -23,7 +23,7 @@ export class NatsMessagingService implements IMessagingService {
     config.servers = typeof messagingUrl === `string` ? [messagingUrl] : messagingUrl;
     config.payload = nats.Payload.JSON;
     // NOTE: high maxPingOut (default=2) to prevent errors while time-travelling during tests
-    this.connection = await nats.connect({ ...config, maxPingOut: 1000000 });
+    this.connection = await nats.connect({ ...config });
     this.log.debug(`Connected!`);
   }
 
@@ -124,6 +124,9 @@ export class NatsMessagingService implements IMessagingService {
   private assertConnected(): void {
     if (!this.connection) {
       throw new Error(`No connection exists, NatsMessagingService is uninitialized.`);
+    }
+    if (!this.connection.isClosed) {
+      throw new Error(`Connection is closed, try reconnecting.`);
     }
   }
 
