@@ -2,7 +2,7 @@ import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
 
-import { CF_METHOD_TIMEOUT, delayAndThrow, stringify, xpubToAddress } from "../lib";
+import { stringify } from "../lib";
 import {
   BigNumber,
   CFCoreTypes,
@@ -11,8 +11,6 @@ import {
   convert,
   ProtocolTypes,
   DepositParameters,
-  SupportedApplication,
-  SupportedApplications,
 } from "../types";
 import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 
@@ -25,6 +23,7 @@ export class DepositController extends AbstractController {
     const myFreeBalanceAddress = this.connext.freeBalanceAddress;
 
     const { assetId, amount } = convert.Deposit(`bignumber`, params);
+    validate(invalidAddress(assetId), notPositive(amount));
 
     // check asset balance of address
     let bal: BigNumber;
@@ -36,11 +35,7 @@ export class DepositController extends AbstractController {
       // TODO: correct? how can i use allowance?
       bal = await token.balanceOf(myFreeBalanceAddress);
     }
-    validate(
-      invalidAddress(assetId),
-      notPositive(amount),
-      notLessThanOrEqualTo(amount, bal), // cant deposit more than default addr owns
-    );
+    validate(notLessThanOrEqualTo(amount, bal)); // cant deposit more than default addr owns
 
     // TODO: remove free balance stuff?
     const preDepositBalances = await this.connext.getFreeBalance(assetId);
@@ -86,12 +81,11 @@ export class DepositController extends AbstractController {
   ////// PRIVATE METHODS
 
   private proposeDepositInstall = async (assetId: string): Promise<string> => {
+    const token = new Contract(assetId!, tokenAbi, this.ethProvider);
     const threshold =
       assetId === AddressZero
         ? await this.ethProvider.getBalance(this.connext.multisigAddress)
-        : await new Contract(assetId!, tokenAbi, this.ethProvider).functions.balanceOf(
-          this.connext.multisigAddress,
-        );
+        : await token.functions.balanceOf(this.connext.multisigAddress);
 
     const initialState: CoinBalanceRefundAppStateBigNumber = {
       multisig: this.connext.multisigAddress,

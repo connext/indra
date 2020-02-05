@@ -75,6 +75,10 @@ export interface IConnextClient {
   publicIdentifier: string;
   signerAddress: string;
 
+  // Expose some internal machineary for easier debugging
+  messaging: IMessagingService;
+  store: Store;
+
   ////////////////////////////////////////
   // Methods
 

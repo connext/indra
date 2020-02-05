@@ -8,7 +8,7 @@ registry_url="https://index.docker.io/v1/repositories/$organization"
 commit=`git rev-parse HEAD | head -c 8`
 
 version="$1"
-images="bot database ethprovider node proxy relay test_runner"
+images="database ethprovider node proxy relay test_runner"
 
 function safePush {
   image=${project}_$1

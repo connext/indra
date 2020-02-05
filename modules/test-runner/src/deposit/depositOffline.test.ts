@@ -8,27 +8,69 @@ import {
   createClientWithMessagingLimits,
   expect,
   fundChannel,
-  getMessaging,
-  getOpts,
-  getStore,
-  ZERO_ZERO_ONE_ETH,
-  cleanupMessaging,
-  TOKEN_AMOUNT,
+  getMnemonic,
+  getProtocolFromData,
   MessagingEvent,
   MesssagingEventData,
-  getProtocolFromData,
   RECEIVED,
   SEND,
+  TestMessagingService,
+  TOKEN_AMOUNT,
+  ZERO_ZERO_ONE_ETH,
 } from "../util";
 import { AddressZero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
 const { CF_METHOD_TIMEOUT } = utils;
 
+const makeDepositCall = async (opts: {
+  client: IConnextClient;
+  clock: any;
+  failsWith?: string;
+  protocol?: string;
+  subjectToFastforward?: MessagingEvent;
+  amount?: BigNumber;
+  assetId?: string;
+}) => {
+  const { client, clock, amount, assetId, failsWith, protocol, subjectToFastforward } = opts;
+  const defaultAmount = assetId && assetId !== AddressZero ? TOKEN_AMOUNT : ZERO_ZERO_ONE_ETH;
+  if (!failsWith) {
+    await fundChannel(client, amount || defaultAmount, assetId);
+    return;
+  }
+  if (!subjectToFastforward) {
+    await expect(fundChannel(client, amount || defaultAmount, assetId)).to.be.rejectedWith(
+      failsWith!,
+    );
+    return;
+  }
+  // get messaging of client
+  (client.messaging as TestMessagingService).on(
+    subjectToFastforward,
+    async (msg: MesssagingEventData) => {
+      // check if you should fast forward on specific protocol, or
+      // just on specfic subject
+      if (!protocol) {
+        clock.tick(89_000);
+        return;
+      }
+      if (getProtocolFromData(msg) === protocol) {
+        clock.tick(89_000);
+        return;
+      }
+    },
+  );
+  await expect(fundChannel(client, amount || defaultAmount, assetId)).to.be.rejectedWith(
+    failsWith!,
+  );
+  return;
+};
+
 /**
  * Contains any deposit tests that involve the client going offline at some
  * point in the protocol.
  */
+
 describe("Deposit offline tests", () => {
   let clock: any;
   let client: IConnextClient;
@@ -40,6 +82,12 @@ describe("Deposit offline tests", () => {
       now: Date.now(),
     });
   });
+
+  afterEach(async () => {
+    clock && clock.reset && clock.reset();
+    await client.messaging.disconnect();
+  });
+
   /**
    * In this case, the client correctly stops processing received messages
    * so the `proposeInstallApp` call never resolves. However, the node *does*
@@ -49,49 +97,6 @@ describe("Deposit offline tests", () => {
    * before it is completed by both parties) if the `initiator` goes offline
    * after sending m1
    */
-
-  const makeDepositCall = async (opts: {
-    failsWith?: string;
-    protocol?: string;
-    subjectToFastforward?: MessagingEvent;
-    amount?: BigNumber;
-    assetId?: string;
-  }) => {
-    const { amount, assetId, failsWith, protocol, subjectToFastforward } = opts;
-    const defaultAmount = assetId && assetId !== AddressZero ? TOKEN_AMOUNT : ZERO_ZERO_ONE_ETH;
-
-    if (!failsWith) {
-      await fundChannel(client, amount || defaultAmount, assetId);
-      return;
-    }
-
-    if (!subjectToFastforward) {
-      await expect(fundChannel(client, amount || defaultAmount, assetId)).to.be.rejectedWith(
-        failsWith!,
-      );
-      return;
-    }
-
-    // get messaging of client
-    const messaging = getMessaging(client.publicIdentifier);
-    messaging!.on(subjectToFastforward, async (msg: MesssagingEventData) => {
-      // check if you should fast forward on specific protocol, or
-      // just on specfic subject
-      if (!protocol) {
-        clock.tick(89_000);
-        return;
-      }
-      if (getProtocolFromData(msg) === protocol) {
-        clock.tick(89_000);
-        return;
-      }
-    });
-    await expect(fundChannel(client, amount || defaultAmount, assetId)).to.be.rejectedWith(
-      failsWith!,
-    );
-    return;
-  };
-
   it("client proposes deposit, but node doesn't receive the NATS message (or no response from node)", async () => {
     // create client where the propose protocol will not complete
     // in deposit, client will propose the `CoinBalanceRefund` app (is the
@@ -104,6 +109,8 @@ describe("Deposit offline tests", () => {
     });
 
     await makeDepositCall({
+      client,
+      clock,
       failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
       subjectToFastforward: RECEIVED,
       protocol: "propose",
@@ -120,15 +127,15 @@ describe("Deposit offline tests", () => {
     });
 
     await makeDepositCall({
+      client,
+      clock,
       failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
       subjectToFastforward: SEND,
       protocol: "propose",
     });
   });
 
-  it("client proposes deposit, but node only responds after timeout is over", async function(): Promise<
-    void
-    > {
+  it("client proposes deposit, but node only responds after timeout is over", async () => {
     // cf method timeout is 90s, client will process any received messages
     // with a preconfigured delay
     const CLIENT_DELAY = CF_METHOD_TIMEOUT + 1_000;
@@ -138,6 +145,8 @@ describe("Deposit offline tests", () => {
     });
 
     await makeDepositCall({
+      client,
+      clock,
       failsWith: APP_PROTOCOL_TOO_LONG("proposal"),
       subjectToFastforward: RECEIVED,
       protocol: "propose",
@@ -151,37 +160,31 @@ describe("Deposit offline tests", () => {
     });
 
     await makeDepositCall({
+      client,
+      clock,
       failsWith: "Failed to deposit",
       subjectToFastforward: RECEIVED,
       protocol: "install",
     });
 
-    const { mnemonic } = getOpts(client.publicIdentifier);
-    await createClient({ mnemonic });
+    await createClient({ mnemonic: getMnemonic(client.publicIdentifier) });
   });
 
   it("client proposes deposit, but then deletes their store", async function(): Promise<void> {
     client = await createClientWithMessagingLimits();
-    const messaging = getMessaging(client.publicIdentifier);
-    expect(messaging).to.be.ok;
+    expect(client.messaging).to.be.ok;
     // on proposal accepted message, delete the store
-    await messaging!.subscribe(
+    await (client.messaging as TestMessagingService).subscribe(
       `indra.node.${client.nodePublicIdentifier}.proposalAccepted.${client.multisigAddress}`,
       async () => {
         // delete the client store
-        const store = getStore(client.publicIdentifier);
-        await store.reset();
+        client.store.reset && client.store.reset();
       },
     );
     await makeDepositCall({
+      client,
+      clock,
       failsWith: "Failed to deposit",
     });
-  });
-
-  afterEach(async () => {
-    await cleanupMessaging();
-    if (clock) {
-      clock.reset();
-    }
   });
 });

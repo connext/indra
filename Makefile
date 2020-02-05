@@ -13,7 +13,7 @@ release=$(shell cat package.json | grep '"version"' | awk -F '"' '{print $$4}')
 solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
 # version that will be tested against for backwards compatibility checks
-backwards_compatible_version=$(shell echo $(release) | cut -d '.' -f 1).0.1
+backwards_compatible_version=$(shell echo $(release) | cut -d '.' -f 1).0.7
 
 # Pool of images to pull cached layers from during docker build steps
 cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_relay:$(commit),$(project)_relay,$(project)_bot:$(commit),$(project)_bot,$(project)_builder"; else echo ""; fi)
@@ -59,9 +59,9 @@ $(shell mkdir -p .makeflags $(node)/dist)
 
 default: dev
 all: dev staging release
-dev: database node client payment-bot-js indra-proxy test-runner-js ws-tcp-relay
-staging: daicard-proxy database ethprovider indra-proxy-prod node-staging payment-bot-staging test-runner-staging ws-tcp-relay
-release: daicard-proxy database ethprovider indra-proxy-prod node-release payment-bot-release test-runner-release ws-tcp-relay
+dev: database node client indra-proxy test-runner-js ws-tcp-relay
+staging: daicard-proxy database ethprovider indra-proxy-prod node-staging test-runner-staging ws-tcp-relay
+release: daicard-proxy database ethprovider indra-proxy-prod node-release test-runner-release ws-tcp-relay
 
 start: start-daicard
 
