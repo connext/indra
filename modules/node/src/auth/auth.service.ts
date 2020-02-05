@@ -29,7 +29,7 @@ export class AuthService {
   private signerCache: { [key: string]: string } = {};
   constructor(private readonly channelRepo: ChannelRepository) {}
 
-  async getNonce(address: string): Promise<string> {
+  async getNonce(address: string): Promise<any> {
     if (!isValidHex(address, 20)) {
       return JSON.stringify({ err: `Invalid address: ${address}` });
     }
@@ -37,7 +37,7 @@ export class AuthService {
     const expiry = Date.now() + nonceTTL;
     this.nonces[nonce] = { address, expiry };
     logger.debug(`getNonce: Gave address ${address} a nonce that expires at ${expiry}: ${nonce}`);
-    return nonce;
+    return {nonce, expiry};
   }
 
   useVerifiedMultisig(callback: any): any {
