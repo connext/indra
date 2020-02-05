@@ -262,8 +262,8 @@ describe("Async transfer offline tests", () => {
     await senderMessaging!.disconnect();
     // wait for transfer to finish
     await received;
-    // fast forward 5 min, so any protocols are expired for the client
-    clock.tick(60_000 * 5);
+    // fast forward 3 min, so any protocols are expired for the client
+    clock.tick(60_000 * 3);
     // verify transfer
     const expected = {
       amount: TOKEN_AMOUNT_SM.toString(),
@@ -294,9 +294,7 @@ describe("Async transfer offline tests", () => {
     await verifyTransfer(reconnected, { ...expected, status: "RECLAIMED" });
   });
 
-  // TODO: Passes independently, but when run with all the integration tests
-  // fails with: `Uncaught NatsError: 'Stale Connection'`
-  it.skip("sender installs, receiver installs, takesAction, then uninstalls. Node tries to take action, with sender but sender is offline but then comes online later", async function() {
+  it("sender installs, receiver installs, takesAction, then uninstalls. Node tries to take action, with sender but sender is offline but then comes online later", async function() {
     this.timeout(200_000);
     /**
      * Expected behavior: sender should still have app (with money owed to
@@ -326,8 +324,8 @@ describe("Async transfer offline tests", () => {
         await received;
         const messaging = getMessaging(senderClient.publicIdentifier);
         await messaging!.disconnect();
-        // fast forward 5 min so protocols are stale on client
-        clock.tick(60_000 * 5);
+        // fast forward 3 min so protocols are stale on client
+        clock.tick(60_000 * 3);
         resolve();
       });
     });
