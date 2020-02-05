@@ -1,4 +1,4 @@
-import { ERC20TokenArtifacts, IConnextClient, LINKED_TRANSFER_TO_RECIPIENT } from "@connext/types";
+import { ERC20TokenArtifacts, IConnextClient, LINKED_TRANSFER_TO_RECIPIENT, toBN } from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { HDNode, hexlify, randomBytes } from "ethers/utils";
@@ -45,21 +45,33 @@ describe("Async Transfers", () => {
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId);
   });
 
-  it.only("latency test: client A transfers eth to client B through node", async () => {
+  it.only("latency test: client A transfers eth to client B through node", async function (done) {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
-    const hrstart = process.hrtime()
-    clientB.on("RECEIVE_TRANSFER_FINISHED_EVENT", () => {
-        const hrend = process.hrtime(hrstart)
-        console.log('Execution time (hr): %ds %dms', hrend[0], hrend[1] / 1000000)
+    let startTime: number[] = [];
+    let y = 0;
+    clientB.on("RECEIVE_TRANSFER_FINISHED_EVENT", (data) => {
+      // console.log(data)
+      const duration = Date.now() - startTime[y];
+      console.log("Caught #: " + y + ". Time: " + duration / 1000)
+      console.log("===========================")
+      y++
+      if(y==5){
+        done()
+      }
     })
-    await clientA.transfer({
+
+    for(let i = 0; i<5; i++) {
+      startTime[i] = Date.now()
+      await clientA.transfer({
         assetId: AddressZero,
         recipient: clientB.publicIdentifier,
-        amount: transfer.amount.toString()
-    })
-    await delay(20000)
+        amount: transfer.amount.div(toBN(10)).toString(),
+        meta: {index: i}
+      })
+      console.log("i: " + i)
+    }
   });
 
   it("client A transfers eth to client B without collateralizing", async () => {
