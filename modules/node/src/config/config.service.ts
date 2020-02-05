@@ -7,6 +7,7 @@ import {
   SimpleTwoPartySwapApp,
   SimpleLinkedTransferApp,
   CoinBalanceRefundApp,
+  AllowedSwap,
 } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
@@ -171,6 +172,10 @@ export class ConfigService implements OnModuleInit {
     return this.get(`INDRA_REDIS_URL`);
   }
 
+  getSwapConfig() {
+    
+  }
+
   async getDefaultPaymentProfile(assetId: string = AddressZero): Promise<PaymentProfile | undefined> {
     const tokenAddress = await this.getTokenAddress();
     switch (assetId) {
@@ -193,6 +198,20 @@ export class ConfigService implements OnModuleInit {
       default:
         return undefined;
     }
+  }
+
+  async getAllowedSwaps(): Promise<AllowedSwap[]> {
+    const allowedSwaps: AllowedSwap[] = [
+      {
+        from: await this.getTokenAddress(),
+        to: AddressZero,
+      },
+      {
+        from: AddressZero,
+        to: await this.getTokenAddress(),
+      },
+    ];
+    return allowedSwaps;
   }
 
   onModuleInit(): void {

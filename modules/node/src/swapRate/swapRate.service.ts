@@ -3,7 +3,7 @@ import { AllowedSwap, SwapRate } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { Contract, ethers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { formatEther, getAddress } from "ethers/utils";
+import { formatEther } from "ethers/utils";
 
 import { medianizerAbi } from "../abi/medianizer.abi";
 import { ConfigService } from "../config/config.service";
@@ -53,9 +53,7 @@ export class SwapRateService implements OnModuleInit {
     if (!(await this.getValidSwaps()).find((s: AllowedSwap) => s.from === from && s.to === to)) {
       throw new Error(`No valid swap exists for ${from} to ${to}`);
     }
-    const rateIndex = this.latestSwapRates.findIndex(
-      (s: SwapRate) => s.from === from && s.to === to,
-    );
+    const rateIndex = this.latestSwapRates.findIndex((s: SwapRate) => s.from === from && s.to === to);
     let oldRate: string | undefined;
     if (rateIndex !== -1) {
       oldRate = this.latestSwapRates[rateIndex].rate;
@@ -115,9 +113,7 @@ export class SwapRateService implements OnModuleInit {
     const swaps = await this.getValidSwaps();
     for (const swap of swaps) {
       // Check rate at each new block
-      provider.on("block", (blockNumber: number) =>
-        this.getSwapRate(swap.from, swap.to, blockNumber),
-      );
+      provider.on("block", (blockNumber: number) => this.getSwapRate(swap.from, swap.to, blockNumber));
     }
   }
 }
