@@ -131,16 +131,17 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
       forbiddenSubjects: opts.forbiddenSubjects || defaults.forbiddenSubjects,
     };
 
-    const factory = new MessagingServiceFactory({
+    // NOTE: high maxPingOut prevents stale connection errors while time-travelling
+    this.connection = new MessagingServiceFactory({
       logLevel: this.options.messagingConfig.logLevel,
       messagingUrl: this.options.messagingConfig.messagingUrl,
-    });
-    this.connection = factory.createService("messaging");
-    // set protocol coounts
+      options: {
+        maxPingOut: 1_000_000_000,
+        pingInterval: 120_000,
+      },
+    }).createService("messaging");
     this.protocolDefaults = this.options.protocolDefaults;
-    // setup count
     this.countInternal = this.options.count;
-    // setup forbidden subjects
     this.forbiddenSubjects = this.options.forbiddenSubjects;
   }
 
@@ -204,11 +205,12 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
         this.hasCeiling({ type: "received" }) &&
         this.count.ceiling!.received! <= this.count.received
       ) {
-        console.log(
-          `Reached ceiling (${
-            this.count.ceiling!.received
-          }), refusing to process any more messages. Received ${this.count.received} messages`,
-        );
+        env.logLevel > 2 &&
+          console.log(
+            `Reached ceiling (${
+              this.count.ceiling!.received
+            }), refusing to process any more messages. Received ${this.count.received} messages`,
+          );
         return;
       }
       // handle overall protocol count
@@ -232,7 +234,7 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
         const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached. ${
           this.protocolDefaults[protocol].received
         } received, ceiling: ${this.protocolDefaults[protocol].ceiling!.received!}`;
-        console.log(msg);
+        env.logLevel > 2 && console.log(msg);
         return;
       }
       this.protocolDefaults[protocol].received += 1;
@@ -249,11 +251,11 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
     // wait out delay
     await this.awaitDelay(true);
     if (this.hasCeiling({ type: "sent" }) && this.count.sent >= this.count.ceiling!.sent!) {
-      console.log(
-        `Reached ceiling (${this.count.ceiling!.sent!}), refusing to send any more messages. Sent ${
-          this.count.sent
-        } messages`,
-      );
+      env.logLevel > 2 &&
+        console.log(
+          `Reached ceiling (${this.count.ceiling!
+            .sent!}), refusing to send any more messages. Sent ${this.count.sent} messages`,
+        );
       return;
     }
 
@@ -273,7 +275,7 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
       const msg = `Refusing to send any more messages, ceiling for ${protocol} has been reached. ${
         this.protocolDefaults[protocol].sent
       } sent, ceiling: ${this.protocolDefaults[protocol].ceiling!.sent!}`;
-      console.log(msg);
+      env.logLevel > 2 && console.log(msg);
       return;
     }
     // handle counts

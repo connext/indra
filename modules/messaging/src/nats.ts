@@ -19,16 +19,12 @@ export class NatsMessagingService implements IMessagingService {
 
   async connect(): Promise<void> {
     const messagingUrl = this.config.messagingUrl;
-    const config = this.config as nats.NatsConnectionOptions;
-    config.servers = typeof messagingUrl === `string` ? [messagingUrl] : messagingUrl;
-    config.payload = nats.Payload.JSON;
-    // NOTE: high maxPingOut (default=2) to prevent errors while time-travelling during tests
     this.connection = await nats.connect({
-      ...config,
-      // maxReconnectAttempts: -1,
-      maxPingOut: 1000,
-      pingInterval: 60_000,
-    });
+      ...this.config,
+      ...this.config.options,
+      servers: typeof messagingUrl === `string` ? [messagingUrl] : messagingUrl,
+      payload: nats.Payload.JSON,
+    } as nats.NatsConnectionOptions);
     this.log.debug(`Connected!`);
   }
 
