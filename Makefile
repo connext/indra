@@ -27,7 +27,7 @@ client=$(cwd)/modules/client
 contracts=$(cwd)/modules/contracts
 daicard=$(cwd)/modules/daicard
 dashboard=$(cwd)/modules/dashboard
-database=$(cwd)/modules/database
+database=$(cwd)/ops/database
 messaging=$(cwd)/modules/messaging
 node=$(cwd)/modules/node
 proxy=$(cwd)/ops/proxy
@@ -228,7 +228,7 @@ daicard-proxy: $(shell find $(proxy) $(find_options))
 	docker tag daicard_proxy daicard_proxy:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-database: node-modules $(shell find $(database) $(find_options))
+database: $(shell find $(database) $(find_options))
 	$(log_start)
 	docker build --file $(database)/db.dockerfile $(cache_from) --tag $(project)_database $(database)
 	docker tag $(project)_database $(project)_database:$(commit)
