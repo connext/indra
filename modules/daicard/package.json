@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@connext/client": "4.0.9",
-    "@connext/contracts": "1.0.4",
     "@connext/store": "4.0.9",
     "@connext/types": "4.0.9",
     "@material-ui/core": "4.9.1",
