@@ -147,7 +147,7 @@ export class CFCoreRpcConnection extends EventEmitter implements IRpcConnection 
     let state;
     state = await this.storeRestore();
     if (!state || !state.path) {
-      throw new Error("No matching paths found in store backup"s state");
+      throw new Error("No matching paths found in store's backup state");
     }
     state = state.path;
     return state;
