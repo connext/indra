@@ -21,16 +21,16 @@ export interface NetworkContext {
 // Keep in sync with above
 export const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
   "ChallengeRegistry",
-  "ConditionalTransactionDelegateTarget",
   "CoinBalanceRefundApp",
-  "MultiAssetMultiPartyCoinTransferInterpreter",
+  "ConditionalTransactionDelegateTarget",
   "IdentityApp",
   "MinimumViableMultisig",
+  "MultiAssetMultiPartyCoinTransferInterpreter",
   "ProxyFactory",
   "SingleAssetTwoPartyCoinTransferInterpreter",
   "TimeLockedPassThrough",
-  "TwoPartyFixedOutcomeInterpreter",
   "TwoPartyFixedOutcomeFromVirtualAppInterpreter",
+  "TwoPartyFixedOutcomeInterpreter",
 ];
 
 export interface DeployedContractNetworksFileEntry {

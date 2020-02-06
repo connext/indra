@@ -1,11 +1,11 @@
-import EventEmitter from "events";
+import EventEmitter from "eventemitter3";
 
 import { NetworkContext } from "./contracts";
 import { ProtocolTypes } from "./protocol";
 import { Store, StorePair } from "./store";
 import { CFCoreTypes } from "./cfCore";
 
-export interface IChannelProvider extends EventEmitter {
+export interface IChannelProvider extends EventEmitter<string> {
   ////////////////////////////////////////
   // Properties
 
