@@ -73,15 +73,9 @@ describe("ChallengeRegistry Challenge", () => {
   });
 
   beforeEach(async () => {
-    const appInstance = new AppIdentityTestClass(
-      [ALICE.address, BOB.address],
-      appDefinition.address,
-      10,
-      123456,
-    );
+    const appInstance = new AppIdentityTestClass([ALICE.address, BOB.address], appDefinition.address, 10, 123456);
 
-    latestState = async () =>
-      (await appRegistry.functions.getAppChallenge(appInstance.identityHash)).appStateHash;
+    latestState = async () => (await appRegistry.functions.getAppChallenge(appInstance.identityHash)).appStateHash;
 
     latestVersionNumber = async () =>
       (await appRegistry.functions.getAppChallenge(appInstance.identityHash)).versionNumber;

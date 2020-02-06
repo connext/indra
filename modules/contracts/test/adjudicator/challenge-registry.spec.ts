@@ -3,24 +3,11 @@ import { waffle as buidler } from "@nomiclabs/buidler";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
-import {
-  BigNumberish,
-  hexlify,
-  joinSignature,
-  keccak256,
-  randomBytes,
-  SigningKey,
-  bigNumberify,
-} from "ethers/utils";
+import { BigNumberish, hexlify, joinSignature, keccak256, randomBytes, SigningKey, bigNumberify } from "ethers/utils";
 
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
 
-import {
-  AppIdentityTestClass,
-  computeAppChallengeHash,
-  expect,
-  sortSignaturesBySignerAddress,
-} from "./utils";
+import { AppIdentityTestClass, computeAppChallengeHash, expect, sortSignaturesBySignerAddress } from "./utils";
 
 type Challenge = {
   status: 0 | 1 | 2;
@@ -49,11 +36,7 @@ describe("ChallengeRegistry", () => {
 
   let appRegistry: Contract;
 
-  let setStateWithSignatures: (
-    versionNumber: BigNumberish,
-    appState?: string,
-    timeout?: number,
-  ) => Promise<void>;
+  let setStateWithSignatures: (versionNumber: BigNumberish, appState?: string, timeout?: number) => Promise<void>;
   let cancelChallenge: () => Promise<void>;
   let sendSignedFinalizationToChain: () => Promise<any>;
   let getChallenge: () => Promise<Challenge>;
@@ -85,8 +68,7 @@ describe("ChallengeRegistry", () => {
 
     latestVersionNumber = async () => (await getChallenge()).versionNumber;
 
-    isStateFinalized = async () =>
-      await appRegistry.functions.isStateFinalized(appIdentityTestObject.identityHash);
+    isStateFinalized = async () => await appRegistry.functions.isStateFinalized(appIdentityTestObject.identityHash);
 
     cancelChallenge = async () => {
       const digest = computeAppChallengeHash(
@@ -111,12 +93,7 @@ describe("ChallengeRegistry", () => {
       timeout: number = ONCHAIN_CHALLENGE_TIMEOUT,
     ) => {
       const stateHash = keccak256(appState);
-      const digest = computeAppChallengeHash(
-        appIdentityTestObject.identityHash,
-        stateHash,
-        versionNumber,
-        timeout,
-      );
+      const digest = computeAppChallengeHash(appIdentityTestObject.identityHash, stateHash, versionNumber, timeout);
       await appRegistry.functions.setState(appIdentityTestObject.appIdentity, {
         timeout,
         versionNumber,
@@ -129,11 +106,7 @@ describe("ChallengeRegistry", () => {
     };
 
     sendSignedFinalizationToChain = async () =>
-      await setStateWithSignatures(
-        (await latestVersionNumber()) + 1,
-        await latestAppStateHash(),
-        0,
-      );
+      await setStateWithSignatures((await latestVersionNumber()) + 1, await latestAppStateHash(), 0);
   });
 
   describe("updating app state", () => {
@@ -152,11 +125,7 @@ describe("ChallengeRegistry", () => {
         let challenge = await getChallenge();
         let block = await provider.getBlock("latest");
 
-        for (
-          let index = block.number;
-          index <= bigNumberify(challenge.finalizesAt).toNumber();
-          index++
-        ) {
+        for (let index = block.number; index <= bigNumberify(challenge.finalizesAt).toNumber(); index++) {
           await provider.send("evm_mine", []);
         }
 
@@ -166,11 +135,7 @@ describe("ChallengeRegistry", () => {
         challenge = await getChallenge();
         block = await provider.getBlock("latest");
 
-        for (
-          let index = block.number;
-          index <= bigNumberify(challenge.finalizesAt).toNumber();
-          index++
-        ) {
+        for (let index = block.number; index <= bigNumberify(challenge.finalizesAt).toNumber(); index++) {
           await provider.send("evm_mine", []);
         }
 
