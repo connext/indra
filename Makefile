@@ -188,7 +188,7 @@ test-bot-farm:
 test-cf: cf-core
 	bash ops/test/cf.sh
 
-test-client: builder client
+test-client: client
 	bash ops/test/client.sh
 
 test-contracts: contracts types
