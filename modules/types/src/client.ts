@@ -1,3 +1,5 @@
+import { providers } from "ethers";
+
 import { AppInstanceJson } from "./app";
 import { AppActionBigNumber, AppRegistry, AppState, DefaultApp, SupportedApplication } from "./app";
 import { BigNumber, Contract, JsonRpcProvider, Network } from "./basic";
@@ -32,7 +34,6 @@ import {
 import { ProtocolTypes } from "./protocol";
 import { IAsyncStorage, IBackupServiceAPI, Store } from "./store";
 import { CFCoreTypes } from "./cfCore";
-import { providers } from "ethers";
 
 export type InternalClientOptions = ClientOptions & {
   appRegistry: AppRegistry;
