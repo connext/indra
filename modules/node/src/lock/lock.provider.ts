@@ -26,8 +26,8 @@ class LockMessaging extends AbstractMessagingProvider {
   }
 
   async setupSubscriptions(): Promise<void> {
-    super.connectRequestReponse("lock.acquire.>", this.authService.useUnverifiedMultisig(this.acquireLock.bind(this)));
-    super.connectRequestReponse("lock.release.>", this.authService.useUnverifiedMultisig(this.releaseLock.bind(this)));
+    super.connectRequestReponse("lock.acquire.>", this.authService.useUnverifiedHexString(this.acquireLock.bind(this)));
+    super.connectRequestReponse("lock.release.>", this.authService.useUnverifiedHexString(this.releaseLock.bind(this)));
   }
 }
 

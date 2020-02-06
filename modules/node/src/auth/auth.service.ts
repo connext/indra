@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
-import { arrayify, hexlify, randomBytes, verifyMessage } from "ethers/utils";
+import { arrayify, hexlify, randomBytes, verifyMessage, isHexString } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { ChannelRepository } from "../channel/channel.repository";
-import { CLogger, isValidHex, isXpub } from "../util";
+import { CLogger, isValidHex, isXpub, isEthAddress } from "../util";
 
 const logger = new CLogger("AuthService");
 const nonceLen = 16;
@@ -30,7 +30,7 @@ export class AuthService {
   constructor(private readonly channelRepo: ChannelRepository) {}
 
   async getNonce(address: string): Promise<any> {
-    if (!isValidHex(address, 20)) {
+    if (!isEthAddress(address)) {
       return JSON.stringify({ err: `Invalid address: ${address}` });
     }
     const nonce = hexlify(randomBytes(nonceLen));
@@ -43,7 +43,7 @@ export class AuthService {
   useVerifiedMultisig(callback: any): any {
     return async (subject: string, data: { token: string }): Promise<string> => {
       const multisig = subject.split(".").pop(); // last item of subject is lock name
-      if (!isValidHex(multisig, 20)) {
+      if (!isEthAddress(multisig)) {
         const authRes = badSubject(`Subject's last item isn't a valid eth address: ${subject}`);
         if (authRes) {
           logger.error(`Auth failed (${authRes.err}) but we're just gonna ignore that for now..`);
@@ -70,14 +70,20 @@ export class AuthService {
   useUnverifiedMultisig(callback: any): any {
     return async (subject: string, data: { token: string }): Promise<string> => {
       const multisig = subject.split(".").pop(); // last item of subject is lock name
-      if (!isValidHex(multisig, 20)) {
-        const authRes = badSubject(`Subject's last item isn't a valid eth address: ${subject}`);
-        if (authRes) {
-          logger.error(`Auth failed (${authRes.err}) but we're just gonna ignore that for now..`);
-          return callback(multisig, data);
-        }
+      if (!isEthAddress(multisig)) {
+        return badSubject(`Subject's last item isn't a valid eth address: ${subject}`);
       }
       return callback(multisig, data);
+    };
+  }
+
+  useUnverifiedHexString(callback: any): any {
+    return async (subject: string, data: { token: string }): Promise<string> => {
+      const lockName = subject.split(".").pop(); // last item of subject is lock name
+      if (!isHexString(lockName)) {
+        return badSubject(`Subject's last item isn't a valid hex string: ${subject}`);
+      }
+      return callback(lockName, data);
     };
   }
 
