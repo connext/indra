@@ -21,6 +21,9 @@ module.exports = {
 
   entry: {
     tests: path.join(__dirname, '../src/index.ts'),
+    setup: path.join(__dirname, '../src/setup.ts'),
+    flamegraph: path.join(__dirname, '../src/benchmarking/flamegraph.ts'),
+    flamegraphPrep: path.join(__dirname, '../src/benchmarking/flamegraphPrep.ts')
   },
 
   output: {

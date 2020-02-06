@@ -75,7 +75,7 @@ export type WithdrawParametersBigNumber = WithdrawParameters<BigNumber>;
 // linked transfer
 export type ResolveLinkedTransferParameters<T = string> = Omit<
   LinkedTransferParameters<T>,
-  "amount" | "assetId"
+  "amount" | "assetId" | "meta"
 >;
 export type ResolveLinkedTransferParametersBigNumber = ResolveLinkedTransferParameters<BigNumber>;
 
@@ -101,6 +101,7 @@ export type ResolveLinkedTransferResponse = {
   appId: string;
   freeBalance: ProtocolTypes.GetFreeBalanceStateResult;
   paymentId: string;
+  meta?: object;
 };
 
 // FIXME: should be union type of all supported conditions

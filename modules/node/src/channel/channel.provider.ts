@@ -65,25 +65,16 @@ class ChannelMessaging extends AbstractMessagingProvider {
     return await this.channelService.create(pubId);
   }
 
-  async verifyAppSequenceNumber(
-    pubId: string,
-    data: { userAppSequenceNumber: number },
-  ): Promise<ChannelAppSequences> {
+  async verifyAppSequenceNumber(pubId: string, data: { userAppSequenceNumber: number }): Promise<ChannelAppSequences> {
     return await this.channelService.verifyAppSequenceNumber(pubId, data.userAppSequenceNumber);
   }
 
-  async requestCollateral(
-    pubId: string,
-    data: { assetId?: string },
-  ): Promise<CFCoreTypes.DepositResult> {
+  async requestCollateral(pubId: string, data: { assetId?: string }): Promise<CFCoreTypes.DepositResult> {
     // do not allow clients to specify an amount to collateralize with
     return this.channelService.requestCollateral(pubId, getAddress(data.assetId));
   }
 
-  async withdraw(
-    pubId: string,
-    data: { tx: CFCoreTypes.MinimalTransaction },
-  ): Promise<TransactionResponse> {
+  async withdraw(pubId: string, data: { tx: CFCoreTypes.MinimalTransaction }): Promise<TransactionResponse> {
     return this.channelService.withdrawForClient(pubId, data.tx);
   }
 
@@ -113,14 +104,8 @@ class ChannelMessaging extends AbstractMessagingProvider {
     });
   }
 
-  async getPaymentProfile(
-    pubId: string,
-    data: { assetId?: string },
-  ): Promise<PaymentProfileRes | undefined> {
-    const prof = await this.channelRepository.getPaymentProfileForChannelAndToken(
-      pubId,
-      data.assetId,
-    );
+  async getPaymentProfile(pubId: string, data: { assetId?: string }): Promise<PaymentProfileRes | undefined> {
+    const prof = await this.channelRepository.getPaymentProfileForChannelAndToken(pubId, data.assetId);
 
     if (!prof) {
       return undefined;
@@ -134,9 +119,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     });
   }
 
-  async getLatestWithdrawal(subject: string, data: {}): Promise<OnchainTransaction | undefined> {
-    const pubId = this.getPublicIdentifierFromSubject(subject);
-
+  async getLatestWithdrawal(pubId: string, data: {}): Promise<OnchainTransaction | undefined> {
     const onchainTx = await this.channelService.getLatestWithdrawal(pubId);
     // TODO: conversions needed?
     return onchainTx;
@@ -149,19 +132,19 @@ class ChannelMessaging extends AbstractMessagingProvider {
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "channel.get.>",
-      this.authService.useVerifiedPublicIdentifier(this.getChannel.bind(this)),
+      this.authService.useUnverifiedPublicIdentifier(this.getChannel.bind(this)),
     );
     await super.connectRequestReponse(
       "channel.create.>",
-      this.authService.useVerifiedPublicIdentifier(this.createChannel.bind(this)),
+      this.authService.useUnverifiedPublicIdentifier(this.createChannel.bind(this)),
     );
     await super.connectRequestReponse(
       "channel.withdraw.>",
-      this.authService.useVerifiedPublicIdentifier(this.withdraw.bind(this)),
+      this.authService.useUnverifiedPublicIdentifier(this.withdraw.bind(this)),
     );
     await super.connectRequestReponse(
       "channel.request-collateral.>",
-      this.authService.useVerifiedPublicIdentifier(this.requestCollateral.bind(this)),
+      this.authService.useUnverifiedPublicIdentifier(this.requestCollateral.bind(this)),
     );
     await super.connectRequestReponse(
       "channel.add-profile.>",
@@ -169,32 +152,25 @@ class ChannelMessaging extends AbstractMessagingProvider {
     );
     await super.connectRequestReponse(
       "channel.get-profile.>",
-      this.authService.useVerifiedPublicIdentifier(this.getPaymentProfile.bind(this)),
+      this.authService.useUnverifiedPublicIdentifier(this.getPaymentProfile.bind(this)),
     );
     await super.connectRequestReponse(
       "channel.verify-app-sequence.>",
-      this.authService.useVerifiedPublicIdentifier(this.verifyAppSequenceNumber.bind(this)),
+      this.authService.useUnverifiedPublicIdentifier(this.verifyAppSequenceNumber.bind(this)),
     );
     await super.connectRequestReponse(
       "channel.restore-states.>",
-      this.authService.useVerifiedPublicIdentifier(this.getStatesForRestore.bind(this)),
+      this.authService.useUnverifiedPublicIdentifier(this.getStatesForRestore.bind(this)),
     );
     await super.connectRequestReponse(
       "channel.latestWithdrawal.>",
-      this.getLatestWithdrawal.bind(this),
+      this.authService.useUnverifiedPublicIdentifier(this.getLatestWithdrawal.bind(this)),
     );
   }
 }
 
 export const channelProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [
-    MessagingProviderId,
-    ChannelRepository,
-    ConfigService,
-    CFCoreProviderId,
-    ChannelService,
-    AuthService,
-  ],
+  inject: [MessagingProviderId, ChannelRepository, ConfigService, CFCoreProviderId, ChannelService, AuthService],
   provide: ChannelMessagingProviderId,
   useFactory: async (
     messaging: IMessagingService,

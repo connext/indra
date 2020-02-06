@@ -14,13 +14,7 @@ import {
   Store,
   StorePair,
 } from "./types";
-import {
-  chan_storeSet,
-  chan_storeGet,
-  chan_nodeAuth,
-  chan_restoreState,
-  IChannelProvider,
-} from "@connext/types";
+import { chan_storeSet, chan_storeGet, chan_nodeAuth, chan_restoreState, IChannelProvider } from "@connext/types";
 
 export const createCFChannelProvider = async ({
   ethProvider,
@@ -74,37 +68,31 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     const { method, params } = payload;
     let result;
     switch (method) {
-    case chan_storeSet:
-      result = await this.storeSet(params.pairs, params.allowDelete);
-      break;
-    case chan_storeGet:
-      result = await this.storeGet(params.path);
-      break;
-    case chan_nodeAuth:
-      result = await this.walletSign(params.message);
-      break;
-    case chan_restoreState:
-      result = await this.restoreState(params.path);
-      break;
-    default:
-      result = await this.routerDispatch(method, params);
-      break;
+      case chan_storeSet:
+        result = await this.storeSet(params.pairs, params.allowDelete);
+        break;
+      case chan_storeGet:
+        result = await this.storeGet(params.path);
+        break;
+      case chan_nodeAuth:
+        result = await this.walletSign(params.message);
+        break;
+      case chan_restoreState:
+        result = await this.restoreState(params.path);
+        break;
+      default:
+        result = await this.routerDispatch(method, params);
+        break;
     }
     return result;
   }
 
-  public on = (
-    event: string | CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
-    listener: (...args: any[]) => void,
-  ): any => {
+  public on = (event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, listener: (...args: any[]) => void): any => {
     this.cfCore.on(event as any, listener);
     return this.cfCore;
   };
 
-  public once = (
-    event: string | CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
-    listener: (...args: any[]) => void,
-  ): any => {
+  public once = (event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, listener: (...args: any[]) => void): any => {
     this.cfCore.once(event as any, listener);
     return this.cfCore;
   };
