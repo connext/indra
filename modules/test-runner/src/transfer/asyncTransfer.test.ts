@@ -51,7 +51,7 @@ describe("Async Transfers", () => {
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId);
   });
 
-  it.only("latency test: client A transfers eth to client B through node", function() {
+  it.skip("latency test: client A transfers eth to client B through node", function() {
     return new Promise(async res => {
       // @ts-ignore
       this.timeout(1200000);
