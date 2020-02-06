@@ -62,12 +62,12 @@ export class ResolveConditionController extends AbstractController {
     params: ResolveLinkedTransferParameters,
   ): Promise<ResolveLinkedTransferResponse> => {
     this.log.info(`Resolving link: ${stringify(params)}`);
-    const { paymentId, preImage, meta } = params;
+    const { paymentId, preImage } = params;
 
     // convert and validate
     // get assetId and amount from node so that this doesnt have to be sent
     // to the user or used in the API
-    const { assetId, amount } = await this.node.fetchLinkedTransfer(params.paymentId);
+    const { assetId, amount, meta } = await this.node.fetchLinkedTransfer(params.paymentId);
     validate(
       notNegative(amount),
       invalidAddress(assetId),
@@ -87,7 +87,6 @@ export class ResolveConditionController extends AbstractController {
     const { appId } = await this.node.resolveLinkedTransfer(
       paymentId,
       createLinkedHash(amountBN, assetId, paymentId, preImage),
-      meta,
     );
 
     // verify and uninstall if there is an error
@@ -124,6 +123,7 @@ export class ResolveConditionController extends AbstractController {
     return {
       appId,
       freeBalance: await this.connext.getFreeBalance(assetId),
+      meta,
       paymentId,
     };
   };
@@ -134,7 +134,7 @@ export class ResolveConditionController extends AbstractController {
     // convert and validate
     // because this function is only used internally, it is safe to add
     // the amount / assetId to the api params without breaking interfaces
-    const { paymentId, preImage, amount, assetId, meta } = params;
+    const { paymentId, preImage, amount, assetId } = params;
     validate(
       notNegative(amount),
       invalidAddress(assetId),
@@ -166,14 +166,15 @@ export class ResolveConditionController extends AbstractController {
 
     // handle collateral issues by pinging the node to see if the app can be
     // properly installed.
-    let appId;
+    let appId: string;
+    let meta: object;
     try {
       const res = await this.node.resolveLinkedTransfer(
         paymentId,
         createLinkedHash(amountBN, assetId, paymentId, preImage),
-        meta,
       );
       appId = res.appId;
+      meta = res.meta;
     } catch (e) {
       this.handleResolveErr(paymentId, e);
     }
@@ -210,6 +211,9 @@ export class ResolveConditionController extends AbstractController {
     }
 
     this.connext.emit(RECEIVE_TRANSFER_FINISHED_EVENT, {
+      amount,
+      assetId,
+      meta,
       paymentId,
     });
 

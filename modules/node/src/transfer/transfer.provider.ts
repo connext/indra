@@ -34,14 +34,14 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
   async resolveLinkedTransfer(
     pubId: string,
-    data: { paymentId: string; linkedHash: string; meta: object },
+    data: { paymentId: string; linkedHash: string },
   ): Promise<ResolveLinkedTransferResponse> {
     logger.log(`Got resolve link request with data: ${JSON.stringify(data, replaceBN, 2)}`);
-    const { paymentId, linkedHash, meta } = data;
+    const { paymentId, linkedHash } = data;
     if (!paymentId || !linkedHash) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
-    return await this.transferService.resolveLinkedTransfer(pubId, paymentId, linkedHash, meta);
+    return await this.transferService.resolveLinkedTransfer(pubId, paymentId, linkedHash);
   }
 
   // TODO: types
