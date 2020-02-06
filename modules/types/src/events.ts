@@ -1,3 +1,6 @@
+import EventEmitter from "eventemitter3";
+import { CFCoreTypes } from "./cfCore";
+
 export const CREATE_CHANNEL_EVENT = "CREATE_CHANNEL_EVENT";
 export const DEPOSIT_CONFIRMED_EVENT = "DEPOSIT_CONFIRMED_EVENT";
 export const DEPOSIT_FAILED_EVENT = "DEPOSIT_FAILED_EVENT";
@@ -54,6 +57,10 @@ export const ConnextEvents = {
   [RECIEVE_TRANSFER_STARTED_EVENT]: RECIEVE_TRANSFER_STARTED_EVENT,
 };
 export type ConnextEvent = keyof typeof ConnextEvents;
+
+export class ConnextEventEmitter extends EventEmitter<
+  string | CFCoreTypes.EventName | CFCoreTypes.RpcMethodName
+> {}
 
 export type NodeEvent = EventName;
 export const NODE_EVENTS = EventNames;

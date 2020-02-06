@@ -1,7 +1,10 @@
-const { CF_PATH, EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT: coreContracts } = require(`@connext/types`);
+const {
+  CF_PATH,
+  EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT: coreContracts,
+} = require(`@connext/types`);
 const fs = require(`fs`);
 const eth = require(`ethers`);
-const tokenArtifacts = require(`openzeppelin-solidity/build/contracts/ERC20Mintable.json`);
+const tokenArtifacts = require(`@openzeppelin/contracts/build/contracts/ERC20Mintable.json`);
 
 /*
 const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
@@ -19,11 +22,7 @@ const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
 ];
 */
 
-const appContracts = [
-  `SimpleLinkedTransferApp`,
-  `SimpleTransferApp`,
-  `SimpleTwoPartySwapApp`
-];
+const appContracts = [`SimpleLinkedTransferApp`, `SimpleTransferApp`, `SimpleTwoPartySwapApp`];
 
 console.log(`Core contracts: ${JSON.stringify(coreContracts)}`);
 
@@ -73,16 +72,16 @@ const getSavedData = (contractName, property) => {
 };
 
 // Write addressBook to disk
-const saveAddressBook = (addressBook) => {
+const saveAddressBook = addressBook => {
   try {
-    fs.writeFileSync(addressBookPath, JSON.stringify(addressBook,null,2));
+    fs.writeFileSync(addressBookPath, JSON.stringify(addressBook, null, 2));
   } catch (e) {
     console.log(`Error saving artifacts: ${e}`);
   }
 };
 
 // Simple sanity checks to make sure contracts from our address book have been deployed
-const contractIsDeployed = async (address) => {
+const contractIsDeployed = async address => {
   if (!address || address === ``) {
     console.log(`This contract is not in our address book.`);
     return false;
@@ -104,7 +103,7 @@ const deployContract = async (name, artifacts, args) => {
     return new eth.Contract(savedAddress, artifacts.abi, wallet);
   }
   const factory = eth.ContractFactory.fromSolidity(artifacts);
-  const contract = await factory.connect(wallet).deploy(...args.map(a=>a.value));
+  const contract = await factory.connect(wallet).deploy(...args.map(a => a.value));
   const txHash = contract.deployTransaction.hash;
   console.log(`Sent transaction to deploy ${name}, txHash: ${txHash}`);
   await wallet.provider.waitForTransaction(txHash);
@@ -113,7 +112,7 @@ const deployContract = async (name, artifacts, args) => {
   const bytecode = eth.utils.keccak256(await wallet.provider.getCode(address));
   // Update address-book w new address + the args we deployed with
   const saveArgs = {};
-  args.forEach(a=> saveArgs[a.name] = a.value);
+  args.forEach(a => (saveArgs[a.name] = a.value));
   if (!addressBook[chainId]) addressBook[chainId] = {};
   if (!addressBook[chainId][name]) addressBook[chainId][name] = {};
   addressBook[chainId][name] = { address, bytecode, txHash, ...saveArgs };
@@ -129,7 +128,7 @@ const sendGift = async (address, token) => {
     console.log(`\nSending ${EtherSymbol} ${ethGift} to ${address}`);
     const tx = await wallet.sendTransaction({
       to: address,
-      value: parseEther(ethGift)
+      value: parseEther(ethGift),
     });
     await wallet.provider.waitForTransaction(tx.hash);
     console.log(`Transaction mined! Hash: ${tx.hash}`);
@@ -147,13 +146,13 @@ const sendGift = async (address, token) => {
       console.log(`\nAccount ${address} already has ${formatEther(tokenBalance)} tokens`);
     }
   }
-}
+};
 
 ////////////////////////////////////////
 // Begin executing main migration script in async wrapper function
 // First, setup signer & connect to eth provider
 
-;(async function() {
+(async function() {
   let provider, balance, nonce, token;
 
   if (process.env.ETH_PROVIDER) {
@@ -179,7 +178,7 @@ const sendGift = async (address, token) => {
     balance = formatEther(await wallet.getBalance());
     nonce = await wallet.getTransactionCount();
   } catch (e) {
-    console.error(`Couldn't connect to eth provider: ${JSON.stringify(provider,null,2)}`);
+    console.error(`Couldn't connect to eth provider: ${JSON.stringify(provider, null, 2)}`);
     process.exit(1);
   }
 
@@ -233,5 +232,4 @@ const sendGift = async (address, token) => {
   const spent = balance - formatEther(await wallet.getBalance());
   const nTx = (await wallet.getTransactionCount()) - nonce;
   console.log(`Sent ${nTx} transaction${nTx === 1 ? `` : `s`} & spent ${EtherSymbol} ${spent}`);
-
 })();

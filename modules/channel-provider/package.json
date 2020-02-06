@@ -15,7 +15,8 @@
     "test": "./node_modules/.bin/ts-mocha --watch"
   },
   "dependencies": {
-    "@connext/types": "4.0.9"
+    "@connext/types": "4.0.9",
+    "eventemitter3": "4.0.0"
   },
   "devDependencies": {
     "@babel/polyfill": "7.8.3",
