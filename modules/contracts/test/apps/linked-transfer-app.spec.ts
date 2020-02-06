@@ -193,7 +193,12 @@ describe("LinkedUnidirectionalTransferApp", () => {
     expect(res).to.eq(
       defaultAbiCoder.encode(
         [singleAssetTwoPartyCoinTransferEncoding],
-        [[[senderAddr, Zero], [redeemerAddr, amount]]],
+        [
+          [
+            [senderAddr, Zero],
+            [redeemerAddr, amount],
+          ],
+        ],
       ),
     );
   });
@@ -252,7 +257,12 @@ describe("LinkedUnidirectionalTransferApp", () => {
     expect(res).to.eq(
       defaultAbiCoder.encode(
         [singleAssetTwoPartyCoinTransferEncoding],
-        [[[senderAddr, amount], [redeemerAddr, Zero]]],
+        [
+          [
+            [senderAddr, amount],
+            [redeemerAddr, Zero],
+          ],
+        ],
       ),
     );
   });

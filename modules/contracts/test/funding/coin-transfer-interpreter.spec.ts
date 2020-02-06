@@ -60,19 +60,19 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
 
     multiAssetMultiPartyCoinTransferInterpreter = await waffle.deployContract(
       wallet,
-      MultiAssetMultiPartyCoinTransferInterpreter
+      MultiAssetMultiPartyCoinTransferInterpreter,
     );
 
     // fund interpreter with ERC20 tokenAddresses
     await erc20.functions.transfer(
       multiAssetMultiPartyCoinTransferInterpreter.address,
-      erc20.functions.balanceOf(wallet.address)
+      erc20.functions.balanceOf(wallet.address),
     );
 
     // fund interpreter with ETH
     await wallet.sendTransaction({
       to: multiAssetMultiPartyCoinTransferInterpreter.address,
-      value: new BigNumber(100)
+      value: new BigNumber(100),
     });
   });
 
@@ -82,7 +82,7 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
 
     await interpretOutcomeAndExecuteEffect([[{ to, amount }]], {
       limit: [amount],
-      tokenAddresses: [AddressZero]
+      tokenAddresses: [AddressZero],
     });
 
     expect(await provider.getBalance(to)).to.eq(One);
@@ -96,11 +96,16 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
     const amount2 = One;
 
     await interpretOutcomeAndExecuteEffect(
-      [[{ to: to1, amount: amount1 }, { to: to2, amount: amount2 }]],
+      [
+        [
+          { to: to1, amount: amount1 },
+          { to: to2, amount: amount2 },
+        ],
+      ],
       {
         limit: [amount1.add(amount2)],
-        tokenAddresses: [AddressZero]
-      }
+        tokenAddresses: [AddressZero],
+      },
     );
 
     expect(await provider.getBalance(to1)).to.eq(One);
@@ -113,7 +118,7 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
 
     await interpretOutcomeAndExecuteEffect([[{ to, amount }]], {
       limit: [amount],
-      tokenAddresses: [erc20.address]
+      tokenAddresses: [erc20.address],
     });
 
     expect(await erc20.functions.balanceOf(to)).to.eq(One);
@@ -127,11 +132,16 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
     const amount2 = One;
 
     await interpretOutcomeAndExecuteEffect(
-      [[{ to: to1, amount: amount1 }, { to: to2, amount: amount2 }]],
+      [
+        [
+          { to: to1, amount: amount1 },
+          { to: to2, amount: amount2 },
+        ],
+      ],
       {
         limit: [amount1.add(amount2)],
-        tokenAddresses: [erc20.address]
-      }
+        tokenAddresses: [erc20.address],
+      },
     );
 
     expect(await erc20.functions.balanceOf(to1)).to.eq(One);
@@ -142,13 +152,10 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
     const to = hexlify(randomBytes(20));
     const amount = One;
 
-    await interpretOutcomeAndExecuteEffect(
-      [[{ to, amount }], [{ to, amount }]],
-      {
-        limit: [amount, amount],
-        tokenAddresses: [AddressZero, erc20.address]
-      }
-    );
+    await interpretOutcomeAndExecuteEffect([[{ to, amount }], [{ to, amount }]], {
+      limit: [amount, amount],
+      tokenAddresses: [AddressZero, erc20.address],
+    });
 
     expect(await provider.getBalance(to)).to.eq(One);
     expect(await erc20.functions.balanceOf(to)).to.eq(One);
@@ -165,8 +172,8 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
       [[{ to: to1, amount: amount1 }], [{ to: to2, amount: amount2 }]],
       {
         limit: [amount1, amount2],
-        tokenAddresses: [AddressZero, erc20.address]
-      }
+        tokenAddresses: [AddressZero, erc20.address],
+      },
     );
 
     expect(await provider.getBalance(to1)).to.eq(One);
@@ -182,13 +189,19 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
 
     await interpretOutcomeAndExecuteEffect(
       [
-        [{ to: to1, amount: amount1 }, { to: to2, amount: amount2 }],
-        [{ to: to1, amount: amount1 }, { to: to2, amount: amount2 }]
+        [
+          { to: to1, amount: amount1 },
+          { to: to2, amount: amount2 },
+        ],
+        [
+          { to: to1, amount: amount1 },
+          { to: to2, amount: amount2 },
+        ],
       ],
       {
         limit: [amount1.add(amount2), amount1.add(amount2)],
-        tokenAddresses: [AddressZero, erc20.address]
-      }
+        tokenAddresses: [AddressZero, erc20.address],
+      },
     );
 
     expect(await provider.getBalance(to1)).to.eq(One);
@@ -207,13 +220,19 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
 
     await interpretOutcomeAndExecuteEffect(
       [
-        [{ to: to2, amount: amount2 }, { to: to1, amount: amount1 }],
-        [{ to: to1, amount: amount1 }, { to: to2, amount: amount2 }]
+        [
+          { to: to2, amount: amount2 },
+          { to: to1, amount: amount1 },
+        ],
+        [
+          { to: to1, amount: amount1 },
+          { to: to2, amount: amount2 },
+        ],
       ],
       {
         limit: [amount1.add(amount2), amount1.add(amount2)],
-        tokenAddresses: [AddressZero, erc20.address]
-      }
+        tokenAddresses: [AddressZero, erc20.address],
+      },
     );
 
     expect(await provider.getBalance(to1)).to.eq(One);

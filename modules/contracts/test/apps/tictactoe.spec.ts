@@ -19,7 +19,7 @@ type TicTacToeAppState = {
 function decodeBytesToAppState(encodedAppState: string): TicTacToeAppState {
   return defaultAbiCoder.decode(
     ["tuple(uint256 versionNumber, uint256 winner, uint256[3][3] board)"],
-    encodedAppState
+    encodedAppState,
   )[0];
 }
 
@@ -39,9 +39,9 @@ describe("TicTacToeApp", () => {
           uint256 winner,
           uint256[3][3] board
         )
-      `
+      `,
       ],
-      [state]
+      [state],
     );
   }
 
@@ -58,20 +58,14 @@ describe("TicTacToeApp", () => {
             uint256 idx
           ) winClaim
         )
-      `
+      `,
       ],
-      [state]
+      [state],
     );
   }
 
-  async function applyAction(
-    state: SolidityValueType,
-    action: SolidityValueType
-  ) {
-    return await ticTacToe.functions.applyAction(
-      encodeState(state),
-      encodeAction(action)
-    );
+  async function applyAction(state: SolidityValueType, action: SolidityValueType) {
+    return await ticTacToe.functions.applyAction(encodeState(state), encodeAction(action));
   }
 
   before(async () => {
@@ -85,7 +79,11 @@ describe("TicTacToeApp", () => {
       const preState = {
         versionNumber: 0,
         winner: 0,
-        board: [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+        board: [
+          [0, 0, 0],
+          [0, 0, 0],
+          [0, 0, 0],
+        ],
       };
 
       const action = {
@@ -94,8 +92,8 @@ describe("TicTacToeApp", () => {
         playY: 0,
         winClaim: {
           winClaimType: 0,
-          idx: 0
-        }
+          idx: 0,
+        },
       };
 
       const ret = await applyAction(preState, action);
@@ -110,7 +108,11 @@ describe("TicTacToeApp", () => {
       const preState = {
         versionNumber: 1,
         winner: 0,
-        board: [[1, 0, 0], [0, 0, 0], [0, 0, 0]]
+        board: [
+          [1, 0, 0],
+          [0, 0, 0],
+          [0, 0, 0],
+        ],
       };
 
       const action = {
@@ -119,8 +121,8 @@ describe("TicTacToeApp", () => {
         playY: 1,
         winClaim: {
           winClaimType: 0,
-          idx: 0
-        }
+          idx: 0,
+        },
       };
 
       const ret = await applyAction(preState, action);
@@ -135,7 +137,11 @@ describe("TicTacToeApp", () => {
       const preState = {
         versionNumber: 0,
         winner: 0,
-        board: [[1, 0, 0], [0, 0, 0], [0, 0, 0]]
+        board: [
+          [1, 0, 0],
+          [0, 0, 0],
+          [0, 0, 0],
+        ],
       };
 
       const action = {
@@ -144,12 +150,12 @@ describe("TicTacToeApp", () => {
         playY: 0,
         winClaim: {
           winClaimType: 0,
-          idx: 0
-        }
+          idx: 0,
+        },
       };
 
       await expect(applyAction(preState, action)).to.be.revertedWith(
-        "playMove: square is not empty"
+        "playMove: square is not empty",
       );
     });
 
@@ -157,7 +163,11 @@ describe("TicTacToeApp", () => {
       const preState = {
         versionNumber: 0,
         winner: 0,
-        board: [[1, 2, 1], [1, 2, 2], [2, 1, 2]]
+        board: [
+          [1, 2, 1],
+          [1, 2, 2],
+          [2, 1, 2],
+        ],
       };
 
       const action = {
@@ -166,8 +176,8 @@ describe("TicTacToeApp", () => {
         playY: 0,
         winClaim: {
           winClaimType: 0,
-          idx: 0
-        }
+          idx: 0,
+        },
       };
 
       const ret = await applyAction(preState, action);
@@ -181,7 +191,11 @@ describe("TicTacToeApp", () => {
       const preState = {
         versionNumber: 0,
         winner: 0,
-        board: [[1, 2, 1], [1, 0, 2], [2, 1, 2]]
+        board: [
+          [1, 2, 1],
+          [1, 0, 2],
+          [2, 1, 2],
+        ],
       };
 
       const action = {
@@ -190,12 +204,12 @@ describe("TicTacToeApp", () => {
         playY: 0,
         winClaim: {
           winClaimType: 0,
-          idx: 0
-        }
+          idx: 0,
+        },
       };
 
       await expect(applyAction(preState, action)).to.be.revertedWith(
-        "assertBoardIsFull: square is empty"
+        "assertBoardIsFull: square is empty",
       );
     });
 
@@ -203,7 +217,11 @@ describe("TicTacToeApp", () => {
       const preState = {
         versionNumber: 0,
         winner: 0,
-        board: [[0, 2, 1], [1, 2, 2], [2, 1, 2]]
+        board: [
+          [0, 2, 1],
+          [1, 2, 2],
+          [2, 1, 2],
+        ],
       };
 
       const action = {
@@ -212,8 +230,8 @@ describe("TicTacToeApp", () => {
         playY: 0,
         winClaim: {
           winClaimType: 0,
-          idx: 0
-        }
+          idx: 0,
+        },
       };
 
       const ret = await applyAction(preState, action);
@@ -227,7 +245,11 @@ describe("TicTacToeApp", () => {
       const preState = {
         versionNumber: 0,
         winner: 0,
-        board: [[0, 2, 1], [1, 2, 2], [2, 0, 0]]
+        board: [
+          [0, 2, 1],
+          [1, 2, 2],
+          [2, 0, 0],
+        ],
       };
 
       const action = {
@@ -236,12 +258,12 @@ describe("TicTacToeApp", () => {
         playY: 0,
         winClaim: {
           winClaimType: 0,
-          idx: 0
-        }
+          idx: 0,
+        },
       };
 
       await expect(applyAction(preState, action)).to.be.revertedWith(
-        "assertBoardIsFull: square is empty"
+        "assertBoardIsFull: square is empty",
       );
     });
 
@@ -249,7 +271,11 @@ describe("TicTacToeApp", () => {
       const preState = {
         versionNumber: 0,
         winner: 0,
-        board: [[1, 1, 0], [0, 0, 0], [0, 0, 0]]
+        board: [
+          [1, 1, 0],
+          [0, 0, 0],
+          [0, 0, 0],
+        ],
       };
 
       const action = {
@@ -258,8 +284,8 @@ describe("TicTacToeApp", () => {
         playY: 2,
         winClaim: {
           winClaimType: 0, // COL
-          idx: 0
-        }
+          idx: 0,
+        },
       };
 
       const ret = await applyAction(preState, action);
@@ -273,7 +299,11 @@ describe("TicTacToeApp", () => {
       const preState = {
         versionNumber: 0,
         winner: 0,
-        board: [[1, 0, 0], [0, 0, 0], [0, 0, 0]]
+        board: [
+          [1, 0, 0],
+          [0, 0, 0],
+          [0, 0, 0],
+        ],
       };
 
       const action = {
@@ -282,13 +312,11 @@ describe("TicTacToeApp", () => {
         playY: 2,
         winClaim: {
           winClaimType: 0, // COL
-          idx: 0
-        }
+          idx: 0,
+        },
       };
 
-      await expect(applyAction(preState, action)).to.be.revertedWith(
-        "Win Claim not valid"
-      );
+      await expect(applyAction(preState, action)).to.be.revertedWith("Win Claim not valid");
     });
   });
   describe("computeOutcome", () => {
@@ -296,7 +324,11 @@ describe("TicTacToeApp", () => {
       const preState = {
         versionNumber: 0,
         winner: 0,
-        board: [[1, 1, 0], [0, 0, 0], [0, 0, 0]]
+        board: [
+          [1, 1, 0],
+          [0, 0, 0],
+          [0, 0, 0],
+        ],
       };
 
       const action = {
@@ -305,8 +337,8 @@ describe("TicTacToeApp", () => {
         playY: 2,
         winClaim: {
           winClaimType: 0, // COL
-          idx: 0
-        }
+          idx: 0,
+        },
       };
 
       const appliedAction = await applyAction(preState, action);
