@@ -1,15 +1,13 @@
-import { bigNumberify, getAddress, HDNode, formatEther, parseEther, BigNumber } from "ethers/utils";
+import { bigNumberify, getAddress } from "ethers/utils";
 
 import { isEthAddress } from "./validate";
 
-export const stringify = (obj: any, space: number = 0): string =>
-  JSON.stringify(obj, replaceBN, space);
+export const stringify = (obj: any, space: number = 0): string => JSON.stringify(obj, replaceBN, space);
 
 export const replaceBN = (key: string, value: any): any =>
   value && value._hex ? bigNumberify(value).toString() : value;
 
-export const delay = (ms: number): Promise<void> =>
-  new Promise((res: any): any => setTimeout(res, ms));
+export const delay = (ms: number): Promise<void> => new Promise((res: any): any => setTimeout(res, ms));
 
 export const bigNumberifyObj = (obj: any): any => {
   const res = {};
