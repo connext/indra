@@ -44,6 +44,10 @@ const CREATE_PROXY_AND_SETUP_GAS = 1e6;
 // written this test to do that yet
 const SETSTATE_COMMITMENT_GAS = 1e6;
 
+// Also we can't estimate the install commitment gas b/c it uses
+// delegatecall for the conditional transaction
+const CONDITIONAL_TX_DELEGATECALL_GAS = 1e6;
+
 let provider: JsonRpcProvider;
 let wallet: Wallet;
 let network: NetworkContextForTestSuite;
@@ -326,7 +330,7 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
           multisigOwnerKeys[0].signDigest(commitment.hashToSign()),
           multisigOwnerKeys[1].signDigest(commitment.hashToSign())
         ]),
-        gasLimit: 6e9
+        gasLimit: CONDITIONAL_TX_DELEGATECALL_GAS
       });
 
       expect(await erc20Contract.functions.balanceOf(capitalProvider)).toBeEq(
@@ -393,7 +397,7 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
           multisigOwnerKeys[0].signDigest(commitment.hashToSign()),
           multisigOwnerKeys[1].signDigest(commitment.hashToSign())
         ]),
-        gasLimit: 6e9
+        gasLimit: CONDITIONAL_TX_DELEGATECALL_GAS
       });
 
       expect(await provider.getBalance(capitalProvider)).toBeEq(
