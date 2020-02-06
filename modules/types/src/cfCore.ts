@@ -61,6 +61,7 @@ export namespace CFCoreTypes {
   export type RequestDepositRightsParams = ProtocolTypes.RequestDepositRightsParams;
   export type RequestDepositRightsResult = ProtocolTypes.RequestDepositRightsResult;
   export type RescindDepositRightsParams = ProtocolTypes.RescindDepositRightsParams;
+  export type RescindDepositRightsResult = ProtocolTypes.RescindDepositRightsResult;
   export type RpcMethodName = ProtocolTypes.RpcMethodName;
   export type TakeActionParams = ProtocolTypes.TakeActionParams;
   export type TakeActionResult = ProtocolTypes.TakeActionResult;

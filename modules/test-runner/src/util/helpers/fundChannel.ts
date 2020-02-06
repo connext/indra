@@ -33,19 +33,14 @@ export const fundChannel = async (
   return;
 };
 
-export const requestCollateral = async (
-  client: IConnextClient,
-  assetId: string = AddressZero,
-): Promise<void> => {
+export const requestCollateral = async (client: IConnextClient, assetId: string = AddressZero): Promise<void> => {
   const nodeFreeBalanceAddress = xkeyKthAddress(client.nodePublicIdentifier);
   const prevFreeBalance = await client.getFreeBalance(assetId);
   await new Promise(async (resolve, reject) => {
     client.once("DEPOSIT_CONFIRMED_EVENT", async data => {
       const freeBalance = await client.getFreeBalance(assetId);
       // verify free balance increased as expected
-      expect(freeBalance[nodeFreeBalanceAddress]).to.be.above(
-        prevFreeBalance[nodeFreeBalanceAddress],
-      );
+      expect(freeBalance[nodeFreeBalanceAddress]).to.be.above(prevFreeBalance[nodeFreeBalanceAddress]);
       resolve();
     });
     client.once(DEPOSIT_FAILED_EVENT, async (msg: any) => {
