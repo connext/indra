@@ -21,6 +21,8 @@ export interface NodeConfig {
   nodeUrl: string;
 }
 
+// TODO: is this the type that is actually returned?
+// i think you get status, etc.
 export type Transfer<T = string> = {
   paymentId: string;
   amount: T;
@@ -110,7 +112,6 @@ export interface INodeApiClient {
   resolveLinkedTransfer(
     paymentId: string,
     linkedHash: string,
-    meta: object,
   ): Promise<ResolveLinkedTransferResponse>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   restoreState(publicIdentifier: string): Promise<any>;
@@ -122,5 +123,5 @@ export interface INodeApiClient {
     recipient: string,
     encryptedPreImage: string,
     linkedHash: string,
-  ): Promise<any>;
+  ): Promise<{ linkedHash: string }>;
 }

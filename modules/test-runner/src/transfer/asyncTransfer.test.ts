@@ -1,4 +1,5 @@
-import { ERC20TokenArtifacts, IConnextClient, LINKED_TRANSFER_TO_RECIPIENT } from "@connext/types";
+import { utils } from "@connext/client";
+import { ERC20TokenArtifacts, IConnextClient, LINKED_TRANSFER_TO_RECIPIENT, toBN } from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { HDNode, hexlify, randomBytes } from "ethers/utils";
@@ -15,8 +16,10 @@ import {
   FUNDED_MNEMONICS,
   TOKEN_AMOUNT,
   requestCollateral,
+  delay,
 } from "../util";
-import { xpubToAddress } from "@connext/client/dist/lib";
+
+const { xpubToAddress } = utils;
 
 describe("Async Transfers", () => {
   let clientA: IConnextClient;
@@ -26,8 +29,12 @@ describe("Async Transfers", () => {
   beforeEach(async () => {
     clientA = await createClient();
     clientB = await createClient();
-
     tokenAddress = clientA.config.contractAddresses.Token;
+  });
+
+  afterEach(async () => {
+    await clientA.messaging.disconnect();
+    await clientB.messaging.disconnect();
   });
 
   it("happy case: client A transfers eth to client B through node", async () => {
@@ -42,6 +49,40 @@ describe("Async Transfers", () => {
     await fundChannel(clientA, transfer.amount, transfer.assetId);
     await clientB.requestCollateral(transfer.assetId);
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId);
+  });
+
+  it.skip("latency test: client A transfers eth to client B through node", function() {
+    return new Promise(async res => {
+      // @ts-ignore
+      this.timeout(1200000);
+      const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
+      await fundChannel(clientA, transfer.amount, transfer.assetId);
+      await requestCollateral(clientB, transfer.assetId);
+      let startTime: number[] = [];
+      let y = 0;
+      clientB.on("RECEIVE_TRANSFER_FINISHED_EVENT", data => {
+        // console.log(data)
+        const duration = Date.now() - startTime[data.meta.index];
+        console.log("Caught #: " + y + ". Index: " + data.meta.index + ". Time: " + duration / 1000);
+        console.log("===========================");
+        y++;
+        if (y === 5) {
+          res();
+        }
+      });
+
+      for (let i = 0; i < 5; i++) {
+        startTime[i] = Date.now();
+        await clientA.transfer({
+          amount: transfer.amount.div(toBN(10)).toString(),
+          assetId: AddressZero,
+          meta: { index: i },
+          recipient: clientB.publicIdentifier,
+        });
+        delay(30000);
+        console.log("i: " + i);
+      }
+    });
   });
 
   it("client A transfers eth to client B without collateralizing", async () => {
@@ -98,9 +139,7 @@ describe("Async Transfers", () => {
   it.skip("Bot A transfers w a valid, unsupported token address", async () => {
     // deploy a token
     const factory = ContractFactory.fromSolidity(ERC20TokenArtifacts);
-    const token = await factory
-      .connect(Wallet.fromMnemonic(FUNDED_MNEMONICS[0]).connect(ethProvider))
-      .deploy();
+    const token = await factory.connect(Wallet.fromMnemonic(FUNDED_MNEMONICS[0]).connect(ethProvider)).deploy();
     const deployHash = token.deployTransaction.hash;
     expect(deployHash).to.exist;
     await ethProvider.waitForTransaction(token.deployTransaction.hash!);
@@ -134,7 +173,7 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         recipient,
       }),
-    ).to.be.rejectedWith(`Value \"${recipient}\" must start with \"xpub\"`);
+    ).to.be.rejectedWith(`Value "${recipient}" must start with "xpub"`);
   });
 
   it("Bot A tries to transfer an amount greater than they have in their free balance", async () => {
@@ -161,7 +200,7 @@ describe("Async Transfers", () => {
         preImage: hexlify(randomBytes(32)),
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`Value \"${paymentId}\" is not a valid hex string`);
+    ).to.be.rejectedWith(`Value "${paymentId}" is not a valid hex string`);
   });
 
   it("Bot A tries to transfer with a preimage that is not 32 bytes", async () => {
@@ -177,7 +216,7 @@ describe("Async Transfers", () => {
         preImage,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`Value \"${preImage}\" is not a valid hex string`);
+    ).to.be.rejectedWith(`Value "${preImage}" is not a valid hex string`);
   });
 
   it("Bot A proposes a transfer to an xpub that doesn’t have a channel", async () => {

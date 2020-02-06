@@ -1,3 +1,4 @@
+import "./setup";
 import "./channelProvider/channelProvider.test";
 import "./createChannel/createChannel.test";
 import "./deposit/collateral.test";
@@ -13,5 +14,7 @@ import "./store/store.test";
 import "./swap/swap.test";
 import "./swap/swapOffline.test";
 import "./transfer/asyncTransfer.test";
+import "./transfer/asyncTransferOffline.test";
 import "./transfer/getLinkedTransfer.test";
 import "./withdraw/withdraw.test";
+import "./withdraw/withdrawOffline.test";

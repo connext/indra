@@ -1,7 +1,6 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { IChannelProvider, IConnextClient, RECEIVE_TRANSFER_FINISHED_EVENT } from "@connext/types";
+import { IConnextClient, RECEIVE_TRANSFER_FINISHED_EVENT } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
-import { Client } from "ts-nats";
 
 import {
   AssetOptions,
@@ -15,54 +14,47 @@ import {
   TOKEN_AMOUNT,
   withdrawFromChannel,
 } from "../util";
-import { createOrRetrieveNatsConnection } from "../util/nats";
 
 describe("ChannelProvider", () => {
-  let clientA: IConnextClient;
-  let clientA1: IConnextClient;
-  let tokenAddress: string;
+  let client: IConnextClient;
+  let remoteClient: IConnextClient;
   let nodeFreeBalanceAddress: string;
   let nodePublicIdentifier: string;
-  let channelProvider: IChannelProvider;
-  let natsConnection: Client;
+  let tokenAddress: string;
 
-  beforeEach(async function() {
-    // Need a longer timeout here bc it's the very first test to run & node might not be awake yet
-    // @ts-ignore
-    this.timeout(120_000);
-    clientA = await createClient();
-    tokenAddress = clientA.config.contractAddresses.Token;
-    nodePublicIdentifier = clientA.config.nodePublicIdentifier;
+  beforeEach(async () => {
+    client = await createClient();
+    remoteClient = await createRemoteClient(await createChannelProvider(client));
+    nodePublicIdentifier = client.config.nodePublicIdentifier;
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
-    channelProvider = await createChannelProvider(clientA);
-    clientA1 = await createRemoteClient(channelProvider);
-    natsConnection = await createOrRetrieveNatsConnection();
+    tokenAddress = client.config.contractAddresses.Token;
   });
 
-  it("Happy case: client A1 can be instantiated with a channelProvider generated from client A", async function() {
-    const _tokenAddress = clientA1.config.contractAddresses.Token;
-    const _nodePublicIdentifier = clientA1.config.nodePublicIdentifier;
-    const _nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
+  afterEach(async () => {
+    await client.messaging.disconnect();
+  });
 
+  it("Happy case: remote client can be instantiated with a channelProvider", async () => {
+    const _tokenAddress = remoteClient.config.contractAddresses.Token;
+    const _nodePublicIdentifier = remoteClient.config.nodePublicIdentifier;
+    const _nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
     expect(_tokenAddress).to.be.eq(tokenAddress);
     expect(_nodePublicIdentifier).to.be.eq(nodePublicIdentifier);
     expect(_nodeFreeBalanceAddress).to.be.eq(nodeFreeBalanceAddress);
   });
 
-  it("Happy case: Bot A1 can call the full deposit → swap → transfer → withdraw flow on Bot A", async function() {
-    this.timeout(90_000);
-
+  it("Happy case: remote client can call the full deposit → swap → transfer → withdraw flow", async function() {
     const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
 
     ////////////////////////////////////////
     // DEPOSIT FLOW
-    await fundChannel(clientA, input.amount, input.assetId);
-    await clientA1.requestCollateral(output.assetId);
+    await fundChannel(client, input.amount, input.assetId);
+    await remoteClient.requestCollateral(output.assetId);
 
     ////////////////////////////////////////
     // SWAP FLOW
-    await swapAsset(clientA1, input, output, nodeFreeBalanceAddress);
+    await swapAsset(remoteClient, input, output, nodeFreeBalanceAddress);
 
     ////////////////////////////////////////
     // TRANSFER FLOW
@@ -70,16 +62,9 @@ describe("ChannelProvider", () => {
     const clientB = await createClient();
     await clientB.requestCollateral(tokenAddress);
 
-    // TODO: Move natsConnection to MockChannelProvider and use asyncTransferAsset test
     const transferFinished = Promise.all([
       new Promise(async resolve => {
-        const sub = await natsConnection.subscribe(
-          `indra.node.${clientA.nodePublicIdentifier}.uninstall.>`,
-          () => {
-            resolve();
-            sub.unsubscribe();
-          },
-        );
+        await clientB.messaging.subscribe(`indra.node.${client.nodePublicIdentifier}.uninstall.>`, resolve);
       }),
       new Promise(async resolve => {
         clientB.once(RECEIVE_TRANSFER_FINISHED_EVENT, async () => {
@@ -88,7 +73,7 @@ describe("ChannelProvider", () => {
       }),
     ]);
 
-    await clientA1.transfer({
+    await remoteClient.transfer({
       amount: transfer.amount.toString(),
       assetId: transfer.assetId,
       recipient: clientB.publicIdentifier,
@@ -99,19 +84,18 @@ describe("ChannelProvider", () => {
     ////////////////////////////////////////
     // WITHDRAW FLOW
     const withdraw: AssetOptions = { amount: One, assetId: tokenAddress };
-    await withdrawFromChannel(clientA1, withdraw.amount, withdraw.assetId);
+    await withdrawFromChannel(remoteClient, withdraw.amount, withdraw.assetId);
   });
 
-  it("Bot A1 tries to call a function when Bot A is offline", async () => {
+  it("Remote client tries to call a function when client is offline", async () => {
     // close channelProvider connection
-    clientA1.channelProvider.close();
-
-    await expect(clientA1.getFreeBalance(AddressZero)).to.be.rejectedWith(
+    remoteClient.channelProvider.close();
+    await expect(remoteClient.getFreeBalance(AddressZero)).to.be.rejectedWith(
       "RpcConnection: Timeout - JSON-RPC not responded within 30s",
     );
   });
 
-  it.skip("Bot A1 tries to reject installing a proposed app that bot A has already installed?", async () => {
+  it.skip("Remote client tries to reject installing a proposed app that client has already installed?", async () => {
     // TODO: add test
   });
 });

@@ -15,7 +15,6 @@ import {
   SimpleTransferAppState,
   SimpleTransferAppStateBigNumber,
   SupportedApplication,
-  SupportedApplications,
 } from "../types";
 
 import { invalidAddress } from "./addresses";

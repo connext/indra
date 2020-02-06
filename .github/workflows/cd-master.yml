@@ -94,6 +94,9 @@ jobs:
     - run: make start-test-release
     - run: sleep 15 && make dls
     - run: TEST_MODE=release make test-integration
+    - name: Print node logs
+      if: failure()
+      run: docker service logs --tail 200 indra_node
 
   test-backwards-compatibility:
     runs-on: ubuntu-latest
@@ -104,6 +107,9 @@ jobs:
     - run: make start-test-release
     - run: sleep 15 && make dls
     - run: make test-backwards-compatibility
+    - name: Print node logs
+      if: failure()
+      run: docker service logs --tail 200 indra_node
 
   test-daicard:
     runs-on: ubuntu-16.04
@@ -113,6 +119,9 @@ jobs:
     - run: make pull-release
     - run: make start-test-release
     - run: make test-daicard
+    - name: Print node logs
+      if: failure()
+      run: docker service logs --tail 200 indra_node
 
   deploy-rinkeby:
     env:

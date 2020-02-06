@@ -34,14 +34,14 @@ export class TransferMessaging extends AbstractMessagingProvider {
 
   async resolveLinkedTransfer(
     pubId: string,
-    data: { paymentId: string; linkedHash: string; meta: object },
+    data: { paymentId: string; linkedHash: string },
   ): Promise<ResolveLinkedTransferResponse> {
     logger.log(`Got resolve link request with data: ${JSON.stringify(data, replaceBN, 2)}`);
-    const { paymentId, linkedHash, meta } = data;
+    const { paymentId, linkedHash } = data;
     if (!paymentId || !linkedHash) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
-    return await this.transferService.resolveLinkedTransfer(pubId, paymentId, linkedHash, meta);
+    return await this.transferService.resolveLinkedTransfer(pubId, paymentId, linkedHash);
   }
 
   // TODO: types
@@ -94,19 +94,19 @@ export class TransferMessaging extends AbstractMessagingProvider {
   async setupSubscriptions(): Promise<void> {
     await super.connectRequestReponse(
       "transfer.fetch-linked.>",
-      this.authService.useVerifiedPublicIdentifier(this.getLinkedTransferByPaymentId.bind(this)),
+      this.authService.useUnverifiedPublicIdentifier(this.getLinkedTransferByPaymentId.bind(this)),
     );
     await super.connectRequestReponse(
       "transfer.resolve-linked.>",
-      this.authService.useVerifiedPublicIdentifier(this.resolveLinkedTransfer.bind(this)),
+      this.authService.useUnverifiedPublicIdentifier(this.resolveLinkedTransfer.bind(this)),
     );
     await super.connectRequestReponse(
       "transfer.set-recipient.>",
-      this.authService.useVerifiedPublicIdentifier(this.setRecipientOnLinkedTransfer.bind(this)),
+      this.authService.useUnverifiedPublicIdentifier(this.setRecipientOnLinkedTransfer.bind(this)),
     );
     await super.connectRequestReponse(
       "transfer.get-pending.>",
-      this.authService.useVerifiedPublicIdentifier(this.getPendingTransfers.bind(this)),
+      this.authService.useUnverifiedPublicIdentifier(this.getPendingTransfers.bind(this)),
     );
     await super.connectRequestReponse(
       "transfer.get-history.>",
@@ -114,7 +114,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
     );
     await super.connectRequestReponse(
       "client.check-in.>",
-      this.authService.useVerifiedPublicIdentifier(this.clientCheckIn.bind(this)),
+      this.authService.useUnverifiedPublicIdentifier(this.clientCheckIn.bind(this)),
     );
   }
 }

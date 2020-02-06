@@ -4,7 +4,7 @@ set -e
 project="indra"
 
 export STORE_DIR="./.test-store"
-export INDRA_CLIENT_LOG_LEVEL="${INDRA_CLIENT_LOG_LEVEL:-2}"
+export INDRA_CLIENT_LOG_LEVEL="${INDRA_CLIENT_LOG_LEVEL:-0}"
 export INDRA_ETH_RPC_URL="${INDRA_ETH_RPC_URL:-http://172.17.0.1:8545}"
 export INDRA_ETH_MNEMONIC="${INDRA_ETH_MNEMONIC:-candy maple cake sugar pudding cream honey rich smooth crumble sweet treat}"
 export INDRA_NODE_URL="${INDRA_NODE_URL:-nats://172.17.0.1:4222}"
@@ -37,9 +37,14 @@ if [[ $1 == "--watch" ]]
 then
   webpack --watch --config ops/webpack.config.js &
   sleep 5 # give webpack a sec to finish the first watch-mode build
-  mocha --timeout 60000 --bail --check-leaks --watch $bundle
+  mocha --timeout 120000 --bail --check-leaks --bail --watch $bundle
+elif [[ $1 == "--flamegraph" ]]
+then
+  node dist/flamegraphPrep.bundle.js
+  sleep 2
+  0x -o dist/flamegraph.bundle.js
 else
-  mocha --timeout 60000 --bail --check-leaks --exit $bundle
+  mocha --timeout 120000 --bail --check-leaks --bail --exit $bundle
 fi
 
 rm -rf $STORE_DIR

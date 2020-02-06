@@ -14,26 +14,28 @@ export default class RescindDepositRightsController extends NodeController {
   @jsonRpcMethod(ProtocolTypes.chan_rescindDepositRights)
   public executeMethod: (
     requestHandler: RequestHandler,
-    params: CFCoreTypes.MethodParams
+    params: CFCoreTypes.MethodParams,
   ) => Promise<CFCoreTypes.MethodResult> = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.RescindDepositRightsParams
+    params: CFCoreTypes.RescindDepositRightsParams,
   ): Promise<string[]> {
     return [params.multisigAddress];
   }
 
-  protected async beforeExecution(): Promise<void> {}
+  protected async beforeExecution(
+    requestHandler: RequestHandler,
+    params: CFCoreTypes.RescindDepositRightsParams,
+  ): Promise<void> {}
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.RescindDepositRightsParams
-  ): Promise<CFCoreTypes.DepositResult> {
+    params: CFCoreTypes.RescindDepositRightsParams,
+  ): Promise<CFCoreTypes.RescindDepositRightsResult> {
     const { provider, store, networkContext } = requestHandler;
     const { multisigAddress } = params;
-    const tokenAddress =
-      params.tokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
+    const tokenAddress = params.tokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
 
     let multisigBalance: BigNumber;
     if (tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
@@ -47,7 +49,7 @@ export default class RescindDepositRightsController extends NodeController {
     if (!channel.hasAppInstanceOfKind(networkContext.CoinBalanceRefundApp)) {
       return {
         multisigBalance,
-        tokenAddress
+        tokenAddress,
       };
     }
 
@@ -56,15 +58,15 @@ export default class RescindDepositRightsController extends NodeController {
       {
         ...params,
         // unused params to make types happy
+        amount: Zero,
         tokenAddress,
-        amount: Zero
       },
-      await provider.getBlockNumber()
+      await provider.getBlockNumber(),
     );
 
     return {
       multisigBalance,
-      tokenAddress
+      tokenAddress,
     };
   }
 }

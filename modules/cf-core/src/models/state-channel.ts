@@ -93,6 +93,12 @@ export class StateChannel {
   }
 
   public getAppInstance(appInstanceIdentityHash: string): AppInstance {
+    if (
+      this.hasFreeBalance &&
+      appInstanceIdentityHash === this.freeBalance.identityHash
+    ) {
+      return this.freeBalance;
+    }
     if (!this.appInstances.has(appInstanceIdentityHash)) {
       throw Error(ERRORS.APP_DOES_NOT_EXIST(appInstanceIdentityHash));
     }

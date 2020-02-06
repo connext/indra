@@ -2,8 +2,8 @@ import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
 
-import { expect, COLLATERAL_AMOUNT_TOKEN, TOKEN_AMOUNT } from "../util";
-import { createClient, ETH_AMOUNT_SM, getStore } from "../util";
+import { expect, TOKEN_AMOUNT } from "../util";
+import { createClient, ETH_AMOUNT_SM } from "../util";
 
 describe("Restore State", () => {
   let clientA: IConnextClient;
@@ -16,6 +16,10 @@ describe("Restore State", () => {
     tokenAddress = clientA.config.contractAddresses.Token;
     nodePublicIdentifier = clientA.config.nodePublicIdentifier;
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
+  });
+
+  afterEach(async () => {
+    await clientA.messaging.disconnect();
   });
 
   it("happy case: client can delete its store and restore from a remote backup", async () => {
@@ -32,8 +36,7 @@ describe("Restore State", () => {
     expect(freeBalanceTokenPre[nodeFreeBalanceAddress]).to.be.least(TOKEN_AMOUNT);
 
     // delete store
-    const store = getStore(clientA.publicIdentifier);
-    store.reset();
+    clientA.store.reset && clientA.store.reset();
 
     // check that getting balances will now error
     await expect(clientA.getFreeBalance(AddressZero)).to.be.rejectedWith(
