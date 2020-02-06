@@ -24,15 +24,11 @@ import { invalid32ByteHexString, invalidAddress, notNegative, validate } from ".
 import { AbstractController } from "./AbstractController";
 
 type ConditionResolvers = {
-  [index in TransferCondition]: (
-    params: ResolveConditionParameters,
-  ) => Promise<ResolveConditionResponse>;
+  [index in TransferCondition]: (params: ResolveConditionParameters) => Promise<ResolveConditionResponse>;
 };
 
 export class ResolveConditionController extends AbstractController {
-  public resolve = async (
-    params: ResolveConditionParameters,
-  ): Promise<ResolveConditionResponse> => {
+  public resolve = async (params: ResolveConditionParameters): Promise<ResolveConditionResponse> => {
     this.log.info(`Resolve condition called with parameters: ${stringify(params)}`);
 
     const res = await this.conditionResolvers[params.conditionType](params);
@@ -46,14 +42,14 @@ export class ResolveConditionController extends AbstractController {
   private handleResolveErr = (paymentId: string, e: any): void => {
     this.log.error(`Failed to resolve linked transfer ${paymentId}: ${e.stack || e.message}`);
     this.connext.emit(RECEIVE_TRANSFER_FAILED_EVENT, {
-      paymentId,
       error: e.stack || e.message,
+      paymentId,
     });
 
     // TODO: remove when deprecated
     this.connext.emit(RECIEVE_TRANSFER_FAILED_EVENT, {
-      paymentId,
       message: `This event has been deprecated in favor of ${RECEIVE_TRANSFER_FAILED_EVENT}`,
+      paymentId,
     });
     throw e;
   };
@@ -77,11 +73,6 @@ export class ResolveConditionController extends AbstractController {
     this.log.info(`Found link payment for ${amount} ${assetId}`);
     const amountBN = bigNumberify(amount);
 
-    // const freeBal = await this.connext.getFreeBalance(assetId);
-    // const preTransferBal = freeBal[this.connext.freeBalanceAddress];
-
-    // TODO: dont listen to linked transfer app in default listener, only listen for it here
-
     // handle collateral issues by pinging the node to see if the app can be
     // properly installed.
     const { appId } = await this.node.resolveLinkedTransfer(
@@ -104,21 +95,6 @@ export class ResolveConditionController extends AbstractController {
     } catch (e) {
       this.handleResolveErr(paymentId, e);
     }
-
-    // sanity check, free balance increased by payment amount
-    // const postTransferBal = await this.connext.getFreeBalance(assetId);
-    // const diff = postTransferBal[this.connext.freeBalanceAddress].sub(preTransferBal);
-    // if (!diff.eq(amountBN)) {
-    //   this.log.error(
-    //     "Welp it appears the difference of the free balance before and after " +
-    //       "uninstalling is not what we expected......",
-    //   );
-    // } else if (postTransferBal[this.connext.freeBalanceAddress].lte(preTransferBal)) {
-    //   this.log.info(
-    //     "Free balance after transfer is lte free balance " +
-    //       "before transfer..... That's not great..",
-    //   );
-    // }
 
     return {
       appId,
@@ -149,8 +125,8 @@ export class ResolveConditionController extends AbstractController {
 
     // TODO: remove when deprecated
     this.connext.emit(RECIEVE_TRANSFER_STARTED_EVENT, {
-      paymentId,
       message: `This event has been deprecated in favor of ${RECEIVE_TRANSFER_STARTED_EVENT}`,
+      paymentId,
     });
 
     // convert and validate
@@ -212,18 +188,16 @@ export class ResolveConditionController extends AbstractController {
 
     this.connext.emit(RECEIVE_TRANSFER_FINISHED_EVENT, {
       amount,
+      appId,
       assetId,
       meta,
       paymentId,
-      meta,
-      amount,
-      appId,
     });
 
     // TODO: remove when deprecated
     this.connext.emit(RECIEVE_TRANSFER_FINISHED_EVENT, {
-      paymentId,
       message: `This event has been deprecated in favor of ${RECEIVE_TRANSFER_FINISHED_EVENT}`,
+      paymentId,
     });
 
     return {
@@ -254,9 +228,7 @@ export class ResolveConditionController extends AbstractController {
     } = appInstance.latestState as SimpleLinkedTransferAppState;
 
     const throwErr = (reason: string): void => {
-      throw new Error(
-        `Detected ${reason} when resolving linked transfer app ${appId}, refusing to takeAction`,
-      );
+      throw new Error(`Detected ${reason} when resolving linked transfer app ${appId}, refusing to takeAction`);
     };
 
     // verify initial state params are correct
