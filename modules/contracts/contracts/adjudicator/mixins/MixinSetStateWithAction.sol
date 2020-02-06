@@ -79,7 +79,18 @@ contract MixinSetStateWithAction is
     );
 
 
-    uint256 finalizesAt = block.number + req.timeout;
+    // do not apply the timeout of the challenge update
+    // to the resultant state, instead use the default timeout.
+    // Doing otherwise could violate the signers intention. For
+    // example:
+    // Signer may be fine signing a very small timeout for a state considered
+    // favorable. ("I made the last move in this state, so I'll win if it gets
+    // finalized!"). Then counterparty applies an action to it, and now signer
+    // has very little time to react to this potentially unfavorable state.
+    // ("Now they made the last move and will win!")
+
+    // instead use the default timeout.
+    uint256 finalizesAt = block.number + appIdentity.defaultTimeout;
     require(finalizesAt >= req.timeout, "uint248 addition overflow");
 
     challenge.finalizesAt = finalizesAt;
