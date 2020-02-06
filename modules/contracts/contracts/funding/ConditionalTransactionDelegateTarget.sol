@@ -35,8 +35,8 @@ contract ConditionalTransactionDelegateTarget {
     public
   {
     require(
-      challengeRegistry.isStateFinalized(freeBalanceAppIdentityHash),
-      "Free Balance app instance is not finalized yet"
+      challengeRegistry.isOutcomeSet(freeBalanceAppIdentityHash),
+      "Free Balance app instance does not have set outcome yet"
     );
 
     FreeBalanceAppState memory freeBalanceAppState = abi.decode(
@@ -107,8 +107,8 @@ contract ConditionalTransactionDelegateTarget {
     require(appIsFunded, "Referenced AppInstance is not funded");
 
     require(
-      challengeRegistry.isStateFinalized(appIdentityHash),
-      "Referenced AppInstance is not finalized");
+      challengeRegistry.isOutcomeSet(appIdentityHash),
+      "Referenced AppInstance does not have set outcome");
 
     bytes memory outcome = challengeRegistry.getOutcome(appIdentityHash);
 

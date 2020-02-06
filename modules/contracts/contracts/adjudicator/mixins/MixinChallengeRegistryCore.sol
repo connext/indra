@@ -39,6 +39,21 @@ contract MixinChallengeRegistryCore is MChallengeRegistryCore {
     );
   }
 
+  /// @notice Checks if an application's outcome has been set (i.e setOutcome
+  /// has been called)
+  /// @param identityHash The unique hash of an `AppIdentity`
+  /// @return A boolean indicator
+  function isOutcomeSet(bytes32 identityHash)
+    external
+    view
+    returns (bool)
+  {
+    return (
+      appChallenges[identityHash].status ==
+      LibStateChannelApp.ChallengeStatus.OUTCOME_SET
+    );
+  }
+
   /// @notice A getter function for the outcome if one is set
   /// @param identityHash The unique hash of an `AppIdentity`
   /// @return A `Transfer.Transaction` object representing the outcome of the channel
