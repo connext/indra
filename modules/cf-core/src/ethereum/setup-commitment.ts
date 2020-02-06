@@ -1,7 +1,13 @@
 import { Interface } from "ethers/utils";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
-import { AppIdentity, MultisigOperation, MultisigTransaction, NetworkContext, DomainSeparator } from "../types";
+import {
+  AppIdentity,
+  MultisigOperation,
+  MultisigTransaction,
+  NetworkContext,
+  DomainSeparator
+} from "../types";
 
 import { MultisigCommitment } from "./multisig-commitment";
 import { appIdentityToHash } from "./utils/app-identity";
@@ -26,7 +32,7 @@ export class SetupCommitment extends MultisigCommitment {
       data: iface.functions.executeEffectOfFreeBalance.encode([
         this.networkContext.ChallengeRegistry,
         appIdentityToHash(this.freeBalanceAppIdentity),
-        this.networkContext.MultiAssetMultiPartyCoinTransferInterpreter,
+        this.networkContext.MultiAssetMultiPartyCoinTransferInterpreter
       ]),
       operation: MultisigOperation.DelegateCall,
       to: this.networkContext.ConditionalTransactionDelegateTarget,
