@@ -31,13 +31,12 @@ export const sendOnchainValue = async (
   value: BigNumberish,
   assetId: string = AddressZero,
 ): Promise<void> => {
-  let res;
   if (assetId === AddressZero) {
-    res = await ethWallet.sendTransaction({ to, value });
+    await ethWallet.sendTransaction({ to, value });
     // console.log("Sent value ", res);
   } else {
     const tokenContract = new Contract(assetId, abi, ethWallet);
-    res = await tokenContract.functions.transfer(to, value);
+    await tokenContract.functions.transfer(to, value);
   }
   /*
   console.log(
@@ -46,10 +45,7 @@ export const sendOnchainValue = async (
   */
 };
 
-export const getOnchainBalance = async (
-  address: string,
-  assetId: string = AddressZero,
-): Promise<BigNumber> => {
+export const getOnchainBalance = async (address: string, assetId: string = AddressZero): Promise<BigNumber> => {
   let result: BigNumber;
   if (assetId === AddressZero) {
     try {

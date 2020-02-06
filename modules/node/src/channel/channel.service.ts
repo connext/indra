@@ -1,11 +1,5 @@
-import {
-  ChannelAppSequences,
-  StateChannelJSON,
-  SupportedApplication,
-  SupportedApplications,
-  CoinBalanceRefundApp,
-} from "@connext/types";
-import { forwardRef, Inject, Injectable } from "@nestjs/common";
+import { ChannelAppSequences, StateChannelJSON, CoinBalanceRefundApp } from "@connext/types";
+import { Injectable } from "@nestjs/common";
 import { Contract } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
@@ -17,7 +11,6 @@ import { ConfigService } from "../config/config.service";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
-import { TransferService } from "../transfer/transfer.service";
 import { CLogger, stringify, xpubToAddress } from "../util";
 import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
@@ -31,8 +24,6 @@ export class ChannelService {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly configService: ConfigService,
-    @Inject(forwardRef(() => TransferService))
-    private readonly transferService: TransferService,
     private readonly channelRepository: ChannelRepository,
     private readonly onchainRepository: OnchainTransactionRepository,
   ) {}
@@ -50,9 +41,7 @@ export class ChannelService {
    * @param counterpartyPublicIdentifier
    */
   async create(counterpartyPublicIdentifier: string): Promise<CFCoreTypes.CreateChannelResult> {
-    const existing = await this.channelRepository.findByUserPublicIdentifier(
-      counterpartyPublicIdentifier,
-    );
+    const existing = await this.channelRepository.findByUserPublicIdentifier(counterpartyPublicIdentifier);
     if (existing) {
       throw new Error(`Channel already exists for ${counterpartyPublicIdentifier}`);
     }
@@ -71,17 +60,9 @@ export class ChannelService {
     }
 
     // don't allow deposit if user's balance refund app is installed
-    const balanceRefundApp = await this.cfCoreService.getCoinBalanceRefundApp(
-      multisigAddress,
-      assetId,
-    );
-    if (
-      balanceRefundApp &&
-      balanceRefundApp.latestState[`recipient`] === xpubToAddress(channel.userPublicIdentifier)
-    ) {
-      throw new Error(
-        `Cannot deposit, user's CoinBalanceRefundApp is installed for ${channel.userPublicIdentifier}`,
-      );
+    const balanceRefundApp = await this.cfCoreService.getCoinBalanceRefundApp(multisigAddress, assetId);
+    if (balanceRefundApp && balanceRefundApp.latestState[`recipient`] === xpubToAddress(channel.userPublicIdentifier)) {
+      throw new Error(`Cannot deposit, user's CoinBalanceRefundApp is installed for ${channel.userPublicIdentifier}`);
     }
 
     if (
@@ -94,7 +75,42 @@ export class ChannelService {
 
     await this.proposeCoinBalanceRefund(assetId, channel);
 
-    return await this.cfCoreService.deposit(multisigAddress, amount, getAddress(assetId));
+    const res = await this.cfCoreService.deposit(multisigAddress, amount, getAddress(assetId));
+    const depositTx = await this.configService.getEthProvider().getTransaction(res.transactionHash);
+    await this.onchainRepository.addCollateralization(depositTx, channel);
+    return res;
+  }
+
+  async withdraw(
+    multisigAddress: string,
+    amount: BigNumber,
+    assetId: string = AddressZero,
+  ): Promise<CFCoreTypes.WithdrawResult> {
+    const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
+    if (!channel) {
+      throw new Error(`No channel exists for multisigAddress ${multisigAddress}`);
+    }
+
+    // don't allow deposit if user's balance refund app is installed
+    const balanceRefundApp = await this.cfCoreService.getCoinBalanceRefundApp(multisigAddress, assetId);
+    if (balanceRefundApp && balanceRefundApp.latestState[`recipient`] === xpubToAddress(channel.userPublicIdentifier)) {
+      throw new Error(`Cannot withdraw, user's CoinBalanceRefundApp is installed for ${channel.userPublicIdentifier}`);
+    }
+
+    if (
+      balanceRefundApp &&
+      balanceRefundApp.latestState[`recipient`] === this.cfCoreService.cfCore.freeBalanceAddress
+    ) {
+      logger.log(`Node's CoinBalanceRefundApp is installed, removing first.`);
+      await this.cfCoreService.rescindDepositRights(channel.multisigAddress, assetId);
+    }
+
+    await this.proposeCoinBalanceRefund(assetId, channel);
+
+    const res = await this.cfCoreService.withdraw(multisigAddress, amount, getAddress(assetId));
+    const withdrawalTx = await this.configService.getEthProvider().getTransaction(res.txHash);
+    await this.onchainRepository.addNodeWithdrawal(withdrawalTx, channel);
+    return res;
   }
 
   async proposeCoinBalanceRefund(assetId: string, channel: Channel): Promise<void> {
@@ -103,9 +119,7 @@ export class ChannelService {
     const threshold =
       assetId === AddressZero
         ? await ethProvider.getBalance(channel.multisigAddress)
-        : await new Contract(assetId!, tokenAbi, ethProvider).functions.balanceOf(
-            channel.multisigAddress,
-          );
+        : await new Contract(assetId!, tokenAbi, ethProvider).functions.balanceOf(channel.multisigAddress);
 
     const initialState = {
       multisig: channel.multisigAddress,
@@ -158,15 +172,10 @@ export class ChannelService {
       return undefined;
     }
 
-    const profile = await this.getPaymentProfileForChannelAndTokenOrDefault(
-      userPubId,
-      normalizedAssetId,
-    );
+    const profile = await this.getPaymentProfileForChannelAndTokenOrDefault(userPubId, normalizedAssetId);
 
     if (!profile) {
-      throw new Error(
-        `Node is not configured to collateralize asset ${assetId} for user ${userPubId}`,
-      );
+      throw new Error(`Node is not configured to collateralize asset ${assetId} for user ${userPubId}`);
     }
 
     let collateralNeeded = profile.minimumMaintainedCollateral;
@@ -174,17 +183,11 @@ export class ChannelService {
       collateralNeeded = amountToCollateralize;
     }
 
-    const freeBalance = await this.cfCoreService.getFreeBalance(
-      userPubId,
-      channel.multisigAddress,
-      normalizedAssetId,
-    );
+    const freeBalance = await this.cfCoreService.getFreeBalance(userPubId, channel.multisigAddress, normalizedAssetId);
     const nodeFreeBalance = freeBalance[this.cfCoreService.cfCore.freeBalanceAddress];
 
     if (nodeFreeBalance.gte(collateralNeeded)) {
-      logger.log(
-        `${userPubId} already has collateral of ${nodeFreeBalance} for asset ${normalizedAssetId}`,
-      );
+      logger.log(`${userPubId} already has collateral of ${nodeFreeBalance} for asset ${normalizedAssetId}`);
       return undefined;
     }
 
@@ -192,8 +195,7 @@ export class ChannelService {
       ? collateralNeeded.sub(nodeFreeBalance)
       : profile.amountToCollateralize.sub(nodeFreeBalance);
     logger.log(
-      `Collateralizing ${channel.multisigAddress} with ${amountDeposit.toString()}, ` +
-        `token: ${normalizedAssetId}`,
+      `Collateralizing ${channel.multisigAddress} with ${amountDeposit.toString()}, token: ${normalizedAssetId}`,
     );
 
     // set in flight so that it cant be double sent
@@ -238,18 +240,16 @@ export class ChannelService {
    * @param creationData event data
    */
   async makeAvailable(creationData: CreateChannelMessage): Promise<void> {
-    let existing = await this.channelRepository.findByMultisigAddress(
-      creationData.data.multisigAddress,
-    );
+    let existing = await this.channelRepository.findByMultisigAddress(creationData.data.multisigAddress);
     if (existing) {
       if (
         !creationData.data.owners.includes(xpubToAddress(existing.nodePublicIdentifier)) ||
         !creationData.data.owners.includes(xpubToAddress(existing.userPublicIdentifier))
       ) {
         throw new Error(
-          `Channel has already been created with different owners! ${stringify(
-            existing,
-          )}. Event data: ${stringify(creationData)}`,
+          `Channel has already been created with different owners! ${stringify(existing)}. Event data: ${stringify(
+            creationData,
+          )}`,
         );
       }
       if (existing.available) {
@@ -280,21 +280,18 @@ export class ChannelService {
   ): Promise<ChannelAppSequences> {
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPublicIdentifier);
     if (!channel) {
-      throw new Error(
-        `Could not find channel associated with: ${userPublicIdentifier} in verifyAppSequenceNumber`,
-      );
+      throw new Error(`Could not find channel associated with: ${userPublicIdentifier} in verifyAppSequenceNumber`);
     }
     const sc = (await this.cfCoreService.getStateChannel(channel.multisigAddress)).data;
-    const [appId, appJson] = sc.appInstances.reduce((prev, curr) => {
-      const [prevId, prevJson] = prev;
-      const [currId, currJson] = curr;
+    const [, appJson] = sc.appInstances.reduce((prev, curr) => {
+      const [, prevJson] = prev;
+      const [, currJson] = curr;
       return currJson.appSeqNo > prevJson.appSeqNo ? curr : prev;
     });
     const nodeSequenceNumber = appJson.appSeqNo;
     if (nodeSequenceNumber !== userSequenceNumber) {
       logger.warn(
-        `Node app sequence number (${nodeSequenceNumber}) ` +
-          `!== user app sequence number (${userSequenceNumber})`,
+        `Node app sequence number (${nodeSequenceNumber}) !== user app sequence number (${userSequenceNumber})`,
       );
     }
     return {
@@ -312,9 +309,7 @@ export class ChannelService {
       throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
     }
 
-    const { transactionHash: deployTx } = await this.cfCoreService.deployMultisig(
-      channel.multisigAddress,
-    );
+    const { transactionHash: deployTx } = await this.cfCoreService.deployMultisig(channel.multisigAddress);
     logger.debug(`Deploy multisig tx: ${deployTx}`);
 
     const wallet = this.configService.getEthWallet();
@@ -336,10 +331,7 @@ export class ChannelService {
     assetId: string = AddressZero,
   ): Promise<PaymentProfile> {
     // try to get payment profile configured
-    let profile = await this.channelRepository.getPaymentProfileForChannelAndToken(
-      userPublicIdentifier,
-      assetId,
-    );
+    let profile = await this.channelRepository.getPaymentProfileForChannelAndToken(userPublicIdentifier, assetId);
     if (!profile) {
       profile = await this.configService.getDefaultPaymentProfile(assetId);
       logger.debug(`Collateralizing with default profile: ${stringify(profile)}`);
@@ -353,9 +345,7 @@ export class ChannelService {
       throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
     }
 
-    return await this.onchainRepository.findLatestWithdrawalByUserPublicIdentifier(
-      userPublicIdentifier,
-    );
+    return await this.onchainRepository.findLatestWithdrawalByUserPublicIdentifier(userPublicIdentifier);
   }
 
   async getStateChannel(userPublicIdentifier: string): Promise<StateChannelJSON> {

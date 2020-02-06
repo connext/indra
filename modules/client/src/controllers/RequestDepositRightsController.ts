@@ -11,7 +11,6 @@ import {
   CoinBalanceRefundAppStateBigNumber,
   RequestDepositRightsParameters,
   RequestDepositRightsResponse,
-  SupportedApplications,
 } from "../types";
 import { invalidAddress, validate } from "../validation";
 
@@ -59,16 +58,11 @@ export class RequestDepositRightsController extends AbstractController {
     // propose the app install
     this.log.info(`Installing balance refund app for ${assetId}`);
     await this.proposeDepositInstall(assetId);
-    const requestDepositRightsResponse = await this.channelProvider.send(
-      ProtocolTypes.chan_requestDepositRights,
-      {
-        multisigAddress: this.channelProvider.multisigAddress,
-        tokenAddress: assetId,
-      } as CFCoreTypes.RequestDepositRightsParams,
-    );
-    this.log.debug(
-      `requestDepositRightsResponse Response: ${stringify(requestDepositRightsResponse)}`,
-    );
+    const requestDepositRightsResponse = await this.channelProvider.send(ProtocolTypes.chan_requestDepositRights, {
+      multisigAddress: this.channelProvider.multisigAddress,
+      tokenAddress: assetId,
+    } as CFCoreTypes.RequestDepositRightsParams);
+    this.log.debug(`requestDepositRightsResponse Response: ${stringify(requestDepositRightsResponse)}`);
     this.log.info(`Deposit rights gained for ${assetId}`);
 
     const freeBalance = await this.connext.getFreeBalance(assetId);
@@ -87,9 +81,7 @@ export class RequestDepositRightsController extends AbstractController {
     const threshold =
       assetId === AddressZero
         ? await this.ethProvider.getBalance(this.connext.multisigAddress)
-        : await new Contract(assetId!, tokenAbi, this.ethProvider).functions.balanceOf(
-          this.connext.multisigAddress,
-        );
+        : await new Contract(assetId!, tokenAbi, this.ethProvider).functions.balanceOf(this.connext.multisigAddress);
 
     const initialState: CoinBalanceRefundAppStateBigNumber = {
       multisig: this.connext.multisigAddress,
