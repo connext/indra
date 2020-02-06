@@ -45,7 +45,7 @@ export const createCFChannelProvider = async ({
     userPublicIdentifier: xpub,
   };
   const connection = new CFCoreRpcConnection(cfCore, store, await keyGen("0"));
-  const channelProvider = new ChannelProvider(connection, channelProviderConfig);
+  const channelProvider = new ChannelProvider(connection as IRpcConnection, channelProviderConfig);
   return channelProvider;
 };
 
@@ -87,12 +87,18 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     return result;
   }
 
-  public on = (event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, listener: (...args: any[]) => void): any => {
+  public on = (
+    event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName | string,
+    listener: (...args: any[]) => void,
+  ): any => {
     this.cfCore.on(event as any, listener);
     return this.cfCore;
   };
 
-  public once = (event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, listener: (...args: any[]) => void): any => {
+  public once = (
+    event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName | string,
+    listener: (...args: any[]) => void,
+  ): any => {
     this.cfCore.once(event as any, listener);
     return this.cfCore;
   };
