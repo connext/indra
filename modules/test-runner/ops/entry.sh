@@ -38,6 +38,11 @@ then
   webpack --watch --config ops/webpack.config.js &
   sleep 5 # give webpack a sec to finish the first watch-mode build
   mocha --timeout 120000 --bail --check-leaks --bail --watch $bundle
+elif [[ $1 == "--flamegraph" ]]
+then
+  node dist/flamegraphPrep.bundle.js
+  sleep 2
+  0x -o dist/flamegraph.bundle.js
 else
   mocha --timeout 120000 --bail --check-leaks --bail --exit $bundle
 fi

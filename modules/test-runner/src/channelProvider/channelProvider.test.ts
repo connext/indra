@@ -32,7 +32,7 @@ describe("ChannelProvider", () => {
 
   afterEach(async () => {
     await client.messaging.disconnect();
-  })
+  });
 
   it("Happy case: remote client can be instantiated with a channelProvider", async () => {
     const _tokenAddress = remoteClient.config.contractAddresses.Token;
@@ -43,7 +43,7 @@ describe("ChannelProvider", () => {
     expect(_nodeFreeBalanceAddress).to.be.eq(nodeFreeBalanceAddress);
   });
 
-  it("Happy case: remote client can call the full deposit → swap → transfer → withdraw flow", async () => {
+  it("Happy case: remote client can call the full deposit → swap → transfer → withdraw flow", async function() {
     const input: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
 
@@ -64,10 +64,7 @@ describe("ChannelProvider", () => {
 
     const transferFinished = Promise.all([
       new Promise(async resolve => {
-        await clientB.messaging.subscribe(
-          `indra.node.${client.nodePublicIdentifier}.uninstall.>`,
-          resolve,
-        );
+        await clientB.messaging.subscribe(`indra.node.${client.nodePublicIdentifier}.uninstall.>`, resolve);
       }),
       new Promise(async resolve => {
         clientB.once(RECEIVE_TRANSFER_FINISHED_EVENT, async () => {

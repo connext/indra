@@ -25,7 +25,7 @@ import { invalidXpub } from "./validation";
 import { chan_nodeAuth } from "@connext/types";
 
 // Include our access token when interacting with these subjects
-const guardedSubjects = ["channel", "client", "lock", "transfer"];
+const guardedSubjects = [];
 const sendFailed = "Failed to send message";
 
 // NOTE: swap rates are given as a decimal string describing:
@@ -40,6 +40,7 @@ export class NodeApiClient implements INodeApiClient {
   private _userPublicIdentifier: string | undefined;
   private _nodePublicIdentifier: string | undefined;
   private _channelProvider: IChannelProvider | undefined;
+  private _authToken: any;
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
@@ -78,11 +79,7 @@ export class NodeApiClient implements INodeApiClient {
   ////////////////////////////////////////
   // PUBLIC
 
-  async acquireLock(
-    lockName: string,
-    callback: (...args: any[]) => any,
-    timeout: number,
-  ): Promise<any> {
+  async acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any> {
     const lockValue = await this.send(`lock.acquire.${lockName}`, { lockTTL: timeout });
     this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
     let retVal: any;
@@ -252,16 +249,26 @@ export class NodeApiClient implements INodeApiClient {
 
   private async getAuthToken(): Promise<string> {
     if (!this.channelProvider) {
-      throw new Error(
-        "Must have instantiated a channel provider (ie a signing thing) before setting auth token",
-      );
+      throw new Error("Must have instantiated a channel provider (ie a signing thing) before setting auth token");
     }
-    const nonce = await this.send("auth.getNonce", {
-      address: this.channelProvider.signerAddress,
-    });
-    const sig = await this.channelProvider.send(chan_nodeAuth, { message: nonce });
-    const token = `${nonce}:${sig}`;
-    return token;
+    let token;
+    // If we have a cached token, use it. Otherwise, get a new one.
+    if (this._authToken && this._authToken.expiry < Date.now()) {
+      token = this._authToken;
+    } else {
+      const unsignedToken = await this.send("auth.getNonce", {
+        address: this.channelProvider.signerAddress,
+      });
+      if (unsignedToken.expiry < Date.now()) {
+        throw new Error("Got expired authentication nonce from hub - this shouldnt happen!");
+      }
+      const sig = await this.channelProvider.send(chan_nodeAuth, { message: unsignedToken.nonce });
+      this._authToken = token = {
+        expiry: unsignedToken.expiry,
+        value: `${unsignedToken.nonce}:${sig}`,
+      };
+    }
+    return token.value;
   }
 
   private async send(subject: string, data?: any): Promise<any | undefined> {
@@ -273,9 +280,7 @@ export class NodeApiClient implements INodeApiClient {
       } catch (e) {
         error = e;
         if (e.message.startsWith(sendFailed)) {
-          this.log.warn(
-            `Attempt ${attempt}/${NATS_ATTEMPTS} to send ${subject} failed: ${e.message}`,
-          );
+          this.log.warn(`Attempt ${attempt}/${NATS_ATTEMPTS} to send ${subject} failed: ${e.message}`);
           await this.messaging.disconnect();
           await this.messaging.connect();
           if (attempt + 1 <= NATS_ATTEMPTS) {
@@ -290,17 +295,16 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   private async sendAttempt(subject: string, data?: any): Promise<any | undefined> {
-    this.log.debug(
-      `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : "without data"}`,
-    );
+    this.log.debug(`Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : "without data"}`);
     const payload = {
       ...data,
       id: uuid.v4(),
     };
     if (guardedSubjects.includes(subject.split(".")[0])) {
+      throw new Error("We are not doing auth right now, this should not ever happen!");
       payload.token = await this.getAuthToken();
     }
-    let msg;
+    let msg: any;
     try {
       msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
     } catch (e) {

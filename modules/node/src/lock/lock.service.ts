@@ -10,11 +10,7 @@ const logger = new CLogger("LockService");
 export class LockService {
   constructor(@Inject(RedlockProviderId) private readonly redlockClient: Redlock) {}
 
-  async lockedOperation(
-    lockName: string,
-    callback: (...args: any[]) => any,
-    timeout: number,
-  ): Promise<any> {
+  async lockedOperation(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any> {
     const hardcodedTTL = LOCK_SERVICE_TTL;
     logger.debug(`Using lock ttl of ${hardcodedTTL / 1000} seconds`);
     logger.debug(`Acquiring lock for ${lockName} ${Date.now()}`);
@@ -41,10 +37,7 @@ export class LockService {
               .catch((e: any) => {
                 const acquisitionDelta = Date.now() - acquiredAt;
                 if (acquisitionDelta < hardcodedTTL) {
-                  logger.error(
-                    `Failed to release lock after ${acquisitionDelta}ms: ${e.message}`,
-                    e.stack,
-                  );
+                  logger.error(`Failed to release lock after ${acquisitionDelta}ms: ${e.message}`, e.stack);
                   reject(e);
                 } else {
                   logger.debug(`Failed to release the lock due to expired ttl: ${e}; `);
