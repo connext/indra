@@ -18,7 +18,13 @@ export class WsMessagingService implements IMessagingService {
   }
 
   async connect(): Promise<void> {
-    this.connection = await wsNats.connect(this.config.messagingUrl);
+    const messagingUrl = this.config.messagingUrl;
+    this.connection = await wsNats.connect({
+      ...this.config,
+      ...this.config.options,
+      servers: typeof messagingUrl === `string` ? [messagingUrl] : messagingUrl,
+    });
+    this.log.debug(`Connected!`);
   }
 
   async disconnect(): Promise<void> {
@@ -29,7 +35,10 @@ export class WsMessagingService implements IMessagingService {
   ////////////////////////////////////////
   // CFCoreTypes.IMessagingService Methods
 
-  async onReceive(subject: string, callback: (msg: CFCoreTypes.NodeMessage) => void): Promise<void> {
+  async onReceive(
+    subject: string,
+    callback: (msg: CFCoreTypes.NodeMessage) => void,
+  ): Promise<void> {
     this.assertConnected();
     this.subscriptions[subject] = this.connection.subscribe(
       this.prependKey(`${subject}.>`),
@@ -72,7 +81,10 @@ export class WsMessagingService implements IMessagingService {
     });
   }
 
-  async subscribe(subject: string, callback: (msg: CFCoreTypes.NodeMessage) => void): Promise<void> {
+  async subscribe(
+    subject: string,
+    callback: (msg: CFCoreTypes.NodeMessage) => void,
+  ): Promise<void> {
     this.assertConnected();
     this.subscriptions[subject] = this.connection.subscribe(subject, (msg: any): void => {
       const data = typeof msg === `string` ? JSON.parse(msg) : msg;

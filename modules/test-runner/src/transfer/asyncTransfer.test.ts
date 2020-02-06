@@ -27,8 +27,12 @@ describe("Async Transfers", () => {
   beforeEach(async () => {
     clientA = await createClient();
     clientB = await createClient();
-
     tokenAddress = clientA.config.contractAddresses.Token;
+  });
+
+  afterEach(async () => {
+    await clientA.messaging.disconnect();
+    await clientB.messaging.disconnect();
   });
 
   it("happy case: client A transfers eth to client B through node", async () => {
@@ -166,7 +170,7 @@ describe("Async Transfers", () => {
         assetId: tokenAddress,
         recipient,
       }),
-    ).to.be.rejectedWith(`Value \"${recipient}\" must start with \"xpub\"`);
+    ).to.be.rejectedWith(`Value "${recipient}" must start with "xpub"`);
   });
 
   it("Bot A tries to transfer an amount greater than they have in their free balance", async () => {
@@ -193,7 +197,7 @@ describe("Async Transfers", () => {
         preImage: hexlify(randomBytes(32)),
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`Value \"${paymentId}\" is not a valid hex string`);
+    ).to.be.rejectedWith(`Value "${paymentId}" is not a valid hex string`);
   });
 
   it("Bot A tries to transfer with a preimage that is not 32 bytes", async () => {
@@ -209,7 +213,7 @@ describe("Async Transfers", () => {
         preImage,
         recipient: clientB.publicIdentifier,
       }),
-    ).to.be.rejectedWith(`Value \"${preImage}\" is not a valid hex string`);
+    ).to.be.rejectedWith(`Value "${preImage}" is not a valid hex string`);
   });
 
   it("Bot A proposes a transfer to an xpub that doesn’t have a channel", async () => {

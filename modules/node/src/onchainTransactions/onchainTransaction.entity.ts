@@ -66,6 +66,9 @@ export class OnchainTransaction {
   s!: string;
 
   // should this just be a ref to user pub id?
-  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.transactions)
+  @ManyToOne(
+    (type: any) => Channel,
+    (channel: Channel) => channel.transactions,
+  )
   channel!: Channel;
 }

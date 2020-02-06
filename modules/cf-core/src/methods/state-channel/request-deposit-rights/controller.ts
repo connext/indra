@@ -10,34 +10,27 @@ import { RequestHandler } from "../../../request-handler";
 import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
-import {
-  INVALID_FACTORY_ADDRESS,
-  INVALID_MASTERCOPY_ADDRESS,
-  INCORRECT_MULTISIG_ADDRESS
-} from "../../errors";
-import {
-  installBalanceRefundApp,
-  uninstallBalanceRefundApp
-} from "../deposit/operation";
+import { INVALID_FACTORY_ADDRESS, INVALID_MASTERCOPY_ADDRESS, INCORRECT_MULTISIG_ADDRESS } from "../../errors";
+import { installBalanceRefundApp, uninstallBalanceRefundApp } from "../deposit/operation";
 
 // TODO: maybe a better name? since it's a little smarter than just a plain install
 export default class RequestDepositRightsController extends NodeController {
   @jsonRpcMethod(ProtocolTypes.chan_requestDepositRights)
   public executeMethod: (
     requestHandler: RequestHandler,
-    params: CFCoreTypes.MethodParams
+    params: CFCoreTypes.MethodParams,
   ) => Promise<CFCoreTypes.MethodResult> = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.RequestDepositRightsParams
+    params: CFCoreTypes.RequestDepositRightsParams,
   ): Promise<string[]> {
     return [params.multisigAddress];
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.RequestDepositRightsParams
+    params: CFCoreTypes.RequestDepositRightsParams,
   ): Promise<void> {
     const { store, provider } = requestHandler;
     const { multisigAddress } = params;
@@ -55,7 +48,7 @@ export default class RequestDepositRightsController extends NodeController {
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userNeuteredExtendedKeys,
       channel.addresses,
-      provider
+      provider,
     );
 
     if (expectedMultisigAddress !== channel.multisigAddress) {
@@ -65,14 +58,9 @@ export default class RequestDepositRightsController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.RequestDepositRightsParams
+    params: CFCoreTypes.RequestDepositRightsParams,
   ): Promise<CFCoreTypes.RequestDepositRightsResult> {
-    const {
-      provider,
-      store,
-      networkContext,
-      publicIdentifier
-    } = requestHandler;
+    const { provider, store, networkContext, publicIdentifier } = requestHandler;
     const { multisigAddress, tokenAddress } = params;
 
     params.tokenAddress = tokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
@@ -88,15 +76,10 @@ export default class RequestDepositRightsController extends NodeController {
       multisigBalance = await erc20Contract.balanceOf(multisigAddress);
     }
 
-    if (
-      channel.hasBalanceRefundAppInstance(
-        networkContext.CoinBalanceRefundApp,
-        params.tokenAddress
-      )
-    ) {
+    if (channel.hasBalanceRefundAppInstance(networkContext.CoinBalanceRefundApp, params.tokenAddress)) {
       const balanceRefundApp = channel.getBalanceRefundAppInstance(
         networkContext.CoinBalanceRefundApp,
-        params.tokenAddress
+        params.tokenAddress,
       );
       // if app is already pointing at us and the multisig balance has not changed,
       // do not uninstall
@@ -106,27 +89,23 @@ export default class RequestDepositRightsController extends NodeController {
 
       if (appIsCorrectlyInstalled) {
         return {
-          freeBalance: channel
-            .getFreeBalanceClass()
-            .withTokenAddress(params.tokenAddress),
+          freeBalance: channel.getFreeBalanceClass().withTokenAddress(params.tokenAddress),
           recipient: freeBalanceAddress,
-          tokenAddress: params.tokenAddress
+          tokenAddress: params.tokenAddress,
         };
       }
 
       // balance refund app is installed but in the wrong state, so reinstall
       await uninstallBalanceRefundApp(requestHandler, {
         ...params,
-        amount: Zero
+        amount: Zero,
       });
     }
     await installBalanceRefundApp(requestHandler, { ...params, amount: Zero });
     return {
-      freeBalance: channel
-        .getFreeBalanceClass()
-        .withTokenAddress(params.tokenAddress),
+      freeBalance: channel.getFreeBalanceClass().withTokenAddress(params.tokenAddress),
       recipient: freeBalanceAddress,
-      tokenAddress: params.tokenAddress
+      tokenAddress: params.tokenAddress,
     };
   }
 }
