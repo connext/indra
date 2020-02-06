@@ -60,10 +60,7 @@ type CallbackStruct = {
   [index in CFCoreTypes.EventName]: (data: any) => Promise<any> | void;
 };
 
-function logEvent(
-  event: CFCoreTypes.EventName,
-  res: CFCoreTypes.NodeMessage & { data: any },
-): void {
+function logEvent(event: CFCoreTypes.EventName, res: CFCoreTypes.NodeMessage & { data: any }): void {
   logger.debug(
     `${event} event fired from ${res && res.from ? res.from : null}, data: ${
       res ? JSON.stringify(res.data) : `event did not have a result`
@@ -153,49 +150,47 @@ export default class ListenerService implements OnModuleInit {
 
         // post-install tasks
         switch (allowedOrRejected.name) {
-        case SimpleLinkedTransferApp:
-          logger.debug(`Saving linked transfer`);
-          const initialState = proposedAppParams.initialState as SimpleLinkedTransferAppStateBigNumber;
+          case SimpleLinkedTransferApp:
+            logger.debug(`Saving linked transfer`);
+            const initialState = proposedAppParams.initialState as SimpleLinkedTransferAppStateBigNumber;
 
-          const isResolving = proposedAppParams.responderDeposit.gt(Zero);
-          if (isResolving) {
-            const transfer = await this.transferService.getLinkedTransferByPaymentId(
+            const isResolving = proposedAppParams.responderDeposit.gt(Zero);
+            if (isResolving) {
+              const transfer = await this.transferService.getLinkedTransferByPaymentId(initialState.paymentId);
+              transfer.receiverAppInstanceId = appInstanceId;
+              await this.linkedTransferRepository.save(transfer);
+              logger.debug(`Updated transfer with receiver appId!`);
+              return;
+            }
+            await this.transferService.saveLinkedTransfer(
+              initiatorXpub,
+              proposedAppParams.initiatorDepositTokenAddress,
+              bigNumberify(proposedAppParams.initiatorDeposit),
+              appInstanceId,
+              initialState.linkedHash,
               initialState.paymentId,
+              proposedAppParams.meta,
             );
-            transfer.receiverAppInstanceId = appInstanceId;
-            await this.linkedTransferRepository.save(transfer);
-            logger.debug(`Updated transfer with receiver appId!`);
-            return;
-          }
-          await this.transferService.saveLinkedTransfer(
-            initiatorXpub,
-            proposedAppParams.initiatorDepositTokenAddress,
-            bigNumberify(proposedAppParams.initiatorDeposit),
-            appInstanceId,
-            initialState.linkedHash,
-            initialState.paymentId,
-            proposedAppParams.meta,
-          );
-          logger.debug(`Linked transfer saved!`);
-          break;
+            logger.debug(`Linked transfer saved!`);
+            break;
           // TODO: add something for swap app? maybe for history preserving reasons.
-        case CoinBalanceRefundApp:
-          const channel = await this.channelRepository.findByUserPublicIdentifier(initiatorXpub);
-          if (!channel) {
-            throw new Error(`Channel does not exist for ${initiatorXpub}`);
-          }
-          logger.debug(
-            `sending acceptance message to indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
-          );
-          await this.messagingClient
-            .emit(
-              `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
-              proposedAppParams,
-            )
-            .toPromise();
-          break;
-        default:
-          logger.debug(`No post-install actions configured.`);
+          case CoinBalanceRefundApp:
+            const channel = await this.channelRepository.findByUserPublicIdentifier(initiatorXpub);
+            if (!channel) {
+              throw new Error(`Channel does not exist for ${initiatorXpub}`);
+            }
+            logger.debug(
+              `sending acceptance message to indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
+            );
+            await this.messagingClient
+              .emit(
+                `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
+                proposedAppParams,
+              )
+              .toPromise();
+            break;
+          default:
+            logger.debug(`No post-install actions configured.`);
         }
       },
       PROTOCOL_MESSAGE_EVENT: (data: NodeMessageWrappedProtocolMessage): void => {
@@ -204,9 +199,7 @@ export default class ListenerService implements OnModuleInit {
       REJECT_INSTALL_EVENT: async (data: RejectProposalMessage): Promise<void> => {
         logEvent(REJECT_INSTALL_EVENT, data);
 
-        const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(
-          data.data.appInstanceId,
-        );
+        const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(data.data.appInstanceId);
         if (!transfer) {
           logger.debug(`Transfer not found`);
           return;
@@ -218,17 +211,13 @@ export default class ListenerService implements OnModuleInit {
         logEvent(UNINSTALL_EVENT, data);
         // check if app being uninstalled is a receiver app for a transfer
         // if so, try to uninstall the sender app
-        const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(
-          data.data.appInstanceId,
-        );
+        const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(data.data.appInstanceId);
         if (!transfer || transfer.status !== LinkedTransferStatus.REDEEMED) {
-          logger.debug(
-            `Uninstalled app was not a transfer or was not redeemed: ${JSON.stringify(transfer)}`,
-          );
+          logger.debug(`Uninstalled app was not a transfer or was not redeemed: ${JSON.stringify(transfer)}`);
           return;
         }
         logger.debug(`Found transfer that needs collateral redeemed: ${JSON.stringify(transfer)}`);
-        // await this.transferService.reclaimLinkedTransferCollateral(transfer.paymentId);
+        await this.transferService.reclaimLinkedTransferCollateral(transfer.paymentId);
       },
       UNINSTALL_VIRTUAL_EVENT: (data: UninstallVirtualMessage): void => {
         logEvent(UNINSTALL_VIRTUAL_EVENT, data);
@@ -265,11 +254,9 @@ export default class ListenerService implements OnModuleInit {
   }
 
   onModuleInit(): void {
-    Object.entries(this.getEventListeners()).forEach(
-      ([event, callback]: [CFCoreTypes.EventName, () => any]): void => {
-        this.cfCoreService.registerCfCoreListener(event, callback, logger.cxt);
-      },
-    );
+    Object.entries(this.getEventListeners()).forEach(([event, callback]: [CFCoreTypes.EventName, () => any]): void => {
+      this.cfCoreService.registerCfCoreListener(event, callback, logger.cxt);
+    });
 
     this.cfCoreService.registerCfCoreListener(
       ProtocolTypes.chan_install as any,
@@ -316,25 +303,22 @@ export default class ListenerService implements OnModuleInit {
     const { responderDeposit, responderDepositTokenAddress } = data.data.params;
     const paymentAmt = bigNumberify(responderDeposit);
     await new Promise(async (resolve, reject) => {
-      this.cfCoreService.cfCore.on(
-        DEPOSIT_CONFIRMED_EVENT,
-        async (msg: DepositConfirmationMessage) => {
-          if (msg.data.multisigAddress !== channel.multisigAddress) {
-            return;
-          }
-          // make sure free balance is appropriate
-          const fb = await this.cfCoreService.getFreeBalance(
-            data.from,
-            channel.multisigAddress,
-            responderDepositTokenAddress,
-          );
-          if (fb[this.cfCoreService.cfCore.freeBalanceAddress].lt(paymentAmt)) {
-            // wait for resolve
-            return;
-          }
-          resolve();
-        },
-      );
+      this.cfCoreService.cfCore.on(DEPOSIT_CONFIRMED_EVENT, async (msg: DepositConfirmationMessage) => {
+        if (msg.data.multisigAddress !== channel.multisigAddress) {
+          return;
+        }
+        // make sure free balance is appropriate
+        const fb = await this.cfCoreService.getFreeBalance(
+          data.from,
+          channel.multisigAddress,
+          responderDepositTokenAddress,
+        );
+        if (fb[this.cfCoreService.cfCore.freeBalanceAddress].lt(paymentAmt)) {
+          // wait for resolve
+          return;
+        }
+        resolve();
+      });
       this.cfCoreService.cfCore.on(DEPOSIT_FAILED_EVENT, (msg: DepositFailedMessage) => {
         if (msg.data.params.multisigAddress !== channel.multisigAddress) {
           return;
@@ -342,11 +326,7 @@ export default class ListenerService implements OnModuleInit {
         reject(`Collateral could not be added to channel, deposit has failed.`);
       });
       try {
-        await this.channelService.requestCollateral(
-          data.from,
-          responderDepositTokenAddress,
-          paymentAmt,
-        );
+        await this.channelService.requestCollateral(data.from, responderDepositTokenAddress, paymentAmt);
       } catch (e) {
         reject(e);
       }
