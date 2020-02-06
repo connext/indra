@@ -57,7 +57,7 @@ const CONDITIONAL_TX_DELEGATECALL_GAS = 1e6;
 let provider: JsonRpcProvider;
 let wallet: Wallet;
 let network: NetworkContext;
-let appRegistry: Contract;
+let challengeRegistry: Contract;
 
 expect.extend({ toBeEq });
 
@@ -67,7 +67,7 @@ beforeAll(async () => {
 
   network = global["networkContext"];
 
-  appRegistry = new Contract(
+  challengeRegistry = new Contract(
     network.ChallengeRegistry,
     ChallengeRegistry.abi,
     wallet
@@ -211,12 +211,12 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         await provider.send("evm_mine", []);
       }
 
-      await appRegistry.functions.setOutcome(
+      await challengeRegistry.functions.setOutcome(
         identityAppInstance.identity,
         identityAppInstance.encodedLatestState
       );
 
-      await appRegistry.functions.setOutcome(
+      await challengeRegistry.functions.setOutcome(
         stateChannel.freeBalance.identity,
         stateChannel.freeBalance.encodedLatestState
       );
