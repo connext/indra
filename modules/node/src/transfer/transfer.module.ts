@@ -1,4 +1,4 @@
-import { Module, forwardRef } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
@@ -10,11 +10,7 @@ import { ConfigModule } from "../config/config.module";
 import { MessagingModule } from "../messaging/messaging.module";
 
 import { transferProviderFactory } from "./transfer.provider";
-import {
-  LinkedTransferRepository,
-  PeerToPeerTransferRepository,
-  TransferRepository,
-} from "./transfer.repository";
+import { LinkedTransferRepository, PeerToPeerTransferRepository, TransferRepository } from "./transfer.repository";
 import { TransferService } from "./transfer.service";
 
 @Module({
@@ -31,7 +27,7 @@ import { TransferService } from "./transfer.service";
       TransferRepository,
     ]),
     MessagingModule,
-    forwardRef(() => ChannelModule),
+    ChannelModule,
     AuthModule,
   ],
   providers: [TransferService, transferProviderFactory],

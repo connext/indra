@@ -1,19 +1,18 @@
 module.exports = {
   rules: {
     "@typescript-eslint/no-unused-expressions": "off",
-    "comma-dangle": ["error", "only-multiline"],
-    "indent": ["error", 2],
-    "max-len": ["warn", { code: 120, ignoreTemplateLiterals: true, ignoreStrings: true }],
+    "comma-dangle": ["error", "always-multiline"],
+    "max-len": ["warn", { code: 120, ignoreTemplateLiterals: true }],
     "no-async-promise-executor": "off",
     "no-empty-pattern": "off",
     "no-undef": ["error"],
-    "no-unused-vars": ["error"],
     "no-var": ["error"],
     "object-curly-spacing": ["error", "always"],
     "quotes": ["error", "double", { allowTemplateLiterals: true }],
     "semi": ["error", "always"],
     "spaced-comment": "off",
     "no-prototype-builtins": "off",
+    "sort-keys": ["error"],
   },
   settings: {
     react: {

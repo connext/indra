@@ -3,7 +3,6 @@ import {
   ContractAddresses,
   DefaultApp,
   SupportedApplication,
-  SupportedApplications,
   SimpleTransferApp,
   SimpleTwoPartySwapApp,
   SimpleLinkedTransferApp,
@@ -100,16 +99,16 @@ export class ConfigService implements OnModuleInit {
       {
         allowNodeInstall: false,
         appDefinitionAddress: addressBook[SimpleTransferApp],
-        name: SimpleTransferApp,
         chainId: ethNetwork.chainId,
+        name: SimpleTransferApp,
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
         stateEncoding: `tuple(${singleAssetTwoPartyCoinTransferEncoding} coinTransfers)`,
       },
       {
         allowNodeInstall: true,
         appDefinitionAddress: addressBook[SimpleTwoPartySwapApp],
-        name: SimpleTwoPartySwapApp,
         chainId: ethNetwork.chainId,
+        name: SimpleTwoPartySwapApp,
         outcomeType: OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
         stateEncoding: `tuple(${multiAssetMultiPartyCoinTransferEncoding} coinTransfers)`,
       },
@@ -117,19 +116,18 @@ export class ConfigService implements OnModuleInit {
         actionEncoding: `tuple(bytes32 preImage)`,
         allowNodeInstall: true,
         appDefinitionAddress: addressBook[SimpleLinkedTransferApp],
-        name: SimpleLinkedTransferApp,
         chainId: ethNetwork.chainId,
+        name: SimpleLinkedTransferApp,
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
         stateEncoding: `tuple(${singleAssetTwoPartyCoinTransferEncoding} coinTransfers, bytes32 linkedHash, uint256 amount, address assetId, bytes32 paymentId, bytes32 preImage)`,
       },
       {
         allowNodeInstall: true,
         appDefinitionAddress: addressBook[CoinBalanceRefundApp],
-        name: CoinBalanceRefundApp,
         chainId: ethNetwork.chainId,
+        name: CoinBalanceRefundApp,
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-        stateEncoding:
-          `tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)`,
+        stateEncoding: `tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)`,
       },
     ];
   }
@@ -173,29 +171,27 @@ export class ConfigService implements OnModuleInit {
     return this.get(`INDRA_REDIS_URL`);
   }
 
-  async getDefaultPaymentProfile(
-    assetId: string = AddressZero,
-  ): Promise<PaymentProfile | undefined> {
+  async getDefaultPaymentProfile(assetId: string = AddressZero): Promise<PaymentProfile | undefined> {
     const tokenAddress = await this.getTokenAddress();
     switch (assetId) {
-    case AddressZero:
-      return {
-        amountToCollateralize: parseEther(`0.1`),
-        assetId: AddressZero,
-        channels: [],
-        id: 0,
-        minimumMaintainedCollateral: parseEther(`0.05`),
-      };
-    case tokenAddress:
-      return {
-        amountToCollateralize: parseEther(`20`),
-        assetId: AddressZero,
-        channels: [],
-        id: 0,
-        minimumMaintainedCollateral: parseEther(`5`),
-      };
-    default:
-      return undefined;
+      case AddressZero:
+        return {
+          amountToCollateralize: parseEther(`0.1`),
+          assetId: AddressZero,
+          channels: [],
+          id: 0,
+          minimumMaintainedCollateral: parseEther(`0.05`),
+        };
+      case tokenAddress:
+        return {
+          amountToCollateralize: parseEther(`20`),
+          assetId: AddressZero,
+          channels: [],
+          id: 0,
+          minimumMaintainedCollateral: parseEther(`5`),
+        };
+      default:
+        return undefined;
     }
   }
 
