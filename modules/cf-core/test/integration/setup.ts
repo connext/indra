@@ -83,7 +83,7 @@ export async function setup(
     global["networkContext"],
     nodeConfig,
     provider,
-    testDomainSeparator(),
+    testDomainSeparator,
     lockService,
     hdNodeA.neuter().extendedKey,
     (index: string): Promise<string> =>
@@ -105,7 +105,7 @@ export async function setup(
     global["networkContext"],
     nodeConfig,
     provider,
-    testDomainSeparator(),
+    testDomainSeparator,
     lockService,
     hdNodeB.neuter().extendedKey,
     (index: string): Promise<string> =>
@@ -128,7 +128,7 @@ export async function setup(
       global["networkContext"],
       nodeConfig,
       provider,
-      testDomainSeparator(),
+      testDomainSeparator,
       lockService,
       hdNodeC.neuter().extendedKey,
       (index: string): Promise<string> =>

@@ -58,7 +58,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
           global[`networkContext`],
           nodeConfig,
           provider,
-          testDomainSeparator(),
+          testDomainSeparator,
           lockService,
           xpubA,
           privateKeyGeneratorA
@@ -75,7 +75,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
           global[`networkContext`],
           nodeConfig,
           provider,
-          testDomainSeparator(),
+          testDomainSeparator,
           lockService,
           xpubB,
           privateKeyGeneratorB

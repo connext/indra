@@ -234,7 +234,7 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
             identityAppInstance.multiAssetMultiPartyCoinTransferInterpreterParams!
           ]
         ),
-        testDomainSeparator(),
+        testDomainSeparator,
         provider.network.chainId,
         stateChannel.numProposedApps
       );
@@ -292,7 +292,7 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         stateChannel.multisigAddress,
         stateChannel.multisigOwners,
         stateChannel.freeBalance.identity,
-        testDomainSeparator(),
+        testDomainSeparator,
         provider.network.chainId,
         stateChannel.numProposedApps
       );

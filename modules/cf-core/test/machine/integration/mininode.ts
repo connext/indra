@@ -44,7 +44,7 @@ export class MiniNode {
     this.protocolRunner = new ProtocolRunner(
       networkContext,
       provider,
-      testDomainSeparator()
+      testDomainSeparator
     );
     this.protocolRunner.register(Opcode.OP_SIGN, makeSigner(this.hdNode));
     this.protocolRunner.register(Opcode.WRITE_COMMITMENT, () => {});

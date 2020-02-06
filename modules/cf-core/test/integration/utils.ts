@@ -60,12 +60,10 @@ const {
   UnidirectionalTransferApp
 } = global[`networkContext`] as NetworkContextForTestSuite;
 
-export const testDomainSeparator = (): DomainSeparator => {
-  return {
-    domainName: "CounterFactual Test",
-    domainVersion: "0.0.1",
-    domainSalt: hexlify(randomBytes(32))
-  };
+export const testDomainSeparator: DomainSeparator = {
+  domainName: "CounterFactual Test",
+  domainVersion: "0.0.1",
+  domainSalt: hexlify(randomBytes(32))
 };
 
 export async function requestDepositRights(

@@ -64,7 +64,7 @@ describe("ConditionalTransaction", () => {
       freeBalanceETH.identityHash,
       AddressZero,
       HashZero,
-      testDomainSeparator(),
+      testDomainSeparator,
       4447,
       stateChannel.numProposedApps
     ).getTransactionDetails();
