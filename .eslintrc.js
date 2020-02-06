@@ -5,6 +5,7 @@ module.exports = {
     "indent": ["error", 2],
     "max-len": ["warn", { code: 120, ignoreTemplateLiterals: true, ignoreStrings: true }],
     "no-async-promise-executor": "off",
+    "no-empty-pattern": "off",
     "no-undef": ["error"],
     "no-unused-vars": ["error"],
     "no-var": ["error"],

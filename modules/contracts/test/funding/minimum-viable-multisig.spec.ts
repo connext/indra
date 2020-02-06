@@ -2,7 +2,6 @@
 import { waffle as buidler } from "@nomiclabs/buidler";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
-import { JsonRpcProvider } from "ethers/providers";
 import {
   parseEther,
   Interface,

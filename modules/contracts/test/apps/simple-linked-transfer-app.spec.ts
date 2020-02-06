@@ -1,6 +1,6 @@
 /* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
-import { Address, SolidityValueType } from "@connext/types";
+import { SolidityValueType } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";

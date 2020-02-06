@@ -4,7 +4,6 @@ import { SolidityValueType } from "@connext/types";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
 import { bigNumberify, defaultAbiCoder, joinSignature, keccak256, SigningKey } from "ethers/utils";
 
 import AppWithAction from "../../build/AppWithAction.json";

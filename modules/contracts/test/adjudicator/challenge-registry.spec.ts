@@ -213,7 +213,7 @@ describe("ChallengeRegistry", () => {
 
       await setStateWithSignatures(1);
 
-      for (const _ of Array(ONCHAIN_CHALLENGE_TIMEOUT + 1)) {
+      for (let index = 0; index <= ONCHAIN_CHALLENGE_TIMEOUT + 1; index++) {
         await provider.send("evm_mine", []);
       }
 

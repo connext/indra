@@ -94,7 +94,10 @@ describe("UnidirectionalTransferApp", () => {
     const preState: UnidirectionalTransferAppState = {
       finalized: false,
       stage: AppStage.POST_FUND,
-      transfers: [{ to: senderAddr, amount: senderAmt }, { to: receiverAddr, amount: Zero }],
+      transfers: [
+        { to: senderAddr, amount: senderAmt },
+        { to: receiverAddr, amount: Zero },
+      ],
       turnNum: 0,
     };
 
@@ -120,7 +123,10 @@ describe("UnidirectionalTransferApp", () => {
     const preState: UnidirectionalTransferAppState = {
       finalized: false,
       stage: AppStage.POST_FUND,
-      transfers: [{ to: senderAddr, amount: senderAmt }, { to: receiverAddr, amount: Zero }],
+      transfers: [
+        { to: senderAddr, amount: senderAmt },
+        { to: receiverAddr, amount: Zero },
+      ],
       turnNum: 0,
     };
 
@@ -140,7 +146,12 @@ describe("UnidirectionalTransferApp", () => {
     expect(ret).to.eq(
       defaultAbiCoder.encode(
         [singleAssetTwoPartyCoinTransferEncoding],
-        [[[senderAddr, senderAmt], [receiverAddr, Zero]]],
+        [
+          [
+            [senderAddr, senderAmt],
+            [receiverAddr, Zero],
+          ],
+        ],
       ),
     );
   });
