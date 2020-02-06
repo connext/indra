@@ -230,13 +230,13 @@
   "4447": {
     "ChallengeRegistry": {
       "address": "0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0",
-      "bytecode": "0x186e73eb5c494979a60077b76a168f75c8eb6b3bde1f08580cd029a322e3a637",
-      "txHash": "0x46cc6e82eaec86296a443b592f5879ff06b900511469d9596bf73949d1d4a42b"
+      "bytecode": "0x16d631b43f06ea581434d4783227724d4bbbe0443e184aadf74623d50f577eb6",
+      "txHash": "0x76252883ee1ed5852a2c45588ed1f2b107c3d41964629c3f2074c5c5e5daf447"
     },
     "ConditionalTransactionDelegateTarget": {
       "address": "0xF12b5dd4EAD5F743C6BaA640B0216200e89B60Da",
-      "bytecode": "0x69573406440822e7cc3786283337094cfebc7fb4a95767de3d3c10dc33d1a975",
-      "txHash": "0x5e05a133df228e8c30df8347f824a904a92da469891c4745a6a26aed6dd548f7"
+      "bytecode": "0xaa57ea9cfcd627ae8f42000c07fb745d85c0fb10445bdcabb93845685ad4ecd1",
+      "txHash": "0x86279fbbfc7e64d00fcfdb049e6320b0e37744f8333b2b873ec5fb6b7403dda6"
     },
     "CoinBalanceRefundApp": {
       "address": "0x345cA3e014Aaf5dcA488057592ee47305D9B3e10",
@@ -255,8 +255,8 @@
     },
     "MinimumViableMultisig": {
       "address": "0x9FBDa871d559710256a2502A2517b794B482Db40",
-      "bytecode": "0xfd0407f99a6df52c90a7a81585bbae1660c53be9d4b517a2f9a637333b580079",
-      "txHash": "0x32dff35c4be7e4ada2740d0db313be7a7e14aa5b6ab57d0f58ab403b9249b2e1"
+      "bytecode": "0xbccd2885286fc0b237cda52d7f7344ac7fe7034827030e303e495c748428ce96",
+      "txHash": "0xa51980bf9fae2bab9e665297d5fb78df3751bac06f635ab873d468c918fcca10"
     },
     "ProxyFactory": {
       "address": "0x2C2B9C9a4a25e24B174f26114e8926a9f2128FE4",
@@ -270,8 +270,8 @@
     },
     "TimeLockedPassThrough": {
       "address": "0xFB88dE099e13c3ED21F80a7a1E49f8CAEcF10df6",
-      "bytecode": "0x2ead25f8b6fdc9337f9550a687fd2584181488c4831d567ce616cc55dc90ae75",
-      "txHash": "0x20563fab102dc3ba63b96fae7fa7cf49d520e9b69cce1aedc4f1ef0389de30da"
+      "bytecode": "0x0948627e55d0d2b478e9b957522ec4001eb072385e9ac670013f242becbd9978",
+      "txHash": "0xcb447ccd8da7a31956e510a7198e4cf229ffc6e8eff18d8c4b8d363a60312ec4"
     },
     "TwoPartyFixedOutcomeInterpreter": {
       "address": "0xAa588d3737B611baFD7bD713445b314BD453a5C8",
