@@ -1,4 +1,5 @@
-import { ethers } from "@nomiclabs/buidler";
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { JsonRpcProvider } from "ethers/providers";
@@ -79,15 +80,14 @@ const signaturesToBytes = (...signatures: Signature[]): string => {
 };
 
 describe("MinimumViableMultisig", () => {
-  let provider;
+  let provider = buidler.provider;
   let wallet0: Wallet;
   let wallet1: Wallet;
   let multisig: Contract;
   let erc20: Contract;
 
   before(async () => {
-    provider = ethers.provider;
-    const wallets = waffle.getWallets(provider);
+    const wallets = provider.getWallets();
     wallet0 = wallets[0];
     wallet1 = wallets[1];
 

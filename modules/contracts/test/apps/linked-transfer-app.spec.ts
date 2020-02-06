@@ -1,4 +1,5 @@
-import { ethers } from "@nomiclabs/buidler";
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import { Address, SolidityValueType } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
@@ -125,6 +126,7 @@ function assertRedeemed(
 
 describe("LinkedUnidirectionalTransferApp", () => {
   let unidirectionalLinkedTransferApp: Contract;
+  let provider = buidler.provider;
 
   const applyAction = (state: any, action: any): any =>
     unidirectionalLinkedTransferApp.functions.applyAction(
@@ -136,8 +138,7 @@ describe("LinkedUnidirectionalTransferApp", () => {
     unidirectionalLinkedTransferApp.functions.computeOutcome(encodeAppState(state));
 
   before(async () => {
-    const provider = ethers.provider;
-    const wallet = await waffle.getWallets(provider)[0];
+    const wallet = await provider.getWallets()[0];
     unidirectionalLinkedTransferApp = await waffle.deployContract(
       wallet,
       UnidirectionalLinkedTransferApp,

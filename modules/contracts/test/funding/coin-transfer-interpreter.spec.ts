@@ -1,10 +1,10 @@
-import { ethers } from "@nomiclabs/buidler";
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import DolphinCoin from "../../build/DolphinCoin.json";
 import MultiAssetMultiPartyCoinTransferInterpreter from "../../build/MultiAssetMultiPartyCoinTransferInterpreter.json";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { AddressZero, One } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder, hexlify, randomBytes } from "ethers/utils";
 
 import { expect } from "./utils/index";
@@ -14,14 +14,8 @@ type CoinTransfer = {
   amount: BigNumber;
 };
 
-function encodeParams(params: {
-  limit: BigNumber[];
-  tokenAddresses: string[];
-}) {
-  return defaultAbiCoder.encode(
-    [`tuple(uint256[] limit, address[] tokenAddresses)`],
-    [params]
-  );
+function encodeParams(params: { limit: BigNumber[]; tokenAddresses: string[] }) {
+  return defaultAbiCoder.encode([`tuple(uint256[] limit, address[] tokenAddresses)`], [params]);
 }
 
 function encodeOutcome(state: CoinTransfer[][]) {
@@ -32,31 +26,30 @@ function encodeOutcome(state: CoinTransfer[][]) {
           address to,
           uint256 amount
         )[][]
-      `
+      `,
     ],
-    [state]
+    [state],
   );
 }
 
 describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
-  let provider: JsonRpcProvider;
+  let provider = buidler.provider;
   let wallet: Wallet;
   let erc20: Contract;
   let multiAssetMultiPartyCoinTransferInterpreter: Contract;
 
   async function interpretOutcomeAndExecuteEffect(
     state: CoinTransfer[][],
-    params: { limit: BigNumber[]; tokenAddresses: string[] }
+    params: { limit: BigNumber[]; tokenAddresses: string[] },
   ) {
     return await multiAssetMultiPartyCoinTransferInterpreter.functions.interpretOutcomeAndExecuteEffect(
       encodeOutcome(state),
-      encodeParams(params)
+      encodeParams(params),
     );
   }
 
   before(async () => {
-    provider = provider = ethers.provider;
-    wallet = (await waffle.getWallets(provider))[0];
+    wallet = (await provider.getWallets())[0];
     erc20 = await waffle.deployContract(wallet, DolphinCoin);
 
     multiAssetMultiPartyCoinTransferInterpreter = await waffle.deployContract(

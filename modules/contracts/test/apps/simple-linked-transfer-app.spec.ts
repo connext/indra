@@ -1,4 +1,5 @@
-import { ethers } from "@nomiclabs/buidler";
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import { Address, SolidityValueType } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
@@ -89,6 +90,7 @@ function createLinkedHash(
 
 describe("SimpleLinkedTransferApp", () => {
   let simpleLinkedTransferApp: Contract;
+  let provider = buidler.provider;
 
   async function computeOutcome(state: SimpleLinkedTransferAppState): Promise<string> {
     return await simpleLinkedTransferApp.functions.computeOutcome(encodeAppState(state));
@@ -102,8 +104,7 @@ describe("SimpleLinkedTransferApp", () => {
   }
 
   before(async () => {
-    const provider = ethers.provider;
-    const wallet = (await waffle.getWallets(provider))[0];
+    const wallet = (await provider.getWallets())[0];
     simpleLinkedTransferApp = await waffle.deployContract(wallet, SimpleLinkedTransferApp);
   });
 

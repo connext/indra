@@ -10,7 +10,7 @@ SHELL=/bin/bash
 
 commit=$(shell git rev-parse HEAD | head -c 8)
 release=$(shell cat package.json | grep '"version"' | awk -F '"' '{print $$4}')
-solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}')
+solc_version=$(shell cat $(contracts)/package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
 # version that will be tested against for backwards compatibility checks
 backwards_compatible_version=$(shell echo $(release) | cut -d '.' -f 1).0.7
@@ -115,6 +115,7 @@ clean: stop
 	rm -rf node_modules/@walletconnect/*
 	rm -rf modules/**/node_modules/@walletconnect/*
 	rm -rf modules/**/build
+	rm -rf modules/**/cache
 	rm -rf modules/**/dist
 	rm -rf modules/**/node_modules/**/.git
 
@@ -365,14 +366,19 @@ types: node-modules $(shell find $(types)/src $(find_options))
 ########################################
 # Common Prerequisites
 
-contracts: node-modules $(shell find $(contracts)/contracts $(contracts)/test $(find_options))
+contracts: node-modules contract-artifacts $(shell find $(contracts)/index.ts $(contracts)/test $(contracts)/tsconfig.json $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/contracts && npm run build"
+	$(docker_run) "cd modules/contracts && npm run transpile"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+contract-artifacts: node-modules $(shell find $(contracts)/contracts $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/contracts && npm run compile"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 contracts-native: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.native.json $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/contracts && npm run build-native"
+	$(docker_run) "cd modules/contracts && npm run compile-native"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 node-modules: builder package.json $(shell ls modules/**/package.json)

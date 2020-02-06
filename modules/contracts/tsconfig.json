@@ -7,9 +7,11 @@
     "resolveJsonModule": true,
     "esModuleInterop": true
   },
-  "exclude": ["test", "dist", "node_modules"],
-  "files": [
+  "exclude": ["dist", "node_modules"],
+  "include": [
+    "../../node_modules/@nomiclabs/buidler-ethers/src/type-extensions.d.ts",
+    "../../node_modules/@nomiclabs/buidler-waffle/src/type-extensions.d.ts",
     "./buidler.config.ts",
-    "../../node_modules/@nomiclabs/buidler-ethers/src/type-extensions.d.ts"
+    "./test/**/*.spec.ts"
   ]
 }

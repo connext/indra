@@ -1,4 +1,5 @@
-import { ethers } from "@nomiclabs/buidler";
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
@@ -70,6 +71,7 @@ const encodeAppAction = (state: any): string =>
 
 describe("UnidirectionalTransferApp", () => {
   let unidirectionalTransferApp: Contract;
+  let provider = buidler.provider;
 
   const applyAction = (state: any, action: any): any =>
     unidirectionalTransferApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
@@ -78,8 +80,7 @@ describe("UnidirectionalTransferApp", () => {
     unidirectionalTransferApp.functions.computeOutcome(encodeAppState(state));
 
   before(async () => {
-    const provider = ethers.provider;
-    const wallet = (await waffle.getWallets(provider))[0];
+    const wallet = (await provider.getWallets())[0];
     unidirectionalTransferApp = await waffle.deployContract(wallet, UnidirectionalTransferApp);
   });
 

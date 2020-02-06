@@ -1,4 +1,5 @@
-import { ethers } from "@nomiclabs/buidler";
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import { SolidityValueType, TwoPartyFixedOutcome } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
@@ -80,6 +81,7 @@ function encodeAction(state: SolidityValueType) {
 
 describe("HighRollerApp", () => {
   let highRollerApp: Contract;
+  let provider = buidler.provider;
 
   async function computeStateTransition(
     state: SolidityValueType,
@@ -100,8 +102,7 @@ describe("HighRollerApp", () => {
   }
 
   before(async () => {
-    const provider = ethers.provider;
-    const wallet = (await waffle.getWallets(provider))[0];
+    const wallet = (await provider.getWallets())[0];
     highRollerApp = await waffle.deployContract(wallet, HighRollerApp);
   });
 

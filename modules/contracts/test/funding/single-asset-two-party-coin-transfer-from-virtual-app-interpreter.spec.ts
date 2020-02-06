@@ -1,10 +1,10 @@
-import { ethers } from "@nomiclabs/buidler";
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import DolphinCoin from "../../build/DolphinCoin.json";
 import SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter from "../../build/SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter.json";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
-import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, BigNumberish, defaultAbiCoder, hexlify, randomBytes } from "ethers/utils";
 
 import { expect } from "./utils/index";
@@ -50,7 +50,7 @@ const encodeOutcome = (outcome: [CoinTransfer, CoinTransfer]) =>
   );
 
 describe("SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter", () => {
-  let provider: JsonRpcProvider;
+  let provider = buidler.provider;
   let wallet: Wallet;
   let erc20: Contract;
   let coinTransferFromVirtualAppInterpreter: Contract;
@@ -66,8 +66,7 @@ describe("SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter", () => {
   }
 
   before(async () => {
-    provider = ethers.provider;
-    wallet = (await waffle.getWallets(provider))[0];
+    wallet = (await provider.getWallets())[0];
     erc20 = await waffle.deployContract(wallet, DolphinCoin);
 
     coinTransferFromVirtualAppInterpreter = await waffle.deployContract(

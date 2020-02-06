@@ -1,4 +1,5 @@
-import { ethers } from "@nomiclabs/buidler";
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import { SolidityValueType } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
@@ -26,6 +27,7 @@ function decodeBytesToAppState(encodedAppState: string): TicTacToeAppState {
 
 describe("TicTacToeApp", () => {
   let ticTacToe: Contract;
+  let provider = buidler.provider;
 
   async function computeOutcome(state: SolidityValueType) {
     return await ticTacToe.functions.computeOutcome(encodeState(state));
@@ -76,8 +78,7 @@ describe("TicTacToeApp", () => {
   }
 
   before(async () => {
-    const provider = ethers.provider;
-    const wallet = (await waffle.getWallets(provider))[0];
+    const wallet = (await provider.getWallets())[0];
     ticTacToe = await waffle.deployContract(wallet, TicTacToeApp);
   });
 

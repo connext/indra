@@ -1,10 +1,11 @@
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import { SolidityValueType } from "@connext/types";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { bigNumberify, defaultAbiCoder, joinSignature, keccak256, SigningKey } from "ethers/utils";
-import { ethers } from "@nomiclabs/buidler";
 
 import AppWithAction from "../../build/AppWithAction.json";
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
@@ -51,7 +52,7 @@ function encodeAction(action: SolidityValueType) {
 }
 
 describe("ChallengeRegistry Challenge", () => {
-  let provider: JsonRpcProvider;
+  let provider = buidler.provider;
   let wallet: Wallet;
 
   let appRegistry: Contract;
@@ -63,8 +64,7 @@ describe("ChallengeRegistry Challenge", () => {
   let respondToChallenge: (state: any, action: any, actionSig: any) => Promise<any>;
 
   before(async () => {
-    provider = ethers.provider;
-    wallet = (await waffle.getWallets(provider))[0];
+    wallet = (await provider.getWallets())[0];
 
     appRegistry = await waffle.deployContract(wallet, ChallengeRegistry, [], {
       gasLimit: 6000000, // override default of 4 million

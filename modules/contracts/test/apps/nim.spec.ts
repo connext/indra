@@ -1,4 +1,5 @@
-import { ethers } from "@nomiclabs/buidler";
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import { SolidityValueType } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
@@ -25,6 +26,7 @@ function decodeBytesToAppState(encodedAppState: string): NimAppState {
 
 describe("Nim", () => {
   let nim: Contract;
+  let provider = buidler.provider;
 
   function encodeState(state: SolidityValueType) {
     return defaultAbiCoder.encode(
@@ -69,8 +71,7 @@ describe("Nim", () => {
   }
 
   before(async () => {
-    const provider = ethers.provider;
-    const wallet = (await waffle.getWallets(provider))[0];
+    const wallet = (await provider.getWallets())[0];
     nim = await waffle.deployContract(wallet, NimApp);
   });
 

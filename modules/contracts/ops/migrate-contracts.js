@@ -3,6 +3,22 @@ const fs = require(`fs`);
 const eth = require(`ethers`);
 const tokenArtifacts = require(`openzeppelin-solidity/build/contracts/ERC20Mintable.json`);
 
+/*
+const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
+  "ChallengeRegistry",
+  "CoinBalanceRefundApp",
+  "ConditionalTransactionDelegateTarget",
+  "IdentityApp",
+  "MinimumViableMultisig",
+  "MultiAssetMultiPartyCoinTransferInterpreter",
+  "ProxyFactory",
+  "SingleAssetTwoPartyCoinTransferInterpreter",
+  "TimeLockedPassThrough",
+  "TwoPartyFixedOutcomeFromVirtualAppInterpreter",
+  "TwoPartyFixedOutcomeInterpreter",
+];
+*/
+
 const appContracts = [
   `SimpleLinkedTransferApp`,
   `SimpleTransferApp`,
