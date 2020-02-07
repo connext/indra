@@ -14,6 +14,8 @@ export class CollateralController {
   async getAnonymizedTransfers(
     @Query() query: GetAnonymizedCollateralDataDto,
   ): Promise<{ offchain: AnonymizedTransfer[]; onchain: AnonymizedOnchainTransaction[] }> {
-    return await this.collateralService.getAnonymizedCollateralData(query.start, query.end);
+    const start = query.start ? parseInt(query.start) : undefined;
+    const end = query.end ? parseInt(query.end) : undefined;
+    return await this.collateralService.getAnonymizedCollateralData(start, end);
   }
 }
