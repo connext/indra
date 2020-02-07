@@ -13,9 +13,7 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     });
   }
 
-  async findByUserPublicIdentifier(
-    userPublicIdentifier: string,
-  ): Promise<OnchainTransaction[] | undefined> {
+  async findByUserPublicIdentifier(userPublicIdentifier: string): Promise<OnchainTransaction[] | undefined> {
     const txs = await this.createQueryBuilder("onchainTransaction")
       .leftJoinAndSelect("onchainTransaction.channel", "channel")
       .where("channel.userPublicIdentifier = :userPublicIdentifier", { userPublicIdentifier })
