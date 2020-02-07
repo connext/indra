@@ -6,7 +6,7 @@ project="`cat $dir/../package.json | jq .name | tr -d '"'`"
 
 version="$1"
 registry="connextproject"
-images="bot database ethprovider node proxy relay test_runner"
+images="database ethprovider node proxy relay test_runner"
 
 for image in $images
 do
