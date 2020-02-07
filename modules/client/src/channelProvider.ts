@@ -3,7 +3,7 @@ import { ChannelProvider } from "@connext/channel-provider";
 import { Wallet } from "ethers";
 import EventEmitter from "events";
 
-import { addTrailing0x, CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
+import { addHexPrefix, CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
 import {
   CFChannelProviderOptions,
   CFCoreTypes,
@@ -120,7 +120,7 @@ export class CFCoreRpcConnection extends EventEmitter implements IRpcConnection 
   private walletSign = async (message: string): Promise<string> => {
     const privateKey = Buffer.from(this.wallet.privateKey, "hex")
     const {signature} = secp256k1.sign(Buffer.from(message), privateKey)
-    return addTrailing0x(signature.toString("hex"))
+    return addHexPrefix(signature.toString("hex"))
   };
 
   private storeGet = async (path: string): Promise<any> => {

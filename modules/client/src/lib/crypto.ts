@@ -1,5 +1,6 @@
 import { decrypt, encrypt } from "eccrypto";
 import { publicKeyConvert } from "secp256k1";
+import { removeHexPrefix } from "./utils";
 
 type Encrypted = {
   ciphertext: string;
@@ -10,15 +11,15 @@ type Encrypted = {
 
 const compress = (pubKey: string): string => {
   const startsWith04 =
-    Buffer.from(pubKey.replace(/^0x/, ""), "hex").length === 64
-      ? `04${pubKey.replace(/^0x/, "")}`
-      : pubKey.replace(/^0x/, "");
+    Buffer.from(removeHexPrefix(pubKey), "hex").length === 64
+      ? `04${removeHexPrefix(pubKey)}`
+      : removeHexPrefix(pubKey);
   return publicKeyConvert(Buffer.from(startsWith04, "hex"), true).toString("hex");
 };
 
 const decompress = (pubKey: string): string => {
   const prefixed = Buffer.from(pubKey, "hex").length === 64 ? `04${pubKey}` : pubKey;
-  return publicKeyConvert(Buffer.from(prefixed.replace(/^0x/, ""), "hex"), false)
+  return publicKeyConvert(Buffer.from(removeHexPrefix(prefixed), "hex"), false)
     .toString("hex")
     .substring(2);
 };
@@ -53,7 +54,7 @@ export const decryptWithPrivateKey = async (
     mac: buf.toString("hex", 49, 81),
   };
   // console.log(`Decrypting data: ${JSON.stringify(encrypted, null, 2)}`);
-  const decryptedBuffer = await decrypt(Buffer.from(privateKey.replace(/^0x/, ""), "hex"), {
+  const decryptedBuffer = await decrypt(Buffer.from(removeHexPrefix(privateKey), "hex"), {
     ciphertext: Buffer.from(encrypted.ciphertext, "hex"),
     ephemPublicKey: Buffer.from(encrypted.ephemPublicKey, "hex"),
     iv: Buffer.from(encrypted.iv, "hex"),

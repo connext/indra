@@ -9,10 +9,10 @@ export const stringify = (obj: object, abrv: boolean = false): string =>
       value && value._hex
         ? bigNumberify(value).toString()
         : abrv && value && typeof value === "string" && value.startsWith("xpub")
-          ? `${value.substring(0, 8)}..${value.substring(value.length - 4)}`
-          : abrv && value && typeof value === "string" && value.startsWith("0x")
-            ? `${value.substring(0, 6)}..${value.substring(value.length - 4)}`
-            : value,
+        ? `${value.substring(0, 8)}..${value.substring(value.length - 4)}`
+        : abrv && value && typeof value === "string" && value.startsWith("0x")
+        ? `${value.substring(0, 6)}..${value.substring(value.length - 4)}`
+        : value,
     2,
   );
 
@@ -87,18 +87,10 @@ export const createRandom32ByteHexString = (): string => {
 export const createPaymentId = createRandom32ByteHexString;
 export const createPreImage = createRandom32ByteHexString;
 
-export function removeTrailing0x(str: string) {
-  if (str.startsWith("0x")) {
-    return str.substring(2);
-  } else {
-    return str;
-  }
+export function removeHexPrefix(hex: string): string {
+  return hex.replace(/^0x/, "");
 }
 
-export function addTrailing0x(str: string) {
-  if (!str.startsWith("0x")) {
-    return "0x" + str;
-  } else {
-    return str;
-  }
+export function addHexPrefix(hex: string): string {
+  return hex.startsWith("0x") ? hex : `0x${hex}`;
 }
