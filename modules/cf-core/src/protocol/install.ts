@@ -17,20 +17,14 @@ import {
   ProtocolMessage,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcomeInterpreterParams,
-  DomainSeparator
+  DomainSeparator,
 } from "../types";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
 import { assertSufficientFundsWithinFreeBalance } from "../utils";
 
-const {
-  OP_SIGN,
-  IO_SEND,
-  IO_SEND_AND_WAIT,
-  WRITE_COMMITMENT,
-  PERSIST_STATE_CHANNEL
-} = Opcode;
+const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, WRITE_COMMITMENT, PERSIST_STATE_CHANNEL } = Opcode;
 const { Update, Install } = Protocol;
 
 /**
@@ -56,7 +50,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       message: { params, processID },
       network,
       provider,
-      domainSeparator
+      domainSeparator,
     } = context;
 
     const {
@@ -66,7 +60,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderDepositTokenAddress,
       initiatorBalanceDecrement,
       responderBalanceDecrement,
-      initiatorXpub
+      initiatorXpub,
     } = params as InstallProtocolParams;
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)!;
@@ -75,19 +69,19 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       preProtocolStateChannel,
       initiatorXpub,
       initiatorDepositTokenAddress,
-      initiatorBalanceDecrement
+      initiatorBalanceDecrement,
     );
 
     assertSufficientFundsWithinFreeBalance(
       preProtocolStateChannel,
       responderXpub,
       responderDepositTokenAddress,
-      responderBalanceDecrement
+      responderBalanceDecrement,
     );
 
     const postProtocolStateChannel = computeStateChannelTransition(
       preProtocolStateChannel,
-      params as InstallProtocolParams
+      params as InstallProtocolParams,
     );
 
     const newAppInstance = postProtocolStateChannel.mostRecentlyInstalledAppInstance();
@@ -97,19 +91,16 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel,
       domainSeparator,
       provider.network.chainId,
-      postProtocolStateChannel.numProposedApps
+      postProtocolStateChannel.numProposedApps,
     );
 
-    const mySignatureOnConditionalTransaction = yield [
-      OP_SIGN,
-      conditionalTransactionData
-    ];
+    const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTransactionData];
 
     const {
       customData: {
         signature: counterpartySignatureOnConditionalTransaction,
-        signature2: counterpartySignatureOnFreeBalanceStateUpdate
-      }
+        signature2: counterpartySignatureOnFreeBalanceStateUpdate,
+      },
     } = yield [
       IO_SEND_AND_WAIT,
       {
@@ -118,69 +109,49 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         protocol: Install,
         toXpub: responderXpub,
         customData: {
-          signature: mySignatureOnConditionalTransaction
+          signature: mySignatureOnConditionalTransaction,
         },
-        seq: 1
-      } as ProtocolMessage
+        seq: 1,
+      } as ProtocolMessage,
     ];
 
     assertIsValidSignature(
       preProtocolStateChannel.getFreeBalanceAddrOf(responderXpub),
       conditionalTransactionData,
-      counterpartySignatureOnConditionalTransaction
+      counterpartySignatureOnConditionalTransaction,
     );
 
-    const signedConditionalTransaction = conditionalTransactionData.getSignedTransaction(
-      [
-        mySignatureOnConditionalTransaction,
-        counterpartySignatureOnConditionalTransaction
-      ]
-    );
+    const signedConditionalTransaction = conditionalTransactionData.getSignedTransaction([
+      mySignatureOnConditionalTransaction,
+      counterpartySignatureOnConditionalTransaction,
+    ]);
 
-    context.stateChannelsMap.set(
-      postProtocolStateChannel.multisigAddress,
-      postProtocolStateChannel
-    );
+    context.stateChannelsMap.set(postProtocolStateChannel.multisigAddress, postProtocolStateChannel);
 
-    yield [
-      WRITE_COMMITMENT,
-      Install,
-      signedConditionalTransaction,
-      newAppInstance.identityHash
-    ];
+    yield [WRITE_COMMITMENT, Install, signedConditionalTransaction, newAppInstance.identityHash];
 
     const freeBalanceUpdateData = new SetStateCommitment(
       network,
       postProtocolStateChannel.freeBalance.identity,
       postProtocolStateChannel.freeBalance.hashOfLatestState,
       postProtocolStateChannel.freeBalance.versionNumber,
-      postProtocolStateChannel.freeBalance.timeout
+      postProtocolStateChannel.freeBalance.timeout,
     );
 
     assertIsValidSignature(
       preProtocolStateChannel.getFreeBalanceAddrOf(responderXpub),
       freeBalanceUpdateData,
-      counterpartySignatureOnFreeBalanceStateUpdate
+      counterpartySignatureOnFreeBalanceStateUpdate,
     );
 
-    const mySignatureOnFreeBalanceStateUpdate = yield [
-      OP_SIGN,
-      freeBalanceUpdateData
-    ];
+    const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateData];
 
-    const signedFreeBalanceStateUpdate = freeBalanceUpdateData.getSignedTransaction(
-      [
-        mySignatureOnFreeBalanceStateUpdate,
-        counterpartySignatureOnFreeBalanceStateUpdate
-      ]
-    );
+    const signedFreeBalanceStateUpdate = freeBalanceUpdateData.getSignedTransaction([
+      mySignatureOnFreeBalanceStateUpdate,
+      counterpartySignatureOnFreeBalanceStateUpdate,
+    ]);
 
-    yield [
-      WRITE_COMMITMENT,
-      Update,
-      signedFreeBalanceStateUpdate,
-      postProtocolStateChannel.freeBalance.identityHash
-    ];
+    yield [WRITE_COMMITMENT, Update, signedFreeBalanceStateUpdate, postProtocolStateChannel.freeBalance.identityHash];
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
@@ -191,10 +162,10 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         protocol: Install,
         toXpub: responderXpub,
         customData: {
-          signature: mySignatureOnFreeBalanceStateUpdate
+          signature: mySignatureOnFreeBalanceStateUpdate,
         },
-        seq: UNASSIGNED_SEQ_NO
-      } as ProtocolMessage
+        seq: UNASSIGNED_SEQ_NO,
+      } as ProtocolMessage,
     ];
   },
 
@@ -213,11 +184,11 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       message: {
         params,
         processID,
-        customData: { signature }
+        customData: { signature },
       },
       network,
       provider,
-      domainSeparator
+      domainSeparator,
     } = context;
 
     // Aliasing `signature` to this variable name for code clarity
@@ -230,7 +201,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       responderXpub,
       responderDepositTokenAddress,
       initiatorBalanceDecrement,
-      initiatorDepositTokenAddress
+      initiatorDepositTokenAddress,
     } = params as InstallProtocolParams;
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)!;
@@ -239,19 +210,19 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       preProtocolStateChannel,
       initiatorXpub,
       initiatorDepositTokenAddress,
-      initiatorBalanceDecrement
+      initiatorBalanceDecrement,
     );
 
     assertSufficientFundsWithinFreeBalance(
       preProtocolStateChannel,
       responderXpub,
       responderDepositTokenAddress,
-      responderBalanceDecrement
+      responderBalanceDecrement,
     );
 
     const postProtocolStateChannel = computeStateChannelTransition(
       preProtocolStateChannel,
-      params as InstallProtocolParams
+      params as InstallProtocolParams,
     );
 
     const newAppInstance = postProtocolStateChannel.mostRecentlyInstalledAppInstance();
@@ -261,54 +232,38 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel,
       domainSeparator,
       provider.network.chainId,
-      postProtocolStateChannel.numProposedApps
+      postProtocolStateChannel.numProposedApps,
     );
 
     assertIsValidSignature(
       preProtocolStateChannel.getFreeBalanceAddrOf(initiatorXpub),
       conditionalTransactionData,
-      counterpartySignatureOnConditionalTransaction
+      counterpartySignatureOnConditionalTransaction,
     );
 
-    const mySignatureOnConditionalTransaction = yield [
-      OP_SIGN,
-      conditionalTransactionData
-    ];
+    const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTransactionData];
 
-    const signedConditionalTransaction = conditionalTransactionData.getSignedTransaction(
-      [
-        mySignatureOnConditionalTransaction,
-        counterpartySignatureOnConditionalTransaction
-      ]
-    );
+    const signedConditionalTransaction = conditionalTransactionData.getSignedTransaction([
+      mySignatureOnConditionalTransaction,
+      counterpartySignatureOnConditionalTransaction,
+    ]);
 
-    context.stateChannelsMap.set(
-      postProtocolStateChannel.multisigAddress,
-      postProtocolStateChannel
-    );
+    context.stateChannelsMap.set(postProtocolStateChannel.multisigAddress, postProtocolStateChannel);
 
-    yield [
-      WRITE_COMMITMENT,
-      Install,
-      signedConditionalTransaction,
-      newAppInstance.identityHash
-    ];
+    yield [WRITE_COMMITMENT, Install, signedConditionalTransaction, newAppInstance.identityHash];
 
     const freeBalanceUpdateData = new SetStateCommitment(
       network,
       postProtocolStateChannel.freeBalance.identity,
       postProtocolStateChannel.freeBalance.hashOfLatestState,
       postProtocolStateChannel.freeBalance.versionNumber,
-      postProtocolStateChannel.freeBalance.timeout
+      postProtocolStateChannel.freeBalance.timeout,
     );
 
-    const mySignatureOnFreeBalanceStateUpdate = yield [
-      OP_SIGN,
-      freeBalanceUpdateData
-    ];
+    const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateData];
 
     const {
-      customData: { signature: counterpartySignatureOnFreeBalanceStateUpdate }
+      customData: { signature: counterpartySignatureOnFreeBalanceStateUpdate },
     } = yield [
       IO_SEND_AND_WAIT,
       {
@@ -317,31 +272,24 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
         toXpub: initiatorXpub,
         customData: {
           signature: mySignatureOnConditionalTransaction,
-          signature2: mySignatureOnFreeBalanceStateUpdate
+          signature2: mySignatureOnFreeBalanceStateUpdate,
         },
-        seq: UNASSIGNED_SEQ_NO
-      } as ProtocolMessage
+        seq: UNASSIGNED_SEQ_NO,
+      } as ProtocolMessage,
     ];
 
     assertIsValidSignature(
       preProtocolStateChannel.getFreeBalanceAddrOf(initiatorXpub),
       freeBalanceUpdateData,
-      counterpartySignatureOnFreeBalanceStateUpdate
+      counterpartySignatureOnFreeBalanceStateUpdate,
     );
 
-    const signedFreeBalanceStateUpdate = freeBalanceUpdateData.getSignedTransaction(
-      [
-        mySignatureOnFreeBalanceStateUpdate,
-        counterpartySignatureOnFreeBalanceStateUpdate
-      ]
-    );
+    const signedFreeBalanceStateUpdate = freeBalanceUpdateData.getSignedTransaction([
+      mySignatureOnFreeBalanceStateUpdate,
+      counterpartySignatureOnFreeBalanceStateUpdate,
+    ]);
 
-    yield [
-      WRITE_COMMITMENT,
-      Update,
-      signedFreeBalanceStateUpdate,
-      postProtocolStateChannel.freeBalance.identityHash
-    ];
+    yield [WRITE_COMMITMENT, Update, signedFreeBalanceStateUpdate, postProtocolStateChannel.freeBalance.identityHash];
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
@@ -350,13 +298,13 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       protocol: Install,
       toXpub: initiatorXpub,
       customData: {
-        dataPersisted: true
+        dataPersisted: true,
       },
-      seq: UNASSIGNED_SEQ_NO
+      seq: UNASSIGNED_SEQ_NO,
     } as ProtocolMessage;
 
     yield [IO_SEND, m4];
-  }
+  },
 };
 
 /**
@@ -368,10 +316,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
  *
  * @returns {Promise<StateChannel>} - The post-protocol state of the channel
  */
-function computeStateChannelTransition(
-  stateChannel: StateChannel,
-  params: InstallProtocolParams
-): StateChannel {
+function computeStateChannelTransition(stateChannel: StateChannel, params: InstallProtocolParams): StateChannel {
   const {
     initiatorBalanceDecrement,
     responderBalanceDecrement,
@@ -385,7 +330,7 @@ function computeStateChannelTransition(
     defaultTimeout,
     appSeqNo,
     outcomeType,
-    disableLimit
+    disableLimit,
   } = params;
 
   const initiatorFbAddress = stateChannel.getFreeBalanceAddrOf(initiatorXpub);
@@ -394,7 +339,7 @@ function computeStateChannelTransition(
   const {
     multiAssetMultiPartyCoinTransferInterpreterParams,
     twoPartyOutcomeInterpreterParams,
-    singleAssetTwoPartyCoinTransferInterpreterParams
+    singleAssetTwoPartyCoinTransferInterpreterParams,
   } = computeInterpreterParameters(
     outcomeType,
     initiatorDepositTokenAddress,
@@ -403,7 +348,7 @@ function computeStateChannelTransition(
     responderBalanceDecrement,
     initiatorFbAddress,
     responderFbAddress,
-    disableLimit
+    disableLimit,
   );
 
   const appInstanceToBeInstalled = new AppInstance(
@@ -418,18 +363,18 @@ function computeStateChannelTransition(
     /* outcomeType */ outcomeType,
     twoPartyOutcomeInterpreterParams,
     multiAssetMultiPartyCoinTransferInterpreterParams,
-    singleAssetTwoPartyCoinTransferInterpreterParams
+    singleAssetTwoPartyCoinTransferInterpreterParams,
   );
 
   let tokenIndexedBalanceDecrement: TokenIndexedCoinTransferMap;
   if (initiatorDepositTokenAddress !== responderDepositTokenAddress) {
     tokenIndexedBalanceDecrement = {
       [initiatorDepositTokenAddress]: {
-        [initiatorFbAddress]: initiatorBalanceDecrement
+        [initiatorFbAddress]: initiatorBalanceDecrement,
       },
       [responderDepositTokenAddress]: {
-        [responderFbAddress]: responderBalanceDecrement
-      }
+        [responderFbAddress]: responderBalanceDecrement,
+      },
     };
   } else {
     // If the decrements are on the same token, the previous block
@@ -438,15 +383,12 @@ function computeStateChannelTransition(
     tokenIndexedBalanceDecrement = {
       [initiatorDepositTokenAddress]: {
         [initiatorFbAddress]: initiatorBalanceDecrement,
-        [responderFbAddress]: responderBalanceDecrement
-      }
+        [responderFbAddress]: responderBalanceDecrement,
+      },
     };
   }
 
-  return stateChannel.installApp(
-    appInstanceToBeInstalled,
-    tokenIndexedBalanceDecrement
-  );
+  return stateChannel.installApp(appInstanceToBeInstalled, tokenIndexedBalanceDecrement);
 }
 
 /**
@@ -480,7 +422,7 @@ function computeInterpreterParameters(
   responderBalanceDecrement: BigNumber,
   initiatorFbAddress: string,
   responderFbAddress: string,
-  disableLimit: boolean
+  disableLimit: boolean,
 ): {
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
   multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
@@ -489,20 +431,15 @@ function computeInterpreterParameters(
   switch (outcomeType) {
     case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
       if (initiatorDepositTokenAddress !== responderDepositTokenAddress) {
-        throw Error(
-          TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(
-            initiatorDepositTokenAddress,
-            responderDepositTokenAddress
-          )
-        );
+        throw Error(TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(initiatorDepositTokenAddress, responderDepositTokenAddress));
       }
 
       return {
         twoPartyOutcomeInterpreterParams: {
           tokenAddress: initiatorDepositTokenAddress,
           playerAddrs: [initiatorFbAddress, responderFbAddress],
-          amount: initiatorBalanceDecrement.add(responderBalanceDecrement)
-        }
+          amount: initiatorBalanceDecrement.add(responderBalanceDecrement),
+        },
       };
     }
 
@@ -511,44 +448,32 @@ function computeInterpreterParameters(
         ? {
             multiAssetMultiPartyCoinTransferInterpreterParams: {
               limit: [initiatorBalanceDecrement.add(responderBalanceDecrement)],
-              tokenAddresses: [initiatorDepositTokenAddress]
-            }
+              tokenAddresses: [initiatorDepositTokenAddress],
+            },
           }
         : {
             multiAssetMultiPartyCoinTransferInterpreterParams: {
               limit: [initiatorBalanceDecrement, responderBalanceDecrement],
-              tokenAddresses: [
-                initiatorDepositTokenAddress,
-                responderDepositTokenAddress
-              ]
-            }
+              tokenAddresses: [initiatorDepositTokenAddress, responderDepositTokenAddress],
+            },
           };
     }
 
     case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
       if (initiatorDepositTokenAddress !== responderDepositTokenAddress) {
-        throw Error(
-          TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(
-            initiatorDepositTokenAddress,
-            responderDepositTokenAddress
-          )
-        );
+        throw Error(TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(initiatorDepositTokenAddress, responderDepositTokenAddress));
       }
 
       return {
         singleAssetTwoPartyCoinTransferInterpreterParams: {
-          limit: disableLimit
-            ? MaxUint256
-            : initiatorBalanceDecrement.add(responderBalanceDecrement),
-          tokenAddress: initiatorDepositTokenAddress
-        }
+          limit: disableLimit ? MaxUint256 : initiatorBalanceDecrement.add(responderBalanceDecrement),
+          tokenAddress: initiatorDepositTokenAddress,
+        },
       };
     }
 
     default: {
-      throw Error(
-        "The outcome type in this application logic contract is not supported yet."
-      );
+      throw Error("The outcome type in this application logic contract is not supported yet.");
     }
   }
 }
@@ -568,7 +493,7 @@ function constructConditionalTransactionData(
   stateChannel: StateChannel,
   domainSeparator: DomainSeparator,
   chainId: number,
-  multisigTxCount: number
+  multisigTxCount: number,
 ): ConditionalTransaction {
   const appInstance = stateChannel.mostRecentlyInstalledAppInstance();
   return new ConditionalTransaction(
@@ -577,21 +502,15 @@ function constructConditionalTransactionData(
     stateChannel.multisigOwners,
     appInstance.identityHash,
     stateChannel.freeBalance.identityHash,
-    getInterpreterAddressFromOutcomeType(
-      appInstance.outcomeType,
-      networkContext
-    ),
+    getInterpreterAddressFromOutcomeType(appInstance.outcomeType, networkContext),
     appInstance.encodedInterpreterParams,
     domainSeparator,
     chainId,
-    multisigTxCount
+    multisigTxCount,
   );
 }
 
-function getInterpreterAddressFromOutcomeType(
-  outcomeType: OutcomeType,
-  networkContext: NetworkContext
-) {
+function getInterpreterAddressFromOutcomeType(outcomeType: OutcomeType, networkContext: NetworkContext) {
   switch (outcomeType) {
     case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
       return networkContext.MultiAssetMultiPartyCoinTransferInterpreter;
@@ -603,9 +522,7 @@ function getInterpreterAddressFromOutcomeType(
       return networkContext.TwoPartyFixedOutcomeInterpreter;
     }
     default: {
-      throw Error(
-        "The outcome type in this application logic contract is not supported yet."
-      );
+      throw Error("The outcome type in this application logic contract is not supported yet.");
     }
   }
 }
