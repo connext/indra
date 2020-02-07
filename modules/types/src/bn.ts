@@ -14,8 +14,7 @@ export const weiToToken = (wei: any, tokenPerEth: any) =>
 
 export const tokenToWei = (token: any, tokenPerEth: any) => toWei(token).div(toWei(tokenPerEth));
 
-export const maxBN = (lobn: any) =>
-  lobn.reduce((max: any, current: any) => (max.gt(current) ? max : current), Zero);
+export const maxBN = (lobn: any) => lobn.reduce((max: any, current: any) => (max.gt(current) ? max : current), Zero);
 
 export const minBN = (lobn: any) =>
   lobn.reduce((min: any, current: any) => (min.lt(current) ? min : current), MaxUint256);
@@ -23,5 +22,7 @@ export const minBN = (lobn: any) =>
 export const inverse = (bn: any) => formatEther(toWei(toWei(`1`)).div(toWei(bn)));
 
 export const calculateExchange = (amount: BigNumber, swapRate: string): BigNumber => {
-  return bigNumberify(formatEther(amount.mul(parseEther(swapRate))).replace(/\.[0-9]*$/, ""));
+  const [integer, fractional] = swapRate.split(".");
+  const safeSwapRate = [integer, fractional.substring(0, 18)].join(".");
+  return bigNumberify(formatEther(amount.mul(parseEther(safeSwapRate))).replace(/\.[0-9]*$/, ""));
 };
