@@ -34,9 +34,7 @@ contract MixinRespondToChallenge is
     AppChallenge storage challenge = appChallenges[identityHash];
 
     require(
-      (
-        challenge.status == ChallengeStatus.FINALIZES_AFTER_DEADLINE
-      ) && challenge.finalizesAt >= block.number,
+      isChallengeNotFinalized(challenge.status, challenge.finalizesAt),
       "respondToChallenge called on app not in FINALIZES_AFTER_DEADLINE state"
     );
 

@@ -51,7 +51,7 @@ contract MixinSetStateWithAction is
 
     require(
       challenge.status == ChallengeStatus.NO_CHALLENGE ||
-      (challenge.status == ChallengeStatus.FINALIZES_AFTER_DEADLINE && challenge.finalizesAt >= block.number),
+      isChallengeNotFinalized(challenge.status, challenge.finalizesAt),
       "setStateWithAction was called on an app that has already been finalized"
     );
 
