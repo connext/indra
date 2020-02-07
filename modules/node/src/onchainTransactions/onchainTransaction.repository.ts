@@ -96,7 +96,10 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
 export class AnonymizedOnchainTransactionRepository extends Repository<AnonymizedOnchainTransaction> {
   async findInTimeRange(start: number, end: number): Promise<AnonymizedOnchainTransaction[]> {
     return await this.find({
-      createdAt: Between(new Date(start), new Date(end)),
+      order: { createdAt: "DESC" },
+      where: {
+        createdAt: Between(new Date(start), new Date(end)),
+      },
     });
   }
 }

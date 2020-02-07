@@ -98,7 +98,10 @@ export class TransferRepository extends Repository<Transfer> {
 export class AnonymizedTransferRepository extends Repository<AnonymizedTransfer> {
   async findInTimeRange(start: number, end: number): Promise<AnonymizedTransfer[]> {
     return await this.find({
-      createdAt: Between(new Date(start), new Date(end)),
+      order: { createdAt: "DESC" },
+      where: {
+        createdAt: Between(new Date(start), new Date(end)),
+      },
     });
   }
 }
