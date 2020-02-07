@@ -1,4 +1,4 @@
 export class GetAnonymizedCollateralDataDto {
-  readonly start: number;
-  readonly end?: number;
+  readonly start: string;
+  readonly end?: string;
 }
