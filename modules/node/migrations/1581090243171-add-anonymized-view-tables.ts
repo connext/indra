@@ -2,6 +2,7 @@ import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class AddAnonymizedViewTables1581090243171 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<any> {
+    await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS pgcrypto;`);
     await queryRunner.query(
       `ALTER TABLE "onchain_transaction" ADD COLUMN "createdAt" timestamp NOT NULL DEFAULT NOW();`,
     );
