@@ -21,7 +21,7 @@ describe("Deposits", () => {
     await client.messaging.disconnect();
   });
 
-  it("happy case: client should deposit ETH", async () => {
+  it.only("happy case: client should deposit ETH", async () => {
     await client.deposit({ amount: ONE, assetId: AddressZero });
     const freeBalance = await client.getFreeBalance(AddressZero);
     expect(freeBalance[client.freeBalanceAddress]).to.equal(ONE);
