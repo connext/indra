@@ -18,8 +18,8 @@ export async function swapAsset(
 
   const preSwap: ExistingBalancesSwap = {
     freeBalanceClientEth: ethToToken ? input.amount : Zero,
-    freeBalanceNodeEth: ethToToken ? Zero : output.amount,
     freeBalanceClientToken: ethToToken ? Zero : input.amount,
+    freeBalanceNodeEth: ethToToken ? Zero : output.amount,
     freeBalanceNodeToken: ethToToken ? output.amount : Zero,
     ...preExistingBalances,
   };

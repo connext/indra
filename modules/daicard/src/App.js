@@ -1,6 +1,13 @@
 import * as connext from "@connext/client";
 import { ConnextStore, PisaClientBackupAPI } from "@connext/store";
-import { ERC20TokenArtifacts, CF_PATH, ConnextClientStorePrefix } from "@connext/types";
+import {
+  ERC20TokenArtifacts,
+  CF_PATH,
+  ConnextClientStorePrefix,
+  RECEIVE_TRANSFER_FINISHED_EVENT,
+  RECEIVE_TRANSFER_STARTED_EVENT,
+  RECEIVE_TRANSFER_FAILED_EVENT,
+} from "@connext/types";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
@@ -30,23 +37,11 @@ import { SetupCard } from "./components/setupCard";
 import { SupportCard } from "./components/supportCard";
 import { WithdrawSaiDialog } from "./components/withdrawSai";
 import { rootMachine } from "./state";
-import {
-  cleanWalletConnect,
-  Currency,
-  migrate,
-  minBN,
-  toBN,
-  tokenToWei,
-  weiToToken,
-  initWalletConnect,
-} from "./utils";
+import { cleanWalletConnect, Currency, migrate, minBN, toBN, tokenToWei, weiToToken, initWalletConnect } from "./utils";
 
 const urls = {
-  ethProviderUrl:
-    process.env.REACT_APP_ETH_URL_OVERRIDE || `${window.location.origin}/api/ethprovider`,
-  nodeUrl:
-    process.env.REACT_APP_NODE_URL_OVERRIDE ||
-    `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
+  ethProviderUrl: process.env.REACT_APP_ETH_URL_OVERRIDE || `${window.location.origin}/api/ethprovider`,
+  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
   legacyUrl: chainId =>
     chainId.toString() === "1"
       ? "https://hub.connext.network/api/hub"
@@ -180,11 +175,7 @@ class App extends React.Component {
     machine.start();
     machine.onTransition(state => {
       this.setState({ state });
-      console.log(
-        `=== Transitioning to ${JSON.stringify(state.value)} (context: ${JSON.stringify(
-          state.context,
-        )})`,
-      );
+      console.log(`=== Transitioning to ${JSON.stringify(state.value)} (context: ${JSON.stringify(state.context)})`);
     });
 
     // If no mnemonic, create one and save to local storage
@@ -258,17 +249,13 @@ class App extends React.Component {
       console.log(`mnemonic address: ${wallet.address} (path: ${wallet.path})`);
       console.log(`xpub address: ${eth.utils.computeAddress(fromExtendedKey(xpub).publicKey)}`);
       console.log(
-        `keygen address: ${new eth.Wallet(await keyGen("1")).address} (path ${
-          new eth.Wallet(await keyGen("1")).path
-        })`,
+        `keygen address: ${new eth.Wallet(await keyGen("1")).address} (path ${new eth.Wallet(await keyGen("1")).path})`,
       );
     } else if (useWalletConnext) {
       const channelProvider = new WalletConnectChannelProvider();
       console.log(`Using WalletConnect with provider: ${JSON.stringify(channelProvider, null, 2)}`);
       await channelProvider.enable();
-      console.log(
-        `ChannelProvider Enabled - config: ${JSON.stringify(channelProvider.config, null, 2)}`,
-      );
+      console.log(`ChannelProvider Enabled - config: ${JSON.stringify(channelProvider.config, null, 2)}`);
       // register channel provider listener for logging
       channelProvider.on("error", data => {
         console.error(`Channel provider error: ${JSON.stringify(data, null, 2)}`);
@@ -290,11 +277,7 @@ class App extends React.Component {
     }
     console.log(`Successfully connected channel`);
 
-    const token = new Contract(
-      channel.config.contractAddresses.Token,
-      ERC20TokenArtifacts.abi,
-      ethProvider,
-    );
+    const token = new Contract(channel.config.contractAddresses.Token, ERC20TokenArtifacts.abi, ethProvider);
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
     console.log(`Client created successfully!`);
@@ -311,18 +294,18 @@ class App extends React.Component {
       this.setState({ swapRate: res.swapRate });
     });
 
-    channel.on("RECEIVE_TRANSFER_STARTED", data => {
-      console.log("Received RECEIVE_TRANSFER_STARTED event: ", data);
+    channel.on(RECEIVE_TRANSFER_STARTED_EVENT, data => {
+      console.log(`Received ${RECEIVE_TRANSFER_STARTED_EVENT} event: `, data);
       machine.send("START_RECEIVE");
     });
 
-    channel.on("RECEIVE_TRANSFER_FINISHED", data => {
-      console.log("Received RECEIVE_TRANSFER_FINISHED event: ", data);
+    channel.on(RECEIVE_TRANSFER_FINISHED_EVENT, data => {
+      console.log(`Received ${RECEIVE_TRANSFER_FINISHED_EVENT} event: `, data);
       machine.send("SUCCESS_RECEIVE");
     });
 
-    channel.on("RECEIVE_TRANSFER_FAILED", data => {
-      console.log("Received RECEIVE_TRANSFER_FAILED event: ", data);
+    channel.on(RECEIVE_TRANSFER_FAILED_EVENT, data => {
+      console.log(`Received ${RECEIVE_TRANSFER_FAILED_EVENT} event: `, data);
       machine.send("ERROR_RECEIVE");
     });
 
@@ -349,11 +332,7 @@ class App extends React.Component {
     if (!channel.config.contractAddresses.SAIToken) {
       return Zero;
     }
-    const saiToken = new Contract(
-      channel.config.contractAddresses.SAIToken,
-      ERC20TokenArtifacts.abi,
-      wallet,
-    );
+    const saiToken = new Contract(channel.config.contractAddresses.SAIToken, ERC20TokenArtifacts.abi, wallet);
     const freeSaiBalance = await channel.getFreeBalance(saiToken.address);
     const mySaiBalance = freeSaiBalance[channel.freeBalanceAddress];
     return mySaiBalance;
@@ -401,10 +380,7 @@ class App extends React.Component {
     let gasPrice = await ethProvider.getGasPrice();
     let totalDepositGasWei = DEPOSIT_ESTIMATED_GAS.mul(toBN(2)).mul(gasPrice);
     let totalWithdrawalGasWei = WITHDRAW_ESTIMATED_GAS.mul(gasPrice);
-    const minDeposit = Currency.WEI(
-      totalDepositGasWei.add(totalWithdrawalGasWei),
-      swapRate,
-    ).toETH();
+    const minDeposit = Currency.WEI(totalDepositGasWei.add(totalWithdrawalGasWei), swapRate).toETH();
     const maxDeposit = MAX_CHANNEL_VALUE.toETH(swapRate); // Or get based on payment profile?
     return { maxDeposit, minDeposit };
   };
@@ -414,23 +390,11 @@ class App extends React.Component {
     const getTotal = (ether, token) => Currency.WEI(ether.wad.add(token.toETH().wad), swapRate);
     const freeEtherBalance = await channel.getFreeBalance();
     const freeTokenBalance = await channel.getFreeBalance(token.address);
-    balance.onChain.ether = Currency.WEI(
-      await ethProvider.getBalance(channel.signerAddress),
-      swapRate,
-    ).toETH();
-    balance.onChain.token = Currency.DEI(
-      await token.balanceOf(channel.signerAddress),
-      swapRate,
-    ).toDAI();
+    balance.onChain.ether = Currency.WEI(await ethProvider.getBalance(channel.signerAddress), swapRate).toETH();
+    balance.onChain.token = Currency.DEI(await token.balanceOf(channel.signerAddress), swapRate).toDAI();
     balance.onChain.total = getTotal(balance.onChain.ether, balance.onChain.token).toETH();
-    balance.channel.ether = Currency.WEI(
-      freeEtherBalance[channel.freeBalanceAddress],
-      swapRate,
-    ).toETH();
-    balance.channel.token = Currency.DEI(
-      freeTokenBalance[channel.freeBalanceAddress],
-      swapRate,
-    ).toDAI();
+    balance.channel.ether = Currency.WEI(freeEtherBalance[channel.freeBalanceAddress], swapRate).toETH();
+    balance.channel.token = Currency.DEI(freeTokenBalance[channel.freeBalanceAddress], swapRate).toDAI();
     balance.channel.total = getTotal(balance.channel.ether, balance.channel.token).toETH();
     const logIfNotZero = (wad, prefix) => {
       if (wad.isZero()) {
@@ -446,16 +410,7 @@ class App extends React.Component {
   };
 
   autoDeposit = async () => {
-    const {
-      balance,
-      channel,
-      machine,
-      maxDeposit,
-      minDeposit,
-      state,
-      swapRate,
-      token,
-    } = this.state;
+    const { balance, channel, machine, maxDeposit, minDeposit, state, swapRate, token } = this.state;
     if (!state.matches("ready")) {
       console.warn(`Channel not available yet.`);
       return;
@@ -486,17 +441,12 @@ class App extends React.Component {
       machine.send(["START_DEPOSIT"]);
 
       if (balance.onChain.token.wad.gt(Zero)) {
-        const amount = minBN([
-          Currency.WEI(nowMaxDeposit, swapRate).toDAI().wad,
-          balance.onChain.token.wad,
-        ]);
+        const amount = minBN([Currency.WEI(nowMaxDeposit, swapRate).toDAI().wad, balance.onChain.token.wad]);
         const depositParams = {
           amount: amount.toString(),
           assetId: token.address.toLowerCase(),
         };
-        console.log(
-          `Depositing ${depositParams.amount} tokens into channel: ${channel.multisigAddress}`,
-        );
+        console.log(`Depositing ${depositParams.amount} tokens into channel: ${channel.multisigAddress}`);
         const result = await channel.deposit(depositParams);
         await this.refreshBalances();
         console.log(`Successfully deposited tokens! Result: ${JSON.stringify(result, null, 2)}`);
@@ -514,9 +464,7 @@ class App extends React.Component {
         return;
       }
       if (balance.onChain.ether.wad.lt(minDeposit.wad)) {
-        console.debug(
-          `Not enough on-chain eth to deposit: ${balance.onChain.ether.toETH().format()}`,
-        );
+        console.debug(`Not enough on-chain eth to deposit: ${balance.onChain.ether.toETH().format()}`);
         machine.send(["SUCCESS_DEPOSIT"]);
         return;
       }
@@ -571,20 +519,16 @@ class App extends React.Component {
     const tokensForWei = weiToToken(availableWeiToSwap, swapRate);
     let collateral = (await channel.getFreeBalance(token.address))[hubFBAddress];
 
-    console.log(
-      `Hub token collateral: ${formatEther(collateral)}, amount to swap: ${formatEther(
-        tokensForWei,
-      )}`,
-    );
+    console.log(`Hub token collateral: ${formatEther(collateral)}, amount to swap: ${formatEther(tokensForWei)}`);
     const { collateralizationInFlight } = await channel.getChannel();
     if (tokensForWei.gt(collateral) && !collateralizationInFlight) {
       console.log(`Requesting more collateral...`);
       await channel.requestCollateral(token.address);
       collateral = (await channel.getFreeBalance(token.address))[hubFBAddress];
       console.debug(
-        `[after collateral request] Hub token collateral: ${formatEther(
-          collateral,
-        )}, amount to swap: ${formatEther(tokensForWei)}`,
+        `[after collateral request] Hub token collateral: ${formatEther(collateral)}, amount to swap: ${formatEther(
+          tokensForWei,
+        )}`,
       );
       // dont return here, will have added the collateral possible
       // upon return of request collateral function
@@ -716,12 +660,7 @@ class App extends React.Component {
             <Route
               path="/deposit"
               render={props => (
-                <DepositCard
-                  {...props}
-                  address={address}
-                  maxDeposit={maxDeposit}
-                  minDeposit={minDeposit}
-                />
+                <DepositCard {...props} address={address} maxDeposit={maxDeposit} minDeposit={minDeposit} />
               )}
             />
             <Route
@@ -739,29 +678,16 @@ class App extends React.Component {
             <Route
               path="/request"
               render={props => (
-                <RequestCard
-                  {...props}
-                  xpub={channel ? channel.publicIdentifier : "Unknown"}
-                  maxDeposit={maxDeposit}
-                />
+                <RequestCard {...props} xpub={channel ? channel.publicIdentifier : "Unknown"} maxDeposit={maxDeposit} />
               )}
             />
             <Route
               path="/send"
               render={props => (
-                <SendCard
-                  {...props}
-                  balance={balance}
-                  channel={channel}
-                  ethProvider={ethProvider}
-                  token={token}
-                />
+                <SendCard {...props} balance={balance} channel={channel} ethProvider={ethProvider} token={token} />
               )}
             />
-            <Route
-              path="/redeem"
-              render={props => <RedeemCard {...props} channel={channel} token={token} />}
-            />
+            <Route path="/redeem" render={props => <RedeemCard {...props} channel={channel} token={token} />} />
             <Route
               path="/cashout"
               render={props => (

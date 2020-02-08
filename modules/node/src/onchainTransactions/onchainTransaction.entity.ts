@@ -1,5 +1,5 @@
 import { BigNumber } from "ethers/utils";
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, ViewEntity, ViewColumn, CreateDateColumn } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
 
@@ -65,7 +65,66 @@ export class OnchainTransaction {
   @Column("text")
   s!: string;
 
+  @CreateDateColumn({ type: "timestamp" })
+  createdAt!: Date;
+
   // should this just be a ref to user pub id?
-  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.transactions)
+  @ManyToOne(
+    (type: any) => Channel,
+    (channel: Channel) => channel.transactions,
+  )
   channel!: Channel;
+}
+
+@ViewEntity({
+  expression: `
+  SELECT
+    "onchain_transaction"."createdAt" as "createdAt",
+    "onchain_transaction"."reason" as "reason",
+    "onchain_transaction"."value" as "value",
+    "onchain_transaction"."gasPrice" as "gasPrice",
+    "onchain_transaction"."gasLimit" as "gasLimit",
+    "onchain_transaction"."to" as "to",
+    "onchain_transaction"."from" as "from",
+    "onchain_transaction"."hash" as "hash",
+    "onchain_transaction"."data" as "data",
+    "onchain_transaction"."nonce" as "nonce",
+    encode(digest("channel"."userPublicIdentifier", 'sha256'), 'hex') as "channelIdentifier"
+  FROM "onchain_transaction"
+    LEFT JOIN "channel" ON "channel"."id" = "onchain_transaction"."channelId"
+  `,
+})
+export class AnonymizedOnchainTransaction {
+  @ViewColumn()
+  createdAt!: Date;
+
+  @ViewColumn()
+  reason!: string;
+
+  @ViewColumn()
+  value!: string;
+
+  @ViewColumn()
+  gasPrice!: string;
+
+  @ViewColumn()
+  gasLimit!: string;
+
+  @ViewColumn()
+  to!: string;
+
+  @ViewColumn()
+  from!: string;
+
+  @ViewColumn()
+  hash!: string;
+
+  @ViewColumn()
+  data!: string;
+
+  @ViewColumn()
+  nonce!: number;
+
+  @ViewColumn()
+  channelIdentifier!: string;
 }
