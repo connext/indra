@@ -37,14 +37,10 @@ export class ChannelRepository extends Repository<Channel> {
       .getOne();
 
     if (!channel) {
-      throw new NotFoundException(
-        `Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`,
-      );
+      throw new NotFoundException(`Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`);
     }
 
-    const existing = channel.paymentProfiles.find(
-      (prof: PaymentProfile) => prof.assetId === paymentProfile.assetId,
-    );
+    const existing = channel.paymentProfiles.find((prof: PaymentProfile) => prof.assetId === paymentProfile.assetId);
 
     await this.manager.transaction(async (transactionalEntityManager: EntityManager) => {
       await transactionalEntityManager.save(paymentProfile);
@@ -77,9 +73,7 @@ export class ChannelRepository extends Repository<Channel> {
       .getOne();
 
     if (!channel) {
-      throw new NotFoundException(
-        `Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`,
-      );
+      throw new NotFoundException(`Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`);
     }
 
     const profile = channel.paymentProfiles.find(
@@ -89,10 +83,7 @@ export class ChannelRepository extends Repository<Channel> {
     return profile;
   }
 
-  async setInflightCollateralization(
-    channel: Channel,
-    collateralizationInFlight: boolean,
-  ): Promise<Channel> {
+  async setInflightCollateralization(channel: Channel, collateralizationInFlight: boolean): Promise<Channel> {
     channel.collateralizationInFlight = collateralizationInFlight;
     return await this.save(channel);
   }
