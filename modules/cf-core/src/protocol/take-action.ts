@@ -47,14 +47,14 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     } = yield [
       IO_SEND_AND_WAIT,
       {
-        protocol,
-        processID,
-        params,
-        seq: 1,
-        toXpub: responderXpub,
         customData: {
           signature: initiatorSignature,
         },
+        params,
+        processID,
+        protocol,
+        seq: 1,
+        toXpub: responderXpub,
       } as ProtocolMessage,
     ];
 
@@ -102,13 +102,13 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     yield [
       IO_SEND,
       {
-        protocol,
-        processID,
-        toXpub: initiatorXpub,
-        seq: UNASSIGNED_SEQ_NO,
         customData: {
           signature: responderSignature,
         },
+        processID,
+        protocol,
+        seq: UNASSIGNED_SEQ_NO,
+        toXpub: initiatorXpub,
       } as ProtocolMessage,
     ];
 
