@@ -11,7 +11,7 @@ import {
   DEPOSIT_FAILED_EVENT,
   DepositFailedMessage,
 } from "@connext/types";
-import { forwardRef, Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
 

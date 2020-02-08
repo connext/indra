@@ -29,17 +29,29 @@ export class Channel {
   @Column("boolean", { default: false })
   collateralizationInFlight!: boolean;
 
-  @ManyToMany((type: any) => PaymentProfile, (profile: PaymentProfile) => profile.channels)
+  @ManyToMany(
+    (type: any) => PaymentProfile,
+    (profile: PaymentProfile) => profile.channels,
+  )
   @JoinTable()
   paymentProfiles!: PaymentProfile[];
 
-  @OneToMany((type: any) => LinkedTransfer, (transfer: LinkedTransfer) => transfer.senderChannel)
+  @OneToMany(
+    (type: any) => LinkedTransfer,
+    (transfer: LinkedTransfer) => transfer.senderChannel,
+  )
   senderLinkedTransfers!: LinkedTransfer[];
 
-  @OneToMany((type: any) => LinkedTransfer, (transfer: LinkedTransfer) => transfer.receiverChannel)
+  @OneToMany(
+    (type: any) => LinkedTransfer,
+    (transfer: LinkedTransfer) => transfer.receiverChannel,
+  )
   receiverLinkedTransfers!: LinkedTransfer[];
 
-  @OneToMany((type: any) => LinkedTransfer, (transfer: LinkedTransfer) => transfer.senderChannel)
+  @OneToMany(
+    (type: any) => LinkedTransfer,
+    (transfer: LinkedTransfer) => transfer.senderChannel,
+  )
   senderPeerToPeerTransfers!: LinkedTransfer[];
 
   @OneToMany(
@@ -48,6 +60,9 @@ export class Channel {
   )
   receiverPeerToPeerTransfers!: PeerToPeerTransfer[];
 
-  @OneToMany((type: any) => OnchainTransaction, (tx: OnchainTransaction) => tx.channel)
+  @OneToMany(
+    (type: any) => OnchainTransaction,
+    (tx: OnchainTransaction) => tx.channel,
+  )
   transactions!: OnchainTransaction[];
 }
