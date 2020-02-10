@@ -21,6 +21,8 @@ const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
 
 const appContracts = ["SimpleLinkedTransferApp", "SimpleTransferApp", "SimpleTwoPartySwapApp"];
 
+const hash = input => eth.utils.keccak256(`0x${input.replace(/^0x/, "")}`);
+
 const artifacts = {};
 for (const contract of coreContracts) {
   try {
@@ -80,15 +82,15 @@ const contractIsDeployed = async (name, address, artifacts) => {
     return false;
   }
   const savedCreationCodeHash = getSavedData(name, "creationCodeHash");
-  const creationCodeHash = eth.utils.keccak256(artifacts.bytecode);
+  const creationCodeHash = hash(artifacts.bytecode);
   if (!savedCreationCodeHash || savedCreationCodeHash !== creationCodeHash) {
     console.log(`creationCodeHash in our address book doen't match ${name} artifacts`);
     console.log(`${savedCreationCodeHash} !== ${creationCodeHash}`);
     return false;
   }
   const savedRuntimeCodeHash = getSavedData(name, "runtimeCodeHash");
-  const runtimeCodeHash = eth.utils.keccak256(await wallet.provider.getCode(address));
-  if (runtimeCodeHash === eth.utils.keccak256("0x00") || runtimeCodeHash === eth.utils.keccak256("0x")) {
+  const runtimeCodeHash = hash(await wallet.provider.getCode(address));
+  if (runtimeCodeHash === hash("0x00") || runtimeCodeHash === hash("0x")) {
     console.log("No runtimeCode exists at the address in our address book");
     return false;
   }
@@ -114,8 +116,8 @@ const deployContract = async (name, artifacts, args) => {
   await wallet.provider.waitForTransaction(txHash);
   const address = contract.address;
   console.log(`${name} has been deployed to address: ${address}`);
-  const runtimeCodeHash = eth.utils.keccak256(await wallet.provider.getCode(address));
-  const creationCodeHash = eth.utils.keccak256(artifacts.bytecode);
+  const runtimeCodeHash = hash(await wallet.provider.getCode(address));
+  const creationCodeHash = hash(artifacts.bytecode);
   // Update address-book w new address + the args we deployed with
   const saveArgs = {};
   args.forEach(a => (saveArgs[a.name] = a.value));
@@ -163,8 +165,6 @@ const sendGift = async (address, token) => {
 
   if (process.env.ETH_PROVIDER) {
     provider = new eth.providers.JsonRpcProvider(process.env.ETH_PROVIDER);
-  } else if (process.env.INFURA_KEY) {
-    provider = new eth.providers.InfuraProvider(process.env.ETH_NETWORK, process.env.INFURA_KEY);
   } else {
     provider = eth.getDefaultProvider(process.env.ETH_NETWORK);
   }
@@ -188,9 +188,7 @@ const sendGift = async (address, token) => {
     process.exit(1);
   }
 
-  // Sanity check: Is our eth provider serving us the correct network?
-  const net = process.env.ETH_NETWORK;
-  console.log(`\nPreparing to migrate contracts to ${net} network (${chainId})`);
+  console.log(`\nPreparing to migrate contracts to network ${chainId}`);
   console.log(`Deployer Wallet: address=${wallet.address} nonce=${nonce} balance=${balance}`);
 
   ////////////////////////////////////////
