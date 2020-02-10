@@ -154,7 +154,7 @@ then
   "
   INDRA_ETH_PROVIDER="http://ethprovider:8545"
   pull_if_unavailable "$ethprovider_image"
-  MODE=${INDRA_MODE#*-} bash ops/deploy-contracts.sh ganache $version
+  MODE=${INDRA_MODE#*-} bash ops/deploy-contracts.sh
 else echo "Eth network \"$chainId\" is not supported for $INDRA_MODE-mode deployments" && exit 1
 fi
 
