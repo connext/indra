@@ -5,9 +5,9 @@ import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { Channel } from "../channel/channel.entity";
 import { ConfigService } from "../config/config.service";
-import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
+import { OnchainTransaction, AnonymizedOnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
-import { LinkedTransfer, PeerToPeerTransfer, Transfer } from "../transfer/transfer.entity";
+import { LinkedTransfer, PeerToPeerTransfer, Transfer, AnonymizedTransfer } from "../transfer/transfer.entity";
 
 // Import Migrations
 import { InitNodeRecords1567158660577 } from "../../migrations/1567158660577-init-node-records";
@@ -21,6 +21,7 @@ import { AddTransferMetas1574449936874 } from "../../migrations/1574449936874-ad
 import { AddCfcoreTimestamps1574451273832 } from "../../migrations/1574451273832-add-cfcore-timestamps";
 import { EditViewTable1578621554000 } from "../../migrations/1578621554000-edit-view-table";
 import { NetworkToChainId1579686361011 } from "../../migrations/1579686361011-network-to-chain-id";
+import { AddAnonymizedViewTables1581090243171 } from "../../migrations/1581090243171-add-anonymized-view-tables";
 
 export const entities = [
   AppRegistry,
@@ -31,6 +32,8 @@ export const entities = [
   PeerToPeerTransfer,
   OnchainTransaction,
   Transfer,
+  AnonymizedOnchainTransaction,
+  AnonymizedTransfer,
 ];
 
 export const migrations = [
@@ -45,6 +48,7 @@ export const migrations = [
   AddTransferMetas1574449936874,
   EditViewTable1578621554000,
   NetworkToChainId1579686361011,
+  AddAnonymizedViewTables1581090243171,
 ];
 
 @Injectable()

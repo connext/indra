@@ -1,4 +1,4 @@
-import { EntityRepository, Repository } from "typeorm";
+import { EntityRepository, Repository, Between } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
 
@@ -7,6 +7,7 @@ import {
   LinkedTransferStatus,
   PeerToPeerTransfer,
   Transfer,
+  AnonymizedTransfer,
 } from "./transfer.entity";
 
 @EntityRepository(PeerToPeerTransfer)
@@ -19,7 +20,7 @@ export class LinkedTransferRepository extends Repository<LinkedTransfer> {
   }
 
   async findByLinkedHash(linkedHash: string): Promise<LinkedTransfer | undefined> {
-    return await this.findOne({ where: { linkedHash }, relations: ["senderChannel"] });
+    return await this.findOne({ relations: ["senderChannel"], where: { linkedHash } });
   }
 
   async findByReceiverAppInstanceId(appInstanceId: string): Promise<LinkedTransfer | undefined> {
@@ -42,10 +43,7 @@ export class LinkedTransferRepository extends Repository<LinkedTransfer> {
     return await this.find();
   }
 
-  async markAsRedeemed(
-    transfer: LinkedTransfer,
-    receiverChannel: Channel,
-  ): Promise<LinkedTransfer> {
+  async markAsRedeemed(transfer: LinkedTransfer, receiverChannel: Channel): Promise<LinkedTransfer> {
     transfer.status = LinkedTransferStatus.REDEEMED;
     transfer.receiverChannel = receiverChannel;
     return await this.save(transfer);
@@ -92,6 +90,18 @@ export class TransferRepository extends Repository<Transfer> {
   async findByPaymentId(paymentId: string): Promise<Transfer> {
     return await this.findOne({
       where: { paymentId },
+    });
+  }
+}
+
+@EntityRepository(AnonymizedTransfer)
+export class AnonymizedTransferRepository extends Repository<AnonymizedTransfer> {
+  async findInTimeRange(start: number, end: number): Promise<AnonymizedTransfer[]> {
+    return await this.find({
+      order: { createdAt: "DESC" },
+      where: {
+        createdAt: Between(new Date(start), new Date(end)),
+      },
     });
   }
 }

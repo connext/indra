@@ -14,6 +14,7 @@ import { MessagingModule } from "./messaging/messaging.module";
 import { RedisModule } from "./redis/redis.module";
 import { SwapRateModule } from "./swapRate/swapRate.module";
 import { TransferModule } from "./transfer/transfer.module";
+import { CollateralModule } from "./collateral/collateral.module";
 
 @Module({
   controllers: [CFCoreController],
@@ -24,6 +25,7 @@ import { TransferModule } from "./transfer/transfer.module";
     AuthModule,
     CFCoreModule,
     ChannelModule,
+    CollateralModule,
     ConfigModule,
     DatabaseModule,
     ListenerModule,
