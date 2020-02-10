@@ -329,12 +329,12 @@ Typeorm is cool, if we update db entity files then typeorm can generate SQL db m
 Start up the stack in a clean state (eg `make clean && make reset && make start`) then something that should look like the following should work:
 
 ```
-$ npm run migration:generate foo
+$ cd modules/node && npm run migration:generate foo
 
-> indra-node@4.0.12 migration:generate /home/bohendo/all/Documents/connext/indra/modules/node
+> indra-node@4.0.12 migration:generate /home/username/Documents/connext/indra/modules/node
 > typeorm migration:generate -d migrations -n  "foo"
 
-Migration /home/bohendo/all/Documents/connext/indra/modules/node/migrations/1581311685857-foo.ts has been generated successfully.
+Migration /home/username/Documents/connext/indra/modules/node/migrations/1581311685857-foo.ts has been generated successfully.
 ```
 
 Note: if entity files have *not* changed since the last db migration, the above will print something like "No changes detected" & not generate anything.
