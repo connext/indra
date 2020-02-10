@@ -124,19 +124,10 @@ fi
 
 echo "eth provider: $INDRA_ETH_PROVIDER w chainId: $chainId"
 
-if [[ "$chainId" == "1" ]]
-then eth_network_name="mainnet"
-elif [[ "$chainId" == "4" ]]
-then eth_network_name="rinkeby"
-elif [[ "$chainId" == "6" ]]
-then eth_network_name="kotti"
-elif [[ "$chainId" == "42" ]]
-then eth_network_name="kovan"
-elif [[ "$chainId" == "$ganache_chain_id" ]]
+if [[ "$chainId" == "$ganache_chain_id" ]]
 then
-  eth_network_name="ganache"
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-  eth_mnemonic_name="${project}_mnemonic_$eth_network_name"
+  eth_mnemonic_name="${project}_mnemonic_$chainId"
   new_secret "$eth_mnemonic_name" "$eth_mnemonic"
   eth_volume="chain_dev:"
   number_of_services=$(( $number_of_services + 1 ))
@@ -162,7 +153,7 @@ if [[ -f address-book.json ]]
 then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
 else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
 fi
-eth_mnemonic_name="${project}_mnemonic_$eth_network_name"
+eth_mnemonic_name="${project}_mnemonic_$chainId"
 
 ########################################
 ## Deploy according to configuration
@@ -242,7 +233,7 @@ services:
     environment:
       AWS_ACCESS_KEY_ID: $INDRA_AWS_ACCESS_KEY_ID
       AWS_SECRET_ACCESS_KEY: $INDRA_AWS_SECRET_ACCESS_KEY
-      ETH_NETWORK: $eth_network_name
+      ETH_NETWORK: $chainId
       POSTGRES_DB: $project
       POSTGRES_PASSWORD_FILE: $pg_password_file
       POSTGRES_USER: $project
