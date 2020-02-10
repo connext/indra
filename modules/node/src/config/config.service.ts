@@ -15,6 +15,7 @@ import { AddressZero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { getAddress, Network as EthNetwork, parseEther } from "ethers/utils";
 
+import { DAI_MAINNET_ADDRESS } from "../constants";
 import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
 import { OutcomeType } from "../util/cfCore";
 
@@ -25,6 +26,13 @@ type PostgresConfig = {
   port: number;
   username: string;
 };
+
+type TestnetTokenConfig = TokenConfig[];
+
+type TokenConfig = {
+  chainId: number;
+  address: string;
+}[];
 
 const singleAssetTwoPartyCoinTransferEncoding = `tuple(address to, uint256 amount)[2]`;
 
@@ -83,9 +91,48 @@ export class ConfigService implements OnModuleInit {
     return getAddress(ethAddressBook[chainId].Token.address);
   }
 
-  // FIXME: should be easy to add tokens
-  async getSupportedTokenAddresses(): Promise<string[]> {
-    return [await this.getTokenAddress(), AddressZero];
+  async getTestnetTokenConfig(): Promise<TestnetTokenConfig> {
+    const testnetTokenConfig = this.get("INDRA_TESTNET_TOKEN_CONFIG")
+      ? JSON.parse(this.get("INDRA_TESTNET_TOKEN_CONFIG"))
+      : [];
+    const currentChainId = (await this.getEthNetwork()).chainId;
+    if (currentChainId !== 1) {
+      testnetTokenConfig.push([
+        {
+          address: DAI_MAINNET_ADDRESS,
+          chainId: 1,
+        },
+        { address: await this.getTokenAddress(), chainId: currentChainId },
+      ]);
+    }
+    return testnetTokenConfig;
+  }
+
+  async getTokenAddressForSwap(tokenAddress: string): Promise<string> {
+    const currentChainId = (await this.getEthNetwork()).chainId;
+
+    if (currentChainId !== 1) {
+      const tokenConfig = await this.getTestnetTokenConfig();
+      const configIndex = tokenConfig.findIndex(tc =>
+        tc.find(t => t.chainId === currentChainId && t.address === tokenAddress),
+      );
+      const configExists = tokenConfig[configIndex].find(tc => tc.chainId === 1 && tc.address === tokenAddress);
+      tokenAddress = configExists ? configExists.address : tokenAddress;
+    }
+
+    return tokenAddress;
+  }
+
+  getSupportedTokenAddresses(): string[] {
+    const swaps = this.getAllowedSwaps();
+    const tokens = swaps.reduce((tokensArray, swap) => tokensArray.concat([swap.from, swap.to]), []);
+    tokens.push(AddressZero);
+    const tokenSet = new Set(tokens);
+    return [...tokenSet];
+  }
+
+  getAllowedSwaps(): AllowedSwap[] {
+    return JSON.parse(this.get("INDRA_ALLOWED_SWAPS"));
   }
 
   async getDefaultAppByName(name: SupportedApplication): Promise<DefaultApp> {
@@ -172,10 +219,6 @@ export class ConfigService implements OnModuleInit {
     return this.get(`INDRA_REDIS_URL`);
   }
 
-  getSwapConfig() {
-    
-  }
-
   async getDefaultPaymentProfile(assetId: string = AddressZero): Promise<PaymentProfile | undefined> {
     const tokenAddress = await this.getTokenAddress();
     switch (assetId) {
@@ -198,20 +241,6 @@ export class ConfigService implements OnModuleInit {
       default:
         return undefined;
     }
-  }
-
-  async getAllowedSwaps(): Promise<AllowedSwap[]> {
-    const allowedSwaps: AllowedSwap[] = [
-      {
-        from: await this.getTokenAddress(),
-        to: AddressZero,
-      },
-      {
-        from: AddressZero,
-        to: await this.getTokenAddress(),
-      },
-    ];
-    return allowedSwaps;
   }
 
   onModuleInit(): void {

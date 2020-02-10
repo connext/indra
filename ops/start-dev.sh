@@ -43,6 +43,8 @@ else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' 
 fi
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 
+allowed_swaps='[{"from":"0xeec918d74c746167564401103096D45BbD494B74","to":"0x0000000000000000000000000000000000000000"},{"from":"0x0000000000000000000000000000000000000000","to":"0xeec918d74c746167564401103096D45BbD494B74"}]'
+
 # database connection settings
 pg_db="$project"
 pg_password_file="/run/secrets/${project}_database_dev"
@@ -176,6 +178,7 @@ services:
     entrypoint: bash modules/node/ops/entry.sh
     environment:
       INDRA_ADMIN_TOKEN: $INDRA_ADMIN_TOKEN
+      INDRA_ALLOWED_SWAPS: '$allowed_swaps'
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC: $eth_mnemonic
       INDRA_ETH_RPC_URL: $eth_rpc_url
