@@ -159,7 +159,7 @@ pull-backwards-compatible:
 	bash ops/pull-images.sh $(backwards_compatible_version)
 
 deployed-contracts: contracts
-	bash ops/deploy-contracts.sh ganache
+	bash ops/deploy-contracts.sh
 	touch $(flags)/$@
 
 build-report:
