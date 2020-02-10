@@ -26,7 +26,6 @@ then mnemonic="roof traffic soul urge tenant credit protect conduct enable anima
 fi
 
 export STORE_DIR="${STORE_DIR:-/store/}"
-export ECCRYPTO_NO_FALLBACK=true
 export ETH_RPC_URL="${ETH_RPC_URL:-http://172.17.0.1:8545}"
 export NODE_URL="${NODE_URL:-nats://172.17.0.1:4222}"
 export PISA_CONTRACT_ADDRESS="${PISA_CONTRACT_ADDRESS:-0x0000000000000000000000000000000000000000}"

@@ -26,7 +26,6 @@ else
 
   exec docker run \
     --entrypoint="bash" \
-    --env="ECCRYPTO_NO_FALLBACK=true" \
     --env="INDRA_CLIENT_LOG_LEVEL=$LOG_LEVEL" \
     --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
     --env="INDRA_NODE_URL=$NODE_URL" \
@@ -41,7 +40,6 @@ echo "Executing image $image"
 
 exec docker run \
   $watchOptions \
-  --env="ECCRYPTO_NO_FALLBACK=true" \
   --env="INDRA_CLIENT_LOG_LEVEL=0" \
   --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
   --env="INDRA_NODE_URL=$NODE_URL" \

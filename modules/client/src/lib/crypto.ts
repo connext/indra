@@ -1,4 +1,4 @@
-import { decrypt, encrypt } from "eccrypto";
+import { decrypt, encrypt } from "eccrypto-js";
 import { publicKeyConvert } from "secp256k1";
 
 type Encrypted = {

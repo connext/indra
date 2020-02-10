@@ -57,7 +57,6 @@ then
   exec docker run \
     $interactive \
     --entrypoint="bash" \
-    --env="ECCRYPTO_NO_FALLBACK=true" \
     --env="ETH_RPC_URL=$ETH_RPC_URL" \
     --env="MNEMONIC=$mnemonic" \
     --env="NODE_URL=$NODE_URL" \

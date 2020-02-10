@@ -12,7 +12,6 @@ fi
 
 exec docker run \
   --entrypoint="bash" \
-  --env="ECCRYPTO_NO_FALLBACK=true" \
   $interactive \
   --name="${project}_test_client" \
   --rm \

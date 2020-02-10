@@ -10,7 +10,6 @@ module.exports = {
   mode: "development",
   target: 'node',
   externals: {
-    'eccrypto': 'commonjs eccrypto',
     '@nestjs/microservices': 'commonjs @nestjs/microservices',
     '@nestjs/common': 'commonjs @nestjs/common',
     'pg': 'commonjs pg',
