@@ -230,8 +230,8 @@
   "4447": {
     "ChallengeRegistry": {
       "address": "0x8CdaF0CD259887258Bc13a92C0a6dA92698644C0",
-      "bytecode": "0xcc2c3019315ae4805520b753a86560b6dee6ae75eb8216396406e5848685ea81",
-      "txHash": "0xd386952a624ca88dd3030a612c396fd5331d892448ac07602c25eb2955d5e97a"
+      "bytecode": "0x625c86e817e9edf39d8502ba911b2b16d099da18eb91d97894647799cf6543b0",
+      "txHash": "0xa1879c4932cd9d22da6d95b1f1d7e70b204dc1d324fc659795cf1790123ceacf"
     },
     "ConditionalTransactionDelegateTarget": {
       "address": "0xF12b5dd4EAD5F743C6BaA640B0216200e89B60Da",
@@ -270,8 +270,8 @@
     },
     "TimeLockedPassThrough": {
       "address": "0x2C2B9C9a4a25e24B174f26114e8926a9f2128FE4",
-      "bytecode": "0x2648887bc3006c9540a3f8cb47579bcf5e1a03b73259052b1c0779528c2d27ca",
-      "txHash": "0x41ffa2ca3000e02d6ecf705e548b67244b289ee64d744877dcd53c2940762da6"
+      "bytecode": "0x0f8bbc47f3c7b286e7fa12f69fe13d80466d16587c23321eadde1d241d454e95",
+      "txHash": "0xb074c5e2f2fc6a21d8e01712b4e55a6b64973990c8a774ba1d586bd8b8714bfd"
     },
     "TwoPartyFixedOutcomeInterpreter": {
       "address": "0xFB88dE099e13c3ED21F80a7a1E49f8CAEcF10df6",
