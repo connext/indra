@@ -89,6 +89,7 @@ export interface IConnextClient {
   on(event: ConnextEvent | CFCoreTypes.RpcMethodName, callback: (...args: any[]) => void): void;
   once(event: ConnextEvent | CFCoreTypes.RpcMethodName, callback: (...args: any[]) => void): void;
   emit(event: ConnextEvent | CFCoreTypes.RpcMethodName, data: any): boolean;
+  removeListener(event: ConnextEvent | CFCoreTypes.RpcMethodName, callback: (...args: any[]) => void): void;
 
   ///////////////////////////////////
   // CORE CHANNEL METHODS

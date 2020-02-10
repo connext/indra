@@ -112,7 +112,6 @@ export interface INodeApiClient {
   resolveLinkedTransfer(
     paymentId: string,
     linkedHash: string,
-    meta: object,
   ): Promise<ResolveLinkedTransferResponse>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   restoreState(publicIdentifier: string): Promise<any>;

@@ -11,7 +11,7 @@ import {
   DEPOSIT_FAILED_EVENT,
   DepositFailedMessage,
 } from "@connext/types";
-import { forwardRef, Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
@@ -156,7 +156,6 @@ export class TransferService {
     userPubId: string,
     paymentId: string,
     linkedHash: string,
-    meta: object,
   ): Promise<ResolveLinkedTransferResponse> {
     logger.debug(`resolveLinkedTransfer(${userPubId}, ${paymentId}, ${linkedHash})`);
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
@@ -269,7 +268,6 @@ export class TransferService {
       Zero,
       transfer.assetId,
       SimpleLinkedTransferApp,
-      meta,
     );
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {
@@ -286,6 +284,7 @@ export class TransferService {
     return {
       appId: receiverAppInstallRes.appInstanceId,
       freeBalance: await this.cfCoreService.getFreeBalance(userPubId, channel.multisigAddress, assetId),
+      meta: transfer.meta,
       paymentId,
     };
   }
