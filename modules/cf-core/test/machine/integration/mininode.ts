@@ -8,6 +8,7 @@ import { Opcode, ProtocolRunner } from "../../../src/machine";
 import { StateChannel } from "../../../src/models";
 
 import { getRandomHDNodes } from "./random-signing-keys";
+import { testDomainSeparator } from "../../integration/utils";
 
 /// Returns a function that can be registered with IO_SEND{_AND_WAIT}
 const makeSigner = (hdNode: HDNode) => {
@@ -40,7 +41,11 @@ export class MiniNode {
     [this.hdNode] = getRandomHDNodes(1);
     this.xpub = this.hdNode.neuter().extendedKey;
     this.scm = new Map<string, StateChannel>();
-    this.protocolRunner = new ProtocolRunner(networkContext, provider);
+    this.protocolRunner = new ProtocolRunner(
+      networkContext,
+      provider,
+      testDomainSeparator
+    );
     this.protocolRunner.register(Opcode.OP_SIGN, makeSigner(this.hdNode));
     this.protocolRunner.register(Opcode.WRITE_COMMITMENT, () => {});
     this.protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, () => {});

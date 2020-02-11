@@ -1,9 +1,9 @@
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { Web3Provider } from "ethers/providers";
 import { hexlify, keccak256, randomBytes, BigNumberish } from "ethers/utils";
-
-import ChallengeRegistry from "../../build/ChallengeRegistry.json";
 
 import {
   AppIdentityTestClass,
@@ -31,7 +31,7 @@ const BOB =
 const ONCHAIN_CHALLENGE_TIMEOUT = 30;
 
 describe("ChallengeRegistry", () => {
-  let provider: Web3Provider;
+  let provider = buidler.provider;
   let wallet: Wallet;
   let globalChannelNonce = 0;
 
@@ -42,8 +42,7 @@ describe("ChallengeRegistry", () => {
   let setStateWithSigs: (versionNumber: BigNumberish, appState?: string, timeout?: number) => Promise<void>;
 
   before(async () => {
-    provider = waffle.createMockProvider();
-    wallet = (await waffle.getWallets(provider))[0];
+    wallet = (await provider.getWallets())[0];
 
     appRegistry = await deployRegistry(wallet);
   });

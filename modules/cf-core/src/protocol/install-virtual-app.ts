@@ -55,7 +55,8 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       message: { params, processID },
       stateChannelsMap,
       network,
-      provider
+      provider,
+      domainSeparator
     } = context;
 
     const {
@@ -95,7 +96,10 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
         stateChannelWithIntermediary.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
           virtualAppInstance.identityHash
         )
-      )
+      ),
+      domainSeparator,
+      provider.network.chainId,
+      stateChannelWithIntermediary.numProposedApps
     );
 
     const initiatorSignatureOnAliceIngridVirtualAppAgreement = yield [
@@ -291,7 +295,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   1 /* Intermediary */: async function*(context: Context) {
-    const { message: m1, stateChannelsMap, network } = context;
+    const { message: m1, stateChannelsMap, network, provider, domainSeparator } = context;
 
     const {
       params,
@@ -348,7 +352,10 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
         stateChannelWithInitiating.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
           timeLockedPassThroughAppInstance.state["targetAppIdentityHash"]
         )
-      )
+      ),
+      domainSeparator,
+      provider.network.chainId,
+      stateChannelWithInitiating.numProposedApps
     );
 
     assertIsValidSignature(
@@ -368,7 +375,10 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
         stateChannelWithResponding.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
           timeLockedPassThroughAppInstance.state["targetAppIdentityHash"]
         )
-      )
+      ),
+      domainSeparator,
+      provider.network.chainId,
+      stateChannelWithResponding.numProposedApps
     );
 
     const intermediarySignatureOnIngridBobVirtualAppAgreement = yield [
@@ -600,14 +610,14 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   2 /* Responding */: async function*(context: Context) {
-    const { message: m2, stateChannelsMap, network, provider } = context;
+    const { message: m2, stateChannelsMap, network, provider, domainSeparator } = context;
 
     const {
       params,
       processID,
       customData: {
         signature: intermediarySignatureOnIngridBobVirtualAppAgreement
-      }
+      },
     } = m2;
 
     const {
@@ -647,7 +657,10 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
         stateChannelWithIntermediary.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
           virtualAppInstance.identityHash
         )
-      )
+      ),
+      domainSeparator,
+      provider.network.chainId,
+      stateChannelWithIntermediary.numProposedApps
     );
 
     assertIsValidSignature(

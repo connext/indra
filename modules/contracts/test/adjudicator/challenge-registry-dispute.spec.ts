@@ -1,8 +1,9 @@
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import { SolidityValueType } from "@connext/types";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
-import { Web3Provider } from "ethers/providers";
 import { bigNumberify, defaultAbiCoder, joinSignature, keccak256, SigningKey } from "ethers/utils";
 
 import AppWithAction from "../../build/AppWithAction.json";
@@ -50,7 +51,7 @@ function encodeAction(action: SolidityValueType) {
 }
 
 describe("ChallengeRegistry Challenge", () => {
-  let provider: Web3Provider;
+  let provider = buidler.provider;
   let wallet: Wallet;
 
   let appRegistry: Contract;
@@ -62,8 +63,7 @@ describe("ChallengeRegistry Challenge", () => {
   let respondToChallenge: (state: any, action: any, actionSig: any) => Promise<any>;
 
   before(async () => {
-    provider = waffle.createMockProvider();
-    wallet = (await waffle.getWallets(provider))[0];
+    wallet = (await provider.getWallets())[0];
 
     appRegistry = await deployRegistry(wallet);
 

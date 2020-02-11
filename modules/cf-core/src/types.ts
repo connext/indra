@@ -35,8 +35,17 @@ export enum MultisigOperation {
   Create = 2
 }
 
-export type MultisigTransaction = CFCoreTypes.MinimalTransaction & {
+// EIP 712 Domain Separator
+export type DomainSeparator = {
+  domainName: string;
+  domainVersion: string;
+  domainSalt: string;
+}
+
+export type MultisigTransaction = CFCoreTypes.MinimalTransaction & DomainSeparator & {
+  chainId: number;
   operation: MultisigOperation;
+  transactionCount: number;
 };
 
 export type ProtocolExecutionFlow = {
@@ -55,6 +64,7 @@ export interface Context {
   stateChannelsMap: Map<string, StateChannel>;
   message: ProtocolMessage;
   provider: BaseProvider;
+  domainSeparator: DomainSeparator;
 }
 
 export type TakeActionProtocolParams = {

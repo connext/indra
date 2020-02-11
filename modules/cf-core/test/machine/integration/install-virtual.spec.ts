@@ -1,4 +1,7 @@
-import { OutcomeType, SingleAssetTwoPartyIntermediaryAgreement } from "@connext/types";
+import {
+  OutcomeType,
+  SingleAssetTwoPartyIntermediaryAgreement
+} from "@connext/types";
 import { Contract, ContractFactory, Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -19,9 +22,12 @@ import {
   MinimumViableMultisig,
   NetworkContextForTestSuite,
   ProxyFactory,
-  TwoPartyFixedOutcomeApp,
+  TwoPartyFixedOutcomeApp
 } from "../../contracts";
-import { transferERC20Tokens } from "../../integration/utils";
+import {
+  transferERC20Tokens,
+  testDomainSeparator
+} from "../../integration/utils";
 
 import { toBeEq } from "./bignumber-jest-matcher";
 import { connectToGanache } from "./connect-ganache";
@@ -37,6 +43,10 @@ const CREATE_PROXY_AND_SETUP_GAS = 1e6;
 // The ChallengeRegistry.setState call _could_ be estimated but we haven't
 // written this test to do that yet
 const SETSTATE_COMMITMENT_GAS = 1e6;
+
+// Also we can't estimate the install commitment gas b/c it uses
+// delegatecall for the conditional transaction
+const CONDITIONAL_TX_DELEGATECALL_GAS = 1e6;
 
 let provider: JsonRpcProvider;
 let wallet: Wallet;
@@ -82,7 +92,7 @@ beforeAll(async () => {
 
   twoPartyFixedOutcomeAppDefinition = await new ContractFactory(
     TwoPartyFixedOutcomeApp.abi,
-    TwoPartyFixedOutcomeApp.evm.bytecode,
+    TwoPartyFixedOutcomeApp.bytecode,
     wallet
   ).deploy();
 
@@ -168,7 +178,10 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
     ) {
       return StateChannel.setupChannel(
         network.IdentityApp,
-        { proxyFactory: proxyFactory.address, multisigMastercopy: network.MinimumViableMultisig },
+        {
+          proxyFactory: proxyFactory.address,
+          multisigMastercopy: network.MinimumViableMultisig
+        },
         proxyAddress, // used as multisigAddress
         xpubs
       ).setFreeBalance(
@@ -306,7 +319,10 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
         targetAppInstance.identityHash, // target
         stateChannel.freeBalance.identityHash, // fb
         network.TwoPartyFixedOutcomeFromVirtualAppInterpreter,
-        encodeSingleAssetTwoPartyIntermediaryAgreementParams(agreement)
+        encodeSingleAssetTwoPartyIntermediaryAgreementParams(agreement),
+        testDomainSeparator,
+        provider.network.chainId,
+        stateChannel.numProposedApps
       );
 
       await wallet.sendTransaction({
@@ -314,7 +330,7 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
           multisigOwnerKeys[0].signDigest(commitment.hashToSign()),
           multisigOwnerKeys[1].signDigest(commitment.hashToSign())
         ]),
-        gasLimit: 6e9
+        gasLimit: CONDITIONAL_TX_DELEGATECALL_GAS
       });
 
       expect(await erc20Contract.functions.balanceOf(capitalProvider)).toBeEq(
@@ -370,7 +386,10 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
         targetAppInstance.identityHash, // target
         stateChannel.freeBalance.identityHash, // fb
         network.TwoPartyFixedOutcomeFromVirtualAppInterpreter,
-        encodeSingleAssetTwoPartyIntermediaryAgreementParams(agreement)
+        encodeSingleAssetTwoPartyIntermediaryAgreementParams(agreement),
+        testDomainSeparator,
+        provider.network.chainId,
+        stateChannel.numProposedApps
       );
 
       await wallet.sendTransaction({
@@ -378,7 +397,7 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
           multisigOwnerKeys[0].signDigest(commitment.hashToSign()),
           multisigOwnerKeys[1].signDigest(commitment.hashToSign())
         ]),
-        gasLimit: 6e9
+        gasLimit: CONDITIONAL_TX_DELEGATECALL_GAS
       });
 
       expect(await provider.getBalance(capitalProvider)).toBeEq(

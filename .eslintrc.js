@@ -4,6 +4,7 @@ module.exports = {
     "comma-dangle": ["error", "always-multiline"],
     "max-len": ["warn", { code: 120, ignoreTemplateLiterals: true }],
     "no-async-promise-executor": "off",
+    "no-empty-pattern": "off",
     "no-undef": ["error"],
     "no-var": ["error"],
     "object-curly-spacing": ["error", "always"],

@@ -1,12 +1,13 @@
+import { MinimumViableMultisig } from "@connext/contracts";
 import {
   Interface,
   joinSignature,
-  keccak256,
   Signature,
-  solidityPack,
+  solidityKeccak256,
+  id,
+  keccak256
 } from "ethers/utils";
 
-import { MinimumViableMultisig } from "../contracts";
 import { CFCoreTypes, EthereumCommitment, MultisigTransaction } from "../types";
 import { sortSignaturesBySignerAddress } from "../utils";
 
@@ -21,7 +22,9 @@ export abstract class MultisigCommitment extends EthereumCommitment {
 
   abstract getTransactionDetails(): MultisigTransaction;
 
-  public getSignedTransaction(sigs: Signature[]): CFCoreTypes.MinimalTransaction {
+  public getSignedTransaction(
+    sigs: Signature[]
+  ): CFCoreTypes.MinimalTransaction {
     const multisigInput = this.getTransactionDetails();
 
     const signaturesList = sortSignaturesBySignerAddress(
@@ -36,6 +39,11 @@ export abstract class MultisigCommitment extends EthereumCommitment {
       multisigInput.value,
       multisigInput.data,
       multisigInput.operation,
+      multisigInput.domainName,
+      multisigInput.domainVersion,
+      multisigInput.chainId,
+      multisigInput.domainSalt,
+      multisigInput.transactionCount,
       signaturesList
     ]);
 
@@ -44,12 +52,42 @@ export abstract class MultisigCommitment extends EthereumCommitment {
   }
 
   public hashToSign(): string {
-    const { to, value, data, operation } = this.getTransactionDetails();
-    return keccak256(
-      solidityPack(
-        ["bytes1", "address[]", "address", "uint256", "bytes", "uint8"],
-        ["0x19", this.multisigOwners, to, value, data, operation]
-      )
+    const {
+      to,
+      value,
+      data,
+      operation,
+      domainName,
+      domainVersion,
+      chainId,
+      domainSalt,
+      transactionCount
+    } = this.getTransactionDetails();
+    const domainSeparatorHash = solidityKeccak256(
+      ["bytes32", "bytes32", "uint256", "address", "bytes32"],
+      [id(domainName), id(domainVersion), chainId, this.multisigAddress, domainSalt]
+    );
+    return solidityKeccak256(
+      [
+        "bytes1",
+        "address[]",
+        "address",
+        "uint256",
+        "bytes32",
+        "uint8",
+        "bytes32",
+        "uint256"
+      ],
+      [
+        "0x19",
+        this.multisigOwners,
+        to,
+        value,
+        keccak256(data),
+        operation,
+        domainSeparatorHash,
+        transactionCount
+      ]
     );
   }
 }
