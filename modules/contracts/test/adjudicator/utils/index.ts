@@ -17,6 +17,7 @@ import { HashZero } from "ethers/constants";
 import { Web3Provider } from "ethers/providers";
 
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
+import AppWithAction from "../../../build/AppWithAction.json";
 
 chai.use(require("chai-subset"));
 chai.use(waffle.solidity);
@@ -169,7 +170,21 @@ export async function isStateFinalized(identityHash: string, challengeRegistry: 
 }
 
 /**
- * Cancels an active challenge
+ * Returns whether or not the outcome is set
+ */
+export async function isOutcomeSet(identityHash: string, challengeRegistry: Contract): Promise<boolean> {
+  return await challengeRegistry.functions.isOutcomeSet(identityHash);
+}
+
+/**
+ * Returns the outcome if it is set
+ */
+export async function getOutcome(identityHash: string, challengeRegistry: Contract): Promise<boolean> {
+  return await challengeRegistry.functions.getOutcome(identityHash);
+}
+
+/**
+ * Sets the state in the challenge registry
  */
 export async function setStateWithSignatures(
   appIdentity: AppIdentityTestClass,
@@ -191,6 +206,14 @@ export async function setStateWithSignatures(
     timeout,
     versionNumber,
   });
+}
+
+export async function setOutcome(
+  appIdentity: AppIdentityTestClass,
+  challengeRegistry: Contract,
+  finalState: string = HashZero,
+): Promise<void> {
+  await challengeRegistry.functions.setOutcome(appIdentity, finalState);
 }
 
 /**
@@ -218,16 +241,35 @@ export async function cancelChallenge(
   );
 }
 
-export async function advanceBlocks(provider: Web3Provider, blocks: number = ONCHAIN_CHALLENGE_TIMEOUT) {
+/**
+ * Fast forwards blocks + 1 from current block
+ * @param provider
+ * @param blocks
+ */
+export async function advanceBlocks(provider: Web3Provider, blocks: number = ONCHAIN_CHALLENGE_TIMEOUT + 1) {
   const currBlock = await provider.getBlockNumber();
-  for (const _ of Array(blocks + 1)) {
+  for (const _ of Array(blocks)) {
     await provider.send("evm_mine", []);
   }
-  expect(await provider.getBlockNumber()).to.be.equal(currBlock + blocks + 1);
+  expect(await provider.getBlockNumber()).to.be.equal(currBlock + blocks);
 }
 
+/**
+ * Deploys the `ChallengeRegistry.sol`
+ * @param wallet default interacting wallet
+ */
 export async function deployRegistry(wallet: Wallet): Promise<Contract> {
   return await waffle.deployContract(wallet, ChallengeRegistry, [], {
+    gasLimit: 6000000, // override default of 4 million
+  });
+}
+
+/**
+ * Deploys the `ChallengeRegistry.sol`
+ * @param wallet default interacting wallet
+ */
+export async function deployApp(wallet: Wallet): Promise<Contract> {
+  return await waffle.deployContract(wallet, AppWithAction, [], {
     gasLimit: 6000000, // override default of 4 million
   });
 }
