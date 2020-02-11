@@ -37,6 +37,6 @@
     "eth-crypto": "1.5.1",
     "jest": "25.1.0",
     "ts-jest": "25.2.0",
-    "typescript": "3.5.3"
+    "typescript": "3.7.5"
   }
 }
