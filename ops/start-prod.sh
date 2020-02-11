@@ -27,7 +27,7 @@ ganache_chain_id="4447"
 log_level="3" # set to 5 for all logs or to 0 for none
 nats_port="4222"
 node_port="8080"
-number_of_services="7" # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services="6" # NOTE: Gotta update this manually when adding/removing services :(
 
 ####################
 # Helper Functions
@@ -100,11 +100,10 @@ fi
 ethprovider_image="$registry${project}_ethprovider:$version"
 database_image="$registry${project}_database:$version"
 logdna_image="logdna/logspout:1.2.0"
-nats_image="nats:2.0.0-linux"
+nats_image="provide/nats-server:latest"
 node_image="$registry${project}_node:$version"
 proxy_image="$registry${project}_proxy:$version"
 redis_image="redis:5-alpine"
-relay_image="$registry${project}_relay:$version"
 
 pull_if_unavailable "$database_image"
 pull_if_unavailable "$logdna_image"
@@ -112,7 +111,6 @@ pull_if_unavailable "$nats_image"
 pull_if_unavailable "$node_image"
 pull_if_unavailable "$proxy_image"
 pull_if_unavailable "$redis_image"
-pull_if_unavailable "$relay_image"
 
 ########################################
 ## Ethereum Config
@@ -260,12 +258,6 @@ services:
           max-size: 10m
     ports:
       - "4222:4222"
-
-  relay:
-    image: $relay_image
-    command: ["nats:$nats_port"]
-    ports:
-      - "4223:4223"
 
   redis:
     image: $redis_image

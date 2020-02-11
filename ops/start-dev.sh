@@ -21,7 +21,9 @@ log_level="${LOG_LEVEL:-3}"
 # Internal Config
 # config & hard-coded stuff you might want to change
 
-number_of_services=5 # NOTE: Gotta update this manually when adding/removing services :(
+number_of_services=4 # NOTE: Gotta update this manually when adding/removing services :(
+
+log_level=3
 nats_port=4222
 node_port=8080
 dash_port=9999
@@ -66,12 +68,11 @@ builder_image="${project}_builder"
 ui_image="$builder_image"
 database_image="postgres:9-alpine"
 ethprovider_image="$builder_image"
-nats_image="nats:2.0.0-linux"
+nats_image="provide/nats-server:latest"
 node_image="$builder_image"
 proxy_image="${project}_proxy"
 redis_image=redis:5-alpine
 redis_url="redis://redis:6379"
-relay_image="${project}_relay"
 
 ####################
 # Deploy according to above configuration
@@ -108,14 +109,6 @@ else
       - "$ui_port:80"
     volumes:
       - certs:/etc/letsencrypt
-
-  relay:
-    image: $relay_image
-    command: ["nats:$nats_port"]
-    networks:
-      - $project
-    ports:
-      - "4223:4223"
 
   ui:
     image: $ui_image
