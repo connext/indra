@@ -75,7 +75,7 @@ describe("ChallengeRegistry", () => {
 
     sendSignedFinalizationToChain = async () =>
       await setStateWithSigs(
-        (await latestVersionNumber(appIdentityTestObject.identityHash, appRegistry)) + 1,
+        (await latestVersionNumber(appIdentityTestObject.identityHash, appRegistry)).add(1),
         await latestAppStateHash(appIdentityTestObject.identityHash, appRegistry),
         0,
       );
