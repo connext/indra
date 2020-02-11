@@ -1,8 +1,8 @@
 pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "../Interpreter.sol";
 import "../libs/LibOutcome.sol";
