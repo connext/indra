@@ -241,7 +241,7 @@ services:
       - $db_secret
     volumes:
       - $db_volume:/var/lib/postgresql/data
-      - `pwd`/modules/database/snapshots:/root/snapshots
+      - `pwd`/ops/database/snapshots:/root/snapshots
     $db_port
 
   nats:
