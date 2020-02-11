@@ -21,7 +21,7 @@
   "scripts": {
     "build": "waffle waffle.json && ./node_modules/.bin/tsc -p tsconfig.json",
     "build-native": "waffle waffle.native.json",
-    "test": "ts-mocha test/**/*",
+    "test": "ts-mocha 'test/**/*.spec.ts'",
     "lint-sol": "solium -d ."
   },
   "dependencies": {
