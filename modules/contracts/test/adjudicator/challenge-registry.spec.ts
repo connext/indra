@@ -28,7 +28,7 @@ const BOB =
 // HELPER DATA
 const ONCHAIN_CHALLENGE_TIMEOUT = 30;
 
-describe.only("ChallengeRegistry", () => {
+describe("ChallengeRegistry", () => {
   let provider: Web3Provider;
   let wallet: Wallet;
   let globalChannelNonce = 0;
