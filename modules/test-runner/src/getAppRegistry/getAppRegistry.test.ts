@@ -5,14 +5,15 @@ import { expect } from "../util";
 import { createClient } from "../util/client";
 
 const expectedNetwork = {
-  chainId: 4447,
   name: "ganache",
+  chainId: 4447,
 };
 const expectedAddresses = addressBook[expectedNetwork.chainId];
 
 const verifyApp = (app: DefaultApp): void => {
   expect(app.chainId).to.be.equal(expectedNetwork.chainId);
   expect(app.name).to.exist;
+  expect(app.appDefinitionAddress).to.be.equal(expectedAddresses[app.name].address);
 };
 
 describe("Get App Registry", () => {
@@ -33,8 +34,8 @@ describe("Get App Registry", () => {
   it("Happy case: user receives registry information for specific app", async () => {
     client = await createClient();
     const appRegistry = await client.getAppRegistry({
-      chainId: 4447,
       name: "CoinBalanceRefundApp",
+      chainId: 4447,
     });
     appRegistry.forEach((app: DefaultApp) => verifyApp(app));
   });

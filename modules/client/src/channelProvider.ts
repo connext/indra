@@ -1,8 +1,7 @@
-import { ConnextEventEmitter } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
 import { Wallet } from "ethers";
-import { HashZero } from "ethers/constants";
 import { arrayify } from "ethers/utils";
+import EventEmitter from "events";
 
 import { CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
 import {
@@ -33,7 +32,6 @@ export const createCFChannelProvider = async ({
     networkContext,
     nodeConfig,
     ethProvider,
-    { domainName: "Connext", domainVersion: "0.0.1", domainSalt: HashZero },
     lockService,
     xpub,
     keyGen,
@@ -45,11 +43,11 @@ export const createCFChannelProvider = async ({
     userPublicIdentifier: xpub,
   };
   const connection = new CFCoreRpcConnection(cfCore, store, await keyGen("0"));
-  const channelProvider = new ChannelProvider(connection as IRpcConnection, channelProviderConfig);
+  const channelProvider = new ChannelProvider(connection, channelProviderConfig);
   return channelProvider;
 };
 
-export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConnection {
+export class CFCoreRpcConnection extends EventEmitter implements IRpcConnection {
   public connected: boolean = true;
   public cfCore: CFCore;
   public store: Store;
@@ -87,18 +85,12 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
     return result;
   }
 
-  public on = (
-    event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName | string,
-    listener: (...args: any[]) => void,
-  ): any => {
+  public on = (event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, listener: (...args: any[]) => void): any => {
     this.cfCore.on(event as any, listener);
     return this.cfCore;
   };
 
-  public once = (
-    event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName | string,
-    listener: (...args: any[]) => void,
-  ): any => {
+  public once = (event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, listener: (...args: any[]) => void): any => {
     this.cfCore.once(event as any, listener);
     return this.cfCore;
   };

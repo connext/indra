@@ -1,10 +1,11 @@
+import EventEmitter from "events";
+
 import { NetworkContext } from "./contracts";
-import { ConnextEventEmitter } from "./events";
 import { ProtocolTypes } from "./protocol";
 import { Store, StorePair } from "./store";
 import { CFCoreTypes } from "./cfCore";
 
-export interface IChannelProvider extends ConnextEventEmitter {
+export interface IChannelProvider extends EventEmitter {
   ////////////////////////////////////////
   // Properties
 
@@ -91,7 +92,7 @@ export type JsonRpcRequest = {
 
 export type KeyGen = (index: string) => Promise<string>;
 
-export interface IRpcConnection extends ConnextEventEmitter {
+export interface IRpcConnection extends EventEmitter {
   ////////////////////////////////////////
   // Properties
   connected: boolean;

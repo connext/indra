@@ -10,6 +10,9 @@ echo
 cd modules
 for module in `ls`
 do
+  if [[ "$module" == "proxy" ]]
+  then continue
+  fi
   echo "===== Module: $module"
   cd $module
   npm outdated | tail -n +2 | awk '$3 != $4' | awk "$format"

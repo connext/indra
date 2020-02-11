@@ -10,10 +10,10 @@ SHELL=/bin/bash
 
 commit=$(shell git rev-parse HEAD | head -c 8)
 release=$(shell cat package.json | grep '"version"' | awk -F '"' '{print $$4}')
-solc_version=$(shell cat $(contracts)/package.json | grep '"solc"' | awk -F '"' '{print $$4}')
+solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
 # version that will be tested against for backwards compatibility checks
-backwards_compatible_version=$(commit) # $(shell echo $(release) | cut -d '.' -f 1).0.0
+backwards_compatible_version=$(shell echo $(release) | cut -d '.' -f 1).0.7
 
 # Pool of images to pull cached layers from during docker build steps
 cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_relay:$(commit),$(project)_relay,$(project)_bot:$(commit),$(project)_bot,$(project)_builder"; else echo ""; fi)
@@ -27,7 +27,7 @@ client=$(cwd)/modules/client
 contracts=$(cwd)/modules/contracts
 daicard=$(cwd)/modules/daicard
 dashboard=$(cwd)/modules/dashboard
-database=$(cwd)/ops/database
+database=$(cwd)/modules/database
 messaging=$(cwd)/modules/messaging
 node=$(cwd)/modules/node
 proxy=$(cwd)/ops/proxy
@@ -115,7 +115,6 @@ clean: stop
 	rm -rf node_modules/@walletconnect/*
 	rm -rf modules/**/node_modules/@walletconnect/*
 	rm -rf modules/**/build
-	rm -rf modules/**/cache
 	rm -rf modules/**/dist
 	rm -rf modules/**/node_modules/**/.git
 
@@ -159,7 +158,7 @@ pull-backwards-compatible:
 	bash ops/pull-images.sh $(backwards_compatible_version)
 
 deployed-contracts: contracts
-	bash ops/deploy-contracts.sh
+	bash ops/deploy-contracts.sh ganache
 	touch $(flags)/$@
 
 build-report:
@@ -188,7 +187,7 @@ test-bot-farm:
 test-cf: cf-core
 	bash ops/test/cf.sh
 
-test-client: client
+test-client: builder client
 	bash ops/test/client.sh
 
 test-contracts: contracts types
@@ -229,7 +228,7 @@ daicard-proxy: $(shell find $(proxy) $(find_options))
 	docker tag daicard_proxy daicard_proxy:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-database: $(shell find $(database) $(find_options))
+database: node-modules $(shell find $(database) $(find_options))
 	$(log_start)
 	docker build --file $(database)/db.dockerfile $(cache_from) --tag $(project)_database $(database)
 	docker tag $(project)_database $(project)_database:$(commit)
@@ -366,19 +365,14 @@ types: node-modules $(shell find $(types)/src $(find_options))
 ########################################
 # Common Prerequisites
 
-contracts: node-modules contract-artifacts types $(shell find $(contracts)/address-book.json $(contracts)/index.ts $(contracts)/test $(contracts)/tsconfig.json $(find_options))
+contracts: node-modules $(shell find $(contracts)/contracts $(contracts)/test $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/contracts && npm run transpile"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-contract-artifacts: node-modules $(shell find $(contracts)/waffle.json $(contracts)/contracts $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/contracts && npm run compile"
+	$(docker_run) "cd modules/contracts && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 contracts-native: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.native.json $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/contracts && npm run compile-native"
+	$(docker_run) "cd modules/contracts && npm run build-native"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 node-modules: builder package.json $(shell ls modules/**/package.json)

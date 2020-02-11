@@ -1,184 +1,183 @@
 pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../adjudicator/interfaces/CounterfactualApp.sol";
 import "../funding/libs/LibOutcome.sol";
 
 
 /// @title Unidirectional Linked Transfer App
-/// @notice This contract allows users to claim a payment locked in
+/// @notice This contract allows users to claim a payment locked in 
 ///         the application if they provide the correct preimage
 
 contract UnidirectionalLinkedTransferApp is CounterfactualApp {
 
-    using SafeMath for uint256;
+  using SafeMath for uint256;
 
-    /**
-    * Assume the app is funded with the money already owed to receiver,
-    * as in the SimpleTwoPartySwapApp.
-    *
-    * This app can also not be used to send _multiple_ linked payments,
-    * only one can be redeemed with the preimage.
-    *
-    */
+  /**
+  * Assume the app is funded with the money already owed to receiver,
+  * as in the SimpleTwoPartySwapApp.
+  *
+  * This app can also not be used to send _multiple_ linked payments,
+  * only one can be redeemed with the preimage.
+  *
+  */
 
-    enum AppStage {
-        POST_FUND,
-        PAYMENT_CLAIMED,
-        CHANNEL_CLOSED
-    }
+  enum AppStage {
+    POST_FUND,
+    PAYMENT_CLAIMED,
+    CHANNEL_CLOSED
+  }
 
-    struct AppState {
-        AppStage stage;
-        LibOutcome.CoinTransfer[2] transfers;
-        bytes32 linkedHash;
-        // NOTE: These following parameters are soon
-        //       to be built in as framework-level
-        //       constants but for now must be app-level.
-        uint256 turnNum; // TODO: is this needed here?
-        bool finalized;
-    }
+  struct AppState {
+    AppStage stage;
+    LibOutcome.CoinTransfer[2] transfers;
+    bytes32 linkedHash;
 
-    // theres really only one type of action here,
-    // the only reason to use the end channel action would
-    // be to allow the hub to uninstall the app to reclaim
-    // collateral. Since this can only be done while the recipient
-    // is online, you dont *need* an END_CHANNEL action type, you
-    // can just use an adjudicator.
+    // NOTE: These following parameters are soon
+    //       to be built in as framework-level
+    //       constants but for now must be app-level.
+    uint256 turnNum; // TODO: is this needed here?
+    bool finalized;
+  }
 
-    // Questions: if the app is set up to have the transfers pre-assigned
-    // in the same way the swap app is atm, will the adjudicator know that
-    // if no correct preimage is included in the commitment, it should 0
-    // transfers?
-    // enum ActionType {
-    //   CLAIM_MONEY
+  // theres really only one type of action here,
+  // the only reason to use the end channel action would
+  // be to allow the hub to uninstall the app to reclaim
+  // collateral. Since this can only be done while the recipient
+  // is online, you dont *need* an END_CHANNEL action type, you
+  // can just use an adjudicator.
 
-    //   // // NOTE: These following action will soon
-    //   // //       be built in as a framework-level
-    //   // //       constant but for now must be app-level.
-    //   // END_CHANNEL
-    // }
+  // Questions: if the app is set up to have the transfers pre-assigned
+  // in the same way the swap app is atm, will the adjudicator know that
+  // if no correct preimage is included in the commitment, it should 0
+  // transfers?
+  // enum ActionType {
+  //   CLAIM_MONEY
 
-    struct Action {
-        uint256 amount;
-        address assetId;
-        bytes32 paymentId;
-        bytes32 preImage;
-    }
+  //   // // NOTE: These following action will soon
+  //   // //       be built in as a framework-level
+  //   // //       constant but for now must be app-level.
+  //   // END_CHANNEL
+  // }
 
-    function computeOutcome(bytes calldata encodedState)
-        external
-        pure
-        returns (bytes memory)
-    {
-        return abi.encode(abi.decode(encodedState, (AppState)).transfers);
-    }
+  struct Action {
+    uint256 amount;
+    address assetId;
+    bytes32 paymentId;
+    bytes32 preImage;
+  }
 
-    function applyAction(
-        bytes calldata encodedState,
-        bytes calldata encodedAction
-    )
-        external
-        pure
-        returns (bytes memory)
-    {
-        AppState memory state = abi.decode(
-            encodedState,
-            (AppState)
-        );
+  function computeOutcome(bytes calldata encodedState)
+    external
+    pure
+    returns (bytes memory)
+  {
+    return abi.encode(abi.decode(encodedState, (AppState)).transfers);
+  }
 
-        Action memory action = abi.decode(
-            encodedAction,
-            (Action)
-        );
+  function applyAction(
+    bytes calldata encodedState,
+    bytes calldata encodedAction
+  )
+    external
+    pure
+    returns (bytes memory)
+  {
+    AppState memory state = abi.decode(
+      encodedState,
+      (AppState)
+    );
 
-        bytes32 generatedHash = keccak256(
-            abi.encodePacked(
-                action.amount,
-                action.assetId,
-                action.paymentId,
-                action.preImage
+    Action memory action = abi.decode(
+      encodedAction,
+      (Action)
+    );
+
+    bytes32 generatedHash = keccak256(abi.encodePacked(
+      action.amount,
+      action.assetId,
+      action.paymentId,
+      action.preImage
+    ));
+    if (generatedHash == state.linkedHash) {
+      /**
+       * If the hash is correct, finalize the state with provided transfers.
+       */
+      return abi.encode(
+        AppState(
+          /* stage of app */
+          AppStage.PAYMENT_CLAIMED,
+          /* transfers */
+          LibOutcome.CoinTransfer[2]([
+            LibOutcome.CoinTransfer(
+              state.transfers[0].to,
+              /* should always be 0 */
+              state.transfers[1].amount
+            ),
+            LibOutcome.CoinTransfer(
+              state.transfers[1].to,
+              /* should always be full value of linked payment */
+              state.transfers[0].amount
             )
-        );
-        if (generatedHash == state.linkedHash) {
-            /**
-             * If the hash is correct, finalize the state with provided transfers.
-             */
-            return abi.encode(
-                AppState(
-                    /* stage of app */
-                    AppStage.PAYMENT_CLAIMED,
-                    /* transfers */
-                    LibOutcome.CoinTransfer[2]([
-                        LibOutcome.CoinTransfer(
-                            state.transfers[0].to,
-                            /* should always be 0 */
-                            state.transfers[1].amount
-                        ),
-                        LibOutcome.CoinTransfer(
-                            state.transfers[1].to,
-                            /* should always be full value of linked payment */
-                            state.transfers[0].amount
-                        )
-                    ]),
-                    /* link hash */
-                    state.linkedHash,
-                    /* turnNum */
-                    state.turnNum + 1,
-                    /* finalized */
-                    true
-                )
-            );
-        } else {
-            /**
-             * If the hash is not correct, finalize the state with reverted transfers.
-             */
-            return abi.encode(
-                AppState(
-                    /* stage of app */
-                    AppStage.CHANNEL_CLOSED,
-                    /* transfers */
-                    LibOutcome.CoinTransfer[2]([
-                        LibOutcome.CoinTransfer(
-                            state.transfers[0].to,
-                            state.transfers[0].amount
-                        ),
-                        LibOutcome.CoinTransfer(
-                            state.transfers[1].to,
-                            state.transfers[1].amount
-                        )
-                    ]),
-                    /* link hash */
-                    state.linkedHash,
-                    /* turnNum */
-                    state.turnNum + 1,
-                    /* finalized */
-                    true
-                )
-            );
-        }
+          ]),
+          /* link hash */
+          state.linkedHash,
+          /* turnNum */
+          state.turnNum + 1,
+          /* finalized */
+          true
+        )
+      );
+    } else {
+      /**
+       * If the hash is not correct, finalize the state with reverted transfers.
+       */
+      return abi.encode(
+        AppState(
+          /* stage of app */
+          AppStage.CHANNEL_CLOSED,
+          /* transfers */
+          LibOutcome.CoinTransfer[2]([
+            LibOutcome.CoinTransfer(
+              state.transfers[0].to,
+              state.transfers[0].amount
+            ),
+            LibOutcome.CoinTransfer(
+              state.transfers[1].to,
+              state.transfers[1].amount
+            )
+          ]),
+          /* link hash */
+          state.linkedHash,
+          /* turnNum */
+          state.turnNum + 1,
+          /* finalized */
+          true
+        )
+      );
     }
+  }
 
-    function getTurnTaker(
-        bytes calldata encodedState,
-        address[] calldata participants
-    )
-        external
-        pure
-        returns (address)
-    {
-        return participants[
-            abi.decode(encodedState, (AppState)).turnNum % participants.length
-        ];
-    }
+  function getTurnTaker(
+    bytes calldata encodedState,
+    address[] calldata participants
+  )
+    external
+    pure
+    returns (address)
+  {
+    return participants[
+      abi.decode(encodedState, (AppState)).turnNum % participants.length
+    ];
+  }
 
-    function isStateTerminal(bytes calldata encodedState)
-        external
-        pure
-        returns (bool)
-    {
-        return abi.decode(encodedState, (AppState)).finalized;
-    }
+  function isStateTerminal(bytes calldata encodedState)
+    external
+    pure
+    returns (bool)
+  {
+    return abi.decode(encodedState, (AppState)).finalized;
+  }
 
 }

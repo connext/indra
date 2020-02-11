@@ -2,7 +2,6 @@ import { CFCoreTypes } from "@connext/types";
 import { bigNumberify, getAddress, hexlify, randomBytes } from "ethers/utils";
 
 import { WithdrawETHCommitment } from "../../../../src/ethereum";
-import { testDomainSeparator } from "../../../integration/utils";
 
 /**
  * This test suite decodes a constructed WithdrawETHCommitment transaction object
@@ -26,10 +25,7 @@ describe("Withdraw ETH Commitment", () => {
       multisigAddress,
       multisigOwners,
       to,
-      value,
-      testDomainSeparator,
-      4447,
-      0
+      value
     );
     tx = commitment.getTransactionDetails();
   });

@@ -1,11 +1,11 @@
 import { bigNumberify } from "ethers/utils";
+import { EventEmitter } from "events";
 
 import { ConnextClient } from "./connext";
 import { Logger, stringify } from "./lib";
 import {
   CFCoreTypes,
   CreateChannelMessage,
-  ConnextEventEmitter,
   DefaultApp,
   DepositConfirmationMessage,
   DepositFailedMessage,
@@ -51,7 +51,7 @@ type CallbackStruct = {
   [index in CFCoreTypes.EventName]: (data: any) => Promise<any> | void;
 };
 
-export class ConnextListener extends ConnextEventEmitter {
+export class ConnextListener extends EventEmitter {
   private log: Logger;
   private channelProvider: IChannelProvider;
   private connext: ConnextClient;

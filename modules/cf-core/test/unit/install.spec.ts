@@ -26,7 +26,6 @@ import { getRandomExtendedPubKeys } from "../machine/integration/random-signing-
 import { MemoryStoreService } from "../services/memory-store-service";
 
 import { createAppInstanceProposalForTest } from "./utils";
-import { testDomainSeparator } from "../integration/utils";
 
 const NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES = EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT.reduce(
   (acc, contractName) => ({
@@ -45,8 +44,7 @@ describe("Can handle correct & incorrect installs", () => {
     store = new Store(new MemoryStoreService(), "install.spec.ts-test-store");
     protocolRunner = new ProtocolRunner(
       NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES,
-      {} as BaseProvider,
-      testDomainSeparator
+      {} as BaseProvider
     );
     initiatorIdentifier = HDNode.fromMnemonic(
       Wallet.createRandom().mnemonic

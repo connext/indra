@@ -1,7 +1,7 @@
 {
   "name": "@connext/messaging",
   "description": "Messaging module for Connext client",
-  "version": "5.0.0",
+  "version": "4.0.11",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
   "types": "dist/index.d.ts",
@@ -12,16 +12,17 @@
   ],
   "scripts": {
     "build": "tsc -p . && rollup -c",
-    "build:watch": "tsc -p . && rollup -c -w"
+    "build:watch": "tsc -p . && rollup -c -w",
+    "prepare": "npm run build"
   },
   "dependencies": {
-    "@connext/types": "5.0.0",
+    "@connext/types": "4.0.11",
     "ts-nats": "1.2.4",
     "websocket-nats": "0.3.3"
   },
   "devDependencies": {
-    "rollup": "1.31.0",
+    "rollup": "1.27.14",
     "rollup-plugin-typescript2": "0.25.3",
-    "typescript": "3.7.5"
+    "typescript": "3.5.3"
   }
 }

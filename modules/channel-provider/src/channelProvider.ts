@@ -1,19 +1,19 @@
 import {
-  chan_config,
-  chan_nodeAuth,
-  chan_restoreState,
-  chan_storeGet,
-  chan_storeSet,
   ChannelProviderConfig,
   ChannelProviderRpcMethod,
-  ConnextEventEmitter,
   IChannelProvider,
   IRpcConnection,
   JsonRpcRequest,
   StorePair,
+  chan_storeSet,
+  chan_storeGet,
+  chan_nodeAuth,
+  chan_config,
+  chan_restoreState,
 } from "@connext/types";
+import EventEmitter from "events";
 
-export class ChannelProvider extends ConnextEventEmitter implements IChannelProvider {
+export class ChannelProvider extends EventEmitter implements IChannelProvider {
   public connected: boolean = false;
   public connection: IRpcConnection;
 

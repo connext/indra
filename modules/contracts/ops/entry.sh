@@ -22,7 +22,7 @@ then
 elif [[ "$1" == "deploy" ]]
 then
   echo "Deploying contracts.."
-  if [[ "${ETH_PROVIDER#*://}" == "localhost"* ]]
+  if [[ "$ETH_NETWORK" == "ganache" ]]
   then
     echo "Starting Ganache.."
     $ganache \

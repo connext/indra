@@ -21,7 +21,7 @@ const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
  */
 export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
-    const { message, network, domainSeparator, provider } = context;
+    const { message, network } = context;
 
     const { processID, params } = message;
 
@@ -42,10 +42,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       network,
       stateChannel.multisigAddress,
       stateChannel.multisigOwners,
-      stateChannel.freeBalance.identity,
-      domainSeparator,
-      provider.network.chainId,
-      stateChannel.numProposedApps
+      stateChannel.freeBalance.identity
     );
 
     const initiatorSignature = yield [OP_SIGN, setupCommitment];
@@ -78,7 +75,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   1 /* Responding */: async function*(context: Context) {
-    const { message, network, provider, domainSeparator } = context;
+    const { message, network } = context;
 
     const {
       processID,
@@ -103,10 +100,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       network,
       stateChannel.multisigAddress,
       stateChannel.multisigOwners,
-      stateChannel.freeBalance.identity,
-      domainSeparator,
-      provider.network.chainId,
-      stateChannel.numProposedApps
+      stateChannel.freeBalance.identity
     );
 
     assertIsValidSignature(

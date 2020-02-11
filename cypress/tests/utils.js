@@ -1,6 +1,5 @@
-/* global Cypress, cy */
 const eth = require("ethers");
-const tokenArtifacts = require("@openzeppelin/contracts/build/contracts/ERC20Mintable.json");
+const tokenArtifacts = require("openzeppelin-solidity/build/contracts/ERC20Mintable.json");
 const addressBook = require("../../modules/contracts/address-book.json");
 
 const provider = new eth.providers.JsonRpcProvider(Cypress.env("provider"));
@@ -28,8 +27,8 @@ my.doneStarting = () => cy.contains("span", /starting/i).should("not.exist");
 my.isWalletConnecting = () => cy.contains(/walletconnect/i).should("exist");
 
 //Dashboard
-my.goToDebug = () => cy.get(`a[href="/debug"]`).click();
-my.goToDebugChannel = () => cy.get(`a[href="/dashboard/debug/channel"]`).click();
+my.goToDebug = () => cy.get(`a[href="/debug"]`).click()
+my.goToDebugChannel = () => cy.get(`a[href="/dashboard/debug/channel"]`).click()
 
 //DaiCard
 my.goToDeposit = () => cy.get(`a[href="/deposit"]`).click();
@@ -49,7 +48,7 @@ my.activateWalletConnext = () => {
   my.isWalletConnecting();
   // TODO: make this actually activate wallet connect
   // my.doneStarting();
-};
+}
 
 my.closeIntroModal = () => {
   my.isStarting();
@@ -73,7 +72,7 @@ my.burnCard = () => {
 my.restoreMnemonic = mnemonic => {
   my.goToSettings();
   cy.contains("button", /import/i).click();
-  cy.get(`input[type="text"]`)
+  cy.get('input[type="text"]')
     .clear()
     .type(mnemonic);
   cy.get("button")
@@ -86,11 +85,11 @@ my.restoreMnemonic = mnemonic => {
 
 my.pay = (to, value) => {
   my.goToSend();
-  cy.get(`input[type="string"]`)
+  cy.get('input[type="string"]')
     .clear()
     .type(to);
   cy.contains("p", /ignored for link/i).should("not.exist");
-  cy.get(`input[type="number"]`)
+  cy.get('input[type="number"]')
     .clear()
     .type(value);
   cy.contains("button", /send/i).click();
@@ -101,7 +100,7 @@ my.pay = (to, value) => {
 my.cashoutEther = () => {
   my.goToCashout();
   cy.log(`cashing out to ${wallet.address}`);
-  cy.get(`input[type="text"]`)
+  cy.get('input[type="text"]')
     .clear()
     .type(wallet.address);
   cy.contains("button", /cash out eth/i).click();
@@ -114,7 +113,7 @@ my.cashoutEther = () => {
 my.cashoutToken = () => {
   my.goToCashout();
   cy.log(`cashing out to ${wallet.address}`);
-  cy.get(`input[type="text"]`)
+  cy.get('input[type="text"]')
     .clear()
     .type(wallet.address);
   cy.contains("button", /cash out dai/i).click();
@@ -310,7 +309,7 @@ my.linkPay = value => {
   return cy.wrap(
     new Cypress.Promise((resolve, reject) => {
       my.goToSend();
-      cy.get(`input[type="number"]`)
+      cy.get('input[type="number"]')
         .clear()
         .type(value);
       cy.contains("button", /link/i).click();

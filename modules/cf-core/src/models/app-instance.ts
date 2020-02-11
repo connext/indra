@@ -62,21 +62,25 @@ export class AppInstance {
     public readonly outcomeType: OutcomeType,
     private readonly twoPartyOutcomeInterpreterParamsInternal?: TwoPartyFixedOutcomeInterpreterParams,
     private readonly multiAssetMultiPartyCoinTransferInterpreterParamsInternal?: MultiAssetMultiPartyCoinTransferInterpreterParams,
-    private readonly singleAssetTwoPartyCoinTransferInterpreterParamsInternal?: SingleAssetTwoPartyCoinTransferInterpreterParams,
+    private readonly singleAssetTwoPartyCoinTransferInterpreterParamsInternal?: SingleAssetTwoPartyCoinTransferInterpreterParams
   ) {}
 
   get twoPartyOutcomeInterpreterParams() {
     if (this.outcomeType !== OutcomeType.TWO_PARTY_FIXED_OUTCOME) {
-      throw Error(`Invalid Accessor. AppInstance has outcomeType ${this.outcomeType}, not TWO_PARTY_FIXED_OUTCOME`);
+      throw Error(
+        `Invalid Accessor. AppInstance has outcomeType ${this.outcomeType}, not TWO_PARTY_FIXED_OUTCOME`
+      );
     }
 
     return this.twoPartyOutcomeInterpreterParamsInternal!;
   }
 
   get multiAssetMultiPartyCoinTransferInterpreterParams() {
-    if (this.outcomeType !== OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER) {
+    if (
+      this.outcomeType !== OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER
+    ) {
       throw Error(
-        `Invalid Accessor. AppInstance has outcomeType ${this.outcomeType}, not MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER`,
+        `Invalid Accessor. AppInstance has outcomeType ${this.outcomeType}, not MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER`
       );
     }
 
@@ -86,7 +90,7 @@ export class AppInstance {
   get singleAssetTwoPartyCoinTransferInterpreterParams() {
     if (this.outcomeType !== OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER) {
       throw Error(
-        `Invalid Accessor. AppInstance has outcomeType ${this.outcomeType}, not SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER `,
+        `Invalid Accessor. AppInstance has outcomeType ${this.outcomeType}, not SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER `
       );
     }
 
@@ -107,7 +111,7 @@ export class AppInstance {
       deserialized.outcomeType,
       deserialized.twoPartyOutcomeInterpreterParams,
       deserialized.multiAssetMultiPartyCoinTransferInterpreterParams,
-      deserialized.singleAssetTwoPartyCoinTransferInterpreterParams,
+      deserialized.singleAssetTwoPartyCoinTransferInterpreterParams
     );
   }
 
@@ -125,10 +129,13 @@ export class AppInstance {
       latestVersionNumber: this.latestVersionNumber,
       latestTimeout: this.latestTimeout,
       outcomeType: this.outcomeType,
-      twoPartyOutcomeInterpreterParams: this.twoPartyOutcomeInterpreterParamsInternal,
-      multiAssetMultiPartyCoinTransferInterpreterParams: this.multiAssetMultiPartyCoinTransferInterpreterParamsInternal,
-      singleAssetTwoPartyCoinTransferInterpreterParams: this.singleAssetTwoPartyCoinTransferInterpreterParamsInternal,
-      identityHash: this.identityHash,
+      twoPartyOutcomeInterpreterParams: this
+        .twoPartyOutcomeInterpreterParamsInternal,
+      multiAssetMultiPartyCoinTransferInterpreterParams: this
+        .multiAssetMultiPartyCoinTransferInterpreterParamsInternal,
+      singleAssetTwoPartyCoinTransferInterpreterParams: this
+        .singleAssetTwoPartyCoinTransferInterpreterParamsInternal,
+      identityHash: this.identityHash
     });
   }
 
@@ -143,7 +150,7 @@ export class AppInstance {
       participants: this.participants,
       appDefinition: this.appInterface.addr,
       defaultTimeout: this.defaultTimeout,
-      channelNonce: this.appSeqNo,
+      channelNonce: this.appSeqNo
     };
   }
 
@@ -155,7 +162,10 @@ export class AppInstance {
   @Memoize()
   // todo(xuanji): we should print better error messages here
   public get encodedLatestState() {
-    return defaultAbiCoder.encode([this.appInterface.stateEncoding], [this.latestState]);
+    return defaultAbiCoder.encode(
+      [this.appInterface.stateEncoding],
+      [this.latestState]
+    );
   }
 
   @Memoize()
@@ -165,33 +175,38 @@ export class AppInstance {
         case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
           return defaultAbiCoder.encode(
             [singleAssetTwoPartyCoinTransferInterpreterParamsEncoding],
-            [this.singleAssetTwoPartyCoinTransferInterpreterParams],
+            [this.singleAssetTwoPartyCoinTransferInterpreterParams]
           );
         }
 
         case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
           return defaultAbiCoder.encode(
             [multiAssetMultiPartyCoinTransferInterpreterParamsEncoding],
-            [this.multiAssetMultiPartyCoinTransferInterpreterParams],
+            [this.multiAssetMultiPartyCoinTransferInterpreterParams]
           );
         }
 
         case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
           return defaultAbiCoder.encode(
             [twoPartyFixedOutcomeInterpreterParamsEncoding],
-            [this.twoPartyOutcomeInterpreterParams],
+            [this.twoPartyOutcomeInterpreterParams]
           );
         }
 
         default: {
-          throw Error("The outcome type in this application logic contract is not supported yet.");
+          throw Error(
+            "The outcome type in this application logic contract is not supported yet."
+          );
         }
       }
     } else {
       switch (this.outcomeType) {
         case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
           // CoinTransferFromVirtualAppInterpreter.sol
-          const { limit, tokenAddress } = this.singleAssetTwoPartyCoinTransferInterpreterParams!;
+          const {
+            limit,
+            tokenAddress
+          } = this.singleAssetTwoPartyCoinTransferInterpreterParams!;
           return defaultAbiCoder.encode(
             [
               `tuple(uint256 capitalProvided, address payable capitalProvider, address virtualAppUser, address tokenAddress)`,
@@ -202,20 +217,24 @@ export class AppInstance {
                 capitalProvided: limit,
                 // FIXME: These addresses are definitely wrong
                 capitalProvider: this.participants[0],
-                virtualAppUser: this.participants[1],
-              },
-            ],
+                virtualAppUser: this.participants[1]
+              }
+            ]
           );
         }
 
         case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
           throw Error(
-            "Unimplemented Error. There is no interpreter params encoded for the (virtual app case of) MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER OutcomeType on the AppInstance model.",
+            "Unimplemented Error. There is no interpreter params encoded for the (virtual app case of) MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER OutcomeType on the AppInstance model."
           );
         }
 
         case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
-          const { amount, playerAddrs, tokenAddress } = this.twoPartyOutcomeInterpreterParams;
+          const {
+            amount,
+            playerAddrs,
+            tokenAddress
+          } = this.twoPartyOutcomeInterpreterParams;
           return defaultAbiCoder.encode(
             [virtualAppAgreementEncoding],
             [
@@ -224,14 +243,16 @@ export class AppInstance {
                 capitalProvided: amount,
                 // FIXME: Also definitely wrong
                 capitalProvider: playerAddrs[0],
-                virtualAppUser: playerAddrs[1],
-              },
-            ],
+                virtualAppUser: playerAddrs[1]
+              }
+            ]
           );
         }
 
         default: {
-          throw Error("The outcome type in this application logic contract is not supported yet.");
+          throw Error(
+            "The outcome type in this application logic contract is not supported yet."
+          );
         }
       }
     }
@@ -249,7 +270,10 @@ export class AppInstance {
     return this.latestTimeout;
   }
 
-  public setState(newState: SolidityValueType, timeout: number = this.defaultTimeout) {
+  public setState(
+    newState: SolidityValueType,
+    timeout: number = this.defaultTimeout
+  ) {
     try {
       defaultAbiCoder.encode([this.appInterface.stateEncoding], [newState]);
     } catch (e) {
@@ -260,7 +284,7 @@ export class AppInstance {
           - appInstanceIdentityHash = ${this.identityHash}
           - newState = ${newState}
           - encodingExpected = ${this.appInterface.stateEncoding}
-          Error: ${e.message}`,
+          Error: ${e.message}`
       );
     }
 
@@ -268,23 +292,36 @@ export class AppInstance {
       ...this.toJson(),
       latestState: newState,
       latestVersionNumber: this.versionNumber + 1,
-      latestTimeout: timeout,
+      latestTimeout: timeout
     });
   }
 
-  public async computeOutcome(state: SolidityValueType, provider: BaseProvider): Promise<string> {
-    return this.toEthersContract(provider).functions.computeOutcome(this.encodeState(state));
+  public async computeOutcome(
+    state: SolidityValueType,
+    provider: BaseProvider
+  ): Promise<string> {
+    return this.toEthersContract(provider).functions.computeOutcome(
+      this.encodeState(state)
+    );
   }
 
-  public async computeOutcomeWithCurrentState(provider: BaseProvider): Promise<string> {
+  public async computeOutcomeWithCurrentState(
+    provider: BaseProvider
+  ): Promise<string> {
     return this.computeOutcome(this.state, provider);
   }
 
-  public async computeStateTransition(action: SolidityValueType, provider: BaseProvider): Promise<SolidityValueType> {
+  public async computeStateTransition(
+    action: SolidityValueType,
+    provider: BaseProvider
+  ): Promise<SolidityValueType> {
     const ret: SolidityValueType = {};
 
     const computedNextState = this.decodeAppState(
-      await this.toEthersContract(provider).functions.applyAction(this.encodedLatestState, this.encodeAction(action)),
+      await this.toEthersContract(provider).functions.applyAction(
+        this.encodedLatestState,
+        this.encodeAction(action)
+      )
     );
 
     // ethers returns an array of [ <each value by idx>, <each value by key> ]
@@ -297,7 +334,10 @@ export class AppInstance {
   }
 
   public encodeAction(action: SolidityValueType) {
-    return defaultAbiCoder.encode([this.appInterface.actionEncoding!], [action]);
+    return defaultAbiCoder.encode(
+      [this.appInterface.actionEncoding!],
+      [action]
+    );
   }
 
   public encodeState(state: SolidityValueType) {
@@ -305,10 +345,17 @@ export class AppInstance {
   }
 
   public decodeAppState(encodedSolidityValueType: string): SolidityValueType {
-    return defaultAbiCoder.decode([this.appInterface.stateEncoding], encodedSolidityValueType)[0];
+    return defaultAbiCoder.decode(
+      [this.appInterface.stateEncoding],
+      encodedSolidityValueType
+    )[0];
   }
 
   public toEthersContract(provider: BaseProvider) {
-    return new Contract(this.appInterface.addr, CounterfactualApp.abi, provider);
+    return new Contract(
+      this.appInterface.addr,
+      CounterfactualApp.abi,
+      provider
+    );
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@connext/contracts",
-  "version": "2.0.0",
+  "version": "1.0.4",
   "description": "Smart contracts that power a Counterfactual State Channel platform",
   "license": "ISC",
   "files": [
@@ -19,35 +19,27 @@
     "solidity"
   ],
   "scripts": {
-    "build": "npm run compile && npm run transpile",
-    "compile": "waffle waffle.json",
-    "compile-native": "waffle waffle.native.json",
-    "lint": "solium -d .",
-    "test": "npx buidler test",
-    "transpile": "./node_modules/.bin/tsc -p tsconfig.json"
+    "build": "waffle waffle.json && ./node_modules/.bin/tsc -p tsconfig.json",
+    "build-native": "waffle waffle.native.json",
+    "test": "ts-mocha test/**/*",
+    "lint-sol": "solium -d ."
   },
   "dependencies": {
-    "@connext/types": "5.0.0",
-    "ethers": "4.0.44",
-    "@openzeppelin/contracts": "2.5.0",
-    "ganache-cli": "6.8.2",
-    "solc": "0.5.11"
+    "@connext/types": "4.0.11",
+    "ethers": "4.0.41",
+    "ganache-cli": "6.7.0",
+    "openzeppelin-solidity": "2.3.0"
   },
   "devDependencies": {
-    "@nomiclabs/buidler": "1.1.2",
-    "@nomiclabs/buidler-ethers": "1.1.2",
-    "@nomiclabs/buidler-waffle": "1.1.2",
-    "@types/chai": "4.2.8",
-    "@types/mocha": "7.0.1",
-    "@types/node": "13.7.0",
-    "@types/sinon-chai": "3.2.3",
+    "@types/chai": "4.2.7",
+    "@types/mocha": "5.2.7",
+    "@types/node": "13.1.7",
     "chai": "4.2.0",
-    "ethereum-waffle": "2.3.2",
+    "ethereum-waffle": "2.1.0",
     "ethlint": "1.2.5",
-    "event-target-shim": "5.0.1",
-    "mocha": "7.0.1",
+    "mocha": "6.2.2",
     "ts-mocha": "6.0.0",
-    "ts-node": "8.6.2",
-    "typescript": "3.7.5"
+    "ts-node": "8.5.4",
+    "typescript": "3.5.3"
   }
 }

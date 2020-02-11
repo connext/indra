@@ -22,19 +22,17 @@ import {
   extendedPrvKeyToExtendedPubKey,
   getRandomExtendedPrvKeys
 } from "./random-signing-keys";
-import { testDomainSeparator } from "../../integration/utils";
 
 // ProxyFactory.createProxy uses assembly `call` so we can't estimate
 // gas needed, so we hard-code this number to ensure the tx completes
-const CREATE_PROXY_AND_SETUP_GAS = 1e6;
+const CREATE_PROXY_AND_SETUP_GAS = 6e9;
+
+// Similarly, the SetupCommitment is a `delegatecall`, so we estimate
+const SETUP_COMMITMENT_GAS = 6e9;
 
 // The ChallengeRegistry.setState call _could_ be estimated but we haven't
 // written this test to do that yet
-const SETSTATE_COMMITMENT_GAS = 1e6;
-
-// Also we can't estimate the install commitment gas b/c it uses
-// delegatecall for the conditional transaction
-const CONDITIONAL_TX_DELEGATECALL_GAS = 1e6;
+const SETSTATE_COMMITMENT_GAS = 6e9;
 
 let provider: JsonRpcProvider;
 let wallet: Wallet;
@@ -130,10 +128,7 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
         network,
         stateChannel.multisigAddress,
         stateChannel.multisigOwners,
-        stateChannel.freeBalance.identity,
-        testDomainSeparator,
-        provider.network.chainId,
-        stateChannel.numProposedApps
+        stateChannel.freeBalance.identity
       );
 
       const setupTx = setupCommitment.getSignedTransaction([
@@ -145,7 +140,7 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
 
       await wallet.sendTransaction({
         ...setupTx,
-        gasLimit: CONDITIONAL_TX_DELEGATECALL_GAS
+        gasLimit: SETUP_COMMITMENT_GAS
       });
 
       expect(await provider.getBalance(proxy)).toBeEq(Zero);

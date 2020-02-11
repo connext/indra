@@ -1,4 +1,3 @@
-/* global Cypress, cy */
 import my from "./utils";
 import BN from "bn.js";
 
@@ -50,17 +49,17 @@ describe("Daicard", () => {
       my.deposit(depositEth).then(tokensDeposited => {
         my.goToSend();
         // No zero payments
-        cy.get(`input[type="number"]`)
+        cy.get('input[type="number"]')
           .clear()
           .type("0");
         cy.contains("p", /greater than 0/i).should("exist");
         // No payments greater than the card's balance
-        cy.get(`input[type="number"]`)
+        cy.get('input[type="number"]')
           .clear()
           .type("1" + tokensDeposited);
         cy.contains("p", /less than your balance/i).should("exist");
         // No invalid xpub addresses
-        cy.get(`input[type="string"]`)
+        cy.get('input[type="string"]')
           .clear()
           .type("0xabc123");
         cy.contains("p", /invalid/i).should("exist");
@@ -83,7 +82,7 @@ describe("Daicard", () => {
     it(`should properly populate the send page when opening a request link`, () => {
       my.getXpub().then(xpub => {
         my.goToRequest();
-        cy.get(`input[type="number"]`)
+        cy.get('input[type="number"]')
           .clear()
           .type(payTokens);
         cy.contains("button", `recipient=${xpub}`).should("exist");
@@ -141,7 +140,7 @@ describe("Daicard", () => {
     it(`should not withdraw to an invalid address`, () => {
       my.deposit(depositEth).then(tokensDeposited => {
         my.goToCashout();
-        cy.get(`input[type="text"]`)
+        cy.get('input[type="text"]')
           .clear()
           .type("0xabc123");
         cy.contains("p", /invalid/i).should("exist");
@@ -171,7 +170,7 @@ describe("Daicard", () => {
     it(`should withdraw tokens to a valid address the second time`, () => {
       my.depositToken(depositToken).then(tokensDeposited => {
         my.getOnchainTokenBalance().then(balanceBefore => {
-          my.cashoutToken();
+          my.cashoutToken()
           my.depositToken(`${depositToken}.1`).then(tokensDeposited => {
             my.getOnchainTokenBalance().then(balanceBefore => {
               my.cashoutToken();

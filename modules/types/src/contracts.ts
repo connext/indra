@@ -3,23 +3,6 @@ import { BaseProvider, BigNumber } from "./basic";
 ////////////////////////////////////////
 // Generic contract ops & network config
 
-export type AddressBook = {
-  [chainId: string]: {
-    [contractName: string]: {
-      address: string;
-      txHash?: string;
-      creationCodeHash?: string;
-      runtimeCodeHash?: string;
-    };
-  };
-};
-
-export type AddressHistory = {
-  [chainId: string]: {
-    [contractName: string]: string[];
-  };
-};
-
 export interface NetworkContext {
   ChallengeRegistry: string;
   CoinBalanceRefundApp: string;
@@ -38,16 +21,16 @@ export interface NetworkContext {
 // Keep in sync with above
 export const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
   "ChallengeRegistry",
-  "CoinBalanceRefundApp",
   "ConditionalTransactionDelegateTarget",
+  "CoinBalanceRefundApp",
+  "MultiAssetMultiPartyCoinTransferInterpreter",
   "IdentityApp",
   "MinimumViableMultisig",
-  "MultiAssetMultiPartyCoinTransferInterpreter",
   "ProxyFactory",
   "SingleAssetTwoPartyCoinTransferInterpreter",
   "TimeLockedPassThrough",
-  "TwoPartyFixedOutcomeFromVirtualAppInterpreter",
   "TwoPartyFixedOutcomeInterpreter",
+  "TwoPartyFixedOutcomeFromVirtualAppInterpreter",
 ];
 
 export interface DeployedContractNetworksFileEntry {

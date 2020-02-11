@@ -1,5 +1,3 @@
-/* global before */
-import { waffle as buidler } from "@nomiclabs/buidler";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
@@ -47,14 +45,14 @@ const encodeAppState = (
 
 describe("SimpleTransferApp", () => {
   let simpleTransferApp: Contract;
-  let provider = buidler.provider;
 
   async function computeOutcome(state: SimpleTransferAppState): Promise<string> {
     return await simpleTransferApp.functions.computeOutcome(encodeAppState(state));
   }
 
   before(async () => {
-    const wallet = (await provider.getWallets())[0];
+    const provider = waffle.createMockProvider();
+    const wallet = (await waffle.getWallets(provider))[0];
     simpleTransferApp = await waffle.deployContract(wallet, SimpleTransferApp);
   });
 

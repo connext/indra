@@ -1,5 +1,4 @@
-/* global before */
-import { waffle as buidler } from "@nomiclabs/buidler";
+import { SolidityABIEncoderV2Type } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
@@ -63,24 +62,24 @@ const unidirectionalTransferAppActionEncoding = `
 const decodeAppState = (encodedAppState: string): UnidirectionalTransferAppState =>
   defaultAbiCoder.decode([unidirectionalTransferAppStateEncoding], encodedAppState)[0];
 
-const encodeAppState = (state: any): string =>
+const encodeAppState = (state: SolidityABIEncoderV2Type): string =>
   defaultAbiCoder.encode([unidirectionalTransferAppStateEncoding], [state]);
 
-const encodeAppAction = (state: any): string =>
+const encodeAppAction = (state: SolidityABIEncoderV2Type): string =>
   defaultAbiCoder.encode([unidirectionalTransferAppActionEncoding], [state]);
 
 describe("UnidirectionalTransferApp", () => {
   let unidirectionalTransferApp: Contract;
-  let provider = buidler.provider;
 
-  const applyAction = (state: any, action: any): any =>
+  const applyAction = (state: SolidityABIEncoderV2Type, action: SolidityABIEncoderV2Type): any =>
     unidirectionalTransferApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
 
-  const computeOutcome = (state: any): any =>
+  const computeOutcome = (state: SolidityABIEncoderV2Type): any =>
     unidirectionalTransferApp.functions.computeOutcome(encodeAppState(state));
 
   before(async () => {
-    const wallet = (await provider.getWallets())[0];
+    const provider = waffle.createMockProvider();
+    const wallet = (await waffle.getWallets(provider))[0];
     unidirectionalTransferApp = await waffle.deployContract(wallet, UnidirectionalTransferApp);
   });
 
@@ -94,10 +93,7 @@ describe("UnidirectionalTransferApp", () => {
     const preState: UnidirectionalTransferAppState = {
       finalized: false,
       stage: AppStage.POST_FUND,
-      transfers: [
-        { to: senderAddr, amount: senderAmt },
-        { to: receiverAddr, amount: Zero },
-      ],
+      transfers: [{ to: senderAddr, amount: senderAmt }, { to: receiverAddr, amount: Zero }],
       turnNum: 0,
     };
 
@@ -123,10 +119,7 @@ describe("UnidirectionalTransferApp", () => {
     const preState: UnidirectionalTransferAppState = {
       finalized: false,
       stage: AppStage.POST_FUND,
-      transfers: [
-        { to: senderAddr, amount: senderAmt },
-        { to: receiverAddr, amount: Zero },
-      ],
+      transfers: [{ to: senderAddr, amount: senderAmt }, { to: receiverAddr, amount: Zero }],
       turnNum: 0,
     };
 
@@ -146,12 +139,7 @@ describe("UnidirectionalTransferApp", () => {
     expect(ret).to.eq(
       defaultAbiCoder.encode(
         [singleAssetTwoPartyCoinTransferEncoding],
-        [
-          [
-            [senderAddr, senderAmt],
-            [receiverAddr, Zero],
-          ],
-        ],
+        [[[senderAddr, senderAmt], [receiverAddr, Zero]]],
       ),
     );
   });

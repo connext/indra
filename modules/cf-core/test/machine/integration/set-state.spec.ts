@@ -18,7 +18,7 @@ import {
 
 // The ChallengeRegistry.setState call _could_ be estimated but we haven't
 // written this test to do that yet
-const SETSTATE_COMMITMENT_GAS = 1e6;
+const SETSTATE_COMMITMENT_GAS = 6e9;
 
 let wallet: Wallet;
 let network: NetworkContext;
@@ -49,10 +49,7 @@ describe("set state on free balance", () => {
 
     const stateChannel = StateChannel.setupChannel(
       network.IdentityApp,
-      {
-        proxyFactory: network.ProxyFactory,
-        multisigMastercopy: network.MinimumViableMultisig
-      },
+      { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
       AddressZero,
       xprvs.map(extendedPrvKeyToExtendedPubKey)
     ).setFreeBalance(

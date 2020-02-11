@@ -1,11 +1,14 @@
-/* global before */
-import { waffle as buidler } from "@nomiclabs/buidler";
 import { SolidityValueType } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { One, Zero } from "ethers/constants";
-import { BigNumber, BigNumberish, defaultAbiCoder, getAddress } from "ethers/utils";
+import {
+  BigNumber,
+  BigNumberish,
+  defaultAbiCoder,
+  getAddress
+} from "ethers/utils";
 
 import UnidirectionalTransferApp from "../../build/UnidirectionalTransferApp.json";
 
@@ -19,7 +22,7 @@ type CoinTransfer = {
 enum AppStage {
   POST_FUND,
   MONEY_SENT,
-  CHANNEL_CLOSED,
+  CHANNEL_CLOSED
 }
 
 type UnidirectionalTransferAppState = {
@@ -31,7 +34,7 @@ type UnidirectionalTransferAppState = {
 
 enum ActionType {
   SEND_MONEY,
-  END_CHANNEL,
+  END_CHANNEL
 }
 
 type UnidirectionalTransferAppAction = {
@@ -61,8 +64,13 @@ const unidirectionalTransferAppActionEncoding = `
     uint256 amount
   )`;
 
-const decodeAppState = (encodedAppState: string): UnidirectionalTransferAppState =>
-  defaultAbiCoder.decode([unidirectionalTransferAppStateEncoding], encodedAppState)[0];
+const decodeAppState = (
+  encodedAppState: string
+): UnidirectionalTransferAppState =>
+  defaultAbiCoder.decode(
+    [unidirectionalTransferAppStateEncoding],
+    encodedAppState
+  )[0];
 
 const encodeAppState = (state: SolidityValueType) =>
   defaultAbiCoder.encode([unidirectionalTransferAppStateEncoding], [state]);
@@ -72,17 +80,23 @@ const encodeAppAction = (state: SolidityValueType) =>
 
 describe("UnidirectionalTransferApp", () => {
   let unidirectionalTransferApp: Contract;
-  let provider = buidler.provider;
 
   const applyAction = (state: SolidityValueType, action: SolidityValueType) =>
-    unidirectionalTransferApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
+    unidirectionalTransferApp.functions.applyAction(
+      encodeAppState(state),
+      encodeAppAction(action)
+    );
 
   const computeOutcome = (state: SolidityValueType) =>
     unidirectionalTransferApp.functions.computeOutcome(encodeAppState(state));
 
   before(async () => {
-    const wallet = (await provider.getWallets())[0];
-    unidirectionalTransferApp = await waffle.deployContract(wallet, UnidirectionalTransferApp);
+    const provider = waffle.createMockProvider();
+    const wallet = (await waffle.getWallets(provider))[0];
+    unidirectionalTransferApp = await waffle.deployContract(
+      wallet,
+      UnidirectionalTransferApp
+    );
   });
 
   describe("The applyAction function", async () => {
@@ -90,10 +104,10 @@ describe("UnidirectionalTransferApp", () => {
       stage: AppStage.POST_FUND,
       transfers: [
         { to: mkAddress("0xa"), amount: One.mul(2) },
-        { to: mkAddress("0xb"), amount: Zero },
+        { to: mkAddress("0xb"), amount: Zero }
       ],
       turnNum: 0,
-      finalized: false,
+      finalized: false
     };
 
     describe("A valid SEND_MONEY action", async () => {
@@ -102,7 +116,7 @@ describe("UnidirectionalTransferApp", () => {
       before(async () => {
         const action: UnidirectionalTransferAppAction = {
           amount: One,
-          actionType: ActionType.SEND_MONEY,
+          actionType: ActionType.SEND_MONEY
         };
 
         newState = decodeAppState(await applyAction(initialState, action));
@@ -110,21 +124,21 @@ describe("UnidirectionalTransferApp", () => {
 
       it("decrements the balance of the sender", async () => {
         const {
-          transfers: [{ amount }],
+          transfers: [{ amount }]
         } = newState;
         expect(amount).to.eq(One);
       });
 
       it("increments the balance of the recipient", async () => {
         const {
-          transfers: [{}, { amount }],
+          transfers: [{}, { amount }]
         } = newState;
         expect(amount).to.eq(One);
       });
 
       it("does not change the addresses of the participants", async () => {
         const {
-          transfers: [{ to: to1 }, { to: to2 }],
+          transfers: [{ to: to1 }, { to: to2 }]
         } = newState;
         expect(to1).to.eq(initialState.transfers[0].to);
         expect(to2).to.eq(initialState.transfers[1].to);
@@ -134,18 +148,18 @@ describe("UnidirectionalTransferApp", () => {
     it("reverts if the amount is larger than the sender's balance", async () => {
       const action: UnidirectionalTransferAppAction = {
         amount: One.mul(3),
-        actionType: ActionType.SEND_MONEY,
+        actionType: ActionType.SEND_MONEY
       };
 
       await expect(applyAction(initialState, action)).to.revertedWith(
-        "SafeMath: subtraction overflow",
+        "SafeMath: subtraction overflow"
       );
     });
 
     it("reverts if given an invalid actionType", async () => {
       const action: UnidirectionalTransferAppAction = {
         amount: One,
-        actionType: 2,
+        actionType: 2
       };
 
       await expect(applyAction(initialState, action)).to.reverted;
@@ -154,12 +168,14 @@ describe("UnidirectionalTransferApp", () => {
     it("reverts if given a SEND_MONEY action from CHANNEL_CLOSED state", async () => {
       const action: UnidirectionalTransferAppAction = {
         amount: One.mul(3),
-        actionType: ActionType.SEND_MONEY,
+        actionType: ActionType.SEND_MONEY
       };
 
-      await expect(applyAction({ ...initialState, stage: 2 }, action)).to.revertedWith(
+      await expect(
+        applyAction({ ...initialState, stage: 2 }, action)
+      ).to.revertedWith(
         // TODO: Note this error kind of makes no sense if you read it
-        "Invalid action. Valid actions from MONEY_SENT are {END_CHANNEL}",
+        "Invalid action. Valid actions from MONEY_SENT are {END_CHANNEL}"
       );
     });
 
@@ -173,15 +189,15 @@ describe("UnidirectionalTransferApp", () => {
         stage: AppStage.POST_FUND,
         transfers: [
           { to: senderAddr, amount: senderAmt },
-          { to: receiverAddr, amount: Zero },
+          { to: receiverAddr, amount: Zero }
         ],
         turnNum: 0,
-        finalized: false,
+        finalized: false
       };
 
       const action: UnidirectionalTransferAppAction = {
         actionType: ActionType.END_CHANNEL,
-        amount: Zero,
+        amount: Zero
       };
 
       let ret = await applyAction(preState, action);
@@ -195,13 +211,8 @@ describe("UnidirectionalTransferApp", () => {
       expect(ret).to.eq(
         defaultAbiCoder.encode(
           [singleAssetTwoPartyCoinTransferEncoding],
-          [
-            [
-              [senderAddr, senderAmt],
-              [receiverAddr, Zero],
-            ],
-          ],
-        ),
+          [[[senderAddr, senderAmt], [receiverAddr, Zero]]]
+        )
       );
     });
   });

@@ -160,14 +160,17 @@ export class AppRegistryService {
       initiatorDepositTokenAddress,
       responderDepositTokenAddress,
     );
-    logger.log(`Our ${initiatorDepositTokenAddress} -> ${responderDepositTokenAddress} Swap Rate: ${ourRate}`);
+    console.log("ourRate: ", ourRate);
+    console.log("initiatorDeposit: ", initiatorDeposit.toString());
     const calculated = calculateExchange(initiatorDeposit, ourRate);
-    logger.log(`initiatorDeposit=${initiatorDeposit} -> ${calculated} vs responderDeposit=${responderDeposit}`);
+    console.log("calculated: ", calculated.toString());
+    console.log("responderDeposit: ", responderDeposit.toString());
 
     // make sure calculated within allowed amount
     const calculatedToActualDiscrepancy = calculated.sub(responderDeposit).abs();
     // i.e. (x * (100 - 5)) / 100 = 0.95 * x
     const allowedDiscrepancy = calculated.mul(bigNumberify(100).sub(ALLOWED_DISCREPANCY_PCT)).div(100);
+    console.log("allowedDiscrepancy: ", allowedDiscrepancy);
 
     if (calculatedToActualDiscrepancy.gt(allowedDiscrepancy)) {
       throw new Error(
@@ -175,7 +178,7 @@ export class AppRegistryService {
       );
     }
 
-    logger.log(`Exchange amounts are within ${ALLOWED_DISCREPANCY_PCT}% of our rate ${ourRate}`);
+    logger.log(`Exchange amounts are within ${ALLOWED_DISCREPANCY_PCT}% of our rate ${ourRate.toString()}`);
   }
 
   private async validateSimpleLinkedTransfer(params: CFCoreTypes.ProposeInstallParams): Promise<void> {
@@ -450,7 +453,7 @@ export class AppRegistryService {
       // also, do we want to request collateral in a different location?
       await this.channelService.requestCollateral(proposedToIdentifier, initiatorDepositTokenAddress, initiatorDeposit);
       throw new Error(
-        `Insufficient collateral detected in responders channel, retry after channel has been collateralized.`,
+        `Insufficient collateral detected in responders channel, ` + `retry after channel has been collateralized.`,
       );
     }
 

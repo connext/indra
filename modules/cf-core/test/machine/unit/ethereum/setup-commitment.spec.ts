@@ -13,7 +13,6 @@ import { StateChannel } from "../../../../src/models";
 import { ConditionalTransactionDelegateTarget } from "../../../contracts";
 import { getRandomExtendedPubKey } from "../../integration/random-signing-keys";
 import { generateRandomNetworkContext } from "../../mocks";
-import { testDomainSeparator } from "../../../integration/utils";
 
 /**
  * This test suite decodes a constructed SetupCommitment transaction object according
@@ -51,10 +50,7 @@ describe("SetupCommitment", () => {
       networkContext,
       stateChannel.multisigAddress,
       stateChannel.multisigOwners,
-      freeBalance.identity,
-      testDomainSeparator,
-      4447,
-      stateChannel.numProposedApps
+      freeBalance.identity
     ).getTransactionDetails();
   });
 

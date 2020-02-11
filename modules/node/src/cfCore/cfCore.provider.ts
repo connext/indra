@@ -11,7 +11,6 @@ import { CLogger } from "../util";
 import { CFCore } from "../util/cfCore";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
-import { HashZero } from "ethers/constants";
 
 const logger = new CLogger("CFCoreProvider");
 
@@ -37,7 +36,6 @@ export const cfCoreProviderFactory: Provider = {
       await config.getContractAddresses(),
       { STORE_KEY_PREFIX: ConnextNodeStorePrefix },
       provider,
-      { domainName: "Connext", domainVersion: "0.0.1", domainSalt: HashZero },
       { acquireLock: lockService.lockedOperation.bind(lockService) },
       publicExtendedKey,
       // key gen fn

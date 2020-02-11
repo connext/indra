@@ -6,12 +6,12 @@ import "./IdentityApp.sol";
 
 contract FinalizedApp is IdentityApp {
 
-    function isStateTerminal(bytes calldata)
-        external
-        pure
-        returns (bool)
-    {
-        return true;
-    }
+  function isStateTerminal(bytes calldata)
+    external
+    pure
+    returns (bool)
+  {
+    return true;
+  }
 
 }

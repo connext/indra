@@ -19,7 +19,7 @@ import {
 import { Contract, Wallet } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import { BigNumber, bigNumberify, randomBytes, hexlify } from "ethers/utils";
+import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { JsonRpcResponse, Node, Rpc } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
@@ -40,8 +40,7 @@ import {
   DepositConfirmationMessage,
   DepositStartedMessage,
   EventEmittedMessage,
-  ProposeInstallProtocolParams,
-  DomainSeparator
+  ProposeInstallProtocolParams
 } from "../../src/types";
 import { deBigNumberifyJson, bigNumberifyJson } from "../../src/utils";
 
@@ -59,12 +58,6 @@ const {
   UnidirectionalLinkedTransferApp,
   UnidirectionalTransferApp
 } = global[`networkContext`] as NetworkContextForTestSuite;
-
-export const testDomainSeparator: DomainSeparator = {
-  domainName: "CounterFactual Test",
-  domainVersion: "0.0.1",
-  domainSalt: hexlify(randomBytes(32))
-};
 
 export async function requestDepositRights(
   node: Node,
@@ -351,7 +344,8 @@ export async function getProposeCoinBalanceRefundAppParams(
   return {
     abiEncodings: {
       actionEncoding: undefined,
-      stateEncoding: `tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)`
+      stateEncoding:
+        `tuple(address recipient, address multisig, uint256 threshold, address tokenAddress)`
     },
     appDefinition: CoinBalanceRefundApp,
     initialState: {

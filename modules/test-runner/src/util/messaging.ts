@@ -1,5 +1,6 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { ConnextEventEmitter, CFCoreTypes, MessagingConfig } from "@connext/types";
+import { CFCoreTypes, MessagingConfig } from "@connext/types";
+import { EventEmitter } from "events";
 
 import { env } from "./env";
 import { combineObjects, delay } from "./misc";
@@ -110,7 +111,7 @@ const defaultOpts = (): TestMessagingConfig => {
   };
 };
 
-export class TestMessagingService extends ConnextEventEmitter implements IMessagingService {
+export class TestMessagingService extends EventEmitter implements IMessagingService {
   private connection: IMessagingService;
   private protocolDefaults: {
     [protocol: string]: DetailedMessageCounter;

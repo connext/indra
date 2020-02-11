@@ -46,9 +46,7 @@ export class SetStateCommitment extends EthereumCommitment {
     );
   }
 
-  public getSignedTransaction(
-    sigs: Signature[]
-  ): CFCoreTypes.MinimalTransaction {
+  public getSignedTransaction(sigs: Signature[]): CFCoreTypes.MinimalTransaction {
     return {
       to: this.networkContext.ChallengeRegistry,
       value: 0,

@@ -6,7 +6,7 @@ import {
   ConditionalTransaction,
   SetStateCommitment,
   WithdrawERC20Commitment,
-  WithdrawETHCommitment
+  WithdrawETHCommitment,
 } from "../ethereum";
 import { ProtocolExecutionFlow } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
@@ -19,19 +19,12 @@ import {
   ProtocolMessage,
   singleAssetTwoPartyCoinTransferInterpreterParamsEncoding,
   WithdrawProtocolParams,
-  DomainSeparator
 } from "../types";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
 
-const {
-  IO_SEND,
-  IO_SEND_AND_WAIT,
-  OP_SIGN,
-  PERSIST_STATE_CHANNEL,
-  WRITE_COMMITMENT
-} = Opcode;
+const { IO_SEND, IO_SEND_AND_WAIT, OP_SIGN, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;
 const { Install, Update, Withdraw } = Protocol;
 /**
  * @description This exchange is described at the following URL:
@@ -61,9 +54,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     const {
       stateChannelsMap,
       message: { params, processID },
-      network,
-      provider,
-      domainSeparator
+      network
     } = context;
 
     const {
@@ -92,10 +83,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     const conditionalTransactionData = constructConditionalTransactionForRefundApp(
       network,
-      postInstallRefundAppStateChannel,
-      domainSeparator,
-      provider.network.chainId,
-      postInstallRefundAppStateChannel.numProposedApps
+      postInstallRefundAppStateChannel
     );
 
     const mySignatureOnConditionalTransaction = yield [
@@ -184,10 +172,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       postInstallRefundAppStateChannel,
       recipient,
       amount,
-      tokenAddress,
-      domainSeparator,
-      provider.network.chainId,
-      postInstallRefundAppStateChannel.numProposedApps
+      tokenAddress
     );
 
     const mySignatureOnWithdrawalCommitment = yield [
@@ -308,9 +293,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     const {
       stateChannelsMap,
       message: { params, processID, customData },
-      network,
-      provider,
-      domainSeparator
+      network
     } = context;
 
     // Aliasing `signature` to this variable name for code clarity
@@ -342,10 +325,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     const conditionalTransactionData = constructConditionalTransactionForRefundApp(
       network,
-      postInstallRefundAppStateChannel,
-      domainSeparator,
-      provider.network.chainId,
-      postInstallRefundAppStateChannel.numProposedApps
+      postInstallRefundAppStateChannel
     );
 
     assertIsValidSignature(
@@ -434,10 +414,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       postInstallRefundAppStateChannel,
       recipient,
       amount,
-      tokenAddress,
-      domainSeparator,
-      provider.network.chainId,
-      postInstallRefundAppStateChannel.numProposedApps
+      tokenAddress
     );
 
     assertIsValidSignature(
@@ -610,10 +587,7 @@ function addRefundAppToStateChannel(
  */
 function constructConditionalTransactionForRefundApp(
   network: NetworkContext,
-  stateChannel: StateChannel,
-  domainSeparator: DomainSeparator,
-  chainId: number,
-  multisigTxCount: number
+  stateChannel: StateChannel
 ): ConditionalTransaction {
   const appInstance = stateChannel.mostRecentlyInstalledAppInstance();
 
@@ -627,10 +601,7 @@ function constructConditionalTransactionForRefundApp(
     defaultAbiCoder.encode(
       [singleAssetTwoPartyCoinTransferInterpreterParamsEncoding],
       [appInstance.singleAssetTwoPartyCoinTransferInterpreterParams]
-    ),
-    domainSeparator,
-    chainId,
-    multisigTxCount
+    )
   );
 }
 
@@ -638,20 +609,14 @@ function constructWithdrawalCommitment(
   postInstallRefundAppStateChannel: StateChannel,
   recipient: string,
   amount: BigNumber,
-  tokenAddress: string,
-  domainSeparator: DomainSeparator,
-  chainId: number,
-  multisigTransactionCount: number
+  tokenAddress: string
 ) {
   if (tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
     return new WithdrawETHCommitment(
       postInstallRefundAppStateChannel.multisigAddress,
       postInstallRefundAppStateChannel.multisigOwners,
       recipient,
-      amount,
-      domainSeparator,
-      chainId,
-      multisigTransactionCount
+      amount
     );
   }
   return new WithdrawERC20Commitment(
@@ -659,9 +624,6 @@ function constructWithdrawalCommitment(
     postInstallRefundAppStateChannel.multisigOwners,
     recipient,
     amount,
-    tokenAddress,
-    domainSeparator,
-    chainId,
-    multisigTransactionCount
+    tokenAddress
   );
 }

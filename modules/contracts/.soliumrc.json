@@ -1,9 +1,20 @@
 {
-  "extends": "solium:all",
-  "plugins": ["security"],
+  "extends": "solium:recommended",
+  "plugins": [
+    "security"
+  ],
   "rules": {
-    "no-experimental": ["off"],
-    "security/no-inline-assembly": ["off"],
-    "security/no-low-level-calls": ["off"]
+    "quotes": [
+      "error",
+      "double"
+    ],
+    "indentation": [
+      "error",
+      4
+    ],
+    "linebreak-style": [
+      "error",
+      "unix"
+    ]
   }
 }

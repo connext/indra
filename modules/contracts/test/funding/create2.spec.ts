@@ -1,9 +1,12 @@
-/* global before */
-import { waffle as buidler } from "@nomiclabs/buidler";
 import * as waffle from "ethereum-waffle";
 import { Contract, Event, Wallet } from "ethers";
-import { TransactionResponse } from "ethers/providers";
-import { getAddress, keccak256, solidityKeccak256, solidityPack } from "ethers/utils";
+import { TransactionResponse, Web3Provider } from "ethers/providers";
+import {
+  getAddress,
+  keccak256,
+  solidityKeccak256,
+  solidityPack
+} from "ethers/utils";
 
 import Echo from "../../build/Echo.json";
 import Proxy from "../../build/Proxy.json";
@@ -11,31 +14,39 @@ import ProxyFactory from "../../build/ProxyFactory.json";
 
 import { expect } from "./utils/index";
 
-describe("ProxyFactory with CREATE2", function() {
+describe("ProxyFactory with CREATE2", function(this: Mocha) {
   this.timeout(5000);
 
-  let provider = buidler.provider;
+  let provider: Web3Provider;
   let wallet: Wallet;
 
   let pf: Contract;
   let echo: Contract;
 
-  function create2(initcode: string, saltNonce: number = 0, initializer: string = "0x") {
+  function create2(
+    initcode: string,
+    saltNonce: number = 0,
+    initializer: string = "0x"
+  ) {
     return getAddress(
       solidityKeccak256(
         ["bytes1", "address", "uint256", "bytes32"],
         [
           "0xff",
           pf.address,
-          solidityKeccak256(["bytes32", "uint256"], [keccak256(initializer), saltNonce]),
-          keccak256(initcode),
-        ],
-      ).slice(-40),
+          solidityKeccak256(
+            ["bytes32", "uint256"],
+            [keccak256(initializer), saltNonce]
+          ),
+          keccak256(initcode)
+        ]
+      ).slice(-40)
     );
   }
 
   before(async () => {
-    wallet = (await provider.getWallets())[0];
+    provider = waffle.createMockProvider();
+    wallet = (await waffle.getWallets(provider))[0];
 
     pf = await waffle.deployContract(wallet, ProxyFactory);
     echo = await waffle.deployContract(wallet, Echo);
@@ -45,11 +56,18 @@ describe("ProxyFactory with CREATE2", function() {
     it("can be used to deploy a contract at a predictable address", async () => {
       const masterCopy = echo.address;
 
-      const initcode = solidityPack(["bytes", "uint256"], [`${Proxy.bytecode}`, echo.address]);
+      const initcode = solidityPack(
+        ["bytes", "uint256"],
+        [`0x${Proxy.evm.bytecode.object}`, echo.address]
+      );
 
       const saltNonce = 0;
 
-      const tx: TransactionResponse = await pf.createProxyWithNonce(masterCopy, "0x", saltNonce);
+      const tx: TransactionResponse = await pf.createProxyWithNonce(
+        masterCopy,
+        "0x",
+        saltNonce
+      );
 
       const receipt = await tx.wait();
 

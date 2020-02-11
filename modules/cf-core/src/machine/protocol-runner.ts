@@ -17,7 +17,6 @@ import {
   UninstallVirtualAppProtocolParams,
   UpdateProtocolParams,
   WithdrawProtocolParams,
-  DomainSeparator,
 } from "../types";
 
 import { Opcode, Protocol } from "./enums";
@@ -77,8 +76,7 @@ export class ProtocolRunner {
 
   constructor(
     public readonly network: NetworkContext,
-    public readonly provider: BaseProvider,
-    public readonly domainSeparator: DomainSeparator
+    public readonly provider: BaseProvider
   ) {
     this.network.provider = network.provider || provider;
     this.middlewares = new MiddlewareContainer();
@@ -145,8 +143,7 @@ export class ProtocolRunner {
       message,
       stateChannelsMap,
       network: this.network,
-      provider: this.provider,
-      domainSeparator: this.domainSeparator
+      provider: this.provider
     };
 
     let lastMiddlewareRet: any = undefined;

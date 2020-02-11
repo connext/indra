@@ -383,7 +383,7 @@ export class CFCoreService {
         app.appInterface.addr === contractAddresses.CoinBalanceRefundApp &&
         app.latestState[`tokenAddress`] === tokenAddress,
     );
-    logger.log(`coinBalanceRefundAppArray: ${stringify(coinBalanceRefundAppArray)}`);
+    console.log(`coinBalanceRefundAppArray: `, coinBalanceRefundAppArray);
     if (coinBalanceRefundAppArray.length > 1) {
       throw new Error(`More than 1 instance of CoinBalanceRefundApp installed for asset! This should never happen.`);
     }

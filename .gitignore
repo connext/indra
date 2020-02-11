@@ -1,5 +1,4 @@
 # Cache
-.buidler
 .cache
 .config
 .jest.cache
@@ -7,13 +6,12 @@
 .npm
 .bot-store
 .test-store
-modules/*/.buidler
-modules/*/.cache
-modules/*/.config
-modules/*/.node-gyp
-modules/*/.npm
+modules/**/.cache
+modules/**/.config
+modules/**/.node-gyp
+modules/**/.npm
 modules/daicard/src/react-app-env.d.ts
-ops/database/snapshots
+modules/database/snapshots
 
 # Compiled output
 build/
@@ -78,5 +76,3 @@ modules/client/docs
 
 # .env
 modules/**/.env
-
-modules/contracts/cache/

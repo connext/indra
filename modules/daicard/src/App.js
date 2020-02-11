@@ -1,6 +1,7 @@
 import * as connext from "@connext/client";
 import { ConnextStore, PisaClientBackupAPI } from "@connext/store";
 import {
+  ERC20TokenArtifacts,
   CF_PATH,
   ConnextClientStorePrefix,
   RECEIVE_TRANSFER_FINISHED_EVENT,
@@ -18,7 +19,6 @@ import { PisaClient } from "pisa-client";
 import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
 import { interpret } from "xstate";
-import tokenAbi from "human-standard-token-abi";
 
 import "./App.css";
 
@@ -277,7 +277,7 @@ class App extends React.Component {
     }
     console.log(`Successfully connected channel`);
 
-    const token = new Contract(channel.config.contractAddresses.Token, tokenAbi, ethProvider);
+    const token = new Contract(channel.config.contractAddresses.Token, ERC20TokenArtifacts.abi, ethProvider);
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
     console.log(`Client created successfully!`);
@@ -332,7 +332,7 @@ class App extends React.Component {
     if (!channel.config.contractAddresses.SAIToken) {
       return Zero;
     }
-    const saiToken = new Contract(channel.config.contractAddresses.SAIToken, tokenAbi, wallet);
+    const saiToken = new Contract(channel.config.contractAddresses.SAIToken, ERC20TokenArtifacts.abi, wallet);
     const freeSaiBalance = await channel.getFreeBalance(saiToken.address);
     const mySaiBalance = freeSaiBalance[channel.freeBalanceAddress];
     return mySaiBalance;

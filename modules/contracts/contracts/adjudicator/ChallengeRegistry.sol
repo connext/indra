@@ -10,14 +10,14 @@ import "./mixins/MixinRespondToChallenge.sol";
 
 
 /// @dev Base contract implementing all logic needed for full-featured App registry
-// solium-disable-next-line lbrace
 contract ChallengeRegistry is
   MixinChallengeRegistryCore,
   MixinSetState,
   MixinSetStateWithAction,
   MixinCancelChallenge,
   MixinRespondToChallenge,
-  MixinSetOutcome {
-    // solium-disable-next-line no-empty-blocks
-    constructor () public {}
+  MixinSetOutcome
+{
+  // solium-disable-next-line no-empty-blocks
+  constructor () public {}
 }
