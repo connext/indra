@@ -4,17 +4,8 @@ import { Zero } from "ethers/constants";
 import { Web3Provider } from "ethers/providers";
 
 import LibAppCaller from "../../../build/LibStateChannelApp.json";
-import { randomBytes, recoverAddress, hexlify, SigningKey, Signature } from "ethers/utils";
-import {
-  expect,
-  sortSignaturesBySignerAddress,
-  signaturesToBytes,
-  signaturesToBytesSortedBySignerAddress,
-} from "../utils";
-
-const APP_STATE = {
-  counter: Zero,
-};
+import { randomBytes, hexlify, SigningKey, Signature } from "ethers/utils";
+import { expect, sortSignaturesBySignerAddress, signaturesToBytes } from "../utils";
 
 const alice =
   // 0xaeF082d339D227646DB914f0cA9fF02c8544F30b
