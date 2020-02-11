@@ -13,7 +13,7 @@ modules/*/.config
 modules/*/.node-gyp
 modules/*/.npm
 modules/daicard/src/react-app-env.d.ts
-modules/database/snapshots
+ops/database/snapshots
 
 # Compiled output
 build/
