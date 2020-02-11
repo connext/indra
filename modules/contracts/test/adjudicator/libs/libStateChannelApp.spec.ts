@@ -1,6 +1,5 @@
-import * as waffle from "ethereum-waffle";
+import { waffle as buidler } from "@nomiclabs/buidler";
 import { Wallet, Contract } from "ethers";
-import { Web3Provider } from "ethers/providers";
 
 import { randomBytes, hexlify, SigningKey, Signature } from "ethers/utils";
 import { expect, sortSignaturesBySignerAddress, signaturesToBytes, deployRegistry } from "../utils";
@@ -14,7 +13,7 @@ const bob =
   new Wallet("0x4ccac8b1e81fb18a98bbaf29b9bfe307885561f71b76bd4680d7aec9d0ddfcfd");
 
 describe("LibStateChannelApp.sol", () => {
-  let provider: Web3Provider;
+  let provider = buidler.provider;
   let wallet: Wallet;
 
   let libStateChannelApp: Contract;
@@ -32,8 +31,7 @@ describe("LibStateChannelApp.sol", () => {
   };
 
   before(async () => {
-    provider = waffle.createMockProvider();
-    wallet = (await waffle.getWallets(provider))[0];
+    wallet = (await provider.getWallets())[0];
 
     libStateChannelApp = await deployRegistry(wallet);
   });

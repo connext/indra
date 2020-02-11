@@ -1,4 +1,4 @@
-import * as waffle from "ethereum-waffle";
+import { waffle as buidler } from "@nomiclabs/buidler";
 import { Wallet, Contract } from "ethers";
 import { Web3Provider } from "ethers/providers";
 
@@ -28,7 +28,7 @@ const bob =
 const ONCHAIN_CHALLENGE_TIMEOUT = 30;
 
 describe("MixinCancelChallenge.sol", () => {
-  let provider: Web3Provider;
+  let provider = buidler.provider;
   let wallet: Wallet;
   let globalChannelNonce = 0;
 
@@ -39,8 +39,7 @@ describe("MixinCancelChallenge.sol", () => {
 
   before(async () => {
     // deploy contract, set provider/wallet
-    provider = waffle.createMockProvider();
-    wallet = (await waffle.getWallets(provider))[0];
+    wallet = (await provider.getWallets())[0];
 
     challengeRegistry = await deployRegistry(wallet);
   });

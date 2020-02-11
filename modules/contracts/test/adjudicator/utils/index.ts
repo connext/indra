@@ -128,12 +128,12 @@ export function signaturesToBytesSortedBySignerAddress(digest: string, ...signat
  */
 export async function getChallenge(identityHash: string, challengeRegistry: Contract): Promise<Challenge> {
   const [
+    status,
     latestSubmitter,
     appStateHash,
     challengeCounter,
     versionNumber,
     finalizesAt,
-    status,
   ] = await challengeRegistry.functions.getAppChallenge(identityHash);
   return {
     appStateHash,
@@ -219,9 +219,11 @@ export async function cancelChallenge(
 }
 
 export async function advanceBlocks(provider: Web3Provider, blocks: number = ONCHAIN_CHALLENGE_TIMEOUT) {
+  const currBlock = await provider.getBlockNumber();
   for (const _ of Array(blocks + 1)) {
     await provider.send("evm_mine", []);
   }
+  expect(await provider.getBlockNumber()).to.be.equal(currBlock + blocks + 1);
 }
 
 export async function deployRegistry(wallet: Wallet): Promise<Contract> {
