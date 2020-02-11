@@ -27,7 +27,7 @@ const bob =
 
 const ONCHAIN_CHALLENGE_TIMEOUT = 30;
 
-describe.only("MixinCancelChallenge.sol", () => {
+describe("MixinCancelChallenge.sol", () => {
   let provider: Web3Provider;
   let wallet: Wallet;
   let globalChannelNonce = 0;
