@@ -20,7 +20,8 @@ import RpcRouter from "./rpc-router";
 import {
   NetworkContext,
   CFCoreTypes,
-  NodeMessageWrappedProtocolMessage
+  NodeMessageWrappedProtocolMessage,
+  DomainSeparator
 } from "./types";
 import { timeout } from "./utils";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
@@ -62,6 +63,7 @@ export class Node {
     networkContext: NetworkContext,
     nodeConfig: NodeConfig,
     provider: BaseProvider,
+    domainSeparator: DomainSeparator,
     lockService?: CFCoreTypes.ILockService,
     publicExtendedKey?: string,
     privateKeyGenerator?: CFCoreTypes.IPrivateKeyGenerator,
@@ -84,6 +86,7 @@ export class Node {
       nodeConfig,
       provider,
       networkContext,
+      domainSeparator,
       blocksNeededForConfirmation,
       lockService
     );
@@ -99,6 +102,7 @@ export class Node {
     private readonly nodeConfig: NodeConfig,
     private readonly provider: BaseProvider,
     public readonly networkContext: NetworkContext,
+    public readonly domainSeparator: DomainSeparator,
     public readonly blocksNeededForConfirmation: number = REASONABLE_NUM_BLOCKS_TO_WAIT,
     private readonly lockService?: CFCoreTypes.ILockService
   ) {
@@ -161,7 +165,8 @@ export class Node {
   private buildProtocolRunner(): ProtocolRunner {
     const protocolRunner = new ProtocolRunner(
       this.networkContext,
-      this.provider
+      this.provider,
+      this.domainSeparator
     );
 
     protocolRunner.register(Opcode.OP_SIGN, async (args: any[]) => {

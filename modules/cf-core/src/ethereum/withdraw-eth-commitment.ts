@@ -1,6 +1,6 @@
 import { bigNumberify, BigNumberish } from "ethers/utils";
 
-import { MultisigOperation, MultisigTransaction } from "../types";
+import { MultisigOperation, MultisigTransaction, DomainSeparator } from "../types";
 
 import { MultisigCommitment } from "./multisig-commitment";
 
@@ -9,7 +9,10 @@ export class WithdrawETHCommitment extends MultisigCommitment {
     public readonly multisigAddress: string,
     public readonly multisigOwners: string[],
     public readonly to: string,
-    public readonly value: BigNumberish
+    public readonly value: BigNumberish,
+    public readonly domainSeparator: DomainSeparator,
+    public readonly chainId: number,
+    public readonly transactionCount: number
   ) {
     super(multisigAddress, multisigOwners);
   }
@@ -19,7 +22,12 @@ export class WithdrawETHCommitment extends MultisigCommitment {
       to: this.to,
       value: bigNumberify(this.value),
       data: "0x",
-      operation: MultisigOperation.Call
+      operation: MultisigOperation.Call,
+      domainName: this.domainSeparator.domainName,
+      domainVersion: this.domainSeparator.domainVersion,
+      chainId: this.chainId,
+      domainSalt: this.domainSeparator.domainSalt,
+      transactionCount: this.transactionCount
     };
   }
 }

@@ -1,7 +1,7 @@
 pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../adjudicator/interfaces/CounterfactualApp.sol";
 import "../funding/libs/LibOutcome.sol";
 
@@ -10,24 +10,24 @@ import "../funding/libs/LibOutcome.sol";
 /// @notice This contract lets Alice transfer assets to Bob
 contract SimpleTransferApp is CounterfactualApp {
 
-  using SafeMath for uint256;
+    using SafeMath for uint256;
 
-  struct AppState {
-    LibOutcome.CoinTransfer[2] coinTransfers;
-  }
+    struct AppState {
+        LibOutcome.CoinTransfer[2] coinTransfers;
+    }
 
-  function computeOutcome(bytes calldata encodedState)
-    external
-    pure
-    returns (bytes memory)
-  {
-    AppState memory state = abi.decode(encodedState, (AppState));
+    function computeOutcome(bytes calldata encodedState)
+        external
+        pure
+        returns (bytes memory)
+    {
+        AppState memory state = abi.decode(encodedState, (AppState));
 
-    uint256 transferAmount = state.coinTransfers[0].amount;
+        uint256 transferAmount = state.coinTransfers[0].amount;
 
-    state.coinTransfers[0].amount = 0;
-    state.coinTransfers[1].amount = transferAmount;
+        state.coinTransfers[0].amount = 0;
+        state.coinTransfers[1].amount = transferAmount;
 
-    return abi.encode(state.coinTransfers);
-  }
+        return abi.encode(state.coinTransfers);
+    }
 }
