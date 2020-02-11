@@ -230,6 +230,10 @@ export class ConfigService implements OnModuleInit {
     return this.get(`INDRA_REDIS_URL`);
   }
 
+  getRebalancingServiceUrl(): string | undefined {
+    return this.get(`INDRA_REBALANCING_SERVICE_URL`);
+  }
+
   async getDefaultPaymentProfile(assetId: string = AddressZero): Promise<PaymentProfile | undefined> {
     const tokenAddress = await this.getTokenAddress();
     switch (assetId) {

@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, HttpModule } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { AuthModule } from "../auth/auth.module";
@@ -27,6 +27,7 @@ import { ChannelService } from "./channel.service";
     ]),
     ConfigModule,
     AuthModule,
+    HttpModule,
   ],
   providers: [ChannelService, channelProviderFactory],
 })

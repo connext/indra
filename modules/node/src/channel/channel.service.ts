@@ -1,9 +1,9 @@
 import { ChannelAppSequences, StateChannelJSON, CoinBalanceRefundApp } from "@connext/types";
-import { Injectable } from "@nestjs/common";
+import { Injectable, HttpService } from "@nestjs/common";
 import { Contract } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
-import { BigNumber, getAddress } from "ethers/utils";
+import { BigNumber, getAddress, toUtf8Bytes, sha256 } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -24,6 +24,7 @@ export class ChannelService {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly configService: ConfigService,
+    private readonly httpService: HttpService,
     private readonly channelRepository: ChannelRepository,
     private readonly onchainRepository: OnchainTransactionRepository,
   ) {}
@@ -324,6 +325,20 @@ export class ChannelService {
     const txRes = await wallet.sendTransaction(tx);
     await this.onchainRepository.addUserWithdrawal(txRes, channel);
     return txRes;
+  }
+
+  async getDataFromRebalancingService(userPublicIdentifier: string): Promise<any> {
+    const rebalancingServiceUrl = this.configService.getRebalancingServiceUrl();
+    if (!rebalancingServiceUrl) {
+      logger.debug(`Rebalancing service URL not configured, falling back to another collateralization strategy...`);
+      return;
+    }
+
+    const hashedPublicIdentifier = sha256(toUtf8Bytes(userPublicIdentifier));
+    const rebalancingTargets = await this.httpService
+      .get(`${rebalancingServiceUrl}/${hashedPublicIdentifier}`)
+      .toPromise();
+    return rebalancingTargets;
   }
 
   async getPaymentProfileForChannelAndTokenOrDefault(
