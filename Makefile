@@ -371,7 +371,7 @@ contracts: node-modules contract-artifacts types $(shell find $(contracts)/addre
 	$(docker_run) "cd modules/contracts && npm run transpile"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-contract-artifacts: node-modules $(shell find $(contracts)/contracts $(find_options))
+contract-artifacts: node-modules $(shell find $(contracts)/waffle.json $(contracts)/contracts $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/contracts && npm run compile"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
