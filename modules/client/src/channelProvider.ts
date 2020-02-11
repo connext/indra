@@ -14,6 +14,7 @@ import {
   StorePair,
 } from "./types";
 import { chan_storeSet, chan_storeGet, chan_nodeAuth, chan_restoreState, IChannelProvider } from "@connext/types";
+import { signMessage } from "./lib/ethSign";
 
 export const createCFChannelProvider = async ({
   ethProvider,
@@ -106,7 +107,7 @@ export class CFCoreRpcConnection extends EventEmitter implements IRpcConnection 
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
   private walletSign = async (message: string): Promise<string> => {
-    return await this.wallet.signMessage(arrayify(message));
+    return await signMessage(this.wallet.privateKey, message);
   };
 
   private storeGet = async (path: string): Promise<any> => {
