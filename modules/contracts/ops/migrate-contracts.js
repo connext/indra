@@ -194,13 +194,7 @@ const sendGift = async (address, token) => {
   ////////////////////////////////////////
   // Deploy contracts
 
-  for (const contract of coreContracts) {
-    if (chainId === ganacheId || contract !== "ProxyFactory") {
-      await deployContract(contract, artifacts[contract], []);
-    }
-  }
-
-  for (const contract of appContracts) {
+  for (const contract of coreContracts.concat(appContracts).sort()) {
     await deployContract(contract, artifacts[contract], []);
   }
 
