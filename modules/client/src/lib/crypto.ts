@@ -16,6 +16,6 @@ export const encryptWithPublicKey = async (publicKey: string, message: string): 
 
 export const decryptWithPrivateKey = async (privateKey: string, message: string): Promise<string> => {
   const encrypted = deserialize(hexToBuffer(message));
-  const descrypted = await decrypt(hexToBuffer(privateKey), encrypted);
-  return bufferToUtf8(descrypted);
+  const decrypted = await decrypt(hexToBuffer(privateKey), encrypted);
+  return bufferToUtf8(decrypted);
 };
