@@ -10,10 +10,10 @@ SHELL=/bin/bash
 
 commit=$(shell git rev-parse HEAD | head -c 8)
 release=$(shell cat package.json | grep '"version"' | awk -F '"' '{print $$4}')
-solc_version=$(shell cat package.json | grep '"solc"' | awk -F '"' '{print $$4}')
+solc_version=$(shell cat $(contracts)/package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
 # version that will be tested against for backwards compatibility checks
-backwards_compatible_version=$(shell echo $(release) | cut -d '.' -f 1).0.7
+backwards_compatible_version=$(commit) # $(shell echo $(release) | cut -d '.' -f 1).0.0
 
 # Pool of images to pull cached layers from during docker build steps
 cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_relay:$(commit),$(project)_relay,$(project)_bot:$(commit),$(project)_bot,$(project)_builder"; else echo ""; fi)
@@ -115,6 +115,7 @@ clean: stop
 	rm -rf node_modules/@walletconnect/*
 	rm -rf modules/**/node_modules/@walletconnect/*
 	rm -rf modules/**/build
+	rm -rf modules/**/cache
 	rm -rf modules/**/dist
 	rm -rf modules/**/node_modules/**/.git
 
@@ -158,7 +159,7 @@ pull-backwards-compatible:
 	bash ops/pull-images.sh $(backwards_compatible_version)
 
 deployed-contracts: contracts
-	bash ops/deploy-contracts.sh ganache
+	bash ops/deploy-contracts.sh
 	touch $(flags)/$@
 
 build-report:
@@ -187,7 +188,7 @@ test-bot-farm:
 test-cf: cf-core
 	bash ops/test/cf.sh
 
-test-client: builder client
+test-client: client
 	bash ops/test/client.sh
 
 test-contracts: contracts types
@@ -367,12 +368,17 @@ types: node-modules $(shell find $(types)/src $(find_options))
 
 contracts: node-modules contract-artifacts types $(shell find $(contracts)/address-book.json $(contracts)/index.ts $(contracts)/test $(contracts)/tsconfig.json $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/contracts && npm run build"
+	$(docker_run) "cd modules/contracts && npm run transpile"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
+contract-artifacts: node-modules $(shell find $(contracts)/waffle.json $(contracts)/contracts $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/contracts && npm run compile"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 contracts-native: node-modules $(shell find $(contracts)/contracts $(contracts)/waffle.native.json $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/contracts && npm run build-native"
+	$(docker_run) "cd modules/contracts && npm run compile-native"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 node-modules: builder package.json $(shell ls modules/**/package.json)
