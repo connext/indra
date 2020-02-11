@@ -1,6 +1,6 @@
 {
   "name": "@connext/types",
-  "version": "4.0.11",
+  "version": "5.0.0",
   "description": "TypeScript typings for common Connext types",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
