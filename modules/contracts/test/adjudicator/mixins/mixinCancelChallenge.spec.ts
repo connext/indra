@@ -1,6 +1,5 @@
 import { waffle as buidler } from "@nomiclabs/buidler";
 import { Wallet, Contract } from "ethers";
-import { Web3Provider } from "ethers/providers";
 
 import {
   expect,
