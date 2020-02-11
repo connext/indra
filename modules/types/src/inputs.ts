@@ -10,8 +10,15 @@ export type AllowedSwap = {
   to: string;
 };
 
+export const PriceOracleTypes = {
+  UNISWAP: "UNISWAP",
+};
+
+export type PriceOracleType = keyof typeof PriceOracleTypes;
+
 export type SwapRate = AllowedSwap & {
   rate: string;
+  priceOracleType: PriceOracleType;
   blockNumber?: number;
 };
 

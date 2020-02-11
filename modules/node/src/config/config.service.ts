@@ -7,7 +7,7 @@ import {
   SimpleTwoPartySwapApp,
   SimpleLinkedTransferApp,
   CoinBalanceRefundApp,
-  AllowedSwap,
+  SwapRate,
 } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
@@ -116,7 +116,7 @@ export class ConfigService implements OnModuleInit {
       const configIndex = tokenConfig.findIndex(tc =>
         tc.find(t => t.chainId === currentChainId && t.address === tokenAddress),
       );
-      const configExists = tokenConfig[configIndex].find(tc => tc.chainId === 1 && tc.address === tokenAddress);
+      const configExists = tokenConfig[configIndex].find(tc => tc.chainId === 1);
       tokenAddress = configExists ? configExists.address : tokenAddress;
     }
 
@@ -131,8 +131,19 @@ export class ConfigService implements OnModuleInit {
     return [...tokenSet];
   }
 
-  getAllowedSwaps(): AllowedSwap[] {
+  getAllowedSwaps(): SwapRate[] {
     return JSON.parse(this.get("INDRA_ALLOWED_SWAPS"));
+  }
+
+  async getDefaultSwapRate(from: string, to: string): Promise<string | undefined> {
+    const tokenAddress = await this.getTokenAddress();
+    if (from === AddressZero && to === tokenAddress) {
+      return "100.00";
+    }
+    if (from === tokenAddress && to === tokenAddress) {
+      return "0.005";
+    }
+    return undefined;
   }
 
   async getDefaultAppByName(name: SupportedApplication): Promise<DefaultApp> {

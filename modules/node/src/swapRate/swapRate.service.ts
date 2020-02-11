@@ -1,15 +1,14 @@
 import { IMessagingService } from "@connext/messaging";
-import { AllowedSwap, SwapRate } from "@connext/types";
+import { AllowedSwap, PriceOracleType, SwapRate } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { getMarketDetails, getTokenReserves } from "@uniswap/sdk";
 import { Contract, ethers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { formatEther } from "ethers/utils";
 
-import { medianizerAbi } from "../abi/medianizer.abi";
 import { ConfigService } from "../config/config.service";
 import { MessagingProviderId } from "../constants";
 import { CLogger } from "../util";
+import { parseEther } from "ethers/utils";
 
 const logger = new CLogger("SwapService");
 
@@ -29,24 +28,69 @@ export class SwapRateService implements OnModuleInit {
     if (swap) {
       rate = swap.rate;
     } else {
-      rate = await this.getSwapRate(from, to);
+      rate = await this.getSwapRate(from, to, swap.priceOracleType);
     }
     return rate;
   }
 
-  async getSwapRate(from: string, to: string, blockNumber: number = 0): Promise<string | undefined> {
+  async getSwapRate(
+    from: string,
+    to: string,
+    priceOracleType: PriceOracleType,
+    blockNumber: number = 0,
+  ): Promise<string | undefined> {
     if (!this.config.getAllowedSwaps().find((s: AllowedSwap) => s.from === from && s.to === to)) {
       throw new Error(`No valid swap exists for ${from} to ${to}`);
     }
     const rateIndex = this.latestSwapRates.findIndex((s: SwapRate) => s.from === from && s.to === to);
+    let oldRate: string | undefined;
+    if (rateIndex !== -1) {
+      oldRate = this.latestSwapRates[rateIndex].rate;
+    }
 
-    const ethProvider = this.config.getEthProvider();
-    const latestBlock = await ethProvider.getBlockNumber();
-    if (this.latestSwapRates[rateIndex] && this.latestSwapRates[rateIndex].blockNumber === latestBlock) {
+    if (this.latestSwapRates[rateIndex] && this.latestSwapRates[rateIndex].blockNumber === blockNumber) {
       // already have rates for this block
       return undefined;
     }
 
+    // check rate based on configured price oracle
+    let newRate: string;
+    try {
+      switch (priceOracleType) {
+        case "UNISWAP":
+          newRate = await this.getUniswapRate(from, to);
+          break;
+        default:
+          throw new Error(`Price oracle not configured for swap ${from} -> ${to}`);
+      }
+    } catch (e) {
+      logger.warn(`Failed to fetch swap rate from medianizer`);
+      if (process.env.NODE_ENV === "development") {
+        newRate = await this.config.getDefaultSwapRate(from, to);
+        if (!newRate) {
+          throw e;
+        }
+      }
+    }
+
+    // eslint-disable-next-line sort-keys
+    const newSwap: SwapRate = { from, to, rate: newRate, priceOracleType, blockNumber };
+    if (rateIndex !== -1) {
+      oldRate = this.latestSwapRates[rateIndex].rate;
+      this.latestSwapRates[rateIndex] = newSwap;
+    } else {
+      this.latestSwapRates.push(newSwap);
+    }
+    const oldRateBn = parseEther(oldRate || "0");
+    const newRateBn = parseEther(newRate);
+    if (!oldRateBn.eq(newRateBn)) {
+      logger.log(`Got swap rate from Uniswap at block ${blockNumber}: ${newRate}`);
+      this.broadcastRate(from, to); // Only broadcast the rate if it's changed
+    }
+    return newRate;
+  }
+
+  async getUniswapRate(from: string, to: string): Promise<string> {
     let fromReserves = undefined;
     if (from !== AddressZero) {
       const fromMainnetAddress = await this.config.getTokenAddressForSwap(from);
@@ -60,38 +104,8 @@ export class SwapRateService implements OnModuleInit {
     }
 
     const marketDetails = getMarketDetails(fromReserves, toReserves);
-    console.log("marketDetails: ", marketDetails.marketRate.rate.toString());
 
-    const newRate = formatEther(marketDetails.marketRate.rate.toString());
-    // eslint-disable-next-line sort-keys
-    const newSwap: SwapRate = { from, to, rate: newRate };
-    let oldRate: string | undefined;
-    if (rateIndex !== -1) {
-      oldRate = this.latestSwapRates[rateIndex].rate;
-      this.latestSwapRates[rateIndex] = newSwap;
-    } else {
-      this.latestSwapRates.push(newSwap);
-    }
-    if (oldRate !== newRate) {
-      logger.log(`Got swap rate from Uniswap at block ${blockNumber}: ${newRate}`);
-      this.broadcastRate(from, to); // Only broadcast the rate if it's changed
-    }
-
-    const inverseNewRate = formatEther(marketDetails.marketRate.rateInverted.toString());
-    // eslint-disable-next-line sort-keys
-    const inverseNewSwap: SwapRate = { from: to, to: from, rate: inverseNewRate };
-    const inverseRateIndex = this.latestSwapRates.findIndex((s: SwapRate) => s.from === to && s.to === from);
-    let inverseOldRate: string | undefined;
-    if (inverseRateIndex !== -1) {
-      inverseOldRate = this.latestSwapRates[inverseRateIndex].rate;
-      this.latestSwapRates[rateIndex] = inverseNewSwap;
-    } else {
-      this.latestSwapRates.push(inverseNewSwap);
-    }
-    if (inverseOldRate !== inverseNewRate) {
-      logger.log(`Got swap rate from Uniswap at block ${blockNumber}: ${inverseNewRate}`);
-      this.broadcastRate(to, from); // Only broadcast the rate if it's changed
-    }
+    const newRate = marketDetails.marketRate.rate.toString();
     return newRate;
   }
 
@@ -111,7 +125,9 @@ export class SwapRateService implements OnModuleInit {
 
     for (const swap of swaps) {
       // Check rate at each new block
-      provider.on("block", (blockNumber: number) => this.getSwapRate(swap.from, swap.to, blockNumber));
+      provider.on("block", (blockNumber: number) =>
+        this.getSwapRate(swap.from, swap.to, swap.priceOracleType, blockNumber),
+      );
     }
   }
 }

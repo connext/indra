@@ -43,7 +43,7 @@ else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' 
 fi
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 
-allowed_swaps='[{"from":"0xeec918d74c746167564401103096D45BbD494B74","to":"0x0000000000000000000000000000000000000000"},{"from":"0x0000000000000000000000000000000000000000","to":"0xeec918d74c746167564401103096D45BbD494B74"}]'
+allowed_swaps='[{"from":"0xeec918d74c746167564401103096D45BbD494B74","to":"0x0000000000000000000000000000000000000000","priceOracleType":"UNISWAP"},{"from":"0x0000000000000000000000000000000000000000","to":"0xeec918d74c746167564401103096D45BbD494B74","priceOracleType":"UNISWAP"}]'
 
 # database connection settings
 pg_db="$project"
