@@ -23,7 +23,7 @@ chai.use(waffle.solidity);
 export const expect = chai.expect;
 
 // HELPER DATA
-const ONCHAIN_CHALLENGE_TIMEOUT = 30;
+export const ONCHAIN_CHALLENGE_TIMEOUT = 30;
 
 export enum ChallengeStatus {
   NO_CHALLENGE,
