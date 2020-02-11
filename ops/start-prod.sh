@@ -115,6 +115,8 @@ pull_if_unavailable "$relay_image"
 ########################################
 ## Ethereum Config
 
+eth_mnemonic_name="${project}_mnemonic"
+
 if [[ -z "$INDRA_ETH_PROVIDER" ]]
 then echo "An env var called INDRA_ETH_PROVIDER is required" && exit 1
 elif [[ "$INDRA_ETH_PROVIDER" =~ .*://localhost:.* ]]
@@ -127,7 +129,6 @@ echo "eth provider: $INDRA_ETH_PROVIDER w chainId: $chainId"
 if [[ "$chainId" == "$ganache_chain_id" ]]
 then
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-  eth_mnemonic_name="${project}_mnemonic_$chainId"
   new_secret "$eth_mnemonic_name" "$eth_mnemonic"
   eth_volume="chain_dev:"
   number_of_services=$(( $number_of_services + 1 ))
@@ -153,7 +154,6 @@ if [[ -f address-book.json ]]
 then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
 else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
 fi
-eth_mnemonic_name="${project}_mnemonic_$chainId"
 
 ########################################
 ## Deploy according to configuration
