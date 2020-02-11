@@ -12,8 +12,7 @@
   ],
   "scripts": {
     "build": "tsc -p . && rollup -c",
-    "build:watch": "tsc -p . && rollup -c -w",
-    "prepare": "npm run build"
+    "build:watch": "tsc -p . && rollup -c -w"
   },
   "dependencies": {
     "@connext/types": "4.0.11",
@@ -21,8 +20,8 @@
     "websocket-nats": "0.3.3"
   },
   "devDependencies": {
-    "rollup": "1.27.14",
+    "rollup": "1.31.0",
     "rollup-plugin-typescript2": "0.25.3",
-    "typescript": "3.5.3"
+    "typescript": "3.7.5"
   }
 }
