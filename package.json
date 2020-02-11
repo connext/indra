@@ -14,8 +14,8 @@
 	"homepage": "https://github.com/ConnextProject/indra#readme",
 	"devDependencies": {
     "@openzeppelin/contracts": "2.5.0",
-		"@typescript-eslint/eslint-plugin": "2.19.0",
-		"@typescript-eslint/parser": "2.19.0",
+		"@typescript-eslint/eslint-plugin": "2.19.2",
+		"@typescript-eslint/parser": "2.19.2",
     "chai-bn": "0.2.0",
 		"cypress": "3.8.3",
 		"eslint": "6.8.0",

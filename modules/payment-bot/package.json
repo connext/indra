@@ -19,12 +19,11 @@
     "dotenv": "8.2.0",
     "ethers": "4.0.44",
     "human-standard-token-abi": "2.0.0",
-    "pisa-client": "0.1.4-connext-beta.1",
     "uuid": "3.4.0"
   },
   "devDependencies": {
     "@types/node-fetch": "2.5.4",
-    "env-cmd": "10.0.1",
+    "env-cmd": "10.1.0",
     "ts-loader": "6.2.1",
     "ts-node": "8.6.2",
     "typescript": "3.5.3",

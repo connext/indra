@@ -22,7 +22,7 @@
     "build": "npm run compile && npm run transpile",
     "compile": "waffle waffle.json",
     "compile-native": "waffle waffle.native.json",
-    "lint-sol": "solium -d .",
+    "lint": "solium -d .",
     "test": "npx buidler test",
     "transpile": "./node_modules/.bin/tsc -p tsconfig.json"
   },

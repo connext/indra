@@ -36,7 +36,7 @@
     "@babel/plugin-proposal-object-rest-spread": "7.8.3",
     "@types/chai": "4.2.8",
     "@types/dotenv-safe": "8.1.0",
-    "@types/jest": "25.1.1",
+    "@types/jest": "25.1.2",
     "@types/loglevel": "1.6.3",
     "@types/node": "13.7.0",
     "chai": "4.2.0",
