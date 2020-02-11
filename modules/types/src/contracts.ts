@@ -3,6 +3,23 @@ import { BaseProvider, BigNumber } from "./basic";
 ////////////////////////////////////////
 // Generic contract ops & network config
 
+export type AddressBook = {
+  [chainId: string]: {
+    [contractName: string]: {
+      address: string;
+      txHash?: string;
+      creationCodeHash?: string;
+      runtimeCodeHash?: string;
+    };
+  };
+};
+
+export type AddressHistory = {
+  [chainId: string]: {
+    [contractName: string]: string[];
+  };
+};
+
 export interface NetworkContext {
   ChallengeRegistry: string;
   CoinBalanceRefundApp: string;
