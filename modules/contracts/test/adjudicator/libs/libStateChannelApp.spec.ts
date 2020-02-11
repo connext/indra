@@ -1,6 +1,5 @@
 import * as waffle from "ethereum-waffle";
 import { Wallet, Contract } from "ethers";
-import { Zero } from "ethers/constants";
 import { Web3Provider } from "ethers/providers";
 
 import LibAppCaller from "../../../build/LibStateChannelApp.json";
@@ -15,7 +14,7 @@ const bob =
   // 0xb37e49bFC97A948617bF3B63BC6942BB15285715
   new Wallet("0x4ccac8b1e81fb18a98bbaf29b9bfe307885561f71b76bd4680d7aec9d0ddfcfd");
 
-describe.only("LibStateChannelApp.sol", () => {
+describe("LibStateChannelApp.sol", () => {
   let provider: Web3Provider;
   let wallet: Wallet;
 
