@@ -63,6 +63,9 @@ pg_host="database"
 pg_port="5432"
 pg_user="$project"
 
+# nats bearer auth settings
+nats_jwt_signer_pubkey='-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqU/GXp8MqmugQyRk5FUF\nBvlJt1/h7L3Crzlzejz/OxriZdq/lBNQW9S1kzGc7qjXprZ1Kg3zP6irr6wmvP0W\nYBGltWs2cWUAmxh0PSxuKdT/OyL9w+rjKLh4yo3ex6DX3Ij0iP01Ej2POe5WrPDS\n8j6LT0s4HZ1FprL5h7RUQWV3cO4pF+1kl6HlBpNzEQzocW9ig4DNdSeUENARHWoC\nixE1gFYo9RXm7acqgqCk3ihdJRIbO4e/m1aZq2mvAFK+yHTIWBL0p5PF0Fe8zcWd\nNeEATYB+eRdNJ3jjS8447YrcbQcBQmhFjk8hbCnc3Rv3HvAapk8xDFhImdVF1ffD\nFwIDAQAB\n-----END PUBLIC KEY-----'
+
 # docker images
 builder_image="${project}_builder"
 ui_image="$builder_image"
@@ -239,6 +242,8 @@ services:
   nats:
     command: -V
     image: $nats_image
+    environment:
+      JWT_SIGNER_PUBLIC_KEY: $nats_jwt_signer_pubkey
     networks:
       - $project
     ports:

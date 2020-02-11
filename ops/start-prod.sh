@@ -80,6 +80,10 @@ pg_password_file="/run/secrets/$db_secret"
 pg_port="5432"
 pg_user="$project"
 
+# nats bearer auth settings
+nats_jwt_signer_pubkey='' # FIXME-- read from configuration
+
+# redis settings
 redis_url="redis://redis:6379"
 
 ########################################
@@ -251,6 +255,8 @@ services:
   nats:
     image: $nats_image
     command: -V
+    environment:
+      JWT_SIGNER_PUBLIC_KEY: "$nats_jwt_signer_pubkey"
     logging:
       driver: "json-file"
       options:
