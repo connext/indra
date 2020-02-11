@@ -23,7 +23,6 @@
     "chai-subset": "1.6.0",
     "core-js": "3.6.1",
     "dotenv": "8.2.0",
-    "eccrypto-js": "4.2.0",
     "ethers": "4.0.41",
     "human-standard-token-abi": "2.0.0",
     "localStorage": "1.0.4",
