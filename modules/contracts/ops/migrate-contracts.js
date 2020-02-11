@@ -97,7 +97,7 @@ const contractIsDeployed = async (name, address, artifacts) => {
   if (savedRuntimeCodeHash !== runtimeCodeHash) {
     console.log(`runtimeCodeHash for ${address} does not match what's in our address book`);
     console.log(`${savedRuntimeCodeHash} !== ${runtimeCodeHash}`);
-    // return false; // This is worth warning about but not redeploying
+    return false;
   }
   return true;
 };
