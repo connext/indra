@@ -14,6 +14,8 @@ import {
   latestAppStateHash,
   latestVersionNumber,
   setStateWithSignatures,
+  deployRegistry,
+  advanceBlocks,
 } from "./utils";
 import { HashZero } from "ethers/constants";
 
@@ -43,9 +45,7 @@ describe("ChallengeRegistry", () => {
     provider = waffle.createMockProvider();
     wallet = (await waffle.getWallets(provider))[0];
 
-    appRegistry = await waffle.deployContract(wallet, ChallengeRegistry, [], {
-      gasLimit: 6000000, // override default of 4 million
-    });
+    appRegistry = await deployRegistry(wallet);
   });
 
   beforeEach(async () => {
@@ -134,9 +134,7 @@ describe("ChallengeRegistry", () => {
 
       await setStateWithSigs(1);
 
-      for (const _ of Array(ONCHAIN_CHALLENGE_TIMEOUT + 1)) {
-        await provider.send("evm_mine", []);
-      }
+      await advanceBlocks(provider);
 
       expect(await isStateFinalized(appIdentityTestObject.identityHash, appRegistry)).to.be.true;
 

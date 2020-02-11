@@ -6,7 +6,6 @@ import { Web3Provider } from "ethers/providers";
 import { bigNumberify, defaultAbiCoder, joinSignature, keccak256, SigningKey } from "ethers/utils";
 
 import AppWithAction from "../../build/AppWithAction.json";
-import ChallengeRegistry from "../../build/ChallengeRegistry.json";
 
 import {
   AppIdentityTestClass,
@@ -14,6 +13,7 @@ import {
   expect,
   signaturesToBytes,
   sortSignaturesBySignerAddress,
+  deployRegistry,
 } from "./utils";
 
 enum ActionType {
@@ -65,9 +65,7 @@ describe("ChallengeRegistry Challenge", () => {
     provider = waffle.createMockProvider();
     wallet = (await waffle.getWallets(provider))[0];
 
-    appRegistry = await waffle.deployContract(wallet, ChallengeRegistry, [], {
-      gasLimit: 6000000, // override default of 4 million
-    });
+    appRegistry = await deployRegistry(wallet);
 
     appDefinition = await waffle.deployContract(wallet, AppWithAction);
   });

@@ -2,9 +2,8 @@ import * as waffle from "ethereum-waffle";
 import { Wallet, Contract } from "ethers";
 import { Web3Provider } from "ethers/providers";
 
-import LibAppCaller from "../../../build/LibStateChannelApp.json";
 import { randomBytes, hexlify, SigningKey, Signature } from "ethers/utils";
-import { expect, sortSignaturesBySignerAddress, signaturesToBytes } from "../utils";
+import { expect, sortSignaturesBySignerAddress, signaturesToBytes, deployRegistry } from "../utils";
 
 const alice =
   // 0xaeF082d339D227646DB914f0cA9fF02c8544F30b
@@ -36,9 +35,7 @@ describe("LibStateChannelApp.sol", () => {
     provider = waffle.createMockProvider();
     wallet = (await waffle.getWallets(provider))[0];
 
-    libStateChannelApp = await waffle.deployContract(wallet, LibAppCaller, [], {
-      gasLimit: 6000000, // override default of 4 million
-    });
+    libStateChannelApp = await deployRegistry(wallet);
   });
 
   it("fails if the signatures array length !== number of signers", async () => {
