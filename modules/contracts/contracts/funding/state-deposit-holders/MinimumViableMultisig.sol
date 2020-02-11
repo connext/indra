@@ -3,6 +3,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 
+
 /// @title MinimumViableMultisig - A multisig wallet supporting the minimum
 /// features required for state channels support
 /// @author Liam Horne - <liam@l4v.io>
@@ -57,7 +58,9 @@ contract MinimumViableMultisig {
         bytes32 domainSalt,
         uint256 nonce,
         bytes[] memory signatures
-    ) public {
+    )
+        public
+    {
         bytes32 domainSeparatorHash = getDomainSeparatorHash(
             domainName,
             domainVersion,
@@ -84,7 +87,12 @@ contract MinimumViableMultisig {
             lastSigner = _owners[i];
         }
 
-        execute(to, value, data, operation);
+        execute(
+            to,
+            value,
+            data,
+            operation
+        );
     }
 
     /// @notice Compute a unique transaction hash for a particular (to, value, data, op) tuple
@@ -98,7 +106,11 @@ contract MinimumViableMultisig {
         Operation operation,
         bytes32 domainSeparatorHash,
         uint256 nonce
-    ) public view returns (bytes32) {
+    )
+        public
+        view
+        returns (bytes32)
+    {
         return
             keccak256(
                 abi.encodePacked(
@@ -123,7 +135,11 @@ contract MinimumViableMultisig {
         string memory domainVersion,
         uint256 chainId,
         bytes32 domainSalt
-    ) public view returns (bytes32) {
+    )
+        public
+        view
+        returns (bytes32)
+    {
         return
             keccak256(
                 abi.encodePacked(
@@ -143,7 +159,14 @@ contract MinimumViableMultisig {
     }
 
     /// @notice Execute a transaction on behalf of the multisignature wallet
-    function execute(address to, uint256 value, bytes memory data, Operation operation) internal {
+    function execute(
+        address to,
+        uint256 value,
+        bytes memory data,
+        Operation operation
+    )
+        internal
+    {
         if (operation == Operation.Call)
             require(executeCall(to, value, data), "executeCall failed");
         else if (operation == Operation.DelegateCall)
