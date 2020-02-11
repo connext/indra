@@ -1,8 +1,6 @@
 /* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
-import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
-import { Web3Provider } from "ethers/providers";
 import { hexlify, keccak256, randomBytes, BigNumberish } from "ethers/utils";
 
 import {
