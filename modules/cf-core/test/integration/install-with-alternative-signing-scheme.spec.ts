@@ -22,7 +22,8 @@ import {
   getBalances,
   getInstalledAppInstances,
   makeInstallCall,
-  makeProposeCall
+  makeProposeCall,
+  testDomainSeparator
 } from "./utils";
 
 expect.extend({ toBeLt });
@@ -57,6 +58,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
           global[`networkContext`],
           nodeConfig,
           provider,
+          testDomainSeparator,
           lockService,
           xpubA,
           privateKeyGeneratorA
@@ -73,6 +75,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
           global[`networkContext`],
           nodeConfig,
           provider,
+          testDomainSeparator,
           lockService,
           xpubB,
           privateKeyGeneratorB

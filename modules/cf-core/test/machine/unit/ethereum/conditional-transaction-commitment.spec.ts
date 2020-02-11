@@ -17,6 +17,7 @@ import { ConditionalTransactionDelegateTarget } from "../../../contracts";
 import { createAppInstanceForTest } from "../../../unit/utils";
 import { getRandomExtendedPubKey } from "../../integration/random-signing-keys";
 import { generateRandomNetworkContext } from "../../mocks";
+import { testDomainSeparator } from "../../../integration/utils";
 
 describe("ConditionalTransaction", () => {
   let tx: MultisigTransaction;
@@ -62,7 +63,10 @@ describe("ConditionalTransaction", () => {
       appInstance.identityHash,
       freeBalanceETH.identityHash,
       AddressZero,
-      HashZero
+      HashZero,
+      testDomainSeparator,
+      4447,
+      stateChannel.numProposedApps
     ).getTransactionDetails();
   });
 

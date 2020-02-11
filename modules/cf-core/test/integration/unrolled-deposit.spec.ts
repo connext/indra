@@ -1,3 +1,4 @@
+import { INSTALL_EVENT } from "@connext/types";
 import { AddressZero, One } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 
@@ -17,8 +18,6 @@ import {
   transferERC20Tokens
 } from "./utils";
 import { xkeyKthAddress } from "../../src/machine";
-import { NetworkContextForTestSuite } from "@counterfactual/local-ganache-server";
-import { INSTALL_EVENT } from "@connext/types";
 
 expect.extend({ toBeLt, toBeEq });
 
@@ -86,9 +85,7 @@ describe(`Node method follows spec - install balance refund`, () => {
   });
 
   it(`install app with tokens, sending tokens should increase free balance`, async done => {
-    const erc20TokenAddress = (global[
-      `networkContext`
-    ] as NetworkContextForTestSuite).DolphinCoin;
+    const erc20TokenAddress = global[`networkContext`].DolphinCoin;
 
     nodeB.on(`INSTALL_EVENT`, async () => {
       const [appInstanceNodeA] = await getInstalledAppInstances(nodeA);
@@ -131,9 +128,7 @@ describe(`Node method follows spec - install balance refund`, () => {
   });
 
   it(`install app with both eth and tokens, sending eth and tokens should increase free balance`, async done => {
-    const erc20TokenAddress = (global[
-      `networkContext`
-    ] as NetworkContextForTestSuite).DolphinCoin;
+    const erc20TokenAddress = global[`networkContext`].DolphinCoin;
 
     let installedCount = 0;
     nodeB.on(`INSTALL_EVENT`, async () => {

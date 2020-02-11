@@ -1,7 +1,13 @@
 import { Interface } from "ethers/utils";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
-import { AppIdentity, MultisigOperation, MultisigTransaction, NetworkContext } from "../types";
+import {
+  AppIdentity,
+  MultisigOperation,
+  MultisigTransaction,
+  NetworkContext,
+  DomainSeparator
+} from "../types";
 
 import { MultisigCommitment } from "./multisig-commitment";
 import { appIdentityToHash } from "./utils/app-identity";
@@ -14,6 +20,9 @@ export class SetupCommitment extends MultisigCommitment {
     public readonly multisigAddress: string,
     public readonly multisigOwners: string[],
     public readonly freeBalanceAppIdentity: AppIdentity,
+    public readonly domainSeparator: DomainSeparator,
+    public readonly chainId: number,
+    public readonly transactionCount: number
   ) {
     super(multisigAddress, multisigOwners);
   }
@@ -23,11 +32,16 @@ export class SetupCommitment extends MultisigCommitment {
       data: iface.functions.executeEffectOfFreeBalance.encode([
         this.networkContext.ChallengeRegistry,
         appIdentityToHash(this.freeBalanceAppIdentity),
-        this.networkContext.MultiAssetMultiPartyCoinTransferInterpreter,
+        this.networkContext.MultiAssetMultiPartyCoinTransferInterpreter
       ]),
       operation: MultisigOperation.DelegateCall,
       to: this.networkContext.ConditionalTransactionDelegateTarget,
       value: 0,
+      domainName: this.domainSeparator.domainName,
+      domainVersion: this.domainSeparator.domainVersion,
+      chainId: this.chainId,
+      domainSalt: this.domainSeparator.domainSalt,
+      transactionCount: this.transactionCount
     };
   }
 }
