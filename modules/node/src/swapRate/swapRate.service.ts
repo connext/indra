@@ -64,7 +64,7 @@ export class SwapRateService implements OnModuleInit {
           throw new Error(`Price oracle not configured for swap ${from} -> ${to}`);
       }
     } catch (e) {
-      logger.warn(`Failed to fetch swap rate from medianizer`);
+      logger.warn(`Failed to fetch swap rate from ${priceOracleType}`);
       if (process.env.NODE_ENV === "development") {
         newRate = await this.config.getDefaultSwapRate(from, to);
         if (!newRate) {
