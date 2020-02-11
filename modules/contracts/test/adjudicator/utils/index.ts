@@ -1,6 +1,6 @@
 import { AppIdentity, Contract } from "@connext/types";
 import * as chai from "chai";
-import { solidity } from "ethereum-waffle";
+import * as waffle from "ethereum-waffle";
 import {
   BigNumber,
   BigNumberish,
@@ -14,19 +14,31 @@ import {
 } from "ethers/utils";
 import { Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
+import { Web3Provider } from "ethers/providers";
 
-export const expect = chai.use(solidity).expect;
+import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
+
+chai.use(require("chai-subset"));
+chai.use(waffle.solidity);
+export const expect = chai.expect;
 
 // HELPER DATA
 const ONCHAIN_CHALLENGE_TIMEOUT = 30;
 
+export enum ChallengeStatus {
+  NO_CHALLENGE,
+  FINALIZES_AFTER_DEADLINE,
+  EXPLICITLY_FINALIZED,
+  OUTCOME_SET,
+}
+
 export type Challenge = {
-  status: 0 | 1 | 2;
+  status: ChallengeStatus;
   latestSubmitter: string;
   appStateHash: string;
-  challengeCounter: number;
-  finalizesAt: number;
-  versionNumber: number;
+  challengeCounter: BigNumber;
+  finalizesAt: BigNumber;
+  versionNumber: BigNumber;
 };
 
 // TS version of MChallengeRegistryCore::computeAppChallengeHash
@@ -34,7 +46,7 @@ export const computeAppChallengeHash = (
   id: string,
   appStateHash: string,
   versionNumber: BigNumberish,
-  timeout: number,
+  timeout: BigNumberish,
 ) =>
   keccak256(
     solidityPack(
@@ -115,7 +127,22 @@ export function signaturesToBytesSortedBySignerAddress(digest: string, ...signat
  * Returns a challenge
  */
 export async function getChallenge(identityHash: string, challengeRegistry: Contract): Promise<Challenge> {
-  return await challengeRegistry.functions.getAppChallenge(identityHash);
+  const [
+    latestSubmitter,
+    appStateHash,
+    challengeCounter,
+    versionNumber,
+    finalizesAt,
+    status,
+  ] = await challengeRegistry.functions.getAppChallenge(identityHash);
+  return {
+    appStateHash,
+    challengeCounter,
+    finalizesAt,
+    latestSubmitter,
+    status,
+    versionNumber,
+  };
 }
 
 /**
@@ -129,7 +156,7 @@ export async function latestAppStateHash(identityHash: string, challengeRegistry
 /**
  * Returns latest app version number
  */
-export async function latestVersionNumber(identityHash: string, challengeRegistry: Contract): Promise<number> {
+export async function latestVersionNumber(identityHash: string, challengeRegistry: Contract): Promise<BigNumber> {
   const { versionNumber } = await getChallenge(identityHash, challengeRegistry);
   return versionNumber;
 }
@@ -150,7 +177,7 @@ export async function setStateWithSignatures(
   challengeRegistry: Contract,
   versionNumber: BigNumberish,
   appState: string = HashZero,
-  timeout: number = ONCHAIN_CHALLENGE_TIMEOUT,
+  timeout: BigNumberish = ONCHAIN_CHALLENGE_TIMEOUT,
 ): Promise<void> {
   const stateHash = keccak256(appState);
   const digest = computeAppChallengeHash(appIdentity.identityHash, stateHash, versionNumber, timeout);
@@ -189,4 +216,16 @@ export async function cancelChallenge(
       await new SigningKey(participants[1].privateKey).signDigest(digest),
     ]).map(joinSignature),
   );
+}
+
+export async function advanceBlocks(provider: Web3Provider, blocks: number = ONCHAIN_CHALLENGE_TIMEOUT) {
+  for (const _ of Array(blocks + 1)) {
+    await provider.send("evm_mine", []);
+  }
+}
+
+export async function deployRegistry(wallet: Wallet): Promise<Contract> {
+  return await waffle.deployContract(wallet, ChallengeRegistry, [], {
+    gasLimit: 6000000, // override default of 4 million
+  });
 }
