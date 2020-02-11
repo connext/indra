@@ -1,4 +1,4 @@
-import { AppIdentity } from "@connext/types";
+import { AppIdentity, Contract } from "@connext/types";
 import * as chai from "chai";
 import { solidity } from "ethereum-waffle";
 import {
@@ -9,10 +9,25 @@ import {
   keccak256,
   recoverAddress,
   Signature,
+  SigningKey,
   solidityPack,
 } from "ethers/utils";
+import { Wallet } from "ethers";
+import { HashZero } from "ethers/constants";
 
 export const expect = chai.use(solidity).expect;
+
+// HELPER DATA
+const ONCHAIN_CHALLENGE_TIMEOUT = 30;
+
+export type Challenge = {
+  status: 0 | 1 | 2;
+  latestSubmitter: string;
+  appStateHash: string;
+  challengeCounter: number;
+  finalizesAt: number;
+  versionNumber: number;
+};
 
 // TS version of MChallengeRegistryCore::computeAppChallengeHash
 export const computeAppChallengeHash = (
@@ -44,10 +59,10 @@ export class AppIdentityTestClass {
 
   get appIdentity(): AppIdentity {
     return {
-      participants: this.participants,
       appDefinition: this.appDefinition,
-      defaultTimeout: this.defaultTimeout,
       channelNonce: this.channelNonce,
+      defaultTimeout: this.defaultTimeout,
+      participants: this.participants,
     };
   }
 
@@ -94,4 +109,84 @@ export function sortSignaturesBySignerAddress(digest: string, signatures: Signat
  */
 export function signaturesToBytesSortedBySignerAddress(digest: string, ...signatures: Signature[]): string {
   return signaturesToBytes(...sortSignaturesBySignerAddress(digest, signatures));
+}
+
+/**
+ * Returns a challenge
+ */
+export async function getChallenge(identityHash: string, challengeRegistry: Contract): Promise<Challenge> {
+  return await challengeRegistry.functions.getAppChallenge(identityHash);
+}
+
+/**
+ * Returns latest app state hash
+ */
+export async function latestAppStateHash(identityHash: string, challengeRegistry: Contract): Promise<string> {
+  const { appStateHash } = await getChallenge(identityHash, challengeRegistry);
+  return appStateHash;
+}
+
+/**
+ * Returns latest app version number
+ */
+export async function latestVersionNumber(identityHash: string, challengeRegistry: Contract): Promise<number> {
+  const { versionNumber } = await getChallenge(identityHash, challengeRegistry);
+  return versionNumber;
+}
+
+/**
+ * Returns whether or not the state is finalized
+ */
+export async function isStateFinalized(identityHash: string, challengeRegistry: Contract): Promise<boolean> {
+  return await challengeRegistry.functions.isStateFinalized(identityHash);
+}
+
+/**
+ * Cancels an active challenge
+ */
+export async function setStateWithSignatures(
+  appIdentity: AppIdentityTestClass,
+  participants: Wallet[],
+  challengeRegistry: Contract,
+  versionNumber: BigNumberish,
+  appState: string = HashZero,
+  timeout: number = ONCHAIN_CHALLENGE_TIMEOUT,
+): Promise<void> {
+  const stateHash = keccak256(appState);
+  const digest = computeAppChallengeHash(appIdentity.identityHash, stateHash, versionNumber, timeout);
+  expect(participants.length).to.be.eq(2);
+  await challengeRegistry.functions.setState(appIdentity.appIdentity, {
+    appStateHash: stateHash,
+    signatures: sortSignaturesBySignerAddress(digest, [
+      await new SigningKey(participants[0].privateKey).signDigest(digest),
+      await new SigningKey(participants[1].privateKey).signDigest(digest),
+    ]).map(joinSignature),
+    timeout,
+    versionNumber,
+  });
+}
+
+/**
+ * Cancels an active challenge
+ */
+export async function cancelChallenge(
+  participants: Wallet[],
+  appIdentity: AppIdentityTestClass,
+  challengeRegistry: Contract,
+): Promise<void> {
+  const digest = computeAppChallengeHash(
+    appIdentity.identityHash,
+    await latestAppStateHash(appIdentity.identityHash, challengeRegistry),
+    await latestVersionNumber(appIdentity.identityHash, challengeRegistry),
+    appIdentity.defaultTimeout,
+  );
+
+  expect(participants.length).to.be.eq(2);
+  await challengeRegistry.functions.cancelChallenge(
+    appIdentity.appIdentity,
+    sortSignaturesBySignerAddress(digest, [
+      await new SigningKey(participants[0].privateKey).signDigest(digest),
+      await new SigningKey(participants[1].privateKey).signDigest(digest),
+    ]).map(joinSignature),
+  );
 }
