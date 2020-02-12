@@ -15,11 +15,10 @@ solc_version=$(shell cat $(contracts)/package.json | grep '"solc"' | awk -F '"' 
 backwards_compatible_version=$(commit) # $(shell echo $(release) | cut -d '.' -f 1).0.0
 
 # Pool of images to pull cached layers from during docker build steps
-cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_relay:$(commit),$(project)_relay,$(project)_bot:$(commit),$(project)_bot,$(project)_builder"; else echo ""; fi)
+cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_relay:$(commit),$(project)_relay,$(project)_builder"; else echo ""; fi)
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
-bot=$(cwd)/modules/payment-bot
 cf-core=$(cwd)/modules/cf-core
 channel-provider=$(cwd)/modules/channel-provider
 client=$(cwd)/modules/client
@@ -127,7 +126,6 @@ quick-reset:
 	bash ops/db.sh 'truncate table onchain_transaction cascade;'
 	bash ops/db.sh 'truncate table payment_profile cascade;'
 	bash ops/db.sh 'truncate table peer_to_peer_transfer cascade;'
-	rm -rf $(bot)/.bot-store/*
 	touch modules/node/src/main.ts
 
 reset: stop
@@ -136,7 +134,6 @@ reset: stop
 	docker volume rm $(project)_database_dev 2> /dev/null || true
 	docker secret rm $(project)_database_dev 2> /dev/null || true
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
-	rm -rf $(bot)/.bot-store/*
 	rm -rf $(flags)/deployed-contracts
 
 push-commit:
@@ -177,12 +174,6 @@ watch: watch-integration
 
 test-backwards-compatibility: pull-backwards-compatible
 	bash ops/test/integration.sh $(backwards_compatible_version)
-
-test-bot:
-	bash ops/test/bot.sh
-
-test-bot-farm:
-	bash ops/test/bot-farm.sh
 
 test-cf: cf-core
 	bash ops/test/cf.sh
@@ -252,20 +243,6 @@ node-staging: node $(node)/ops/Dockerfile $(node)/ops/entry.sh
 	$(docker_run) "MODE=staging cd modules/node && npm run build-bundle"
 	docker build --file $(node)/ops/Dockerfile $(cache_from) --tag $(project)_node .
 	docker tag $(project)_node $(project)_node:$(commit)
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-payment-bot-release: $(shell find $(bot)/src $(bot)/ops $(find_options))
-	$(log_start)
-	$(docker_run) "MODE=release cd modules/payment-bot && npm run build-bundle"
-	docker build --file $(bot)/ops/Dockerfile $(cache_from) --tag $(project)_bot .
-	docker tag $(project)_bot $(project)_bot:$(commit)
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-payment-bot-staging: $(shell find $(bot)/src $(bot)/ops $(find_options))
-	$(log_start)
-	$(docker_run) "MODE=staging cd modules/payment-bot && npm run build-bundle"
-	docker build --file $(bot)/ops/Dockerfile $(cache_from) --tag $(project)_bot .
-	docker tag $(project)_bot $(project)_bot:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
@@ -340,11 +317,6 @@ messaging: node-modules types $(shell find $(messaging)/src $(find_options))
 node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-payment-bot-js: client $(shell find $(bot)/src $(bot)/ops $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/payment-bot && npm run build-bundle"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 store: node-modules types $(shell find $(store)/src $(find_options))
