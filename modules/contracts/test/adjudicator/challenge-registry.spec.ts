@@ -43,15 +43,11 @@ describe("ChallengeRegistry", () => {
 
   let appRegistry: Contract;
 
-<<<<<<< HEAD
-  let setStateWithSignatures: (versionNumber: BigNumberish, appState?: string, timeout?: number) => Promise<void>;
-=======
   let setStateWithSignatures: (
     versionNumber: BigNumberish,
     appState?: string,
     timeout?: number,
   ) => Promise<void>;
->>>>>>> ops-cleanup
   let cancelChallenge: () => Promise<void>;
   let sendSignedFinalizationToChain: () => Promise<any>;
   let getChallenge: () => Promise<Challenge>;

@@ -26,7 +26,7 @@ contract MixinCancelChallenge is LibStateChannelApp, MChallengeRegistryCore {
         AppChallenge storage challenge = appChallenges[identityHash];
 
         require(
-            isNotChallengeFinalized(challenge.status, challenge.finalizesAt),
+            isChallengeNotFinalized(challenge.status, challenge.finalizesAt),
             "cancelChallenge called on app not in FINALIZES_AFTER_DEADLINE state"
         );
 

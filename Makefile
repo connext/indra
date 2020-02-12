@@ -355,7 +355,6 @@ contracts-native: node-modules $(shell find $(contracts)/contracts $(contracts)/
 node-modules: builder package.json $(shell ls modules/**/package.json)
 	$(log_start)
 	$(docker_run) "lerna bootstrap --hoist --no-progress"
-	$(docker_run) "cd node_modules/eccrypto && npm run install"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 builder: ops/builder.dockerfile
