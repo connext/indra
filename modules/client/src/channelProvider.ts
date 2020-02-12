@@ -1,3 +1,4 @@
+import { chan_storeSet, chan_storeGet, chan_nodeAuth, chan_restoreState, IChannelProvider } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
 import { signMessage } from "@connext/crypto";
 import { Wallet } from "ethers";
@@ -13,7 +14,6 @@ import {
   Store,
   StorePair,
 } from "./types";
-import { chan_storeSet, chan_storeGet, chan_nodeAuth, chan_restoreState, IChannelProvider } from "@connext/types";
 
 export const createCFChannelProvider = async ({
   ethProvider,
