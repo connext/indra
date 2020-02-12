@@ -50,7 +50,7 @@ describe("MixinSetOutcome.sol", () => {
     challengeRegistry = await deployRegistry(wallet);
 
     appWithAction = await deployApp(wallet);
-    appWithActionComputeFails = await deployApp(wallet, true);
+    appWithActionComputeFails = await deployApp(wallet, { computeOutcomeFails: true });
   });
 
   beforeEach(async () => {
