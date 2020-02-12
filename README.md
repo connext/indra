@@ -71,6 +71,16 @@ Then, try sending some Eth to the Dai Card's deposit address (top left of the ap
  - `make watch-node`: start a test watcher that will re-run node server's unit tests when source code changes
  - `make test-ui` or `make test-node`: run either one-off ui-based e2e tests or node unit tests that will exit once tests are finished.
 
+### Deploying local indra to non-local chains
+
+To start a local indra instance pointed at a non-ganache chain (rinkeby, kovan, etc), run the following:
+
+```bash
+export INDRA_ETH_PROVIDER="https://ethprovider.com" # eth provider url (note: this is not a working eth provider, just a sample)
+export INDRA_ETH_NETWORK="rinkeby" # string of network
+make start
+```
+
 ## Deploying to Production
 
 ### TL;DR
