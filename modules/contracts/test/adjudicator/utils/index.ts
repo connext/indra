@@ -17,9 +17,13 @@ import { Wallet } from "ethers";
 import { HashZero, One, Zero } from "ethers/constants";
 import { Web3Provider } from "ethers/providers";
 
-import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
-import AppWithAction from "../../../build/AppWithAction.json";
-import AppWithActionComputeOutcomeFails from "../../../build/AppWithActionComputeOutcomeFails.json";
+import {
+  AppWithNoTurnTaker,
+  AppWithNoApplyAction,
+  AppWithAction,
+  AppWithActionComputeOutcomeFails,
+  ChallengeRegistry,
+} from "../../../index";
 
 chai.use(require("chai-subset"));
 chai.use(waffle.solidity);
@@ -320,9 +324,23 @@ export async function deployRegistry(wallet: Wallet): Promise<Contract> {
  * Deploys the `ChallengeRegistry.sol`
  * @param wallet default interacting wallet
  */
-export async function deployApp(wallet: Wallet, computeOutcomeFails: boolean = false): Promise<Contract> {
-  if (computeOutcomeFails) {
+export async function deployApp(
+  wallet: Wallet,
+  opts: Partial<{
+    applyActionFails: boolean;
+    computeOutcomeFails: boolean;
+    getTurnTakerFails: boolean;
+  }> = {},
+): Promise<Contract> {
+  const { applyActionFails, computeOutcomeFails, getTurnTakerFails } = opts;
+  if (!!computeOutcomeFails) {
     return await waffle.deployContract(wallet, AppWithActionComputeOutcomeFails);
+  }
+  if (!!getTurnTakerFails) {
+    return await waffle.deployContract(wallet, AppWithNoTurnTaker);
+  }
+  if (!!applyActionFails) {
+    return await waffle.deployContract(wallet, AppWithNoApplyAction);
   }
   return await waffle.deployContract(wallet, AppWithAction);
 }
