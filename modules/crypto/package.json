@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@connext/types": "4.0.11",
-    "eccrypto-js": "4.2.5"
+    "eccrypto-js": "4.2.6"
   },
   "devDependencies": {
     "@babel/polyfill": "7.7.0",
