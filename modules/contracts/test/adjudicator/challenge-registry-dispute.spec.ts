@@ -87,6 +87,7 @@ describe("ChallengeRegistry Challenge", () => {
       );
   });
 
+  // tested in mixinRespondToChallenge.spec (but skipped until i know why you delete the challenge)
   it("Can call respondToChallenge", async () => {
     expect(await latestVersionNumber()).to.eq(0);
 
@@ -106,6 +107,7 @@ describe("ChallengeRegistry Challenge", () => {
     expect(await latestState()).to.be.eql(HashZero);
   });
 
+  // tested in mixinRespondToChallenge.spec
   it("Cannot call respondToChallenge with incorrect turn taker", async () => {
     await setState(1, encodeAppState(PRE_STATE));
 
