@@ -1,26 +1,24 @@
 dir=$(shell cd "$(shell dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )
-project=$(shell cat $(dir)/package.json | jq .name | tr -d '"')
-registry=connextproject
+project=$(shell cat $(dir)/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4)
+registry=$(shell cat $(dir)/package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4)
 
 # Specify make-specific variables (VPATH = prerequisite search path)
 flags=.makeflags
 VPATH=$(flags)
 SHELL=/bin/bash
 
-
 commit=$(shell git rev-parse HEAD | head -c 8)
-release=$(shell cat package.json | grep '"version"' | awk -F '"' '{print $$4}')
+release=$(shell cat package.json | grep '"version"' | head -n 1 | cut -d '"' -f 4)
 solc_version=$(shell cat $(contracts)/package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
 # version that will be tested against for backwards compatibility checks
-backwards_compatible_version=$(commit) # $(shell echo $(release) | cut -d '.' -f 1).0.0
+backwards_compatible_version=$(shell echo $(release) | cut -d '.' -f 1).0.0
 
 # Pool of images to pull cached layers from during docker build steps
-cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_relay:$(commit),$(project)_relay,$(project)_bot:$(commit),$(project)_bot,$(project)_builder"; else echo ""; fi)
+cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_relay:$(commit),$(project)_relay,$(project)_builder"; else echo ""; fi)
 
 # Get absolute paths to important dirs
 cwd=$(shell pwd)
-bot=$(cwd)/modules/payment-bot
 cf-core=$(cwd)/modules/cf-core
 channel-provider=$(cwd)/modules/channel-provider
 client=$(cwd)/modules/client
@@ -108,12 +106,12 @@ restart-prod:
 clean: stop
 	docker container prune -f
 	rm -rf $(flags)/*
-	rm -rf node_modules/@connext/*
-	rm -rf modules/**/node_modules/@connext/*
-	rm -rf node_modules/@counterfactual/*
-	rm -rf modules/**/node_modules/@counterfactual/*
-	rm -rf node_modules/@walletconnect/*
-	rm -rf modules/**/node_modules/@walletconnect/*
+	rm -rf node_modules/@connext
+	rm -rf modules/**/node_modules/@connext
+	rm -rf node_modules/@counterfactual
+	rm -rf modules/**/node_modules/@counterfactual
+	rm -rf node_modules/@walletconnect
+	rm -rf modules/**/node_modules/@walletconnect
 	rm -rf modules/**/build
 	rm -rf modules/**/cache
 	rm -rf modules/**/dist
@@ -128,7 +126,6 @@ quick-reset:
 	bash ops/db.sh 'truncate table onchain_transaction cascade;'
 	bash ops/db.sh 'truncate table payment_profile cascade;'
 	bash ops/db.sh 'truncate table peer_to_peer_transfer cascade;'
-	rm -rf $(bot)/.bot-store/*
 	touch modules/node/src/main.ts
 
 reset: stop
@@ -137,7 +134,6 @@ reset: stop
 	docker volume rm $(project)_database_dev 2> /dev/null || true
 	docker secret rm $(project)_database_dev 2> /dev/null || true
 	docker volume rm $(project)_chain_dev 2> /dev/null || true
-	rm -rf $(bot)/.bot-store/*
 	rm -rf $(flags)/deployed-contracts
 
 push-commit:
@@ -179,12 +175,6 @@ watch: watch-integration
 test-backwards-compatibility: pull-backwards-compatible
 	bash ops/test/integration.sh $(backwards_compatible_version)
 
-test-bot:
-	bash ops/test/bot.sh
-
-test-bot-farm:
-	bash ops/test/bot-farm.sh
-
 test-cf: cf-core
 	bash ops/test/cf.sh
 
@@ -225,7 +215,7 @@ watch-node: node
 
 daicard-proxy: $(shell find $(proxy) $(find_options))
 	$(log_start)
-	docker build --file $(proxy)/daicard.io/prod.dockerfile $(cache_from) --tag daicard_proxy .
+	docker build --file $(proxy)/daicard/prod.dockerfile $(cache_from) --tag daicard_proxy .
 	docker tag daicard_proxy daicard_proxy:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
@@ -255,28 +245,14 @@ node-staging: node $(node)/ops/Dockerfile $(node)/ops/entry.sh
 	docker tag $(project)_node $(project)_node:$(commit)
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-payment-bot-release: $(shell find $(bot)/src $(bot)/ops $(find_options))
-	$(log_start)
-	$(docker_run) "MODE=release cd modules/payment-bot && npm run build-bundle"
-	docker build --file $(bot)/ops/Dockerfile $(cache_from) --tag $(project)_bot .
-	docker tag $(project)_bot $(project)_bot:$(commit)
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-payment-bot-staging: $(shell find $(bot)/src $(bot)/ops $(find_options))
-	$(log_start)
-	$(docker_run) "MODE=staging cd modules/payment-bot && npm run build-bundle"
-	docker build --file $(bot)/ops/Dockerfile $(cache_from) --tag $(project)_bot .
-	docker tag $(project)_bot $(project)_bot:$(commit)
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
 indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
 	$(log_start)
-	docker build --file $(proxy)/indra.connext.network/dev.dockerfile $(cache_from) --tag $(project)_proxy .
+	docker build --file $(proxy)/indra/dev.dockerfile $(cache_from) --tag $(project)_proxy .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 indra-proxy-prod: daicard-prod dashboard-prod ws-tcp-relay $(shell find $(proxy) $(find_options))
 	$(log_start)
-	docker build --file $(proxy)/indra.connext.network/prod.dockerfile $(cache_from) --tag $(project)_proxy:$(commit) .
+	docker build --file $(proxy)/indra/prod.dockerfile $(cache_from) --tag $(project)_proxy:$(commit) .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ssh-action: $(shell find $(ssh-action) $(find_options))
@@ -341,11 +317,6 @@ messaging: node-modules types $(shell find $(messaging)/src $(find_options))
 node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build"
-	$(log_finish) && mv -f $(totalTime) $(flags)/$@
-
-payment-bot-js: client $(shell find $(bot)/src $(bot)/ops $(find_options))
-	$(log_start)
-	$(docker_run) "cd modules/payment-bot && npm run build-bundle"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 store: node-modules types $(shell find $(store)/src $(find_options))

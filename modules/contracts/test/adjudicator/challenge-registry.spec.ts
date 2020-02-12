@@ -3,7 +3,14 @@ import { waffle as buidler } from "@nomiclabs/buidler";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
-import { BigNumberish, hexlify, joinSignature, keccak256, randomBytes, SigningKey, bigNumberify } from "ethers/utils";
+import {
+  BigNumberish,
+  hexlify,
+  joinSignature,
+  keccak256,
+  randomBytes,
+  SigningKey,
+} from "ethers/utils";
 
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
 
@@ -36,7 +43,15 @@ describe("ChallengeRegistry", () => {
 
   let appRegistry: Contract;
 
+<<<<<<< HEAD
   let setStateWithSignatures: (versionNumber: BigNumberish, appState?: string, timeout?: number) => Promise<void>;
+=======
+  let setStateWithSignatures: (
+    versionNumber: BigNumberish,
+    appState?: string,
+    timeout?: number,
+  ) => Promise<void>;
+>>>>>>> ops-cleanup
   let cancelChallenge: () => Promise<void>;
   let sendSignedFinalizationToChain: () => Promise<any>;
   let getChallenge: () => Promise<Challenge>;
