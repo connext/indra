@@ -31,7 +31,7 @@ const bob =
   // 0xb37e49bFC97A948617bF3B63BC6942BB15285715
   new Wallet("0x4ccac8b1e81fb18a98bbaf29b9bfe307885561f71b76bd4680d7aec9d0ddfcfd");
 
-describe.only("MixinChallengeRegistry.sol", () => {
+describe("MixinChallengeRegistry.sol", () => {
   const provider = buidler.provider;
   let wallet: Wallet;
   let challengeRegistry: Contract;
@@ -134,7 +134,7 @@ describe.only("MixinChallengeRegistry.sol", () => {
     );
     globalChannelNonce += 1;
     await setChallenge();
-    await expect(respond()).to.be.revertedWith("revert getTurnTaker fails for this app");
+    await expect(respond()).to.be.revertedWith("The getTurnTaker method has no implementation for this App");
   });
 
   it("should fail if the action is not signed by the turn taker", async () => {
@@ -154,7 +154,7 @@ describe.only("MixinChallengeRegistry.sol", () => {
     );
     globalChannelNonce += 1;
     await setChallenge();
-    await expect(respond()).to.be.revertedWith("no applyAction for this app");
+    await expect(respond()).to.be.revertedWith("The applyAction method has no implementation for this App");
   });
 
   it.skip("should be able to respond to a challenge", async () => {

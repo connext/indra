@@ -45,17 +45,6 @@ contract AppWithNoApplyAction is CounterfactualApp {
         return participants[state.counter > 0 ? 0 : 1];
     }
 
-    function applyAction(
-        bytes calldata encodedState,
-        bytes calldata encodedAction
-    )
-        external
-        pure
-        returns (bytes memory ret)
-    {
-        revert("no applyAction for this app");
-    }
-
     function computeOutcome(bytes calldata)
         external
         pure

@@ -29,17 +29,6 @@ contract AppWithNoTurnTaker is CounterfactualApp {
         uint256 increment;
     }
 
-    function getTurnTaker(
-        bytes calldata encodedState,
-        address[] calldata participants
-    )
-        external
-        pure
-        returns (address)
-    {
-        revert("getTurnTaker fails for this app");
-    }
-
     function computeOutcome(bytes calldata)
         external
         pure
