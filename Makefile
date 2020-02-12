@@ -108,12 +108,12 @@ restart-prod:
 clean: stop
 	docker container prune -f
 	rm -rf $(flags)/*
-	rm -rf node_modules/@connext/*
-	rm -rf modules/**/node_modules/@connext/*
-	rm -rf node_modules/@counterfactual/*
-	rm -rf modules/**/node_modules/@counterfactual/*
-	rm -rf node_modules/@walletconnect/*
-	rm -rf modules/**/node_modules/@walletconnect/*
+	rm -rf node_modules/@connext
+	rm -rf modules/**/node_modules/@connext
+	rm -rf node_modules/@counterfactual
+	rm -rf modules/**/node_modules/@counterfactual
+	rm -rf node_modules/@walletconnect
+	rm -rf modules/**/node_modules/@walletconnect
 	rm -rf modules/**/build
 	rm -rf modules/**/cache
 	rm -rf modules/**/dist
@@ -271,12 +271,12 @@ payment-bot-staging: $(shell find $(bot)/src $(bot)/ops $(find_options))
 
 indra-proxy: ws-tcp-relay $(shell find $(proxy) $(find_options))
 	$(log_start)
-	docker build --file $(proxy)/indra.connext.network/dev.dockerfile $(cache_from) --tag $(project)_proxy .
+	docker build --file $(proxy)/indra/dev.dockerfile $(cache_from) --tag $(project)_proxy .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 indra-proxy-prod: daicard-prod dashboard-prod ws-tcp-relay $(shell find $(proxy) $(find_options))
 	$(log_start)
-	docker build --file $(proxy)/indra.connext.network/prod.dockerfile $(cache_from) --tag $(project)_proxy:$(commit) .
+	docker build --file $(proxy)/indra/prod.dockerfile $(cache_from) --tag $(project)_proxy:$(commit) .
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 ssh-action: $(shell find $(ssh-action) $(find_options))
