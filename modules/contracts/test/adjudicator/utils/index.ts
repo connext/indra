@@ -38,6 +38,15 @@ export enum TwoPartyFixedOutcome {
   SPLIT_AND_SEND_TO_BOTH_ADDRS,
 }
 
+export type AppWithActionState = {
+  counter: BigNumber;
+};
+
+export type AppWithActionAction = {
+  actionType: ActionType;
+  increment: BigNumber;
+};
+
 export function encodeAppState(state: SolidityValueType): string {
   return defaultAbiCoder.encode([`tuple(uint256 counter)`], [state]);
 }
@@ -46,14 +55,14 @@ export function encodeAppAction(action: SolidityValueType): string {
   return defaultAbiCoder.encode([`tuple(uint8 actionType, uint256 increment)`], [action]);
 }
 
-export function getIncrementCounterAction(increment: BigNumberish = One) {
+export function getIncrementCounterAction(increment: BigNumberish = One): AppWithActionAction {
   return {
     actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
-    increment,
+    increment: bigNumberify(increment),
   };
 }
 
-export function getAppWithActionState(counter: BigNumberish = Zero) {
+export function getAppWithActionState(counter: BigNumberish = Zero): AppWithActionState {
   return { counter: bigNumberify(counter) };
 }
 
