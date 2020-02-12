@@ -20,7 +20,9 @@ INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-cxt1234}" # pass this in through CI
 # Internal Config
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../package.json | jq .name | tr -d '"'`"
+project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
+
 ganache_chain_id="4447"
 log_level="3" # set to 5 for all logs or to 0 for none
 nats_port="4222"
@@ -85,13 +87,13 @@ redis_url="redis://redis:6379"
 
 if [[ "$INDRA_MODE" == "test"* ]]
 then registry=""
-else registry="docker.io/connextproject/"
+else registry="${registry%/}/"
 fi
 
 if [[ "$INDRA_MODE" == *"staging" ]]
 then version="`git rev-parse HEAD | head -c 8`"
 elif [[ "$INDRA_MODE" == *"release" ]]
-then version="`cat package.json | jq .version | tr -d '"'`"
+then version="`cat $dir/../package.json | grep '"version":' | head -n 1 | cut -d '"' -f 4`"
 else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" && exit 1
 fi
 

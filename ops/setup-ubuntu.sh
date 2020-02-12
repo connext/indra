@@ -1,14 +1,14 @@
 #!/bin/bash
 set -e
 
-hostname="$1"
-
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../package.json | jq .name | tr -d '"'`"
-user="ubuntu"
+project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+
+hostname="$1"
 key_name="${project}_mnemonic" # name of docker secret to store mnemonic in
-pubkey="$HOME/.ssh/circleci.pub"
 prvkey="$HOME/.ssh/connext-aws"
+pubkey="$HOME/.ssh/circleci.pub"
+user="ubuntu"
 
 # Sanity checks
 if [[ -z "$1" ]]

@@ -1,12 +1,11 @@
 dir=$(shell cd "$(shell dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )
-project=$(shell cat $(dir)/package.json | jq .name | tr -d '"')
-registry=connextproject
+project=$(shell cat $(dir)/package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4)
+registry=$(shell cat $(dir)/package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4)
 
 # Specify make-specific variables (VPATH = prerequisite search path)
 flags=.makeflags
 VPATH=$(flags)
 SHELL=/bin/bash
-
 
 commit=$(shell git rev-parse HEAD | head -c 8)
 release=$(shell cat package.json | grep '"version"' | awk -F '"' '{print $$4}')

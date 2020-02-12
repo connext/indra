@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -e
 
-mode="${TEST_MODE:-local}"
-
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../../package.json | jq .name | tr -d '"'`"
+project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
+
+mode="${TEST_MODE:-local}"
 name="${project}_test_runner"
-registry="connextproject"
 commit="`git rev-parse HEAD | head -c 8`"
 release="`cat package.json | grep '"version":' | awk -F '"' '{print $4}'`"
 
