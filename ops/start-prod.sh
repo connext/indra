@@ -25,7 +25,6 @@ registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"
 
 ganache_chain_id="4447"
 log_level="3" # set to 5 for all logs or to 0 for none
-nats_port="4222"
 node_port="8080"
 number_of_services="6" # NOTE: Gotta update this manually when adding/removing services :(
 
@@ -82,6 +81,8 @@ pg_user="$project"
 
 # nats bearer auth settings
 nats_jwt_signer_pubkey='' # FIXME-- read from configuration
+nats_port="4222"
+nats_ws_port="4221"
 
 # redis settings
 redis_url="redis://redis:6379"
@@ -216,6 +217,7 @@ services:
       INDRA_LOG_LEVEL: $log_level
       INDRA_NATS_CLUSTER_ID: abc123
       INDRA_NATS_SERVERS: nats://nats:$nats_port
+      INDRA_NATS_WS_ENDPOINT: wss://nats:$nats_ws_port
       INDRA_NATS_TOKEN: abc123
       INDRA_PG_DATABASE: $pg_db
       INDRA_PG_HOST: $pg_host
@@ -263,7 +265,8 @@ services:
           max-file: 10
           max-size: 10m
     ports:
-      - "4222:4222"
+      - "$nats_port:$nats_port"
+      - "$nats_ws_port:$nats_ws_port"
 
   redis:
     image: $redis_image

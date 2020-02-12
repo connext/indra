@@ -65,6 +65,8 @@ pg_user="$project"
 
 # nats bearer auth settings
 nats_jwt_signer_pubkey='-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqU/GXp8MqmugQyRk5FUF\nBvlJt1/h7L3Crzlzejz/OxriZdq/lBNQW9S1kzGc7qjXprZ1Kg3zP6irr6wmvP0W\nYBGltWs2cWUAmxh0PSxuKdT/OyL9w+rjKLh4yo3ex6DX3Ij0iP01Ej2POe5WrPDS\n8j6LT0s4HZ1FprL5h7RUQWV3cO4pF+1kl6HlBpNzEQzocW9ig4DNdSeUENARHWoC\nixE1gFYo9RXm7acqgqCk3ihdJRIbO4e/m1aZq2mvAFK+yHTIWBL0p5PF0Fe8zcWd\nNeEATYB+eRdNJ3jjS8447YrcbQcBQmhFjk8hbCnc3Rv3HvAapk8xDFhImdVF1ffD\nFwIDAQAB\n-----END PUBLIC KEY-----'
+nats_port="4222"
+nats_ws_port="4221"
 
 # docker images
 builder_image="${project}_builder"
@@ -190,6 +192,7 @@ services:
       INDRA_LOG_LEVEL: $log_level
       INDRA_NATS_CLUSTER_ID:
       INDRA_NATS_SERVERS: nats://nats:$nats_port
+      INDRA_NATS_WS_ENDPOINT: wss://nats:$nats_ws_port
       INDRA_NATS_TOKEN:
       INDRA_PG_DATABASE: $pg_db
       INDRA_PG_HOST: $pg_host
@@ -248,6 +251,7 @@ services:
       - $project
     ports:
       - "$nats_port:$nats_port"
+      - "$nats_ws_port:$nats_ws_port"
 
   redis:
     image: $redis_image
