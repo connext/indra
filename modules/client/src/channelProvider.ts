@@ -1,6 +1,6 @@
 import { ChannelProvider } from "@connext/channel-provider";
+import { signMessage } from "@connext/crypto";
 import { Wallet } from "ethers";
-import { arrayify } from "ethers/utils";
 import EventEmitter from "events";
 
 import { CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
@@ -14,7 +14,6 @@ import {
   StorePair,
 } from "./types";
 import { chan_storeSet, chan_storeGet, chan_nodeAuth, chan_restoreState, IChannelProvider } from "@connext/types";
-import { signMessage } from "./lib/ethSign";
 
 export const createCFChannelProvider = async ({
   ethProvider,

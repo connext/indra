@@ -1,12 +1,20 @@
-import { sign, keccak256, concatBuffers, utf8ToBuffer, hexToBuffer, addHexPrefix, bufferToHex } from "eccrypto-js";
+import { EthSignature } from "@connext/types";
+import {
+  sign,
+  encrypt,
+  decrypt,
+  keccak256,
+  serialize,
+  deserialize,
+  hexToBuffer,
+  bufferToHex,
+  utf8ToBuffer,
+  bufferToUtf8,
+  concatBuffers,
+  addHexPrefix,
+} from "eccrypto-js";
 
-const ETH_SIGN_PREFIX = "\x19Ethereum Signed Message:\n";
-
-export interface EthSignature {
-  r: string;
-  s: string;
-  v: string;
-}
+export const ETH_SIGN_PREFIX = "\x19Ethereum Signed Message:\n";
 
 export function hashMessage(message: Buffer | string): Buffer {
   const data = Buffer.isBuffer(message) ? message : utf8ToBuffer(message);
@@ -35,4 +43,15 @@ export async function signMessage(privateKey: Buffer | string, message: Buffer |
   const hash = hashMessage(message);
   const sig = await signDigest(privateKey, hash);
   return addHexPrefix(bufferToHex(sig));
+}
+
+export async function encryptWithPublicKey(publicKey: string, message: string): Promise<string> {
+  const encrypted = await encrypt(hexToBuffer(publicKey), utf8ToBuffer(message));
+  return bufferToHex(serialize(encrypted));
+}
+
+export async function decryptWithPrivateKey(privateKey: string, message: string): Promise<string> {
+  const encrypted = deserialize(hexToBuffer(message));
+  const decrypted = await decrypt(hexToBuffer(privateKey), encrypted);
+  return bufferToUtf8(decrypted);
 }

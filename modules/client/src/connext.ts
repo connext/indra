@@ -9,6 +9,7 @@ import {
   chan_storeSet,
   chan_restoreState,
 } from "@connext/types";
+import { decryptWithPrivateKey } from "@connext/crypto";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -25,7 +26,6 @@ import { ResolveConditionController } from "./controllers/ResolveConditionContro
 import { SwapController } from "./controllers/SwapController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger, stringify, withdrawalKey, xpubToAddress } from "./lib";
-import { decryptWithPrivateKey } from "./lib/crypto";
 import { ConnextListener } from "./listener";
 import {
   Address,

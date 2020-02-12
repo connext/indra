@@ -1,7 +1,7 @@
 {
-  "name": "@connext/client",
+  "name": "@connext/crypto",
   "version": "4.0.11",
-  "description": "Client for Connext Network",
+  "description": "Crypto module for Connext client",
   "main": "dist/index.js",
   "files": [
     "dist",
@@ -16,26 +16,13 @@
     "test": "./node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
-    "@connext/cf-core": "4.0.11",
-    "@connext/channel-provider": "4.0.11",
-    "@connext/crypto": "4.0.11",
-    "@connext/messaging": "4.0.11",
-    "@connext/store": "4.0.11",
     "@connext/types": "4.0.11",
-    "core-js": "3.6.1",
-    "eccrypto-js": "4.2.3",
-    "ethers": "4.0.41",
-    "human-standard-token-abi": "2.0.0",
-    "regenerator-runtime": "0.13.3",
-    "rpc-server": "0.0.1",
-    "secp256k1": "3.8.0",
-    "uuid": "3.3.3"
+    "eccrypto-js": "4.2.3"
   },
   "devDependencies": {
     "@babel/polyfill": "7.7.0",
     "@types/jest": "24.0.25",
-    "@types/uuid": "3.4.6",
-    "eth-crypto": "1.5.0",
+    "@types/node": "13.1.7",
     "jest": "24.9.0",
     "ts-jest": "24.2.0",
     "typescript": "3.5.3"

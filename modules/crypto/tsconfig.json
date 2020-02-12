@@ -11,5 +11,6 @@
     "module": "commonjs"
   },
   "exclude": ["dist", "node_modules", "**/*spec.ts"],
-  "include": ["src/**/*.ts", "../crypto/src/crypto.spec.ts"]
+  "include": [ "src/**/*.ts" ]
 }
+
