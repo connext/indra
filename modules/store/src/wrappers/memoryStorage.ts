@@ -33,6 +33,16 @@ export class MemoryStorage implements IAsyncStorage {
     this.store = new Map();
   }
 
+  async getChannels(): Promise<object> {
+    const channelsObj = Object.entries(this.store).reduce((channels, [path, value]) => {
+      if (path.includes("channel")) {
+        channels[value.multisigAddress] = value;
+      }
+      return channels;
+    }, {});
+    return channelsObj;
+  }
+
   async getAllKeys(): Promise<string[]> {
     return Array.from(this.store.keys());
   }

@@ -26,6 +26,7 @@ export interface StorageWrapper {
   getKeys(): Promise<string[]>;
   getEntries(): Promise<[string, any][]>;
   clear(prefix: string): Promise<void>;
+  getChannels(): Promise<object>;
 }
 
 export interface IAsyncStorage {
@@ -34,6 +35,7 @@ export interface IAsyncStorage {
   removeItem(key: string): Promise<void>;
   clear(): Promise<void>;
   getAllKeys(): Promise<string[]>;
+  getChannels(): Promise<AsyncStorageData>;
 }
 
 export interface IBackupServiceAPI {

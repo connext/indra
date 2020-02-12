@@ -83,6 +83,17 @@ export class AsyncStorageWrapper implements StorageWrapper {
     await this.asyncStorage.removeItem(this.asyncStorageKey);
   }
 
+  async getChannels(): Promise<AsyncStorageData> {
+    const entries = await this.getEntries();
+    const channelsObj = entries.reduce((channels, [path, value]) => {
+      if (path.includes("channel")) {
+        channels[value.multisigAddress] = value;
+      }
+      return channels;
+    }, {});
+    return channelsObj;
+  }
+
   async getKeys(): Promise<string[]> {
     return Object.keys(this.data);
   }

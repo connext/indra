@@ -27,6 +27,17 @@ export class LocalStorageWrapper implements StorageWrapper {
     return Object.entries(this.localStorage);
   }
 
+  async getChannels(): Promise<object> {
+    const entries = await this.getEntries();
+    const channelsObj = entries.reduce((channels, [path, value]) => {
+      if (path.includes("channel")) {
+        channels[value.multisigAddress] = value;
+      }
+      return channels;
+    }, {});
+    return channelsObj;
+  }
+
   async clear(prefix: string): Promise<void> {
     const entries = await this.getEntries();
     entries.forEach(async ([key, value]: [string, any]) => {

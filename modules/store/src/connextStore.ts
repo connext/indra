@@ -18,7 +18,7 @@ export class ConnextStore {
   private backupService: IBackupServiceAPI | null = null;
 
   constructor(storage: Storage | IAsyncStorage, opts?: StoreFactoryOptions) {
-    let asyncStorageKey;
+    let asyncStorageKey: string;
 
     if (opts) {
       this.prefix = opts.prefix || DEFAULT_STORE_PREFIX;
@@ -36,9 +36,10 @@ export class ConnextStore {
   }
 
   public async get(path: string): Promise<any> {
-    const raw = await this.store.getItem(`${path}`);
-    const partialMatches = await this.getPartialMatches(path);
-    return partialMatches || raw;
+    if (path.endsWith(PATH_CHANNEL)) {
+      return this.store.getChannels();
+    }
+    return this.store.getItem(`${path}`);
   }
 
   public async set(pairs: StorePair[], shouldBackup?: boolean): Promise<void> {
@@ -66,26 +67,5 @@ export class ConnextStore {
     }
     await this.reset();
     return [];
-  }
-
-  /// ////////////////////////////////////////////
-  /// // PRIVATE METHODS
-
-  private async getPartialMatches(path: string): Promise<any | undefined> {
-    // Handle partial matches so the following line works -.-
-    // https://github.com/counterfactual/monorepo/blob/master/packages/node/src/store.ts#L54
-    if (path.endsWith(PATH_CHANNEL) || path.endsWith(PATH_PROPOSED_APP_INSTANCE_ID)) {
-      const partialMatches = {};
-      const keys = await this.store.getKeys();
-      for (const k of keys) {
-        const pathToFind = `${path}${this.separator}`;
-        if (k.includes(pathToFind)) {
-          const value = await this.store.getItem(k);
-          partialMatches[k.replace(pathToFind, "")] = value;
-        }
-      }
-      return Object.keys(partialMatches).length === 0 ? undefined : partialMatches;
-    }
-    return undefined;
   }
 }
