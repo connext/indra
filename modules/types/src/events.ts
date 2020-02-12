@@ -25,6 +25,7 @@ export const RECIEVE_TRANSFER_FAILED_EVENT = "RECIEVE_TRANSFER_FAILED_EVENT";
 export const RECIEVE_TRANSFER_FINISHED_EVENT = "RECIEVE_TRANSFER_FINISHED_EVENT";
 export const RECIEVE_TRANSFER_STARTED_EVENT = "RECIEVE_TRANSFER_STARTED_EVENT";
 
+// TODO: should really be named "ProtocolEventNames"
 export const EventNames = {
   [CREATE_CHANNEL_EVENT]: CREATE_CHANNEL_EVENT,
   [DEPOSIT_CONFIRMED_EVENT]: DEPOSIT_CONFIRMED_EVENT,
@@ -32,6 +33,8 @@ export const EventNames = {
   [DEPOSIT_STARTED_EVENT]: DEPOSIT_STARTED_EVENT,
   [INSTALL_EVENT]: INSTALL_EVENT,
   [INSTALL_VIRTUAL_EVENT]: INSTALL_VIRTUAL_EVENT,
+  [PROPOSE_INSTALL_EVENT]: PROPOSE_INSTALL_EVENT,
+  [PROTOCOL_MESSAGE_EVENT]: PROTOCOL_MESSAGE_EVENT,
   [REJECT_INSTALL_EVENT]: REJECT_INSTALL_EVENT,
   [UNINSTALL_EVENT]: UNINSTALL_EVENT,
   [UNINSTALL_VIRTUAL_EVENT]: UNINSTALL_VIRTUAL_EVENT,
@@ -39,12 +42,8 @@ export const EventNames = {
   [WITHDRAWAL_CONFIRMED_EVENT]: WITHDRAWAL_CONFIRMED_EVENT,
   [WITHDRAWAL_FAILED_EVENT]: WITHDRAWAL_FAILED_EVENT,
   [WITHDRAWAL_STARTED_EVENT]: WITHDRAWAL_STARTED_EVENT,
-  [PROPOSE_INSTALL_EVENT]: PROPOSE_INSTALL_EVENT,
-  [PROTOCOL_MESSAGE_EVENT]: PROTOCOL_MESSAGE_EVENT,
 };
 export type EventName = keyof typeof EventNames;
-
-// TODO: merge ConnextEvents and EventNames???
 
 export const ConnextEvents = {
   ...EventNames,
@@ -58,9 +57,7 @@ export const ConnextEvents = {
 };
 export type ConnextEvent = keyof typeof ConnextEvents;
 
-export class ConnextEventEmitter extends EventEmitter<
-  string | CFCoreTypes.EventName | CFCoreTypes.RpcMethodName
-> {}
+export class ConnextEventEmitter extends EventEmitter<string | ConnextEvent | CFCoreTypes.RpcMethodName> {}
 
 export type NodeEvent = EventName;
 export const NODE_EVENTS = EventNames;

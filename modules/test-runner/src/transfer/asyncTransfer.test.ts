@@ -1,11 +1,9 @@
 import { utils } from "@connext/client";
-import { IConnextClient, LINKED_TRANSFER_TO_RECIPIENT } from "@connext/types";
+import { IConnextClient, LINKED_TRANSFER_TO_RECIPIENT, toBN } from "@connext/types";
 import { ContractFactory, Wallet } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { bigNumberify, HDNode, hexlify, randomBytes } from "ethers/utils";
-import tokenAbi from "human-standard-token-abi";
-
-const toBN = n => bigNumberify(n.toString());
+import { HDNode, hexlify, randomBytes } from "ethers/utils";
+import tokenArtifacts from "@openzeppelin/contracts/build/contracts/ERC20Mintable.json";
 
 import {
   AssetOptions,
@@ -142,10 +140,8 @@ describe("Async Transfers", () => {
   // TODO: Fix race condition in this one
   it.skip("Bot A transfers w a valid, unsupported token address", async () => {
     // deploy a token
-    const factory = ContractFactory.fromSolidity(tokenAbi);
-    const token = await factory
-      .connect(Wallet.fromMnemonic(FUNDED_MNEMONICS[0]).connect(ethProvider))
-      .deploy();
+    const factory = ContractFactory.fromSolidity(tokenArtifacts);
+    const token = await factory.connect(Wallet.fromMnemonic(FUNDED_MNEMONICS[0]).connect(ethProvider)).deploy();
     const deployHash = token.deployTransaction.hash;
     expect(deployHash).to.exist;
     await ethProvider.waitForTransaction(token.deployTransaction.hash!);

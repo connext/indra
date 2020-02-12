@@ -126,17 +126,8 @@ fi
 
 echo "eth provider: $INDRA_ETH_PROVIDER w chainId: $chainId"
 
-if [[ "$chainId" == "1" ]]
-then eth_network_name="mainnet"
-elif [[ "$chainId" == "4" ]]
-then eth_network_name="rinkeby"
-elif [[ "$chainId" == "6" ]]
-then eth_network_name="kotti"
-elif [[ "$chainId" == "42" ]]
-then eth_network_name="kovan"
-elif [[ "$chainId" == "$ganache_chain_id" ]]
+if [[ "$chainId" == "$ganache_chain_id" ]]
 then
-  eth_network_name="ganache"
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
   new_secret "$eth_mnemonic_name" "$eth_mnemonic"
   eth_volume="chain_dev:"
@@ -155,7 +146,6 @@ then
   INDRA_ETH_PROVIDER="http://ethprovider:8545"
   pull_if_unavailable "$ethprovider_image"
   MODE=${INDRA_MODE#*-} bash ops/deploy-contracts.sh
-else echo "Eth network \"$chainId\" is not supported for $INDRA_MODE-mode deployments" && exit 1
 fi
 
 # Prefer top-level address-book override otherwise default to one in contracts
@@ -242,7 +232,7 @@ services:
     environment:
       AWS_ACCESS_KEY_ID: $INDRA_AWS_ACCESS_KEY_ID
       AWS_SECRET_ACCESS_KEY: $INDRA_AWS_SECRET_ACCESS_KEY
-      ETH_NETWORK: $eth_network_name
+      ETH_NETWORK: $chainId
       POSTGRES_DB: $project
       POSTGRES_PASSWORD_FILE: $pg_password_file
       POSTGRES_USER: $project

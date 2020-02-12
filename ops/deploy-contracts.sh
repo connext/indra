@@ -145,7 +145,7 @@ id="`
     --mount="type=bind,source=$log,target=/root/ganache.log" \
     --mount="type=bind,source=$address_book,target=/root/address-book.json" \
     --restart-condition="none" \
-    $SECRET_ENV \
+    "$SECRET_ENV" \
     $image deploy 2> /dev/null
 `"
 
