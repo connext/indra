@@ -64,7 +64,7 @@ beforeAll(async () => {
  * the balances have been updated on-chain.
  */
 describe("Scenario: install AppInstance, set state, put on-chain", () => {
-  it.only("returns the funds the app had locked up for both ETH and ERC20 in app and free balance", async done => {
+  it("returns the funds the app had locked up for both ETH and ERC20 in app and free balance", async done => {
     const xprvs = getRandomExtendedPrvKeys(2);
 
     const multisigOwnerKeys = xkeysToSortedKthSigningKeys(xprvs, 0);
