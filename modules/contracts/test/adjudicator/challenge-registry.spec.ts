@@ -1,7 +1,8 @@
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
-import { Web3Provider } from "ethers/providers";
 import {
   BigNumberish,
   hexlify,
@@ -31,21 +32,17 @@ type Challenge = {
 
 const ALICE =
   // 0xaeF082d339D227646DB914f0cA9fF02c8544F30b
-  new Wallet(
-    "0x3570f77380e22f8dc2274d8fd33e7830cc2d29cf76804e8c21f4f7a6cc571d27"
-  );
+  new Wallet("0x3570f77380e22f8dc2274d8fd33e7830cc2d29cf76804e8c21f4f7a6cc571d27");
 
 const BOB =
   // 0xb37e49bFC97A948617bF3B63BC6942BB15285715
-  new Wallet(
-    "0x4ccac8b1e81fb18a98bbaf29b9bfe307885561f71b76bd4680d7aec9d0ddfcfd"
-  );
+  new Wallet("0x4ccac8b1e81fb18a98bbaf29b9bfe307885561f71b76bd4680d7aec9d0ddfcfd");
 
 // HELPER DATA
 const ONCHAIN_CHALLENGE_TIMEOUT = 30;
 
 describe("ChallengeRegistry", () => {
-  let provider: Web3Provider;
+  let provider = buidler.provider;
   let wallet: Wallet;
   let globalChannelNonce = 0;
 
@@ -54,7 +51,7 @@ describe("ChallengeRegistry", () => {
   let setStateWithSignatures: (
     versionNumber: BigNumberish,
     appState?: string,
-    timeout?: number
+    timeout?: number,
   ) => Promise<void>;
   let cancelChallenge: () => Promise<void>;
   let sendSignedFinalizationToChain: () => Promise<any>;
@@ -64,11 +61,10 @@ describe("ChallengeRegistry", () => {
   let isStateFinalized: () => Promise<boolean>;
 
   before(async () => {
-    provider = waffle.createMockProvider();
-    wallet = (await waffle.getWallets(provider))[0];
+    wallet = (await provider.getWallets())[0];
 
     appRegistry = await waffle.deployContract(wallet, ChallengeRegistry, [], {
-      gasLimit: 6000000 // override default of 4 million
+      gasLimit: 6000000, // override default of 4 million
     });
   });
 
@@ -77,7 +73,7 @@ describe("ChallengeRegistry", () => {
       [ALICE.address, BOB.address],
       hexlify(randomBytes(20)),
       10,
-      globalChannelNonce
+      globalChannelNonce,
     );
 
     globalChannelNonce += 1;
