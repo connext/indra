@@ -1,26 +1,23 @@
 /* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
-import { SolidityValueType } from "@connext/types";
-import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
-import { bigNumberify, defaultAbiCoder, joinSignature, keccak256, SigningKey } from "ethers/utils";
-
-import AppWithAction from "../../build/AppWithAction.json";
+import { bigNumberify, joinSignature, keccak256, SigningKey } from "ethers/utils";
 
 import {
   AppIdentityTestClass,
   computeAppChallengeHash,
+  encodeAppAction,
+  encodeAppState,
   expect,
   signaturesToBytes,
   sortSignaturesBySignerAddress,
   deployRegistry,
+  ONCHAIN_CHALLENGE_TIMEOUT,
+  getIncrementCounterAction,
+  getAppWithActionState,
+  deployApp,
 } from "./utils";
-
-enum ActionType {
-  SUBMIT_COUNTER_INCREMENT,
-  ACCEPT_INCREMENT,
-}
 
 const ALICE =
   // 0xaeF082d339D227646DB914f0cA9fF02c8544F30b
@@ -30,25 +27,9 @@ const BOB =
   // 0xb37e49bFC97A948617bF3B63BC6942BB15285715
   new Wallet("0x4ccac8b1e81fb18a98bbaf29b9bfe307885561f71b76bd4680d7aec9d0ddfcfd");
 
-// HELPER DATA
-const ONCHAIN_CHALLENGE_TIMEOUT = 30;
+const PRE_STATE = getAppWithActionState();
 
-const PRE_STATE = {
-  counter: bigNumberify(0),
-};
-
-const ACTION = {
-  actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
-  increment: bigNumberify(2),
-};
-
-function encodeState(state: SolidityValueType) {
-  return defaultAbiCoder.encode([`tuple(uint256 counter)`], [state]);
-}
-
-function encodeAction(action: SolidityValueType) {
-  return defaultAbiCoder.encode([`tuple(uint8 actionType, uint256 increment)`], [action]);
-}
+const ACTION = getIncrementCounterAction(bigNumberify(2));
 
 describe("ChallengeRegistry Challenge", () => {
   let provider = buidler.provider;
@@ -67,7 +48,7 @@ describe("ChallengeRegistry Challenge", () => {
 
     appRegistry = await deployRegistry(wallet);
 
-    appDefinition = await waffle.deployContract(wallet, AppWithAction);
+    appDefinition = await deployApp(wallet);
   });
 
   beforeEach(async () => {
@@ -100,8 +81,8 @@ describe("ChallengeRegistry Challenge", () => {
     respondToChallenge = (state: any, action: any, actionSig: any) =>
       appRegistry.functions.respondToChallenge(
         appInstance.appIdentity,
-        encodeState(state),
-        encodeAction(action),
+        encodeAppState(state),
+        encodeAppAction(action),
         actionSig,
       );
   });
@@ -109,16 +90,16 @@ describe("ChallengeRegistry Challenge", () => {
   it("Can call respondToChallenge", async () => {
     expect(await latestVersionNumber()).to.eq(0);
 
-    await setState(1, encodeState(PRE_STATE));
+    await setState(1, encodeAppState(PRE_STATE));
 
     expect(await latestVersionNumber()).to.eq(1);
 
     const signer = new SigningKey(BOB.privateKey);
-    const thingToSign = keccak256(encodeAction(ACTION));
+    const thingToSign = keccak256(encodeAppAction(ACTION));
     const signature = await signer.signDigest(thingToSign);
     const bytes = signaturesToBytes(signature);
 
-    expect(await latestState()).to.be.eql(keccak256(encodeState(PRE_STATE)));
+    expect(await latestState()).to.be.eql(keccak256(encodeAppState(PRE_STATE)));
 
     await respondToChallenge(PRE_STATE, ACTION, bytes);
 
@@ -126,10 +107,10 @@ describe("ChallengeRegistry Challenge", () => {
   });
 
   it("Cannot call respondToChallenge with incorrect turn taker", async () => {
-    await setState(1, encodeState(PRE_STATE));
+    await setState(1, encodeAppState(PRE_STATE));
 
     const signer = new SigningKey(ALICE.privateKey);
-    const thingToSign = keccak256(encodeAction(ACTION));
+    const thingToSign = keccak256(encodeAppAction(ACTION));
     const signature = await signer.signDigest(thingToSign);
     const bytes = signaturesToBytes(signature);
 

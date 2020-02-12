@@ -1,4 +1,4 @@
-import { AppIdentity, Contract } from "@connext/types";
+import { AppIdentity, Contract, SolidityValueType } from "@connext/types";
 import * as chai from "chai";
 import * as waffle from "ethereum-waffle";
 import {
@@ -11,21 +11,62 @@ import {
   Signature,
   SigningKey,
   solidityPack,
+  bigNumberify,
 } from "ethers/utils";
 import { Wallet } from "ethers";
-import { HashZero } from "ethers/constants";
+import { HashZero, One, Zero } from "ethers/constants";
 import { Web3Provider } from "ethers/providers";
 
 import ChallengeRegistry from "../../../build/ChallengeRegistry.json";
 import AppWithAction from "../../../build/AppWithAction.json";
+import AppWithActionComputeOutcomeFails from "../../../build/AppWithActionComputeOutcomeFails.json";
 
 chai.use(require("chai-subset"));
 chai.use(waffle.solidity);
 export const expect = chai.expect;
 
-// HELPER DATA
+/////////////////////////////////
+// Helpers for AppWithAction.sol
+export enum ActionType {
+  SUBMIT_COUNTER_INCREMENT,
+  ACCEPT_INCREMENT,
+}
+
+export enum TwoPartyFixedOutcome {
+  SEND_TO_ADDR_ONE,
+  SEND_TO_ADDR_TWO,
+  SPLIT_AND_SEND_TO_BOTH_ADDRS,
+}
+
+export function encodeAppState(state: SolidityValueType): string {
+  return defaultAbiCoder.encode([`tuple(uint256 counter)`], [state]);
+}
+
+export function encodeAppAction(action: SolidityValueType): string {
+  return defaultAbiCoder.encode([`tuple(uint8 actionType, uint256 increment)`], [action]);
+}
+
+export function getIncrementCounterAction(increment: BigNumberish = One) {
+  return {
+    actionType: ActionType.SUBMIT_COUNTER_INCREMENT,
+    increment,
+  };
+}
+
+export function getAppWithActionState(counter: BigNumberish = Zero) {
+  return { counter: bigNumberify(counter) };
+}
+
+export function getExpectedOutcome(value: TwoPartyFixedOutcome = TwoPartyFixedOutcome.SEND_TO_ADDR_ONE) {
+  return defaultAbiCoder.encode([`uint256 enum`], [value]);
+}
+
+/////////////////////////////////
+// default values
 export const ONCHAIN_CHALLENGE_TIMEOUT = 30;
 
+/////////////////////////////////
+// Challenge helpers
 export enum ChallengeStatus {
   NO_CHALLENGE,
   FINALIZES_AFTER_DEADLINE,
@@ -42,6 +83,8 @@ export type Challenge = {
   versionNumber: BigNumber;
 };
 
+/////////////////////////////////
+// Other helpers
 // TS version of MChallengeRegistryCore::computeAppChallengeHash
 export const computeAppChallengeHash = (
   id: string,
@@ -268,8 +311,9 @@ export async function deployRegistry(wallet: Wallet): Promise<Contract> {
  * Deploys the `ChallengeRegistry.sol`
  * @param wallet default interacting wallet
  */
-export async function deployApp(wallet: Wallet): Promise<Contract> {
-  return await waffle.deployContract(wallet, AppWithAction, [], {
-    gasLimit: 6000000, // override default of 4 million
-  });
+export async function deployApp(wallet: Wallet, computeOutcomeFails: boolean = false): Promise<Contract> {
+  if (computeOutcomeFails) {
+    return await waffle.deployContract(wallet, AppWithActionComputeOutcomeFails);
+  }
+  return await waffle.deployContract(wallet, AppWithAction);
 }
