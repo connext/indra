@@ -4,6 +4,9 @@ import * as addressHistory from "./address-history.json";
 
 // export all build artifacts
 import * as AppWithAction from "./build/AppWithAction.json";
+import * as AppWithNoTurnTaker from "./build/AppWithNoTurnTaker.json";
+import * as AppWithNoApplyAction from "./build/AppWithNoApplyAction.json";
+import * as AppWithActionComputeOutcomeFails from "./build/AppWithActionComputeOutcomeFails.json";
 import * as ChallengeRegistry from "./build/ChallengeRegistry.json";
 import * as CoinBalanceRefundApp from "./build/CoinBalanceRefundApp.json";
 import * as ConditionalTransactionDelegateTarget from "./build/ConditionalTransactionDelegateTarget.json";
@@ -24,6 +27,9 @@ export {
   addressBook,
   addressHistory,
   AppWithAction,
+  AppWithNoTurnTaker,
+  AppWithNoApplyAction,
+  AppWithActionComputeOutcomeFails,
   ChallengeRegistry,
   CoinBalanceRefundApp,
   ConditionalTransactionDelegateTarget,
