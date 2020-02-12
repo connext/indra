@@ -26,15 +26,16 @@ node_port=8080
 dash_port=9999
 port=3000
 
-if [[ "$INDRA_ETH_NETWORK" == "rinkeby" ]]
-then eth_rpc_url="https://rinkeby.infura.io/metamask"
-elif [[ "$INDRA_ETH_NETWORK" == "kovan" ]]
-then eth_rpc_url="https://kovan.infura.io/metamask"
-elif [[ "$INDRA_ETH_NETWORK" == "ganache" ]]
+if [[ "$INDRA_ETH_NETWORK" == "ganache" ]]
 then
   eth_rpc_url="http://ethprovider:8545"
   make deployed-contracts
+else
+  eth_rpc_url="${INDRA_ETH_PROVIDER}"
 fi
+
+if [[ -z "$eth_rpc_url" ]]
+then echo "An env var called 'INDRA_ETH_PROVIDER' is required or you must be running on ganache" && exit 1
 
 # Prefer top-level address-book override otherwise default to one in contracts
 if [[ -f address-book.json ]]
