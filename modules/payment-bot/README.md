@@ -6,7 +6,7 @@ Payment functionality is demonstrated by using two payment bots connected to an 
 
 ## Initial Setup
 All setup is from root of repository.
-* `make start` or `bash ops/start-dev.sh kovan` to run Indra node locally on Ganache or Kovan.
+* `make start` or `INDRA_ETH_NETWORK="kovan" bash ops/start-dev.sh` to run Indra node locally on Ganache or Kovan.
 
 ## Bot Functionality
 The bot can be run with the following optional command line arguments:

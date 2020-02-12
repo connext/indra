@@ -10,7 +10,7 @@ docker swarm init 2> /dev/null || true
 ####################
 # External Env Vars
 
-INDRA_ETH_NETWORK="${1:-ganache}"
+INDRA_ETH_NETWORK="${INDRA_ETH_NETWORK:-ganache}"
 INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-foo}"
 INDRA_UI="${INDRA_UI:-daicard}"
 
