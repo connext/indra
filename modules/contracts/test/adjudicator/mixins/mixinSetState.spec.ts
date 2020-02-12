@@ -143,7 +143,11 @@ describe.only("MixinSetState.sol", () => {
     }
   });
 
-  it("should correctly set the challenge state", async () => {
+  it("should correctly set the challenge state with nonzero timeout", async () => {
     await setChallenge();
+  });
+
+  it("should correctly set the challenge state with zero timeout", async () => {
+    await setChallenge(undefined, 0);
   });
 });
