@@ -36,6 +36,7 @@ fi
 
 if [[ -z "$eth_rpc_url" ]]
 then echo "An env var called 'INDRA_ETH_PROVIDER' is required or you must be running on ganache" && exit 1
+fi
 
 # Prefer top-level address-book override otherwise default to one in contracts
 if [[ -f address-book.json ]]
