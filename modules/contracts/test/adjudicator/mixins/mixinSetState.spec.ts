@@ -20,7 +20,7 @@ import {
 } from "../utils";
 import { Wallet, Contract } from "ethers";
 import { Zero, One } from "ethers/constants";
-import { BigNumberish, keccak256, bigNumberify, SigningKey, joinSignature, hexlify, randomBytes } from "ethers/utils";
+import { BigNumberish, keccak256, bigNumberify, SigningKey, joinSignature } from "ethers/utils";
 
 const alice =
   // 0xaeF082d339D227646DB914f0cA9fF02c8544F30b
