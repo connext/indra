@@ -25,7 +25,7 @@ describe("Store", () => {
     await Promise.all(createArray(5).map(() => setAndGet(store)));
   });
 
-  it.only("happy case: get channels map indexed by multisigAddress", async () => {
+  it("happy case: get channels map indexed by multisigAddress", async () => {
     const xpub =
       "xpub6FLhjUvMxAuTfCrrNYFJ8qxq4Tx7FuYWVgbRv1TwBhfbtasEZP8EQcmD62jrhaaywiBkxcbEGHciBFwcf56B2mrtUnCBa92L3XbDzf85J4A";
     const multisigAddress1 = "0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4b";
