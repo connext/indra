@@ -26,16 +26,6 @@ node_port=8080
 dash_port=9999
 port=3000
 
-if [[ "$INDRA_ETH_NETWORK" == "rinkeby" ]]
-then eth_rpc_url="https://rinkeby.infura.io/metamask"
-elif [[ "$INDRA_ETH_NETWORK" == "kovan" ]]
-then eth_rpc_url="https://kovan.infura.io/metamask"
-elif [[ "$INDRA_ETH_NETWORK" == "ganache" ]]
-then
-  eth_rpc_url="http://ethprovider:8545"
-  make deployed-contracts
-fi
-
 # Prefer top-level address-book override otherwise default to one in contracts
 if [[ -f address-book.json ]]
 then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
@@ -43,7 +33,24 @@ else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' 
 fi
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 
-allowed_swaps='[{"from":"0xeec918d74c746167564401103096D45BbD494B74","to":"0x0000000000000000000000000000000000000000","priceOracleType":"UNISWAP"},{"from":"0x0000000000000000000000000000000000000000","to":"0xeec918d74c746167564401103096D45BbD494B74","priceOracleType":"UNISWAP"}]'
+# TODO, could not get the command to work with a variable
+# token_address="`echo $eth_contract_addresses | jq '.["$chainId"].Token.address' | tr -d '"'`"
+if [[ "$INDRA_ETH_NETWORK" == "rinkeby" ]]
+then 
+  eth_rpc_url="https://rinkeby.infura.io/metamask"
+  token_address="`echo $eth_contract_addresses | jq '.["4"].Token.address' | tr -d '"'`"
+elif [[ "$INDRA_ETH_NETWORK" == "kovan" ]]
+then 
+  eth_rpc_url="https://kovan.infura.io/metamask"
+  token_address="`echo $eth_contract_addresses | jq '.["42"].Token.address' | tr -d '"'`"
+elif [[ "$INDRA_ETH_NETWORK" == "ganache" ]]
+then
+  eth_rpc_url="http://ethprovider:8545"
+  token_address="`echo $eth_contract_addresses | jq '.["4447"].Token.address' | tr -d '"'`"
+  make deployed-contracts
+fi
+
+allowed_swaps="[{\"from\":\"$token_address\",\"to\":\"0x0000000000000000000000000000000000000000\",\"priceOracleType\":\"UNISWAP\"},{\"from\":\"0x0000000000000000000000000000000000000000\",\"to\":\"$token_address\",\"priceOracleType\":\"UNISWAP\"}]"
 
 # database connection settings
 pg_db="$project"
