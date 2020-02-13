@@ -32,7 +32,7 @@ function wait_for {
     fi
   fi
   echo "Waiting for $name at $target ($host) to wake up..."
-  bash ops/wait-for.sh -t 60 $host 2> /dev/null
+  bash ops/wait-for.sh -t 60 $host
 }
 
 wait_for "database" "$INDRA_PG_HOST:$INDRA_PG_PORT"
