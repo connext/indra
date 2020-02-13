@@ -27,5 +27,3 @@ export const RedisProviderId = "REDIS";
 export const RedlockProviderId = "REDLOCK";
 export const SwapRateProviderId = "SWAP_RATE";
 export const TransferProviderId = "TRANSFER";
-
-export const DAI_MAINNET_ADDRESS = "0x6b175474e89094c44da98b954eedeac495271d0f";
