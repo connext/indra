@@ -1,10 +1,4 @@
-import {
-  ConnextStore,
-  MemoryStorage,
-  PATH_CHANNEL,
-  PATH_PROPOSED_APP_INSTANCE_ID,
-  StorePair,
-} from "@connext/store";
+import { ConnextStore, MemoryStorage, PATH_CHANNEL, PATH_PROPOSED_APP_INSTANCE_ID, StorePair } from "@connext/store";
 import { hexlify, randomBytes } from "ethers/utils";
 
 import {
@@ -31,18 +25,23 @@ describe("Store", () => {
     await Promise.all(createArray(5).map(() => setAndGet(store)));
   });
 
-  it("happy case: get partial matches when available", async () => {
-    const names = [PATH_PROPOSED_APP_INSTANCE_ID, PATH_CHANNEL];
-    const subdir = "partial";
-    for (const name of names) {
-      const pair: StorePair = {
-        path: `${name}/${subdir}`,
-        value: { ilyk: "tests" },
-      };
-      await setAndGet(store, pair);
-      const retrieved = await store.get(name);
-      expect(retrieved).to.deep.equal({ [subdir]: pair.value });
-    }
+  it.only("happy case: get channels map indexed by multisigAddress", async () => {
+    const xpub =
+      "xpub6FLhjUvMxAuTfCrrNYFJ8qxq4Tx7FuYWVgbRv1TwBhfbtasEZP8EQcmD62jrhaaywiBkxcbEGHciBFwcf56B2mrtUnCBa92L3XbDzf85J4A";
+    const multisigAddress1 = "0x5a0b54d5dc17e0aadc383d2db43b0a0d3e029c4b";
+    const multisigAddress2 = "0x829BD824B016326A401d083B33D092293333A831";
+    const path = `${xpub}/${PATH_CHANNEL}`;
+    const pairs: StorePair[] = [
+      { path: `${path}/${multisigAddress1}`, value: { multisigAddress: multisigAddress1 } },
+      { path: `${path}/${multisigAddress2}`, value: { multisigAddress: multisigAddress2 } },
+    ];
+    await store.set(pairs);
+    const expected = {
+      [multisigAddress1]: pairs[0].value,
+      [multisigAddress2]: pairs[1].value,
+    };
+    const retrieved = await store.get(path);
+    expect(retrieved).to.deep.equal(expected);
   });
 
   it("happy case: reset the whole store state", async () => {
