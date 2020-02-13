@@ -6,6 +6,7 @@ import {
   safeJsonParse,
   safeJsonStringify,
   StorageWrapper,
+  reduceChannelsMap,
 } from "../helpers";
 
 export class AsyncStorageWrapper implements StorageWrapper {
@@ -85,12 +86,7 @@ export class AsyncStorageWrapper implements StorageWrapper {
 
   async getChannels(): Promise<AsyncStorageData> {
     const entries = await this.getEntries();
-    const channelsObj = entries.reduce((channels, [path, value]) => {
-      if (path.includes("channel")) {
-        channels[value.multisigAddress] = value;
-      }
-      return channels;
-    }, {});
+    const channelsObj = reduceChannelsMap(entries);
     return channelsObj;
   }
 

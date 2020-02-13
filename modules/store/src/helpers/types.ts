@@ -1,5 +1,6 @@
 export {
   AsyncStorageData,
+  ChannelsMap,
   IAsyncStorage,
   IBackupServiceAPI,
   InitCallback,

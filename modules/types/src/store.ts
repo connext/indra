@@ -69,3 +69,7 @@ export interface Store extends IStoreService {
   set(pairs: StorePair[], shouldBackup?: Boolean): Promise<void>;
   restore(): Promise<StorePair[]>;
 }
+
+export interface ChannelsMap {
+  [multisigAddress: string]: any;
+}

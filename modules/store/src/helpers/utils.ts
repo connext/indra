@@ -1,10 +1,9 @@
-import { IAsyncStorage } from "@connext/types";
 import { utils } from "ethers";
 
 import { AsyncStorageWrapper, LocalStorageWrapper } from "../wrappers";
 
 import { ASYNC_STORAGE_TEST_KEY } from "./constants";
-import { StorageWrapper } from "./types";
+import { IAsyncStorage, ChannelsMap, StorageWrapper } from "./types";
 
 export function arrayify(value: string | ArrayLike<number> | utils.Hexable): Uint8Array {
   return utils.arrayify(value);
@@ -71,4 +70,13 @@ export function wrapLocalStorage(localStorage: Storage): StorageWrapper {
 
 export function wrapStorage(storage: any, asyncStorageKey?: string): StorageWrapper {
   return isAsyncStorage(storage) ? wrapAsyncStorage(storage, asyncStorageKey) : wrapLocalStorage(storage);
+}
+
+export function reduceChannelsMap(entries: [string, any][]): ChannelsMap {
+  return entries.reduce((channels, [path, value]) => {
+    if (path.includes("channel")) {
+      channels[value.multisigAddress] = value;
+    }
+    return channels;
+  }, {});
 }

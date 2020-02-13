@@ -1,4 +1,4 @@
-import { IAsyncStorage } from "../helpers";
+import { IAsyncStorage, reduceChannelsMap } from "../helpers";
 
 export class MemoryStorage implements IAsyncStorage {
   private store: Map<string, any> = new Map();
@@ -34,12 +34,7 @@ export class MemoryStorage implements IAsyncStorage {
   }
 
   async getChannels(): Promise<object> {
-    const channelsObj = Object.entries(this.store).reduce((channels, [path, value]) => {
-      if (path.includes("channel")) {
-        channels[value.multisigAddress] = value;
-      }
-      return channels;
-    }, {});
+    const channelsObj = reduceChannelsMap(Object.entries(this.store));
     return channelsObj;
   }
 
