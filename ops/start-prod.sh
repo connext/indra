@@ -124,14 +124,29 @@ fi
 
 echo "eth provider: $INDRA_ETH_PROVIDER w chainId: $chainId"
 
+# Prefer top-level address-book override otherwise default to one in contracts
+if [[ -f address-book.json ]]
+then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
+fi
+
+allowed_swaps='{}'
 if [[ "$chainId" == "1" ]]
-then eth_network_name="mainnet"
+then 
+  token_address="`echo $eth_contract_addresses | jq '.["1"].Token.address' | tr -d '"'`"
+  eth_network_name="mainnet"
 elif [[ "$chainId" == "4" ]]
-then eth_network_name="rinkeby"
+then 
+  token_address="`echo $eth_contract_addresses | jq '.["4"].Token.address' | tr -d '"'`"
+  eth_network_name="rinkeby"
 elif [[ "$chainId" == "6" ]]
-then eth_network_name="kotti"
+then 
+  token_address="`echo $eth_contract_addresses | jq '.["6"].Token.address' | tr -d '"'`"
+  eth_network_name="kotti"
 elif [[ "$chainId" == "42" ]]
-then eth_network_name="kovan"
+then 
+  token_address="`echo $eth_contract_addresses | jq '.["42"].Token.address' | tr -d '"'`"
+  eth_network_name="kovan"
 elif [[ "$chainId" == "$ganache_chain_id" ]]
 then
   eth_network_name="ganache"
@@ -154,14 +169,11 @@ then
   INDRA_ETH_PROVIDER="http://ethprovider:8545"
   pull_if_unavailable "$ethprovider_image"
   MODE=${INDRA_MODE#*-} bash ops/deploy-contracts.sh ganache $version
+  token_address="`echo $eth_contract_addresses | jq '.["4447"].Token.address' | tr -d '"'`"
 else echo "Eth network \"$chainId\" is not supported for $INDRA_MODE-mode deployments" && exit 1
 fi
+allowed_swaps="[{\"from\":\"$token_address\",\"to\":\"0x0000000000000000000000000000000000000000\",\"priceOracleType\":\"UNISWAP\"},{\"from\":\"0x0000000000000000000000000000000000000000\",\"to\":\"$token_address\",\"priceOracleType\":\"UNISWAP\"}]"
 
-# Prefer top-level address-book override otherwise default to one in contracts
-if [[ -f address-book.json ]]
-then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
-else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
-fi
 eth_mnemonic_name="${project}_mnemonic_$eth_network_name"
 
 ########################################
@@ -211,6 +223,7 @@ services:
     entrypoint: bash ops/entry.sh
     environment:
       INDRA_ADMIN_TOKEN: $INDRA_ADMIN_TOKEN
+      INDRA_ALLOWED_SWAPS: '$allowed_swaps'
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC_FILE: /run/secrets/$eth_mnemonic_name
       INDRA_ETH_RPC_URL: $INDRA_ETH_PROVIDER

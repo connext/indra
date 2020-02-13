@@ -1,8 +1,3 @@
-import { AddressZero } from "ethers/constants";
-import { parseEther } from "ethers/utils";
-
-import { PaymentProfile } from "./paymentProfile/paymentProfile.entity";
-
 export enum Network {
   GANACHE = "ganache",
   KOVAN = "kovan",
