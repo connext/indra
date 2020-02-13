@@ -1,6 +1,6 @@
-import { StorageWrapper, reduceChannelsMap, ChannelsMap } from "../helpers";
+import { WrappedStorage, reduceChannelsMap, ChannelsMap } from "../helpers";
 
-export class LocalStorageWrapper implements StorageWrapper {
+export class WrappedLocalStorage implements WrappedStorage {
   private localStorage: Storage;
 
   constructor(localStorage: Storage) {
@@ -43,4 +43,4 @@ export class LocalStorageWrapper implements StorageWrapper {
   }
 }
 
-export default LocalStorageWrapper;
+export default WrappedLocalStorage;

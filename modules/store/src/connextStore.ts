@@ -11,7 +11,7 @@ import {
 import InternalStore from "./internalStore";
 
 export class ConnextStore {
-  private store: InternalStore;
+  private internalStore: InternalStore;
 
   private prefix: string = DEFAULT_STORE_PREFIX;
   private separator: string = DEFAULT_STORE_SEPARATOR;
@@ -28,7 +28,7 @@ export class ConnextStore {
       asyncStorageKey = opts.asyncStorageKey;
     }
 
-    this.store = new InternalStore(storage, this.channelPrefix, asyncStorageKey);
+    this.internalStore = new InternalStore(storage, this.channelPrefix, asyncStorageKey);
   }
 
   get channelPrefix(): string {
@@ -37,14 +37,14 @@ export class ConnextStore {
 
   public async get(path: string): Promise<any> {
     if (path.endsWith(PATH_CHANNEL)) {
-      return this.store.getChannels();
+      return this.internalStore.getChannels();
     }
-    return this.store.getItem(`${path}`);
+    return this.internalStore.getItem(`${path}`);
   }
 
   public async set(pairs: StorePair[], shouldBackup?: boolean): Promise<void> {
     for (const pair of pairs) {
-      await this.store.setItem(pair.path, pair.value);
+      await this.internalStore.setItem(pair.path, pair.value);
 
       if (
         shouldBackup &&
@@ -58,7 +58,7 @@ export class ConnextStore {
   }
 
   public async reset(): Promise<void> {
-    await this.store.clear();
+    await this.internalStore.clear();
   }
 
   public async restore(): Promise<StorePair[]> {
