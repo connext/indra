@@ -142,7 +142,7 @@ export class AppRegistryService {
       throw new Error(`Unsupported "responderDepositTokenAddress" provided`);
     }
 
-    const validSwaps = await this.swapRateService.getValidSwaps();
+    const validSwaps = this.configService.getAllowedSwaps();
     if (
       !validSwaps.find(
         (swap: AllowedSwap) => swap.from === initiatorDepositTokenAddress && swap.to === responderDepositTokenAddress,
