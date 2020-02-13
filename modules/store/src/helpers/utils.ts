@@ -74,8 +74,9 @@ export function wrapStorage(storage: any, asyncStorageKey?: string): StorageWrap
 
 export function reduceChannelsMap(entries: [string, any][]): ChannelsMap {
   return entries.reduce((channels, [path, value]) => {
+    const _value = safeJsonParse(value);
     if (path.includes("channel")) {
-      channels[value.multisigAddress] = value;
+      channels[_value.multisigAddress] = _value;
     }
     return channels;
   }, {});

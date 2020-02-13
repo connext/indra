@@ -1,4 +1,4 @@
-import { StorageWrapper, reduceChannelsMap } from "../helpers";
+import { StorageWrapper, reduceChannelsMap, ChannelsMap } from "../helpers";
 
 export class LocalStorageWrapper implements StorageWrapper {
   private localStorage: Storage;
@@ -27,7 +27,7 @@ export class LocalStorageWrapper implements StorageWrapper {
     return Object.entries(this.localStorage);
   }
 
-  async getChannels(): Promise<object> {
+  async getChannels(): Promise<ChannelsMap> {
     const entries = await this.getEntries();
     const channelsObj = reduceChannelsMap(entries);
     return channelsObj;

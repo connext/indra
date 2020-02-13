@@ -14,6 +14,7 @@ import {
   safeFsRead,
   sanitizeExt,
   safeJsonParse,
+  ChannelsMap,
 } from "../helpers";
 
 export class FileStorage implements IAsyncStorage {
@@ -77,7 +78,7 @@ export class FileStorage implements IAsyncStorage {
     return keys;
   }
 
-  async getChannels(): Promise<object> {
+  async getChannels(): Promise<ChannelsMap> {
     const allKeys = await this.getAllKeys();
     const channelKeys = allKeys.filter(key => key.includes("channel"));
     const channelsObj = {};

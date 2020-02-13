@@ -1,4 +1,4 @@
-import { IAsyncStorage, safeJsonParse, safeJsonStringify, StorageWrapper, wrapStorage } from "./helpers";
+import { IAsyncStorage, safeJsonParse, safeJsonStringify, StorageWrapper, wrapStorage, ChannelsMap } from "./helpers";
 
 class InternalStore {
   private _store: StorageWrapper;
@@ -41,10 +41,10 @@ class InternalStore {
     return keys;
   }
 
-  async getChannels(): Promise<string> {
+  async getChannels(): Promise<ChannelsMap> {
     const store = await this.getStore();
     const channels = await store.getChannels();
-    return safeJsonStringify(channels);
+    return channels;
   }
 
   async getEntries(): Promise<[string, any][]> {
