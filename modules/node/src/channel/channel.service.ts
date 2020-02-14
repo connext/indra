@@ -175,7 +175,7 @@ export class ChannelService {
     assetId: string = AddressZero,
     rebalanceType: RebalanceType,
     minimumRequiredCollateral: BigNumber = Zero,
-  ): Promise<CFCoreTypes.DepositResult | undefined> {
+  ): Promise<CFCoreTypes.DepositResult | CFCoreTypes.WithdrawResult | undefined> {
     const normalizedAssetId = getAddress(assetId);
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
 
@@ -220,6 +220,9 @@ export class ChannelService {
       const collateralNeeded = maxBN([upperBoundCollateralize, minimumRequiredCollateral]);
       return await this.collateralizeIfNecessary(channel, assetId, collateralNeeded, lowerBoundCollateralize);
     } else if (rebalanceType === RebalanceType.RECLAIM) {
+      return await this.reclaimIfNecessary(channel, assetId, upperBoundReclaim, lowerBoundReclaim);
+    } else {
+      throw new Error(`Invalid rebalancing type: ${rebalanceType}`);
     }
   }
 
