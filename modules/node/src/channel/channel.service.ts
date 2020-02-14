@@ -1,9 +1,10 @@
-import { ChannelAppSequences, StateChannelJSON, CoinBalanceRefundApp } from "@connext/types";
+import { ChannelAppSequences, StateChannelJSON, CoinBalanceRefundApp, maxBN } from "@connext/types";
 import { Injectable, HttpService } from "@nestjs/common";
+import { AxiosResponse } from "axios";
 import { Contract } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { TransactionResponse } from "ethers/providers";
-import { BigNumber, getAddress, toUtf8Bytes, sha256 } from "ethers/utils";
+import { BigNumber, getAddress, toUtf8Bytes, sha256, bigNumberify } from "ethers/utils";
 import tokenAbi from "human-standard-token-abi";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
@@ -18,6 +19,19 @@ import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
 
 const logger = new CLogger(`ChannelService`);
+
+type RebalancingTargetsResponse<T = string> = {
+  assetId: string;
+  upperBoundCollateralize: T;
+  lowerBoundCollateralize: T;
+  upperBoundReclaim: T;
+  lowerBoundReclaim: T;
+};
+
+enum RebalanceType {
+  COLLATERALIZE,
+  RECLAIM,
+}
 
 @Injectable()
 export class ChannelService {
@@ -156,10 +170,11 @@ export class ChannelService {
     await this.cfCoreService.proposeAndWaitForAccepted(params, channel.multisigAddress);
   }
 
-  async requestCollateral(
+  async rebalance(
     userPubId: string,
     assetId: string = AddressZero,
-    amountToCollateralize?: BigNumber,
+    rebalanceType: RebalanceType,
+    minimumRequiredCollateral: BigNumber = Zero,
   ): Promise<CFCoreTypes.DepositResult | undefined> {
     const normalizedAssetId = getAddress(assetId);
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
@@ -173,37 +188,106 @@ export class ChannelService {
       return undefined;
     }
 
-    const profile = await this.getPaymentProfileForChannelAndTokenOrDefault(userPubId, normalizedAssetId);
-
-    if (!profile) {
-      throw new Error(`Node is not configured to collateralize asset ${assetId} for user ${userPubId}`);
+    // option 1: rebalancing service, option 2: payment profile, option 3: default
+    let rebalancingTargets = await this.getDataFromRebalancingService(userPubId, assetId);
+    if (!rebalancingTargets) {
+      logger.log(`Unable to get rebalancing targets from service, falling back to profile`);
+      rebalancingTargets = await this.getPaymentProfileForChannelAndToken(userPubId, normalizedAssetId);
+      if (!rebalancingTargets) {
+        rebalancingTargets = await this.configService.getDefaultPaymentProfile(assetId);
+        if (rebalancingTargets) {
+          logger.debug(`Rebalancing with default profile: ${stringify(rebalancingTargets)}`);
+        }
+      }
     }
 
-    let collateralNeeded = profile.minimumMaintainedCollateral;
-    if (amountToCollateralize && profile.minimumMaintainedCollateral.lt(amountToCollateralize)) {
-      collateralNeeded = amountToCollateralize;
+    if (!rebalancingTargets) {
+      throw new Error(`Node is not configured to rebalance asset ${assetId} for user ${userPubId}`);
     }
 
-    const freeBalance = await this.cfCoreService.getFreeBalance(userPubId, channel.multisigAddress, normalizedAssetId);
-    const nodeFreeBalance = freeBalance[this.cfCoreService.cfCore.freeBalanceAddress];
+    const {
+      lowerBoundCollateralize,
+      upperBoundCollateralize,
+      lowerBoundReclaim,
+      upperBoundReclaim,
+    } = rebalancingTargets;
 
-    if (nodeFreeBalance.gte(collateralNeeded)) {
-      logger.log(`${userPubId} already has collateral of ${nodeFreeBalance} for asset ${normalizedAssetId}`);
+    if (upperBoundCollateralize.lt(lowerBoundCollateralize) || upperBoundReclaim.lt(lowerBoundReclaim)) {
+      throw new Error(`Rebalancing targets not properly configured: ${rebalancingTargets}`);
+    }
+    if (rebalanceType === RebalanceType.COLLATERALIZE) {
+      // if minimum amount is supplier, override upper bound
+      const collateralNeeded = maxBN([upperBoundCollateralize, minimumRequiredCollateral]);
+      return await this.collateralizeIfNecessary(channel, assetId, collateralNeeded, lowerBoundCollateralize);
+    } else if (rebalanceType === RebalanceType.RECLAIM) {
+    }
+  }
+
+  private async collateralizeIfNecessary(
+    channel: Channel,
+    assetId: string,
+    collateralNeeded: BigNumber,
+    lowerBoundCollateral: BigNumber,
+  ) {
+    const { [this.cfCoreService.cfCore.freeBalanceAddress]: nodeFreeBalance } = await this.cfCoreService.getFreeBalance(
+      channel.userPublicIdentifier,
+      channel.multisigAddress,
+      assetId,
+    );
+    if (nodeFreeBalance.gte(lowerBoundCollateral)) {
+      logger.log(
+        `${channel.userPublicIdentifier} already has sufficient collateral of ${nodeFreeBalance} for asset ${assetId}`,
+      );
       return undefined;
     }
 
-    const amountDeposit = collateralNeeded.gt(profile.amountToCollateralize)
-      ? collateralNeeded.sub(nodeFreeBalance)
-      : profile.amountToCollateralize.sub(nodeFreeBalance);
-    logger.log(
-      `Collateralizing ${channel.multisigAddress} with ${amountDeposit.toString()}, token: ${normalizedAssetId}`,
-    );
+    const amountDeposit = collateralNeeded.sub(nodeFreeBalance);
+    logger.log(`Collateralizing ${channel.multisigAddress} with ${amountDeposit.toString()}, token: ${assetId}`);
 
     // set in flight so that it cant be double sent
     await this.channelRepository.setInflightCollateralization(channel, true);
-    const result = this.deposit(channel.multisigAddress, amountDeposit, normalizedAssetId)
+    const result = this.deposit(channel.multisigAddress, amountDeposit, assetId)
       .then(async (res: CFCoreTypes.DepositResult) => {
         logger.log(`Deposit result: ${stringify(res)}`);
+        return res;
+      })
+      .catch(async (e: any) => {
+        await this.clearCollateralizationInFlight(channel.multisigAddress);
+        throw e;
+      });
+    return result;
+  }
+
+  // collateral is reclaimed if it is above the upper bound
+  private async reclaimIfNecessary(
+    channel: Channel,
+    assetId: string,
+    upperBoundReclaim: BigNumber,
+    lowerBoundReclaim: BigNumber,
+  ) {
+    const { [this.cfCoreService.cfCore.freeBalanceAddress]: nodeFreeBalance } = await this.cfCoreService.getFreeBalance(
+      channel.userPublicIdentifier,
+      channel.multisigAddress,
+      assetId,
+    );
+    if (nodeFreeBalance.lte(upperBoundReclaim)) {
+      logger.log(`${channel.multisigAddress} does not need to be reclaimed, ${nodeFreeBalance} for asset ${assetId}`);
+      return undefined;
+    }
+
+    // example:
+    // freeBalance = 10
+    // upperBound = 8
+    // lowerBound = 6
+    // amountWithdrawal = freeBalance - lowerBound = 10 - 6 = 4
+    const amountWithdrawal = nodeFreeBalance.sub(lowerBoundReclaim);
+    logger.log(`Reclaiming ${channel.multisigAddress}, ${amountWithdrawal.toString()}, token: ${assetId}`);
+
+    // set in flight so that it cant be double sent
+    await this.channelRepository.setInflightCollateralization(channel, true);
+    const result = this.withdraw(channel.multisigAddress, amountWithdrawal, assetId)
+      .then(async (res: CFCoreTypes.WithdrawResult) => {
+        logger.log(`Withdraw result: ${stringify(res)}`);
         return res;
       })
       .catch(async (e: any) => {
@@ -230,8 +314,8 @@ export class ChannelService {
   ): Promise<PaymentProfile> {
     const profile = new PaymentProfile();
     profile.assetId = getAddress(assetId);
-    profile.minimumMaintainedCollateral = minimumMaintainedCollateral;
-    profile.amountToCollateralize = amountToCollateralize;
+    profile.lowerBoundCollateralize = minimumMaintainedCollateral;
+    profile.upperBoundCollateralize = amountToCollateralize;
     return await this.channelRepository.addPaymentProfileToChannel(userPubId, profile);
   }
 
@@ -327,30 +411,44 @@ export class ChannelService {
     return txRes;
   }
 
-  async getDataFromRebalancingService(userPublicIdentifier: string): Promise<any> {
+  async getDataFromRebalancingService(
+    userPublicIdentifier: string,
+    assetId: string,
+  ): Promise<RebalancingTargetsResponse<BigNumber> | undefined> {
     const rebalancingServiceUrl = this.configService.getRebalancingServiceUrl();
     if (!rebalancingServiceUrl) {
-      logger.debug(`Rebalancing service URL not configured, falling back to another collateralization strategy...`);
-      return;
+      logger.debug(`Rebalancing service URL not configured`);
+      return undefined;
     }
 
     const hashedPublicIdentifier = sha256(toUtf8Bytes(userPublicIdentifier));
-    const rebalancingTargets = await this.httpService
-      .get(`${rebalancingServiceUrl}/${hashedPublicIdentifier}`)
+    const {
+      data: rebalancingTargets,
+      status,
+    }: AxiosResponse<RebalancingTargetsResponse<string>> = await this.httpService
+      .get(`${rebalancingServiceUrl}/api/v1/recommendations/asset/${assetId}/channel/${hashedPublicIdentifier}`)
       .toPromise();
-    return rebalancingTargets;
+
+    if (status !== 200) {
+      logger.warn(`Rebalancing service returned a non-200 response: ${status}`);
+      return undefined;
+    }
+    return {
+      assetId: rebalancingTargets.assetId,
+      lowerBoundCollateralize: bigNumberify(rebalancingTargets.lowerBoundCollateralize),
+      upperBoundCollateralize: bigNumberify(rebalancingTargets.upperBoundCollateralize),
+      // eslint-disable-next-line sort-keys
+      lowerBoundReclaim: bigNumberify(rebalancingTargets.lowerBoundReclaim),
+      upperBoundReclaim: bigNumberify(rebalancingTargets.upperBoundReclaim),
+    };
   }
 
-  async getPaymentProfileForChannelAndTokenOrDefault(
+  async getPaymentProfileForChannelAndToken(
     userPublicIdentifier: string,
     assetId: string = AddressZero,
-  ): Promise<PaymentProfile> {
+  ): Promise<PaymentProfile | undefined> {
     // try to get payment profile configured
     let profile = await this.channelRepository.getPaymentProfileForChannelAndToken(userPublicIdentifier, assetId);
-    if (!profile) {
-      profile = await this.configService.getDefaultPaymentProfile(assetId);
-      logger.debug(`Collateralizing with default profile: ${stringify(profile)}`);
-    }
     return profile;
   }
 
