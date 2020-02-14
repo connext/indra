@@ -2,6 +2,7 @@ import { BigNumber } from "ethers/utils";
 import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
+import { MaxUint256, Zero } from "ethers/constants";
 
 @Entity()
 export class PaymentProfile {
@@ -9,26 +10,47 @@ export class PaymentProfile {
   id!: number;
 
   @Column("text", {
-    default: "0",
+    default: Zero,
     transformer: {
       from: (value: string): BigNumber => new BigNumber(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })
-  minimumMaintainedCollateral!: BigNumber;
+  lowerBoundCollateralize!: BigNumber;
 
   @Column("text", {
-    default: "0",
+    default: Zero,
     transformer: {
       from: (value: string): BigNumber => new BigNumber(value),
       to: (value: BigNumber): string => value.toString(),
     },
   })
-  amountToCollateralize!: BigNumber;
+  upperBoundCollateralize!: BigNumber;
+
+  @Column("text", {
+    default: MaxUint256,
+    transformer: {
+      from: (value: string): BigNumber => new BigNumber(value),
+      to: (value: BigNumber): string => value.toString(),
+    },
+  })
+  lowerBoundReclaim!: BigNumber;
+
+  @Column("text", {
+    default: MaxUint256,
+    transformer: {
+      from: (value: string): BigNumber => new BigNumber(value),
+      to: (value: BigNumber): string => value.toString(),
+    },
+  })
+  upperBoundReclaim!: BigNumber;
 
   @Column("text")
   assetId: string;
 
-  @ManyToMany((type: any) => Channel, (channel: Channel) => channel.paymentProfiles)
+  @ManyToMany(
+    (type: any) => Channel,
+    (channel: Channel) => channel.paymentProfiles,
+  )
   channels!: Channel[];
 }
