@@ -19,13 +19,14 @@ export interface StoreFactoryOptions {
   backupService?: IBackupServiceAPI;
 }
 
-export interface StorageWrapper {
+export interface WrappedStorage {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
   removeItem(key: string): Promise<void>;
   getKeys(): Promise<string[]>;
   getEntries(): Promise<[string, any][]>;
   clear(prefix: string): Promise<void>;
+  getChannels(): Promise<ChannelsMap>;
 }
 
 export interface IAsyncStorage {
@@ -34,6 +35,7 @@ export interface IAsyncStorage {
   removeItem(key: string): Promise<void>;
   clear(): Promise<void>;
   getAllKeys(): Promise<string[]>;
+  getChannels(): Promise<AsyncStorageData>;
 }
 
 export interface IBackupServiceAPI {
@@ -66,4 +68,8 @@ export interface IStoreService {
 export interface Store extends IStoreService {
   set(pairs: StorePair[], shouldBackup?: Boolean): Promise<void>;
   restore(): Promise<StorePair[]>;
+}
+
+export interface ChannelsMap {
+  [multisigAddress: string]: any;
 }
