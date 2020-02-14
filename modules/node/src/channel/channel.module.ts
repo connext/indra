@@ -12,10 +12,9 @@ import { PaymentProfileRepository } from "../paymentProfile/paymentProfile.repos
 import { channelProviderFactory } from "./channel.provider";
 import { ChannelRepository } from "./channel.repository";
 import { ChannelService } from "./channel.service";
-import { ChannelController } from "./channel.controller";
 
 @Module({
-  controllers: [ChannelController],
+  controllers: [],
   exports: [ChannelService],
   imports: [
     MessagingModule,
