@@ -264,6 +264,48 @@ export async function setStateWithSignatures(
   });
 }
 
+/**
+ * Sets the state in the challenge registry by calling `setStateWithAction
+ */
+export async function setStateWithSignedAction(
+  appIdentity: AppIdentityTestClass,
+  participants: Wallet[],
+  turnTaker: Wallet,
+  challengeRegistry: Contract,
+  versionNumber: BigNumberish,
+  encodedAction: string = encodeAppAction(getIncrementCounterAction()),
+  appState: string = HashZero,
+  timeout: BigNumberish = ONCHAIN_CHALLENGE_TIMEOUT,
+): Promise<void> {
+  const stateHash = keccak256(appState);
+  const stateDigest = computeAppChallengeHash(appIdentity.identityHash, stateHash, versionNumber, timeout);
+  expect(participants.length).to.be.eq(2);
+  const stateSigs = sortSignaturesBySignerAddress(stateDigest, [
+    await new SigningKey(participants[0].privateKey).signDigest(stateDigest),
+    await new SigningKey(participants[1].privateKey).signDigest(stateDigest),
+  ]).map(joinSignature);
+  const actionDigest = computeActionHash(
+    turnTaker.address,
+    stateHash,
+    encodedAction,
+    bigNumberify(versionNumber).toNumber(),
+  );
+  const actionSig = joinSignature(await new SigningKey(turnTaker.privateKey).signDigest(actionDigest));
+  await challengeRegistry.functions.setStateWithAction(
+    appIdentity.appIdentity,
+    {
+      appState,
+      signatures: stateSigs,
+      timeout,
+      versionNumber: bigNumberify(versionNumber),
+    },
+    {
+      encodedAction,
+      signature: actionSig,
+    },
+  );
+}
+
 export async function setOutcome(
   appIdentity: AppIdentityTestClass,
   challengeRegistry: Contract,
