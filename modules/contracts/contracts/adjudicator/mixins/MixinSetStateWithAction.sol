@@ -86,7 +86,7 @@ contract MixinSetStateWithAction is LibStateChannelApp, LibAppCaller, MChallenge
 
         // instead use the default timeout.
         uint256 finalizesAt = block.number + appIdentity.defaultTimeout;
-        require(finalizesAt >= req.timeout, "uint248 addition overflow");
+        require(finalizesAt >= appIdentity.defaultTimeout, "uint248 addition overflow");
 
         challenge.finalizesAt = finalizesAt;
         challenge.status = ChallengeStatus.FINALIZES_AFTER_DEADLINE;
