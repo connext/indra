@@ -64,7 +64,10 @@ describe("MixinSetOutcome.sol", () => {
 
     globalChannelNonce += 1;
 
-    const versionNumber = await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry);
+    const versionNumber = await latestVersionNumber(
+      appIdentityTestObject.identityHash,
+      challengeRegistry,
+    );
     expect(versionNumber).to.be.equal(Zero);
 
     // sets the state and begins a challenge
@@ -99,9 +102,9 @@ describe("MixinSetOutcome.sol", () => {
 
   it("should fail if the challenge is not finalized based on timing", async () => {
     await setChallenge();
-    await expect(setOutcome(appIdentityTestObject, challengeRegistry, intialStateHash)).to.be.revertedWith(
-      "setOutcome can only be called after a challenge has been finalized",
-    );
+    await expect(
+      setOutcome(appIdentityTestObject, challengeRegistry, intialStateHash),
+    ).to.be.revertedWith("setOutcome can only be called after a challenge has been finalized");
   });
 
   it("should fail if the challenge status is not EXPLICITLY_FINALIZED", async () => {
@@ -109,17 +112,17 @@ describe("MixinSetOutcome.sol", () => {
     await setOutcome(appIdentityTestObject, challengeRegistry);
     const challenge = await getChallenge(appIdentityTestObject.identityHash, challengeRegistry);
     expect(challenge.status).to.be.equal(ChallengeStatus.OUTCOME_SET);
-    await expect(setOutcome(appIdentityTestObject, challengeRegistry, intialStateHash)).to.be.revertedWith(
-      "setOutcome can only be called after a challenge has been finalized",
-    );
+    await expect(
+      setOutcome(appIdentityTestObject, challengeRegistry, intialStateHash),
+    ).to.be.revertedWith("setOutcome can only be called after a challenge has been finalized");
   });
 
   it("should fail if the submitted state does not have the correct state hash", async () => {
     await setChallenge(undefined, 0);
     const falseState = encodeAppState(getAppWithActionState(2));
-    await expect(setOutcome(appIdentityTestObject, challengeRegistry, falseState)).to.be.revertedWith(
-      "setOutcome called with incorrect witness data of finalState",
-    );
+    await expect(
+      setOutcome(appIdentityTestObject, challengeRegistry, falseState),
+    ).to.be.revertedWith("setOutcome called with incorrect witness data of finalState");
   });
 
   it("should fail if `computeOutcome` fails", async () => {
@@ -131,9 +134,9 @@ describe("MixinSetOutcome.sol", () => {
     );
     globalChannelNonce += 1;
     await setChallenge(undefined, 0);
-    await expect(setOutcome(appIdentityTestObject, challengeRegistry, intialStateHash)).to.be.revertedWith(
-      "computeOutcome fails",
-    );
+    await expect(
+      setOutcome(appIdentityTestObject, challengeRegistry, intialStateHash),
+    ).to.be.revertedWith("computeOutcome fails");
   });
 
   it("should be able to successfully set the outcome of a challenge", async () => {

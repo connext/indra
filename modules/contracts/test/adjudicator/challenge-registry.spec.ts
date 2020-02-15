@@ -48,7 +48,11 @@ describe("ChallengeRegistry", () => {
   let appIdentityTestObject: AppIdentityTestClass;
 
   let sendSignedFinalizationToChain: () => Promise<any>;
-  let setStateWithSigs: (versionNumber: BigNumberish, appState?: string, timeout?: number) => Promise<Challenge>;
+  let setStateWithSigs: (
+    versionNumber: BigNumberish,
+    appState?: string,
+    timeout?: number,
+  ) => Promise<Challenge>;
   let cancel: () => Promise<void>;
   let outcome: (finalState?: string) => Promise<void>;
   let setStateWithAction: (
@@ -141,10 +145,13 @@ describe("ChallengeRegistry", () => {
     };
 
     sendSignedFinalizationToChain = async () => {
-      const stateHash = await latestAppStateHash(appIdentityTestObject.identityHash, challengeRegistry);
-      const submittedVersionNo = (await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry)).add(
-        1,
+      const stateHash = await latestAppStateHash(
+        appIdentityTestObject.identityHash,
+        challengeRegistry,
       );
+      const submittedVersionNo = (
+        await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry)
+      ).add(1);
       await setStateWithSigs(submittedVersionNo, stateHash, 0);
       // make sure the challenge is correct
       const challenge = await getChallenge(appIdentityTestObject.identityHash, challengeRegistry);
@@ -162,15 +169,23 @@ describe("ChallengeRegistry", () => {
       await cancelChallenge([ALICE, BOB], appIdentityTestObject, challengeRegistry);
       const challenge = await getChallenge(appIdentityTestObject.identityHash, challengeRegistry);
       expect(challenge).to.containSubset({
-        appStateHash: await latestAppStateHash(appIdentityTestObject.identityHash, challengeRegistry),
+        appStateHash: await latestAppStateHash(
+          appIdentityTestObject.identityHash,
+          challengeRegistry,
+        ),
         finalizesAt: Zero,
         latestSubmitter: wallet.address,
         status: ChallengeStatus.NO_CHALLENGE,
-        versionNumber: await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
+        versionNumber: await latestVersionNumber(
+          appIdentityTestObject.identityHash,
+          challengeRegistry,
+        ),
       });
     };
 
-    outcome = async (finalState: string = encodeAppState(getAppWithActionState())): Promise<void> => {
+    outcome = async (
+      finalState: string = encodeAppState(getAppWithActionState()),
+    ): Promise<void> => {
       await setOutcome(appIdentityTestObject, challengeRegistry, finalState);
       const challenge = await getChallenge(appIdentityTestObject.identityHash, challengeRegistry);
       expect(challenge).to.containSubset({
@@ -192,56 +207,84 @@ describe("ChallengeRegistry", () => {
   describe("updating app state", () => {
     describe("with signing keys and setState", async () => {
       it("should work with higher versionNumber", async () => {
-        expect(await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry)).to.eq(0);
+        expect(
+          await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
+        ).to.eq(0);
         const challenge = await setStateWithSigs(1);
-        expect(await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry)).to.eq(1);
+        expect(
+          await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
+        ).to.eq(1);
         await advanceBlocks(provider, challenge.finalizesAt);
         await outcome();
       });
 
       it("should work many times", async () => {
-        expect(await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry)).to.eq(0);
+        expect(
+          await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
+        ).to.eq(0);
         await setStateWithSigs(1);
-        expect(await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry)).to.eq(1);
+        expect(
+          await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
+        ).to.eq(1);
         await cancel();
         await setStateWithSigs(2);
-        expect(await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry)).to.eq(2);
+        expect(
+          await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
+        ).to.eq(2);
         await cancel();
         const challenge = await setStateWithSigs(3);
-        expect(await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry)).to.eq(3);
+        expect(
+          await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
+        ).to.eq(3);
         await advanceBlocks(provider, challenge.finalizesAt);
         await outcome();
       });
 
       it("should work many times without cancelling challenges", async () => {
-        expect(await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry)).to.eq(0);
+        expect(
+          await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
+        ).to.eq(0);
         await setStateWithSigs(1);
-        expect(await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry)).to.eq(1);
+        expect(
+          await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
+        ).to.eq(1);
         await setStateWithSigs(2);
-        expect(await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry)).to.eq(2);
+        expect(
+          await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
+        ).to.eq(2);
         const challenge = await setStateWithSigs(3);
-        expect(await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry)).to.eq(3);
+        expect(
+          await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
+        ).to.eq(3);
         await advanceBlocks(provider, challenge.finalizesAt);
         await outcome();
       });
 
       it("should work with much higher versionNumber", async () => {
-        expect(await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry)).to.eq(0);
+        expect(
+          await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
+        ).to.eq(0);
         const challenge = await setStateWithSigs(1000);
-        expect(await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry)).to.eq(1000);
+        expect(
+          await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
+        ).to.eq(1000);
         await advanceBlocks(provider, challenge.finalizesAt);
         await outcome();
       });
 
       it("shouldn't work with an equal versionNumber", async () => {
         await expect(setStateWithSigs(0)).to.be.reverted;
-        expect(await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry)).to.eq(0);
+        expect(
+          await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
+        ).to.eq(0);
       });
 
       it("shouldn't work with a lower versionNumber", async () => {
         await setStateWithSigs(1);
         await expect(setStateWithSigs(0)).to.be.reverted;
-        expect(await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry)).to.eq(1);
+        expect(
+          await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
+        ).to.eq(1);
       });
 
       it("should successfully cancel a challenge", async () => {
@@ -292,12 +335,16 @@ describe("ChallengeRegistry", () => {
 
       it("should fail with an equal version number", async () => {
         await setStateWithAction(1);
-        await expect(setStateWithAction(1)).to.be.revertedWith(`setStateWithAction was called with outdated state`);
+        await expect(setStateWithAction(1)).to.be.revertedWith(
+          `setStateWithAction was called with outdated state`,
+        );
       });
 
       it("should fail with a lower version number", async () => {
         await setStateWithAction(3);
-        await expect(setStateWithAction(1)).to.be.revertedWith(`setStateWithAction was called with outdated state`);
+        await expect(setStateWithAction(1)).to.be.revertedWith(
+          `setStateWithAction was called with outdated state`,
+        );
       });
 
       it("should be able to respond with a valid higher state using `setState`", async () => {
@@ -312,21 +359,25 @@ describe("ChallengeRegistry", () => {
 
   describe("finalizing app state", async () => {
     it("should work with keys", async () => {
-      expect(await isStateFinalized(appIdentityTestObject.identityHash, challengeRegistry)).to.be.false;
+      expect(await isStateFinalized(appIdentityTestObject.identityHash, challengeRegistry)).to.be
+        .false;
       await sendSignedFinalizationToChain();
-      expect(await isStateFinalized(appIdentityTestObject.identityHash, challengeRegistry)).to.be.true;
+      expect(await isStateFinalized(appIdentityTestObject.identityHash, challengeRegistry)).to.be
+        .true;
     });
   });
 
   describe("waiting for timeout", async () => {
     it("should block updates after the timeout", async () => {
-      expect(await isStateFinalized(appIdentityTestObject.identityHash, challengeRegistry)).to.be.false;
+      expect(await isStateFinalized(appIdentityTestObject.identityHash, challengeRegistry)).to.be
+        .false;
 
       await setStateWithSigs(1);
 
       await advanceBlocks(provider);
 
-      expect(await isStateFinalized(appIdentityTestObject.identityHash, challengeRegistry)).to.be.true;
+      expect(await isStateFinalized(appIdentityTestObject.identityHash, challengeRegistry)).to.be
+        .true;
 
       await expect(setStateWithSigs(2)).to.be.reverted;
 
@@ -341,10 +392,14 @@ describe("ChallengeRegistry", () => {
     await setStateWithSigs(1, state);
 
     // Verify the correct data was put on-chain
-    const { status, latestSubmitter, appStateHash, challengeCounter, finalizesAt, versionNumber } = await getChallenge(
-      appIdentityTestObject.identityHash,
-      challengeRegistry,
-    );
+    const {
+      status,
+      latestSubmitter,
+      appStateHash,
+      challengeCounter,
+      finalizesAt,
+      versionNumber,
+    } = await getChallenge(appIdentityTestObject.identityHash, challengeRegistry);
 
     expect(status).to.be.eq(1);
     expect(latestSubmitter).to.be.eq(await wallet.getAddress());
