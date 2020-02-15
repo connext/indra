@@ -1,13 +1,13 @@
 import "./setup";
 import "./channelProvider/channelProvider.test";
 import "./createChannel/createChannel.test";
-import "./deposit/collateral.test";
 import "./deposit/deposit.test";
 import "./deposit/depositOffline.test";
 import "./deposit/depositRights.test";
 import "./flows/transfer.test";
 import "./getAppRegistry/getAppRegistry.test";
 import "./getStateChannel/getStateChannel.test";
+import "./rebalance/collateral.test";
 import "./restoreState/restoreState.test";
 import "./store/storage.test";
 import "./store/store.test";
