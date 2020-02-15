@@ -50,7 +50,7 @@ export class RebalanceProfile {
 
   @ManyToMany(
     (type: any) => Channel,
-    (channel: Channel) => channel.paymentProfiles,
+    (channel: Channel) => channel.rebalanceProfiles,
   )
   channels!: Channel[];
 }

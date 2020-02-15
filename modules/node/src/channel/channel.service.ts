@@ -188,13 +188,13 @@ export class ChannelService {
       return undefined;
     }
 
-    // option 1: rebalancing service, option 2: payment profile, option 3: default
+    // option 1: rebalancing service, option 2: rebalance profile, option 3: default
     let rebalancingTargets = await this.getDataFromRebalancingService(userPubId, assetId);
     if (!rebalancingTargets) {
       logger.log(`Unable to get rebalancing targets from service, falling back to profile`);
-      rebalancingTargets = await this.getPaymentProfileForChannelAndToken(userPubId, normalizedAssetId);
+      rebalancingTargets = await this.getRebalanceProfileForChannelAndToken(userPubId, normalizedAssetId);
       if (!rebalancingTargets) {
-        rebalancingTargets = await this.configService.getDefaultPaymentProfile(assetId);
+        rebalancingTargets = await this.configService.getDefaultRebalanceProfile(assetId);
         if (rebalancingTargets) {
           logger.debug(`Rebalancing with default profile: ${stringify(rebalancingTargets)}`);
         }
@@ -269,7 +269,7 @@ export class ChannelService {
     lowerBoundReclaim: BigNumber,
   ) {
     if (upperBoundReclaim.isZero() && lowerBoundReclaim.isZero()) {
-      logger.log(`Upper bound and lower bound for reclaim are 0, doing nothing.`)
+      logger.log(`Upper bound and lower bound for reclaim are 0, doing nothing.`);
       return undefined;
     }
     const { [this.cfCoreService.cfCore.freeBalanceAddress]: nodeFreeBalance } = await this.cfCoreService.getFreeBalance(
@@ -310,14 +310,18 @@ export class ChannelService {
   async addRebalanceProfileToChannel(
     userPubId: string,
     assetId: string,
-    minimumMaintainedCollateral: BigNumber,
-    amountToCollateralize: BigNumber,
+    lowerBoundCollateralize: BigNumber,
+    upperBoundCollateralize: BigNumber,
+    lowerBoundReclaim: BigNumber,
+    upperBoundReclaim: BigNumber,
   ): Promise<RebalanceProfile> {
     const profile = new RebalanceProfile();
     profile.assetId = getAddress(assetId);
-    profile.lowerBoundCollateralize = minimumMaintainedCollateral;
-    profile.upperBoundCollateralize = amountToCollateralize;
-    return await this.channelRepository.addPaymentProfileToChannel(userPubId, profile);
+    profile.lowerBoundCollateralize = lowerBoundCollateralize;
+    profile.upperBoundCollateralize = upperBoundCollateralize;
+    profile.lowerBoundReclaim = lowerBoundReclaim;
+    profile.upperBoundReclaim = upperBoundReclaim;
+    return await this.channelRepository.addRebalanceProfileToChannel(userPubId, profile);
   }
 
   /**
@@ -443,11 +447,11 @@ export class ChannelService {
     };
   }
 
-  async getPaymentProfileForChannelAndToken(
+  async getRebalanceProfileForChannelAndToken(
     userPublicIdentifier: string,
     assetId: string = AddressZero,
   ): Promise<RebalanceProfile | undefined> {
-    // try to get payment profile configured
+    // try to get rebalance profile configured
     let profile = await this.channelRepository.getRebalanceProfileForChannelAndToken(userPublicIdentifier, assetId);
     return profile;
   }

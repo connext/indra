@@ -73,19 +73,23 @@ class ChannelMessaging extends AbstractMessagingProvider {
     return this.channelService.withdrawForClient(pubId, data.tx);
   }
 
-  async addPaymentProfile(
+  async addRebalanceProfile(
     pubId: string,
     data: {
       assetId: string;
-      minimumMaintainedCollateral: string;
-      amountToCollateralize: string;
+      lowerBoundCollateralize: string;
+      upperBoundCollateralize: string;
+      lowerBoundReclaim: string;
+      upperBoundReclaim: string;
     },
   ): Promise<void> {
     await this.channelService.addRebalanceProfileToChannel(
       pubId,
       data.assetId,
-      bigNumberify(data.minimumMaintainedCollateral),
-      bigNumberify(data.amountToCollateralize),
+      bigNumberify(data.lowerBoundCollateralize),
+      bigNumberify(data.upperBoundCollateralize),
+      bigNumberify(data.lowerBoundReclaim),
+      bigNumberify(data.upperBoundReclaim),
     );
   }
 
@@ -144,7 +148,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     );
     await super.connectRequestReponse(
       "channel.add-profile.>",
-      this.authService.useAdminToken(this.addPaymentProfile.bind(this)),
+      this.authService.useAdminToken(this.addRebalanceProfile.bind(this)),
     );
     await super.connectRequestReponse(
       "channel.get-profile.>",

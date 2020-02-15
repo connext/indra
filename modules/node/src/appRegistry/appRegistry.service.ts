@@ -444,7 +444,7 @@ export class AppRegistryService {
 
     if (collateralAvailable.lt(initiatorDeposit)) {
       // TODO: best way to handle case where user is sending payment
-      // *above* amounts specified in the payment profile
+      // *above* amounts specified in the rebalance profile
       // also, do we want to request collateral in a different location?
       await this.channelService.rebalance(
         proposedToIdentifier,

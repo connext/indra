@@ -234,7 +234,7 @@ export class ConfigService implements OnModuleInit {
     return this.get(`INDRA_REBALANCING_SERVICE_URL`);
   }
 
-  async getDefaultPaymentProfile(assetId: string = AddressZero): Promise<RebalanceProfile | undefined> {
+  async getDefaultRebalanceProfile(assetId: string = AddressZero): Promise<RebalanceProfile | undefined> {
     const tokenAddress = await this.getTokenAddress();
     switch (assetId) {
       case AddressZero:

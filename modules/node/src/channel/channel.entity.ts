@@ -34,7 +34,7 @@ export class Channel {
     (profile: RebalanceProfile) => profile.channels,
   )
   @JoinTable()
-  paymentProfiles!: RebalanceProfile[];
+  rebalanceProfiles!: RebalanceProfile[];
 
   @OneToMany(
     (type: any) => LinkedTransfer,

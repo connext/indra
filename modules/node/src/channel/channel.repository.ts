@@ -27,12 +27,12 @@ export class ChannelRepository extends Repository<Channel> {
     });
   }
 
-  async addPaymentProfileToChannel(
+  async addRebalanceProfileToChannel(
     userPublicIdentifier: string,
-    paymentProfile: RebalanceProfile,
+    rebalanceProfile: RebalanceProfile,
   ): Promise<RebalanceProfile> {
     const channel = await this.createQueryBuilder("channel")
-      .leftJoinAndSelect("channel.paymentProfiles", "paymentProfiles")
+      .leftJoinAndSelect("channel.rebalanceProfiles", "rebalanceProfiles")
       .where("channel.userPublicIdentifier = :userPublicIdentifier", { userPublicIdentifier })
       .getOne();
 
@@ -40,27 +40,29 @@ export class ChannelRepository extends Repository<Channel> {
       throw new NotFoundException(`Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`);
     }
 
-    const existing = channel.paymentProfiles.find((prof: RebalanceProfile) => prof.assetId === paymentProfile.assetId);
+    const existing = channel.rebalanceProfiles.find(
+      (prof: RebalanceProfile) => prof.assetId === rebalanceProfile.assetId,
+    );
 
     await this.manager.transaction(async (transactionalEntityManager: EntityManager) => {
-      await transactionalEntityManager.save(paymentProfile);
+      await transactionalEntityManager.save(rebalanceProfile);
 
       if (existing) {
-        logger.log(`Found existing profile for token ${paymentProfile.assetId}, replacing`);
+        logger.log(`Found existing profile for token ${rebalanceProfile.assetId}, replacing`);
         await transactionalEntityManager
           .createQueryBuilder()
-          .relation(Channel, "paymentProfiles")
+          .relation(Channel, "rebalanceProfiles")
           .of(channel)
           .remove(existing);
       }
 
       return await transactionalEntityManager
         .createQueryBuilder()
-        .relation(Channel, "paymentProfiles")
+        .relation(Channel, "rebalanceProfiles")
         .of(channel)
-        .add(paymentProfile);
+        .add(rebalanceProfile);
     });
-    return paymentProfile;
+    return rebalanceProfile;
   }
 
   async getRebalanceProfileForChannelAndToken(
@@ -68,7 +70,7 @@ export class ChannelRepository extends Repository<Channel> {
     assetId: string = AddressZero,
   ): Promise<RebalanceProfile | undefined> {
     const channel = await this.createQueryBuilder("channel")
-      .leftJoinAndSelect("channel.paymentProfiles", "paymentProfiles")
+      .leftJoinAndSelect("channel.rebalanceProfiles", "rebalanceProfiles")
       .where("channel.userPublicIdentifier = :userPublicIdentifier", { userPublicIdentifier })
       .getOne();
 
@@ -76,7 +78,7 @@ export class ChannelRepository extends Repository<Channel> {
       throw new NotFoundException(`Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`);
     }
 
-    const profile = channel.paymentProfiles.find(
+    const profile = channel.rebalanceProfiles.find(
       (prof: RebalanceProfile) => prof.assetId.toLowerCase() === assetId.toLowerCase(),
     );
 
