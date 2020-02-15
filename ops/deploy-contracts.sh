@@ -4,13 +4,13 @@ set -e
 # Make sure docker swarm mode is enabled so we can use the secret store
 docker swarm init 2> /dev/null || true
 
-########################################
-# Setup env
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
 
 # Constants
 ganacheId="4447"
 localProvider="http://localhost:8545"
-registry="connextproject"
 
 # Command line args
 ETH_PROVIDER="${1:-$localProvider}"
@@ -21,8 +21,6 @@ mode="${MODE:-local}"
 ########################################
 # Calculate stuff based on env
 
-dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../package.json | jq .name | tr -d '"'`"
 cwd="`pwd`"
 log="$cwd/.ganache.log"
 
