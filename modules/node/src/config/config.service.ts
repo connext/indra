@@ -11,12 +11,12 @@ import {
 } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
-import { AddressZero } from "ethers/constants";
+import { AddressZero, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { getAddress, Network as EthNetwork, parseEther } from "ethers/utils";
 
 import { DAI_MAINNET_ADDRESS } from "../constants";
-import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
+import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { OutcomeType } from "../util/cfCore";
 
 type PostgresConfig = {
@@ -234,24 +234,30 @@ export class ConfigService implements OnModuleInit {
     return this.get(`INDRA_REBALANCING_SERVICE_URL`);
   }
 
-  async getDefaultPaymentProfile(assetId: string = AddressZero): Promise<PaymentProfile | undefined> {
+  async getDefaultPaymentProfile(assetId: string = AddressZero): Promise<RebalanceProfile | undefined> {
     const tokenAddress = await this.getTokenAddress();
     switch (assetId) {
       case AddressZero:
         return {
-          amountToCollateralize: parseEther(`0.1`),
           assetId: AddressZero,
           channels: [],
           id: 0,
-          minimumMaintainedCollateral: parseEther(`0.05`),
+          lowerBoundCollateralize: parseEther(`0.05`),
+          upperBoundCollateralize: parseEther(`0.1`),
+          // eslint-disable-next-line sort-keys
+          lowerBoundReclaim: Zero,
+          upperBoundReclaim: Zero,
         };
       case tokenAddress:
         return {
-          amountToCollateralize: parseEther(`20`),
           assetId: AddressZero,
           channels: [],
           id: 0,
-          minimumMaintainedCollateral: parseEther(`5`),
+          lowerBoundCollateralize: parseEther(`5`),
+          upperBoundCollateralize: parseEther(`20`),
+          // eslint-disable-next-line sort-keys
+          lowerBoundReclaim: Zero,
+          upperBoundReclaim: Zero,
         };
       default:
         return undefined;

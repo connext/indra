@@ -1,11 +1,11 @@
+import { Zero } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
-import { MaxUint256, Zero } from "ethers/constants";
 
 @Entity()
-export class PaymentProfile {
+export class RebalanceProfile {
   @PrimaryGeneratedColumn()
   id!: number;
 
@@ -28,7 +28,7 @@ export class PaymentProfile {
   upperBoundCollateralize!: BigNumber;
 
   @Column("text", {
-    default: MaxUint256,
+    default: Zero,
     transformer: {
       from: (value: string): BigNumber => new BigNumber(value),
       to: (value: BigNumber): string => value.toString(),
@@ -37,7 +37,7 @@ export class PaymentProfile {
   lowerBoundReclaim!: BigNumber;
 
   @Column("text", {
-    default: MaxUint256,
+    default: Zero,
     transformer: {
       from: (value: string): BigNumber => new BigNumber(value),
       to: (value: BigNumber): string => value.toString(),

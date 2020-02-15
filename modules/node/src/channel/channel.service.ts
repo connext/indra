@@ -11,7 +11,8 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
-import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
+import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
+import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { CLogger, stringify, xpubToAddress } from "../util";
 import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
@@ -28,7 +29,7 @@ type RebalancingTargetsResponse<T = string> = {
   lowerBoundReclaim: T;
 };
 
-enum RebalanceType {
+export enum RebalanceType {
   COLLATERALIZE,
   RECLAIM,
 }
@@ -38,9 +39,10 @@ export class ChannelService {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly configService: ConfigService,
+    private readonly onchainTransactionService: OnchainTransactionService,
     private readonly httpService: HttpService,
     private readonly channelRepository: ChannelRepository,
-    private readonly onchainRepository: OnchainTransactionRepository,
+    private readonly onchainTransactionRepository: OnchainTransactionRepository,
   ) {}
 
   /**
@@ -92,21 +94,21 @@ export class ChannelService {
 
     const res = await this.cfCoreService.deposit(multisigAddress, amount, getAddress(assetId));
     const depositTx = await this.configService.getEthProvider().getTransaction(res.transactionHash);
-    await this.onchainRepository.addCollateralization(depositTx, channel);
+    await this.onchainTransactionRepository.addCollateralization(depositTx, channel);
     return res;
   }
 
-  async withdraw(
+  private async reclaim(
     multisigAddress: string,
     amount: BigNumber,
     assetId: string = AddressZero,
-  ): Promise<CFCoreTypes.WithdrawResult> {
+  ): Promise<TransactionResponse> {
     const channel = await this.channelRepository.findByMultisigAddress(multisigAddress);
     if (!channel) {
       throw new Error(`No channel exists for multisigAddress ${multisigAddress}`);
     }
 
-    // don't allow deposit if user's balance refund app is installed
+    // don't allow withdraw if user's balance refund app is installed
     const balanceRefundApp = await this.cfCoreService.getCoinBalanceRefundApp(multisigAddress, assetId);
     if (balanceRefundApp && balanceRefundApp.latestState[`recipient`] === xpubToAddress(channel.userPublicIdentifier)) {
       throw new Error(`Cannot withdraw, user's CoinBalanceRefundApp is installed for ${channel.userPublicIdentifier}`);
@@ -122,10 +124,8 @@ export class ChannelService {
 
     await this.proposeCoinBalanceRefund(assetId, channel);
 
-    const res = await this.cfCoreService.withdraw(multisigAddress, amount, getAddress(assetId));
-    const withdrawalTx = await this.configService.getEthProvider().getTransaction(res.txHash);
-    await this.onchainRepository.addNodeWithdrawal(withdrawalTx, channel);
-    return res;
+    const res = await this.cfCoreService.generateWithdrawCommitment(multisigAddress, amount, getAddress(assetId));
+    return await this.onchainTransactionService.sendWithdrawalCommitment(channel, res.transaction);
   }
 
   async proposeCoinBalanceRefund(assetId: string, channel: Channel): Promise<void> {
@@ -175,7 +175,7 @@ export class ChannelService {
     assetId: string = AddressZero,
     rebalanceType: RebalanceType,
     minimumRequiredCollateral: BigNumber = Zero,
-  ): Promise<CFCoreTypes.DepositResult | CFCoreTypes.WithdrawResult | undefined> {
+  ): Promise<CFCoreTypes.DepositResult | TransactionResponse | undefined> {
     const normalizedAssetId = getAddress(assetId);
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
 
@@ -287,16 +287,10 @@ export class ChannelService {
     logger.log(`Reclaiming ${channel.multisigAddress}, ${amountWithdrawal.toString()}, token: ${assetId}`);
 
     // set in flight so that it cant be double sent
-    await this.channelRepository.setInflightCollateralization(channel, true);
-    const result = this.withdraw(channel.multisigAddress, amountWithdrawal, assetId)
-      .then(async (res: CFCoreTypes.WithdrawResult) => {
-        logger.log(`Withdraw result: ${stringify(res)}`);
-        return res;
-      })
-      .catch(async (e: any) => {
-        await this.clearCollateralizationInFlight(channel.multisigAddress);
-        throw e;
-      });
+    const result = this.reclaim(channel.multisigAddress, amountWithdrawal, assetId).then((res: TransactionResponse) => {
+      logger.log(`Withdraw tx response: ${stringify(res)}`);
+      return res;
+    });
     return result;
   }
 
@@ -309,13 +303,13 @@ export class ChannelService {
     return await this.channelRepository.setInflightCollateralization(channel, false);
   }
 
-  async addPaymentProfileToChannel(
+  async addRebalanceProfileToChannel(
     userPubId: string,
     assetId: string,
     minimumMaintainedCollateral: BigNumber,
     amountToCollateralize: BigNumber,
-  ): Promise<PaymentProfile> {
-    const profile = new PaymentProfile();
+  ): Promise<RebalanceProfile> {
+    const profile = new RebalanceProfile();
     profile.assetId = getAddress(assetId);
     profile.lowerBoundCollateralize = minimumMaintainedCollateral;
     profile.upperBoundCollateralize = amountToCollateralize;
@@ -409,8 +403,7 @@ export class ChannelService {
       logger.debug(`Multisig already deployed, proceeding with withdrawal`);
     }
 
-    const txRes = await wallet.sendTransaction(tx);
-    await this.onchainRepository.addUserWithdrawal(txRes, channel);
+    const txRes = await this.onchainTransactionService.sendUserWithdrawal(channel, tx);
     return txRes;
   }
 
@@ -449,9 +442,9 @@ export class ChannelService {
   async getPaymentProfileForChannelAndToken(
     userPublicIdentifier: string,
     assetId: string = AddressZero,
-  ): Promise<PaymentProfile | undefined> {
+  ): Promise<RebalanceProfile | undefined> {
     // try to get payment profile configured
-    let profile = await this.channelRepository.getPaymentProfileForChannelAndToken(userPublicIdentifier, assetId);
+    let profile = await this.channelRepository.getRebalanceProfileForChannelAndToken(userPublicIdentifier, assetId);
     return profile;
   }
 
@@ -461,7 +454,7 @@ export class ChannelService {
       throw new Error(`No channel exists for userPublicIdentifier ${userPublicIdentifier}`);
     }
 
-    return await this.onchainRepository.findLatestWithdrawalByUserPublicIdentifier(userPublicIdentifier);
+    return await this.onchainTransactionRepository.findLatestWithdrawalByUserPublicIdentifier(userPublicIdentifier);
   }
 
   async getStateChannel(userPublicIdentifier: string): Promise<StateChannelJSON> {

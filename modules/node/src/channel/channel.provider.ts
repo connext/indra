@@ -1,19 +1,10 @@
 import { IMessagingService } from "@connext/messaging";
-import {
-  ChannelAppSequences,
-  convert,
-  GetChannelResponse,
-  GetConfigResponse,
-  PaymentProfile as PaymentProfileRes,
-  RequestCollateralResponse,
-  StateChannelJSON,
-} from "@connext/types";
+import { ChannelAppSequences, GetChannelResponse, GetConfigResponse, StateChannelJSON } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { TransactionResponse } from "ethers/providers";
 import { bigNumberify, getAddress } from "ethers/utils";
 
 import { AuthService } from "../auth/auth.service";
-import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { ConfigService } from "../config/config.service";
 import { CFCoreProviderId, ChannelMessagingProviderId, MessagingProviderId } from "../constants";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
@@ -21,7 +12,7 @@ import { AbstractMessagingProvider } from "../util";
 import { CFCore, CFCoreTypes } from "../util/cfCore";
 
 import { ChannelRepository } from "./channel.repository";
-import { ChannelService } from "./channel.service";
+import { ChannelService, RebalanceType } from "./channel.service";
 
 // This should be done in the config module but i didnt want to create a circular dependency
 class ConfigMessaging extends AbstractMessagingProvider {
@@ -71,7 +62,11 @@ class ChannelMessaging extends AbstractMessagingProvider {
 
   async requestCollateral(pubId: string, data: { assetId?: string }): Promise<CFCoreTypes.DepositResult> {
     // do not allow clients to specify an amount to collateralize with
-    return this.channelService.requestCollateral(pubId, getAddress(data.assetId));
+    return (this.channelService.rebalance(
+      pubId,
+      getAddress(data.assetId),
+      RebalanceType.COLLATERALIZE,
+    ) as unknown) as CFCoreTypes.DepositResult;
   }
 
   async withdraw(pubId: string, data: { tx: CFCoreTypes.MinimalTransaction }): Promise<TransactionResponse> {
@@ -85,38 +80,39 @@ class ChannelMessaging extends AbstractMessagingProvider {
       minimumMaintainedCollateral: string;
       amountToCollateralize: string;
     },
-  ): Promise<PaymentProfileRes> {
-    const {
-      amountToCollateralize,
-      minimumMaintainedCollateral,
-      assetId,
-    } = await this.channelService.addPaymentProfileToChannel(
+  ): Promise<void> {
+    await this.channelService.addRebalanceProfileToChannel(
       pubId,
       data.assetId,
       bigNumberify(data.minimumMaintainedCollateral),
       bigNumberify(data.amountToCollateralize),
     );
-
-    return convert.PaymentProfile("str", {
-      amountToCollateralize,
-      assetId,
-      minimumMaintainedCollateral,
-    });
   }
 
-  async getPaymentProfile(pubId: string, data: { assetId?: string }): Promise<PaymentProfileRes | undefined> {
-    const prof = await this.channelRepository.getPaymentProfileForChannelAndToken(pubId, data.assetId);
+  async getRebalanceProfile(
+    pubId: string,
+    data: { assetId?: string },
+  ): Promise<{
+    assetId: string;
+    upperBoundReclaim: string;
+    lowerBoundReclaim: string;
+    upperBoundCollateralize: string;
+    lowerBoundCollateralize: string;
+  }> {
+    const prof = await this.channelRepository.getRebalanceProfileForChannelAndToken(pubId, data.assetId);
 
     if (!prof) {
       return undefined;
     }
 
-    const { amountToCollateralize, minimumMaintainedCollateral, assetId } = prof;
-    return convert.PaymentProfile("str", {
-      amountToCollateralize,
+    const { upperBoundReclaim, lowerBoundReclaim, upperBoundCollateralize, lowerBoundCollateralize, assetId } = prof;
+    return {
       assetId,
-      minimumMaintainedCollateral,
-    });
+      lowerBoundCollateralize: lowerBoundCollateralize.toString(),
+      lowerBoundReclaim: lowerBoundReclaim.toString(),
+      upperBoundCollateralize: upperBoundCollateralize.toString(),
+      upperBoundReclaim: upperBoundReclaim.toString(),
+    };
   }
 
   async getLatestWithdrawal(pubId: string, data: {}): Promise<OnchainTransaction | undefined> {
@@ -152,7 +148,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     );
     await super.connectRequestReponse(
       "channel.get-profile.>",
-      this.authService.useUnverifiedPublicIdentifier(this.getPaymentProfile.bind(this)),
+      this.authService.useUnverifiedPublicIdentifier(this.getRebalanceProfile.bind(this)),
     );
     await super.connectRequestReponse(
       "channel.verify-app-sequence.>",

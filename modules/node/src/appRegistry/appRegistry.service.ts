@@ -18,7 +18,7 @@ import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
-import { ChannelService } from "../channel/channel.service";
+import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { LinkedTransferStatus } from "../transfer/transfer.entity";
@@ -160,17 +160,12 @@ export class AppRegistryService {
       initiatorDepositTokenAddress,
       responderDepositTokenAddress,
     );
-    console.log("ourRate: ", ourRate);
-    console.log("initiatorDeposit: ", initiatorDeposit.toString());
     const calculated = calculateExchange(initiatorDeposit, ourRate);
-    console.log("calculated: ", calculated.toString());
-    console.log("responderDeposit: ", responderDeposit.toString());
 
     // make sure calculated within allowed amount
     const calculatedToActualDiscrepancy = calculated.sub(responderDeposit).abs();
     // i.e. (x * (100 - 5)) / 100 = 0.95 * x
     const allowedDiscrepancy = calculated.mul(bigNumberify(100).sub(ALLOWED_DISCREPANCY_PCT)).div(100);
-    console.log("allowedDiscrepancy: ", allowedDiscrepancy);
 
     if (calculatedToActualDiscrepancy.gt(allowedDiscrepancy)) {
       throw new Error(
@@ -451,7 +446,12 @@ export class AppRegistryService {
       // TODO: best way to handle case where user is sending payment
       // *above* amounts specified in the payment profile
       // also, do we want to request collateral in a different location?
-      await this.channelService.requestCollateral(proposedToIdentifier, initiatorDepositTokenAddress, initiatorDeposit);
+      await this.channelService.rebalance(
+        proposedToIdentifier,
+        initiatorDepositTokenAddress,
+        RebalanceType.COLLATERALIZE,
+        initiatorDeposit,
+      );
       throw new Error(
         `Insufficient collateral detected in responders channel, ` + `retry after channel has been collateralized.`,
       );

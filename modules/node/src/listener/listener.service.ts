@@ -29,7 +29,7 @@ import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
-import { ChannelService } from "../channel/channel.service";
+import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { MessagingClientProviderId } from "../constants";
 import { LinkedTransferStatus } from "../transfer/transfer.entity";
 import { LinkedTransferRepository } from "../transfer/transfer.repository";
@@ -326,7 +326,12 @@ export default class ListenerService implements OnModuleInit {
         reject(`Collateral could not be added to channel, deposit has failed.`);
       });
       try {
-        await this.channelService.requestCollateral(data.from, responderDepositTokenAddress, paymentAmt);
+        await this.channelService.rebalance(
+          data.from,
+          responderDepositTokenAddress,
+          RebalanceType.COLLATERALIZE,
+          paymentAmt,
+        );
       } catch (e) {
         reject(e);
       }

@@ -2,7 +2,7 @@ import { NotFoundException } from "@nestjs/common";
 import { AddressZero } from "ethers/constants";
 import { EntityManager, EntityRepository, Repository } from "typeorm";
 
-import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
+import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { CLogger } from "../util";
 
 import { Channel } from "./channel.entity";
@@ -29,8 +29,8 @@ export class ChannelRepository extends Repository<Channel> {
 
   async addPaymentProfileToChannel(
     userPublicIdentifier: string,
-    paymentProfile: PaymentProfile,
-  ): Promise<PaymentProfile> {
+    paymentProfile: RebalanceProfile,
+  ): Promise<RebalanceProfile> {
     const channel = await this.createQueryBuilder("channel")
       .leftJoinAndSelect("channel.paymentProfiles", "paymentProfiles")
       .where("channel.userPublicIdentifier = :userPublicIdentifier", { userPublicIdentifier })
@@ -40,7 +40,7 @@ export class ChannelRepository extends Repository<Channel> {
       throw new NotFoundException(`Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`);
     }
 
-    const existing = channel.paymentProfiles.find((prof: PaymentProfile) => prof.assetId === paymentProfile.assetId);
+    const existing = channel.paymentProfiles.find((prof: RebalanceProfile) => prof.assetId === paymentProfile.assetId);
 
     await this.manager.transaction(async (transactionalEntityManager: EntityManager) => {
       await transactionalEntityManager.save(paymentProfile);
@@ -63,10 +63,10 @@ export class ChannelRepository extends Repository<Channel> {
     return paymentProfile;
   }
 
-  async getPaymentProfileForChannelAndToken(
+  async getRebalanceProfileForChannelAndToken(
     userPublicIdentifier: string,
     assetId: string = AddressZero,
-  ): Promise<PaymentProfile | undefined> {
+  ): Promise<RebalanceProfile | undefined> {
     const channel = await this.createQueryBuilder("channel")
       .leftJoinAndSelect("channel.paymentProfiles", "paymentProfiles")
       .where("channel.userPublicIdentifier = :userPublicIdentifier", { userPublicIdentifier })
@@ -77,7 +77,7 @@ export class ChannelRepository extends Repository<Channel> {
     }
 
     const profile = channel.paymentProfiles.find(
-      (prof: PaymentProfile) => prof.assetId.toLowerCase() === assetId.toLowerCase(),
+      (prof: RebalanceProfile) => prof.assetId.toLowerCase() === assetId.toLowerCase(),
     );
 
     return profile;

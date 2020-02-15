@@ -17,7 +17,7 @@ import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
-import { ChannelService } from "../channel/channel.service";
+import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { CLogger, xpubToAddress } from "../util";
 import { AppInstanceJson } from "../util/cfCore";
@@ -232,14 +232,14 @@ export class TransferService {
           return reject(JSON.stringify(msg, null, 2));
         });
         try {
-          await this.channelService.requestCollateral(userPubId, assetId, amountBN);
+          await this.channelService.rebalance(userPubId, assetId, RebalanceType.COLLATERALIZE, amountBN);
         } catch (e) {
           return reject(e);
         }
       });
     } else {
       // request collateral normally without awaiting
-      this.channelService.requestCollateral(userPubId, assetId, amountBN);
+      this.channelService.rebalance(userPubId, assetId, RebalanceType.COLLATERALIZE, amountBN);
     }
 
     const initialState: SimpleLinkedTransferAppStateBigNumber = {
