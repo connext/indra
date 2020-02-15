@@ -344,12 +344,13 @@ export async function cancelChallenge(
  * @param provider
  * @param blocks
  */
-export async function advanceBlocks(provider: Web3Provider, blocks: number = ONCHAIN_CHALLENGE_TIMEOUT + 1) {
-  const currBlock = await provider.getBlockNumber();
-  for (const _ of Array(blocks)) {
+export async function advanceBlocks(provider: Web3Provider, blocks: BigNumberish = ONCHAIN_CHALLENGE_TIMEOUT + 1) {
+  const startingBlock = bigNumberify(await provider.getBlockNumber());
+  for (const _ of Array(bigNumberify(blocks).toNumber())) {
     await provider.send("evm_mine", []);
   }
-  expect(await provider.getBlockNumber()).to.be.equal(currBlock + blocks);
+  const currBlock = bigNumberify(await provider.getBlockNumber());
+  expect(currBlock).to.be.equal(startingBlock.add(blocks));
 }
 
 /**
