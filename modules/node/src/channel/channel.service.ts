@@ -217,7 +217,7 @@ export class ChannelService {
     }
     if (rebalanceType === RebalanceType.COLLATERALIZE) {
       // if minimum amount is supplier, override upper bound
-      const collateralNeeded = maxBN([upperBoundCollateralize, minimumRequiredCollateral]);
+      const collateralNeeded: BigNumber = maxBN([upperBoundCollateralize, minimumRequiredCollateral]);
       return await this.collateralizeIfNecessary(channel, assetId, collateralNeeded, lowerBoundCollateralize);
     } else if (rebalanceType === RebalanceType.RECLAIM) {
       return await this.reclaimIfNecessary(channel, assetId, upperBoundReclaim, lowerBoundReclaim);
@@ -268,6 +268,10 @@ export class ChannelService {
     upperBoundReclaim: BigNumber,
     lowerBoundReclaim: BigNumber,
   ) {
+    if (upperBoundReclaim.isZero() && lowerBoundReclaim.isZero()) {
+      logger.log(`Upper bound and lower bound for reclaim are 0, doing nothing.`)
+      return undefined;
+    }
     const { [this.cfCoreService.cfCore.freeBalanceAddress]: nodeFreeBalance } = await this.cfCoreService.getFreeBalance(
       channel.userPublicIdentifier,
       channel.multisigAddress,
