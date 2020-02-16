@@ -1,4 +1,4 @@
-import { IAsyncStorage } from "../helpers";
+import { IAsyncStorage, reduceChannelsMap, ChannelsMap } from "../helpers";
 
 export class MemoryStorage implements IAsyncStorage {
   private store: Map<string, any> = new Map();
@@ -31,6 +31,11 @@ export class MemoryStorage implements IAsyncStorage {
 
   async clear(): Promise<void> {
     this.store = new Map();
+  }
+
+  async getChannels(): Promise<ChannelsMap> {
+    const channelsObj = reduceChannelsMap(Object.entries(this.store));
+    return channelsObj;
   }
 
   async getAllKeys(): Promise<string[]> {

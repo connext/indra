@@ -15,7 +15,6 @@ import { AddressZero, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { getAddress, Network as EthNetwork, parseEther } from "ethers/utils";
 
-import { DAI_MAINNET_ADDRESS } from "../constants";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { OutcomeType } from "../util/cfCore";
 
@@ -75,13 +74,17 @@ export class ConfigService implements OnModuleInit {
     return ethNetwork;
   }
 
-  async getContractAddresses(): Promise<ContractAddresses> {
-    const chainId = (await this.getEthNetwork()).chainId.toString();
+  getEthAddressBook() {
+    return JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
+  }
+
+  async getContractAddresses(chainId?: string): Promise<ContractAddresses> {
+    chainId = chainId ? chainId : (await this.getEthNetwork()).chainId.toString();
     const ethAddresses = {} as any;
-    const ethAddressBook = JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
-    Object.keys(ethAddressBook[chainId]).map((contract: string): void => {
-      ethAddresses[contract] = getAddress(ethAddressBook[chainId][contract].address);
-    });
+    const ethAddressBook = this.getEthAddressBook();
+    Object.keys(ethAddressBook[chainId]).map(
+      (contract: string) => (ethAddresses[contract] = getAddress(ethAddressBook[chainId][contract].address)),
+    );
     return ethAddresses as ContractAddresses;
   }
 
@@ -96,10 +99,13 @@ export class ConfigService implements OnModuleInit {
       ? JSON.parse(this.get("INDRA_TESTNET_TOKEN_CONFIG"))
       : [];
     const currentChainId = (await this.getEthNetwork()).chainId;
+
+    // by default, map token address to mainnet token address
     if (currentChainId !== 1) {
+      const contractAddresses = await this.getContractAddresses("1");
       testnetTokenConfig.push([
         {
-          address: DAI_MAINNET_ADDRESS,
+          address: contractAddresses.Token,
           chainId: 1,
         },
         { address: await this.getTokenAddress(), chainId: currentChainId },
