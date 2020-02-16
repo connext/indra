@@ -12,7 +12,8 @@ import {
   SimpleTwoPartySwapApp,
   SimpleTransferApp,
 } from "@connext/types";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Inject } from "@nestjs/common";
+import { ClientProxy } from "@nestjs/microservices";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
@@ -20,12 +21,13 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
+import { MessagingClientProviderId } from "../constants";
 import { SwapRateService } from "../swapRate/swapRate.service";
 import { LinkedTransferStatus } from "../transfer/transfer.entity";
 import { LinkedTransferRepository } from "../transfer/transfer.repository";
 import { TransferService } from "../transfer/transfer.service";
 import { bigNumberifyObj, CLogger, isEthAddress, normalizeEthAddresses, stringify, xpubToAddress } from "../util";
-import { CFCoreTypes, ProposeMessage } from "../util/cfCore";
+import { CFCoreTypes } from "../util/cfCore";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
@@ -41,25 +43,103 @@ export class AppRegistryService {
     private readonly swapRateService: SwapRateService,
     private readonly channelService: ChannelService,
     private readonly transferService: TransferService,
+    private readonly configService: ConfigService,
     private readonly appRegistryRepository: AppRegistryRepository,
     private readonly channelRepository: ChannelRepository,
-    private readonly configService: ConfigService,
     private readonly linkedTransferRepository: LinkedTransferRepository,
+    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
   ) {}
 
-  /**
-   * Validate apps that are proposed to be installed on the node by clients and
-   * accept or reject the install.
-   * @param data Data from CF event PROPOSE_INSTALL
-   */
-  async allowOrReject(data: ProposeMessage): Promise<AppRegistry | void> {
-    const registryAppInfo = await this.verifyAppProposal(data.data, data.from);
-    if (registryAppInfo.name === CoinBalanceRefundApp) {
-      logger.log(`Not installing coin balance refund app, returning registry information`);
-      return registryAppInfo;
+  async validateAndInstallOrReject(
+    appInstanceId: string,
+    proposeInstallParams: CFCoreTypes.ProposeInstallParams,
+    from: string,
+  ): Promise<void> {
+    let registryAppInfo: AppRegistry;
+    try {
+      registryAppInfo = await this.verifyAppProposal(proposeInstallParams, from);
+      if (registryAppInfo.name !== CoinBalanceRefundApp) {
+        await this.cfCoreService.installApp(appInstanceId);
+      } else {
+        logger.log(`Not installing coin balance refund app, returning registry information`);
+      }
+    } catch (e) {
+      if (!e.message.includes(`Node has insufficient balance`)) {
+        logger.warn(`App install failed, . Error: ${e.stack || e.message}`);
+        await this.cfCoreService.rejectInstallApp(appInstanceId);
+        return;
+      }
+      // try to collateralize, and re-install
+      const tx = await this.channelService.rebalance(
+        from,
+        proposeInstallParams.responderDepositTokenAddress,
+        RebalanceType.COLLATERALIZE,
+        bigNumberify(proposeInstallParams.responderDeposit),
+      );
+      if (tx) {
+        await tx.wait();
+      }
+      try {
+        await this.cfCoreService.installApp(appInstanceId);
+      } catch (e) {
+        logger.warn(`App install failed, . Error: ${e.stack || e.message}`);
+        await this.cfCoreService.rejectInstallApp(appInstanceId);
+      }
     }
-    await this.cfCoreService.installApp(data.data.appInstanceId);
-    return registryAppInfo;
+    await this.runPostInstallTasks(registryAppInfo, appInstanceId, proposeInstallParams, from);
+  }
+
+  private async runPostInstallTasks(
+    registryAppInfo: AppRegistry,
+    appInstanceId: string,
+    proposeInstallParams: CFCoreTypes.ProposeInstallParams,
+    from: string,
+  ) {
+    switch (registryAppInfo.name) {
+      case SimpleLinkedTransferApp:
+        logger.debug(`Saving linked transfer`);
+        const initialState = proposeInstallParams.initialState as SimpleLinkedTransferAppStateBigNumber;
+
+        const isResolving = proposeInstallParams.responderDeposit.gt(Zero);
+        if (isResolving) {
+          const transfer = await this.transferService.getLinkedTransferByPaymentId(initialState.paymentId);
+          transfer.receiverAppInstanceId = appInstanceId;
+          await this.linkedTransferRepository.save(transfer);
+          logger.debug(`Updated transfer with receiver appId!`);
+          return;
+        }
+        await this.transferService.saveLinkedTransfer(
+          from,
+          proposeInstallParams.initiatorDepositTokenAddress,
+          bigNumberify(proposeInstallParams.initiatorDeposit),
+          appInstanceId,
+          initialState.linkedHash,
+          initialState.paymentId,
+          proposeInstallParams.meta,
+        );
+        logger.debug(`Linked transfer saved!`);
+        break;
+      // TODO: add something for swap app? maybe for history preserving reasons.
+      case CoinBalanceRefundApp:
+        const channel = await this.channelRepository.findByUserPublicIdentifier(from);
+        if (!channel) {
+          throw new Error(`Channel does not exist for ${from}`);
+        }
+        logger.debug(
+          `sending acceptance message to indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
+        );
+        await this.messagingClient
+          .emit(
+            `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
+            proposeInstallParams,
+          )
+          .toPromise();
+        break;
+      default:
+        logger.debug(`No post-install actions configured.`);
+    }
+    // rebalance at the end without blocking
+    this.channelService.rebalance(from, proposeInstallParams.responderDepositTokenAddress, RebalanceType.RECLAIM);
   }
 
   async appProposalMatchesRegistry(proposal: CFCoreTypes.ProposeInstallParams): Promise<AppRegistry> {
@@ -375,29 +455,26 @@ export class AppRegistryService {
   // TODO: there is a lot of duplicate logic here + client. ideally, much
   // of this would be moved to a shared library.
   private async verifyAppProposal(
-    proposedAppParams: {
-      params: CFCoreTypes.ProposeInstallParams;
-      appInstanceId: string;
-    },
+    proposeInstallParams: CFCoreTypes.ProposeInstallParams,
     initiatorIdentifier: string, // will always be `from` field
   ): Promise<AppRegistry> {
-    const registryAppInfo = await this.appProposalMatchesRegistry(proposedAppParams.params);
+    const registryAppInfo = await this.appProposalMatchesRegistry(proposeInstallParams);
 
     if (!registryAppInfo.allowNodeInstall) {
       throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
     }
 
-    logger.log(`App with params ${stringify(proposedAppParams.params, 2)} allowed to be installed`);
+    logger.log(`App with params ${stringify(proposeInstallParams, 2)} allowed to be installed`);
 
-    await this.commonAppProposalValidation(proposedAppParams.params, initiatorIdentifier);
+    await this.commonAppProposalValidation(proposeInstallParams, initiatorIdentifier);
 
     switch (registryAppInfo.name) {
       case SimpleTwoPartySwapApp:
-        await this.validateSwap(proposedAppParams.params);
+        await this.validateSwap(proposeInstallParams);
         break;
       // TODO: add validation of simple transfer validateSimpleTransfer
       case SimpleLinkedTransferApp:
-        await this.validateSimpleLinkedTransfer(proposedAppParams.params);
+        await this.validateSimpleLinkedTransfer(proposeInstallParams);
         break;
       default:
         break;
@@ -453,7 +530,7 @@ export class AppRegistryService {
         initiatorDeposit,
       );
       throw new Error(
-        `Insufficient collateral detected in responders channel, ` + `retry after channel has been collateralized.`,
+        `Insufficient collateral detected in responders channel, retry after channel has been collateralized.`,
       );
     }
 
