@@ -2,6 +2,7 @@ import { RebalanceProfile, IConnextClient } from "@connext/types";
 import { Client } from "ts-nats";
 
 import { expect } from "..";
+import { env } from "../env";
 
 export const addRebalanceProfile = async (nats: Client, client: IConnextClient, profile: RebalanceProfile) => {
   await nats.request(
@@ -10,7 +11,7 @@ export const addRebalanceProfile = async (nats: Client, client: IConnextClient, 
     JSON.stringify({
       id: Date.now(),
       profile,
-      token: "foo",
+      token: env.adminToken,
     }),
   );
 
