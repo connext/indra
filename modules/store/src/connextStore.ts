@@ -11,14 +11,14 @@ import {
 import InternalStore from "./internalStore";
 
 export class ConnextStore {
-  private store: InternalStore;
+  private internalStore: InternalStore;
 
   private prefix: string = DEFAULT_STORE_PREFIX;
   private separator: string = DEFAULT_STORE_SEPARATOR;
   private backupService: IBackupServiceAPI | null = null;
 
   constructor(storage: Storage | IAsyncStorage, opts?: StoreFactoryOptions) {
-    let asyncStorageKey;
+    let asyncStorageKey: string;
 
     if (opts) {
       this.prefix = opts.prefix || DEFAULT_STORE_PREFIX;
@@ -28,7 +28,7 @@ export class ConnextStore {
       asyncStorageKey = opts.asyncStorageKey;
     }
 
-    this.store = new InternalStore(storage, this.channelPrefix, asyncStorageKey);
+    this.internalStore = new InternalStore(storage, this.channelPrefix, asyncStorageKey);
   }
 
   get channelPrefix(): string {
@@ -36,14 +36,15 @@ export class ConnextStore {
   }
 
   public async get(path: string): Promise<any> {
-    const raw = await this.store.getItem(`${path}`);
-    const partialMatches = await this.getPartialMatches(path);
-    return partialMatches || raw;
+    if (path.endsWith(PATH_CHANNEL)) {
+      return this.internalStore.getChannels();
+    }
+    return this.internalStore.getItem(`${path}`);
   }
 
   public async set(pairs: StorePair[], shouldBackup?: boolean): Promise<void> {
     for (const pair of pairs) {
-      await this.store.setItem(pair.path, pair.value);
+      await this.internalStore.setItem(pair.path, pair.value);
 
       if (
         shouldBackup &&
@@ -57,7 +58,7 @@ export class ConnextStore {
   }
 
   public async reset(): Promise<void> {
-    await this.store.clear();
+    await this.internalStore.clear();
   }
 
   public async restore(): Promise<StorePair[]> {
@@ -66,26 +67,5 @@ export class ConnextStore {
     }
     await this.reset();
     return [];
-  }
-
-  /// ////////////////////////////////////////////
-  /// // PRIVATE METHODS
-
-  private async getPartialMatches(path: string): Promise<any | undefined> {
-    // Handle partial matches so the following line works -.-
-    // https://github.com/counterfactual/monorepo/blob/master/packages/node/src/store.ts#L54
-    if (path.endsWith(PATH_CHANNEL) || path.endsWith(PATH_PROPOSED_APP_INSTANCE_ID)) {
-      const partialMatches = {};
-      const keys = await this.store.getKeys();
-      for (const k of keys) {
-        const pathToFind = `${path}${this.separator}`;
-        if (k.includes(pathToFind)) {
-          const value = await this.store.getItem(k);
-          partialMatches[k.replace(pathToFind, "")] = value;
-        }
-      }
-      return Object.keys(partialMatches).length === 0 ? undefined : partialMatches;
-    }
-    return undefined;
   }
 }
