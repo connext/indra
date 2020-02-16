@@ -328,6 +328,17 @@ export class ChannelService {
     lowerBoundReclaim: BigNumber,
     upperBoundReclaim: BigNumber,
   ): Promise<RebalanceProfile> {
+    if (upperBoundCollateralize.lt(lowerBoundCollateralize) || upperBoundReclaim.lt(lowerBoundReclaim)) {
+      throw new Error(
+        `Rebalancing targets not properly configured: ${{
+          lowerBoundCollateralize,
+          upperBoundCollateralize,
+          lowerBoundReclaim,
+          upperBoundReclaim,
+        }}`,
+      );
+    }
+
     const profile = new RebalanceProfile();
     profile.assetId = getAddress(assetId);
     profile.lowerBoundCollateralize = lowerBoundCollateralize;
@@ -454,7 +465,6 @@ export class ChannelService {
       assetId: rebalancingTargets.assetId,
       lowerBoundCollateralize: bigNumberify(rebalancingTargets.lowerBoundCollateralize),
       upperBoundCollateralize: bigNumberify(rebalancingTargets.upperBoundCollateralize),
-      // eslint-disable-next-line sort-keys
       lowerBoundReclaim: bigNumberify(rebalancingTargets.lowerBoundReclaim),
       upperBoundReclaim: bigNumberify(rebalancingTargets.upperBoundReclaim),
     };

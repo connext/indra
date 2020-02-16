@@ -37,7 +37,6 @@ describe("Reclaim", () => {
       assetId: AddressZero,
       lowerBoundCollateralize: "5",
       upperBoundCollateralize: "10",
-      // eslint-disable-next-line sort-keys
       lowerBoundReclaim: "20",
       upperBoundReclaim: "30",
     };
@@ -72,7 +71,6 @@ describe("Reclaim", () => {
       assetId: tokenAddress,
       lowerBoundCollateralize: "5",
       upperBoundCollateralize: "10",
-      // eslint-disable-next-line sort-keys
       lowerBoundReclaim: "20",
       upperBoundReclaim: "30",
     };

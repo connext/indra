@@ -27,10 +27,6 @@ describe("Reclaim", () => {
     await client.messaging.disconnect();
   });
 
-  after(() => {
-    nats.close();
-  });
-
   it.skip("throws error if collateral targets are higher than reclaim");
 
   it.skip("throws error if collateralize upper bound is lower than higher bound");

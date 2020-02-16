@@ -244,7 +244,6 @@ export class ConfigService implements OnModuleInit {
           id: 0,
           lowerBoundCollateralize: parseEther(`0.05`),
           upperBoundCollateralize: parseEther(`0.1`),
-          // eslint-disable-next-line sort-keys
           lowerBoundReclaim: Zero,
           upperBoundReclaim: Zero,
         };
@@ -255,7 +254,6 @@ export class ConfigService implements OnModuleInit {
           id: 0,
           lowerBoundCollateralize: parseEther(`5`),
           upperBoundCollateralize: parseEther(`20`),
-          // eslint-disable-next-line sort-keys
           lowerBoundReclaim: Zero,
           upperBoundReclaim: Zero,
         };
