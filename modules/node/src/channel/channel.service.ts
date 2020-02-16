@@ -69,7 +69,7 @@ export class ChannelService {
     return await this.cfCoreService.createChannel(counterpartyPublicIdentifier);
   }
 
-  async deposit(
+  private async deposit(
     multisigAddress: string,
     amount: BigNumber,
     assetId: string = AddressZero,
@@ -141,7 +141,7 @@ export class ChannelService {
     return tx;
   }
 
-  async proposeCoinBalanceRefund(assetId: string, channel: Channel): Promise<void> {
+  private async proposeCoinBalanceRefund(assetId: string, channel: Channel): Promise<void> {
     // any deposit has to first propose the balance refund app
     const ethProvider = this.configService.getEthProvider();
     const threshold =
@@ -286,7 +286,6 @@ export class ChannelService {
     upperBoundReclaim: BigNumber,
     lowerBoundReclaim: BigNumber,
   ): Promise<TransactionResponse | undefined> {
-    logger.error("TRYING TO RECLAIM");
     if (upperBoundReclaim.isZero() && lowerBoundReclaim.isZero()) {
       logger.log(`Upper bound and lower bound for reclaim are 0, doing nothing.`);
       return undefined;
