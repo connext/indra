@@ -65,7 +65,7 @@ export class ChannelRepository extends Repository<Channel> {
     return rebalanceProfile;
   }
 
-  async getRebalanceProfileForChannelAndToken(
+  async getRebalanceProfileForChannelAndAsset(
     userPublicIdentifier: string,
     assetId: string = AddressZero,
   ): Promise<RebalanceProfile | undefined> {

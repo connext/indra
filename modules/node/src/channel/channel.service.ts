@@ -200,7 +200,7 @@ export class ChannelService {
     let rebalancingTargets = await this.getDataFromRebalancingService(userPubId, assetId);
     if (!rebalancingTargets) {
       logger.log(`Unable to get rebalancing targets from service, falling back to profile`);
-      rebalancingTargets = await this.getRebalanceProfileForChannelAndToken(userPubId, normalizedAssetId);
+      rebalancingTargets = await this.getRebalanceProfileForChannelAndAsset(userPubId, normalizedAssetId);
       if (!rebalancingTargets) {
         rebalancingTargets = await this.configService.getDefaultRebalanceProfile(assetId);
         if (rebalancingTargets) {
@@ -470,12 +470,12 @@ export class ChannelService {
     };
   }
 
-  async getRebalanceProfileForChannelAndToken(
+  async getRebalanceProfileForChannelAndAsset(
     userPublicIdentifier: string,
     assetId: string = AddressZero,
   ): Promise<RebalanceProfile | undefined> {
     // try to get rebalance profile configured
-    let profile = await this.channelRepository.getRebalanceProfileForChannelAndToken(userPublicIdentifier, assetId);
+    let profile = await this.channelRepository.getRebalanceProfileForChannelAndAsset(userPublicIdentifier, assetId);
     return profile;
   }
 

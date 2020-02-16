@@ -91,7 +91,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
   }
 
   async getRebalanceProfile(pubId: string, data: { assetId?: string }): Promise<RebalanceProfile> {
-    const prof = await this.channelRepository.getRebalanceProfileForChannelAndToken(pubId, data.assetId);
+    const prof = await this.channelRepository.getRebalanceProfileForChannelAndAsset(pubId, data.assetId);
 
     if (!prof) {
       return undefined;
