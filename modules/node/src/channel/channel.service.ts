@@ -339,6 +339,19 @@ export class ChannelService {
       );
     }
 
+    // reclaim targets cannot be less than collateralize targets, otherwise we get into a loop of
+    // collateralize/reclaim
+    if (lowerBoundReclaim.lt(upperBoundCollateralize)) {
+      throw new Error(
+        `Reclaim targets cannot be less than collateralize targets: ${{
+          lowerBoundCollateralize,
+          upperBoundCollateralize,
+          lowerBoundReclaim,
+          upperBoundReclaim,
+        }}`,
+      );
+    }
+
     const profile = new RebalanceProfile();
     profile.assetId = getAddress(assetId);
     profile.lowerBoundCollateralize = lowerBoundCollateralize;
