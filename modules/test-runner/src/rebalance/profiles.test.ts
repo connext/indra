@@ -1,5 +1,6 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
+import { before, after } from "mocha";
 
 import { createClient } from "../util";
 import { connectNats } from "../util/nats";
@@ -12,7 +13,7 @@ describe("Reclaim", () => {
   let nodeFreeBalanceAddress: string;
   let nats: Client;
 
-  beforeAll(async () => {
+  before(async () => {
     nats = await connectNats();
   });
 
@@ -26,13 +27,13 @@ describe("Reclaim", () => {
     await client.messaging.disconnect();
   });
 
-  afterAll(() => {
+  after(() => {
     nats.close();
   });
 
-  it.todo("throws error if collateral targets are higher than reclaim");
+  it.skip("throws error if collateral targets are higher than reclaim");
 
-  it.todo("throws error if collateralize upper bound is lower than higher bound");
+  it.skip("throws error if collateralize upper bound is lower than higher bound");
 
-  it.todo("throws error if reclaim upper bound is lower than higher bound");
+  it.skip("throws error if reclaim upper bound is lower than higher bound");
 });

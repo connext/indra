@@ -1,60 +1,79 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
-
-import { createClient } from "../util";
-import { connectNats } from "../util/nats";
+import { AddressZero, One, Two } from "ethers/constants";
+import { bigNumberify } from "ethers/utils";
+import { after, before, describe } from "mocha";
 import { Client } from "ts-nats";
-import { AddressZero } from "ethers/constants";
+
+import { createClient, fundChannel, asyncTransferAsset, expect, delay } from "../util";
+import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
+import { connectNats } from "../util/nats";
 
 describe("Reclaim", () => {
-  let client: IConnextClient;
+  let clientA: IConnextClient;
+  let clientB: IConnextClient;
   let tokenAddress: string;
   let nodeFreeBalanceAddress: string;
   let nats: Client;
 
-  beforeAll(async () => {
+  before(async () => {
     nats = await connectNats();
   });
 
   beforeEach(async () => {
-    client = await createClient();
-    tokenAddress = client.config.contractAddresses.Token;
-    nodeFreeBalanceAddress = xkeyKthAddress(client.config.nodePublicIdentifier);
+    clientA = await createClient();
+    clientB = await createClient();
+    tokenAddress = clientA.config.contractAddresses.Token;
+    nodeFreeBalanceAddress = xkeyKthAddress(clientA.config.nodePublicIdentifier);
   });
 
   afterEach(async () => {
-    await client.messaging.disconnect();
+    await clientA.messaging.disconnect();
+    await clientB.messaging.disconnect();
   });
 
-  afterAll(() => {
+  after(() => {
     nats.close();
   });
 
-  it("happy case: node should reclaim ETH after linked transfer", async () => {
-    // set rebalancing profile to reclaim collateral
-    await nats.request(`channel.add-profile.${client.publicIdentifier}`, 5000, {
+  it.only("happy case: node should reclaim ETH with async transfer", async () => {
+    const REBALANCE_PROFILE = {
       assetId: AddressZero,
       lowerBoundCollateralize: "5",
       upperBoundCollateralize: "10",
       // eslint-disable-next-line sort-keys
       lowerBoundReclaim: "20",
       upperBoundReclaim: "30",
-      // eslint-disable-next-line sort-keys
-      token: "foo",
-    });
+    };
 
-    // verify profile
+    // set rebalancing profile to reclaim collateral
+    await addRebalanceProfile(nats, clientA, REBALANCE_PROFILE);
 
     // deposit client
+    await fundChannel(clientA, bigNumberify(REBALANCE_PROFILE.upperBoundReclaim).add(Two), AddressZero);
+    await clientB.requestCollateral(AddressZero);
 
     // transfer to node to get node over upper bound reclaim
-
+    // first transfer gets to upper bound
+    await asyncTransferAsset(clientA, clientB, bigNumberify(REBALANCE_PROFILE.upperBoundReclaim).add(One), AddressZero);
+    // second transfer triggers reclaim
     // verify that node reclaims until lower bound reclaim
+    await new Promise(async res => {
+      await nats.subscribe(`indra.node.${clientA.nodePublicIdentifier}.reclaim.${clientA.multisigAddress}`, res);
+      clientA.transfer({ amount: One.toString(), assetId: AddressZero, recipient: clientB.publicIdentifier });
+    });
+
+    const freeBalancePost = await clientA.getFreeBalance(AddressZero);
+    // expect this could be checked pre or post the rest of the transfer, so try to pre-emptively avoid race conditions
+    expect(
+      freeBalancePost[nodeFreeBalanceAddress].gte(bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim)) &&
+        freeBalancePost[nodeFreeBalanceAddress].lte(bigNumberify(REBALANCE_PROFILE.lowerBoundReclaim).add(One)),
+    ).to.be.ok;
   });
 
-  it.todo("happy case: node should reclaim tokens after linked transfer", async () => {});
+  it.skip("happy case: node should reclaim tokens after async transfer", async () => {});
 
-  it.todo("happy case: node should reclaim ETH after async transfer", async () => {})
+  it.skip("happy case: node should reclaim ETH after linked transfer", async () => {});
 
-  it.todo("happy case: node should reclaim tokens after async transfer", async () => {});
+  it.skip("happy case: node should reclaim tokens after linked transfer", async () => {});
 });
