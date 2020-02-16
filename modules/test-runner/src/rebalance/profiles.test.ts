@@ -1,11 +1,12 @@
 import { xkeyKthAddress } from "@connext/cf-core";
-import { IConnextClient } from "@connext/types";
-import { before, after } from "mocha";
+import { IConnextClient, RebalanceProfile } from "@connext/types";
+import { before } from "mocha";
 
-import { createClient } from "../util";
+import { createClient, expect } from "../util";
 import { connectNats } from "../util/nats";
 import { Client } from "ts-nats";
 import { AddressZero } from "ethers/constants";
+import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 
 describe("Reclaim", () => {
   let client: IConnextClient;
@@ -27,9 +28,39 @@ describe("Reclaim", () => {
     await client.messaging.disconnect();
   });
 
-  it.skip("throws error if collateral targets are higher than reclaim");
+  it.only("throws error if collateral targets are higher than reclaim", async () => {
+    const REBALANCE_PROFILE: RebalanceProfile = {
+      assetId: AddressZero,
+      lowerBoundCollateralize: "1",
+      upperBoundCollateralize: "10",
+      lowerBoundReclaim: "9",
+      upperBoundReclaim: "15",
+    };
+    const profileResponse = await addRebalanceProfile(nats, client, REBALANCE_PROFILE, false);
+    expect(profileResponse).to.match(/Reclaim targets cannot be less than collateralize targets/);
+  });
 
-  it.skip("throws error if collateralize upper bound is lower than higher bound");
+  it.only("throws error if collateralize upper bound is lower than higher bound", async () => {
+    const REBALANCE_PROFILE: RebalanceProfile = {
+      assetId: AddressZero,
+      lowerBoundCollateralize: "10",
+      upperBoundCollateralize: "1",
+      lowerBoundReclaim: "9",
+      upperBoundReclaim: "15",
+    };
+    const profileResponse = await addRebalanceProfile(nats, client, REBALANCE_PROFILE, false);
+    expect(profileResponse).to.match(/Rebalancing targets not properly configured/);
+  });
 
-  it.skip("throws error if reclaim upper bound is lower than higher bound");
+  it.only("throws error if reclaim upper bound is lower than higher bound", async () => {
+    const REBALANCE_PROFILE: RebalanceProfile = {
+      assetId: AddressZero,
+      lowerBoundCollateralize: "1",
+      upperBoundCollateralize: "10",
+      lowerBoundReclaim: "15",
+      upperBoundReclaim: "9",
+    };
+    const profileResponse = await addRebalanceProfile(nats, client, REBALANCE_PROFILE, false);
+    expect(profileResponse).to.match(/Rebalancing targets not properly configured/);
+  });
 });

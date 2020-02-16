@@ -330,12 +330,12 @@ export class ChannelService {
   ): Promise<RebalanceProfile> {
     if (upperBoundCollateralize.lt(lowerBoundCollateralize) || upperBoundReclaim.lt(lowerBoundReclaim)) {
       throw new Error(
-        `Rebalancing targets not properly configured: ${{
+        `Rebalancing targets not properly configured: ${JSON.stringify({
           lowerBoundCollateralize,
           upperBoundCollateralize,
           lowerBoundReclaim,
           upperBoundReclaim,
-        }}`,
+        })}`,
       );
     }
 
@@ -343,12 +343,12 @@ export class ChannelService {
     // collateralize/reclaim
     if (lowerBoundReclaim.lt(upperBoundCollateralize)) {
       throw new Error(
-        `Reclaim targets cannot be less than collateralize targets: ${{
+        `Reclaim targets cannot be less than collateralize targets: ${JSON.stringify({
           lowerBoundCollateralize,
           upperBoundCollateralize,
           lowerBoundReclaim,
           upperBoundReclaim,
-        }}`,
+        })}`,
       );
     }
 
