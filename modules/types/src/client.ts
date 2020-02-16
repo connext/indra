@@ -1,7 +1,7 @@
 import { AppInstanceJson } from "./app";
 import { AppActionBigNumber, AppRegistry, AppState, DefaultApp, SupportedApplication } from "./app";
 import { BigNumber, Contract, JsonRpcProvider, Network } from "./basic";
-import { CFCoreChannel, ChannelAppSequences, ChannelState, PaymentProfile } from "./channel";
+import { CFCoreChannel, ChannelAppSequences, ChannelState, RebalanceProfile } from "./channel";
 import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvider";
 import { ConnextEvent } from "./events";
 import {
@@ -129,7 +129,7 @@ export interface IConnextClient {
   getLatestSwapRate(from: string, to: string): Promise<string>;
   unsubscribeToSwapRates(from: string, to: string): Promise<void>;
   requestCollateral(tokenAddress: string): Promise<RequestCollateralResponse | void>;
-  getPaymentProfile(assetId?: string): Promise<PaymentProfile | undefined>;
+  getRebalanceProfile(assetId?: string): Promise<RebalanceProfile | undefined>;
   getTransferHistory(): Promise<Transfer[]>;
   reclaimPendingAsyncTransfers(): Promise<void>;
   reclaimPendingAsyncTransfer(

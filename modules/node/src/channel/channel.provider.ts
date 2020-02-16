@@ -1,5 +1,11 @@
 import { IMessagingService } from "@connext/messaging";
-import { ChannelAppSequences, GetChannelResponse, GetConfigResponse, StateChannelJSON } from "@connext/types";
+import {
+  ChannelAppSequences,
+  GetChannelResponse,
+  GetConfigResponse,
+  StateChannelJSON,
+  RebalanceProfile,
+} from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { TransactionResponse } from "ethers/providers";
 import { bigNumberify, getAddress } from "ethers/utils";
@@ -73,36 +79,18 @@ class ChannelMessaging extends AbstractMessagingProvider {
     return this.channelService.withdrawForClient(pubId, data.tx);
   }
 
-  async addRebalanceProfile(
-    pubId: string,
-    data: {
-      assetId: string;
-      lowerBoundCollateralize: string;
-      upperBoundCollateralize: string;
-      lowerBoundReclaim: string;
-      upperBoundReclaim: string;
-    },
-  ): Promise<void> {
+  async addRebalanceProfile(pubId: string, data: { profile: RebalanceProfile }): Promise<void> {
     await this.channelService.addRebalanceProfileToChannel(
       pubId,
-      data.assetId,
-      bigNumberify(data.lowerBoundCollateralize),
-      bigNumberify(data.upperBoundCollateralize),
-      bigNumberify(data.lowerBoundReclaim),
-      bigNumberify(data.upperBoundReclaim),
+      data.profile.assetId,
+      bigNumberify(data.profile.lowerBoundCollateralize),
+      bigNumberify(data.profile.upperBoundCollateralize),
+      bigNumberify(data.profile.lowerBoundReclaim),
+      bigNumberify(data.profile.upperBoundReclaim),
     );
   }
 
-  async getRebalanceProfile(
-    pubId: string,
-    data: { assetId?: string },
-  ): Promise<{
-    assetId: string;
-    upperBoundReclaim: string;
-    lowerBoundReclaim: string;
-    upperBoundCollateralize: string;
-    lowerBoundCollateralize: string;
-  }> {
+  async getRebalanceProfile(pubId: string, data: { assetId?: string }): Promise<RebalanceProfile> {
     const prof = await this.channelRepository.getRebalanceProfileForChannelAndToken(pubId, data.assetId);
 
     if (!prof) {
@@ -148,7 +136,7 @@ class ChannelMessaging extends AbstractMessagingProvider {
     );
     await super.connectRequestReponse(
       "channel.add-profile.>",
-      this.authService.useAdminToken(this.addRebalanceProfile.bind(this)),
+      this.authService.useAdminTokenWithPublicIdentifier(this.addRebalanceProfile.bind(this)),
     );
     await super.connectRequestReponse(
       "channel.get-profile.>",

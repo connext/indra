@@ -8,6 +8,8 @@ import "./flows/transfer.test";
 import "./getAppRegistry/getAppRegistry.test";
 import "./getStateChannel/getStateChannel.test";
 import "./rebalance/collateral.test";
+import "./rebalance/reclaim.test";
+import "./rebalance/profiles.test";
 import "./restoreState/restoreState.test";
 import "./store/storage.test";
 import "./store/store.test";
