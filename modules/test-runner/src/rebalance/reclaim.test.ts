@@ -32,10 +32,6 @@ describe("Reclaim", () => {
     await clientB.messaging.disconnect();
   });
 
-  after(() => {
-    nats.close();
-  });
-
   it("happy case: node should reclaim ETH with async transfer", async () => {
     const REBALANCE_PROFILE = {
       assetId: AddressZero,
