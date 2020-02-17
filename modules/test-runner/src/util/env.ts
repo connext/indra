@@ -14,5 +14,6 @@ export const env = {
   mnemonic: process.env.INDRA_ETH_MNEMONIC || "",
   nodeUrl: process.env.INDRA_NODE_URL || "",
   storeDir: process.env.STORE_DIR || "",
+  adminToken: process.env.INDRA_ADMIN_TOKEN || "foo",
 };
 // console.log(`Starting tests in env: ${JSON.stringify(env, null, 2)}`);

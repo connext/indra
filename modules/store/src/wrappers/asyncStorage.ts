@@ -5,10 +5,11 @@ import {
   InitCallback,
   safeJsonParse,
   safeJsonStringify,
-  StorageWrapper,
+  WrappedStorage,
+  reduceChannelsMap,
 } from "../helpers";
 
-export class AsyncStorageWrapper implements StorageWrapper {
+export class WrappedAsyncStorage implements WrappedStorage {
   private asyncStorage: IAsyncStorage;
   private asyncStorageKey: string = DEFAULT_ASYNC_STORAGE_KEY;
   private data: AsyncStorageData = {};
@@ -81,6 +82,12 @@ export class AsyncStorageWrapper implements StorageWrapper {
 
   async clear(): Promise<void> {
     await this.asyncStorage.removeItem(this.asyncStorageKey);
+  }
+
+  async getChannels(): Promise<AsyncStorageData> {
+    const entries = await this.getEntries();
+    const channelsObj = reduceChannelsMap(entries);
+    return channelsObj;
   }
 
   async getKeys(): Promise<string[]> {
