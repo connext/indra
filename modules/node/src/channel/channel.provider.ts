@@ -5,10 +5,11 @@ import {
   GetConfigResponse,
   StateChannelJSON,
   RebalanceProfile,
+  convert,
 } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { TransactionResponse } from "ethers/providers";
-import { bigNumberify, getAddress } from "ethers/utils";
+import { getAddress } from "ethers/utils";
 
 import { AuthService } from "../auth/auth.service";
 import { ConfigService } from "../config/config.service";
@@ -68,29 +69,23 @@ class ChannelMessaging extends AbstractMessagingProvider {
 
   async requestCollateral(pubId: string, data: { assetId?: string }): Promise<CFCoreTypes.DepositResult> {
     // do not allow clients to specify an amount to collateralize with
-    return (this.channelService.rebalance(
+    return (await (this.channelService.rebalance(
       pubId,
       getAddress(data.assetId),
       RebalanceType.COLLATERALIZE,
-    ) as unknown) as CFCoreTypes.DepositResult;
+    ) as unknown)) as CFCoreTypes.DepositResult;
   }
 
   async withdraw(pubId: string, data: { tx: CFCoreTypes.MinimalTransaction }): Promise<TransactionResponse> {
-    return this.channelService.withdrawForClient(pubId, data.tx);
+    return await this.channelService.withdrawForClient(pubId, data.tx);
   }
 
   async addRebalanceProfile(pubId: string, data: { profile: RebalanceProfile }): Promise<void> {
-    await this.channelService.addRebalanceProfileToChannel(
-      pubId,
-      data.profile.assetId,
-      bigNumberify(data.profile.lowerBoundCollateralize),
-      bigNumberify(data.profile.upperBoundCollateralize),
-      bigNumberify(data.profile.lowerBoundReclaim),
-      bigNumberify(data.profile.upperBoundReclaim),
-    );
+    const profile = convert.RebalanceProfile("bignumber", data.profile);
+    await this.channelService.addRebalanceProfileToChannel(pubId, profile);
   }
 
-  async getRebalanceProfile(pubId: string, data: { assetId?: string }): Promise<RebalanceProfile> {
+  async getRebalanceProfile(pubId: string, data: { assetId?: string }): Promise<RebalanceProfile | undefined> {
     const prof = await this.channelRepository.getRebalanceProfileForChannelAndAsset(pubId, data.assetId);
 
     if (!prof) {
@@ -98,13 +93,13 @@ class ChannelMessaging extends AbstractMessagingProvider {
     }
 
     const { upperBoundReclaim, lowerBoundReclaim, upperBoundCollateralize, lowerBoundCollateralize, assetId } = prof;
-    return {
+    return convert.RebalanceProfile("str", {
       assetId,
-      lowerBoundCollateralize: lowerBoundCollateralize.toString(),
-      lowerBoundReclaim: lowerBoundReclaim.toString(),
-      upperBoundCollateralize: upperBoundCollateralize.toString(),
-      upperBoundReclaim: upperBoundReclaim.toString(),
-    };
+      lowerBoundCollateralize,
+      lowerBoundReclaim,
+      upperBoundCollateralize,
+      upperBoundReclaim,
+    });
   }
 
   async getLatestWithdrawal(pubId: string, data: {}): Promise<OnchainTransaction | undefined> {
