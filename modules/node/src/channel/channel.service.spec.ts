@@ -124,7 +124,6 @@ describe.skip("Channel Service", () => {
   });
 
   it("should add deposits to the onchain transaction table", async () => {
-    const result = await channelService.rebalance(mkXpub("0xXpub"), AddressZero, RebalanceType.COLLATERALIZE, One);
-    console.log("result: ", result);
+    await channelService.rebalance(mkXpub("0xXpub"), AddressZero, RebalanceType.COLLATERALIZE, One);
   });
 });
