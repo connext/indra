@@ -27,10 +27,7 @@ const exists = (obj: any): boolean => {
   return !!obj && !!Object.keys(obj).length;
 };
 
-const createMessagingService = async (
-  messagingUrl: string,
-  logLevel: number,
-): Promise<IMessagingService> => {
+const createMessagingService = async (messagingUrl: string, logLevel: number): Promise<IMessagingService> => {
   // create a messaging service client
   const messagingFactory = new MessagingServiceFactory({ logLevel, messagingUrl });
   const messaging = messagingFactory.createService("messaging");
@@ -76,16 +73,8 @@ export const connect = async (
   overrideOptions?: Partial<ClientOptions>,
 ): Promise<IConnextClient> => {
   const opts =
-    typeof clientOptions === "string"
-      ? await getDefaultOptions(clientOptions, overrideOptions)
-      : clientOptions;
-  const {
-    logLevel,
-    ethProviderUrl,
-    nodeUrl,
-    mnemonic,
-    channelProvider: providedChannelProvider,
-  } = opts;
+    typeof clientOptions === "string" ? await getDefaultOptions(clientOptions, overrideOptions) : clientOptions;
+  const { logLevel, ethProviderUrl, nodeUrl, mnemonic, channelProvider: providedChannelProvider } = opts;
   let { xpub, keyGen, store, messaging } = opts;
 
   const log = new Logger("ConnextConnect", logLevel);
@@ -118,7 +107,7 @@ export const connect = async (
     }
 
     // create a new node api instance
-    node = new NodeApiClient({ logLevel, messaging, channelProvider });
+    node = new NodeApiClient({ channelProvider, logLevel, messaging });
     config = await node.config();
     log.debug(`Node provided config: ${stringify(config)}`);
 
@@ -142,8 +131,7 @@ export const connect = async (
       // Convert mnemonic into xpub + keyGen if provided
       const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
       xpub = hdNode.neuter().extendedKey;
-      keyGen = (index: string): Promise<string> =>
-        Promise.resolve(hdNode.derivePath(index).privateKey);
+      keyGen = (index: string): Promise<string> => Promise.resolve(hdNode.derivePath(index).privateKey);
     } else {
       log.debug(`Creating channelProvider with xpub: ${xpub}`);
       log.debug(`Creating channelProvider with keyGen: ${keyGen}`);
@@ -163,9 +151,7 @@ export const connect = async (
 
     // ensure that node and user xpub are different
     if (config.nodePublicIdentifier === xpub) {
-      throw new Error(
-        "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
-      );
+      throw new Error("Client must be instantiated with a mnemonic that is different from the node's mnemonic");
     }
 
     channelProvider = await createCFChannelProvider({

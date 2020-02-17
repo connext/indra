@@ -67,6 +67,8 @@ jobs:
     - run: make test-node
 
   test-integration:
+    env:
+      INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
     runs-on: ubuntu-latest
     needs: [build]
     steps:

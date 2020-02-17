@@ -3,14 +3,7 @@ import { TransactionResponse } from "ethers/providers";
 import { bigNumberify, getAddress } from "ethers/utils";
 
 import { stringify, withdrawalKey } from "../lib";
-import {
-  BigNumber,
-  CFCoreTypes,
-  convert,
-  ProtocolTypes,
-  WithdrawalResponse,
-  WithdrawParameters,
-} from "../types";
+import { BigNumber, CFCoreTypes, convert, ProtocolTypes, WithdrawalResponse, WithdrawParameters } from "../types";
 import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
@@ -43,9 +36,7 @@ export class WithdrawalController extends AbstractController {
 
     const preWithdrawBalances = await this.connext.getFreeBalance(assetId);
 
-    this.log.info(
-      `\nWithdrawing ${amount} wei from ${this.connext.multisigAddress} to ${recipient}\n`,
-    );
+    this.log.info(`\nWithdrawing ${amount} wei from ${this.connext.multisigAddress} to ${recipient}\n`);
 
     let transaction: TransactionResponse | undefined;
     try {
@@ -58,9 +49,7 @@ export class WithdrawalController extends AbstractController {
         const minTx: CFCoreTypes.MinimalTransaction = withdrawResponse.transaction;
         // set the withdrawal tx in the store
         await this.connext.channelProvider.send(chan_storeSet, {
-          pairs: [
-            { path: withdrawalKey(this.connext.publicIdentifier), value: { tx: minTx, retry: 0 } },
-          ],
+          pairs: [{ path: withdrawalKey(this.connext.publicIdentifier), value: { tx: minTx, retry: 0 } }],
         });
 
         transaction = await this.node.withdraw(minTx);
@@ -80,11 +69,7 @@ export class WithdrawalController extends AbstractController {
         }
         this.log.info(`Calling ${ProtocolTypes.chan_withdraw}`);
         // user submitting the withdrawal
-        const withdrawResponse = await this.connext.providerWithdraw(
-          assetId,
-          new BigNumber(amount),
-          recipient,
-        );
+        const withdrawResponse = await this.connext.providerWithdraw(assetId, new BigNumber(amount), recipient);
         this.log.info(`Withdraw Response: ${stringify(withdrawResponse)}`);
         transaction = await this.ethProvider.getTransaction(withdrawResponse.txHash);
       }

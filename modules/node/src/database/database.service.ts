@@ -6,7 +6,7 @@ import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { Channel } from "../channel/channel.entity";
 import { ConfigService } from "../config/config.service";
 import { OnchainTransaction, AnonymizedOnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
-import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
+import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { LinkedTransfer, PeerToPeerTransfer, Transfer, AnonymizedTransfer } from "../transfer/transfer.entity";
 
 // Import Migrations
@@ -22,12 +22,13 @@ import { AddCfcoreTimestamps1574451273832 } from "../../migrations/1574451273832
 import { EditViewTable1578621554000 } from "../../migrations/1578621554000-edit-view-table";
 import { NetworkToChainId1579686361011 } from "../../migrations/1579686361011-network-to-chain-id";
 import { AddAnonymizedViewTables1581090243171 } from "../../migrations/1581090243171-add-anonymized-view-tables";
+import { RebalancingProfile1581796200880 } from "../../migrations/1581796200880-rebalancing-profile";
 
 export const entities = [
   AppRegistry,
   Channel,
   CFCoreRecord,
-  PaymentProfile,
+  RebalanceProfile,
   LinkedTransfer,
   PeerToPeerTransfer,
   OnchainTransaction,
@@ -49,6 +50,7 @@ export const migrations = [
   EditViewTable1578621554000,
   NetworkToChainId1579686361011,
   AddAnonymizedViewTables1581090243171,
+  RebalancingProfile1581796200880,
 ];
 
 @Injectable()
