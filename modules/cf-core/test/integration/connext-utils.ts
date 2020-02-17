@@ -36,9 +36,7 @@ type CoinTransfer = {
   amount: BigNumber;
 };
 
-const { SimpleTransferApp, UnidirectionalLinkedTransferApp } = global[
-  "networkContext"
-] as NetworkContextForTestSuite;
+const { SimpleTransferApp, UnidirectionalLinkedTransferApp } = global["networkContext"] as NetworkContextForTestSuite;
 
 /**
  * This file contains any utils functions that are useful when testing
@@ -47,26 +45,11 @@ const { SimpleTransferApp, UnidirectionalLinkedTransferApp } = global[
  * Note: this does nothing to assert that the transfer exchanges the intended
  * amount. That is assumed to be tested in unit tests.
  */
-export async function makeSimpleTransfer(
-  sender: Node,
-  intermediary: Node,
-  receiver: Node,
-  amount: BigNumber = One
-) {
+export async function makeSimpleTransfer(sender: Node, intermediary: Node, receiver: Node, amount: BigNumber = One) {
   // create transfer app with default transfer value of 1
-  const initialState = initialSimpleTransferState(
-    sender.freeBalanceAddress,
-    receiver.freeBalanceAddress,
-    amount
-  );
+  const initialState = initialSimpleTransferState(sender.freeBalanceAddress, receiver.freeBalanceAddress, amount);
 
-  const appId = await installVirtualApp(
-    sender,
-    intermediary,
-    receiver,
-    SimpleTransferApp,
-    initialState
-  );
+  const appId = await installVirtualApp(sender, intermediary, receiver, SimpleTransferApp, initialState);
 
   const senderApp = await getAppInstance(sender, appId);
   const receiverApp = await getAppInstance(receiver, appId);
@@ -75,19 +58,14 @@ export async function makeSimpleTransfer(
   expect(senderApp).toEqual(receiverApp);
 
   // uninstall the virtual transfer app
-  await uninstallVirtualApp(
-    sender,
-    receiver,
-    intermediary.publicIdentifier,
-    appId
-  );
+  await uninstallVirtualApp(sender, receiver, intermediary.publicIdentifier, appId);
 }
 
 export async function installLink(
   funder: Node,
   redeemer: Node,
   state: UnidirectionalLinkedTransferAppState,
-  action: UnidirectionalLinkedTransferAppAction
+  action: UnidirectionalLinkedTransferAppAction,
 ): Promise<string> {
   const linkDef = UnidirectionalLinkedTransferApp;
 
@@ -99,21 +77,15 @@ export async function installLink(
     bigNumberify(action.amount),
     action.assetId,
     Zero,
-    action.assetId
+    action.assetId,
   );
   return res[0]; // appInstanceId
 }
 
 function assertLinkRedemption(app: AppInstanceJson, amount: BigNumber): void {
-  expect(
-    (app.latestState as UnidirectionalLinkedTransferAppState).finalized
-  ).toEqual(true);
-  expect(
-    (app.latestState as UnidirectionalLinkedTransferAppState).transfers[1][1]
-  ).toBeEq(amount);
-  expect(
-    (app.latestState as UnidirectionalLinkedTransferAppState).transfers[0][1]
-  ).toBeEq(Zero);
+  expect((app.latestState as UnidirectionalLinkedTransferAppState).finalized).toEqual(true);
+  expect((app.latestState as UnidirectionalLinkedTransferAppState).transfers[1][1]).toBeEq(amount);
+  expect((app.latestState as UnidirectionalLinkedTransferAppState).transfers[0][1]).toBeEq(Zero);
 }
 
 /**
@@ -124,7 +96,7 @@ export async function redeemLink(
   redeemer: Node,
   funder: Node,
   appId: string,
-  action: UnidirectionalLinkedTransferAppAction
+  action: UnidirectionalLinkedTransferAppAction,
 ): Promise<string> {
   // take action to finalize state and claim funds from intermediary
   await takeAppAction(redeemer, appId, action);
@@ -144,7 +116,7 @@ export async function installAndRedeemLink(
   funder: Node,
   intermediary: Node,
   redeemer: Node,
-  stateAndAction: { action: any; state: any }
+  stateAndAction: { action: any; state: any },
 ) {
   const linkDef = UnidirectionalLinkedTransferApp;
 
@@ -152,15 +124,10 @@ export async function installAndRedeemLink(
 
   const { state, action } = stateAndAction;
 
-  const hasAddressInTransfers = (
-    app: AppInstanceJson,
-    addr: string
-  ): boolean => {
+  const hasAddressInTransfers = (app: AppInstanceJson, addr: string): boolean => {
     return (
-      (app.latestState as UnidirectionalLinkedTransferAppState).transfers[0]
-        .to === addr ||
-      (app.latestState as UnidirectionalLinkedTransferAppState).transfers[1]
-        .to === addr
+      (app.latestState as UnidirectionalLinkedTransferAppState).transfers[0].to === addr ||
+      (app.latestState as UnidirectionalLinkedTransferAppState).transfers[1].to === addr
     );
   };
 
@@ -169,8 +136,7 @@ export async function installAndRedeemLink(
       app =>
         app.appInterface.addr === linkDef &&
         hasAddressInTransfers(app, funder.freeBalanceAddress) &&
-        (app.latestState as UnidirectionalLinkedTransferAppState).linkedHash ===
-          state.linkedHash
+        (app.latestState as UnidirectionalLinkedTransferAppState).linkedHash === state.linkedHash,
     );
   };
 
@@ -178,12 +144,7 @@ export async function installAndRedeemLink(
   expect(matchedApp).toBeDefined();
 
   // install an app between the intermediary and redeemer
-  const redeemerAppId = await installLink(
-    intermediary,
-    redeemer,
-    state,
-    action
-  );
+  const redeemerAppId = await installLink(intermediary, redeemer, state, action);
 
   // redeemer take action to finalize state and claim funds from intermediary
   await redeemLink(redeemer, intermediary, redeemerAppId, action);

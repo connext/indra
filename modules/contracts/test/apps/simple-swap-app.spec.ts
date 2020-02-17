@@ -46,7 +46,7 @@ describe("SimpleTwoPartySwapApp", () => {
     return await simpleSwapApp.functions.computeOutcome(encodeAppState(state));
   }
 
-  before(async () => {
+  beforeAll(async () => {
     const provider = waffle.createMockProvider();
     const wallet = (await waffle.getWallets(provider))[0];
     simpleSwapApp = await waffle.deployContract(wallet, SimpleTwoPartySwapApp);

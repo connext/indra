@@ -1,10 +1,6 @@
 import { CF_PATH, CFCoreTypes } from "@connext/types";
 import { Wallet } from "ethers";
-import {
-  JsonRpcProvider,
-  Provider,
-  TransactionRequest
-} from "ethers/providers";
+import { JsonRpcProvider, Provider, TransactionRequest } from "ethers/providers";
 import { parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 import { v4 as generateUUID } from "uuid";
@@ -14,11 +10,7 @@ import { computeRandomExtendedPrvKey } from "../../src/machine/xkeys";
 import MemoryLockService from "../services/memory-lock-service";
 import { MemoryMessagingService } from "../services/memory-messaging-service";
 import { MemoryStoreServiceFactory } from "../services/memory-store-service";
-import {
-  A_EXTENDED_PRIVATE_KEY,
-  B_EXTENDED_PRIVATE_KEY,
-  C_EXTENDED_PRIVATE_KEY,
-} from "../test-constants.jest";
+import { A_EXTENDED_PRIVATE_KEY, B_EXTENDED_PRIVATE_KEY, C_EXTENDED_PRIVATE_KEY } from "../test-constants.jest";
 
 export interface NodeContext {
   node: Node;
@@ -63,10 +55,7 @@ export async function setup(
   let extendedPrvKeyB = B_EXTENDED_PRIVATE_KEY;
 
   if (newExtendedPrvKey) {
-    const newExtendedPrvKeys = await generateNewFundedExtendedPrvKeys(
-      global["fundedPrivateKey"],
-      provider,
-    );
+    const newExtendedPrvKeys = await generateNewFundedExtendedPrvKeys(global["fundedPrivateKey"], provider);
     extendedPrvKeyB = newExtendedPrvKeys.B_EXTENDED_PRV_KEY;
   }
 
@@ -130,10 +119,7 @@ export async function setup(
   return setupContext;
 }
 
-export async function generateNewFundedWallet(
-  fundedPrivateKey: string,
-  provider: Provider,
-) {
+export async function generateNewFundedWallet(fundedPrivateKey: string, provider: Provider) {
   const fundedWallet = new Wallet(fundedPrivateKey, provider);
   const wallet = Wallet.createRandom().connect(provider);
 
@@ -145,10 +131,7 @@ export async function generateNewFundedWallet(
   return wallet;
 }
 
-export async function generateNewFundedExtendedPrvKeys(
-  fundedPrivateKey: string,
-  provider: Provider,
-) {
+export async function generateNewFundedExtendedPrvKeys(fundedPrivateKey: string, provider: Provider) {
   const fundedWallet = new Wallet(fundedPrivateKey, provider);
   const A_EXTENDED_PRV_KEY = computeRandomExtendedPrvKey();
   const B_EXTENDED_PRV_KEY = computeRandomExtendedPrvKey();

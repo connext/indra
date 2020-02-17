@@ -25,14 +25,13 @@ const TopGrid = styled(Grid)({
   justifyContent: "center",
   alignItems: "center",
 });
-const TokenModal = styled(Modal)({
-});
+const TokenModal = styled(Modal)({});
 
 const TokenModalGrid = styled(Grid)({
-  display:"flex",
-  alignSelf:"center",
-  width:"50%",
-  marginLeft:"25%",
+  display: "flex",
+  alignSelf: "center",
+  width: "50%",
+  marginLeft: "25%",
   backgroundColor: "#ffffff",
   alignItems: "center",
   justifyContent: "center",
@@ -48,9 +47,7 @@ const ErrorTypography = styled(Typography)({
 
 const env = {
   adminToken: process.env.REACT_APP_INDRA_NATS_TOKEN || "foo",
-  nodeUrl:
-    process.env.REACT_APP_NODE_URL_OVERRIDE ||
-    `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
+  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
   urlPrefix: process.env.PUBLIC_URL || "",
 };
 
@@ -82,24 +79,24 @@ const App = () => {
   }, []);
 
   const getMessagingWithToken = async token => {
-    setLoading(true)
+    setLoading(true);
     if (!token) {
       setErrorText("Please enter a token");
-      setLoading(false)
+      setLoading(false);
       return;
     }
     try {
-      console.log(env.nodeUrl)
+      console.log(env.nodeUrl);
       const messaging = new DashboardMessaging(env.nodeUrl, token, 5);
       await messaging.connect();
       setMessaging(messaging);
       console.log(`messaging set!`, messaging);
       localStorage.setItem("token", token);
-      setLoading(false)
+      setLoading(false);
       setModalOpen(false);
     } catch (e) {
       setErrorText("Incorrect token");
-      setLoading(false)
+      setLoading(false);
     }
   };
 

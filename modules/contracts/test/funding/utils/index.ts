@@ -1,11 +1,6 @@
 import * as chai from "chai";
 import { solidity } from "ethereum-waffle";
-import {
-  BigNumber,
-  joinSignature,
-  recoverAddress,
-  Signature
-} from "ethers/utils";
+import { BigNumber, joinSignature, recoverAddress, Signature } from "ethers/utils";
 
 export const expect = chai.use(solidity).expect;
 
@@ -26,10 +21,7 @@ export function signaturesToBytes(...signatures: Signature[]): string {
  *
  * @param signatures An array of etherium signatures
  */
-export function sortSignaturesBySignerAddress(
-  digest: string,
-  signatures: Signature[]
-): Signature[] {
+export function sortSignaturesBySignerAddress(digest: string, signatures: Signature[]): Signature[] {
   const ret = signatures.slice();
   ret.sort((sigA, sigB) => {
     const addrA = recoverAddress(digest, signaturesToBytes(sigA));
@@ -45,11 +37,6 @@ export function sortSignaturesBySignerAddress(
  *
  * @param signatures An array of etherium signatures
  */
-export function signaturesToBytesSortedBySignerAddress(
-  digest: string,
-  ...signatures: Signature[]
-): string {
-  return signaturesToBytes(
-    ...sortSignaturesBySignerAddress(digest, signatures)
-  );
+export function signaturesToBytesSortedBySignerAddress(digest: string, ...signatures: Signature[]): string {
+  return signaturesToBytes(...sortSignaturesBySignerAddress(digest, signatures));
 }

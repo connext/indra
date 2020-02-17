@@ -38,9 +38,7 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getNoFreeBalance();
   }
 
-  async getStateChannelByUserPublicIdentifier(data: {
-    userPublicIdentifier: string;
-  }): Promise<StateChannelJSON> {
+  async getStateChannelByUserPublicIdentifier(data: { userPublicIdentifier: string }): Promise<StateChannelJSON> {
     const { userPublicIdentifier } = data;
     if (!userPublicIdentifier) {
       throw new RpcException(`No public identifier supplied: ${stringify(data)}`);
@@ -64,9 +62,7 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getAllLinkedTransfers();
   }
 
-  async getLinkedTransferByPaymentId(data: {
-    paymentId: string;
-  }): Promise<LinkedTransfer | undefined> {
+  async getLinkedTransferByPaymentId(data: { paymentId: string }): Promise<LinkedTransfer | undefined> {
     const { paymentId } = data;
     if (!paymentId) {
       throw new RpcException(`No paymentId supplied: ${stringify(data)}`);

@@ -126,21 +126,15 @@ describe("LinkedUnidirectionalTransferApp", () => {
   let unidirectionalLinkedTransferApp: Contract;
 
   const applyAction = (state: SolidityABIEncoderV2Type, action: SolidityABIEncoderV2Type): any =>
-    unidirectionalLinkedTransferApp.functions.applyAction(
-      encodeAppState(state),
-      encodeAppAction(action),
-    );
+    unidirectionalLinkedTransferApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
 
   const computeOutcome = (state: SolidityABIEncoderV2Type): any =>
     unidirectionalLinkedTransferApp.functions.computeOutcome(encodeAppState(state));
 
-  before(async () => {
+  beforeAll(async () => {
     const provider = waffle.createMockProvider();
     const wallet = await waffle.getWallets(provider)[0];
-    unidirectionalLinkedTransferApp = await waffle.deployContract(
-      wallet,
-      UnidirectionalLinkedTransferApp,
-    );
+    unidirectionalLinkedTransferApp = await waffle.deployContract(wallet, UnidirectionalLinkedTransferApp);
   });
 
   it("can redeem a payment with correct hash", async () => {
@@ -193,7 +187,12 @@ describe("LinkedUnidirectionalTransferApp", () => {
     expect(res).to.eq(
       defaultAbiCoder.encode(
         [singleAssetTwoPartyCoinTransferEncoding],
-        [[[senderAddr, Zero], [redeemerAddr, amount]]],
+        [
+          [
+            [senderAddr, Zero],
+            [redeemerAddr, amount],
+          ],
+        ],
       ),
     );
   });
@@ -252,7 +251,12 @@ describe("LinkedUnidirectionalTransferApp", () => {
     expect(res).to.eq(
       defaultAbiCoder.encode(
         [singleAssetTwoPartyCoinTransferEncoding],
-        [[[senderAddr, amount], [redeemerAddr, Zero]]],
+        [
+          [
+            [senderAddr, amount],
+            [redeemerAddr, Zero],
+          ],
+        ],
       ),
     );
   });

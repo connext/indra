@@ -108,9 +108,7 @@ export default class AdminMessaging {
       } catch (e) {
         error = e;
         if (e.message.startsWith(sendFailed)) {
-          console.warn(
-            `Attempt ${attempt}/${NATS_ATTEMPTS} to send ${subject} failed: ${e.message}`,
-          );
+          console.warn(`Attempt ${attempt}/${NATS_ATTEMPTS} to send ${subject} failed: ${e.message}`);
           await this.messaging.disconnect();
           await this.messaging.connect();
           if (attempt + 1 <= NATS_ATTEMPTS) {
@@ -125,9 +123,7 @@ export default class AdminMessaging {
   }
 
   async sendAttempt(subject, data) {
-    console.log(
-      `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : "without data"}`,
-    );
+    console.log(`Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : "without data"}`);
     const payload = {
       ...data,
       id: uuid.v4(),
@@ -157,5 +153,4 @@ export default class AdminMessaging {
     const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
     return !response || isEmptyObj ? undefined : response;
   }
-
 }

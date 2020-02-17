@@ -174,10 +174,7 @@ export type CoinTransfer<T = string> = {
 export type CoinTransferBigNumber = CoinTransfer<BigNumber>;
 
 // all the types of cf app states
-export type AppState<T = string> =
-  | SimpleTransferAppState<T>
-  | SimpleLinkedTransferAppState<T>
-  | SimpleSwapAppState<T>;
+export type AppState<T = string> = SimpleTransferAppState<T> | SimpleLinkedTransferAppState<T> | SimpleSwapAppState<T>;
 export type AppStateBigNumber = AppState<BigNumber>;
 
 // all the types of cf app actions
@@ -253,9 +250,7 @@ export type UnidirectionalLinkedTransferAppState<T = string> = {
   turnNum: T;
   finalized: false;
 };
-export type UnidirectionalLinkedTransferAppStateBigNumber = UnidirectionalLinkedTransferAppState<
-  BigNumber
->;
+export type UnidirectionalLinkedTransferAppStateBigNumber = UnidirectionalLinkedTransferAppState<BigNumber>;
 
 export type UnidirectionalLinkedTransferAppAction<T = string> = {
   amount: T;
@@ -264,9 +259,7 @@ export type UnidirectionalLinkedTransferAppAction<T = string> = {
   preImage: string;
 };
 
-export type UnidirectionalLinkedTransferAppActionBigNumber = UnidirectionalLinkedTransferAppAction<
-  BigNumber
->;
+export type UnidirectionalLinkedTransferAppActionBigNumber = UnidirectionalLinkedTransferAppAction<BigNumber>;
 
 export enum UnidirectionalLinkedTransferAppStage {
   POST_FUND,

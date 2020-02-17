@@ -705,7 +705,7 @@ class App extends React.Component {
               )}
             />
             <Route path="/support" render={props => <SupportCard {...props} channel={channel} />} />
-            <Confirmations machine={machine} state={state} network={network} state={state} />
+            <Confirmations machine={machine} network={network} state={state} />
           </Paper>
         </Grid>
       </Router>

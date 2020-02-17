@@ -1,19 +1,7 @@
-import {
-  Interface,
-  joinSignature,
-  keccak256,
-  Signature,
-  solidityPack
-} from "ethers/utils";
+import { Interface, joinSignature, keccak256, Signature, solidityPack } from "ethers/utils";
 
 import { ChallengeRegistry } from "../contracts";
-import {
-  AppIdentity,
-  CFCoreTypes,
-  EthereumCommitment,
-  NetworkContext,
-  SignedStateHashUpdate
-} from "../types";
+import { AppIdentity, CFCoreTypes, EthereumCommitment, NetworkContext, SignedStateHashUpdate } from "../types";
 import { sortSignaturesBySignerAddress } from "../utils";
 
 import { appIdentityToHash } from "./utils/app-identity";
@@ -26,7 +14,7 @@ export class SetStateCommitment extends EthereumCommitment {
     public readonly appIdentity: AppIdentity,
     public readonly hashedAppState: string,
     public readonly appVersionNumber: number,
-    public readonly timeout: number
+    public readonly timeout: number,
   ) {
     super();
   }
@@ -35,14 +23,8 @@ export class SetStateCommitment extends EthereumCommitment {
     return keccak256(
       solidityPack(
         ["bytes1", "bytes32", "uint256", "uint256", "bytes32"],
-        [
-          "0x19",
-          appIdentityToHash(this.appIdentity),
-          this.appVersionNumber,
-          this.timeout,
-          this.hashedAppState
-        ]
-      )
+        ["0x19", appIdentityToHash(this.appIdentity), this.appVersionNumber, this.timeout, this.hashedAppState],
+      ),
     );
   }
 
@@ -50,24 +32,16 @@ export class SetStateCommitment extends EthereumCommitment {
     return {
       to: this.networkContext.ChallengeRegistry,
       value: 0,
-      data: iface.functions.setState.encode([
-        this.appIdentity,
-        this.getSignedStateHashUpdate(sigs)
-      ])
+      data: iface.functions.setState.encode([this.appIdentity, this.getSignedStateHashUpdate(sigs)]),
     };
   }
 
-  private getSignedStateHashUpdate(
-    signatures: Signature[]
-  ): SignedStateHashUpdate {
+  private getSignedStateHashUpdate(signatures: Signature[]): SignedStateHashUpdate {
     return {
       appStateHash: this.hashedAppState,
       versionNumber: this.appVersionNumber,
       timeout: this.timeout,
-      signatures: sortSignaturesBySignerAddress(
-        this.hashToSign(),
-        signatures
-      ).map(joinSignature)
+      signatures: sortSignaturesBySignerAddress(this.hashToSign(), signatures).map(joinSignature),
     };
   }
 }

@@ -41,9 +41,7 @@ describe("Node method follows spec - deploy state deposit holder", () => {
     const startingMultisigBalance = await provider.getBalance(multisigAddress);
     await deposit(nodeA, multisigAddress, One, nodeB);
 
-    const postDepositMultisigBalance = await provider.getBalance(
-      multisigAddress
-    );
+    const postDepositMultisigBalance = await provider.getBalance(multisigAddress);
 
     expect(postDepositMultisigBalance).toBeEq(startingMultisigBalance.add(One));
 
@@ -51,12 +49,7 @@ describe("Node method follows spec - deploy state deposit holder", () => {
 
     expect(await provider.getBalance(recipient)).toBeEq(Zero);
 
-    const withdrawReq = constructWithdrawRpc(
-      multisigAddress,
-      One,
-      CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-      recipient
-    );
+    const withdrawReq = constructWithdrawRpc(multisigAddress, One, CONVENTION_FOR_ETH_TOKEN_ADDRESS, recipient);
 
     expect(nodeA.rpcRouter.dispatch(withdrawReq)).rejects.toBeDefined();
   });

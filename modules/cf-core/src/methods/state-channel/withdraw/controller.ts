@@ -1,8 +1,4 @@
-import {
-  WITHDRAWAL_STARTED_EVENT,
-  WITHDRAWAL_FAILED_EVENT,
-  WITHDRAWAL_CONFIRMED_EVENT
-} from "@connext/types";
+import { WITHDRAWAL_STARTED_EVENT, WITHDRAWAL_FAILED_EVENT, WITHDRAWAL_CONFIRMED_EVENT } from "@connext/types";
 import { TransactionResponse } from "ethers/providers";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -18,7 +14,7 @@ import {
   INSUFFICIENT_FUNDS_TO_WITHDRAW,
   INVALID_FACTORY_ADDRESS,
   INVALID_MASTERCOPY_ADDRESS,
-  WITHDRAWAL_FAILED
+  WITHDRAWAL_FAILED,
 } from "../../errors";
 
 import { runWithdrawProtocol } from "./operation";
@@ -29,47 +25,29 @@ export default class WithdrawController extends NodeController {
 
   public static async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.WithdrawParams
+    params: CFCoreTypes.WithdrawParams,
   ): Promise<string[]> {
     const { store, publicIdentifier, networkContext } = requestHandler;
 
     const stateChannel = await store.getStateChannel(params.multisigAddress);
 
-    const tokenAddress =
-      params.tokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
+    const tokenAddress = params.tokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
 
-    if (
-      stateChannel.hasBalanceRefundAppInstance(
-        networkContext.CoinBalanceRefundApp,
-        tokenAddress
-      )
-    ) {
+    if (stateChannel.hasBalanceRefundAppInstance(networkContext.CoinBalanceRefundApp, tokenAddress)) {
       throw Error(CANNOT_WITHDRAW);
     }
 
     const senderBalance = stateChannel
       .getFreeBalanceClass()
-      .getBalance(
-        tokenAddress,
-        stateChannel.getFreeBalanceAddrOf(publicIdentifier)
-      );
+      .getBalance(tokenAddress, stateChannel.getFreeBalanceAddrOf(publicIdentifier));
     if (senderBalance.lt(params.amount)) {
-      throw Error(
-        INSUFFICIENT_FUNDS_TO_WITHDRAW(
-          tokenAddress,
-          params.amount,
-          senderBalance
-        )
-      );
+      throw Error(INSUFFICIENT_FUNDS_TO_WITHDRAW(tokenAddress, params.amount, senderBalance));
     }
 
     return [params.multisigAddress];
   }
 
-  protected async beforeExecution(
-    requestHandler: RequestHandler,
-    params: CFCoreTypes.WithdrawParams
-  ): Promise<void> {
+  protected async beforeExecution(requestHandler: RequestHandler, params: CFCoreTypes.WithdrawParams): Promise<void> {
     const { store, provider } = requestHandler;
     const { multisigAddress } = params;
 
@@ -80,15 +58,13 @@ export default class WithdrawController extends NodeController {
     }
 
     if (!channel.addresses.multisigMastercopy) {
-      throw Error(
-        INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy)
-      );
+      throw Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userNeuteredExtendedKeys,
       channel.addresses,
-      provider
+      provider,
     );
 
     if (expectedMultisigAddress !== channel.multisigAddress) {
@@ -98,16 +74,9 @@ export default class WithdrawController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.WithdrawParams
+    params: CFCoreTypes.WithdrawParams,
   ): Promise<CFCoreTypes.WithdrawResult> {
-    const {
-      store,
-      provider,
-      wallet,
-      publicIdentifier,
-      blocksNeededForConfirmation,
-      outgoing
-    } = requestHandler;
+    const { store, provider, wallet, publicIdentifier, blocksNeededForConfirmation, outgoing } = requestHandler;
 
     const { multisigAddress, recipient } = params;
 
@@ -133,7 +102,7 @@ export default class WithdrawController extends NodeController {
       ...commitment,
       gasPrice: await provider.getGasPrice(),
       gasLimit: 300000,
-      nonce
+      nonce,
     };
 
     let txResponse: TransactionResponse;
@@ -145,32 +114,29 @@ export default class WithdrawController extends NodeController {
         type: WITHDRAWAL_STARTED_EVENT,
         data: {
           params,
-          txHash: txResponse.hash
-        }
+          txHash: txResponse.hash,
+        },
       });
 
-      const txReceipt = await provider.waitForTransaction(
-        txResponse.hash as string,
-        blocksNeededForConfirmation
-      );
+      const txReceipt = await provider.waitForTransaction(txResponse.hash as string, blocksNeededForConfirmation);
 
       outgoing.emit(WITHDRAWAL_CONFIRMED_EVENT, {
         from: publicIdentifier,
         type: WITHDRAWAL_CONFIRMED_EVENT,
-        data: { txReceipt }
+        data: { txReceipt },
       });
     } catch (e) {
       outgoing.emit(WITHDRAWAL_FAILED_EVENT, {
         from: publicIdentifier,
         type: WITHDRAWAL_FAILED_EVENT,
-        data: e.toString()
+        data: e.toString(),
       });
       throw Error(`${WITHDRAWAL_FAILED}: ${e.message}`);
     }
 
     return {
       recipient: params.recipient,
-      txHash: txResponse.hash!
+      txHash: txResponse.hash!,
     };
   }
 }

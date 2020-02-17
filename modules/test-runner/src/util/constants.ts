@@ -14,8 +14,7 @@ export const APP_PROTOCOL_TOO_LONG = (protocol: string): string => {
   }
   return `App ${protocol} took longer than 90 seconds`;
 };
-export const MESSAGE_FAILED_TO_SEND = (reason?: string): string =>
-  `Failed to send message: ${reason}`;
+export const MESSAGE_FAILED_TO_SEND = (reason?: string): string => `Failed to send message: ${reason}`;
 export const FORBIDDEN_SUBJECT_ERROR = `Subject is forbidden`;
 export const NODE_HAS_RIGHTS_ERROR = `Cannot uninstall a balance refund app without being the recipient`;
 

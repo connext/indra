@@ -18,34 +18,30 @@ export const transferAbiEncodings: AppABIEncodings = {
     tuple(
       uint8 actionType,
       uint256 amount
-    )`
+    )`,
 };
 
 export function validAction(actionType: number = 0, amount: BigNumberish = 1) {
   return {
     actionType, // SEND_MONEY = 0, END_CHANNEL = 1
-    amount
+    amount,
   };
 }
 
-export function initialTransferState(
-  senderAddr: string,
-  receiverAddr: string,
-  amount: BigNumberish = 1
-) {
+export function initialTransferState(senderAddr: string, receiverAddr: string, amount: BigNumberish = 1) {
   return {
     stage: 0, // POST_FUND
     transfers: [
       {
         amount: bigNumberify(amount),
-        to: senderAddr
+        to: senderAddr,
       },
       {
         to: receiverAddr,
-        amount: Zero
-      }
+        amount: Zero,
+      },
     ],
     turnNum: 0,
-    finalized: false
+    finalized: false,
   };
 }

@@ -1,20 +1,12 @@
 import { parseEther } from "ethers/utils";
 
 import { Node } from "../../src";
-import {
-  InstallVirtualMessage,
-  UninstallVirtualMessage
-} from "../../src/types";
+import { InstallVirtualMessage, UninstallVirtualMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
-import {
-  collateralizeChannel,
-  constructUninstallVirtualRpc,
-  createChannel,
-  installVirtualApp
-} from "./utils";
+import { collateralizeChannel, constructUninstallVirtualRpc, createChannel, installVirtualApp } from "./utils";
 
 expect.extend({ toBeLt });
 
@@ -38,19 +30,9 @@ describe("Concurrently uninstalling virtual and regular applications without iss
     multisigAddressAB = await createChannel(nodeA, nodeB);
     multisigAddressBC = await createChannel(nodeB, nodeC);
 
-    await collateralizeChannel(
-      multisigAddressAB,
-      nodeA,
-      nodeB,
-      parseEther("2")
-    );
+    await collateralizeChannel(multisigAddressAB, nodeA, nodeB, parseEther("2"));
 
-    await collateralizeChannel(
-      multisigAddressBC,
-      nodeB,
-      nodeC,
-      parseEther("2")
-    );
+    await collateralizeChannel(multisigAddressBC, nodeB, nodeC, parseEther("2"));
   });
 
   it("can handle two concurrent TTT virtual app uninstalls", async done => {
@@ -71,23 +53,19 @@ describe("Concurrently uninstalling virtual and regular applications without iss
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    const uninstallRpc = (appId: string) =>
-      constructUninstallVirtualRpc(appId, nodeB.publicIdentifier);
+    const uninstallRpc = (appId: string) => constructUninstallVirtualRpc(appId, nodeB.publicIdentifier);
 
     nodeA.rpcRouter.dispatch(uninstallRpc(appIds[0]));
     nodeA.rpcRouter.dispatch(uninstallRpc(appIds[1]));
 
     // NOTE: nodeA does not emit this event
-    nodeC.on(
-      "UNINSTALL_VIRTUAL_EVENT",
-      async (msg: UninstallVirtualMessage) => {
-        expect(appIds.includes(msg.data.appInstanceId)).toBe(true);
-        uninstalledApps += 1;
-        // NOTE: this expect fails
-        // const apps = (await getInstalledAppInstances(nodeC)).length;
-        // expect(INSTALLED_APPS - apps).toEqual(uninstalledApps);
-        if (uninstalledApps === 2) done();
-      }
-    );
+    nodeC.on("UNINSTALL_VIRTUAL_EVENT", async (msg: UninstallVirtualMessage) => {
+      expect(appIds.includes(msg.data.appInstanceId)).toBe(true);
+      uninstalledApps += 1;
+      // NOTE: this expect fails
+      // const apps = (await getInstalledAppInstances(nodeC)).length;
+      // expect(INSTALLED_APPS - apps).toEqual(uninstalledApps);
+      if (uninstalledApps === 2) done();
+    });
   });
 });

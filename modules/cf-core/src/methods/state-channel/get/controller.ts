@@ -10,12 +10,10 @@ export default class GetStateChannelController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.GetStateChannelParams
+    params: CFCoreTypes.GetStateChannelParams,
   ): Promise<CFCoreTypes.GetStateChannelResult> {
     return {
-      data: (
-        await requestHandler.store.getStateChannel(params.multisigAddress)
-      ).toJson()
+      data: (await requestHandler.store.getStateChannel(params.multisigAddress)).toJson(),
     };
   }
 }

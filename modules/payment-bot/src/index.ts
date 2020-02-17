@@ -187,9 +187,7 @@ process.on("unhandledRejection", (e: any): any => {
       WITHDRAWAL_CONFIRMED_EVENT,
       async (data: any): Promise<void> => {
         console.log(`Caught withdraw confirmed event, data: ${JSON.stringify(data, replaceBN, 2)}`);
-        const postWithdrawBal = await provider.getBalance(
-          config.recipient || client.freeBalanceAddress,
-        );
+        const postWithdrawBal = await provider.getBalance(config.recipient || client.freeBalanceAddress);
         console.log(`Found postwithdrawal balance of ${formatEther(postWithdrawBal)}`);
         const diff = postWithdrawBal.sub(preWithdrawBal);
         if (!diff.eq(withdrawParams.amount)) {

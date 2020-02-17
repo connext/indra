@@ -7,7 +7,7 @@ import {
   UninstallProtocolParams,
   UninstallVirtualAppProtocolParams,
   UpdateProtocolParams,
-  WithdrawProtocolParams
+  WithdrawProtocolParams,
 } from "../machine";
 import { NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID } from "../methods/errors";
 import { StateChannel } from "../models";
@@ -25,7 +25,7 @@ import {
 } from "../types";
 import { bigNumberifyJson } from "../utils";
 import { Store } from "../store";
-import { 
+import {
   PROPOSE_INSTALL_EVENT,
   INSTALL_EVENT,
   UNINSTALL_EVENT,
@@ -33,7 +33,7 @@ import {
   WITHDRAWAL_STARTED_EVENT,
   UPDATE_STATE_EVENT,
   INSTALL_VIRTUAL_EVENT,
-  UNINSTALL_VIRTUAL_EVENT
+  UNINSTALL_VIRTUAL_EVENT,
 } from "@connext/types";
 
 /**
@@ -43,15 +43,9 @@ import {
  */
 export async function handleReceivedProtocolMessage(
   requestHandler: RequestHandler,
-  msg: NodeMessageWrappedProtocolMessage
+  msg: NodeMessageWrappedProtocolMessage,
 ) {
-  const {
-    protocolRunner,
-    store,
-    router,
-    networkContext,
-    publicIdentifier
-  } = requestHandler;
+  const { protocolRunner, store, router, networkContext, publicIdentifier } = requestHandler;
 
   const { data } = bigNumberifyJson(msg) as NodeMessageWrappedProtocolMessage;
 
@@ -61,10 +55,7 @@ export async function handleReceivedProtocolMessage(
 
   const preProtocolStateChannelsMap = await store.getStateChannelsMap();
 
-  const postProtocolStateChannelsMap = await protocolRunner.runProtocolWithMessage(
-    data,
-    preProtocolStateChannelsMap
-  );
+  const postProtocolStateChannelsMap = await protocolRunner.runProtocolWithMessage(data, preProtocolStateChannelsMap);
 
   const outgoingEventData = await getOutgoingEventDataFromProtocol(
     protocol,
@@ -72,36 +63,24 @@ export async function handleReceivedProtocolMessage(
     postProtocolStateChannelsMap,
     networkContext,
     store,
-    publicIdentifier
+    publicIdentifier,
   );
 
-  if (
-    outgoingEventData &&
-    (protocol === Protocol.Install || protocol === Protocol.InstallVirtualApp)
-  ) {
+  if (outgoingEventData && (protocol === Protocol.Install || protocol === Protocol.InstallVirtualApp)) {
     const appInstanceId =
-      outgoingEventData!.data["appInstanceId"] ||
-      (outgoingEventData!.data as any).params["appInstanceId"];
+      outgoingEventData!.data["appInstanceId"] || (outgoingEventData!.data as any).params["appInstanceId"];
     if (appInstanceId) {
       let proposal;
       try {
         proposal = await store.getAppInstanceProposal(appInstanceId);
       } catch (e) {
-        if (
-          !e
-            .toString()
-            .includes(
-              NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID(appInstanceId)
-            )
-        ) {
+        if (!e.toString().includes(NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID(appInstanceId))) {
           throw e;
         }
       }
       if (proposal) {
         await store.saveStateChannel(
-          (
-            await store.getChannelFromAppInstanceID(appInstanceId)
-          ).removeProposal(appInstanceId)
+          (await store.getChannelFromAppInstanceID(appInstanceId)).removeProposal(appInstanceId),
         );
       }
     }
@@ -122,7 +101,7 @@ async function getOutgoingEventDataFromProtocol(
   stateChannelsMap: Map<string, StateChannel>,
   networkContext: NetworkContext,
   store: Store,
-  publicIdentifier: string
+  publicIdentifier: string,
 ): Promise<EventEmittedMessage | undefined> {
   // default to the pubId that initiated the protocol
   const baseEvent = { from: params.initiatorXpub };
@@ -141,12 +120,12 @@ async function getOutgoingEventDataFromProtocol(
         data: {
           params: {
             ...emittedParams,
-            proposedToIdentifier: responderXpub
+            proposedToIdentifier: responderXpub,
           },
           appInstanceId: stateChannelsMap
             .get((params as ProposeInstallProtocolParams).multisigAddress)!
-            .mostRecentlyProposedAppInstance().identityHash
-        }
+            .mostRecentlyProposedAppInstance().identityHash,
+        },
       };
     case Protocol.Install:
       return {
@@ -158,15 +137,15 @@ async function getOutgoingEventDataFromProtocol(
           params: {
             appInstanceId: stateChannelsMap
               .get((params as InstallProtocolParams).multisigAddress)!
-              .mostRecentlyInstalledAppInstance().identityHash
-          }
-        }
+              .mostRecentlyInstalledAppInstance().identityHash,
+          },
+        },
       };
     case Protocol.Uninstall:
       return {
         ...baseEvent,
         type: UNINSTALL_EVENT,
-        data: getUninstallEventData(params as UninstallProtocolParams)
+        data: getUninstallEventData(params as UninstallProtocolParams),
       };
     case Protocol.Setup:
       return {
@@ -174,9 +153,8 @@ async function getOutgoingEventDataFromProtocol(
         type: CREATE_CHANNEL_EVENT,
         data: getSetupEventData(
           params as SetupProtocolParams,
-          stateChannelsMap.get((params as SetupProtocolParams).multisigAddress)!
-            .multisigOwners
-        )
+          stateChannelsMap.get((params as SetupProtocolParams).multisigAddress)!.multisigOwners,
+        ),
       };
     case Protocol.Withdraw:
       // NOTE: responder will only ever emit a withdraw started
@@ -185,7 +163,7 @@ async function getOutgoingEventDataFromProtocol(
       return {
         ...baseEvent,
         type: WITHDRAWAL_STARTED_EVENT,
-        data: getWithdrawEventData(params as WithdrawProtocolParams)
+        data: getWithdrawEventData(params as WithdrawProtocolParams),
       } as WithdrawStartedMessage;
     case Protocol.TakeAction:
     case Protocol.Update:
@@ -195,21 +173,15 @@ async function getOutgoingEventDataFromProtocol(
         data: getStateUpdateEventData(
           params as UpdateProtocolParams,
           stateChannelsMap
-            .get(
-              (params as TakeActionProtocolParams | UpdateProtocolParams)
-                .multisigAddress
-            )!
-            .getAppInstance(
-              (params as TakeActionProtocolParams | UpdateProtocolParams)
-                .appIdentityHash
-            )!.state
-        )
+            .get((params as TakeActionProtocolParams | UpdateProtocolParams).multisigAddress)!
+            .getAppInstance((params as TakeActionProtocolParams | UpdateProtocolParams).appIdentityHash)!.state,
+        ),
       };
     case Protocol.InstallVirtualApp:
       const {
         initiatorXpub: initiator,
         intermediaryXpub,
-        responderXpub: responder
+        responderXpub: responder,
       } = params as InstallVirtualAppProtocolParams;
       // channels for responders and initiators of virtual protocols are
       // persisted at the end of the `propose` protocol. channels with the
@@ -227,7 +199,7 @@ async function getOutgoingEventDataFromProtocol(
         [responder, initiator],
         networkContext.ProxyFactory,
         networkContext.MinimumViableMultisig,
-        isIntermediary ? networkContext.provider : undefined
+        isIntermediary ? networkContext.provider : undefined,
       );
       if (stateChannelsMap.has(virtualChannel)) {
         return {
@@ -237,11 +209,9 @@ async function getOutgoingEventDataFromProtocol(
             // TODO: It is weird that `params` is in the event data, we should
             // remove it, but after telling all consumers about this change
             params: {
-              appInstanceId: stateChannelsMap
-                .get(virtualChannel)!
-                .mostRecentlyInstalledAppInstance().identityHash
-            }
-          }
+              appInstanceId: stateChannelsMap.get(virtualChannel)!.mostRecentlyInstalledAppInstance().identityHash,
+            },
+          },
         };
       }
       return;
@@ -249,21 +219,14 @@ async function getOutgoingEventDataFromProtocol(
       return {
         ...baseEvent,
         type: UNINSTALL_VIRTUAL_EVENT,
-        data: getUninstallVirtualAppEventData(
-          params as UninstallVirtualAppProtocolParams
-        )
+        data: getUninstallVirtualAppEventData(params as UninstallVirtualAppProtocolParams),
       };
     default:
-      throw Error(
-        `handleReceivedProtocolMessage received invalid protocol message: ${protocol}`
-      );
+      throw Error(`handleReceivedProtocolMessage received invalid protocol message: ${protocol}`);
   }
 }
 
-function getStateUpdateEventData(
-  params: TakeActionProtocolParams | UpdateProtocolParams,
-  newState: SolidityValueType
-) {
+function getStateUpdateEventData(params: TakeActionProtocolParams | UpdateProtocolParams, newState: SolidityValueType) {
   // note: action does not exist on type `UpdateProtocolParams`
   // so use any cast
   const { appIdentityHash: appInstanceId, action } = params as any;
@@ -272,14 +235,12 @@ function getStateUpdateEventData(
 
 function getUninstallVirtualAppEventData({
   intermediaryXpub: intermediaryIdentifier,
-  targetAppIdentityHash: appInstanceId
+  targetAppIdentityHash: appInstanceId,
 }: UninstallVirtualAppProtocolParams) {
   return { appInstanceId, intermediaryIdentifier };
 }
 
-function getUninstallEventData({
-  appIdentityHash: appInstanceId
-}: UninstallProtocolParams) {
+function getUninstallEventData({ appIdentityHash: appInstanceId }: UninstallProtocolParams) {
   return { appInstanceId };
 }
 
@@ -290,14 +251,14 @@ function getWithdrawEventData(params: WithdrawProtocolParams) {
       multisigAddress,
       tokenAddress,
       recipient,
-      amount
-    }
+      amount,
+    },
   };
 }
 
 function getSetupEventData(
   { initiatorXpub: counterpartyXpub, multisigAddress }: SetupProtocolParams,
-  owners: string[]
+  owners: string[],
 ) {
   return { multisigAddress, owners, counterpartyXpub };
 }
@@ -316,7 +277,7 @@ function getSetupEventData(
 async function getQueueNamesListByProtocolName(
   protocol: string,
   params: ProtocolParameters,
-  requestHandler: RequestHandler
+  requestHandler: RequestHandler,
 ): Promise<string[]> {
   const { networkContext, provider, publicIdentifier, store } = requestHandler;
 
@@ -332,7 +293,7 @@ async function getQueueNamesListByProtocolName(
       xpubs,
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
-      allowed ? provider : undefined
+      allowed ? provider : undefined,
     );
   }
 
@@ -344,10 +305,7 @@ async function getQueueNamesListByProtocolName(
     case Protocol.Setup:
     case Protocol.Withdraw:
     case Protocol.Propose:
-      const { multisigAddress } = params as
-        | InstallProtocolParams
-        | SetupProtocolParams
-        | WithdrawProtocolParams;
+      const { multisigAddress } = params as InstallProtocolParams | SetupProtocolParams | WithdrawProtocolParams;
 
       return [multisigAddress];
 
@@ -356,17 +314,12 @@ async function getQueueNamesListByProtocolName(
      */
     case Protocol.TakeAction:
     case Protocol.Update:
-      const { appIdentityHash } = params as
-        | TakeActionProtocolParams
-        | UpdateProtocolParams;
+      const { appIdentityHash } = params as TakeActionProtocolParams | UpdateProtocolParams;
 
       return [appIdentityHash];
 
     case Protocol.Uninstall:
-      const {
-        multisigAddress: addr,
-        appIdentityHash: appInstanceId
-      } = params as UninstallProtocolParams;
+      const { multisigAddress: addr, appIdentityHash: appInstanceId } = params as UninstallProtocolParams;
 
       return [addr, appInstanceId];
 
@@ -374,23 +327,19 @@ async function getQueueNamesListByProtocolName(
      * Queue on the multisig addresses of both direct channels involved.
      */
     case Protocol.InstallVirtualApp:
-      const {
-        initiatorXpub,
-        intermediaryXpub,
-        responderXpub
-      } = params as InstallVirtualAppProtocolParams;
+      const { initiatorXpub, intermediaryXpub, responderXpub } = params as InstallVirtualAppProtocolParams;
 
       if (publicIdentifier === intermediaryXpub) {
         return [
           await multisigAddressFor([initiatorXpub, intermediaryXpub]),
-          await multisigAddressFor([responderXpub, intermediaryXpub])
+          await multisigAddressFor([responderXpub, intermediaryXpub]),
         ];
       }
 
       if (publicIdentifier === responderXpub) {
         return [
           await multisigAddressFor([responderXpub, intermediaryXpub]),
-          await multisigAddressFor([responderXpub, initiatorXpub])
+          await multisigAddressFor([responderXpub, initiatorXpub]),
         ];
       }
 
@@ -403,14 +352,14 @@ async function getQueueNamesListByProtocolName(
         initiatorXpub: initiator,
         intermediaryXpub: intermediary,
         responderXpub: responder,
-        targetAppIdentityHash
+        targetAppIdentityHash,
       } = params as UninstallVirtualAppProtocolParams;
 
       if (publicIdentifier === intermediary) {
         return [
           await multisigAddressFor([initiator, intermediary]),
           await multisigAddressFor([responder, intermediary]),
-          targetAppIdentityHash
+          targetAppIdentityHash,
         ];
       }
 
@@ -418,7 +367,7 @@ async function getQueueNamesListByProtocolName(
         return [
           await multisigAddressFor([responder, intermediary]),
           await multisigAddressFor([responder, initiator]),
-          targetAppIdentityHash
+          targetAppIdentityHash,
         ];
       }
 
@@ -429,8 +378,6 @@ async function getQueueNamesListByProtocolName(
     // that case.
 
     default:
-      throw Error(
-        `handleReceivedProtocolMessage received invalid protocol message: ${protocol}`
-      );
+      throw Error(`handleReceivedProtocolMessage received invalid protocol message: ${protocol}`);
   }
 }

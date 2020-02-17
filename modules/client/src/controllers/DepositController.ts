@@ -54,9 +54,7 @@ export class DepositController extends AbstractController {
 
       const postDepositBalances = await this.connext.getFreeBalance(assetId);
 
-      const diff = postDepositBalances[myFreeBalanceAddress].sub(
-        preDepositBalances[myFreeBalanceAddress],
-      );
+      const diff = postDepositBalances[myFreeBalanceAddress].sub(preDepositBalances[myFreeBalanceAddress]);
 
       // changing this from !eq to lt. now that we have async deposits there is an edge case
       // where it could be more than amount

@@ -19,7 +19,7 @@ import {
   deposit,
   getFreeBalanceState,
   transferERC20Tokens,
-  assertNodeMessage
+  assertNodeMessage,
 } from "./utils";
 import { WithdrawConfirmationMessage } from "../../src/types";
 import { CFCoreTypes } from "@connext/types";
@@ -27,60 +27,50 @@ import { CFCoreTypes } from "@connext/types";
 expect.extend({ toBeEq, toBeLt });
 
 // NOTE: responder does not have confirm event for any withdrawals
-function confirmWithdrawalMessages(
-  initiator: Node,
-  responder: Node,
-  params: CFCoreTypes.WithdrawParams
-) {
+function confirmWithdrawalMessages(initiator: Node, responder: Node, params: CFCoreTypes.WithdrawParams) {
   // initiator messages
-  initiator.once(
-    WITHDRAWAL_CONFIRMED_EVENT,
-    (msg: WithdrawConfirmationMessage) => {
-      assertNodeMessage(
-        msg,
-        {
-          from: initiator.publicIdentifier,
-          type: WITHDRAWAL_CONFIRMED_EVENT,
-          data: {
-            txReceipt: {
-              from: initiator.freeBalanceAddress,
-              to: params.multisigAddress
-            }
-          }
+  initiator.once(WITHDRAWAL_CONFIRMED_EVENT, (msg: WithdrawConfirmationMessage) => {
+    assertNodeMessage(
+      msg,
+      {
+        from: initiator.publicIdentifier,
+        type: WITHDRAWAL_CONFIRMED_EVENT,
+        data: {
+          txReceipt: {
+            from: initiator.freeBalanceAddress,
+            to: params.multisigAddress,
+          },
         },
-        [
-          "data.txReceipt.blockHash",
-          "data.txReceipt.blockNumber",
-          "data.txReceipt.byzantium",
-          "data.txReceipt.confirmations",
-          "data.txReceipt.contractAddress",
-          "data.txReceipt.cumulativeGasUsed",
-          "data.txReceipt.gasUsed",
-          "data.txReceipt.logs",
-          "data.txReceipt.logsBloom",
-          "data.txReceipt.status",
-          "data.txReceipt.transactionHash",
-          "data.txReceipt.transactionIndex"
-        ]
-      );
-    }
-  );
+      },
+      [
+        "data.txReceipt.blockHash",
+        "data.txReceipt.blockNumber",
+        "data.txReceipt.byzantium",
+        "data.txReceipt.confirmations",
+        "data.txReceipt.contractAddress",
+        "data.txReceipt.cumulativeGasUsed",
+        "data.txReceipt.gasUsed",
+        "data.txReceipt.logs",
+        "data.txReceipt.logsBloom",
+        "data.txReceipt.status",
+        "data.txReceipt.transactionHash",
+        "data.txReceipt.transactionIndex",
+      ],
+    );
+  });
 
   const startedMsg = {
     from: initiator.publicIdentifier,
     type: WITHDRAWAL_STARTED_EVENT,
-    data: { params }
+    data: { params },
   };
   initiator.once(WITHDRAWAL_STARTED_EVENT, (msg: any) => {
     assertNodeMessage(msg, startedMsg, ["data.txHash"]);
   });
 
-  responder.once(
-    WITHDRAWAL_STARTED_EVENT,
-    (msg: WithdrawStartedMessage) => {
-      assertNodeMessage(msg, startedMsg);
-    }
-  );
+  responder.once(WITHDRAWAL_STARTED_EVENT, (msg: WithdrawStartedMessage) => {
+    assertNodeMessage(msg, startedMsg);
+  });
 }
 
 describe("Node method follows spec - withdraw", () => {
@@ -109,9 +99,7 @@ describe("Node method follows spec - withdraw", () => {
 
     await deposit(nodeA, multisigAddress, One, nodeB);
 
-    const postDepositMultisigBalance = await provider.getBalance(
-      multisigAddress
-    );
+    const postDepositMultisigBalance = await provider.getBalance(multisigAddress);
 
     expect(postDepositMultisigBalance).toBeEq(startingMultisigBalance.add(One));
 
@@ -119,87 +107,57 @@ describe("Node method follows spec - withdraw", () => {
 
     expect(await provider.getBalance(recipient)).toBeEq(Zero);
 
-    const withdrawReq = constructWithdrawRpc(
-      multisigAddress,
-      One,
-      CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-      recipient
-    );
+    const withdrawReq = constructWithdrawRpc(multisigAddress, One, CONVENTION_FOR_ETH_TOKEN_ADDRESS, recipient);
 
-    confirmWithdrawalMessages(
-      nodeA,
-      nodeB,
-      withdrawReq.parameters as CFCoreTypes.WithdrawParams
-    );
+    confirmWithdrawalMessages(nodeA, nodeB, withdrawReq.parameters as CFCoreTypes.WithdrawParams);
 
     const {
       result: {
-        result: { txHash }
-      }
+        result: { txHash },
+      },
     } = await nodeA.rpcRouter.dispatch(withdrawReq);
 
     expect(txHash).toBeDefined();
     expect(txHash.length).toBe(66);
     expect(txHash.substr(0, 2)).toBe("0x");
 
-    expect(await provider.getBalance(multisigAddress)).toBeEq(
-      startingMultisigBalance
-    );
+    expect(await provider.getBalance(multisigAddress)).toBeEq(startingMultisigBalance);
 
     expect(await provider.getBalance(recipient)).toBeEq(One);
   });
 
   it("has the right balance for both parties after withdrawal of ERC20 tokens", async () => {
-    const erc20ContractAddress = (global[
-      "networkContext"
-    ] as NetworkContextForTestSuite).DolphinCoin;
+    const erc20ContractAddress = (global["networkContext"] as NetworkContextForTestSuite).DolphinCoin;
 
     const erc20Contract = new Contract(
       erc20ContractAddress,
       DolphinCoin.abi,
-      new JsonRpcProvider(global["ganacheURL"])
+      new JsonRpcProvider(global["ganacheURL"]),
     );
 
     expect(multisigAddress).toBeDefined();
 
     await transferERC20Tokens(await nodeA.signerAddress());
 
-    const startingMultisigTokenBalance = await erc20Contract.functions.balanceOf(
-      multisigAddress
-    );
+    const startingMultisigTokenBalance = await erc20Contract.functions.balanceOf(multisigAddress);
 
     await deposit(nodeA, multisigAddress, One, nodeB, erc20ContractAddress);
 
-    const postDepositMultisigTokenBalance = await erc20Contract.functions.balanceOf(
-      multisigAddress
-    );
+    const postDepositMultisigTokenBalance = await erc20Contract.functions.balanceOf(multisigAddress);
 
-    expect(postDepositMultisigTokenBalance).toBeEq(
-      startingMultisigTokenBalance.add(One)
-    );
+    expect(postDepositMultisigTokenBalance).toBeEq(startingMultisigTokenBalance.add(One));
 
     const recipient = getAddress(hexlify(randomBytes(20)));
 
     expect(await erc20Contract.functions.balanceOf(recipient)).toBeEq(Zero);
 
-    const withdrawReq = constructWithdrawRpc(
-      multisigAddress,
-      One,
-      erc20ContractAddress,
-      recipient
-    );
+    const withdrawReq = constructWithdrawRpc(multisigAddress, One, erc20ContractAddress, recipient);
 
-    confirmWithdrawalMessages(
-      nodeA,
-      nodeB,
-      withdrawReq.parameters as CFCoreTypes.WithdrawParams
-    );
+    confirmWithdrawalMessages(nodeA, nodeB, withdrawReq.parameters as CFCoreTypes.WithdrawParams);
 
     await nodeA.rpcRouter.dispatch(withdrawReq);
 
-    expect(await erc20Contract.functions.balanceOf(multisigAddress)).toBeEq(
-      startingMultisigTokenBalance
-    );
+    expect(await erc20Contract.functions.balanceOf(multisigAddress)).toBeEq(startingMultisigTokenBalance);
 
     expect(await erc20Contract.functions.balanceOf(recipient)).toBeEq(One);
   });
@@ -209,16 +167,10 @@ describe("Node method follows spec - withdraw", () => {
 
     await deposit(nodeA, multisigAddress, One, nodeB);
 
-    const postDepositMultisigBalance = await provider.getBalance(
-      multisigAddress
-    );
+    const postDepositMultisigBalance = await provider.getBalance(multisigAddress);
 
     const getFreeBalance = async (node: Node) => {
-      return getFreeBalanceState(
-        node,
-        multisigAddress,
-        CONVENTION_FOR_ETH_TOKEN_ADDRESS
-      );
+      return getFreeBalanceState(node, multisigAddress, CONVENTION_FOR_ETH_TOKEN_ADDRESS);
     };
 
     expect(await getFreeBalance(nodeA)).toEqual(await getFreeBalance(nodeB));
@@ -233,50 +185,37 @@ describe("Node method follows spec - withdraw", () => {
       multisigAddress,
       One,
       CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-      recipient
+      recipient,
     );
 
     // NOTE: no initiator withdrawal started event
     // and no confirm events
-    confirmWithdrawalMessages(
-      nodeA,
-      nodeB,
-      withdrawCommitmentReq.parameters as CFCoreTypes.WithdrawParams
-    );
+    confirmWithdrawalMessages(nodeA, nodeB, withdrawCommitmentReq.parameters as CFCoreTypes.WithdrawParams);
 
     const {
       result: {
-        result: { transaction }
-      }
+        result: { transaction },
+      },
     } = await nodeA.rpcRouter.dispatch(withdrawCommitmentReq);
 
     expect(transaction).toBeDefined();
 
-    const externalFundedAccount = new Wallet(
-      global["fundedPrivateKey"],
-      provider
-    );
+    const externalFundedAccount = new Wallet(global["fundedPrivateKey"], provider);
 
-    const externalAccountPreTxBalance = await provider.getBalance(
-      externalFundedAccount.address
-    );
+    const externalAccountPreTxBalance = await provider.getBalance(externalFundedAccount.address);
     const nodeAPreTxBalance = await provider.getBalance(nodeA.signerAddress());
 
     expect(await getFreeBalance(nodeA)).toEqual(await getFreeBalance(nodeB));
 
     await externalFundedAccount.sendTransaction(transaction);
 
-    const externalAccountPostTxBalance = await provider.getBalance(
-      externalFundedAccount.address
-    );
+    const externalAccountPostTxBalance = await provider.getBalance(externalFundedAccount.address);
     const nodeAPostTxBalance = await provider.getBalance(nodeA.signerAddress());
 
     expect(externalAccountPostTxBalance).toBeLt(externalAccountPreTxBalance);
     expect(nodeAPreTxBalance).toBeEq(nodeAPostTxBalance);
 
-    expect(await provider.getBalance(multisigAddress)).toBeEq(
-      startingMultisigBalance
-    );
+    expect(await provider.getBalance(multisigAddress)).toBeEq(startingMultisigBalance);
 
     expect(await provider.getBalance(recipient)).toBeEq(One);
   });

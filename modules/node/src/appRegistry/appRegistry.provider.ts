@@ -14,10 +14,7 @@ const logger = new CLogger("AppRegistryProvider");
 export const appRegistryProviderFactory: Provider = {
   inject: [AppRegistryRepository, ConfigService],
   provide: AppRegistryProviderId,
-  useFactory: async (
-    appRegistryRepository: AppRegistryRepository,
-    configService: ConfigService,
-  ): Promise<void> => {
+  useFactory: async (appRegistryRepository: AppRegistryRepository, configService: ConfigService): Promise<void> => {
     for (const app of await configService.getDefaultApps()) {
       let appRegistry = await appRegistryRepository.findByNameAndNetwork(app.name, app.chainId);
       if (!appRegistry) {

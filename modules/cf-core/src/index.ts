@@ -1,16 +1,7 @@
 export * from "rpc-server";
-export {
-  sortAddresses,
-  xkeyKthAddress,
-  xkeysToSortedKthAddresses
-} from "./machine";
+export { sortAddresses, xkeyKthAddress, xkeysToSortedKthAddresses } from "./machine";
 export * from "./methods/errors";
 export { StateChannel } from "./models";
 export * from "./node";
 export * from "./private-keys-generator";
-export {
-  getCreate2MultisigAddress,
-  bigNumberifyJson,
-  deBigNumberifyJson,
-  scanForCriticalAddresses
-} from "./utils";
+export { getCreate2MultisigAddress, bigNumberifyJson, deBigNumberifyJson, scanForCriticalAddresses } from "./utils";

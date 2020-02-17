@@ -17,9 +17,7 @@ export class AppRegistryController {
     }
 
     if (data && data.appDefinitionAddress) {
-      return [
-        await this.appRegistryRepository.findByAppDefinitionAddress(data.appDefinitionAddress),
-      ];
+      return [await this.appRegistryRepository.findByAppDefinitionAddress(data.appDefinitionAddress)];
     }
     return await this.appRegistryRepository.find();
   }

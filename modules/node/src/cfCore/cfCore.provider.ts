@@ -45,9 +45,7 @@ export const cfCoreProviderFactory: Provider = {
     );
     const signerAddr = await cfCore.signerAddress();
     const balance = (await provider.getBalance(signerAddr)).toString();
-    logger.log(
-      `Balance of signer address ${signerAddr} on ${networkName} (chainId ${chainId}): ${balance}`,
-    );
+    logger.log(`Balance of signer address ${signerAddr} on ${networkName} (chainId ${chainId}): ${balance}`);
     logger.log("CFCore created");
     logger.log(`Public Identifier ${JSON.stringify(cfCore.publicIdentifier)}`);
     logger.log(`Free balance address ${cfCore.freeBalanceAddress}`);

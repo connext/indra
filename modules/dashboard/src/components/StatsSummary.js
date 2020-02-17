@@ -34,8 +34,8 @@ const RefreshButton = styled(Button)({
 });
 
 const SectionGrid = styled(Grid)({
-  marginLeft:"5%"
-})
+  marginLeft: "5%",
+});
 
 const address = {
   mainnet: "0xf3f722f6ca6026fb7cc9b63523bbc6a73d3aad39", //"0xF80fd6F5eF91230805508bB28d75248024E50F6F", //,
@@ -85,10 +85,10 @@ const StatsSummary = ({ classes, messaging }) => {
         currentChannelValue !== 0 && channelTotalArr.push(currentChannelValue);
         currentNodeChannelValue !== 0 && nodeChannelTotalArr.push(currentNodeChannelValue);
       }
-      var channelTotalArrReduced = channelTotalArr.reduce((a, b) => {
+      let channelTotalArrReduced = channelTotalArr.reduce((a, b) => {
         return a + b;
       }, 0);
-      var nodeChannelTotalArrReduced = nodeChannelTotalArr.reduce((a, b) => {
+      let nodeChannelTotalArrReduced = nodeChannelTotalArr.reduce((a, b) => {
         return a + b;
       }, 0);
 
@@ -147,6 +147,7 @@ const StatsSummary = ({ classes, messaging }) => {
     let pastDayTotal = 0,
       pastWeekTotal = 0,
       pastMonthTotal = 0;
+    let totalTransfersReduced;
     if (res) {
       for (let transfer of res) {
         totalTransfers.push(parseInt(transfer.amount._hex, 16));
@@ -154,7 +155,7 @@ const StatsSummary = ({ classes, messaging }) => {
         const hourDifference = (Date.now() - createdDate.getTime()) / 3600000;
         if (hourDifference <= 24) {
           pastDayTotal++;
-        } 
+        }
         if (hourDifference <= 168) {
           pastWeekTotal++;
         }
@@ -162,11 +163,11 @@ const StatsSummary = ({ classes, messaging }) => {
           pastMonthTotal++;
         }
       }
-      var totalTransfersReduced = totalTransfers.reduce((a, b) => {
+      totalTransfersReduced = totalTransfers.reduce((a, b) => {
         return a + b;
       }, 0);
     }
-    var averageTransfer = totalTransfersReduced / res.length / 1000000000000000000;
+    let averageTransfer = totalTransfersReduced / res.length / 1000000000000000000;
     setTransferWindows({ pastDayTotal, pastWeekTotal, pastMonthTotal });
     setAverageTransfer(averageTransfer);
     setAllTransfers(res);
@@ -190,12 +191,10 @@ const StatsSummary = ({ classes, messaging }) => {
         <SectionGrid container xs={12}>
           <Grid xs={3}>
             <StatLabelTypography>
-              total channels:{" "}
-              <StatTypography>{allChannels ? allChannels.length : 0}</StatTypography>
+              total channels: <StatTypography>{allChannels ? allChannels.length : 0}</StatTypography>
             </StatLabelTypography>
             <StatLabelTypography>
-              collateral ratio:{" "}
-              <StatTypography>{(nodeTotal / channelTotal).toFixed(2)}</StatTypography>
+              collateral ratio: <StatTypography>{(nodeTotal / channelTotal).toFixed(2)}</StatTypography>
             </StatLabelTypography>
           </Grid>
           <Grid xs={4}>
@@ -234,15 +233,13 @@ const StatsSummary = ({ classes, messaging }) => {
           </Grid>
           <Grid xs={4}>
             <StatLabelTypography>
-              total user balances:{" "}
-              <StatTypography>{(channelTotal / 1000000000000000000).toFixed(2)}</StatTypography>
+              total user balances: <StatTypography>{(channelTotal / 1000000000000000000).toFixed(2)}</StatTypography>
             </StatLabelTypography>
             <StatLabelTypography>
               average transfer: <StatTypography>{averageTransfer.toFixed(2)}</StatTypography>
             </StatLabelTypography>
             <StatLabelTypography>
-              total node balances:{" "}
-              <StatTypography>{(nodeTotal / 1000000000000000000).toFixed(2)}</StatTypography>
+              total node balances: <StatTypography>{(nodeTotal / 1000000000000000000).toFixed(2)}</StatTypography>
             </StatLabelTypography>
           </Grid>
         </SectionGrid>

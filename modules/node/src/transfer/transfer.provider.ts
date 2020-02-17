@@ -21,10 +21,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
     super(messaging);
   }
 
-  async getLinkedTransferByPaymentId(
-    pubId: string,
-    data: { paymentId: string },
-  ): Promise<Transfer> {
+  async getLinkedTransferByPaymentId(pubId: string, data: { paymentId: string }): Promise<Transfer> {
     if (!data.paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }

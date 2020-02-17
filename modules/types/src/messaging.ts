@@ -59,12 +59,7 @@ export interface IMessagingService extends CFMessagingService {
   flush(): Promise<void>;
   onReceive(subject: string, callback: (msg: NodeMessage) => void): Promise<void>;
   publish(subject: string, data: any): Promise<void>;
-  request(
-    subject: string,
-    timeout: number,
-    data: object,
-    callback?: (response: any) => any,
-  ): Promise<any>;
+  request(subject: string, timeout: number, data: object, callback?: (response: any) => any): Promise<any>;
   send(to: string, msg: NodeMessage): Promise<void>;
   subscribe(subject: string, callback: (msg: NodeMessage) => void): Promise<void>;
   unsubscribe(subject: string): Promise<void>;

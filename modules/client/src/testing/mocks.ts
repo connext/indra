@@ -25,10 +25,8 @@ type TransactionRequest = providers.TransactionRequest;
 type TransactionResponse = providers.TransactionResponse;
 
 export const address: string = "0x627306090abab3a6e1400e9345bc60c78a8bef57";
-export const mnemonic: string =
-  "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat";
-export const privateKey: string =
-  "0x8339a8d4aa2aa5771f0230f50c725a4d6e6b7bc87bbf8b63b0c260285346eff6";
+export const mnemonic: string = "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat";
+export const privateKey: string = "0x8339a8d4aa2aa5771f0230f50c725a4d6e6b7bc87bbf8b63b0c260285346eff6";
 export const ethUrl: string = process.env.ETH_RPC_URL || "http://localhost:8545";
 export const nodeUrl: string = process.env.NODE_URL || "nats://morecoolstuffs";
 
@@ -102,11 +100,7 @@ export class MockNodeClientApi implements INodeApiClient {
     this.signature = undefined;
   }
 
-  async acquireLock(
-    lockName: string,
-    callback: (...args: any[]) => any,
-    timeout: number,
-  ): Promise<any> {
+  async acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any> {
     this.log.info("acquireLock");
   }
 
@@ -127,10 +121,7 @@ export class MockNodeClientApi implements INodeApiClient {
     withdraw: {} as TransactionResponse,
   };
 
-  public async appRegistry(appDetails?: {
-    name: SupportedApplication;
-    chainId: number;
-  }): Promise<AppRegistry> {
+  public async appRegistry(appDetails?: { name: SupportedApplication; chainId: number }): Promise<AppRegistry> {
     return MockNodeClientApi.returnValues.appRegistry;
   }
 
@@ -184,11 +175,7 @@ export class MockNodeClientApi implements INodeApiClient {
     return true;
   }
 
-  public async subscribeToSwapRates(
-    from: string,
-    to: string,
-    store: IStoreService,
-  ): Promise<void> {}
+  public async subscribeToSwapRates(from: string, to: string, store: IStoreService): Promise<void> {}
 
   public async unsubscribeFromSwapRates(from: string, to: string): Promise<void> {}
 

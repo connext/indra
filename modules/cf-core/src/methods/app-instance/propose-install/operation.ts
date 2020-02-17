@@ -15,7 +15,7 @@ export async function createProposedAppInstance(
   myIdentifier: string,
   store: Store,
   networkContext: NetworkContext,
-  params: CFCoreTypes.ProposeInstallParams
+  params: CFCoreTypes.ProposeInstallParams,
 ): Promise<string> {
   const {
     abiEncodings,
@@ -27,7 +27,7 @@ export async function createProposedAppInstance(
     proposedToIdentifier,
     responderDeposit,
     responderDepositTokenAddress,
-    timeout
+    timeout,
   } = params;
 
   // no way to determine if this is a virtual or regular app being
@@ -46,7 +46,7 @@ export async function createProposedAppInstance(
     [myIdentifier, proposedToIdentifier],
     networkContext.ProxyFactory,
     networkContext.MinimumViableMultisig,
-    networkContext.provider
+    networkContext.provider,
   );
 
   const stateChannel = await store.getOrCreateStateChannelBetweenVirtualAppParticipants(
@@ -56,32 +56,28 @@ export async function createProposedAppInstance(
       multisigMastercopy: networkContext.MinimumViableMultisig,
     },
     myIdentifier,
-    proposedToIdentifier
+    proposedToIdentifier,
   );
 
   const appInstanceProposal: AppInstanceProposal = {
     identityHash: appIdentityToHash({
       appDefinition,
       channelNonce: stateChannel.numProposedApps,
-      participants: stateChannel.getSigningKeysFor(
-        stateChannel.numProposedApps
-      ),
-      defaultTimeout: timeout.toNumber()
+      participants: stateChannel.getSigningKeysFor(stateChannel.numProposedApps),
+      defaultTimeout: timeout.toNumber(),
     }),
     abiEncodings: abiEncodings,
     appDefinition: appDefinition,
     appSeqNo: stateChannel.numProposedApps,
     initialState: initialState,
     initiatorDeposit: initiatorDeposit.toHexString(),
-    initiatorDepositTokenAddress:
-      initiatorDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+    initiatorDepositTokenAddress: initiatorDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
     outcomeType: outcomeType,
     proposedByIdentifier: myIdentifier,
     proposedToIdentifier: proposedToIdentifier,
     responderDeposit: responderDeposit.toHexString(),
-    responderDepositTokenAddress:
-      responderDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-    timeout: timeout.toHexString()
+    responderDepositTokenAddress: responderDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+    timeout: timeout.toHexString(),
   };
 
   await store.saveStateChannel(stateChannel.addProposal(appInstanceProposal));

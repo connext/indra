@@ -1,11 +1,4 @@
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Typography,
-} from "@material-ui/core";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@material-ui/core";
 import React, { useState } from "react";
 
 import { useAddress, AddressInput } from "./input";
@@ -42,16 +35,14 @@ export const WithdrawSaiDialog = ({ channel, ethProvider, machine, state, saiBal
       <DialogTitle id="alert-dialog-title">You have SAI in Your Channel!</DialogTitle>
       <DialogContent dividers>
         <Typography variant="body1">
-          We've transitioned the DaiCard from SAI (single-collateral DAI) to DAI (multi-collateral
-          DAI)! Please withdraw the SAI from your channel in order to keep using your daicard.
+          We've transitioned the DaiCard from SAI (single-collateral DAI) to DAI (multi-collateral DAI)! Please withdraw
+          the SAI from your channel in order to keep using your daicard.
         </Typography>
         <Typography variant="h6" component="p">
           Sai Balance: {saiBalance ? saiBalance.toDAI().format() : 0}
         </Typography>
         <AddressInput address={recipient} setAddress={setRecipient} />
-        <Typography variant="caption">
-          Contact us at support@connext.network with any issues!
-        </Typography>
+        <Typography variant="caption">Contact us at support@connext.network with any issues!</Typography>
       </DialogContent>
       <DialogActions>
         <Button onClick={withdrawSai} color="primary" variant="contained" disabled={withdrawing}>

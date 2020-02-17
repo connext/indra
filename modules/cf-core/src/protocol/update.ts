@@ -21,40 +21,26 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
 
     const { processID, params } = message;
 
-    const {
-      appIdentityHash,
-      multisigAddress,
-      responderXpub,
-      newState
-    } = params as UpdateProtocolParams;
+    const { appIdentityHash, multisigAddress, responderXpub, newState } = params as UpdateProtocolParams;
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)!;
 
-    const postProtocolStateChannel = preProtocolStateChannel.setState(
-      appIdentityHash,
-      newState
-    );
+    const postProtocolStateChannel = preProtocolStateChannel.setState(appIdentityHash, newState);
 
-    const appInstance = postProtocolStateChannel.getAppInstance(
-      appIdentityHash
-    );
+    const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
     const setStateCommitment = new SetStateCommitment(
       network,
       appInstance.identity,
       appInstance.hashOfLatestState,
       appInstance.versionNumber,
-      appInstance.timeout
+      appInstance.timeout,
     );
 
-    const initiatorSignature = yield [
-      OP_SIGN,
-      setStateCommitment,
-      appInstance.appSeqNo
-    ];
+    const initiatorSignature = yield [OP_SIGN, setStateCommitment, appInstance.appSeqNo];
 
     const {
-      customData: { signature: responderSignature }
+      customData: { signature: responderSignature },
     } = yield [
       IO_SEND_AND_WAIT,
       {
@@ -64,23 +50,16 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
         seq: 1,
         toXpub: responderXpub,
         customData: {
-          signature: initiatorSignature
-        }
-      } as ProtocolMessage
+          signature: initiatorSignature,
+        },
+      } as ProtocolMessage,
     ];
 
-    assertIsValidSignature(
-      xkeyKthAddress(responderXpub, appInstance.appSeqNo),
-      setStateCommitment,
-      responderSignature
-    );
+    assertIsValidSignature(xkeyKthAddress(responderXpub, appInstance.appSeqNo), setStateCommitment, responderSignature);
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
-    context.stateChannelsMap.set(
-      postProtocolStateChannel.multisigAddress,
-      postProtocolStateChannel
-    );
+    context.stateChannelsMap.set(postProtocolStateChannel.multisigAddress, postProtocolStateChannel);
   },
 
   1 /* Responding */: async function*(context: Context) {
@@ -89,46 +68,28 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     const {
       processID,
       params,
-      customData: { signature: initiatorSignature }
+      customData: { signature: initiatorSignature },
     } = message;
 
-    const {
-      appIdentityHash,
-      multisigAddress,
-      initiatorXpub,
-      newState
-    } = params as UpdateProtocolParams;
+    const { appIdentityHash, multisigAddress, initiatorXpub, newState } = params as UpdateProtocolParams;
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)!;
 
-    const postProtocolStateChannel = preProtocolStateChannel.setState(
-      appIdentityHash,
-      newState
-    );
+    const postProtocolStateChannel = preProtocolStateChannel.setState(appIdentityHash, newState);
 
-    const appInstance = postProtocolStateChannel.getAppInstance(
-      appIdentityHash
-    );
+    const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
     const setStateCommitment = new SetStateCommitment(
       network,
       appInstance.identity,
       appInstance.hashOfLatestState,
       appInstance.versionNumber,
-      appInstance.timeout
+      appInstance.timeout,
     );
 
-    assertIsValidSignature(
-      xkeyKthAddress(initiatorXpub, appInstance.appSeqNo),
-      setStateCommitment,
-      initiatorSignature
-    );
+    assertIsValidSignature(xkeyKthAddress(initiatorXpub, appInstance.appSeqNo), setStateCommitment, initiatorSignature);
 
-    const responderSignature = yield [
-      OP_SIGN,
-      setStateCommitment,
-      appInstance.appSeqNo
-    ];
+    const responderSignature = yield [OP_SIGN, setStateCommitment, appInstance.appSeqNo];
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
@@ -140,14 +101,11 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
         toXpub: initiatorXpub,
         seq: UNASSIGNED_SEQ_NO,
         customData: {
-          signature: responderSignature
-        }
-      } as ProtocolMessage
+          signature: responderSignature,
+        },
+      } as ProtocolMessage,
     ];
 
-    context.stateChannelsMap.set(
-      postProtocolStateChannel.multisigAddress,
-      postProtocolStateChannel
-    );
-  }
+    context.stateChannelsMap.set(postProtocolStateChannel.multisigAddress, postProtocolStateChannel);
+  },
 };

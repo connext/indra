@@ -16,10 +16,7 @@ type NimAppState = {
 };
 
 function decodeBytesToAppState(encodedAppState: string): NimAppState {
-  return defaultAbiCoder.decode(
-    ["tuple(uint256 versionNumber, uint256[3] pileHeights)"],
-    encodedAppState
-  )[0];
+  return defaultAbiCoder.decode(["tuple(uint256 versionNumber, uint256[3] pileHeights)"], encodedAppState)[0];
 }
 
 describe("Nim", () => {
@@ -33,9 +30,9 @@ describe("Nim", () => {
           uint256 versionNumber,
           uint256[3] pileHeights
         )
-      `
+      `,
       ],
-      [state]
+      [state],
     );
   }
 
@@ -47,27 +44,21 @@ describe("Nim", () => {
           uint256 pileIdx,
           uint256 takeAmnt
         )
-      `
+      `,
       ],
-      [state]
+      [state],
     );
   }
 
-  async function applyAction(
-    state: SolidityValueType,
-    action: SolidityValueType
-  ) {
-    return await nim.functions.applyAction(
-      encodeState(state),
-      encodeAction(action)
-    );
+  async function applyAction(state: SolidityValueType, action: SolidityValueType) {
+    return await nim.functions.applyAction(encodeState(state), encodeAction(action));
   }
 
   async function isStateTerminal(state: SolidityValueType) {
     return await nim.functions.isStateTerminal(encodeState(state));
   }
 
-  before(async () => {
+  beforeAll(async () => {
     const provider = waffle.createMockProvider();
     const wallet = (await waffle.getWallets(provider))[0];
     nim = await waffle.deployContract(wallet, NimApp);
@@ -77,12 +68,12 @@ describe("Nim", () => {
     it("can take from a pile", async () => {
       const preState = {
         versionNumber: 0,
-        pileHeights: [6, 5, 12]
+        pileHeights: [6, 5, 12],
       };
 
       const action = {
         pileIdx: 0,
-        takeAmnt: 5
+        takeAmnt: 5,
       };
 
       const ret = await applyAction(preState, action);
@@ -98,12 +89,12 @@ describe("Nim", () => {
     it("can take to produce an empty pile", async () => {
       const preState = {
         versionNumber: 0,
-        pileHeights: [6, 5, 12]
+        pileHeights: [6, 5, 12],
       };
 
       const action = {
         pileIdx: 0,
-        takeAmnt: 6
+        takeAmnt: 6,
       };
 
       const ret = await applyAction(preState, action);
@@ -119,17 +110,15 @@ describe("Nim", () => {
     it("should fail for taking too much", async () => {
       const preState = {
         versionNumber: 0,
-        pileHeights: [6, 5, 12]
+        pileHeights: [6, 5, 12],
       };
 
       const action = {
         pileIdx: 0,
-        takeAmnt: 7
+        takeAmnt: 7,
       };
 
-      await expect(applyAction(preState, action)).to.be.revertedWith(
-        "invalid pileIdx"
-      );
+      await expect(applyAction(preState, action)).to.be.revertedWith("invalid pileIdx");
     });
   });
 
@@ -137,7 +126,7 @@ describe("Nim", () => {
     it("empty state is final", async () => {
       const preState = {
         versionNumber: 49,
-        pileHeights: [0, 0, 0]
+        pileHeights: [0, 0, 0],
       };
       expect(await isStateTerminal(preState)).to.eq(true);
     });
@@ -145,7 +134,7 @@ describe("Nim", () => {
     it("nonempty state is not final", async () => {
       const preState = {
         versionNumber: 49,
-        pileHeights: [0, 1, 0]
+        pileHeights: [0, 1, 0],
       };
       expect(await isStateTerminal(preState)).to.eq(false);
     });

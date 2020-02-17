@@ -17,7 +17,7 @@ export default class InstallController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.InstallParams
+    params: CFCoreTypes.InstallParams,
   ): Promise<string[]> {
     const { store } = requestHandler;
     const { appInstanceId } = params;
@@ -29,21 +29,14 @@ export default class InstallController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.InstallParams
+    params: CFCoreTypes.InstallParams,
   ): Promise<CFCoreTypes.InstallResult> {
     const { store, protocolRunner, publicIdentifier } = requestHandler;
 
-    const appInstanceProposal = await install(
-      store,
-      protocolRunner,
-      params,
-      publicIdentifier
-    );
+    const appInstanceProposal = await install(store, protocolRunner, params, publicIdentifier);
 
     return {
-      appInstance: (
-        await store.getAppInstance(appInstanceProposal.identityHash)
-      ).toJson()
+      appInstance: (await store.getAppInstance(appInstanceProposal.identityHash)).toJson(),
     };
   }
 }

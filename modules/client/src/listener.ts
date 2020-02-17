@@ -104,9 +104,7 @@ export class ConnextListener extends EventEmitter {
       const { matchedApp } = matchedResult;
       await this.verifyAndInstallKnownApp(msg, matchedApp);
       // only publish for coin balance refund app
-      const coinBalanceDef = this.connext.appRegistry.filter(
-        (app: DefaultApp) => app.name === CoinBalanceRefundApp,
-      )[0];
+      const coinBalanceDef = this.connext.appRegistry.filter((app: DefaultApp) => app.name === CoinBalanceRefundApp)[0];
       if (params.appDefinition !== coinBalanceDef.appDefinitionAddress) {
         this.log.info("not sending propose message, not the coinbalance refund app");
         return;
@@ -183,9 +181,7 @@ export class ConnextListener extends EventEmitter {
       this.removeListener(event, cb as any);
       return true;
     } catch (e) {
-      this.log.error(
-        `Error trying to remove registered listener from event ${event}: ${e.stack || e.message}`,
-      );
+      this.log.error(`Error trying to remove registered listener from event ${event}: ${e.stack || e.message}`);
       return false;
     }
   };
@@ -221,16 +217,13 @@ export class ConnextListener extends EventEmitter {
   };
 
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
-    const protocol =
-      event === PROTOCOL_MESSAGE_EVENT ? (data.data ? data.data.protocol : data.protocol) : "";
+    const protocol = event === PROTOCOL_MESSAGE_EVENT ? (data.data ? data.data.protocol : data.protocol) : "";
     this.log.info(`Received ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
     this.log.debug(`Emitted ${event} with data ${stringify(data)} at ${Date.now()}`);
     this.emit(event, data);
   };
 
-  private matchAppInstance = async (
-    msg: ProposeMessage,
-  ): Promise<MatchAppInstanceResponse | undefined> => {
+  private matchAppInstance = async (msg: ProposeMessage): Promise<MatchAppInstanceResponse | undefined> => {
     const filteredApps = this.connext.appRegistry.filter((app: DefaultApp): boolean => {
       return app.appDefinitionAddress === msg.data.params.appDefinition;
     });
@@ -243,9 +236,9 @@ export class ConnextListener extends EventEmitter {
     if (filteredApps.length > 1) {
       // TODO: throw error here?
       this.log.error(
-        `Proposed app matched ${
-          filteredApps.length
-        } registered applications by definition address. App: ${stringify(msg)}`,
+        `Proposed app matched ${filteredApps.length} registered applications by definition address. App: ${stringify(
+          msg,
+        )}`,
       );
       return undefined;
     }
@@ -263,20 +256,12 @@ export class ConnextListener extends EventEmitter {
     };
   };
 
-  private verifyAndInstallKnownApp = async (
-    msg: ProposeMessage,
-    matchedApp: DefaultApp,
-  ): Promise<void> => {
+  private verifyAndInstallKnownApp = async (msg: ProposeMessage, matchedApp: DefaultApp): Promise<void> => {
     const {
       data: { params, appInstanceId },
       from,
     } = msg;
-    const invalidProposal = await appProposalValidation[matchedApp.name](
-      params,
-      from,
-      matchedApp,
-      this.connext,
-    );
+    const invalidProposal = await appProposalValidation[matchedApp.name](params, from, matchedApp, this.connext);
 
     if (invalidProposal) {
       // reject app installation

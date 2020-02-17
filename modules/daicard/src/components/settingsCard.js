@@ -47,17 +47,17 @@ export const SettingsCard = style(({ classes, setWalletConnext, getWalletConnext
   const [showRecovery, setShowRecovery] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
-  const useWalletConnext = getWalletConnext()
+  const useWalletConnext = getWalletConnext();
 
   const generateNewAddress = async () => {
     setIsBurning(true);
-    store && await store.reset(); // remove anything in the store related to the old channel
+    store && (await store.reset()); // remove anything in the store related to the old channel
     localStorage.removeItem("mnemonic", mnemonic);
     window.location.reload();
   };
 
   const recoverAddressFromMnemonic = async () => {
-    store && await store.reset(); // remove anything in the store related to the old channel
+    store && (await store.reset()); // remove anything in the store related to the old channel
     localStorage.setItem("mnemonic", mnemonic);
     window.location.reload();
   };
@@ -215,8 +215,8 @@ export const SettingsCard = style(({ classes, setWalletConnext, getWalletConnext
               {isBurning ? (
                 <Grid item xs={12}>
                   <DialogContentText variant="body1">
-                    Burning. Please do not refresh or navigate away. This page will refresh
-                    automatically when it's done.
+                    Burning. Please do not refresh or navigate away. This page will refresh automatically when it's
+                    done.
                   </DialogContentText>
                   <CircularProgress style={{ marginTop: "1em" }} />
                 </Grid>

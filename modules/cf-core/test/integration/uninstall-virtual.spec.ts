@@ -1,4 +1,3 @@
-
 import { Node } from "../../src";
 import { UninstallVirtualMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
@@ -10,7 +9,7 @@ import {
   createChannel,
   getInstalledAppInstances,
   installVirtualApp,
-  assertNodeMessage
+  assertNodeMessage,
 } from "./utils";
 
 jest.setTimeout(10000);
@@ -37,7 +36,11 @@ describe("Node method follows spec - uninstall virtual", () => {
         const initialState = {
           versionNumber: 0,
           winner: 1, // Hard-coded winner for test
-          board: [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+          board: [
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0],
+          ],
         };
 
         const multisigAddressAB = await createChannel(nodeA, nodeB);
@@ -46,38 +49,27 @@ describe("Node method follows spec - uninstall virtual", () => {
         await collateralizeChannel(multisigAddressAB, nodeA, nodeB);
         await collateralizeChannel(multisigAddressBC, nodeB, nodeC);
 
-        const appInstanceId = await installVirtualApp(
-          nodeA,
-          nodeB,
-          nodeC,
-          TicTacToeApp,
-          initialState
-        );
+        const appInstanceId = await installVirtualApp(nodeA, nodeB, nodeC, TicTacToeApp, initialState);
 
-        nodeC.once(
-          "UNINSTALL_VIRTUAL_EVENT",
-          async (msg: UninstallVirtualMessage) => {
-            assertNodeMessage(msg, {
-              from: nodeA.publicIdentifier,
-              type: "UNINSTALL_VIRTUAL_EVENT",
-              data: {
-                intermediaryIdentifier: nodeB.publicIdentifier,
-                appInstanceId,
-              }
-            })
+        nodeC.once("UNINSTALL_VIRTUAL_EVENT", async (msg: UninstallVirtualMessage) => {
+          assertNodeMessage(msg, {
+            from: nodeA.publicIdentifier,
+            type: "UNINSTALL_VIRTUAL_EVENT",
+            data: {
+              intermediaryIdentifier: nodeB.publicIdentifier,
+              appInstanceId,
+            },
+          });
 
-            expect(await getInstalledAppInstances(nodeC)).toEqual([]);
+          expect(await getInstalledAppInstances(nodeC)).toEqual([]);
 
-            done();
-          }
-        );
+          done();
+        });
 
-        await nodeA.rpcRouter.dispatch(
-          constructUninstallVirtualRpc(appInstanceId, nodeB.publicIdentifier)
-        );
+        await nodeA.rpcRouter.dispatch(constructUninstallVirtualRpc(appInstanceId, nodeB.publicIdentifier));
 
         expect(await getInstalledAppInstances(nodeA)).toEqual([]);
       });
-    }
+    },
   );
 });

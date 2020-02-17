@@ -10,10 +10,7 @@ export default class InstallVirtualController extends NodeController {
   @jsonRpcMethod(ProtocolTypes.chan_installVirtual)
   public executeMethod = super.executeMethod;
 
-  protected async getRequiredLockNames(
-    requestHandler: RequestHandler,
-    params: CFCoreTypes.InstallVirtualParams
-  ) {
+  protected async getRequiredLockNames(requestHandler: RequestHandler, params: CFCoreTypes.InstallVirtualParams) {
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { appInstanceId, intermediaryIdentifier } = params;
 
@@ -21,16 +18,13 @@ export default class InstallVirtualController extends NodeController {
     const multisigAddressWithHub = await store.getMultisigAddressWithCounterparty(
       [publicIdentifier, intermediaryIdentifier],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
     );
 
     const proposal = await store.getAppInstanceProposal(appInstanceId);
 
     const { proposedByIdentifier, proposedToIdentifier } = proposal;
-    const responding =
-      proposedByIdentifier === publicIdentifier
-        ? proposedToIdentifier
-        : proposedByIdentifier;
+    const responding = proposedByIdentifier === publicIdentifier ? proposedToIdentifier : proposedByIdentifier;
 
     // do not provide the networkContext provider here. in the case
     // where a virtual app is being installed, it *should* have gone
@@ -45,7 +39,7 @@ export default class InstallVirtualController extends NodeController {
     const multisigAddressWithResponding = await store.getMultisigAddressWithCounterparty(
       [publicIdentifier, responding],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
     );
 
     // because this is the initiators store, it may not have access to
@@ -59,56 +53,41 @@ export default class InstallVirtualController extends NodeController {
       [intermediaryIdentifier, responding],
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
-      networkContext.provider
+      networkContext.provider,
     );
 
-    return [
-      multisigAddressWithHub,
-      multisigAddressWithResponding,
-      multisigAddressBetweenHubAndResponding
-    ];
+    return [multisigAddressWithHub, multisigAddressWithResponding, multisigAddressBetweenHubAndResponding];
   }
 
-  protected async beforeExecution(
-    requestHandler: RequestHandler,
-    params: CFCoreTypes.InstallVirtualParams
-  ) {
+  protected async beforeExecution(requestHandler: RequestHandler, params: CFCoreTypes.InstallVirtualParams) {
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { intermediaryIdentifier } = params;
 
     if (!intermediaryIdentifier) {
-      throw Error(
-        `Cannot install virtual app: you did not provide an intermediary.`
-      );
+      throw Error(`Cannot install virtual app: you did not provide an intermediary.`);
     }
 
     // no provider used, should never generate a new multisig address
     const multisigAddress = await store.getMultisigAddressWithCounterparty(
       [publicIdentifier, intermediaryIdentifier],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
     );
 
-    const stateChannelWithIntermediary = await store.getStateChannel(
-      multisigAddress
-    );
+    const stateChannelWithIntermediary = await store.getStateChannel(multisigAddress);
 
     if (!stateChannelWithIntermediary) {
-      throw Error(
-        `Cannot install virtual app: you do not have a channel with the intermediary provided.`
-      );
+      throw Error(`Cannot install virtual app: you do not have a channel with the intermediary provided.`);
     }
 
     if (!stateChannelWithIntermediary.freeBalance) {
-      throw Error(
-        `Cannot install virtual app: channel with intermediary has no free balance app instance installed.`
-      );
+      throw Error(`Cannot install virtual app: channel with intermediary has no free balance app instance installed.`);
     }
   }
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.InstallVirtualParams
+    params: CFCoreTypes.InstallVirtualParams,
   ): Promise<CFCoreTypes.InstallVirtualResult> {
     const { store, protocolRunner } = requestHandler;
 
@@ -119,7 +98,7 @@ export default class InstallVirtualController extends NodeController {
     await installVirtual(store, protocolRunner, params);
 
     return {
-      appInstance: (await store.getAppInstance(appInstanceId)).toJson()
+      appInstance: (await store.getAppInstance(appInstanceId)).toJson(),
     };
   }
 }

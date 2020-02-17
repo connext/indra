@@ -1,10 +1,4 @@
-import {
-  getAddress,
-  hexlify,
-  Interface,
-  randomBytes,
-  TransactionDescription
-} from "ethers/utils";
+import { getAddress, hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
 
 import { SetupCommitment } from "../../../../src/ethereum";
 import { MultisigTransaction } from "../../../../src/types";
@@ -29,7 +23,7 @@ describe("SetupCommitment", () => {
   // General interaction testing values
   const interaction = {
     sender: getRandomExtendedPubKey(),
-    receiver: getRandomExtendedPubKey()
+    receiver: getRandomExtendedPubKey(),
   };
 
   // State channel testing values
@@ -40,7 +34,7 @@ describe("SetupCommitment", () => {
       multisigMastercopy: networkContext.MinimumViableMultisig,
     },
     getAddress(hexlify(randomBytes(20))),
-    [interaction.sender, interaction.receiver]
+    [interaction.sender, interaction.receiver],
   );
 
   const freeBalance = stateChannel.freeBalance;
@@ -50,7 +44,7 @@ describe("SetupCommitment", () => {
       networkContext,
       stateChannel.multisigAddress,
       stateChannel.multisigOwners,
-      freeBalance.identity
+      freeBalance.identity,
     ).getTransactionDetails();
   });
 
@@ -72,18 +66,14 @@ describe("SetupCommitment", () => {
     });
 
     it("should be to the executeEffectOfFreeBalance method", () => {
-      expect(desc.sighash).toBe(
-        iface.functions.executeEffectOfFreeBalance.sighash
-      );
+      expect(desc.sighash).toBe(iface.functions.executeEffectOfFreeBalance.sighash);
     });
 
     it("should contain expected arguments", () => {
       const [appRegistry, appIdentityHash, interpreterAddress] = desc.args;
       expect(appRegistry).toBe(networkContext.ChallengeRegistry);
       expect(appIdentityHash).toBe(appIdentityToHash(freeBalance.identity));
-      expect(interpreterAddress).toBe(
-        networkContext.MultiAssetMultiPartyCoinTransferInterpreter
-      );
+      expect(interpreterAddress).toBe(networkContext.MultiAssetMultiPartyCoinTransferInterpreter);
     });
   });
 });

@@ -2,23 +2,11 @@ import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
 import { Web3Provider } from "ethers/providers";
-import {
-  BigNumberish,
-  hexlify,
-  joinSignature,
-  keccak256,
-  randomBytes,
-  SigningKey,
-} from "ethers/utils";
+import { BigNumberish, hexlify, joinSignature, keccak256, randomBytes, SigningKey } from "ethers/utils";
 
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
 
-import {
-  AppIdentityTestClass,
-  computeAppChallengeHash,
-  expect,
-  sortSignaturesBySignerAddress
-} from "./utils";
+import { AppIdentityTestClass, computeAppChallengeHash, expect, sortSignaturesBySignerAddress } from "./utils";
 
 type Challenge = {
   status: 0 | 1 | 2;
@@ -31,15 +19,11 @@ type Challenge = {
 
 const ALICE =
   // 0xaeF082d339D227646DB914f0cA9fF02c8544F30b
-  new Wallet(
-    "0x3570f77380e22f8dc2274d8fd33e7830cc2d29cf76804e8c21f4f7a6cc571d27"
-  );
+  new Wallet("0x3570f77380e22f8dc2274d8fd33e7830cc2d29cf76804e8c21f4f7a6cc571d27");
 
 const BOB =
   // 0xb37e49bFC97A948617bF3B63BC6942BB15285715
-  new Wallet(
-    "0x4ccac8b1e81fb18a98bbaf29b9bfe307885561f71b76bd4680d7aec9d0ddfcfd"
-  );
+  new Wallet("0x4ccac8b1e81fb18a98bbaf29b9bfe307885561f71b76bd4680d7aec9d0ddfcfd");
 
 // HELPER DATA
 const ONCHAIN_CHALLENGE_TIMEOUT = 30;
@@ -51,11 +35,7 @@ describe("ChallengeRegistry", () => {
 
   let appRegistry: Contract;
 
-  let setStateWithSignatures: (
-    versionNumber: BigNumberish,
-    appState?: string,
-    timeout?: number
-  ) => Promise<void>;
+  let setStateWithSignatures: (versionNumber: BigNumberish, appState?: string, timeout?: number) => Promise<void>;
   let cancelChallenge: () => Promise<void>;
   let sendSignedFinalizationToChain: () => Promise<any>;
   let getChallenge: () => Promise<Challenge>;
@@ -63,12 +43,12 @@ describe("ChallengeRegistry", () => {
   let latestVersionNumber: () => Promise<number>;
   let isStateFinalized: () => Promise<boolean>;
 
-  before(async () => {
+  beforeAll(async () => {
     provider = waffle.createMockProvider();
     wallet = (await waffle.getWallets(provider))[0];
 
     appRegistry = await waffle.deployContract(wallet, ChallengeRegistry, [], {
-      gasLimit: 6000000 // override default of 4 million
+      gasLimit: 6000000, // override default of 4 million
     });
   });
 
@@ -77,69 +57,56 @@ describe("ChallengeRegistry", () => {
       [ALICE.address, BOB.address],
       hexlify(randomBytes(20)),
       10,
-      globalChannelNonce
+      globalChannelNonce,
     );
 
     globalChannelNonce += 1;
 
-    getChallenge = () =>
-      appRegistry.functions.getAppChallenge(appIdentityTestObject.identityHash);
+    getChallenge = () => appRegistry.functions.getAppChallenge(appIdentityTestObject.identityHash);
 
     latestAppStateHash = async () => (await getChallenge()).appStateHash;
 
     latestVersionNumber = async () => (await getChallenge()).versionNumber;
 
-    isStateFinalized = async () =>
-      await appRegistry.functions.isStateFinalized(
-        appIdentityTestObject.identityHash
-      );
+    isStateFinalized = async () => await appRegistry.functions.isStateFinalized(appIdentityTestObject.identityHash);
 
     cancelChallenge = async () => {
       const digest = computeAppChallengeHash(
         appIdentityTestObject.identityHash,
         await latestAppStateHash(),
         await latestVersionNumber(),
-        appIdentityTestObject.defaultTimeout
+        appIdentityTestObject.defaultTimeout,
       );
 
       await appRegistry.functions.cancelChallenge(
         appIdentityTestObject.appIdentity,
         sortSignaturesBySignerAddress(digest, [
           await new SigningKey(ALICE.privateKey).signDigest(digest),
-          await new SigningKey(BOB.privateKey).signDigest(digest)
-        ]).map(joinSignature)
+          await new SigningKey(BOB.privateKey).signDigest(digest),
+        ]).map(joinSignature),
       );
     };
 
     setStateWithSignatures = async (
       versionNumber: BigNumberish,
       appState: string = HashZero,
-      timeout: number = ONCHAIN_CHALLENGE_TIMEOUT
+      timeout: number = ONCHAIN_CHALLENGE_TIMEOUT,
     ) => {
       const stateHash = keccak256(appState);
-      const digest = computeAppChallengeHash(
-        appIdentityTestObject.identityHash,
-        stateHash,
-        versionNumber,
-        timeout
-      );
+      const digest = computeAppChallengeHash(appIdentityTestObject.identityHash, stateHash, versionNumber, timeout);
       await appRegistry.functions.setState(appIdentityTestObject.appIdentity, {
         timeout,
         versionNumber,
         appStateHash: stateHash,
         signatures: sortSignaturesBySignerAddress(digest, [
           await new SigningKey(ALICE.privateKey).signDigest(digest),
-          await new SigningKey(BOB.privateKey).signDigest(digest)
-        ]).map(joinSignature)
+          await new SigningKey(BOB.privateKey).signDigest(digest),
+        ]).map(joinSignature),
       });
     };
 
     sendSignedFinalizationToChain = async () =>
-      await setStateWithSignatures(
-        (await latestVersionNumber()) + 1,
-        await latestAppStateHash(),
-        0
-      );
+      await setStateWithSignatures((await latestVersionNumber()) + 1, await latestAppStateHash(), 0);
   });
 
   describe("updating app state", () => {
@@ -220,16 +187,14 @@ describe("ChallengeRegistry", () => {
       appStateHash,
       challengeCounter,
       finalizesAt,
-      versionNumber
+      versionNumber,
     } = await getChallenge();
 
     expect(status).to.be.eq(1);
     expect(latestSubmitter).to.be.eq(await wallet.getAddress());
     expect(appStateHash).to.be.eq(keccak256(state));
     expect(challengeCounter).to.be.eq(1);
-    expect(finalizesAt).to.be.eq(
-      (await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT
-    );
+    expect(finalizesAt).to.be.eq((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT);
     expect(versionNumber).to.be.eq(1);
   });
 });

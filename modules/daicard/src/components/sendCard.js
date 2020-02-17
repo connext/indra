@@ -22,7 +22,7 @@ import { Currency, toBN } from "../utils";
 import { sendMachine } from "../state";
 
 import { Copyable } from "./copyable";
-import { useXpub, XpubInput } from "./input"
+import { useXpub, XpubInput } from "./input";
 
 const LINK_LIMIT = Currency.DAI("10"); // $10 capped linked payments
 
@@ -109,7 +109,7 @@ export const SendCard = style(({ balance, channel, classes, ethProvider, history
           paymentId: hexlify(randomBytes(32)),
           preImage: hexlify(randomBytes(32)),
           recipient: recipient.value,
-          meta: { source: "daicard" }
+          meta: { source: "daicard" },
         });
         break;
       } catch (e) {
@@ -141,7 +141,7 @@ export const SendCard = style(({ balance, channel, classes, ethProvider, history
         conditionType: "LINKED_TRANSFER",
         paymentId: hexlify(randomBytes(32)),
         preImage: hexlify(randomBytes(32)),
-        meta: { source: "daicard" }
+        meta: { source: "daicard" },
       });
       console.log(`Created link payment: ${JSON.stringify(link, null, 2)}`);
       console.log(
@@ -198,9 +198,7 @@ export const SendCard = style(({ balance, channel, classes, ethProvider, history
       <Grid item xs={12}>
         <Grid container direction="row" justify="center" alignItems="center">
           <Typography variant="h2">
-            <span>
-              {balance.channel.token.toDAI().format({ decimals: 2, symbol: false, round: false })}
-            </span>
+            <span>{balance.channel.token.toDAI().format({ decimals: 2, symbol: false, round: false })}</span>
           </Typography>
         </Grid>
       </Grid>
@@ -306,11 +304,7 @@ export const SendCard = style(({ balance, channel, classes, ethProvider, history
 const SendCardModal = ({ amount, classes, closeModal, history, link, paymentState, recipient }) => (
   <Dialog
     open={!paymentState.matches("idle")}
-    onBackdropClick={
-      paymentState === "processingP2p" || paymentState === "processingLink"
-        ? null
-        : () => closeModal()
-    }
+    onBackdropClick={paymentState === "processingP2p" || paymentState === "processingLink" ? null : () => closeModal()}
     fullWidth
     style={{
       justifyContent: "center",
@@ -377,14 +371,10 @@ const SendCardModal = ({ amount, classes, closeModal, history, link, paymentStat
           </DialogTitle>
           <DialogContent className={classes.modalContent}>
             <DialogContentText variant="body1" style={{ color: "#0F1012", margin: "1em" }}>
-              Anyone with this link can redeem the payment. Save a copy of it somewhere safe and
-              only share it with the person you want to pay.
+              Anyone with this link can redeem the payment. Save a copy of it somewhere safe and only share it with the
+              person you want to pay.
             </DialogContentText>
-            <Copyable
-              text={
-                link ? `${link.baseUrl}?paymentId=${link.paymentId}&secret=${link.secret}` : "???"
-              }
-            />
+            <Copyable text={link ? `${link.baseUrl}?paymentId=${link.paymentId}&secret=${link.secret}` : "???"} />
           </DialogContent>
         </div>
       ) : paymentState.matches("error") ? (
@@ -399,8 +389,7 @@ const SendCardModal = ({ amount, classes, closeModal, history, link, paymentStat
               An unknown error occured when making your payment.
             </DialogContentText>
             <DialogContentText variant="body1" style={{ color: "#0F1012" }}>
-              Please try again in 30s and contact support if you continue to experience issues.
-              (Settings --> Support)
+              Please try again in 30s and contact support if you continue to experience issues. (Settings --> Support)
             </DialogContentText>
           </DialogContent>
         </Grid>
@@ -412,13 +401,7 @@ const SendCardModal = ({ amount, classes, closeModal, history, link, paymentStat
         <div />
       ) : (
         <DialogActions>
-          <Button
-            disableTouchRipple
-            color="primary"
-            variant="outlined"
-            size="medium"
-            onClick={() => closeModal()}
-          >
+          <Button disableTouchRipple color="primary" variant="outlined" size="medium" onClick={() => closeModal()}>
             Close
           </Button>
           <Button

@@ -190,10 +190,7 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
 
   ////////////////////////////////////////
   // CFCoreTypes.IMessagingService Methods
-  async onReceive(
-    subject: string,
-    callback: (msg: CFCoreTypes.NodeMessage) => void,
-  ): Promise<void> {
+  async onReceive(subject: string, callback: (msg: CFCoreTypes.NodeMessage) => void): Promise<void> {
     // return connection callback
     return await this.connection.onReceive(subject, async (msg: CFCoreTypes.NodeMessage) => {
       this.emit(RECEIVED, { subject, data: msg } as MesssagingEventData);
@@ -201,15 +198,12 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
       this.subjectForbidden(subject, "receive");
       // wait out delay
       await this.awaitDelay();
-      if (
-        this.hasCeiling({ type: "received" }) &&
-        this.count.ceiling!.received! <= this.count.received
-      ) {
+      if (this.hasCeiling({ type: "received" }) && this.count.ceiling!.received! <= this.count.received) {
         env.logLevel > 2 &&
           console.log(
-            `Reached ceiling (${
-              this.count.ceiling!.received
-            }), refusing to process any more messages. Received ${this.count.received} messages`,
+            `Reached ceiling (${this.count.ceiling!.received}), refusing to process any more messages. Received ${
+              this.count.received
+            } messages`,
           );
         return;
       }
@@ -228,8 +222,7 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
       // verify ceiling exists and has not been reached
       if (
         this.hasCeiling({ protocol, type: "received" }) &&
-        this.protocolDefaults[protocol].ceiling!.received! <=
-          this.protocolDefaults[protocol].received
+        this.protocolDefaults[protocol].ceiling!.received! <= this.protocolDefaults[protocol].received
       ) {
         const msg = `Refusing to process any more messages, ceiling for ${protocol} has been reached. ${
           this.protocolDefaults[protocol].received
@@ -253,8 +246,9 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
     if (this.hasCeiling({ type: "sent" }) && this.count.sent >= this.count.ceiling!.sent!) {
       env.logLevel > 2 &&
         console.log(
-          `Reached ceiling (${this.count.ceiling!
-            .sent!}), refusing to send any more messages. Sent ${this.count.sent} messages`,
+          `Reached ceiling (${this.count.ceiling!.sent!}), refusing to send any more messages. Sent ${
+            this.count.sent
+          } messages`,
         );
       return;
     }
@@ -325,12 +319,7 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
     return await this.connection.publish(subject, data);
   }
 
-  async request(
-    subject: string,
-    timeout: number,
-    data: object,
-    callback?: (response: any) => any,
-  ): Promise<any> {
+  async request(subject: string, timeout: number, data: object, callback?: (response: any) => any): Promise<any> {
     // make sure that client is allowed to send message
     // note: when sending via node.ts uses request
     // make sure that client is allowed to send message
@@ -340,10 +329,7 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
     return await this.connection.request(subject, timeout, data, callback);
   }
 
-  async subscribe(
-    subject: string,
-    callback: (msg: CFCoreTypes.NodeMessage) => void,
-  ): Promise<void> {
+  async subscribe(subject: string, callback: (msg: CFCoreTypes.NodeMessage) => void): Promise<void> {
     return await this.connection.subscribe(subject, callback);
   }
 
@@ -402,9 +388,6 @@ export class TestMessagingService extends EventEmitter implements IMessagingServ
     if (!type) {
       return exists(this.protocolDefaults[protocol].ceiling);
     }
-    return (
-      exists(this.protocolDefaults[protocol].ceiling) &&
-      exists(this.protocolDefaults[protocol].ceiling![type!])
-    );
+    return exists(this.protocolDefaults[protocol].ceiling) && exists(this.protocolDefaults[protocol].ceiling![type!]);
   }
 }

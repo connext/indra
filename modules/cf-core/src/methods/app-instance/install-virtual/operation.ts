@@ -37,31 +37,25 @@ export async function installVirtual(
   }
 
   try {
-    await protocolRunner.initiateProtocol(
-      Protocol.InstallVirtualApp,
-      await store.getStateChannelsMap(),
-      {
-        appInterface: { addr: appDefinition, ...abiEncodings },
-        appSeqNo: proposal.appSeqNo,
-        defaultTimeout: bigNumberify(timeout).toNumber(),
-        initialState,
-        initiatorBalanceDecrement: bigNumberify(initiatorDeposit),
-        initiatorXpub: proposedToIdentifier,
-        intermediaryXpub: intermediaryIdentifier,
-        outcomeType,
-        responderBalanceDecrement: bigNumberify(responderDeposit),
-        responderXpub: proposedByIdentifier,
-        tokenAddress: initiatorDepositTokenAddress,
-      },
-    );
+    await protocolRunner.initiateProtocol(Protocol.InstallVirtualApp, await store.getStateChannelsMap(), {
+      appInterface: { addr: appDefinition, ...abiEncodings },
+      appSeqNo: proposal.appSeqNo,
+      defaultTimeout: bigNumberify(timeout).toNumber(),
+      initialState,
+      initiatorBalanceDecrement: bigNumberify(initiatorDeposit),
+      initiatorXpub: proposedToIdentifier,
+      intermediaryXpub: intermediaryIdentifier,
+      outcomeType,
+      responderBalanceDecrement: bigNumberify(responderDeposit),
+      responderXpub: proposedByIdentifier,
+      tokenAddress: initiatorDepositTokenAddress,
+    });
   } catch (e) {
     // TODO: We should generalize this error handling style everywhere
     throw Error(`Node Error: ${VIRTUAL_APP_INSTALLATION_FAIL}\nStack Trace: ${e.stack}`);
   }
 
-  await store.saveStateChannel(
-    (await store.getChannelFromAppInstanceID(appInstanceId)).removeProposal(appInstanceId),
-  );
+  await store.saveStateChannel((await store.getChannelFromAppInstanceID(appInstanceId)).removeProposal(appInstanceId));
 
   return proposal;
 }

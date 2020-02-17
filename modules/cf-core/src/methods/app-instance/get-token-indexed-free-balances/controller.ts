@@ -10,15 +10,13 @@ export default class GetTokenIndexedFreeBalancesController extends NodeControlle
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.GetTokenIndexedFreeBalanceStatesParams
+    params: CFCoreTypes.GetTokenIndexedFreeBalanceStatesParams,
   ): Promise<CFCoreTypes.GetTokenIndexedFreeBalanceStatesResult> {
     const { store } = requestHandler;
     const { multisigAddress } = params;
 
     if (!multisigAddress) {
-      throw Error(
-        `getTokenIndexedFreeBalanceStates method was given undefined multisigAddress`
-      );
+      throw Error(`getTokenIndexedFreeBalanceStates method was given undefined multisigAddress`);
     }
 
     const stateChannel = await store.getStateChannel(multisigAddress);

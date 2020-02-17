@@ -33,7 +33,7 @@ export const SupportCard = style(({ channel }) => {
   const channelRender = channelState => {
     return Object.entries(channelState).map(([key, value], i) => {
       return (
-        <div>
+        <div key={key}>
           <span>
             {key}: {value}{" "}
           </span>

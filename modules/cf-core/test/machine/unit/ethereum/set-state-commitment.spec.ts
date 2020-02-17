@@ -1,11 +1,5 @@
 import { CFCoreTypes } from "@connext/types";
-import {
-  bigNumberify,
-  Interface,
-  keccak256,
-  solidityPack,
-  TransactionDescription
-} from "ethers/utils";
+import { bigNumberify, Interface, keccak256, solidityPack, TransactionDescription } from "ethers/utils";
 
 import { SetStateCommitment } from "../../../../src/ethereum";
 import { appIdentityToHash } from "../../../../src/ethereum/utils/app-identity";
@@ -32,7 +26,7 @@ describe("Set State Commitment", () => {
       appInstance.identity,
       appInstance.hashOfLatestState,
       appInstance.versionNumber,
-      appInstance.timeout
+      appInstance.timeout,
     );
     // TODO: (question) Should there be a way to retrieve the version
     //       of this transaction sent to the multisig vs sent
@@ -64,21 +58,12 @@ describe("Set State Commitment", () => {
     });
 
     it("should contain expected AppIdentity argument", () => {
-      const [
-        channelNonce,
-        participants,
-        appDefinition,
-        defaultTimeout
-      ] = desc.args[0];
+      const [channelNonce, participants, appDefinition, defaultTimeout] = desc.args[0];
 
-      expect(channelNonce).toEqual(
-        bigNumberify(appInstance.identity.channelNonce)
-      );
+      expect(channelNonce).toEqual(bigNumberify(appInstance.identity.channelNonce));
       expect(participants).toEqual(appInstance.identity.participants);
       expect(appDefinition).toBe(appInstance.identity.appDefinition);
-      expect(defaultTimeout).toEqual(
-        bigNumberify(appInstance.identity.defaultTimeout)
-      );
+      expect(defaultTimeout).toEqual(bigNumberify(appInstance.identity.defaultTimeout));
     });
 
     it("should contain expected SignedStateHashUpdate argument", () => {
@@ -103,9 +88,9 @@ describe("Set State Commitment", () => {
           appIdentityToHash(appInstance.identity),
           appInstance.versionNumber,
           appInstance.timeout,
-          appInstance.hashOfLatestState
-        ]
-      )
+          appInstance.hashOfLatestState,
+        ],
+      ),
     );
 
     expect(hashToSign).toBe(expectedHashToSign);

@@ -6,5 +6,5 @@ export {
   CounterfactualApp,
   ERC20,
   MinimumViableMultisig,
-  ProxyFactory
+  ProxyFactory,
 } from "@connext/contracts";

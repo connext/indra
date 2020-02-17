@@ -47,7 +47,7 @@ function Debug({ classes, messaging, prefix }) {
     <TopGrid container>
       <AppBar container>
         <AppBarButton component={Link} to={`${prefix}`}>
-          <HomeIcon color="primary"/>
+          <HomeIcon color="primary" />
         </AppBarButton>
         <AppBarButton component={Link} to={`${prefix}/debug/channel`}>
           <AppBarButtonTypography>Channels</AppBarButtonTypography>
@@ -65,16 +65,8 @@ function Debug({ classes, messaging, prefix }) {
           path={`${prefix}/debug/channel`}
           render={props => <DebugChannel {...props} messaging={messaging} />}
         />
-        <Route
-          exact
-          path={`${prefix}/debug/node`}
-          render={props => <DebugNode {...props} messaging={messaging} />}
-        />
-        <Route
-          exact
-          path={`${prefix}/debug/admin`}
-          render={props => <Admin {...props} messaging={messaging} />}
-        />
+        <Route exact path={`${prefix}/debug/node`} render={props => <DebugNode {...props} messaging={messaging} />} />
+        <Route exact path={`${prefix}/debug/admin`} render={props => <Admin {...props} messaging={messaging} />} />
       </Switch>
     </TopGrid>
   );

@@ -1,11 +1,11 @@
 import { connectDb, disconnectDb } from "./util";
 
-before("Global Setup", async () => {
+beforeAll(async () => {
   await connectDb();
   console.log("DB Connected!");
 });
 
-after("Global Teardown", async () => {
+afterAll(async () => {
   await disconnectDb();
   console.log("DB Disconnected!");
 });

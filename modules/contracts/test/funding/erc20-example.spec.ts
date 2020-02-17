@@ -15,7 +15,7 @@ describe("DolphinCoin (ERC20) can be created", () => {
   let wallet: Wallet;
   let erc20: Contract;
 
-  before(async () => {
+  beforeAll(async () => {
     provider = waffle.createMockProvider();
     wallet = (await waffle.getWallets(provider))[0];
     erc20 = await waffle.deployContract(wallet, DolphinCoin);
@@ -23,9 +23,7 @@ describe("DolphinCoin (ERC20) can be created", () => {
 
   describe("Deployer has all of initial supply", () => {
     it("Initial supply for deployer is DOLPHINCOIN_SUPPLY", async () => {
-      expect(await erc20.functions.balanceOf(wallet.address)).to.be.eq(
-        DOLPHINCOIN_SUPPLY
-      );
+      expect(await erc20.functions.balanceOf(wallet.address)).to.be.eq(DOLPHINCOIN_SUPPLY);
     });
   });
 });

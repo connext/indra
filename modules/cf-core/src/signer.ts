@@ -6,9 +6,7 @@ import { CFCoreTypes } from "./types";
 
 export const EXTENDED_PRIVATE_KEY_PATH = "EXTENDED_PRIVATE_KEY";
 
-export async function getHDNode(
-  storeService: CFCoreTypes.IStoreService
-): Promise<HDNode> {
+export async function getHDNode(storeService: CFCoreTypes.IStoreService): Promise<HDNode> {
   let xprv = await storeService.get(EXTENDED_PRIVATE_KEY_PATH);
 
   if (!xprv) {

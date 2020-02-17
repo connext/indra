@@ -101,12 +101,8 @@ export interface IConnextClient {
   conditionalTransfer(params: ConditionalTransferParameters): Promise<ConditionalTransferResponse>;
   restoreState(): Promise<void>;
   channelProviderConfig(): Promise<ChannelProviderConfig>;
-  requestDepositRights(
-    params: RequestDepositRightsParameters,
-  ): Promise<ProtocolTypes.RequestDepositRightsResult>;
-  rescindDepositRights(
-    params: RescindDepositRightsParameters,
-  ): Promise<RescindDepositRightsResponse>;
+  requestDepositRights(params: RequestDepositRightsParameters): Promise<ProtocolTypes.RequestDepositRightsResult>;
+  rescindDepositRights(params: RescindDepositRightsParameters): Promise<RescindDepositRightsResponse>;
   checkDepositRights(params: CheckDepositRightsParameters): Promise<CheckDepositRightsResponse>;
 
   ///////////////////////////////////
@@ -153,26 +149,14 @@ export interface IConnextClient {
   getAppInstances(multisigAddress?: string): Promise<AppInstanceJson[]>;
   getAppInstanceDetails(appInstanceId: string): Promise<ProtocolTypes.GetAppInstanceDetailsResult>;
   getAppState(appInstanceId: string): Promise<ProtocolTypes.GetStateResult>;
-  getProposedAppInstances(
-    multisigAddress?: string,
-  ): Promise<ProtocolTypes.GetProposedAppInstancesResult | undefined>;
-  getProposedAppInstance(
-    appInstanceId: string,
-  ): Promise<ProtocolTypes.GetProposedAppInstanceResult | undefined>;
-  proposeInstallApp(
-    params: ProtocolTypes.ProposeInstallParams,
-  ): Promise<ProtocolTypes.ProposeInstallResult>;
+  getProposedAppInstances(multisigAddress?: string): Promise<ProtocolTypes.GetProposedAppInstancesResult | undefined>;
+  getProposedAppInstance(appInstanceId: string): Promise<ProtocolTypes.GetProposedAppInstanceResult | undefined>;
+  proposeInstallApp(params: ProtocolTypes.ProposeInstallParams): Promise<ProtocolTypes.ProposeInstallResult>;
   installVirtualApp(appInstanceId: string): Promise<ProtocolTypes.InstallVirtualResult>;
   installApp(appInstanceId: string): Promise<ProtocolTypes.InstallResult>;
   rejectInstallApp(appInstanceId: string): Promise<ProtocolTypes.UninstallResult>;
-  takeAction(
-    appInstanceId: string,
-    action: AppActionBigNumber,
-  ): Promise<ProtocolTypes.TakeActionResult>;
-  updateState(
-    appInstanceId: string,
-    newState: AppState | any,
-  ): Promise<ProtocolTypes.UpdateStateResult>;
+  takeAction(appInstanceId: string, action: AppActionBigNumber): Promise<ProtocolTypes.TakeActionResult>;
+  updateState(appInstanceId: string, newState: AppState | any): Promise<ProtocolTypes.UpdateStateResult>;
   uninstallApp(appInstanceId: string): Promise<ProtocolTypes.UninstallResult>;
   uninstallVirtualApp(appInstanceId: string): Promise<ProtocolTypes.UninstallVirtualResult>;
 }

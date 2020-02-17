@@ -1,8 +1,5 @@
 import { Node } from "../../src";
-import {
-  ProposeMessage,
-  RejectInstallVirtualMessage,
-} from "../../src/types";
+import { ProposeMessage, RejectInstallVirtualMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 
 import { setup, SetupContext } from "./setup";
@@ -12,7 +9,7 @@ import {
   createChannel,
   getProposedAppInstances,
   makeVirtualProposeCall,
-  assertNodeMessage
+  assertNodeMessage,
 } from "./utils";
 import { REJECT_INSTALL_EVENT } from "@connext/types";
 
@@ -40,49 +37,37 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
 
         let appInstanceId: string;
 
-        nodeA.on(
-          REJECT_INSTALL_EVENT,
-          async (msg: RejectInstallVirtualMessage) => {
-            expect((await getProposedAppInstances(nodeA)).length).toEqual(0);
-            assertNodeMessage(msg, {
-              from: nodeC.publicIdentifier,
-              data: {
-                appInstanceId
-              },
-              type: REJECT_INSTALL_EVENT
-            });
-            done();
-          }
-        );
+        nodeA.on(REJECT_INSTALL_EVENT, async (msg: RejectInstallVirtualMessage) => {
+          expect((await getProposedAppInstances(nodeA)).length).toEqual(0);
+          assertNodeMessage(msg, {
+            from: nodeC.publicIdentifier,
+            data: {
+              appInstanceId,
+            },
+            type: REJECT_INSTALL_EVENT,
+          });
+          done();
+        });
 
-        nodeC.once(
-          "PROPOSE_INSTALL_EVENT",
-          async ({ data: { params, appInstanceId } }: ProposeMessage) => {
-            const [proposedAppInstanceC] = await getProposedAppInstances(nodeC);
-            appInstanceId = proposedAppInstanceC.identityHash;
+        nodeC.once("PROPOSE_INSTALL_EVENT", async ({ data: { params, appInstanceId } }: ProposeMessage) => {
+          const [proposedAppInstanceC] = await getProposedAppInstances(nodeC);
+          appInstanceId = proposedAppInstanceC.identityHash;
 
-            confirmProposedAppInstance(params, proposedAppInstanceC);
+          confirmProposedAppInstance(params, proposedAppInstanceC);
 
-            expect(proposedAppInstanceC.proposedByIdentifier).toEqual(
-              nodeA.publicIdentifier
-            );
+          expect(proposedAppInstanceC.proposedByIdentifier).toEqual(nodeA.publicIdentifier);
 
-            const rejectReq = constructRejectInstallRpc(appInstanceId);
-            await nodeC.rpcRouter.dispatch(rejectReq);
-            expect((await getProposedAppInstances(nodeC)).length).toEqual(0);
-          }
-        );
+          const rejectReq = constructRejectInstallRpc(appInstanceId);
+          await nodeC.rpcRouter.dispatch(rejectReq);
+          expect((await getProposedAppInstances(nodeC)).length).toEqual(0);
+        });
 
-        const { params } = await makeVirtualProposeCall(
-          nodeA,
-          nodeC,
-          TicTacToeApp
-        );
+        const { params } = await makeVirtualProposeCall(nodeA, nodeC, TicTacToeApp);
 
         const [proposedAppInstanceA] = await getProposedAppInstances(nodeA);
 
         confirmProposedAppInstance(params, proposedAppInstanceA);
       });
-    }
+    },
   );
 });

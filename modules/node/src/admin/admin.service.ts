@@ -1,8 +1,4 @@
-import {
-  ConnextNodeStorePrefix,
-  CriticalStateChannelAddresses,
-  StateChannelJSON,
-} from "@connext/types";
+import { ConnextNodeStorePrefix, CriticalStateChannelAddresses, StateChannelJSON } from "@connext/types";
 import { Injectable } from "@nestjs/common";
 
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
@@ -35,9 +31,7 @@ export class AdminService {
   ///// GENERAL PURPOSE ADMIN FNS
 
   /**  Get channels by xpub */
-  async getStateChannelByUserPublicIdentifier(
-    userPublicIdentifier: string,
-  ): Promise<StateChannelJSON> {
+  async getStateChannelByUserPublicIdentifier(userPublicIdentifier: string): Promise<StateChannelJSON> {
     return await this.channelService.getStateChannel(userPublicIdentifier);
   }
 
@@ -113,10 +107,7 @@ export class AdminService {
     // outlined possibilities
     const toMerge = [];
     for (const chan of channels) {
-      const oldPrefix = await this.cfCoreService.getChannelRecord(
-        chan.multisigAddress,
-        "ConnextHub",
-      );
+      const oldPrefix = await this.cfCoreService.getChannelRecord(chan.multisigAddress, "ConnextHub");
       const currPrefix = await this.cfCoreService.getChannelRecord(chan.multisigAddress);
       const mergeInfo = {
         channelId: chan.id,
@@ -136,9 +127,11 @@ export class AdminService {
    * Add these critical addresses to the channel's state
    */
   async repairCriticalStateChannelAddresses(): Promise<RepairCriticalAddressesResponse> {
-    const states = (await Promise.all((await this.getAllChannels()).map(channel =>
-      this.cfCoreService.getStateChannel(channel.multisigAddress)
-    ))).map(state => state.data);
+    const states = (
+      await Promise.all(
+        (await this.getAllChannels()).map(channel => this.cfCoreService.getStateChannel(channel.multisigAddress)),
+      )
+    ).map(state => state.data);
     const output: RepairCriticalAddressesResponse = { fixed: [], broken: [] };
     logger.log(`Scanning ${states.length} channels to see if any need to be repaired..`);
     // First loop: Identify all channels that need to be repaired
@@ -147,11 +140,12 @@ export class AdminService {
         !state.addresses ||
         !state.addresses.proxyFactory ||
         !state.addresses.multisigMastercopy ||
-        state.multisigAddress !== await getCreate2MultisigAddress(
-          state.userNeuteredExtendedKeys,
-          state.addresses,
-          this.configService.getEthProvider(),
-        )
+        state.multisigAddress !==
+          (await getCreate2MultisigAddress(
+            state.userNeuteredExtendedKeys,
+            state.addresses,
+            this.configService.getEthProvider(),
+          ))
       ) {
         output.broken.push(state.multisigAddress);
       }

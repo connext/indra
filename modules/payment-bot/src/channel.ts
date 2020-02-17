@@ -1,11 +1,6 @@
 import * as connext from "@connext/client";
 import { ConnextStore, FileStorage } from "@connext/store";
-import {
-  ClientOptions,
-  IConnextClient,
-  WITHDRAWAL_CONFIRMED_EVENT,
-  UNINSTALL_VIRTUAL_EVENT,
-} from "@connext/types";
+import { ClientOptions, IConnextClient, WITHDRAWAL_CONFIRMED_EVENT, UNINSTALL_VIRTUAL_EVENT } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 
 import { config } from "./config";

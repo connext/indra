@@ -145,10 +145,7 @@ export class Currency {
       FIN: this.toRay(parseUnits("1", 3).toString()),
       WEI: this.toRay(parseUnits("1", 18).toString()),
     };
-    if (
-      (this.isEthType() && this.isEthType(currency)) ||
-      (this.isTokenType() && this.isTokenType(currency))
-    ) {
+    if ((this.isEthType() && this.isEthType(currency)) || (this.isTokenType() && this.isTokenType(currency))) {
       return exchangeRates[currency];
     }
     if (!this.daiRateGiven) {
@@ -175,16 +172,11 @@ export class Currency {
     const thisToTargetRate = this.toRay(this.getRate(targetType)).div(this.getRate(this.type));
     const targetAmount = this.fromRay(this.fromRoundRay(this.ray.mul(thisToTargetRate)));
     // console.debug(`Converted: ${this.amount} ${this.type} => ${targetAmount} ${targetType}`)
-    return new Currency(
-      targetType,
-      targetAmount.toString(),
-      this.daiRateGiven ? this.daiRate : undefined,
-    );
+    return new Currency(targetType, targetAmount.toString(), this.daiRateGiven ? this.daiRate : undefined);
   };
 
   // convert to wad, add 0.5 wad, convert back to dec string, then truncate decimal
-  public _round = (decStr: any) =>
-    this._floor(this.fromWad(this.toWad(decStr).add(this.toWad("0.5"))).toString());
+  public _round = (decStr: any) => this._floor(this.fromWad(this.toWad(decStr).add(this.toWad("0.5"))).toString());
 
   public _floor = (decStr: any) => decStr.substring(0, decStr.indexOf("."));
 

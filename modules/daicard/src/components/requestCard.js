@@ -15,8 +15,7 @@ const style = withStyles(theme => ({
 }));
 
 const zero = "0.0";
-const generateQrUrl = (amount, xpub) =>
-  `${window.location.origin}/send?amount=${amount || zero}&recipient=${xpub}`;
+const generateQrUrl = (amount, xpub) => `${window.location.origin}/send?amount=${amount || zero}&recipient=${xpub}`;
 
 export const RequestCard = style(props => {
   const { maxDeposit, xpub } = props;

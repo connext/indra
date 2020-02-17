@@ -8,13 +8,7 @@ import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
-import {
-  collateralizeChannel,
-  constructUninstallRpc,
-  createChannel,
-  makeInstallCall,
-  makeProposeCall
-} from "./utils";
+import { collateralizeChannel, constructUninstallRpc, createChannel, makeInstallCall, makeProposeCall } from "./utils";
 
 expect.extend({ toBeLt });
 
@@ -41,7 +35,7 @@ describe("Node method follows spec when happening concurrently - install / unins
         multisigAddress,
         nodeA,
         nodeB,
-        parseEther("2") // We are depositing in 2 and use 1 for each concurrent app
+        parseEther("2"), // We are depositing in 2 and use 1 for each concurrent app
       );
 
       installCall = makeProposeCall(
@@ -51,7 +45,7 @@ describe("Node method follows spec when happening concurrently - install / unins
         One,
         CONVENTION_FOR_ETH_TOKEN_ADDRESS,
         One,
-        CONVENTION_FOR_ETH_TOKEN_ADDRESS
+        CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       );
 
       // install the first app
@@ -72,9 +66,7 @@ describe("Node method follows spec when happening concurrently - install / unins
     it("install app with ETH then uninstall and install apps simultaneously from the same node", async done => {
       let completedActions = 0;
 
-      nodeB.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) =>
-        makeInstallCall(nodeB, msg.data.appInstanceId)
-      );
+      nodeB.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => makeInstallCall(nodeB, msg.data.appInstanceId));
 
       nodeA.once("INSTALL_EVENT", () => {
         completedActions += 1;
@@ -94,7 +86,7 @@ describe("Node method follows spec when happening concurrently - install / unins
         One,
         CONVENTION_FOR_ETH_TOKEN_ADDRESS,
         One,
-        CONVENTION_FOR_ETH_TOKEN_ADDRESS
+        CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       );
 
       nodeA.rpcRouter.dispatch(installCall);
@@ -104,9 +96,7 @@ describe("Node method follows spec when happening concurrently - install / unins
     it("install app with ETH then uninstall and install apps simultaneously from separate nodes", async done => {
       let completedActions = 0;
 
-      nodeB.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) =>
-        makeInstallCall(nodeB, msg.data.appInstanceId)
-      );
+      nodeB.once("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => makeInstallCall(nodeB, msg.data.appInstanceId));
 
       nodeA.once("INSTALL_EVENT", () => {
         completedActions += 1;
@@ -126,7 +116,7 @@ describe("Node method follows spec when happening concurrently - install / unins
         One,
         CONVENTION_FOR_ETH_TOKEN_ADDRESS,
         One,
-        CONVENTION_FOR_ETH_TOKEN_ADDRESS
+        CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       );
 
       nodeA.rpcRouter.dispatch(installCall);

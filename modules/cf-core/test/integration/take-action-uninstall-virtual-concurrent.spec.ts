@@ -12,7 +12,7 @@ import {
   constructUninstallVirtualRpc,
   createChannel,
   installApp,
-  installVirtualApp
+  installVirtualApp,
 } from "./utils";
 import { UPDATE_STATE_EVENT, UNINSTALL_VIRTUAL_EVENT } from "@connext/types";
 
@@ -41,19 +41,9 @@ describe("Concurrently taking action on regular app and uninstallling virtual ap
     multisigAddressAB = await createChannel(nodeA, nodeB);
     multisigAddressBC = await createChannel(nodeB, nodeC);
 
-    await collateralizeChannel(
-      multisigAddressAB,
-      nodeA,
-      nodeB,
-      parseEther("2")
-    );
+    await collateralizeChannel(multisigAddressAB, nodeA, nodeB, parseEther("2"));
 
-    await collateralizeChannel(
-      multisigAddressBC,
-      nodeB,
-      nodeC,
-      parseEther("2")
-    );
+    await collateralizeChannel(multisigAddressBC, nodeB, nodeC, parseEther("2"));
 
     // install a virtual app to uninstall
     virtualId = await installVirtualApp(nodeA, nodeB, nodeC, TicTacToeApp);
@@ -78,11 +68,9 @@ describe("Concurrently taking action on regular app and uninstallling virtual ap
       incrementAndEnd();
     });
 
-    const takeActionReq = (appId: string) =>
-      constructTakeActionRpc(appId, validAction);
+    const takeActionReq = (appId: string) => constructTakeActionRpc(appId, validAction);
 
-    const uninstallReq = (appId: string) =>
-      constructUninstallVirtualRpc(appId, nodeB.publicIdentifier);
+    const uninstallReq = (appId: string) => constructUninstallVirtualRpc(appId, nodeB.publicIdentifier);
     nodeB.rpcRouter.dispatch(takeActionReq(appId));
     nodeA.rpcRouter.dispatch(uninstallReq(virtualId));
   });

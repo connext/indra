@@ -10,17 +10,12 @@ import {
   keccak256,
   recoverAddress,
   Signature,
-  solidityKeccak256
+  solidityKeccak256,
 } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { JSON_STRINGIFY_SPACE } from "./constants";
-import {
-  addressBook,
-  addressHistory,
-  MinimumViableMultisig,
-  ProxyFactory
-} from "./contracts";
+import { addressBook, addressHistory, MinimumViableMultisig, ProxyFactory } from "./contracts";
 import { StateChannel } from "./models";
 import { xkeyKthAddress } from "./machine";
 import { Zero } from "ethers/constants";
@@ -40,13 +35,11 @@ export const bigNumberifyJson = (json: object) =>
   JSON.parse(JSON.stringify(json), (
     // @ts-ignore
     key,
-    val
+    val,
   ) => (val && val["_hex"] ? bigNumberify(val) : val));
 
 export const deBigNumberifyJson = (json: object) =>
-  JSON.parse(JSON.stringify(json), (key, val) =>
-    val && BigNumber.isBigNumber(val) ? val.toHexString() : val
-  );
+  JSON.parse(JSON.stringify(json), (key, val) => (val && BigNumber.isBigNumber(val) ? val.toHexString() : val));
 /**
  * Converts an array of signatures into a single string
  *
@@ -64,10 +57,7 @@ export function signaturesToBytes(...signatures: Signature[]): string {
  *
  * @param signatures An array of etherium signatures
  */
-export function sortSignaturesBySignerAddress(
-  digest: string,
-  signatures: Signature[]
-): Signature[] {
+export function sortSignaturesBySignerAddress(digest: string, signatures: Signature[]): Signature[] {
   const ret = signatures.slice();
   ret.sort((sigA, sigB) => {
     const addrA = recoverAddress(digest, signaturesToBytes(sigA));
@@ -83,13 +73,8 @@ export function sortSignaturesBySignerAddress(
  *
  * @param signatures An array of etherium signatures
  */
-export function signaturesToBytesSortedBySignerAddress(
-  digest: string,
-  ...signatures: Signature[]
-): string {
-  return signaturesToBytes(
-    ...sortSignaturesBySignerAddress(digest, signatures)
-  );
+export function signaturesToBytesSortedBySignerAddress(digest: string, ...signatures: Signature[]): string {
+  return signaturesToBytes(...sortSignaturesBySignerAddress(digest, signatures));
 }
 
 export function prettyPrintObject(object: any) {
@@ -126,25 +111,18 @@ export const getCreate2MultisigAddress = async (
   addresses: CriticalStateChannelAddresses,
   ethProvider: Provider,
   legacyKeygen?: boolean,
-  toxicBytecode?: string
+  toxicBytecode?: string,
 ): Promise<string> => {
-  const proxyFactory = new Contract(
-    addresses.proxyFactory,
-    ProxyFactory.abi,
-    ethProvider
-  );
+  const proxyFactory = new Contract(addresses.proxyFactory, ProxyFactory.abi, ethProvider);
 
   const xkeysToSortedKthAddresses = xkeys =>
     xkeys
       .map(xkey =>
-        legacyKeygen === true
-          ? fromExtendedKey(xkey).address
-          : fromExtendedKey(xkey).derivePath("0").address
+        legacyKeygen === true ? fromExtendedKey(xkey).address : fromExtendedKey(xkey).derivePath("0").address,
       )
       .sort((a, b) => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
 
-  const proxyBytecode =
-    toxicBytecode || (await proxyFactory.functions.proxyCreationCode());
+  const proxyBytecode = toxicBytecode || (await proxyFactory.functions.proxyCreationCode());
 
   return getAddress(
     solidityKeccak256(
@@ -157,22 +135,17 @@ export const getCreate2MultisigAddress = async (
           [
             keccak256(
               // see encoding notes
-              new Interface(MinimumViableMultisig.abi).functions.setup.encode([
-                xkeysToSortedKthAddresses(owners)
-              ])
+              new Interface(MinimumViableMultisig.abi).functions.setup.encode([xkeysToSortedKthAddresses(owners)]),
             ),
-            0
-          ]
+            0,
+          ],
         ),
         solidityKeccak256(
           ["bytes", "uint256"],
-          [
-            `0x${proxyBytecode.replace(/^0x/, "")}`,
-            addresses.multisigMastercopy
-          ]
-        )
-      ]
-    ).slice(-40)
+          [`0x${proxyBytecode.replace(/^0x/, "")}`, addresses.multisigMastercopy],
+        ),
+      ],
+    ).slice(-40),
   );
 };
 
@@ -184,7 +157,7 @@ export const scanForCriticalAddresses = async (
     ProxyFactory: string[];
     MinimumViableMultisig: string[];
     ToxicBytecode: string[];
-  }
+  },
 ): Promise<void | { [key: string]: string | boolean }> => {
   const chainId = (await ethProvider.getNetwork()).chainId;
   // First, consolidate all sources of addresses to scan
@@ -192,9 +165,7 @@ export const scanForCriticalAddresses = async (
   // Falsy toxic bytecode (ie "") causes getCreate2MultisigAddress to fetch non-toxic value
   let toxicBytecodes: string[] = [""];
   if (addressHistory[chainId] && addressHistory[chainId].ToxicBytecode) {
-    toxicBytecodes = toxicBytecodes.concat(
-      addressHistory[chainId].ToxicBytecode
-    );
+    toxicBytecodes = toxicBytecodes.concat(addressHistory[chainId].ToxicBytecode);
   }
   if (moreAddressHistory && moreAddressHistory.ToxicBytecode) {
     toxicBytecodes = toxicBytecodes.concat(moreAddressHistory.ToxicBytecode);
@@ -203,30 +174,21 @@ export const scanForCriticalAddresses = async (
   //console.log(`Scanning toxic bytecode: ${toxicBytecodes}`);
 
   let mastercopies: string[] = [];
-  if (
-    addressHistory[chainId] &&
-    addressHistory[chainId].MinimumViableMultisig
-  ) {
-    mastercopies = mastercopies.concat(
-      addressHistory[chainId].MinimumViableMultisig
-    );
+  if (addressHistory[chainId] && addressHistory[chainId].MinimumViableMultisig) {
+    mastercopies = mastercopies.concat(addressHistory[chainId].MinimumViableMultisig);
   }
   if (addressBook[chainId] && addressBook[chainId].MinimumViableMultisig) {
     mastercopies.push(addressBook[chainId].MinimumViableMultisig.address);
   }
   if (moreAddressHistory && moreAddressHistory.MinimumViableMultisig) {
-    mastercopies = mastercopies.concat(
-      moreAddressHistory.MinimumViableMultisig
-    );
+    mastercopies = mastercopies.concat(moreAddressHistory.MinimumViableMultisig);
   }
   mastercopies = [...new Set(mastercopies)]; // de-dup
   //console.log(`Scanning multisig mastercopies: ${mastercopies}`);
 
   let proxyFactories: string[] = [];
   if (addressHistory[chainId] && addressHistory[chainId].ProxyFactory) {
-    proxyFactories = proxyFactories.concat(
-      addressHistory[chainId].ProxyFactory
-    );
+    proxyFactories = proxyFactories.concat(addressHistory[chainId].ProxyFactory);
   }
   if (addressBook[chainId] && addressBook[chainId].ProxyFactory) {
     mastercopies.push(addressBook[chainId].ProxyFactory.address);
@@ -247,14 +209,14 @@ export const scanForCriticalAddresses = async (
             { proxyFactory, multisigMastercopy },
             ethProvider,
             legacyKeygen,
-            toxicBytecode
+            toxicBytecode,
           );
           if (calculated === expectedMultisig) {
             return {
               legacyKeygen,
               multisigMastercopy,
               proxyFactory,
-              toxicBytecode
+              toxicBytecode,
             };
           }
         }
@@ -271,14 +233,12 @@ export function assertSufficientFundsWithinFreeBalance(
   channel: StateChannel,
   publicIdentifier: string,
   tokenAddress: string,
-  depositAmount: BigNumber
+  depositAmount: BigNumber,
 ): void {
   if (!channel.hasFreeBalance) return;
 
   const freeBalanceForToken =
-    channel
-      .getFreeBalanceClass()
-      .getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0)) || Zero;
+    channel.getFreeBalanceClass().getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0)) || Zero;
 
   if (freeBalanceForToken.lt(depositAmount)) {
     throw Error(
@@ -287,8 +247,8 @@ export function assertSufficientFundsWithinFreeBalance(
         channel.multisigAddress,
         tokenAddress,
         freeBalanceForToken,
-        depositAmount
-      )
+        depositAmount,
+      ),
     );
   }
 }

@@ -6,18 +6,12 @@ import { parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { deployTestArtifactsToChain } from "./contracts";
-import {
-  A_EXTENDED_PRIVATE_KEY,
-  B_EXTENDED_PRIVATE_KEY,
-  C_EXTENDED_PRIVATE_KEY,
-} from "./test-constants.jest";
+import { A_EXTENDED_PRIVATE_KEY, B_EXTENDED_PRIVATE_KEY, C_EXTENDED_PRIVATE_KEY } from "./test-constants.jest";
 
 dotenvExtended.load();
 const env = {
   ETHPROVIDER_URL: process.env.ETHPROVIDER_URL || "http://localhost:8545",
-  SUGAR_DADDY:
-    process.env.SUGAR_DADDY ||
-    "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat",
+  SUGAR_DADDY: process.env.SUGAR_DADDY || "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat",
 };
 
 const fundAddress = async (to: string, ethProvider: JsonRpcProvider): Promise<void> => {

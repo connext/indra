@@ -1,20 +1,13 @@
 import { parseEther } from "ethers/utils";
 
 import { Node } from "../../src";
-import {
-  InstallVirtualMessage,
-} from "../../src/types";
+import { InstallVirtualMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
 import { validAction } from "./tic-tac-toe";
-import {
-  collateralizeChannel,
-  constructTakeActionRpc,
-  createChannel,
-  installVirtualApp
-} from "./utils";
+import { collateralizeChannel, constructTakeActionRpc, createChannel, installVirtualApp } from "./utils";
 import { UPDATE_STATE_EVENT, INSTALL_VIRTUAL_EVENT } from "@connext/types";
 
 expect.extend({ toBeLt });
@@ -39,19 +32,9 @@ describe("Concurrently taking action on virtual apps without issue", () => {
     multisigAddressAB = await createChannel(nodeA, nodeB);
     multisigAddressBC = await createChannel(nodeB, nodeC);
 
-    await collateralizeChannel(
-      multisigAddressAB,
-      nodeA,
-      nodeB,
-      parseEther("2")
-    );
+    await collateralizeChannel(multisigAddressAB, nodeA, nodeB, parseEther("2"));
 
-    await collateralizeChannel(
-      multisigAddressBC,
-      nodeB,
-      nodeC,
-      parseEther("2")
-    );
+    await collateralizeChannel(multisigAddressBC, nodeB, nodeC, parseEther("2"));
   });
 
   it("can handle two concurrent TTT virtual app take actions", async done => {
@@ -78,8 +61,7 @@ describe("Concurrently taking action on virtual apps without issue", () => {
       if (appsTakenActionOn === 2) done();
     });
 
-    const takeActionReq = (appId: string) =>
-      constructTakeActionRpc(appId, validAction);
+    const takeActionReq = (appId: string) => constructTakeActionRpc(appId, validAction);
 
     nodeA.rpcRouter.dispatch(takeActionReq(appIds[0]));
     nodeA.rpcRouter.dispatch(takeActionReq(appIds[1]));

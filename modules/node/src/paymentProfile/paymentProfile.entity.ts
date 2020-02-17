@@ -29,6 +29,9 @@ export class PaymentProfile {
   @Column("text")
   assetId: string;
 
-  @ManyToMany((type: any) => Channel, (channel: Channel) => channel.paymentProfiles)
+  @ManyToMany(
+    (type: any) => Channel,
+    (channel: Channel) => channel.paymentProfiles,
+  )
   channels!: Channel[];
 }

@@ -13,51 +13,37 @@ export class PrivateKeysGetter {
   private appInstanceIdentityHashToPrivateKey: Map<string, string> = new Map();
   private readonly privateKeys: Set<string> = new Set();
 
-  constructor(
-    private readonly privateKeyGenerator: CFCoreTypes.IPrivateKeyGenerator
-  ) {}
+  constructor(private readonly privateKeyGenerator: CFCoreTypes.IPrivateKeyGenerator) {}
 
   @Memoize()
   public async getPrivateKey(appInstanceIdentityHash: string): Promise<string> {
     const validHDPathRepresentationOfIdentityHash = convertDecimalStringToValidHDPath(
-      new BigNumber(appInstanceIdentityHash).toString()
+      new BigNumber(appInstanceIdentityHash).toString(),
     );
 
-    if (
-      this.appInstanceIdentityHashToPrivateKey.has(
-        validHDPathRepresentationOfIdentityHash
-      )
-    ) {
-      return await this.appInstanceIdentityHashToPrivateKey.get(
-        validHDPathRepresentationOfIdentityHash
-      )!;
+    if (this.appInstanceIdentityHashToPrivateKey.has(validHDPathRepresentationOfIdentityHash)) {
+      return await this.appInstanceIdentityHashToPrivateKey.get(validHDPathRepresentationOfIdentityHash)!;
     }
 
-    const privateKey = await this.privateKeyGenerator(
-      validHDPathRepresentationOfIdentityHash
-    );
+    const privateKey = await this.privateKeyGenerator(validHDPathRepresentationOfIdentityHash);
     try {
       new Wallet(privateKey);
     } catch (e) {
       throw new Error(`
         Invalid private key retrieved from wallet-provided
-        callback given AppInstance ID ${appInstanceIdentityHash}: ${JSON.stringify(
-  e,
-  null,
-  4
-)}
+        callback given AppInstance ID ${appInstanceIdentityHash}: ${JSON.stringify(e, null, 4)}
       `);
     }
 
     if (this.privateKeys.has(privateKey)) {
       throw new Error(
-        "Wallet-provided callback function returned a colliding private key for two different AppInstance IDs"
+        "Wallet-provided callback function returned a colliding private key for two different AppInstance IDs",
       );
     }
 
     this.appInstanceIdentityHashToPrivateKey = this.appInstanceIdentityHashToPrivateKey.set(
       validHDPathRepresentationOfIdentityHash,
-      privateKey
+      privateKey,
     );
     this.privateKeys.add(privateKey);
 
@@ -68,55 +54,40 @@ export class PrivateKeysGetter {
 export async function getPrivateKeysGeneratorAndXPubOrThrow(
   storeService: CFCoreTypes.IStoreService,
   privateKeyGenerator?: CFCoreTypes.IPrivateKeyGenerator,
-  publicExtendedKey?: string
+  publicExtendedKey?: string,
 ): Promise<[PrivateKeysGetter, string]> {
   if (publicExtendedKey && !privateKeyGenerator) {
-    throw new Error(
-      "Cannot provide an extended public key but not provide a private key generation function"
-    );
+    throw new Error("Cannot provide an extended public key but not provide a private key generation function");
   }
 
   if (!publicExtendedKey && privateKeyGenerator) {
-    throw new Error(
-      "Cannot provide a private key generation function but not provide an extended public key"
-    );
+    throw new Error("Cannot provide a private key generation function but not provide an extended public key");
   }
 
   if (publicExtendedKey && privateKeyGenerator) {
-    return Promise.resolve([
-      new PrivateKeysGetter(privateKeyGenerator),
-      publicExtendedKey
-    ]);
+    return Promise.resolve([new PrivateKeysGetter(privateKeyGenerator), publicExtendedKey]);
   }
 
   let extendedPrvKey = await storeService.get(EXTENDED_PRIVATE_KEY_PATH);
 
   if (!extendedPrvKey) {
     log.info(
-      "No (extended public key, private key generation function) pair was provided and no extended private key was found in store. Generating a random extended private key"
+      "No (extended public key, private key generation function) pair was provided and no extended private key was found in store. Generating a random extended private key",
     );
     extendedPrvKey = fromMnemonic(Wallet.createRandom().mnemonic).extendedKey;
-    await storeService.set([
-      { path: EXTENDED_PRIVATE_KEY_PATH, value: extendedPrvKey }
-    ]);
+    await storeService.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedPrvKey }]);
   } else {
     log.info("Using extended private key found in the store.");
   }
-  const [
-    privKeyGenerator,
-    extendedPubKey
-  ] = generatePrivateKeyGeneratorAndXPubPair(extendedPrvKey);
-  return Promise.resolve([
-    new PrivateKeysGetter(privKeyGenerator),
-    extendedPubKey
-  ]);
+  const [privKeyGenerator, extendedPubKey] = generatePrivateKeyGeneratorAndXPubPair(extendedPrvKey);
+  return Promise.resolve([new PrivateKeysGetter(privKeyGenerator), extendedPubKey]);
 }
 
 // Reference implementation for how the `IPrivateKeyGenerator` interface
 // should be implemented, with specific reference to hardcoding the
 // "Counterfactual" derivation path.
 export function generatePrivateKeyGeneratorAndXPubPair(
-  extendedPrvKey: string
+  extendedPrvKey: string,
 ): [CFCoreTypes.IPrivateKeyGenerator, string] {
   const hdNode = fromExtendedKey(extendedPrvKey).derivePath(CF_PATH);
 
@@ -124,7 +95,7 @@ export function generatePrivateKeyGeneratorAndXPubPair(
     function(uniqueID: string): Promise<string> {
       return Promise.resolve(hdNode.derivePath(uniqueID).privateKey);
     },
-    hdNode.neuter().extendedKey
+    hdNode.neuter().extendedKey,
   ];
 }
 
@@ -147,7 +118,7 @@ function convertDecimalStringToValidHDPath(numbers: string): string {
       }
       return componentAccumulator;
     },
-    [[numbers[0]]]
+    [[numbers[0]]],
   );
 
   return components.map((component: string[]) => component.join("")).join("/");

@@ -72,8 +72,8 @@ export async function getDefaultOptions(
   const baseUrl = isMainnet(network)
     ? "indra.connext.network/api"
     : isRinkeby(network)
-      ? "rinkeby.indra.connext.network/api"
-      : null;
+    ? "rinkeby.indra.connext.network/api"
+    : null;
 
   log.debug(`Using default baseUrl: ${baseUrl}`);
 
@@ -90,9 +90,7 @@ export async function getDefaultOptions(
 
   const store = getOptionIfAvailable("store", overrideOptions) || getDefaultStore(overrideOptions);
 
-  const mnemonic = shouldGenerateMnemonic(network, overrideOptions)
-    ? await getDefaultMnemonic(store, log)
-    : undefined;
+  const mnemonic = shouldGenerateMnemonic(network, overrideOptions) ? await getDefaultMnemonic(store, log) : undefined;
 
   log.debug(`Using default store: ${JSON.stringify(store, null, 2)}`);
 

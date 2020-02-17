@@ -5,11 +5,7 @@ import { Lock } from "./lock";
 export class MemoryLockService implements CFCoreTypes.ILockService {
   public readonly locks: Map<string, Lock> = new Map<string, Lock>();
 
-  async acquireLock(
-    lockName: string,
-    callback: (...args: any[]) => any,
-    timeout: number
-  ): Promise<any> {
+  async acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any> {
     const lock = this.getOrCreateLock(lockName);
 
     let retval = null;

@@ -28,12 +28,7 @@ export type SuccinctChannelUpdate<T = string | number | BigNumber> = {
 
 // TODO: do we need this?
 // some caveats: succint form has only 2 options
-const expandSuccinct = (
-  strs: string[],
-  s: any,
-  keysCastAsNumbers: string[] = [],
-  isSuffix: boolean = true,
-): any => {
+const expandSuccinct = (strs: string[], s: any, keysCastAsNumbers: string[] = [], isSuffix: boolean = true): any => {
   const res = {} as any;
   Object.entries(s).forEach(([name, value]: any): any => {
     if (Array.isArray(value)) {

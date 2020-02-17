@@ -30,24 +30,24 @@ export function createStore(
   let storage;
 
   switch (type.toUpperCase()) {
-  case LOCALSTORAGE:
-    storage = localStorage;
-    break;
+    case LOCALSTORAGE:
+      storage = localStorage;
+      break;
 
-  case ASYNCSTORAGE:
-    storage = new MockAsyncStorage(storageOpts);
-    break;
+    case ASYNCSTORAGE:
+      storage = new MockAsyncStorage(storageOpts);
+      break;
 
-  case FILESTORAGE:
-    storage = new FileStorage(storageOpts);
-    break;
+    case FILESTORAGE:
+      storage = new FileStorage(storageOpts);
+      break;
 
-  case MEMORYSTORAGE:
-    storage = new MemoryStorage(storageOpts);
-    break;
+    case MEMORYSTORAGE:
+      storage = new MemoryStorage(storageOpts);
+      break;
 
-  default:
-    throw new Error(`Unable to create test store of type: ${type}`);
+    default:
+      throw new Error(`Unable to create test store of type: ${type}`);
   }
 
   const store = new ConnextStore(storage, opts);
@@ -67,10 +67,7 @@ export function generateStorePairs(length: number = 10): StorePair[] {
   });
 }
 
-export async function setAndGet(
-  store: ConnextStore,
-  pair: StorePair = TEST_STORE_PAIR,
-): Promise<void> {
+export async function setAndGet(store: ConnextStore, pair: StorePair = TEST_STORE_PAIR): Promise<void> {
   await store.set([pair]);
   const value = await store.get(pair.path);
   if (typeof pair.value === "object" && !BigNumber.isBigNumber(pair.value)) {
@@ -94,10 +91,7 @@ export async function setAndGetMultiple(store: ConnextStore, length: number = 10
   );
 }
 
-export async function testAsyncStorageKey(
-  storage: IAsyncStorage,
-  asyncStorageKey: string,
-): Promise<void> {
+export async function testAsyncStorageKey(storage: IAsyncStorage, asyncStorageKey: string): Promise<void> {
   const keys = await storage.getAllKeys();
   expect(keys.length).to.equal(1);
   expect(keys[0]).to.equal(asyncStorageKey);
