@@ -10,8 +10,6 @@ import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 
 describe("Reclaim", () => {
   let client: IConnextClient;
-  let tokenAddress: string;
-  let nodeFreeBalanceAddress: string;
   let nats: Client;
 
   before(async () => {
@@ -20,8 +18,6 @@ describe("Reclaim", () => {
 
   beforeEach(async () => {
     client = await createClient();
-    tokenAddress = client.config.contractAddresses.Token;
-    nodeFreeBalanceAddress = xkeyKthAddress(client.config.nodePublicIdentifier);
   });
 
   afterEach(async () => {
