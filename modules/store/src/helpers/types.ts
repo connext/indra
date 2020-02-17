@@ -1,11 +1,12 @@
 export {
   AsyncStorageData,
+  ChannelsMap,
   IAsyncStorage,
   IBackupServiceAPI,
   InitCallback,
   FileStorageOptions,
   StorePair,
-  StorageWrapper,
+  WrappedStorage,
   StoreFactoryOptions,
 } from "@connext/types";
 export { Signer } from "ethers";

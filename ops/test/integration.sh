@@ -29,6 +29,7 @@ else
     --env="INDRA_CLIENT_LOG_LEVEL=$LOG_LEVEL" \
     --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
     --env="INDRA_NODE_URL=$NODE_URL" \
+    --env="INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN" \
     $interactive \
     --name="$name" \
     --mount="type=bind,source=`pwd`,target=/root" \
@@ -43,6 +44,7 @@ exec docker run \
   --env="INDRA_CLIENT_LOG_LEVEL=0" \
   --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
   --env="INDRA_NODE_URL=$NODE_URL" \
+  --env="INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN" \
   --env="NODE_ENV=production" \
   $interactive \
   --name="$name" \

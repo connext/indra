@@ -61,9 +61,7 @@ export async function asyncTransferAsset(
     [clientA.freeBalanceAddress]: postTransferFreeBalanceClientA,
     [nodeFreeBalanceAddress]: postTransferFreeBalanceNodeA,
   } = await clientA.getFreeBalance(assetId);
-  expect(postTransferFreeBalanceClientA).to.equal(
-    preTransferFreeBalanceClientA.sub(transferAmount),
-  );
+  expect(postTransferFreeBalanceClientA).to.equal(preTransferFreeBalanceClientA.sub(transferAmount));
   expect(postTransferFreeBalanceNodeA).equal(preTransferFreeBalanceNodeA.add(transferAmount));
 
   const {
@@ -95,8 +93,8 @@ export async function asyncTransferAsset(
 
   const postTransfer: ExistingBalancesAsyncTransfer = {
     freeBalanceClientA: postTransferFreeBalanceClientA,
-    freeBalanceNodeA: postTransferFreeBalanceNodeA,
     freeBalanceClientB: postTransferFreeBalanceClientB,
+    freeBalanceNodeA: postTransferFreeBalanceNodeA,
     freeBalanceNodeB: postTransferFreeBalanceNodeB,
   };
 

@@ -1,6 +1,6 @@
 {
   "name": "@connext/client",
-  "version": "4.0.11",
+  "version": "4.0.12",
   "description": "Client for Connext Network",
   "main": "dist/index.js",
   "files": [
@@ -16,12 +16,12 @@
     "test": "./node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
-    "@connext/cf-core": "4.0.11",
-    "@connext/channel-provider": "4.0.11",
-    "@connext/crypto": "4.0.11",
-    "@connext/messaging": "4.0.11",
-    "@connext/store": "4.0.11",
-    "@connext/types": "4.0.11",
+    "@connext/cf-core": "4.0.12",
+    "@connext/channel-provider": "4.0.12",
+    "@connext/crypto": "4.0.12",
+    "@connext/messaging": "4.0.12",
+    "@connext/store": "4.0.12",
+    "@connext/types": "4.0.12",
     "core-js": "3.6.1",
     "ethers": "4.0.41",
     "human-standard-token-abi": "2.0.0",
