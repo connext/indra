@@ -11,7 +11,10 @@ module.exports = {
     "semi": ["error", "always"],
     "spaced-comment": "off",
     "no-prototype-builtins": "off",
-    "sort-keys": ["error"],
+    "react/display-name": ["off"],
+    "react/no-unescaped-entities": ["off"],
+    "react/prop-types": ["off"],
+    "sort-keys": ["off"],
   },
   settings: {
     react: {
