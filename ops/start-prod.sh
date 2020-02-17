@@ -128,6 +128,14 @@ fi
 
 echo "eth provider: $INDRA_ETH_PROVIDER w chainId: $chainId"
 
+# Prefer top-level address-book override otherwise default to one in contracts
+if [[ -f address-book.json ]]
+then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
+fi
+
+token_address="`echo $eth_contract_addresses | jq '.["'"$chainId"'"].Token.address' | tr -d '"'`"
+
 if [[ "$chainId" == "$ganache_chain_id" ]]
 then
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
@@ -150,11 +158,7 @@ then
   MODE=${INDRA_MODE#*-} bash ops/deploy-contracts.sh
 fi
 
-# Prefer top-level address-book override otherwise default to one in contracts
-if [[ -f address-book.json ]]
-then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
-else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
-fi
+allowed_swaps="[{\"from\":\"$token_address\",\"to\":\"0x0000000000000000000000000000000000000000\",\"priceOracleType\":\"UNISWAP\"},{\"from\":\"0x0000000000000000000000000000000000000000\",\"to\":\"$token_address\",\"priceOracleType\":\"UNISWAP\"}]"
 
 ########################################
 ## Deploy according to configuration
@@ -203,6 +207,7 @@ services:
     entrypoint: bash ops/entry.sh
     environment:
       INDRA_ADMIN_TOKEN: $INDRA_ADMIN_TOKEN
+      INDRA_ALLOWED_SWAPS: '$allowed_swaps'
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC_FILE: /run/secrets/$eth_mnemonic_name
       INDRA_ETH_RPC_URL: $INDRA_ETH_PROVIDER

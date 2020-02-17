@@ -1,6 +1,6 @@
 {
   "name": "indra",
-  "version": "4.0.12",
+  "version": "4.0.13",
   "registry": "docker.io/connextproject",
   "description": "",
   "repository": {
@@ -14,6 +14,7 @@
   },
   "homepage": "https://github.com/ConnextProject/indra#readme",
   "devDependencies": {
+    "@connext/types": "1.5.0",
     "@openzeppelin/contracts": "2.5.0",
     "@typescript-eslint/eslint-plugin": "2.19.2",
     "@typescript-eslint/parser": "2.19.2",

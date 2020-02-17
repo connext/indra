@@ -7,6 +7,7 @@ import {
   SimpleTwoPartySwapApp,
   SimpleLinkedTransferApp,
   CoinBalanceRefundApp,
+  SwapRate,
 } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
@@ -24,6 +25,13 @@ type PostgresConfig = {
   port: number;
   username: string;
 };
+
+type TestnetTokenConfig = TokenConfig[];
+
+type TokenConfig = {
+  chainId: number;
+  address: string;
+}[];
 
 const singleAssetTwoPartyCoinTransferEncoding = `tuple(address to, uint256 amount)[2]`;
 
@@ -66,13 +74,17 @@ export class ConfigService implements OnModuleInit {
     return ethNetwork;
   }
 
-  async getContractAddresses(): Promise<ContractAddresses> {
-    const chainId = (await this.getEthNetwork()).chainId.toString();
+  getEthAddressBook() {
+    return JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
+  }
+
+  async getContractAddresses(chainId?: string): Promise<ContractAddresses> {
+    chainId = chainId ? chainId : (await this.getEthNetwork()).chainId.toString();
     const ethAddresses = {} as any;
-    const ethAddressBook = JSON.parse(this.get(`INDRA_ETH_CONTRACT_ADDRESSES`));
-    Object.keys(ethAddressBook[chainId]).map((contract: string): void => {
-      ethAddresses[contract] = getAddress(ethAddressBook[chainId][contract].address);
-    });
+    const ethAddressBook = this.getEthAddressBook();
+    Object.keys(ethAddressBook[chainId]).map(
+      (contract: string) => (ethAddresses[contract] = getAddress(ethAddressBook[chainId][contract].address)),
+    );
     return ethAddresses as ContractAddresses;
   }
 
@@ -82,9 +94,62 @@ export class ConfigService implements OnModuleInit {
     return getAddress(ethAddressBook[chainId].Token.address);
   }
 
-  // FIXME: should be easy to add tokens
-  async getSupportedTokenAddresses(): Promise<string[]> {
-    return [await this.getTokenAddress(), AddressZero];
+  async getTestnetTokenConfig(): Promise<TestnetTokenConfig> {
+    const testnetTokenConfig = this.get("INDRA_TESTNET_TOKEN_CONFIG")
+      ? JSON.parse(this.get("INDRA_TESTNET_TOKEN_CONFIG"))
+      : [];
+    const currentChainId = (await this.getEthNetwork()).chainId;
+
+    // by default, map token address to mainnet token address
+    if (currentChainId !== 1) {
+      const contractAddresses = await this.getContractAddresses("1");
+      testnetTokenConfig.push([
+        {
+          address: contractAddresses.Token,
+          chainId: 1,
+        },
+        { address: await this.getTokenAddress(), chainId: currentChainId },
+      ]);
+    }
+    return testnetTokenConfig;
+  }
+
+  async getTokenAddressForSwap(tokenAddress: string): Promise<string> {
+    const currentChainId = (await this.getEthNetwork()).chainId;
+
+    if (currentChainId !== 1) {
+      const tokenConfig = await this.getTestnetTokenConfig();
+      const configIndex = tokenConfig.findIndex(tc =>
+        tc.find(t => t.chainId === currentChainId && t.address === tokenAddress),
+      );
+      const configExists = tokenConfig[configIndex].find(tc => tc.chainId === 1);
+      tokenAddress = configExists ? configExists.address : tokenAddress;
+    }
+
+    return tokenAddress;
+  }
+
+  getSupportedTokenAddresses(): string[] {
+    const swaps = this.getAllowedSwaps();
+    const tokens = swaps.reduce((tokensArray, swap) => tokensArray.concat([swap.from, swap.to]), []);
+    tokens.push(AddressZero);
+    const tokenSet = new Set(tokens);
+    return [...tokenSet];
+  }
+
+  getAllowedSwaps(): SwapRate[] {
+    return JSON.parse(this.get("INDRA_ALLOWED_SWAPS"));
+  }
+
+  async getDefaultSwapRate(from: string, to: string): Promise<string | undefined> {
+    const tokenAddress = await this.getTokenAddress();
+    if (from === AddressZero && to === tokenAddress) {
+      return "100.00";
+    }
+    if (from === tokenAddress && to === tokenAddress) {
+      return "0.005";
+    }
+    return undefined;
   }
 
   async getDefaultAppByName(name: SupportedApplication): Promise<DefaultApp> {
