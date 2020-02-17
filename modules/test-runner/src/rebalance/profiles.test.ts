@@ -10,8 +10,6 @@ import { addRebalanceProfile } from "../util/helpers/rebalanceProfile";
 
 describe("Reclaim", () => {
   let client: IConnextClient;
-  let tokenAddress: string;
-  let nodeFreeBalanceAddress: string;
   let nats: Client;
 
   before(async () => {
@@ -20,15 +18,13 @@ describe("Reclaim", () => {
 
   beforeEach(async () => {
     client = await createClient();
-    tokenAddress = client.config.contractAddresses.Token;
-    nodeFreeBalanceAddress = xkeyKthAddress(client.config.nodePublicIdentifier);
   });
 
   afterEach(async () => {
     await client.messaging.disconnect();
   });
 
-  it.only("throws error if collateral targets are higher than reclaim", async () => {
+  it("throws error if collateral targets are higher than reclaim", async () => {
     const REBALANCE_PROFILE: RebalanceProfile = {
       assetId: AddressZero,
       lowerBoundCollateralize: "1",
@@ -40,7 +36,7 @@ describe("Reclaim", () => {
     expect(profileResponse).to.match(/Reclaim targets cannot be less than collateralize targets/);
   });
 
-  it.only("throws error if collateralize upper bound is lower than higher bound", async () => {
+  it("throws error if collateralize upper bound is lower than higher bound", async () => {
     const REBALANCE_PROFILE: RebalanceProfile = {
       assetId: AddressZero,
       lowerBoundCollateralize: "10",
@@ -52,7 +48,7 @@ describe("Reclaim", () => {
     expect(profileResponse).to.match(/Rebalancing targets not properly configured/);
   });
 
-  it.only("throws error if reclaim upper bound is lower than higher bound", async () => {
+  it("throws error if reclaim upper bound is lower than higher bound", async () => {
     const REBALANCE_PROFILE: RebalanceProfile = {
       assetId: AddressZero,
       lowerBoundCollateralize: "1",
