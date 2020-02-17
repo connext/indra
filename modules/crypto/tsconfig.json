@@ -11,6 +11,5 @@
     "module": "commonjs"
   },
   "exclude": ["dist", "node_modules", "**/*spec.ts"],
-  "include": [ "src/**/*.ts" ]
+  "include": ["src/**/*.ts"]
 }
-
