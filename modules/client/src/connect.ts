@@ -107,7 +107,7 @@ export const connect = async (
     }
 
     // create a new node api instance
-    node = new NodeApiClient({ logLevel, messaging, channelProvider });
+    node = new NodeApiClient({ channelProvider, logLevel, messaging });
     config = await node.config();
     log.debug(`Node provided config: ${stringify(config)}`);
 

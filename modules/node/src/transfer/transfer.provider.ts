@@ -72,7 +72,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
     // reclaim collateral from redeemed transfers
     const reclaimableTransfers = await this.transferService.getLinkedTransfersForReclaim(pubId);
     for (const transfer of reclaimableTransfers) {
-      await this.transferService.reclaimLinkedTransferCollateral(transfer.paymentId);
+      await this.transferService.reclaimLinkedTransferCollateralByPaymentId(transfer.paymentId);
     }
   }
 
@@ -80,7 +80,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
     const transfers = await this.transferService.getPendingTransfers(pubId);
     return transfers.map((transfer: LinkedTransfer) => {
       const { assetId, amount, encryptedPreImage, linkedHash, paymentId } = transfer;
-      return { assetId, amount: amount.toString(), encryptedPreImage, linkedHash, paymentId };
+      return { amount: amount.toString(), assetId, encryptedPreImage, linkedHash, paymentId };
     });
   }
 

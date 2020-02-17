@@ -54,7 +54,7 @@ import {
   KeyGen,
   makeChecksum,
   makeChecksumOrEthAddress,
-  PaymentProfile,
+  RebalanceProfile,
   ProtocolTypes,
   RequestCollateralResponse,
   RequestDepositRightsParameters,
@@ -258,11 +258,11 @@ export class ConnextClient implements IConnextClient {
   };
 
   public unsubscribeToSwapRates = async (from: string, to: string): Promise<void> => {
-    return await this.node.unsubscribeFromSwapRates(from, to);
+    return this.node.unsubscribeFromSwapRates(from, to);
   };
 
-  public getPaymentProfile = async (assetId?: string): Promise<PaymentProfile | undefined> => {
-    return await this.node.getPaymentProfile(assetId);
+  public getRebalanceProfile = async (assetId?: string): Promise<RebalanceProfile | undefined> => {
+    return await this.node.getRebalanceProfile(assetId);
   };
 
   public getTransferHistory = async (): Promise<Transfer[]> => {
@@ -985,7 +985,7 @@ export class ConnextClient implements IConnextClient {
       pairs: [
         {
           path: withdrawalKey(this.publicIdentifier),
-          value: { tx, retry },
+          value: { retry, tx },
         },
       ],
     });

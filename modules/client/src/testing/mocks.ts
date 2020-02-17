@@ -13,7 +13,7 @@ import {
   IStoreService,
   INodeApiClient,
   NodeInitializationParameters,
-  PaymentProfile,
+  RebalanceProfile,
   PendingAsyncTransfer,
   RequestCollateralResponse,
   ResolveLinkedTransferResponse,
@@ -197,7 +197,7 @@ export class MockNodeClientApi implements INodeApiClient {
     };
   }
 
-  public async getPaymentProfile(): Promise<PaymentProfile | undefined> {
+  public async getRebalanceProfile(): Promise<RebalanceProfile | undefined> {
     return undefined;
   }
 

@@ -2,7 +2,7 @@ import { AddressZero } from "ethers/constants";
 import { BigNumber, getAddress } from "ethers/utils";
 
 import { AppState, CoinBalanceRefundAppState, CoinTransfer, SimpleLinkedTransferAppState } from "./app";
-import { AssetAmount, PaymentProfile } from "./channel";
+import { AssetAmount, RebalanceProfile } from "./channel";
 import {
   DepositParameters,
   LinkedTransferParameters,
@@ -129,12 +129,17 @@ function convertAssetAmountWithId<To extends NumericTypeName>(
   return convertAssetAmount(to, asset);
 }
 
-function convertPaymentProfile<To extends NumericTypeName>(
+function convertRebalanceProfile<To extends NumericTypeName>(
   to: To,
-  obj: PaymentProfile<any>,
-): PaymentProfile<NumericTypes[To]> {
-  const fromType = getType(obj.amountToCollateralize);
-  return convertFields(fromType, to, ["amountToCollateralize", "minimumMaintainedCollateral"], obj);
+  obj: RebalanceProfile<any>,
+): RebalanceProfile<NumericTypes[To]> {
+  const fromType = getType(obj.upperBoundCollateralize);
+  return convertFields(
+    fromType,
+    to,
+    ["upperBoundCollateralize", "lowerBoundCollateralize", "upperBoundReclaim", "lowerBoundReclaim"],
+    obj,
+  );
 }
 
 function convertCoinBalanceRefund<To extends NumericTypeName>(
@@ -225,7 +230,7 @@ export const convert = {
   LinkedTransfer: convertLinkedTransferParametersToAsset,
   LinkedTransferAppState: convertLinkedTransferAppState,
   LinkedTransferToRecipient: convertLinkedTransferToRecipientParametersToAsset,
-  PaymentProfile: convertPaymentProfile,
+  RebalanceProfile: convertRebalanceProfile,
   ResolveLinkedTransfer: convertAssetAmountWithId,
   SimpleTransferAppState: convertAppState,
   SwapAppState: convertAppState,
