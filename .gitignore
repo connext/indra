@@ -54,6 +54,7 @@ cypress/videos
 
 # Misc
 .rpt2_cache
+report.*
 
 # Git submodules
 modules/**/.git
