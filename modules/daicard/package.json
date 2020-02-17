@@ -8,6 +8,7 @@
     "start-test": "make start-test",
     "build": "./node_modules/.bin/react-scripts --max_old_space_size=4096 build",
     "eject": "./node_modules/.bin/react-scripts eject",
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*.js'",
     "logs": "bash ops/logs.sh",
     "format": "prettier --write \"src/**/*.js\""
   },

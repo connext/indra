@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "build-bundle": "webpack --config ops/webpack.config.js",
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
     "start:bot1": "env-cmd -e devbot1 ts-node src/",
     "start:bot2": "env-cmd -e devbot2 ts-node src/"
   },

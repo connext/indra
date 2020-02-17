@@ -9,6 +9,7 @@
     "build": "tsc -p tsconfig.json",
     "build-bundle": "webpack --config ops/webpack.config.js",
     "format": "prettier --write \"src/**/*.ts\"",
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
     "start": "ts-node -r tsconfig-paths/register src/main.ts",
     "start:dev": "concurrently --handle-input \"wait-on dist/main.js && nodemon\" \"tsc -w -p tsconfig.json\" ",
     "start:debug": "nodemon --config ops/nodemon-debug.json",

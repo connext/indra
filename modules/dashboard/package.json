@@ -5,6 +5,7 @@
   "scripts": {
     "start": "./node_modules/.bin/react-scripts start",
     "build": "./node_modules/.bin/react-scripts --max_old_space_size=4096 build",
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*.js'",
     "test": "./node_modules/.bin/react-scripts test",
     "eject": "./node_modules/.bin/react-scripts eject"
   },

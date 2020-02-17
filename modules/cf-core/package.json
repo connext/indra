@@ -15,6 +15,7 @@
     "build:ts": "node_modules/.bin/tsc -b .",
     "build:rollup": "rollup -c",
     "build:watch": "node_modules/.bin/tsc -b . && rollup -c -w",
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*' 'test/**/*'",
     "test": "jest --setupFiles dotenv-extended/config --runInBand --bail --forceExit",
     "test:coverage": "jest --runInBand --detectOpenHandles --bail --coverage"
   },

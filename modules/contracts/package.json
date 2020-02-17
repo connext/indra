@@ -22,6 +22,7 @@
     "build": "waffle waffle.json && ./node_modules/.bin/tsc -p tsconfig.json",
     "build-native": "waffle waffle.native.json",
     "test": "ts-mocha test/**/*",
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'test/**/*' 'index.ts'",
     "lint-sol": "solium -d ."
   },
   "dependencies": {

@@ -13,6 +13,7 @@
   "scripts": {
     "build": "tsc -p . && rollup -c",
     "build:watch": "tsc -p . && rollup -c -w",
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
     "prepare": "npm run build"
   },
   "dependencies": {
