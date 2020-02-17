@@ -1,6 +1,6 @@
 {
   "name": "@connext/channel-provider",
-  "version": "4.0.12",
+  "version": "4.0.16",
   "description": "Channel Provider module for Connext client",
   "main": "dist/index.js",
   "files": [
@@ -17,7 +17,7 @@
     "test": "./node_modules/.bin/ts-mocha --watch"
   },
   "dependencies": {
-    "@connext/types": "4.0.12"
+    "@connext/types": "4.0.16"
   },
   "devDependencies": {
     "@babel/polyfill": "7.7.0",
