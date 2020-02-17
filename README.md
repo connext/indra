@@ -8,20 +8,18 @@ Connext's new & improved state channel network!
 
 ## TL;DR
 
-Make sure the following tools are installed: `make`, `jq`, and `docker` and then run `make start`. This will build everything & launch a pre-configured payment node + a simple UI, play with it from your browser at http://127.0.0.1:3000.
+Make sure the following tools are installed: `make`, `jq`, and `docker` and then run `make start`. This will build everything & launch a pre-configured payment node + a simple UI, play with it from your browser at http://localhost:3000.
 
 Run `bash ops/logs.sh node` to see the node server's logs or replace "node" with one of the other service names, list services with: `make dls` (short for **D**ocker **L**i**s**t).
 
-To run e2e UI tests use: `make test-daicard` or run integration tests with: `make test-integration`.
-
-When you're done testing it out, shut the whole thing down with `make stop`.
+When you're done playing w it, shut the whole thing down with `make stop`.
 
 ## Contents
 
-- [Deploy for local development](#deploy-for-local-development)
+- [Deploy in dev-mode for local development](#deploy-for-local-development)
 - [Deploy to production](#deploying-to-production)
 - [How to interact with the Hub](#how-to-interact-with-hub)
-- [Debugging & Troubleshooting](#debugging)
+- [FAQ](#faq)
 
 If you encounter any problems, check out the [FAQ](#faq) at the bottom of this doc. For any unanswered questions, open an [issue](https://github.com/ConnextProject/indra/issues/new) or reach out on our Discord channel & we'll be happy to help.
 
@@ -47,9 +45,9 @@ Beware! The first time `make start` is run, it will take a very long time (maybe
 
 ### Interacting with your Local Node
 
-You can interact with the node by browsing to our reference implementation, the Dai Card, available at `localhost:3000`.
+You can interact with the node by browsing to our reference implementation, the Dai Card, available at http://localhost:3000.
 
-Note that the local node runs on a local blockchain (ganache) in a docker container. To test your node, point a wallet to your local chain at `localhost:8545` and then recover the following "sugar daddy" mnemonic:
+Note that the local node runs on a local blockchain (ganache) in a docker container. To test your node, point a wallet to your local chain at http://localhost:8545 and then recover the following "sugar daddy" mnemonic:
 
 `candy maple cake sugar pudding cream honey rich smooth crumble sweet treat`
 
@@ -87,6 +85,7 @@ export INDRA_ETH_PROVIDER="https://ethprovider.com" # eth provider url (note: th
 export INDRA_ETH_NETWORK="rinkeby" # string of network
 make start
 ```
+
 ## Deploying to Production
 
 ### TL;DR
@@ -218,7 +217,7 @@ ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash indra/ops/collateralize.sh 3.14 
 ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash indra/ops/collateralize.sh 1000 token
 ```
 
-## Debugging
+## FAQ
 
 If you encounter problems while the app is running, the first thing to do is check the logs of each component:
 
@@ -277,7 +276,7 @@ This lets us do a simple `bash curleth.sh net_version '[]'` as a sanity check to
 
 One other sanity check is to run `docker service ls` and make sure that you see an ethprovider service that has port 8545 exposed.
 
-You can also run `docker exec -it indra_ethprovider.1.<containerId> bash` to start a shell inside the docker container. Even if there are networking issues between the container & host, you can still ping localhost:8545 here to see if ganache is listening & run `ps` to see if it's even alive.
+You can also run `docker exec -it indra_ethprovider.1.<containerId> bash` to start a shell inside the docker container. Even if there are networking issues between the container & host, you can still ping http://localhost:8545 here to see if ganache is listening & run `ps` to see if it's even alive.
 
 Ganache should dump its logs onto your host and you can print/follow them with: `tail -f modules/contracts/ops/ganache.log` as another way to make sure it's alive. Try deleting this file then running `npm restart` to see if it gets recreated & if so, check to see if there is anything suspicious there
 
