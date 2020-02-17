@@ -1,10 +1,6 @@
 {
   "name": "indra-node",
-<<<<<<< HEAD
-  "version": "4.0.15",
-=======
-	"version": "4.0.16",
->>>>>>> 98158e67018720be5c85b19dc5a6c04523130499
+  "version": "4.0.16",
   "description": "",
   "author": "",
   "license": "MIT",
