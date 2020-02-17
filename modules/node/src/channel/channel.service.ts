@@ -1,4 +1,10 @@
-import { ChannelAppSequences, StateChannelJSON, CoinBalanceRefundApp, maxBN } from "@connext/types";
+import {
+  ChannelAppSequences,
+  StateChannelJSON,
+  CoinBalanceRefundApp,
+  maxBN,
+  RebalanceProfileBigNumber,
+} from "@connext/types";
 import { Injectable, HttpService, Inject } from "@nestjs/common";
 import { AxiosResponse } from "axios";
 import { Contract } from "ethers";
@@ -320,14 +326,8 @@ export class ChannelService {
     return await this.channelRepository.setInflightCollateralization(channel, false);
   }
 
-  async addRebalanceProfileToChannel(
-    userPubId: string,
-    assetId: string,
-    lowerBoundCollateralize: BigNumber,
-    upperBoundCollateralize: BigNumber,
-    lowerBoundReclaim: BigNumber,
-    upperBoundReclaim: BigNumber,
-  ): Promise<RebalanceProfile> {
+  async addRebalanceProfileToChannel(userPubId: string, profile: RebalanceProfileBigNumber): Promise<RebalanceProfile> {
+    const { assetId, lowerBoundCollateralize, upperBoundCollateralize, lowerBoundReclaim, upperBoundReclaim } = profile;
     if (upperBoundCollateralize.lt(lowerBoundCollateralize) || upperBoundReclaim.lt(lowerBoundReclaim)) {
       throw new Error(
         `Rebalancing targets not properly configured: ${JSON.stringify({
@@ -352,13 +352,13 @@ export class ChannelService {
       );
     }
 
-    const profile = new RebalanceProfile();
-    profile.assetId = getAddress(assetId);
-    profile.lowerBoundCollateralize = lowerBoundCollateralize;
-    profile.upperBoundCollateralize = upperBoundCollateralize;
-    profile.lowerBoundReclaim = lowerBoundReclaim;
-    profile.upperBoundReclaim = upperBoundReclaim;
-    return await this.channelRepository.addRebalanceProfileToChannel(userPubId, profile);
+    const rebalanceProfile = new RebalanceProfile();
+    rebalanceProfile.assetId = getAddress(assetId);
+    rebalanceProfile.lowerBoundCollateralize = lowerBoundCollateralize;
+    rebalanceProfile.upperBoundCollateralize = upperBoundCollateralize;
+    rebalanceProfile.lowerBoundReclaim = lowerBoundReclaim;
+    rebalanceProfile.upperBoundReclaim = upperBoundReclaim;
+    return await this.channelRepository.addRebalanceProfileToChannel(userPubId, rebalanceProfile);
   }
 
   /**
