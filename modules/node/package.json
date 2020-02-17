@@ -30,6 +30,7 @@
     "@nestjs/microservices": "6.11.7",
     "@nestjs/platform-express": "6.11.7",
     "@nestjs/typeorm": "6.3.1",
+    "@openzeppelin/contracts": "2.5.0",
     "@uniswap/sdk": "^1.0.0-beta.4",
     "class-validator": "0.11.0",
     "dotenv": "8.2.0",
