@@ -84,6 +84,7 @@ export class AppRegistryService {
       } catch (e) {
         logger.warn(`App install failed, . Error: ${e.stack || e.message}`);
         await this.cfCoreService.rejectInstallApp(appInstanceId);
+        return;
       }
     }
     await this.runPostInstallTasks(registryAppInfo, appInstanceId, proposeInstallParams, from);
