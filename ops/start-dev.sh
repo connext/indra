@@ -10,7 +10,7 @@ docker swarm init 2> /dev/null || true
 ####################
 # External Env Vars
 
-INDRA_ETH_NETWORK="${1:-ganache}"
+INDRA_ETH_NETWORK="${INDRA_ETH_NETWORK:-ganache}"
 INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-foo}"
 INDRA_UI="${INDRA_UI:-daicard}"
 
@@ -48,6 +48,12 @@ then
   eth_rpc_url="http://ethprovider:8545"
   token_address="`echo $eth_contract_addresses | jq '.["4447"].Token.address' | tr -d '"'`"
   make deployed-contracts
+else
+  eth_rpc_url="${INDRA_ETH_PROVIDER}"
+fi
+
+if [[ -z "$eth_rpc_url" ]]
+then echo "An env var called 'INDRA_ETH_PROVIDER' is required or you must be running on ganache" && exit 1
 fi
 
 allowed_swaps="[{\"from\":\"$token_address\",\"to\":\"0x0000000000000000000000000000000000000000\",\"priceOracleType\":\"UNISWAP\"},{\"from\":\"0x0000000000000000000000000000000000000000\",\"to\":\"$token_address\",\"priceOracleType\":\"UNISWAP\"}]"

@@ -14,7 +14,7 @@ import {
   INodeApiClient,
   makeChecksumOrEthAddress,
   NodeInitializationParameters,
-  PaymentProfile,
+  RebalanceProfile,
   PendingAsyncTransfer,
   RequestCollateralResponse,
   ResolveLinkedTransferResponse,
@@ -171,7 +171,7 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
-  public async getPaymentProfile(assetId?: string): Promise<PaymentProfile> {
+  public async getRebalanceProfile(assetId?: string): Promise<RebalanceProfile> {
     return await this.send(`channel.get-profile.${this.userPublicIdentifier}`, {
       assetId: makeChecksumOrEthAddress(assetId),
     });

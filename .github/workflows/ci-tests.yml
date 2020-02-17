@@ -47,6 +47,8 @@ jobs:
     - run: make test-contracts
 
   test-integration:
+    env:
+      INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1

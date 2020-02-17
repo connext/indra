@@ -1,7 +1,7 @@
 import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
-import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
+import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { LinkedTransfer, PeerToPeerTransfer } from "../transfer/transfer.entity";
 import { IsEthAddress, IsXpub } from "../util";
 
@@ -30,11 +30,11 @@ export class Channel {
   collateralizationInFlight!: boolean;
 
   @ManyToMany(
-    (type: any) => PaymentProfile,
-    (profile: PaymentProfile) => profile.channels,
+    (type: any) => RebalanceProfile,
+    (profile: RebalanceProfile) => profile.channels,
   )
   @JoinTable()
-  paymentProfiles!: PaymentProfile[];
+  rebalanceProfiles!: RebalanceProfile[];
 
   @OneToMany(
     (type: any) => LinkedTransfer,

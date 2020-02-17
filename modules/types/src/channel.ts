@@ -12,12 +12,14 @@ export type ChannelAppSequences = {
 };
 
 // payment setups
-export type PaymentProfile<T = string> = {
+export type RebalanceProfile<T = string> = {
   assetId: string;
-  minimumMaintainedCollateral: T;
-  amountToCollateralize: T;
+  upperBoundCollateralize: T;
+  lowerBoundCollateralize: T;
+  upperBoundReclaim: T;
+  lowerBoundReclaim: T;
 };
-export type PaymentProfileBigNumber = PaymentProfile<BigNumber>;
+export type RebalanceProfileBigNumber = RebalanceProfile<BigNumber>;
 
 // asset types
 export type AssetAmount<T = string> = {
