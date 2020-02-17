@@ -5,7 +5,7 @@ WORKDIR /root
 ENV HOME /root
 RUN apk add --update --no-cache bash curl g++ gcc git jq make python
 RUN npm config set unsafe-perm true
-RUN npm install -g npm@6.12.0
+RUN npm install -g npm@6.13.7
 RUN npm install -g lerna@3.20.2
 COPY --from=solc /usr/local/bin/solc /usr/local/bin/solc
 RUN true
