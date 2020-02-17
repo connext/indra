@@ -137,12 +137,6 @@ export class CFCoreService {
       } as CFCoreTypes.DepositParams,
     });
     logger.debug(`deposit called with result ${stringify(depositRes.result.result)}`);
-    const multisig = bigNumberify(depositRes.result.result.multisigBalance);
-    if (multisig.lt(amount)) {
-      logger.error(
-        `multisig balance is lt deposit amount. deposited: ${multisig.toString()}, requested: ${amount.toString()}`,
-      );
-    }
     return depositRes.result.result as CFCoreTypes.DepositResult;
   }
 
@@ -170,13 +164,34 @@ export class CFCoreService {
       } as CFCoreTypes.WithdrawParams,
     });
     logger.debug(`withdraw called with result ${stringify(withdrawRes.result.result)}`);
-    const multisig = bigNumberify(withdrawRes.result.result.multisigBalance);
-    if (multisig.lt(amount)) {
-      logger.error(
-        `multisig balance is lt deposit amount. deposited: ${multisig.toString()}, requested: ${amount.toString()}`,
-      );
-    }
     return withdrawRes.result.result as CFCoreTypes.WithdrawResult;
+  }
+
+  async generateWithdrawCommitment(
+    multisigAddress: string,
+    amount: BigNumber,
+    assetId: string = AddressZero,
+    recipient: string = this.cfCore.freeBalanceAddress,
+  ): Promise<CFCoreTypes.WithdrawCommitmentResult> {
+    logger.debug(
+      `Calling ${ProtocolTypes.chan_withdraw} with params: ${stringify({
+        amount,
+        multisigAddress,
+        tokenAddress: assetId,
+      })}`,
+    );
+    const withdrawRes = await this.cfCore.rpcRouter.dispatch({
+      id: Date.now(),
+      methodName: ProtocolTypes.chan_withdrawCommitment,
+      parameters: {
+        amount,
+        multisigAddress,
+        recipient,
+        tokenAddress: assetId,
+      } as CFCoreTypes.WithdrawCommitmentParams,
+    });
+    logger.debug(`withdrawCommitment called with result ${stringify(withdrawRes.result.result)}`);
+    return withdrawRes.result.result as CFCoreTypes.WithdrawCommitmentResult;
   }
 
   async proposeInstallApp(params: CFCoreTypes.ProposeInstallParams): Promise<CFCoreTypes.ProposeInstallResult> {

@@ -116,6 +116,24 @@ export class AuthService {
     };
   }
 
+  useAdminTokenWithPublicIdentifier(callback: any): any {
+    // get token from subject
+    return async (subject: string, data: { token: string }): Promise<string> => {
+      // // verify token is admin token
+      const { token } = data;
+      if (token !== process.env.INDRA_ADMIN_TOKEN) {
+        return badToken(`Unrecognized admin token: ${token}.`);
+      }
+
+      // Get & validate xpub from subject
+      const xpub = subject.split(".").pop(); // last item of subscription is xpub
+      if (!xpub || !isXpub(xpub)) {
+        return badSubject(`Subject's last item isn't a valid xpub: ${subject}`);
+      }
+      return callback(xpub, data);
+    };
+  }
+
   useUnverifiedPublicIdentifier(callback: any): any {
     return async (subject: string, data: { token: string }): Promise<string> => {
       // Get & validate xpub from subject

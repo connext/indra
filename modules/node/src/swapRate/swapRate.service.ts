@@ -73,7 +73,6 @@ export class SwapRateService implements OnModuleInit {
       }
     }
 
-    // eslint-disable-next-line sort-keys
     const newSwap: SwapRate = { from, to, rate: newRate, priceOracleType, blockNumber };
     if (rateIndex !== -1) {
       oldRate = this.latestSwapRates[rateIndex].rate;

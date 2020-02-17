@@ -8,7 +8,7 @@ import { mkHash, mkXpub } from "../test/utils";
 import { CFCoreTypes, AppInstanceJson } from "../util";
 
 import { Channel } from "./channel.entity";
-import { ChannelService } from "./channel.service";
+import { ChannelService, RebalanceType } from "./channel.service";
 import { ChannelRepository } from "./channel.repository";
 import { mkAddress } from "../../dist/src/test/utils";
 import { ConfigService } from "../config/config.service";
@@ -122,6 +122,6 @@ describe.skip("Channel Service", () => {
   });
 
   it("should add deposits to the onchain transaction table", async () => {
-    const result = await channelService.deposit(mkAddress("0xAAA"), One);
+    await channelService.rebalance(mkXpub("0xXpub"), AddressZero, RebalanceType.COLLATERALIZE, One);
   });
 });
