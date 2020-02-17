@@ -3,6 +3,7 @@ import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { Web3Provider } from "ethers/providers";
 import { bigNumberify } from "ethers/utils";
+import { before } from "mocha";
 
 import { expect } from "./utils/index";
 
@@ -15,9 +16,9 @@ describe("DolphinCoin (ERC20) can be created", () => {
   let wallet: Wallet;
   let erc20: Contract;
 
-  beforeAll(async () => {
+  before(async () => {
     provider = waffle.createMockProvider();
-    wallet = (await waffle.getWallets(provider))[0];
+    wallet = waffle.getWallets(provider)[0];
     erc20 = await waffle.deployContract(wallet, DolphinCoin);
   });
 

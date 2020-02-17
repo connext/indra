@@ -1,9 +1,10 @@
 import { SolidityValueType } from "@connext/types";
-import * as waffle from "ethereum-waffle";
+import { createMockProvider, getWallets, deployContract } from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
 import { Web3Provider } from "ethers/providers";
 import { bigNumberify, defaultAbiCoder, joinSignature, keccak256, SigningKey } from "ethers/utils";
+import { before } from "mocha";
 
 import AppWithAction from "../../build/AppWithAction.json";
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
@@ -61,15 +62,15 @@ describe("ChallengeRegistry Challenge", () => {
   let latestVersionNumber: () => Promise<number>;
   let respondToChallenge: (state: any, action: any, actionSig: any) => Promise<any>;
 
-  beforeAll(async () => {
-    provider = waffle.createMockProvider();
-    wallet = (await waffle.getWallets(provider))[0];
+  before(async () => {
+    provider = createMockProvider();
+    wallet = getWallets(provider)[0];
 
-    appRegistry = await waffle.deployContract(wallet, ChallengeRegistry, [], {
+    appRegistry = await deployContract(wallet, ChallengeRegistry, [], {
       gasLimit: 6000000, // override default of 4 million
     });
 
-    appDefinition = await waffle.deployContract(wallet, AppWithAction);
+    appDefinition = await deployContract(wallet, AppWithAction);
   });
 
   beforeEach(async () => {

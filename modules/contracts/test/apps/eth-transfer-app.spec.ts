@@ -4,6 +4,7 @@ import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { BigNumber, BigNumberish, defaultAbiCoder } from "ethers/utils";
+import { before } from "mocha";
 
 import UnidirectionalTransferApp from "../../build/UnidirectionalTransferApp.json";
 
@@ -77,9 +78,9 @@ describe("UnidirectionalTransferApp", () => {
   const computeOutcome = (state: SolidityABIEncoderV2Type): any =>
     unidirectionalTransferApp.functions.computeOutcome(encodeAppState(state));
 
-  beforeAll(async () => {
+  before(async () => {
     const provider = waffle.createMockProvider();
-    const wallet = (await waffle.getWallets(provider))[0];
+    const wallet = waffle.getWallets(provider)[0];
     unidirectionalTransferApp = await waffle.deployContract(wallet, UnidirectionalTransferApp);
   });
 

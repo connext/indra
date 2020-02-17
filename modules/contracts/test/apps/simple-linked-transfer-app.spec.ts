@@ -1,9 +1,10 @@
-import { Address, SolidityValueType } from "@connext/types";
+import { SolidityValueType } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
+import { before } from "mocha";
 
 import SimpleLinkedTransferApp from "../../build/SimpleLinkedTransferApp.json";
 
@@ -86,7 +87,7 @@ describe("SimpleLinkedTransferApp", () => {
     return await simpleLinkedTransferApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
   }
 
-  beforeAll(async () => {
+  before(async () => {
     const provider = waffle.createMockProvider();
     const wallet = (await waffle.getWallets(provider))[0];
     simpleLinkedTransferApp = await waffle.deployContract(wallet, SimpleLinkedTransferApp);

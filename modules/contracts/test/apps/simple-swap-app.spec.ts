@@ -2,6 +2,7 @@ import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
+import { before } from "mocha";
 
 import SimpleTwoPartySwapApp from "../../build/SimpleTwoPartySwapApp.json";
 
@@ -46,7 +47,7 @@ describe("SimpleTwoPartySwapApp", () => {
     return await simpleSwapApp.functions.computeOutcome(encodeAppState(state));
   }
 
-  beforeAll(async () => {
+  before(async () => {
     const provider = waffle.createMockProvider();
     const wallet = (await waffle.getWallets(provider))[0];
     simpleSwapApp = await waffle.deployContract(wallet, SimpleTwoPartySwapApp);

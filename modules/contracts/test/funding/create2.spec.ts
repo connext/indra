@@ -2,6 +2,7 @@ import * as waffle from "ethereum-waffle";
 import { Contract, Event, Wallet } from "ethers";
 import { TransactionResponse, Web3Provider } from "ethers/providers";
 import { getAddress, keccak256, solidityKeccak256, solidityPack } from "ethers/utils";
+import { before } from "mocha";
 
 import Echo from "../../build/Echo.json";
 import Proxy from "../../build/Proxy.json";
@@ -9,7 +10,7 @@ import ProxyFactory from "../../build/ProxyFactory.json";
 
 import { expect } from "./utils/index";
 
-describe("ProxyFactory with CREATE2", function(this: Mocha) {
+describe("ProxyFactory with CREATE2", function() {
   this.timeout(5000);
 
   let provider: Web3Provider;
@@ -32,9 +33,9 @@ describe("ProxyFactory with CREATE2", function(this: Mocha) {
     );
   }
 
-  beforeAll(async () => {
+  before(async () => {
     provider = waffle.createMockProvider();
-    wallet = (await waffle.getWallets(provider))[0];
+    wallet = waffle.getWallets(provider)[0];
 
     pf = await waffle.deployContract(wallet, ProxyFactory);
     echo = await waffle.deployContract(wallet, Echo);

@@ -3,6 +3,7 @@ import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
 import { Web3Provider } from "ethers/providers";
 import { BigNumberish, hexlify, joinSignature, keccak256, randomBytes, SigningKey } from "ethers/utils";
+import { before } from "mocha";
 
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
 
@@ -43,7 +44,7 @@ describe("ChallengeRegistry", () => {
   let latestVersionNumber: () => Promise<number>;
   let isStateFinalized: () => Promise<boolean>;
 
-  beforeAll(async () => {
+  before(async () => {
     provider = waffle.createMockProvider();
     wallet = (await waffle.getWallets(provider))[0];
 

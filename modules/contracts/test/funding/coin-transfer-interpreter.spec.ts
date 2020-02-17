@@ -5,6 +5,7 @@ import { Contract, Wallet } from "ethers";
 import { AddressZero, One } from "ethers/constants";
 import { Web3Provider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder, hexlify, randomBytes } from "ethers/utils";
+import { before } from "mocha";
 
 import { expect } from "./utils/index";
 
@@ -47,7 +48,7 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
     );
   }
 
-  beforeAll(async () => {
+  before(async () => {
     provider = waffle.createMockProvider();
     wallet = (await waffle.getWallets(provider))[0];
     erc20 = await waffle.deployContract(wallet, DolphinCoin);

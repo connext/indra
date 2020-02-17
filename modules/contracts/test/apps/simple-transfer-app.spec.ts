@@ -3,6 +3,7 @@ import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
+import { before } from "mocha";
 
 import SimpleTransferApp from "../../build/SimpleTransferApp.json";
 
@@ -47,9 +48,9 @@ describe("SimpleTransferApp", () => {
     return await simpleTransferApp.functions.computeOutcome(encodeAppState(state));
   }
 
-  beforeAll(async () => {
+  before(async () => {
     const provider = waffle.createMockProvider();
-    const wallet = (await waffle.getWallets(provider))[0];
+    const wallet = waffle.getWallets(provider)[0];
     simpleTransferApp = await waffle.deployContract(wallet, SimpleTransferApp);
   });
 

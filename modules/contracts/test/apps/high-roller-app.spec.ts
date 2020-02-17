@@ -4,6 +4,7 @@ import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { HashZero } from "ethers/constants";
 import { defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
+import { before } from "mocha";
 
 import HighRollerApp from "../../build/HighRollerApp.json";
 
@@ -92,7 +93,7 @@ describe("HighRollerApp", () => {
     return decodedResult;
   }
 
-  beforeAll(async () => {
+  before(async () => {
     const provider = waffle.createMockProvider();
     const wallet = (await waffle.getWallets(provider))[0];
     highRollerApp = await waffle.deployContract(wallet, HighRollerApp);
