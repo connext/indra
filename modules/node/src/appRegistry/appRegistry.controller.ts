@@ -1,8 +1,9 @@
 import { Controller } from "@nestjs/common";
-import { MessagePattern } from "@nestjs/microservices";
+import { MessagePattern, Payload, Ctx, NatsContext } from "@nestjs/microservices";
 
 import { AppRegistry } from "./appRegistry.entity";
 import { AppRegistryRepository } from "./appRegistry.repository";
+import { from, Observable } from "rxjs";
 
 @Controller()
 export class AppRegistryController {
@@ -17,10 +18,20 @@ export class AppRegistryController {
     }
 
     if (data && data.appDefinitionAddress) {
-      return [
-        await this.appRegistryRepository.findByAppDefinitionAddress(data.appDefinitionAddress),
-      ];
+      return [await this.appRegistryRepository.findByAppDefinitionAddress(data.appDefinitionAddress)];
     }
     return await this.appRegistryRepository.find();
+  }
+
+  @MessagePattern("app-registry-hello")
+  hello(@Payload() data: any, @Ctx() context: NatsContext) {
+    console.log("context: ", context);
+    console.log("data: ", data);
+    return "Hi";
+  }
+
+  @MessagePattern("sum")
+  accumulate(data: number[]): Observable<number> {
+    return from([1, 2, 3]);
   }
 }

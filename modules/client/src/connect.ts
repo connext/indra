@@ -207,6 +207,7 @@ export const connect = async (
   }
 
   // waits until the setup protocol or create channel call is completed
+  console.error("waiting for channel to be available...");
   await new Promise(
     async (resolve: any, reject: any): Promise<any> => {
       // Wait for channel to be available
@@ -220,6 +221,7 @@ export const connect = async (
       resolve();
     },
   );
+  console.error("channel is available!");
 
   try {
     await client.getFreeBalance();

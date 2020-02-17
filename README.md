@@ -23,7 +23,7 @@ When you're done testing it out, shut the whole thing down with `make stop`.
 - [How to interact with the Hub](#how-to-interact-with-hub)
 - [Debugging & Troubleshooting](#debugging)
 
-If you encounter any problems, check out the [debugging guide](#debugging) at the bottom of this doc. For any unanswered questions, open an [issue](https://github.com/ConnextProject/indra/issues/new) or reach out on our Discord channel & we'll be happy to help.
+If you encounter any problems, check out the [FAQ](#faq) at the bottom of this doc. For any unanswered questions, open an [issue](https://github.com/ConnextProject/indra/issues/new) or reach out on our Discord channel & we'll be happy to help.
 
 Discord Invitation: <https://discord.gg/SmMSFf>
 
@@ -281,7 +281,7 @@ You can also run `docker exec -it indra_ethprovider.1.<containerId> bash` to sta
 
 Ganache should dump its logs onto your host and you can print/follow them with: `tail -f modules/contracts/ops/ganache.log` as another way to make sure it's alive. Try deleting this file then running `npm restart` to see if it gets recreated & if so, check to see if there is anything suspicious there
 
-## Have you tried turning it off and back on again
+### Have you tried turning it off and back on again?
 
 Restarting: the debugger's most useful tool.
 
@@ -290,3 +290,22 @@ Some problems will be fixed by just restarting the app so try this first: `make 
 If this doesn't work, try resetting all persistent data (database + the ethprovider's chain data) and starting the app again: `make reset && npm start`. After doing this, you'll likely need to reset your MetaMask account to get your tx nonces synced up correctly.
 
 If that doesn't work either, try rebuilding everything with `make clean && make start`.
+
+### How to generate node db migrations
+
+Typeorm is cool, if we update db entity files then typeorm can generate SQL db migrations from the entity changes.
+
+Start up the stack in a clean state (eg `make clean && make reset && make start`) then something that should look like the following should work:
+
+```
+$ cd modules/node && npm run migration:generate foo
+
+> indra-node@4.0.12 migration:generate /home/username/Documents/connext/indra/modules/node
+> typeorm migration:generate -d migrations -n  "foo"
+
+Migration /home/username/Documents/connext/indra/modules/node/migrations/1581311685857-foo.ts has been generated successfully.
+```
+
+Note: if entity files have *not* changed since the last db migration, the above will print something like "No changes detected" & not generate anything.
+
+Once the migrations are generated, you should skim them & make sure the auto-generated code is sane & doing what you expect it to do. If it looks good, import it & add it to the migrations array in `modules/node/src/database/database.service.ts`.

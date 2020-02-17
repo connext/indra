@@ -12,7 +12,7 @@ import {
   SimpleTwoPartySwapApp,
   SimpleTransferApp,
 } from "@connext/types";
-import { Injectable, Inject } from "@nestjs/common";
+import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
@@ -37,7 +37,7 @@ const logger = new CLogger(`AppRegistryService`);
 const ALLOWED_DISCREPANCY_PCT = 5;
 
 @Injectable()
-export class AppRegistryService {
+export class AppRegistryService implements OnModuleInit {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly swapRateService: SwapRateService,
@@ -554,5 +554,23 @@ export class AppRegistryService {
         break;
     }
     logger.log(`Validation completed for app ${registryAppInfo.name}`);
+  }
+
+  async onModuleInit() {
+    for (const app of await this.configService.getDefaultApps()) {
+      let appRegistry = await this.appRegistryRepository.findByNameAndNetwork(app.name, app.chainId);
+      if (!appRegistry) {
+        appRegistry = new AppRegistry();
+      }
+      logger.log(`Creating ${app.name} app on chain ${app.chainId}: ${app.appDefinitionAddress}`);
+      appRegistry.actionEncoding = app.actionEncoding;
+      appRegistry.appDefinitionAddress = app.appDefinitionAddress;
+      appRegistry.name = app.name;
+      appRegistry.chainId = app.chainId;
+      appRegistry.outcomeType = app.outcomeType;
+      appRegistry.stateEncoding = app.stateEncoding;
+      appRegistry.allowNodeInstall = app.allowNodeInstall;
+      await this.appRegistryRepository.save(appRegistry);
+    }
   }
 }
