@@ -22,7 +22,9 @@ export class PrivateKeysGetter {
     );
 
     if (this.appInstanceIdentityHashToPrivateKey.has(validHDPathRepresentationOfIdentityHash)) {
-      return await this.appInstanceIdentityHashToPrivateKey.get(validHDPathRepresentationOfIdentityHash)!;
+      return await this.appInstanceIdentityHashToPrivateKey.get(
+        validHDPathRepresentationOfIdentityHash,
+      )!;
     }
 
     const privateKey = await this.privateKeyGenerator(validHDPathRepresentationOfIdentityHash);
@@ -57,11 +59,15 @@ export async function getPrivateKeysGeneratorAndXPubOrThrow(
   publicExtendedKey?: string,
 ): Promise<[PrivateKeysGetter, string]> {
   if (publicExtendedKey && !privateKeyGenerator) {
-    throw new Error("Cannot provide an extended public key but not provide a private key generation function");
+    throw new Error(
+      "Cannot provide an extended public key but not provide a private key generation function",
+    );
   }
 
   if (!publicExtendedKey && privateKeyGenerator) {
-    throw new Error("Cannot provide a private key generation function but not provide an extended public key");
+    throw new Error(
+      "Cannot provide a private key generation function but not provide an extended public key",
+    );
   }
 
   if (publicExtendedKey && privateKeyGenerator) {

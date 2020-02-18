@@ -65,8 +65,16 @@ function Debug({ classes, messaging, prefix }) {
           path={`${prefix}/debug/channel`}
           render={props => <DebugChannel {...props} messaging={messaging} />}
         />
-        <Route exact path={`${prefix}/debug/node`} render={props => <DebugNode {...props} messaging={messaging} />} />
-        <Route exact path={`${prefix}/debug/admin`} render={props => <Admin {...props} messaging={messaging} />} />
+        <Route
+          exact
+          path={`${prefix}/debug/node`}
+          render={props => <DebugNode {...props} messaging={messaging} />}
+        />
+        <Route
+          exact
+          path={`${prefix}/debug/admin`}
+          render={props => <Admin {...props} messaging={messaging} />}
+        />
       </Switch>
     </TopGrid>
   );

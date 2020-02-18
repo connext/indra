@@ -36,7 +36,9 @@ type CoinTransfer = {
   amount: BigNumber;
 };
 
-const { SimpleTransferApp, UnidirectionalLinkedTransferApp } = global["networkContext"] as NetworkContextForTestSuite;
+const { SimpleTransferApp, UnidirectionalLinkedTransferApp } = global[
+  "networkContext"
+] as NetworkContextForTestSuite;
 
 /**
  * This file contains any utils functions that are useful when testing
@@ -45,11 +47,26 @@ const { SimpleTransferApp, UnidirectionalLinkedTransferApp } = global["networkCo
  * Note: this does nothing to assert that the transfer exchanges the intended
  * amount. That is assumed to be tested in unit tests.
  */
-export async function makeSimpleTransfer(sender: Node, intermediary: Node, receiver: Node, amount: BigNumber = One) {
+export async function makeSimpleTransfer(
+  sender: Node,
+  intermediary: Node,
+  receiver: Node,
+  amount: BigNumber = One,
+) {
   // create transfer app with default transfer value of 1
-  const initialState = initialSimpleTransferState(sender.freeBalanceAddress, receiver.freeBalanceAddress, amount);
+  const initialState = initialSimpleTransferState(
+    sender.freeBalanceAddress,
+    receiver.freeBalanceAddress,
+    amount,
+  );
 
-  const appId = await installVirtualApp(sender, intermediary, receiver, SimpleTransferApp, initialState);
+  const appId = await installVirtualApp(
+    sender,
+    intermediary,
+    receiver,
+    SimpleTransferApp,
+    initialState,
+  );
 
   const senderApp = await getAppInstance(sender, appId);
   const receiverApp = await getAppInstance(receiver, appId);

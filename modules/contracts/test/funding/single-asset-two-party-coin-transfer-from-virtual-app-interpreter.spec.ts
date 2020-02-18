@@ -55,7 +55,10 @@ describe("SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter", () => {
   let erc20: Contract;
   let coinTransferFromVirtualAppInterpreter: Contract;
 
-  async function interpretOutcomeAndExecuteEffect(outcome: [CoinTransfer, CoinTransfer], params: InterpreterParams) {
+  async function interpretOutcomeAndExecuteEffect(
+    outcome: [CoinTransfer, CoinTransfer],
+    params: InterpreterParams,
+  ) {
     return await coinTransferFromVirtualAppInterpreter.functions.interpretOutcomeAndExecuteEffect(
       encodeOutcome(outcome),
       encodeParams(params),

@@ -10,7 +10,10 @@ export default class InstallVirtualController extends NodeController {
   @jsonRpcMethod(ProtocolTypes.chan_installVirtual)
   public executeMethod = super.executeMethod;
 
-  protected async getRequiredLockNames(requestHandler: RequestHandler, params: CFCoreTypes.InstallVirtualParams) {
+  protected async getRequiredLockNames(
+    requestHandler: RequestHandler,
+    params: CFCoreTypes.InstallVirtualParams,
+  ) {
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { appInstanceId, intermediaryIdentifier } = params;
 
@@ -24,7 +27,8 @@ export default class InstallVirtualController extends NodeController {
     const proposal = await store.getAppInstanceProposal(appInstanceId);
 
     const { proposedByIdentifier, proposedToIdentifier } = proposal;
-    const responding = proposedByIdentifier === publicIdentifier ? proposedToIdentifier : proposedByIdentifier;
+    const responding =
+      proposedByIdentifier === publicIdentifier ? proposedToIdentifier : proposedByIdentifier;
 
     // do not provide the networkContext provider here. in the case
     // where a virtual app is being installed, it *should* have gone
@@ -56,10 +60,17 @@ export default class InstallVirtualController extends NodeController {
       networkContext.provider,
     );
 
-    return [multisigAddressWithHub, multisigAddressWithResponding, multisigAddressBetweenHubAndResponding];
+    return [
+      multisigAddressWithHub,
+      multisigAddressWithResponding,
+      multisigAddressBetweenHubAndResponding,
+    ];
   }
 
-  protected async beforeExecution(requestHandler: RequestHandler, params: CFCoreTypes.InstallVirtualParams) {
+  protected async beforeExecution(
+    requestHandler: RequestHandler,
+    params: CFCoreTypes.InstallVirtualParams,
+  ) {
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { intermediaryIdentifier } = params;
 
@@ -77,11 +88,15 @@ export default class InstallVirtualController extends NodeController {
     const stateChannelWithIntermediary = await store.getStateChannel(multisigAddress);
 
     if (!stateChannelWithIntermediary) {
-      throw Error(`Cannot install virtual app: you do not have a channel with the intermediary provided.`);
+      throw Error(
+        `Cannot install virtual app: you do not have a channel with the intermediary provided.`,
+      );
     }
 
     if (!stateChannelWithIntermediary.freeBalance) {
-      throw Error(`Cannot install virtual app: channel with intermediary has no free balance app instance installed.`);
+      throw Error(
+        `Cannot install virtual app: channel with intermediary has no free balance app instance installed.`,
+      );
     }
   }
 

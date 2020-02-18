@@ -24,7 +24,11 @@ enum ActionType {
 beforeAll(async () => {
   [{}, wallet, {}] = await connectToGanache();
 
-  appWithAction = await new ContractFactory(AppWithAction.abi, AppWithAction.evm.bytecode, wallet).deploy();
+  appWithAction = await new ContractFactory(
+    AppWithAction.abi,
+    AppWithAction.evm.bytecode,
+    wallet,
+  ).deploy();
 });
 
 describe("Three mininodes", () => {
@@ -34,25 +38,29 @@ describe("Three mininodes", () => {
 
     await tr.setup();
 
-    await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.InstallVirtualApp, tr.mininodeA.scm, {
-      initiatorXpub: tr.mininodeA.xpub,
-      intermediaryXpub: tr.mininodeB.xpub,
-      responderXpub: tr.mininodeC.xpub,
-      defaultTimeout: 100,
-      appInterface: {
-        addr: appWithAction.address,
-        stateEncoding: "tuple(uint256 counter)",
-        actionEncoding: "tuple(uint8 actionType, uint256 increment)",
+    await tr.mininodeA.protocolRunner.initiateProtocol(
+      Protocol.InstallVirtualApp,
+      tr.mininodeA.scm,
+      {
+        initiatorXpub: tr.mininodeA.xpub,
+        intermediaryXpub: tr.mininodeB.xpub,
+        responderXpub: tr.mininodeC.xpub,
+        defaultTimeout: 100,
+        appInterface: {
+          addr: appWithAction.address,
+          stateEncoding: "tuple(uint256 counter)",
+          actionEncoding: "tuple(uint8 actionType, uint256 increment)",
+        },
+        initialState: {
+          counter: 0,
+        },
+        appSeqNo: 0,
+        initiatorBalanceDecrement: bigNumberify(0),
+        responderBalanceDecrement: bigNumberify(0),
+        tokenAddress: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+        outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
       },
-      initialState: {
-        counter: 0,
-      },
-      appSeqNo: 0,
-      initiatorBalanceDecrement: bigNumberify(0),
-      responderBalanceDecrement: bigNumberify(0),
-      tokenAddress: CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-      outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-    });
+    );
 
     const [virtualAppInstance] = [...tr.mininodeA.scm.get(tr.multisigAC)!.appInstances.values()];
 
@@ -79,17 +87,21 @@ describe("Three mininodes", () => {
       },
     });
 
-    await tr.mininodeA.protocolRunner.initiateProtocol(Protocol.UninstallVirtualApp, tr.mininodeA.scm, {
-      initiatorXpub: tr.mininodeA.xpub,
-      intermediaryXpub: tr.mininodeB.xpub,
-      responderXpub: tr.mininodeC.xpub,
-      targetAppIdentityHash: virtualAppInstance.identityHash,
-      targetOutcome: await virtualAppInstance.computeOutcome(
-        {
-          counter: 2,
-        },
-        appWithAction.provider as BaseProvider,
-      ),
-    });
+    await tr.mininodeA.protocolRunner.initiateProtocol(
+      Protocol.UninstallVirtualApp,
+      tr.mininodeA.scm,
+      {
+        initiatorXpub: tr.mininodeA.xpub,
+        intermediaryXpub: tr.mininodeB.xpub,
+        responderXpub: tr.mininodeC.xpub,
+        targetAppIdentityHash: virtualAppInstance.identityHash,
+        targetOutcome: await virtualAppInstance.computeOutcome(
+          {
+            counter: 2,
+          },
+          appWithAction.provider as BaseProvider,
+        ),
+      },
+    );
   });
 });

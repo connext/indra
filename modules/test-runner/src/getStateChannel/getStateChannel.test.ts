@@ -80,7 +80,9 @@ describe("Get State Channel", () => {
     const path: string = `${ConnextClientStorePrefix}/${clientA.publicIdentifier}/channel/${clientA.multisigAddress}`;
     const value: any = await clientA.store.get(path);
 
-    expect(value.addresses.proxyFactory).to.be.eq((await clientA.getStateChannel()).data.addresses.proxyFactory);
+    expect(value.addresses.proxyFactory).to.be.eq(
+      (await clientA.getStateChannel()).data.addresses.proxyFactory,
+    );
 
     value.addresses.proxyFactory = null;
     const pair: StorePair[] = [{ path, value }];

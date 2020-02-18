@@ -138,7 +138,10 @@ describe("LinkedUnidirectionalTransferApp", () => {
   before(async () => {
     const provider = waffle.createMockProvider();
     const wallet = await waffle.getWallets(provider)[0];
-    unidirectionalLinkedTransferApp = await waffle.deployContract(wallet, UnidirectionalLinkedTransferApp);
+    unidirectionalLinkedTransferApp = await waffle.deployContract(
+      wallet,
+      UnidirectionalLinkedTransferApp,
+    );
   });
 
   it("can redeem a payment with correct hash", async () => {

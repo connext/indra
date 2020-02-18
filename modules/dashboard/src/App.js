@@ -47,7 +47,9 @@ const ErrorTypography = styled(Typography)({
 
 const env = {
   adminToken: process.env.REACT_APP_INDRA_NATS_TOKEN || "foo",
-  nodeUrl: process.env.REACT_APP_NODE_URL_OVERRIDE || `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
+  nodeUrl:
+    process.env.REACT_APP_NODE_URL_OVERRIDE ||
+    `${window.location.origin.replace(/^http/, "ws")}/api/messaging`,
   urlPrefix: process.env.PUBLIC_URL || "",
 };
 

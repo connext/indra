@@ -115,7 +115,9 @@ async function sendMultisigDeployTx(
     try {
       const tx: TransactionResponse = await proxyFactory.functions.createProxyWithNonce(
         networkContext.MinimumViableMultisig,
-        new Interface(MinimumViableMultisig.abi).functions.setup.encode([xkeysToSortedKthAddresses(owners, 0)]),
+        new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+          xkeysToSortedKthAddresses(owners, 0),
+        ]),
         0, // TODO: Increment nonce as needed
         {
           gasLimit: CREATE_PROXY_AND_SETUP_GAS,
@@ -128,7 +130,12 @@ async function sendMultisigDeployTx(
         throw Error(`${NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT}: ${prettyPrintObject(tx)}`);
       }
 
-      const ownersAreCorrectlySet = await checkForCorrectOwners(tx!, provider, owners, stateChannel.multisigAddress);
+      const ownersAreCorrectlySet = await checkForCorrectOwners(
+        tx!,
+        provider,
+        owners,
+        stateChannel.multisigAddress,
+      );
 
       if (!ownersAreCorrectlySet) {
         log.error(

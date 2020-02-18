@@ -67,9 +67,9 @@ describe("Withdraw offline tests", () => {
       }
     });
 
-    await expect(withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero)).to.be.rejectedWith(
-      `timed out after 90s waiting for counterparty reply in withdraw`,
-    );
+    await expect(
+      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
+    ).to.be.rejectedWith(`timed out after 90s waiting for counterparty reply in withdraw`);
   });
 
   it("client proposes withdrawal and then goes offline before node responds", async () => {
@@ -88,9 +88,9 @@ describe("Withdraw offline tests", () => {
       }
     });
 
-    await expect(withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero)).to.be.rejectedWith(
-      `timed out after 90s waiting for counterparty reply in withdraw`,
-    );
+    await expect(
+      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
+    ).to.be.rejectedWith(`timed out after 90s waiting for counterparty reply in withdraw`);
   });
 
   it("client proposes a node submitted withdrawal but node is offline for one message (commitment should be written to store and retried)", async () => {
@@ -101,9 +101,9 @@ describe("Withdraw offline tests", () => {
     (client.messaging as TestMessagingService).on(SUBJECT_FORBIDDEN, () => {
       clock.tick(89_000);
     });
-    await expect(withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero)).to.be.rejectedWith(
-      FORBIDDEN_SUBJECT_ERROR,
-    );
+    await expect(
+      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
+    ).to.be.rejectedWith(FORBIDDEN_SUBJECT_ERROR);
 
     // make sure withdrawal is in the store
     const { tx, retry } = await client.store.get(withdrawalKey(client.publicIdentifier));

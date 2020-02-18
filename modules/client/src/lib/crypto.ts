@@ -41,7 +41,10 @@ export const encryptWithPublicKey = async (publicKey: string, message: string): 
   ]).toString("hex");
 };
 
-export const decryptWithPrivateKey = async (privateKey: string, message: string): Promise<string> => {
+export const decryptWithPrivateKey = async (
+  privateKey: string,
+  message: string,
+): Promise<string> => {
   const buf = Buffer.from(message, "hex");
   const encrypted = {
     ciphertext: buf.toString("hex", 81, buf.length),

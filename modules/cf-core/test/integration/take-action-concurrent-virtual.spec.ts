@@ -7,7 +7,12 @@ import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
 import { validAction } from "./tic-tac-toe";
-import { collateralizeChannel, constructTakeActionRpc, createChannel, installVirtualApp } from "./utils";
+import {
+  collateralizeChannel,
+  constructTakeActionRpc,
+  createChannel,
+  installVirtualApp,
+} from "./utils";
 import { UPDATE_STATE_EVENT, INSTALL_VIRTUAL_EVENT } from "@connext/types";
 
 expect.extend({ toBeLt });

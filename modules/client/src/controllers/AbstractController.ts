@@ -25,10 +25,15 @@ export abstract class AbstractController {
     this.ethProvider = connext.ethProvider;
   }
 
-  proposeAndInstallLedgerApp = async (params: CFCoreTypes.ProposeInstallParams): Promise<string> => {
+  proposeAndInstallLedgerApp = async (
+    params: CFCoreTypes.ProposeInstallParams,
+  ): Promise<string> => {
     const proposeRes = await Promise.race([
       this.connext.proposeInstallApp(params),
-      delayAndThrow(CF_METHOD_TIMEOUT, `App proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`),
+      delayAndThrow(
+        CF_METHOD_TIMEOUT,
+        `App proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
+      ),
     ]);
     const { appInstanceId } = proposeRes as CFCoreTypes.ProposeInstallResult;
 
@@ -37,7 +42,10 @@ export abstract class AbstractController {
 
     try {
       const res = await Promise.race([
-        delayAndThrow(CF_METHOD_TIMEOUT, `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`),
+        delayAndThrow(
+          CF_METHOD_TIMEOUT,
+          `App install took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
+        ),
         new Promise((res: () => any, rej: () => any): void => {
           boundResolve = this.resolveInstall.bind(null, res, rej, appInstanceId);
           boundReject = this.rejectInstall.bind(null, rej, appInstanceId);
@@ -69,7 +77,10 @@ export abstract class AbstractController {
 
     try {
       await Promise.race([
-        delayAndThrow(CF_METHOD_TIMEOUT, `App proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`),
+        delayAndThrow(
+          CF_METHOD_TIMEOUT,
+          `App proposal took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
+        ),
         new Promise(
           async (res: () => void, rej: (msg: string | Error) => void): Promise<void> => {
             // set up reject install event listeners
@@ -138,7 +149,11 @@ export abstract class AbstractController {
     res(message);
   };
 
-  private rejectInstall = (rej: (message?: Error) => void, appInstanceId: string, message: any): void => {
+  private rejectInstall = (
+    rej: (message?: Error) => void,
+    appInstanceId: string,
+    message: any,
+  ): void => {
     // check app id
     const data = message.data && message.data.data ? message.data.data : message.data || message;
     if (data.appInstanceId !== appInstanceId) {
@@ -152,12 +167,17 @@ export abstract class AbstractController {
     return rej(new Error(`Install failed. Event data: ${stringify(message)}`));
   };
 
-  private rejectProposal = (rej: (reason?: Error) => void, msg: CFCoreTypes.RejectInstallEventData): void => {
+  private rejectProposal = (
+    rej: (reason?: Error) => void,
+    msg: CFCoreTypes.RejectInstallEventData,
+  ): void => {
     return rej(new Error(`Proposal rejected, event data: ${stringify(msg)}`));
   };
 
   private cleanupInstallListeners = (boundReject: any, appId: string): void => {
-    this.connext.messaging.unsubscribe(`indra.node.${this.connext.nodePublicIdentifier}.install.${appId}`);
+    this.connext.messaging.unsubscribe(
+      `indra.node.${this.connext.nodePublicIdentifier}.install.${appId}`,
+    );
     this.listener.removeCfListener(REJECT_INSTALL_EVENT, boundReject);
   };
 

@@ -49,7 +49,13 @@ describe("Node method follows spec - uninstall virtual", () => {
         await collateralizeChannel(multisigAddressAB, nodeA, nodeB);
         await collateralizeChannel(multisigAddressBC, nodeB, nodeC);
 
-        const appInstanceId = await installVirtualApp(nodeA, nodeB, nodeC, TicTacToeApp, initialState);
+        const appInstanceId = await installVirtualApp(
+          nodeA,
+          nodeB,
+          nodeC,
+          TicTacToeApp,
+          initialState,
+        );
 
         nodeC.once("UNINSTALL_VIRTUAL_EVENT", async (msg: UninstallVirtualMessage) => {
           assertNodeMessage(msg, {
@@ -66,7 +72,9 @@ describe("Node method follows spec - uninstall virtual", () => {
           done();
         });
 
-        await nodeA.rpcRouter.dispatch(constructUninstallVirtualRpc(appInstanceId, nodeB.publicIdentifier));
+        await nodeA.rpcRouter.dispatch(
+          constructUninstallVirtualRpc(appInstanceId, nodeB.publicIdentifier),
+        );
 
         expect(await getInstalledAppInstances(nodeA)).toEqual([]);
       });

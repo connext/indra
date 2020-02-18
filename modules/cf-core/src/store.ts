@@ -2,7 +2,11 @@ import { CriticalStateChannelAddresses, AppInstanceJson, StateChannelJSON } from
 import { BaseProvider } from "ethers/providers";
 import { solidityKeccak256 } from "ethers/utils";
 
-import { DB_NAMESPACE_ALL_COMMITMENTS, DB_NAMESPACE_CHANNEL, DB_NAMESPACE_WITHDRAWALS } from "./db-schema";
+import {
+  DB_NAMESPACE_ALL_COMMITMENTS,
+  DB_NAMESPACE_CHANNEL,
+  DB_NAMESPACE_WITHDRAWALS,
+} from "./db-schema";
 import {
   NO_MULTISIG_FOR_APP_INSTANCE_ID,
   NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID,
@@ -18,7 +22,10 @@ import { getCreate2MultisigAddress } from "./utils";
  * StoreService.
  */
 export class Store {
-  constructor(private readonly storeService: CFCoreTypes.IStoreService, private readonly storeKeyPrefix: string) {}
+  constructor(
+    private readonly storeService: CFCoreTypes.IStoreService,
+    private readonly storeKeyPrefix: string,
+  ) {}
 
   public static async getMultisigAddressWithCounterpartyFromMap(
     stateChannelsMap: Map<string, StateChannel>,
@@ -33,7 +40,11 @@ export class Store {
       }
     }
     if (provider) {
-      return await getCreate2MultisigAddress(owners, { proxyFactory, multisigMastercopy }, provider);
+      return await getCreate2MultisigAddress(
+        owners,
+        { proxyFactory, multisigMastercopy },
+        provider,
+      );
     }
     throw new Error(NO_MULTISIG_FOR_COUNTERPARTIES(owners));
   }
@@ -59,7 +70,9 @@ export class Store {
    * values being `StateChannel` instances.
    */
   public async getStateChannelsMap(): Promise<Map<string, StateChannel>> {
-    const channelsJSON = ((await this.storeService.get(`${this.storeKeyPrefix}/${DB_NAMESPACE_CHANNEL}`)) || {}) as {
+    const channelsJSON = ((await this.storeService.get(
+      `${this.storeKeyPrefix}/${DB_NAMESPACE_CHANNEL}`,
+    )) || {}) as {
       [multisigAddress: string]: StateChannelJSON;
     };
 
@@ -91,7 +104,9 @@ export class Store {
    * Checks if a StateChannel is in the store
    */
   public async hasStateChannel(multisigAddress: string): Promise<boolean> {
-    return !!(await this.storeService.get(`${this.storeKeyPrefix}/${DB_NAMESPACE_CHANNEL}/${multisigAddress}`));
+    return !!(await this.storeService.get(
+      `${this.storeKeyPrefix}/${DB_NAMESPACE_CHANNEL}/${multisigAddress}`,
+    ));
   }
 
   /**
@@ -143,7 +158,10 @@ export class Store {
     const chanArray = multisigAddress
       ? [await this.getStateChannel(multisigAddress)]
       : [...(await this.getStateChannelsMap()).values()];
-    return chanArray.reduce((lst, sc) => [...lst, ...sc.proposedAppInstances.values()], [] as AppInstanceProposal[]);
+    return chanArray.reduce(
+      (lst, sc) => [...lst, ...sc.proposedAppInstances.values()],
+      [] as AppInstanceProposal[],
+    );
   }
 
   /**
@@ -154,7 +172,9 @@ export class Store {
       ? [await this.getStateChannel(multisigAddress)]
       : [...(await this.getStateChannelsMap()).values()];
     return chanArray.reduce((acc: AppInstanceJson[], channel: StateChannel) => {
-      acc.push(...Array.from(channel.appInstances.values()).map(appInstance => appInstance.toJson()));
+      acc.push(
+        ...Array.from(channel.appInstances.values()).map(appInstance => appInstance.toJson()),
+      );
       return acc;
     }, []);
   }
@@ -185,11 +205,18 @@ export class Store {
     return await this.getStateChannel(await this.getMultisigAddressFromAppInstance(appInstanceId));
   }
 
-  public async getWithdrawalCommitment(multisigAddress: string): Promise<CFCoreTypes.MinimalTransaction> {
-    return this.storeService.get([this.storeKeyPrefix, DB_NAMESPACE_WITHDRAWALS, multisigAddress].join("/"));
+  public async getWithdrawalCommitment(
+    multisigAddress: string,
+  ): Promise<CFCoreTypes.MinimalTransaction> {
+    return this.storeService.get(
+      [this.storeKeyPrefix, DB_NAMESPACE_WITHDRAWALS, multisigAddress].join("/"),
+    );
   }
 
-  public async storeWithdrawalCommitment(multisigAddress: string, commitment: CFCoreTypes.MinimalTransaction) {
+  public async storeWithdrawalCommitment(
+    multisigAddress: string,
+    commitment: CFCoreTypes.MinimalTransaction,
+  ) {
     return this.storeService.set([
       {
         path: [this.storeKeyPrefix, DB_NAMESPACE_WITHDRAWALS, multisigAddress].join("/"),
@@ -204,7 +231,10 @@ export class Store {
         path: [
           this.storeKeyPrefix,
           DB_NAMESPACE_ALL_COMMITMENTS,
-          solidityKeccak256(["address", "uint256", "bytes"], [commitment.to, commitment.value, commitment.data]),
+          solidityKeccak256(
+            ["address", "uint256", "bytes"],
+            [commitment.to, commitment.value, commitment.data],
+          ),
         ].join("/"),
         value: args.concat([commitment]),
       },

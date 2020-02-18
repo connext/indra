@@ -9,7 +9,10 @@ export class NatsMessagingService implements IMessagingService {
   private log: Logger;
   private subscriptions: { [key: string]: nats.Subscription } = {};
 
-  constructor(private readonly config: MessagingConfig, private readonly messagingServiceKey: string) {
+  constructor(
+    private readonly config: MessagingConfig,
+    private readonly messagingServiceKey: string,
+  ) {
     this.log = new Logger(`NatsMessagingService`, config.logLevel);
     this.log.debug(`Created with config: ${JSON.stringify(config, null, 2)}`);
   }
@@ -33,7 +36,10 @@ export class NatsMessagingService implements IMessagingService {
   ////////////////////////////////////////
   // CFCoreTypes.IMessagingService Methods
 
-  async onReceive(subject: string, callback: (msg: CFCoreTypes.NodeMessage) => void): Promise<void> {
+  async onReceive(
+    subject: string,
+    callback: (msg: CFCoreTypes.NodeMessage) => void,
+  ): Promise<void> {
     this.assertConnected();
     this.subscriptions[subject] = await this.connection!.subscribe(
       this.prependKey(`${subject}.>`),
@@ -72,17 +78,23 @@ export class NatsMessagingService implements IMessagingService {
     return response;
   }
 
-  async subscribe(subject: string, callback: (msg: CFCoreTypes.NodeMessage) => void): Promise<void> {
+  async subscribe(
+    subject: string,
+    callback: (msg: CFCoreTypes.NodeMessage) => void,
+  ): Promise<void> {
     this.assertConnected();
-    this.subscriptions[subject] = await this.connection!.subscribe(subject, (err: any, msg: any): void => {
-      if (err || !msg || !msg.data) {
-        this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
-      } else {
-        const data = typeof msg === `string` ? JSON.parse(msg) : msg;
-        this.log.debug(`Subscription for ${subject}: ${JSON.stringify(data)}`);
-        callback(data as CFCoreTypes.NodeMessage);
-      }
-    });
+    this.subscriptions[subject] = await this.connection!.subscribe(
+      subject,
+      (err: any, msg: any): void => {
+        if (err || !msg || !msg.data) {
+          this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
+        } else {
+          const data = typeof msg === `string` ? JSON.parse(msg) : msg;
+          this.log.debug(`Subscription for ${subject}: ${JSON.stringify(data)}`);
+          callback(data as CFCoreTypes.NodeMessage);
+        }
+      },
+    );
   }
 
   async unsubscribe(subject: string): Promise<void> {

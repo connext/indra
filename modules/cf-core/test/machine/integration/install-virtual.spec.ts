@@ -64,7 +64,11 @@ beforeAll(async () => {
 
   erc20ContractAddress = network.DolphinCoin;
 
-  erc20Contract = new Contract(erc20ContractAddress, DolphinCoin.abi, new JsonRpcProvider(global["ganacheURL"]));
+  erc20Contract = new Contract(
+    erc20ContractAddress,
+    DolphinCoin.abi,
+    new JsonRpcProvider(global["ganacheURL"]),
+  );
 
   twoPartyFixedOutcomeAppDefinition = await new ContractFactory(
     TwoPartyFixedOutcomeApp.abi,
@@ -84,11 +88,18 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
 
   let fundWithDolphinCoin: (proxyAddress: string, amount: BigNumber) => Promise<void>;
 
-  let setupChannel: (proxyAddress: string, tokenAmounts: BigNumber, tokenAddress: string) => Promise<StateChannel>;
+  let setupChannel: (
+    proxyAddress: string,
+    tokenAmounts: BigNumber,
+    tokenAddress: string,
+  ) => Promise<StateChannel>;
 
   let createTargetAppInstance: () => AppInstance;
 
-  let setStatesAndOutcomes: (targetAppInstance: AppInstance, stateChannel: StateChannel) => Promise<void>;
+  let setStatesAndOutcomes: (
+    targetAppInstance: AppInstance,
+    stateChannel: StateChannel,
+  ) => Promise<void>;
 
   beforeEach(async () => {
     const xprvs = getRandomExtendedPrvKeys(2);
@@ -102,7 +113,9 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
     createProxy = async function() {
       await proxyFactory.functions.createProxyWithNonce(
         network.MinimumViableMultisig,
-        new Interface(MinimumViableMultisig.abi).functions.setup.encode([multisigOwnerKeys.map(x => x.address)]),
+        new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+          multisigOwnerKeys.map(x => x.address),
+        ]),
         0,
         { gasLimit: CREATE_PROXY_AND_SETUP_GAS },
       );
@@ -119,7 +132,11 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
       await transferERC20Tokens(proxyAddress, erc20ContractAddress, erc20Contract.abi, amount);
     };
 
-    setupChannel = async function(proxyAddress: string, tokenAmounts: BigNumber, tokenAddress: string) {
+    setupChannel = async function(
+      proxyAddress: string,
+      tokenAmounts: BigNumber,
+      tokenAddress: string,
+    ) {
       return StateChannel.setupChannel(
         network.IdentityApp,
         { proxyFactory: proxyFactory.address, multisigMastercopy: network.MinimumViableMultisig },
@@ -159,7 +176,10 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
       );
     };
 
-    setStatesAndOutcomes = async function(targetAppInstance: AppInstance, stateChannel: StateChannel) {
+    setStatesAndOutcomes = async function(
+      targetAppInstance: AppInstance,
+      stateChannel: StateChannel,
+    ) {
       const setStateCommitment = new SetStateCommitment(
         network,
         targetAppInstance.identity,
@@ -195,7 +215,10 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
         gasLimit: SETSTATE_COMMITMENT_GAS,
       });
 
-      await appRegistry.functions.setOutcome(targetAppInstance.identity, targetAppInstance.encodedLatestState);
+      await appRegistry.functions.setOutcome(
+        targetAppInstance.identity,
+        targetAppInstance.encodedLatestState,
+      );
 
       await appRegistry.functions.setOutcome(
         stateChannel.freeBalance.identity,
@@ -271,7 +294,11 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
     proxyFactory.once("ProxyCreation", async (proxyAddress: string) => {
       await fundWithETH(wallet, proxyAddress, parseEther("10"));
 
-      let stateChannel = await setupChannel(proxyAddress, parseEther("5"), CONVENTION_FOR_ETH_TOKEN_ADDRESS);
+      let stateChannel = await setupChannel(
+        proxyAddress,
+        parseEther("5"),
+        CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      );
 
       const targetAppInstance = createTargetAppInstance();
 

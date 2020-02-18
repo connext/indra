@@ -26,7 +26,10 @@ export const linkedAbiEncodings: AppABIEncodings = {
     )`,
 };
 
-export function validAction(amount: BigNumberish = 1, assetId: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
+export function validAction(
+  amount: BigNumberish = 1,
+  assetId: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+) {
   return {
     assetId,
     amount: bigNumberify(amount),

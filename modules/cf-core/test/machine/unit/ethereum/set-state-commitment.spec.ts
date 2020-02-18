@@ -1,5 +1,11 @@
 import { CFCoreTypes } from "@connext/types";
-import { bigNumberify, Interface, keccak256, solidityPack, TransactionDescription } from "ethers/utils";
+import {
+  bigNumberify,
+  Interface,
+  keccak256,
+  solidityPack,
+  TransactionDescription,
+} from "ethers/utils";
 
 import { SetStateCommitment } from "../../../../src/ethereum";
 import { appIdentityToHash } from "../../../../src/ethereum/utils/app-identity";

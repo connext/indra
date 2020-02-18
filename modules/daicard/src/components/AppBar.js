@@ -9,7 +9,12 @@ const noAddrBlocky = require("../assets/noAddress.png");
 export const AppBarComponent = props => (
   <Grid>
     <Grid container spacing={2}>
-      <AppBar position="sticky" color="secondary" elevation={0} style={{ paddingTop: "2%", zIndex: "auto" }}>
+      <AppBar
+        position="sticky"
+        color="secondary"
+        elevation={0}
+        style={{ paddingTop: "2%", zIndex: "auto" }}
+      >
         <Toolbar>
           <Grid
             container
@@ -20,9 +25,17 @@ export const AppBarComponent = props => (
             style={{ textAlign: "center" }}
           >
             <Grid item xs={3}>
-              <IconButton disableTouchRipple color="inherit" variant="contained" component={Link} to="/deposit">
+              <IconButton
+                disableTouchRipple
+                color="inherit"
+                variant="contained"
+                component={Link}
+                to="/deposit"
+              >
                 <img
-                  src={props.address ? blockies.createDataURL({ seed: props.address }) : noAddrBlocky}
+                  src={
+                    props.address ? blockies.createDataURL({ seed: props.address }) : noAddrBlocky
+                  }
                   alt=""
                   style={{ width: "40px", height: "40px", borderRadius: "4px" }}
                 />

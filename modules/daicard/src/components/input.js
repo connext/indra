@@ -182,9 +182,9 @@ export const XpubInput = ({ xpub, setXpub }) => {
         helperText={
           (xpub.resolved === "pending" ? `Resolving ENS name...` : "") ||
           xpub.error ||
-          (xpub.value && xpub.resolved === true ? `ENS name resolved to: ${xpub.value.substring(0, 42)}...` : false)(
-            xpub.value ? "" : "Ignored for linked payments",
-          )
+          (xpub.value && xpub.resolved === true
+            ? `ENS name resolved to: ${xpub.value.substring(0, 42)}...`
+            : false)(xpub.value ? "" : "Ignored for linked payments")
         }
         error={xpub.error !== null}
         InputProps={{

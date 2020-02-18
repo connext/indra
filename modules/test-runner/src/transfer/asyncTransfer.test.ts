@@ -65,7 +65,9 @@ describe("Async Transfers", () => {
       clientB.on("RECEIVE_TRANSFER_FINISHED_EVENT", data => {
         // console.log(data)
         const duration = Date.now() - startTime[data.meta.index];
-        console.log("Caught #: " + y + ". Index: " + data.meta.index + ". Time: " + duration / 1000);
+        console.log(
+          "Caught #: " + y + ". Index: " + data.meta.index + ". Time: " + duration / 1000,
+        );
         console.log("===========================");
         y++;
         if (y === 5) {
@@ -141,7 +143,9 @@ describe("Async Transfers", () => {
   it.skip("Bot A transfers w a valid, unsupported token address", async () => {
     // deploy a token
     const factory = ContractFactory.fromSolidity(tokenArtifacts);
-    const token = await factory.connect(Wallet.fromMnemonic(FUNDED_MNEMONICS[0]).connect(ethProvider)).deploy();
+    const token = await factory
+      .connect(Wallet.fromMnemonic(FUNDED_MNEMONICS[0]).connect(ethProvider))
+      .deploy();
     const deployHash = token.deployTransaction.hash;
     expect(deployHash).to.exist;
     await ethProvider.waitForTransaction(token.deployTransaction.hash!);

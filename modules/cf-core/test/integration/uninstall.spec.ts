@@ -62,9 +62,9 @@ describe("Uninstalling coin balance refund app", () => {
 
   // will timeout if it goes through this path, params are incorrect
   it("should fail if you trying to uninstall coin balance refund app", async () => {
-    await expect(nodeB.rpcRouter.dispatch(constructUninstallRpc(coinBalanceAppId))).rejects.toThrowError(
-      USE_RESCIND_DEPOSIT_RIGHTS,
-    );
+    await expect(
+      nodeB.rpcRouter.dispatch(constructUninstallRpc(coinBalanceAppId)),
+    ).rejects.toThrowError(USE_RESCIND_DEPOSIT_RIGHTS);
     await assertAppsPresent(1);
   });
 });

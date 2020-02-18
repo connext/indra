@@ -18,7 +18,11 @@ expect.extend({ toBeLt });
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
-async function assertEqualProposedApps(nodeA: Node, nodeB: Node, expectedAppIds: string[]): Promise<void> {
+async function assertEqualProposedApps(
+  nodeA: Node,
+  nodeB: Node,
+  expectedAppIds: string[],
+): Promise<void> {
   const proposedA = await getProposedAppInstances(nodeA);
   const proposedB = await getProposedAppInstances(nodeB);
   expect(proposedB.length).toEqual(proposedA.length);

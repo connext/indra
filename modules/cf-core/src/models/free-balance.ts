@@ -85,7 +85,9 @@ export class FreeBalanceClass {
   public toTokenIndexedCoinTransferMap() {
     const ret = {};
     for (const tokenAddress of Object.keys(this.balancesIndexedByToken)) {
-      ret[tokenAddress] = convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[tokenAddress]);
+      ret[tokenAddress] = convertCoinTransfersToCoinTransfersMap(
+        this.balancesIndexedByToken[tokenAddress],
+      );
     }
     return ret;
   }
@@ -113,12 +115,17 @@ export class FreeBalanceClass {
 
   public static fromAppInstance(appInstance: AppInstance): FreeBalanceClass {
     const freeBalanceState = deserializeFreeBalanceState(appInstance.state as FreeBalanceStateJSON);
-    return new FreeBalanceClass(freeBalanceState.activeAppsMap, freeBalanceState.balancesIndexedByToken);
+    return new FreeBalanceClass(
+      freeBalanceState.activeAppsMap,
+      freeBalanceState.balancesIndexedByToken,
+    );
   }
 
   public getBalance(tokenAddress: string, beneficiary: string) {
     try {
-      return convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[tokenAddress])[beneficiary];
+      return convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[tokenAddress])[
+        beneficiary
+      ];
     } catch {
       return Zero;
     }
@@ -129,7 +136,9 @@ export class FreeBalanceClass {
     balances = convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[tokenAddress]);
     if (Object.keys(balances).length === 0) {
       const addresses = Object.keys(
-        convertCoinTransfersToCoinTransfersMap(this.balancesIndexedByToken[CONVENTION_FOR_ETH_TOKEN_ADDRESS]),
+        convertCoinTransfersToCoinTransfersMap(
+          this.balancesIndexedByToken[CONVENTION_FOR_ETH_TOKEN_ADDRESS],
+        ),
       );
       for (const address of addresses) {
         balances[address] = Zero;
@@ -234,7 +243,10 @@ function deserializeFreeBalanceState(freeBalanceStateJSON: FreeBalanceStateJSON)
       }),
       {},
     ),
-    activeAppsMap: (activeApps || []).reduce((acc, identityHash) => ({ ...acc, [identityHash]: true }), {}),
+    activeAppsMap: (activeApps || []).reduce(
+      (acc, identityHash) => ({ ...acc, [identityHash]: true }),
+      {},
+    ),
   };
 }
 
@@ -255,7 +267,9 @@ function serializeFreeBalanceState(freeBalanceState: FreeBalanceState): FreeBala
 
 // The following conversion functions are only relevant in the context
 // of reading/writing to a channel's Free Balance
-export function convertCoinTransfersToCoinTransfersMap(coinTransfers: CoinTransfer[]): CoinTransferMap {
+export function convertCoinTransfersToCoinTransfersMap(
+  coinTransfers: CoinTransfer[],
+): CoinTransferMap {
   return (coinTransfers || []).reduce((acc, { to, amount }) => ({ ...acc, [to]: amount }), {});
 }
 

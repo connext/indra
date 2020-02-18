@@ -107,7 +107,14 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
 
     it("should fail if intermediary has insufficient collateral in the channel", async done => {
       // only collateralize initiator
-      await collateralizeChannel(multisigAddressAB, nodeA, nodeB, One, CONVENTION_FOR_ETH_TOKEN_ADDRESS, false);
+      await collateralizeChannel(
+        multisigAddressAB,
+        nodeA,
+        nodeB,
+        One,
+        CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+        false,
+      );
 
       // proposal will not involve intermediary, install from nodeC
       nodeC.once("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {

@@ -5,7 +5,12 @@ import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
-import { collateralizeChannel, constructUninstallVirtualRpc, createChannel, installVirtualApp } from "./utils";
+import {
+  collateralizeChannel,
+  constructUninstallVirtualRpc,
+  createChannel,
+  installVirtualApp,
+} from "./utils";
 
 expect.extend({ toBeLt });
 
@@ -49,7 +54,9 @@ describe("Concurrently uninstalling virtual and installing virtual applications 
     nodeA.once("INSTALL_VIRTUAL_EVENT", registerEvent);
     nodeC.once("UNINSTALL_VIRTUAL_EVENT", registerEvent);
 
-    nodeA.rpcRouter.dispatch(constructUninstallVirtualRpc(installedAppInstanceId, nodeB.publicIdentifier));
+    nodeA.rpcRouter.dispatch(
+      constructUninstallVirtualRpc(installedAppInstanceId, nodeB.publicIdentifier),
+    );
 
     installVirtualApp(nodeA, nodeB, nodeC, TicTacToeApp);
   });
@@ -65,7 +72,9 @@ describe("Concurrently uninstalling virtual and installing virtual applications 
     nodeA.once("INSTALL_VIRTUAL_EVENT", registerEvent);
     nodeA.once("UNINSTALL_VIRTUAL_EVENT", registerEvent);
 
-    nodeC.rpcRouter.dispatch(constructUninstallVirtualRpc(installedAppInstanceId, nodeB.publicIdentifier));
+    nodeC.rpcRouter.dispatch(
+      constructUninstallVirtualRpc(installedAppInstanceId, nodeB.publicIdentifier),
+    );
 
     installVirtualApp(nodeA, nodeB, nodeC, TicTacToeApp);
   });

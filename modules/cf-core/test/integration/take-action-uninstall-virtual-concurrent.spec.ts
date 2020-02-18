@@ -70,7 +70,8 @@ describe("Concurrently taking action on regular app and uninstallling virtual ap
 
     const takeActionReq = (appId: string) => constructTakeActionRpc(appId, validAction);
 
-    const uninstallReq = (appId: string) => constructUninstallVirtualRpc(appId, nodeB.publicIdentifier);
+    const uninstallReq = (appId: string) =>
+      constructUninstallVirtualRpc(appId, nodeB.publicIdentifier);
     nodeB.rpcRouter.dispatch(takeActionReq(appId));
     nodeA.rpcRouter.dispatch(uninstallReq(virtualId));
   });

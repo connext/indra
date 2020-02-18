@@ -1,4 +1,8 @@
-import { ConnextNodeStorePrefix, CriticalStateChannelAddresses, StateChannelJSON } from "@connext/types";
+import {
+  ConnextNodeStorePrefix,
+  CriticalStateChannelAddresses,
+  StateChannelJSON,
+} from "@connext/types";
 import { Injectable } from "@nestjs/common";
 
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
@@ -31,7 +35,9 @@ export class AdminService {
   ///// GENERAL PURPOSE ADMIN FNS
 
   /**  Get channels by xpub */
-  async getStateChannelByUserPublicIdentifier(userPublicIdentifier: string): Promise<StateChannelJSON> {
+  async getStateChannelByUserPublicIdentifier(
+    userPublicIdentifier: string,
+  ): Promise<StateChannelJSON> {
     return await this.channelService.getStateChannel(userPublicIdentifier);
   }
 
@@ -107,7 +113,10 @@ export class AdminService {
     // outlined possibilities
     const toMerge = [];
     for (const chan of channels) {
-      const oldPrefix = await this.cfCoreService.getChannelRecord(chan.multisigAddress, "ConnextHub");
+      const oldPrefix = await this.cfCoreService.getChannelRecord(
+        chan.multisigAddress,
+        "ConnextHub",
+      );
       const currPrefix = await this.cfCoreService.getChannelRecord(chan.multisigAddress);
       const mergeInfo = {
         channelId: chan.id,
@@ -129,7 +138,9 @@ export class AdminService {
   async repairCriticalStateChannelAddresses(): Promise<RepairCriticalAddressesResponse> {
     const states = (
       await Promise.all(
-        (await this.getAllChannels()).map(channel => this.cfCoreService.getStateChannel(channel.multisigAddress)),
+        (await this.getAllChannels()).map(channel =>
+          this.cfCoreService.getStateChannel(channel.multisigAddress),
+        ),
       )
     ).map(state => state.data);
     const output: RepairCriticalAddressesResponse = { fixed: [], broken: [] };
@@ -167,13 +178,19 @@ export class AdminService {
         this.configService.getEthProvider(),
       );
       if (!criticalAddresses) {
-        logger.warn(`Could not find critical addresses that would fix channel ${state.multisigAddress}`);
+        logger.warn(
+          `Could not find critical addresses that would fix channel ${state.multisigAddress}`,
+        );
         continue;
       }
       if (criticalAddresses.toxicBytecode) {
-        logger.warn(`Channel ${state.multisigAddress} was created with toxic bytecode, it is unrepairable`);
+        logger.warn(
+          `Channel ${state.multisigAddress} was created with toxic bytecode, it is unrepairable`,
+        );
       } else if (criticalAddresses.legacyKeygen) {
-        logger.warn(`Channel ${state.multisigAddress} was created with legacyKeygen, it needs to be repaired manually`);
+        logger.warn(
+          `Channel ${state.multisigAddress} was created with legacyKeygen, it needs to be repaired manually`,
+        );
       }
       logger.log(`Found critical addresses that fit, repairing channel: ${brokenMultisig}`);
       const repoPath = `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel/${brokenMultisig}`;

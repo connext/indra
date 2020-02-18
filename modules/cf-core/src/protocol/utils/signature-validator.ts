@@ -2,7 +2,11 @@ import { getAddress, recoverAddress, Signature } from "ethers/utils";
 
 import { EthereumCommitment } from "../../types";
 
-export function assertIsValidSignature(expectedSigner: string, commitment?: EthereumCommitment, signature?: Signature) {
+export function assertIsValidSignature(
+  expectedSigner: string,
+  commitment?: EthereumCommitment,
+  signature?: Signature,
+) {
   if (commitment === undefined) {
     throw Error("assertIsValidSignature received an undefined commitment");
   }

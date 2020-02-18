@@ -8,7 +8,11 @@ import { Store } from "../../../store";
 import { CFCoreTypes, ProtocolTypes, SolidityValueType } from "../../../types";
 import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
-import { IMPROPERLY_FORMATTED_STRUCT, NO_APP_INSTANCE_FOR_TAKE_ACTION, STATE_OBJECT_NOT_ENCODABLE } from "../../errors";
+import {
+  IMPROPERLY_FORMATTED_STRUCT,
+  NO_APP_INSTANCE_FOR_TAKE_ACTION,
+  STATE_OBJECT_NOT_ENCODABLE,
+} from "../../errors";
 
 export default class UpdateStateController extends NodeController {
   @jsonRpcMethod(ProtocolTypes.chan_updateState)
@@ -54,9 +58,19 @@ export default class UpdateStateController extends NodeController {
 
     const sc = await store.getChannelFromAppInstanceID(appInstanceId);
 
-    const responderXpub = getFirstElementInListNotEqualTo(publicIdentifier, sc.userNeuteredExtendedKeys);
+    const responderXpub = getFirstElementInListNotEqualTo(
+      publicIdentifier,
+      sc.userNeuteredExtendedKeys,
+    );
 
-    await runUpdateStateProtocol(appInstanceId, store, protocolRunner, publicIdentifier, responderXpub, newState);
+    await runUpdateStateProtocol(
+      appInstanceId,
+      store,
+      protocolRunner,
+      publicIdentifier,
+      responderXpub,
+      newState,
+    );
 
     return { newState };
   }

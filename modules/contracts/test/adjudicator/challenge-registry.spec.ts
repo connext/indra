@@ -83,7 +83,8 @@ describe("ChallengeRegistry", () => {
 
     latestVersionNumber = async () => (await getChallenge()).versionNumber;
 
-    isStateFinalized = async () => await appRegistry.functions.isStateFinalized(appIdentityTestObject.identityHash);
+    isStateFinalized = async () =>
+      await appRegistry.functions.isStateFinalized(appIdentityTestObject.identityHash);
 
     cancelChallenge = async () => {
       const digest = computeAppChallengeHash(
@@ -108,7 +109,12 @@ describe("ChallengeRegistry", () => {
       timeout: number = ONCHAIN_CHALLENGE_TIMEOUT,
     ) => {
       const stateHash = keccak256(appState);
-      const digest = computeAppChallengeHash(appIdentityTestObject.identityHash, stateHash, versionNumber, timeout);
+      const digest = computeAppChallengeHash(
+        appIdentityTestObject.identityHash,
+        stateHash,
+        versionNumber,
+        timeout,
+      );
       await appRegistry.functions.setState(appIdentityTestObject.appIdentity, {
         timeout,
         versionNumber,
@@ -121,7 +127,11 @@ describe("ChallengeRegistry", () => {
     };
 
     sendSignedFinalizationToChain = async () =>
-      await setStateWithSignatures((await latestVersionNumber()) + 1, await latestAppStateHash(), 0);
+      await setStateWithSignatures(
+        (await latestVersionNumber()) + 1,
+        await latestAppStateHash(),
+        0,
+      );
   });
 
   describe("updating app state", () => {

@@ -8,7 +8,13 @@ import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
-import { collateralizeChannel, constructUninstallRpc, createChannel, makeInstallCall, makeProposeCall } from "./utils";
+import {
+  collateralizeChannel,
+  constructUninstallRpc,
+  createChannel,
+  makeInstallCall,
+  makeProposeCall,
+} from "./utils";
 
 expect.extend({ toBeLt });
 

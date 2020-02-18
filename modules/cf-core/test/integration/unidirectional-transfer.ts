@@ -28,7 +28,11 @@ export function validAction(actionType: number = 0, amount: BigNumberish = 1) {
   };
 }
 
-export function initialTransferState(senderAddr: string, receiverAddr: string, amount: BigNumberish = 1) {
+export function initialTransferState(
+  senderAddr: string,
+  receiverAddr: string,
+  amount: BigNumberish = 1,
+) {
   return {
     stage: 0, // POST_FUND
     transfers: [

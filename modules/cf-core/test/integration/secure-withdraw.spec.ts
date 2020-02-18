@@ -1,4 +1,8 @@
-import { WithdrawStartedMessage, WITHDRAWAL_CONFIRMED_EVENT, WITHDRAWAL_STARTED_EVENT } from "@connext/types";
+import {
+  WithdrawStartedMessage,
+  WITHDRAWAL_CONFIRMED_EVENT,
+  WITHDRAWAL_STARTED_EVENT,
+} from "@connext/types";
 import { randomBytes } from "crypto";
 import { Contract, Wallet } from "ethers";
 import { One, Zero } from "ethers/constants";
@@ -27,7 +31,11 @@ import { CFCoreTypes } from "@connext/types";
 expect.extend({ toBeEq, toBeLt });
 
 // NOTE: responder does not have confirm event for any withdrawals
-function confirmWithdrawalMessages(initiator: Node, responder: Node, params: CFCoreTypes.WithdrawParams) {
+function confirmWithdrawalMessages(
+  initiator: Node,
+  responder: Node,
+  params: CFCoreTypes.WithdrawParams,
+) {
   // initiator messages
   initiator.once(WITHDRAWAL_CONFIRMED_EVENT, (msg: WithdrawConfirmationMessage) => {
     assertNodeMessage(
@@ -107,7 +115,12 @@ describe("Node method follows spec - withdraw", () => {
 
     expect(await provider.getBalance(recipient)).toBeEq(Zero);
 
-    const withdrawReq = constructWithdrawRpc(multisigAddress, One, CONVENTION_FOR_ETH_TOKEN_ADDRESS, recipient);
+    const withdrawReq = constructWithdrawRpc(
+      multisigAddress,
+      One,
+      CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      recipient,
+    );
 
     confirmWithdrawalMessages(nodeA, nodeB, withdrawReq.parameters as CFCoreTypes.WithdrawParams);
 
@@ -127,7 +140,8 @@ describe("Node method follows spec - withdraw", () => {
   });
 
   it("has the right balance for both parties after withdrawal of ERC20 tokens", async () => {
-    const erc20ContractAddress = (global["networkContext"] as NetworkContextForTestSuite).DolphinCoin;
+    const erc20ContractAddress = (global["networkContext"] as NetworkContextForTestSuite)
+      .DolphinCoin;
 
     const erc20Contract = new Contract(
       erc20ContractAddress,
@@ -143,7 +157,9 @@ describe("Node method follows spec - withdraw", () => {
 
     await deposit(nodeA, multisigAddress, One, nodeB, erc20ContractAddress);
 
-    const postDepositMultisigTokenBalance = await erc20Contract.functions.balanceOf(multisigAddress);
+    const postDepositMultisigTokenBalance = await erc20Contract.functions.balanceOf(
+      multisigAddress,
+    );
 
     expect(postDepositMultisigTokenBalance).toBeEq(startingMultisigTokenBalance.add(One));
 
@@ -157,7 +173,9 @@ describe("Node method follows spec - withdraw", () => {
 
     await nodeA.rpcRouter.dispatch(withdrawReq);
 
-    expect(await erc20Contract.functions.balanceOf(multisigAddress)).toBeEq(startingMultisigTokenBalance);
+    expect(await erc20Contract.functions.balanceOf(multisigAddress)).toBeEq(
+      startingMultisigTokenBalance,
+    );
 
     expect(await erc20Contract.functions.balanceOf(recipient)).toBeEq(One);
   });
@@ -190,7 +208,11 @@ describe("Node method follows spec - withdraw", () => {
 
     // NOTE: no initiator withdrawal started event
     // and no confirm events
-    confirmWithdrawalMessages(nodeA, nodeB, withdrawCommitmentReq.parameters as CFCoreTypes.WithdrawParams);
+    confirmWithdrawalMessages(
+      nodeA,
+      nodeB,
+      withdrawCommitmentReq.parameters as CFCoreTypes.WithdrawParams,
+    );
 
     const {
       result: {

@@ -32,7 +32,17 @@ const style = withStyles(theme => ({
 }));
 
 export const CashoutCard = style(
-  ({ balance, channel, classes, ethProvider, history, machine, refreshBalances, swapRate, token }) => {
+  ({
+    balance,
+    channel,
+    classes,
+    ethProvider,
+    history,
+    machine,
+    refreshBalances,
+    swapRate,
+    token,
+  }) => {
     const [withdrawing, setWithdrawing] = useState(false);
     const [recipient, setRecipient] = useAddress(null, ethProvider);
 
@@ -109,7 +119,11 @@ export const CashoutCard = style(
         <Grid item xs={12}>
           <Grid container direction="row" justify="center" alignItems="center">
             <Typography variant="h2">
-              <span>{balance.channel.token.toDAI(swapRate).format({ decimals: 2, symbol: false, round: false })}</span>
+              <span>
+                {balance.channel.token
+                  .toDAI(swapRate)
+                  .format({ decimals: 2, symbol: false, round: false })}
+              </span>
             </Typography>
           </Grid>
         </Grid>
@@ -132,7 +146,11 @@ export const CashoutCard = style(
                 disabled={!recipient.value}
               >
                 Cash Out Eth
-                <img src={EthIcon} style={{ width: "15px", height: "15px", marginLeft: "5px" }} alt="" />
+                <img
+                  src={EthIcon}
+                  style={{ width: "15px", height: "15px", marginLeft: "5px" }}
+                  alt=""
+                />
               </Button>
             </Grid>
             <Grid item xs={6}>
@@ -145,7 +163,11 @@ export const CashoutCard = style(
                 disabled={!recipient.value}
               >
                 Cash Out Dai
-                <img src={DaiIcon} style={{ width: "15px", height: "15px", marginLeft: "5px" }} alt="" />
+                <img
+                  src={DaiIcon}
+                  style={{ width: "15px", height: "15px", marginLeft: "5px" }}
+                  alt=""
+                />
               </Button>
             </Grid>
           </Grid>

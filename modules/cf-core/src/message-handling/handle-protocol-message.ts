@@ -55,7 +55,10 @@ export async function handleReceivedProtocolMessage(
 
   const preProtocolStateChannelsMap = await store.getStateChannelsMap();
 
-  const postProtocolStateChannelsMap = await protocolRunner.runProtocolWithMessage(data, preProtocolStateChannelsMap);
+  const postProtocolStateChannelsMap = await protocolRunner.runProtocolWithMessage(
+    data,
+    preProtocolStateChannelsMap,
+  );
 
   const outgoingEventData = await getOutgoingEventDataFromProtocol(
     protocol,
@@ -66,9 +69,13 @@ export async function handleReceivedProtocolMessage(
     publicIdentifier,
   );
 
-  if (outgoingEventData && (protocol === Protocol.Install || protocol === Protocol.InstallVirtualApp)) {
+  if (
+    outgoingEventData &&
+    (protocol === Protocol.Install || protocol === Protocol.InstallVirtualApp)
+  ) {
     const appInstanceId =
-      outgoingEventData!.data["appInstanceId"] || (outgoingEventData!.data as any).params["appInstanceId"];
+      outgoingEventData!.data["appInstanceId"] ||
+      (outgoingEventData!.data as any).params["appInstanceId"];
     if (appInstanceId) {
       let proposal;
       try {
@@ -174,7 +181,9 @@ async function getOutgoingEventDataFromProtocol(
           params as UpdateProtocolParams,
           stateChannelsMap
             .get((params as TakeActionProtocolParams | UpdateProtocolParams).multisigAddress)!
-            .getAppInstance((params as TakeActionProtocolParams | UpdateProtocolParams).appIdentityHash)!.state,
+            .getAppInstance(
+              (params as TakeActionProtocolParams | UpdateProtocolParams).appIdentityHash,
+            )!.state,
         ),
       };
     case Protocol.InstallVirtualApp:
@@ -209,7 +218,9 @@ async function getOutgoingEventDataFromProtocol(
             // TODO: It is weird that `params` is in the event data, we should
             // remove it, but after telling all consumers about this change
             params: {
-              appInstanceId: stateChannelsMap.get(virtualChannel)!.mostRecentlyInstalledAppInstance().identityHash,
+              appInstanceId: stateChannelsMap
+                .get(virtualChannel)!
+                .mostRecentlyInstalledAppInstance().identityHash,
             },
           },
         };
@@ -226,7 +237,10 @@ async function getOutgoingEventDataFromProtocol(
   }
 }
 
-function getStateUpdateEventData(params: TakeActionProtocolParams | UpdateProtocolParams, newState: SolidityValueType) {
+function getStateUpdateEventData(
+  params: TakeActionProtocolParams | UpdateProtocolParams,
+  newState: SolidityValueType,
+) {
   // note: action does not exist on type `UpdateProtocolParams`
   // so use any cast
   const { appIdentityHash: appInstanceId, action } = params as any;
@@ -305,7 +319,10 @@ async function getQueueNamesListByProtocolName(
     case Protocol.Setup:
     case Protocol.Withdraw:
     case Protocol.Propose:
-      const { multisigAddress } = params as InstallProtocolParams | SetupProtocolParams | WithdrawProtocolParams;
+      const { multisigAddress } = params as
+        | InstallProtocolParams
+        | SetupProtocolParams
+        | WithdrawProtocolParams;
 
       return [multisigAddress];
 
@@ -319,7 +336,10 @@ async function getQueueNamesListByProtocolName(
       return [appIdentityHash];
 
     case Protocol.Uninstall:
-      const { multisigAddress: addr, appIdentityHash: appInstanceId } = params as UninstallProtocolParams;
+      const {
+        multisigAddress: addr,
+        appIdentityHash: appInstanceId,
+      } = params as UninstallProtocolParams;
 
       return [addr, appInstanceId];
 
@@ -327,7 +347,11 @@ async function getQueueNamesListByProtocolName(
      * Queue on the multisig addresses of both direct channels involved.
      */
     case Protocol.InstallVirtualApp:
-      const { initiatorXpub, intermediaryXpub, responderXpub } = params as InstallVirtualAppProtocolParams;
+      const {
+        initiatorXpub,
+        intermediaryXpub,
+        responderXpub,
+      } = params as InstallVirtualAppProtocolParams;
 
       if (publicIdentifier === intermediaryXpub) {
         return [

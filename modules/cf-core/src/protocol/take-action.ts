@@ -21,13 +21,20 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
 
     const { processID, params } = message;
 
-    const { appIdentityHash, multisigAddress, responderXpub, action } = params as TakeActionProtocolParams;
+    const {
+      appIdentityHash,
+      multisigAddress,
+      responderXpub,
+      action,
+    } = params as TakeActionProtocolParams;
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)!;
 
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       appIdentityHash,
-      await preProtocolStateChannel.getAppInstance(appIdentityHash).computeStateTransition(action, provider),
+      await preProtocolStateChannel
+        .getAppInstance(appIdentityHash)
+        .computeStateTransition(action, provider),
     );
 
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
@@ -58,11 +65,18 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessage,
     ];
 
-    assertIsValidSignature(xkeyKthAddress(responderXpub, appInstance.appSeqNo), setStateCommitment, responderSignature);
+    assertIsValidSignature(
+      xkeyKthAddress(responderXpub, appInstance.appSeqNo),
+      setStateCommitment,
+      responderSignature,
+    );
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
-    context.stateChannelsMap.set(postProtocolStateChannel.multisigAddress, postProtocolStateChannel);
+    context.stateChannelsMap.set(
+      postProtocolStateChannel.multisigAddress,
+      postProtocolStateChannel,
+    );
   },
 
   1 /* Responding */: async function*(context: Context) {
@@ -74,13 +88,20 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: initiatorSignature },
     } = message;
 
-    const { appIdentityHash, multisigAddress, initiatorXpub, action } = params as TakeActionProtocolParams;
+    const {
+      appIdentityHash,
+      multisigAddress,
+      initiatorXpub,
+      action,
+    } = params as TakeActionProtocolParams;
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)!;
 
     const postProtocolStateChannel = preProtocolStateChannel.setState(
       appIdentityHash,
-      await preProtocolStateChannel.getAppInstance(appIdentityHash).computeStateTransition(action, provider),
+      await preProtocolStateChannel
+        .getAppInstance(appIdentityHash)
+        .computeStateTransition(action, provider),
     );
 
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
@@ -93,7 +114,11 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       appInstance.timeout,
     );
 
-    assertIsValidSignature(xkeyKthAddress(initiatorXpub, appInstance.appSeqNo), setStateCommitment, initiatorSignature);
+    assertIsValidSignature(
+      xkeyKthAddress(initiatorXpub, appInstance.appSeqNo),
+      setStateCommitment,
+      initiatorSignature,
+    );
 
     const responderSignature = yield [OP_SIGN, setStateCommitment, appInstance.appSeqNo];
 
@@ -112,6 +137,9 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessage,
     ];
 
-    context.stateChannelsMap.set(postProtocolStateChannel.multisigAddress, postProtocolStateChannel);
+    context.stateChannelsMap.set(
+      postProtocolStateChannel.multisigAddress,
+      postProtocolStateChannel,
+    );
   },
 };

@@ -95,7 +95,9 @@ describe("Node method follows spec when happening concurrently - install / unins
       });
 
       nodeA.rpcRouter.dispatch(installCall);
-      nodeA.rpcRouter.dispatch(constructUninstallVirtualRpc(installedAppInstanceId, nodeB.publicIdentifier));
+      nodeA.rpcRouter.dispatch(
+        constructUninstallVirtualRpc(installedAppInstanceId, nodeB.publicIdentifier),
+      );
     });
 
     it("install app with ETH then uninstall virtual and install apps simultaneously from separate nodes", async done => {
@@ -120,7 +122,9 @@ describe("Node method follows spec when happening concurrently - install / unins
       });
 
       nodeA.rpcRouter.dispatch(installCall);
-      nodeC.rpcRouter.dispatch(constructUninstallVirtualRpc(installedAppInstanceId, nodeB.publicIdentifier));
+      nodeC.rpcRouter.dispatch(
+        constructUninstallVirtualRpc(installedAppInstanceId, nodeB.publicIdentifier),
+      );
     });
   });
 });

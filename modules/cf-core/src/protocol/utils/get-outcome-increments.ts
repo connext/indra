@@ -32,16 +32,25 @@ export async function computeTokenIndexedFreeBalanceIncrements(
 ): Promise<TokenIndexedCoinTransferMap> {
   const { outcomeType } = appInstance;
 
-  const encodedOutcome = encodedOutcomeOverride || (await appInstance.computeOutcomeWithCurrentState(provider));
+  const encodedOutcome =
+    encodedOutcomeOverride || (await appInstance.computeOutcomeWithCurrentState(provider));
 
   // FIXME: This is a very sketchy way of handling this edge-case
   if (appInstance.state["threshold"] !== undefined) {
-    return handleRefundAppOutcomeSpecialCase(encodedOutcome, appInstance, provider, blockNumberToUseIfNecessary);
+    return handleRefundAppOutcomeSpecialCase(
+      encodedOutcome,
+      appInstance,
+      provider,
+      blockNumberToUseIfNecessary,
+    );
   }
 
   switch (outcomeType) {
     case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
-      return handleTwoPartyFixedOutcome(encodedOutcome, appInstance.twoPartyOutcomeInterpreterParams);
+      return handleTwoPartyFixedOutcome(
+        encodedOutcome,
+        appInstance.twoPartyOutcomeInterpreterParams,
+      );
     }
     case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
       return handleSingleAssetTwoPartyCoinTransfer(
@@ -56,7 +65,9 @@ export async function computeTokenIndexedFreeBalanceIncrements(
       );
     }
     default: {
-      throw Error("computeTokenIndexedFreeBalanceIncrements received an AppInstance with unknown OutcomeType");
+      throw Error(
+        "computeTokenIndexedFreeBalanceIncrements received an AppInstance with unknown OutcomeType",
+      );
     }
   }
 }
@@ -160,9 +171,10 @@ function handleSingleAssetTwoPartyCoinTransfer(
 ): TokenIndexedCoinTransferMap {
   const { tokenAddress } = interpreterParams;
 
-  const [{ to: to1, amount: amount1 }, { to: to2, amount: amount2 }] = decodeSingleAssetTwoPartyCoinTransfer(
-    encodedOutcome,
-  );
+  const [
+    { to: to1, amount: amount1 },
+    { to: to2, amount: amount2 },
+  ] = decodeSingleAssetTwoPartyCoinTransfer(encodedOutcome);
 
   return {
     [tokenAddress]: {
@@ -173,7 +185,10 @@ function handleSingleAssetTwoPartyCoinTransfer(
 }
 
 function decodeRefundAppState(encodedOutcome: string): [CoinTransfer] {
-  const [[{ to, amount }]] = defaultAbiCoder.decode(["tuple(address to, uint256 amount)[2]"], encodedOutcome);
+  const [[{ to, amount }]] = defaultAbiCoder.decode(
+    ["tuple(address to, uint256 amount)[2]"],
+    encodedOutcome,
+  );
 
   return [{ to, amount }];
 }
@@ -184,7 +199,9 @@ function decodeTwoPartyFixedOutcome(encodedOutcome: string): TwoPartyFixedOutcom
   return twoPartyFixedOutcome.toNumber();
 }
 
-function decodeSingleAssetTwoPartyCoinTransfer(encodedOutcome: string): [CoinTransfer, CoinTransfer] {
+function decodeSingleAssetTwoPartyCoinTransfer(
+  encodedOutcome: string,
+): [CoinTransfer, CoinTransfer] {
   const [[[to1, amount1], [to2, amount2]]] = defaultAbiCoder.decode(
     ["tuple(address to, uint256 amount)[2]"],
     encodedOutcome,
@@ -197,7 +214,12 @@ function decodeSingleAssetTwoPartyCoinTransfer(encodedOutcome: string): [CoinTra
 }
 
 function decodeMultiAssetMultiPartyCoinTransfer(encodedOutcome: string): CoinTransfer[][] {
-  const [coinTransferListOfLists] = defaultAbiCoder.decode([multiAssetMultiPartyCoinTransferEncoding], encodedOutcome);
+  const [coinTransferListOfLists] = defaultAbiCoder.decode(
+    [multiAssetMultiPartyCoinTransferEncoding],
+    encodedOutcome,
+  );
 
-  return coinTransferListOfLists.map(coinTransferList => coinTransferList.map(({ to, amount }) => ({ to, amount })));
+  return coinTransferListOfLists.map(coinTransferList =>
+    coinTransferList.map(({ to, amount }) => ({ to, amount })),
+  );
 }

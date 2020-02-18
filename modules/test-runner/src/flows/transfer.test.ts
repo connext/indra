@@ -1,7 +1,13 @@
 import { IConnextClient } from "@connext/types";
 import { AddressZero } from "ethers/constants";
 
-import { createClient, ETH_AMOUNT_SM, fundChannel, requestCollateral, TOKEN_AMOUNT_SM } from "../util";
+import {
+  createClient,
+  ETH_AMOUNT_SM,
+  fundChannel,
+  requestCollateral,
+  TOKEN_AMOUNT_SM,
+} from "../util";
 import { asyncTransferAsset } from "../util/helpers/asyncTransferAsset";
 
 describe("Full Flow: Transfer", () => {

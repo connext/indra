@@ -77,7 +77,11 @@ function Stats({ classes, messaging, prefix }) {
           path={`${prefix}/stats/transfers`}
           render={props => <StatsTransfers {...props} messaging={messaging} />}
         />
-        <Route exact path={`${prefix}/stats/gas`} render={props => <StatsGas {...props} messaging={messaging} />} />
+        <Route
+          exact
+          path={`${prefix}/stats/gas`}
+          render={props => <StatsGas {...props} messaging={messaging} />}
+        />
         <Route
           exact
           path={`${prefix}/stats/export`}

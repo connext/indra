@@ -8,14 +8,22 @@ type AsyncCallback = (...args: any) => Promise<any>;
 export default class RpcRouter extends Router {
   private readonly requestHandler: RequestHandler;
 
-  constructor({ controllers, requestHandler }: { controllers: typeof Controller[]; requestHandler: RequestHandler }) {
+  constructor({
+    controllers,
+    requestHandler,
+  }: {
+    controllers: typeof Controller[];
+    requestHandler: RequestHandler;
+  }) {
     super({ controllers });
 
     this.requestHandler = requestHandler;
   }
 
   async dispatch(rpc: Rpc): Promise<JsonRpcResponse> {
-    const controller = Object.values(Controller.rpcMethods).find(mapping => mapping.method === rpc.methodName);
+    const controller = Object.values(Controller.rpcMethods).find(
+      mapping => mapping.method === rpc.methodName,
+    );
 
     if (!controller) {
       throw Error(`Cannot execute ${rpc.methodName}: no controller`);
@@ -23,7 +31,10 @@ export default class RpcRouter extends Router {
 
     const result = jsonRpcSerializeAsResponse(
       {
-        result: await new controller.type()[controller.callback](this.requestHandler, bigNumberifyJson(rpc.parameters)),
+        result: await new controller.type()[controller.callback](
+          this.requestHandler,
+          bigNumberifyJson(rpc.parameters),
+        ),
         type: rpc.methodName,
       },
       rpc.id as number,

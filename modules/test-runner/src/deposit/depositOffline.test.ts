@@ -39,23 +39,30 @@ const makeDepositCall = async (opts: {
     return;
   }
   if (!subjectToFastforward) {
-    await expect(fundChannel(client, amount || defaultAmount, assetId)).to.be.rejectedWith(failsWith!);
+    await expect(fundChannel(client, amount || defaultAmount, assetId)).to.be.rejectedWith(
+      failsWith!,
+    );
     return;
   }
   // get messaging of client
-  (client.messaging as TestMessagingService).on(subjectToFastforward, async (msg: MesssagingEventData) => {
-    // check if you should fast forward on specific protocol, or
-    // just on specfic subject
-    if (!protocol) {
-      clock.tick(89_000);
-      return;
-    }
-    if (getProtocolFromData(msg) === protocol) {
-      clock.tick(89_000);
-      return;
-    }
-  });
-  await expect(fundChannel(client, amount || defaultAmount, assetId)).to.be.rejectedWith(failsWith!);
+  (client.messaging as TestMessagingService).on(
+    subjectToFastforward,
+    async (msg: MesssagingEventData) => {
+      // check if you should fast forward on specific protocol, or
+      // just on specfic subject
+      if (!protocol) {
+        clock.tick(89_000);
+        return;
+      }
+      if (getProtocolFromData(msg) === protocol) {
+        clock.tick(89_000);
+        return;
+      }
+    },
+  );
+  await expect(fundChannel(client, amount || defaultAmount, assetId)).to.be.rejectedWith(
+    failsWith!,
+  );
   return;
 };
 

@@ -51,7 +51,9 @@ describe("Deposits", () => {
   it("client should not be able to propose deposit with value it doesn't have", async () => {
     await expect(
       client.deposit({
-        amount: (await getOnchainBalance(client.freeBalanceAddress, tokenAddress)).add(1).toString(),
+        amount: (await getOnchainBalance(client.freeBalanceAddress, tokenAddress))
+          .add(1)
+          .toString(),
         assetId: client.config.contractAddresses.Token,
       }),
     ).to.be.rejectedWith("is not less than or equal to");

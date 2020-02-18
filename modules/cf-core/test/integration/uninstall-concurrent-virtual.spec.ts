@@ -6,7 +6,12 @@ import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
-import { collateralizeChannel, constructUninstallVirtualRpc, createChannel, installVirtualApp } from "./utils";
+import {
+  collateralizeChannel,
+  constructUninstallVirtualRpc,
+  createChannel,
+  installVirtualApp,
+} from "./utils";
 
 expect.extend({ toBeLt });
 
@@ -53,7 +58,8 @@ describe("Concurrently uninstalling virtual and regular applications without iss
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    const uninstallRpc = (appId: string) => constructUninstallVirtualRpc(appId, nodeB.publicIdentifier);
+    const uninstallRpc = (appId: string) =>
+      constructUninstallVirtualRpc(appId, nodeB.publicIdentifier);
 
     nodeA.rpcRouter.dispatch(uninstallRpc(appIds[0]));
     nodeA.rpcRouter.dispatch(uninstallRpc(appIds[1]));

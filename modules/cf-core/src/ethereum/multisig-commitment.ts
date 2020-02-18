@@ -15,7 +15,9 @@ export abstract class MultisigCommitment extends EthereumCommitment {
   public getSignedTransaction(sigs: Signature[]): CFCoreTypes.MinimalTransaction {
     const multisigInput = this.getTransactionDetails();
 
-    const signaturesList = sortSignaturesBySignerAddress(this.hashToSign(), sigs).map(joinSignature);
+    const signaturesList = sortSignaturesBySignerAddress(this.hashToSign(), sigs).map(
+      joinSignature,
+    );
 
     const txData = new Interface(MinimumViableMultisig.abi).functions.execTransaction.encode([
       multisigInput.to,

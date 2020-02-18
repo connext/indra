@@ -12,7 +12,10 @@ describe("objMap", () => {
       test: "str",
     };
 
-    const res = (await objMapPromise(obj, async (val: any, field: any): Promise<any> => field)) as any;
+    const res = (await objMapPromise(
+      obj,
+      async (val: any, field: any): Promise<any> => field,
+    )) as any;
 
     expect(res).toStrictEqual({
       me: ethers.utils.bigNumberify(7),

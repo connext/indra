@@ -15,7 +15,10 @@ import { CollateralController } from "./collateral.controller";
   imports: [
     ConfigModule,
     CFCoreModule,
-    TypeOrmModule.forFeature([AnonymizedOnchainTransactionRepository, AnonymizedTransferRepository]),
+    TypeOrmModule.forFeature([
+      AnonymizedOnchainTransactionRepository,
+      AnonymizedTransferRepository,
+    ]),
   ],
   providers: [CollateralService],
 })

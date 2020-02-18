@@ -189,7 +189,9 @@ export class Node {
       const msg = await Promise.race([counterpartyResponse, timeout(IO_SEND_AND_WAIT_TIMEOUT)]);
 
       if (!msg || !("data" in (msg as NodeMessageWrappedProtocolMessage))) {
-        throw Error(`IO_SEND_AND_WAIT timed out after 90s waiting for counterparty reply in ${data.protocol}`);
+        throw Error(
+          `IO_SEND_AND_WAIT timed out after 90s waiting for counterparty reply in ${data.protocol}`,
+        );
       }
 
       // Removes the deferral from the list of pending defferals after
@@ -273,7 +275,10 @@ export class Node {
    * @param method
    * @param req
    */
-  async call(method: CFCoreTypes.MethodName, req: CFCoreTypes.MethodRequest): Promise<CFCoreTypes.MethodResponse> {
+  async call(
+    method: CFCoreTypes.MethodName,
+    req: CFCoreTypes.MethodRequest,
+  ): Promise<CFCoreTypes.MethodResponse> {
     return this.requestHandler.callMethod(method, req);
   }
 
@@ -336,7 +341,10 @@ export class Node {
     try {
       promise.resolve(msg);
     } catch (error) {
-      console.error("Error while executing callback registered by IO_SEND_AND_WAIT middleware hook", { error, msg });
+      console.error(
+        "Error while executing callback registered by IO_SEND_AND_WAIT middleware hook",
+        { error, msg },
+      );
     }
   }
 }

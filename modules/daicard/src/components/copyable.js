@@ -33,7 +33,12 @@ export const Copyable = style(props => {
           </Typography>
         </Button>
       </CopyToClipboard>
-      <MySnackbar variant="success" openWhen={copied} onClose={() => setCopied(false)} message="Copied!" />
+      <MySnackbar
+        variant="success"
+        openWhen={copied}
+        onClose={() => setCopied(false)}
+        message="Copied!"
+      />
     </Grid>
   );
 });

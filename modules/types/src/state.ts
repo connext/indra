@@ -21,7 +21,10 @@ export type StateChannelJSON = {
   readonly userNeuteredExtendedKeys: string[];
   readonly proposedAppInstances: [string, AppInstanceProposal][];
   readonly appInstances: [string, AppInstanceJson][];
-  readonly singleAssetTwoPartyIntermediaryAgreements: [string, SingleAssetTwoPartyIntermediaryAgreement][];
+  readonly singleAssetTwoPartyIntermediaryAgreements: [
+    string,
+    SingleAssetTwoPartyIntermediaryAgreement,
+  ][];
   readonly freeBalanceAppInstance: AppInstanceJson | undefined;
   readonly monotonicNumProposedApps: number;
 };

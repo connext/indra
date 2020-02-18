@@ -53,11 +53,20 @@ const {
   UnidirectionalTransferApp,
 } = global[`networkContext`] as NetworkContextForTestSuite;
 
-export async function requestDepositRights(node: Node, multisigAddress: string, tokenAddress: string = AddressZero) {
-  return await node.rpcRouter.dispatch(constructRequestDepositRightsRpcCall(multisigAddress, tokenAddress));
+export async function requestDepositRights(
+  node: Node,
+  multisigAddress: string,
+  tokenAddress: string = AddressZero,
+) {
+  return await node.rpcRouter.dispatch(
+    constructRequestDepositRightsRpcCall(multisigAddress, tokenAddress),
+  );
 }
 
-export function constructRequestDepositRightsRpcCall(multisigAddress: string, tokenAddress: string = AddressZero) {
+export function constructRequestDepositRightsRpcCall(
+  multisigAddress: string,
+  tokenAddress: string = AddressZero,
+) {
   return {
     id: Date.now(),
     methodName: ProtocolTypes.chan_requestDepositRights,
@@ -68,11 +77,20 @@ export function constructRequestDepositRightsRpcCall(multisigAddress: string, to
   };
 }
 
-export async function rescindDepositRights(node: Node, multisigAddress: string, tokenAddress: string = AddressZero) {
-  return await node.rpcRouter.dispatch(constructRescindDepositRightsRpcCall(multisigAddress, tokenAddress));
+export async function rescindDepositRights(
+  node: Node,
+  multisigAddress: string,
+  tokenAddress: string = AddressZero,
+) {
+  return await node.rpcRouter.dispatch(
+    constructRescindDepositRightsRpcCall(multisigAddress, tokenAddress),
+  );
 }
 
-export function constructRescindDepositRightsRpcCall(multisigAddress: string, tokenAddress: string = AddressZero) {
+export function constructRescindDepositRightsRpcCall(
+  multisigAddress: string,
+  tokenAddress: string = AddressZero,
+) {
   return {
     id: Date.now(),
     methodName: ProtocolTypes.chan_rescindDepositRights,
@@ -110,8 +128,17 @@ export function assertNodeMessage(
   expect(deBigNumberifyJson(msg)).toMatchObject(deBigNumberifyJson(expected));
 }
 
-export function assertProposeMessage(senderId: string, msg: ProposeMessage, params: ProposeInstallProtocolParams) {
-  const { multisigAddress, initiatorXpub, responderXpub: proposedToIdentifier, ...emittedParams } = params;
+export function assertProposeMessage(
+  senderId: string,
+  msg: ProposeMessage,
+  params: ProposeInstallProtocolParams,
+) {
+  const {
+    multisigAddress,
+    initiatorXpub,
+    responderXpub: proposedToIdentifier,
+    ...emittedParams
+  } = params;
   assertNodeMessage(
     msg,
     {
@@ -202,8 +229,13 @@ export async function getAppInstance(node: Node, appInstanceId: string): Promise
   return appInstance;
 }
 
-export async function getAppInstanceProposal(node: Node, appInstanceId: string): Promise<AppInstanceProposal> {
-  const candidates = (await getProposedAppInstances(node)).filter(proposal => proposal.identityHash === appInstanceId);
+export async function getAppInstanceProposal(
+  node: Node,
+  appInstanceId: string,
+): Promise<AppInstanceProposal> {
+  const candidates = (await getProposedAppInstances(node)).filter(
+    proposal => proposal.identityHash === appInstanceId,
+  );
 
   if (candidates.length === 0) {
     throw new Error(`Could not find proposal`);
@@ -388,7 +420,11 @@ export async function deployStateDepositHolder(node: Node, multisigAddress: stri
   return result.transactionHash;
 }
 
-export function constructDepositRpc(multisigAddress: string, amount: BigNumber, tokenAddress?: string): Rpc {
+export function constructDepositRpc(
+  multisigAddress: string,
+  amount: BigNumber,
+  tokenAddress?: string,
+): Rpc {
   return {
     id: Date.now(),
     methodName: ProtocolTypes.chan_deposit,
@@ -406,7 +442,12 @@ export function constructWithdrawCommitmentRpc(
   tokenAddress: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
   recipient?: string,
 ): Rpc {
-  const withdrawCommitmentReq = constructWithdrawRpc(multisigAddress, amount, tokenAddress, recipient);
+  const withdrawCommitmentReq = constructWithdrawRpc(
+    multisigAddress,
+    amount,
+    tokenAddress,
+    recipient,
+  );
 
   withdrawCommitmentReq.methodName = ProtocolTypes.chan_withdrawCommitment;
 
@@ -480,7 +521,10 @@ export function constructAppProposalRpc(
   };
 }
 
-export function constructInstallVirtualRpc(appInstanceId: string, intermediaryIdentifier: string): Rpc {
+export function constructInstallVirtualRpc(
+  appInstanceId: string,
+  intermediaryIdentifier: string,
+): Rpc {
   return {
     parameters: {
       appInstanceId,
@@ -533,11 +577,19 @@ export function confirmProposedAppInstance(
   expect(proposalParams.appDefinition).toEqual(appInstanceProposal.appDefinition);
 
   if (nonInitiatingNode) {
-    expect(proposalParams.initiatorDeposit).toEqual(bigNumberify(appInstanceProposal.responderDeposit));
-    expect(proposalParams.responderDeposit).toEqual(bigNumberify(appInstanceProposal.initiatorDeposit));
+    expect(proposalParams.initiatorDeposit).toEqual(
+      bigNumberify(appInstanceProposal.responderDeposit),
+    );
+    expect(proposalParams.responderDeposit).toEqual(
+      bigNumberify(appInstanceProposal.initiatorDeposit),
+    );
   } else {
-    expect(proposalParams.initiatorDeposit).toEqual(bigNumberify(appInstanceProposal.initiatorDeposit));
-    expect(proposalParams.responderDeposit).toEqual(bigNumberify(appInstanceProposal.responderDeposit));
+    expect(proposalParams.initiatorDeposit).toEqual(
+      bigNumberify(appInstanceProposal.initiatorDeposit),
+    );
+    expect(proposalParams.responderDeposit).toEqual(
+      bigNumberify(appInstanceProposal.responderDeposit),
+    );
   }
 
   expect(proposalParams.timeout).toEqual(bigNumberify(appInstanceProposal.timeout));
@@ -585,7 +637,10 @@ export function constructUninstallRpc(appInstanceId: string): Rpc {
   };
 }
 
-export function constructUninstallVirtualRpc(appInstanceId: string, intermediaryIdentifier: string): Rpc {
+export function constructUninstallVirtualRpc(
+  appInstanceId: string,
+  intermediaryIdentifier: string,
+): Rpc {
   return {
     parameters: {
       appInstanceId,
@@ -612,7 +667,10 @@ export async function collateralizeChannel(
 
 export async function createChannel(nodeA: Node, nodeB: Node): Promise<string> {
   return new Promise(async resolve => {
-    const sortedOwners = xkeysToSortedKthAddresses([nodeA.publicIdentifier, nodeB.publicIdentifier], 0);
+    const sortedOwners = xkeysToSortedKthAddresses(
+      [nodeA.publicIdentifier, nodeB.publicIdentifier],
+      0,
+    );
     nodeB.once(CREATE_CHANNEL_EVENT, async (msg: CreateChannelMessage) => {
       assertNodeMessage(
         msg,
@@ -732,7 +790,9 @@ export async function installVirtualApp(
     } = msg;
     if (eventAppInstanceId === appInstanceId) {
       assertProposeMessage(nodeA.publicIdentifier, msg, params);
-      await nodeC.rpcRouter.dispatch(constructInstallVirtualRpc(appInstanceId, nodeB.publicIdentifier));
+      await nodeC.rpcRouter.dispatch(
+        constructInstallVirtualRpc(appInstanceId, nodeB.publicIdentifier),
+      );
     }
   });
 
@@ -835,8 +895,14 @@ export async function makeVirtualProposal(
   return { appInstanceId, params };
 }
 
-export async function installTTTVirtual(node: Node, appInstanceId: string, intermediaryIdentifier: string) {
-  return await node.rpcRouter.dispatch(constructInstallVirtualRpc(appInstanceId, intermediaryIdentifier));
+export async function installTTTVirtual(
+  node: Node,
+  appInstanceId: string,
+  intermediaryIdentifier: string,
+) {
+  return await node.rpcRouter.dispatch(
+    constructInstallVirtualRpc(appInstanceId, intermediaryIdentifier),
+  );
 }
 
 export async function makeInstallCall(node: Node, appInstanceId: string) {
@@ -935,7 +1001,10 @@ export async function transferERC20Tokens(
   contractABI: ContractABI = DolphinCoin.abi,
   amount: BigNumber = One,
 ): Promise<BigNumber> {
-  const deployerAccount = new Wallet(global[`fundedPrivateKey`], new JsonRpcProvider(global[`ganacheURL`]));
+  const deployerAccount = new Wallet(
+    global[`fundedPrivateKey`],
+    new JsonRpcProvider(global[`ganacheURL`]),
+  );
 
   const contract = new Contract(tokenAddress, contractABI, deployerAccount);
 

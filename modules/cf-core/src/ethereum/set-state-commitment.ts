@@ -1,7 +1,13 @@
 import { Interface, joinSignature, keccak256, Signature, solidityPack } from "ethers/utils";
 
 import { ChallengeRegistry } from "../contracts";
-import { AppIdentity, CFCoreTypes, EthereumCommitment, NetworkContext, SignedStateHashUpdate } from "../types";
+import {
+  AppIdentity,
+  CFCoreTypes,
+  EthereumCommitment,
+  NetworkContext,
+  SignedStateHashUpdate,
+} from "../types";
 import { sortSignaturesBySignerAddress } from "../utils";
 
 import { appIdentityToHash } from "./utils/app-identity";
@@ -23,7 +29,13 @@ export class SetStateCommitment extends EthereumCommitment {
     return keccak256(
       solidityPack(
         ["bytes1", "bytes32", "uint256", "uint256", "bytes32"],
-        ["0x19", appIdentityToHash(this.appIdentity), this.appVersionNumber, this.timeout, this.hashedAppState],
+        [
+          "0x19",
+          appIdentityToHash(this.appIdentity),
+          this.appVersionNumber,
+          this.timeout,
+          this.hashedAppState,
+        ],
       ),
     );
   }
@@ -32,7 +44,10 @@ export class SetStateCommitment extends EthereumCommitment {
     return {
       to: this.networkContext.ChallengeRegistry,
       value: 0,
-      data: iface.functions.setState.encode([this.appIdentity, this.getSignedStateHashUpdate(sigs)]),
+      data: iface.functions.setState.encode([
+        this.appIdentity,
+        this.getSignedStateHashUpdate(sigs),
+      ]),
     };
   }
 

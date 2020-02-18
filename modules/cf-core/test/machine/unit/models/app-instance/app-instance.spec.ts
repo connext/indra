@@ -6,7 +6,10 @@ import { AppInstance } from "../../../../../src/models";
 
 describe("AppInstance", () => {
   it("should be able to instantiate", () => {
-    const participants = [getAddress(hexlify(randomBytes(20))), getAddress(hexlify(randomBytes(20)))];
+    const participants = [
+      getAddress(hexlify(randomBytes(20))),
+      getAddress(hexlify(randomBytes(20))),
+    ];
 
     const appInstance = new AppInstance(
       participants,

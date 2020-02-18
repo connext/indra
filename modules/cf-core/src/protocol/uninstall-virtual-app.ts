@@ -67,7 +67,12 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelWithIntermediary,
       stateChannelWithResponding,
       timeLockedPassThroughAppInstance,
-    ] = await getUpdatedStateChannelAndAppInstanceObjectsForInitiating(stateChannelsMap, params!, provider, network);
+    ] = await getUpdatedStateChannelAndAppInstanceObjectsForInitiating(
+      stateChannelsMap,
+      params!,
+      provider,
+      network,
+    );
 
     const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
       network,
@@ -154,11 +159,20 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       [stateChannelWithIntermediary, stateChannelWithAllThreeParties, stateChannelWithResponding],
     ];
 
-    context.stateChannelsMap.set(stateChannelWithIntermediary.multisigAddress, stateChannelWithIntermediary);
+    context.stateChannelsMap.set(
+      stateChannelWithIntermediary.multisigAddress,
+      stateChannelWithIntermediary,
+    );
 
-    context.stateChannelsMap.set(stateChannelWithAllThreeParties.multisigAddress, stateChannelWithAllThreeParties);
+    context.stateChannelsMap.set(
+      stateChannelWithAllThreeParties.multisigAddress,
+      stateChannelWithAllThreeParties,
+    );
 
-    context.stateChannelsMap.set(stateChannelWithResponding.multisigAddress, stateChannelWithResponding);
+    context.stateChannelsMap.set(
+      stateChannelWithResponding.multisigAddress,
+      stateChannelWithResponding,
+    );
   },
 
   1 /* Intermediary */: async function*(context: Context) {
@@ -183,7 +197,12 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelWithInitiating,
       stateChannelWithResponding,
       timeLockedPassThroughAppInstance,
-    ] = await getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(stateChannelsMap, params!, provider, network);
+    ] = await getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
+      stateChannelsMap,
+      params!,
+      provider,
+      network,
+    );
 
     const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
       network,
@@ -299,11 +318,20 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       respondingSignatureOnIngridBobAppDisactivationCommitment,
     );
 
-    context.stateChannelsMap.set(stateChannelWithInitiating.multisigAddress, stateChannelWithInitiating);
+    context.stateChannelsMap.set(
+      stateChannelWithInitiating.multisigAddress,
+      stateChannelWithInitiating,
+    );
 
-    context.stateChannelsMap.set(stateChannelWithAllThreeParties.multisigAddress, stateChannelWithAllThreeParties);
+    context.stateChannelsMap.set(
+      stateChannelWithAllThreeParties.multisigAddress,
+      stateChannelWithAllThreeParties,
+    );
 
-    context.stateChannelsMap.set(stateChannelWithResponding.multisigAddress, stateChannelWithResponding);
+    context.stateChannelsMap.set(
+      stateChannelWithResponding.multisigAddress,
+      stateChannelWithResponding,
+    );
 
     yield [
       PERSIST_STATE_CHANNEL,
@@ -348,7 +376,12 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelWithIntermediary,
       stateChannelWithInitiating,
       timeLockedPassThroughAppInstance,
-    ] = await getUpdatedStateChannelAndAppInstanceObjectsForResponding(stateChannelsMap, params!, provider, network);
+    ] = await getUpdatedStateChannelAndAppInstanceObjectsForResponding(
+      stateChannelsMap,
+      params!,
+      provider,
+      network,
+    );
 
     const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
       network,
@@ -427,11 +460,20 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [IO_SEND, m7];
 
-    context.stateChannelsMap.set(stateChannelWithIntermediary.multisigAddress, stateChannelWithIntermediary);
+    context.stateChannelsMap.set(
+      stateChannelWithIntermediary.multisigAddress,
+      stateChannelWithIntermediary,
+    );
 
-    context.stateChannelsMap.set(stateChannelWithAllThreeParties.multisigAddress, stateChannelWithAllThreeParties);
+    context.stateChannelsMap.set(
+      stateChannelWithAllThreeParties.multisigAddress,
+      stateChannelWithAllThreeParties,
+    );
 
-    context.stateChannelsMap.set(stateChannelWithInitiating.multisigAddress, stateChannelWithInitiating);
+    context.stateChannelsMap.set(
+      stateChannelWithInitiating.multisigAddress,
+      stateChannelWithInitiating,
+    );
   },
 };
 
@@ -468,12 +510,28 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForInitiating(
   const intermediaryAddress = xkeyTo0thAddress(intermediaryXpub);
   const responderAddress = xkeyTo0thAddress(responderXpub);
 
-  const [stateChannelWithAllThreeParties, stateChannelWithIntermediary, stateChannelWithResponding] = [
-    await getStateChannelFromMapWithOwners(stateChannelsMap, [initiatorXpub, responderXpub, intermediaryXpub], network),
+  const [
+    stateChannelWithAllThreeParties,
+    stateChannelWithIntermediary,
+    stateChannelWithResponding,
+  ] = [
+    await getStateChannelFromMapWithOwners(
+      stateChannelsMap,
+      [initiatorXpub, responderXpub, intermediaryXpub],
+      network,
+    ),
 
-    await getStateChannelFromMapWithOwners(stateChannelsMap, [initiatorXpub, intermediaryXpub], network),
+    await getStateChannelFromMapWithOwners(
+      stateChannelsMap,
+      [initiatorXpub, intermediaryXpub],
+      network,
+    ),
 
-    await getStateChannelFromMapWithOwners(stateChannelsMap, [initiatorXpub, responderXpub], network),
+    await getStateChannelFromMapWithOwners(
+      stateChannelsMap,
+      [initiatorXpub, responderXpub],
+      network,
+    ),
   ];
 
   const agreement = stateChannelWithIntermediary.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
@@ -490,9 +548,9 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForInitiating(
     timeLockedPassThroughAppInstance.state["targetAppIdentityHash"], // TODO: type
   );
 
-  const virtualAppHasExpired = (timeLockedPassThroughAppInstance.state["switchesOutcomeAt"] as BigNumber).lte(
-    await provider.getBlockNumber(),
-  );
+  const virtualAppHasExpired = (timeLockedPassThroughAppInstance.state[
+    "switchesOutcomeAt"
+  ] as BigNumber).lte(await provider.getBlockNumber());
 
   const tokenIndexedIncrements = await computeTokenIndexedFreeBalanceIncrements(
     virtualAppHasExpired ? timeLockedPassThroughAppInstance : virtualAppInstance,
@@ -503,7 +561,9 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForInitiating(
     /**
      * Remove the agreement from the app with the intermediary
      */
-    stateChannelWithAllThreeParties.removeAppInstance(timeLockedPassThroughAppInstance.identityHash),
+    stateChannelWithAllThreeParties.removeAppInstance(
+      timeLockedPassThroughAppInstance.identityHash,
+    ),
 
     /**
      * Remove the agreement from the app with the intermediary
@@ -552,12 +612,28 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForResponding(
   const intermediaryAddress = xkeyTo0thAddress(intermediaryXpub);
   const responderAddress = xkeyTo0thAddress(responderXpub);
 
-  const [stateChannelWithAllThreeParties, stateChannelWithIntermediary, stateChannelWithInitiating] = [
-    await getStateChannelFromMapWithOwners(stateChannelsMap, [initiatorXpub, responderXpub, intermediaryXpub], network),
+  const [
+    stateChannelWithAllThreeParties,
+    stateChannelWithIntermediary,
+    stateChannelWithInitiating,
+  ] = [
+    await getStateChannelFromMapWithOwners(
+      stateChannelsMap,
+      [initiatorXpub, responderXpub, intermediaryXpub],
+      network,
+    ),
 
-    await getStateChannelFromMapWithOwners(stateChannelsMap, [responderXpub, intermediaryXpub], network),
+    await getStateChannelFromMapWithOwners(
+      stateChannelsMap,
+      [responderXpub, intermediaryXpub],
+      network,
+    ),
 
-    await getStateChannelFromMapWithOwners(stateChannelsMap, [initiatorXpub, responderXpub], network),
+    await getStateChannelFromMapWithOwners(
+      stateChannelsMap,
+      [initiatorXpub, responderXpub],
+      network,
+    ),
   ];
 
   const agreement = stateChannelWithIntermediary.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
@@ -582,9 +658,9 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForResponding(
     );
   }
 
-  const virtualAppHasExpired = (timeLockedPassThroughAppInstance.state["switchesOutcomeAt"] as BigNumber).lte(
-    await provider.getBlockNumber(),
-  );
+  const virtualAppHasExpired = (timeLockedPassThroughAppInstance.state[
+    "switchesOutcomeAt"
+  ] as BigNumber).lte(await provider.getBlockNumber());
 
   const tokenIndexedIncrements = await computeTokenIndexedFreeBalanceIncrements(
     virtualAppHasExpired ? timeLockedPassThroughAppInstance : virtualAppInstance,
@@ -595,7 +671,9 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForResponding(
     /**
      * Remove the agreement from the app with the intermediary
      */
-    stateChannelWithAllThreeParties.removeAppInstance(timeLockedPassThroughAppInstance.identityHash),
+    stateChannelWithAllThreeParties.removeAppInstance(
+      timeLockedPassThroughAppInstance.identityHash,
+    ),
 
     /**
      * Remove the agreement from the app with the intermediary
@@ -644,12 +722,28 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
   const intermediaryAddress = xkeyTo0thAddress(intermediaryXpub);
   const responderAddress = xkeyTo0thAddress(responderXpub);
 
-  const [stateChannelWithAllThreeParties, stateChannelWithInitiating, stateChannelWithResponding] = [
-    await getStateChannelFromMapWithOwners(stateChannelsMap, [initiatorXpub, responderXpub, intermediaryXpub], network),
+  const [
+    stateChannelWithAllThreeParties,
+    stateChannelWithInitiating,
+    stateChannelWithResponding,
+  ] = [
+    await getStateChannelFromMapWithOwners(
+      stateChannelsMap,
+      [initiatorXpub, responderXpub, intermediaryXpub],
+      network,
+    ),
 
-    await getStateChannelFromMapWithOwners(stateChannelsMap, [initiatorXpub, intermediaryXpub], network),
+    await getStateChannelFromMapWithOwners(
+      stateChannelsMap,
+      [initiatorXpub, intermediaryXpub],
+      network,
+    ),
 
-    await getStateChannelFromMapWithOwners(stateChannelsMap, [intermediaryXpub, responderXpub], network),
+    await getStateChannelFromMapWithOwners(
+      stateChannelsMap,
+      [intermediaryXpub, responderXpub],
+      network,
+    ),
   ];
 
   const agreementWithInitiating = stateChannelWithInitiating.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
@@ -662,9 +756,9 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
     agreementWithInitiating.timeLockedPassThroughIdentityHash,
   );
 
-  const virtualAppHasExpired = (timeLockedPassThroughAppInstance.state["switchesOutcomeAt"] as BigNumber).lte(
-    await provider.getBlockNumber(),
-  );
+  const virtualAppHasExpired = (timeLockedPassThroughAppInstance.state[
+    "switchesOutcomeAt"
+  ] as BigNumber).lte(await provider.getBlockNumber());
 
   // FIXME: Come up with a better abstraction for this function. In this case,
   // we want to pass in an outcome to use to compute the token indexed free
@@ -675,14 +769,18 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
   const tokenIndexedIncrements = await computeTokenIndexedFreeBalanceIncrements(
     timeLockedPassThroughAppInstance,
     provider,
-    virtualAppHasExpired ? (timeLockedPassThroughAppInstance.state["defaultOutcome"] as string) : targetOutcome,
+    virtualAppHasExpired
+      ? (timeLockedPassThroughAppInstance.state["defaultOutcome"] as string)
+      : targetOutcome,
   );
 
   return [
     /**
      * Remove the agreement from the 3-party app
      */
-    stateChannelWithAllThreeParties.removeAppInstance(timeLockedPassThroughAppInstance.identityHash),
+    stateChannelWithAllThreeParties.removeAppInstance(
+      timeLockedPassThroughAppInstance.identityHash,
+    ),
 
     /**
      * Remove the agreement from the app with the initiating

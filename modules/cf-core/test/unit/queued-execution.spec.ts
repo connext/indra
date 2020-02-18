@@ -161,17 +161,27 @@ describe("addToManyQueues", () => {
 
     ///// Test helpers
     const assertCompletion = () => {
-      const bothBotsActiveOnce = noTimesQueueBecameActive[0] === 1 && noTimesQueueBecameActive[1] === 1;
-      const bothBotsActiveTwice = noTimesQueueBecameActive[0] === 2 && noTimesQueueBecameActive[1] === 2;
+      const bothBotsActiveOnce =
+        noTimesQueueBecameActive[0] === 1 && noTimesQueueBecameActive[1] === 1;
+      const bothBotsActiveTwice =
+        noTimesQueueBecameActive[0] === 2 && noTimesQueueBecameActive[1] === 2;
 
       // must account for bot activity, otherwise you will run into race
       // conditions with the `hasStarted` check
-      if (noTimesExecutionFunctionRan[0] === 0 && noTimesExecutionFunctionRan[1] === 0 && !bothBotsActiveOnce) {
+      if (
+        noTimesExecutionFunctionRan[0] === 0 &&
+        noTimesExecutionFunctionRan[1] === 0 &&
+        !bothBotsActiveOnce
+      ) {
         expect(hasExecutionStartedOnFirstOne).toBe(false);
         expect(hasExecutionFinishedOnFirstOne).toBe(false);
         expect(hasExecutionStartedOnSecondOne).toBe(false);
         expect(hasExecutionFinishedOnSecondOne).toBe(false);
-      } else if (noTimesExecutionFunctionRan[0] === 1 && noTimesExecutionFunctionRan[1] === 0 && !bothBotsActiveTwice) {
+      } else if (
+        noTimesExecutionFunctionRan[0] === 1 &&
+        noTimesExecutionFunctionRan[1] === 0 &&
+        !bothBotsActiveTwice
+      ) {
         expect(hasExecutionStartedOnFirstOne).toBe(true);
         expect(hasExecutionFinishedOnFirstOne).toBe(true);
         expect(hasExecutionStartedOnSecondOne).toBe(false);
@@ -181,7 +191,9 @@ describe("addToManyQueues", () => {
         noTimesExecutionFunctionRan[0] === 0 &&
         noTimesExecutionFunctionRan[1] === 1
       ) {
-        throw new Error(`Seems like the first function was not completed before the second one.. Yikes.`);
+        throw new Error(
+          `Seems like the first function was not completed before the second one.. Yikes.`,
+        );
       }
     };
 

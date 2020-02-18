@@ -13,7 +13,10 @@ describe("Withdraw ETH Commitment", () => {
   let tx: CFCoreTypes.MinimalTransaction;
 
   const multisigAddress = getAddress(hexlify(randomBytes(20)));
-  const multisigOwners = [getAddress(hexlify(randomBytes(20))), getAddress(hexlify(randomBytes(20)))];
+  const multisigOwners = [
+    getAddress(hexlify(randomBytes(20))),
+    getAddress(hexlify(randomBytes(20))),
+  ];
   const to = getAddress(hexlify(randomBytes(20)));
   const value = bigNumberify(Math.round(10000 * Math.random()));
 
