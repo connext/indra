@@ -162,6 +162,9 @@ deployed-contracts: contracts
 build-report:
 	bash ops/build-report.sh
 
+lint:
+	bash ops/lint.sh
+
 dls:
 	@docker service ls
 	@echo "====="

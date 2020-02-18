@@ -16,7 +16,6 @@ class NodeEnvironment extends NodeJSEnvironment {
     this.global.networkContext = global["networkContext"];
   }
 
-
   async teardown() {
     await super.teardown();
   }

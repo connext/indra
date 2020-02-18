@@ -5,11 +5,7 @@ import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
-import {
-  collateralizeChannel,
-  createChannel,
-  installVirtualApp
-} from "./utils";
+import { collateralizeChannel, createChannel, installVirtualApp } from "./utils";
 
 expect.extend({ toBeLt });
 
@@ -33,19 +29,9 @@ describe(`Concurrently installing virtual applications with same intermediary`, 
     multisigAddressAB = await createChannel(nodeA, nodeB);
     multisigAddressBC = await createChannel(nodeB, nodeC);
 
-    await collateralizeChannel(
-      multisigAddressAB,
-      nodeA,
-      nodeB,
-      parseEther(`2`)
-    );
+    await collateralizeChannel(multisigAddressAB, nodeA, nodeB, parseEther(`2`));
 
-    await collateralizeChannel(
-      multisigAddressBC,
-      nodeB,
-      nodeC,
-      parseEther(`2`)
-    );
+    await collateralizeChannel(multisigAddressBC, nodeB, nodeC, parseEther(`2`));
   });
 
   it(`can handle two TicTacToeApp proposals syncronously made`, done => {

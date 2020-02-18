@@ -13,12 +13,11 @@ import {
 } from "ethers/utils";
 
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
-
 import {
   AppIdentityTestClass,
   computeAppChallengeHash,
   expect,
-  sortSignaturesBySignerAddress
+  sortSignaturesBySignerAddress,
 } from "./utils";
 
 type Challenge = {
@@ -78,46 +77,43 @@ describe("ChallengeRegistry", () => {
 
     globalChannelNonce += 1;
 
-    getChallenge = () =>
-      appRegistry.functions.getAppChallenge(appIdentityTestObject.identityHash);
+    getChallenge = () => appRegistry.functions.getAppChallenge(appIdentityTestObject.identityHash);
 
     latestAppStateHash = async () => (await getChallenge()).appStateHash;
 
     latestVersionNumber = async () => (await getChallenge()).versionNumber;
 
     isStateFinalized = async () =>
-      await appRegistry.functions.isStateFinalized(
-        appIdentityTestObject.identityHash
-      );
+      await appRegistry.functions.isStateFinalized(appIdentityTestObject.identityHash);
 
     cancelChallenge = async () => {
       const digest = computeAppChallengeHash(
         appIdentityTestObject.identityHash,
         await latestAppStateHash(),
         await latestVersionNumber(),
-        appIdentityTestObject.defaultTimeout
+        appIdentityTestObject.defaultTimeout,
       );
 
       await appRegistry.functions.cancelChallenge(
         appIdentityTestObject.appIdentity,
         sortSignaturesBySignerAddress(digest, [
           await new SigningKey(ALICE.privateKey).signDigest(digest),
-          await new SigningKey(BOB.privateKey).signDigest(digest)
-        ]).map(joinSignature)
+          await new SigningKey(BOB.privateKey).signDigest(digest),
+        ]).map(joinSignature),
       );
     };
 
     setStateWithSignatures = async (
       versionNumber: BigNumberish,
       appState: string = HashZero,
-      timeout: number = ONCHAIN_CHALLENGE_TIMEOUT
+      timeout: number = ONCHAIN_CHALLENGE_TIMEOUT,
     ) => {
       const stateHash = keccak256(appState);
       const digest = computeAppChallengeHash(
         appIdentityTestObject.identityHash,
         stateHash,
         versionNumber,
-        timeout
+        timeout,
       );
       await appRegistry.functions.setState(appIdentityTestObject.appIdentity, {
         timeout,
@@ -125,8 +121,8 @@ describe("ChallengeRegistry", () => {
         appStateHash: stateHash,
         signatures: sortSignaturesBySignerAddress(digest, [
           await new SigningKey(ALICE.privateKey).signDigest(digest),
-          await new SigningKey(BOB.privateKey).signDigest(digest)
-        ]).map(joinSignature)
+          await new SigningKey(BOB.privateKey).signDigest(digest),
+        ]).map(joinSignature),
       });
     };
 
@@ -134,7 +130,7 @@ describe("ChallengeRegistry", () => {
       await setStateWithSignatures(
         (await latestVersionNumber()) + 1,
         await latestAppStateHash(),
-        0
+        0,
       );
   });
 
@@ -216,16 +212,14 @@ describe("ChallengeRegistry", () => {
       appStateHash,
       challengeCounter,
       finalizesAt,
-      versionNumber
+      versionNumber,
     } = await getChallenge();
 
     expect(status).to.be.eq(1);
     expect(latestSubmitter).to.be.eq(await wallet.getAddress());
     expect(appStateHash).to.be.eq(keccak256(state));
     expect(challengeCounter).to.be.eq(1);
-    expect(finalizesAt).to.be.eq(
-      (await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT
-    );
+    expect(finalizesAt).to.be.eq((await provider.getBlockNumber()) + ONCHAIN_CHALLENGE_TIMEOUT);
     expect(versionNumber).to.be.eq(1);
   });
 });

@@ -24,8 +24,8 @@ describe("Node method follows spec - fails with improper action taken", () => {
         playY: 0,
         winClaim: {
           winClaimType: 0,
-          idx: 0
-        }
+          idx: 0,
+        },
       };
       await createChannel(nodeA, nodeB);
 
@@ -33,9 +33,7 @@ describe("Node method follows spec - fails with improper action taken", () => {
 
       const takeActionReq = constructTakeActionRpc(appInstanceId, validAction);
 
-      await expect(
-        nodeA.rpcRouter.dispatch(takeActionReq)
-      ).rejects.toThrowError(INVALID_ACTION);
+      await expect(nodeA.rpcRouter.dispatch(takeActionReq)).rejects.toThrowError(INVALID_ACTION);
     });
   });
 });

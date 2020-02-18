@@ -8,6 +8,7 @@
     "start-test": "make start-test",
     "build": "./node_modules/.bin/react-scripts --max_old_space_size=4096 build",
     "eject": "./node_modules/.bin/react-scripts eject",
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*.js'",
     "logs": "bash ops/logs.sh",
     "format": "prettier --write \"src/**/*.js\""
   },
@@ -24,7 +25,7 @@
     "classnames": "2.2.6",
     "connext": "4.2.5",
     "ethereum-blockies-png": "0.1.3",
-    "ethers": "4.0.44",
+    "ethers": "4.0.45",
     "human-standard-token-abi": "2.0.0",
     "interval-promise": "1.4.0",
     "mdi-material-ui": "6.12.0",

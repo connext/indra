@@ -37,7 +37,10 @@ export default class DepositController extends NodeController {
     return [params.multisigAddress];
   }
 
-  protected async beforeExecution(requestHandler: RequestHandler, params: CFCoreTypes.DepositParams): Promise<void> {
+  protected async beforeExecution(
+    requestHandler: RequestHandler,
+    params: CFCoreTypes.DepositParams,
+  ): Promise<void> {
     const { store, provider, networkContext } = requestHandler;
     const { multisigAddress, amount, tokenAddress: tokenAddressParam } = params;
 
@@ -67,7 +70,12 @@ export default class DepositController extends NodeController {
       throw Error(CANNOT_DEPOSIT);
     }
 
-    if (!channel.hasProposedBalanceRefundAppInstance(networkContext.CoinBalanceRefundApp, tokenAddress)) {
+    if (
+      !channel.hasProposedBalanceRefundAppInstance(
+        networkContext.CoinBalanceRefundApp,
+        tokenAddress,
+      )
+    ) {
       throw Error(COIN_BALANCE_NOT_PROPOSED);
     }
 
@@ -131,7 +139,9 @@ export default class DepositController extends NodeController {
     const multisigBalance =
       params.tokenAddress === CONVENTION_FOR_ETH_TOKEN_ADDRESS
         ? await provider.getBalance(multisigAddress)
-        : await new Contract(tokenAddress!, ERC20.abi, provider).functions.balanceOf(multisigAddress);
+        : await new Contract(tokenAddress!, ERC20.abi, provider).functions.balanceOf(
+            multisigAddress,
+          );
 
     return {
       multisigBalance,

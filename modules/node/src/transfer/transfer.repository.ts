@@ -43,7 +43,10 @@ export class LinkedTransferRepository extends Repository<LinkedTransfer> {
     return await this.find();
   }
 
-  async markAsRedeemed(transfer: LinkedTransfer, receiverChannel: Channel): Promise<LinkedTransfer> {
+  async markAsRedeemed(
+    transfer: LinkedTransfer,
+    receiverChannel: Channel,
+  ): Promise<LinkedTransfer> {
     transfer.status = LinkedTransferStatus.REDEEMED;
     transfer.receiverChannel = receiverChannel;
     return await this.save(transfer);

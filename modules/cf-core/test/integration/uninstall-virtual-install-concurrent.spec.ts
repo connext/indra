@@ -14,7 +14,7 @@ import {
   createChannel,
   installVirtualApp,
   makeInstallCall,
-  makeProposeCall
+  makeProposeCall,
 } from "./utils";
 
 expect.extend({ toBeLt });
@@ -42,19 +42,9 @@ describe("Node method follows spec when happening concurrently - install / unins
       multisigAddressAB = await createChannel(nodeA, nodeB);
       multisigAddressBC = await createChannel(nodeB, nodeC);
 
-      await collateralizeChannel(
-        multisigAddressAB,
-        nodeA,
-        nodeB,
-        parseEther("2")
-      );
+      await collateralizeChannel(multisigAddressAB, nodeA, nodeB, parseEther("2"));
 
-      await collateralizeChannel(
-        multisigAddressBC,
-        nodeB,
-        nodeC,
-        parseEther("2")
-      );
+      await collateralizeChannel(multisigAddressBC, nodeB, nodeC, parseEther("2"));
 
       const appDef = TicTacToeApp;
 
@@ -65,7 +55,7 @@ describe("Node method follows spec when happening concurrently - install / unins
         One,
         CONVENTION_FOR_ETH_TOKEN_ADDRESS,
         One,
-        CONVENTION_FOR_ETH_TOKEN_ADDRESS
+        CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       );
 
       // install the first app
@@ -77,7 +67,7 @@ describe("Node method follows spec when happening concurrently - install / unins
         undefined,
         CONVENTION_FOR_ETH_TOKEN_ADDRESS,
         One,
-        One
+        One,
       );
       expect(installedAppInstanceId).toBeDefined();
     });
@@ -106,10 +96,7 @@ describe("Node method follows spec when happening concurrently - install / unins
 
       nodeA.rpcRouter.dispatch(installCall);
       nodeA.rpcRouter.dispatch(
-        constructUninstallVirtualRpc(
-          installedAppInstanceId,
-          nodeB.publicIdentifier
-        )
+        constructUninstallVirtualRpc(installedAppInstanceId, nodeB.publicIdentifier),
       );
     });
 
@@ -136,10 +123,7 @@ describe("Node method follows spec when happening concurrently - install / unins
 
       nodeA.rpcRouter.dispatch(installCall);
       nodeC.rpcRouter.dispatch(
-        constructUninstallVirtualRpc(
-          installedAppInstanceId,
-          nodeB.publicIdentifier
-        )
+        constructUninstallVirtualRpc(installedAppInstanceId, nodeB.publicIdentifier),
       );
     });
   });

@@ -12,6 +12,7 @@
     "build": "./node_modules/.bin/tsc -p tsconfig.json",
     "rebuild": "npm run clean && npm run build",
     "clean": "rm -rf ./dist",
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
     "test": "./node_modules/.bin/ts-mocha --watch"
   },
   "dependencies": {
@@ -20,10 +21,10 @@
   },
   "devDependencies": {
     "@babel/polyfill": "7.8.3",
-    "@types/chai": "4.2.8",
+    "@types/chai": "4.2.9",
     "@types/chai-as-promised": "7.1.2",
     "@types/mocha": "7.0.1",
-    "@types/node": "13.7.0",
+    "@types/node": "13.7.1",
     "chai": "4.2.0",
     "chai-as-promised": "7.1.1",
     "mocha": "7.0.1",

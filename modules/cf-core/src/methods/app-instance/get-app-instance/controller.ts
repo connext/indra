@@ -14,7 +14,7 @@ export default class GetAppInstanceDetailsController extends NodeController {
   @jsonRpcMethod(ProtocolTypes.chan_getAppInstance)
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.GetAppInstanceDetailsParams
+    params: CFCoreTypes.GetAppInstanceDetailsParams,
   ): Promise<CFCoreTypes.GetAppInstanceDetailsResult> {
     const { store } = requestHandler;
     const { appInstanceId } = params;
@@ -24,7 +24,7 @@ export default class GetAppInstanceDetailsController extends NodeController {
     }
 
     return {
-      appInstance: (await store.getAppInstance(appInstanceId)).toJson()
+      appInstance: (await store.getAppInstance(appInstanceId)).toJson(),
     };
   }
 }

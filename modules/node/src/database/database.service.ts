@@ -5,9 +5,17 @@ import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { Channel } from "../channel/channel.entity";
 import { ConfigService } from "../config/config.service";
-import { OnchainTransaction, AnonymizedOnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
+import {
+  OnchainTransaction,
+  AnonymizedOnchainTransaction,
+} from "../onchainTransactions/onchainTransaction.entity";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { LinkedTransfer, PeerToPeerTransfer, Transfer, AnonymizedTransfer } from "../transfer/transfer.entity";
+import {
+  LinkedTransfer,
+  PeerToPeerTransfer,
+  Transfer,
+  AnonymizedTransfer,
+} from "../transfer/transfer.entity";
 
 // Import Migrations
 import { InitNodeRecords1567158660577 } from "../../migrations/1567158660577-init-node-records";

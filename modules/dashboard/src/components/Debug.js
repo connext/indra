@@ -47,7 +47,7 @@ function Debug({ classes, messaging, prefix }) {
     <TopGrid container>
       <AppBar container>
         <AppBarButton component={Link} to={`${prefix}`}>
-          <HomeIcon color="primary"/>
+          <HomeIcon color="primary" />
         </AppBarButton>
         <AppBarButton component={Link} to={`${prefix}/debug/channel`}>
           <AppBarButtonTypography>Channels</AppBarButtonTypography>

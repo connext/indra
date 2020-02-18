@@ -1,3 +1,4 @@
+/* global before */
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";

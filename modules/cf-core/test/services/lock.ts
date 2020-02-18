@@ -33,10 +33,7 @@ export class Lock {
     return this.currentLockHandle !== null;
   }
 
-  private acquireLockInternal(
-    unlockKey: string,
-    timeout: number
-  ): Promise<any> {
+  private acquireLockInternal(unlockKey: string, timeout: number): Promise<any> {
     const claim = new Deferred();
     this.currentLockHandle = claim;
     this.unlockKey = unlockKey;
@@ -46,9 +43,7 @@ export class Lock {
 
   private verifyLockKey(unlockKey: string) {
     if (unlockKey !== this.unlockKey) {
-      throw new Error(
-        `Attempted to unlock ${this.lockName} with invalid key: ${unlockKey}`
-      );
+      throw new Error(`Attempted to unlock ${this.lockName} with invalid key: ${unlockKey}`);
     }
   }
 }

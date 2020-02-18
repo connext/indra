@@ -1,3 +1,4 @@
+/* global before */
 import { SolidityValueType, TwoPartyFixedOutcome } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";

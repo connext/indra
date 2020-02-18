@@ -11,7 +11,7 @@ export default class GetFreeBalanceController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.GetFreeBalanceStateParams
+    params: CFCoreTypes.GetFreeBalanceStateParams,
   ): Promise<CFCoreTypes.GetFreeBalanceStateResult> {
     const { store } = requestHandler;
     const { multisigAddress, tokenAddress: tokenAddressParam } = params;
@@ -20,9 +20,7 @@ export default class GetFreeBalanceController extends NodeController {
     const tokenAddress = tokenAddressParam || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
 
     if (!multisigAddress) {
-      throw Error(
-        "getFreeBalanceState method was given undefined multisigAddress"
-      );
+      throw Error("getFreeBalanceState method was given undefined multisigAddress");
     }
 
     const stateChannel = await store.getStateChannel(multisigAddress);

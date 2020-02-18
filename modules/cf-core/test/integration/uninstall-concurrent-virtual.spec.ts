@@ -1,10 +1,7 @@
 import { parseEther } from "ethers/utils";
 
 import { Node } from "../../src";
-import {
-  InstallVirtualMessage,
-  UninstallVirtualMessage
-} from "../../src/types";
+import { InstallVirtualMessage, UninstallVirtualMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
@@ -13,7 +10,7 @@ import {
   collateralizeChannel,
   constructUninstallVirtualRpc,
   createChannel,
-  installVirtualApp
+  installVirtualApp,
 } from "./utils";
 
 expect.extend({ toBeLt });
@@ -38,19 +35,9 @@ describe("Concurrently uninstalling virtual and regular applications without iss
     multisigAddressAB = await createChannel(nodeA, nodeB);
     multisigAddressBC = await createChannel(nodeB, nodeC);
 
-    await collateralizeChannel(
-      multisigAddressAB,
-      nodeA,
-      nodeB,
-      parseEther("2")
-    );
+    await collateralizeChannel(multisigAddressAB, nodeA, nodeB, parseEther("2"));
 
-    await collateralizeChannel(
-      multisigAddressBC,
-      nodeB,
-      nodeC,
-      parseEther("2")
-    );
+    await collateralizeChannel(multisigAddressBC, nodeB, nodeC, parseEther("2"));
   });
 
   it("can handle two concurrent TTT virtual app uninstalls", async done => {
@@ -78,16 +65,13 @@ describe("Concurrently uninstalling virtual and regular applications without iss
     nodeA.rpcRouter.dispatch(uninstallRpc(appIds[1]));
 
     // NOTE: nodeA does not emit this event
-    nodeC.on(
-      "UNINSTALL_VIRTUAL_EVENT",
-      async (msg: UninstallVirtualMessage) => {
-        expect(appIds.includes(msg.data.appInstanceId)).toBe(true);
-        uninstalledApps += 1;
-        // NOTE: this expect fails
-        // const apps = (await getInstalledAppInstances(nodeC)).length;
-        // expect(INSTALLED_APPS - apps).toEqual(uninstalledApps);
-        if (uninstalledApps === 2) done();
-      }
-    );
+    nodeC.on("UNINSTALL_VIRTUAL_EVENT", async (msg: UninstallVirtualMessage) => {
+      expect(appIds.includes(msg.data.appInstanceId)).toBe(true);
+      uninstalledApps += 1;
+      // NOTE: this expect fails
+      // const apps = (await getInstalledAppInstances(nodeC)).length;
+      // expect(INSTALLED_APPS - apps).toEqual(uninstalledApps);
+      if (uninstalledApps === 2) done();
+    });
   });
 });

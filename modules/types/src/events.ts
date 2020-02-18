@@ -57,7 +57,9 @@ export const ConnextEvents = {
 };
 export type ConnextEvent = keyof typeof ConnextEvents;
 
-export class ConnextEventEmitter extends EventEmitter<string | ConnextEvent | CFCoreTypes.RpcMethodName> {}
+export class ConnextEventEmitter extends EventEmitter<
+  string | ConnextEvent | CFCoreTypes.RpcMethodName
+> {}
 
 export type NodeEvent = EventName;
 export const NODE_EVENTS = EventNames;

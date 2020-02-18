@@ -1,4 +1,11 @@
-import { IAsyncStorage, safeJsonParse, safeJsonStringify, WrappedStorage, wrapStorage, ChannelsMap } from "./helpers";
+import {
+  IAsyncStorage,
+  safeJsonParse,
+  safeJsonStringify,
+  WrappedStorage,
+  wrapStorage,
+  ChannelsMap,
+} from "./helpers";
 
 class InternalStore {
   private wrappedStorage: WrappedStorage;

@@ -28,18 +28,33 @@ interface DepositContext {
   appInterface: AppInterface;
 }
 
-export async function installBalanceRefundApp(requestHandler: RequestHandler, params: CFCoreTypes.DepositParams) {
+export async function installBalanceRefundApp(
+  requestHandler: RequestHandler,
+  params: CFCoreTypes.DepositParams,
+) {
   const { publicIdentifier, protocolRunner, networkContext, store, provider } = requestHandler;
 
   const { multisigAddress, tokenAddress } = params;
 
-  const [peerAddress] = await StateChannel.getPeersAddressFromChannel(publicIdentifier, store, multisigAddress);
+  const [peerAddress] = await StateChannel.getPeersAddressFromChannel(
+    publicIdentifier,
+    store,
+    multisigAddress,
+  );
 
   const stateChannel = await store.getStateChannel(multisigAddress);
 
-  const stateChannelsMap = new Map<string, StateChannel>([[stateChannel.multisigAddress, stateChannel]]);
+  const stateChannelsMap = new Map<string, StateChannel>([
+    [stateChannel.multisigAddress, stateChannel],
+  ]);
 
-  const depositContext = await getDepositContext(params, publicIdentifier, provider, networkContext, tokenAddress!);
+  const depositContext = await getDepositContext(
+    params,
+    publicIdentifier,
+    provider,
+    networkContext,
+    tokenAddress!,
+  );
 
   const installProtocolParams: InstallProtocolParams = {
     initialState: depositContext.initialState,
@@ -143,7 +158,11 @@ export async function uninstallBalanceRefundApp(
 
   const { CoinBalanceRefundApp } = networkContext;
 
-  const [peerAddress] = await StateChannel.getPeersAddressFromChannel(publicIdentifier, store, multisigAddress);
+  const [peerAddress] = await StateChannel.getPeersAddressFromChannel(
+    publicIdentifier,
+    store,
+    multisigAddress,
+  );
 
   const stateChannel = await store.getStateChannel(params.multisigAddress);
 
