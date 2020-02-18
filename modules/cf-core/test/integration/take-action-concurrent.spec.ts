@@ -3,10 +3,7 @@ import { parseEther } from "ethers/utils";
 
 import { Node } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
-import {
-  InstallMessage,
-  ProposeMessage,
-} from "../../src/types";
+import { InstallMessage, ProposeMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
@@ -48,7 +45,7 @@ describe("Node method follows spec - toke action", () => {
         multisigAddress,
         nodeA,
         nodeB,
-        parseEther("2") // We are depositing in 2 and use 1 for each concurrent app
+        parseEther("2"), // We are depositing in 2 and use 1 for each concurrent app
       );
 
       nodeB.on("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
@@ -66,7 +63,7 @@ describe("Node method follows spec - toke action", () => {
         One,
         CONVENTION_FOR_ETH_TOKEN_ADDRESS,
         One,
-        CONVENTION_FOR_ETH_TOKEN_ADDRESS
+        CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       );
 
       nodeA.rpcRouter.dispatch(proposeRpc);

@@ -157,5 +157,4 @@ export default class AdminMessaging {
     const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
     return !response || isEmptyObj ? undefined : response;
   }
-
 }

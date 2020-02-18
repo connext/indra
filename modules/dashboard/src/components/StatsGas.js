@@ -9,7 +9,7 @@ const TopGrid = styled(Grid)({
   height: "100%",
   justifyContent: "center",
   alignItems: "center",
-})
+});
 
 const StatTypography = styled(Typography)({
   textAlign: "center",
@@ -17,16 +17,15 @@ const StatTypography = styled(Typography)({
   fontSize: "24px",
   color: "#002868",
   textDecoration: "none",
-})
+});
 
 function StatsGas({ classes }) {
   return (
     <TopGrid container>
-      <StatTypography >Hello</StatTypography>
-      <StatTypography >World</StatTypography>
+      <StatTypography>Hello</StatTypography>
+      <StatTypography>World</StatTypography>
     </TopGrid>
   );
 }
-
 
 export default StatsGas;

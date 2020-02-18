@@ -9,7 +9,7 @@ export class WithdrawETHCommitment extends MultisigCommitment {
     public readonly multisigAddress: string,
     public readonly multisigOwners: string[],
     public readonly to: string,
-    public readonly value: BigNumberish
+    public readonly value: BigNumberish,
   ) {
     super(multisigAddress, multisigOwners);
   }
@@ -19,7 +19,7 @@ export class WithdrawETHCommitment extends MultisigCommitment {
       to: this.to,
       value: bigNumberify(this.value),
       data: "0x",
-      operation: MultisigOperation.Call
+      operation: MultisigOperation.Call,
     };
   }
 }

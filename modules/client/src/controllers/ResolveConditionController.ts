@@ -24,11 +24,15 @@ import { invalid32ByteHexString, invalidAddress, notNegative, validate } from ".
 import { AbstractController } from "./AbstractController";
 
 type ConditionResolvers = {
-  [index in TransferCondition]: (params: ResolveConditionParameters) => Promise<ResolveConditionResponse>;
+  [index in TransferCondition]: (
+    params: ResolveConditionParameters,
+  ) => Promise<ResolveConditionResponse>;
 };
 
 export class ResolveConditionController extends AbstractController {
-  public resolve = async (params: ResolveConditionParameters): Promise<ResolveConditionResponse> => {
+  public resolve = async (
+    params: ResolveConditionParameters,
+  ): Promise<ResolveConditionResponse> => {
     this.log.info(`Resolve condition called with parameters: ${stringify(params)}`);
 
     const res = await this.conditionResolvers[params.conditionType](params);
@@ -228,7 +232,9 @@ export class ResolveConditionController extends AbstractController {
     } = appInstance.latestState as SimpleLinkedTransferAppState;
 
     const throwErr = (reason: string): void => {
-      throw new Error(`Detected ${reason} when resolving linked transfer app ${appId}, refusing to takeAction`);
+      throw new Error(
+        `Detected ${reason} when resolving linked transfer app ${appId}, refusing to takeAction`,
+      );
     };
 
     // verify initial state params are correct

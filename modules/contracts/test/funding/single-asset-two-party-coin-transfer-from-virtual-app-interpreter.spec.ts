@@ -1,16 +1,11 @@
-import DolphinCoin from "../../build/DolphinCoin.json";
-import SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter from "../../build/SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter.json";
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
+import DolphinCoin from "../../build/DolphinCoin.json";
+import SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter from "../../build/SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter.json";
 import { AddressZero, One, Zero } from "ethers/constants";
-import { Web3Provider } from "ethers/providers";
-import {
-  BigNumber,
-  BigNumberish,
-  defaultAbiCoder,
-  hexlify,
-  randomBytes
-} from "ethers/utils";
+import { BigNumber, BigNumberish, defaultAbiCoder, hexlify, randomBytes } from "ethers/utils";
 
 import { expect } from "./utils/index";
 
@@ -36,9 +31,9 @@ const encodeParams = (params: InterpreterParams) =>
           address virtualAppUser,
           address tokenAddress
         )
-      `
+      `,
     ],
-    [params]
+    [params],
   );
 
 const encodeOutcome = (outcome: [CoinTransfer, CoinTransfer]) =>
@@ -49,47 +44,46 @@ const encodeOutcome = (outcome: [CoinTransfer, CoinTransfer]) =>
           address to,
           uint256 amount
         )[2]
-      `
+      `,
     ],
-    [outcome]
+    [outcome],
   );
 
 describe("SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter", () => {
-  let provider: Web3Provider;
+  let provider = buidler.provider;
   let wallet: Wallet;
   let erc20: Contract;
   let coinTransferFromVirtualAppInterpreter: Contract;
 
   async function interpretOutcomeAndExecuteEffect(
     outcome: [CoinTransfer, CoinTransfer],
-    params: InterpreterParams
+    params: InterpreterParams,
   ) {
     return await coinTransferFromVirtualAppInterpreter.functions.interpretOutcomeAndExecuteEffect(
       encodeOutcome(outcome),
-      encodeParams(params)
+      encodeParams(params),
     );
   }
 
   before(async () => {
-    provider = waffle.createMockProvider();
-    wallet = (await waffle.getWallets(provider))[0];
+    wallet = (await provider.getWallets())[0];
     erc20 = await waffle.deployContract(wallet, DolphinCoin);
 
     coinTransferFromVirtualAppInterpreter = await waffle.deployContract(
       wallet,
-      SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter
+      SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter,
     );
 
     // fund interpreter with ERC20 tokenAddresses
     await erc20.functions.transfer(
       coinTransferFromVirtualAppInterpreter.address,
-      erc20.functions.balanceOf(wallet.address)
+      erc20.functions.balanceOf(wallet.address),
     );
 
     // fund interpreter with ETH
     await wallet.sendTransaction({
       to: coinTransferFromVirtualAppInterpreter.address,
-      value: new BigNumber(100)
+      value: new BigNumber(100),
     });
   });
 
@@ -100,13 +94,16 @@ describe("SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter", () => {
     const capitalProvided = One;
 
     await interpretOutcomeAndExecuteEffect(
-      [{ to, amount: capitalProvided }, { to: randomAddress, amount: Zero }],
+      [
+        { to, amount: capitalProvided },
+        { to: randomAddress, amount: Zero },
+      ],
       {
         capitalProvided,
         capitalProvider: to,
         virtualAppUser: lender,
-        tokenAddress: AddressZero
-      }
+        tokenAddress: AddressZero,
+      },
     );
 
     expect(await provider.getBalance(to)).to.eq(One);
@@ -124,13 +121,16 @@ describe("SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter", () => {
     const amount = capitalProvided.div(2);
 
     await interpretOutcomeAndExecuteEffect(
-      [{ to, amount: capitalProvided }, { to: randomAddress, amount: Zero }],
+      [
+        { to, amount: capitalProvided },
+        { to: randomAddress, amount: Zero },
+      ],
       {
         capitalProvided,
         capitalProvider: to,
         virtualAppUser: lender,
-        tokenAddress: AddressZero
-      }
+        tokenAddress: AddressZero,
+      },
     );
 
     expect(await provider.getBalance(to)).to.eq(amount);
@@ -144,13 +144,16 @@ describe("SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter", () => {
     const capitalProvided = One;
 
     await interpretOutcomeAndExecuteEffect(
-      [{ to, amount: capitalProvided }, { to: randomAddress, amount: Zero }],
+      [
+        { to, amount: capitalProvided },
+        { to: randomAddress, amount: Zero },
+      ],
       {
         capitalProvided,
         capitalProvider: to,
         virtualAppUser: lender,
-        tokenAddress: erc20.address
-      }
+        tokenAddress: erc20.address,
+      },
     );
 
     expect(await erc20.functions.balanceOf(to)).to.eq(One);
@@ -168,13 +171,16 @@ describe("SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter", () => {
     const amount = capitalProvided.div(2);
 
     await interpretOutcomeAndExecuteEffect(
-      [{ to, amount: capitalProvided }, { to: randomAddress, amount: Zero }],
+      [
+        { to, amount: capitalProvided },
+        { to: randomAddress, amount: Zero },
+      ],
       {
         capitalProvided,
         capitalProvider: to,
         virtualAppUser: lender,
-        tokenAddress: erc20.address
-      }
+        tokenAddress: erc20.address,
+      },
     );
 
     expect(await erc20.functions.balanceOf(to)).to.eq(amount);

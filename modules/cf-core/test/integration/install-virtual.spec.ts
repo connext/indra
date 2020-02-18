@@ -1,8 +1,4 @@
-import {
-  Node,
-  VIRTUAL_APP_INSTALLATION_FAIL,
-  bigNumberifyJson
-} from "../../src";
+import { Node, VIRTUAL_APP_INSTALLATION_FAIL, bigNumberifyJson } from "../../src";
 import { ProposeMessage, InstallVirtualMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 
@@ -16,7 +12,7 @@ import {
   getInstalledAppInstances,
   getProposedAppInstances,
   installTTTVirtual,
-  makeVirtualProposal
+  makeVirtualProposal,
 } from "./utils";
 import { One, Zero } from "ethers/constants";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
@@ -46,42 +42,37 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
         await collateralizeChannel(multisigAddressAB, nodeA, nodeB);
         await collateralizeChannel(multisigAddressBC, nodeB, nodeC);
 
-        nodeA.once(
-          "INSTALL_VIRTUAL_EVENT",
-          async (msg: InstallVirtualMessage) => {
-            const [virtualAppNodeA] = await getInstalledAppInstances(nodeA);
+        nodeA.once("INSTALL_VIRTUAL_EVENT", async (msg: InstallVirtualMessage) => {
+          const [virtualAppNodeA] = await getInstalledAppInstances(nodeA);
 
-            const [virtualAppNodeC] = await getInstalledAppInstances(nodeC);
+          const [virtualAppNodeC] = await getInstalledAppInstances(nodeC);
 
-            expect(virtualAppNodeA).toEqual(virtualAppNodeC);
+          expect(virtualAppNodeA).toEqual(virtualAppNodeC);
 
-            assertNodeMessage(msg, {
-              from: nodeC.publicIdentifier,
-              type: "INSTALL_VIRTUAL_EVENT",
-              data: {
-                params: {
-                  appInstanceId: virtualAppNodeA.identityHash
-                }
-              }
-            });
+          assertNodeMessage(msg, {
+            from: nodeC.publicIdentifier,
+            type: "INSTALL_VIRTUAL_EVENT",
+            data: {
+              params: {
+                appInstanceId: virtualAppNodeA.identityHash,
+              },
+            },
+          });
 
-            done();
-          }
-        );
+          done();
+        });
 
         nodeC.once("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
           const { params: proposedParams } = await proposal;
           assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
           const {
-            data: { params, appInstanceId }
+            data: { params, appInstanceId },
           } = msg;
           const [proposedAppNodeC] = await getProposedAppInstances(nodeC);
 
           confirmProposedAppInstance(params, proposedAppNodeC, true);
 
-          expect(proposedAppNodeC.proposedByIdentifier).toEqual(
-            nodeA.publicIdentifier
-          );
+          expect(proposedAppNodeC.proposedByIdentifier).toEqual(nodeA.publicIdentifier);
 
           await installTTTVirtual(nodeC, appInstanceId, nodeB.publicIdentifier);
         });
@@ -93,7 +84,7 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
 
         confirmProposedAppInstance(params, proposedAppNodeA);
       });
-    }
+    },
   );
 
   describe("Node A makes a virtual proposal through intermediary B to install a virtual app instance with c", () => {
@@ -122,20 +113,18 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
         nodeB,
         One,
         CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-        false
+        false,
       );
 
       // proposal will not involve intermediary, install from nodeC
       nodeC.once("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
         const {
-          data: { appInstanceId }
+          data: { appInstanceId },
         } = msg;
         try {
           await installTTTVirtual(nodeC, appInstanceId, nodeB.publicIdentifier);
         } catch (e) {
-          expect(
-            e.message.includes(`Node Error: ${VIRTUAL_APP_INSTALLATION_FAIL}`)
-          ).toBeTruthy();
+          expect(e.message.includes(`Node Error: ${VIRTUAL_APP_INSTALLATION_FAIL}`)).toBeTruthy();
         }
         done();
       });
@@ -160,7 +149,7 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
       // proposal will not involve intermediary, install from nodeC
       nodeC.once("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
         const {
-          data: { appInstanceId }
+          data: { appInstanceId },
         } = msg;
         await installTTTVirtual(nodeC, appInstanceId, nodeB.publicIdentifier);
       });

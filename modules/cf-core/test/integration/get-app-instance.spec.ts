@@ -2,12 +2,7 @@ import { Node } from "../../src";
 import { NetworkContextForTestSuite } from "../contracts";
 
 import { setup, SetupContext } from "./setup";
-import {
-  confirmAppInstanceInstallation,
-  createChannel,
-  getAppInstance,
-  installApp
-} from "./utils";
+import { confirmAppInstanceInstallation, createChannel, getAppInstance, installApp } from "./utils";
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
@@ -24,11 +19,7 @@ describe("Node method follows spec - getAppInstanceDetails", () => {
   it("can accept a valid call to get the desired AppInstance details", async () => {
     await createChannel(nodeA, nodeB);
 
-    const [appInstanceId, proposedParams] = await installApp(
-      nodeA,
-      nodeB,
-      TicTacToeApp
-    );
+    const [appInstanceId, proposedParams] = await installApp(nodeA, nodeB, TicTacToeApp);
 
     const appInstanceNodeA = await getAppInstance(nodeA, appInstanceId);
     confirmAppInstanceInstallation(proposedParams, appInstanceNodeA);

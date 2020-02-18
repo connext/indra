@@ -10,7 +10,7 @@ export async function install(
   store: Store,
   protocolRunner: ProtocolRunner,
   params: CFCoreTypes.InstallParams,
-  initiatorXpub: string
+  initiatorXpub: string,
 ): Promise<AppInstanceProposal> {
   const { appInstanceId } = params;
 
@@ -28,7 +28,7 @@ export async function install(
       // TODO: (architectural decision) Should this use `getAllChannels` or
       //       is this good enough? InstallProtocol only operates on a single
       //       channel, anyway. PR #532 might make this question obsolete.
-      [stateChannel.multisigAddress, stateChannel]
+      [stateChannel.multisigAddress, stateChannel],
     ]),
     {
       initiatorXpub,
@@ -43,21 +43,19 @@ export async function install(
       initialState: proposal.initialState,
       appInterface: {
         ...proposal.abiEncodings,
-        addr: proposal.appDefinition
+        addr: proposal.appDefinition,
       },
       appSeqNo: proposal.appSeqNo,
       defaultTimeout: bigNumberify(proposal.timeout).toNumber(),
       outcomeType: proposal.outcomeType,
       initiatorDepositTokenAddress: proposal.initiatorDepositTokenAddress,
       responderDepositTokenAddress: proposal.responderDepositTokenAddress,
-      disableLimit: false
-    }
+      disableLimit: false,
+    },
   );
 
   await store.saveStateChannel(
-    (await store.getChannelFromAppInstanceID(appInstanceId)).removeProposal(
-      appInstanceId
-    )
+    (await store.getChannelFromAppInstanceID(appInstanceId)).removeProposal(appInstanceId),
   );
 
   return proposal;

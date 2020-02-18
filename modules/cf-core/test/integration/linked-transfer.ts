@@ -1,12 +1,6 @@
 import { AppABIEncodings } from "@connext/types";
 import { Zero } from "ethers/constants";
-import {
-  bigNumberify,
-  BigNumberish,
-  hexlify,
-  randomBytes,
-  solidityKeccak256
-} from "ethers/utils";
+import { bigNumberify, BigNumberish, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 
@@ -29,28 +23,28 @@ export const linkedAbiEncodings: AppABIEncodings = {
       address assetId,
       bytes32 paymentId,
       bytes32 preImage
-    )`
+    )`,
 };
 
 export function validAction(
   amount: BigNumberish = 1,
-  assetId: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS
+  assetId: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
 ) {
   return {
     assetId,
     amount: bigNumberify(amount),
     paymentId: hexlify(randomBytes(32)),
-    preImage: hexlify(randomBytes(32))
+    preImage: hexlify(randomBytes(32)),
   };
 }
 
 function createLinkedHash(
-  action: any // SolidityValueType <-- y no work
+  action: any, // SolidityValueType <-- y no work
   // SHOULD BE TYPE OF ABOVE, NOT SURE WHERE TO GET / PUT APP TYPES
 ): string {
   return solidityKeccak256(
     ["uint256", "address", "bytes32", "bytes32"],
-    [action.amount, action.assetId, action.paymentId, action.preImage]
+    [action.amount, action.assetId, action.paymentId, action.preImage],
   );
 }
 
@@ -58,7 +52,7 @@ export function initialLinkedState(
   senderAddr: string,
   redeemerAddr: string,
   amount: BigNumberish = 1,
-  assetId: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS
+  assetId: string = CONVENTION_FOR_ETH_TOKEN_ADDRESS,
 ) {
   const action = validAction(amount, assetId);
   const linkedHash = createLinkedHash(action);
@@ -72,13 +66,13 @@ export function initialLinkedState(
       transfers: [
         {
           amount: bigNumberify(amount),
-          to: senderAddr
+          to: senderAddr,
         },
         {
           amount: Zero,
-          to: redeemerAddr
-        }
-      ]
-    }
+          to: redeemerAddr,
+        },
+      ],
+    },
   };
 }

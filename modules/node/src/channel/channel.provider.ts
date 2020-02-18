@@ -63,11 +63,17 @@ class ChannelMessaging extends AbstractMessagingProvider {
     return await this.channelService.create(pubId);
   }
 
-  async verifyAppSequenceNumber(pubId: string, data: { userAppSequenceNumber: number }): Promise<ChannelAppSequences> {
+  async verifyAppSequenceNumber(
+    pubId: string,
+    data: { userAppSequenceNumber: number },
+  ): Promise<ChannelAppSequences> {
     return await this.channelService.verifyAppSequenceNumber(pubId, data.userAppSequenceNumber);
   }
 
-  async requestCollateral(pubId: string, data: { assetId?: string }): Promise<CFCoreTypes.DepositResult> {
+  async requestCollateral(
+    pubId: string,
+    data: { assetId?: string },
+  ): Promise<CFCoreTypes.DepositResult> {
     // do not allow clients to specify an amount to collateralize with
     return (await (this.channelService.rebalance(
       pubId,
@@ -76,7 +82,10 @@ class ChannelMessaging extends AbstractMessagingProvider {
     ) as unknown)) as CFCoreTypes.DepositResult;
   }
 
-  async withdraw(pubId: string, data: { tx: CFCoreTypes.MinimalTransaction }): Promise<TransactionResponse> {
+  async withdraw(
+    pubId: string,
+    data: { tx: CFCoreTypes.MinimalTransaction },
+  ): Promise<TransactionResponse> {
     return await this.channelService.withdrawForClient(pubId, data.tx);
   }
 
@@ -85,14 +94,26 @@ class ChannelMessaging extends AbstractMessagingProvider {
     await this.channelService.addRebalanceProfileToChannel(pubId, profile);
   }
 
-  async getRebalanceProfile(pubId: string, data: { assetId?: string }): Promise<RebalanceProfile | undefined> {
-    const prof = await this.channelRepository.getRebalanceProfileForChannelAndAsset(pubId, data.assetId);
+  async getRebalanceProfile(
+    pubId: string,
+    data: { assetId?: string },
+  ): Promise<RebalanceProfile | undefined> {
+    const prof = await this.channelRepository.getRebalanceProfileForChannelAndAsset(
+      pubId,
+      data.assetId,
+    );
 
     if (!prof) {
       return undefined;
     }
 
-    const { upperBoundReclaim, lowerBoundReclaim, upperBoundCollateralize, lowerBoundCollateralize, assetId } = prof;
+    const {
+      upperBoundReclaim,
+      lowerBoundReclaim,
+      upperBoundCollateralize,
+      lowerBoundCollateralize,
+      assetId,
+    } = prof;
     return convert.RebalanceProfile("str", {
       assetId,
       lowerBoundCollateralize,
@@ -153,7 +174,14 @@ class ChannelMessaging extends AbstractMessagingProvider {
 }
 
 export const channelProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [MessagingProviderId, ChannelRepository, ConfigService, CFCoreProviderId, ChannelService, AuthService],
+  inject: [
+    MessagingProviderId,
+    ChannelRepository,
+    ConfigService,
+    CFCoreProviderId,
+    ChannelService,
+    AuthService,
+  ],
   provide: ChannelMessagingProviderId,
   useFactory: async (
     messaging: IMessagingService,

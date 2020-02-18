@@ -47,12 +47,12 @@ function DebugNode({ classes }) {
         ),
       );
 
-      var eth = {
+      let eth = {
         mainnet: balances[0].data.ETH.balance,
         staging: balances[1].data.ETH.balance,
         rinkeby: balances[2].data.ETH.balance,
       };
-      var dai = {
+      let dai = {
         mainnet: balances[0].data.tokens
           ? balances[0].data.tokens[0].balance / 1000000000000000000
           : 0,

@@ -25,7 +25,7 @@ function StatsExport({ classes, messaging }) {
   // const [allTransfers, setAllTransfers] = useState(null);
 
   function convertArrayOfObjectsToCSV(args) {
-    var result, ctr, keys, columnDelimiter, lineDelimiter, data;
+    let result, ctr, keys, columnDelimiter, lineDelimiter, data;
 
     data = args.data || null;
     if (data == null || !data.length) {
@@ -56,8 +56,8 @@ function StatsExport({ classes, messaging }) {
   }
 
   function downloadCSV(args) {
-    var data, filename, link;
-    var csv = convertArrayOfObjectsToCSV({
+    let data, filename, link;
+    let csv = convertArrayOfObjectsToCSV({
       data: args.data,
     });
     if (csv == null) return;

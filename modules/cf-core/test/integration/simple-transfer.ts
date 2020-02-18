@@ -11,24 +11,24 @@ export const simpleTransferAbiEncodings: AppABIEncodings = {
     tuple(
       ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers
     )`,
-  actionEncoding: ""
+  actionEncoding: "",
 };
 
 export function initialSimpleTransferState(
   senderAddr: string,
   receiverAddr: string,
-  amount: BigNumberish = 1
+  amount: BigNumberish = 1,
 ) {
   return {
     coinTransfers: [
       {
         amount: bigNumberify(amount),
-        to: senderAddr
+        to: senderAddr,
       },
       {
         to: receiverAddr,
-        amount: Zero
-      }
-    ]
+        amount: Zero,
+      },
+    ],
   };
 }

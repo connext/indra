@@ -14,7 +14,8 @@ export const weiToToken = (wei: any, tokenPerEth: any) =>
 
 export const tokenToWei = (token: any, tokenPerEth: any) => toWei(token).div(toWei(tokenPerEth));
 
-export const maxBN = (lobn: any) => lobn.reduce((max: any, current: any) => (max.gt(current) ? max : current), Zero);
+export const maxBN = (lobn: any) =>
+  lobn.reduce((max: any, current: any) => (max.gt(current) ? max : current), Zero);
 
 export const minBN = (lobn: any) =>
   lobn.reduce((min: any, current: any) => (min.lt(current) ? min : current), MaxUint256);

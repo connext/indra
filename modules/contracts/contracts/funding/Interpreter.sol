@@ -3,9 +3,9 @@ pragma experimental "ABIEncoderV2";
 
 
 contract Interpreter {
-  function interpretOutcomeAndExecuteEffect(
-    bytes calldata,
-    bytes calldata
-  )
-    external;
+    function interpretOutcomeAndExecuteEffect(
+        bytes calldata,
+        bytes calldata
+    )
+        external;
 }

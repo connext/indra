@@ -2,11 +2,7 @@ import { CREATE_CHANNEL_EVENT } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import {
-  CreateChannelMessage,
-  CFCoreTypes,
-  ProtocolTypes
-} from "../../../types";
+import { CreateChannelMessage, CFCoreTypes, ProtocolTypes } from "../../../types";
 import { NodeController } from "../../controller";
 import { xkeysToSortedKthAddresses } from "../../../machine";
 
@@ -27,14 +23,14 @@ export default class CreateChannelController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.CreateChannelParams
+    params: CFCoreTypes.CreateChannelParams,
   ): Promise<string[]> {
     return [`${ProtocolTypes.chan_create}:${params.owners.sort().toString()}`];
   }
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.CreateChannelParams
+    params: CFCoreTypes.CreateChannelParams,
   ): Promise<CFCoreTypes.CreateChannelTransactionResult> {
     const { owners } = params;
     const { networkContext, store } = requestHandler;
@@ -48,7 +44,7 @@ export default class CreateChannelController extends NodeController {
       owners,
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
-      networkContext.provider
+      networkContext.provider,
     );
 
     // Check if the database has stored the relevant data for this state channel
@@ -62,7 +58,7 @@ export default class CreateChannelController extends NodeController {
   private async setupAndCreateChannel(
     multisigAddress: string,
     requestHandler: RequestHandler,
-    params: CFCoreTypes.CreateChannelParams
+    params: CFCoreTypes.CreateChannelParams,
   ) {
     const { owners } = params;
     const { publicIdentifier, protocolRunner, outgoing } = requestHandler;
@@ -72,7 +68,7 @@ export default class CreateChannelController extends NodeController {
     await protocolRunner.runSetupProtocol({
       multisigAddress,
       responderXpub,
-      initiatorXpub: publicIdentifier
+      initiatorXpub: publicIdentifier,
     });
 
     // use state channel for owners
@@ -84,8 +80,8 @@ export default class CreateChannelController extends NodeController {
       data: {
         multisigAddress,
         owners: addressOwners,
-        counterpartyXpub: responderXpub
-      } as CFCoreTypes.CreateChannelResult
+        counterpartyXpub: responderXpub,
+      } as CFCoreTypes.CreateChannelResult,
     };
 
     outgoing.emit(CREATE_CHANNEL_EVENT, msg);
