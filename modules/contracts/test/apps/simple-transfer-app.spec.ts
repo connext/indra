@@ -35,10 +35,7 @@ function mkAddress(prefix: string = "0xa"): string {
 const decodeAppState = (encodedAppState: string): CoinTransfer[] =>
   defaultAbiCoder.decode([multiAssetMultiPartyCoinTransferEncoding], encodedAppState)[0];
 
-const encodeAppState = (
-  state: SimpleTransferAppState,
-  onlyCoinTransfers: boolean = false,
-): string => {
+const encodeAppState = (state: SimpleTransferAppState, onlyCoinTransfers: boolean = false): string => {
   if (!onlyCoinTransfers) return defaultAbiCoder.encode([transferAppStateEncoding], [state]);
   return defaultAbiCoder.encode([multiAssetMultiPartyCoinTransferEncoding], [state.coinTransfers]);
 };
