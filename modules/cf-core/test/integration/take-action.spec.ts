@@ -6,12 +6,22 @@ import { NetworkContextForTestSuite } from "../contracts";
 
 import { setup, SetupContext } from "./setup";
 import { validAction } from "./tic-tac-toe";
-import { constructGetStateRpc, constructTakeActionRpc, createChannel, installApp, assertNodeMessage } from "./utils";
+import {
+  constructGetStateRpc,
+  constructTakeActionRpc,
+  createChannel,
+  installApp,
+  assertNodeMessage,
+} from "./utils";
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
 // NOTE: no initiator events
-function confirmMessages(initiator: Node, responder: Node, expectedData: CFCoreTypes.UpdateStateEventData) {
+function confirmMessages(
+  initiator: Node,
+  responder: Node,
+  expectedData: CFCoreTypes.UpdateStateEventData,
+) {
   const expected = {
     from: initiator.publicIdentifier,
     type: UPDATE_STATE_EVENT,
@@ -36,12 +46,15 @@ describe("Node method follows spec - takeAction", () => {
   });
 
   describe(
-    "Node A and B install an AppInstance, Node A takes action, " + "Node B confirms receipt of state update",
+    "Node A and B install an AppInstance, Node A takes action, " +
+      "Node B confirms receipt of state update",
     () => {
       it("sends takeAction with invalid appInstanceId", async () => {
         const takeActionReq = constructTakeActionRpc("", validAction);
 
-        await expect(nodeA.rpcRouter.dispatch(takeActionReq)).rejects.toThrowError(NO_APP_INSTANCE_FOR_TAKE_ACTION);
+        await expect(nodeA.rpcRouter.dispatch(takeActionReq)).rejects.toThrowError(
+          NO_APP_INSTANCE_FOR_TAKE_ACTION,
+        );
       });
 
       it("can take action", async done => {

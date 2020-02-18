@@ -1,4 +1,11 @@
-import { Button, IconButton, Snackbar, SnackbarContent, Tooltip, withStyles } from "@material-ui/core";
+import {
+  Button,
+  IconButton,
+  Snackbar,
+  SnackbarContent,
+  Tooltip,
+  withStyles,
+} from "@material-ui/core";
 import { amber, green, red } from "@material-ui/core/colors";
 import {
   Close as CloseIcon,
@@ -41,7 +48,17 @@ const style = withStyles(theme => ({
 }));
 
 export const MySnackbar = style(props => {
-  const { classes, className, network, variant, openWhen, onClose, message, duration, txHash } = props;
+  const {
+    classes,
+    className,
+    network,
+    variant,
+    openWhen,
+    onClose,
+    message,
+    duration,
+    txHash,
+  } = props;
   const Icon = variantIcon[variant];
 
   let networkPrefix = "";

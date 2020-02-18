@@ -53,14 +53,18 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       identityHash: appIdentityToHash({
         appDefinition,
         channelNonce: preProtocolStateChannel.numProposedApps + 1,
-        participants: preProtocolStateChannel.getSigningKeysFor(preProtocolStateChannel.numProposedApps + 1),
+        participants: preProtocolStateChannel.getSigningKeysFor(
+          preProtocolStateChannel.numProposedApps + 1,
+        ),
         defaultTimeout: timeout.toNumber(),
       }),
       proposedByIdentifier: initiatorXpub,
       proposedToIdentifier: responderXpub,
       appSeqNo: preProtocolStateChannel.numProposedApps + 1,
-      initiatorDepositTokenAddress: initiatorDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-      responderDepositTokenAddress: responderDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      initiatorDepositTokenAddress:
+        initiatorDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      responderDepositTokenAddress:
+        responderDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
     };
 
     const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
@@ -72,7 +76,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       {
         appDefinition,
         channelNonce: preProtocolStateChannel.numProposedApps + 1,
-        participants: preProtocolStateChannel.getSigningKeysFor(preProtocolStateChannel.numProposedApps + 1),
+        participants: preProtocolStateChannel.getSigningKeysFor(
+          preProtocolStateChannel.numProposedApps + 1,
+        ),
         defaultTimeout: timeout.toNumber(),
       },
       keccak256(defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState])),
@@ -103,7 +109,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
 
     assertIsValidSignature(responderAddress, setStateCommitment, responderSignatureOnInitialState);
 
-    context.stateChannelsMap.set(postProtocolStateChannel.multisigAddress, postProtocolStateChannel);
+    context.stateChannelsMap.set(
+      postProtocolStateChannel.multisigAddress,
+      postProtocolStateChannel,
+    );
   },
 
   1 /* Responding */: async function*(context: Context) {
@@ -146,7 +155,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       identityHash: appIdentityToHash({
         appDefinition,
         channelNonce: preProtocolStateChannel.numProposedApps + 1,
-        participants: preProtocolStateChannel.getSigningKeysFor(preProtocolStateChannel.numProposedApps + 1),
+        participants: preProtocolStateChannel.getSigningKeysFor(
+          preProtocolStateChannel.numProposedApps + 1,
+        ),
         defaultTimeout: timeout.toNumber(),
       }),
       timeout: timeout.toHexString(),
@@ -155,8 +166,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       proposedByIdentifier: initiatorXpub,
       proposedToIdentifier: responderXpub,
       appSeqNo: preProtocolStateChannel.numProposedApps + 1,
-      initiatorDepositTokenAddress: responderDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
-      responderDepositTokenAddress: initiatorDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      initiatorDepositTokenAddress:
+        responderDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      responderDepositTokenAddress:
+        initiatorDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
     };
 
     const setStateCommitment = new SetStateCommitment(
@@ -164,7 +177,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       {
         appDefinition,
         channelNonce: preProtocolStateChannel.numProposedApps + 1,
-        participants: preProtocolStateChannel.getSigningKeysFor(preProtocolStateChannel.numProposedApps + 1),
+        participants: preProtocolStateChannel.getSigningKeysFor(
+          preProtocolStateChannel.numProposedApps + 1,
+        ),
         defaultTimeout: timeout.toNumber(),
       },
       keccak256(defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState])),
@@ -195,6 +210,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessage,
     ];
 
-    context.stateChannelsMap.set(postProtocolStateChannel.multisigAddress, postProtocolStateChannel);
+    context.stateChannelsMap.set(
+      postProtocolStateChannel.multisigAddress,
+      postProtocolStateChannel,
+    );
   },
 };

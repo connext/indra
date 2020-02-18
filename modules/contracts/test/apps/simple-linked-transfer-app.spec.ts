@@ -1,10 +1,11 @@
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import { SolidityValueType } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
-import { before } from "mocha";
 
 import SimpleLinkedTransferApp from "../../build/SimpleLinkedTransferApp.json";
 
@@ -63,7 +64,10 @@ const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
 const decodeAppState = (encodedAppState: string): SimpleLinkedTransferAppState =>
   defaultAbiCoder.decode([linkedTransferAppStateEncoding], encodedAppState)[0];
 
-const encodeAppState = (state: SimpleLinkedTransferAppState, onlyCoinTransfers: boolean = false): string => {
+const encodeAppState = (
+  state: SimpleLinkedTransferAppState,
+  onlyCoinTransfers: boolean = false,
+): string => {
   if (!onlyCoinTransfers) return defaultAbiCoder.encode([linkedTransferAppStateEncoding], [state]);
   return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.coinTransfers]);
 };
@@ -72,24 +76,35 @@ function encodeAppAction(state: SolidityValueType): string {
   return defaultAbiCoder.encode([linkedTransferAppActionEncoding], [state]);
 }
 
-function createLinkedHash(amount: BigNumber, assetId: string, paymentId: string, preImage: string): string {
-  return solidityKeccak256(["uint256", "address", "bytes32", "bytes32"], [amount, assetId, paymentId, preImage]);
+function createLinkedHash(
+  amount: BigNumber,
+  assetId: string,
+  paymentId: string,
+  preImage: string,
+): string {
+  return solidityKeccak256(
+    ["uint256", "address", "bytes32", "bytes32"],
+    [amount, assetId, paymentId, preImage],
+  );
 }
 
 describe("SimpleLinkedTransferApp", () => {
   let simpleLinkedTransferApp: Contract;
+  let provider = buidler.provider;
 
   async function computeOutcome(state: SimpleLinkedTransferAppState): Promise<string> {
     return await simpleLinkedTransferApp.functions.computeOutcome(encodeAppState(state));
   }
 
   async function applyAction(state: any, action: SolidityValueType): Promise<string> {
-    return await simpleLinkedTransferApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
+    return await simpleLinkedTransferApp.functions.applyAction(
+      encodeAppState(state),
+      encodeAppAction(action),
+    );
   }
 
   before(async () => {
-    const provider = waffle.createMockProvider();
-    const wallet = (await waffle.getWallets(provider))[0];
+    const wallet = (await provider.getWallets())[0];
     simpleLinkedTransferApp = await waffle.deployContract(wallet, SimpleLinkedTransferApp);
   });
 

@@ -17,9 +17,13 @@ export const stringify = (obj: object, abrv: boolean = false): string =>
   );
 
 // Capitalizes first char of a string
-export const capitalize = (str: string): string => str.substring(0, 1).toUpperCase() + str.substring(1);
+export const capitalize = (str: string): string =>
+  str.substring(0, 1).toUpperCase() + str.substring(1);
 
-export const objMap = <T, F extends keyof T, R>(obj: T, func: (val: T[F], field: F) => R): { [key in keyof T]: R } => {
+export const objMap = <T, F extends keyof T, R>(
+  obj: T,
+  func: (val: T[F], field: F) => R,
+): { [key in keyof T]: R } => {
   const res: any = {};
   for (const key in obj) {
     if ((obj as any).hasOwnProperty(key)) {
@@ -54,13 +58,22 @@ export const insertDefault = (val: string, obj: any, keys: string[]): any => {
   return adjusted;
 };
 
-export const delay = (ms: number): Promise<void> => new Promise((res: any): any => setTimeout(res, ms));
+export const delay = (ms: number): Promise<void> =>
+  new Promise((res: any): any => setTimeout(res, ms));
 
 export const delayAndThrow = (ms: number, msg: string = ""): Promise<void> =>
   new Promise((res: any, rej: any): any => setTimeout((): void => rej(new Error(msg)), ms));
 
-export const createLinkedHash = (amount: BigNumber, assetId: string, paymentId: string, preImage: string): string => {
-  return solidityKeccak256(["uint256", "address", "bytes32", "bytes32"], [amount, assetId, paymentId, preImage]);
+export const createLinkedHash = (
+  amount: BigNumber,
+  assetId: string,
+  paymentId: string,
+  preImage: string,
+): string => {
+  return solidityKeccak256(
+    ["uint256", "address", "bytes32", "bytes32"],
+    [amount, assetId, paymentId, preImage],
+  );
 };
 
 export const withdrawalKey = (xpub: string): string => {

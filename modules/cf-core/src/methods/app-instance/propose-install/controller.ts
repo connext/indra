@@ -8,7 +8,10 @@ import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { NodeController } from "../../controller";
-import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET, NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../errors";
+import {
+  INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET,
+  NULL_INITIAL_STATE_FOR_PROPOSAL,
+} from "../../errors";
 
 /**
  * This creates an entry of a proposed AppInstance while sending the proposal
@@ -76,9 +79,11 @@ export default class ProposeInstallController extends NodeController {
       networkContext.provider,
     );
 
-    const initiatorDepositTokenAddress = initiatorDepositTokenAddressParam || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
+    const initiatorDepositTokenAddress =
+      initiatorDepositTokenAddressParam || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
 
-    const responderDepositTokenAddress = responderDepositTokenAddressParam || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
+    const responderDepositTokenAddress =
+      responderDepositTokenAddressParam || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
 
     const stateChannel = await store.getOrCreateStateChannelBetweenVirtualAppParticipants(
       multisigAddress,
@@ -118,7 +123,9 @@ export default class ProposeInstallController extends NodeController {
     });
 
     return {
-      appInstanceId: (await store.getStateChannel(multisigAddress)).mostRecentlyProposedAppInstance().identityHash,
+      appInstanceId: (
+        await store.getStateChannel(multisigAddress)
+      ).mostRecentlyProposedAppInstance().identityHash,
     };
   }
 }
@@ -132,7 +139,8 @@ function assertSufficientFundsWithinFreeBalance(
   if (!channel.hasFreeBalance) return;
 
   const freeBalanceForToken =
-    channel.getFreeBalanceClass().getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0)) || Zero;
+    channel.getFreeBalanceClass().getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0)) ||
+    Zero;
 
   if (freeBalanceForToken.lt(depositAmount)) {
     throw Error(

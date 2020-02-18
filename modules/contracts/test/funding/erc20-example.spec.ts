@@ -1,9 +1,9 @@
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import DolphinCoin from "../../build/DolphinCoin.json";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
-import { Web3Provider } from "ethers/providers";
 import { bigNumberify } from "ethers/utils";
-import { before } from "mocha";
 
 import { expect } from "./utils/index";
 
@@ -12,13 +12,12 @@ const DOLPHINCOIN_SUPPLY = bigNumberify(10)
   .mul(10000);
 
 describe("DolphinCoin (ERC20) can be created", () => {
-  let provider: Web3Provider;
+  let provider = buidler.provider;
   let wallet: Wallet;
   let erc20: Contract;
 
   before(async () => {
-    provider = waffle.createMockProvider();
-    wallet = waffle.getWallets(provider)[0];
+    wallet = (await provider.getWallets())[0];
     erc20 = await waffle.deployContract(wallet, DolphinCoin);
   });
 

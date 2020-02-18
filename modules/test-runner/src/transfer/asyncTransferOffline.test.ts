@@ -1,4 +1,9 @@
-import { IConnextClient, DefaultApp, RECIEVE_TRANSFER_FINISHED_EVENT, UPDATE_STATE_EVENT } from "@connext/types";
+import {
+  IConnextClient,
+  DefaultApp,
+  RECIEVE_TRANSFER_FINISHED_EVENT,
+  UPDATE_STATE_EVENT,
+} from "@connext/types";
 import * as lolex from "lolex";
 
 import {
@@ -37,7 +42,9 @@ const fundForTransfers = async (
 };
 
 const getLinkedApp = async (client: IConnextClient, onlyOne: boolean = true): Promise<any> => {
-  const registeredApp = client.appRegistry.filter((app: DefaultApp) => app.name === "SimpleLinkedTransferApp")[0];
+  const registeredApp = client.appRegistry.filter(
+    (app: DefaultApp) => app.name === "SimpleLinkedTransferApp",
+  )[0];
   const linkedApps = (await client.getAppInstances()).filter(
     app => app.appInterface.addr === registeredApp.appDefinitionAddress,
   );
@@ -101,9 +108,9 @@ describe("Async transfer offline tests", () => {
     (senderClient.messaging as TestMessagingService).on(SUBJECT_FORBIDDEN, () => {
       clock.tick(89_000);
     });
-    await expect(asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress)).to.be.rejectedWith(
-      FORBIDDEN_SUBJECT_ERROR,
-    );
+    await expect(
+      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
+    ).to.be.rejectedWith(FORBIDDEN_SUBJECT_ERROR);
     // make sure that the app is installed with the hub/sender
     const senderLinkedApp = await getLinkedApp(senderClient);
     const { paymentId } = senderLinkedApp.latestState as any;
@@ -139,9 +146,9 @@ describe("Async transfer offline tests", () => {
       // fast forward here
       clock.tick(89_000);
     });
-    await expect(asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress)).to.be.rejectedWith(
-      FORBIDDEN_SUBJECT_ERROR,
-    );
+    await expect(
+      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
+    ).to.be.rejectedWith(FORBIDDEN_SUBJECT_ERROR);
     // make sure that the app is installed with the hub/sender
     const senderLinkedApp = await getLinkedApp(senderClient);
     const { paymentId } = senderLinkedApp.latestState as any;
@@ -178,18 +185,21 @@ describe("Async transfer offline tests", () => {
     });
     const tokenAddress = senderClient.config.contractAddresses.Token;
     await fundForTransfers(receiverClient, senderClient);
-    (receiverClient.messaging as TestMessagingService).on(REQUEST, async (msg: MesssagingEventData) => {
-      const { subject } = msg;
-      if (subject!.includes(`resolve`)) {
-        // wait for message to be sent, event is fired first
-        await delay(500);
-        clock.tick(89_000);
-      }
-    });
-    // make the transfer call, should timeout in propose protocol
-    await expect(asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress)).to.be.rejectedWith(
-      `Failed to send message: Request timed out`,
+    (receiverClient.messaging as TestMessagingService).on(
+      REQUEST,
+      async (msg: MesssagingEventData) => {
+        const { subject } = msg;
+        if (subject!.includes(`resolve`)) {
+          // wait for message to be sent, event is fired first
+          await delay(500);
+          clock.tick(89_000);
+        }
+      },
     );
+    // make the transfer call, should timeout in propose protocol
+    await expect(
+      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
+    ).to.be.rejectedWith(`Failed to send message: Request timed out`);
   });
 
   /**
@@ -204,14 +214,17 @@ describe("Async transfer offline tests", () => {
     });
     const tokenAddress = senderClient.config.contractAddresses.Token;
     await fundForTransfers(receiverClient, senderClient);
-    (receiverClient.messaging as TestMessagingService).on(RECEIVED, async (msg: MesssagingEventData) => {
-      if (getProtocolFromData(msg) === "takeAction") {
-        clock.tick(89_000);
-      }
-    });
-    await expect(asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress)).to.be.rejectedWith(
-      APP_PROTOCOL_TOO_LONG("takeAction"),
+    (receiverClient.messaging as TestMessagingService).on(
+      RECEIVED,
+      async (msg: MesssagingEventData) => {
+        if (getProtocolFromData(msg) === "takeAction") {
+          clock.tick(89_000);
+        }
+      },
     );
+    await expect(
+      asyncTransferAsset(senderClient, receiverClient, TOKEN_AMOUNT_SM, tokenAddress),
+    ).to.be.rejectedWith(APP_PROTOCOL_TOO_LONG("takeAction"));
   });
 
   /**

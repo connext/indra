@@ -21,7 +21,9 @@ export class MockBackupService implements IBackupServiceAPI {
   }
 
   public async restore(): Promise<StorePair[]> {
-    const keys = (await this.storage.getAllKeys()).filter((k: string) => k.includes(`${this.prefix}`));
+    const keys = (await this.storage.getAllKeys()).filter((k: string) =>
+      k.includes(`${this.prefix}`),
+    );
     const statesToRestore: StorePair[] = [];
     for (const key of keys) {
       const value = await this.storage.getItem(key);

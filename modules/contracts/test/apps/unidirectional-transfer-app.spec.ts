@@ -1,10 +1,11 @@
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import { SolidityValueType } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { One, Zero } from "ethers/constants";
 import { BigNumber, BigNumberish, defaultAbiCoder, getAddress } from "ethers/utils";
-import { before } from "mocha";
 
 import UnidirectionalTransferApp from "../../build/UnidirectionalTransferApp.json";
 
@@ -71,6 +72,7 @@ const encodeAppAction = (state: SolidityValueType) =>
 
 describe("UnidirectionalTransferApp", () => {
   let unidirectionalTransferApp: Contract;
+  let provider = buidler.provider;
 
   const applyAction = (state: SolidityValueType, action: SolidityValueType) =>
     unidirectionalTransferApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
@@ -79,8 +81,7 @@ describe("UnidirectionalTransferApp", () => {
     unidirectionalTransferApp.functions.computeOutcome(encodeAppState(state));
 
   before(async () => {
-    const provider = waffle.createMockProvider();
-    const wallet = waffle.getWallets(provider)[0];
+    const wallet = (await provider.getWallets())[0];
     unidirectionalTransferApp = await waffle.deployContract(wallet, UnidirectionalTransferApp);
   });
 
@@ -136,7 +137,9 @@ describe("UnidirectionalTransferApp", () => {
         actionType: ActionType.SEND_MONEY,
       };
 
-      await expect(applyAction(initialState, action)).to.revertedWith("SafeMath: subtraction overflow");
+      await expect(applyAction(initialState, action)).to.revertedWith(
+        "SafeMath: subtraction overflow",
+      );
     });
 
     it("reverts if given an invalid actionType", async () => {

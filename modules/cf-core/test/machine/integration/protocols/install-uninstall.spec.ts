@@ -14,7 +14,10 @@ export enum TestFundingType {
   SPLIT = "SPLIT",
 }
 
-async function runDirectInstallUninstallTest(outcomeType: OutcomeType, testFundingType: TestFundingType) {
+async function runDirectInstallUninstallTest(
+  outcomeType: OutcomeType,
+  testFundingType: TestFundingType,
+) {
   const tr = new TestRunner();
   await tr.connectToGanache();
 
@@ -22,7 +25,11 @@ async function runDirectInstallUninstallTest(outcomeType: OutcomeType, testFundi
   await tr.unsafeFund();
 
   if (testFundingType === TestFundingType.SPLIT) {
-    await tr.installSplitDeposits(outcomeType, CONVENTION_FOR_ETH_TOKEN_ADDRESS, TestRunner.TEST_TOKEN_ADDRESS);
+    await tr.installSplitDeposits(
+      outcomeType,
+      CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      TestRunner.TEST_TOKEN_ADDRESS,
+    );
     tr.assertFB(Participant.A, CONVENTION_FOR_ETH_TOKEN_ADDRESS, Zero);
     tr.assertFB(Participant.B, TestRunner.TEST_TOKEN_ADDRESS, Zero);
 
@@ -50,7 +57,11 @@ describe("Install-then-uninstall in a direct channel", () => {
     OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
     OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
   ]) {
-    for (const testFundingType of [TestFundingType.ETH, TestFundingType.ERC20, TestFundingType.SPLIT]) {
+    for (const testFundingType of [
+      TestFundingType.ETH,
+      TestFundingType.ERC20,
+      TestFundingType.SPLIT,
+    ]) {
       if (
         testFundingType === TestFundingType.SPLIT &&
         outcomeType !== OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER
@@ -66,7 +77,10 @@ describe("Install-then-uninstall in a direct channel", () => {
 });
 
 describe("Install-then-uninstall of a virtual app", () => {
-  for (const outcomeType of [OutcomeType.TWO_PARTY_FIXED_OUTCOME, OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER]) {
+  for (const outcomeType of [
+    OutcomeType.TWO_PARTY_FIXED_OUTCOME,
+    OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+  ]) {
     for (const tokenAddress of [CONVENTION_FOR_ETH_TOKEN_ADDRESS, TestRunner.TEST_TOKEN_ADDRESS]) {
       it(`${outcomeType}/${tokenAddress}`, async () => {
         const tr = new TestRunner();

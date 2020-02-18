@@ -23,7 +23,9 @@ describe("Deposits", () => {
           const balance = await getOnchainBalance(client.multisigAddress);
           expect(balance).to.be.eq("1");
           await client.rescindDepositRights({ assetId: AddressZero });
-          const { [client.freeBalanceAddress]: postDeposit } = await client.getFreeBalance(AddressZero);
+          const { [client.freeBalanceAddress]: postDeposit } = await client.getFreeBalance(
+            AddressZero,
+          );
           expect(postDeposit).to.be.eq("1");
           res();
         });
@@ -46,7 +48,9 @@ describe("Deposits", () => {
           const balance = await getOnchainBalance(client.multisigAddress, tokenAddress);
           expect(balance).to.be.eq("1");
           await client.rescindDepositRights({ assetId: tokenAddress });
-          const { [client.freeBalanceAddress]: postDeposit } = await client.getFreeBalance(tokenAddress);
+          const { [client.freeBalanceAddress]: postDeposit } = await client.getFreeBalance(
+            tokenAddress,
+          );
           expect(postDeposit).to.be.eq("1");
           res();
         });

@@ -1,9 +1,9 @@
 import { LINKED_TRANSFER, SimpleLinkedTransferApp } from "@connext/types";
+import { encryptWithPublicKey } from "@connext/crypto";
 import { HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 
 import { createLinkedHash, stringify, xpubToAddress } from "../lib";
-import { encryptWithPublicKey } from "../lib/crypto";
 import {
   BigNumber,
   CFCoreTypes,

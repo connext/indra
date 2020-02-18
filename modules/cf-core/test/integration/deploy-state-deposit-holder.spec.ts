@@ -49,7 +49,12 @@ describe("Node method follows spec - deploy state deposit holder", () => {
 
     expect(await provider.getBalance(recipient)).toBeEq(Zero);
 
-    const withdrawReq = constructWithdrawRpc(multisigAddress, One, CONVENTION_FOR_ETH_TOKEN_ADDRESS, recipient);
+    const withdrawReq = constructWithdrawRpc(
+      multisigAddress,
+      One,
+      CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+      recipient,
+    );
 
     expect(nodeA.rpcRouter.dispatch(withdrawReq)).rejects.toBeDefined();
   });

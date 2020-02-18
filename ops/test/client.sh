@@ -2,7 +2,7 @@
 set -e
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../../package.json | jq .name | tr -d '"'`"
+project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
 # If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
 if [[ -t 0 && -t 1 && -t 2 ]]
@@ -12,7 +12,6 @@ fi
 
 exec docker run \
   --entrypoint="bash" \
-  --env="ECCRYPTO_NO_FALLBACK=true" \
   $interactive \
   --name="${project}_test_client" \
   --rm \

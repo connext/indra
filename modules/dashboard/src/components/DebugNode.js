@@ -40,7 +40,10 @@ function DebugNode({ classes }) {
     async function getBalances(addressArr) {
       const balances = await Promise.all(
         addressArr.map(
-          async address => await axios.get("http://api.ethplorer.io/getAddressInfo/" + address + "?apiKey=freekey"),
+          async address =>
+            await axios.get(
+              "http://api.ethplorer.io/getAddressInfo/" + address + "?apiKey=freekey",
+            ),
         ),
       );
 
@@ -50,9 +53,15 @@ function DebugNode({ classes }) {
         rinkeby: balances[2].data.ETH.balance,
       };
       let dai = {
-        mainnet: balances[0].data.tokens ? balances[0].data.tokens[0].balance / 1000000000000000000 : 0,
-        staging: balances[1].data.tokens ? balances[1].data.tokens[0].balance / 1000000000000000000 : 0,
-        rinkeby: balances[2].data.tokens ? balances[2].data.tokens[0].balance / 1000000000000000000 : 0,
+        mainnet: balances[0].data.tokens
+          ? balances[0].data.tokens[0].balance / 1000000000000000000
+          : 0,
+        staging: balances[1].data.tokens
+          ? balances[1].data.tokens[0].balance / 1000000000000000000
+          : 0,
+        rinkeby: balances[2].data.tokens
+          ? balances[2].data.tokens[0].balance / 1000000000000000000
+          : 0,
       };
 
       setEthBalances(eth);
@@ -67,8 +76,12 @@ function DebugNode({ classes }) {
     <TopGrid container>
       <StatGrid>
         <a href={`https://etherscan.io/address/${address.mainnet}`}>Mainnet</a>
-        <StatTypography>Eth Balance: {ethBalances ? ethBalances.mainnet : "loading..."}</StatTypography>
-        <StatTypography>Dai Balance: {daiBalances ? daiBalances.mainnet : "loading..."}</StatTypography>
+        <StatTypography>
+          Eth Balance: {ethBalances ? ethBalances.mainnet : "loading..."}
+        </StatTypography>
+        <StatTypography>
+          Dai Balance: {daiBalances ? daiBalances.mainnet : "loading..."}
+        </StatTypography>
         <StatTypography>
           Public Identifier:
           xpub6Di1bLRzeR8icvPKfZxir23fE54AhgWn6bxeuDD4yGWtgHK59LDQgojdyNqtjeg134svT126JzrKR9vjn1UWdUFzTHzNMER9QpS8UuQ9L8m
@@ -77,14 +90,22 @@ function DebugNode({ classes }) {
 
       <StatGrid>
         <a href={`https://etherscan.io/address/${address.staging}`}>Staging</a>
-        <StatTypography>Eth Balance: {ethBalances ? ethBalances.staging : "loading..."}</StatTypography>
-        <StatTypography>Dai Balance: {daiBalances ? daiBalances.staging : "loading..."}</StatTypography>
+        <StatTypography>
+          Eth Balance: {ethBalances ? ethBalances.staging : "loading..."}
+        </StatTypography>
+        <StatTypography>
+          Dai Balance: {daiBalances ? daiBalances.staging : "loading..."}
+        </StatTypography>
         <StatTypography>Public Identifier: ???</StatTypography>
       </StatGrid>
       <StatGrid>
         <a href={`https://etherscan.io/address/${address.rinkeby}`}>Rinkeby</a>
-        <StatTypography>Eth Balance: {ethBalances ? ethBalances.rinkeby : "loading..."}</StatTypography>
-        <StatTypography>Dai Balance: {daiBalances ? daiBalances.rinkeby : "loading..."}</StatTypography>
+        <StatTypography>
+          Eth Balance: {ethBalances ? ethBalances.rinkeby : "loading..."}
+        </StatTypography>
+        <StatTypography>
+          Dai Balance: {daiBalances ? daiBalances.rinkeby : "loading..."}
+        </StatTypography>
         <StatTypography>
           Public Identifier:
           xpub6EUSTe4tBM9vQFvYf3jNHfHAVasAVndhVdn1jFv5vv3dBwjxtiDbQoPZiCUYhNH3EFeiYVeKSckn4YqVqG9NhBe9K8XFF3xa1m9Z3h7kyBW

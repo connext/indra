@@ -46,15 +46,15 @@ describe("Can handle correct & incorrect installs", () => {
   });
 
   it("fails to install with empty string appInstanceId", async () => {
-    await expect(install(store, protocolRunner, { appInstanceId: "" }, initiatorIdentifier)).rejects.toThrowError(
-      NO_APP_INSTANCE_ID_TO_INSTALL,
-    );
+    await expect(
+      install(store, protocolRunner, { appInstanceId: "" }, initiatorIdentifier),
+    ).rejects.toThrowError(NO_APP_INSTANCE_ID_TO_INSTALL);
   });
 
   it("fails to install without the AppInstance being proposed first", async () => {
-    await expect(install(store, protocolRunner, { appInstanceId: HashZero }, initiatorIdentifier)).rejects.toThrowError(
-      NO_MULTISIG_FOR_APP_INSTANCE_ID,
-    );
+    await expect(
+      install(store, protocolRunner, { appInstanceId: HashZero }, initiatorIdentifier),
+    ).rejects.toThrowError(NO_MULTISIG_FOR_APP_INSTANCE_ID);
   });
 
   it("fails to install without the AppInstanceId being in a channel", async () => {
@@ -67,7 +67,9 @@ describe("Can handle correct & incorrect installs", () => {
 
     when(mockedStore.getAppInstanceProposal(appInstanceId)).thenResolve(appInstanceProposal);
 
-    when(mockedStore.getChannelFromAppInstanceID(appInstanceId)).thenThrow(Error(NO_MULTISIG_FOR_APP_INSTANCE_ID));
+    when(mockedStore.getChannelFromAppInstanceID(appInstanceId)).thenThrow(
+      Error(NO_MULTISIG_FOR_APP_INSTANCE_ID),
+    );
 
     await expect(
       install(instance(mockedStore), protocolRunner, { appInstanceId }, initiatorIdentifier),
@@ -93,12 +95,16 @@ describe("Can handle correct & incorrect installs", () => {
       extendedKeys,
     );
 
-    expect(stateChannel.getFreeBalanceClass().getBalance(CONVENTION_FOR_ETH_TOKEN_ADDRESS, participants[0])).toEqual(
-      Zero,
-    );
-    expect(stateChannel.getFreeBalanceClass().getBalance(CONVENTION_FOR_ETH_TOKEN_ADDRESS, participants[1])).toEqual(
-      Zero,
-    );
+    expect(
+      stateChannel
+        .getFreeBalanceClass()
+        .getBalance(CONVENTION_FOR_ETH_TOKEN_ADDRESS, participants[0]),
+    ).toEqual(Zero);
+    expect(
+      stateChannel
+        .getFreeBalanceClass()
+        .getBalance(CONVENTION_FOR_ETH_TOKEN_ADDRESS, participants[1]),
+    ).toEqual(Zero);
 
     await store.saveStateChannel(stateChannel);
 
@@ -111,9 +117,9 @@ describe("Can handle correct & incorrect installs", () => {
     // Gets around having to register middleware into the machine
     // and just returns a basic <string, StateChannel> map with the
     // expected multisigAddress in it.
-    when(mockedProtocolRunner.initiateProtocol(Protocol.Install, anything(), anything())).thenResolve(
-      new Map([[multisigAddress, stateChannel]]),
-    );
+    when(
+      mockedProtocolRunner.initiateProtocol(Protocol.Install, anything(), anything()),
+    ).thenResolve(new Map([[multisigAddress, stateChannel]]));
 
     // The AppInstanceProposal that's returned is the one that was installed, which
     // is the same one as the one that was proposed

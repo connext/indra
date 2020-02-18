@@ -70,7 +70,9 @@ describe("StateChannel::uninstallApp", () => {
     });
 
     it("should have updated balances for Alice and Bob", () => {
-      for (const amount of Object.values(fb.withTokenAddress(CONVENTION_FOR_ETH_TOKEN_ADDRESS) || {})) {
+      for (const amount of Object.values(
+        fb.withTokenAddress(CONVENTION_FOR_ETH_TOKEN_ADDRESS) || {},
+      )) {
         expect(amount).toEqual(Zero);
       }
     });

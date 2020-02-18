@@ -1,10 +1,10 @@
+/* global before */
 import { SolidityValueType, TwoPartyFixedOutcome } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { HashZero } from "ethers/constants";
 import { defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
-import { before } from "mocha";
 
 import HighRollerApp from "../../build/HighRollerApp.json";
 

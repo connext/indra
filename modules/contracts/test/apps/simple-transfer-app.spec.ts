@@ -1,9 +1,9 @@
+/* global before */
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
-import { before } from "mocha";
 
 import SimpleTransferApp from "../../build/SimpleTransferApp.json";
 
@@ -36,7 +36,10 @@ function mkAddress(prefix: string = "0xa"): string {
 const decodeAppState = (encodedAppState: string): CoinTransfer[] =>
   defaultAbiCoder.decode([multiAssetMultiPartyCoinTransferEncoding], encodedAppState)[0];
 
-const encodeAppState = (state: SimpleTransferAppState, onlyCoinTransfers: boolean = false): string => {
+const encodeAppState = (
+  state: SimpleTransferAppState,
+  onlyCoinTransfers: boolean = false,
+): string => {
   if (!onlyCoinTransfers) return defaultAbiCoder.encode([transferAppStateEncoding], [state]);
   return defaultAbiCoder.encode([multiAssetMultiPartyCoinTransferEncoding], [state.coinTransfers]);
 };

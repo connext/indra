@@ -191,10 +191,12 @@ const StatsSummary = ({ classes, messaging }) => {
         <SectionGrid container xs={12}>
           <Grid xs={3}>
             <StatLabelTypography>
-              total channels: <StatTypography>{allChannels ? allChannels.length : 0}</StatTypography>
+              total channels:{" "}
+              <StatTypography>{allChannels ? allChannels.length : 0}</StatTypography>
             </StatLabelTypography>
             <StatLabelTypography>
-              collateral ratio: <StatTypography>{(nodeTotal / channelTotal).toFixed(2)}</StatTypography>
+              collateral ratio:{" "}
+              <StatTypography>{(nodeTotal / channelTotal).toFixed(2)}</StatTypography>
             </StatLabelTypography>
           </Grid>
           <Grid xs={4}>
@@ -233,13 +235,15 @@ const StatsSummary = ({ classes, messaging }) => {
           </Grid>
           <Grid xs={4}>
             <StatLabelTypography>
-              total user balances: <StatTypography>{(channelTotal / 1000000000000000000).toFixed(2)}</StatTypography>
+              total user balances:{" "}
+              <StatTypography>{(channelTotal / 1000000000000000000).toFixed(2)}</StatTypography>
             </StatLabelTypography>
             <StatLabelTypography>
               average transfer: <StatTypography>{averageTransfer.toFixed(2)}</StatTypography>
             </StatLabelTypography>
             <StatLabelTypography>
-              total node balances: <StatTypography>{(nodeTotal / 1000000000000000000).toFixed(2)}</StatTypography>
+              total node balances:{" "}
+              <StatTypography>{(nodeTotal / 1000000000000000000).toFixed(2)}</StatTypography>
             </StatLabelTypography>
           </Grid>
         </SectionGrid>

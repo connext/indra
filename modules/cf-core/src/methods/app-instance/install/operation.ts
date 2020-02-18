@@ -33,7 +33,9 @@ export async function install(
     {
       initiatorXpub,
       responderXpub:
-        initiatorXpub === proposal.proposedToIdentifier ? proposal.proposedByIdentifier : proposal.proposedToIdentifier,
+        initiatorXpub === proposal.proposedToIdentifier
+          ? proposal.proposedByIdentifier
+          : proposal.proposedToIdentifier,
       initiatorBalanceDecrement: bigNumberify(proposal.initiatorDeposit),
       responderBalanceDecrement: bigNumberify(proposal.responderDeposit),
       multisigAddress: stateChannel.multisigAddress,
@@ -52,7 +54,9 @@ export async function install(
     },
   );
 
-  await store.saveStateChannel((await store.getChannelFromAppInstanceID(appInstanceId)).removeProposal(appInstanceId));
+  await store.saveStateChannel(
+    (await store.getChannelFromAppInstanceID(appInstanceId)).removeProposal(appInstanceId),
+  );
 
   return proposal;
 }

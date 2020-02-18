@@ -136,7 +136,9 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
 
     await proxyFactory.functions.createProxyWithNonce(
       network.MinimumViableMultisig,
-      new Interface(MinimumViableMultisig.abi).functions.setup.encode([multisigOwnerKeys.map(x => x.address)]),
+      new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+        multisigOwnerKeys.map(x => x.address),
+      ]),
       0,
       { gasLimit: CREATE_PROXY_AND_SETUP_GAS },
     );

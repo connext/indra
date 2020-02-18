@@ -10,7 +10,11 @@ import {
   Typography,
   withStyles,
 } from "@material-ui/core";
-import { Done as DoneIcon, ErrorOutline as ErrorIcon, SaveAlt as ReceiveIcon } from "@material-ui/icons";
+import {
+  Done as DoneIcon,
+  ErrorOutline as ErrorIcon,
+  SaveAlt as ReceiveIcon,
+} from "@material-ui/icons";
 import { useMachine } from "@xstate/react";
 import { AddressZero } from "ethers/constants";
 import { formatEther } from "ethers/utils";
@@ -129,7 +133,11 @@ export const RedeemCard = style(({ channel, classes, history, location, token })
 
     try {
       const freeTokenBalance = await channel.getFreeBalance(token.address);
-      console.log(`Hub has collateralized us with ${formatEther(freeTokenBalance[hubFreeBalanceAddress])} tokens`);
+      console.log(
+        `Hub has collateralized us with ${formatEther(
+          freeTokenBalance[hubFreeBalanceAddress],
+        )} tokens`,
+      );
       takeAction(`REDEEM`);
       setMessage(`This should take just a few seconds`);
       const result = await channel.resolveCondition({
@@ -321,11 +329,14 @@ const RedeemCardModal = ({ amount, history, message, redeemPayment, state, takeA
               The payment will be saved to this browser's local storage.
             </DialogContentText>
             <DialogContentText variant="body1" style={{ color: "#0F1012", paddingTop: "5%" }}>
-              WARNING: If you redeem in an incognito window and you have not backed up your seed phrase, you will lose
-              this money.
+              WARNING: If you redeem in an incognito window and you have not backed up your seed
+              phrase, you will lose this money.
             </DialogContentText>
             Get a copy of your seed phrase anytime by visiting settings.
-            <DialogContentText variant="body1" style={{ color: "#0F1012", paddingTop: "5%" }}></DialogContentText>
+            <DialogContentText
+              variant="body1"
+              style={{ color: "#0F1012", paddingTop: "5%" }}
+            ></DialogContentText>
             <DialogActions style={{ textAlign: "center", justifyContent: "center" }}>
               <Button
                 disableTouchRipple

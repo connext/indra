@@ -10,7 +10,11 @@ import { RequestHandler } from "../../../request-handler";
 import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
-import { INVALID_FACTORY_ADDRESS, INVALID_MASTERCOPY_ADDRESS, INCORRECT_MULTISIG_ADDRESS } from "../../errors";
+import {
+  INVALID_FACTORY_ADDRESS,
+  INVALID_MASTERCOPY_ADDRESS,
+  INCORRECT_MULTISIG_ADDRESS,
+} from "../../errors";
 import { installBalanceRefundApp, uninstallBalanceRefundApp } from "../deposit/operation";
 
 // TODO: maybe a better name? since it's a little smarter than just a plain install
@@ -76,7 +80,9 @@ export default class RequestDepositRightsController extends NodeController {
       multisigBalance = await erc20Contract.balanceOf(multisigAddress);
     }
 
-    if (channel.hasBalanceRefundAppInstance(networkContext.CoinBalanceRefundApp, params.tokenAddress)) {
+    if (
+      channel.hasBalanceRefundAppInstance(networkContext.CoinBalanceRefundApp, params.tokenAddress)
+    ) {
       const balanceRefundApp = channel.getBalanceRefundAppInstance(
         networkContext.CoinBalanceRefundApp,
         params.tokenAddress,

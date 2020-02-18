@@ -25,11 +25,16 @@ export default class TakeActionController extends NodeController {
     requestHandler: RequestHandler,
     params: CFCoreTypes.TakeActionParams,
   ): Promise<string[]> {
-    const multisigAddress = await requestHandler.store.getMultisigAddressFromAppInstance(params.appInstanceId);
+    const multisigAddress = await requestHandler.store.getMultisigAddressFromAppInstance(
+      params.appInstanceId,
+    );
     return [multisigAddress, params.appInstanceId];
   }
 
-  protected async beforeExecution(requestHandler: RequestHandler, params: CFCoreTypes.TakeActionParams): Promise<void> {
+  protected async beforeExecution(
+    requestHandler: RequestHandler,
+    params: CFCoreTypes.TakeActionParams,
+  ): Promise<void> {
     const { store } = requestHandler;
     const { appInstanceId, action } = params;
 
@@ -58,16 +63,29 @@ export default class TakeActionController extends NodeController {
 
     const sc = await store.getChannelFromAppInstanceID(appInstanceId);
 
-    const responderXpub = getFirstElementInListNotEqualTo(publicIdentifier, sc.userNeuteredExtendedKeys);
+    const responderXpub = getFirstElementInListNotEqualTo(
+      publicIdentifier,
+      sc.userNeuteredExtendedKeys,
+    );
 
-    await runTakeActionProtocol(appInstanceId, store, protocolRunner, publicIdentifier, responderXpub, action);
+    await runTakeActionProtocol(
+      appInstanceId,
+      store,
+      protocolRunner,
+      publicIdentifier,
+      responderXpub,
+      action,
+    );
 
     const appInstance = await store.getAppInstance(appInstanceId);
 
     return { newState: appInstance.state };
   }
 
-  protected async afterExecution(requestHandler: RequestHandler, params: CFCoreTypes.TakeActionParams): Promise<void> {
+  protected async afterExecution(
+    requestHandler: RequestHandler,
+    params: CFCoreTypes.TakeActionParams,
+  ): Promise<void> {
     const { store, router, publicIdentifier } = requestHandler;
     const { appInstanceId, action } = params;
 

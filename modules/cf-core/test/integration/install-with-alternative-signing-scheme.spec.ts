@@ -44,7 +44,9 @@ describe(`Uses a provided signing key generation function to sign channel state 
         const lockService = new MemoryLockService();
 
         const storeServiceA = new MemoryStoreServiceFactory().createStoreService();
-        const [privateKeyGeneratorA, xpubA] = generatePrivateKeyGeneratorAndXPubPair(A_EXTENDED_PRIVATE_KEY);
+        const [privateKeyGeneratorA, xpubA] = generatePrivateKeyGeneratorAndXPubPair(
+          A_EXTENDED_PRIVATE_KEY,
+        );
         nodeA = await Node.create(
           messagingService,
           storeServiceA,
@@ -57,7 +59,9 @@ describe(`Uses a provided signing key generation function to sign channel state 
         );
 
         const storeServiceB = new MemoryStoreServiceFactory().createStoreService();
-        const [privateKeyGeneratorB, xpubB] = generatePrivateKeyGeneratorAndXPubPair(B_EXTENDED_PRIVATE_KEY);
+        const [privateKeyGeneratorB, xpubB] = generatePrivateKeyGeneratorAndXPubPair(
+          B_EXTENDED_PRIVATE_KEY,
+        );
         nodeB = await Node.create(
           messagingService,
           storeServiceB,

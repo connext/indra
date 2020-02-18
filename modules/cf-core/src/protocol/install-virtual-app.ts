@@ -67,7 +67,9 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       provider,
     );
 
-    const intermediaryAddress = stateChannelWithIntermediary.getMultisigOwnerAddrOf(intermediaryXpub);
+    const intermediaryAddress = stateChannelWithIntermediary.getMultisigOwnerAddrOf(
+      intermediaryXpub,
+    );
 
     const responderAddress = stateChannelWithResponding.getMultisigOwnerAddrOf(responderXpub);
 
@@ -182,7 +184,10 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       timeLockedPassThroughSetStateCommitment,
     ];
 
-    const initiatorSignatureOnVirtualAppSetStateCommitment = yield [OP_SIGN, virtualAppSetStateCommitment];
+    const initiatorSignatureOnVirtualAppSetStateCommitment = yield [
+      OP_SIGN,
+      virtualAppSetStateCommitment,
+    ];
 
     const m5 = {
       protocol,
@@ -247,12 +252,22 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_STATE_CHANNEL,
-      [stateChannelWithIntermediary, stateChannelWithResponding, stateChannelWithRespondingAndIntermediary],
+      [
+        stateChannelWithIntermediary,
+        stateChannelWithResponding,
+        stateChannelWithRespondingAndIntermediary,
+      ],
     ];
 
-    context.stateChannelsMap.set(stateChannelWithIntermediary.multisigAddress, stateChannelWithIntermediary);
+    context.stateChannelsMap.set(
+      stateChannelWithIntermediary.multisigAddress,
+      stateChannelWithIntermediary,
+    );
 
-    context.stateChannelsMap.set(stateChannelWithResponding.multisigAddress, stateChannelWithResponding);
+    context.stateChannelsMap.set(
+      stateChannelWithResponding.multisigAddress,
+      stateChannelWithResponding,
+    );
 
     context.stateChannelsMap.set(
       stateChannelWithRespondingAndIntermediary.multisigAddress,
@@ -544,9 +559,15 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelBetweenVirtualAppUsers,
     );
 
-    context.stateChannelsMap.set(stateChannelWithInitiating.multisigAddress, stateChannelWithInitiating);
+    context.stateChannelsMap.set(
+      stateChannelWithInitiating.multisigAddress,
+      stateChannelWithInitiating,
+    );
 
-    context.stateChannelsMap.set(stateChannelWithResponding.multisigAddress, stateChannelWithResponding);
+    context.stateChannelsMap.set(
+      stateChannelWithResponding.multisigAddress,
+      stateChannelWithResponding,
+    );
   },
 
   2 /* Responding */: async function*(context: Context) {
@@ -573,7 +594,9 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       provider,
     );
 
-    const intermediaryAddress = stateChannelWithIntermediary.getMultisigOwnerAddrOf(intermediaryXpub);
+    const intermediaryAddress = stateChannelWithIntermediary.getMultisigOwnerAddrOf(
+      intermediaryXpub,
+    );
 
     const initiatorAddress = stateChannelWithInitiating.getMultisigOwnerAddrOf(initiatorXpub);
 
@@ -702,7 +725,10 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       timeLockedPassThroughSetStateCommitment,
     ];
 
-    const responderSignatureOnVirtualAppSetStateCommitment = yield [OP_SIGN, virtualAppSetStateCommitment];
+    const responderSignatureOnVirtualAppSetStateCommitment = yield [
+      OP_SIGN,
+      virtualAppSetStateCommitment,
+    ];
 
     yield [
       WRITE_COMMITMENT,
@@ -740,12 +766,22 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       PERSIST_STATE_CHANNEL,
-      [stateChannelWithIntermediary, stateChannelWithRespondingAndIntermediary, stateChannelWithInitiating],
+      [
+        stateChannelWithIntermediary,
+        stateChannelWithRespondingAndIntermediary,
+        stateChannelWithInitiating,
+      ],
     ];
 
-    context.stateChannelsMap.set(stateChannelWithIntermediary.multisigAddress, stateChannelWithIntermediary);
+    context.stateChannelsMap.set(
+      stateChannelWithIntermediary.multisigAddress,
+      stateChannelWithIntermediary,
+    );
 
-    context.stateChannelsMap.set(stateChannelWithInitiating.multisigAddress, stateChannelWithInitiating);
+    context.stateChannelsMap.set(
+      stateChannelWithInitiating.multisigAddress,
+      stateChannelWithInitiating,
+    );
 
     context.stateChannelsMap.set(
       stateChannelWithRespondingAndIntermediary.multisigAddress,
@@ -769,7 +805,9 @@ function computeInterpreterParameters(
     | MultiAssetMultiPartyCoinTransferInterpreterParams
     | undefined = undefined;
 
-  let twoPartyOutcomeInterpreterParams: TwoPartyFixedOutcomeInterpreterParams | undefined = undefined;
+  let twoPartyOutcomeInterpreterParams:
+    | TwoPartyFixedOutcomeInterpreterParams
+    | undefined = undefined;
 
   let singleAssetTwoPartyCoinTransferInterpreterParams:
     | SingleAssetTwoPartyCoinTransferInterpreterParams

@@ -9,7 +9,13 @@ import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
 import { validAction } from "./tic-tac-toe";
-import { collateralizeChannel, constructTakeActionRpc, createChannel, makeInstallCall, makeProposeCall } from "./utils";
+import {
+  collateralizeChannel,
+  constructTakeActionRpc,
+  createChannel,
+  makeInstallCall,
+  makeProposeCall,
+} from "./utils";
 import { UPDATE_STATE_EVENT } from "@connext/types";
 
 expect.extend({ toBeLt });

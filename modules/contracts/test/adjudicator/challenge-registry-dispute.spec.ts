@@ -1,10 +1,10 @@
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import { SolidityValueType } from "@connext/types";
-import { createMockProvider, getWallets, deployContract } from "ethereum-waffle";
+import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
-import { Web3Provider } from "ethers/providers";
 import { bigNumberify, defaultAbiCoder, joinSignature, keccak256, SigningKey } from "ethers/utils";
-import { before } from "mocha";
 
 import AppWithAction from "../../build/AppWithAction.json";
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
@@ -51,7 +51,7 @@ function encodeAction(action: SolidityValueType) {
 }
 
 describe("ChallengeRegistry Challenge", () => {
-  let provider: Web3Provider;
+  let provider = buidler.provider;
   let wallet: Wallet;
 
   let appRegistry: Contract;
@@ -63,20 +63,25 @@ describe("ChallengeRegistry Challenge", () => {
   let respondToChallenge: (state: any, action: any, actionSig: any) => Promise<any>;
 
   before(async () => {
-    provider = createMockProvider();
-    wallet = getWallets(provider)[0];
+    wallet = (await provider.getWallets())[0];
 
-    appRegistry = await deployContract(wallet, ChallengeRegistry, [], {
+    appRegistry = await waffle.deployContract(wallet, ChallengeRegistry, [], {
       gasLimit: 6000000, // override default of 4 million
     });
 
-    appDefinition = await deployContract(wallet, AppWithAction);
+    appDefinition = await waffle.deployContract(wallet, AppWithAction);
   });
 
   beforeEach(async () => {
-    const appInstance = new AppIdentityTestClass([ALICE.address, BOB.address], appDefinition.address, 10, 123456);
+    const appInstance = new AppIdentityTestClass(
+      [ALICE.address, BOB.address],
+      appDefinition.address,
+      10,
+      123456,
+    );
 
-    latestState = async () => (await appRegistry.functions.getAppChallenge(appInstance.identityHash)).appStateHash;
+    latestState = async () =>
+      (await appRegistry.functions.getAppChallenge(appInstance.identityHash)).appStateHash;
 
     latestVersionNumber = async () =>
       (await appRegistry.functions.getAppChallenge(appInstance.identityHash)).versionNumber;

@@ -26,19 +26,21 @@ import {
 
 const { withdrawalKey } = utils;
 
-const createAndFundChannel = async (
-  messagingConfig: Partial<ClientTestMessagingInputOpts> = {},
-  amount: BigNumber = ETH_AMOUNT_SM,
-  assetId: string = AddressZero,
-): Promise<IConnextClient> => {
-  // make sure the tokenAddress is set
-  const client = await createClientWithMessagingLimits(messagingConfig);
-  await fundChannel(client, amount, assetId);
-  return client;
-};
-
 describe("Withdraw offline tests", () => {
   let clock: any;
+  let client: IConnextClient;
+
+  const createAndFundChannel = async (
+    messagingConfig: Partial<ClientTestMessagingInputOpts> = {},
+    amount: BigNumber = ETH_AMOUNT_SM,
+    assetId: string = AddressZero,
+  ): Promise<IConnextClient> => {
+    // make sure the tokenAddress is set
+    client = await createClientWithMessagingLimits(messagingConfig);
+    await fundChannel(client, amount, assetId);
+    return client;
+  };
+
   beforeEach(async () => {
     // create the clock
     clock = lolex.install({
@@ -50,10 +52,11 @@ describe("Withdraw offline tests", () => {
 
   afterEach(async () => {
     clock && clock.reset && clock.reset();
+    await client.messaging.disconnect();
   });
 
   it("client proposes withdrawal but doesn't receive a response from node", async () => {
-    const client = await createAndFundChannel({
+    await createAndFundChannel({
       ceiling: { received: 0 },
       protocol: "withdraw",
     });
@@ -64,13 +67,13 @@ describe("Withdraw offline tests", () => {
       }
     });
 
-    await expect(withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero)).to.be.rejectedWith(
-      `timed out after 90s waiting for counterparty reply in withdraw`,
-    );
+    await expect(
+      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
+    ).to.be.rejectedWith(`timed out after 90s waiting for counterparty reply in withdraw`);
   });
 
   it("client proposes withdrawal and then goes offline before node responds", async () => {
-    const client = await createAndFundChannel({
+    await createAndFundChannel({
       ceiling: { sent: 1 },
       protocol: "withdraw",
     });
@@ -85,22 +88,22 @@ describe("Withdraw offline tests", () => {
       }
     });
 
-    await expect(withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero)).to.be.rejectedWith(
-      `timed out after 90s waiting for counterparty reply in withdraw`,
-    );
+    await expect(
+      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
+    ).to.be.rejectedWith(`timed out after 90s waiting for counterparty reply in withdraw`);
   });
 
   it("client proposes a node submitted withdrawal but node is offline for one message (commitment should be written to store and retried)", async () => {
-    const client = await createAndFundChannel({
+    await createAndFundChannel({
       forbiddenSubjects: ["channel.withdraw"],
     });
 
     (client.messaging as TestMessagingService).on(SUBJECT_FORBIDDEN, () => {
       clock.tick(89_000);
     });
-    await expect(withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero)).to.be.rejectedWith(
-      FORBIDDEN_SUBJECT_ERROR,
-    );
+    await expect(
+      withdrawFromChannel(client, ZERO_ZERO_ZERO_FIVE_ETH, AddressZero),
+    ).to.be.rejectedWith(FORBIDDEN_SUBJECT_ERROR);
 
     // make sure withdrawal is in the store
     const { tx, retry } = await client.store.get(withdrawalKey(client.publicIdentifier));

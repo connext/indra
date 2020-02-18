@@ -17,7 +17,12 @@ import {
   UpdateProtocolParams,
   WithdrawProtocolParams,
 } from "../types";
-import { sortAddresses, xkeyKthAddress, xkeysToSortedKthAddresses, xkeysToSortedKthSigningKeys } from "./xkeys";
+import {
+  sortAddresses,
+  xkeyKthAddress,
+  xkeysToSortedKthAddresses,
+  xkeysToSortedKthSigningKeys,
+} from "./xkeys";
 
 export {
   appIdentityToHash,

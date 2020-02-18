@@ -1,4 +1,8 @@
-import { WITHDRAWAL_STARTED_EVENT, WITHDRAWAL_FAILED_EVENT, WITHDRAWAL_CONFIRMED_EVENT } from "@connext/types";
+import {
+  WITHDRAWAL_STARTED_EVENT,
+  WITHDRAWAL_FAILED_EVENT,
+  WITHDRAWAL_CONFIRMED_EVENT,
+} from "@connext/types";
 import { TransactionResponse } from "ethers/providers";
 import { jsonRpcMethod } from "rpc-server";
 
@@ -33,7 +37,9 @@ export default class WithdrawController extends NodeController {
 
     const tokenAddress = params.tokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
 
-    if (stateChannel.hasBalanceRefundAppInstance(networkContext.CoinBalanceRefundApp, tokenAddress)) {
+    if (
+      stateChannel.hasBalanceRefundAppInstance(networkContext.CoinBalanceRefundApp, tokenAddress)
+    ) {
       throw Error(CANNOT_WITHDRAW);
     }
 
@@ -47,7 +53,10 @@ export default class WithdrawController extends NodeController {
     return [params.multisigAddress];
   }
 
-  protected async beforeExecution(requestHandler: RequestHandler, params: CFCoreTypes.WithdrawParams): Promise<void> {
+  protected async beforeExecution(
+    requestHandler: RequestHandler,
+    params: CFCoreTypes.WithdrawParams,
+  ): Promise<void> {
     const { store, provider } = requestHandler;
     const { multisigAddress } = params;
 
@@ -76,7 +85,14 @@ export default class WithdrawController extends NodeController {
     requestHandler: RequestHandler,
     params: CFCoreTypes.WithdrawParams,
   ): Promise<CFCoreTypes.WithdrawResult> {
-    const { store, provider, wallet, publicIdentifier, blocksNeededForConfirmation, outgoing } = requestHandler;
+    const {
+      store,
+      provider,
+      wallet,
+      publicIdentifier,
+      blocksNeededForConfirmation,
+      outgoing,
+    } = requestHandler;
 
     const { multisigAddress, recipient } = params;
 
@@ -118,7 +134,10 @@ export default class WithdrawController extends NodeController {
         },
       });
 
-      const txReceipt = await provider.waitForTransaction(txResponse.hash as string, blocksNeededForConfirmation);
+      const txReceipt = await provider.waitForTransaction(
+        txResponse.hash as string,
+        blocksNeededForConfirmation,
+      );
 
       outgoing.emit(WITHDRAWAL_CONFIRMED_EVENT, {
         from: publicIdentifier,

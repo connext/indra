@@ -1,33 +1,35 @@
-const path = require('path');
-const nodeExternals = require('webpack-node-externals');
+const path = require("path");
+const nodeExternals = require("webpack-node-externals");
 
 const mode = process.env.MODE === "release" ? "release" : "staging";
-const whitelist = mode === "release" ? '' : /@connext\/.*/;
+const whitelist = mode === "release" ? "" : /@connext\/.*/;
 
 console.log(`Building ${mode}-mode bundle`);
 
 module.exports = {
   mode: "development",
-  target: 'node',
-  externals: [nodeExternals({
-    modulesDir: path.resolve(__dirname, '../../../node_modules'),
-    whitelist,
-  })],
+  target: "node",
+  externals: [
+    nodeExternals({
+      modulesDir: path.resolve(__dirname, "../../../node_modules"),
+      whitelist,
+    }),
+  ],
 
   resolve: {
-    extensions: ['.js', '.ts', '.json'],
-    symlinks: false
+    extensions: [".js", ".ts", ".json"],
+    symlinks: false,
   },
 
   entry: {
-    tests: path.join(__dirname, '../src/index.ts'),
-    setup: path.join(__dirname, '../src/setup.ts'),
-    flamegraph: path.join(__dirname, '../src/benchmarking/flamegraph.ts'),
-    flamegraphPrep: path.join(__dirname, '../src/benchmarking/flamegraphPrep.ts')
+    tests: path.join(__dirname, "../src/index.ts"),
+    setup: path.join(__dirname, "../src/setup.ts"),
+    flamegraph: path.join(__dirname, "../src/benchmarking/flamegraph.ts"),
+    flamegraphPrep: path.join(__dirname, "../src/benchmarking/flamegraphPrep.ts"),
   },
 
   output: {
-    path: path.join(__dirname, '../dist'),
+    path: path.join(__dirname, "../dist"),
     filename: `[name].bundle.js`,
   },
 
@@ -37,9 +39,9 @@ module.exports = {
         test: /\.js$/,
         exclude: /node_modules/,
         use: {
-          loader: 'babel-loader',
+          loader: "babel-loader",
           options: {
-            presets: ['@babel/env'],
+            presets: ["@babel/env"],
           },
         },
       },
@@ -47,9 +49,9 @@ module.exports = {
         test: /\.ts$/,
         exclude: /node_modules/,
         use: {
-          loader: 'ts-loader',
+          loader: "ts-loader",
           options: {
-            configFile: path.join(__dirname, '../tsconfig.json')
+            configFile: path.join(__dirname, "../tsconfig.json"),
           },
         },
       },

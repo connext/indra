@@ -30,7 +30,10 @@ export default class UninstallController extends NodeController {
     return [sc.multisigAddress, appInstanceId];
   }
 
-  protected async beforeExecution(requestHandler: RequestHandler, params: CFCoreTypes.UninstallParams) {
+  protected async beforeExecution(
+    requestHandler: RequestHandler,
+    params: CFCoreTypes.UninstallParams,
+  ) {
     const { store, networkContext } = requestHandler;
     const { appInstanceId } = params;
 
@@ -68,9 +71,18 @@ export default class UninstallController extends NodeController {
       throw Error(APP_ALREADY_UNINSTALLED(appInstanceId));
     }
 
-    const to = getFirstElementInListNotEqualTo(publicIdentifier, stateChannel.userNeuteredExtendedKeys);
+    const to = getFirstElementInListNotEqualTo(
+      publicIdentifier,
+      stateChannel.userNeuteredExtendedKeys,
+    );
 
-    await uninstallAppInstanceFromChannel(store, protocolRunner, publicIdentifier, to, appInstanceId);
+    await uninstallAppInstanceFromChannel(
+      store,
+      protocolRunner,
+      publicIdentifier,
+      to,
+      appInstanceId,
+    );
 
     return { appInstanceId };
   }

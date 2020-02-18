@@ -37,9 +37,17 @@ export const deployTestArtifactsToChain = async (wallet: Wallet): Promise<any> =
     wallet,
   ).deploy();
 
-  const dolphinCoin = await new ContractFactory(DolphinCoin.abi, DolphinCoin.evm.bytecode, wallet).deploy();
+  const dolphinCoin = await new ContractFactory(
+    DolphinCoin.abi,
+    DolphinCoin.evm.bytecode,
+    wallet,
+  ).deploy();
 
-  const identityApp = await new ContractFactory(IdentityApp.abi, IdentityApp.evm.bytecode, wallet).deploy();
+  const identityApp = await new ContractFactory(
+    IdentityApp.abi,
+    IdentityApp.evm.bytecode,
+    wallet,
+  ).deploy();
 
   const mvmContract = await new ContractFactory(
     MinimumViableMultisig.abi,
@@ -47,7 +55,11 @@ export const deployTestArtifactsToChain = async (wallet: Wallet): Promise<any> =
     wallet,
   ).deploy();
 
-  const proxyFactoryContract = await new ContractFactory(ProxyFactory.abi, ProxyFactory.evm.bytecode, wallet).deploy();
+  const proxyFactoryContract = await new ContractFactory(
+    ProxyFactory.abi,
+    ProxyFactory.evm.bytecode,
+    wallet,
+  ).deploy();
 
   const coinTransferETHInterpreter = await new ContractFactory(
     MultiAssetMultiPartyCoinTransferInterpreter.abi,
@@ -79,7 +91,11 @@ export const deployTestArtifactsToChain = async (wallet: Wallet): Promise<any> =
     wallet,
   ).deploy();
 
-  const tttContract = await new ContractFactory(TicTacToeApp.abi, TicTacToeApp.evm.bytecode, wallet).deploy();
+  const tttContract = await new ContractFactory(
+    TicTacToeApp.abi,
+    TicTacToeApp.evm.bytecode,
+    wallet,
+  ).deploy();
 
   const transferContract = await new ContractFactory(
     UnidirectionalTransferApp.abi,
@@ -124,7 +140,8 @@ export const deployTestArtifactsToChain = async (wallet: Wallet): Promise<any> =
     SingleAssetTwoPartyCoinTransferInterpreter: singleAssetTwoPartyCoinTransferInterpreter.address,
     TicTacToeApp: tttContract.address,
     TimeLockedPassThrough: timeLockedPassThrough.address,
-    TwoPartyFixedOutcomeFromVirtualAppInterpreter: twoPartyFixedOutcomeFromVirtualAppETHInterpreter.address,
+    TwoPartyFixedOutcomeFromVirtualAppInterpreter:
+      twoPartyFixedOutcomeFromVirtualAppETHInterpreter.address,
     TwoPartyFixedOutcomeInterpreter: twoPartyFixedOutcomeInterpreter.address,
     UnidirectionalLinkedTransferApp: linkContract.address,
     UnidirectionalTransferApp: transferContract.address,

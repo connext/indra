@@ -5,7 +5,11 @@ import { CFCoreTypes } from "./types";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 
 class QueueWithLockingServiceConnection extends Queue {
-  constructor(private readonly lockName, private readonly lockingService: CFCoreTypes.ILockService, ...args: any[]) {
+  constructor(
+    private readonly lockName,
+    private readonly lockingService: CFCoreTypes.ILockService,
+    ...args: any[]
+  ) {
     super(...args);
   }
 
@@ -13,7 +17,9 @@ class QueueWithLockingServiceConnection extends Queue {
   // for worst case messaging scenario in virtual install
   // protocol (3 IO_SEND_AND_WAITs each with a 30s timer)
   async add(task: Task<any>) {
-    return super.add(() => this.lockingService.acquireLock(this.lockName, task, IO_SEND_AND_WAIT_TIMEOUT * 3));
+    return super.add(() =>
+      this.lockingService.acquireLock(this.lockName, task, IO_SEND_AND_WAIT_TIMEOUT * 3),
+    );
   }
 }
 

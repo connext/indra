@@ -59,7 +59,9 @@ function verifyPayload(payload) {
   const { params, id, method } = payload;
 
   if (!params || typeof params !== "object") {
-    throw new Error(`WalletConnect Error - invalid payload params. Payload: ${prettyPrint(payload)}`);
+    throw new Error(
+      `WalletConnect Error - invalid payload params. Payload: ${prettyPrint(payload)}`,
+    );
   }
 
   if (!id || typeof id !== "number") {
@@ -67,7 +69,9 @@ function verifyPayload(payload) {
   }
 
   if (!method || typeof method !== "string") {
-    throw new Error(`WalletConnect Error - invalid payload method. Payload: ${prettyPrint(payload)}`);
+    throw new Error(
+      `WalletConnect Error - invalid payload method. Payload: ${prettyPrint(payload)}`,
+    );
   }
 
   return;

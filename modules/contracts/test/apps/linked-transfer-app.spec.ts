@@ -1,10 +1,10 @@
+/* global before */
 import { Address, SolidityValueType } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
-import { before } from "mocha";
 
 import UnidirectionalLinkedTransferApp from "../../build/UnidirectionalLinkedTransferApp.json";
 
@@ -126,16 +126,22 @@ function assertRedeemed(
 describe("LinkedUnidirectionalTransferApp", () => {
   let unidirectionalLinkedTransferApp: Contract;
 
-  const applyAction = (state: SolidityABIEncoderV2Type, action: SolidityABIEncoderV2Type): any =>
-    unidirectionalLinkedTransferApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
+  const applyAction = (state: any, action: any): any =>
+    unidirectionalLinkedTransferApp.functions.applyAction(
+      encodeAppState(state),
+      encodeAppAction(action),
+    );
 
-  const computeOutcome = (state: SolidityABIEncoderV2Type): any =>
+  const computeOutcome = (state: any): any =>
     unidirectionalLinkedTransferApp.functions.computeOutcome(encodeAppState(state));
 
   before(async () => {
     const provider = waffle.createMockProvider();
     const wallet = await waffle.getWallets(provider)[0];
-    unidirectionalLinkedTransferApp = await waffle.deployContract(wallet, UnidirectionalLinkedTransferApp);
+    unidirectionalLinkedTransferApp = await waffle.deployContract(
+      wallet,
+      UnidirectionalLinkedTransferApp,
+    );
   });
 
   it("can redeem a payment with correct hash", async () => {

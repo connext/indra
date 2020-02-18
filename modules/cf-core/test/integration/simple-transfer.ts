@@ -14,7 +14,11 @@ export const simpleTransferAbiEncodings: AppABIEncodings = {
   actionEncoding: "",
 };
 
-export function initialSimpleTransferState(senderAddr: string, receiverAddr: string, amount: BigNumberish = 1) {
+export function initialSimpleTransferState(
+  senderAddr: string,
+  receiverAddr: string,
+  amount: BigNumberish = 1,
+) {
   return {
     coinTransfers: [
       {

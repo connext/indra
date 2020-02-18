@@ -3,7 +3,11 @@ import { EntityRepository, Repository, Between } from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
 
-import { OnchainTransaction, TransactionReason, AnonymizedOnchainTransaction } from "./onchainTransaction.entity";
+import {
+  OnchainTransaction,
+  TransactionReason,
+  AnonymizedOnchainTransaction,
+} from "./onchainTransaction.entity";
 
 @EntityRepository(OnchainTransaction)
 export class OnchainTransactionRepository extends Repository<OnchainTransaction> {
@@ -13,7 +17,9 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
     });
   }
 
-  async findByUserPublicIdentifier(userPublicIdentifier: string): Promise<OnchainTransaction[] | undefined> {
+  async findByUserPublicIdentifier(
+    userPublicIdentifier: string,
+  ): Promise<OnchainTransaction[] | undefined> {
     const txs = await this.createQueryBuilder("onchainTransaction")
       .leftJoinAndSelect("onchainTransaction.channel", "channel")
       .where("channel.userPublicIdentifier = :userPublicIdentifier", { userPublicIdentifier })
@@ -93,7 +99,9 @@ export class OnchainTransactionRepository extends Repository<OnchainTransaction>
 }
 
 @EntityRepository(AnonymizedOnchainTransaction)
-export class AnonymizedOnchainTransactionRepository extends Repository<AnonymizedOnchainTransaction> {
+export class AnonymizedOnchainTransactionRepository extends Repository<
+  AnonymizedOnchainTransaction
+> {
   async findInTimeRange(start: number, end: number): Promise<AnonymizedOnchainTransaction[]> {
     return await this.find({
       order: { createdAt: "DESC" },

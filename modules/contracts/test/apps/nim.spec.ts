@@ -1,9 +1,9 @@
+/* global before */
 import { SolidityValueType } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
-import { before } from "mocha";
 
 import NimApp from "../../build/NimApp.json";
 
@@ -17,7 +17,10 @@ type NimAppState = {
 };
 
 function decodeBytesToAppState(encodedAppState: string): NimAppState {
-  return defaultAbiCoder.decode(["tuple(uint256 versionNumber, uint256[3] pileHeights)"], encodedAppState)[0];
+  return defaultAbiCoder.decode(
+    ["tuple(uint256 versionNumber, uint256[3] pileHeights)"],
+    encodedAppState,
+  )[0];
 }
 
 describe("Nim", () => {

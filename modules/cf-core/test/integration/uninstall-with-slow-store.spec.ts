@@ -4,7 +4,12 @@ import { timeout } from "../../src/utils";
 import { NetworkContextForTestSuite } from "../contracts";
 
 import { SetupContext, setupWithMemoryMessagingAndSlowStore } from "./setup";
-import { constructUninstallRpc, createChannel, getInstalledAppInstances, installApp } from "./utils";
+import {
+  constructUninstallRpc,
+  createChannel,
+  getInstalledAppInstances,
+  installApp,
+} from "./utils";
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 

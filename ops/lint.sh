@@ -3,9 +3,7 @@ set -e
 
 cwd="`pwd`"
 
-packages="cf-core,channel-provider,client,contracts,daicard,dashboard,messaging,node,payment-bot,store,test-runner,types"
-
-for package in `echo $packages | tr ',' ' '`
+for package in `ls modules`
 do
   echo "Linting ${package}"
   cd "${cwd}/modules/${package}"

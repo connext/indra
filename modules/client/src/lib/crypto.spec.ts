@@ -1,9 +1,8 @@
 import { CF_PATH } from "@connext/types";
+import { decryptWithPrivateKey, encryptWithPublicKey } from "@connext/crypto";
 import * as EthCrypto from "eth-crypto";
 import { Wallet } from "ethers";
 import { computePublicKey } from "ethers/utils";
-
-import { decryptWithPrivateKey, encryptWithPublicKey } from "./crypto";
 
 const prvKey = Wallet.createRandom().privateKey;
 const pubKey = computePublicKey(prvKey).replace(/^0x/, "");

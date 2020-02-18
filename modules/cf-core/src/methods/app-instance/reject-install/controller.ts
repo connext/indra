@@ -39,7 +39,8 @@ export default class RejectInstallController extends NodeController {
     };
 
     const { proposedByIdentifier, proposedToIdentifier } = appInstanceProposal;
-    const counterparty = publicIdentifier === proposedByIdentifier ? proposedToIdentifier : proposedByIdentifier;
+    const counterparty =
+      publicIdentifier === proposedByIdentifier ? proposedToIdentifier : proposedByIdentifier;
 
     await messagingService.send(counterparty, rejectProposalMsg);
 

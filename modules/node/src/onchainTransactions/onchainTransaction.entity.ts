@@ -1,5 +1,13 @@
 import { BigNumber } from "ethers/utils";
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, ViewEntity, ViewColumn, CreateDateColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  ViewEntity,
+  ViewColumn,
+  CreateDateColumn,
+} from "typeorm";
 
 import { Channel } from "../channel/channel.entity";
 

@@ -133,18 +133,30 @@ const StatsTransfers = props => {
       </SectionWrapper>
       <SectionWrapper>
         <HeaderTypography>Past Day</HeaderTypography>
-        <StatTypography>{transferDateWindows ? transferDateWindows.pastDayTotal : 0} total transfers</StatTypography>
-        <StatTypography>${transferDateWindows ? transferDateWindows.averageTransferDay : 0} average</StatTypography>
+        <StatTypography>
+          {transferDateWindows ? transferDateWindows.pastDayTotal : 0} total transfers
+        </StatTypography>
+        <StatTypography>
+          ${transferDateWindows ? transferDateWindows.averageTransferDay : 0} average
+        </StatTypography>
       </SectionWrapper>
       <SectionWrapper>
         <HeaderTypography>Past Week</HeaderTypography>
-        <StatTypography>${transferDateWindows ? transferDateWindows.pastWeekTotal : 0} total transfers</StatTypography>
-        <StatTypography>${transferDateWindows ? transferDateWindows.averageTransferWeek : 0} average</StatTypography>
+        <StatTypography>
+          ${transferDateWindows ? transferDateWindows.pastWeekTotal : 0} total transfers
+        </StatTypography>
+        <StatTypography>
+          ${transferDateWindows ? transferDateWindows.averageTransferWeek : 0} average
+        </StatTypography>
       </SectionWrapper>
       <SectionWrapper>
         <HeaderTypography>Past Month</HeaderTypography>
-        <StatTypography>{transferDateWindows ? transferDateWindows.pastMonthTotal : 0} total transfers</StatTypography>
-        <StatTypography>${transferDateWindows ? transferDateWindows.averageTransferMonth : 0} average</StatTypography>
+        <StatTypography>
+          {transferDateWindows ? transferDateWindows.pastMonthTotal : 0} total transfers
+        </StatTypography>
+        <StatTypography>
+          ${transferDateWindows ? transferDateWindows.averageTransferMonth : 0} average
+        </StatTypography>
       </SectionWrapper>
     </TopGrid>
   );

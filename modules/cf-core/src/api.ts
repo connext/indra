@@ -87,7 +87,8 @@ export const methodNameToImplementation = controllers.reduce((acc, controller) =
   return acc;
 }, {});
 
-export const createRpcRouter = (requestHandler: RequestHandler) => new RpcRouter({ controllers, requestHandler });
+export const createRpcRouter = (requestHandler: RequestHandler) =>
+  new RpcRouter({ controllers, requestHandler });
 
 export const eventNameToImplementation = {
   [PROTOCOL_MESSAGE_EVENT]: handleReceivedProtocolMessage,

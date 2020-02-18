@@ -12,14 +12,23 @@ import {
   SimpleSwapAppStateBigNumber,
   SwapParameters,
 } from "../types";
-import { invalidAddress, notGreaterThan, notLessThanOrEqualTo, notPositive, validate } from "../validation";
+import {
+  invalidAddress,
+  notGreaterThan,
+  notLessThanOrEqualTo,
+  notPositive,
+  validate,
+} from "../validation";
 
 import { AbstractController } from "./AbstractController";
 
 export class SwapController extends AbstractController {
   public async swap(params: SwapParameters): Promise<CFCoreChannel> {
     // convert params + validate
-    const { amount, toAssetId, fromAssetId, swapRate } = convert.SwapParameters("bignumber", params);
+    const { amount, toAssetId, fromAssetId, swapRate } = convert.SwapParameters(
+      "bignumber",
+      params,
+    );
     const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
     const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
     const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
@@ -43,7 +52,10 @@ export class SwapController extends AbstractController {
     // if app installed, that means swap was accepted now uninstall
     try {
       await Promise.race([
-        delayAndThrow(CF_METHOD_TIMEOUT, `App uninstall took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`),
+        delayAndThrow(
+          CF_METHOD_TIMEOUT,
+          `App uninstall took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
+        ),
         this.connext.uninstallApp(appId),
       ]);
     } catch (e) {
@@ -60,7 +72,9 @@ export class SwapController extends AbstractController {
       postSwapFromBal[this.connext.freeBalanceAddress],
     );
     // balance increases
-    const diffTo = postSwapToBal[this.connext.freeBalanceAddress].sub(preSwapToBal[this.connext.freeBalanceAddress]);
+    const diffTo = postSwapToBal[this.connext.freeBalanceAddress].sub(
+      preSwapToBal[this.connext.freeBalanceAddress],
+    );
     if (!diffFrom.eq(amount) || !diffTo.eq(swappedAmount)) {
       throw new Error("Invalid final swap amounts - this shouldn't happen!!");
     }

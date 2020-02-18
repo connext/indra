@@ -9,7 +9,10 @@ export class WsMessagingService implements IMessagingService {
   private log: Logger;
   private subscriptions: { [key: string]: number } = {};
 
-  constructor(private readonly config: MessagingConfig, private readonly messagingServiceKey: string) {
+  constructor(
+    private readonly config: MessagingConfig,
+    private readonly messagingServiceKey: string,
+  ) {
     this.log = new Logger(`WsMessagingService`, config.logLevel);
     this.log.debug(`Created with config: ${JSON.stringify(config, null, 2)}`);
   }
@@ -32,13 +35,19 @@ export class WsMessagingService implements IMessagingService {
   ////////////////////////////////////////
   // CFCoreTypes.IMessagingService Methods
 
-  async onReceive(subject: string, callback: (msg: CFCoreTypes.NodeMessage) => void): Promise<void> {
+  async onReceive(
+    subject: string,
+    callback: (msg: CFCoreTypes.NodeMessage) => void,
+  ): Promise<void> {
     this.assertConnected();
-    this.subscriptions[subject] = this.connection.subscribe(this.prependKey(`${subject}.>`), (msg: any): void => {
-      const data = typeof msg === `string` ? JSON.parse(msg) : msg;
-      this.log.debug(`Received message for ${subject}: ${JSON.stringify(data)}`);
-      callback(data as CFCoreTypes.NodeMessage);
-    });
+    this.subscriptions[subject] = this.connection.subscribe(
+      this.prependKey(`${subject}.>`),
+      (msg: any): void => {
+        const data = typeof msg === `string` ? JSON.parse(msg) : msg;
+        this.log.debug(`Received message for ${subject}: ${JSON.stringify(data)}`);
+        callback(data as CFCoreTypes.NodeMessage);
+      },
+    );
   }
 
   async send(to: string, msg: CFCoreTypes.NodeMessage): Promise<void> {
@@ -60,14 +69,22 @@ export class WsMessagingService implements IMessagingService {
     this.assertConnected();
     this.log.debug(`Requesting ${subject} with data: ${JSON.stringify(data)}`);
     return new Promise((resolve: any, reject: any): any => {
-      this.connection.request(subject, JSON.stringify(data), { max: 1, timeout }, (response: any): any => {
-        this.log.debug(`Request for ${subject} returned: ${response}`);
-        resolve({ data: JSON.parse(response) });
-      });
+      this.connection.request(
+        subject,
+        JSON.stringify(data),
+        { max: 1, timeout },
+        (response: any): any => {
+          this.log.debug(`Request for ${subject} returned: ${response}`);
+          resolve({ data: JSON.parse(response) });
+        },
+      );
     });
   }
 
-  async subscribe(subject: string, callback: (msg: CFCoreTypes.NodeMessage) => void): Promise<void> {
+  async subscribe(
+    subject: string,
+    callback: (msg: CFCoreTypes.NodeMessage) => void,
+  ): Promise<void> {
     this.assertConnected();
     this.subscriptions[subject] = this.connection.subscribe(subject, (msg: any): void => {
       const data = typeof msg === `string` ? JSON.parse(msg) : msg;

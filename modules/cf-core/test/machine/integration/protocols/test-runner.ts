@@ -40,7 +40,11 @@ export class TestRunner {
     this.provider = provider;
     const network = global["networkContext"];
 
-    this.identityApp = await new ContractFactory(IdentityApp.abi, IdentityApp.evm.bytecode, wallet).deploy();
+    this.identityApp = await new ContractFactory(
+      IdentityApp.abi,
+      IdentityApp.evm.bytecode,
+      wallet,
+    ).deploy();
 
     this.mininodeA = new MiniNode(network, provider);
     this.mininodeB = new MiniNode(network, provider);
@@ -181,23 +185,27 @@ export class TestRunner {
       ],
     }[outcomeType];
 
-    await this.mininodeA.protocolRunner.initiateProtocol(Protocol.InstallVirtualApp, this.mininodeA.scm, {
-      outcomeType,
-      tokenAddress,
-      initialState,
-      initiatorXpub: this.mininodeA.xpub,
-      intermediaryXpub: this.mininodeB.xpub,
-      responderXpub: this.mininodeC.xpub,
-      initiatorBalanceDecrement: One,
-      responderBalanceDecrement: One,
-      appSeqNo: 1,
-      appInterface: {
-        stateEncoding,
-        addr: this.identityApp.address,
-        actionEncoding: undefined,
+    await this.mininodeA.protocolRunner.initiateProtocol(
+      Protocol.InstallVirtualApp,
+      this.mininodeA.scm,
+      {
+        outcomeType,
+        tokenAddress,
+        initialState,
+        initiatorXpub: this.mininodeA.xpub,
+        intermediaryXpub: this.mininodeB.xpub,
+        responderXpub: this.mininodeC.xpub,
+        initiatorBalanceDecrement: One,
+        responderBalanceDecrement: One,
+        appSeqNo: 1,
+        appInterface: {
+          stateEncoding,
+          addr: this.identityApp.address,
+          actionEncoding: undefined,
+        },
+        defaultTimeout: 40,
       },
-      defaultTimeout: 40,
-    });
+    );
   }
 
   async installEqualDeposits(outcomeType: OutcomeType, tokenAddress: string) {
@@ -260,7 +268,11 @@ export class TestRunner {
     });
   }
 
-  async installSplitDeposits(outcomeType: OutcomeType, tokenAddressA: string, tokenAddressB: string) {
+  async installSplitDeposits(
+    outcomeType: OutcomeType,
+    tokenAddressA: string,
+    tokenAddressB: string,
+  ) {
     const stateEncoding = {
       [OutcomeType.TWO_PARTY_FIXED_OUTCOME]: "uint8",
       [OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER]: "tuple(address to, uint256 amount)[2]",
@@ -327,14 +339,21 @@ export class TestRunner {
     }
     const [virtualAppInstance] = [...multisig.appInstances.values()];
 
-    await this.mininodeA.protocolRunner.initiateProtocol(Protocol.UninstallVirtualApp, this.mininodeA.scm, {
-      // todo(xuanji): this should be computed by the protocol
-      targetOutcome: await virtualAppInstance.computeOutcome(virtualAppInstance.latestState, this.provider),
-      initiatorXpub: this.mininodeA.xpub,
-      intermediaryXpub: this.mininodeB.xpub,
-      responderXpub: this.mininodeC.xpub,
-      targetAppIdentityHash: virtualAppInstance.identityHash,
-    });
+    await this.mininodeA.protocolRunner.initiateProtocol(
+      Protocol.UninstallVirtualApp,
+      this.mininodeA.scm,
+      {
+        // todo(xuanji): this should be computed by the protocol
+        targetOutcome: await virtualAppInstance.computeOutcome(
+          virtualAppInstance.latestState,
+          this.provider,
+        ),
+        initiatorXpub: this.mininodeA.xpub,
+        intermediaryXpub: this.mininodeB.xpub,
+        responderXpub: this.mininodeC.xpub,
+        targetAppIdentityHash: virtualAppInstance.identityHash,
+      },
+    );
 
     await this.mr.waitForAllPendingPromises();
   }

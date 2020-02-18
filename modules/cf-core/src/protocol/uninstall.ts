@@ -58,13 +58,19 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     assertIsValidSignature(responderAddress, uninstallCommitment, responderSignature);
 
-    const finalCommitment = uninstallCommitment.getSignedTransaction([signature, responderSignature]);
+    const finalCommitment = uninstallCommitment.getSignedTransaction([
+      signature,
+      responderSignature,
+    ]);
 
     yield [WRITE_COMMITMENT, protocol, finalCommitment, appIdentityHash];
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
-    context.stateChannelsMap.set(postProtocolStateChannel.multisigAddress, postProtocolStateChannel);
+    context.stateChannelsMap.set(
+      postProtocolStateChannel.multisigAddress,
+      postProtocolStateChannel,
+    );
   },
 
   1 /* Responding */: async function*(context: Context) {
@@ -94,7 +100,10 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const responderSignature = yield [OP_SIGN, uninstallCommitment];
 
-    const finalCommitment = uninstallCommitment.getSignedTransaction([responderSignature, initiatorSignature]);
+    const finalCommitment = uninstallCommitment.getSignedTransaction([
+      responderSignature,
+      initiatorSignature,
+    ]);
 
     yield [WRITE_COMMITMENT, protocol, finalCommitment, appIdentityHash];
 
@@ -113,7 +122,10 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessage,
     ];
 
-    context.stateChannelsMap.set(postProtocolStateChannel.multisigAddress, postProtocolStateChannel);
+    context.stateChannelsMap.set(
+      postProtocolStateChannel.multisigAddress,
+      postProtocolStateChannel,
+    );
   },
 };
 

@@ -45,7 +45,12 @@ export default class WithdrawCommitmentController extends NodeController {
       throw Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
     }
 
-    if (channel.hasBalanceRefundAppInstance(networkContext.CoinBalanceRefundApp, tokenAddress || AddressZero)) {
+    if (
+      channel.hasBalanceRefundAppInstance(
+        networkContext.CoinBalanceRefundApp,
+        tokenAddress || AddressZero,
+      )
+    ) {
       throw Error(CANNOT_WITHDRAW);
     }
 

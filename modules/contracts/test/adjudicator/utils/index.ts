@@ -29,7 +29,12 @@ export const computeAppChallengeHash = (
   );
 
 // TS version of MChallengeRegistryCore::computeActionHash
-export const computeActionHash = (turnTaker: string, previousState: string, action: string, versionNumber: number) =>
+export const computeActionHash = (
+  turnTaker: string,
+  previousState: string,
+  action: string,
+  versionNumber: number,
+) =>
   keccak256(
     solidityPack(
       ["bytes1", "address", "bytes", "bytes", "uint256"],
@@ -39,7 +44,9 @@ export const computeActionHash = (turnTaker: string, previousState: string, acti
 
 export class AppIdentityTestClass {
   get identityHash(): string {
-    return keccak256(defaultAbiCoder.encode(["uint256", "address[]"], [this.channelNonce, this.participants]));
+    return keccak256(
+      defaultAbiCoder.encode(["uint256", "address[]"], [this.channelNonce, this.participants]),
+    );
   }
 
   get appIdentity(): AppIdentity {
@@ -76,7 +83,10 @@ export function signaturesToBytes(...signatures: Signature[]): string {
  *
  * @param signatures An array of etherium signatures
  */
-export function sortSignaturesBySignerAddress(digest: string, signatures: Signature[]): Signature[] {
+export function sortSignaturesBySignerAddress(
+  digest: string,
+  signatures: Signature[],
+): Signature[] {
   const ret = signatures.slice();
   ret.sort((sigA, sigB) => {
     const addrA = recoverAddress(digest, signaturesToBytes(sigA));
@@ -92,6 +102,9 @@ export function sortSignaturesBySignerAddress(digest: string, signatures: Signat
  *
  * @param signatures An array of etherium signatures
  */
-export function signaturesToBytesSortedBySignerAddress(digest: string, ...signatures: Signature[]): string {
+export function signaturesToBytesSortedBySignerAddress(
+  digest: string,
+  ...signatures: Signature[]
+): string {
   return signaturesToBytes(...sortSignaturesBySignerAddress(digest, signatures));
 }

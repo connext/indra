@@ -49,18 +49,21 @@ describe("Node method follows spec - rejectInstallVirtual", () => {
           done();
         });
 
-        nodeC.once("PROPOSE_INSTALL_EVENT", async ({ data: { params, appInstanceId } }: ProposeMessage) => {
-          const [proposedAppInstanceC] = await getProposedAppInstances(nodeC);
-          appInstanceId = proposedAppInstanceC.identityHash;
+        nodeC.once(
+          "PROPOSE_INSTALL_EVENT",
+          async ({ data: { params, appInstanceId } }: ProposeMessage) => {
+            const [proposedAppInstanceC] = await getProposedAppInstances(nodeC);
+            appInstanceId = proposedAppInstanceC.identityHash;
 
-          confirmProposedAppInstance(params, proposedAppInstanceC);
+            confirmProposedAppInstance(params, proposedAppInstanceC);
 
-          expect(proposedAppInstanceC.proposedByIdentifier).toEqual(nodeA.publicIdentifier);
+            expect(proposedAppInstanceC.proposedByIdentifier).toEqual(nodeA.publicIdentifier);
 
-          const rejectReq = constructRejectInstallRpc(appInstanceId);
-          await nodeC.rpcRouter.dispatch(rejectReq);
-          expect((await getProposedAppInstances(nodeC)).length).toEqual(0);
-        });
+            const rejectReq = constructRejectInstallRpc(appInstanceId);
+            await nodeC.rpcRouter.dispatch(rejectReq);
+            expect((await getProposedAppInstances(nodeC)).length).toEqual(0);
+          },
+        );
 
         const { params } = await makeVirtualProposeCall(nodeA, nodeC, TicTacToeApp);
 

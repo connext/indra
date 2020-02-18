@@ -10,6 +10,12 @@ export const BigNumber = ethersBN;
 export type ABIEncoding = string;
 export type Address = string;
 
+export interface EthSignature {
+  r: string;
+  s: string;
+  v: string;
+}
+
 // This is copied from the ethers definition of how an ABI is typed.
 export type ContractABI = Array<string | ParamType> | string | Interface;
 

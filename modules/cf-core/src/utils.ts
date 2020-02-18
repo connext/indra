@@ -39,7 +39,9 @@ export const bigNumberifyJson = (json: object) =>
   ) => (val && val["_hex"] ? bigNumberify(val) : val));
 
 export const deBigNumberifyJson = (json: object) =>
-  JSON.parse(JSON.stringify(json), (key, val) => (val && BigNumber.isBigNumber(val) ? val.toHexString() : val));
+  JSON.parse(JSON.stringify(json), (key, val) =>
+    val && BigNumber.isBigNumber(val) ? val.toHexString() : val,
+  );
 /**
  * Converts an array of signatures into a single string
  *
@@ -57,7 +59,10 @@ export function signaturesToBytes(...signatures: Signature[]): string {
  *
  * @param signatures An array of etherium signatures
  */
-export function sortSignaturesBySignerAddress(digest: string, signatures: Signature[]): Signature[] {
+export function sortSignaturesBySignerAddress(
+  digest: string,
+  signatures: Signature[],
+): Signature[] {
   const ret = signatures.slice();
   ret.sort((sigA, sigB) => {
     const addrA = recoverAddress(digest, signaturesToBytes(sigA));
@@ -73,7 +78,10 @@ export function sortSignaturesBySignerAddress(digest: string, signatures: Signat
  *
  * @param signatures An array of etherium signatures
  */
-export function signaturesToBytesSortedBySignerAddress(digest: string, ...signatures: Signature[]): string {
+export function signaturesToBytesSortedBySignerAddress(
+  digest: string,
+  ...signatures: Signature[]
+): string {
   return signaturesToBytes(...sortSignaturesBySignerAddress(digest, signatures));
 }
 
@@ -118,7 +126,9 @@ export const getCreate2MultisigAddress = async (
   const xkeysToSortedKthAddresses = xkeys =>
     xkeys
       .map(xkey =>
-        legacyKeygen === true ? fromExtendedKey(xkey).address : fromExtendedKey(xkey).derivePath("0").address,
+        legacyKeygen === true
+          ? fromExtendedKey(xkey).address
+          : fromExtendedKey(xkey).derivePath("0").address,
       )
       .sort((a, b) => (parseInt(a, 16) < parseInt(b, 16) ? -1 : 1));
 
@@ -135,7 +145,9 @@ export const getCreate2MultisigAddress = async (
           [
             keccak256(
               // see encoding notes
-              new Interface(MinimumViableMultisig.abi).functions.setup.encode([xkeysToSortedKthAddresses(owners)]),
+              new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+                xkeysToSortedKthAddresses(owners),
+              ]),
             ),
             0,
           ],
@@ -238,7 +250,8 @@ export function assertSufficientFundsWithinFreeBalance(
   if (!channel.hasFreeBalance) return;
 
   const freeBalanceForToken =
-    channel.getFreeBalanceClass().getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0)) || Zero;
+    channel.getFreeBalanceClass().getBalance(tokenAddress, xkeyKthAddress(publicIdentifier, 0)) ||
+    Zero;
 
   if (freeBalanceForToken.lt(depositAmount)) {
     throw Error(

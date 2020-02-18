@@ -20,7 +20,11 @@ jest.setTimeout(15000);
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
 // NOTE: no initiator events
-function confirmMessages(initiator: Node, responder: Node, expectedData: CFCoreTypes.UpdateStateEventData) {
+function confirmMessages(
+  initiator: Node,
+  responder: Node,
+  expectedData: CFCoreTypes.UpdateStateEventData,
+) {
   const expected = {
     from: initiator.publicIdentifier,
     type: UPDATE_STATE_EVENT,
@@ -47,11 +51,14 @@ describe("Node method follows spec - takeAction virtual", () => {
   });
 
   describe(
-    "Node A and C install an AppInstance via Node B, Node A takes action, " + "Node C confirms receipt of state update",
+    "Node A and C install an AppInstance via Node B, Node A takes action, " +
+      "Node C confirms receipt of state update",
     () => {
       it("sends takeAction with invalid appInstanceId", async () => {
         const takeActionReq = constructTakeActionRpc("", validAction);
-        await expect(nodeA.rpcRouter.dispatch(takeActionReq)).rejects.toThrowError(NO_APP_INSTANCE_FOR_TAKE_ACTION);
+        await expect(nodeA.rpcRouter.dispatch(takeActionReq)).rejects.toThrowError(
+          NO_APP_INSTANCE_FOR_TAKE_ACTION,
+        );
       });
 
       it("can take action", async done => {

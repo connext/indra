@@ -42,7 +42,9 @@ export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<I
   return client;
 };
 
-export const createRemoteClient = async (channelProvider: IChannelProvider): Promise<IConnextClient> => {
+export const createRemoteClient = async (
+  channelProvider: IChannelProvider,
+): Promise<IConnextClient> => {
   const clientOpts: ClientOptions = {
     channelProvider,
     ethProviderUrl: env.ethProviderUrl,

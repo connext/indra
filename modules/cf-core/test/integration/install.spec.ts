@@ -126,7 +126,8 @@ describe("Node method follows spec - install", () => {
         await transferERC20Tokens(await nodeA.signerAddress());
         await transferERC20Tokens(await nodeB.signerAddress());
 
-        const erc20TokenAddress = (global["networkContext"] as NetworkContextForTestSuite).DolphinCoin;
+        const erc20TokenAddress = (global["networkContext"] as NetworkContextForTestSuite)
+          .DolphinCoin;
 
         await collateralizeChannel(multisigAddress, nodeA, nodeB, One, erc20TokenAddress);
 

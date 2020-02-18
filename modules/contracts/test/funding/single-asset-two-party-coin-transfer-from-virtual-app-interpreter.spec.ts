@@ -1,14 +1,13 @@
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
-import { AddressZero, One, Zero } from "ethers/constants";
-import { Web3Provider } from "ethers/providers";
-import { BigNumber, BigNumberish, defaultAbiCoder, hexlify, randomBytes } from "ethers/utils";
-import { before } from "mocha";
-
-import { expect } from "./utils/index";
-
 import DolphinCoin from "../../build/DolphinCoin.json";
 import SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter from "../../build/SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter.json";
+import { AddressZero, One, Zero } from "ethers/constants";
+import { BigNumber, BigNumberish, defaultAbiCoder, hexlify, randomBytes } from "ethers/utils";
+
+import { expect } from "./utils/index";
 
 type CoinTransfer = {
   to: string;
@@ -51,12 +50,15 @@ const encodeOutcome = (outcome: [CoinTransfer, CoinTransfer]) =>
   );
 
 describe("SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter", () => {
-  let provider: Web3Provider;
+  let provider = buidler.provider;
   let wallet: Wallet;
   let erc20: Contract;
   let coinTransferFromVirtualAppInterpreter: Contract;
 
-  async function interpretOutcomeAndExecuteEffect(outcome: [CoinTransfer, CoinTransfer], params: InterpreterParams) {
+  async function interpretOutcomeAndExecuteEffect(
+    outcome: [CoinTransfer, CoinTransfer],
+    params: InterpreterParams,
+  ) {
     return await coinTransferFromVirtualAppInterpreter.functions.interpretOutcomeAndExecuteEffect(
       encodeOutcome(outcome),
       encodeParams(params),
@@ -64,8 +66,7 @@ describe("SingleAssetTwoPartyCoinTransferFromVirtualAppInterpreter", () => {
   }
 
   before(async () => {
-    provider = waffle.createMockProvider();
-    wallet = waffle.getWallets(provider)[0];
+    wallet = (await provider.getWallets())[0];
     erc20 = await waffle.deployContract(wallet, DolphinCoin);
 
     coinTransferFromVirtualAppInterpreter = await waffle.deployContract(

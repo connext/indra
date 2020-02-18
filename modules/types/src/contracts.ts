@@ -3,6 +3,23 @@ import { BaseProvider, BigNumber } from "./basic";
 ////////////////////////////////////////
 // Generic contract ops & network config
 
+export type AddressBook = {
+  [chainId: string]: {
+    [contractName: string]: {
+      address: string;
+      txHash?: string;
+      creationCodeHash?: string;
+      runtimeCodeHash?: string;
+    };
+  };
+};
+
+export type AddressHistory = {
+  [chainId: string]: {
+    [contractName: string]: string[];
+  };
+};
+
 export interface NetworkContext {
   ChallengeRegistry: string;
   CoinBalanceRefundApp: string;
@@ -21,16 +38,16 @@ export interface NetworkContext {
 // Keep in sync with above
 export const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
   "ChallengeRegistry",
-  "ConditionalTransactionDelegateTarget",
   "CoinBalanceRefundApp",
-  "MultiAssetMultiPartyCoinTransferInterpreter",
+  "ConditionalTransactionDelegateTarget",
   "IdentityApp",
   "MinimumViableMultisig",
+  "MultiAssetMultiPartyCoinTransferInterpreter",
   "ProxyFactory",
   "SingleAssetTwoPartyCoinTransferInterpreter",
   "TimeLockedPassThrough",
-  "TwoPartyFixedOutcomeInterpreter",
   "TwoPartyFixedOutcomeFromVirtualAppInterpreter",
+  "TwoPartyFixedOutcomeInterpreter",
 ];
 
 export interface DeployedContractNetworksFileEntry {
@@ -73,9 +90,11 @@ export type SingleAssetTwoPartyCoinTransferInterpreterParams = {
 export const multiAssetMultiPartyCoinTransferInterpreterParamsEncoding =
   "tuple(uint256[] limit, address[] tokenAddresses)";
 
-export const singleAssetTwoPartyCoinTransferInterpreterParamsEncoding = "tuple(uint256 limit, address tokenAddress)";
+export const singleAssetTwoPartyCoinTransferInterpreterParamsEncoding =
+  "tuple(uint256 limit, address tokenAddress)";
 
-export const twoPartyFixedOutcomeInterpreterParamsEncoding = "tuple(address[2] playerAddrs, uint256 amount)";
+export const twoPartyFixedOutcomeInterpreterParamsEncoding =
+  "tuple(address[2] playerAddrs, uint256 amount)";
 
 export const virtualAppAgreementEncoding =
   "tuple(uint256 capitalProvided, address capitalProvider, address virtualAppUser, address tokenAddress)";
