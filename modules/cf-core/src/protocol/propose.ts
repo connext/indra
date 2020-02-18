@@ -15,7 +15,7 @@ const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
 
 export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
-    const { message, network, stateChannelsMap } = context;
+    const { message, network, store } = context;
 
     const { processID, params } = message;
 
@@ -34,8 +34,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       outcomeType,
     } = params as ProposeInstallProtocolParams;
 
-    const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)
-      ? stateChannelsMap.get(multisigAddress)!
+    let preProtocolStateChannel = await store.getStateChannelIfExists(multisigAddress);
+    preProtocolStateChannel = preProtocolStateChannel
+      ? preProtocolStateChannel
       : StateChannel.createEmptyChannel(
           multisigAddress,
           { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
@@ -108,15 +109,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const responderAddress = xkeyKthAddress(responderXpub, 0);
 
     assertIsValidSignature(responderAddress, setStateCommitment, responderSignatureOnInitialState);
-
-    context.stateChannelsMap.set(
-      postProtocolStateChannel.multisigAddress,
-      postProtocolStateChannel,
-    );
   },
 
   1 /* Responding */: async function*(context: Context) {
-    const { message, network, stateChannelsMap } = context;
+    const { message, network, store } = context;
 
     const { params, processID } = message;
 
@@ -139,8 +135,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       customData: { signature: initiatorSignatureOnInitialState },
     } = message;
 
-    const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)
-      ? stateChannelsMap.get(multisigAddress)!
+    let preProtocolStateChannel = await store.getStateChannelIfExists(multisigAddress);
+    preProtocolStateChannel = preProtocolStateChannel
+      ? preProtocolStateChannel
       : StateChannel.createEmptyChannel(
           multisigAddress,
           { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
@@ -209,10 +206,5 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         },
       } as ProtocolMessage,
     ];
-
-    context.stateChannelsMap.set(
-      postProtocolStateChannel.multisigAddress,
-      postProtocolStateChannel,
-    );
   },
 };

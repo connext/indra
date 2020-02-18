@@ -17,7 +17,7 @@ const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
  */
 export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Intiating */: async function*(context: Context) {
-    const { stateChannelsMap, message, network } = context;
+    const { store, message, network } = context;
 
     const { processID, params } = message;
 
@@ -28,7 +28,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       newState,
     } = params as UpdateProtocolParams;
 
-    const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)!;
+    const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
     const postProtocolStateChannel = preProtocolStateChannel.setState(appIdentityHash, newState);
 
@@ -67,15 +67,10 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
-
-    context.stateChannelsMap.set(
-      postProtocolStateChannel.multisigAddress,
-      postProtocolStateChannel,
-    );
   },
 
   1 /* Responding */: async function*(context: Context) {
-    const { stateChannelsMap, message, network } = context;
+    const { store, message, network } = context;
 
     const {
       processID,
@@ -90,7 +85,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       newState,
     } = params as UpdateProtocolParams;
 
-    const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)!;
+    const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
     const postProtocolStateChannel = preProtocolStateChannel.setState(appIdentityHash, newState);
 
@@ -126,10 +121,5 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
         },
       } as ProtocolMessage,
     ];
-
-    context.stateChannelsMap.set(
-      postProtocolStateChannel.multisigAddress,
-      postProtocolStateChannel,
-    );
   },
 };

@@ -52,7 +52,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
   0 /* Initiating */: async function*(context: Context) {
     const {
-      stateChannelsMap,
+      store,
       message: { params, processID },
       network,
     } = context;
@@ -65,7 +65,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       tokenAddress,
     } = params as WithdrawProtocolParams;
 
-    const preInstallRefundAppStateChannel = stateChannelsMap.get(multisigAddress)!;
+    const preInstallRefundAppStateChannel = await store.getStateChannel(multisigAddress);
 
     const responderAddress = preInstallRefundAppStateChannel.getFreeBalanceAddrOf(responderXpub);
 
@@ -113,11 +113,6 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       mySignatureOnConditionalTransaction,
       counterpartySignatureOnConditionalTransaction,
     ]);
-
-    context.stateChannelsMap.set(
-      postInstallRefundAppStateChannel.multisigAddress,
-      postInstallRefundAppStateChannel,
-    );
 
     yield [
       WRITE_COMMITMENT,
@@ -193,11 +188,6 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       {},
     );
 
-    context.stateChannelsMap.set(
-      postUninstallRefundAppStateChannel.multisigAddress,
-      postUninstallRefundAppStateChannel,
-    );
-
     const uninstallRefundAppCommitment = new SetStateCommitment(
       network,
       postUninstallRefundAppStateChannel.freeBalance.identity,
@@ -214,7 +204,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     const mySignatureOnUninstallCommitment = yield [OP_SIGN, uninstallRefundAppCommitment];
 
-    yield <[Opcode, ProtocolMessage]>[
+    yield [
       IO_SEND_AND_WAIT,
       {
         protocol: Withdraw,
@@ -225,7 +215,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
         },
         seq: UNASSIGNED_SEQ_NO,
       },
-    ];
+    ] as [Opcode, ProtocolMessage];
 
     const signedWithdrawalCommitment = withdrawCommitment.getSignedTransaction([
       mySignatureOnWithdrawalCommitment,
@@ -264,7 +254,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
   1 /* Responding */: async function*(context: Context) {
     const {
-      stateChannelsMap,
+      store,
       message: { params, processID, customData },
       network,
     } = context;
@@ -280,7 +270,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       tokenAddress,
     } = params as WithdrawProtocolParams;
 
-    const preInstallRefundAppStateChannel = stateChannelsMap.get(multisigAddress)!;
+    const preInstallRefundAppStateChannel = await store.getStateChannel(multisigAddress);
 
     const initiatorAddress = preInstallRefundAppStateChannel.getFreeBalanceAddrOf(initiatorXpub);
 
@@ -309,11 +299,6 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       mySignatureOnConditionalTransaction,
       counterpartySignatureOnConditionalTransaction,
     ]);
-
-    context.stateChannelsMap.set(
-      postInstallRefundAppStateChannel.multisigAddress,
-      postInstallRefundAppStateChannel,
-    );
 
     yield [
       WRITE_COMMITMENT,
@@ -394,11 +379,6 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     const postUninstallRefundAppStateChannel = postInstallRefundAppStateChannel.uninstallApp(
       refundApp.identityHash,
       {},
-    );
-
-    context.stateChannelsMap.set(
-      postUninstallRefundAppStateChannel.multisigAddress,
-      postUninstallRefundAppStateChannel,
     );
 
     const uninstallRefundAppCommitment = new SetStateCommitment(

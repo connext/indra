@@ -1,9 +1,10 @@
-import { CFCoreTypes, NetworkContext, ProtocolMessage, SolidityValueType } from "@connext/types";
+import { CFCoreTypes, NetworkContext, ProtocolMessage, SolidityValueType, IStoreServiceNew } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import { Signature } from "ethers/utils";
 
 import { Opcode } from "./machine/enums";
 import { StateChannel } from "./models";
+import { Store } from "./store";
 
 export abstract class EthereumCommitment {
   // todo(xuanji): EthereumCommitment was designed under the assumption that
@@ -46,8 +47,8 @@ export type Instruction = Function | Opcode;
 
 /// Arguments passed to a protocol execulion flow
 export interface Context {
+  store: Store;
   network: NetworkContext;
-  stateChannelsMap: Map<string, StateChannel>;
   message: ProtocolMessage;
   provider: BaseProvider;
 }

@@ -27,7 +27,7 @@ export class RequestHandler {
     readonly publicIdentifier: string,
     readonly incoming: EventEmitter,
     readonly outgoing: EventEmitter,
-    readonly storeService: CFCoreTypes.IStoreService,
+    readonly storeService: CFCoreTypes.IStoreServiceNew,
     readonly messagingService: CFCoreTypes.IMessagingService,
     readonly protocolRunner: ProtocolRunner,
     readonly networkContext: NetworkContext,

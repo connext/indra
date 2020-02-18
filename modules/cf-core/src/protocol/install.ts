@@ -45,7 +45,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
   0 /* Initiating */: async function*(context: Context) {
     const {
-      stateChannelsMap,
+      store,
       message: { params, processID },
       network,
     } = context;
@@ -60,7 +60,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorXpub,
     } = params as InstallProtocolParams;
 
-    const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)!;
+    const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
     assertSufficientFundsWithinFreeBalance(
       preProtocolStateChannel,
@@ -120,11 +120,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnConditionalTransaction,
     ]);
 
-    context.stateChannelsMap.set(
-      postProtocolStateChannel.multisigAddress,
-      postProtocolStateChannel,
-    );
-
     yield [WRITE_COMMITMENT, Install, signedConditionalTransaction, newAppInstance.identityHash];
 
     const freeBalanceUpdateData = new SetStateCommitment(
@@ -182,7 +177,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
   1 /* Responding */: async function*(context: Context) {
     const {
-      stateChannelsMap,
+      store,
       message: {
         params,
         processID,
@@ -204,7 +199,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       initiatorDepositTokenAddress,
     } = params as InstallProtocolParams;
 
-    const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)!;
+    const preProtocolStateChannel = await store.getStateChannel(multisigAddress);
 
     assertSufficientFundsWithinFreeBalance(
       preProtocolStateChannel,
@@ -244,11 +239,6 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       mySignatureOnConditionalTransaction,
       counterpartySignatureOnConditionalTransaction,
     ]);
-
-    context.stateChannelsMap.set(
-      postProtocolStateChannel.multisigAddress,
-      postProtocolStateChannel,
-    );
 
     yield [WRITE_COMMITMENT, Install, signedConditionalTransaction, newAppInstance.identityHash];
 
@@ -433,7 +423,9 @@ function computeInterpreterParameters(
   disableLimit: boolean,
 ): {
   twoPartyOutcomeInterpreterParams?: TwoPartyFixedOutcomeInterpreterParams;
+  // eslint-disable-next-line max-len
   multiAssetMultiPartyCoinTransferInterpreterParams?: MultiAssetMultiPartyCoinTransferInterpreterParams;
+  // eslint-disable-next-line max-len
   singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
 } {
   switch (outcomeType) {

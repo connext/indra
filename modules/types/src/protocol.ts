@@ -295,7 +295,7 @@ export namespace ProtocolTypes {
   };
 
   export type GetAppInstancesParams = {
-    multisigAddress?: string;
+    multisigAddress: string;
   };
 
   export type GetAppInstancesResult = {
@@ -328,7 +328,7 @@ export namespace ProtocolTypes {
   };
 
   export type GetProposedAppInstancesParams = {
-    multisigAddress?: string;
+    multisigAddress: string;
   };
 
   export type GetProposedAppInstancesResult = {

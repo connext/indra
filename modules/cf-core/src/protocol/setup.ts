@@ -58,8 +58,6 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     assertIsValidSignature(xkeyKthAddress(responderXpub, 0), setupCommitment, responderSignature);
 
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
-
-    context.stateChannelsMap.set(stateChannel.multisigAddress, stateChannel);
   },
 
   1 /* Responding */: async function*(context: Context) {
@@ -105,7 +103,5 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         },
       } as ProtocolMessage,
     ];
-
-    context.stateChannelsMap.set(stateChannel.multisigAddress, stateChannel);
   },
 };

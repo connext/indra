@@ -115,7 +115,7 @@ export default class ProposeInstallController extends NodeController {
       networkContext.provider,
     );
 
-    await protocolRunner.initiateProtocol(Protocol.Propose, await store.getStateChannelsMap(), {
+    await protocolRunner.initiateProtocol(Protocol.Propose, {
       ...params,
       multisigAddress,
       initiatorXpub: publicIdentifier,

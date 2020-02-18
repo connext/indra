@@ -33,7 +33,7 @@ export default class UninstallVirtualController extends NodeController {
       networkContext.MinimumViableMultisig,
     );
 
-    const stateChannelWithResponding = await store.getChannelFromAppInstanceID(appInstanceId);
+    const stateChannelWithResponding = await store.getStateChannelFromAppInstanceID(appInstanceId);
 
     if (!networkContext.provider) {
       throw new Error(NO_NETWORK_PROVIDER_CREATE2);
@@ -92,7 +92,7 @@ export default class UninstallVirtualController extends NodeController {
       throw Error(NO_APP_INSTANCE_ID_TO_UNINSTALL);
     }
 
-    const stateChannel = await store.getChannelFromAppInstanceID(appInstanceId);
+    const stateChannel = await store.getStateChannelFromAppInstanceID(appInstanceId);
 
     if (!stateChannel.hasAppInstance(appInstanceId)) {
       throw Error(APP_ALREADY_UNINSTALLED(appInstanceId));

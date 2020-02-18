@@ -3,12 +3,12 @@ import { BaseProvider } from "ethers/providers";
 import { SetStateCommitment } from "../ethereum";
 import { xkeyKthAddress } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
-import { StateChannel } from "../models";
 import { Context, ProtocolExecutionFlow, ProtocolMessage, UninstallProtocolParams } from "../types";
 
 import { computeTokenIndexedFreeBalanceIncrements } from "./utils/get-outcome-increments";
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
+import { Store } from "../store";
 
 const protocol = Protocol.Uninstall;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;
@@ -20,7 +20,7 @@ const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, WRITE_COMMITM
  */
 export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
-    const { message, provider, stateChannelsMap, network } = context;
+    const { message, provider, store, network } = context;
     const { params, processID } = message;
     const { responderXpub, appIdentityHash } = params as UninstallProtocolParams;
 
@@ -28,7 +28,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const postProtocolStateChannel = await computeStateTransition(
       params as UninstallProtocolParams,
-      stateChannelsMap,
+      store,
       provider,
     );
 
@@ -66,15 +66,10 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     yield [WRITE_COMMITMENT, protocol, finalCommitment, appIdentityHash];
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
-
-    context.stateChannelsMap.set(
-      postProtocolStateChannel.multisigAddress,
-      postProtocolStateChannel,
-    );
   },
 
   1 /* Responding */: async function*(context: Context) {
-    const { message, provider, stateChannelsMap, network } = context;
+    const { message, provider, store, network } = context;
     const { params, processID } = message;
     const { initiatorXpub, appIdentityHash } = params as UninstallProtocolParams;
 
@@ -82,7 +77,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const postProtocolStateChannel = await computeStateTransition(
       params as UninstallProtocolParams,
-      stateChannelsMap,
+      store,
       provider,
     );
 
@@ -121,21 +116,16 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
         },
       } as ProtocolMessage,
     ];
-
-    context.stateChannelsMap.set(
-      postProtocolStateChannel.multisigAddress,
-      postProtocolStateChannel,
-    );
   },
 };
 
 async function computeStateTransition(
   params: UninstallProtocolParams,
-  stateChannelsMap: Map<string, StateChannel>,
+  store: Store,
   provider: BaseProvider,
 ) {
   const { appIdentityHash, multisigAddress, blockNumberToUseIfNecessary } = params;
-  const stateChannel = stateChannelsMap.get(multisigAddress) as StateChannel;
+  const stateChannel = await store.getStateChannel(multisigAddress);
   return stateChannel.uninstallApp(
     appIdentityHash,
     await computeTokenIndexedFreeBalanceIncrements(

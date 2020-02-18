@@ -53,7 +53,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     const {
       message: { processID, params },
       provider,
-      stateChannelsMap,
+      store,
       network,
     } = context;
 
@@ -68,7 +68,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelWithResponding,
       timeLockedPassThroughAppInstance,
     ] = await getUpdatedStateChannelAndAppInstanceObjectsForInitiating(
-      stateChannelsMap,
+      store,
       params!,
       provider,
       network,
@@ -98,7 +98,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       },
     } as ProtocolMessage;
 
-    const m4 = (yield [IO_SEND_AND_WAIT, m1]) as ProtocolMessage;
+    const m4 = ((yield [IO_SEND_AND_WAIT, m1]) as unknown) as ProtocolMessage;
 
     const {
       customData: {
@@ -142,7 +142,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       },
     } as ProtocolMessage;
 
-    const m8 = (yield [IO_SEND_AND_WAIT, m5]) as ProtocolMessage;
+    const m8 = ((yield [IO_SEND_AND_WAIT, m5]) as unknown) as ProtocolMessage;
 
     const {
       customData: { signature: intermediarySignatureOnAliceIngridAppDisactivationCommitment },
@@ -158,21 +158,6 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       PERSIST_STATE_CHANNEL,
       [stateChannelWithIntermediary, stateChannelWithAllThreeParties, stateChannelWithResponding],
     ];
-
-    context.stateChannelsMap.set(
-      stateChannelWithIntermediary.multisigAddress,
-      stateChannelWithIntermediary,
-    );
-
-    context.stateChannelsMap.set(
-      stateChannelWithAllThreeParties.multisigAddress,
-      stateChannelWithAllThreeParties,
-    );
-
-    context.stateChannelsMap.set(
-      stateChannelWithResponding.multisigAddress,
-      stateChannelWithResponding,
-    );
   },
 
   1 /* Intermediary */: async function*(context: Context) {
@@ -183,7 +168,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
         customData: { signature: initiatingSignatureOnTimeLockedPassThroughSetStateCommitment },
       },
       provider,
-      stateChannelsMap,
+      store,
       network,
     } = context;
 
@@ -198,7 +183,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelWithResponding,
       timeLockedPassThroughAppInstance,
     ] = await getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
-      stateChannelsMap,
+      store,
       params!,
       provider,
       network,
@@ -235,7 +220,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       },
     } as ProtocolMessage;
 
-    const m3 = (yield [IO_SEND_AND_WAIT, m2]) as ProtocolMessage;
+    const m3 = ((yield [IO_SEND_AND_WAIT, m2]) as unknown) as ProtocolMessage;
 
     const {
       customData: { signature: respondingSignatureOnTimeLockedPassThroughSetStateCommitment },
@@ -258,7 +243,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       },
     } as ProtocolMessage;
 
-    const m5 = (yield [IO_SEND_AND_WAIT, m4]) as ProtocolMessage;
+    const m5 = ((yield [IO_SEND_AND_WAIT, m4]) as unknown) as ProtocolMessage;
 
     const {
       customData: { signature: initiatingSignatureOnAliceIngridAppDisactivationCommitment },
@@ -306,7 +291,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       },
     } as ProtocolMessage;
 
-    const m7 = (yield [IO_SEND_AND_WAIT, m6]) as ProtocolMessage;
+    const m7 = ((yield [IO_SEND_AND_WAIT, m6]) as unknown) as ProtocolMessage;
 
     const {
       customData: { signature: respondingSignatureOnIngridBobAppDisactivationCommitment },
@@ -316,21 +301,6 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       responderAddress,
       ingridBobAppDisactivationCommitment,
       respondingSignatureOnIngridBobAppDisactivationCommitment,
-    );
-
-    context.stateChannelsMap.set(
-      stateChannelWithInitiating.multisigAddress,
-      stateChannelWithInitiating,
-    );
-
-    context.stateChannelsMap.set(
-      stateChannelWithAllThreeParties.multisigAddress,
-      stateChannelWithAllThreeParties,
-    );
-
-    context.stateChannelsMap.set(
-      stateChannelWithResponding.multisigAddress,
-      stateChannelWithResponding,
     );
 
     yield [
@@ -362,7 +332,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
         },
       },
       provider,
-      stateChannelsMap,
+      store,
       network,
     } = context;
 
@@ -377,7 +347,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelWithInitiating,
       timeLockedPassThroughAppInstance,
     ] = await getUpdatedStateChannelAndAppInstanceObjectsForResponding(
-      stateChannelsMap,
+      store,
       params!,
       provider,
       network,
@@ -418,7 +388,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       },
     } as ProtocolMessage;
 
-    const m6 = (yield [IO_SEND_AND_WAIT, m3]) as ProtocolMessage;
+    const m6 = ((yield [IO_SEND_AND_WAIT, m3]) as unknown) as ProtocolMessage;
 
     const {
       customData: { signature: intermediarySignatureOnIngridBobAppDisactivationCommitment },
@@ -459,41 +429,25 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     } as ProtocolMessage;
 
     yield [IO_SEND, m7];
-
-    context.stateChannelsMap.set(
-      stateChannelWithIntermediary.multisigAddress,
-      stateChannelWithIntermediary,
-    );
-
-    context.stateChannelsMap.set(
-      stateChannelWithAllThreeParties.multisigAddress,
-      stateChannelWithAllThreeParties,
-    );
-
-    context.stateChannelsMap.set(
-      stateChannelWithInitiating.multisigAddress,
-      stateChannelWithInitiating,
-    );
   },
 };
 
 async function getStateChannelFromMapWithOwners(
-  stateChannelsMap: Map<string, StateChannel>,
+  store: Store,
   userXpubs: string[],
   network: NetworkContext,
 ): Promise<StateChannel> {
-  const multisigAddress = await Store.getMultisigAddressWithCounterpartyFromMap(
-    stateChannelsMap,
+  const multisigAddress = await store.getMultisigAddressWithCounterparty(
     userXpubs,
     network.ProxyFactory,
     network.MinimumViableMultisig,
     network.provider,
   );
-  return stateChannelsMap.get(multisigAddress)!;
+  return store.getStateChannel(multisigAddress);
 }
 
 async function getUpdatedStateChannelAndAppInstanceObjectsForInitiating(
-  stateChannelsMap: Map<string, StateChannel>,
+  store: Store,
   params: ProtocolParameters,
   provider: BaseProvider,
   network: NetworkContext,
@@ -514,25 +468,17 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForInitiating(
     stateChannelWithAllThreeParties,
     stateChannelWithIntermediary,
     stateChannelWithResponding,
-  ] = [
-    await getStateChannelFromMapWithOwners(
-      stateChannelsMap,
+  ] = await Promise.all([
+    getStateChannelFromMapWithOwners(
+      store,
       [initiatorXpub, responderXpub, intermediaryXpub],
       network,
     ),
 
-    await getStateChannelFromMapWithOwners(
-      stateChannelsMap,
-      [initiatorXpub, intermediaryXpub],
-      network,
-    ),
+    getStateChannelFromMapWithOwners(store, [initiatorXpub, intermediaryXpub], network),
 
-    await getStateChannelFromMapWithOwners(
-      stateChannelsMap,
-      [initiatorXpub, responderXpub],
-      network,
-    ),
-  ];
+    getStateChannelFromMapWithOwners(store, [initiatorXpub, responderXpub], network),
+  ]);
 
   const agreement = stateChannelWithIntermediary.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
     targetAppIdentityHash,
@@ -595,7 +541,7 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForInitiating(
 }
 
 async function getUpdatedStateChannelAndAppInstanceObjectsForResponding(
-  stateChannelsMap: Map<string, StateChannel>,
+  store: Store,
   params: ProtocolParameters,
   provider: BaseProvider,
   network: NetworkContext,
@@ -616,25 +562,17 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForResponding(
     stateChannelWithAllThreeParties,
     stateChannelWithIntermediary,
     stateChannelWithInitiating,
-  ] = [
-    await getStateChannelFromMapWithOwners(
-      stateChannelsMap,
+  ] = await Promise.all([
+    getStateChannelFromMapWithOwners(
+      store,
       [initiatorXpub, responderXpub, intermediaryXpub],
       network,
     ),
 
-    await getStateChannelFromMapWithOwners(
-      stateChannelsMap,
-      [responderXpub, intermediaryXpub],
-      network,
-    ),
+    getStateChannelFromMapWithOwners(store, [responderXpub, intermediaryXpub], network),
 
-    await getStateChannelFromMapWithOwners(
-      stateChannelsMap,
-      [initiatorXpub, responderXpub],
-      network,
-    ),
-  ];
+    getStateChannelFromMapWithOwners(store, [initiatorXpub, responderXpub], network),
+  ]);
 
   const agreement = stateChannelWithIntermediary.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
     targetAppIdentityHash,
@@ -705,7 +643,7 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForResponding(
 }
 
 async function getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
-  stateChannelsMap: Map<string, StateChannel>,
+  store: Store,
   params: ProtocolParameters,
   provider: BaseProvider,
   network: NetworkContext,
@@ -726,25 +664,17 @@ async function getUpdatedStateChannelAndAppInstanceObjectsForIntermediary(
     stateChannelWithAllThreeParties,
     stateChannelWithInitiating,
     stateChannelWithResponding,
-  ] = [
-    await getStateChannelFromMapWithOwners(
-      stateChannelsMap,
+  ] = await Promise.all([
+    getStateChannelFromMapWithOwners(
+      store,
       [initiatorXpub, responderXpub, intermediaryXpub],
       network,
     ),
 
-    await getStateChannelFromMapWithOwners(
-      stateChannelsMap,
-      [initiatorXpub, intermediaryXpub],
-      network,
-    ),
+    getStateChannelFromMapWithOwners(store, [initiatorXpub, intermediaryXpub], network),
 
-    await getStateChannelFromMapWithOwners(
-      stateChannelsMap,
-      [intermediaryXpub, responderXpub],
-      network,
-    ),
-  ];
+    getStateChannelFromMapWithOwners(store, [intermediaryXpub, responderXpub], network),
+  ]);
 
   const agreementWithInitiating = stateChannelWithInitiating.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
     targetAppIdentityHash,

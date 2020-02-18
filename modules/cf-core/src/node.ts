@@ -82,7 +82,7 @@ export class Node {
     private readonly publicExtendedKey: string,
     private readonly privateKeyGetter: PrivateKeysGetter,
     private readonly messagingService: CFCoreTypes.IMessagingService,
-    private readonly storeService: CFCoreTypes.IStoreService,
+    private readonly storeService: CFCoreTypes.IStoreServiceNew,
     private readonly nodeConfig: NodeConfig,
     private readonly provider: BaseProvider,
     public readonly networkContext: NetworkContext,
@@ -142,7 +142,11 @@ export class Node {
    * for the OP_SIGN, IO_SEND, and IO_SEND_AND_WAIT opcodes.
    */
   private buildProtocolRunner(): ProtocolRunner {
-    const protocolRunner = new ProtocolRunner(this.networkContext, this.provider);
+    const protocolRunner = new ProtocolRunner(
+      this.networkContext,
+      this.provider,
+      this.storeService,
+    );
 
     protocolRunner.register(Opcode.OP_SIGN, async (args: any[]) => {
       if (args.length !== 1 && args.length !== 2) {
