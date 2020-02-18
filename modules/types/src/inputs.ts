@@ -10,8 +10,16 @@ export type AllowedSwap = {
   to: string;
 };
 
+export const PriceOracleTypes = {
+  UNISWAP: "UNISWAP",
+};
+
+export type PriceOracleType = keyof typeof PriceOracleTypes;
+
 export type SwapRate = AllowedSwap & {
   rate: string;
+  priceOracleType: PriceOracleType;
+  blockNumber?: number;
 };
 
 /////////////////////////////////
@@ -88,9 +96,7 @@ export type ResolveLinkedTransferToRecipientParameters<T = string> = Omit<
   conditionType: typeof LINKED_TRANSFER_TO_RECIPIENT;
 };
 
-export type ResolveLinkedTransferToRecipientParametersBigNumber = ResolveLinkedTransferToRecipientParameters<
-  BigNumber
->;
+export type ResolveLinkedTransferToRecipientParametersBigNumber = ResolveLinkedTransferToRecipientParameters<BigNumber>;
 
 // resolver union types
 export type ResolveConditionParameters<T = string> =
@@ -133,16 +139,11 @@ export type LinkedTransferResponse = {
   meta?: object;
 };
 
-export type LinkedTransferToRecipientParameters<T = string> = Omit<
-  LinkedTransferParameters<T>,
-  "conditionType"
-> & {
+export type LinkedTransferToRecipientParameters<T = string> = Omit<LinkedTransferParameters<T>, "conditionType"> & {
   conditionType: typeof LINKED_TRANSFER_TO_RECIPIENT;
   recipient: string;
 };
-export type LinkedTransferToRecipientParametersBigNumber = LinkedTransferToRecipientParameters<
-  BigNumber
->;
+export type LinkedTransferToRecipientParametersBigNumber = LinkedTransferToRecipientParameters<BigNumber>;
 export type LinkedTransferToRecipientResponse = LinkedTransferResponse & {
   recipient: string;
 };
@@ -152,9 +153,7 @@ export type ConditionalTransferParameters<T = string> =
   | LinkedTransferToRecipientParameters<T>;
 export type ConditionalTransferParametersBigNumber = ConditionalTransferParameters<BigNumber>;
 
-export type ConditionalTransferResponse =
-  | LinkedTransferResponse
-  | LinkedTransferToRecipientResponse;
+export type ConditionalTransferResponse = LinkedTransferResponse | LinkedTransferToRecipientResponse;
 
 // condition initial states
 // FIXME: should be union type of all supported conditions

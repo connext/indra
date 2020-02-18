@@ -1,6 +1,5 @@
 import {
   SimpleLinkedTransferAppState,
-  SimpleLinkedTransferAppStateBigNumber,
   CREATE_CHANNEL_EVENT,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
@@ -17,15 +16,10 @@ import {
   WITHDRAWAL_FAILED_EVENT,
   WITHDRAWAL_STARTED_EVENT,
   ProtocolTypes,
-  SimpleLinkedTransferApp,
-  CoinBalanceRefundApp,
 } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
-import { Zero } from "ethers/constants";
-import { bigNumberify } from "ethers/utils";
 
-import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { AppRegistryService } from "../appRegistry/appRegistry.service";
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
@@ -107,91 +101,13 @@ export default class ListenerService implements OnModuleInit {
       INSTALL_VIRTUAL_EVENT: async (data: InstallVirtualMessage): Promise<void> => {
         logEvent(INSTALL_VIRTUAL_EVENT, data);
       },
-      PROPOSE_INSTALL_EVENT: async (data: ProposeMessage): Promise<void> => {
+      PROPOSE_INSTALL_EVENT: (data: ProposeMessage): void => {
         if (data.from === this.cfCoreService.cfCore.publicIdentifier) {
           logger.debug(`Received proposal from our own node. Doing nothing.`);
           return;
         }
         logEvent(PROPOSE_INSTALL_EVENT, data);
-
-        // TODO: separate install from validation, do both at this level
-        // install if possible
-        let allowedOrRejected: AppRegistry | void;
-        const install = async () => {
-          allowedOrRejected = await this.appRegistryService.allowOrReject(data);
-        };
-        const reject = async (error: Error) => {
-          logger.warn(`App validation failed, . Error: ${error.stack || error.message}`);
-          await this.cfCoreService.rejectInstallApp(data.data.appInstanceId);
-        };
-        try {
-          await install();
-        } catch (e) {
-          if (!e.message.includes(`Node has insufficient balance`)) {
-            await reject(e);
-            return;
-          }
-          // try to collateralize, and re-install
-          await this.addCollateral(data);
-          try {
-            await install();
-          } catch (e) {
-            await reject(e);
-          }
-        }
-        if (!allowedOrRejected) {
-          logger.log(`No data from appRegistryService.allowOrReject, nothing was installed.`);
-          return;
-        }
-
-        const proposedAppParams = data.data.params;
-        const appInstanceId = data.data.appInstanceId;
-        const initiatorXpub = data.from;
-
-        // post-install tasks
-        switch (allowedOrRejected.name) {
-          case SimpleLinkedTransferApp:
-            logger.debug(`Saving linked transfer`);
-            const initialState = proposedAppParams.initialState as SimpleLinkedTransferAppStateBigNumber;
-
-            const isResolving = proposedAppParams.responderDeposit.gt(Zero);
-            if (isResolving) {
-              const transfer = await this.transferService.getLinkedTransferByPaymentId(initialState.paymentId);
-              transfer.receiverAppInstanceId = appInstanceId;
-              await this.linkedTransferRepository.save(transfer);
-              logger.debug(`Updated transfer with receiver appId!`);
-              return;
-            }
-            await this.transferService.saveLinkedTransfer(
-              initiatorXpub,
-              proposedAppParams.initiatorDepositTokenAddress,
-              bigNumberify(proposedAppParams.initiatorDeposit),
-              appInstanceId,
-              initialState.linkedHash,
-              initialState.paymentId,
-              proposedAppParams.meta,
-            );
-            logger.debug(`Linked transfer saved!`);
-            break;
-          // TODO: add something for swap app? maybe for history preserving reasons.
-          case CoinBalanceRefundApp:
-            const channel = await this.channelRepository.findByUserPublicIdentifier(initiatorXpub);
-            if (!channel) {
-              throw new Error(`Channel does not exist for ${initiatorXpub}`);
-            }
-            logger.debug(
-              `sending acceptance message to indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
-            );
-            await this.messagingClient
-              .emit(
-                `indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
-                proposedAppParams,
-              )
-              .toPromise();
-            break;
-          default:
-            logger.debug(`No post-install actions configured.`);
-        }
+        this.appRegistryService.validateAndInstallOrReject(data.data.appInstanceId, data.data.params, data.from);
       },
       PROTOCOL_MESSAGE_EVENT: (data: NodeMessageWrappedProtocolMessage): void => {
         logEvent(PROTOCOL_MESSAGE_EVENT, data);
@@ -211,13 +127,7 @@ export default class ListenerService implements OnModuleInit {
         logEvent(UNINSTALL_EVENT, data);
         // check if app being uninstalled is a receiver app for a transfer
         // if so, try to uninstall the sender app
-        const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(data.data.appInstanceId);
-        if (!transfer || transfer.status !== LinkedTransferStatus.REDEEMED) {
-          logger.debug(`Uninstalled app was not a transfer or was not redeemed: ${JSON.stringify(transfer)}`);
-          return;
-        }
-        logger.debug(`Found transfer that needs collateral redeemed: ${JSON.stringify(transfer)}`);
-        await this.transferService.reclaimLinkedTransferCollateral(transfer.paymentId);
+        this.transferService.reclaimLinkedTransferCollateralByAppInstanceId(data.data.appInstanceId);
       },
       UNINSTALL_VIRTUAL_EVENT: (data: UninstallVirtualMessage): void => {
         logEvent(UNINSTALL_VIRTUAL_EVENT, data);
@@ -296,40 +206,5 @@ export default class ListenerService implements OnModuleInit {
       },
       logger.cxt,
     );
-  }
-
-  private async addCollateral(data: ProposeMessage): Promise<void> {
-    const channel = await this.channelRepository.findByUserPublicIdentifier(data.from);
-    const { responderDeposit, responderDepositTokenAddress } = data.data.params;
-    const paymentAmt = bigNumberify(responderDeposit);
-    await new Promise(async (resolve, reject) => {
-      this.cfCoreService.cfCore.on(DEPOSIT_CONFIRMED_EVENT, async (msg: DepositConfirmationMessage) => {
-        if (msg.data.multisigAddress !== channel.multisigAddress) {
-          return;
-        }
-        // make sure free balance is appropriate
-        const fb = await this.cfCoreService.getFreeBalance(
-          data.from,
-          channel.multisigAddress,
-          responderDepositTokenAddress,
-        );
-        if (fb[this.cfCoreService.cfCore.freeBalanceAddress].lt(paymentAmt)) {
-          // wait for resolve
-          return;
-        }
-        resolve();
-      });
-      this.cfCoreService.cfCore.on(DEPOSIT_FAILED_EVENT, (msg: DepositFailedMessage) => {
-        if (msg.data.params.multisigAddress !== channel.multisigAddress) {
-          return;
-        }
-        reject(`Collateral could not be added to channel, deposit has failed.`);
-      });
-      try {
-        await this.channelService.requestCollateral(data.from, responderDepositTokenAddress, paymentAmt);
-      } catch (e) {
-        reject(e);
-      }
-    });
   }
 }

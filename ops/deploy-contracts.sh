@@ -20,8 +20,9 @@ log="$cwd/.ganache.log"
 # Setup env vars
 
 INFURA_KEY=$INFURA_KEY
+ETH_PROVIDER=$ETH_PROVIDER
 
-if [[ "$ETH_NETWORK" == "ganache" ]]
+if [[ "$ETH_NETWORK" == "ganache" && -z "$ETH_PROVIDER" ]]
 then ETH_PROVIDER="http://localhost:8545"
 fi
 

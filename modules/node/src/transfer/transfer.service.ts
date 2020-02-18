@@ -11,13 +11,13 @@ import {
   DEPOSIT_FAILED_EVENT,
   DepositFailedMessage,
 } from "@connext/types";
-import { forwardRef, Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
-import { ChannelService } from "../channel/channel.service";
+import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { CLogger, xpubToAddress } from "../util";
 import { AppInstanceJson } from "../util/cfCore";
@@ -232,14 +232,14 @@ export class TransferService {
           return reject(JSON.stringify(msg, null, 2));
         });
         try {
-          await this.channelService.requestCollateral(userPubId, assetId, amountBN);
+          await this.channelService.rebalance(userPubId, assetId, RebalanceType.COLLATERALIZE, amountBN);
         } catch (e) {
           return reject(e);
         }
       });
     } else {
       // request collateral normally without awaiting
-      this.channelService.requestCollateral(userPubId, assetId, amountBN);
+      this.channelService.rebalance(userPubId, assetId, RebalanceType.COLLATERALIZE, amountBN);
     }
 
     const initialState: SimpleLinkedTransferAppStateBigNumber = {
@@ -326,10 +326,29 @@ export class TransferService {
     return res.appInstanceId;
   }
 
-  async reclaimLinkedTransferCollateral(paymentId: string): Promise<void> {
+  async reclaimLinkedTransferCollateralByAppInstanceId(appInstanceId: string): Promise<void> {
+    const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(appInstanceId);
+    if (!transfer) {
+      logger.debug(`Did not find transfer`);
+      return;
+    }
+    logger.debug(`Found transfer: ${JSON.stringify(transfer)}`);
+    await this.reclaimLinkedTransferCollateral(transfer);
+  }
+
+  async reclaimLinkedTransferCollateralByPaymentId(paymentId: string): Promise<void> {
     const transfer = await this.linkedTransferRepository.findByPaymentId(paymentId);
+    if (!transfer) {
+      logger.debug(`Did not find transfer`);
+      return;
+    }
+    logger.debug(`Found transfer: ${JSON.stringify(transfer)}`);
+    await this.reclaimLinkedTransferCollateral(transfer);
+  }
+
+  private async reclaimLinkedTransferCollateral(transfer: LinkedTransfer): Promise<void> {
     if (transfer.status !== LinkedTransferStatus.REDEEMED) {
-      throw new Error(`Transfer with id ${paymentId} has not been redeemed, status: ${transfer.status}`);
+      throw new Error(`Transfer with id ${transfer.paymentId} has not been redeemed, status: ${transfer.status}`);
     }
 
     const uninstall = async (): Promise<void> => {
@@ -339,7 +358,7 @@ export class TransferService {
     };
 
     // if action has been taken on the app, then there will be a preimage
-    // in the latest state, an you just have to uninstall
+    // in the latest state, and you just have to uninstall
     const app = await this.cfCoreService.getAppInstanceDetails(transfer.senderAppInstanceId);
     if ((app.latestState as SimpleLinkedTransferAppState).preImage === transfer.preImage) {
       // just uninstall
