@@ -1,6 +1,6 @@
 {
   "name": "@connext/types",
-  "version": "1.4.4",
+  "version": "4.1.0",
   "description": "TypeScript typings for common Connext types",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -10,18 +10,19 @@
   "files": ["dist", "src"],
   "scripts": {
     "build": "./node_modules/.bin/tsc -b . && ./node_modules/.bin/rollup -c",
-    "prepare": "npm run build",
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
     "test": "./node_modules/.bin/jest"
   },
   "dependencies": {
-    "ethers": "4.0.41"
+    "ethers": "4.0.45",
+    "eventemitter3": "4.0.0"
   },
   "devDependencies": {
-    "@types/jest": "24.0.25",
-    "jest": "24.9.0",
-    "rollup": "1.27.14",
-    "rollup-plugin-typescript2": "0.25.3",
-    "ts-jest": "24.2.0",
-    "typescript": "3.5.3"
+    "@types/jest": "25.1.2",
+    "jest": "25.1.0",
+    "rollup": "1.31.1",
+    "rollup-plugin-typescript2": "0.26.0",
+    "ts-jest": "25.2.0",
+    "typescript": "3.7.5"
   }
 }

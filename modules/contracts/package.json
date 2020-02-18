@@ -1,29 +1,55 @@
 {
   "name": "@connext/contracts",
-  "version": "0.0.1",
-  "description": "",
-  "main": "index.js",
-  "files": ["build", "contracts"],
-  "scripts": {
-    "build": "waffle waffle.json",
-    "migrate": "truffle migrate",
-    "test": "ts-mocha test/*"
-  },
-  "author": "",
+  "version": "1.0.4",
+  "description": "Smart contracts that power a Counterfactual State Channel platform",
   "license": "ISC",
+  "files": [
+    "dist/address-book.json",
+    "dist/address-history.json",
+    "dist/build",
+    "dist/contracts",
+    "dist/index.js",
+    "dist/index.d.ts"
+  ],
+  "main": "./dist/index.js",
+  "keywords": [
+    "ethereum",
+    "counterfactual",
+    "state channels",
+    "solidity"
+  ],
+  "scripts": {
+    "build": "npm run compile && npm run transpile",
+    "compile": "waffle waffle.json",
+    "compile-native": "waffle waffle.native.json",
+    "lint": "npm run lint-ts && npm run lint-sol",
+    "lint-ts": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'test/**/*' 'index.ts'",
+    "lint-sol": "solium -d .",
+    "test": "npx buidler test",
+    "transpile": "./node_modules/.bin/tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@connext/types": "4.1.0",
+    "ethers": "4.0.45",
+    "@openzeppelin/contracts": "2.5.0",
+    "ganache-cli": "6.8.2",
+    "solc": "0.5.11"
+  },
   "devDependencies": {
-    "@connext/cf-adjudicator-contracts": "0.4.1",
-    "@connext/cf-funding-protocol-contracts": "0.4.1",
-    "@types/chai": "4.2.7",
+    "@nomiclabs/buidler": "1.1.2",
+    "@nomiclabs/buidler-ethers": "1.1.2",
+    "@nomiclabs/buidler-waffle": "1.1.2",
+    "@types/chai": "4.2.9",
+    "@types/mocha": "7.0.1",
+    "@types/node": "13.7.1",
+    "@types/sinon-chai": "3.2.3",
     "chai": "4.2.0",
-    "dotenv": "8.2.0",
-    "eth-gas-reporter": "0.2.14",
-    "ethereum-waffle": "2.1.0",
-    "ethers": "4.0.41",
-    "openzeppelin-solidity": "2.3.0",
-    "truffle": "5.1.6",
-    "truffle-hdwallet-provider": "1.0.17",
+    "ethereum-waffle": "2.3.2",
+    "ethlint": "1.2.5",
+    "event-target-shim": "5.0.1",
+    "mocha": "7.0.1",
     "ts-mocha": "6.0.0",
-    "ts-node": "8.5.4"
+    "ts-node": "8.6.2",
+    "typescript": "3.7.5"
   }
 }

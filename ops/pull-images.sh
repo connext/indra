@@ -2,11 +2,11 @@
 set -e
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../package.json | jq .name | tr -d '"'`"
+project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
 
 version="$1"
-registry="connextproject"
-images="bot database ethprovider node proxy relay test_runner"
+images="database ethprovider node proxy relay test_runner"
 
 for image in $images
 do

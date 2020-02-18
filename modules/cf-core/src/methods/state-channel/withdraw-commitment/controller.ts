@@ -2,48 +2,53 @@ import { jsonRpcMethod } from "rpc-server";
 
 import { xkeyKthAddress } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes } from "../../../types";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { NodeController } from "../../controller";
 import WithdrawController from "../withdraw/controller";
 import { runWithdrawProtocol } from "../withdraw/operation";
 import { getCreate2MultisigAddress } from "../../../utils";
 import {
+  CANNOT_WITHDRAW,
   INCORRECT_MULTISIG_ADDRESS,
   INVALID_FACTORY_ADDRESS,
-  CANNOT_WITHDRAW
+  INVALID_MASTERCOPY_ADDRESS,
 } from "../../errors";
 import { AddressZero } from "ethers/constants";
 
 // Note: This can't extend `WithdrawController` because the `methodName` static
 // members of each class are incompatible.
 export default class WithdrawCommitmentController extends NodeController {
-  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_withdrawCommitment)
+  @jsonRpcMethod(ProtocolTypes.chan_withdrawCommitment)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.WithdrawCommitmentParams
+    params: CFCoreTypes.WithdrawCommitmentParams,
   ): Promise<string[]> {
     return WithdrawController.getRequiredLockNames(requestHandler, params);
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.WithdrawCommitmentParams
+    params: CFCoreTypes.WithdrawCommitmentParams,
   ): Promise<void> {
     const { store, provider, networkContext } = requestHandler;
     const { multisigAddress, tokenAddress } = params;
 
     const channel = await store.getStateChannel(multisigAddress);
 
-    if (!channel.proxyFactoryAddress) {
-      throw Error(INVALID_FACTORY_ADDRESS(channel.proxyFactoryAddress));
+    if (!channel.addresses.proxyFactory) {
+      throw Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
+    }
+
+    if (!channel.addresses.multisigMastercopy) {
+      throw Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
     }
 
     if (
       channel.hasBalanceRefundAppInstance(
         networkContext.CoinBalanceRefundApp,
-        tokenAddress || AddressZero
+        tokenAddress || AddressZero,
       )
     ) {
       throw Error(CANNOT_WITHDRAW);
@@ -51,9 +56,8 @@ export default class WithdrawCommitmentController extends NodeController {
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userNeuteredExtendedKeys,
-      channel.proxyFactoryAddress,
-      networkContext.MinimumViableMultisig,
-      provider
+      channel.addresses,
+      provider,
     );
 
     if (expectedMultisigAddress !== channel.multisigAddress) {
@@ -63,7 +67,7 @@ export default class WithdrawCommitmentController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.WithdrawCommitmentParams
+    params: CFCoreTypes.WithdrawCommitmentParams,
   ): Promise<CFCoreTypes.WithdrawCommitmentResult> {
     const { store, publicIdentifier } = requestHandler;
 
@@ -80,7 +84,7 @@ export default class WithdrawCommitmentController extends NodeController {
     }
 
     return {
-      transaction: commitment
+      transaction: commitment,
     };
   }
 }

@@ -1,5 +1,5 @@
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { CF_PATH } from "@connext/types";
+import { CF_PATH, CREATE_CHANNEL_EVENT, StateSchemaVersion } from "@connext/types";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -7,9 +7,10 @@ import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
-import { ChannelProvider, createCFChannelProvider } from "./channelProvider";
+import { createCFChannelProvider } from "./channelProvider";
 import { ConnextClient } from "./connext";
-import { Logger, stringify, delayAndThrow } from "./lib";
+import { getDefaultOptions, isWalletProvided, getDefaultStore } from "./lib/default";
+import { delayAndThrow, Logger, stringify } from "./lib";
 import { NodeApiClient } from "./node";
 import {
   CFCoreTypes,
@@ -17,7 +18,9 @@ import {
   ConnextClientStorePrefix,
   CreateChannelMessage,
   GetConfigResponse,
+  IChannelProvider,
   IConnextClient,
+  INodeApiClient,
 } from "./types";
 
 const exists = (obj: any): boolean => {
@@ -36,30 +39,27 @@ const createMessagingService = async (
 };
 
 const setupMultisigAddress = async (
-  node: NodeApiClient,
-  channelProvider: ChannelProvider,
+  node: INodeApiClient,
+  channelProvider: IChannelProvider,
   log: Logger,
-): Promise<ChannelProvider> => {
+): Promise<IChannelProvider> => {
   const myChannel = await node.getChannel();
 
   let multisigAddress: string;
   if (!myChannel) {
     log.debug("no channel detected, creating channel..");
-    const creationEventData: CFCoreTypes.CreateChannelResult | {} = await Promise.race([
+    const creationEventData = await Promise.race([
+      delayAndThrow(30_000, "Create channel event not fired within 30s"),
       new Promise(
         async (res: any): Promise<any> => {
-          channelProvider.once(
-            CFCoreTypes.EventNames.CREATE_CHANNEL_EVENT as CFCoreTypes.EventName,
-            (data: CreateChannelMessage): void => {
-              res(data.data);
-            },
-          );
+          channelProvider.once(CREATE_CHANNEL_EVENT, (data: CreateChannelMessage): void => {
+            res(data.data);
+          });
 
           const creationData = await node.createChannel();
           log.debug(`created channel, transaction: ${stringify(creationData)}`);
         },
       ),
-      delayAndThrow(30_000, "Create channel event not fired within 30s"),
     ]);
     multisigAddress = (creationEventData as CFCoreTypes.CreateChannelResult).multisigAddress;
   } else {
@@ -71,16 +71,22 @@ const setupMultisigAddress = async (
   return channelProvider;
 };
 
-export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
+export const connect = async (
+  clientOptions: string | ClientOptions,
+  overrideOptions?: Partial<ClientOptions>,
+): Promise<IConnextClient> => {
+  const opts =
+    typeof clientOptions === "string"
+      ? await getDefaultOptions(clientOptions, overrideOptions)
+      : clientOptions;
   const {
     logLevel,
     ethProviderUrl,
     nodeUrl,
-    store,
     mnemonic,
     channelProvider: providedChannelProvider,
   } = opts;
-  let { xpub, keyGen } = opts;
+  let { xpub, keyGen, store, messaging } = opts;
 
   const log = new Logger("ConnextConnect", logLevel);
 
@@ -89,22 +95,12 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   const ethProvider = new providers.JsonRpcProvider(ethProviderUrl);
   const network = await ethProvider.getNetwork();
 
-  // special case for ganache
-  if (network.chainId === 4447) {
-    network.name = "ganache";
-    // Enforce using provided signer, not via RPC
-    ethProvider.getSigner = (addressOrIndex?: string | number): any => {
-      throw { code: "UNSUPPORTED_OPERATION" };
-    };
-  }
-
   // setup messaging and node api
-  let messaging: IMessagingService;
-  let node: NodeApiClient;
+  let node: INodeApiClient;
   let config: GetConfigResponse;
 
   // setup channelProvider
-  let channelProvider: ChannelProvider;
+  let channelProvider: IChannelProvider;
   let isInjected = false;
 
   if (providedChannelProvider) {
@@ -115,10 +111,14 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
     log.debug(`Creating messaging service client ${channelProvider.config.nodeUrl}`);
-    messaging = await createMessagingService(channelProvider.config.nodeUrl, logLevel);
+    if (!messaging) {
+      messaging = await createMessagingService(channelProvider.config.nodeUrl, logLevel);
+    } else {
+      await messaging.connect();
+    }
 
     // create a new node api instance
-    node = new NodeApiClient({ logLevel, messaging, channelProvider });
+    node = new NodeApiClient({ channelProvider, logLevel, messaging });
     config = await node.config();
     log.debug(`Node provided config: ${stringify(config)}`);
 
@@ -128,13 +128,13 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     node.nodePublicIdentifier = config.nodePublicIdentifier;
 
     isInjected = true;
-  } else if (mnemonic || (xpub && keyGen)) {
-    if (!store) {
-      throw new Error("Client must be instantiated with store if not using a channelProvider");
-    }
-
+  } else if (isWalletProvided(opts)) {
     if (!nodeUrl) {
       throw new Error("Client must be instantiated with nodeUrl if not using a channelProvider");
+    }
+
+    if (!store) {
+      store = getDefaultStore(opts);
     }
 
     if (mnemonic) {
@@ -150,12 +150,23 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     }
 
     log.debug(`Creating messaging service client ${nodeUrl}`);
-    messaging = await createMessagingService(nodeUrl, logLevel);
+    if (!messaging) {
+      messaging = await createMessagingService(nodeUrl, logLevel);
+    } else {
+      await messaging.connect();
+    }
 
     // create a new node api instance
     node = new NodeApiClient({ logLevel, messaging });
     config = await node.config();
     log.debug(`Node provided config: ${stringify(config)}`);
+
+    // ensure that node and user xpub are different
+    if (config.nodePublicIdentifier === xpub) {
+      throw new Error(
+        "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
+      );
+    }
 
     channelProvider = await createCFChannelProvider({
       ethProvider,
@@ -176,10 +187,7 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     node.userPublicIdentifier = channelProvider.config.userPublicIdentifier;
     node.nodePublicIdentifier = config.nodePublicIdentifier;
   } else {
-    throw new Error(
-      // tslint:disable-next-line:max-line-length
-      `Client must be instantiated with xpub and keyGen, or a channelProvider if not using mnemonic`,
-    );
+    throw new Error("Must provide mnemonic or xpub + keygen");
   }
 
   // setup multisigAddress + assign to channelProvider
@@ -212,10 +220,25 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     return client;
   }
 
+  // waits until the setup protocol or create channel call is completed
+  await new Promise(
+    async (resolve: any, reject: any): Promise<any> => {
+      // Wait for channel to be available
+      const channelIsAvailable = async (): Promise<boolean> => {
+        const chan = await node.getChannel();
+        return chan && chan.available;
+      };
+      while (!(await channelIsAvailable())) {
+        await new Promise((res: any): any => setTimeout((): void => res(), 100));
+      }
+      resolve();
+    },
+  );
+
   try {
     await client.getFreeBalance();
   } catch (e) {
-    if (e.message.includes(`StateChannel does not exist yet`)) {
+    if (e.message.includes("StateChannel does not exist yet")) {
       log.debug(`Restoring client state: ${e.stack || e.message}`);
       await client.restoreState();
     } else {
@@ -224,10 +247,10 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
     }
   }
 
-  // 12/11/2019 make sure state is restored if there is no state channel
+  // Make sure our state schema is up-to-date
   const { data: sc } = await client.getStateChannel();
-  if (!sc.proxyFactoryAddress) {
-    log.debug(`No proxy factory address found, restoring client state`);
+  if (!sc.schemaVersion || sc.schemaVersion !== StateSchemaVersion || !sc.addresses) {
+    log.debug("State schema is out-of-date, restoring an up-to-date client state");
     await client.restoreState();
   }
 
@@ -258,6 +281,10 @@ export const connect = async (opts: ClientOptions): Promise<IConnextClient> => {
   // check in with node to do remaining work
   await client.clientCheckIn();
 
+  // check if client is available
+  await client.isAvailable();
+
   log.debug("Done creating channel client");
+
   return client;
 };

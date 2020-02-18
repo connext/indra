@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, { useState } from "react";
 import { Grid, Typography, styled, Button } from "@material-ui/core";
 
 const TopGrid = styled(Grid)({
@@ -11,6 +11,7 @@ const TopGrid = styled(Grid)({
   alignItems: "center",
 });
 
+/*
 const StatTypography = styled(Typography)({
   textAlign: "center",
   width: "90%",
@@ -18,14 +19,13 @@ const StatTypography = styled(Typography)({
   color: "#002868",
   textDecoration: "none",
 });
+*/
 
 function StatsExport({ classes, messaging }) {
-
-  const [allTransfers, setAllTransfers] = useState(null);
-
+  // const [allTransfers, setAllTransfers] = useState(null);
 
   function convertArrayOfObjectsToCSV(args) {
-    var result, ctr, keys, columnDelimiter, lineDelimiter, data;
+    let result, ctr, keys, columnDelimiter, lineDelimiter, data;
 
     data = args.data || null;
     if (data == null || !data.length) {
@@ -56,8 +56,8 @@ function StatsExport({ classes, messaging }) {
   }
 
   function downloadCSV(args) {
-    var data, filename, link;
-    var csv = convertArrayOfObjectsToCSV({
+    let data, filename, link;
+    let csv = convertArrayOfObjectsToCSV({
       data: args.data,
     });
     if (csv == null) return;
@@ -75,25 +75,30 @@ function StatsExport({ classes, messaging }) {
     link.click();
   }
 
-  async function getTransferDataAndDownload(){
-      if (!messaging) {
-        return;
+  async function getTransferDataAndDownload() {
+    if (!messaging) {
+      return;
+    }
+    const res = await messaging.getAllLinkedTransfers();
+    if (res) {
+      for (let i = 0; i < res.length; i++) {
+        if (res[i].amount) {
+          res[i].amount_clean = parseInt(res[i].amount._hex, 16);
+        }
       }
-      const res = await messaging.getAllLinkedTransfers();
-      if(res){
-        downloadCSV({ data: res, filename: "transfer-data.csv" })
-      }
+      downloadCSV({ data: res, filename: "transfer-data.csv" });
+    }
   }
 
-  async function getChannelDataAndDownload(){
+  async function getChannelDataAndDownload() {
     if (!messaging) {
       return;
     }
     const res = await messaging.getAllChannelStates();
-    if(res){
-      downloadCSV({ data: res, filename: "channel-data.csv" })
+    if (res) {
+      downloadCSV({ data: res, filename: "channel-data.csv" });
     }
-}
+  }
 
   return (
     <TopGrid container>

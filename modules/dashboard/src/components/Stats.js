@@ -8,15 +8,13 @@ import StatsGas from "./StatsGas";
 import StatsTransfers from "./StatsTransfers";
 import StatsExport from "./StatsExport";
 
-
 const TopGrid = styled(Grid)({
   display: "flex",
   flexWrap: "wrap",
   flexDirection: "row",
   width: "100%",
   height: "100%",
-})
-
+});
 
 const AppBar = styled(Grid)({
   width: "100%",
@@ -48,24 +46,24 @@ const AppBarButtonTypography = styled(Typography)({
 
 function Stats({ classes, messaging, prefix }) {
   return (
-    <TopGrid  container>
-      <AppBar  container>
+    <TopGrid container>
+      <AppBar container>
         <AppBarButton component={Link} to={`${prefix}`}>
-          <HomeIcon  />
+          <HomeIcon color="primary" />{" "}
         </AppBarButton>
         <AppBarButton component={Link} to={`${prefix}/stats/summary`}>
-          <AppBarButtonTypography >Summary</AppBarButtonTypography>
+          <AppBarButtonTypography>Summary</AppBarButtonTypography>
         </AppBarButton>
-        <AppBarButton  component={Link} to={`${prefix}/stats/transfers`}>
-          <AppBarButtonTypography >Transfers</AppBarButtonTypography>
-        </AppBarButton>
-
-        <AppBarButton  component={Link} to={`${prefix}/stats/gas`}>
-          <AppBarButtonTypography >Gas</AppBarButtonTypography>
+        <AppBarButton component={Link} to={`${prefix}/stats/transfers`}>
+          <AppBarButtonTypography>Transfers</AppBarButtonTypography>
         </AppBarButton>
 
-        <AppBarButton  component={Link} to={`${prefix}/stats/export`}>
-          <AppBarButtonTypography >Export</AppBarButtonTypography>
+        <AppBarButton component={Link} to={`${prefix}/stats/gas`}>
+          <AppBarButtonTypography>Gas</AppBarButtonTypography>
+        </AppBarButton>
+
+        <AppBarButton component={Link} to={`${prefix}/stats/export`}>
+          <AppBarButtonTypography>Export</AppBarButtonTypography>
         </AppBarButton>
       </AppBar>
       <Switch>
@@ -93,6 +91,5 @@ function Stats({ classes, messaging, prefix }) {
     </TopGrid>
   );
 }
-
 
 export default Stats;

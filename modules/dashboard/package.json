@@ -3,22 +3,23 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "start": "./node_modules/.bin/react-scripts start",
+    "build": "./node_modules/.bin/react-scripts --max_old_space_size=4096 build",
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*.js'",
+    "test": "./node_modules/.bin/react-scripts test",
+    "eject": "./node_modules/.bin/react-scripts eject"
   },
   "dependencies": {
-    "@connext/cf-funding-protocol-contracts": "0.4.1",
-    "@connext/messaging": "1.4.4",
-    "@connext/types": "1.4.4",
-    "@material-ui/core": "4.8.2",
-    "@material-ui/icons": "4.5.1",
+    "@connext/cf-core": "4.1.0",
+    "@connext/messaging": "4.1.0",
+    "@connext/types": "4.1.0",
+    "@material-ui/core": "4.9.3",
+    "@material-ui/icons": "4.9.1",
     "react": "16.12.0",
     "react-dom": "16.12.0",
-    "react-json-tree": "^0.11.2",
+    "react-json-tree": "0.11.2",
     "react-router-dom": "5.1.2",
-    "react-scripts": "3.3.0"
+    "react-scripts": "3.4.0"
   },
   "browserslist": {
     "production": [

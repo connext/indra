@@ -1,9 +1,9 @@
 import { xkeyKthAddress } from "@connext/cf-core";
 import { IConnextClient } from "@connext/types";
 import { AddressZero, Zero } from "ethers/constants";
-import { BigNumber, parseEther } from "ethers/utils";
 
-import { createClient, getStore } from "../util/client";
+import { expect, TOKEN_AMOUNT } from "../util";
+import { createClient, ETH_AMOUNT_SM } from "../util";
 
 describe("Restore State", () => {
   let clientA: IConnextClient;
@@ -13,34 +13,36 @@ describe("Restore State", () => {
 
   beforeEach(async () => {
     clientA = await createClient();
-
     tokenAddress = clientA.config.contractAddresses.Token;
     nodePublicIdentifier = clientA.config.nodePublicIdentifier;
     nodeFreeBalanceAddress = xkeyKthAddress(nodePublicIdentifier);
-  }, 90_000);
+  });
 
-  test("happy case: client can delete its store and restore from a remote backup", async () => {
+  afterEach(async () => {
+    await clientA.messaging.disconnect();
+  });
+
+  it("happy case: client can delete its store and restore from a remote backup", async () => {
     // client deposit and request node collateral
-    await clientA.deposit({ amount: parseEther("0.01").toString(), assetId: AddressZero });
+    await clientA.deposit({ amount: ETH_AMOUNT_SM.toString(), assetId: AddressZero });
     await clientA.requestCollateral(tokenAddress);
 
     // check balances pre
     const freeBalanceEthPre = await clientA.getFreeBalance(AddressZero);
     const freeBalanceTokenPre = await clientA.getFreeBalance(tokenAddress);
-    expect(freeBalanceEthPre[clientA.freeBalanceAddress]).toBeBigNumberEq(parseEther("0.01"));
-    expect(freeBalanceEthPre[nodeFreeBalanceAddress]).toBeBigNumberEq(Zero);
-    expect(freeBalanceTokenPre[clientA.freeBalanceAddress]).toBeBigNumberEq(Zero);
-    expect(freeBalanceTokenPre[nodeFreeBalanceAddress]).toBeBigNumberEq(parseEther("10"));
+    expect(freeBalanceEthPre[clientA.freeBalanceAddress]).to.be.eq(ETH_AMOUNT_SM);
+    expect(freeBalanceEthPre[nodeFreeBalanceAddress]).to.be.eq(Zero);
+    expect(freeBalanceTokenPre[clientA.freeBalanceAddress]).to.be.eq(Zero);
+    expect(freeBalanceTokenPre[nodeFreeBalanceAddress]).to.be.least(TOKEN_AMOUNT);
 
     // delete store
-    const store = getStore();
-    store.reset();
+    clientA.store.reset && clientA.store.reset();
 
     // check that getting balances will now error
-    await expect(clientA.getFreeBalance(AddressZero)).rejects.toThrowError(
+    await expect(clientA.getFreeBalance(AddressZero)).to.be.rejectedWith(
       "Call to getStateChannel failed when searching for multisig address",
     );
-    await expect(clientA.getFreeBalance(tokenAddress)).rejects.toThrowError(
+    await expect(clientA.getFreeBalance(tokenAddress)).to.be.rejectedWith(
       "Call to getStateChannel failed when searching for multisig address",
     );
 
@@ -49,9 +51,9 @@ describe("Restore State", () => {
     // check balances post
     const freeBalanceEthPost = await clientA.getFreeBalance(AddressZero);
     const freeBalanceTokenPost = await clientA.getFreeBalance(tokenAddress);
-    expect(freeBalanceEthPost[clientA.freeBalanceAddress]).toBeBigNumberEq(parseEther("0.01"));
-    expect(freeBalanceEthPost[nodeFreeBalanceAddress]).toBeBigNumberEq(Zero);
-    expect(freeBalanceTokenPost[clientA.freeBalanceAddress]).toBeBigNumberEq(Zero);
-    expect(freeBalanceTokenPost[nodeFreeBalanceAddress]).toBeBigNumberEq(parseEther("10"));
+    expect(freeBalanceEthPost[clientA.freeBalanceAddress]).to.be.eq(ETH_AMOUNT_SM);
+    expect(freeBalanceEthPost[nodeFreeBalanceAddress]).to.be.eq(Zero);
+    expect(freeBalanceTokenPost[clientA.freeBalanceAddress]).to.be.eq(Zero);
+    expect(freeBalanceTokenPost[nodeFreeBalanceAddress]).to.be.least(TOKEN_AMOUNT);
   });
 });

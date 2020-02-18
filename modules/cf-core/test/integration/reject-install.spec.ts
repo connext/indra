@@ -1,9 +1,5 @@
 import { Node } from "../../src";
-import {
-  NODE_EVENTS,
-  ProposeMessage,
-  RejectProposalMessage
-} from "../../src/types";
+import { ProposeMessage, RejectProposalMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 
 import { setup, SetupContext } from "./setup";
@@ -16,8 +12,9 @@ import {
   getAppInstanceProposal,
   getInstalledAppInstances,
   getProposedAppInstances,
-  makeAndSendProposeCall
+  makeAndSendProposeCall,
 } from "./utils";
+import { REJECT_INSTALL_EVENT } from "@connext/types";
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
@@ -41,13 +38,13 @@ describe("Node method follows spec - rejectInstall", () => {
       expect(await getInstalledAppInstances(nodeB)).toEqual([]);
 
       let proposedAppId: string;
-      nodeA.on("REJECT_INSTALL_EVENT", async (msg: RejectProposalMessage) => {
+      nodeA.on(REJECT_INSTALL_EVENT, async (msg: RejectProposalMessage) => {
         assertNodeMessage(msg, {
           from: nodeB.publicIdentifier,
-          type: "REJECT_INSTALL_EVENT",
+          type: REJECT_INSTALL_EVENT,
           data: {
-            appInstanceId: proposedAppId
-          }
+            appInstanceId: proposedAppId,
+          },
         });
         expect((await getProposedAppInstances(nodeA)).length).toEqual(0);
         expect((await getProposedAppInstances(nodeB)).length).toEqual(0);
@@ -63,16 +60,9 @@ describe("Node method follows spec - rejectInstall", () => {
         await nodeB.rpcRouter.dispatch(rejectReq);
       });
 
-      const { params, appInstanceId } = await makeAndSendProposeCall(
-        nodeA,
-        nodeB,
-        TicTacToeApp
-      );
+      const { params, appInstanceId } = await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp);
 
-      await confirmProposedAppInstance(
-        params,
-        await getAppInstanceProposal(nodeA, appInstanceId)
-      );
+      await confirmProposedAppInstance(params, await getAppInstanceProposal(nodeA, appInstanceId));
     });
     it("Node A installs, node a rejects", async done => {
       const multisigAddress = await createChannel(nodeA, nodeB);
@@ -83,13 +73,13 @@ describe("Node method follows spec - rejectInstall", () => {
       expect(await getInstalledAppInstances(nodeB)).toEqual([]);
 
       let proposedAppId: string;
-      nodeB.on("REJECT_INSTALL_EVENT", async (msg: RejectProposalMessage) => {
+      nodeB.on(REJECT_INSTALL_EVENT, async (msg: RejectProposalMessage) => {
         assertNodeMessage(msg, {
           from: nodeA.publicIdentifier,
-          type: "REJECT_INSTALL_EVENT",
+          type: REJECT_INSTALL_EVENT,
           data: {
-            appInstanceId: proposedAppId
-          }
+            appInstanceId: proposedAppId,
+          },
         });
         expect((await getProposedAppInstances(nodeA)).length).toEqual(0);
         expect((await getProposedAppInstances(nodeB)).length).toEqual(0);
@@ -105,16 +95,9 @@ describe("Node method follows spec - rejectInstall", () => {
         await nodeA.rpcRouter.dispatch(rejectReq);
       });
 
-      const { params, appInstanceId } = await makeAndSendProposeCall(
-        nodeA,
-        nodeB,
-        TicTacToeApp
-      );
+      const { params, appInstanceId } = await makeAndSendProposeCall(nodeA, nodeB, TicTacToeApp);
 
-      await confirmProposedAppInstance(
-        params,
-        await getAppInstanceProposal(nodeA, appInstanceId)
-      );
+      await confirmProposedAppInstance(params, await getAppInstanceProposal(nodeA, appInstanceId));
     });
   });
 });

@@ -1,7 +1,6 @@
 import { parseEther } from "ethers/utils";
 
 import { Node } from "../../src";
-import { NODE_EVENTS } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
@@ -10,7 +9,7 @@ import {
   collateralizeChannel,
   constructUninstallVirtualRpc,
   createChannel,
-  installVirtualApp
+  installVirtualApp,
 } from "./utils";
 
 expect.extend({ toBeLt });
@@ -36,27 +35,12 @@ describe("Concurrently uninstalling virtual and installing virtual applications 
     multisigAddressAB = await createChannel(nodeA, nodeB);
     multisigAddressBC = await createChannel(nodeB, nodeC);
 
-    await collateralizeChannel(
-      multisigAddressAB,
-      nodeA,
-      nodeB,
-      parseEther("2")
-    );
+    await collateralizeChannel(multisigAddressAB, nodeA, nodeB, parseEther("2"));
 
-    await collateralizeChannel(
-      multisigAddressBC,
-      nodeB,
-      nodeC,
-      parseEther("2")
-    );
+    await collateralizeChannel(multisigAddressBC, nodeB, nodeC, parseEther("2"));
 
     // install a virtual app
-    installedAppInstanceId = await installVirtualApp(
-      nodeA,
-      nodeB,
-      nodeC,
-      TicTacToeApp
-    );
+    installedAppInstanceId = await installVirtualApp(nodeA, nodeB, nodeC, TicTacToeApp);
   });
 
   it("will uninstall virtual and install virtual successfully when called by the same node", async done => {
@@ -71,10 +55,7 @@ describe("Concurrently uninstalling virtual and installing virtual applications 
     nodeC.once("UNINSTALL_VIRTUAL_EVENT", registerEvent);
 
     nodeA.rpcRouter.dispatch(
-      constructUninstallVirtualRpc(
-        installedAppInstanceId,
-        nodeB.publicIdentifier
-      )
+      constructUninstallVirtualRpc(installedAppInstanceId, nodeB.publicIdentifier),
     );
 
     installVirtualApp(nodeA, nodeB, nodeC, TicTacToeApp);
@@ -92,10 +73,7 @@ describe("Concurrently uninstalling virtual and installing virtual applications 
     nodeA.once("UNINSTALL_VIRTUAL_EVENT", registerEvent);
 
     nodeC.rpcRouter.dispatch(
-      constructUninstallVirtualRpc(
-        installedAppInstanceId,
-        nodeB.publicIdentifier
-      )
+      constructUninstallVirtualRpc(installedAppInstanceId, nodeB.publicIdentifier),
     );
 
     installVirtualApp(nodeA, nodeB, nodeC, TicTacToeApp);

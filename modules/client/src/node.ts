@@ -1,9 +1,7 @@
 import { IMessagingService } from "@connext/messaging";
 import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
-import uuid = require("uuid");
-
-import { ChannelProvider } from "./channelProvider";
+import uuid from "uuid";
 import { Logger, NATS_ATTEMPTS, NATS_TIMEOUT, stringify } from "./lib";
 import {
   AppRegistry,
@@ -12,52 +10,26 @@ import {
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
+  IChannelProvider,
+  INodeApiClient,
   makeChecksumOrEthAddress,
   NodeInitializationParameters,
-  PaymentProfile,
+  RebalanceProfile,
+  PendingAsyncTransfer,
   RequestCollateralResponse,
   ResolveLinkedTransferResponse,
   SupportedApplication,
-  SupportedNetwork,
   Transfer,
 } from "./types";
 import { invalidXpub } from "./validation";
+import { chan_nodeAuth } from "@connext/types";
 
 // Include our access token when interacting with these subjects
-const guardedSubjects = ["channel", "lock", "transfer"];
+const guardedSubjects = [];
 const sendFailed = "Failed to send message";
 
-export interface INodeApiClient {
-  acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any>;
-  addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile>;
-  appRegistry(appDetails?: {
-    name: SupportedApplication;
-    network: SupportedNetwork;
-  }): Promise<AppRegistry>;
-  config(): Promise<GetConfigResponse>;
-  createChannel(): Promise<CreateChannelResponse>;
-  getChannel(): Promise<GetChannelResponse>;
-  getLatestSwapRate(from: string, to: string): Promise<string>;
-  getPaymentProfile(assetId?: string): Promise<PaymentProfile>;
-  getTransferHistory(publicIdentifier: string): Promise<Transfer[]>;
-  requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
-  withdraw(tx: CFCoreTypes.MinimalTransaction): Promise<TransactionResponse>;
-  fetchLinkedTransfer(paymentId: string): Promise<any>;
-  resolveLinkedTransfer(
-    paymentId: string,
-    linkedHash: string,
-    meta: object,
-  ): Promise<ResolveLinkedTransferResponse>;
-  recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
-  restoreState(publicIdentifier: string): Promise<any>;
-  subscribeToSwapRates(from: string, to: string, callback: any): void;
-  unsubscribeFromSwapRates(from: string, to: string): void;
-  // TODO: fix types
-  verifyAppSequenceNumber(appSequenceNumber: number): Promise<ChannelAppSequences>;
-}
-
 // NOTE: swap rates are given as a decimal string describing:
-// Given 1 unit of `from`, how many units `to` are recieved.
+// Given 1 unit of `from`, how many units `to` are received.
 // eg the rate string might be "202.02" if 1 eth can be swapped for 202.02 dai
 
 export class NodeApiClient implements INodeApiClient {
@@ -65,9 +37,10 @@ export class NodeApiClient implements INodeApiClient {
   public latestSwapRates: { [key: string]: string } = {};
   public log: Logger;
 
-  private _userPublicIdentifier: string | undefined; // tslint:disable-line:variable-name
-  private _nodePublicIdentifier: string | undefined; // tslint:disable-line:variable-name
-  private _channelProvider: ChannelProvider | undefined; // tslint:disable-line:variable-name
+  private _userPublicIdentifier: string | undefined;
+  private _nodePublicIdentifier: string | undefined;
+  private _channelProvider: IChannelProvider | undefined;
+  private _authToken: any;
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
@@ -79,11 +52,11 @@ export class NodeApiClient implements INodeApiClient {
 
   ////////////////////////////////////////
   // GETTERS/SETTERS
-  get channelProvider(): ChannelProvider | undefined {
+  get channelProvider(): IChannelProvider | undefined {
     return this._channelProvider;
   }
 
-  set channelProvider(channelProvider: ChannelProvider) {
+  set channelProvider(channelProvider: IChannelProvider) {
     this._channelProvider = channelProvider;
   }
 
@@ -125,11 +98,15 @@ export class NodeApiClient implements INodeApiClient {
     return retVal;
   }
 
-  public async appRegistry(appDetails?: {
-    name: SupportedApplication;
-    network: SupportedNetwork;
-  }): Promise<AppRegistry> {
-    return (await this.send("app-registry", appDetails)) as AppRegistry;
+  public async appRegistry(
+    appDetails?:
+      | {
+          name: SupportedApplication;
+          chainId: number;
+        }
+      | { appDefinitionAddress: string },
+  ): Promise<AppRegistry> {
+    return (await this.send("app-registry", { data: appDetails })) as AppRegistry;
   }
 
   public async config(): Promise<GetConfigResponse> {
@@ -144,15 +121,7 @@ export class NodeApiClient implements INodeApiClient {
     return await this.send(`channel.get.${this.userPublicIdentifier}`);
   }
 
-  public async getPendingAsyncTransfers(): Promise<
-    {
-      assetId: string;
-      amount: string;
-      encryptedPreImage: string;
-      linkedHash: string;
-      paymentId: string;
-    }[]
-  > {
+  public async getPendingAsyncTransfers(): Promise<PendingAsyncTransfer[]> {
     return (await this.send(`transfer.get-pending.${this.userPublicIdentifier}`)) || [];
   }
 
@@ -175,7 +144,7 @@ export class NodeApiClient implements INodeApiClient {
     } catch (e) {
       // TODO: node should return once deposit starts
       if (e.message.startsWith("Request timed out")) {
-        this.log.warn(`request collateral message timed out`);
+        this.log.warn("request collateral message timed out");
         return;
       }
       throw e;
@@ -206,11 +175,7 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
-  public async addPaymentProfile(profile: PaymentProfile): Promise<PaymentProfile> {
-    return await this.send(`channel.add-profile.${this.userPublicIdentifier}`, profile);
-  }
-
-  public async getPaymentProfile(assetId?: string): Promise<PaymentProfile> {
+  public async getRebalanceProfile(assetId?: string): Promise<RebalanceProfile> {
     return await this.send(`channel.get-profile.${this.userPublicIdentifier}`, {
       assetId: makeChecksumOrEthAddress(assetId),
     });
@@ -220,7 +185,7 @@ export class NodeApiClient implements INodeApiClient {
     recipientPublicIdentifier: string,
     encryptedPreImage: string,
     linkedHash: string,
-  ): Promise<any> {
+  ): Promise<{ linkedHash: string }> {
     return await this.send(`transfer.set-recipient.${this.userPublicIdentifier}`, {
       encryptedPreImage,
       linkedHash,
@@ -289,15 +254,27 @@ export class NodeApiClient implements INodeApiClient {
   private async getAuthToken(): Promise<string> {
     if (!this.channelProvider) {
       throw new Error(
-        `Must have instantiated a channel provider (ie a signing thing) before setting auth token`,
+        "Must have instantiated a channel provider (ie a signing thing) before setting auth token",
       );
     }
-    const nonce = await this.send("auth.getNonce", {
-      address: this.channelProvider.signerAddress,
-    });
-    const sig = await this.channelProvider.send("chan_nodeAuth", { message: nonce });
-    const token = `${nonce}:${sig}`;
-    return token;
+    let token;
+    // If we have a cached token, use it. Otherwise, get a new one.
+    if (this._authToken && this._authToken.expiry < Date.now()) {
+      token = this._authToken;
+    } else {
+      const unsignedToken = await this.send("auth.getNonce", {
+        address: this.channelProvider.signerAddress,
+      });
+      if (unsignedToken.expiry < Date.now()) {
+        throw new Error("Got expired authentication nonce from hub - this shouldnt happen!");
+      }
+      const sig = await this.channelProvider.send(chan_nodeAuth, { message: unsignedToken.nonce });
+      this._authToken = token = {
+        expiry: unsignedToken.expiry,
+        value: `${unsignedToken.nonce}:${sig}`,
+      };
+    }
+    return token.value;
   }
 
   private async send(subject: string, data?: any): Promise<any | undefined> {
@@ -327,16 +304,17 @@ export class NodeApiClient implements INodeApiClient {
 
   private async sendAttempt(subject: string, data?: any): Promise<any | undefined> {
     this.log.debug(
-      `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : `without data`}`,
+      `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : "without data"}`,
     );
     const payload = {
       ...data,
       id: uuid.v4(),
     };
     if (guardedSubjects.includes(subject.split(".")[0])) {
+      throw new Error("We are not doing auth right now, this should not ever happen!");
       payload.token = await this.getAuthToken();
     }
-    let msg;
+    let msg: any;
     try {
       msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
     } catch (e) {
@@ -344,7 +322,7 @@ export class NodeApiClient implements INodeApiClient {
     }
     let error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     if (error && error.startsWith("Invalid token")) {
-      this.log.info(`Auth error, token might have expired. Let's get a fresh token & try again.`);
+      this.log.info("Auth error, token might have expired. Let's get a fresh token & try again.");
       payload.token = await this.getAuthToken();
       msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
       error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
@@ -353,8 +331,8 @@ export class NodeApiClient implements INodeApiClient {
       this.log.info(`Maybe this message is malformed: ${stringify(msg)}`);
       return undefined;
     }
-    const { err, response, ...rest } = msg.data;
-    if (err || error) {
+    const { err, response } = msg.data;
+    if (err || error || msg.data.err) {
       throw new Error(`Error sending request. Message: ${stringify(msg)}`);
     }
     const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;

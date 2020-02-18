@@ -45,6 +45,19 @@ jobs:
     - run: make client
     - run: make test-client
 
+  test-contracts:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Cache node modules
+      uses: actions/cache@v1
+      with:
+        path: .npm
+        key: npm-${{ hashFiles('package-lock.json') }}
+        restore-keys: npm-
+    - run: make contracts
+    - run: make test-contracts
+
   test-node:
     runs-on: ubuntu-latest
     steps:
@@ -66,15 +79,23 @@ jobs:
         CMD: 'echo Successfully connected to $STAGING_DOMAINNAME: `hostname`;'
 
   test-integration:
+    env:
+      INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
     runs-on: ubuntu-latest
     needs: [build]
     steps:
     - uses: actions/checkout@v1
     - run: make pull-commit
     - run: make start-test-staging
+    - run: sleep 15 && make dls
     - run: TEST_MODE=staging make test-integration
+    - name: Print node logs
+      if: failure()
+      run: docker service logs --tail 200 indra_node
 
   test-backwards-compatibility:
+    env:
+      INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
     runs-on: ubuntu-latest
     needs: [build]
     steps:
@@ -83,30 +104,27 @@ jobs:
     - run: make start-test-staging
     - run: sleep 15 && make dls
     - run: make test-backwards-compatibility
-
-  test-bot:
-    runs-on: ubuntu-latest
-    needs: [build]
-    steps:
-    - uses: actions/checkout@v1
-    - run: make pull-commit
-    - run: make start-test-staging
-    - run: TEST_MODE=staging make test-bot
+    - name: Print node logs
+      if: failure()
+      run: docker service logs --tail 200 indra_node
 
   test-daicard:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-16.04
     needs: [build]
     steps:
     - uses: actions/checkout@v1
     - run: make pull-commit
     - run: make start-test-staging
     - run: make test-daicard
+    - name: Print node logs
+      if: failure()
+      run: docker service logs --tail 200 indra_node
 
   deploy-staging:
     env:
       RINKEBY_ETH_PROVIDER: ${{ secrets.RINKEBY_ETH_PROVIDER }}
       STAGING_DOMAINNAME: staging.indra.connext.network
-    needs: [test-backwards-compatibility, test-bot, test-cf, test-client, test-daicard, test-integration, test-node, test-ssh]
+    needs: [test-cf, test-client, test-contracts, test-daicard, test-integration, test-node, test-ssh]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1

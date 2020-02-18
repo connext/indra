@@ -1,17 +1,24 @@
 import * as connext from "@connext/client";
-import { CF_PATH, ConnextClientStorePrefix } from "@connext/types";
+import { ConnextStore, PisaClientBackupAPI } from "@connext/store";
+import {
+  CF_PATH,
+  ConnextClientStorePrefix,
+  RECEIVE_TRANSFER_FINISHED_EVENT,
+  RECEIVE_TRANSFER_STARTED_EVENT,
+  RECEIVE_TRANSFER_FAILED_EVENT,
+} from "@connext/types";
 import WalletConnectChannelProvider from "@walletconnect/channel-provider";
 import { Paper, withStyles, Grid } from "@material-ui/core";
 import { Contract, ethers as eth } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
-import { formatEther, parseEther } from "ethers/utils";
+import { formatEther } from "ethers/utils";
 import interval from "interval-promise";
 import { PisaClient } from "pisa-client";
 import React from "react";
 import { BrowserRouter as Router, Route } from "react-router-dom";
-import tokenArtifacts from "openzeppelin-solidity/build/contracts/ERC20Mintable.json";
 import { interpret } from "xstate";
+import tokenAbi from "human-standard-token-abi";
 
 import "./App.css";
 
@@ -35,7 +42,6 @@ import {
   Currency,
   migrate,
   minBN,
-  storeFactory,
   toBN,
   tokenToWei,
   weiToToken,
@@ -74,13 +80,6 @@ const MAX_CHANNEL_VALUE = Currency.DAI("30");
 // profile on initial load in the case the
 // user is being paid without depositing, or
 // in the case where the user is redeeming a link
-
-// NOTE: in the redeem controller, if the default payment is
-// insufficient, then it will be updated. the same thing
-// happens in autodeposit, if the eth deposited > deposit
-// needed for autoswap
-const DEFAULT_COLLATERAL_MINIMUM = Currency.DAI("5");
-const DEFAULT_AMOUNT_TO_COLLATERALIZE = Currency.DAI("10");
 
 const style = withStyles(theme => ({
   paper: {
@@ -156,10 +155,10 @@ class App extends React.Component {
 
   setWalletConnext = useWalletConnext => {
     // clear any pre-existing sessions
-    localStorage.removeItem("wcUri")
-    localStorage.removeItem("walletconnect")
+    localStorage.removeItem("wcUri");
+    localStorage.removeItem("walletconnect");
     // set wallet connext
-    localStorage.setItem("useWalletConnext", !!useWalletConnext)
+    localStorage.setItem("useWalletConnext", !!useWalletConnext);
     this.setState({ useWalletConnext });
     window.location.reload();
   };
@@ -229,15 +228,16 @@ class App extends React.Component {
       const pisaUrl = urls.pisaUrl(network.chainId);
       if (pisaUrl) {
         console.log(`Using external state backup service: ${pisaUrl}`);
-        store = storeFactory({
+        const backupService = new PisaClientBackupAPI({
           wallet,
           pisaClient: new PisaClient(
             pisaUrl,
             "0xa4121F89a36D1908F960C2c9F057150abDb5e1E3", // TODO: Don't hardcode
           ),
         });
+        store = new ConnextStore(window.localStorage, { backupService });
       } else {
-        store = storeFactory();
+        store = new ConnextStore(window.localStorage);
       }
 
       // If store has double prefixes, flush and restore
@@ -272,9 +272,9 @@ class App extends React.Component {
     } else if (useWalletConnext) {
       const channelProvider = new WalletConnectChannelProvider();
       console.log(`Using WalletConnect with provider: ${JSON.stringify(channelProvider, null, 2)}`);
-      await channelProvider.enable();	
-      console.log(	
-        `ChannelProvider Enabled - config: ${JSON.stringify(channelProvider.config, null, 2)}`,	
+      await channelProvider.enable();
+      console.log(
+        `ChannelProvider Enabled - config: ${JSON.stringify(channelProvider.config, null, 2)}`,
       );
       // register channel provider listener for logging
       channelProvider.on("error", data => {
@@ -297,13 +297,7 @@ class App extends React.Component {
     }
     console.log(`Successfully connected channel`);
 
-    await channel.isAvailable();
-
-    const token = new Contract(
-      channel.config.contractAddresses.Token,
-      tokenArtifacts.abi,
-      ethProvider,
-    );
+    const token = new Contract(channel.config.contractAddresses.Token, tokenAbi, ethProvider);
     const swapRate = await channel.getLatestSwapRate(AddressZero, token.address);
 
     console.log(`Client created successfully!`);
@@ -320,18 +314,18 @@ class App extends React.Component {
       this.setState({ swapRate: res.swapRate });
     });
 
-    channel.on("RECIEVE_TRANSFER_STARTED", data => {
-      console.log("Received RECIEVE_TRANSFER_STARTED event: ", data);
+    channel.on(RECEIVE_TRANSFER_STARTED_EVENT, data => {
+      console.log(`Received ${RECEIVE_TRANSFER_STARTED_EVENT} event: `, data);
       machine.send("START_RECEIVE");
     });
 
-    channel.on("RECIEVE_TRANSFER_FINISHED", data => {
-      console.log("Received RECIEVE_TRANSFER_FINISHED event: ", data);
+    channel.on(RECEIVE_TRANSFER_FINISHED_EVENT, data => {
+      console.log(`Received ${RECEIVE_TRANSFER_FINISHED_EVENT} event: `, data);
       machine.send("SUCCESS_RECEIVE");
     });
 
-    channel.on("RECIEVE_TRANSFER_FAILED", data => {
-      console.log("Received RECIEVE_TRANSFER_FAILED event: ", data);
+    channel.on(RECEIVE_TRANSFER_FAILED_EVENT, data => {
+      console.log(`Received ${RECEIVE_TRANSFER_FAILED_EVENT} event: `, data);
       machine.send("ERROR_RECEIVE");
     });
 
@@ -358,11 +352,7 @@ class App extends React.Component {
     if (!channel.config.contractAddresses.SAIToken) {
       return Zero;
     }
-    const saiToken = new Contract(
-      channel.config.contractAddresses.SAIToken,
-      tokenArtifacts.abi,
-      wallet,
-    );
+    const saiToken = new Contract(channel.config.contractAddresses.SAIToken, tokenAbi, wallet);
     const freeSaiBalance = await channel.getFreeBalance(saiToken.address);
     const mySaiBalance = freeSaiBalance[channel.freeBalanceAddress];
     return mySaiBalance;
@@ -537,7 +527,6 @@ class App extends React.Component {
       console.log(`Successfully deposited ether! Result: ${JSON.stringify(result, null, 2)}`);
 
       machine.send(["SUCCESS_DEPOSIT"]);
-      this.autoSwap();
     }
   };
 
@@ -565,9 +554,9 @@ class App extends React.Component {
     }
 
     const maxSwap = tokenToWei(maxDeposit.toDAI().wad.sub(balance.channel.token.wad), swapRate);
-    const weiToSwap = minBN([balance.channel.ether.wad, maxSwap]);
+    const availableWeiToSwap = minBN([balance.channel.ether.wad, maxSwap]);
 
-    if (weiToSwap.isZero()) {
+    if (availableWeiToSwap.isZero()) {
       // can happen if the balance.channel.ether.wad is 1 due to rounding
       console.debug(`Will not exchange 0 wei. This is still weird, so here are some logs:`);
       console.debug(`   - maxSwap: ${maxSwap.toString()}`);
@@ -577,22 +566,45 @@ class App extends React.Component {
     }
 
     const hubFBAddress = connext.utils.xpubToAddress(channel.nodePublicIdentifier);
-    const collateralNeeded = balance.channel.token.wad.add(weiToToken(weiToSwap, swapRate));
-    let collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress]);
+    // in swap, collateral needed is just weiToToken(availableWeiToSwap)
+    const tokensForWei = weiToToken(availableWeiToSwap, swapRate);
+    let collateral = (await channel.getFreeBalance(token.address))[hubFBAddress];
 
-    console.log(`Collateral: ${collateral} tokens, need: ${formatEther(collateralNeeded)}`);
-    if (collateralNeeded.gt(parseEther(collateral))) {
+    console.log(
+      `Hub token collateral: ${formatEther(collateral)}, amount to swap: ${formatEther(
+        tokensForWei,
+      )}`,
+    );
+    const { collateralizationInFlight } = await channel.getChannel();
+    if (tokensForWei.gt(collateral) && !collateralizationInFlight) {
       console.log(`Requesting more collateral...`);
       await channel.requestCollateral(token.address);
-      collateral = formatEther((await channel.getFreeBalance(token.address))[hubFBAddress]);
-      console.log(`Collateral: ${collateral} tokens, need: ${formatEther(collateralNeeded)}`);
-      return;
+      collateral = (await channel.getFreeBalance(token.address))[hubFBAddress];
+      console.debug(
+        `[after collateral request] Hub token collateral: ${formatEther(
+          collateral,
+        )}, amount to swap: ${formatEther(tokensForWei)}`,
+      );
+      // dont return here, will have added the collateral possible
+      // upon return of request collateral function
     }
-    console.log(`Attempting to swap ${formatEther(weiToSwap)} eth for dai at rate: ${swapRate}`);
+
+    // depending on payment profile for user and amount to swap,
+    // the amount the hub collateralized could be lte token equivalent
+    // of client eth deposit
+    const weiToSwap = collateral.sub(tokensForWei).gte(Zero)
+      ? availableWeiToSwap.toString() // sufficient collateral for entire swap
+      : tokenToWei(collateral, swapRate).toString(); // insufficient, claim all hubs balance
+
+    console.log(
+      `Attempting to swap ${formatEther(weiToSwap)} eth for ${formatEther(
+        weiToToken(weiToSwap, swapRate),
+      )} dai at rate: ${swapRate}`,
+    );
     machine.send(["START_SWAP"]);
 
     await channel.swap({
-      amount: weiToSwap.toString(),
+      amount: weiToSwap,
       fromAssetId: AddressZero,
       swapRate,
       toAssetId: token.address,
@@ -747,9 +759,7 @@ class App extends React.Component {
             />
             <Route
               path="/redeem"
-              render={props => (
-                <RedeemCard {...props} channel={channel} token={token} />
-              )}
+              render={props => <RedeemCard {...props} channel={channel} token={token} />}
             />
             <Route
               path="/cashout"
@@ -768,7 +778,7 @@ class App extends React.Component {
               )}
             />
             <Route path="/support" render={props => <SupportCard {...props} channel={channel} />} />
-            <Confirmations machine={machine} state={state} network={network} state={state} />
+            <Confirmations machine={machine} network={network} state={state} />
           </Paper>
         </Grid>
       </Router>

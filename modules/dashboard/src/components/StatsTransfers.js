@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Button, Grid, Typography, styled } from "@material-ui/core";
 import { WeiPerEther } from "ethers/constants";
 
-
 const TopGrid = styled(Grid)({
   display: "flex",
   flexWrap: "wrap",
@@ -17,7 +16,7 @@ const TopGrid = styled(Grid)({
 const SectionWrapper = styled(Grid)({
   marginTop: "1%",
   marginBottom: "1%",
-  width:"30%",
+  width: "30%",
 });
 
 const StatTypography = styled(Typography)({
@@ -57,6 +56,11 @@ const StatsTransfers = props => {
       pastWeekAvg = [],
       pastMonthAvg = [];
 
+    let pastDayReduced;
+    let pastWeekReduced;
+    let pastMonthReduced;
+    let totalTransfersReduced;
+
     if (res) {
       for (let transfer of res) {
         totalTransfers.push(parseInt(transfer.amount._hex, 16));
@@ -66,34 +70,36 @@ const StatsTransfers = props => {
         if (hourDifference <= 24) {
           pastDayTotal++;
           pastDayAvg.push(parseInt(transfer.amount._hex, 16));
-        } else if (hourDifference > 24 && hourDifference <= 168) {
+        }
+        if (hourDifference <= 168) {
           pastWeekTotal++;
           pastWeekAvg.push(parseInt(transfer.amount._hex, 16));
-        } else if (hourDifference > 168 && hourDifference <= 720) {
+        }
+        if (hourDifference <= 720) {
           pastMonthTotal++;
           pastMonthAvg.push(parseInt(transfer.amount._hex, 16));
         }
       }
-      var pastDayReduced = pastDayAvg.reduce((a, b) => {
+      pastDayReduced = pastDayAvg.reduce((a, b) => {
         return a + b;
       }, 0);
-      var pastWeekReduced = pastWeekAvg.reduce((a, b) => {
+      pastWeekReduced = pastWeekAvg.reduce((a, b) => {
         return a + b;
       }, 0);
-      var pastMonthReduced = pastMonthAvg.reduce((a, b) => {
+      pastMonthReduced = pastMonthAvg.reduce((a, b) => {
         return a + b;
       }, 0);
 
-      var totalTransfersReduced = totalTransfers.reduce((a, b) => {
+      totalTransfersReduced = totalTransfers.reduce((a, b) => {
         return a + b;
       }, 0);
     }
-    var averageTransfer = totalTransfersReduced / res.length / WeiPerEther;
-    var averageTransferDay = pastDayReduced / pastDayAvg.length / WeiPerEther;
-    var averageTransferWeek = pastWeekReduced / pastWeekAvg.length / WeiPerEther;
-    var averageTransferMonth = pastMonthReduced / pastMonthAvg.length / WeiPerEther;
+    let averageTransfer = totalTransfersReduced / res.length / WeiPerEther;
+    let averageTransferDay = pastDayReduced / pastDayAvg.length / WeiPerEther;
+    let averageTransferWeek = pastWeekReduced / pastWeekAvg.length / WeiPerEther;
+    let averageTransferMonth = pastMonthReduced / pastMonthAvg.length / WeiPerEther;
 
-    var transferDateWindows = {
+    let transferDateWindows = {
       pastDayTotal: pastDayTotal,
       averageTransferDay: averageTransferDay.toFixed(2),
       pastWeekTotal: pastWeekTotal,

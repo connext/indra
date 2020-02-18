@@ -1,26 +1,28 @@
 {
   "name": "@connext/messaging",
-  "version": "1.4.4",
+  "description": "Messaging module for Connext client",
+  "version": "4.1.0",
   "main": "dist/index.js",
   "iife": "dist/index.iife.js",
   "types": "dist/index.d.ts",
   "license": "MIT",
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
     "build": "tsc -p . && rollup -c",
     "build:watch": "tsc -p . && rollup -c -w",
-    "lint": "tslint -c tslint.json -p .",
-    "lint:fix": "tslint -c tslint.json -p . --fix",
-    "prepare": "npm run build"
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
   },
   "dependencies": {
-    "@connext/types": "1.4.4",
+    "@connext/types": "4.1.0",
     "ts-nats": "1.2.4",
     "websocket-nats": "0.3.3"
   },
   "devDependencies": {
-    "rollup": "1.27.14",
-    "rollup-plugin-typescript2": "0.25.3",
-    "typescript": "3.5.3"
+    "rollup": "1.31.1",
+    "rollup-plugin-typescript2": "0.26.0",
+    "typescript": "3.7.5"
   }
 }

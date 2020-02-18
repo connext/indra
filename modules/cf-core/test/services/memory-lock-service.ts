@@ -8,7 +8,7 @@ export class MemoryLockService implements CFCoreTypes.ILockService {
   async acquireLock(
     lockName: string,
     callback: (...args: any[]) => any,
-    timeout: number
+    timeout: number,
   ): Promise<any> {
     const lock = this.getOrCreateLock(lockName);
 

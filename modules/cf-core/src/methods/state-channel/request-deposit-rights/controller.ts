@@ -7,51 +7,52 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { ERC20 } from "../../../contracts";
 import { xkeyKthAddress } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes } from "../../../types";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
   INVALID_FACTORY_ADDRESS,
-  INCORRECT_MULTISIG_ADDRESS
+  INVALID_MASTERCOPY_ADDRESS,
+  INCORRECT_MULTISIG_ADDRESS,
 } from "../../errors";
-import {
-  installBalanceRefundApp,
-  uninstallBalanceRefundApp
-} from "../deposit/operation";
+import { installBalanceRefundApp, uninstallBalanceRefundApp } from "../deposit/operation";
 
 // TODO: maybe a better name? since it's a little smarter than just a plain install
 export default class RequestDepositRightsController extends NodeController {
-  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_requestDepositRights)
+  @jsonRpcMethod(ProtocolTypes.chan_requestDepositRights)
   public executeMethod: (
     requestHandler: RequestHandler,
-    params: CFCoreTypes.MethodParams
+    params: CFCoreTypes.MethodParams,
   ) => Promise<CFCoreTypes.MethodResult> = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.RequestDepositRightsParams
+    params: CFCoreTypes.RequestDepositRightsParams,
   ): Promise<string[]> {
     return [params.multisigAddress];
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.RequestDepositRightsParams
+    params: CFCoreTypes.RequestDepositRightsParams,
   ): Promise<void> {
-    const { store, provider, networkContext } = requestHandler;
+    const { store, provider } = requestHandler;
     const { multisigAddress } = params;
 
     const channel = await store.getStateChannel(multisigAddress);
 
-    if (!channel.proxyFactoryAddress) {
-      throw Error(INVALID_FACTORY_ADDRESS(channel.proxyFactoryAddress));
+    if (!channel.addresses.proxyFactory) {
+      throw Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
+    }
+
+    if (!channel.addresses.multisigMastercopy) {
+      throw Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userNeuteredExtendedKeys,
-      channel.proxyFactoryAddress,
-      networkContext.MinimumViableMultisig,
-      provider
+      channel.addresses,
+      provider,
     );
 
     if (expectedMultisigAddress !== channel.multisigAddress) {
@@ -61,14 +62,9 @@ export default class RequestDepositRightsController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.RequestDepositRightsParams
+    params: CFCoreTypes.RequestDepositRightsParams,
   ): Promise<CFCoreTypes.RequestDepositRightsResult> {
-    const {
-      provider,
-      store,
-      networkContext,
-      publicIdentifier
-    } = requestHandler;
+    const { provider, store, networkContext, publicIdentifier } = requestHandler;
     const { multisigAddress, tokenAddress } = params;
 
     params.tokenAddress = tokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
@@ -85,14 +81,11 @@ export default class RequestDepositRightsController extends NodeController {
     }
 
     if (
-      channel.hasBalanceRefundAppInstance(
-        networkContext.CoinBalanceRefundApp,
-        params.tokenAddress
-      )
+      channel.hasBalanceRefundAppInstance(networkContext.CoinBalanceRefundApp, params.tokenAddress)
     ) {
       const balanceRefundApp = channel.getBalanceRefundAppInstance(
         networkContext.CoinBalanceRefundApp,
-        params.tokenAddress
+        params.tokenAddress,
       );
       // if app is already pointing at us and the multisig balance has not changed,
       // do not uninstall
@@ -102,27 +95,23 @@ export default class RequestDepositRightsController extends NodeController {
 
       if (appIsCorrectlyInstalled) {
         return {
-          freeBalance: channel
-            .getFreeBalanceClass()
-            .withTokenAddress(params.tokenAddress),
+          freeBalance: channel.getFreeBalanceClass().withTokenAddress(params.tokenAddress),
           recipient: freeBalanceAddress,
-          tokenAddress: params.tokenAddress
+          tokenAddress: params.tokenAddress,
         };
       }
 
       // balance refund app is installed but in the wrong state, so reinstall
       await uninstallBalanceRefundApp(requestHandler, {
         ...params,
-        amount: Zero
+        amount: Zero,
       });
     }
     await installBalanceRefundApp(requestHandler, { ...params, amount: Zero });
     return {
-      freeBalance: channel
-        .getFreeBalanceClass()
-        .withTokenAddress(params.tokenAddress),
+      freeBalance: channel.getFreeBalanceClass().withTokenAddress(params.tokenAddress),
       recipient: freeBalanceAddress,
-      tokenAddress: params.tokenAddress
+      tokenAddress: params.tokenAddress,
     };
   }
 }

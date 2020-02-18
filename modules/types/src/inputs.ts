@@ -1,8 +1,7 @@
-import { BigNumber } from "ethers/utils";
-
 import { SimpleLinkedTransferAppState } from "./app";
-import { Address, CFCoreTypes } from "./cf";
+import { Address, BigNumber } from "./basic";
 import { AssetAmount } from "./channel";
+import { ProtocolTypes } from "./protocol";
 
 /////////////////////////////////
 ///////// SWAP
@@ -11,8 +10,16 @@ export type AllowedSwap = {
   to: string;
 };
 
+export const PriceOracleTypes = {
+  UNISWAP: "UNISWAP",
+};
+
+export type PriceOracleType = keyof typeof PriceOracleTypes;
+
 export type SwapRate = AllowedSwap & {
   rate: string;
+  priceOracleType: PriceOracleType;
+  blockNumber?: number;
 };
 
 /////////////////////////////////
@@ -27,7 +34,7 @@ export type DepositParametersBigNumber = DepositParameters<BigNumber>;
 
 export type RequestDepositRightsParameters = Omit<DepositParameters, "amount">;
 
-export type RequestDepositRightsResponse = CFCoreTypes.RequestDepositRightsResult;
+export type RequestDepositRightsResponse = ProtocolTypes.RequestDepositRightsResult;
 
 export type CheckDepositRightsParameters = RequestDepositRightsParameters;
 
@@ -40,9 +47,12 @@ export type CheckDepositRightsResponse<T = string> = {
 
 export type RescindDepositRightsParameters = RequestDepositRightsParameters;
 
-export type RescindDepositRightsResponse = CFCoreTypes.DepositResult;
+export type RescindDepositRightsResponse = ProtocolTypes.DepositResult;
 
 ////// Transfer types
+export const LINKED_TRANSFER = "LINKED_TRANSFER";
+export const LINKED_TRANSFER_TO_RECIPIENT = "LINKED_TRANSFER_TO_RECIPIENT";
+
 // TODO: would we ever want to pay people in the same app with multiple currencies?
 export type TransferParameters<T = string> = DepositParameters<T> & {
   recipient: Address;
@@ -73,7 +83,7 @@ export type WithdrawParametersBigNumber = WithdrawParameters<BigNumber>;
 // linked transfer
 export type ResolveLinkedTransferParameters<T = string> = Omit<
   LinkedTransferParameters<T>,
-  "amount" | "assetId"
+  "amount" | "assetId" | "meta"
 >;
 export type ResolveLinkedTransferParametersBigNumber = ResolveLinkedTransferParameters<BigNumber>;
 
@@ -83,9 +93,9 @@ export type ResolveLinkedTransferToRecipientParameters<T = string> = Omit<
 > & {
   amount: T;
   assetId: string;
-  conditionType: "LINKED_TRANSFER_TO_RECIPIENT";
+  conditionType: typeof LINKED_TRANSFER_TO_RECIPIENT;
 };
-// tslint:disable-next-line: max-line-length
+
 export type ResolveLinkedTransferToRecipientParametersBigNumber = ResolveLinkedTransferToRecipientParameters<
   BigNumber
 >;
@@ -97,8 +107,9 @@ export type ResolveConditionParameters<T = string> =
 
 export type ResolveLinkedTransferResponse = {
   appId: string;
-  freeBalance: CFCoreTypes.GetFreeBalanceStateResult;
+  freeBalance: ProtocolTypes.GetFreeBalanceStateResult;
   paymentId: string;
+  meta?: object;
 };
 
 // FIXME: should be union type of all supported conditions
@@ -107,14 +118,14 @@ export type ResolveConditionResponse = ResolveLinkedTransferResponse;
 ///// Conditional transfer types
 
 export const TransferConditions = {
-  LINKED_TRANSFER: "LINKED_TRANSFER",
-  LINKED_TRANSFER_TO_RECIPIENT: "LINKED_TRANSFER_TO_RECIPIENT",
+  [LINKED_TRANSFER]: LINKED_TRANSFER,
+  [LINKED_TRANSFER_TO_RECIPIENT]: LINKED_TRANSFER_TO_RECIPIENT,
 };
 export type TransferCondition = keyof typeof TransferConditions;
 
 // linked transfer types
 export type LinkedTransferParameters<T = string> = {
-  conditionType: "LINKED_TRANSFER";
+  conditionType: typeof LINKED_TRANSFER;
   amount: T;
   assetId?: Address;
   paymentId: string;
@@ -126,7 +137,7 @@ export type LinkedTransferParametersBigNumber = LinkedTransferParameters<BigNumb
 export type LinkedTransferResponse = {
   paymentId: string;
   preImage: string;
-  freeBalance: CFCoreTypes.GetFreeBalanceStateResult;
+  freeBalance: ProtocolTypes.GetFreeBalanceStateResult;
   meta?: object;
 };
 
@@ -134,7 +145,7 @@ export type LinkedTransferToRecipientParameters<T = string> = Omit<
   LinkedTransferParameters<T>,
   "conditionType"
 > & {
-  conditionType: "LINKED_TRANSFER_TO_RECIPIENT";
+  conditionType: typeof LINKED_TRANSFER_TO_RECIPIENT;
   recipient: string;
 };
 export type LinkedTransferToRecipientParametersBigNumber = LinkedTransferToRecipientParameters<

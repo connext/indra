@@ -9,11 +9,7 @@ import { AdminMessagingProviderId, MessagingProviderId } from "../constants";
 import { LinkedTransfer } from "../transfer/transfer.entity";
 import { AbstractMessagingProvider, stringify } from "../util";
 
-import {
-  AdminService,
-  FixProxyFactoryAddressesResponse,
-  GetChannelsWithoutProxyFactoryResponse,
-} from "./admin.service";
+import { AdminService, RepairCriticalAddressesResponse } from "./admin.service";
 
 class AdminMessaging extends AbstractMessagingProvider {
   constructor(
@@ -88,27 +84,12 @@ class AdminMessaging extends AbstractMessagingProvider {
     return await this.adminService.getLinkedTransferByPaymentId(paymentId);
   }
 
-  async getIncorrectMultisigAddresses(): Promise<
-    {
-      oldMultisigAddress: string;
-      expectedMultisigAddress: string;
-      userXpub: string;
-      channelId: number;
-    }[]
-  > {
-    return await this.adminService.getIncorrectMultisigAddresses();
-  }
-
   async getChannelsForMerging(): Promise<any[]> {
     return await this.adminService.getChannelsForMerging();
   }
 
-  async fixProxyFactoryAddresses(): Promise<FixProxyFactoryAddressesResponse> {
-    return await this.adminService.fixProxyFactoryAddresses();
-  }
-
-  async getChannelsWithoutProxyFactory(): Promise<GetChannelsWithoutProxyFactoryResponse> {
-    return await this.adminService.getChannelsWithoutProxyFactory();
+  async repairCriticalStateChannelAddresses(): Promise<RepairCriticalAddressesResponse> {
+    return await this.adminService.repairCriticalStateChannelAddresses();
   }
 
   async setupSubscriptions(): Promise<void> {
@@ -148,23 +129,13 @@ class AdminMessaging extends AbstractMessagingProvider {
     );   
 
     await super.connectRequestReponse(
-      "admin.get-incorrect-multisig",
-      this.authService.useAdminToken(this.getIncorrectMultisigAddresses.bind(this)),
-    );
-
-    await super.connectRequestReponse(
       "admin.get-channels-for-merging",
       this.authService.useAdminToken(this.getChannelsForMerging.bind(this)),
     );
 
     await super.connectRequestReponse(
-      "admin.fix-proxy-factory-addresses",
-      this.authService.useAdminToken(this.fixProxyFactoryAddresses.bind(this)),
-    );
-
-    await super.connectRequestReponse(
-      "admin.get-channels-no-proxy-factory",
-      this.authService.useAdminToken(this.getChannelsWithoutProxyFactory.bind(this)),
+      "admin.repair-critical-addresses",
+      this.authService.useAdminToken(this.repairCriticalStateChannelAddresses.bind(this)),
     );
   }
 }

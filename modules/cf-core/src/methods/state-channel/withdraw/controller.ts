@@ -1,10 +1,15 @@
-import { JsonRpcProvider, TransactionResponse } from "ethers/providers";
+import {
+  WITHDRAWAL_STARTED_EVENT,
+  WITHDRAWAL_FAILED_EVENT,
+  WITHDRAWAL_CONFIRMED_EVENT,
+} from "@connext/types";
+import { TransactionResponse } from "ethers/providers";
 import { jsonRpcMethod } from "rpc-server";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../constants";
 import { xkeyKthAddress } from "../../../machine";
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes, NODE_EVENTS } from "../../../types";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { getCreate2MultisigAddress } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
@@ -12,49 +17,37 @@ import {
   INCORRECT_MULTISIG_ADDRESS,
   INSUFFICIENT_FUNDS_TO_WITHDRAW,
   INVALID_FACTORY_ADDRESS,
-  WITHDRAWAL_FAILED
+  INVALID_MASTERCOPY_ADDRESS,
+  WITHDRAWAL_FAILED,
 } from "../../errors";
 
 import { runWithdrawProtocol } from "./operation";
 
 export default class WithdrawController extends NodeController {
-  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_withdraw)
+  @jsonRpcMethod(ProtocolTypes.chan_withdraw)
   public executeMethod = super.executeMethod;
 
   public static async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.WithdrawParams
+    params: CFCoreTypes.WithdrawParams,
   ): Promise<string[]> {
     const { store, publicIdentifier, networkContext } = requestHandler;
 
     const stateChannel = await store.getStateChannel(params.multisigAddress);
 
-    const tokenAddress =
-      params.tokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
+    const tokenAddress = params.tokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS;
 
     if (
-      stateChannel.hasBalanceRefundAppInstance(
-        networkContext.CoinBalanceRefundApp,
-        tokenAddress
-      )
+      stateChannel.hasBalanceRefundAppInstance(networkContext.CoinBalanceRefundApp, tokenAddress)
     ) {
       throw Error(CANNOT_WITHDRAW);
     }
 
     const senderBalance = stateChannel
       .getFreeBalanceClass()
-      .getBalance(
-        tokenAddress,
-        stateChannel.getFreeBalanceAddrOf(publicIdentifier)
-      );
+      .getBalance(tokenAddress, stateChannel.getFreeBalanceAddrOf(publicIdentifier));
     if (senderBalance.lt(params.amount)) {
-      throw Error(
-        INSUFFICIENT_FUNDS_TO_WITHDRAW(
-          tokenAddress,
-          params.amount,
-          senderBalance
-        )
-      );
+      throw Error(INSUFFICIENT_FUNDS_TO_WITHDRAW(tokenAddress, params.amount, senderBalance));
     }
 
     return [params.multisigAddress];
@@ -62,22 +55,25 @@ export default class WithdrawController extends NodeController {
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.WithdrawParams
+    params: CFCoreTypes.WithdrawParams,
   ): Promise<void> {
-    const { store, provider, networkContext } = requestHandler;
+    const { store, provider } = requestHandler;
     const { multisigAddress } = params;
 
     const channel = await store.getStateChannel(multisigAddress);
 
-    if (!channel.proxyFactoryAddress) {
-      throw Error(INVALID_FACTORY_ADDRESS(channel.proxyFactoryAddress));
+    if (!channel.addresses.proxyFactory) {
+      throw Error(INVALID_FACTORY_ADDRESS(channel.addresses.proxyFactory));
+    }
+
+    if (!channel.addresses.multisigMastercopy) {
+      throw Error(INVALID_MASTERCOPY_ADDRESS(channel.addresses.multisigMastercopy));
     }
 
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userNeuteredExtendedKeys,
-      channel.proxyFactoryAddress,
-      networkContext.MinimumViableMultisig,
-      provider
+      channel.addresses,
+      provider,
     );
 
     if (expectedMultisigAddress !== channel.multisigAddress) {
@@ -87,7 +83,7 @@ export default class WithdrawController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.WithdrawParams
+    params: CFCoreTypes.WithdrawParams,
   ): Promise<CFCoreTypes.WithdrawResult> {
     const {
       store,
@@ -95,7 +91,7 @@ export default class WithdrawController extends NodeController {
       wallet,
       publicIdentifier,
       blocksNeededForConfirmation,
-      outgoing
+      outgoing,
     } = requestHandler;
 
     const { multisigAddress, recipient } = params;
@@ -122,44 +118,44 @@ export default class WithdrawController extends NodeController {
       ...commitment,
       gasPrice: await provider.getGasPrice(),
       gasLimit: 300000,
-      nonce
+      nonce,
     };
 
     let txResponse: TransactionResponse;
     try {
       txResponse = await wallet.sendTransaction(tx);
 
-      outgoing.emit("WITHDRAWAL_STARTED_EVENT", {
+      outgoing.emit(WITHDRAWAL_STARTED_EVENT, {
         from: publicIdentifier,
-        type: "WITHDRAWAL_STARTED_EVENT",
+        type: WITHDRAWAL_STARTED_EVENT,
         data: {
           params,
-          txHash: txResponse.hash
-        }
+          txHash: txResponse.hash,
+        },
       });
 
       const txReceipt = await provider.waitForTransaction(
         txResponse.hash as string,
-        blocksNeededForConfirmation
+        blocksNeededForConfirmation,
       );
 
-      outgoing.emit("WITHDRAWAL_CONFIRMED_EVENT", {
+      outgoing.emit(WITHDRAWAL_CONFIRMED_EVENT, {
         from: publicIdentifier,
-        type: "WITHDRAWAL_CONFIRMED_EVENT",
-        data: { txReceipt }
+        type: WITHDRAWAL_CONFIRMED_EVENT,
+        data: { txReceipt },
       });
     } catch (e) {
-      outgoing.emit(NODE_EVENTS.WITHDRAWAL_FAILED_EVENT, {
+      outgoing.emit(WITHDRAWAL_FAILED_EVENT, {
         from: publicIdentifier,
-        type: NODE_EVENTS.WITHDRAWAL_FAILED_EVENT,
-        data: e.toString()
+        type: WITHDRAWAL_FAILED_EVENT,
+        data: e.toString(),
       });
       throw Error(`${WITHDRAWAL_FAILED}: ${e.message}`);
     }
 
     return {
       recipient: params.recipient,
-      txHash: txResponse.hash!
+      txHash: txResponse.hash!,
     };
   }
 }

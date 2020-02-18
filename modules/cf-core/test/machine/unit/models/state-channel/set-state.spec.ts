@@ -10,7 +10,7 @@ import { generateRandomNetworkContext } from "../../../mocks";
 
 const APP_STATE = {
   foo: AddressZero,
-  bar: 42
+  bar: 42,
 };
 
 describe("StateChannel::setState", () => {
@@ -26,9 +26,12 @@ describe("StateChannel::setState", () => {
 
     sc1 = StateChannel.setupChannel(
       networkContext.IdentityApp,
-      networkContext.ProxyFactory,
+      {
+        proxyFactory: networkContext.ProxyFactory,
+        multisigMastercopy: networkContext.MinimumViableMultisig,
+      },
       multisigAddress,
-      xpubs
+      xpubs,
     );
 
     testApp = createAppInstanceForTest(sc1);
@@ -36,8 +39,8 @@ describe("StateChannel::setState", () => {
     sc1 = sc1.installApp(testApp, {
       [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
         [xkeyKthAddress(xpubs[0], 0)]: Zero,
-        [xkeyKthAddress(xpubs[1], 0)]: Zero
-      }
+        [xkeyKthAddress(xpubs[1], 0)]: Zero,
+      },
     });
 
     sc2 = sc1.setState(testApp.identityHash, APP_STATE);

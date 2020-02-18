@@ -3,12 +3,7 @@ import { parseEther } from "ethers/utils";
 
 import { Node } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
-import {
-  InstallMessage,
-  NODE_EVENTS,
-  ProposeMessage,
-  UninstallMessage
-} from "../../src/types";
+import { InstallMessage, ProposeMessage, UninstallMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
@@ -18,7 +13,7 @@ import {
   constructUninstallRpc,
   createChannel,
   makeInstallCall,
-  makeProposeCall
+  makeProposeCall,
 } from "./utils";
 
 expect.extend({ toBeLt });
@@ -48,7 +43,7 @@ describe("Node method follows spec - uninstall", () => {
         multisigAddress,
         nodeA,
         nodeB,
-        parseEther("2") // We are depositing in 2 and use 1 for each concurrent app
+        parseEther("2"), // We are depositing in 2 and use 1 for each concurrent app
       );
 
       nodeB.on("PROPOSE_INSTALL_EVENT", (msg: ProposeMessage) => {
@@ -66,7 +61,7 @@ describe("Node method follows spec - uninstall", () => {
         One,
         CONVENTION_FOR_ETH_TOKEN_ADDRESS,
         One,
-        CONVENTION_FOR_ETH_TOKEN_ADDRESS
+        CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       );
 
       nodeA.rpcRouter.dispatch(proposeRpc);

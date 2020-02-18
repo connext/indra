@@ -12,7 +12,7 @@ describe("p-queue", () => {
         new Promise(async r => {
           await p;
           r("abc");
-        })
+        }),
     );
     expect(ret).toBe("abc");
   });
@@ -26,7 +26,7 @@ describe("p-queue", () => {
         new Promise(async r => {
           await p;
           r("abc");
-        })
+        }),
     );
     expect(ret).toBe("abc");
   });
@@ -36,7 +36,7 @@ describe("addToManyQueues", () => {
   it("should work with one queue", async () => {
     const ret = await addToManyQueues(
       [new Queue({ concurrency: 1 })],
-      () => new Promise(r => setTimeout(() => r("abc"), 1))
+      () => new Promise(r => setTimeout(() => r("abc"), 1)),
     );
     expect(ret).toBe("abc");
   });
@@ -54,7 +54,7 @@ describe("addToManyQueues", () => {
         new Promise(r => {
           noTimesExecutionFunctionRan += 1;
           r("abc");
-        })
+        }),
     );
     expect(ret).toBe("abc");
     expect(noTimesExecutionFunctionRan).toBe(1);
@@ -75,7 +75,7 @@ describe("addToManyQueues", () => {
         new Promise(r => {
           noTimesExecutionFunctionRan += 1;
           r("abc");
-        })
+        }),
     );
     expect(ret).toBe("abc");
     expect(noTimesExecutionFunctionRan).toBe(1);
@@ -120,7 +120,7 @@ describe("addToManyQueues", () => {
           expect(sharedQueue.pending + sharedQueue.size).toEqual(2);
           hasExecutionFinishedOnFirstOne = true;
           r();
-        })
+        }),
     );
 
     addToManyQueues(
@@ -130,7 +130,7 @@ describe("addToManyQueues", () => {
           hasExecutionStartedOnSecondOne = true;
           hasExecutionFinishedOnSecondOne = true;
           r();
-        })
+        }),
     );
 
     // NOTE: onEmpty could also be used, but doesnt guarantee
@@ -192,7 +192,7 @@ describe("addToManyQueues", () => {
         noTimesExecutionFunctionRan[1] === 1
       ) {
         throw new Error(
-          `Seems like the first function was not completed before the second one.. Yikes.`
+          `Seems like the first function was not completed before the second one.. Yikes.`,
         );
       }
     };
@@ -225,7 +225,7 @@ describe("addToManyQueues", () => {
           noTimesExecutionFunctionRan[0] += 1;
           hasExecutionFinishedOnFirstOne = true;
           r();
-        })
+        }),
     );
 
     await addToManyQueues(
@@ -239,7 +239,7 @@ describe("addToManyQueues", () => {
           noTimesExecutionFunctionRan[1] += 1;
           hasExecutionFinishedOnSecondOne = true;
           r();
-        })
+        }),
     );
 
     await queue0.onIdle();

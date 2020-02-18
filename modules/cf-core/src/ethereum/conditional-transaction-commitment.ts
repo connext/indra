@@ -1,10 +1,9 @@
 import { Interface } from "ethers/utils";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
-import { NetworkContext } from "../types";
+import { MultisigOperation, NetworkContext } from "../types";
 
 import { MultisigCommitment } from "./multisig-commitment";
-import { MultisigOperation } from "./types";
 
 const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
 
@@ -23,7 +22,7 @@ export class ConditionalTransaction extends MultisigCommitment {
     public readonly appIdentityHash: string,
     public readonly freeBalanceAppIdentityHash: string,
     public readonly interpreterAddr: string,
-    public readonly interpreterParams: string
+    public readonly interpreterParams: string,
   ) {
     super(multisig, multisigOwners);
   }
@@ -44,9 +43,9 @@ export class ConditionalTransaction extends MultisigCommitment {
         this.freeBalanceAppIdentityHash,
         this.appIdentityHash,
         this.interpreterAddr,
-        this.interpreterParams
+        this.interpreterParams,
       ]),
-      operation: MultisigOperation.DelegateCall
+      operation: MultisigOperation.DelegateCall,
     };
   }
 }

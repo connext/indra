@@ -1,16 +1,14 @@
 import { IMessagingService } from "@connext/messaging";
-import { AllowedSwap, SwapRate } from "@connext/types";
+import { AllowedSwap, PriceOracleType, SwapRate } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
+import { getMarketDetails, getTokenReserves } from "@uniswap/sdk";
 import { Contract, ethers } from "ethers";
 import { AddressZero } from "ethers/constants";
-import { formatEther, getAddress } from "ethers/utils";
 
-import { medianizerAbi } from "../abi/medianizer.abi";
 import { ConfigService } from "../config/config.service";
 import { MessagingProviderId } from "../constants";
 import { CLogger } from "../util";
-
-const MEDIANIZER_ADDRESS = "0x729D19f657BD0614b4985Cf1D82531c67569197B";
+import { parseEther } from "ethers/utils";
 
 const logger = new CLogger("SwapService");
 
@@ -24,33 +22,24 @@ export class SwapRateService implements OnModuleInit {
     @Inject(MessagingProviderId) private readonly messaging: IMessagingService,
   ) {}
 
-  async getValidSwaps(): Promise<AllowedSwap[]> {
-    const allowedSwaps: AllowedSwap[] = [
-      {
-        from: await this.config.getTokenAddress(),
-        to: AddressZero,
-      },
-      {
-        from: AddressZero,
-        to: await this.config.getTokenAddress(),
-      },
-    ];
-    return allowedSwaps;
-  }
-
   async getOrFetchRate(from: string, to: string): Promise<string> {
     const swap = this.latestSwapRates.find((s: SwapRate) => s.from === from && s.to === to);
     let rate: string;
     if (swap) {
       rate = swap.rate;
     } else {
-      rate = await this.getSwapRate(from, to);
+      rate = await this.getSwapRate(from, to, swap.priceOracleType);
     }
     return rate;
   }
 
-  async getSwapRate(from: string, to: string, blockNumber: number = 0): Promise<string> {
-    if (!(await this.getValidSwaps()).find((s: AllowedSwap) => s.from === from && s.to === to)) {
+  async getSwapRate(
+    from: string,
+    to: string,
+    priceOracleType: PriceOracleType,
+    blockNumber: number = 0,
+  ): Promise<string | undefined> {
+    if (!this.config.getAllowedSwaps().find((s: AllowedSwap) => s.from === from && s.to === to)) {
       throw new Error(`No valid swap exists for ${from} to ${to}`);
     }
     const rateIndex = this.latestSwapRates.findIndex(
@@ -60,42 +49,67 @@ export class SwapRateService implements OnModuleInit {
     if (rateIndex !== -1) {
       oldRate = this.latestSwapRates[rateIndex].rate;
     }
-    const tokenAddress = await this.config.getTokenAddress();
 
+    if (
+      this.latestSwapRates[rateIndex] &&
+      this.latestSwapRates[rateIndex].blockNumber === blockNumber
+    ) {
+      // already have rates for this block
+      return undefined;
+    }
+
+    // check rate based on configured price oracle
     let newRate: string;
-    if (from === AddressZero && to === tokenAddress) {
-      try {
-        const bnRate = (await this.medianizer.peek())[0];
-        newRate = formatEther(bnRate);
-      } catch (e) {
-        logger.warn(`Failed to fetch swap rate from medianizer`);
-        if (process.env.NODE_ENV === "development" && !oldRate) {
-          newRate = oldRate || "100.0";
-          logger.log(`Dev-mode: using hard coded swap rate: ${newRate.toString()}`);
-        }
+    try {
+      switch (priceOracleType) {
+        case "UNISWAP":
+          newRate = await this.getUniswapRate(from, to);
+          break;
+        default:
+          throw new Error(`Price oracle not configured for swap ${from} -> ${to}`);
       }
-    } else if (from === tokenAddress && to === AddressZero) {
-      try {
-        newRate = (1 / parseFloat(formatEther((await this.medianizer.peek())[0]))).toString();
-      } catch (e) {
-        logger.warn(`Failed to fetch swap rate from medianizer`);
-        if (process.env.NODE_ENV === "development" && !oldRate) {
-          newRate = oldRate || "0.005";
-          logger.log(`Dev-mode: using hard coded swap rate: ${newRate.toString()}`);
+    } catch (e) {
+      logger.warn(`Failed to fetch swap rate from ${priceOracleType}`);
+      if (process.env.NODE_ENV === "development") {
+        newRate = await this.config.getDefaultSwapRate(from, to);
+        if (!newRate) {
+          throw e;
         }
       }
     }
 
-    const newSwap: SwapRate = { from, to, rate: newRate };
+    const newSwap: SwapRate = { from, to, rate: newRate, priceOracleType, blockNumber };
     if (rateIndex !== -1) {
+      oldRate = this.latestSwapRates[rateIndex].rate;
       this.latestSwapRates[rateIndex] = newSwap;
     } else {
       this.latestSwapRates.push(newSwap);
     }
-    if (oldRate !== newRate) {
-      logger.log(`Got swap rate from medianizer at block ${blockNumber}: ${newRate}`);
+    const oldRateBn = parseEther(oldRate || "0");
+    const newRateBn = parseEther(newRate);
+    if (!oldRateBn.eq(newRateBn)) {
+      logger.log(`Got swap rate from Uniswap at block ${blockNumber}: ${newRate}`);
       this.broadcastRate(from, to); // Only broadcast the rate if it's changed
     }
+    return newRate;
+  }
+
+  async getUniswapRate(from: string, to: string): Promise<string> {
+    let fromReserves = undefined;
+    if (from !== AddressZero) {
+      const fromMainnetAddress = await this.config.getTokenAddressForSwap(from);
+      fromReserves = await getTokenReserves(fromMainnetAddress);
+    }
+
+    let toReserves = undefined;
+    if (to !== AddressZero) {
+      const toMainnetAddress = await this.config.getTokenAddressForSwap(to);
+      toReserves = await getTokenReserves(toMainnetAddress);
+    }
+
+    const marketDetails = getMarketDetails(fromReserves, toReserves);
+
+    const newRate = marketDetails.marketRate.rate.toString();
     return newRate;
   }
 
@@ -111,12 +125,12 @@ export class SwapRateService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     const provider = ethers.getDefaultProvider();
-    this.medianizer = new ethers.Contract(MEDIANIZER_ADDRESS, medianizerAbi, provider);
-    const swaps = await this.getValidSwaps();
+    const swaps = this.config.getAllowedSwaps();
+
     for (const swap of swaps) {
       // Check rate at each new block
       provider.on("block", (blockNumber: number) =>
-        this.getSwapRate(swap.from, swap.to, blockNumber),
+        this.getSwapRate(swap.from, swap.to, swap.priceOracleType, blockNumber),
       );
     }
   }

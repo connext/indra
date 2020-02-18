@@ -1,27 +1,45 @@
 import { jsonRpcMethod } from "rpc-server";
 
-import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes } from "../../../types";
-import { getFirstElementInListNotEqualTo } from "../../../utils";
-import { NodeController } from "../../controller";
+import { uninstallAppInstanceFromChannel } from "./operation";
+
 import {
   APP_ALREADY_UNINSTALLED,
   CANNOT_UNINSTALL_FREE_BALANCE,
   NO_APP_INSTANCE_ID_TO_UNINSTALL,
+  USE_RESCIND_DEPOSIT_RIGHTS,
 } from "../../errors";
 
-import { uninstallAppInstanceFromChannel } from "./operation";
+import { RequestHandler } from "../../../request-handler";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
+import { getFirstElementInListNotEqualTo } from "../../../utils";
+import { NodeController } from "../../controller";
 
 export default class UninstallController extends NodeController {
-  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_uninstall)
+  @jsonRpcMethod(ProtocolTypes.chan_uninstall)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.UninstallVirtualParams
+    params: CFCoreTypes.UninstallVirtualParams,
   ): Promise<string[]> {
     const { store } = requestHandler;
     const { appInstanceId } = params;
+
+    const sc = await store.getChannelFromAppInstanceID(appInstanceId);
+
+    return [sc.multisigAddress, appInstanceId];
+  }
+
+  protected async beforeExecution(
+    requestHandler: RequestHandler,
+    params: CFCoreTypes.UninstallParams,
+  ) {
+    const { store, networkContext } = requestHandler;
+    const { appInstanceId } = params;
+
+    if (!appInstanceId) {
+      throw Error(NO_APP_INSTANCE_ID_TO_UNINSTALL);
+    }
 
     const sc = await store.getChannelFromAppInstanceID(appInstanceId);
 
@@ -29,24 +47,16 @@ export default class UninstallController extends NodeController {
       throw Error(CANNOT_UNINSTALL_FREE_BALANCE(sc.multisigAddress));
     }
 
-    return [sc.multisigAddress, appInstanceId];
-  }
-
-  protected async beforeExecution(
-    // @ts-ignore
-    requestHandler: RequestHandler,
-    params: CFCoreTypes.UninstallParams
-  ) {
-    const { appInstanceId } = params;
-
-    if (!appInstanceId) {
-      throw Error(NO_APP_INSTANCE_ID_TO_UNINSTALL);
+    // check if its the balance refund app
+    const app = await store.getAppInstance(appInstanceId);
+    if (app.appInterface.addr === networkContext.CoinBalanceRefundApp) {
+      throw Error(USE_RESCIND_DEPOSIT_RIGHTS);
     }
   }
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.UninstallParams
+    params: CFCoreTypes.UninstallParams,
   ): Promise<CFCoreTypes.UninstallResult> {
     const { store, protocolRunner, publicIdentifier } = requestHandler;
     const { appInstanceId } = params;
@@ -63,7 +73,7 @@ export default class UninstallController extends NodeController {
 
     const to = getFirstElementInListNotEqualTo(
       publicIdentifier,
-      stateChannel.userNeuteredExtendedKeys
+      stateChannel.userNeuteredExtendedKeys,
     );
 
     await uninstallAppInstanceFromChannel(
@@ -71,7 +81,7 @@ export default class UninstallController extends NodeController {
       protocolRunner,
       publicIdentifier,
       to,
-      appInstanceId
+      appInstanceId,
     );
 
     return { appInstanceId };

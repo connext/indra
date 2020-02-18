@@ -11,8 +11,24 @@
 // This function is called when a project is opened or re-opened (e.g. due to
 // the project's config changing)
 
+////////////////////////////////////////
+// To exit tests after first failure, the following code was copy/pasted from:
+// https://github.com/cypress-io/cypress/issues/518#issuecomment-552382781
+
+let shouldSkip = false;
 module.exports = (on, config) => {
   // `on` is used to hook into various events Cypress emits
   // `config` is the resolved Cypress config
   // on('task', { failed: require('cypress-failed-log/src/failed')(), })
-}
+  on("task", {
+    resetShouldSkipFlag() {
+      shouldSkip = false;
+      return null;
+    },
+    shouldSkip(value) {
+      if (value != null) shouldSkip = value;
+      return shouldSkip;
+    },
+  });
+};
+////////////////////////////////////////

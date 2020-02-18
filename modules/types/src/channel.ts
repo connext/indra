@@ -1,7 +1,6 @@
-import { TransactionResponse } from "ethers/providers";
-import { BigNumber } from "ethers/utils";
-
-import { Address, AppInstanceJson, CFCoreTypes } from "./cf";
+import { AppInstanceJson } from "./app";
+import { Address, BigNumber, TransactionResponse } from "./basic";
+import { ProtocolTypes } from "./protocol";
 
 ////////////////////////////////////
 ////// CHANNEL TYPES
@@ -13,18 +12,20 @@ export type ChannelAppSequences = {
 };
 
 // payment setups
-export type PaymentProfile<T = string> = {
+export type RebalanceProfile<T = string> = {
   assetId: string;
-  minimumMaintainedCollateral: T;
-  amountToCollateralize: T;
+  upperBoundCollateralize: T;
+  lowerBoundCollateralize: T;
+  upperBoundReclaim: T;
+  lowerBoundReclaim: T;
 };
-export type PaymentProfileBigNumber = PaymentProfile<BigNumber>;
+export type RebalanceProfileBigNumber = RebalanceProfile<BigNumber>;
 
 // asset types
 export type AssetAmount<T = string> = {
   amount: T;
   assetId: Address; // empty address if eth
-}
+};
 export type AssetAmountBigNumber = AssetAmount<BigNumber>;
 
 export type CFCoreChannel = {
@@ -40,7 +41,7 @@ export type ChannelState<T = string> = {
   apps: AppInstanceJson[]; // result of getApps()
   // TODO: CF types should all be generic, this will be
   // a BigNumber
-  freeBalance: CFCoreTypes.GetFreeBalanceStateResult;
+  freeBalance: ProtocolTypes.GetFreeBalanceStateResult;
 };
 export type ChannelStateBigNumber = ChannelState<BigNumber>;
 

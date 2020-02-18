@@ -1,23 +1,12 @@
-import {
-  Interface,
-  joinSignature,
-  keccak256,
-  Signature,
-  solidityPack,
-} from "ethers/utils";
+import { Interface, joinSignature, keccak256, Signature, solidityPack } from "ethers/utils";
 
 import { MinimumViableMultisig } from "../contracts";
-import { CFCoreTypes } from "../types";
+import { CFCoreTypes, EthereumCommitment, MultisigTransaction } from "../types";
 import { sortSignaturesBySignerAddress } from "../utils";
-
-import { EthereumCommitment, MultisigTransaction } from "./types";
 
 /// A commitment to make MinimumViableMultisig perform a message call
 export abstract class MultisigCommitment extends EthereumCommitment {
-  constructor(
-    readonly multisigAddress: string,
-    readonly multisigOwners: string[]
-  ) {
+  constructor(readonly multisigAddress: string, readonly multisigOwners: string[]) {
     super();
   }
 
@@ -26,19 +15,16 @@ export abstract class MultisigCommitment extends EthereumCommitment {
   public getSignedTransaction(sigs: Signature[]): CFCoreTypes.MinimalTransaction {
     const multisigInput = this.getTransactionDetails();
 
-    const signaturesList = sortSignaturesBySignerAddress(
-      this.hashToSign(),
-      sigs
-    ).map(joinSignature);
+    const signaturesList = sortSignaturesBySignerAddress(this.hashToSign(), sigs).map(
+      joinSignature,
+    );
 
-    const txData = new Interface(
-      MinimumViableMultisig.abi
-    ).functions.execTransaction.encode([
+    const txData = new Interface(MinimumViableMultisig.abi).functions.execTransaction.encode([
       multisigInput.to,
       multisigInput.value,
       multisigInput.data,
       multisigInput.operation,
-      signaturesList
+      signaturesList,
     ]);
 
     // TODO: Deterministically compute `to` address
@@ -50,8 +36,8 @@ export abstract class MultisigCommitment extends EthereumCommitment {
     return keccak256(
       solidityPack(
         ["bytes1", "address[]", "address", "uint256", "bytes", "uint8"],
-        ["0x19", this.multisigOwners, to, value, data, operation]
-      )
+        ["0x19", this.multisigOwners, to, value, data, operation],
+      ),
     );
   }
 }

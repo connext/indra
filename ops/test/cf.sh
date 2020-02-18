@@ -2,7 +2,7 @@
 set -e
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../../package.json | jq .name | tr -d '"'`"
+project="`cat $dir/../../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
 test_command='
   jest --setupFiles dotenv-extended/config --runInBand --forceExit '"'$@'"'
@@ -42,10 +42,11 @@ trap cleanup EXIT
 
 docker network create --attachable $network 2> /dev/null || true
 
-# Damn I forget where I copy/pasted this witchcraft from, yikes.
-# It's supposed to find out whether we're calling this script from a shell & can print stuff
-# Or whether it's running in the background of another script and can't attach to a screen
-test -t 0 -a -t 1 -a -t 2 && interactive="--interactive"
+# If file descriptors 0-2 exist, then we're prob running via interactive shell instead of on CD/CI
+if [[ -t 0 && -t 1 && -t 2 ]]
+then interactive="--interactive --tty"
+else echo "Running in non-interactive mode"
+fi
 
 ########################################
 # Start dependencies
@@ -80,7 +81,6 @@ docker run \
   --name="${project}_test_cf_core" \
   --network="$network" \
   --rm \
-  --tty \
   --volume="`pwd`:/root" \
   ${project}_builder -c '
     set -e

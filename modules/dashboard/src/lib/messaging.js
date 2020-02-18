@@ -62,13 +62,9 @@ export default class AdminMessaging {
     return await this.send("admin.get-all-channels");
   }
 
-  async getChannelsIncorrectProxyFactoryAddress() {
-    return await this.send("admin.get-channels-no-proxy-factory");
-  }
-
-  async fixChannelsIncorrectProxyFactoryAddress() {
+  async repairCriticalAddresses() {
     // use longer timeout bc this function takes a long time
-    return await this.send("admin.fix-proxy-factory-addresses", {}, 90_000);
+    return await this.send("admin.repair-critical-addresses", {}, 90_000);
   }
 
   ///////////////////////////////////////
@@ -94,7 +90,7 @@ export default class AdminMessaging {
       return this.adminToken;
     } else if (guardedSubjects.includes(subject.split(".")[0])) {
       if (!this.signer) {
-        throw new Error(`Must have instantiated a signer before setting sig token`);
+        throw new Error("Must have instantiated a signer before setting sig token");
       } else if (!this.sigToken) {
         const nonce = await this.send("auth.getNonce", {
           address: this.signer.address,
@@ -136,7 +132,7 @@ export default class AdminMessaging {
 
   async sendAttempt(subject, data) {
     console.log(
-      `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : `without data`}`,
+      `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : "without data"}`,
     );
     const payload = {
       ...data,
@@ -151,7 +147,7 @@ export default class AdminMessaging {
     }
     let error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
     if (error && error.startsWith("Invalid token")) {
-      console.log(`Auth error, token might have expired. Let's get a fresh token & try again.`);
+      console.log("Auth error, token might have expired. Let's get a fresh token & try again.");
       payload.token = await this.getToken(subject);
       msg = await this.messaging.request(subject, NATS_TIMEOUT, payload);
       error = msg ? (msg.data ? (msg.data.response ? msg.data.response.err : "") : "") : "";
@@ -167,5 +163,4 @@ export default class AdminMessaging {
     const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
     return !response || isEmptyObj ? undefined : response;
   }
-
 }

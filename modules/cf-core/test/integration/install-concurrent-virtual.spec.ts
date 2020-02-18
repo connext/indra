@@ -1,24 +1,19 @@
 import { parseEther } from "ethers/utils";
 
 import { Node } from "../../src";
-import { NODE_EVENTS } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
-import {
-  collateralizeChannel,
-  createChannel,
-  installVirtualApp
-} from "./utils";
+import { collateralizeChannel, createChannel, installVirtualApp } from "./utils";
 
 expect.extend({ toBeLt });
 
 jest.setTimeout(15000);
 
-const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
+const { TicTacToeApp } = global[`networkContext`] as NetworkContextForTestSuite;
 
-describe("Concurrently installing virtual applications with same intermediary", () => {
+describe(`Concurrently installing virtual applications with same intermediary`, () => {
   let multisigAddressAB: string;
   let multisigAddressBC: string;
   let nodeA: Node;
@@ -27,32 +22,22 @@ describe("Concurrently installing virtual applications with same intermediary", 
 
   beforeEach(async () => {
     const context: SetupContext = await setup(global, true);
-    nodeA = context["A"].node;
-    nodeB = context["B"].node;
-    nodeC = context["C"].node;
+    nodeA = context[`A`].node;
+    nodeB = context[`B`].node;
+    nodeC = context[`C`].node;
 
     multisigAddressAB = await createChannel(nodeA, nodeB);
     multisigAddressBC = await createChannel(nodeB, nodeC);
 
-    await collateralizeChannel(
-      multisigAddressAB,
-      nodeA,
-      nodeB,
-      parseEther("2")
-    );
+    await collateralizeChannel(multisigAddressAB, nodeA, nodeB, parseEther(`2`));
 
-    await collateralizeChannel(
-      multisigAddressBC,
-      nodeB,
-      nodeC,
-      parseEther("2")
-    );
+    await collateralizeChannel(multisigAddressBC, nodeB, nodeC, parseEther(`2`));
   });
 
-  it("can handle two TicTacToeApp proposals syncronously made", done => {
+  it(`can handle two TicTacToeApp proposals syncronously made`, done => {
     let i = 0;
 
-    nodeA.on("INSTALL_VIRTUAL_EVENT", () => {
+    nodeA.on(`INSTALL_VIRTUAL_EVENT`, () => {
       i += 1;
       if (i === 2) done();
     });
@@ -62,10 +47,10 @@ describe("Concurrently installing virtual applications with same intermediary", 
     }
   });
 
-  it("can handle two TicTacToeApp proposals asyncronously made", async done => {
+  it(`can handle two TicTacToeApp proposals asyncronously made`, async done => {
     let i = 0;
 
-    nodeA.on("INSTALL_VIRTUAL_EVENT", () => {
+    nodeA.on(`INSTALL_VIRTUAL_EVENT`, () => {
       i += 1;
       if (i === 2) done();
     });

@@ -2,17 +2,9 @@ import { defaultAbiCoder, keccak256 } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { SetStateCommitment } from "../ethereum";
-import {
-  appIdentityToHash,
-  ProtocolExecutionFlow,
-  xkeyKthAddress
-} from "../machine";
+import { appIdentityToHash, ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
-import {
-  Context,
-  ProposeInstallProtocolParams,
-  ProtocolMessage
-} from "../machine/types";
+import { Context, ProposeInstallProtocolParams, ProtocolMessage } from "../types";
 import { AppInstanceProposal, StateChannel } from "../models";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
@@ -39,15 +31,16 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderDepositTokenAddress,
       timeout,
       initialState,
-      outcomeType
+      outcomeType,
     } = params as ProposeInstallProtocolParams;
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)
       ? stateChannelsMap.get(multisigAddress)!
-      : StateChannel.createEmptyChannel(multisigAddress, network.ProxyFactory, [
-          initiatorXpub,
-          responderXpub
-        ]);
+      : StateChannel.createEmptyChannel(
+          multisigAddress,
+          { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
+          [initiatorXpub, responderXpub],
+        );
 
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
@@ -61,9 +54,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         appDefinition,
         channelNonce: preProtocolStateChannel.numProposedApps + 1,
         participants: preProtocolStateChannel.getSigningKeysFor(
-          preProtocolStateChannel.numProposedApps + 1
+          preProtocolStateChannel.numProposedApps + 1,
         ),
-        defaultTimeout: timeout.toNumber()
+        defaultTimeout: timeout.toNumber(),
       }),
       proposedByIdentifier: initiatorXpub,
       proposedToIdentifier: responderXpub,
@@ -71,12 +64,10 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       initiatorDepositTokenAddress:
         initiatorDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       responderDepositTokenAddress:
-        responderDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS
+        responderDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
     };
 
-    const postProtocolStateChannel = preProtocolStateChannel.addProposal(
-      appInstanceProposal
-    );
+    const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
@@ -86,21 +77,16 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         appDefinition,
         channelNonce: preProtocolStateChannel.numProposedApps + 1,
         participants: preProtocolStateChannel.getSigningKeysFor(
-          preProtocolStateChannel.numProposedApps + 1
+          preProtocolStateChannel.numProposedApps + 1,
         ),
-        defaultTimeout: timeout.toNumber()
+        defaultTimeout: timeout.toNumber(),
       },
-      keccak256(
-        defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState])
-      ),
+      keccak256(defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState])),
       0,
-      timeout.toNumber()
+      timeout.toNumber(),
     );
 
-    const initiatorSignatureOnInitialState = yield [
-      OP_SIGN,
-      setStateCommitment
-    ];
+    const initiatorSignatureOnInitialState = yield [OP_SIGN, setStateCommitment];
 
     const m1 = {
       protocol,
@@ -109,27 +95,23 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       seq: 1,
       toXpub: responderXpub,
       customData: {
-        signature: initiatorSignatureOnInitialState
-      }
+        signature: initiatorSignatureOnInitialState,
+      },
     } as ProtocolMessage;
 
     const m2 = yield [IO_SEND_AND_WAIT, m1];
 
     const {
-      customData: { signature: responderSignatureOnInitialState }
+      customData: { signature: responderSignatureOnInitialState },
     } = m2! as ProtocolMessage;
 
     const responderAddress = xkeyKthAddress(responderXpub, 0);
 
-    assertIsValidSignature(
-      responderAddress,
-      setStateCommitment,
-      responderSignatureOnInitialState
-    );
+    assertIsValidSignature(responderAddress, setStateCommitment, responderSignatureOnInitialState);
 
     context.stateChannelsMap.set(
       postProtocolStateChannel.multisigAddress,
-      postProtocolStateChannel
+      postProtocolStateChannel,
     );
   },
 
@@ -150,19 +132,20 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderDepositTokenAddress,
       timeout,
       initialState,
-      outcomeType
+      outcomeType,
     } = params as ProposeInstallProtocolParams;
 
     const {
-      customData: { signature: initiatorSignatureOnInitialState }
+      customData: { signature: initiatorSignatureOnInitialState },
     } = message;
 
     const preProtocolStateChannel = stateChannelsMap.get(multisigAddress)
       ? stateChannelsMap.get(multisigAddress)!
-      : StateChannel.createEmptyChannel(multisigAddress, network.ProxyFactory, [
-          initiatorXpub,
-          responderXpub
-        ]);
+      : StateChannel.createEmptyChannel(
+          multisigAddress,
+          { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
+          [initiatorXpub, responderXpub],
+        );
 
     const appInstanceProposal: AppInstanceProposal = {
       appDefinition,
@@ -173,9 +156,9 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         appDefinition,
         channelNonce: preProtocolStateChannel.numProposedApps + 1,
         participants: preProtocolStateChannel.getSigningKeysFor(
-          preProtocolStateChannel.numProposedApps + 1
+          preProtocolStateChannel.numProposedApps + 1,
         ),
-        defaultTimeout: timeout.toNumber()
+        defaultTimeout: timeout.toNumber(),
       }),
       timeout: timeout.toHexString(),
       initiatorDeposit: responderDeposit.toHexString(),
@@ -186,7 +169,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       initiatorDepositTokenAddress:
         responderDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       responderDepositTokenAddress:
-        initiatorDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS
+        initiatorDepositTokenAddress || CONVENTION_FOR_ETH_TOKEN_ADDRESS,
     };
 
     const setStateCommitment = new SetStateCommitment(
@@ -195,35 +178,24 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         appDefinition,
         channelNonce: preProtocolStateChannel.numProposedApps + 1,
         participants: preProtocolStateChannel.getSigningKeysFor(
-          preProtocolStateChannel.numProposedApps + 1
+          preProtocolStateChannel.numProposedApps + 1,
         ),
-        defaultTimeout: timeout.toNumber()
+        defaultTimeout: timeout.toNumber(),
       },
-      keccak256(
-        defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState])
-      ),
+      keccak256(defaultAbiCoder.encode([abiEncodings.stateEncoding], [initialState])),
       0,
-      timeout.toNumber()
+      timeout.toNumber(),
     );
 
     const initiatorAddress = xkeyKthAddress(initiatorXpub, 0);
 
-    assertIsValidSignature(
-      initiatorAddress,
-      setStateCommitment,
-      initiatorSignatureOnInitialState
-    );
+    assertIsValidSignature(initiatorAddress, setStateCommitment, initiatorSignatureOnInitialState);
 
-    const postProtocolStateChannel = preProtocolStateChannel.addProposal(
-      appInstanceProposal
-    );
+    const postProtocolStateChannel = preProtocolStateChannel.addProposal(appInstanceProposal);
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
-    const responderSignatureOnInitialState = yield [
-      OP_SIGN,
-      setStateCommitment
-    ];
+    const responderSignatureOnInitialState = yield [OP_SIGN, setStateCommitment];
 
     yield [
       IO_SEND,
@@ -233,14 +205,14 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
         seq: UNASSIGNED_SEQ_NO,
         toXpub: initiatorXpub,
         customData: {
-          signature: responderSignatureOnInitialState
-        }
-      } as ProtocolMessage
+          signature: responderSignatureOnInitialState,
+        },
+      } as ProtocolMessage,
     ];
 
     context.stateChannelsMap.set(
       postProtocolStateChannel.multisigAddress,
-      postProtocolStateChannel
+      postProtocolStateChannel,
     );
-  }
+  },
 };

@@ -1,19 +1,23 @@
-import { DepositConfirmationMessage, NODE_EVENTS } from "@connext/cf-core";
 import {
   DefaultApp,
+  DepositConfirmationMessage,
   ResolveLinkedTransferResponse,
   SimpleLinkedTransferAppStateBigNumber,
   SimpleTransferAppStateBigNumber,
-  SupportedApplication,
-  SupportedApplications,
+  SimpleLinkedTransferApp,
+  SimpleTransferApp,
+  SimpleLinkedTransferAppState,
+  DEPOSIT_CONFIRMED_EVENT,
+  DEPOSIT_FAILED_EVENT,
+  DepositFailedMessage,
 } from "@connext/types";
-import { forwardRef, Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { HashZero, Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
-import { ChannelService } from "../channel/channel.service";
+import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
 import { CLogger, xpubToAddress } from "../util";
 import { AppInstanceJson } from "../util/cfCore";
@@ -31,13 +35,12 @@ import {
   TransferRepository,
 } from "./transfer.repository";
 
-const logger = new CLogger("TransferService");
+const logger = new CLogger(`TransferService`);
 
 @Injectable()
 export class TransferService {
   constructor(
     private readonly cfCoreService: CFCoreService,
-    @Inject(forwardRef(() => ChannelService))
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
     private readonly channelRepository: ChannelRepository,
@@ -158,7 +161,7 @@ export class TransferService {
 
     return await this.linkedTransferRepository.addRecipientPublicIdentifierAndEncryptedPreImage(
       transfer,
-      recipientPublicIdentifier,
+      recipientChannel,
       encryptedPreImage,
     );
   }
@@ -167,7 +170,6 @@ export class TransferService {
     userPubId: string,
     paymentId: string,
     linkedHash: string,
-    meta: object,
   ): Promise<ResolveLinkedTransferResponse> {
     logger.debug(`resolveLinkedTransfer(${userPubId}, ${paymentId}, ${linkedHash})`);
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
@@ -198,7 +200,7 @@ export class TransferService {
 
     // check that linked transfer app has been installed from sender
     const defaultApp = (await this.configService.getDefaultApps()).find(
-      (app: DefaultApp) => app.name === SupportedApplications.SimpleLinkedTransferApp,
+      (app: DefaultApp) => app.name === SimpleLinkedTransferApp,
     );
     const installedApps = await this.cfCoreService.getAppInstances();
     const senderApp = installedApps.find(
@@ -223,7 +225,7 @@ export class TransferService {
       // TODO: expose remove listener
       await new Promise(async (resolve, reject) => {
         this.cfCoreService.cfCore.on(
-          "DEPOSIT_CONFIRMED_EVENT",
+          DEPOSIT_CONFIRMED_EVENT,
           async (msg: DepositConfirmationMessage) => {
             if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
               // do not reject promise here, since theres a chance the event is
@@ -248,22 +250,30 @@ export class TransferService {
               assetId,
             );
             if (fb[freeBalanceAddr].lt(amountBN)) {
-              reject(
+              return reject(
                 `Free balance associated with ${freeBalanceAddr} is less than transfer amount: ${amountBN}`,
               );
             }
             resolve();
           },
         );
+        this.cfCoreService.cfCore.on(DEPOSIT_FAILED_EVENT, (msg: DepositFailedMessage) => {
+          return reject(JSON.stringify(msg, null, 2));
+        });
         try {
-          await this.channelService.requestCollateral(userPubId, assetId, amountBN);
+          await this.channelService.rebalance(
+            userPubId,
+            assetId,
+            RebalanceType.COLLATERALIZE,
+            amountBN,
+          );
         } catch (e) {
-          reject(e);
+          return reject(e);
         }
       });
     } else {
       // request collateral normally without awaiting
-      this.channelService.requestCollateral(userPubId, assetId, amountBN);
+      this.channelService.rebalance(userPubId, assetId, RebalanceType.COLLATERALIZE, amountBN);
     }
 
     const initialState: SimpleLinkedTransferAppStateBigNumber = {
@@ -291,8 +301,7 @@ export class TransferService {
       transfer.assetId,
       Zero,
       transfer.assetId,
-      SupportedApplications.SimpleLinkedTransferApp as SupportedApplication,
-      meta,
+      SimpleLinkedTransferApp,
     );
 
     if (!receiverAppInstallRes || !receiverAppInstallRes.appInstanceId) {
@@ -313,6 +322,7 @@ export class TransferService {
         channel.multisigAddress,
         assetId,
       ),
+      meta: transfer.meta,
       paymentId,
     };
   }
@@ -348,7 +358,7 @@ export class TransferService {
       assetId,
       Zero,
       assetId,
-      SupportedApplications.SimpleTransferApp as SupportedApplication,
+      SimpleTransferApp,
     );
 
     if (!res || !res.appInstanceId) {
@@ -358,12 +368,49 @@ export class TransferService {
     return res.appInstanceId;
   }
 
-  async reclaimLinkedTransferCollateral(paymentId: string): Promise<void> {
+  async reclaimLinkedTransferCollateralByAppInstanceId(appInstanceId: string): Promise<void> {
+    const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(appInstanceId);
+    if (!transfer) {
+      logger.debug(`Did not find transfer`);
+      return;
+    }
+    logger.debug(`Found transfer: ${JSON.stringify(transfer)}`);
+    await this.reclaimLinkedTransferCollateral(transfer);
+  }
+
+  async reclaimLinkedTransferCollateralByPaymentId(paymentId: string): Promise<void> {
     const transfer = await this.linkedTransferRepository.findByPaymentId(paymentId);
+    if (!transfer) {
+      logger.debug(`Did not find transfer`);
+      return;
+    }
+    logger.debug(`Found transfer: ${JSON.stringify(transfer)}`);
+    await this.reclaimLinkedTransferCollateral(transfer);
+  }
+
+  private async reclaimLinkedTransferCollateral(transfer: LinkedTransfer): Promise<void> {
     if (transfer.status !== LinkedTransferStatus.REDEEMED) {
       throw new Error(
-        `Transfer with id ${paymentId} has not been redeemed, status: ${transfer.status}`,
+        `Transfer with id ${transfer.paymentId} has not been redeemed, status: ${transfer.status}`,
       );
+    }
+
+    const uninstall = async (): Promise<void> => {
+      logger.debug(`Action taken, uninstalling app. ${Date.now()}`);
+      await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
+      await this.linkedTransferRepository.markAsReclaimed(transfer);
+    };
+
+    // if action has been taken on the app, then there will be a preimage
+    // in the latest state, and you just have to uninstall
+    const app = await this.cfCoreService.getAppInstanceDetails(transfer.senderAppInstanceId);
+    if ((app.latestState as SimpleLinkedTransferAppState).preImage === transfer.preImage) {
+      // just uninstall
+      logger.debug(
+        `Action has already been taken on app ${transfer.senderAppInstanceId}, uninstalling`,
+      );
+      await uninstall();
+      return;
     }
 
     logger.log(
@@ -372,9 +419,7 @@ export class TransferService {
     await this.cfCoreService.takeAction(transfer.senderAppInstanceId, {
       preImage: transfer.preImage,
     });
-    logger.debug(`Action taken, uninstalling app.`);
-    await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
-    await this.linkedTransferRepository.markAsReclaimed(transfer);
+    await uninstall();
   }
 
   async getLinkedTransfersForReclaim(userPublicIdentifier: string): Promise<LinkedTransfer[]> {

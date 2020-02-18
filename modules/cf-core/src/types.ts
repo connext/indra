@@ -1,6 +1,64 @@
-import { CFCoreTypes } from "@connext/types";
-import { TransactionReceipt } from "ethers/providers";
-import { BigNumber } from "ethers/utils";
+import { CFCoreTypes, NetworkContext, ProtocolMessage, SolidityValueType } from "@connext/types";
+import { BaseProvider } from "ethers/providers";
+import { Signature } from "ethers/utils";
+
+import { Opcode } from "./machine/enums";
+import { StateChannel } from "./models";
+
+export abstract class EthereumCommitment {
+  // todo(xuanji): EthereumCommitment was designed under the assumption that
+  // `hashToSign` returns the same hash for different signers. However, in the
+  // install-virtual-app protocol, the hash that the intermediary signs is
+  // different from the one the other participants sign. The optional
+  // `signerIsIntermediary` flag is a hack that is only used by the
+  // `install-virtual-app protocol`. `intermediarySignature` in `transaction`
+  // is the same kind of hack.
+  public abstract hashToSign(signerIsIntermediary?: boolean): string;
+  public abstract getSignedTransaction(
+    signatures: Signature[],
+    intermediarySignature?: Signature,
+  ): CFCoreTypes.MinimalTransaction;
+}
+
+export enum MultisigOperation {
+  Call = 0,
+  DelegateCall = 1,
+  // Gnosis Safe uses "2" for CREATE, but we don't actually
+  // make use of it in our code. Still, I put this here to be
+  // maximally explicit that we based the data structure on
+  // Gnosis's implementation of a Multisig
+  Create = 2,
+}
+
+export type MultisigTransaction = CFCoreTypes.MinimalTransaction & {
+  operation: MultisigOperation;
+};
+
+export type ProtocolExecutionFlow = {
+  [x: number]: (context: Context) => AsyncIterableIterator<any[]>;
+};
+
+export type Middleware = {
+  (args: any): any;
+};
+
+export type Instruction = Function | Opcode;
+
+/// Arguments passed to a protocol execulion flow
+export interface Context {
+  network: NetworkContext;
+  stateChannelsMap: Map<string, StateChannel>;
+  message: ProtocolMessage;
+  provider: BaseProvider;
+}
+
+export type TakeActionProtocolParams = {
+  initiatorXpub: string;
+  responderXpub: string;
+  multisigAddress: string;
+  appIdentityHash: string;
+  action: SolidityValueType;
+};
 
 export {
   AppABIEncodings,
@@ -8,16 +66,37 @@ export {
   AppInstanceJson,
   AppInstanceProposal,
   AppInterface,
+  CFCoreTypes,
   CoinBalanceRefundState,
   coinBalanceRefundStateEncoding,
+  CreateChannelMessage,
   DeployedContractNetworksFileEntry,
+  DepositConfirmationMessage,
+  DepositFailedMessage,
+  DepositStartedMessage,
+  EventEmittedMessage,
   EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
+  InstallMessage,
+  InstallProtocolParams,
+  InstallVirtualAppProtocolParams,
+  InstallVirtualMessage,
   multiAssetMultiPartyCoinTransferEncoding,
   MultiAssetMultiPartyCoinTransferInterpreterParams,
   multiAssetMultiPartyCoinTransferInterpreterParamsEncoding,
   NetworkContext,
-  CFCoreTypes,
+  NODE_EVENTS,
+  NodeEvent,
+  NodeMessageWrappedProtocolMessage,
   OutcomeType,
+  ProposeInstallProtocolParams,
+  ProposeMessage,
+  Protocol,
+  ProtocolMessage,
+  ProtocolParameters,
+  ProtocolTypes,
+  RejectInstallVirtualMessage,
+  RejectProposalMessage,
+  SetupProtocolParams,
   SignedStateHashUpdate,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   singleAssetTwoPartyCoinTransferInterpreterParamsEncoding,
@@ -25,112 +104,15 @@ export {
   TwoPartyFixedOutcome,
   TwoPartyFixedOutcomeInterpreterParams,
   twoPartyFixedOutcomeInterpreterParamsEncoding,
-  virtualAppAgreementEncoding
+  UninstallMessage,
+  UninstallProtocolParams,
+  UninstallVirtualAppProtocolParams,
+  UninstallVirtualMessage,
+  UpdateProtocolParams,
+  UpdateStateMessage,
+  virtualAppAgreementEncoding,
+  WithdrawConfirmationMessage,
+  WithdrawFailedMessage,
+  WithdrawProtocolParams,
+  WithdrawStartedMessage,
 } from "@connext/types";
-
-import { ProtocolMessage } from "./machine";
-
-export type NodeEvent = CFCoreTypes.EventName;
-export const NODE_EVENTS = CFCoreTypes.EventNames;
-
-export interface NodeMessageWrappedProtocolMessage extends CFCoreTypes.NodeMessage {
-  data: ProtocolMessage;
-}
-
-export interface ProposeMessage extends CFCoreTypes.NodeMessage {
-  data: {
-    params: CFCoreTypes.ProposeInstallParams;
-    appInstanceId: string;
-  };
-}
-
-export interface InstallMessage extends CFCoreTypes.NodeMessage {
-  data: {
-    params: CFCoreTypes.InstallParams;
-  };
-}
-
-export interface InstallVirtualMessage extends CFCoreTypes.NodeMessage {
-  // TODO: update this to include the intermediares
-  data: {
-    params: CFCoreTypes.InstallParams;
-  };
-}
-
-export interface CreateChannelMessage extends CFCoreTypes.NodeMessage {
-  data: CFCoreTypes.CreateChannelResult;
-}
-
-export interface UpdateStateMessage extends CFCoreTypes.NodeMessage {
-  data: CFCoreTypes.UpdateStateEventData;
-}
-
-export interface UninstallMessage extends CFCoreTypes.NodeMessage {
-  data: CFCoreTypes.UninstallEventData;
-}
-
-export interface UninstallVirtualMessage extends CFCoreTypes.NodeMessage {
-  // TODO: update this to include the intermediares
-  data: CFCoreTypes.UninstallVirtualParams;
-}
-
-export interface WithdrawStartedMessage extends CFCoreTypes.NodeMessage {
-  data: {
-    params: CFCoreTypes.WithdrawParams;
-    txHash?: string; // not included in responder events
-  };
-}
-
-export interface WithdrawConfirmationMessage extends CFCoreTypes.NodeMessage {
-  data: {
-    txReceipt: TransactionReceipt;
-  };
-}
-
-export interface WithdrawFailedMessage extends CFCoreTypes.NodeMessage {
-  data: string; // failure error
-}
-
-export interface RejectProposalMessage extends CFCoreTypes.NodeMessage {
-  data: {
-    appInstanceId: string;
-  };
-}
-
-export interface DepositConfirmationMessage extends CFCoreTypes.NodeMessage {
-  data: CFCoreTypes.DepositParams;
-}
-
-export interface DepositStartedMessage extends CFCoreTypes.NodeMessage {
-  data: {
-    value: BigNumber;
-    txHash: string;
-  };
-}
-
-export interface DepositFailedMessage extends CFCoreTypes.NodeMessage {
-  data: {
-    params: CFCoreTypes.DepositParams;
-    errors: string[];
-  };
-}
-
-export interface RejectInstallVirtualMessage extends RejectProposalMessage {}
-
-export type EventEmittedMessage =
-  | RejectProposalMessage
-  | RejectInstallVirtualMessage
-  | WithdrawConfirmationMessage
-  | WithdrawStartedMessage
-  | WithdrawFailedMessage
-  | UninstallVirtualMessage
-  | UninstallMessage
-  | UpdateStateMessage
-  | InstallVirtualMessage
-  | InstallMessage
-  | ProposeMessage
-  | DepositConfirmationMessage
-  | DepositStartedMessage
-  | DepositFailedMessage
-  | CreateChannelMessage
-  | NodeMessageWrappedProtocolMessage;

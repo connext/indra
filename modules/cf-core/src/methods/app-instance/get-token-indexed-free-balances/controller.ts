@@ -1,11 +1,11 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes } from "../../../types";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { NodeController } from "../../controller";
 
 export default class GetTokenIndexedFreeBalancesController extends NodeController {
-  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_getTokenIndexedFreeBalanceStates)
+  @jsonRpcMethod(ProtocolTypes.chan_getTokenIndexedFreeBalanceStates)
   public executeMethod = super.executeMethod;
 
   protected async executeMethodImplementation(
@@ -16,7 +16,7 @@ export default class GetTokenIndexedFreeBalancesController extends NodeControlle
     const { multisigAddress } = params;
 
     if (!multisigAddress) {
-      throw Error("getTokenIndexedFreeBalanceStates method was given undefined multisigAddress");
+      throw Error(`getTokenIndexedFreeBalanceStates method was given undefined multisigAddress`);
     }
 
     const stateChannel = await store.getStateChannel(multisigAddress);

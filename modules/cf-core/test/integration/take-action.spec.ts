@@ -1,12 +1,7 @@
-import { CFCoreTypes } from "@connext/types";
+import { CFCoreTypes, UpdateStateMessage, UPDATE_STATE_EVENT } from "@connext/types";
 import { One, Zero } from "ethers/constants";
 
-import {
-  NO_APP_INSTANCE_FOR_TAKE_ACTION,
-  Node,
-  NODE_EVENTS,
-  UpdateStateMessage
-} from "../../src";
+import { NO_APP_INSTANCE_FOR_TAKE_ACTION, Node } from "../../src";
 import { NetworkContextForTestSuite } from "../contracts";
 
 import { setup, SetupContext } from "./setup";
@@ -16,22 +11,26 @@ import {
   constructTakeActionRpc,
   createChannel,
   installApp,
-  assertNodeMessage
+  assertNodeMessage,
 } from "./utils";
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
 // NOTE: no initiator events
-function confirmMessages(initiator: Node, responder: Node, expectedData: CFCoreTypes.UpdateStateEventData) {
+function confirmMessages(
+  initiator: Node,
+  responder: Node,
+  expectedData: CFCoreTypes.UpdateStateEventData,
+) {
   const expected = {
     from: initiator.publicIdentifier,
-    type: "UPDATE_STATE_EVENT",
+    type: UPDATE_STATE_EVENT,
     data: expectedData,
   };
-  // initiator.once("UPDATE_STATE_EVENT", (msg: UpdateStateMessage) => {
+  // initiator.once(UPDATE_STATE_EVENT, (msg: UpdateStateMessage) => {
   //   assertNodeMessage(msg, expected);
   // });
-  responder.once("UPDATE_STATE_EVENT", (msg: UpdateStateMessage) => {
+  responder.once(UPDATE_STATE_EVENT, (msg: UpdateStateMessage) => {
     assertNodeMessage(msg, expected);
   });
 }
@@ -53,9 +52,9 @@ describe("Node method follows spec - takeAction", () => {
       it("sends takeAction with invalid appInstanceId", async () => {
         const takeActionReq = constructTakeActionRpc("", validAction);
 
-        await expect(
-          nodeA.rpcRouter.dispatch(takeActionReq)
-        ).rejects.toThrowError(NO_APP_INSTANCE_FOR_TAKE_ACTION);
+        await expect(nodeA.rpcRouter.dispatch(takeActionReq)).rejects.toThrowError(
+          NO_APP_INSTANCE_FOR_TAKE_ACTION,
+        );
       });
 
       it("can take action", async done => {
@@ -63,40 +62,39 @@ describe("Node method follows spec - takeAction", () => {
         const [appInstanceId] = await installApp(nodeA, nodeB, TicTacToeApp);
 
         const expectedNewState = {
-          board: [[One, Zero, Zero], [Zero, Zero, Zero], [Zero, Zero, Zero]],
+          board: [
+            [One, Zero, Zero],
+            [Zero, Zero, Zero],
+            [Zero, Zero, Zero],
+          ],
           versionNumber: One,
-          winner: Zero
+          winner: Zero,
         };
 
-        nodeB.on("UPDATE_STATE_EVENT", async (msg: UpdateStateMessage) => {
+        nodeB.on(UPDATE_STATE_EVENT, async (msg: UpdateStateMessage) => {
           /**
            * TEST #3
            * The database of Node C is correctly updated and querying it works
            */
           const {
             result: {
-              result: { state }
-            }
-          } = await nodeB.rpcRouter.dispatch(
-            constructGetStateRpc(appInstanceId)
-          );
+              result: { state },
+            },
+          } = await nodeB.rpcRouter.dispatch(constructGetStateRpc(appInstanceId));
 
           expect(state).toEqual(expectedNewState);
 
           done();
         });
 
-        const takeActionReq = constructTakeActionRpc(
-          appInstanceId,
-          validAction
-        );
+        const takeActionReq = constructTakeActionRpc(appInstanceId, validAction);
 
         /**
          * TEST #1
          * The event emittted by Node C after an action is taken by A
          * sends the appInstanceId and the newState correctly.
          */
-        confirmMessages(nodeA, nodeB, { 
+        confirmMessages(nodeA, nodeB, {
           newState: expectedNewState,
           appInstanceId,
           action: validAction,
@@ -108,18 +106,18 @@ describe("Node method follows spec - takeAction", () => {
          */
         const {
           result: {
-            result: { newState }
-          }
+            result: { newState },
+          },
         } = await nodeA.rpcRouter.dispatch(takeActionReq);
         // allow nodeA to confirm its messages
         await new Promise(resolve => {
-          nodeA.once("UPDATE_STATE_EVENT", () => {
-            setTimeout(resolve, 2000)
+          nodeA.once(UPDATE_STATE_EVENT, () => {
+            setTimeout(resolve, 2000);
           });
         });
 
         expect(newState).toEqual(expectedNewState);
       });
-    }
+    },
   );
 });

@@ -1,4 +1,4 @@
-import { bigNumberify, getAddress, HDNode } from "ethers/utils";
+import { bigNumberify, getAddress } from "ethers/utils";
 
 import { isEthAddress } from "./validate";
 

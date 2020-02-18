@@ -5,30 +5,30 @@ import { Protocol, ProtocolRunner } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { Store } from "../../../store";
-import { CFCoreTypes, SolidityValueType } from "../../../types";
+import { CFCoreTypes, ProtocolTypes, SolidityValueType } from "../../../types";
 import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
   IMPROPERLY_FORMATTED_STRUCT,
   NO_APP_INSTANCE_FOR_TAKE_ACTION,
-  STATE_OBJECT_NOT_ENCODABLE
+  STATE_OBJECT_NOT_ENCODABLE,
 } from "../../errors";
 
 export default class UpdateStateController extends NodeController {
-  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_updateState)
+  @jsonRpcMethod(ProtocolTypes.chan_updateState)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
     // @ts-ignore
     requestHandler: RequestHandler,
-    params: CFCoreTypes.UpdateStateParams
+    params: CFCoreTypes.UpdateStateParams,
   ): Promise<string[]> {
     return [params.appInstanceId];
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.UpdateStateParams
+    params: CFCoreTypes.UpdateStateParams,
   ): Promise<void> {
     const { store } = requestHandler;
     const { appInstanceId, newState } = params;
@@ -51,7 +51,7 @@ export default class UpdateStateController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.UpdateStateParams
+    params: CFCoreTypes.UpdateStateParams,
   ): Promise<CFCoreTypes.UpdateStateResult> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
     const { appInstanceId, newState } = params;
@@ -60,7 +60,7 @@ export default class UpdateStateController extends NodeController {
 
     const responderXpub = getFirstElementInListNotEqualTo(
       publicIdentifier,
-      sc.userNeuteredExtendedKeys
+      sc.userNeuteredExtendedKeys,
     );
 
     await runUpdateStateProtocol(
@@ -69,7 +69,7 @@ export default class UpdateStateController extends NodeController {
       protocolRunner,
       publicIdentifier,
       responderXpub,
-      newState
+      newState,
     );
 
     return { newState };
@@ -82,21 +82,19 @@ async function runUpdateStateProtocol(
   protocolRunner: ProtocolRunner,
   initiatorXpub: string,
   responderXpub: string,
-  newState: SolidityValueType
+  newState: SolidityValueType,
 ) {
   const stateChannel = await store.getChannelFromAppInstanceID(appIdentityHash);
 
   const stateChannelsMap = await protocolRunner.initiateProtocol(
     Protocol.Update,
-    new Map<string, StateChannel>([
-      [stateChannel.multisigAddress, stateChannel]
-    ]),
+    new Map<string, StateChannel>([[stateChannel.multisigAddress, stateChannel]]),
     {
       initiatorXpub,
       responderXpub,
       appIdentityHash,
       newState,
-      multisigAddress: stateChannel.multisigAddress
-    }
+      multisigAddress: stateChannel.multisigAddress,
+    },
   );
 }

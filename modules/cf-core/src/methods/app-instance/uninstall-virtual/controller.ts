@@ -1,41 +1,39 @@
 import { jsonRpcMethod } from "rpc-server";
 
 import { RequestHandler } from "../../../request-handler";
-import { CFCoreTypes } from "../../../types";
+import { CFCoreTypes, ProtocolTypes } from "../../../types";
 import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
   APP_ALREADY_UNINSTALLED,
   NO_APP_INSTANCE_ID_TO_UNINSTALL,
-  NO_NETWORK_PROVIDER_CREATE2
+  NO_NETWORK_PROVIDER_CREATE2,
 } from "../../errors";
 
 import { uninstallVirtualAppInstanceFromChannel } from "./operation";
 
 export default class UninstallVirtualController extends NodeController {
-  @jsonRpcMethod(CFCoreTypes.RpcMethodNames.chan_uninstallVirtual)
+  @jsonRpcMethod(ProtocolTypes.chan_uninstallVirtual)
   public executeMethod = super.executeMethod;
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.UninstallVirtualParams
+    params: CFCoreTypes.UninstallVirtualParams,
   ): Promise<string[]> {
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { appInstanceId, intermediaryIdentifier } = params;
 
-    // safe to use network context proxy factory address directly here.
+    // safe to use network context critical state channel addresses here.
     // the `getMultisigAddressWithCounterparty` function will default
     // to using any existing multisig address for the provided
     // owners before creating one
     const multisigAddressForStateChannelWithIntermediary = await store.getMultisigAddressWithCounterparty(
       [publicIdentifier, intermediaryIdentifier],
       networkContext.ProxyFactory,
-      networkContext.MinimumViableMultisig
+      networkContext.MinimumViableMultisig,
     );
 
-    const stateChannelWithResponding = await store.getChannelFromAppInstanceID(
-      appInstanceId
-    );
+    const stateChannelWithResponding = await store.getChannelFromAppInstanceID(appInstanceId);
 
     if (!networkContext.provider) {
       throw new Error(NO_NETWORK_PROVIDER_CREATE2);
@@ -54,28 +52,26 @@ export default class UninstallVirtualController extends NodeController {
     // parameter, or as a part of the virtual app state.
     const multisigAddressBetweenHubAndResponding = await store.getMultisigAddressWithCounterparty(
       [
-        stateChannelWithResponding.userNeuteredExtendedKeys.filter(
-          x => x !== publicIdentifier
-        )[0],
-        intermediaryIdentifier
+        stateChannelWithResponding.userNeuteredExtendedKeys.filter(x => x !== publicIdentifier)[0],
+        intermediaryIdentifier,
       ],
-      stateChannelWithResponding.proxyFactoryAddress,
-      networkContext.MinimumViableMultisig,
-      networkContext.provider
+      stateChannelWithResponding.addresses.proxyFactory,
+      stateChannelWithResponding.addresses.multisigMastercopy,
+      networkContext.provider,
     );
 
     return [
       stateChannelWithResponding.multisigAddress,
       multisigAddressForStateChannelWithIntermediary,
       multisigAddressBetweenHubAndResponding,
-      appInstanceId
+      appInstanceId,
     ];
   }
 
   protected async beforeExecution(
     // @ts-ignore
     requestHandler: RequestHandler,
-    params: CFCoreTypes.UninstallVirtualParams
+    params: CFCoreTypes.UninstallVirtualParams,
   ) {
     const { appInstanceId } = params;
 
@@ -86,14 +82,9 @@ export default class UninstallVirtualController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.UninstallVirtualParams
+    params: CFCoreTypes.UninstallVirtualParams,
   ): Promise<CFCoreTypes.UninstallVirtualResult> {
-    const {
-      store,
-      protocolRunner,
-      publicIdentifier,
-      provider
-    } = requestHandler;
+    const { store, protocolRunner, publicIdentifier, provider } = requestHandler;
 
     const { appInstanceId, intermediaryIdentifier } = params;
 
@@ -109,7 +100,7 @@ export default class UninstallVirtualController extends NodeController {
 
     const to = getFirstElementInListNotEqualTo(
       publicIdentifier,
-      stateChannel.userNeuteredExtendedKeys
+      stateChannel.userNeuteredExtendedKeys,
     );
 
     await uninstallVirtualAppInstanceFromChannel(
@@ -119,7 +110,7 @@ export default class UninstallVirtualController extends NodeController {
       publicIdentifier,
       to,
       intermediaryIdentifier,
-      appInstanceId
+      appInstanceId,
     );
 
     return {};

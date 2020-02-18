@@ -1,16 +1,20 @@
 # Cache
+.buidler
 .cache
 .config
 .jest.cache
 .node-gyp
 .npm
 .bot-store
-modules/**/.cache
-modules/**/.config
-modules/**/.node-gyp
-modules/**/.npm
+.test-store
+modules/*/.buidler
+modules/*/.cache
+modules/*/.config
+modules/*/.node-gyp
+modules/*/.npm
+modules/*/package-lock.json
 modules/daicard/src/react-app-env.d.ts
-modules/database/snapshots
+ops/database/snapshots
 
 # Compiled output
 build/
@@ -53,6 +57,7 @@ cypress/videos
 
 # Misc
 .rpt2_cache
+report.*
 
 # Git submodules
 modules/**/.git
@@ -75,3 +80,5 @@ modules/client/docs
 
 # .env
 modules/**/.env
+
+modules/contracts/cache/

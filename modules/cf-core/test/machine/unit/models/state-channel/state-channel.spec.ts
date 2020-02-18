@@ -10,9 +10,13 @@ describe("StateChannel", () => {
     const multisigAddress = getAddress(hexlify(randomBytes(20)));
     const xpubs = getRandomExtendedPubKeys(2);
 
-    const { ProxyFactory } = generateRandomNetworkContext();
+    const { ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
 
-    const sc = new StateChannel(multisigAddress, ProxyFactory, xpubs);
+    const sc = new StateChannel(
+      multisigAddress,
+      { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
+      xpubs,
+    );
 
     expect(sc).not.toBe(null);
     expect(sc).not.toBe(undefined);
@@ -29,15 +33,15 @@ describe("StateChannel", () => {
     let sc: StateChannel;
     let json: StateChannelJSON;
 
-    const { IdentityApp, ProxyFactory } = generateRandomNetworkContext();
+    const { IdentityApp, ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
 
     beforeAll(() => {
       // NOTE: this functionality is tested in `setup-channel.spec`
       sc = StateChannel.setupChannel(
         IdentityApp,
-        ProxyFactory,
+        { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
         multisigAddress,
-        xpubs
+        xpubs,
       );
       json = sc.toJson();
     });
@@ -66,9 +70,11 @@ describe("StateChannel", () => {
       expect(json.singleAssetTwoPartyIntermediaryAgreements).toEqual([]);
     });
 
-    it("should have the correct proxy factory address", () => {
-      expect(json.proxyFactoryAddress).toEqual(sc.proxyFactoryAddress);
-      expect(sc.proxyFactoryAddress).toEqual(ProxyFactory);
+    it("should have the correct critical state channel addresses", () => {
+      expect(json.addresses.proxyFactory).toEqual(sc.addresses.proxyFactory);
+      expect(sc.addresses.proxyFactory).toEqual(ProxyFactory);
+      expect(json.addresses.multisigMastercopy).toEqual(sc.addresses.multisigMastercopy);
+      expect(sc.addresses.multisigMastercopy).toEqual(MinimumViableMultisig);
     });
   });
 
@@ -76,7 +82,7 @@ describe("StateChannel", () => {
     const multisigAddress = getAddress(hexlify(randomBytes(20)));
     const xpubs = getRandomExtendedPubKeys(2);
 
-    const { IdentityApp, ProxyFactory } = generateRandomNetworkContext();
+    const { IdentityApp, ProxyFactory, MinimumViableMultisig } = generateRandomNetworkContext();
 
     let sc: StateChannel;
     let json: StateChannelJSON;
@@ -86,9 +92,9 @@ describe("StateChannel", () => {
       // NOTE: this functionality is tested in `setup-channel.spec`
       sc = StateChannel.setupChannel(
         IdentityApp,
-        ProxyFactory,
+        { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
         multisigAddress,
-        xpubs
+        xpubs,
       );
       json = sc.toJson();
       rehydrated = StateChannel.fromJson(json);
@@ -111,9 +117,7 @@ describe("StateChannel", () => {
     });
 
     it("should not change the user xpubs", () => {
-      expect(rehydrated.userNeuteredExtendedKeys).toEqual(
-        sc.userNeuteredExtendedKeys
-      );
+      expect(rehydrated.userNeuteredExtendedKeys).toEqual(sc.userNeuteredExtendedKeys);
     });
 
     it("should not change the multisig address", () => {
@@ -122,7 +126,7 @@ describe("StateChannel", () => {
 
     it("should have a singleAssetTwoPartyIntermediaryAgreements array", () => {
       expect(rehydrated.singleAssetTwoPartyIntermediaryAgreements).toEqual(
-        sc.singleAssetTwoPartyIntermediaryAgreements
+        sc.singleAssetTwoPartyIntermediaryAgreements,
       );
     });
   });

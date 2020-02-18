@@ -1,21 +1,15 @@
-import {
-  Interface,
-  joinSignature,
-  keccak256,
-  Signature,
-  solidityPack
-} from "ethers/utils";
+import { Interface, joinSignature, keccak256, Signature, solidityPack } from "ethers/utils";
 
 import { ChallengeRegistry } from "../contracts";
 import {
   AppIdentity,
-  NetworkContext,
   CFCoreTypes,
-  SignedStateHashUpdate
+  EthereumCommitment,
+  NetworkContext,
+  SignedStateHashUpdate,
 } from "../types";
 import { sortSignaturesBySignerAddress } from "../utils";
 
-import { EthereumCommitment } from "./types";
 import { appIdentityToHash } from "./utils/app-identity";
 
 const iface = new Interface(ChallengeRegistry.abi);
@@ -26,7 +20,7 @@ export class SetStateCommitment extends EthereumCommitment {
     public readonly appIdentity: AppIdentity,
     public readonly hashedAppState: string,
     public readonly appVersionNumber: number,
-    public readonly timeout: number
+    public readonly timeout: number,
   ) {
     super();
   }
@@ -40,9 +34,9 @@ export class SetStateCommitment extends EthereumCommitment {
           appIdentityToHash(this.appIdentity),
           this.appVersionNumber,
           this.timeout,
-          this.hashedAppState
-        ]
-      )
+          this.hashedAppState,
+        ],
+      ),
     );
   }
 
@@ -52,22 +46,17 @@ export class SetStateCommitment extends EthereumCommitment {
       value: 0,
       data: iface.functions.setState.encode([
         this.appIdentity,
-        this.getSignedStateHashUpdate(sigs)
-      ])
+        this.getSignedStateHashUpdate(sigs),
+      ]),
     };
   }
 
-  private getSignedStateHashUpdate(
-    signatures: Signature[]
-  ): SignedStateHashUpdate {
+  private getSignedStateHashUpdate(signatures: Signature[]): SignedStateHashUpdate {
     return {
       appStateHash: this.hashedAppState,
       versionNumber: this.appVersionNumber,
       timeout: this.timeout,
-      signatures: sortSignaturesBySignerAddress(
-        this.hashToSign(),
-        signatures
-      ).map(joinSignature)
+      signatures: sortSignaturesBySignerAddress(this.hashToSign(), signatures).map(joinSignature),
     };
   }
 }

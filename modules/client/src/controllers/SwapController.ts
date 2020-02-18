@@ -1,8 +1,10 @@
 import { Zero } from "ethers/constants";
-import { BigNumber, bigNumberify, formatEther, parseEther } from "ethers/utils";
+import { BigNumber, parseEther } from "ethers/utils";
 
+import { CF_METHOD_TIMEOUT, delayAndThrow } from "../lib";
 import { xpubToAddress } from "../lib/cfCore";
 import {
+  calculateExchange,
   CFCoreChannel,
   CFCoreTypes,
   convert,
@@ -20,10 +22,6 @@ import {
 
 import { AbstractController } from "./AbstractController";
 
-export const calculateExchange = (amount: BigNumber, swapRate: string): BigNumber => {
-  return bigNumberify(formatEther(amount.mul(parseEther(swapRate))).replace(/\.[0-9]*$/, ""));
-};
-
 export class SwapController extends AbstractController {
   public async swap(params: SwapParameters): Promise<CFCoreChannel> {
     // convert params + validate
@@ -34,14 +32,12 @@ export class SwapController extends AbstractController {
     const preSwapFromBal = await this.connext.getFreeBalance(fromAssetId);
     const userBal = preSwapFromBal[this.connext.freeBalanceAddress];
     const preSwapToBal = await this.connext.getFreeBalance(toAssetId);
-    const nodeBal = preSwapToBal[xpubToAddress(this.connext.nodePublicIdentifier)];
     const swappedAmount = calculateExchange(amount, swapRate);
     validate(
       invalidAddress(fromAssetId),
       invalidAddress(toAssetId),
       notLessThanOrEqualTo(amount, userBal),
       notGreaterThan(amount, Zero),
-      notLessThanOrEqualTo(swappedAmount, nodeBal),
       notPositive(parseEther(swapRate)),
     );
 
@@ -54,7 +50,19 @@ export class SwapController extends AbstractController {
     this.log.info(`Swap app installed! Uninstalling without updating state.`);
 
     // if app installed, that means swap was accepted now uninstall
-    await this.connext.uninstallApp(appId);
+    try {
+      await Promise.race([
+        delayAndThrow(
+          CF_METHOD_TIMEOUT,
+          `App uninstall took longer than ${CF_METHOD_TIMEOUT / 1000} seconds`,
+        ),
+        this.connext.uninstallApp(appId),
+      ]);
+    } catch (e) {
+      const msg = `Failed to uninstall swap: ${e.stack || e.message}`;
+      this.log.error(msg);
+      throw new Error(msg);
+    }
 
     // Sanity check to ensure swap was executed correctly
     const postSwapFromBal = await this.connext.getFreeBalance(fromAssetId);

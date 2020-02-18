@@ -3,8 +3,7 @@ import { BigNumber } from "ethers/utils";
 
 import { Node, NULL_INITIAL_STATE_FOR_PROPOSAL } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
-import { ProposeInstallProtocolParams } from "../../src/machine/types";
-import { InstallMessage, NODE_EVENTS, ProposeMessage } from "../../src/types";
+import { InstallMessage, ProposeInstallProtocolParams, ProposeMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
@@ -56,14 +55,11 @@ describe("Node method follows spec - install", () => {
         let proposeInstallParams: ProposeInstallProtocolParams;
 
         nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
-          [
-            preInstallETHBalanceNodeA,
-            preInstallETHBalanceNodeB
-          ] = await getBalances(
+          [preInstallETHBalanceNodeA, preInstallETHBalanceNodeB] = await getBalances(
             nodeA,
             nodeB,
             multisigAddress,
-            CONVENTION_FOR_ETH_TOKEN_ADDRESS
+            CONVENTION_FOR_ETH_TOKEN_ADDRESS,
           );
           assertProposeMessage(nodeA.publicIdentifier, msg, proposeInstallParams);
           makeInstallCall(nodeB, msg.data.appInstanceId);
@@ -90,14 +86,11 @@ describe("Node method follows spec - install", () => {
           const proposedAppsA = await getProposedAppInstances(nodeA);
           expect(proposedAppsA.length).toBe(0);
 
-          [
-            postInstallETHBalanceNodeA,
-            postInstallETHBalanceNodeB
-          ] = await getBalances(
+          [postInstallETHBalanceNodeA, postInstallETHBalanceNodeB] = await getBalances(
             nodeA,
             nodeB,
             multisigAddress,
-            CONVENTION_FOR_ETH_TOKEN_ADDRESS
+            CONVENTION_FOR_ETH_TOKEN_ADDRESS,
           );
 
           expect(postInstallETHBalanceNodeA).toBeLt(preInstallETHBalanceNodeA);
@@ -124,7 +117,7 @@ describe("Node method follows spec - install", () => {
           One,
           CONVENTION_FOR_ETH_TOKEN_ADDRESS,
           One,
-          CONVENTION_FOR_ETH_TOKEN_ADDRESS
+          CONVENTION_FOR_ETH_TOKEN_ADDRESS,
         );
         proposeInstallParams = params;
       });
@@ -133,17 +126,10 @@ describe("Node method follows spec - install", () => {
         await transferERC20Tokens(await nodeA.signerAddress());
         await transferERC20Tokens(await nodeB.signerAddress());
 
-        const erc20TokenAddress = (global[
-          "networkContext"
-        ] as NetworkContextForTestSuite).DolphinCoin;
+        const erc20TokenAddress = (global["networkContext"] as NetworkContextForTestSuite)
+          .DolphinCoin;
 
-        await collateralizeChannel(
-          multisigAddress,
-          nodeA,
-          nodeB,
-          One,
-          erc20TokenAddress
-        );
+        await collateralizeChannel(multisigAddress, nodeA, nodeB, One, erc20TokenAddress);
 
         let preInstallERC20BalanceNodeA: BigNumber;
         let postInstallERC20BalanceNodeA: BigNumber;
@@ -153,14 +139,11 @@ describe("Node method follows spec - install", () => {
         let proposedParams: ProposeInstallProtocolParams;
 
         nodeB.on("PROPOSE_INSTALL_EVENT", async (msg: ProposeMessage) => {
-          [
-            preInstallERC20BalanceNodeA,
-            preInstallERC20BalanceNodeB
-          ] = await getBalances(
+          [preInstallERC20BalanceNodeA, preInstallERC20BalanceNodeB] = await getBalances(
             nodeA,
             nodeB,
             multisigAddress,
-            erc20TokenAddress
+            erc20TokenAddress,
           );
           assertProposeMessage(nodeA.publicIdentifier, msg, proposedParams);
           makeInstallCall(nodeB, msg.data.appInstanceId);
@@ -171,25 +154,18 @@ describe("Node method follows spec - install", () => {
           const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
           expect(appInstanceNodeA).toEqual(appInstanceNodeB);
 
-          [
-            postInstallERC20BalanceNodeA,
-            postInstallERC20BalanceNodeB
-          ] = await getBalances(
+          [postInstallERC20BalanceNodeA, postInstallERC20BalanceNodeB] = await getBalances(
             nodeA,
             nodeB,
             multisigAddress,
-            erc20TokenAddress
+            erc20TokenAddress,
           );
 
-          expect(postInstallERC20BalanceNodeA).toBeLt(
-            preInstallERC20BalanceNodeA
-          );
+          expect(postInstallERC20BalanceNodeA).toBeLt(preInstallERC20BalanceNodeA);
 
-          expect(postInstallERC20BalanceNodeB).toBeLt(
-            preInstallERC20BalanceNodeB
-          );
+          expect(postInstallERC20BalanceNodeB).toBeLt(preInstallERC20BalanceNodeB);
 
-          assertInstallMessage(nodeB.publicIdentifier, msg, appInstanceNodeA.identityHash)
+          assertInstallMessage(nodeB.publicIdentifier, msg, appInstanceNodeA.identityHash);
 
           done();
         });
@@ -202,7 +178,7 @@ describe("Node method follows spec - install", () => {
           One,
           erc20TokenAddress,
           One,
-          erc20TokenAddress
+          erc20TokenAddress,
         );
         proposedParams = params;
       });
@@ -213,15 +189,15 @@ describe("Node method follows spec - install", () => {
           nodeB.publicIdentifier,
           appContext.appDefinition,
           appContext.abiEncodings,
-          appContext.initialState
+          appContext.initialState,
         );
 
         appInstanceProposalReq.parameters["initialState"] = undefined;
 
-        await expect(
-          nodeA.rpcRouter.dispatch(appInstanceProposalReq)
-        ).rejects.toThrowError(NULL_INITIAL_STATE_FOR_PROPOSAL);
+        await expect(nodeA.rpcRouter.dispatch(appInstanceProposalReq)).rejects.toThrowError(
+          NULL_INITIAL_STATE_FOR_PROPOSAL,
+        );
       });
-    }
+    },
   );
 });

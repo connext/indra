@@ -20,7 +20,9 @@ INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-cxt1234}" # pass this in through CI
 # Internal Config
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../package.json | jq .name | tr -d '"'`"
+project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+registry="`cat $dir/../package.json | grep '"registry":' | head -n 1 | cut -d '"' -f 4`"
+
 ganache_chain_id="4447"
 log_level="3" # set to 5 for all logs or to 0 for none
 nats_port="4222"
@@ -85,13 +87,13 @@ redis_url="redis://redis:6379"
 
 if [[ "$INDRA_MODE" == "test"* ]]
 then registry=""
-else registry="docker.io/connextproject/"
+else registry="${registry%/}/"
 fi
 
 if [[ "$INDRA_MODE" == *"staging" ]]
 then version="`git rev-parse HEAD | head -c 8`"
 elif [[ "$INDRA_MODE" == *"release" ]]
-then version="`cat package.json | jq .version | tr -d '"'`"
+then version="`cat $dir/../package.json | grep '"version":' | head -n 1 | cut -d '"' -f 4`"
 else echo "Unknown mode ($INDRA_MODE) for domain: $INDRA_DOMAINNAME. Aborting" && exit 1
 fi
 
@@ -115,6 +117,8 @@ pull_if_unavailable "$relay_image"
 ########################################
 ## Ethereum Config
 
+eth_mnemonic_name="${project}_mnemonic"
+
 if [[ -z "$INDRA_ETH_PROVIDER" ]]
 then echo "An env var called INDRA_ETH_PROVIDER is required" && exit 1
 elif [[ "$INDRA_ETH_PROVIDER" =~ .*://localhost:.* ]]
@@ -124,17 +128,17 @@ fi
 
 echo "eth provider: $INDRA_ETH_PROVIDER w chainId: $chainId"
 
-if [[ "$chainId" == "1" ]]
-then eth_network_name="mainnet"
-elif [[ "$chainId" == "4" ]]
-then eth_network_name="rinkeby"
-elif [[ "$chainId" == "42" ]]
-then eth_network_name="kovan"
-elif [[ "$chainId" == "$ganache_chain_id" ]]
+# Prefer top-level address-book override otherwise default to one in contracts
+if [[ -f address-book.json ]]
+then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
+fi
+
+token_address="`echo $eth_contract_addresses | jq '.["'"$chainId"'"].Token.address' | tr -d '"'`"
+
+if [[ "$chainId" == "$ganache_chain_id" ]]
 then
-  eth_network_name="ganache"
   eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-  eth_mnemonic_name="${project}_mnemonic_$eth_network_name"
   new_secret "$eth_mnemonic_name" "$eth_mnemonic"
   eth_volume="chain_dev:"
   number_of_services=$(( $number_of_services + 1 ))
@@ -151,20 +155,17 @@ then
   "
   INDRA_ETH_PROVIDER="http://ethprovider:8545"
   pull_if_unavailable "$ethprovider_image"
-  bash ops/deploy-contracts.sh ganache $version
-else echo "Eth network \"$chainId\" is not supported for $INDRA_MODE-mode deployments" && exit 1
+  MODE=${INDRA_MODE#*-} bash ops/deploy-contracts.sh
 fi
 
-eth_mnemonic_name="${project}_mnemonic_$eth_network_name"
-eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
-
+allowed_swaps="[{\"from\":\"$token_address\",\"to\":\"0x0000000000000000000000000000000000000000\",\"priceOracleType\":\"UNISWAP\"},{\"from\":\"0x0000000000000000000000000000000000000000\",\"to\":\"$token_address\",\"priceOracleType\":\"UNISWAP\"}]"
 
 ########################################
 ## Deploy according to configuration
 
 echo "Deploying node image: $node_image to $INDRA_DOMAINNAME"
 
-mkdir -p modules/database/snapshots /tmp/$project
+mkdir -p ops/database/snapshots /tmp/$project
 cat - > /tmp/$project/docker-compose.yml <<EOF
 version: '3.4'
 
@@ -206,6 +207,7 @@ services:
     entrypoint: bash ops/entry.sh
     environment:
       INDRA_ADMIN_TOKEN: $INDRA_ADMIN_TOKEN
+      INDRA_ALLOWED_SWAPS: '$allowed_swaps'
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC_FILE: /run/secrets/$eth_mnemonic_name
       INDRA_ETH_RPC_URL: $INDRA_ETH_PROVIDER
@@ -237,7 +239,7 @@ services:
     environment:
       AWS_ACCESS_KEY_ID: $INDRA_AWS_ACCESS_KEY_ID
       AWS_SECRET_ACCESS_KEY: $INDRA_AWS_SECRET_ACCESS_KEY
-      ETH_NETWORK: $eth_network_name
+      ETH_NETWORK: $chainId
       POSTGRES_DB: $project
       POSTGRES_PASSWORD_FILE: $pg_password_file
       POSTGRES_USER: $project
@@ -245,7 +247,7 @@ services:
       - $db_secret
     volumes:
       - $db_volume:/var/lib/postgresql/data
-      - `pwd`/modules/database/snapshots:/root/snapshots
+      - `pwd`/ops/database/snapshots:/root/snapshots
     $db_port
 
   nats:

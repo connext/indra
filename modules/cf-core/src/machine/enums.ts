@@ -1,3 +1,5 @@
+export { Protocol } from "../types";
+
 enum Opcode {
   /**
    * Called at the end of execution before the return value to store a commitment
@@ -23,19 +25,7 @@ enum Opcode {
    * Middleware hook to write the state channel to store. Used to lock channel
    * between protocols.
    */
-  PERSIST_STATE_CHANNEL
+  PERSIST_STATE_CHANNEL,
 }
 
-enum Protocol {
-  Install = "install",
-  InstallVirtualApp = "install-virtual-app",
-  Setup = "setup",
-  Propose = "propose",
-  TakeAction = "takeAction",
-  Uninstall = "uninstall",
-  UninstallVirtualApp = "uninstall-virtual-app",
-  Update = "update",
-  Withdraw = "withdraw"
-}
-
-export { Opcode, Protocol };
+export { Opcode };

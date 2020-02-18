@@ -22,9 +22,12 @@ describe("StateChannel::uninstallApp", () => {
 
     sc1 = StateChannel.setupChannel(
       networkContext.IdentityApp,
-      networkContext.ProxyFactory,
+      {
+        proxyFactory: networkContext.ProxyFactory,
+        multisigMastercopy: networkContext.MinimumViableMultisig,
+      },
       multisigAddress,
-      xpubs
+      xpubs,
     );
 
     testApp = createAppInstanceForTest(sc1);
@@ -32,15 +35,15 @@ describe("StateChannel::uninstallApp", () => {
     sc1 = sc1.installApp(testApp, {
       [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
         [xkeyKthAddress(xpubs[0], 0)]: Zero,
-        [xkeyKthAddress(xpubs[1], 0)]: Zero
-      }
+        [xkeyKthAddress(xpubs[1], 0)]: Zero,
+      },
     });
 
     sc2 = sc1.uninstallApp(testApp.identityHash, {
       [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
         [xkeyKthAddress(xpubs[0], 0)]: Zero,
-        [xkeyKthAddress(xpubs[1], 0)]: Zero
-      }
+        [xkeyKthAddress(xpubs[1], 0)]: Zero,
+      },
     });
   });
 
@@ -70,7 +73,7 @@ describe("StateChannel::uninstallApp", () => {
 
     it("should have updated balances for Alice and Bob", () => {
       for (const amount of Object.values(
-        fb.withTokenAddress(CONVENTION_FOR_ETH_TOKEN_ADDRESS) || {}
+        fb.withTokenAddress(CONVENTION_FOR_ETH_TOKEN_ADDRESS) || {},
       )) {
         expect(amount).toEqual(Zero);
       }

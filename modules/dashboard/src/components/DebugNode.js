@@ -28,8 +28,8 @@ const StatTypography = styled(Typography)({
 
 const address = {
   mainnet: "0xf3f722f6ca6026fb7cc9b63523bbc6a73d3aad39",
-  staging: "0x0f41a9aaee33d3520f853cb706c24ca75cac874e",
-  rinkeby: "0x5307b4f67ca8746562a4a9fdeb0714033008ef4a",
+  staging: "0x5307B4F67ca8746562A4a9fdEb0714033008Ef4A",
+  rinkeby: "0xDA3CCBa9F3e3a9fE7D0Ed9F699Ca2BEF78Ba7A6c",
 };
 
 function DebugNode({ classes }) {
@@ -47,12 +47,12 @@ function DebugNode({ classes }) {
         ),
       );
 
-      var eth = {
+      let eth = {
         mainnet: balances[0].data.ETH.balance,
         staging: balances[1].data.ETH.balance,
         rinkeby: balances[2].data.ETH.balance,
       };
-      var dai = {
+      let dai = {
         mainnet: balances[0].data.tokens
           ? balances[0].data.tokens[0].balance / 1000000000000000000
           : 0,

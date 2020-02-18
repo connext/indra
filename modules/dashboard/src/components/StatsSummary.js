@@ -9,27 +9,40 @@ const TopGrid = styled(Grid)({
   flexDirection: "row",
   width: "100%",
   height: "100%",
-  justifyContent: "center",
+  justifyContent: "flex-start",
   alignItems: "center",
-})
+});
 
-const StatTypography = styled(Typography)({
-  textAlign: "center",
-  width: "90%",
+const StatLabelTypography = styled(Typography)({
+  alignSelf: "center",
+  textAlign: "left",
   fontSize: "24px",
+  fontWeight: "600",
   color: "#002868",
   textDecoration: "none",
-})
+});
+
+const StatTypography = styled(Typography)({
+  fontSize: "24px",
+  fontWeight: "400",
+});
 
 const ErrorTypography = styled(Typography)({
   color: "red",
-})
+});
 
+const RefreshButton = styled(Button)({
+  marginLeft: "5%",
+});
+
+const SectionGrid = styled(Grid)({
+  marginLeft: "5%",
+});
 
 const address = {
   mainnet: "0xf3f722f6ca6026fb7cc9b63523bbc6a73d3aad39", //"0xF80fd6F5eF91230805508bB28d75248024E50F6F", //,
-  // staging: "0x0f41a9aaee33d3520f853cb706c24ca75cac874e",
-  // rinkeby: "0x5307b4f67ca8746562a4a9fdeb0714033008ef4a",
+  staging: "0x5307B4F67ca8746562A4a9fdEb0714033008Ef4A",
+  // rinkeby: "0xDA3CCBa9F3e3a9fE7D0Ed9F699Ca2BEF78Ba7A6c",
 };
 
 const EthWeiConversion = new BigNumber(WeiPerEther)
@@ -44,6 +57,7 @@ const StatsSummary = ({ classes, messaging }) => {
   const [searchError, setSearchError] = useState(null);
   const [valueReclaimable, setValueReclaimable] = useState(new BigNumber(0))
   const [numberReclaimable, setNumberReclaimable] = useState(new BigNumber(0))
+  const [transferWindows, setTransferWindows] = useState({});
 
   useEffect(() => {
     if (!messaging) {
@@ -96,7 +110,7 @@ const StatsSummary = ({ classes, messaging }) => {
       const res = await messaging.getStateChannelByUserPubId(xPub);
       let balanceArr = [];
       res.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
-        if (balance.to !== address.mainnet) {
+        if (balance.to !== address.staging) {
           balanceArr.push(parseInt(balance.amount._hex, 16));
         }
       });
@@ -114,7 +128,7 @@ const StatsSummary = ({ classes, messaging }) => {
       const res = await messaging.getStateChannelByUserPubId(xPub);
       let balanceArr = [];
       res.freeBalanceAppInstance.latestState.balances[0].forEach(balance => {
-        if (balance.to === address.mainnet) {
+        if (balance.to === address.staging) {
           balanceArr.push(parseInt(balance.amount._hex, 16));
         }
       });
@@ -122,7 +136,6 @@ const StatsSummary = ({ classes, messaging }) => {
       const balanceArrReduced = balanceArr.reduce((a, b) => {
         return a + b;
       }, 0);
-
       return balanceArrReduced;
     } catch (e) {
       setSearchError(`error getting channel: ${e}`);
@@ -130,10 +143,13 @@ const StatsSummary = ({ classes, messaging }) => {
   };
 
   const getTransfers = async () => {
-    const res = await messaging.getAllLinkedTransfers() || [];
+    const res = (await messaging.getAllLinkedTransfers()) || [];
 
-    const totalTransfers = [];
-    const totalTransfersReduced = new BigNumber(0);
+    let totalTransfers = [];
+    let pastDayTotal = 0,
+      pastWeekTotal = 0,
+      pastMonthTotal = 0;
+    let totalTransfersReduced;
     if (res) {
       await getReclaimableTransfers(res)
       for (let transfer of res) {
@@ -169,16 +185,16 @@ const StatsSummary = ({ classes, messaging }) => {
   };
 
   return (
-    <TopGrid  container>
-      <Button
+    <TopGrid container>
+      <RefreshButton
         onClick={async () => {
           await onRefresh();
         }}
       >
         Refresh stats
-      </Button>
+      </RefreshButton>
       <Grid>
-        <ErrorTypography >{searchError}</ErrorTypography>
+        <ErrorTypography>{searchError}</ErrorTypography>
       </Grid>
       {loading ? (
         <CircularProgress color="secondary" />

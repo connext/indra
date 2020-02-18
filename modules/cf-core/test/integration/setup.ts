@@ -1,10 +1,6 @@
 import { CF_PATH, CFCoreTypes } from "@connext/types";
 import { Wallet } from "ethers";
-import {
-  JsonRpcProvider,
-  Provider,
-  TransactionRequest
-} from "ethers/providers";
+import { JsonRpcProvider, Provider, TransactionRequest } from "ethers/providers";
 import { parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 import { v4 as generateUUID } from "uuid";
@@ -49,7 +45,9 @@ export async function setup(
   nodeCPresent: boolean = false,
   newExtendedPrvKey: boolean = false,
   messagingService: CFCoreTypes.IMessagingService = new MemoryMessagingService(),
-  storeServiceFactory: CFCoreTypes.ServiceFactory = new MemoryStoreServiceFactory(),
+  storeServiceFactory: {
+    createStoreService?(storeServiceKey: string): CFCoreTypes.IStoreService;
+  } = new MemoryStoreServiceFactory(),
 ): Promise<SetupContext> {
   const setupContext: SetupContext = {};
 
@@ -128,10 +126,7 @@ export async function setup(
   return setupContext;
 }
 
-export async function generateNewFundedWallet(
-  fundedPrivateKey: string,
-  provider: Provider,
-) {
+export async function generateNewFundedWallet(fundedPrivateKey: string, provider: Provider) {
   const fundedWallet = new Wallet(fundedPrivateKey, provider);
   const wallet = Wallet.createRandom().connect(provider);
 

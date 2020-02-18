@@ -2,27 +2,28 @@ import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import tokenAbi from "human-standard-token-abi";
 
-import { CF_METHOD_TIMEOUT, delayAndThrow, stringify, xpubToAddress } from "../lib";
+import { stringify } from "../lib";
 import {
   BigNumber,
   CFCoreTypes,
   ChannelState,
   CoinBalanceRefundAppStateBigNumber,
   convert,
+  ProtocolTypes,
   DepositParameters,
-  SupportedApplication,
-  SupportedApplications,
 } from "../types";
 import { invalidAddress, notLessThanOrEqualTo, notPositive, validate } from "../validation";
 
 import { AbstractController } from "./AbstractController";
+import { CoinBalanceRefundApp } from "@connext/types";
 
 // TODO: refactor to use unrolled version
 export class DepositController extends AbstractController {
   public deposit = async (params: DepositParameters): Promise<ChannelState> => {
     const myFreeBalanceAddress = this.connext.freeBalanceAddress;
 
-    const { assetId, amount } = convert.Deposit("bignumber", params);
+    const { assetId, amount } = convert.Deposit(`bignumber`, params);
+    validate(invalidAddress(assetId), notPositive(amount));
 
     // check asset balance of address
     let bal: BigNumber;
@@ -34,11 +35,7 @@ export class DepositController extends AbstractController {
       // TODO: correct? how can i use allowance?
       bal = await token.balanceOf(myFreeBalanceAddress);
     }
-    validate(
-      invalidAddress(assetId),
-      notPositive(amount),
-      notLessThanOrEqualTo(amount, bal), // cant deposit more than default addr owns
-    );
+    validate(notLessThanOrEqualTo(amount, bal)); // cant deposit more than default addr owns
 
     // TODO: remove free balance stuff?
     const preDepositBalances = await this.connext.getFreeBalance(assetId);
@@ -50,7 +47,7 @@ export class DepositController extends AbstractController {
     this.log.debug(`Coin balance refund app proposed with id: ${appId}`);
 
     try {
-      this.log.info(`Calling ${CFCoreTypes.RpcMethodNames.chan_deposit}`);
+      this.log.info(`Calling ${ProtocolTypes.chan_deposit}`);
       await this.connext.rescindDepositRights({ assetId });
       const depositResponse = await this.connext.providerDeposit(amount, assetId);
       this.log.info(`Deposit Response: ${stringify(depositResponse)}`);
@@ -64,13 +61,14 @@ export class DepositController extends AbstractController {
       // changing this from !eq to lt. now that we have async deposits there is an edge case
       // where it could be more than amount
       if (diff.lt(amount)) {
-        throw new Error("My balance was not increased by the deposit amount.");
+        throw new Error(`My balance was not increased by the deposit amount.`);
       }
 
-      this.log.info("Deposited!");
+      this.log.info(`Deposited!`);
     } catch (e) {
-      this.log.error(`Failed to deposit: ${e.stack || e.message}`);
-      throw e;
+      const msg = `Failed to deposit: ${e.stack || e.message}`;
+      this.log.error(msg);
+      throw new Error(msg);
     }
 
     return {
@@ -83,12 +81,11 @@ export class DepositController extends AbstractController {
   ////// PRIVATE METHODS
 
   private proposeDepositInstall = async (assetId: string): Promise<string> => {
+    const token = new Contract(assetId!, tokenAbi, this.ethProvider);
     const threshold =
       assetId === AddressZero
         ? await this.ethProvider.getBalance(this.connext.multisigAddress)
-        : await new Contract(assetId!, tokenAbi, this.ethProvider).functions.balanceOf(
-            this.connext.multisigAddress,
-          );
+        : await token.functions.balanceOf(this.connext.multisigAddress);
 
     const initialState: CoinBalanceRefundAppStateBigNumber = {
       multisig: this.connext.multisigAddress,
@@ -102,9 +99,7 @@ export class DepositController extends AbstractController {
       appDefinitionAddress: appDefinition,
       stateEncoding,
       outcomeType,
-    } = this.connext.getRegisteredAppDetails(
-      SupportedApplications.CoinBalanceRefundApp as SupportedApplication,
-    );
+    } = this.connext.getRegisteredAppDetails(CoinBalanceRefundApp);
 
     const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {

@@ -8,7 +8,7 @@ describe("AppInstance", () => {
   it("should be able to instantiate", () => {
     const participants = [
       getAddress(hexlify(randomBytes(20))),
-      getAddress(hexlify(randomBytes(20)))
+      getAddress(hexlify(randomBytes(20))),
     ];
 
     const appInstance = new AppInstance(
@@ -17,7 +17,7 @@ describe("AppInstance", () => {
       {
         addr: getAddress(hexlify(randomBytes(20))),
         stateEncoding: "tuple(address foo, uint256 bar)",
-        actionEncoding: undefined
+        actionEncoding: undefined,
       },
       false,
       Math.ceil(Math.random() * 2e10),
@@ -28,10 +28,10 @@ describe("AppInstance", () => {
       {
         playerAddrs: [AddressZero, AddressZero],
         amount: Zero,
-        tokenAddress: AddressZero
+        tokenAddress: AddressZero,
       },
       undefined,
-      undefined
+      undefined,
     );
 
     expect(appInstance).not.toBe(null);

@@ -3,7 +3,7 @@ import { parseEther } from "ethers/utils";
 
 import { Node } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
-import { InstallMessage, NODE_EVENTS, ProposeMessage } from "../../src/types";
+import { InstallMessage, ProposeMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
@@ -14,7 +14,7 @@ import {
   createChannel,
   installVirtualApp,
   makeInstallCall,
-  makeProposeCall
+  makeProposeCall,
 } from "./utils";
 
 expect.extend({ toBeLt });
@@ -42,19 +42,9 @@ describe("Node method follows spec when happening concurrently - install virtual
       multisigAddressBC = await createChannel(nodeB, nodeC);
 
       // collateralize both channels
-      await collateralizeChannel(
-        multisigAddressAB,
-        nodeA,
-        nodeB,
-        parseEther("2")
-      );
+      await collateralizeChannel(multisigAddressAB, nodeA, nodeB, parseEther("2"));
 
-      await collateralizeChannel(
-        multisigAddressBC,
-        nodeB,
-        nodeC,
-        parseEther("2")
-      );
+      await collateralizeChannel(multisigAddressBC, nodeB, nodeC, parseEther("2"));
 
       const appDef = TicTacToeApp;
 
@@ -76,8 +66,8 @@ describe("Node method follows spec when happening concurrently - install virtual
             One,
             CONVENTION_FOR_ETH_TOKEN_ADDRESS,
             One,
-            CONVENTION_FOR_ETH_TOKEN_ADDRESS
-          )
+            CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+          ),
         );
       });
     });

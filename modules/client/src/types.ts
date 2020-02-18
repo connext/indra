@@ -1,37 +1,3 @@
-import { IMessagingService } from "@connext/messaging";
-import {
-  AppRegistry,
-  BigNumber as connextBN,
-  ClientOptions,
-  GetConfigResponse,
-  Store,
-} from "@connext/types";
-import { Contract, providers } from "ethers";
-import { Network } from "ethers/utils";
-
-import { ChannelProvider } from "./channelProvider";
-import { NodeApiClient } from "./node";
-
-export {
-  CreateChannelMessage,
-  DepositConfirmationMessage,
-  DepositFailedMessage,
-  DepositStartedMessage,
-  EXTENDED_PRIVATE_KEY_PATH,
-  InstallMessage,
-  InstallVirtualMessage,
-  NodeMessageWrappedProtocolMessage,
-  ProposeMessage,
-  RejectInstallVirtualMessage,
-  RejectProposalMessage,
-  UninstallMessage,
-  UninstallVirtualMessage,
-  UpdateStateMessage,
-  WithdrawConfirmationMessage,
-  WithdrawFailedMessage,
-  WithdrawStartedMessage,
-} from "@connext/cf-core";
-
 export {
   Address,
   App,
@@ -40,13 +6,14 @@ export {
   AppInstanceJson,
   AppRegistry,
   AppStateBigNumber,
-  CFCoreChannel,
+  BigNumber,
+  calculateExchange,
   CFChannelProviderOptions,
+  CFCoreChannel,
+  CFCoreTypes,
   ChannelAppSequences,
-  ChannelProvider,
   ChannelProviderConfig,
   ChannelProviderRpcMethod,
-  ChannelProviderRpcMethods,
   ChannelState,
   CheckDepositRightsParameters,
   CheckDepositRightsResponse,
@@ -58,35 +25,61 @@ export {
   ConditionalTransferResponse,
   ConnextClientStorePrefix,
   ConnextEvent,
+  ConnextEventEmitter,
   ConnextEvents,
   ConnextRpcMethod,
+  ConnextRpcMethods,
   convert,
+  CreateChannelMessage,
   CreateChannelResponse,
   DefaultApp,
+  DepositConfirmationMessage,
+  DepositFailedMessage,
   DepositParameters,
+  DepositStartedMessage,
+  fromWei,
   GetChannelResponse,
   GetConfigResponse,
+  IChannelProvider,
   IConnextClient,
+  INodeApiClient,
+  InstallMessage,
+  InstallVirtualMessage,
+  InternalClientOptions,
+  inverse,
+  IRpcConnection,
+  isBN,
+  IStoreService,
+  JsonRpcRequest,
   KeyGen,
+  LINKED_TRANSFER_TO_RECIPIENT,
   LinkedTransferParameters,
   LinkedTransferResponse,
   LinkedTransferToRecipientParameters,
   LinkedTransferToRecipientResponse,
   makeChecksum,
   makeChecksumOrEthAddress,
-  CFCoreTypes,
-  PaymentProfile,
+  MatchAppInstanceResponse,
+  maxBN,
+  minBN,
+  NodeInitializationParameters,
+  NodeMessageWrappedProtocolMessage,
+  RebalanceProfile,
+  PendingAsyncTransfer,
+  ProposeMessage,
+  ProtocolTypes,
+  RejectInstallVirtualMessage,
+  RejectProposalMessage,
   RequestCollateralResponse,
-  ResolveConditionParameters,
-  ResolveConditionResponse,
-  ResolveLinkedTransferParameters,
-  ResolveLinkedTransferToRecipientParameters,
-  ResolveLinkedTransferResponse,
   RequestDepositRightsParameters,
   RequestDepositRightsResponse,
   RescindDepositRightsParameters,
   RescindDepositRightsResponse,
-  RpcConnection,
+  ResolveConditionParameters,
+  ResolveConditionResponse,
+  ResolveLinkedTransferParameters,
+  ResolveLinkedTransferResponse,
+  ResolveLinkedTransferToRecipientParameters,
   SimpleLinkedTransferAppState,
   SimpleLinkedTransferAppStateBigNumber,
   SimpleSwapAppState,
@@ -98,34 +91,20 @@ export {
   StorePair,
   SupportedApplication,
   SupportedApplications,
-  SupportedNetwork,
   SwapParameters,
+  toBN,
+  tokenToWei,
+  toWei,
   Transfer,
   TransferCondition,
   TransferParameters,
+  UninstallMessage,
+  UninstallVirtualMessage,
+  UpdateStateMessage,
+  weiToToken,
   WithdrawalResponse,
+  WithdrawConfirmationMessage,
+  WithdrawFailedMessage,
   WithdrawParameters,
+  WithdrawStartedMessage,
 } from "@connext/types";
-
-export type BigNumber = connextBN;
-export const BigNumber = connextBN;
-
-export type InternalClientOptions = ClientOptions & {
-  appRegistry: AppRegistry;
-  channelProvider: ChannelProvider;
-  config: GetConfigResponse;
-  ethProvider: providers.JsonRpcProvider;
-  messaging: IMessagingService;
-  network: Network;
-  node: NodeApiClient;
-  store: Store;
-  token: Contract;
-};
-
-export interface NodeInitializationParameters {
-  messaging: IMessagingService;
-  logLevel?: number;
-  userPublicIdentifier?: string;
-  nodePublicIdentifier?: string;
-  channelProvider?: ChannelProvider;
-}

@@ -13,16 +13,18 @@ export class NatsMessagingService implements IMessagingService {
     private readonly config: MessagingConfig,
     private readonly messagingServiceKey: string,
   ) {
-    this.log = new Logger("NatsMessagingService", config.logLevel);
+    this.log = new Logger(`NatsMessagingService`, config.logLevel);
     this.log.debug(`Created with config: ${JSON.stringify(config, null, 2)}`);
   }
 
   async connect(): Promise<void> {
     const messagingUrl = this.config.messagingUrl;
-    const config = this.config as nats.NatsConnectionOptions;
-    config.servers = typeof messagingUrl === "string" ? [messagingUrl] : messagingUrl;
-    config.payload = nats.Payload.JSON;
-    this.connection = await nats.connect(config);
+    this.connection = await nats.connect({
+      ...this.config,
+      ...this.config.options,
+      servers: typeof messagingUrl === `string` ? [messagingUrl] : messagingUrl,
+      payload: nats.Payload.JSON,
+    } as nats.NatsConnectionOptions);
     this.log.debug(`Connected!`);
   }
 
@@ -34,7 +36,10 @@ export class NatsMessagingService implements IMessagingService {
   ////////////////////////////////////////
   // CFCoreTypes.IMessagingService Methods
 
-  async onReceive(subject: string, callback: (msg: CFCoreTypes.NodeMessage) => void): Promise<void> {
+  async onReceive(
+    subject: string,
+    callback: (msg: CFCoreTypes.NodeMessage) => void,
+  ): Promise<void> {
     this.assertConnected();
     this.subscriptions[subject] = await this.connection!.subscribe(
       this.prependKey(`${subject}.>`),
@@ -42,7 +47,7 @@ export class NatsMessagingService implements IMessagingService {
         if (err || !msg || !msg.data) {
           this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
         } else {
-          const data = typeof msg.data === "string" ? JSON.parse(msg).data : msg.data;
+          const data = typeof msg.data === `string` ? JSON.parse(msg).data : msg.data;
           this.log.debug(`Received message for ${subject}: ${JSON.stringify(data)}`);
           callback(data as CFCoreTypes.NodeMessage);
         }
@@ -73,7 +78,10 @@ export class NatsMessagingService implements IMessagingService {
     return response;
   }
 
-  async subscribe(subject: string, callback: (msg: CFCoreTypes.NodeMessage) => void): Promise<void> {
+  async subscribe(
+    subject: string,
+    callback: (msg: CFCoreTypes.NodeMessage) => void,
+  ): Promise<void> {
     this.assertConnected();
     this.subscriptions[subject] = await this.connection!.subscribe(
       subject,
@@ -81,7 +89,7 @@ export class NatsMessagingService implements IMessagingService {
         if (err || !msg || !msg.data) {
           this.log.error(`Encountered an error while handling callback for message ${msg}: ${err}`);
         } else {
-          const data = typeof msg === "string" ? JSON.parse(msg) : msg;
+          const data = typeof msg === `string` ? JSON.parse(msg) : msg;
           this.log.debug(`Subscription for ${subject}: ${JSON.stringify(data)}`);
           callback(data as CFCoreTypes.NodeMessage);
         }
@@ -91,12 +99,15 @@ export class NatsMessagingService implements IMessagingService {
 
   async unsubscribe(subject: string): Promise<void> {
     this.assertConnected();
-    if (this.subscriptions[subject]) {
-      this.subscriptions[subject].unsubscribe();
-      this.log.debug(`Unsubscribed from ${subject}`);
-    } else {
-      this.log.warn(`Not subscribed to ${subject}, doing nothing`);
-    }
+    const unsubscribeFrom = this.getSubjectsToUnsubscribeFrom(subject);
+    unsubscribeFrom.forEach(sub => {
+      if (this.subscriptions[sub]) {
+        this.subscriptions[sub].unsubscribe();
+        this.log.debug(`Unsubscribed from ${sub}`);
+      } else {
+        this.log.warn(`Not subscribed to ${sub}, doing nothing`);
+      }
+    });
   }
 
   async flush(): Promise<void> {
@@ -113,7 +124,35 @@ export class NatsMessagingService implements IMessagingService {
 
   private assertConnected(): void {
     if (!this.connection) {
-      throw new Error("No connection exists, NatsMessagingService is uninitialized.");
+      throw new Error(`No connection exists, NatsMessagingService is uninitialized.`);
     }
+    if (!this.connection.isClosed) {
+      throw new Error(`Connection is closed, try reconnecting.`);
+    }
+  }
+
+  private getSubjectsToUnsubscribeFrom(subject: string): string[] {
+    // must account for wildcards
+    const subscribedTo = Object.keys(this.subscriptions);
+    const unsubscribeFrom: string[] = [];
+
+    // get all the substrings to match in the existing subscriptions
+    // anything after `>` doesnt matter
+    // `*` represents any set of characters
+    // if no match for split, will return [subject]
+    const substrsToMatch = subject.split(`>`)[0].split(`*`);
+    subscribedTo.forEach(subscribedSubject => {
+      let subjectIncludesAllSubstrings = true;
+      substrsToMatch.forEach(match => {
+        if (!subscribedSubject.includes(match) && match !== ``) {
+          subjectIncludesAllSubstrings = false;
+        }
+      });
+      if (subjectIncludesAllSubstrings) {
+        unsubscribeFrom.push(subscribedSubject);
+      }
+    });
+
+    return unsubscribeFrom;
   }
 }

@@ -23,19 +23,15 @@ describe("Confirms that a FreeBalance cannot be uninstalled", () => {
         global["networkContext"].IdentityApp,
         global["networkContext"].ProxyFactory,
         multisigAddress,
-        [nodeA.publicIdentifier, nodeB.publicIdentifier]
+        [nodeA.publicIdentifier, nodeB.publicIdentifier],
       );
 
-      const fbUninstallReq = constructUninstallRpc(
-        channel.freeBalance.identityHash
-      );
+      const fbUninstallReq = constructUninstallRpc(channel.freeBalance.identityHash);
 
       try {
         await nodeA.rpcRouter.dispatch(fbUninstallReq);
       } catch (e) {
-        expect(e.toString()).toMatch(
-          CANNOT_UNINSTALL_FREE_BALANCE(multisigAddress)
-        );
+        expect(e.toString()).toMatch(CANNOT_UNINSTALL_FREE_BALANCE(multisigAddress));
       }
     });
   });

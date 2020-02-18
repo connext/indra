@@ -2,7 +2,7 @@
 set -e
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../package.json | jq .name | tr -d '"'`"
+project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
 # Turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
@@ -10,7 +10,7 @@ docker swarm init 2> /dev/null || true
 ####################
 # External Env Vars
 
-INDRA_ETH_NETWORK="${1:-ganache}"
+INDRA_ETH_NETWORK="${INDRA_ETH_NETWORK:-ganache}"
 INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-foo}"
 INDRA_UI="${INDRA_UI:-daicard}"
 
@@ -26,18 +26,37 @@ node_port=8080
 dash_port=9999
 port=3000
 
+# Prefer top-level address-book override otherwise default to one in contracts
+if [[ -f address-book.json ]]
+then eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
+else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' \n\r'`"
+fi
+eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+
+# TODO, could not get the command to work with a variable
+# token_address="`echo $eth_contract_addresses | jq '.["$chainId"].Token.address' | tr -d '"'`"
 if [[ "$INDRA_ETH_NETWORK" == "rinkeby" ]]
-then eth_rpc_url="https://rinkeby.infura.io/metamask"
+then 
+  eth_rpc_url="https://rinkeby.infura.io/metamask"
+  token_address="`echo $eth_contract_addresses | jq '.["4"].Token.address' | tr -d '"'`"
 elif [[ "$INDRA_ETH_NETWORK" == "kovan" ]]
-then eth_rpc_url="https://kovan.infura.io/metamask"
+then 
+  eth_rpc_url="https://kovan.infura.io/metamask"
+  token_address="`echo $eth_contract_addresses | jq '.["42"].Token.address' | tr -d '"'`"
 elif [[ "$INDRA_ETH_NETWORK" == "ganache" ]]
 then
   eth_rpc_url="http://ethprovider:8545"
+  token_address="`echo $eth_contract_addresses | jq '.["4447"].Token.address' | tr -d '"'`"
   make deployed-contracts
+else
+  eth_rpc_url="${INDRA_ETH_PROVIDER}"
 fi
 
-eth_contract_addresses="`cat address-book.json | tr -d ' \n\r'`"
-eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
+if [[ -z "$eth_rpc_url" ]]
+then echo "An env var called 'INDRA_ETH_PROVIDER' is required or you must be running on ganache" && exit 1
+fi
+
+allowed_swaps="[{\"from\":\"$token_address\",\"to\":\"0x0000000000000000000000000000000000000000\",\"priceOracleType\":\"UNISWAP\"},{\"from\":\"0x0000000000000000000000000000000000000000\",\"to\":\"$token_address\",\"priceOracleType\":\"UNISWAP\"}]"
 
 # database connection settings
 pg_db="$project"
@@ -50,7 +69,7 @@ pg_user="$project"
 builder_image="${project}_builder"
 ui_image="$builder_image"
 database_image="postgres:9-alpine"
-ethprovider_image="${project}_ethprovider"
+ethprovider_image="$builder_image"
 nats_image="nats:2.0.0-linux"
 node_image="$builder_image"
 proxy_image="${project}_proxy"
@@ -172,6 +191,7 @@ services:
     entrypoint: bash modules/node/ops/entry.sh
     environment:
       INDRA_ADMIN_TOKEN: $INDRA_ADMIN_TOKEN
+      INDRA_ALLOWED_SWAPS: '$allowed_swaps'
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC: $eth_mnemonic
       INDRA_ETH_RPC_URL: $eth_rpc_url
@@ -198,6 +218,7 @@ services:
 
   ethprovider:
     image: $ethprovider_image
+    entrypoint: bash modules/contracts/ops/entry.sh
     command: "start"
     environment:
       ETH_MNEMONIC: $eth_mnemonic
@@ -206,6 +227,7 @@ services:
     ports:
       - "8545:8545"
     volumes:
+      - `pwd`:/root
       - chain_dev:/data
 
   database:

@@ -1,21 +1,23 @@
 import { IMessagingService } from "@connext/messaging";
 import { providers } from "ethers";
+import { BigNumber, Transaction } from "ethers/utils";
 
 import { Logger } from "../lib";
-import { INodeApiClient } from "../node";
 import {
   AppRegistry,
-  CFCoreTypes,
   ChannelAppSequences,
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
+  IChannelProvider,
+  IStoreService,
+  INodeApiClient,
   NodeInitializationParameters,
-  PaymentProfile,
+  RebalanceProfile,
+  PendingAsyncTransfer,
   RequestCollateralResponse,
   ResolveLinkedTransferResponse,
   SupportedApplication,
-  SupportedNetwork,
   Transfer,
 } from "../types";
 
@@ -39,11 +41,11 @@ export class MockMessagingService implements IMessagingService {
   }
 
   async connect(): Promise<void> {
-    this.log.info(`Connect`);
+    this.log.info("Connect");
   }
 
   async disconnect(): Promise<void> {
-    this.log.info(`Disconnect`);
+    this.log.info("Disconnect");
   }
 
   async onReceive(subject: string, callback: (msg: any) => void): Promise<void> {
@@ -72,7 +74,7 @@ export class MockMessagingService implements IMessagingService {
   }
 
   async flush(): Promise<void> {
-    this.log.info(`Flushing messaging connection`);
+    this.log.info("Flushing messaging connection");
   }
 
   public patch(subject: string, returnValue: any): any {
@@ -89,6 +91,10 @@ export class MockNodeClientApi implements INodeApiClient {
   private nonce: string | undefined;
   private signature: string | undefined;
 
+  public channelProvider: IChannelProvider | undefined;
+  public userPublicIdentifier: string | undefined;
+  public nodePublicIdentifier: string | undefined;
+
   public constructor(opts: Partial<NodeInitializationParameters> = {}) {
     this.log = new Logger("MockNodeClientApi", opts.logLevel);
     this.messaging = (opts.messaging as any) || new MockMessagingService(opts);
@@ -101,13 +107,12 @@ export class MockNodeClientApi implements INodeApiClient {
     callback: (...args: any[]) => any,
     timeout: number,
   ): Promise<any> {
-    this.log.info(`acquireLock`);
+    this.log.info("acquireLock");
   }
 
   // should have keys same as the message passed in to fake messaging client
   // TODO: how well will this work with dynamic paths?
   public static returnValues: any = {
-    addPaymentProfile: {} as PaymentProfile,
     appRegistry: {} as AppRegistry,
     config: {
       chainId: "mocks", // network that your channel is on
@@ -124,7 +129,7 @@ export class MockNodeClientApi implements INodeApiClient {
 
   public async appRegistry(appDetails?: {
     name: SupportedApplication;
-    network: SupportedNetwork;
+    chainId: number;
   }): Promise<AppRegistry> {
     return MockNodeClientApi.returnValues.appRegistry;
   }
@@ -141,9 +146,35 @@ export class MockNodeClientApi implements INodeApiClient {
     return "100";
   }
 
-  public async getTransferHistory(): Promise<Transfer[]> {
+  public async getPendingAsyncTransfers(): Promise<PendingAsyncTransfer[]> {
+    return [
+      {
+        amount: "",
+        assetId: "",
+        encryptedPreImage: "",
+        linkedHash: "",
+        paymentId: "",
+      },
+    ];
+  }
+
+  public async getTransferHistory(publicIdentifier?: string): Promise<Transfer[]> {
     return [];
   }
+  public async getLatestWithdrawal(): Promise<Transaction> {
+    const mockNumber = 1;
+    const mockBigNumber = new BigNumber(mockNumber);
+    return {
+      chainId: mockNumber,
+      data: "",
+      gasLimit: mockBigNumber,
+      gasPrice: mockBigNumber,
+      nonce: mockNumber,
+      value: mockBigNumber,
+    };
+  }
+
+  public async clientCheckIn(): Promise<void> {}
 
   public async createChannel(): Promise<CreateChannelResponse> {
     return MockNodeClientApi.returnValues.createChannel;
@@ -156,7 +187,7 @@ export class MockNodeClientApi implements INodeApiClient {
   public async subscribeToSwapRates(
     from: string,
     to: string,
-    store: CFCoreTypes.IStoreService,
+    store: IStoreService,
   ): Promise<void> {}
 
   public async unsubscribeFromSwapRates(from: string, to: string): Promise<void> {}
@@ -179,15 +210,17 @@ export class MockNodeClientApi implements INodeApiClient {
     };
   }
 
-  public async addPaymentProfile(): Promise<any> {
-    return MockNodeClientApi.returnValues.addPaymentProfile;
-  }
-
-  public async getPaymentProfile(): Promise<PaymentProfile | undefined> {
+  public async getRebalanceProfile(): Promise<RebalanceProfile | undefined> {
     return undefined;
   }
 
   public async verifyAppSequenceNumber(): Promise<ChannelAppSequences> {
     return MockNodeClientApi.returnValues.verifyAppSequenceNumber;
   }
+
+  public async setRecipientAndEncryptedPreImageForLinkedTransfer(
+    recipient: string,
+    encryptedPreImage: string,
+    linkedHash: string,
+  ): Promise<any> {}
 }

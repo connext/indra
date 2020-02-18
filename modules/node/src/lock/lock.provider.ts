@@ -28,11 +28,11 @@ class LockMessaging extends AbstractMessagingProvider {
   async setupSubscriptions(): Promise<void> {
     super.connectRequestReponse(
       "lock.acquire.>",
-      this.authService.useVerifiedMultisig(this.acquireLock.bind(this)),
+      this.authService.useUnverifiedHexString(this.acquireLock.bind(this)),
     );
     super.connectRequestReponse(
       "lock.release.>",
-      this.authService.useVerifiedMultisig(this.releaseLock.bind(this)),
+      this.authService.useUnverifiedHexString(this.releaseLock.bind(this)),
     );
   }
 }

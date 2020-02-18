@@ -18,16 +18,17 @@ describe("StateChannel::setupChannel", () => {
   beforeAll(() => {
     sc = StateChannel.setupChannel(
       networkContext.IdentityApp,
-      networkContext.ProxyFactory,
+      {
+        proxyFactory: networkContext.ProxyFactory,
+        multisigMastercopy: networkContext.MinimumViableMultisig,
+      },
       multisigAddress,
-      xpubs
+      xpubs,
     );
   });
 
   it("should have empty map for proposed app instances", () => {
-    expect(sc.proposedAppInstances).toEqual(
-      new Map<string, AppInstanceProposal>()
-    );
+    expect(sc.proposedAppInstances).toEqual(new Map<string, AppInstanceProposal>());
   });
 
   it("should have empty map for app instances", () => {
@@ -88,9 +89,7 @@ describe("StateChannel::setupChannel", () => {
 
     it("should have 0 balances for Alice and Bob", () => {
       for (const amount of Object.values(
-        sc
-          .getFreeBalanceClass()
-          .withTokenAddress(CONVENTION_FOR_ETH_TOKEN_ADDRESS) || {}
+        sc.getFreeBalanceClass().withTokenAddress(CONVENTION_FOR_ETH_TOKEN_ADDRESS) || {},
       )) {
         expect(amount).toEqual(Zero);
       }

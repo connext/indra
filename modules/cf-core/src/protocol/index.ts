@@ -1,5 +1,5 @@
 import { Protocol } from "../machine/enums";
-import { ProtocolExecutionFlow } from "../machine/types";
+import { ProtocolExecutionFlow } from "../types";
 
 import { INSTALL_PROTOCOL } from "./install";
 import { INSTALL_VIRTUAL_APP_PROTOCOL } from "./install-virtual-app";
@@ -20,12 +20,10 @@ const protocolsByName = {
   [Protocol.Uninstall]: UNINSTALL_PROTOCOL,
   [Protocol.UninstallVirtualApp]: UNINSTALL_VIRTUAL_APP_PROTOCOL,
   [Protocol.Update]: UPDATE_PROTOCOL,
-  [Protocol.Withdraw]: WITHDRAW_PROTOCOL
+  [Protocol.Withdraw]: WITHDRAW_PROTOCOL,
 };
 
-export function getProtocolFromName(
-  protocolName: Protocol
-): ProtocolExecutionFlow {
+export function getProtocolFromName(protocolName: Protocol): ProtocolExecutionFlow {
   if (!(protocolName in protocolsByName)) {
     throw Error(`Received invalid protocol type ${protocolName}`);
   }
@@ -40,5 +38,5 @@ export {
   UNINSTALL_PROTOCOL,
   UPDATE_PROTOCOL,
   PROPOSE_PROTOCOL,
-  WITHDRAW_PROTOCOL
+  WITHDRAW_PROTOCOL,
 };

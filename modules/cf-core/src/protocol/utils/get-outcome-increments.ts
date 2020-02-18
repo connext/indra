@@ -5,7 +5,7 @@ import { AppInstance } from "../../models";
 import {
   CoinTransfer,
   convertCoinTransfersToCoinTransfersMap,
-  TokenIndexedCoinTransferMap
+  TokenIndexedCoinTransferMap,
 } from "../../models/free-balance";
 import {
   CoinBalanceRefundState,
@@ -14,7 +14,7 @@ import {
   OutcomeType,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
   TwoPartyFixedOutcome,
-  TwoPartyFixedOutcomeInterpreterParams
+  TwoPartyFixedOutcomeInterpreterParams,
 } from "../../types";
 import { wait } from "../../utils";
 
@@ -28,13 +28,12 @@ export async function computeTokenIndexedFreeBalanceIncrements(
   appInstance: AppInstance,
   provider: BaseProvider,
   encodedOutcomeOverride: string = "",
-  blockNumberToUseIfNecessary?: number
+  blockNumberToUseIfNecessary?: number,
 ): Promise<TokenIndexedCoinTransferMap> {
   const { outcomeType } = appInstance;
 
   const encodedOutcome =
-    encodedOutcomeOverride ||
-    (await appInstance.computeOutcomeWithCurrentState(provider));
+    encodedOutcomeOverride || (await appInstance.computeOutcomeWithCurrentState(provider));
 
   // FIXME: This is a very sketchy way of handling this edge-case
   if (appInstance.state["threshold"] !== undefined) {
@@ -42,7 +41,7 @@ export async function computeTokenIndexedFreeBalanceIncrements(
       encodedOutcome,
       appInstance,
       provider,
-      blockNumberToUseIfNecessary
+      blockNumberToUseIfNecessary,
     );
   }
 
@@ -50,24 +49,24 @@ export async function computeTokenIndexedFreeBalanceIncrements(
     case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
       return handleTwoPartyFixedOutcome(
         encodedOutcome,
-        appInstance.twoPartyOutcomeInterpreterParams
+        appInstance.twoPartyOutcomeInterpreterParams,
       );
     }
     case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
       return handleSingleAssetTwoPartyCoinTransfer(
         encodedOutcome,
-        appInstance.singleAssetTwoPartyCoinTransferInterpreterParams
+        appInstance.singleAssetTwoPartyCoinTransferInterpreterParams,
       );
     }
     case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
       return handleMultiAssetMultiPartyCoinTransfer(
         encodedOutcome,
-        appInstance.multiAssetMultiPartyCoinTransferInterpreterParams
+        appInstance.multiAssetMultiPartyCoinTransferInterpreterParams,
       );
     }
     default: {
       throw Error(
-        "computeTokenIndexedFreeBalanceIncrements received an AppInstance with unknown OutcomeType"
+        "computeTokenIndexedFreeBalanceIncrements received an AppInstance with unknown OutcomeType",
       );
     }
   }
@@ -87,7 +86,7 @@ async function handleRefundAppOutcomeSpecialCase(
   encodedOutcome: string,
   appInstance: AppInstance,
   provider: BaseProvider,
-  blockNumberToUseIfNecessary?: number
+  blockNumberToUseIfNecessary?: number,
 ): Promise<TokenIndexedCoinTransferMap> {
   let mutableOutcome = encodedOutcome;
   let attempts = 1;
@@ -97,14 +96,13 @@ async function handleRefundAppOutcomeSpecialCase(
     // if blockNumberToUseIfNecessary is specified and has elapsed, use the decoded state even
     // if amount is 0
     const blockNumberSpecifiedAndElapsed =
-      blockNumberToUseIfNecessary &&
-      currentBlockNumber >= blockNumberToUseIfNecessary;
+      blockNumberToUseIfNecessary && currentBlockNumber >= blockNumberToUseIfNecessary;
     // if blockNumberToUseIfNecessary is not specified, wait for nonzero balance refund or error
     if (amount.gt(0) || blockNumberSpecifiedAndElapsed) {
       return {
         [(appInstance.state as CoinBalanceRefundState).tokenAddress]: {
-          [to]: amount
-        }
+          [to]: amount,
+        },
       };
     }
 
@@ -118,13 +116,13 @@ async function handleRefundAppOutcomeSpecialCase(
   }
 
   throw Error(
-    "When attempting to check for a deposit having been made to the multisig, did not find any non-zero deposits."
+    "When attempting to check for a deposit having been made to the multisig, did not find any non-zero deposits.",
   );
 }
 
 function handleTwoPartyFixedOutcome(
   encodedOutcome: string,
-  interpreterParams: TwoPartyFixedOutcomeInterpreterParams
+  interpreterParams: TwoPartyFixedOutcomeInterpreterParams,
 ): TokenIndexedCoinTransferMap {
   const { amount, playerAddrs, tokenAddress } = interpreterParams;
 
@@ -132,107 +130,96 @@ function handleTwoPartyFixedOutcome(
     case TwoPartyFixedOutcome.SEND_TO_ADDR_ONE:
       return {
         [tokenAddress]: {
-          [playerAddrs[0]]: amount
-        }
+          [playerAddrs[0]]: amount,
+        },
       };
     case TwoPartyFixedOutcome.SEND_TO_ADDR_TWO:
       return {
         [tokenAddress]: {
-          [playerAddrs[1]]: amount
-        }
+          [playerAddrs[1]]: amount,
+        },
       };
     case TwoPartyFixedOutcome.SPLIT_AND_SEND_TO_BOTH_ADDRS:
     default:
       return {
         [tokenAddress]: {
           [playerAddrs[0]]: amount.div(2),
-          [playerAddrs[1]]: amount.sub(amount.div(2))
-        }
+          [playerAddrs[1]]: amount.sub(amount.div(2)),
+        },
       };
   }
 }
 
 function handleMultiAssetMultiPartyCoinTransfer(
   encodedOutcome: string,
-  interpreterParams: MultiAssetMultiPartyCoinTransferInterpreterParams
+  interpreterParams: MultiAssetMultiPartyCoinTransferInterpreterParams,
 ): TokenIndexedCoinTransferMap {
-  const decodedTransfers = decodeMultiAssetMultiPartyCoinTransfer(
-    encodedOutcome
-  );
+  const decodedTransfers = decodeMultiAssetMultiPartyCoinTransfer(encodedOutcome);
 
   return interpreterParams.tokenAddresses.reduce(
     (acc, tokenAddress, index) => ({
       ...acc,
-      [tokenAddress]: convertCoinTransfersToCoinTransfersMap(
-        decodedTransfers[index]
-      )
+      [tokenAddress]: convertCoinTransfersToCoinTransfersMap(decodedTransfers[index]),
     }),
-    {}
+    {},
   );
 }
 
 function handleSingleAssetTwoPartyCoinTransfer(
   encodedOutcome: string,
-  interpreterParams: SingleAssetTwoPartyCoinTransferInterpreterParams
+  interpreterParams: SingleAssetTwoPartyCoinTransferInterpreterParams,
 ): TokenIndexedCoinTransferMap {
   const { tokenAddress } = interpreterParams;
 
   const [
     { to: to1, amount: amount1 },
-    { to: to2, amount: amount2 }
+    { to: to2, amount: amount2 },
   ] = decodeSingleAssetTwoPartyCoinTransfer(encodedOutcome);
 
   return {
     [tokenAddress]: {
       [to1 as string]: amount1 as BigNumber,
-      [to2 as string]: amount2 as BigNumber
-    }
+      [to2 as string]: amount2 as BigNumber,
+    },
   };
 }
 
 function decodeRefundAppState(encodedOutcome: string): [CoinTransfer] {
   const [[{ to, amount }]] = defaultAbiCoder.decode(
     ["tuple(address to, uint256 amount)[2]"],
-    encodedOutcome
+    encodedOutcome,
   );
 
   return [{ to, amount }];
 }
 
-function decodeTwoPartyFixedOutcome(
-  encodedOutcome: string
-): TwoPartyFixedOutcome {
-  const [twoPartyFixedOutcome] = defaultAbiCoder.decode(
-    ["uint256"],
-    encodedOutcome
-  ) as [BigNumber];
+function decodeTwoPartyFixedOutcome(encodedOutcome: string): TwoPartyFixedOutcome {
+  const [twoPartyFixedOutcome] = defaultAbiCoder.decode(["uint256"], encodedOutcome) as [BigNumber];
 
   return twoPartyFixedOutcome.toNumber();
 }
 
 function decodeSingleAssetTwoPartyCoinTransfer(
-  encodedOutcome: string
+  encodedOutcome: string,
 ): [CoinTransfer, CoinTransfer] {
   const [[[to1, amount1], [to2, amount2]]] = defaultAbiCoder.decode(
     ["tuple(address to, uint256 amount)[2]"],
-    encodedOutcome
+    encodedOutcome,
   );
 
   return [
     { to: to1, amount: amount1 },
-    { to: to2, amount: amount2 }
+    { to: to2, amount: amount2 },
   ];
 }
 
-function decodeMultiAssetMultiPartyCoinTransfer(
-  encodedOutcome: string
-): CoinTransfer[][] {
+function decodeMultiAssetMultiPartyCoinTransfer(encodedOutcome: string): CoinTransfer[][] {
   const [coinTransferListOfLists] = defaultAbiCoder.decode(
     [multiAssetMultiPartyCoinTransferEncoding],
-    encodedOutcome
+    encodedOutcome,
   );
 
   return coinTransferListOfLists.map(coinTransferList =>
-    coinTransferList.map(({ to, amount }) => ({ to, amount }))
+    coinTransferList.map(({ to, amount }) => ({ to, amount })),
   );
 }
