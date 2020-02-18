@@ -1,7 +1,4 @@
-import {
-  OutcomeType,
-  SingleAssetTwoPartyIntermediaryAgreement
-} from "@connext/types";
+import { OutcomeType, SingleAssetTwoPartyIntermediaryAgreement } from "@connext/types";
 import { Contract, ContractFactory, Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
@@ -19,12 +16,9 @@ import {
   MinimumViableMultisig,
   NetworkContextForTestSuite,
   ProxyFactory,
-  TwoPartyFixedOutcomeApp
+  TwoPartyFixedOutcomeApp,
 } from "../../contracts";
-import {
-  transferERC20Tokens,
-  testDomainSeparator
-} from "../../integration/utils";
+import { transferERC20Tokens, testDomainSeparator } from "../../integration/utils";
 
 import { toBeEq } from "./bignumber-jest-matcher";
 import { connectToGanache } from "./connect-ganache";
@@ -151,7 +145,7 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
         network.IdentityApp,
         {
           proxyFactory: proxyFactory.address,
-          multisigMastercopy: network.MinimumViableMultisig
+          multisigMastercopy: network.MinimumViableMultisig,
         },
         proxyAddress, // used as multisigAddress
         xpubs,
@@ -285,7 +279,7 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
         encodeSingleAssetTwoPartyIntermediaryAgreementParams(agreement),
         testDomainSeparator,
         provider.network.chainId,
-        stateChannel.numProposedApps
+        stateChannel.numProposedApps,
       );
 
       await wallet.sendTransaction({

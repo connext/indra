@@ -39,11 +39,9 @@ describe("Can handle correct & incorrect installs", () => {
     protocolRunner = new ProtocolRunner(
       NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES,
       {} as BaseProvider,
-      testDomainSeparator
+      testDomainSeparator,
     );
-    initiatorIdentifier = HDNode.fromMnemonic(
-      Wallet.createRandom().mnemonic
-    ).neuter().extendedKey;
+    initiatorIdentifier = HDNode.fromMnemonic(Wallet.createRandom().mnemonic).neuter().extendedKey;
   });
 
   it("fails to install with undefined appInstanceId", async () => {

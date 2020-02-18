@@ -54,7 +54,10 @@ describe("MixinCancelChallenge.sol", () => {
 
     globalChannelNonce += 1;
 
-    const versionNumber = await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry);
+    const versionNumber = await latestVersionNumber(
+      appIdentityTestObject.identityHash,
+      challengeRegistry,
+    );
     expect(versionNumber).to.be.equal(Zero);
 
     // sets the state and begins a challenge
@@ -103,12 +106,16 @@ describe("MixinCancelChallenge.sol", () => {
     await setChallenge();
     // mine blocks
     await advanceBlocks(provider);
-    await expect(cancel()).to.be.revertedWith(`cancelChallenge called on app not in FINALIZES_AFTER_DEADLINE state`);
+    await expect(cancel()).to.be.revertedWith(
+      `cancelChallenge called on app not in FINALIZES_AFTER_DEADLINE state`,
+    );
   });
 
   it("fails if challenge is finalized -- wrong status", async () => {
     await setChallenge(undefined, Zero);
-    await expect(cancel()).to.be.revertedWith(`cancelChallenge called on app not in FINALIZES_AFTER_DEADLINE state`);
+    await expect(cancel()).to.be.revertedWith(
+      `cancelChallenge called on app not in FINALIZES_AFTER_DEADLINE state`,
+    );
   });
 
   it("can cancel an active challenge", async () => {

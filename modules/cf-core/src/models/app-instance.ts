@@ -67,7 +67,9 @@ export class AppInstance {
 
   get twoPartyOutcomeInterpreterParams() {
     if (this.outcomeType !== OutcomeType.TWO_PARTY_FIXED_OUTCOME) {
-      throw Error(`Invalid Accessor. AppInstance has outcomeType ${this.outcomeType}, not TWO_PARTY_FIXED_OUTCOME`);
+      throw Error(
+        `Invalid Accessor. AppInstance has outcomeType ${this.outcomeType}, not TWO_PARTY_FIXED_OUTCOME`,
+      );
     }
 
     return this.twoPartyOutcomeInterpreterParamsInternal!;
@@ -126,8 +128,10 @@ export class AppInstance {
       latestTimeout: this.latestTimeout,
       outcomeType: this.outcomeType,
       twoPartyOutcomeInterpreterParams: this.twoPartyOutcomeInterpreterParamsInternal,
-      multiAssetMultiPartyCoinTransferInterpreterParams: this.multiAssetMultiPartyCoinTransferInterpreterParamsInternal,
-      singleAssetTwoPartyCoinTransferInterpreterParams: this.singleAssetTwoPartyCoinTransferInterpreterParamsInternal,
+      multiAssetMultiPartyCoinTransferInterpreterParams: this
+        .multiAssetMultiPartyCoinTransferInterpreterParamsInternal,
+      singleAssetTwoPartyCoinTransferInterpreterParams: this
+        .singleAssetTwoPartyCoinTransferInterpreterParamsInternal,
       identityHash: this.identityHash,
     });
   }
@@ -280,11 +284,17 @@ export class AppInstance {
     return this.computeOutcome(this.state, provider);
   }
 
-  public async computeStateTransition(action: SolidityValueType, provider: BaseProvider): Promise<SolidityValueType> {
+  public async computeStateTransition(
+    action: SolidityValueType,
+    provider: BaseProvider,
+  ): Promise<SolidityValueType> {
     const ret: SolidityValueType = {};
 
     const computedNextState = this.decodeAppState(
-      await this.toEthersContract(provider).functions.applyAction(this.encodedLatestState, this.encodeAction(action)),
+      await this.toEthersContract(provider).functions.applyAction(
+        this.encodedLatestState,
+        this.encodeAction(action),
+      ),
     );
 
     // ethers returns an array of [ <each value by idx>, <each value by key> ]

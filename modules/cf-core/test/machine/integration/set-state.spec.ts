@@ -44,7 +44,7 @@ describe("set state on free balance", () => {
       network.IdentityApp,
       {
         proxyFactory: network.ProxyFactory,
-        multisigMastercopy: network.MinimumViableMultisig
+        multisigMastercopy: network.MinimumViableMultisig,
       },
       AddressZero,
       xprvs.map(extendedPrvKeyToExtendedPubKey),

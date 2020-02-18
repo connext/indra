@@ -1,3 +1,4 @@
+/* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
 import { Wallet, Contract } from "ethers";
 
@@ -26,7 +27,10 @@ describe("LibStateChannelApp.sol", () => {
     new SigningKey(bob.privateKey).signDigest(hash),
   ]).map((sig: Signature) => signaturesToBytes(sig));
 
-  const verifySignatures = async (signers: string[] = sortedSigners, sigs: string[] = sortedSigs) => {
+  const verifySignatures = async (
+    signers: string[] = sortedSigners,
+    sigs: string[] = sortedSigs,
+  ) => {
     return await libStateChannelApp.functions.verifySignatures(sigs, hash, signers);
   };
 
@@ -51,7 +55,9 @@ describe("LibStateChannelApp.sol", () => {
   });
 
   it("fails if the signatures are not valid", async () => {
-    await expect(verifySignatures([...sortedSigners].reverse())).to.be.revertedWith(`Invalid signature`);
+    await expect(verifySignatures([...sortedSigners].reverse())).to.be.revertedWith(
+      `Invalid signature`,
+    );
   });
 
   it("can call correctly verify signatures", async () => {

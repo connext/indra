@@ -39,7 +39,11 @@ describe("MixinSetState.sol", () => {
   let appWithAction: Contract;
   let challengeRegistry: Contract;
   let appIdentityTestObject: AppIdentityTestClass;
-  let setChallenge: (appState?: string, timeout?: BigNumberish, versionNo?: BigNumberish) => Promise<Challenge>;
+  let setChallenge: (
+    appState?: string,
+    timeout?: BigNumberish,
+    versionNo?: BigNumberish,
+  ) => Promise<Challenge>;
 
   before(async () => {
     // deploy contract, set provider/wallet
@@ -60,7 +64,10 @@ describe("MixinSetState.sol", () => {
 
     globalChannelNonce += 1;
 
-    const versionNumber = await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry);
+    const versionNumber = await latestVersionNumber(
+      appIdentityTestObject.identityHash,
+      challengeRegistry,
+    );
     expect(versionNumber).to.be.equal(Zero);
 
     // sets the state and begins a challenge
@@ -97,8 +104,11 @@ describe("MixinSetState.sol", () => {
   it("should fail if the challenge is finalized", async () => {
     await setChallenge(undefined, 0);
     // second try should fail
-    expect(await isStateFinalized(appIdentityTestObject.identityHash, challengeRegistry)).to.be.true;
-    await expect(setChallenge()).revertedWith("setState was called on an app that has already been finalized");
+    expect(await isStateFinalized(appIdentityTestObject.identityHash, challengeRegistry)).to.be
+      .true;
+    await expect(setChallenge()).revertedWith(
+      "setState was called on an app that has already been finalized",
+    );
   });
 
   it("should fail if the status is NO_CHALLENGE", async () => {
@@ -106,15 +116,25 @@ describe("MixinSetState.sol", () => {
     await setOutcome(appIdentityTestObject, challengeRegistry);
     const challenge = await getChallenge(appIdentityTestObject.identityHash, challengeRegistry);
     expect(challenge.status).to.be.equal(ChallengeStatus.OUTCOME_SET);
-    await expect(setChallenge()).revertedWith("setState was called on an app that has already been finalized");
+    await expect(setChallenge()).revertedWith(
+      "setState was called on an app that has already been finalized",
+    );
   });
 
   it("should fail if the signatures are incorrect", async () => {
     const stateHash = keccak256(intialStateHash);
-    const versionNumber = await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry);
+    const versionNumber = await latestVersionNumber(
+      appIdentityTestObject.identityHash,
+      challengeRegistry,
+    );
     const submittedVersionNo = versionNumber.add(1);
     const timeout = Zero;
-    const digest = computeAppChallengeHash(appIdentityTestObject.identityHash, stateHash, submittedVersionNo, timeout);
+    const digest = computeAppChallengeHash(
+      appIdentityTestObject.identityHash,
+      stateHash,
+      submittedVersionNo,
+      timeout,
+    );
     await expect(
       challengeRegistry.functions.setState(appIdentityTestObject.appIdentity, {
         appStateHash: keccak256(encodeAppState(getAppWithActionState(5))),

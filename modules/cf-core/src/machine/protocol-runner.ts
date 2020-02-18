@@ -72,7 +72,7 @@ export class ProtocolRunner {
   constructor(
     public readonly network: NetworkContext,
     public readonly provider: BaseProvider,
-    public readonly domainSeparator: DomainSeparator
+    public readonly domainSeparator: DomainSeparator,
   ) {
     this.network.provider = network.provider || provider;
     this.middlewares = new MiddlewareContainer();
@@ -131,7 +131,7 @@ export class ProtocolRunner {
       stateChannelsMap,
       network: this.network,
       provider: this.provider,
-      domainSeparator: this.domainSeparator
+      domainSeparator: this.domainSeparator,
     };
 
     let lastMiddlewareRet: any = undefined;

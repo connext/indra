@@ -37,7 +37,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannel.freeBalance.identity,
       domainSeparator,
       provider.network.chainId,
-      stateChannel.numProposedApps
+      stateChannel.numProposedApps,
     );
 
     const initiatorSignature = yield [OP_SIGN, setupCommitment];
@@ -90,7 +90,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannel.freeBalance.identity,
       domainSeparator,
       provider.network.chainId,
-      stateChannel.numProposedApps
+      stateChannel.numProposedApps,
     );
 
     assertIsValidSignature(xkeyKthAddress(initiatorXpub, 0), setupCommitment, initiatorSignature);

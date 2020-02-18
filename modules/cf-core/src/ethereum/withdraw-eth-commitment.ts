@@ -12,7 +12,7 @@ export class WithdrawETHCommitment extends MultisigCommitment {
     public readonly value: BigNumberish,
     public readonly domainSeparator: DomainSeparator,
     public readonly chainId: number,
-    public readonly transactionCount: number
+    public readonly transactionCount: number,
   ) {
     super(multisigAddress, multisigOwners);
   }
@@ -27,7 +27,7 @@ export class WithdrawETHCommitment extends MultisigCommitment {
       domainVersion: this.domainSeparator.domainVersion,
       chainId: this.chainId,
       domainSalt: this.domainSeparator.domainSalt,
-      transactionCount: this.transactionCount
+      transactionCount: this.transactionCount,
     };
   }
 }

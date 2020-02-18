@@ -70,7 +70,9 @@ export function getAppWithActionState(counter: BigNumberish = Zero): AppWithActi
   return { counter: bigNumberify(counter) };
 }
 
-export function getExpectedOutcome(value: TwoPartyFixedOutcome = TwoPartyFixedOutcome.SEND_TO_ADDR_ONE) {
+export function getExpectedOutcome(
+  value: TwoPartyFixedOutcome = TwoPartyFixedOutcome.SEND_TO_ADDR_ONE,
+) {
   return defaultAbiCoder.encode([`uint256 enum`], [value]);
 }
 
@@ -113,7 +115,12 @@ export const computeAppChallengeHash = (
   );
 
 // TS version of MChallengeRegistryCore::computeActionHash
-export const computeActionHash = (turnTaker: string, previousState: string, action: string, versionNumber: number) =>
+export const computeActionHash = (
+  turnTaker: string,
+  previousState: string,
+  action: string,
+  versionNumber: number,
+) =>
   keccak256(
     solidityPack(
       ["bytes1", "address", "bytes", "bytes", "uint256"],
@@ -123,7 +130,9 @@ export const computeActionHash = (turnTaker: string, previousState: string, acti
 
 export class AppIdentityTestClass {
   get identityHash(): string {
-    return keccak256(defaultAbiCoder.encode(["uint256", "address[]"], [this.channelNonce, this.participants]));
+    return keccak256(
+      defaultAbiCoder.encode(["uint256", "address[]"], [this.channelNonce, this.participants]),
+    );
   }
 
   get appIdentity(): AppIdentity {
@@ -160,7 +169,10 @@ export function signaturesToBytes(...signatures: Signature[]): string {
  *
  * @param signatures An array of etherium signatures
  */
-export function sortSignaturesBySignerAddress(digest: string, signatures: Signature[]): Signature[] {
+export function sortSignaturesBySignerAddress(
+  digest: string,
+  signatures: Signature[],
+): Signature[] {
   const ret = signatures.slice();
   ret.sort((sigA, sigB) => {
     const addrA = recoverAddress(digest, signaturesToBytes(sigA));
@@ -176,14 +188,20 @@ export function sortSignaturesBySignerAddress(digest: string, signatures: Signat
  *
  * @param signatures An array of etherium signatures
  */
-export function signaturesToBytesSortedBySignerAddress(digest: string, ...signatures: Signature[]): string {
+export function signaturesToBytesSortedBySignerAddress(
+  digest: string,
+  ...signatures: Signature[]
+): string {
   return signaturesToBytes(...sortSignaturesBySignerAddress(digest, signatures));
 }
 
 /**
  * Returns a challenge
  */
-export async function getChallenge(identityHash: string, challengeRegistry: Contract): Promise<Challenge> {
+export async function getChallenge(
+  identityHash: string,
+  challengeRegistry: Contract,
+): Promise<Challenge> {
   const [
     status,
     latestSubmitter,
@@ -205,7 +223,10 @@ export async function getChallenge(identityHash: string, challengeRegistry: Cont
 /**
  * Returns latest app state hash
  */
-export async function latestAppStateHash(identityHash: string, challengeRegistry: Contract): Promise<string> {
+export async function latestAppStateHash(
+  identityHash: string,
+  challengeRegistry: Contract,
+): Promise<string> {
   const { appStateHash } = await getChallenge(identityHash, challengeRegistry);
   return appStateHash;
 }
@@ -213,7 +234,10 @@ export async function latestAppStateHash(identityHash: string, challengeRegistry
 /**
  * Returns latest app version number
  */
-export async function latestVersionNumber(identityHash: string, challengeRegistry: Contract): Promise<BigNumber> {
+export async function latestVersionNumber(
+  identityHash: string,
+  challengeRegistry: Contract,
+): Promise<BigNumber> {
   const { versionNumber } = await getChallenge(identityHash, challengeRegistry);
   return versionNumber;
 }
@@ -221,21 +245,30 @@ export async function latestVersionNumber(identityHash: string, challengeRegistr
 /**
  * Returns whether or not the state is finalized
  */
-export async function isStateFinalized(identityHash: string, challengeRegistry: Contract): Promise<boolean> {
+export async function isStateFinalized(
+  identityHash: string,
+  challengeRegistry: Contract,
+): Promise<boolean> {
   return await challengeRegistry.functions.isStateFinalized(identityHash);
 }
 
 /**
  * Returns whether or not the outcome is set
  */
-export async function isOutcomeSet(identityHash: string, challengeRegistry: Contract): Promise<boolean> {
+export async function isOutcomeSet(
+  identityHash: string,
+  challengeRegistry: Contract,
+): Promise<boolean> {
   return await challengeRegistry.functions.isOutcomeSet(identityHash);
 }
 
 /**
  * Returns the outcome if it is set
  */
-export async function getOutcome(identityHash: string, challengeRegistry: Contract): Promise<boolean> {
+export async function getOutcome(
+  identityHash: string,
+  challengeRegistry: Contract,
+): Promise<boolean> {
   return await challengeRegistry.functions.getOutcome(identityHash);
 }
 
@@ -251,7 +284,12 @@ export async function setStateWithSignatures(
   timeout: BigNumberish = ONCHAIN_CHALLENGE_TIMEOUT,
 ): Promise<void> {
   const stateHash = keccak256(appState);
-  const digest = computeAppChallengeHash(appIdentity.identityHash, stateHash, versionNumber, timeout);
+  const digest = computeAppChallengeHash(
+    appIdentity.identityHash,
+    stateHash,
+    versionNumber,
+    timeout,
+  );
   expect(participants.length).to.be.eq(2);
   await challengeRegistry.functions.setState(appIdentity.appIdentity, {
     appStateHash: stateHash,
@@ -278,7 +316,12 @@ export async function setStateWithSignedAction(
   timeout: BigNumberish = ONCHAIN_CHALLENGE_TIMEOUT,
 ): Promise<void> {
   const stateHash = keccak256(appState);
-  const stateDigest = computeAppChallengeHash(appIdentity.identityHash, stateHash, versionNumber, timeout);
+  const stateDigest = computeAppChallengeHash(
+    appIdentity.identityHash,
+    stateHash,
+    versionNumber,
+    timeout,
+  );
   expect(participants.length).to.be.eq(2);
   const stateSigs = sortSignaturesBySignerAddress(stateDigest, [
     await new SigningKey(participants[0].privateKey).signDigest(stateDigest),
@@ -290,7 +333,9 @@ export async function setStateWithSignedAction(
     encodedAction,
     bigNumberify(versionNumber).toNumber(),
   );
-  const actionSig = joinSignature(await new SigningKey(turnTaker.privateKey).signDigest(actionDigest));
+  const actionSig = joinSignature(
+    await new SigningKey(turnTaker.privateKey).signDigest(actionDigest),
+  );
   await challengeRegistry.functions.setStateWithAction(
     appIdentity.appIdentity,
     {
@@ -344,7 +389,10 @@ export async function cancelChallenge(
  * @param provider
  * @param blocks
  */
-export async function advanceBlocks(provider: Web3Provider, blocks: BigNumberish = ONCHAIN_CHALLENGE_TIMEOUT + 1) {
+export async function advanceBlocks(
+  provider: Web3Provider,
+  blocks: BigNumberish = ONCHAIN_CHALLENGE_TIMEOUT + 1,
+) {
   const startingBlock = bigNumberify(await provider.getBlockNumber());
   for (const _ of Array(bigNumberify(blocks).toNumber())) {
     await provider.send("evm_mine", []);

@@ -61,7 +61,10 @@ describe("MixinChallengeRegistry.sol", () => {
 
     globalChannelNonce += 1;
 
-    const versionNumber = await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry);
+    const versionNumber = await latestVersionNumber(
+      appIdentityTestObject.identityHash,
+      challengeRegistry,
+    );
     expect(versionNumber).to.be.equal(Zero);
 
     // sets the state and begins a challenge
@@ -100,13 +103,19 @@ describe("MixinChallengeRegistry.sol", () => {
     // advance blocks
     await setChallenge();
     await advanceBlocks(provider);
-    const isFinalized = await isStateFinalized(appIdentityTestObject.identityHash, challengeRegistry);
+    const isFinalized = await isStateFinalized(
+      appIdentityTestObject.identityHash,
+      challengeRegistry,
+    );
     expect(isFinalized).to.be.true;
   });
 
   it("can correctly determine if a state is finalized based on status", async () => {
     await setChallenge(undefined, 0);
-    const isFinalized = await isStateFinalized(appIdentityTestObject.identityHash, challengeRegistry);
+    const isFinalized = await isStateFinalized(
+      appIdentityTestObject.identityHash,
+      challengeRegistry,
+    );
     expect(isFinalized).to.be.true;
   });
 
@@ -129,8 +138,8 @@ describe("MixinChallengeRegistry.sol", () => {
     await setChallenge();
     const outcomeSet = await isOutcomeSet(appIdentityTestObject.identityHash, challengeRegistry);
     expect(outcomeSet).to.be.false;
-    await expect(getOutcome(appIdentityTestObject.identityHash, challengeRegistry)).to.be.revertedWith(
-      "Outcome must be set",
-    );
+    await expect(
+      getOutcome(appIdentityTestObject.identityHash, challengeRegistry),
+    ).to.be.revertedWith("Outcome must be set");
   });
 });

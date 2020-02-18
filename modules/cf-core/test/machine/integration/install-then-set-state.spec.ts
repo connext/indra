@@ -226,11 +226,17 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
       expect(await provider.getBalance(multisigOwnerKeys[0].address)).toBeEq(WeiPerEther);
       expect(await provider.getBalance(multisigOwnerKeys[1].address)).toBeEq(Zero);
 
-      const erc20Contract = new Contract(erc20TokenAddress, DolphinCoin.abi, new JsonRpcProvider(global["ganacheURL"]));
+      const erc20Contract = new Contract(
+        erc20TokenAddress,
+        DolphinCoin.abi,
+        new JsonRpcProvider(global["ganacheURL"]),
+      );
 
       expect(await erc20Contract.functions.balanceOf(proxyAddress)).toBeEq(WeiPerEther);
       expect(await erc20Contract.functions.balanceOf(multisigOwnerKeys[0].address)).toBeEq(Zero);
-      expect(await erc20Contract.functions.balanceOf(multisigOwnerKeys[1].address)).toBeEq(WeiPerEther);
+      expect(await erc20Contract.functions.balanceOf(multisigOwnerKeys[1].address)).toBeEq(
+        WeiPerEther,
+      );
 
       const freeBalanceConditionalTransaction = new SetupCommitment(
         network,
@@ -257,15 +263,21 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
       expect(await provider.getBalance(multisigOwnerKeys[1].address)).toBeEq(WeiPerEther);
 
       expect(await erc20Contract.functions.balanceOf(proxyAddress)).toBeEq(Zero);
-      expect(await erc20Contract.functions.balanceOf(multisigOwnerKeys[0].address)).toBeEq(WeiPerEther);
-      expect(await erc20Contract.functions.balanceOf(multisigOwnerKeys[1].address)).toBeEq(WeiPerEther);
+      expect(await erc20Contract.functions.balanceOf(multisigOwnerKeys[0].address)).toBeEq(
+        WeiPerEther,
+      );
+      expect(await erc20Contract.functions.balanceOf(multisigOwnerKeys[1].address)).toBeEq(
+        WeiPerEther,
+      );
 
       done();
     });
 
     await proxyFactory.functions.createProxyWithNonce(
       network.MinimumViableMultisig,
-      new Interface(MinimumViableMultisig.abi).functions.setup.encode([multisigOwnerKeys.map(x => x.address)]),
+      new Interface(MinimumViableMultisig.abi).functions.setup.encode([
+        multisigOwnerKeys.map(x => x.address),
+      ]),
       0,
       { gasLimit: CREATE_PROXY_AND_SETUP_GAS },
     );

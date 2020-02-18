@@ -20,7 +20,7 @@ import {
   getInstalledAppInstances,
   makeInstallCall,
   makeProposeCall,
-  testDomainSeparator
+  testDomainSeparator,
 } from "./utils";
 
 expect.extend({ toBeLt });

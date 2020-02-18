@@ -35,13 +35,14 @@ export type DomainSeparator = {
   domainName: string;
   domainVersion: string;
   domainSalt: string;
-}
-
-export type MultisigTransaction = CFCoreTypes.MinimalTransaction & DomainSeparator & {
-  chainId: number;
-  operation: MultisigOperation;
-  transactionCount: number;
 };
+
+export type MultisigTransaction = CFCoreTypes.MinimalTransaction &
+  DomainSeparator & {
+    chainId: number;
+    operation: MultisigOperation;
+    transactionCount: number;
+  };
 
 export type ProtocolExecutionFlow = {
   [x: number]: (context: Context) => AsyncIterableIterator<any[]>;

@@ -22,7 +22,14 @@ import {
   computeActionHash,
 } from "../utils";
 import { Zero, One } from "ethers/constants";
-import { BigNumberish, keccak256, bigNumberify, BigNumber, SigningKey, joinSignature } from "ethers/utils";
+import {
+  BigNumberish,
+  keccak256,
+  bigNumberify,
+  BigNumber,
+  SigningKey,
+  joinSignature,
+} from "ethers/utils";
 
 const alice =
   // 0xaeF082d339D227646DB914f0cA9fF02c8544F30b
@@ -74,7 +81,10 @@ describe("MixinSetState.sol", () => {
 
     globalChannelNonce += 1;
 
-    versionNumber = await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry);
+    versionNumber = await latestVersionNumber(
+      appIdentityTestObject.identityHash,
+      challengeRegistry,
+    );
     expect(versionNumber).to.be.equal(Zero);
 
     setStateWithAction = async (
@@ -120,7 +130,9 @@ describe("MixinSetState.sol", () => {
 
   it("should fail if the version number is outdated", async () => {
     await setStateWithAction();
-    await expect(setStateWithAction()).to.be.revertedWith(`setStateWithAction was called with outdated state`);
+    await expect(setStateWithAction()).to.be.revertedWith(
+      `setStateWithAction was called with outdated state`,
+    );
   });
 
   it("should fail if the signatures on the action are incorrect", async () => {

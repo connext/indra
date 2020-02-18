@@ -50,7 +50,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelsMap,
       network,
       provider,
-      domainSeparator
+      domainSeparator,
     } = context;
 
     const { intermediaryXpub, responderXpub } = params as InstallVirtualAppProtocolParams;
@@ -83,12 +83,12 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       network.TwoPartyFixedOutcomeFromVirtualAppInterpreter,
       encodeSingleAssetTwoPartyIntermediaryAgreementParams(
         stateChannelWithIntermediary.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
-          virtualAppInstance.identityHash
-        )
+          virtualAppInstance.identityHash,
+        ),
       ),
       domainSeparator,
       provider.network.chainId,
-      stateChannelWithIntermediary.numProposedApps
+      stateChannelWithIntermediary.numProposedApps,
     );
 
     const initiatorSignatureOnAliceIngridVirtualAppAgreement = yield [
@@ -331,12 +331,12 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       network.TwoPartyFixedOutcomeFromVirtualAppInterpreter,
       encodeSingleAssetTwoPartyIntermediaryAgreementParams(
         stateChannelWithInitiating.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
-          timeLockedPassThroughAppInstance.state["targetAppIdentityHash"]
-        )
+          timeLockedPassThroughAppInstance.state["targetAppIdentityHash"],
+        ),
       ),
       domainSeparator,
       provider.network.chainId,
-      stateChannelWithInitiating.numProposedApps
+      stateChannelWithInitiating.numProposedApps,
     );
 
     assertIsValidSignature(
@@ -354,12 +354,12 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       network.TwoPartyFixedOutcomeFromVirtualAppInterpreter,
       encodeSingleAssetTwoPartyIntermediaryAgreementParams(
         stateChannelWithResponding.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
-          timeLockedPassThroughAppInstance.state["targetAppIdentityHash"]
-        )
+          timeLockedPassThroughAppInstance.state["targetAppIdentityHash"],
+        ),
       ),
       domainSeparator,
       provider.network.chainId,
-      stateChannelWithResponding.numProposedApps
+      stateChannelWithResponding.numProposedApps,
     );
 
     const intermediarySignatureOnIngridBobVirtualAppAgreement = yield [
@@ -586,9 +586,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     const {
       params,
       processID,
-      customData: {
-        signature: intermediarySignatureOnIngridBobVirtualAppAgreement
-      },
+      customData: { signature: intermediarySignatureOnIngridBobVirtualAppAgreement },
     } = m2;
 
     const { intermediaryXpub, initiatorXpub } = params as InstallVirtualAppProtocolParams;
@@ -621,12 +619,12 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       network.TwoPartyFixedOutcomeFromVirtualAppInterpreter,
       encodeSingleAssetTwoPartyIntermediaryAgreementParams(
         stateChannelWithIntermediary.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(
-          virtualAppInstance.identityHash
-        )
+          virtualAppInstance.identityHash,
+        ),
       ),
       domainSeparator,
       provider.network.chainId,
-      stateChannelWithIntermediary.numProposedApps
+      stateChannelWithIntermediary.numProposedApps,
     );
 
     assertIsValidSignature(

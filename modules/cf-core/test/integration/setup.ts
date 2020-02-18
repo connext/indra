@@ -13,7 +13,7 @@ import { MemoryStoreServiceFactory } from "../services/memory-store-service";
 import {
   A_EXTENDED_PRIVATE_KEY,
   B_EXTENDED_PRIVATE_KEY,
-  C_EXTENDED_PRIVATE_KEY
+  C_EXTENDED_PRIVATE_KEY,
 } from "../test-constants.jest";
 import { testDomainSeparator } from "./utils";
 
@@ -29,7 +29,7 @@ export interface SetupContext {
 export async function setupWithMemoryMessagingAndSlowStore(
   global: any,
   nodeCPresent: boolean = false,
-  newExtendedPrvKeys: boolean = false
+  newExtendedPrvKeys: boolean = false,
 ): Promise<SetupContext> {
   const storeDelay = 2; // milliseconds (tests timeout if too high)
   return setup(
@@ -37,7 +37,7 @@ export async function setupWithMemoryMessagingAndSlowStore(
     nodeCPresent,
     newExtendedPrvKeys,
     new MemoryMessagingService(),
-    new MemoryStoreServiceFactory(storeDelay)
+    new MemoryStoreServiceFactory(storeDelay),
   );
 }
 
@@ -48,7 +48,7 @@ export async function setup(
   messagingService: CFCoreTypes.IMessagingService = new MemoryMessagingService(),
   storeServiceFactory: {
     createStoreService?(storeServiceKey: string): CFCoreTypes.IStoreService;
-  } = new MemoryStoreServiceFactory()
+  } = new MemoryStoreServiceFactory(),
 ): Promise<SetupContext> {
   const setupContext: SetupContext = {};
 
@@ -62,7 +62,7 @@ export async function setup(
   if (newExtendedPrvKey) {
     const newExtendedPrvKeys = await generateNewFundedExtendedPrvKeys(
       global["fundedPrivateKey"],
-      provider
+      provider,
     );
     extendedPrvKeyB = newExtendedPrvKeys.B_EXTENDED_PRV_KEY;
   }
@@ -70,9 +70,7 @@ export async function setup(
   const lockService = new MemoryLockService();
 
   const hdNodeA = fromExtendedKey(extendedPrvKeyA).derivePath(CF_PATH);
-  const storeServiceA = storeServiceFactory.createStoreService!(
-    `test_${generateUUID()}`
-  );
+  const storeServiceA = storeServiceFactory.createStoreService!(`test_${generateUUID()}`);
   const nodeA = await Node.create(
     messagingService,
     storeServiceA,
@@ -82,19 +80,16 @@ export async function setup(
     testDomainSeparator,
     lockService,
     hdNodeA.neuter().extendedKey,
-    (index: string): Promise<string> =>
-      Promise.resolve(hdNodeA.derivePath(index).privateKey)
+    (index: string): Promise<string> => Promise.resolve(hdNodeA.derivePath(index).privateKey),
   );
 
   setupContext["A"] = {
     node: nodeA,
-    store: storeServiceA
+    store: storeServiceA,
   };
 
   const hdNodeB = fromExtendedKey(extendedPrvKeyB).derivePath(CF_PATH);
-  const storeServiceB = storeServiceFactory.createStoreService!(
-    `test_${generateUUID()}`
-  );
+  const storeServiceB = storeServiceFactory.createStoreService!(`test_${generateUUID()}`);
   const nodeB = await Node.create(
     messagingService,
     storeServiceB,
@@ -104,20 +99,17 @@ export async function setup(
     testDomainSeparator,
     lockService,
     hdNodeB.neuter().extendedKey,
-    (index: string): Promise<string> =>
-      Promise.resolve(hdNodeB.derivePath(index).privateKey)
+    (index: string): Promise<string> => Promise.resolve(hdNodeB.derivePath(index).privateKey),
   );
   setupContext["B"] = {
     node: nodeB,
-    store: storeServiceB
+    store: storeServiceB,
   };
 
   let nodeC: Node;
   if (nodeCPresent) {
     const hdNodeC = fromExtendedKey(C_EXTENDED_PRIVATE_KEY).derivePath(CF_PATH);
-    const storeServiceC = storeServiceFactory.createStoreService!(
-      `test_${generateUUID()}`
-    );
+    const storeServiceC = storeServiceFactory.createStoreService!(`test_${generateUUID()}`);
     nodeC = await Node.create(
       messagingService,
       storeServiceC,
@@ -127,28 +119,24 @@ export async function setup(
       testDomainSeparator,
       lockService,
       hdNodeC.neuter().extendedKey,
-      (index: string): Promise<string> =>
-        Promise.resolve(hdNodeC.derivePath(index).privateKey)
+      (index: string): Promise<string> => Promise.resolve(hdNodeC.derivePath(index).privateKey),
     );
     setupContext["C"] = {
       node: nodeC,
-      store: storeServiceC
+      store: storeServiceC,
     };
   }
 
   return setupContext;
 }
 
-export async function generateNewFundedWallet(
-  fundedPrivateKey: string,
-  provider: Provider
-) {
+export async function generateNewFundedWallet(fundedPrivateKey: string, provider: Provider) {
   const fundedWallet = new Wallet(fundedPrivateKey, provider);
   const wallet = Wallet.createRandom().connect(provider);
 
   const transactionToA: TransactionRequest = {
     to: wallet.address,
-    value: parseEther("20").toHexString()
+    value: parseEther("20").toHexString(),
   };
   await fundedWallet.sendTransaction(transactionToA);
   return wallet;
@@ -156,34 +144,30 @@ export async function generateNewFundedWallet(
 
 export async function generateNewFundedExtendedPrvKeys(
   fundedPrivateKey: string,
-  provider: Provider
+  provider: Provider,
 ) {
   const fundedWallet = new Wallet(fundedPrivateKey, provider);
   const A_EXTENDED_PRV_KEY = computeRandomExtendedPrvKey();
   const B_EXTENDED_PRV_KEY = computeRandomExtendedPrvKey();
 
-  const signerAPrivateKey = fromExtendedKey(A_EXTENDED_PRV_KEY).derivePath(
-    CF_PATH
-  ).privateKey;
-  const signerBPrivateKey = fromExtendedKey(B_EXTENDED_PRV_KEY).derivePath(
-    CF_PATH
-  ).privateKey;
+  const signerAPrivateKey = fromExtendedKey(A_EXTENDED_PRV_KEY).derivePath(CF_PATH).privateKey;
+  const signerBPrivateKey = fromExtendedKey(B_EXTENDED_PRV_KEY).derivePath(CF_PATH).privateKey;
 
   const signerAAddress = new Wallet(signerAPrivateKey).address;
   const signerBAddress = new Wallet(signerBPrivateKey).address;
 
   const transactionToA: TransactionRequest = {
     to: signerAAddress,
-    value: parseEther("1").toHexString()
+    value: parseEther("1").toHexString(),
   };
   const transactionToB: TransactionRequest = {
     to: signerBAddress,
-    value: parseEther("1").toHexString()
+    value: parseEther("1").toHexString(),
   };
   await fundedWallet.sendTransaction(transactionToA);
   await fundedWallet.sendTransaction(transactionToB);
   return {
     A_EXTENDED_PRV_KEY,
-    B_EXTENDED_PRV_KEY
+    B_EXTENDED_PRV_KEY,
   };
 }

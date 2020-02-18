@@ -40,7 +40,11 @@ describe("MixinChallengeRegistry.sol", () => {
 
   let globalChannelNonce = 0;
   let setChallenge: (appState?: string, timeout?: BigNumberish) => Promise<Challenge>;
-  let respond: (state?: AppWithActionState, action?: AppWithActionAction, signer?: Wallet) => Promise<void>;
+  let respond: (
+    state?: AppWithActionState,
+    action?: AppWithActionAction,
+    signer?: Wallet,
+  ) => Promise<void>;
 
   before(async () => {
     // deploy contract, set provider/wallet
@@ -61,7 +65,10 @@ describe("MixinChallengeRegistry.sol", () => {
 
     globalChannelNonce += 1;
 
-    const versionNumber = await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry);
+    const versionNumber = await latestVersionNumber(
+      appIdentityTestObject.identityHash,
+      challengeRegistry,
+    );
     expect(versionNumber).to.be.equal(Zero);
 
     // sets the state and begins a challenge
@@ -114,7 +121,9 @@ describe("MixinChallengeRegistry.sol", () => {
   it("should fail if the challenge is finalized", async () => {
     const challenge = await setChallenge(undefined, 0);
     expect(challenge.status).to.be.equal(ChallengeStatus.EXPLICITLY_FINALIZED);
-    await expect(respond()).to.be.revertedWith("respondToChallenge called on app not in FINALIZES_AFTER_DEADLINE");
+    await expect(respond()).to.be.revertedWith(
+      "respondToChallenge called on app not in FINALIZES_AFTER_DEADLINE",
+    );
   });
 
   it("should fail if the app state hash is not the same as the challenge app state hash", async () => {
@@ -134,7 +143,9 @@ describe("MixinChallengeRegistry.sol", () => {
     );
     globalChannelNonce += 1;
     await setChallenge();
-    await expect(respond()).to.be.revertedWith("The getTurnTaker method has no implementation for this App");
+    await expect(respond()).to.be.revertedWith(
+      "The getTurnTaker method has no implementation for this App",
+    );
   });
 
   it("should fail if the action is not signed by the turn taker", async () => {
@@ -154,14 +165,19 @@ describe("MixinChallengeRegistry.sol", () => {
     );
     globalChannelNonce += 1;
     await setChallenge();
-    await expect(respond()).to.be.revertedWith("The applyAction method has no implementation for this App");
+    await expect(respond()).to.be.revertedWith(
+      "The applyAction method has no implementation for this App",
+    );
   });
 
   it.skip("should be able to respond to a challenge", async () => {
     const initialChallenge = await setChallenge();
     expect(initialChallenge.challengeCounter).to.be.eq(One);
     await respond();
-    const respondedChallenge = await getChallenge(appIdentityTestObject.identityHash, challengeRegistry);
+    const respondedChallenge = await getChallenge(
+      appIdentityTestObject.identityHash,
+      challengeRegistry,
+    );
     // TODO: will be an empty challenge, is this expected? is this a problem?
     expect(respondedChallenge).to.be.equal(undefined);
   });

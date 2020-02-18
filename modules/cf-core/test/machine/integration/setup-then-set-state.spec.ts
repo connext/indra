@@ -14,10 +14,7 @@ import { getCreate2MultisigAddress } from "../../../src/utils";
 
 import { toBeEq } from "./bignumber-jest-matcher";
 import { connectToGanache } from "./connect-ganache";
-import {
-  extendedPrvKeyToExtendedPubKey,
-  getRandomExtendedPrvKeys
-} from "./random-signing-keys";
+import { extendedPrvKeyToExtendedPubKey, getRandomExtendedPrvKeys } from "./random-signing-keys";
 import { testDomainSeparator } from "../../integration/utils";
 
 // ProxyFactory.createProxy uses assembly `call` so we can't estimate
@@ -118,7 +115,7 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
         stateChannel.freeBalance.identity,
         testDomainSeparator,
         provider.network.chainId,
-        stateChannel.numProposedApps
+        stateChannel.numProposedApps,
       );
 
       const setupTx = setupCommitment.getSignedTransaction([

@@ -126,7 +126,10 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnConditionalTransaction,
     ]);
 
-    context.stateChannelsMap.set(postProtocolStateChannel.multisigAddress, postProtocolStateChannel);
+    context.stateChannelsMap.set(
+      postProtocolStateChannel.multisigAddress,
+      postProtocolStateChannel,
+    );
 
     yield [WRITE_COMMITMENT, Install, signedConditionalTransaction, newAppInstance.identityHash];
 
@@ -151,7 +154,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnFreeBalanceStateUpdate,
     ]);
 
-    yield [WRITE_COMMITMENT, Update, signedFreeBalanceStateUpdate, postProtocolStateChannel.freeBalance.identityHash];
+    yield [
+      WRITE_COMMITMENT,
+      Update,
+      signedFreeBalanceStateUpdate,
+      postProtocolStateChannel.freeBalance.identityHash,
+    ];
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
@@ -248,7 +256,10 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnConditionalTransaction,
     ]);
 
-    context.stateChannelsMap.set(postProtocolStateChannel.multisigAddress, postProtocolStateChannel);
+    context.stateChannelsMap.set(
+      postProtocolStateChannel.multisigAddress,
+      postProtocolStateChannel,
+    );
 
     yield [WRITE_COMMITMENT, Install, signedConditionalTransaction, newAppInstance.identityHash];
 
@@ -289,7 +300,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnFreeBalanceStateUpdate,
     ]);
 
-    yield [WRITE_COMMITMENT, Update, signedFreeBalanceStateUpdate, postProtocolStateChannel.freeBalance.identityHash];
+    yield [
+      WRITE_COMMITMENT,
+      Update,
+      signedFreeBalanceStateUpdate,
+      postProtocolStateChannel.freeBalance.identityHash,
+    ];
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
@@ -316,7 +332,10 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
  *
  * @returns {Promise<StateChannel>} - The post-protocol state of the channel
  */
-function computeStateChannelTransition(stateChannel: StateChannel, params: InstallProtocolParams): StateChannel {
+function computeStateChannelTransition(
+  stateChannel: StateChannel,
+  params: InstallProtocolParams,
+): StateChannel {
   const {
     initiatorBalanceDecrement,
     responderBalanceDecrement,
@@ -431,7 +450,12 @@ function computeInterpreterParameters(
   switch (outcomeType) {
     case OutcomeType.TWO_PARTY_FIXED_OUTCOME: {
       if (initiatorDepositTokenAddress !== responderDepositTokenAddress) {
-        throw Error(TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(initiatorDepositTokenAddress, responderDepositTokenAddress));
+        throw Error(
+          TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(
+            initiatorDepositTokenAddress,
+            responderDepositTokenAddress,
+          ),
+        );
       }
 
       return {
@@ -461,12 +485,19 @@ function computeInterpreterParameters(
 
     case OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER: {
       if (initiatorDepositTokenAddress !== responderDepositTokenAddress) {
-        throw Error(TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(initiatorDepositTokenAddress, responderDepositTokenAddress));
+        throw Error(
+          TWO_PARTY_OUTCOME_DIFFERENT_ASSETS(
+            initiatorDepositTokenAddress,
+            responderDepositTokenAddress,
+          ),
+        );
       }
 
       return {
         singleAssetTwoPartyCoinTransferInterpreterParams: {
-          limit: disableLimit ? MaxUint256 : initiatorBalanceDecrement.add(responderBalanceDecrement),
+          limit: disableLimit
+            ? MaxUint256
+            : initiatorBalanceDecrement.add(responderBalanceDecrement),
           tokenAddress: initiatorDepositTokenAddress,
         },
       };
@@ -510,7 +541,10 @@ function constructConditionalTransactionData(
   );
 }
 
-function getInterpreterAddressFromOutcomeType(outcomeType: OutcomeType, networkContext: NetworkContext) {
+function getInterpreterAddressFromOutcomeType(
+  outcomeType: OutcomeType,
+  networkContext: NetworkContext,
+) {
   switch (outcomeType) {
     case OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER: {
       return networkContext.MultiAssetMultiPartyCoinTransferInterpreter;

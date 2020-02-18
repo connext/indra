@@ -18,7 +18,7 @@ import {
   NetworkContext,
   CFCoreTypes,
   NodeMessageWrappedProtocolMessage,
-  DomainSeparator
+  DomainSeparator,
 } from "./types";
 import { timeout } from "./utils";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
@@ -153,7 +153,7 @@ export class Node {
     const protocolRunner = new ProtocolRunner(
       this.networkContext,
       this.provider,
-      this.domainSeparator
+      this.domainSeparator,
     );
 
     protocolRunner.register(Opcode.OP_SIGN, async (args: any[]) => {

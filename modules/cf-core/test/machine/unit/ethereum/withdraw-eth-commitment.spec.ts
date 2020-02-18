@@ -29,7 +29,7 @@ describe("Withdraw ETH Commitment", () => {
       value,
       testDomainSeparator,
       4447,
-      0
+      0,
     );
     tx = commitment.getTransactionDetails();
   });

@@ -48,7 +48,7 @@ describe("SetupCommitment", () => {
       freeBalance.identity,
       testDomainSeparator,
       4447,
-      stateChannel.numProposedApps
+      stateChannel.numProposedApps,
     ).getTransactionDetails();
   });
 

@@ -35,7 +35,7 @@ import {
   DepositStartedMessage,
   EventEmittedMessage,
   ProposeInstallProtocolParams,
-  DomainSeparator
+  DomainSeparator,
 } from "../../src/types";
 import { deBigNumberifyJson, bigNumberifyJson } from "../../src/utils";
 
@@ -57,7 +57,7 @@ const {
 export const testDomainSeparator: DomainSeparator = {
   domainName: "CounterFactual Test",
   domainVersion: "0.0.1",
-  domainSalt: hexlify(randomBytes(32))
+  domainSalt: hexlify(randomBytes(32)),
 };
 
 export async function requestDepositRights(
