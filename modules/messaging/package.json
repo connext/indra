@@ -12,7 +12,8 @@
   ],
   "scripts": {
     "build": "tsc -p . && rollup -c",
-    "build:watch": "tsc -p . && rollup -c -w"
+    "build:watch": "tsc -p . && rollup -c -w",
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'"
   },
   "dependencies": {
     "@connext/types": "5.0.0",
@@ -20,8 +21,8 @@
     "websocket-nats": "0.3.3"
   },
   "devDependencies": {
-    "rollup": "1.31.0",
-    "rollup-plugin-typescript2": "0.25.3",
+    "rollup": "1.31.1",
+    "rollup-plugin-typescript2": "0.26.0",
     "typescript": "3.7.5"
   }
 }

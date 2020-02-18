@@ -12,6 +12,7 @@ modules/*/.cache
 modules/*/.config
 modules/*/.node-gyp
 modules/*/.npm
+modules/*/package-lock.json
 modules/daicard/src/react-app-env.d.ts
 ops/database/snapshots
 
@@ -56,6 +57,7 @@ cypress/videos
 
 # Misc
 .rpt2_cache
+report.*
 
 # Git submodules
 modules/**/.git

@@ -14,7 +14,7 @@ import {
   INodeApiClient,
   makeChecksumOrEthAddress,
   NodeInitializationParameters,
-  PaymentProfile,
+  RebalanceProfile,
   PendingAsyncTransfer,
   RequestCollateralResponse,
   ResolveLinkedTransferResponse,
@@ -79,7 +79,11 @@ export class NodeApiClient implements INodeApiClient {
   ////////////////////////////////////////
   // PUBLIC
 
-  async acquireLock(lockName: string, callback: (...args: any[]) => any, timeout: number): Promise<any> {
+  async acquireLock(
+    lockName: string,
+    callback: (...args: any[]) => any,
+    timeout: number,
+  ): Promise<any> {
     const lockValue = await this.send(`lock.acquire.${lockName}`, { lockTTL: timeout });
     this.log.debug(`Acquired lock at ${Date.now()} for ${lockName} with secret ${lockValue}`);
     let retVal: any;
@@ -171,7 +175,7 @@ export class NodeApiClient implements INodeApiClient {
     });
   }
 
-  public async getPaymentProfile(assetId?: string): Promise<PaymentProfile> {
+  public async getRebalanceProfile(assetId?: string): Promise<RebalanceProfile> {
     return await this.send(`channel.get-profile.${this.userPublicIdentifier}`, {
       assetId: makeChecksumOrEthAddress(assetId),
     });
@@ -249,7 +253,9 @@ export class NodeApiClient implements INodeApiClient {
 
   private async getAuthToken(): Promise<string> {
     if (!this.channelProvider) {
-      throw new Error("Must have instantiated a channel provider (ie a signing thing) before setting auth token");
+      throw new Error(
+        "Must have instantiated a channel provider (ie a signing thing) before setting auth token",
+      );
     }
     let token;
     // If we have a cached token, use it. Otherwise, get a new one.
@@ -280,7 +286,9 @@ export class NodeApiClient implements INodeApiClient {
       } catch (e) {
         error = e;
         if (e.message.startsWith(sendFailed)) {
-          this.log.warn(`Attempt ${attempt}/${NATS_ATTEMPTS} to send ${subject} failed: ${e.message}`);
+          this.log.warn(
+            `Attempt ${attempt}/${NATS_ATTEMPTS} to send ${subject} failed: ${e.message}`,
+          );
           await this.messaging.disconnect();
           await this.messaging.connect();
           if (attempt + 1 <= NATS_ATTEMPTS) {
@@ -295,7 +303,9 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   private async sendAttempt(subject: string, data?: any): Promise<any | undefined> {
-    this.log.debug(`Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : "without data"}`);
+    this.log.debug(
+      `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : "without data"}`,
+    );
     const payload = {
       ...data,
       id: uuid.v4(),

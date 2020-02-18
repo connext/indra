@@ -28,7 +28,7 @@ describe("StateChannel::uninstallApp", () => {
         multisigMastercopy: networkContext.MinimumViableMultisig,
       },
       multisigAddress,
-      xpubs
+      xpubs,
     );
 
     const appInstance = createAppInstanceForTest(sc1);
@@ -41,15 +41,15 @@ describe("StateChannel::uninstallApp", () => {
       FreeBalanceClass.createWithFundedTokenAmounts(
         [xkeyKthAddress(xpubs[0], 0), xkeyKthAddress(xpubs[1], 0)],
         WeiPerEther,
-        [CONVENTION_FOR_ETH_TOKEN_ADDRESS]
-      )
+        [CONVENTION_FOR_ETH_TOKEN_ADDRESS],
+      ),
     );
 
     sc2 = sc1.installApp(appInstance, {
       [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
         [xkeyKthAddress(xpubs[0], 0)]: WeiPerEther,
-        [xkeyKthAddress(xpubs[1], 0)]: WeiPerEther
-      }
+        [xkeyKthAddress(xpubs[1], 0)]: WeiPerEther,
+      },
     });
   });
 
@@ -71,7 +71,7 @@ describe("StateChannel::uninstallApp", () => {
 
     it("should have updated balances for Alice and Bob", () => {
       for (const amount of Object.values(
-        fb.withTokenAddress(CONVENTION_FOR_ETH_TOKEN_ADDRESS) || {}
+        fb.withTokenAddress(CONVENTION_FOR_ETH_TOKEN_ADDRESS) || {},
       )) {
         expect(amount).toEqual(Zero);
       }

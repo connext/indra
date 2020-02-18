@@ -2,24 +2,25 @@ import {
   IAsyncStorage,
   safeJsonParse,
   safeJsonStringify,
-  StorageWrapper,
+  WrappedStorage,
   wrapStorage,
+  ChannelsMap,
 } from "./helpers";
 
 class InternalStore {
-  private _store: StorageWrapper;
-  private _channelPrefix: string;
+  private wrappedStorage: WrappedStorage;
+  private channelPrefix: string;
 
   constructor(storage: Storage | IAsyncStorage, channelPrefix: string, asyncStorageKey?: string) {
-    this._store = wrapStorage(storage, asyncStorageKey);
-    this._channelPrefix = channelPrefix;
+    this.wrappedStorage = wrapStorage(storage, asyncStorageKey);
+    this.channelPrefix = channelPrefix;
   }
 
-  async getStore(): Promise<StorageWrapper> {
-    if (!this._store) {
+  async getStore(): Promise<WrappedStorage> {
+    if (!this.wrappedStorage) {
       throw new Error("Store is not available");
     }
-    return this._store;
+    return this.wrappedStorage;
   }
 
   async getItem(path: string): Promise<string | null> {
@@ -47,6 +48,12 @@ class InternalStore {
     return keys;
   }
 
+  async getChannels(): Promise<ChannelsMap> {
+    const store = await this.getStore();
+    const channels = await store.getChannels();
+    return channels;
+  }
+
   async getEntries(): Promise<[string, any][]> {
     const store = await this.getStore();
     const entries = await store.getEntries();
@@ -55,7 +62,7 @@ class InternalStore {
 
   async clear(): Promise<void> {
     const store = await this.getStore();
-    await store.clear(this._channelPrefix);
+    await store.clear(this.channelPrefix);
   }
 }
 

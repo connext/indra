@@ -9,5 +9,5 @@ export {
   SetStateCommitment,
   SetupCommitment,
   WithdrawETHCommitment,
-  WithdrawERC20Commitment
+  WithdrawERC20Commitment,
 };

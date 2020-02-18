@@ -26,10 +26,10 @@ else
 
   exec docker run \
     --entrypoint="bash" \
-    --env="ECCRYPTO_NO_FALLBACK=true" \
     --env="INDRA_CLIENT_LOG_LEVEL=$LOG_LEVEL" \
     --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
     --env="INDRA_NODE_URL=$NODE_URL" \
+    --env="INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN" \
     $interactive \
     --name="$name" \
     --mount="type=bind,source=`pwd`,target=/root" \
@@ -41,10 +41,10 @@ echo "Executing image $image"
 
 exec docker run \
   $watchOptions \
-  --env="ECCRYPTO_NO_FALLBACK=true" \
   --env="INDRA_CLIENT_LOG_LEVEL=0" \
   --env="INDRA_ETH_RPC_URL=$ETH_RPC_URL" \
   --env="INDRA_NODE_URL=$NODE_URL" \
+  --env="INDRA_ADMIN_TOKEN=$INDRA_ADMIN_TOKEN" \
   --env="NODE_ENV=production" \
   $interactive \
   --name="$name" \

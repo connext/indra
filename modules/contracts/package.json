@@ -22,13 +22,15 @@
     "build": "npm run compile && npm run transpile",
     "compile": "waffle waffle.json",
     "compile-native": "waffle waffle.native.json",
-    "lint": "solium -d .",
+    "lint": "npm run lint-ts && npm run lint-sol",
+    "lint-ts": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'test/**/*' 'index.ts'",
+    "lint-sol": "solium -d .",
     "test": "npx buidler test",
     "transpile": "./node_modules/.bin/tsc -p tsconfig.json"
   },
   "dependencies": {
     "@connext/types": "5.0.0",
-    "ethers": "4.0.44",
+    "ethers": "4.0.45",
     "@openzeppelin/contracts": "2.5.0",
     "ganache-cli": "6.8.2",
     "solc": "0.5.11"

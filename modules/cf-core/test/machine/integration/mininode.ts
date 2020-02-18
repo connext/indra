@@ -20,9 +20,7 @@ const makeSigner = (hdNode: HDNode) => {
     const [commitment, overrideKeyIndex] = args;
     const keyIndex = overrideKeyIndex || 0;
 
-    const signingKey = new SigningKey(
-      hdNode.derivePath(`${keyIndex}`).privateKey
-    );
+    const signingKey = new SigningKey(hdNode.derivePath(`${keyIndex}`).privateKey);
 
     return signingKey.signDigest(commitment.hashToSign());
   };
@@ -34,10 +32,7 @@ export class MiniNode {
   public scm: Map<string, StateChannel>;
   public readonly xpub: string;
 
-  constructor(
-    readonly networkContext: NetworkContext,
-    readonly provider: JsonRpcProvider
-  ) {
+  constructor(readonly networkContext: NetworkContext, readonly provider: JsonRpcProvider) {
     [this.hdNode] = getRandomHDNodes(1);
     this.xpub = this.hdNode.neuter().extendedKey;
     this.scm = new Map<string, StateChannel>();
@@ -52,9 +47,6 @@ export class MiniNode {
   }
 
   public async dispatchMessage(message: any) {
-    this.scm = await this.protocolRunner.runProtocolWithMessage(
-      message,
-      this.scm
-    );
+    this.scm = await this.protocolRunner.runProtocolWithMessage(message, this.scm);
   }
 }

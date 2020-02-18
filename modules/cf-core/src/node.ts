@@ -10,10 +10,7 @@ import { Deferred } from "./deferred";
 import { Opcode, Protocol, ProtocolMessage, ProtocolRunner } from "./machine";
 import { StateChannel } from "./models";
 import { getFreeBalanceAddress } from "./models/free-balance";
-import {
-  getPrivateKeysGeneratorAndXPubOrThrow,
-  PrivateKeysGetter
-} from "./private-keys-generator";
+import { getPrivateKeysGeneratorAndXPubOrThrow, PrivateKeysGetter } from "./private-keys-generator";
 import ProcessQueue from "./process-queue";
 import { RequestHandler } from "./request-handler";
 import RpcRouter from "./rpc-router";
@@ -41,10 +38,7 @@ export class Node {
 
   private readonly protocolRunner: ProtocolRunner;
 
-  private readonly ioSendDeferrals = new Map<
-    string,
-    Deferred<NodeMessageWrappedProtocolMessage>
-  >();
+  private readonly ioSendDeferrals = new Map<string, Deferred<NodeMessageWrappedProtocolMessage>>();
 
   /**
    * These properties don't have initializers in the constructor, since they must be initialized
@@ -67,15 +61,12 @@ export class Node {
     lockService?: CFCoreTypes.ILockService,
     publicExtendedKey?: string,
     privateKeyGenerator?: CFCoreTypes.IPrivateKeyGenerator,
-    blocksNeededForConfirmation?: number
+    blocksNeededForConfirmation?: number,
   ): Promise<Node> {
-    const [
-      privateKeysGenerator,
-      extendedPubKey
-    ] = await getPrivateKeysGeneratorAndXPubOrThrow(
+    const [privateKeysGenerator, extendedPubKey] = await getPrivateKeysGeneratorAndXPubOrThrow(
       storeService,
       privateKeyGenerator,
-      publicExtendedKey
+      publicExtendedKey,
     );
 
     const node = new Node(
@@ -88,7 +79,7 @@ export class Node {
       networkContext,
       domainSeparator,
       blocksNeededForConfirmation,
-      lockService
+      lockService,
     );
 
     return await node.asynchronouslySetupUsingRemoteServices();
@@ -104,22 +95,18 @@ export class Node {
     public readonly networkContext: NetworkContext,
     public readonly domainSeparator: DomainSeparator,
     public readonly blocksNeededForConfirmation: number = REASONABLE_NUM_BLOCKS_TO_WAIT,
-    private readonly lockService?: CFCoreTypes.ILockService
+    private readonly lockService?: CFCoreTypes.ILockService,
   ) {
     this.networkContext.provider = this.provider;
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
     this.protocolRunner = this.buildProtocolRunner();
-    log.info(
-      `Waiting for ${this.blocksNeededForConfirmation} block confirmations`
-    );
+    log.info(`Waiting for ${this.blocksNeededForConfirmation} block confirmations`);
   }
 
   private async asynchronouslySetupUsingRemoteServices(): Promise<Node> {
     // TODO: is "0" a reasonable path to derive `signer` private key from?
-    this.signer = new SigningKey(
-      await this.privateKeyGetter.getPrivateKey("0")
-    );
+    this.signer = new SigningKey(await this.privateKeyGetter.getPrivateKey("0"));
     log.info(`Node signer address: ${this.signer.address}`);
     log.info(`Node public identifier: ${this.publicIdentifier}`);
     this.requestHandler = new RequestHandler(
@@ -134,7 +121,7 @@ export class Node {
       new AutoNonceWallet(this.signer.privateKey, this.provider),
       `${this.nodeConfig.STORE_KEY_PREFIX}/${this.publicIdentifier}`,
       this.blocksNeededForConfirmation!,
-      new ProcessQueue(this.lockService)
+      new ProcessQueue(this.lockService),
     );
     this.registerMessagingConnection();
     this.rpcRouter = createRpcRouter(this.requestHandler);
@@ -177,9 +164,7 @@ export class Node {
       const [commitment, overrideKeyIndex] = args;
       const keyIndex = overrideKeyIndex || 0;
 
-      const signingKey = new SigningKey(
-        await this.privateKeyGetter.getPrivateKey(keyIndex)
-      );
+      const signingKey = new SigningKey(await this.privateKeyGetter.getPrivateKey(keyIndex));
 
       return signingKey.signDigest(commitment.hashToSign());
     });
@@ -192,49 +177,43 @@ export class Node {
       await this.messagingService.send(to, {
         data,
         from: fromXpub,
-        type: PROTOCOL_MESSAGE_EVENT
+        type: PROTOCOL_MESSAGE_EVENT,
       } as NodeMessageWrappedProtocolMessage);
     });
 
-    protocolRunner.register(
-      Opcode.IO_SEND_AND_WAIT,
-      async (args: [ProtocolMessage]) => {
-        const [data] = args;
-        const to = data.toXpub;
+    protocolRunner.register(Opcode.IO_SEND_AND_WAIT, async (args: [ProtocolMessage]) => {
+      const [data] = args;
+      const to = data.toXpub;
 
-        const deferral = new Deferred<NodeMessageWrappedProtocolMessage>();
+      const deferral = new Deferred<NodeMessageWrappedProtocolMessage>();
 
-        this.ioSendDeferrals.set(data.processID, deferral);
+      this.ioSendDeferrals.set(data.processID, deferral);
 
-        const counterpartyResponse = deferral.promise;
+      const counterpartyResponse = deferral.promise;
 
-        await this.messagingService.send(to, {
-          data,
-          from: this.publicIdentifier,
-          type: PROTOCOL_MESSAGE_EVENT
-        } as NodeMessageWrappedProtocolMessage);
+      await this.messagingService.send(to, {
+        data,
+        from: this.publicIdentifier,
+        type: PROTOCOL_MESSAGE_EVENT,
+      } as NodeMessageWrappedProtocolMessage);
 
-        // 90 seconds is the default lock acquiring time time
-        const msg = await Promise.race([
-          counterpartyResponse,
-          timeout(IO_SEND_AND_WAIT_TIMEOUT)
-        ]);
+      // 90 seconds is the default lock acquiring time time
+      const msg = await Promise.race([counterpartyResponse, timeout(IO_SEND_AND_WAIT_TIMEOUT)]);
 
-        if (!msg || !("data" in (msg as NodeMessageWrappedProtocolMessage))) {
-          throw Error(
-            `IO_SEND_AND_WAIT timed out after 90s waiting for counterparty reply in ${data.protocol}`
-          );
-        }
-
-        // Removes the deferral from the list of pending defferals after
-        // its promise has been resolved and the necessary callback (above)
-        // has been called. Note that, as is, only one defferal can be open
-        // per counterparty at the moment.
-        this.ioSendDeferrals.delete(data.processID);
-
-        return (msg as NodeMessageWrappedProtocolMessage).data;
+      if (!msg || !("data" in (msg as NodeMessageWrappedProtocolMessage))) {
+        throw Error(
+          `IO_SEND_AND_WAIT timed out after 90s waiting for counterparty reply in ${data.protocol}`,
+        );
       }
-    );
+
+      // Removes the deferral from the list of pending defferals after
+      // its promise has been resolved and the necessary callback (above)
+      // has been called. Note that, as is, only one defferal can be open
+      // per counterparty at the moment.
+      this.ioSendDeferrals.delete(data.processID);
+
+      return (msg as NodeMessageWrappedProtocolMessage).data;
+    });
 
     protocolRunner.register(Opcode.WRITE_COMMITMENT, async (args: any[]) => {
       const { store } = this.requestHandler;
@@ -249,17 +228,14 @@ export class Node {
       }
     });
 
-    protocolRunner.register(
-      Opcode.PERSIST_STATE_CHANNEL,
-      async (args: [StateChannel[]]) => {
-        const { store } = this.requestHandler;
-        const [stateChannels] = args;
+    protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, async (args: [StateChannel[]]) => {
+      const { store } = this.requestHandler;
+      const [stateChannels] = args;
 
-        for (const stateChannel of stateChannels) {
-          await store.saveStateChannel(stateChannel);
-        }
+      for (const stateChannel of stateChannels) {
+        await store.saveStateChannel(stateChannel);
       }
-    );
+    });
 
     return protocolRunner;
   }
@@ -270,10 +246,7 @@ export class Node {
    * @param event
    * @param callback
    */
-  on(
-    event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
-    callback: (res: any) => void
-  ) {
+  on(event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, callback: (res: any) => void) {
     this.rpcRouter.subscribe(event, async (res: any) => callback(res));
   }
 
@@ -284,14 +257,8 @@ export class Node {
    * @param event
    * @param [callback]
    */
-  off(
-    event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
-    callback?: (res: any) => void
-  ) {
-    this.rpcRouter.unsubscribe(
-      event,
-      callback ? async (res: any) => callback(res) : undefined
-    );
+  off(event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, callback?: (res: any) => void) {
+    this.rpcRouter.unsubscribe(event, callback ? async (res: any) => callback(res) : undefined);
   }
 
   /**
@@ -302,10 +269,7 @@ export class Node {
    * @param event
    * @param [callback]
    */
-  once(
-    event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
-    callback: (res: any) => void
-  ) {
+  once(event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, callback: (res: any) => void) {
     this.rpcRouter.subscribeOnce(event, async (res: any) => callback(res));
   }
 
@@ -314,10 +278,7 @@ export class Node {
    * @param event
    * @param req
    */
-  emit(
-    event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
-    req: CFCoreTypes.MethodRequest
-  ) {
+  emit(event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, req: CFCoreTypes.MethodRequest) {
     this.rpcRouter.emit(event, req);
   }
 
@@ -328,7 +289,7 @@ export class Node {
    */
   async call(
     method: CFCoreTypes.MethodName,
-    req: CFCoreTypes.MethodRequest
+    req: CFCoreTypes.MethodRequest,
   ): Promise<CFCoreTypes.MethodResponse> {
     return this.requestHandler.callMethod(method, req);
   }
@@ -340,13 +301,10 @@ export class Node {
    * subscribed (i.e. consumers of the Node).
    */
   private registerMessagingConnection() {
-    this.messagingService.onReceive(
-      this.publicIdentifier,
-      async (msg: CFCoreTypes.NodeMessage) => {
-        await this.handleReceivedMessage(msg);
-        this.rpcRouter.emit(msg.type, msg, "outgoing");
-      }
-    );
+    this.messagingService.onReceive(this.publicIdentifier, async (msg: CFCoreTypes.NodeMessage) => {
+      await this.handleReceivedMessage(msg);
+      this.rpcRouter.emit(msg.type, msg, "outgoing");
+    });
   }
 
   /**
@@ -370,15 +328,11 @@ export class Node {
       console.error(`Received message with unknown event type: ${msg.type}`);
     }
 
-    const isProtocolMessage = (msg: CFCoreTypes.NodeMessage) =>
-      msg.type === PROTOCOL_MESSAGE_EVENT;
+    const isProtocolMessage = (msg: CFCoreTypes.NodeMessage) => msg.type === PROTOCOL_MESSAGE_EVENT;
 
     const isExpectingResponse = (msg: NodeMessageWrappedProtocolMessage) =>
       this.ioSendDeferrals.has(msg.data.processID);
-    if (
-      isProtocolMessage(msg) &&
-      isExpectingResponse(msg as NodeMessageWrappedProtocolMessage)
-    ) {
+    if (isProtocolMessage(msg) && isExpectingResponse(msg as NodeMessageWrappedProtocolMessage)) {
       await this.handleIoSendDeferral(msg as NodeMessageWrappedProtocolMessage);
     } else if (this.requestHandler.isLegacyEvent(msg.type)) {
       await this.requestHandler.callEvent(msg.type, msg);
@@ -391,9 +345,7 @@ export class Node {
     const key = msg.data.processID;
 
     if (!this.ioSendDeferrals.has(key)) {
-      throw Error(
-        "Node received message intended for machine but no handler was present"
-      );
+      throw Error("Node received message intended for machine but no handler was present");
     }
 
     const promise = this.ioSendDeferrals.get(key)!;
@@ -403,7 +355,7 @@ export class Node {
     } catch (error) {
       console.error(
         "Error while executing callback registered by IO_SEND_AND_WAIT middleware hook",
-        { error, msg }
+        { error, msg },
       );
     }
   }

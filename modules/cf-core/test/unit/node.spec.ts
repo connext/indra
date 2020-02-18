@@ -17,7 +17,7 @@ describe("Node", () => {
       global["networkContext"],
       { STORE_KEY_PREFIX: "./node.spec.ts-test-file" },
       new JsonRpcProvider(global["ganacheURL"]),
-      testDomainSeparator
+      testDomainSeparator,
     );
 
     expect(node).toBeDefined();

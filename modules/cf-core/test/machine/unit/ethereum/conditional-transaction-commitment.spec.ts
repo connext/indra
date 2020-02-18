@@ -1,11 +1,5 @@
 import { AddressZero, HashZero, WeiPerEther } from "ethers/constants";
-import {
-  getAddress,
-  hexlify,
-  Interface,
-  randomBytes,
-  TransactionDescription
-} from "ethers/utils";
+import { getAddress, hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
 import { ConditionalTransaction } from "../../../../src/ethereum";
@@ -28,7 +22,7 @@ describe("ConditionalTransaction", () => {
   // General interaction testing values
   const interaction = {
     sender: getRandomExtendedPubKey(),
-    receiver: getRandomExtendedPubKey()
+    receiver: getRandomExtendedPubKey(),
   };
 
   // State channel testing values
@@ -39,16 +33,14 @@ describe("ConditionalTransaction", () => {
       multisigMastercopy: networkContext.MinimumViableMultisig,
     },
     getAddress(hexlify(randomBytes(20))),
-    [interaction.sender, interaction.receiver]
+    [interaction.sender, interaction.receiver],
   );
 
   // Set the state to some test values
   stateChannel = stateChannel.setFreeBalance(
-    FreeBalanceClass.createWithFundedTokenAmounts(
-      stateChannel.multisigOwners,
-      WeiPerEther,
-      [CONVENTION_FOR_ETH_TOKEN_ADDRESS]
-    )
+    FreeBalanceClass.createWithFundedTokenAmounts(stateChannel.multisigOwners, WeiPerEther, [
+      CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+    ]),
   );
 
   const freeBalanceETH = stateChannel.freeBalance;
@@ -66,7 +58,7 @@ describe("ConditionalTransaction", () => {
       HashZero,
       testDomainSeparator,
       4447,
-      stateChannel.numProposedApps
+      stateChannel.numProposedApps,
     ).getTransactionDetails();
   });
 
@@ -88,9 +80,7 @@ describe("ConditionalTransaction", () => {
     });
 
     it("should be directed at the executeEffectOfInterpretedAppOutcome method", () => {
-      expect(calldata.sighash).toBe(
-        iface.functions.executeEffectOfInterpretedAppOutcome.sighash
-      );
+      expect(calldata.sighash).toBe(iface.functions.executeEffectOfInterpretedAppOutcome.sighash);
     });
 
     it("should have correctly constructed arguments", () => {
@@ -99,7 +89,7 @@ describe("ConditionalTransaction", () => {
         freeBalanceAppIdentity,
         appIdentityHash,
         interpreterAddress,
-        interpreterParams
+        interpreterParams,
       ] = calldata.args;
       expect(appRegistryAddress).toBe(networkContext.ChallengeRegistry);
       expect(freeBalanceAppIdentity).toBe(freeBalanceETH.identityHash);

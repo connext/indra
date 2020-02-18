@@ -2,7 +2,7 @@ import { NotFoundException } from "@nestjs/common";
 import { AddressZero } from "ethers/constants";
 import { EntityManager, EntityRepository, Repository } from "typeorm";
 
-import { PaymentProfile } from "../paymentProfile/paymentProfile.entity";
+import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { CLogger } from "../util";
 
 import { Channel } from "./channel.entity";
@@ -27,63 +27,72 @@ export class ChannelRepository extends Repository<Channel> {
     });
   }
 
-  async addPaymentProfileToChannel(
+  async addRebalanceProfileToChannel(
     userPublicIdentifier: string,
-    paymentProfile: PaymentProfile,
-  ): Promise<PaymentProfile> {
+    rebalanceProfile: RebalanceProfile,
+  ): Promise<RebalanceProfile> {
     const channel = await this.createQueryBuilder("channel")
-      .leftJoinAndSelect("channel.paymentProfiles", "paymentProfiles")
+      .leftJoinAndSelect("channel.rebalanceProfiles", "rebalanceProfiles")
       .where("channel.userPublicIdentifier = :userPublicIdentifier", { userPublicIdentifier })
       .getOne();
 
     if (!channel) {
-      throw new NotFoundException(`Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`);
+      throw new NotFoundException(
+        `Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`,
+      );
     }
 
-    const existing = channel.paymentProfiles.find((prof: PaymentProfile) => prof.assetId === paymentProfile.assetId);
+    const existing = channel.rebalanceProfiles.find(
+      (prof: RebalanceProfile) => prof.assetId === rebalanceProfile.assetId,
+    );
 
     await this.manager.transaction(async (transactionalEntityManager: EntityManager) => {
-      await transactionalEntityManager.save(paymentProfile);
+      await transactionalEntityManager.save(rebalanceProfile);
 
       if (existing) {
-        logger.log(`Found existing profile for token ${paymentProfile.assetId}, replacing`);
+        logger.log(`Found existing profile for token ${rebalanceProfile.assetId}, replacing`);
         await transactionalEntityManager
           .createQueryBuilder()
-          .relation(Channel, "paymentProfiles")
+          .relation(Channel, "rebalanceProfiles")
           .of(channel)
           .remove(existing);
       }
 
       return await transactionalEntityManager
         .createQueryBuilder()
-        .relation(Channel, "paymentProfiles")
+        .relation(Channel, "rebalanceProfiles")
         .of(channel)
-        .add(paymentProfile);
+        .add(rebalanceProfile);
     });
-    return paymentProfile;
+    return rebalanceProfile;
   }
 
-  async getPaymentProfileForChannelAndToken(
+  async getRebalanceProfileForChannelAndAsset(
     userPublicIdentifier: string,
     assetId: string = AddressZero,
-  ): Promise<PaymentProfile | undefined> {
+  ): Promise<RebalanceProfile | undefined> {
     const channel = await this.createQueryBuilder("channel")
-      .leftJoinAndSelect("channel.paymentProfiles", "paymentProfiles")
+      .leftJoinAndSelect("channel.rebalanceProfiles", "rebalanceProfiles")
       .where("channel.userPublicIdentifier = :userPublicIdentifier", { userPublicIdentifier })
       .getOne();
 
     if (!channel) {
-      throw new NotFoundException(`Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`);
+      throw new NotFoundException(
+        `Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`,
+      );
     }
 
-    const profile = channel.paymentProfiles.find(
-      (prof: PaymentProfile) => prof.assetId.toLowerCase() === assetId.toLowerCase(),
+    const profile = channel.rebalanceProfiles.find(
+      (prof: RebalanceProfile) => prof.assetId.toLowerCase() === assetId.toLowerCase(),
     );
 
     return profile;
   }
 
-  async setInflightCollateralization(channel: Channel, collateralizationInFlight: boolean): Promise<Channel> {
+  async setInflightCollateralization(
+    channel: Channel,
+    collateralizationInFlight: boolean,
+  ): Promise<Channel> {
     channel.collateralizationInFlight = collateralizationInFlight;
     return await this.save(channel);
   }

@@ -11,10 +11,7 @@ import { ChallengeRegistry } from "../../contracts";
 
 import { toBeEq } from "./bignumber-jest-matcher";
 import { connectToGanache } from "./connect-ganache";
-import {
-  extendedPrvKeyToExtendedPubKey,
-  getRandomExtendedPrvKeys
-} from "./random-signing-keys";
+import { extendedPrvKeyToExtendedPubKey, getRandomExtendedPrvKeys } from "./random-signing-keys";
 
 // The ChallengeRegistry.setState call _could_ be estimated but we haven't
 // written this test to do that yet
@@ -31,11 +28,7 @@ beforeAll(async () => {
 
   network = global["networkContext"];
 
-  appRegistry = new Contract(
-    network.ChallengeRegistry,
-    ChallengeRegistry.abi,
-    wallet
-  );
+  appRegistry = new Contract(network.ChallengeRegistry, ChallengeRegistry.abi, wallet);
 });
 
 /**
@@ -54,13 +47,13 @@ describe("set state on free balance", () => {
         multisigMastercopy: network.MinimumViableMultisig
       },
       AddressZero,
-      xprvs.map(extendedPrvKeyToExtendedPubKey)
+      xprvs.map(extendedPrvKeyToExtendedPubKey),
     ).setFreeBalance(
       FreeBalanceClass.createWithFundedTokenAmounts(
         multisigOwnerKeys.map<string>(key => key.address),
         WeiPerEther,
-        [CONVENTION_FOR_ETH_TOKEN_ADDRESS]
-      )
+        [CONVENTION_FOR_ETH_TOKEN_ADDRESS],
+      ),
     );
 
     const freeBalanceETH = stateChannel.freeBalance;
@@ -70,26 +63,22 @@ describe("set state on free balance", () => {
       freeBalanceETH.identity,
       freeBalanceETH.hashOfLatestState,
       freeBalanceETH.versionNumber,
-      freeBalanceETH.timeout
+      freeBalanceETH.timeout,
     );
 
     const setStateTx = setStateCommitment.getSignedTransaction([
       multisigOwnerKeys[0].signDigest(setStateCommitment.hashToSign()),
-      multisigOwnerKeys[1].signDigest(setStateCommitment.hashToSign())
+      multisigOwnerKeys[1].signDigest(setStateCommitment.hashToSign()),
     ]);
 
     await wallet.sendTransaction({
       ...setStateTx,
-      gasLimit: SETSTATE_COMMITMENT_GAS
+      gasLimit: SETSTATE_COMMITMENT_GAS,
     });
 
-    const contractAppState = await appRegistry.appChallenges(
-      freeBalanceETH.identityHash
-    );
+    const contractAppState = await appRegistry.appChallenges(freeBalanceETH.identityHash);
 
-    expect(contractAppState.versionNumber).toBeEq(
-      setStateCommitment.appVersionNumber
-    );
+    expect(contractAppState.versionNumber).toBeEq(setStateCommitment.appVersionNumber);
 
     done();
   });

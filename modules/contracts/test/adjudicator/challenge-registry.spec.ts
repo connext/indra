@@ -1,29 +1,41 @@
 /* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
 import { Contract, Wallet } from "ethers";
-import { hexlify, keccak256, randomBytes, BigNumberish, bigNumberify } from "ethers/utils";
+import { HashZero } from "ethers/constants";
+import {
+  bigNumberify
+  BigNumberish,
+  hexlify,
+  joinSignature,
+  keccak256,
+  randomBytes,
+  SigningKey,
+} from "ethers/utils";
+
+import ChallengeRegistry from "../../build/ChallengeRegistry.json";
 
 import {
+  advanceBlocks,
   AppIdentityTestClass,
   cancelChallenge,
+  Challenge,
+  ChallengeStatus,
+  deployApp,
+  deployRegistry,
+  encodeAppAction,
+  encodeAppState,
   expect,
+  getAppWithActionState,
   getChallenge,
+  getIncrementCounterAction,
+  getOutcome,
   isStateFinalized,
   latestAppStateHash,
   latestVersionNumber,
-  setStateWithSignatures,
-  deployRegistry,
-  advanceBlocks,
-  Challenge,
-  ChallengeStatus,
   setOutcome,
-  getOutcome,
-  deployApp,
+  setStateWithSignatures,
   setStateWithSignedAction,
-  encodeAppAction,
-  getIncrementCounterAction,
-  encodeAppState,
-  getAppWithActionState,
+  sortSignaturesBySignerAddress,
 } from "./utils";
 import { Zero } from "ethers/constants";
 

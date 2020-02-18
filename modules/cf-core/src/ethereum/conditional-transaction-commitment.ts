@@ -25,7 +25,7 @@ export class ConditionalTransaction extends MultisigCommitment {
     public readonly interpreterParams: string,
     public readonly domainSeparator: DomainSeparator,
     public readonly chainId: number,
-    public readonly transactionCount: number
+    public readonly transactionCount: number,
   ) {
     super(multisig, multisigOwners);
   }
@@ -53,7 +53,7 @@ export class ConditionalTransaction extends MultisigCommitment {
       domainVersion: this.domainSeparator.domainVersion,
       chainId: this.chainId,
       domainSalt: this.domainSeparator.domainSalt,
-      transactionCount: this.transactionCount
+      transactionCount: this.transactionCount,
     };
   }
 }

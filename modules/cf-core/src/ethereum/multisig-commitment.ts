@@ -13,10 +13,7 @@ import { sortSignaturesBySignerAddress } from "../utils";
 
 /// A commitment to make MinimumViableMultisig perform a message call
 export abstract class MultisigCommitment extends EthereumCommitment {
-  constructor(
-    readonly multisigAddress: string,
-    readonly multisigOwners: string[]
-  ) {
+  constructor(readonly multisigAddress: string, readonly multisigOwners: string[]) {
     super();
   }
 
@@ -27,14 +24,11 @@ export abstract class MultisigCommitment extends EthereumCommitment {
   ): CFCoreTypes.MinimalTransaction {
     const multisigInput = this.getTransactionDetails();
 
-    const signaturesList = sortSignaturesBySignerAddress(
-      this.hashToSign(),
-      sigs
-    ).map(joinSignature);
+    const signaturesList = sortSignaturesBySignerAddress(this.hashToSign(), sigs).map(
+      joinSignature,
+    );
 
-    const txData = new Interface(
-      MinimumViableMultisig.abi
-    ).functions.execTransaction.encode([
+    const txData = new Interface(MinimumViableMultisig.abi).functions.execTransaction.encode([
       multisigInput.to,
       multisigInput.value,
       multisigInput.data,
@@ -44,7 +38,7 @@ export abstract class MultisigCommitment extends EthereumCommitment {
       multisigInput.chainId,
       multisigInput.domainSalt,
       multisigInput.transactionCount,
-      signaturesList
+      signaturesList,
     ]);
 
     // TODO: Deterministically compute `to` address
@@ -87,7 +81,7 @@ export abstract class MultisigCommitment extends EthereumCommitment {
         operation,
         domainSeparatorHash,
         transactionCount
-      ]
+      ],
     );
   }
 }

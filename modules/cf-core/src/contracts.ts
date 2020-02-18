@@ -6,6 +6,6 @@ export {
   ConditionalTransactionDelegateTarget,
   CounterfactualApp,
   MinimumViableMultisig,
-  ProxyFactory
+  ProxyFactory,
 } from "@connext/contracts";
 export { ERC20 };

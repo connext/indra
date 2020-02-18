@@ -95,8 +95,8 @@ export async function asyncTransferAsset(
 
   const postTransfer: ExistingBalancesAsyncTransfer = {
     freeBalanceClientA: postTransferFreeBalanceClientA,
-    freeBalanceNodeA: postTransferFreeBalanceNodeA,
     freeBalanceClientB: postTransferFreeBalanceClientB,
+    freeBalanceNodeA: postTransferFreeBalanceNodeA,
     freeBalanceNodeB: postTransferFreeBalanceNodeB,
   };
 

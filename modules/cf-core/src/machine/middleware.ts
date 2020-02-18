@@ -7,7 +7,7 @@ export class MiddlewareContainer {
     [Opcode.IO_SEND_AND_WAIT]: [],
     [Opcode.OP_SIGN]: [],
     [Opcode.WRITE_COMMITMENT]: [],
-    [Opcode.PERSIST_STATE_CHANNEL]: []
+    [Opcode.PERSIST_STATE_CHANNEL]: [],
   };
 
   public add(scope: Opcode, method: Middleware) {
@@ -18,9 +18,7 @@ export class MiddlewareContainer {
     const middleware = this.middlewares[opCode][0];
 
     if (middleware === undefined) {
-      throw Error(
-        `Attempted to run middleware for opcode ${opCode} but none existed`
-      );
+      throw Error(`Attempted to run middleware for opcode ${opCode} but none existed`);
     }
 
     return middleware(args);

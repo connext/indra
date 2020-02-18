@@ -56,7 +56,10 @@ describe("Swaps", () => {
     const output: AssetOptions = { amount: TOKEN_AMOUNT, assetId: tokenAddress };
     await fundChannel(client, input.amount, input.assetId);
     const expectedFreeBalanceNodeToken = COLLATERAL_AMOUNT_TOKEN.sub(
-      calculateExchange(input.amount, await client.getLatestSwapRate(input.assetId, output.assetId)),
+      calculateExchange(
+        input.amount,
+        await client.getLatestSwapRate(input.assetId, output.assetId),
+      ),
     );
     await swapAsset(
       client,

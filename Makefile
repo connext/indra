@@ -12,7 +12,7 @@ release=$(shell cat package.json | grep '"version"' | head -n 1 | cut -d '"' -f 
 solc_version=$(shell cat $(contracts)/package.json | grep '"solc"' | awk -F '"' '{print $$4}')
 
 # version that will be tested against for backwards compatibility checks
-backwards_compatible_version=$(shell echo $(release) | cut -d '.' -f 1).0.0
+backwards_compatible_version=$(commit) # $(shell echo $(release) | cut -d '.' -f 1).0.0
 
 # Pool of images to pull cached layers from during docker build steps
 cache_from=$(shell if [[ -n "${GITHUB_WORKFLOW}" ]]; then echo "--cache-from=$(project)_database:$(commit),$(project)_database,$(project)_ethprovider:$(commit),$(project)_ethprovider,$(project)_node:$(commit),$(project)_node,$(project)_proxy:$(commit),$(project)_proxy,$(project)_relay:$(commit),$(project)_relay,$(project)_builder"; else echo ""; fi)
@@ -23,6 +23,7 @@ cf-core=$(cwd)/modules/cf-core
 channel-provider=$(cwd)/modules/channel-provider
 client=$(cwd)/modules/client
 contracts=$(cwd)/modules/contracts
+crypto=$(cwd)/modules/crypto
 daicard=$(cwd)/modules/daicard
 dashboard=$(cwd)/modules/dashboard
 database=$(cwd)/ops/database
@@ -161,6 +162,9 @@ deployed-contracts: contracts
 build-report:
 	bash ops/build-report.sh
 
+lint:
+	bash ops/lint.sh
+
 dls:
 	@docker service ls
 	@echo "====="
@@ -284,7 +288,7 @@ ws-tcp-relay: ops/ws-tcp-relay.dockerfile
 ########################################
 # JS & bundles
 
-client: cf-core contracts types messaging store channel-provider $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
+client: cf-core contracts types crypto messaging store channel-provider $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
@@ -297,6 +301,11 @@ cf-core: node-modules types contracts $(shell find $(cf-core)/src $(cf-core)/tes
 channel-provider: node-modules types $(shell find $(channel-provider)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/channel-provider && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+	
+crypto: node-modules types $(shell find $(crypto)/src $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/crypto && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))

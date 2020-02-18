@@ -25,7 +25,7 @@ enum Opcode {
    * Middleware hook to write the state channel to store. Used to lock channel
    * between protocols.
    */
-  PERSIST_STATE_CHANNEL
+  PERSIST_STATE_CHANNEL,
 }
 
 export { Opcode };

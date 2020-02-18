@@ -1,10 +1,6 @@
 import { CF_PATH, CFCoreTypes } from "@connext/types";
 import { Wallet } from "ethers";
-import {
-  JsonRpcProvider,
-  Provider,
-  TransactionRequest
-} from "ethers/providers";
+import { JsonRpcProvider, Provider, TransactionRequest } from "ethers/providers";
 import { parseEther } from "ethers/utils";
 import { fromExtendedKey } from "ethers/utils/hdnode";
 import { v4 as generateUUID } from "uuid";

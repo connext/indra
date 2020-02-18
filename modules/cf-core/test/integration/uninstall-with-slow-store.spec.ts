@@ -3,15 +3,12 @@ import { UninstallMessage } from "../../src/types";
 import { timeout } from "../../src/utils";
 import { NetworkContextForTestSuite } from "../contracts";
 
-import {
-  SetupContext,
-  setupWithMemoryMessagingAndSlowStore
-} from "./setup";
+import { SetupContext, setupWithMemoryMessagingAndSlowStore } from "./setup";
 import {
   constructUninstallRpc,
   createChannel,
   getInstalledAppInstances,
-  installApp
+  installApp,
 } from "./utils";
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
@@ -21,9 +18,7 @@ describe("Node method follows spec - uninstall", () => {
   let nodeB: Node;
 
   beforeAll(async () => {
-    const context: SetupContext = await setupWithMemoryMessagingAndSlowStore(
-      global
-    );
+    const context: SetupContext = await setupWithMemoryMessagingAndSlowStore(global);
     nodeA = context["A"].node;
     nodeB = context["B"].node;
   });
@@ -33,7 +28,11 @@ describe("Node method follows spec - uninstall", () => {
       const initialState = {
         versionNumber: 0,
         winner: 1, // Hard-coded winner for test
-        board: [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+        board: [
+          [0, 0, 0],
+          [0, 0, 0],
+          [0, 0, 0],
+        ],
       };
 
       await createChannel(nodeA, nodeB);
@@ -41,12 +40,7 @@ describe("Node method follows spec - uninstall", () => {
       // FIXME: There is some timing issue with slow stores @snario noticed
       await timeout(2000);
 
-      const [appInstanceId] = await installApp(
-        nodeA,
-        nodeB,
-        TicTacToeApp,
-        initialState
-      );
+      const [appInstanceId] = await installApp(nodeA, nodeB, TicTacToeApp, initialState);
 
       nodeB.once("UNINSTALL_EVENT", async (msg: UninstallMessage) => {
         expect(msg.data.appInstanceId).toBe(appInstanceId);

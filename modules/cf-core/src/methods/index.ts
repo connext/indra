@@ -49,5 +49,5 @@ export {
   UninstallVirtualController,
   UpdateStateController,
   WithdrawCommitmentController,
-  WithdrawController
+  WithdrawController,
 };

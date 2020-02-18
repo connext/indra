@@ -5,19 +5,14 @@ import { Protocol, ProtocolRunner } from "../../../machine";
 import { StateChannel } from "../../../models";
 import { RequestHandler } from "../../../request-handler";
 import { Store } from "../../../store";
-import {
-  CFCoreTypes,
-  ProtocolTypes,
-  SolidityValueType,
-  UpdateStateMessage
-} from "../../../types";
+import { CFCoreTypes, ProtocolTypes, SolidityValueType, UpdateStateMessage } from "../../../types";
 import { getFirstElementInListNotEqualTo } from "../../../utils";
 import { NodeController } from "../../controller";
 import {
   IMPROPERLY_FORMATTED_STRUCT,
   INVALID_ACTION,
   NO_APP_INSTANCE_FOR_TAKE_ACTION,
-  STATE_OBJECT_NOT_ENCODABLE
+  STATE_OBJECT_NOT_ENCODABLE,
 } from "../../errors";
 import { UPDATE_STATE_EVENT } from "@connext/types";
 
@@ -28,17 +23,17 @@ export default class TakeActionController extends NodeController {
   protected async getRequiredLockNames(
     // @ts-ignore
     requestHandler: RequestHandler,
-    params: CFCoreTypes.TakeActionParams
+    params: CFCoreTypes.TakeActionParams,
   ): Promise<string[]> {
     const multisigAddress = await requestHandler.store.getMultisigAddressFromAppInstance(
-      params.appInstanceId
+      params.appInstanceId,
     );
     return [multisigAddress, params.appInstanceId];
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.TakeActionParams
+    params: CFCoreTypes.TakeActionParams,
   ): Promise<void> {
     const { store } = requestHandler;
     const { appInstanceId, action } = params;
@@ -61,7 +56,7 @@ export default class TakeActionController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.TakeActionParams
+    params: CFCoreTypes.TakeActionParams,
   ): Promise<CFCoreTypes.TakeActionResult> {
     const { store, publicIdentifier, protocolRunner } = requestHandler;
     const { appInstanceId, action } = params;
@@ -70,7 +65,7 @@ export default class TakeActionController extends NodeController {
 
     const responderXpub = getFirstElementInListNotEqualTo(
       publicIdentifier,
-      sc.userNeuteredExtendedKeys
+      sc.userNeuteredExtendedKeys,
     );
 
     await runTakeActionProtocol(
@@ -79,7 +74,7 @@ export default class TakeActionController extends NodeController {
       protocolRunner,
       publicIdentifier,
       responderXpub,
-      action
+      action,
     );
 
     const appInstance = await store.getAppInstance(appInstanceId);
@@ -89,7 +84,7 @@ export default class TakeActionController extends NodeController {
 
   protected async afterExecution(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.TakeActionParams
+    params: CFCoreTypes.TakeActionParams,
   ): Promise<void> {
     const { store, router, publicIdentifier } = requestHandler;
     const { appInstanceId, action } = params;
@@ -99,7 +94,7 @@ export default class TakeActionController extends NodeController {
     const msg = {
       from: publicIdentifier,
       type: UPDATE_STATE_EVENT,
-      data: { appInstanceId, action, newState: appInstance.state }
+      data: { appInstanceId, action, newState: appInstance.state },
     } as UpdateStateMessage;
 
     await router.emit(msg.type, msg, `outgoing`);
@@ -112,7 +107,7 @@ async function runTakeActionProtocol(
   protocolRunner: ProtocolRunner,
   initiatorXpub: string,
   responderXpub: string,
-  action: SolidityValueType
+  action: SolidityValueType,
 ) {
   const stateChannel = await store.getChannelFromAppInstanceID(appIdentityHash);
 
@@ -121,16 +116,14 @@ async function runTakeActionProtocol(
   try {
     stateChannelsMap = await protocolRunner.initiateProtocol(
       Protocol.TakeAction,
-      new Map<string, StateChannel>([
-        [stateChannel.multisigAddress, stateChannel]
-      ]),
+      new Map<string, StateChannel>([[stateChannel.multisigAddress, stateChannel]]),
       {
         initiatorXpub,
         responderXpub,
         appIdentityHash,
         action,
-        multisigAddress: stateChannel.multisigAddress
-      }
+        multisigAddress: stateChannel.multisigAddress,
+      },
     );
   } catch (e) {
     if (e.toString().indexOf(`VM Exception`) !== -1) {

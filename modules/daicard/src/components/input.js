@@ -1,10 +1,4 @@
-import {
-  Button,
-  InputAdornment,
-  Modal,
-  TextField,
-  Tooltip,
-} from "@material-ui/core";
+import { Button, InputAdornment, Modal, TextField, Tooltip } from "@material-ui/core";
 import { arrayify, isHexString } from "ethers/utils";
 import React, { useEffect, useState } from "react";
 import QRIcon from "mdi-material-ui/QrcodeScan";
@@ -17,11 +11,11 @@ const useDebounce = (value, delay) => {
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedValue(value);
-    }, delay)
+    }, delay);
     return () => clearTimeout(handler);
   }, [value, delay]);
   return debouncedValue;
-}
+};
 
 export const useAddress = (initialAddress, ethProvider) => {
   const [display, setDisplay] = useState(initialAddress);
@@ -35,7 +29,7 @@ export const useAddress = (initialAddress, ethProvider) => {
       await ethProvider.ready;
       const network = await ethProvider.getNetwork();
       setNetwork(network);
-    })()
+    })();
   }, [ethProvider]);
   useEffect(() => {
     (async () => {
@@ -62,13 +56,10 @@ export const useAddress = (initialAddress, ethProvider) => {
       }
       setValue(error ? undefined : value);
       setError(error);
-    })()
+    })();
   }, [debouncedAddress, network, ethProvider]);
-  return [
-    { display, value, error, resolved },
-    setDisplay,
-  ];
-}
+  return [{ display, value, error, resolved }, setDisplay];
+};
 
 export const AddressInput = ({ address, setAddress }) => {
   const [scan, setScan] = useState(false);
@@ -85,9 +76,9 @@ export const AddressInput = ({ address, setAddress }) => {
         variant="outlined"
         required
         helperText={
-          (address.resolved === 'pending' ? `Resolving ENS name...` : '')
-          || address.error
-          || (address.resolved === true ? `ENS name resolved to: ${address.value}` : false)
+          (address.resolved === "pending" ? `Resolving ENS name...` : "") ||
+          address.error ||
+          (address.resolved === true ? `ENS name resolved to: ${address.value}` : false)
         }
         error={!!address.error}
         InputProps={{
@@ -125,14 +116,16 @@ export const AddressInput = ({ address, setAddress }) => {
           right: "0",
         }}
       >
-        <QRScan handleResult={(res) => {
-          setAddress(res);
-          setScan(false);
-        }} />
+        <QRScan
+          handleResult={res => {
+            setAddress(res);
+            setScan(false);
+          }}
+        />
       </Modal>
     </div>
   );
-}
+};
 
 export const useXpub = (initialXpub, ethProvider) => {
   const [network, setNetwork] = useState(null);
@@ -146,7 +139,7 @@ export const useXpub = (initialXpub, ethProvider) => {
       await ethProvider.ready;
       const network = await ethProvider.getNetwork();
       setNetwork(network);
-    })()
+    })();
   }, [ethProvider]);
   useEffect(() => {
     (async () => {
@@ -170,14 +163,10 @@ export const useXpub = (initialXpub, ethProvider) => {
       }
       setValue(error ? undefined : value);
       setError(error);
-    })()
+    })();
   }, [debounced, ethProvider, network]);
-  return [
-    { display, value, error, resolved },
-    setDisplay,
-    setError,
-  ];
-}
+  return [{ display, value, error, resolved }, setDisplay, setError];
+};
 
 export const XpubInput = ({ xpub, setXpub }) => {
   const [scan, setScan] = useState(false);
@@ -193,10 +182,12 @@ export const XpubInput = ({ xpub, setXpub }) => {
         margin="normal"
         variant="outlined"
         helperText={
-          (xpub.resolved === 'pending' ? `Resolving ENS name...` : '')
-          || xpub.error
-          || (xpub.value && xpub.resolved === true ? `ENS name resolved to: ${xpub.value.substring(0, 42)}...` : false)
-          || (xpub.value ? "" : "Ignored for linked payments")
+          (xpub.resolved === "pending" ? `Resolving ENS name...` : "") ||
+          xpub.error ||
+          (xpub.value && xpub.resolved === true
+            ? `ENS name resolved to: ${xpub.value.substring(0, 42)}...`
+            : false) ||
+          (xpub.value ? "" : "Ignored for linked payments")
         }
         error={xpub.error !== null}
         InputProps={{
@@ -234,18 +225,19 @@ export const XpubInput = ({ xpub, setXpub }) => {
           right: "0",
         }}
       >
-        <QRScan handleResult={(res) => {
-          // Extract the xpub from a request link if necessary
-          const i = res.indexOf('=xpub')
-          if (i !== -1) {
-            setXpub(res.substring(i + 1, i + 112));
-          } else {
-            setXpub(res);
-          }
-          setScan(false);
-        }} />
+        <QRScan
+          handleResult={res => {
+            // Extract the xpub from a request link if necessary
+            const i = res.indexOf("=xpub");
+            if (i !== -1) {
+              setXpub(res.substring(i + 1, i + 112));
+            } else {
+              setXpub(res);
+            }
+            setScan(false);
+          }}
+        />
       </Modal>
     </div>
   );
-}
-
+};

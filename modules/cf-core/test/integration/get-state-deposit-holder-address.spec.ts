@@ -19,15 +19,15 @@ describe(`Node method follows spec - getStateDepositHolderAddress`, () => {
 
     const {
       result: {
-        result: { address }
-      }
+        result: { address },
+      },
     } = await nodeA.rpcRouter.dispatch(
       jsonRpcDeserialize({
         id: Date.now(),
         method: ProtocolTypes.chan_getStateDepositHolderAddress,
         params: { owners },
-        jsonrpc: `2.0`
-      })
+        jsonrpc: `2.0`,
+      }),
     );
 
     expect(address.length).toBe(42);

@@ -11,8 +11,12 @@ export class MessagingServiceFactory {
       throw new Error(`No messaging url provided. Config: ${JSON.stringify(config)}`);
     }
     if (typeof messagingUrl === "string") {
-      this.serviceType = messagingUrl.startsWith("nats://") ? "nats" : "ws";
-    } else if (messagingUrl[0] && messagingUrl[0].startsWith("nats://")) {
+      this.serviceType =
+        messagingUrl.startsWith("nats://") || messagingUrl.startsWith("tls://") ? "nats" : "ws";
+    } else if (
+      (messagingUrl[0] && messagingUrl[0].startsWith("nats://")) ||
+      messagingUrl[0].startsWith("tls://")
+    ) {
       this.serviceType = "nats";
     } else {
       throw new Error(`Invalid Messaging Url: ${JSON.stringify(messagingUrl)}`);

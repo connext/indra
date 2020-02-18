@@ -34,9 +34,9 @@ export const RepairCriticalAddresses = ({ messaging }) => {
       <Snackbar
         open={open}
         autoHideDuration={6000}
-        message={
-          `${repaired.fixed ? repaired.fixed.length : 0} Channels repaired 🏗  ${repaired.broken ? repaired.broken.length : 0} still broken`
-        }
+        message={`${repaired.fixed ? repaired.fixed.length : 0} Channels repaired 🏗  ${
+          repaired.broken ? repaired.broken.length : 0
+        } still broken`}
       />
     </Grid>
   );

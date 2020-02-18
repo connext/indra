@@ -1,7 +1,4 @@
-import {
-  EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT,
-  NetworkContext
-} from "@connext/types";
+import { EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT, NetworkContext } from "@connext/types";
 import { Wallet } from "ethers";
 import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { BaseProvider } from "ethers/providers";
@@ -14,11 +11,7 @@ import {
   NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID,
 } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
-import {
-  Protocol,
-  ProtocolRunner,
-  xkeysToSortedKthAddresses
-} from "../../src/machine";
+import { Protocol, ProtocolRunner, xkeysToSortedKthAddresses } from "../../src/machine";
 import { install } from "../../src/methods/app-instance/install/operation";
 import { StateChannel } from "../../src/models";
 import { Store } from "../../src/store";
@@ -31,9 +24,9 @@ import { testDomainSeparator } from "../integration/utils";
 const NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES = EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT.reduce(
   (acc, contractName) => ({
     ...acc,
-    [contractName]: AddressZero
+    [contractName]: AddressZero,
   }),
-  {} as NetworkContext
+  {} as NetworkContext,
 );
 
 describe("Can handle correct & incorrect installs", () => {
@@ -55,29 +48,19 @@ describe("Can handle correct & incorrect installs", () => {
 
   it("fails to install with undefined appInstanceId", async () => {
     await expect(
-      install(
-        store,
-        protocolRunner,
-        { appInstanceId: undefined! },
-        initiatorIdentifier
-      )
+      install(store, protocolRunner, { appInstanceId: undefined! }, initiatorIdentifier),
     ).rejects.toThrowError(NO_APP_INSTANCE_ID_TO_INSTALL);
   });
 
   it("fails to install with empty string appInstanceId", async () => {
     await expect(
-      install(store, protocolRunner, { appInstanceId: "" }, initiatorIdentifier)
+      install(store, protocolRunner, { appInstanceId: "" }, initiatorIdentifier),
     ).rejects.toThrowError(NO_APP_INSTANCE_ID_TO_INSTALL);
   });
 
   it("fails to install without the AppInstance being proposed first", async () => {
     await expect(
-      install(
-        store,
-        protocolRunner,
-        { appInstanceId: HashZero },
-        initiatorIdentifier
-      )
+      install(store, protocolRunner, { appInstanceId: HashZero }, initiatorIdentifier),
     ).rejects.toThrowError(NO_MULTISIG_FOR_APP_INSTANCE_ID);
   });
 
@@ -89,21 +72,14 @@ describe("Can handle correct & incorrect installs", () => {
     const appInstanceId = hexlify(randomBytes(32));
     const appInstanceProposal = createAppInstanceProposalForTest(appInstanceId);
 
-    when(mockedStore.getAppInstanceProposal(appInstanceId)).thenResolve(
-      appInstanceProposal
-    );
+    when(mockedStore.getAppInstanceProposal(appInstanceId)).thenResolve(appInstanceProposal);
 
     when(mockedStore.getChannelFromAppInstanceID(appInstanceId)).thenThrow(
-      Error(NO_MULTISIG_FOR_APP_INSTANCE_ID)
+      Error(NO_MULTISIG_FOR_APP_INSTANCE_ID),
     );
 
     await expect(
-      install(
-        instance(mockedStore),
-        protocolRunner,
-        { appInstanceId },
-        initiatorIdentifier
-      )
+      install(instance(mockedStore), protocolRunner, { appInstanceId }, initiatorIdentifier),
     ).rejects.toThrowError(NO_MULTISIG_FOR_APP_INSTANCE_ID);
   });
 
@@ -123,41 +99,33 @@ describe("Can handle correct & incorrect installs", () => {
       AddressZero,
       { proxyFactory: AddressZero, multisigMastercopy: AddressZero },
       multisigAddress,
-      extendedKeys
+      extendedKeys,
     );
 
     expect(
       stateChannel
         .getFreeBalanceClass()
-        .getBalance(CONVENTION_FOR_ETH_TOKEN_ADDRESS, participants[0])
+        .getBalance(CONVENTION_FOR_ETH_TOKEN_ADDRESS, participants[0]),
     ).toEqual(Zero);
     expect(
       stateChannel
         .getFreeBalanceClass()
-        .getBalance(CONVENTION_FOR_ETH_TOKEN_ADDRESS, participants[1])
+        .getBalance(CONVENTION_FOR_ETH_TOKEN_ADDRESS, participants[1]),
     ).toEqual(Zero);
 
     await store.saveStateChannel(stateChannel);
 
     const appInstanceProposal = createAppInstanceProposalForTest(appInstanceId);
 
-    when(mockedStore.getAppInstanceProposal(appInstanceId)).thenResolve(
-      appInstanceProposal
-    );
+    when(mockedStore.getAppInstanceProposal(appInstanceId)).thenResolve(appInstanceProposal);
 
-    when(mockedStore.getChannelFromAppInstanceID(appInstanceId)).thenResolve(
-      stateChannel
-    );
+    when(mockedStore.getChannelFromAppInstanceID(appInstanceId)).thenResolve(stateChannel);
 
     // Gets around having to register middleware into the machine
     // and just returns a basic <string, StateChannel> map with the
     // expected multisigAddress in it.
     when(
-      mockedProtocolRunner.initiateProtocol(
-        Protocol.Install,
-        anything(),
-        anything()
-      )
+      mockedProtocolRunner.initiateProtocol(Protocol.Install, anything(), anything()),
     ).thenResolve(new Map([[multisigAddress, stateChannel]]));
 
     // The AppInstanceProposal that's returned is the one that was installed, which
@@ -167,10 +135,10 @@ describe("Can handle correct & incorrect installs", () => {
         store,
         protocolRunner,
         {
-          appInstanceId
+          appInstanceId,
         },
-        extendedKeys[0]
-      )
+        extendedKeys[0],
+      ),
     ).resolves.toEqual(appInstanceProposal);
   });
 });

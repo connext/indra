@@ -7,7 +7,7 @@ import { NodeController } from "../../controller";
 import {
   APP_ALREADY_UNINSTALLED,
   NO_APP_INSTANCE_ID_TO_UNINSTALL,
-  NO_NETWORK_PROVIDER_CREATE2
+  NO_NETWORK_PROVIDER_CREATE2,
 } from "../../errors";
 
 import { uninstallVirtualAppInstanceFromChannel } from "./operation";
@@ -18,7 +18,7 @@ export default class UninstallVirtualController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.UninstallVirtualParams
+    params: CFCoreTypes.UninstallVirtualParams,
   ): Promise<string[]> {
     const { store, publicIdentifier, networkContext } = requestHandler;
     const { appInstanceId, intermediaryIdentifier } = params;
@@ -27,16 +27,13 @@ export default class UninstallVirtualController extends NodeController {
     // the `getMultisigAddressWithCounterparty` function will default
     // to using any existing multisig address for the provided
     // owners before creating one
-    const multisigAddressForStateChannelWithIntermediary =
-      await store.getMultisigAddressWithCounterparty(
-        [publicIdentifier, intermediaryIdentifier],
-        networkContext.ProxyFactory,
-        networkContext.MinimumViableMultisig
-      );
-
-    const stateChannelWithResponding = await store.getChannelFromAppInstanceID(
-      appInstanceId
+    const multisigAddressForStateChannelWithIntermediary = await store.getMultisigAddressWithCounterparty(
+      [publicIdentifier, intermediaryIdentifier],
+      networkContext.ProxyFactory,
+      networkContext.MinimumViableMultisig,
     );
+
+    const stateChannelWithResponding = await store.getChannelFromAppInstanceID(appInstanceId);
 
     if (!networkContext.provider) {
       throw new Error(NO_NETWORK_PROVIDER_CREATE2);
@@ -55,28 +52,26 @@ export default class UninstallVirtualController extends NodeController {
     // parameter, or as a part of the virtual app state.
     const multisigAddressBetweenHubAndResponding = await store.getMultisigAddressWithCounterparty(
       [
-        stateChannelWithResponding.userNeuteredExtendedKeys.filter(
-          x => x !== publicIdentifier
-        )[0],
-        intermediaryIdentifier
+        stateChannelWithResponding.userNeuteredExtendedKeys.filter(x => x !== publicIdentifier)[0],
+        intermediaryIdentifier,
       ],
       stateChannelWithResponding.addresses.proxyFactory,
       stateChannelWithResponding.addresses.multisigMastercopy,
-      networkContext.provider
+      networkContext.provider,
     );
 
     return [
       stateChannelWithResponding.multisigAddress,
       multisigAddressForStateChannelWithIntermediary,
       multisigAddressBetweenHubAndResponding,
-      appInstanceId
+      appInstanceId,
     ];
   }
 
   protected async beforeExecution(
     // @ts-ignore
     requestHandler: RequestHandler,
-    params: CFCoreTypes.UninstallVirtualParams
+    params: CFCoreTypes.UninstallVirtualParams,
   ) {
     const { appInstanceId } = params;
 
@@ -87,14 +82,9 @@ export default class UninstallVirtualController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.UninstallVirtualParams
+    params: CFCoreTypes.UninstallVirtualParams,
   ): Promise<CFCoreTypes.UninstallVirtualResult> {
-    const {
-      store,
-      protocolRunner,
-      publicIdentifier,
-      provider
-    } = requestHandler;
+    const { store, protocolRunner, publicIdentifier, provider } = requestHandler;
 
     const { appInstanceId, intermediaryIdentifier } = params;
 
@@ -110,7 +100,7 @@ export default class UninstallVirtualController extends NodeController {
 
     const to = getFirstElementInListNotEqualTo(
       publicIdentifier,
-      stateChannel.userNeuteredExtendedKeys
+      stateChannel.userNeuteredExtendedKeys,
     );
 
     await uninstallVirtualAppInstanceFromChannel(
@@ -120,7 +110,7 @@ export default class UninstallVirtualController extends NodeController {
       publicIdentifier,
       to,
       intermediaryIdentifier,
-      appInstanceId
+      appInstanceId,
     );
 
     return {};

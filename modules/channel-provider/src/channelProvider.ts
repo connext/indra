@@ -89,7 +89,8 @@ export class ChannelProvider extends ConnextEventEmitter implements IChannelProv
   }
 
   get multisigAddress(): string | undefined {
-    const multisigAddress = this._multisigAddress || (this._config ? this._config.multisigAddress : undefined);
+    const multisigAddress =
+      this._multisigAddress || (this._config ? this._config.multisigAddress : undefined);
     return multisigAddress;
   }
 

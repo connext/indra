@@ -1,7 +1,7 @@
 import { AppRegistry, SupportedApplication } from "./app";
 import { BigNumber, Network, Transaction, TransactionResponse } from "./basic";
 import { NetworkContext } from "./contracts";
-import { CFCoreChannel, ChannelAppSequences, PaymentProfile } from "./channel";
+import { CFCoreChannel, ChannelAppSequences, RebalanceProfile } from "./channel";
 import { IChannelProvider } from "./channelProvider";
 import { ResolveLinkedTransferResponse } from "./inputs";
 import { IMessagingService, MessagingConfig } from "./messaging";
@@ -102,7 +102,7 @@ export interface INodeApiClient {
   clientCheckIn(): Promise<void>;
   getChannel(): Promise<GetChannelResponse>;
   getLatestSwapRate(from: string, to: string): Promise<string>;
-  getPaymentProfile(assetId?: string): Promise<PaymentProfile>;
+  getRebalanceProfile(assetId?: string): Promise<RebalanceProfile>;
   getPendingAsyncTransfers(): Promise<PendingAsyncTransfer[]>;
   getTransferHistory(publicIdentifier?: string): Promise<Transfer[]>;
   getLatestWithdrawal(): Promise<Transaction>;

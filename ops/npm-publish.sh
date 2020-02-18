@@ -2,7 +2,7 @@
 set -e
 
 # This is the order they'll be published in
-packages="types,cf-core,messaging,store,channel-provider,client"
+packages="types,crypto,cf-core,messaging,store,channel-provider,client"
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
@@ -54,7 +54,24 @@ then echo "Aborting: A new, unique version is required" && exit 1
 elif [[ "$package_versions" =~ "$target_version" ]]
 then echo "Aborting: A new, unique version is required" && exit 1
 elif [[ "`get_latest_version $package_versions $target_version`" != "$target_version" ]]
-then echo "Aborting: The new version should be bigger than old ones" && exit 1
+then
+  for package in `echo $packages | tr ',' ' '`
+  do
+    package_name="`cat modules/$package/package.json | grep '"name":' | awk -F '"' '{print $4}'`"
+    # make sure this is still a unique version number, even though its old
+    version_exists="`npm view $package_name@$target_version version 2> /dev/null || echo "0.0.0"`"
+    if [[ -z "$version_exists" ]]
+    then echo "Safe to publish $package_name@$target_version"
+    else echo "Aborting: version $package_name@$target_version already exists" && exit 1
+    fi
+  done
+  echo
+
+  echo "Are you sure you want to publish an old version number (y/n)?"
+  read -p "> " -r
+  if [[ ! "$REPLY" =~ ^[Yy]$ ]]
+  then echo "Aborting: The new version should be bigger than old ones" && exit 1
+  fi
 fi
 
 echo "Confirm: we'll publish the current code to npm as @connext/{$packages}@$target_version (y/n)?"

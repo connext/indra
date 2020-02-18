@@ -8,7 +8,7 @@ import { mkHash, mkXpub } from "../test/utils";
 import { CFCoreTypes, AppInstanceJson } from "../util";
 
 import { Channel } from "./channel.entity";
-import { ChannelService } from "./channel.service";
+import { ChannelService, RebalanceType } from "./channel.service";
 import { ChannelRepository } from "./channel.repository";
 import { mkAddress } from "../../dist/src/test/utils";
 import { ConfigService } from "../config/config.service";
@@ -115,13 +115,16 @@ describe.skip("Channel Service", () => {
         { provide: ConfigService, useClass: MockConfigService },
         { provide: CFCoreService, useClass: MockCFCoreService },
         { provide: getRepositoryToken(Channel), useClass: MockChannelRepository },
-        { provide: getRepositoryToken(OnchainTransaction), useClass: MockOnchainTransactionRepository },
+        {
+          provide: getRepositoryToken(OnchainTransaction),
+          useClass: MockOnchainTransactionRepository,
+        },
       ],
     }).compile();
     channelService = moduleRef.get<ChannelService>(ChannelService);
   });
 
   it("should add deposits to the onchain transaction table", async () => {
-    const result = await channelService.deposit(mkAddress("0xAAA"), One);
+    await channelService.rebalance(mkXpub("0xXpub"), AddressZero, RebalanceType.COLLATERALIZE, One);
   });
 });

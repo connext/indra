@@ -9,6 +9,7 @@ import {
   chan_storeSet,
   chan_restoreState,
 } from "@connext/types";
+import { decryptWithPrivateKey } from "@connext/crypto";
 import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
@@ -25,7 +26,6 @@ import { ResolveConditionController } from "./controllers/ResolveConditionContro
 import { SwapController } from "./controllers/SwapController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
 import { Logger, stringify, withdrawalKey, xpubToAddress } from "./lib";
-import { decryptWithPrivateKey } from "./lib/crypto";
 import { ConnextListener } from "./listener";
 import {
   Address,
@@ -54,7 +54,7 @@ import {
   KeyGen,
   makeChecksum,
   makeChecksumOrEthAddress,
-  PaymentProfile,
+  RebalanceProfile,
   ProtocolTypes,
   RequestCollateralResponse,
   RequestDepositRightsParameters,
@@ -277,11 +277,11 @@ export class ConnextClient implements IConnextClient {
   };
 
   public unsubscribeToSwapRates = async (from: string, to: string): Promise<void> => {
-    return await this.node.unsubscribeFromSwapRates(from, to);
+    return this.node.unsubscribeFromSwapRates(from, to);
   };
 
-  public getPaymentProfile = async (assetId?: string): Promise<PaymentProfile | undefined> => {
-    return await this.node.getPaymentProfile(assetId);
+  public getRebalanceProfile = async (assetId?: string): Promise<RebalanceProfile | undefined> => {
+    return await this.node.getRebalanceProfile(assetId);
   };
 
   public getTransferHistory = async (): Promise<Transfer[]> => {
@@ -462,7 +462,10 @@ export class ConnextClient implements IConnextClient {
     return this.listener.emit(event, data);
   };
 
-  public removeListener = (event: ConnextEvent, callback: (...args: any[]) => void): ConnextListener => {
+  public removeListener = (
+    event: ConnextEvent,
+    callback: (...args: any[]) => void,
+  ): ConnextListener => {
     return this.listener.removeListener(event, callback);
   };
 
@@ -1040,7 +1043,7 @@ export class ConnextClient implements IConnextClient {
       pairs: [
         {
           path: withdrawalKey(this.publicIdentifier),
-          value: { tx, retry },
+          value: { retry, tx },
         },
       ],
     });

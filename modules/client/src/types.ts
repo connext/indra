@@ -64,7 +64,7 @@ export {
   minBN,
   NodeInitializationParameters,
   NodeMessageWrappedProtocolMessage,
-  PaymentProfile,
+  RebalanceProfile,
   PendingAsyncTransfer,
   ProposeMessage,
   ProtocolTypes,

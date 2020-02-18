@@ -12,7 +12,7 @@ import {
   constructTakeActionRpc,
   createChannel,
   installVirtualApp,
-  assertNodeMessage
+  assertNodeMessage,
 } from "./utils";
 
 jest.setTimeout(15000);
@@ -20,7 +20,11 @@ jest.setTimeout(15000);
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
 // NOTE: no initiator events
-function confirmMessages(initiator: Node, responder: Node, expectedData: CFCoreTypes.UpdateStateEventData) {
+function confirmMessages(
+  initiator: Node,
+  responder: Node,
+  expectedData: CFCoreTypes.UpdateStateEventData,
+) {
   const expected = {
     from: initiator.publicIdentifier,
     type: UPDATE_STATE_EVENT,
@@ -52,9 +56,9 @@ describe("Node method follows spec - takeAction virtual", () => {
     () => {
       it("sends takeAction with invalid appInstanceId", async () => {
         const takeActionReq = constructTakeActionRpc("", validAction);
-        await expect(
-          nodeA.rpcRouter.dispatch(takeActionReq)
-        ).rejects.toThrowError(NO_APP_INSTANCE_FOR_TAKE_ACTION);
+        await expect(nodeA.rpcRouter.dispatch(takeActionReq)).rejects.toThrowError(
+          NO_APP_INSTANCE_FOR_TAKE_ACTION,
+        );
       });
 
       it("can take action", async done => {
@@ -64,67 +68,60 @@ describe("Node method follows spec - takeAction virtual", () => {
         await collateralizeChannel(multisigAddressAB, nodeA, nodeB);
         await collateralizeChannel(multisigAddressBC, nodeB, nodeC);
 
-        const appInstanceId = await installVirtualApp(
-          nodeA,
-          nodeB,
-          nodeC,
-          TicTacToeApp
-        );
+        const appInstanceId = await installVirtualApp(nodeA, nodeB, nodeC, TicTacToeApp);
 
         const expectedNewState = {
-          board: [[One, Zero, Zero], [Zero, Zero, Zero], [Zero, Zero, Zero]],
+          board: [
+            [One, Zero, Zero],
+            [Zero, Zero, Zero],
+            [Zero, Zero, Zero],
+          ],
           versionNumber: One,
-          winner: Zero
+          winner: Zero,
         };
 
-        nodeC.once(
-          UPDATE_STATE_EVENT,
-          async () => {
-            const req = constructGetStateRpc(appInstanceId);
+        nodeC.once(UPDATE_STATE_EVENT, async () => {
+          const req = constructGetStateRpc(appInstanceId);
 
-            /**
-             * TEST #3
-             * The database of Node C is correctly updated and querying it works
-             */
-            const {
-              result: {
-                result: { state: nodeCState }
-              }
-            } = await nodeC.rpcRouter.dispatch(req);
+          /**
+           * TEST #3
+           * The database of Node C is correctly updated and querying it works
+           */
+          const {
+            result: {
+              result: { state: nodeCState },
+            },
+          } = await nodeC.rpcRouter.dispatch(req);
 
-            expect(nodeCState).toEqual(expectedNewState);
+          expect(nodeCState).toEqual(expectedNewState);
 
-            /**
-             * TEST #4
-             * The database of Node A is correctly updated and querying it works
-             */
-            const {
-              result: {
-                result: { state: nodeAState }
-              }
-            } = await nodeA.rpcRouter.dispatch(req);
+          /**
+           * TEST #4
+           * The database of Node A is correctly updated and querying it works
+           */
+          const {
+            result: {
+              result: { state: nodeAState },
+            },
+          } = await nodeA.rpcRouter.dispatch(req);
 
-            expect(nodeAState).toEqual(expectedNewState);
+          expect(nodeAState).toEqual(expectedNewState);
 
-            done();
-          }
-        );
+          done();
+        });
 
         /**
          * TEST #1
          * The event emitted by Node C after an action is taken by A
          * sends the appInstanceId and the newState correctly.
          */
-        confirmMessages(nodeA, nodeC, { 
+        confirmMessages(nodeA, nodeC, {
           newState: expectedNewState,
           appInstanceId,
           action: validAction,
         });
 
-        const takeActionReq = constructTakeActionRpc(
-          appInstanceId,
-          validAction
-        );
+        const takeActionReq = constructTakeActionRpc(appInstanceId, validAction);
 
         /**
          * TEST #2
@@ -132,12 +129,12 @@ describe("Node method follows spec - takeAction virtual", () => {
          */
         const {
           result: {
-            result: { newState }
-          }
+            result: { newState },
+          },
         } = await nodeA.rpcRouter.dispatch(takeActionReq);
 
         expect(newState).toEqual(expectedNewState);
       });
-    }
+    },
   );
 });

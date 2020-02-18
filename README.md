@@ -8,31 +8,30 @@ Connext's new & improved state channel network!
 
 ## TL;DR
 
-Make sure the following tools are installed: `make`, `jq`, and `docker` and then run `make start`. This will build everything & launch a pre-configured payment node + a simple UI, play with it from your browser at http://127.0.0.1:3000.
+Make sure the following tools are installed: `make`, `jq`, and `docker` and then run `make start`. This will build everything & launch a pre-configured payment node + a simple UI, play with it from your browser at http://localhost:3000.
 
 Run `bash ops/logs.sh node` to see the node server's logs or replace "node" with one of the other service names, list services with: `make dls` (short for **D**ocker **L**i**s**t).
 
-To run e2e UI tests use: `make test-daicard` or run integration tests with: `make test-integration`.
-
-When you're done testing it out, shut the whole thing down with `make stop`.
+When you're done playing w it, shut the whole thing down with `make stop`.
 
 ## Contents
- - [Deploy for local development](#deploy-for-local-development)
- - [Deploy to production](#deploying-to-production)
- - [How to interact with the Hub](#how-to-interact-with-hub)
- - [Debugging & Troubleshooting](#debugging)
 
-If you encounter any problems, check out the [debugging guide](#debugging) at the bottom of this doc. For any unanswered questions, open an [issue](https://github.com/ConnextProject/indra/issues/new) or reach out on our Discord channel & we'll be happy to help.
+- [Deploy in dev-mode for local development](#deploy-for-local-development)
+- [Deploy to production](#deploying-to-production)
+- [How to interact with the Hub](#how-to-interact-with-hub)
+- [FAQ](#faq)
 
-Discord Invitation: https://discord.gg/SmMSFf
+If you encounter any problems, check out the [FAQ](#faq) at the bottom of this doc. For any unanswered questions, open an [issue](https://github.com/ConnextProject/indra/issues/new) or reach out on our Discord channel & we'll be happy to help.
+
+Discord Invitation: <https://discord.gg/SmMSFf>
 
 ## Deploy for local development
 
 ### Prerequisites
 
- - `make`: Probably already installed, otherwise install w `brew install make` or `apt install make` or similar.
- - `jq`: Probably not installed yet, install w `brew install jq` or `apt install jq` or similar.
- - [`docker`](https://www.docker.com/): sadly, Docker is kinda annoying to install. See website for instructions.
+- `make`: Probably already installed, otherwise install w `brew install make` or `apt install make` or similar.
+- `jq`: Probably not installed yet, install w `brew install jq` or `apt install jq` or similar.
+- [`docker`](https://www.docker.com/): sadly, Docker is kinda annoying to install. See website for instructions.
 
 To download this repo, build, and deploy in dev-mode, run the following:
 
@@ -46,9 +45,9 @@ Beware! The first time `make start` is run, it will take a very long time (maybe
 
 ### Interacting with your Local Node
 
-You can interact with the node by browsing to our reference UI implementation (the Dai Card), available at: http://127.0.0.1:3000.
+You can interact with the node by browsing to our reference implementation, the Dai Card, available at http://localhost:3000.
 
-Note that the local node runs on a local blockchain (ganache) in a docker container. To test your node, point a wallet to your local chain at `localhost:8545` and then recover the following "sugar daddy" mnemonic:
+Note that the local node runs on a local blockchain (ganache) in a docker container. To test your node, point a wallet to your local chain at http://localhost:8545 and then recover the following "sugar daddy" mnemonic:
 
 `candy maple cake sugar pudding cream honey rich smooth crumble sweet treat`
 
@@ -56,26 +55,36 @@ Then, try sending some Eth to the Dai Card's deposit address (top left of the ap
 
 ### Useful Commands
 
- - `make start`: Builds everything & then starts the app
- - `make stop`: Stop the app once it's been started
- - `make restart`: Stop the app & start it again, rebuilding anything that's out of date
- - `make clean`: Stops the app & deletes all build artifacts eg transpiled typescript
- - `make reset`: Stops the app & removes all persistent data eg database data
- - `make restart-prod`: Restarts the app in production-mode
- - `make dls`: Show all running services (groups of containers) plus list all running containers.
- - `bash ops/db.sh`: Opens a console attached to the running app's database. You can also run `bash ops/db.sh '\d+'` to run a single PostgreSQL query (eg `\d+` to list table details) and then exit.
- - `bash ops/logs.sh node`: Monitor the node's logs. Similar commands can be run to monitor logs for the other services.
+- `make start`: Builds everything & then starts the app
+- `make stop`: Stop the app once it's been started
+- `make restart`: Stop the app & start it again, rebuilding anything that's out of date
+- `make clean`: Stops the app & deletes all build artifacts eg transpiled typescript
+- `make reset`: Stops the app & removes all persistent data eg database data
+- `make restart-prod`: Restarts the app in production-mode
+- `make dls`: Show all running services (groups of containers) plus list all running containers.
+- `bash ops/db.sh`: Opens a console attached to the running app's database. You can also run `bash ops/db.sh '\d+'` to run a single PostgreSQL query (eg `\d+` to list table details) and then exit.
+- `bash ops/logs.sh node`: Monitor the node's logs. Similar commands can be run to monitor logs for the other services.
 
 ### Running Tests
 
- - `make test-cf`: run unit tests for core protocol (cf-core).
- - `make test-contracts`: run unit tests for Ethereum smart contracts.
- - `make test-client`: run unit tests for our browser client.
- - `make test-node`: run unit tests for our node server.
- - `make start && make test-daicard`: run integration tests for our daicard UI.
- - `make start && make test-integration`: run integration test suite.
- - `make start && make watch-ui`: Open a test-optimized browser & use cypress to run automated e2e tests. Tests will be re-run any time test files change.
- - `make start && make watch-integration`: start a test watcher that will re-run integration tests whenever test code changes (great to use while debugging).
+- `make test-cf`: run unit tests for core protocol (cf-core).
+- `make test-contracts`: run unit tests for Ethereum smart contracts.
+- `make test-client`: run unit tests for our browser client.
+- `make test-node`: run unit tests for our node server.
+- `make start && make test-daicard`: run integration tests for our daicard UI.
+- `make start && make test-integration`: run integration test suite.
+- `make start && make watch-ui`: Open a test-optimized browser & use cypress to run automated e2e tests. Tests will be re-run any time test files change.
+- `make start && make watch-integration`: start a test watcher that will re-run integration tests whenever test code changes (great to use while debugging).
+
+### Deploying local indra to non-local chains
+
+To start a local indra instance pointed at a non-ganache chain (rinkeby, kovan, etc), run the following:
+
+```bash
+export INDRA_ETH_PROVIDER="https://ethprovider.com" # eth provider url (note: this is not a working eth provider, just a sample)
+export INDRA_ETH_NETWORK="rinkeby" # string of network
+make start
+```
 
 ## Deploying to Production
 
@@ -94,11 +103,11 @@ Run `ssh-keygen -t rsa -b 4096 -C "deployer" -m pem -f .ssh/deployer` to generat
 
 Go to GitHub -> Indra Repo -> Settings -> Secrets
 
- - `DOCKER_USER` & `DOCKER_PASSWORD`: Login credentials for someone with push access to the docker repository specified by the `registry` vars at the top of the Makefile & `ops/start-prod.sh`.
- - `INDRA_ADMIN_TOKEN`: an admin token for controlling access to sensitive parts of the dashboard.
- - `INDRA_AWS_ACCESS_KEY_ID` & `INDRA_AWS_SECRET_ACCESS_KEY`: Login credentials for an AWS storage repo, if provided the database will automatically send DB snapshots to AWS.
- - `INDRA_LOGDNA_KEY`: Credentials for LogDNA. If provided, all logs will be sent to this service for further analysis.
- - `MAINNET_ETH_PROVIDER` & `RINKEBY_ETH_PROVIDER`: Ethereum RPC Urls eg [Alchemy](https://alchemyapi.io/) or Infura that let us read from/write to the blockchain.
+- `DOCKER_USER` & `DOCKER_PASSWORD`: Login credentials for someone with push access to the docker repository specified by the `registry` vars at the top of the Makefile & `ops/start-prod.sh`.
+- `INDRA_ADMIN_TOKEN`: an admin token for controlling access to sensitive parts of the dashboard.
+- `INDRA_AWS_ACCESS_KEY_ID` & `INDRA_AWS_SECRET_ACCESS_KEY`: Login credentials for an AWS storage repo, if provided the database will automatically send DB snapshots to AWS.
+- `INDRA_LOGDNA_KEY`: Credentials for LogDNA. If provided, all logs will be sent to this service for further analysis.
+- `MAINNET_ETH_PROVIDER` & `RINKEBY_ETH_PROVIDER`: Ethereum RPC Urls eg [Alchemy](https://alchemyapi.io/) or Infura that let us read from/write to the blockchain.
 
 ### Second, setup the production server
 
@@ -154,16 +163,18 @@ bash ops/npm-publish.sh
 ```
 
 This script will prompt you for a new version number. Heuristics:
- - Is this minor bug fix? Then increment the minor version eg `1.0.0` -> `1.0.1`
- - Did you add a new, backwards-compatible feature? Then increment the middle version eg `1.0.0` -> `1.1.0`
- - Did you add a new, backwards-incompatible feature? Then increment the major version eg `1.0.0` -> `2.0.0`
+
+- Is this minor bug fix? Then increment the minor version eg `1.0.0` -> `1.0.1`
+- Did you add a new, backwards-compatible feature? Then increment the middle version eg `1.0.0` -> `1.1.0`
+- Did you add a new, backwards-incompatible feature? Then increment the major version eg `1.0.0` -> `2.0.0`
 
 Once you specify the version, it will automatically:
- - update `modules/{packages-to-publish}/package.json` with the new version
- - run npm publish
- - update `modules/{packages-that-depend-on-newly-published-packages}/package.json` to import the new version of the package
- - create & push a new git commit
- - create & push a new git tag
+
+- update `modules/{packages-to-publish}/package.json` with the new version
+- run npm publish
+- update `modules/{packages-that-depend-on-newly-published-packages}/package.json` to import the new version of the package
+- create & push a new git commit
+- create & push a new git tag
 
 ### Lastly, deploy a new Indra node
 
@@ -184,10 +195,11 @@ bash ops/deploy-indra.sh
 ```
 
 This script will prompt you for a new version number. See the previous step for versioning heuristics. Once you specify the version, it will automatically:
- - merge staging into master
- - update the project root's `package.json` with the version you provided & amend this change to the merge commit
- - push this commit to origin/master
- - create & push a new git tag
+
+- merge staging into master
+- update the project root's `package.json` with the version you provided & amend this change to the merge commit
+- push this commit to origin/master
+- create & push a new git tag
 
 Pushing to origin/master will trigger another CI run that will deploy a new Indra node to production if no tests fail.
 
@@ -205,13 +217,13 @@ ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash indra/ops/collateralize.sh 3.14 
 ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash indra/ops/collateralize.sh 1000 token
 ```
 
-## Debugging
+## FAQ
 
 If you encounter problems while the app is running, the first thing to do is check the logs of each component:
 
- - `bash ops/logs.sh node`: Core node logic logs
- - `bash ops/logs.sh database`
- - `bash ops/logs.sh proxy` 
+- `bash ops/logs.sh node`: Core node logic logs
+- `bash ops/logs.sh database`
+- `bash ops/logs.sh proxy` 
 
 ### `The container name "/indra_buidler" is already in use`
 
@@ -264,11 +276,11 @@ This lets us do a simple `bash curleth.sh net_version '[]'` as a sanity check to
 
 One other sanity check is to run `docker service ls` and make sure that you see an ethprovider service that has port 8545 exposed.
 
-You can also run `docker exec -it indra_ethprovider.1.<containerId> bash` to start a shell inside the docker container. Even if there are networking issues between the container & host, you can still ping localhost:8545 here to see if ganache is listening & run `ps` to see if it's even alive.
+You can also run `docker exec -it indra_ethprovider.1.<containerId> bash` to start a shell inside the docker container. Even if there are networking issues between the container & host, you can still ping http://localhost:8545 here to see if ganache is listening & run `ps` to see if it's even alive.
 
 Ganache should dump its logs onto your host and you can print/follow them with: `tail -f modules/contracts/ops/ganache.log` as another way to make sure it's alive. Try deleting this file then running `npm restart` to see if it gets recreated & if so, check to see if there is anything suspicious there
 
-## Have you tried turning it off and back on again?
+### Have you tried turning it off and back on again?
 
 Restarting: the debugger's most useful tool.
 
@@ -277,3 +289,22 @@ Some problems will be fixed by just restarting the app so try this first: `make 
 If this doesn't work, try resetting all persistent data (database + the ethprovider's chain data) and starting the app again: `make reset && npm start`. After doing this, you'll likely need to reset your MetaMask account to get your tx nonces synced up correctly.
 
 If that doesn't work either, try rebuilding everything with `make clean && make start`.
+
+### How to generate node db migrations
+
+Typeorm is cool, if we update db entity files then typeorm can generate SQL db migrations from the entity changes.
+
+Start up the stack in a clean state (eg `make clean && make reset && make start`) then something that should look like the following should work:
+
+```
+$ cd modules/node && npm run migration:generate foo
+
+> indra-node@4.0.12 migration:generate /home/username/Documents/connext/indra/modules/node
+> typeorm migration:generate -d migrations -n  "foo"
+
+Migration /home/username/Documents/connext/indra/modules/node/migrations/1581311685857-foo.ts has been generated successfully.
+```
+
+Note: if entity files have *not* changed since the last db migration, the above will print something like "No changes detected" & not generate anything.
+
+Once the migrations are generated, you should skim them & make sure the auto-generated code is sane & doing what you expect it to do. If it looks good, import it & add it to the migrations array in `modules/node/src/database/database.service.ts`.
