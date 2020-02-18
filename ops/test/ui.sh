@@ -8,7 +8,7 @@ ui="${1:-daicard}"
 
 # Make sure bare minimum dependencies are installed
 if [[ ! -f "$cypress" || ! -d "./node_modules/ethers" ]]
-then npm i --no-save bn.js cypress ethers openzeppelin-solidity
+then npm i --no-save
 fi
 $cypress install
 
