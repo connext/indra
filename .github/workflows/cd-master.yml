@@ -101,6 +101,8 @@ jobs:
       run: docker service logs --tail 200 indra_node
 
   test-backwards-compatibility:
+    env:
+      INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
     runs-on: ubuntu-latest
     needs: [build]
     steps:
@@ -108,7 +110,7 @@ jobs:
     - run: make pull-release
     - run: make start-test-release
     - run: sleep 15 && make dls
-    - run: TEST_MODE=release make test-backwards-compatibility
+    - run: make test-backwards-compatibility
     - name: Print node logs
       if: failure()
       run: docker service logs --tail 200 indra_node
