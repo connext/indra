@@ -18,7 +18,6 @@ import {
   transferERC20Tokens,
 } from "./utils";
 import { xkeyKthAddress } from "../../src/machine";
-import { INSTALL_EVENT } from "@connext/types";
 
 expect.extend({ toBeLt, toBeEq });
 
