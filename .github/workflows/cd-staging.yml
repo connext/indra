@@ -94,6 +94,8 @@ jobs:
       run: docker service logs --tail 200 indra_node
 
   test-backwards-compatibility:
+    env:
+      INDRA_ADMIN_TOKEN: ${{ secrets.INDRA_ADMIN_TOKEN }}
     runs-on: ubuntu-latest
     needs: [build]
     steps:
