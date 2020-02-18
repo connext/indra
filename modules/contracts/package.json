@@ -29,7 +29,7 @@
     "transpile": "./node_modules/.bin/tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@connext/types": "4.0.16",
+    "@connext/types": "4.1.0",
     "ethers": "4.0.45",
     "@openzeppelin/contracts": "2.5.0",
     "ganache-cli": "6.8.2",
