@@ -1,4 +1,4 @@
-import { CriticalStateChannelAddresses, AppInstanceJson, StateChannelJSON } from "@connext/types";
+import { CriticalStateChannelAddresses, AppInstanceJson } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import { solidityKeccak256 } from "ethers/utils";
 
@@ -71,7 +71,7 @@ export class Store {
    * Checks if a StateChannel is in the store
    */
   public async hasStateChannel(multisigAddress: string): Promise<boolean> {
-    return !!(await this.storeService.get(`${this.storeKeyPrefix}/${DB_NAMESPACE_CHANNEL}/${multisigAddress}`));
+    return !!(await this.storeService.getStateChannel(multisigAddress));
   }
 
   /**
@@ -80,16 +80,10 @@ export class Store {
    * @param appInstanceId
    */
   public async getMultisigAddressFromAppInstance(appInstanceId: string): Promise<string> {
-    for (const sc of (await this.getStateChannelsMap()).values()) {
-      if (
-        sc.proposedAppInstances.has(appInstanceId) ||
-        sc.appInstances.has(appInstanceId) ||
-        (sc.hasFreeBalance && sc.freeBalance.identityHash === appInstanceId)
-      ) {
-        return sc.multisigAddress;
-      }
+    const stateChannel = await this.storeService.getStateChannelByAppInstanceId(appInstanceId);
+    if (stateChannel) {
+      return stateChannel.multisigAddress;
     }
-
     throw new Error(NO_MULTISIG_FOR_APP_INSTANCE_ID);
   }
 
@@ -98,12 +92,7 @@ export class Store {
    * @param stateChannel
    */
   public async saveStateChannel(stateChannel: StateChannel) {
-    await this.storeService.set([
-      {
-        path: `${this.storeKeyPrefix}/${DB_NAMESPACE_CHANNEL}/${stateChannel.multisigAddress}`,
-        value: stateChannel.toJson(),
-      },
-    ]);
+    await this.storeService.saveStateChannel(stateChannel.toJson())
   }
 
   /**
@@ -112,31 +101,25 @@ export class Store {
    */
   public async saveAppInstanceState(appInstanceId: string, newState: SolidityValueType) {
     const channel = await this.getChannelFromAppInstanceID(appInstanceId);
-    const updatedChannel = await channel.setState(appInstanceId, newState);
+    const updatedChannel = channel.setState(appInstanceId, newState);
     await this.saveStateChannel(updatedChannel);
   }
 
   /**
    * Returns a list of proposed `AppInstanceProposals`s.
    */
-  public async getProposedAppInstances(multisigAddress?: string): Promise<AppInstanceProposal[]> {
-    const chanArray = multisigAddress
-      ? [await this.getStateChannel(multisigAddress)]
-      : [...(await this.getStateChannelsMap()).values()];
-    return chanArray.reduce((lst, sc) => [...lst, ...sc.proposedAppInstances.values()], [] as AppInstanceProposal[]);
+  // TODO: make sure this isn't being called to get all channels
+  public async getProposedAppInstances(multisigAddress: string): Promise<AppInstanceProposal[]> {
+    const sc = await this.getStateChannel(multisigAddress);
+    return [...sc.proposedAppInstances.values()];
   }
 
   /**
    * Returns a list of proposed `AppInstanceJson`s.
    */
-  public async getAppInstances(multisigAddress?: string): Promise<AppInstanceJson[]> {
-    const chanArray = multisigAddress
-      ? [await this.getStateChannel(multisigAddress)]
-      : [...(await this.getStateChannelsMap()).values()];
-    return chanArray.reduce((acc: AppInstanceJson[], channel: StateChannel) => {
-      acc.push(...Array.from(channel.appInstances.values()).map(appInstance => appInstance.toJson()));
-      return acc;
-    }, []);
+  public async getAppInstances(multisigAddress: string): Promise<AppInstanceJson[]> {
+    const sc = await this.getStateChannel(multisigAddress);
+    return [...sc.appInstances.values()].map(appInstance => appInstance.toJson());
   }
 
   /**

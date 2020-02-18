@@ -69,8 +69,9 @@ export interface IStoreService {
 }
 
 export interface IStoreServiceNew {
-  getStateChannel(multisigAddress: string): Promise<StateChannelJSON>;
-  getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON>;
+  getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined>;
+  getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined>;
+  getStateChannelByAppInstanceId(appInstanceId: string): Promise<StateChannelJSON | undefined>;
   saveStateChannel(stateChannel: StateChannelJSON): Promise<void>;
   getAppInstance(appInstanceId: string): Promise<AppInstanceJson>;
   saveAppInstance(appInstance: AppInstanceJson): Promise<void>;
