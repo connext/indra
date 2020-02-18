@@ -1,7 +1,7 @@
+import { ConnextEventEmitter } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
 import { Wallet } from "ethers";
 import { arrayify } from "ethers/utils";
-import EventEmitter from "events";
 
 import { CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
 import {
@@ -47,7 +47,7 @@ export const createCFChannelProvider = async ({
   return channelProvider;
 };
 
-export class CFCoreRpcConnection extends EventEmitter implements IRpcConnection {
+export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConnection {
   public connected: boolean = true;
   public cfCore: CFCore;
   public store: Store;
@@ -85,12 +85,18 @@ export class CFCoreRpcConnection extends EventEmitter implements IRpcConnection 
     return result;
   }
 
-  public on = (event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, listener: (...args: any[]) => void): any => {
+  public on = (
+    event: string | CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
+    listener: (...args: any[]) => void,
+  ): any => {
     this.cfCore.on(event as any, listener);
     return this.cfCore;
   };
 
-  public once = (event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, listener: (...args: any[]) => void): any => {
+  public once = (
+    event: string | CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
+    listener: (...args: any[]) => void,
+  ): any => {
     this.cfCore.once(event as any, listener);
     return this.cfCore;
   };

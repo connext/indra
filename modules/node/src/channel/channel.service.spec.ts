@@ -23,7 +23,6 @@ class MockCFCoreService {
   };
 
   async deposit(): Promise<CFCoreTypes.DepositResult> {
-    console.log("Called mock function deposit()");
     return {
       multisigBalance: One,
       tokenAddress: AddressZero,
@@ -120,7 +119,6 @@ describe.skip("Channel Service", () => {
       ],
     }).compile();
     channelService = moduleRef.get<ChannelService>(ChannelService);
-    console.log("channelService: ", channelService);
   });
 
   it("should add deposits to the onchain transaction table", async () => {

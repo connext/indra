@@ -17,7 +17,10 @@ type NimAppState = {
 };
 
 function decodeBytesToAppState(encodedAppState: string): NimAppState {
-  return defaultAbiCoder.decode(["tuple(uint256 versionNumber, uint256[3] pileHeights)"], encodedAppState)[0];
+  return defaultAbiCoder.decode(
+    ["tuple(uint256 versionNumber, uint256[3] pileHeights)"],
+    encodedAppState,
+  )[0];
 }
 
 describe("Nim", () => {

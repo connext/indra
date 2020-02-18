@@ -1,10 +1,11 @@
+import * as ERC20 from "@openzeppelin/contracts/build/contracts/ERC20.json";
 export {
   addressBook,
   addressHistory,
   ChallengeRegistry,
   ConditionalTransactionDelegateTarget,
   CounterfactualApp,
-  ERC20,
   MinimumViableMultisig,
   ProxyFactory,
 } from "@connext/contracts";
+export { ERC20 };

@@ -1,8 +1,15 @@
+import { waffle as buidler } from "@nomiclabs/buidler";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
-import { Web3Provider } from "ethers/providers";
-import { BigNumberish, hexlify, joinSignature, keccak256, randomBytes, SigningKey } from "ethers/utils";
+import {
+  BigNumberish,
+  hexlify,
+  joinSignature,
+  keccak256,
+  randomBytes,
+  SigningKey,
+} from "ethers/utils";
 import { before } from "mocha";
 
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
@@ -30,13 +37,17 @@ const BOB =
 const ONCHAIN_CHALLENGE_TIMEOUT = 30;
 
 describe("ChallengeRegistry", () => {
-  let provider: Web3Provider;
+  let provider = buidler.provider;
   let wallet: Wallet;
   let globalChannelNonce = 0;
 
   let appRegistry: Contract;
 
-  let setStateWithSignatures: (versionNumber: BigNumberish, appState?: string, timeout?: number) => Promise<void>;
+  let setStateWithSignatures: (
+    versionNumber: BigNumberish,
+    appState?: string,
+    timeout?: number,
+  ) => Promise<void>;
   let cancelChallenge: () => Promise<void>;
   let sendSignedFinalizationToChain: () => Promise<any>;
   let getChallenge: () => Promise<Challenge>;
@@ -45,8 +56,7 @@ describe("ChallengeRegistry", () => {
   let isStateFinalized: () => Promise<boolean>;
 
   before(async () => {
-    provider = waffle.createMockProvider();
-    wallet = (await waffle.getWallets(provider))[0];
+    wallet = (await provider.getWallets())[0];
 
     appRegistry = await waffle.deployContract(wallet, ChallengeRegistry, [], {
       gasLimit: 6000000, // override default of 4 million
@@ -163,7 +173,7 @@ describe("ChallengeRegistry", () => {
 
       await setStateWithSignatures(1);
 
-      for (const _ of Array(ONCHAIN_CHALLENGE_TIMEOUT + 1)) {
+      for (let index = 0; index <= ONCHAIN_CHALLENGE_TIMEOUT + 1; index++) {
         await provider.send("evm_mine", []);
       }
 

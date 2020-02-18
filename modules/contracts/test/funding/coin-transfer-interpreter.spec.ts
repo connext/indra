@@ -1,9 +1,10 @@
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import DolphinCoin from "../../build/DolphinCoin.json";
 import MultiAssetMultiPartyCoinTransferInterpreter from "../../build/MultiAssetMultiPartyCoinTransferInterpreter.json";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { AddressZero, One } from "ethers/constants";
-import { Web3Provider } from "ethers/providers";
 import { BigNumber, defaultAbiCoder, hexlify, randomBytes } from "ethers/utils";
 import { before } from "mocha";
 
@@ -33,7 +34,7 @@ function encodeOutcome(state: CoinTransfer[][]) {
 }
 
 describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
-  let provider: Web3Provider;
+  let provider = buidler.provider;
   let wallet: Wallet;
   let erc20: Contract;
   let multiAssetMultiPartyCoinTransferInterpreter: Contract;
@@ -49,8 +50,7 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
   }
 
   before(async () => {
-    provider = waffle.createMockProvider();
-    wallet = (await waffle.getWallets(provider))[0];
+    wallet = (await provider.getWallets())[0];
     erc20 = await waffle.deployContract(wallet, DolphinCoin);
 
     multiAssetMultiPartyCoinTransferInterpreter = await waffle.deployContract(
@@ -163,10 +163,13 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
     const to2 = hexlify(randomBytes(20));
     const amount2 = One;
 
-    await interpretOutcomeAndExecuteEffect([[{ to: to1, amount: amount1 }], [{ to: to2, amount: amount2 }]], {
-      limit: [amount1, amount2],
-      tokenAddresses: [AddressZero, erc20.address],
-    });
+    await interpretOutcomeAndExecuteEffect(
+      [[{ to: to1, amount: amount1 }], [{ to: to2, amount: amount2 }]],
+      {
+        limit: [amount1, amount2],
+        tokenAddresses: [AddressZero, erc20.address],
+      },
+    );
 
     expect(await provider.getBalance(to1)).to.eq(One);
     expect(await erc20.functions.balanceOf(to2)).to.eq(One);

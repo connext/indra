@@ -21,7 +21,10 @@ export function signaturesToBytes(...signatures: Signature[]): string {
  *
  * @param signatures An array of etherium signatures
  */
-export function sortSignaturesBySignerAddress(digest: string, signatures: Signature[]): Signature[] {
+export function sortSignaturesBySignerAddress(
+  digest: string,
+  signatures: Signature[],
+): Signature[] {
   const ret = signatures.slice();
   ret.sort((sigA, sigB) => {
     const addrA = recoverAddress(digest, signaturesToBytes(sigA));
@@ -37,6 +40,9 @@ export function sortSignaturesBySignerAddress(digest: string, signatures: Signat
  *
  * @param signatures An array of etherium signatures
  */
-export function signaturesToBytesSortedBySignerAddress(digest: string, ...signatures: Signature[]): string {
+export function signaturesToBytesSortedBySignerAddress(
+  digest: string,
+  ...signatures: Signature[]
+): string {
   return signaturesToBytes(...sortSignaturesBySignerAddress(digest, signatures));
 }

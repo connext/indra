@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+# This script is intended to be a standalone that can run w/out needing any deps
+# So eg don't fetch project/registry names from package.json bc that might not be available
+
 # Turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
 

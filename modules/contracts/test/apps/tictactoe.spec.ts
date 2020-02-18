@@ -155,7 +155,9 @@ describe("TicTacToeApp", () => {
         },
       };
 
-      await expect(applyAction(preState, action)).to.be.revertedWith("playMove: square is not empty");
+      await expect(applyAction(preState, action)).to.be.revertedWith(
+        "playMove: square is not empty",
+      );
     });
 
     it("can draw from a full board", async () => {
@@ -207,7 +209,9 @@ describe("TicTacToeApp", () => {
         },
       };
 
-      await expect(applyAction(preState, action)).to.be.revertedWith("assertBoardIsFull: square is empty");
+      await expect(applyAction(preState, action)).to.be.revertedWith(
+        "assertBoardIsFull: square is empty",
+      );
     });
 
     it("can play_and_draw from an almost full board", async () => {
@@ -259,7 +263,9 @@ describe("TicTacToeApp", () => {
         },
       };
 
-      await expect(applyAction(preState, action)).to.be.revertedWith("assertBoardIsFull: square is empty");
+      await expect(applyAction(preState, action)).to.be.revertedWith(
+        "assertBoardIsFull: square is empty",
+      );
     });
 
     it("can play_and_win from a winning position", async () => {

@@ -1,6 +1,8 @@
+/* global before */
+import { waffle as buidler } from "@nomiclabs/buidler";
 import * as waffle from "ethereum-waffle";
 import { Contract, Event, Wallet } from "ethers";
-import { TransactionResponse, Web3Provider } from "ethers/providers";
+import { TransactionResponse } from "ethers/providers";
 import { getAddress, keccak256, solidityKeccak256, solidityPack } from "ethers/utils";
 import { before } from "mocha";
 
@@ -13,7 +15,7 @@ import { expect } from "./utils/index";
 describe("ProxyFactory with CREATE2", function() {
   this.timeout(5000);
 
-  let provider: Web3Provider;
+  let provider = buidler.provider;
   let wallet: Wallet;
 
   let pf: Contract;
@@ -34,8 +36,7 @@ describe("ProxyFactory with CREATE2", function() {
   }
 
   before(async () => {
-    provider = waffle.createMockProvider();
-    wallet = waffle.getWallets(provider)[0];
+    wallet = (await provider.getWallets())[0];
 
     pf = await waffle.deployContract(wallet, ProxyFactory);
     echo = await waffle.deployContract(wallet, Echo);
@@ -45,7 +46,10 @@ describe("ProxyFactory with CREATE2", function() {
     it("can be used to deploy a contract at a predictable address", async () => {
       const masterCopy = echo.address;
 
-      const initcode = solidityPack(["bytes", "uint256"], [`0x${Proxy.evm.bytecode.object}`, echo.address]);
+      const initcode = solidityPack(
+        ["bytes", "uint256"],
+        [`0x${Proxy.bytecode.replace(/^0x/, "")}`, echo.address],
+      );
 
       const saltNonce = 0;
 
