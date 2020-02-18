@@ -23,6 +23,7 @@ cf-core=$(cwd)/modules/cf-core
 channel-provider=$(cwd)/modules/channel-provider
 client=$(cwd)/modules/client
 contracts=$(cwd)/modules/contracts
+crypto=$(cwd)/modules/crypto
 daicard=$(cwd)/modules/daicard
 dashboard=$(cwd)/modules/dashboard
 database=$(cwd)/ops/database
@@ -287,7 +288,7 @@ ws-tcp-relay: ops/ws-tcp-relay.dockerfile
 ########################################
 # JS & bundles
 
-client: cf-core contracts types messaging store channel-provider $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
+client: cf-core contracts types crypto messaging store channel-provider $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
@@ -300,6 +301,11 @@ cf-core: node-modules types contracts $(shell find $(cf-core)/src $(cf-core)/tes
 channel-provider: node-modules types $(shell find $(channel-provider)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/channel-provider && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+	
+crypto: node-modules types $(shell find $(crypto)/src $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/crypto && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 daicard-prod: node-modules client $(shell find $(daicard)/src $(find_options))
@@ -358,7 +364,6 @@ contracts-native: node-modules $(shell find $(contracts)/contracts $(contracts)/
 node-modules: builder package.json $(shell ls modules/**/package.json)
 	$(log_start)
 	$(docker_run) "lerna bootstrap --hoist --no-progress"
-	$(docker_run) "cd node_modules/eccrypto && npm run install"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 builder: ops/builder.dockerfile

@@ -1,7 +1,14 @@
-import { ConnextEventEmitter } from "@connext/types";
+import {
+  chan_storeSet,
+  chan_storeGet,
+  chan_nodeAuth,
+  chan_restoreState,
+  IChannelProvider,
+  ConnextEventEmitter,
+} from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
+import { signMessage } from "@connext/crypto";
 import { Wallet } from "ethers";
-import { arrayify } from "ethers/utils";
 
 import { CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
 import {
@@ -13,13 +20,6 @@ import {
   Store,
   StorePair,
 } from "./types";
-import {
-  chan_storeSet,
-  chan_storeGet,
-  chan_nodeAuth,
-  chan_restoreState,
-  IChannelProvider,
-} from "@connext/types";
 
 export const createCFChannelProvider = async ({
   ethProvider,
@@ -118,7 +118,7 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
   private walletSign = async (message: string): Promise<string> => {
-    return await this.wallet.signMessage(arrayify(message));
+    return await signMessage(this.wallet.privateKey, message);
   };
 
   private storeGet = async (path: string): Promise<any> => {
