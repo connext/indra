@@ -1,8 +1,4 @@
-import {
-  CFCoreTypes,
-  REJECT_INSTALL_EVENT,
-  PROPOSE_INSTALL_EVENT
-} from "@connext/types";
+import { CFCoreTypes, REJECT_INSTALL_EVENT, PROPOSE_INSTALL_EVENT } from "@connext/types";
 
 import { Node } from "../../src";
 import { ProposeMessage } from "../../src/types";
@@ -14,7 +10,7 @@ import {
   constructRejectInstallRpc,
   createChannel,
   getProposedAppInstances,
-  makeVirtualProposeCall
+  makeVirtualProposeCall,
 } from "./utils";
 
 const { TicTacToeApp } = global[`networkContext`] as NetworkContextForTestSuite;
@@ -26,10 +22,7 @@ describe(`Node method follows spec - rejectInstallVirtual`, () => {
   let nodeC: Node;
 
   beforeAll(async () => {
-    const context: SetupContext = await setupWithMemoryMessagingAndSlowStore(
-      global,
-      true
-    );
+    const context: SetupContext = await setupWithMemoryMessagingAndSlowStore(global, true);
     nodeA = context[`A`].node;
     nodeB = context[`B`].node;
     nodeC = context[`C`].node;
@@ -60,12 +53,8 @@ describe(`Node method follows spec - rejectInstallVirtual`, () => {
 
           confirmProposedAppInstance(proposalParams, proposedAppInstanceC);
 
-          expect(proposedAppInstanceC.proposedByIdentifier).toEqual(
-            nodeA.publicIdentifier
-          );
-          expect(proposedAppInstanceA.identityHash).toEqual(
-            proposedAppInstanceC.identityHash
-          );
+          expect(proposedAppInstanceC.proposedByIdentifier).toEqual(nodeA.publicIdentifier);
+          expect(proposedAppInstanceA.identityHash).toEqual(proposedAppInstanceC.identityHash);
 
           const rejectReq = constructRejectInstallRpc(appInstanceId);
 
@@ -78,6 +67,6 @@ describe(`Node method follows spec - rejectInstallVirtual`, () => {
 
         proposalParams = result.params;
       });
-    }
+    },
   );
 });

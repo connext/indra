@@ -1,10 +1,4 @@
-import {
-  Controller,
-  JsonRpcResponse,
-  jsonRpcSerializeAsResponse,
-  Router,
-  Rpc
-} from "rpc-server";
+import { Controller, JsonRpcResponse, jsonRpcSerializeAsResponse, Router, Rpc } from "rpc-server";
 
 import { RequestHandler } from "./request-handler";
 import { bigNumberifyJson } from "./utils";
@@ -16,7 +10,7 @@ export default class RpcRouter extends Router {
 
   constructor({
     controllers,
-    requestHandler
+    requestHandler,
   }: {
     controllers: typeof Controller[];
     requestHandler: RequestHandler;
@@ -28,7 +22,7 @@ export default class RpcRouter extends Router {
 
   async dispatch(rpc: Rpc): Promise<JsonRpcResponse> {
     const controller = Object.values(Controller.rpcMethods).find(
-      mapping => mapping.method === rpc.methodName
+      mapping => mapping.method === rpc.methodName,
     );
 
     if (!controller) {
@@ -39,11 +33,11 @@ export default class RpcRouter extends Router {
       {
         result: await new controller.type()[controller.callback](
           this.requestHandler,
-          bigNumberifyJson(rpc.parameters)
+          bigNumberifyJson(rpc.parameters),
         ),
-        type: rpc.methodName
+        type: rpc.methodName,
       },
-      rpc.id as number
+      rpc.id as number,
     );
 
     this.requestHandler.outgoing.emit(rpc.methodName, result);

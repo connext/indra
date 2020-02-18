@@ -13,7 +13,13 @@ import {
   Store,
   StorePair,
 } from "./types";
-import { chan_storeSet, chan_storeGet, chan_nodeAuth, chan_restoreState, IChannelProvider } from "@connext/types";
+import {
+  chan_storeSet,
+  chan_storeGet,
+  chan_nodeAuth,
+  chan_restoreState,
+  IChannelProvider,
+} from "@connext/types";
 
 export const createCFChannelProvider = async ({
   ethProvider,

@@ -15,7 +15,7 @@ import {
   UninstallProtocolParams,
   UninstallVirtualAppProtocolParams,
   UpdateProtocolParams,
-  WithdrawProtocolParams
+  WithdrawProtocolParams,
 } from "../types";
 import {
   sortAddresses,

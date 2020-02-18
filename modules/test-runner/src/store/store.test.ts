@@ -1,4 +1,10 @@
-import { ConnextStore, MemoryStorage, PATH_CHANNEL, PATH_PROPOSED_APP_INSTANCE_ID, StorePair } from "@connext/store";
+import {
+  ConnextStore,
+  MemoryStorage,
+  PATH_CHANNEL,
+  PATH_PROPOSED_APP_INSTANCE_ID,
+  StorePair,
+} from "@connext/store";
 import { hexlify, randomBytes } from "ethers/utils";
 
 import {

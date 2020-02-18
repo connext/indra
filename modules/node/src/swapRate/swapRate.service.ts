@@ -42,13 +42,18 @@ export class SwapRateService implements OnModuleInit {
     if (!this.config.getAllowedSwaps().find((s: AllowedSwap) => s.from === from && s.to === to)) {
       throw new Error(`No valid swap exists for ${from} to ${to}`);
     }
-    const rateIndex = this.latestSwapRates.findIndex((s: SwapRate) => s.from === from && s.to === to);
+    const rateIndex = this.latestSwapRates.findIndex(
+      (s: SwapRate) => s.from === from && s.to === to,
+    );
     let oldRate: string | undefined;
     if (rateIndex !== -1) {
       oldRate = this.latestSwapRates[rateIndex].rate;
     }
 
-    if (this.latestSwapRates[rateIndex] && this.latestSwapRates[rateIndex].blockNumber === blockNumber) {
+    if (
+      this.latestSwapRates[rateIndex] &&
+      this.latestSwapRates[rateIndex].blockNumber === blockNumber
+    ) {
       // already have rates for this block
       return undefined;
     }

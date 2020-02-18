@@ -29,7 +29,11 @@ import {
   PeerToPeerTransferStatus,
   Transfer,
 } from "./transfer.entity";
-import { LinkedTransferRepository, PeerToPeerTransferRepository, TransferRepository } from "./transfer.repository";
+import {
+  LinkedTransferRepository,
+  PeerToPeerTransferRepository,
+  TransferRepository,
+} from "./transfer.repository";
 
 const logger = new CLogger(`TransferService`);
 
@@ -125,14 +129,20 @@ export class TransferService {
       `setRecipientAndEncryptedPreImageOnLinkedTransfer(${senderPublicIdentifier}, ${recipientPublicIdentifier}, ${encryptedPreImage}, ${linkedHash}`,
     );
 
-    const senderChannel = await this.channelRepository.findByUserPublicIdentifier(senderPublicIdentifier);
+    const senderChannel = await this.channelRepository.findByUserPublicIdentifier(
+      senderPublicIdentifier,
+    );
     if (!senderChannel) {
       throw new Error(`No channel exists for senderPublicIdentifier ${senderPublicIdentifier}`);
     }
 
-    const recipientChannel = await this.channelRepository.findByUserPublicIdentifier(recipientPublicIdentifier);
+    const recipientChannel = await this.channelRepository.findByUserPublicIdentifier(
+      recipientPublicIdentifier,
+    );
     if (!recipientChannel) {
-      throw new Error(`No channel exists for recipientPublicIdentifier ${recipientPublicIdentifier}`);
+      throw new Error(
+        `No channel exists for recipientPublicIdentifier ${recipientPublicIdentifier}`,
+      );
     }
 
     // check that we have recorded this transfer in our db
@@ -177,7 +187,9 @@ export class TransferService {
     }
 
     if (transfer.status !== LinkedTransferStatus.PENDING) {
-      throw new Error(`Transfer with paymentId ${paymentId} cannot be redeemed with status: ${transfer.status}`);
+      throw new Error(
+        `Transfer with paymentId ${paymentId} cannot be redeemed with status: ${transfer.status}`,
+      );
     }
 
     logger.debug(`Found linked transfer in our database, attempting to install...`);
@@ -199,40 +211,58 @@ export class TransferService {
 
     const freeBalanceAddr = this.cfCoreService.cfCore.freeBalanceAddress;
 
-    const freeBal = await this.cfCoreService.getFreeBalance(userPubId, channel.multisigAddress, assetId);
+    const freeBal = await this.cfCoreService.getFreeBalance(
+      userPubId,
+      channel.multisigAddress,
+      assetId,
+    );
     if (freeBal[freeBalanceAddr].lt(amountBN)) {
       // request collateral and wait for deposit to come through
       // TODO: expose remove listener
       await new Promise(async (resolve, reject) => {
-        this.cfCoreService.cfCore.on(DEPOSIT_CONFIRMED_EVENT, async (msg: DepositConfirmationMessage) => {
-          if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
-            // do not reject promise here, since theres a chance the event is
-            // emitted for another user depositing into their channel
-            logger.debug(
-              `Deposit event from field: ${msg.from}, did not match public identifier: ${this.cfCoreService.cfCore.publicIdentifier}`,
+        this.cfCoreService.cfCore.on(
+          DEPOSIT_CONFIRMED_EVENT,
+          async (msg: DepositConfirmationMessage) => {
+            if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
+              // do not reject promise here, since theres a chance the event is
+              // emitted for another user depositing into their channel
+              logger.debug(
+                `Deposit event from field: ${msg.from}, did not match public identifier: ${this.cfCoreService.cfCore.publicIdentifier}`,
+              );
+              return;
+            }
+            if (msg.data.multisigAddress !== channel.multisigAddress) {
+              // do not reject promise here, since theres a chance the event is
+              // emitted for node collateralizing another users' channel
+              logger.debug(
+                `Deposit event multisigAddress: ${msg.data.multisigAddress}, did not match channel multisig address: ${channel.multisigAddress}`,
+              );
+              return;
+            }
+            // make sure free balance is appropriate
+            const fb = await this.cfCoreService.getFreeBalance(
+              userPubId,
+              channel.multisigAddress,
+              assetId,
             );
-            return;
-          }
-          if (msg.data.multisigAddress !== channel.multisigAddress) {
-            // do not reject promise here, since theres a chance the event is
-            // emitted for node collateralizing another users' channel
-            logger.debug(
-              `Deposit event multisigAddress: ${msg.data.multisigAddress}, did not match channel multisig address: ${channel.multisigAddress}`,
-            );
-            return;
-          }
-          // make sure free balance is appropriate
-          const fb = await this.cfCoreService.getFreeBalance(userPubId, channel.multisigAddress, assetId);
-          if (fb[freeBalanceAddr].lt(amountBN)) {
-            return reject(`Free balance associated with ${freeBalanceAddr} is less than transfer amount: ${amountBN}`);
-          }
-          resolve();
-        });
+            if (fb[freeBalanceAddr].lt(amountBN)) {
+              return reject(
+                `Free balance associated with ${freeBalanceAddr} is less than transfer amount: ${amountBN}`,
+              );
+            }
+            resolve();
+          },
+        );
         this.cfCoreService.cfCore.on(DEPOSIT_FAILED_EVENT, (msg: DepositFailedMessage) => {
           return reject(JSON.stringify(msg, null, 2));
         });
         try {
-          await this.channelService.rebalance(userPubId, assetId, RebalanceType.COLLATERALIZE, amountBN);
+          await this.channelService.rebalance(
+            userPubId,
+            assetId,
+            RebalanceType.COLLATERALIZE,
+            amountBN,
+          );
         } catch (e) {
           return reject(e);
         }
@@ -283,13 +313,21 @@ export class TransferService {
 
     return {
       appId: receiverAppInstallRes.appInstanceId,
-      freeBalance: await this.cfCoreService.getFreeBalance(userPubId, channel.multisigAddress, assetId),
+      freeBalance: await this.cfCoreService.getFreeBalance(
+        userPubId,
+        channel.multisigAddress,
+        assetId,
+      ),
       meta: transfer.meta,
       paymentId,
     };
   }
 
-  async sendTransferToClient(userPubId: string, amount: BigNumber, assetId: string): Promise<string> {
+  async sendTransferToClient(
+    userPubId: string,
+    amount: BigNumber,
+    assetId: string,
+  ): Promise<string> {
     logger.debug(`sendTransferToClient(${userPubId}, ${amount}, ${assetId}`);
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
     if (!channel) {
@@ -348,7 +386,9 @@ export class TransferService {
 
   private async reclaimLinkedTransferCollateral(transfer: LinkedTransfer): Promise<void> {
     if (transfer.status !== LinkedTransferStatus.REDEEMED) {
-      throw new Error(`Transfer with id ${transfer.paymentId} has not been redeemed, status: ${transfer.status}`);
+      throw new Error(
+        `Transfer with id ${transfer.paymentId} has not been redeemed, status: ${transfer.status}`,
+      );
     }
 
     const uninstall = async (): Promise<void> => {
@@ -362,7 +402,9 @@ export class TransferService {
     const app = await this.cfCoreService.getAppInstanceDetails(transfer.senderAppInstanceId);
     if ((app.latestState as SimpleLinkedTransferAppState).preImage === transfer.preImage) {
       // just uninstall
-      logger.debug(`Action has already been taken on app ${transfer.senderAppInstanceId}, uninstalling`);
+      logger.debug(
+        `Action has already been taken on app ${transfer.senderAppInstanceId}, uninstalling`,
+      );
       await uninstall();
       return;
     }

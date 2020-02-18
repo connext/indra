@@ -109,7 +109,10 @@ export interface INodeApiClient {
   requestCollateral(assetId: string): Promise<RequestCollateralResponse | void>;
   withdraw(tx: ProtocolTypes.MinimalTransaction): Promise<TransactionResponse>;
   fetchLinkedTransfer(paymentId: string): Promise<any>;
-  resolveLinkedTransfer(paymentId: string, linkedHash: string): Promise<ResolveLinkedTransferResponse>;
+  resolveLinkedTransfer(
+    paymentId: string,
+    linkedHash: string,
+  ): Promise<ResolveLinkedTransferResponse>;
   recipientOnline(recipientPublicIdentifier: string): Promise<boolean>;
   restoreState(publicIdentifier: string): Promise<any>;
   subscribeToSwapRates(from: string, to: string, callback: any): void;

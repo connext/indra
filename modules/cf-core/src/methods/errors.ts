@@ -10,20 +10,25 @@ export const CANNOT_DEPOSIT = "Cannot deposit while another deposit is occurring
 
 export const COIN_BALANCE_NOT_PROPOSED = "No coin balance refund app proposed in channel.";
 
-export const NOT_YOUR_BALANCE_REFUND_APP = "Cannot uninstall a balance refund app without being the recipient";
+export const NOT_YOUR_BALANCE_REFUND_APP =
+  "Cannot uninstall a balance refund app without being the recipient";
 
-export const USE_RESCIND_DEPOSIT_RIGHTS = "Use `rescindDepositRights` to uninstall coin balance refund app.";
+export const USE_RESCIND_DEPOSIT_RIGHTS =
+  "Use `rescindDepositRights` to uninstall coin balance refund app.";
 
-export const BALANCE_REFUND_APP_ALREADY_INSTALLED = "Balance refund app is installed, please uninstall first.";
+export const BALANCE_REFUND_APP_ALREADY_INSTALLED =
+  "Balance refund app is installed, please uninstall first.";
 
 export const BALANCE_REFUND_APP_NOT_INSTALLED = "Balance refund app is not installed.";
 
 export const CANNOT_UNINSTALL_FREE_BALANCE = (multisigAddress: string): string =>
   `Cannot uninstall the FreeBalance of channel: ${multisigAddress}`;
 
-export const CANNOT_WITHDRAW = "Cannot withdraw while another deposit / withdraw app is active in the channel.";
+export const CANNOT_WITHDRAW =
+  "Cannot withdraw while another deposit / withdraw app is active in the channel.";
 
-export const CHANNEL_CREATION_FAILED = "Failed to create channel. Multisignature wallet cannot be deployed properly";
+export const CHANNEL_CREATION_FAILED =
+  "Failed to create channel. Multisignature wallet cannot be deployed properly";
 
 export const DEPOSIT_FAILED = "Failed to send funds to the multisig contract";
 
@@ -37,9 +42,11 @@ export const IMPROPERLY_FORMATTED_STRUCT = "Improperly formatted ABIEncoderV2 st
 
 export const INCORRECT_MULTISIG_ADDRESS = "Channel multisig address does not match expected";
 
-export const INVALID_FACTORY_ADDRESS = (address: string): string => `Channel factory address is invalid: ${address}`;
+export const INVALID_FACTORY_ADDRESS = (address: string): string =>
+  `Channel factory address is invalid: ${address}`;
 
-export const INVALID_MASTERCOPY_ADDRESS = (address: string): string => `Multisig master address is invalid: ${address}`;
+export const INVALID_MASTERCOPY_ADDRESS = (address: string): string =>
+  `Multisig master address is invalid: ${address}`;
 
 export const NO_NETWORK_PROVIDER_CREATE2 =
   "`getCreate2MultisigAddress` needs access to an eth provider within the network context";
@@ -52,7 +59,11 @@ export const INSUFFICIENT_ERC20_FUNDS_TO_DEPOSIT = (
 ): string =>
   `Node's default signer ${address} has ${balance} and needs ${amount} of the specified ERC20 token ${tokenAddress} to deposit`;
 
-export const INSUFFICIENT_FUNDS_TO_WITHDRAW = (address: string, amount: BigNumber, balance: BigNumber): string => {
+export const INSUFFICIENT_FUNDS_TO_WITHDRAW = (
+  address: string,
+  amount: BigNumber,
+  balance: BigNumber,
+): string => {
   if (address === CONVENTION_FOR_ETH_TOKEN_ADDRESS) {
     return `Node has ${balance} and needs ${amount} ETH to withdraw`;
   }
@@ -70,13 +81,15 @@ export const INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET = (
   for token ${tokenAddress} to allocate towards an AppInstance. Current free balance for token is ${balance},
   attempted allocation amount: ${allocationAmount} `;
 
-export const INSUFFICIENT_FUNDS = "Node's default signer does not have enough funds for this action";
+export const INSUFFICIENT_FUNDS =
+  "Node's default signer does not have enough funds for this action";
 
 export const INVALID_ACTION = "Invalid action taken";
 
 export const INVALID_NETWORK_NAME = "Invalid network name provided for initializing Node";
 
-export const NO_ACTION_ENCODING_FOR_APP_INSTANCE = "The AppInstance does not have an Action encoding defined";
+export const NO_ACTION_ENCODING_FOR_APP_INSTANCE =
+  "The AppInstance does not have an Action encoding defined";
 
 export const NO_APP_CONTRACT_ADDR = "The App Contract address is empty";
 
@@ -92,7 +105,8 @@ export const NO_APP_INSTANCE_ID_TO_INSTALL = "No AppInstanceId specified to inst
 
 export const NO_APP_INSTANCE_ID_TO_UNINSTALL = "No AppInstanceId specified to uninstall";
 
-export const NO_MULTISIG_FOR_APP_INSTANCE_ID = "No multisig address exists for the given appInstanceId";
+export const NO_MULTISIG_FOR_APP_INSTANCE_ID =
+  "No multisig address exists for the given appInstanceId";
 
 export const NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID = (id: string): string =>
   `No proposed AppInstance exists for the given appInstanceId: ${id}`;
@@ -100,11 +114,14 @@ export const NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID = (id: string): string
 export const NO_STATE_CHANNEL_FOR_MULTISIG_ADDR = (multisigAddress: string): string =>
   `Call to getStateChannel failed when searching for multisig address: ${multisigAddress}. This probably means that the StateChannel does not exist yet.`;
 
-export const NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT = "The multisig deployment transaction does not have a hash";
+export const NO_TRANSACTION_HASH_FOR_MULTISIG_DEPLOYMENT =
+  "The multisig deployment transaction does not have a hash";
 
-export const NULL_INITIAL_STATE_FOR_PROPOSAL = "A proposed AppInstance cannot have an empty initial state";
+export const NULL_INITIAL_STATE_FOR_PROPOSAL =
+  "A proposed AppInstance cannot have an empty initial state";
 
-export const STATE_OBJECT_NOT_ENCODABLE = "The state object is not encodable by the AppInstance's state encoding";
+export const STATE_OBJECT_NOT_ENCODABLE =
+  "The state object is not encodable by the AppInstance's state encoding";
 
 export const TWO_PARTY_OUTCOME_DIFFERENT_ASSETS = (assetA: string, assetB: string): string =>
   `For a TWO_PARTY_FIXED_OUTCOME there cannot be two kinds of tokens deposited: ${assetA} and ${assetB}`;

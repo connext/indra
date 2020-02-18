@@ -7,12 +7,10 @@ export default class GetProposedAppInstanceController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.GetProposedAppInstanceParams
+    params: CFCoreTypes.GetProposedAppInstanceParams,
   ): Promise<CFCoreTypes.GetProposedAppInstanceResult> {
     return {
-      appInstance: await requestHandler.store.getAppInstanceProposal(
-        params.appInstanceId
-      )
+      appInstance: await requestHandler.store.getAppInstanceProposal(params.appInstanceId),
     };
   }
 }

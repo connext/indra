@@ -15,7 +15,7 @@ import {
   getAppContext,
   installTTTVirtual,
   makeInstallCall,
-  makeProposeCall
+  makeProposeCall,
 } from "./utils";
 
 expect.extend({ toBeLt });
@@ -40,19 +40,9 @@ describe(`Concurrently installing virtual and regular applications without issue
     multisigAddressAB = await createChannel(nodeA, nodeB);
     multisigAddressBC = await createChannel(nodeB, nodeC);
 
-    await collateralizeChannel(
-      multisigAddressAB,
-      nodeA,
-      nodeB,
-      parseEther(`2`)
-    );
+    await collateralizeChannel(multisigAddressAB, nodeA, nodeB, parseEther(`2`));
 
-    await collateralizeChannel(
-      multisigAddressBC,
-      nodeB,
-      nodeC,
-      parseEther(`2`)
-    );
+    await collateralizeChannel(multisigAddressBC, nodeB, nodeC, parseEther(`2`));
   });
 
   it(`can handle a virtual and regular concurrent TTT app install`, async done => {
@@ -82,7 +72,7 @@ describe(`Concurrently installing virtual and regular applications without issue
       One,
       CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       One,
-      CONVENTION_FOR_ETH_TOKEN_ADDRESS
+      CONVENTION_FOR_ETH_TOKEN_ADDRESS,
     );
 
     const makeVirtualProposalRpc = () => {
@@ -96,7 +86,7 @@ describe(`Concurrently installing virtual and regular applications without issue
         One,
         CONVENTION_FOR_ETH_TOKEN_ADDRESS,
         One,
-        CONVENTION_FOR_ETH_TOKEN_ADDRESS
+        CONVENTION_FOR_ETH_TOKEN_ADDRESS,
       );
     };
 

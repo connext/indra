@@ -11,7 +11,7 @@ export default class GetStateDepositHolderAddressController extends NodeControll
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.GetStateDepositHolderAddressParams
+    params: CFCoreTypes.GetStateDepositHolderAddressParams,
   ): Promise<CFCoreTypes.GetStateDepositHolderAddressResult> {
     const { owners } = params;
     const { networkContext, store } = requestHandler;
@@ -27,7 +27,7 @@ export default class GetStateDepositHolderAddressController extends NodeControll
       owners,
       networkContext.ProxyFactory,
       networkContext.MinimumViableMultisig,
-      networkContext.provider!
+      networkContext.provider!,
     );
 
     return { address };

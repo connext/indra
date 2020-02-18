@@ -8,12 +8,7 @@ import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
 import { setup, SetupContext } from "./setup";
-import {
-  collateralizeChannel,
-  createChannel,
-  makeInstallCall,
-  makeProposeCall
-} from "./utils";
+import { collateralizeChannel, createChannel, makeInstallCall, makeProposeCall } from "./utils";
 
 expect.extend({ toBeLt });
 
@@ -41,7 +36,7 @@ describe(`Node method follows spec - install`, () => {
           multisigAddress,
           nodeA,
           nodeB,
-          parseEther(`2`) // We are depositing in 2 and use 1 for each concurrent app
+          parseEther(`2`), // We are depositing in 2 and use 1 for each concurrent app
         );
       });
 
@@ -66,12 +61,12 @@ describe(`Node method follows spec - install`, () => {
           One,
           CONVENTION_FOR_ETH_TOKEN_ADDRESS,
           One,
-          CONVENTION_FOR_ETH_TOKEN_ADDRESS
+          CONVENTION_FOR_ETH_TOKEN_ADDRESS,
         );
 
         nodeA.rpcRouter.dispatch(rpc);
         nodeA.rpcRouter.dispatch(rpc);
       });
-    }
+    },
   );
 });

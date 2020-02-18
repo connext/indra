@@ -5,10 +5,7 @@ export class MemoryStoreService implements CFCoreTypes.IStoreService {
   constructor(private readonly delay: number = 0) {}
   async get(path: string): Promise<any> {
     await new Promise((res: any): any => setTimeout(() => res(), this.delay));
-    if (
-      path.endsWith("channel") ||
-      path.endsWith("appInstanceIdToProposedAppInstance")
-    ) {
+    if (path.endsWith("channel") || path.endsWith("appInstanceIdToProposedAppInstance")) {
       const nestedRecords = Array.from(this.store.entries()).filter(entry => {
         return entry[0].includes(path);
       });
@@ -33,14 +30,14 @@ export class MemoryStoreService implements CFCoreTypes.IStoreService {
   }
 
   async set(pairs: { path: string; value: any }[]): Promise<void> {
-    await new Promise(res => setTimeout(() => res(), this.delay))
+    await new Promise(res => setTimeout(() => res(), this.delay));
     for (const pair of pairs) {
       this.store.set(pair.path, JSON.parse(JSON.stringify(pair.value)));
     }
   }
 
   async reset() {
-    await new Promise(res => setTimeout(() => res(), this.delay))
+    await new Promise(res => setTimeout(() => res(), this.delay));
     this.store.clear();
   }
 }

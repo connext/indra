@@ -14,14 +14,8 @@ type CoinTransfer = {
   amount: BigNumber;
 };
 
-function encodeParams(params: {
-  limit: BigNumber[];
-  tokenAddresses: string[];
-}) {
-  return defaultAbiCoder.encode(
-    [`tuple(uint256[] limit, address[] tokenAddresses)`],
-    [params]
-  );
+function encodeParams(params: { limit: BigNumber[]; tokenAddresses: string[] }) {
+  return defaultAbiCoder.encode([`tuple(uint256[] limit, address[] tokenAddresses)`], [params]);
 }
 
 function encodeOutcome(state: CoinTransfer[][]) {
@@ -32,9 +26,9 @@ function encodeOutcome(state: CoinTransfer[][]) {
           address to,
           uint256 amount
         )[][]
-      `
+      `,
     ],
-    [state]
+    [state],
   );
 }
 
@@ -46,11 +40,11 @@ describe("MultiAssetMultiPartyCoinTransferInterpreter", () => {
 
   async function interpretOutcomeAndExecuteEffect(
     state: CoinTransfer[][],
-    params: { limit: BigNumber[]; tokenAddresses: string[] }
+    params: { limit: BigNumber[]; tokenAddresses: string[] },
   ) {
     return await multiAssetMultiPartyCoinTransferInterpreter.functions.interpretOutcomeAndExecuteEffect(
       encodeOutcome(state),
-      encodeParams(params)
+      encodeParams(params),
     );
   }
 
