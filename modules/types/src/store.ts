@@ -1,3 +1,6 @@
+import { StateChannelJSON } from "./state";
+import { AppInstanceJson } from "./app";
+
 export const ConnextNodeStorePrefix = "INDRA_NODE_CF_CORE";
 export const ConnextClientStorePrefix = "INDRA_CLIENT_CF_CORE";
 
@@ -63,6 +66,22 @@ export interface IStoreService {
   get(path: string): Promise<any>;
   set(pairs: { path: string; value: any }[], allowDelete?: Boolean): Promise<void>;
   reset?(): Promise<void>;
+}
+
+export interface IStoreServiceNew {
+  getStateChannel(multisigAddress: string): Promise<StateChannelJSON>;
+  getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON>;
+  saveStateChannel(stateChannel: StateChannelJSON): Promise<void>;
+  getAppInstance(appInstanceId: string): Promise<AppInstanceJson>;
+  saveAppInstance(appInstance: AppInstanceJson): Promise<void>;
+  // getAppProposals(multisigAddress: string): Promise<AppProposal[]>;
+  // saveAppProposal(appProposal: AppInstanceProposal): Promise<void>;
+  // getCommitment(AppInstanceId: string): Promise<MinimalTransaction>;
+  // saveCommitment(commitment: MinimalTransaction): Promise<void>;
+  // getWithdrawals(multisigAddress: string): Promise<Withdrawal>;
+  // saveWithdrawal(withdrawal: Withdrawal): Promise<void>;
+  clear(): Promise<void>;
+  restore(): Promise<void>;
 }
 
 export interface Store extends IStoreService {

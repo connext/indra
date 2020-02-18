@@ -2,6 +2,7 @@ import { ProtocolTypes } from "./protocol";
 import { EventName as exEventName } from "./events";
 import { NodeMessage as exNodeMessage, CFMessagingService } from "./messaging";
 import { IStoreService as exIStoreService } from "./store";
+import { IStoreServiceNew as exIStoreServiceNew } from "./store";
 
 // Legacy CFCoreTypes, to be dissolved & incorporated into the rest of our types.
 // This copy is preserved for now to maintain backwards compatibility
@@ -12,6 +13,7 @@ export namespace CFCoreTypes {
   export type MethodName = ProtocolTypes.MethodName;
   export type NodeMessage = exNodeMessage;
   export type IStoreService = exIStoreService;
+  export type IStoreServiceNew = exIStoreServiceNew;
   export type IMessagingService = CFMessagingService;
 
   export type CreateChannelParams = ProtocolTypes.CreateChannelParams;

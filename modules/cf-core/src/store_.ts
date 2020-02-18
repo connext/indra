@@ -18,23 +18,56 @@ import { getCreate2MultisigAddress } from "./utils";
  * StoreService.
  */
 export class Store {
-  constructor(private readonly storeService: CFCoreTypes.IStoreServiceNew, private readonly storeKeyPrefix: string) {}
+  constructor(private readonly storeService: CFCoreTypes.IStoreService, private readonly storeKeyPrefix: string) {}
 
-  public async getMultisigAddressWithCounterpartyFromStore(
+  public static async getMultisigAddressWithCounterpartyFromMap(
+    stateChannelsMap: Map<string, StateChannel>,
     owners: string[],
     proxyFactory: string,
     multisigMastercopy: string,
     provider?: BaseProvider,
   ): Promise<string> {
-    try {
-      const stateChannel = await this.getStateChannelByOwners(owners);
-      return stateChannel.multisigAddress;
-    } catch (e) {
-      if (provider) {
-        return await getCreate2MultisigAddress(owners, { proxyFactory, multisigMastercopy }, provider);
+    for (const stateChannel of stateChannelsMap.values()) {
+      if (stateChannel.userNeuteredExtendedKeys.sort().toString() === owners.sort().toString()) {
+        return stateChannel.multisigAddress;
       }
     }
+    if (provider) {
+      return await getCreate2MultisigAddress(owners, { proxyFactory, multisigMastercopy }, provider);
+    }
     throw new Error(NO_MULTISIG_FOR_COUNTERPARTIES(owners));
+  }
+
+  public async getMultisigAddressWithCounterparty(
+    owners: string[],
+    proxyFactoryAddress: string,
+    minimumViableMultisigAddress: string,
+    provider?: BaseProvider,
+  ) {
+    const stateChannelsMap = await this.getStateChannelsMap();
+    return await Store.getMultisigAddressWithCounterpartyFromMap(
+      stateChannelsMap,
+      owners,
+      proxyFactoryAddress,
+      minimumViableMultisigAddress,
+      provider,
+    );
+  }
+
+  /**
+   * Returns an object with the keys being the multisig addresses and the
+   * values being `StateChannel` instances.
+   */
+  public async getStateChannelsMap(): Promise<Map<string, StateChannel>> {
+    const channelsJSON = ((await this.storeService.get(`${this.storeKeyPrefix}/${DB_NAMESPACE_CHANNEL}`)) || {}) as {
+      [multisigAddress: string]: StateChannelJSON;
+    };
+
+    return new Map(
+      Object.values(channelsJSON)
+        .map(StateChannel.fromJson)
+        .map(sc => [sc.multisigAddress, sc]),
+    );
   }
 
   /**
@@ -42,25 +75,12 @@ export class Store {
    * @param multisigAddress
    */
   public async getStateChannel(multisigAddress: string): Promise<StateChannel> {
-    const stateChannelJson = await this.storeService.getStateChannel(multisigAddress);
+    const stateChannelJson = await this.storeService.get(
+      `${this.storeKeyPrefix}/${DB_NAMESPACE_CHANNEL}/${multisigAddress}`,
+    );
 
     if (!stateChannelJson) {
       throw Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(multisigAddress));
-    }
-
-    const channel = StateChannel.fromJson(stateChannelJson);
-    return channel;
-  }
-
-  /**
-   * Returns the StateChannel instance with the specified multisig address.
-   * @param multisigAddress
-   */
-  public async getStateChannelByOwners(owners: string[]): Promise<StateChannel> {
-    const stateChannelJson = await this.storeService.getStateChannelByOwners(owners.sort());
-
-    if (!stateChannelJson) {
-      throw Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(owners.toString()));
     }
 
     const channel = StateChannel.fromJson(stateChannelJson);
