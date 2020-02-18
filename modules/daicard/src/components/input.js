@@ -75,9 +75,11 @@ export const AddressInput = ({ address, setAddress }) => {
         margin="normal"
         variant="outlined"
         required
-        helperText={(address.resolved === "pending" ? `Resolving ENS name...` : "")(
-          address.resolved === true ? `ENS name resolved to: ${address.value}` : address.error,
-        )}
+        helperText={
+          (address.resolved === "pending" ? `Resolving ENS name...` : "") ||
+          address.error ||
+          (address.resolved === true ? `ENS name resolved to: ${address.value}` : false)
+        }
         error={!!address.error}
         InputProps={{
           endAdornment: (
@@ -184,7 +186,8 @@ export const XpubInput = ({ xpub, setXpub }) => {
           xpub.error ||
           (xpub.value && xpub.resolved === true
             ? `ENS name resolved to: ${xpub.value.substring(0, 42)}...`
-            : false)(xpub.value ? "" : "Ignored for linked payments")
+            : false) ||
+          (xpub.value ? "" : "Ignored for linked payments")
         }
         error={xpub.error !== null}
         InputProps={{
