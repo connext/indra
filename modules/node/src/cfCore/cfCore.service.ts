@@ -85,7 +85,9 @@ export class CFCoreService {
     return getStateChannelRes.result.result;
   }
 
-  async createChannel(counterpartyPublicIdentifier: string): Promise<CFCoreTypes.CreateChannelResult> {
+  async createChannel(
+    counterpartyPublicIdentifier: string,
+  ): Promise<CFCoreTypes.CreateChannelResult> {
     const params = {
       id: Date.now(),
       methodName: ProtocolTypes.chan_create,
@@ -99,7 +101,9 @@ export class CFCoreService {
     return createRes.result.result as CFCoreTypes.CreateChannelResult;
   }
 
-  async deployMultisig(multisigAddress: string): Promise<CFCoreTypes.DeployStateDepositHolderResult> {
+  async deployMultisig(
+    multisigAddress: string,
+  ): Promise<CFCoreTypes.DeployStateDepositHolderResult> {
     const params = {
       id: Date.now(),
       methodName: ProtocolTypes.chan_deployStateDepositHolder,
@@ -107,10 +111,14 @@ export class CFCoreService {
         multisigAddress,
       } as CFCoreTypes.DeployStateDepositHolderParams,
     };
-    logger.debug(`Calling ${ProtocolTypes.chan_deployStateDepositHolder} with params: ${stringify(params)}`);
+    logger.debug(
+      `Calling ${ProtocolTypes.chan_deployStateDepositHolder} with params: ${stringify(params)}`,
+    );
     const deployRes = await this.cfCore.rpcRouter.dispatch(params);
     logger.debug(
-      `${ProtocolTypes.chan_deployStateDepositHolder} called with result: ${stringify(deployRes.result.result)}`,
+      `${ProtocolTypes.chan_deployStateDepositHolder} called with result: ${stringify(
+        deployRes.result.result,
+      )}`,
     );
     return deployRes.result.result as CFCoreTypes.DeployStateDepositHolderResult;
   }
@@ -194,7 +202,9 @@ export class CFCoreService {
     return withdrawRes.result.result as CFCoreTypes.WithdrawCommitmentResult;
   }
 
-  async proposeInstallApp(params: CFCoreTypes.ProposeInstallParams): Promise<CFCoreTypes.ProposeInstallResult> {
+  async proposeInstallApp(
+    params: CFCoreTypes.ProposeInstallParams,
+  ): Promise<CFCoreTypes.ProposeInstallResult> {
     logger.debug(`Calling ${ProtocolTypes.chan_proposeInstall} with params: ${stringify(params)}`);
     const proposeRes = await this.cfCore.rpcRouter.dispatch({
       id: Date.now(),
@@ -251,7 +261,12 @@ export class CFCoreService {
 
     const network = await this.configService.getEthNetwork();
     const appInfo = await this.appRegistryRepository.findByNameAndNetwork(app, network.chainId);
-    const { actionEncoding, appDefinitionAddress: appDefinition, outcomeType, stateEncoding } = appInfo;
+    const {
+      actionEncoding,
+      appDefinitionAddress: appDefinition,
+      outcomeType,
+      stateEncoding,
+    } = appInfo;
     const params: CFCoreTypes.ProposeInstallParams = {
       abiEncodings: {
         actionEncoding,
@@ -314,7 +329,10 @@ export class CFCoreService {
     return rejectRes.result.result as CFCoreTypes.RejectInstallResult;
   }
 
-  async takeAction(appInstanceId: string, action: AppActionBigNumber): Promise<CFCoreTypes.TakeActionResult> {
+  async takeAction(
+    appInstanceId: string,
+    action: AppActionBigNumber,
+  ): Promise<CFCoreTypes.TakeActionResult> {
     logger.log(`Taking action on app ${appInstanceId}: ${stringify(action)}`);
     // check the app is actually installed
     await this.assertAppInstalled(appInstanceId);
@@ -366,7 +384,9 @@ export class CFCoreService {
       parameters: { multisigAddress, tokenAddress } as CFCoreTypes.RescindDepositRightsParams,
     });
 
-    logger.log(`rescindDepositRights called with result ${stringify(uninstallResponse.result.result)}`);
+    logger.log(
+      `rescindDepositRights called with result ${stringify(uninstallResponse.result.result)}`,
+    );
     return uninstallResponse.result.result as CFCoreTypes.DepositResult;
   }
 
@@ -398,9 +418,11 @@ export class CFCoreService {
         app.appInterface.addr === contractAddresses.CoinBalanceRefundApp &&
         app.latestState[`tokenAddress`] === tokenAddress,
     );
-    console.log(`coinBalanceRefundAppArray: `, coinBalanceRefundAppArray);
+    logger.log(`coinBalanceRefundAppArray: ${stringify(coinBalanceRefundAppArray)}`);
     if (coinBalanceRefundAppArray.length > 1) {
-      throw new Error(`More than 1 instance of CoinBalanceRefundApp installed for asset! This should never happen.`);
+      throw new Error(
+        `More than 1 instance of CoinBalanceRefundApp installed for asset! This should never happen.`,
+      );
     }
     if (coinBalanceRefundAppArray.length === 0) {
       return undefined;
@@ -415,7 +437,9 @@ export class CFCoreService {
       parameters: { multisigAddress } as CFCoreTypes.GetAppInstancesParams,
     });
 
-    logger.log(`getProposedAppInstances called with result ${stringify(appInstanceResponse.result.result)}`);
+    logger.log(
+      `getProposedAppInstances called with result ${stringify(appInstanceResponse.result.result)}`,
+    );
     return appInstanceResponse.result.result.appInstances as AppInstanceProposal[];
   }
 
@@ -467,12 +491,18 @@ export class CFCoreService {
     return await this.cfCoreRepository.get(path);
   }
 
-  private resolveInstallTransfer = (res: (value?: unknown) => void, message: InstallMessage): InstallMessage => {
+  private resolveInstallTransfer = (
+    res: (value?: unknown) => void,
+    message: InstallMessage,
+  ): InstallMessage => {
     res(message);
     return message;
   };
 
-  private rejectInstallTransfer = (rej: (reason?: string) => void, msg: RejectProposalMessage): any => {
+  private rejectInstallTransfer = (
+    rej: (reason?: string) => void,
+    msg: RejectProposalMessage,
+  ): any => {
     return rej(`Install failed. Event data: ${stringify(msg)}`);
   };
 
@@ -481,8 +511,14 @@ export class CFCoreService {
     this.cfCore.off(REJECT_INSTALL_EVENT, boundReject);
   };
 
-  private cleanupProposalListeners = (boundReject: any, multisigAddress: string, userPubId: string): void => {
-    this.messagingProvider.unsubscribe(`indra.client.${userPubId}.proposalAccepted.${multisigAddress}`);
+  private cleanupProposalListeners = (
+    boundReject: any,
+    multisigAddress: string,
+    userPubId: string,
+  ): void => {
+    this.messagingProvider.unsubscribe(
+      `indra.client.${userPubId}.proposalAccepted.${multisigAddress}`,
+    );
     this.cfCore.off(REJECT_INSTALL_EVENT, boundReject);
   };
 
@@ -490,10 +526,14 @@ export class CFCoreService {
     const apps = await this.getAppInstances();
     const app = apps.filter((app: AppInstanceJson) => app.identityHash === appInstanceId);
     if (!app || app.length === 0) {
-      return `Could not find installed app with id: ${appInstanceId}. Installed apps: ${stringify(apps)}.`;
+      return `Could not find installed app with id: ${appInstanceId}. Installed apps: ${stringify(
+        apps,
+      )}.`;
     }
     if (app.length > 1) {
-      return `CRITICAL ERROR: found multiple apps with the same id. Installed apps: ${stringify(apps)}.`;
+      return `CRITICAL ERROR: found multiple apps with the same id. Installed apps: ${stringify(
+        apps,
+      )}.`;
     }
     return undefined;
   }

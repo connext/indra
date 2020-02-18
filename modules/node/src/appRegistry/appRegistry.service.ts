@@ -12,7 +12,7 @@ import {
   SimpleTwoPartySwapApp,
   SimpleTransferApp,
 } from "@connext/types";
-import { Injectable, Inject } from "@nestjs/common";
+import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
 import { Zero } from "ethers/constants";
 import { BigNumber, bigNumberify } from "ethers/utils";
@@ -26,7 +26,14 @@ import { SwapRateService } from "../swapRate/swapRate.service";
 import { LinkedTransferStatus } from "../transfer/transfer.entity";
 import { LinkedTransferRepository } from "../transfer/transfer.repository";
 import { TransferService } from "../transfer/transfer.service";
-import { bigNumberifyObj, CLogger, isEthAddress, normalizeEthAddresses, stringify, xpubToAddress } from "../util";
+import {
+  bigNumberifyObj,
+  CLogger,
+  isEthAddress,
+  normalizeEthAddresses,
+  stringify,
+  xpubToAddress,
+} from "../util";
 import { CFCoreTypes } from "../util/cfCore";
 
 import { AppRegistry } from "./appRegistry.entity";
@@ -37,7 +44,7 @@ const logger = new CLogger(`AppRegistryService`);
 const ALLOWED_DISCREPANCY_PCT = 5;
 
 @Injectable()
-export class AppRegistryService {
+export class AppRegistryService implements OnModuleInit {
   constructor(
     private readonly cfCoreService: CFCoreService,
     private readonly swapRateService: SwapRateService,
@@ -103,7 +110,9 @@ export class AppRegistryService {
 
         const isResolving = proposeInstallParams.responderDeposit.gt(Zero);
         if (isResolving) {
-          const transfer = await this.transferService.getLinkedTransferByPaymentId(initialState.paymentId);
+          const transfer = await this.transferService.getLinkedTransferByPaymentId(
+            initialState.paymentId,
+          );
           transfer.receiverAppInstanceId = appInstanceId;
           await this.linkedTransferRepository.save(transfer);
           logger.debug(`Updated transfer with receiver appId!`);
@@ -140,11 +149,19 @@ export class AppRegistryService {
         logger.debug(`No post-install actions configured.`);
     }
     // rebalance at the end without blocking
-    this.channelService.rebalance(from, proposeInstallParams.responderDepositTokenAddress, RebalanceType.RECLAIM);
+    this.channelService.rebalance(
+      from,
+      proposeInstallParams.responderDepositTokenAddress,
+      RebalanceType.RECLAIM,
+    );
   }
 
-  async appProposalMatchesRegistry(proposal: CFCoreTypes.ProposeInstallParams): Promise<AppRegistry> {
-    const registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(proposal.appDefinition);
+  async appProposalMatchesRegistry(
+    proposal: CFCoreTypes.ProposeInstallParams,
+  ): Promise<AppRegistry> {
+    const registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
+      proposal.appDefinition,
+    );
 
     if (!registryAppInfo) {
       throw new Error(`App does not exist in registry for definition ${proposal.appDefinition}`);
@@ -158,7 +175,9 @@ export class AppRegistryService {
       )
     ) {
       throw new Error(
-        `Proposed app details ${stringify(proposal)} do not match registry ${stringify(registryAppInfo)}`,
+        `Proposed app details ${stringify(proposal)} do not match registry ${stringify(
+          registryAppInfo,
+        )}`,
       );
     }
 
@@ -170,9 +189,11 @@ export class AppRegistryService {
   private async validateTransfer(params: CFCoreTypes.ProposeInstallParams): Promise<void> {
     // perform any validation that is relevant to both virtual
     // and ledger applications sent from a client
-    const { initialState: initialStateBadType, initiatorDeposit, responderDeposit } = normalizeEthAddresses(
-      bigNumberifyObj(params),
-    );
+    const {
+      initialState: initialStateBadType,
+      initiatorDeposit,
+      responderDeposit,
+    } = normalizeEthAddresses(bigNumberifyObj(params));
     if (!responderDeposit.isZero()) {
       throw new Error(`Cannot install virtual transfer app with a nonzero responder deposit.`);
     }
@@ -197,7 +218,9 @@ export class AppRegistryService {
     }
 
     if (!bigNumberify(initialState.coinTransfers[1].amount).isZero()) {
-      throw new Error(`Cannot install a transfer app with nonzero values for the recipient in the initial state.`);
+      throw new Error(
+        `Cannot install a transfer app with nonzero values for the recipient in the initial state.`,
+      );
     }
   }
 
@@ -226,7 +249,8 @@ export class AppRegistryService {
     const validSwaps = this.configService.getAllowedSwaps();
     if (
       !validSwaps.find(
-        (swap: AllowedSwap) => swap.from === initiatorDepositTokenAddress && swap.to === responderDepositTokenAddress,
+        (swap: AllowedSwap) =>
+          swap.from === initiatorDepositTokenAddress && swap.to === responderDepositTokenAddress,
       )
     ) {
       throw new Error(
@@ -241,12 +265,20 @@ export class AppRegistryService {
       initiatorDepositTokenAddress,
       responderDepositTokenAddress,
     );
+    logger.log(
+      `Our ${initiatorDepositTokenAddress} -> ${responderDepositTokenAddress} Swap Rate: ${ourRate}`,
+    );
     const calculated = calculateExchange(initiatorDeposit, ourRate);
+    logger.log(
+      `initiatorDeposit=${initiatorDeposit} -> ${calculated} vs responderDeposit=${responderDeposit}`,
+    );
 
     // make sure calculated within allowed amount
     const calculatedToActualDiscrepancy = calculated.sub(responderDeposit).abs();
     // i.e. (x * (100 - 5)) / 100 = 0.95 * x
-    const allowedDiscrepancy = calculated.mul(bigNumberify(100).sub(ALLOWED_DISCREPANCY_PCT)).div(100);
+    const allowedDiscrepancy = calculated
+      .mul(bigNumberify(100).sub(ALLOWED_DISCREPANCY_PCT))
+      .div(100);
 
     if (calculatedToActualDiscrepancy.gt(allowedDiscrepancy)) {
       throw new Error(
@@ -254,10 +286,12 @@ export class AppRegistryService {
       );
     }
 
-    logger.log(`Exchange amounts are within ${ALLOWED_DISCREPANCY_PCT}% of our rate ${ourRate.toString()}`);
+    logger.log(`Exchange amounts are within ${ALLOWED_DISCREPANCY_PCT}% of our rate ${ourRate}`);
   }
 
-  private async validateSimpleLinkedTransfer(params: CFCoreTypes.ProposeInstallParams): Promise<void> {
+  private async validateSimpleLinkedTransfer(
+    params: CFCoreTypes.ProposeInstallParams,
+  ): Promise<void> {
     const {
       responderDeposit,
       initiatorDeposit,
@@ -275,27 +309,36 @@ export class AppRegistryService {
       throw new Error(`Unsupported "responderDepositTokenAddress" provided`);
     }
 
-    const initialState = bigNumberifyObj(initialStateBadType) as SimpleLinkedTransferAppStateBigNumber;
+    const initialState = bigNumberifyObj(
+      initialStateBadType,
+    ) as SimpleLinkedTransferAppStateBigNumber;
 
-    initialState.coinTransfers = initialState.coinTransfers.map((transfer: CoinTransfer<BigNumber>) =>
-      bigNumberifyObj(transfer),
+    initialState.coinTransfers = initialState.coinTransfers.map(
+      (transfer: CoinTransfer<BigNumber>) => bigNumberifyObj(transfer),
     ) as any;
 
     const nodeTransfer = initialState.coinTransfers.filter((transfer: CoinTransferBigNumber) => {
       return transfer.to === this.cfCoreService.cfCore.freeBalanceAddress;
     })[0];
-    const counterpartyTransfer = initialState.coinTransfers.filter((transfer: CoinTransferBigNumber) => {
-      return transfer.to !== this.cfCoreService.cfCore.freeBalanceAddress;
-    })[0];
+    const counterpartyTransfer = initialState.coinTransfers.filter(
+      (transfer: CoinTransferBigNumber) => {
+        return transfer.to !== this.cfCoreService.cfCore.freeBalanceAddress;
+      },
+    )[0];
 
-    if (!counterpartyTransfer.amount.eq(initiatorDeposit) || !nodeTransfer.amount.eq(responderDeposit)) {
+    if (
+      !counterpartyTransfer.amount.eq(initiatorDeposit) ||
+      !nodeTransfer.amount.eq(responderDeposit)
+    ) {
       throw new Error(`Mismatch between deposits and initial state, refusing to install.`);
     }
 
     const initiatorReclaiming = responderDeposit.gt(Zero) && initiatorDeposit.eq(Zero);
     if (initiatorReclaiming) {
       if (!initialState.amount.eq(responderDeposit)) {
-        throw new Error(`Payment amount must be the same as responder deposit ${stringify(params)}`);
+        throw new Error(
+          `Payment amount must be the same as responder deposit ${stringify(params)}`,
+        );
       }
 
       if (nodeTransfer.amount.lte(Zero)) {
@@ -325,7 +368,9 @@ export class AppRegistryService {
       }
 
       if (transfer.status === LinkedTransferStatus.REDEEMED) {
-        throw new Error(`Transfer with linkedHash ${initialState.linkedHash} has already been redeemed`);
+        throw new Error(
+          `Transfer with linkedHash ${initialState.linkedHash} has already been redeemed`,
+        );
       }
 
       // check that linked transfer app has been installed from sender
@@ -336,22 +381,31 @@ export class AppRegistryService {
       const senderApp = installedApps.find(
         (app: AppInstanceJson) =>
           app.appInterface.addr === defaultApp!.appDefinitionAddress &&
-          (app.latestState as SimpleLinkedTransferAppStateBigNumber).linkedHash === initialState.linkedHash,
+          (app.latestState as SimpleLinkedTransferAppStateBigNumber).linkedHash ===
+            initialState.linkedHash,
       );
 
       if (!senderApp) {
-        throw new Error(`App with provided hash has not been installed: ${initialState.linkedHash}`);
+        throw new Error(
+          `App with provided hash has not been installed: ${initialState.linkedHash}`,
+        );
       }
 
       return;
     }
 
     if (!responderDeposit.eq(Zero)) {
-      throw new Error(`Will not accept linked transfer install where node deposit is != 0 ${stringify(params)}`);
+      throw new Error(
+        `Will not accept linked transfer install where node deposit is != 0 ${stringify(params)}`,
+      );
     }
 
     if (initiatorDeposit.lte(Zero)) {
-      throw new Error(`Will not accept linked transfer install where initiator deposit is <=0 ${stringify(params)}`);
+      throw new Error(
+        `Will not accept linked transfer install where initiator deposit is <=0 ${stringify(
+          params,
+        )}`,
+      );
     }
 
     if (!initialState.amount.eq(initiatorDeposit)) {
@@ -388,7 +442,9 @@ export class AppRegistryService {
       proposedToIdentifier,
     } = normalizeEthAddresses(bigNumberifyObj(params));
 
-    const appInfo = await this.appRegistryRepository.findByAppDefinitionAddress(params.appDefinition);
+    const appInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
+      params.appDefinition,
+    );
 
     if (timeout.lt(Zero)) {
       throw new Error(`"timeout" in params cannot be negative`);
@@ -408,12 +464,20 @@ export class AppRegistryService {
 
     // NOTE: may need to remove this condition if we start working
     // with games
-    if (responderDeposit.isZero() && initiatorDeposit.isZero() && appInfo.name !== CoinBalanceRefundApp) {
-      throw new Error(`Cannot install an app with zero valued deposits for both initiator and responder.`);
+    if (
+      responderDeposit.isZero() &&
+      initiatorDeposit.isZero() &&
+      appInfo.name !== CoinBalanceRefundApp
+    ) {
+      throw new Error(
+        `Cannot install an app with zero valued deposits for both initiator and responder.`,
+      );
     }
 
     // make sure initiator has sufficient funds
-    const initiatorChannel = await this.channelRepository.findByUserPublicIdentifier(initiatorIdentifier);
+    const initiatorChannel = await this.channelRepository.findByUserPublicIdentifier(
+      initiatorIdentifier,
+    );
     if (!initiatorChannel) {
       throw new Error(`Could not find channel for user: ${initiatorIdentifier}`);
     }
@@ -492,9 +556,11 @@ export class AppRegistryService {
     },
     initiatorIdentifier: string,
   ): Promise<void> {
-    const { initiatorDeposit, initiatorDepositTokenAddress, proposedToIdentifier } = bigNumberifyObj(
-      proposedAppParams.params,
-    );
+    const {
+      initiatorDeposit,
+      initiatorDepositTokenAddress,
+      proposedToIdentifier,
+    } = bigNumberifyObj(proposedAppParams.params);
 
     const registryAppInfo = await this.appProposalMatchesRegistry(proposedAppParams.params);
 
@@ -552,5 +618,26 @@ export class AppRegistryService {
         break;
     }
     logger.log(`Validation completed for app ${registryAppInfo.name}`);
+  }
+
+  async onModuleInit() {
+    for (const app of await this.configService.getDefaultApps()) {
+      let appRegistry = await this.appRegistryRepository.findByNameAndNetwork(
+        app.name,
+        app.chainId,
+      );
+      if (!appRegistry) {
+        appRegistry = new AppRegistry();
+      }
+      logger.log(`Creating ${app.name} app on chain ${app.chainId}: ${app.appDefinitionAddress}`);
+      appRegistry.actionEncoding = app.actionEncoding;
+      appRegistry.appDefinitionAddress = app.appDefinitionAddress;
+      appRegistry.name = app.name;
+      appRegistry.chainId = app.chainId;
+      appRegistry.outcomeType = app.outcomeType;
+      appRegistry.stateEncoding = app.stateEncoding;
+      appRegistry.allowNodeInstall = app.allowNodeInstall;
+      await this.appRegistryRepository.save(appRegistry);
+    }
   }
 }

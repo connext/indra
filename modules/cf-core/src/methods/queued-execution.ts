@@ -50,8 +50,8 @@ export async function addToManyQueues(queues: Queue[], task: Task<any>) {
       q.add(() => {
         deferreds[i].resolve();
         return waitForEveryQueueToFinish.then(runTaskWithMemoization);
-      })
-    )
+      }),
+    ),
   );
 
   return await runTaskWithMemoization();

@@ -34,7 +34,9 @@ export const clearDb = async (): Promise<void> => {
   await dbClient.query("truncate table peer_to_peer_transfer cascade;");
 };
 
-export const getOnchainTransactionsForChannel = async (userPublicIdentifier: string): Promise<any[]> => {
+export const getOnchainTransactionsForChannel = async (
+  userPublicIdentifier: string,
+): Promise<any[]> => {
   const { rows: onchainTransactions } = await dbClient.query(SQL`
       SELECT * FROM onchain_transaction 
       WHERE "channelId" = (

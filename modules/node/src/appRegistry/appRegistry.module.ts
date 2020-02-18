@@ -11,7 +11,6 @@ import { TransferModule } from "../transfer/transfer.module";
 import { LinkedTransferRepository } from "../transfer/transfer.repository";
 
 import { AppRegistryController } from "./appRegistry.controller";
-import { appRegistryProviderFactory } from "./appRegistry.provider";
 import { AppRegistryRepository } from "./appRegistry.repository";
 import { AppRegistryService } from "./appRegistry.service";
 
@@ -27,6 +26,6 @@ import { AppRegistryService } from "./appRegistry.service";
     TransferModule,
     TypeOrmModule.forFeature([AppRegistryRepository, ChannelRepository, LinkedTransferRepository]),
   ],
-  providers: [appRegistryProviderFactory, AppRegistryService],
+  providers: [AppRegistryService],
 })
 export class AppRegistryModule {}

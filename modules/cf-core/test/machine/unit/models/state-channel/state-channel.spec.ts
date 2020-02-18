@@ -41,7 +41,7 @@ describe("StateChannel", () => {
         IdentityApp,
         { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
         multisigAddress,
-        xpubs
+        xpubs,
       );
       json = sc.toJson();
     });
@@ -94,7 +94,7 @@ describe("StateChannel", () => {
         IdentityApp,
         { proxyFactory: ProxyFactory, multisigMastercopy: MinimumViableMultisig },
         multisigAddress,
-        xpubs
+        xpubs,
       );
       json = sc.toJson();
       rehydrated = StateChannel.fromJson(json);
@@ -117,9 +117,7 @@ describe("StateChannel", () => {
     });
 
     it("should not change the user xpubs", () => {
-      expect(rehydrated.userNeuteredExtendedKeys).toEqual(
-        sc.userNeuteredExtendedKeys
-      );
+      expect(rehydrated.userNeuteredExtendedKeys).toEqual(sc.userNeuteredExtendedKeys);
     });
 
     it("should not change the multisig address", () => {
@@ -128,7 +126,7 @@ describe("StateChannel", () => {
 
     it("should have a singleAssetTwoPartyIntermediaryAgreements array", () => {
       expect(rehydrated.singleAssetTwoPartyIntermediaryAgreements).toEqual(
-        sc.singleAssetTwoPartyIntermediaryAgreements
+        sc.singleAssetTwoPartyIntermediaryAgreements,
       );
     });
   });

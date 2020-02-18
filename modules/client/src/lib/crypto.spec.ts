@@ -1,9 +1,8 @@
 import { CF_PATH } from "@connext/types";
+import { decryptWithPrivateKey, encryptWithPublicKey } from "@connext/crypto";
 import * as EthCrypto from "eth-crypto";
 import { Wallet } from "ethers";
 import { computePublicKey } from "ethers/utils";
-
-import { decryptWithPrivateKey, encryptWithPublicKey } from "./crypto";
 
 const prvKey = Wallet.createRandom().privateKey;
 const pubKey = computePublicKey(prvKey).replace(/^0x/, "");
@@ -40,14 +39,9 @@ describe("crypto", () => {
 
   test("our crypto stuff & eth-crypto should be able to decrypt each other", async () => {
     const myEncrypted = await encryptWithPublicKey(pubKey, shortMessage);
-    const ethEncrypted = EthCrypto.cipher.stringify(
-      await EthCrypto.encryptWithPublicKey(pubKey, shortMessage),
-    );
+    const ethEncrypted = EthCrypto.cipher.stringify(await EthCrypto.encryptWithPublicKey(pubKey, shortMessage));
     const myDecrypted = await decryptWithPrivateKey(prvKey, ethEncrypted);
-    const ethDecrypted = await EthCrypto.decryptWithPrivateKey(
-      prvKey,
-      EthCrypto.cipher.parse(myEncrypted),
-    );
+    const ethDecrypted = await EthCrypto.decryptWithPrivateKey(prvKey, EthCrypto.cipher.parse(myEncrypted));
     expect(myDecrypted).toEqual(ethDecrypted);
     expect(myDecrypted).toEqual(shortMessage);
   });

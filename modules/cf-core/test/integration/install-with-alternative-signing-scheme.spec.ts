@@ -11,10 +11,7 @@ import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 import MemoryLockService from "../services/memory-lock-service";
 import { MemoryMessagingService } from "../services/memory-messaging-service";
 import { MemoryStoreServiceFactory } from "../services/memory-store-service";
-import {
-  A_EXTENDED_PRIVATE_KEY,
-  B_EXTENDED_PRIVATE_KEY
-} from "../test-constants.jest";
+import { A_EXTENDED_PRIVATE_KEY, B_EXTENDED_PRIVATE_KEY } from "../test-constants.jest";
 
 import {
   collateralizeChannel,
@@ -22,7 +19,7 @@ import {
   getBalances,
   getInstalledAppInstances,
   makeInstallCall,
-  makeProposeCall
+  makeProposeCall,
 } from "./utils";
 
 expect.extend({ toBeLt });
@@ -47,10 +44,9 @@ describe(`Uses a provided signing key generation function to sign channel state 
         const lockService = new MemoryLockService();
 
         const storeServiceA = new MemoryStoreServiceFactory().createStoreService();
-        const [
-          privateKeyGeneratorA,
-          xpubA
-        ] = generatePrivateKeyGeneratorAndXPubPair(A_EXTENDED_PRIVATE_KEY);
+        const [privateKeyGeneratorA, xpubA] = generatePrivateKeyGeneratorAndXPubPair(
+          A_EXTENDED_PRIVATE_KEY,
+        );
         nodeA = await Node.create(
           messagingService,
           storeServiceA,
@@ -59,14 +55,13 @@ describe(`Uses a provided signing key generation function to sign channel state 
           provider,
           lockService,
           xpubA,
-          privateKeyGeneratorA
+          privateKeyGeneratorA,
         );
 
         const storeServiceB = new MemoryStoreServiceFactory().createStoreService();
-        const [
-          privateKeyGeneratorB,
-          xpubB
-        ] = generatePrivateKeyGeneratorAndXPubPair(B_EXTENDED_PRIVATE_KEY);
+        const [privateKeyGeneratorB, xpubB] = generatePrivateKeyGeneratorAndXPubPair(
+          B_EXTENDED_PRIVATE_KEY,
+        );
         nodeB = await Node.create(
           messagingService,
           storeServiceB,
@@ -75,7 +70,7 @@ describe(`Uses a provided signing key generation function to sign channel state 
           provider,
           lockService,
           xpubB,
-          privateKeyGeneratorB
+          privateKeyGeneratorB,
         );
 
         multisigAddress = await createChannel(nodeA, nodeB);
@@ -90,14 +85,11 @@ describe(`Uses a provided signing key generation function to sign channel state 
         let postInstallETHBalanceNodeB: BigNumber;
 
         nodeB.on(`PROPOSE_INSTALL_EVENT`, async (msg: ProposeMessage) => {
-          [
-            preInstallETHBalanceNodeA,
-            preInstallETHBalanceNodeB
-          ] = await getBalances(
+          [preInstallETHBalanceNodeA, preInstallETHBalanceNodeB] = await getBalances(
             nodeA,
             nodeB,
             multisigAddress,
-            CONVENTION_FOR_ETH_TOKEN_ADDRESS
+            CONVENTION_FOR_ETH_TOKEN_ADDRESS,
           );
           makeInstallCall(nodeB, msg.data.appInstanceId);
         });
@@ -108,14 +100,11 @@ describe(`Uses a provided signing key generation function to sign channel state 
           expect(appInstanceNodeA).toBeDefined();
           expect(appInstanceNodeA).toEqual(appInstanceNodeB);
 
-          [
-            postInstallETHBalanceNodeA,
-            postInstallETHBalanceNodeB
-          ] = await getBalances(
+          [postInstallETHBalanceNodeA, postInstallETHBalanceNodeB] = await getBalances(
             nodeA,
             nodeB,
             multisigAddress,
-            CONVENTION_FOR_ETH_TOKEN_ADDRESS
+            CONVENTION_FOR_ETH_TOKEN_ADDRESS,
           );
 
           expect(postInstallETHBalanceNodeA).toBeLt(preInstallETHBalanceNodeA);
@@ -128,16 +117,15 @@ describe(`Uses a provided signing key generation function to sign channel state 
         nodeA.rpcRouter.dispatch(
           await makeProposeCall(
             nodeB,
-            (global[`networkContext`] as NetworkContextForTestSuite)
-              .TicTacToeApp,
+            (global[`networkContext`] as NetworkContextForTestSuite).TicTacToeApp,
             undefined,
             One,
             CONVENTION_FOR_ETH_TOKEN_ADDRESS,
             One,
-            CONVENTION_FOR_ETH_TOKEN_ADDRESS
-          )
+            CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+          ),
         );
       });
-    }
+    },
   );
 });

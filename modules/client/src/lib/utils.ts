@@ -9,10 +9,10 @@ export const stringify = (obj: object, abrv: boolean = false): string =>
       value && value._hex
         ? bigNumberify(value).toString()
         : abrv && value && typeof value === "string" && value.startsWith("xpub")
-          ? `${value.substring(0, 8)}..${value.substring(value.length - 4)}`
-          : abrv && value && typeof value === "string" && value.startsWith("0x")
-            ? `${value.substring(0, 6)}..${value.substring(value.length - 4)}`
-            : value,
+        ? `${value.substring(0, 8)}..${value.substring(value.length - 4)}`
+        : abrv && value && typeof value === "string" && value.startsWith("0x")
+        ? `${value.substring(0, 6)}..${value.substring(value.length - 4)}`
+        : value,
     2,
   );
 

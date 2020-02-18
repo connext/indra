@@ -3,11 +3,11 @@ import { RejectProposalMessage } from "../types";
 
 export async function handleRejectProposalMessage(
   requestHandler: RequestHandler,
-  receivedRejectProposalMessage: RejectProposalMessage
+  receivedRejectProposalMessage: RejectProposalMessage,
 ) {
   const { store } = requestHandler;
   const {
-    data: { appInstanceId }
+    data: { appInstanceId },
   } = receivedRejectProposalMessage;
 
   const stateChannel = await store.getChannelFromAppInstanceID(appInstanceId);

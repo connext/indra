@@ -45,7 +45,10 @@ export const sendOnchainValue = async (
   */
 };
 
-export const getOnchainBalance = async (address: string, assetId: string = AddressZero): Promise<BigNumber> => {
+export const getOnchainBalance = async (
+  address: string,
+  assetId: string = AddressZero,
+): Promise<BigNumber> => {
   let result: BigNumber;
   if (assetId === AddressZero) {
     try {

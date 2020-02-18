@@ -23,7 +23,7 @@ describe("ProcessQueue", () => {
     let ret2;
     await Promise.all([
       processQueue.addTask(["queue1"], () => (ret1 = i += 1)),
-      processQueue.addTask(["queue1"], () => (ret2 = i += 1))
+      processQueue.addTask(["queue1"], () => (ret2 = i += 1)),
     ]);
     expect(ret1).toBe(1);
     expect(ret2).toBe(2);
@@ -36,7 +36,7 @@ describe("ProcessQueue", () => {
     let ret2;
     await Promise.all([
       processQueue.addTask(["queue1"], () => (ret1 = i += 1)),
-      processQueue.addTask(["queue2"], () => (ret2 = i += 1))
+      processQueue.addTask(["queue2"], () => (ret2 = i += 1)),
     ]);
     expect(ret1).toBe(1);
     expect(ret2).toBe(2);
@@ -49,7 +49,7 @@ describe("ProcessQueue", () => {
     let ret2;
     await Promise.all([
       processQueue.addTask(["queue1", "queue2"], () => (ret1 = i += 1)),
-      processQueue.addTask(["queue1", "queue2"], () => (ret2 = i += 1))
+      processQueue.addTask(["queue1", "queue2"], () => (ret2 = i += 1)),
     ]);
     expect(ret1).toBe(1);
     expect(ret2).toBe(2);
@@ -62,7 +62,7 @@ describe("ProcessQueue", () => {
     let ret2;
     await Promise.all([
       processQueue.addTask(["queue1", "queue3"], () => (ret1 = i += 1)),
-      processQueue.addTask(["queue1", "queue2"], () => (ret2 = i += 1))
+      processQueue.addTask(["queue1", "queue2"], () => (ret2 = i += 1)),
     ]);
     expect(ret1).toBe(1);
     expect(ret2).toBe(2);

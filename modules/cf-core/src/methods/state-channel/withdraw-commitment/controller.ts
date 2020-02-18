@@ -23,14 +23,14 @@ export default class WithdrawCommitmentController extends NodeController {
 
   protected async getRequiredLockNames(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.WithdrawCommitmentParams
+    params: CFCoreTypes.WithdrawCommitmentParams,
   ): Promise<string[]> {
     return WithdrawController.getRequiredLockNames(requestHandler, params);
   }
 
   protected async beforeExecution(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.WithdrawCommitmentParams
+    params: CFCoreTypes.WithdrawCommitmentParams,
   ): Promise<void> {
     const { store, provider, networkContext } = requestHandler;
     const { multisigAddress, tokenAddress } = params;
@@ -48,7 +48,7 @@ export default class WithdrawCommitmentController extends NodeController {
     if (
       channel.hasBalanceRefundAppInstance(
         networkContext.CoinBalanceRefundApp,
-        tokenAddress || AddressZero
+        tokenAddress || AddressZero,
       )
     ) {
       throw Error(CANNOT_WITHDRAW);
@@ -57,7 +57,7 @@ export default class WithdrawCommitmentController extends NodeController {
     const expectedMultisigAddress = await getCreate2MultisigAddress(
       channel.userNeuteredExtendedKeys,
       channel.addresses,
-      provider
+      provider,
     );
 
     if (expectedMultisigAddress !== channel.multisigAddress) {
@@ -67,7 +67,7 @@ export default class WithdrawCommitmentController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.WithdrawCommitmentParams
+    params: CFCoreTypes.WithdrawCommitmentParams,
   ): Promise<CFCoreTypes.WithdrawCommitmentResult> {
     const { store, publicIdentifier } = requestHandler;
 
@@ -84,7 +84,7 @@ export default class WithdrawCommitmentController extends NodeController {
     }
 
     return {
-      transaction: commitment
+      transaction: commitment,
     };
   }
 }

@@ -1,19 +1,19 @@
 import {
+  chan_config,
+  chan_nodeAuth,
+  chan_restoreState,
+  chan_storeGet,
+  chan_storeSet,
   ChannelProviderConfig,
   ChannelProviderRpcMethod,
+  ConnextEventEmitter,
   IChannelProvider,
   IRpcConnection,
   JsonRpcRequest,
   StorePair,
-  chan_storeSet,
-  chan_storeGet,
-  chan_nodeAuth,
-  chan_config,
-  chan_restoreState,
 } from "@connext/types";
-import EventEmitter from "events";
 
-export class ChannelProvider extends EventEmitter implements IChannelProvider {
+export class ChannelProvider extends ConnextEventEmitter implements IChannelProvider {
   public connected: boolean = false;
   public connection: IRpcConnection;
 
@@ -89,7 +89,8 @@ export class ChannelProvider extends EventEmitter implements IChannelProvider {
   }
 
   get multisigAddress(): string | undefined {
-    const multisigAddress = this._multisigAddress || (this._config ? this._config.multisigAddress : undefined);
+    const multisigAddress =
+      this._multisigAddress || (this._config ? this._config.multisigAddress : undefined);
     return multisigAddress;
   }
 

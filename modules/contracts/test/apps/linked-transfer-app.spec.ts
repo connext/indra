@@ -1,3 +1,4 @@
+/* global before */
 import { Address, SolidityValueType } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
@@ -125,13 +126,13 @@ function assertRedeemed(
 describe("LinkedUnidirectionalTransferApp", () => {
   let unidirectionalLinkedTransferApp: Contract;
 
-  const applyAction = (state: SolidityABIEncoderV2Type, action: SolidityABIEncoderV2Type): any =>
+  const applyAction = (state: any, action: any): any =>
     unidirectionalLinkedTransferApp.functions.applyAction(
       encodeAppState(state),
       encodeAppAction(action),
     );
 
-  const computeOutcome = (state: SolidityABIEncoderV2Type): any =>
+  const computeOutcome = (state: any): any =>
     unidirectionalLinkedTransferApp.functions.computeOutcome(encodeAppState(state));
 
   before(async () => {
@@ -193,7 +194,12 @@ describe("LinkedUnidirectionalTransferApp", () => {
     expect(res).to.eq(
       defaultAbiCoder.encode(
         [singleAssetTwoPartyCoinTransferEncoding],
-        [[[senderAddr, Zero], [redeemerAddr, amount]]],
+        [
+          [
+            [senderAddr, Zero],
+            [redeemerAddr, amount],
+          ],
+        ],
       ),
     );
   });
@@ -252,7 +258,12 @@ describe("LinkedUnidirectionalTransferApp", () => {
     expect(res).to.eq(
       defaultAbiCoder.encode(
         [singleAssetTwoPartyCoinTransferEncoding],
-        [[[senderAddr, amount], [redeemerAddr, Zero]]],
+        [
+          [
+            [senderAddr, amount],
+            [redeemerAddr, Zero],
+          ],
+        ],
       ),
     );
   });
