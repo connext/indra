@@ -4,7 +4,6 @@ import * as waffle from "ethereum-waffle";
 import { Contract, Event, Wallet } from "ethers";
 import { TransactionResponse } from "ethers/providers";
 import { getAddress, keccak256, solidityKeccak256, solidityPack } from "ethers/utils";
-import { before } from "mocha";
 
 import Echo from "../../build/Echo.json";
 import Proxy from "../../build/Proxy.json";

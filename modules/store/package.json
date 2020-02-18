@@ -17,14 +17,14 @@
   },
   "dependencies": {
     "@connext/types": "4.0.16",
-    "ethers": "4.0.44",
+    "ethers": "4.0.45",
     "pisa-client": "0.1.4-connext-beta.1",
     "uuid": "3.4.0"
   },
   "devDependencies": {
     "@babel/polyfill": "7.8.3",
     "@types/jest": "25.1.2",
-    "@types/node": "13.7.0",
+    "@types/node": "13.7.1",
     "jest": "25.1.0",
     "ts-jest": "25.2.0",
     "typescript": "3.7.5"

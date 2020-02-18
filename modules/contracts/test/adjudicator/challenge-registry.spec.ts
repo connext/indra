@@ -1,3 +1,4 @@
+/* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
@@ -10,11 +11,14 @@ import {
   randomBytes,
   SigningKey,
 } from "ethers/utils";
-import { before } from "mocha";
 
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
-
-import { AppIdentityTestClass, computeAppChallengeHash, expect, sortSignaturesBySignerAddress } from "./utils";
+import {
+  AppIdentityTestClass,
+  computeAppChallengeHash,
+  expect,
+  sortSignaturesBySignerAddress,
+} from "./utils";
 
 type Challenge = {
   status: 0 | 1 | 2;

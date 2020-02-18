@@ -1,9 +1,9 @@
+/* global before */
 import { SolidityValueType } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { defaultAbiCoder } from "ethers/utils";
-import { before } from "mocha";
 
 import TicTacToeApp from "../../build/TicTacToeApp.json";
 

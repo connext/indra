@@ -1,3 +1,4 @@
+/* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
 import { SolidityValueType } from "@connext/types";
 import chai from "chai";
@@ -5,7 +6,6 @@ import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, solidityKeccak256 } from "ethers/utils";
-import { before } from "mocha";
 
 import SimpleLinkedTransferApp from "../../build/SimpleLinkedTransferApp.json";
 

@@ -1,8 +1,8 @@
+/* global before */
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { BigNumber, defaultAbiCoder } from "ethers/utils";
-import { before } from "mocha";
 
 import SimpleTwoPartySwapApp from "../../build/SimpleTwoPartySwapApp.json";
 

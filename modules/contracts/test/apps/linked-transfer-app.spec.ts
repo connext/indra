@@ -1,10 +1,10 @@
+/* global before */
 import { Address, SolidityValueType } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract } from "ethers";
 import { AddressZero, One, Zero } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
-import { before } from "mocha";
 
 import UnidirectionalLinkedTransferApp from "../../build/UnidirectionalLinkedTransferApp.json";
 

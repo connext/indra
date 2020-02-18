@@ -6,7 +6,6 @@ import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { AddressZero, One } from "ethers/constants";
 import { BigNumber, defaultAbiCoder, hexlify, randomBytes } from "ethers/utils";
-import { before } from "mocha";
 
 import { expect } from "./utils/index";
 

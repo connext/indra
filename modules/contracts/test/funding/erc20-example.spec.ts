@@ -1,9 +1,9 @@
+/* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
 import DolphinCoin from "../../build/DolphinCoin.json";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { bigNumberify } from "ethers/utils";
-import { before } from "mocha";
 
 import { expect } from "./utils/index";
 

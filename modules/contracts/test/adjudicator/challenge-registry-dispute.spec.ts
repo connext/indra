@@ -1,10 +1,10 @@
+/* global before */
 import { waffle as buidler } from "@nomiclabs/buidler";
 import { SolidityValueType } from "@connext/types";
-import { createMockProvider, getWallets, deployContract } from "ethereum-waffle";
+import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
 import { bigNumberify, defaultAbiCoder, joinSignature, keccak256, SigningKey } from "ethers/utils";
-import { before } from "mocha";
 
 import AppWithAction from "../../build/AppWithAction.json";
 import ChallengeRegistry from "../../build/ChallengeRegistry.json";
@@ -69,7 +69,7 @@ describe("ChallengeRegistry Challenge", () => {
       gasLimit: 6000000, // override default of 4 million
     });
 
-    appDefinition = await deployContract(wallet, AppWithAction);
+    appDefinition = await waffle.deployContract(wallet, AppWithAction);
   });
 
   beforeEach(async () => {
