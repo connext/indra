@@ -89,7 +89,7 @@ jobs:
     - run: make pull-commit
     - run: make start-test-staging
     - run: sleep 15 && make dls
-    - run: make test-backwards-compatibility
+    - run: TEST_MODE=staging make test-backwards-compatibility
     - name: Print node logs
       if: failure()
       run: docker service logs --tail 200 indra_node

@@ -108,7 +108,7 @@ jobs:
     - run: make pull-release
     - run: make start-test-release
     - run: sleep 15 && make dls
-    - run: make test-backwards-compatibility
+    - run: TEST_MODE=release make test-backwards-compatibility
     - name: Print node logs
       if: failure()
       run: docker service logs --tail 200 indra_node
