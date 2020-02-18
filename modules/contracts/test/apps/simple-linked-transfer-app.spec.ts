@@ -64,7 +64,10 @@ const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
 const decodeAppState = (encodedAppState: string): SimpleLinkedTransferAppState =>
   defaultAbiCoder.decode([linkedTransferAppStateEncoding], encodedAppState)[0];
 
-const encodeAppState = (state: SimpleLinkedTransferAppState, onlyCoinTransfers: boolean = false): string => {
+const encodeAppState = (
+  state: SimpleLinkedTransferAppState,
+  onlyCoinTransfers: boolean = false,
+): string => {
   if (!onlyCoinTransfers) return defaultAbiCoder.encode([linkedTransferAppStateEncoding], [state]);
   return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.coinTransfers]);
 };
@@ -73,8 +76,16 @@ function encodeAppAction(state: SolidityValueType): string {
   return defaultAbiCoder.encode([linkedTransferAppActionEncoding], [state]);
 }
 
-function createLinkedHash(amount: BigNumber, assetId: string, paymentId: string, preImage: string): string {
-  return solidityKeccak256(["uint256", "address", "bytes32", "bytes32"], [amount, assetId, paymentId, preImage]);
+function createLinkedHash(
+  amount: BigNumber,
+  assetId: string,
+  paymentId: string,
+  preImage: string,
+): string {
+  return solidityKeccak256(
+    ["uint256", "address", "bytes32", "bytes32"],
+    [amount, assetId, paymentId, preImage],
+  );
 }
 
 describe("SimpleLinkedTransferApp", () => {
@@ -86,7 +97,10 @@ describe("SimpleLinkedTransferApp", () => {
   }
 
   async function applyAction(state: any, action: SolidityValueType): Promise<string> {
-    return await simpleLinkedTransferApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
+    return await simpleLinkedTransferApp.functions.applyAction(
+      encodeAppState(state),
+      encodeAppAction(action),
+    );
   }
 
   before(async () => {
