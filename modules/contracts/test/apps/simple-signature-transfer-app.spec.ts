@@ -1,4 +1,5 @@
-import { Address, SolidityValueType } from "@connext/types";
+/* global before */
+import { SolidityValueType } from "@connext/types";
 import chai from "chai";
 import * as waffle from "ethereum-waffle";
 import { Contract, Wallet } from "ethers";
@@ -78,8 +79,12 @@ const decodeTransfers = (encodedAppState: string): CoinTransfer[] =>
 const decodeAppState = (encodedAppState: string): SimpleSignatureTransferAppState =>
   defaultAbiCoder.decode([signatureTransferAppStateEncoding], encodedAppState)[0];
 
-const encodeAppState = (state: SimpleSignatureTransferAppState, onlyCoinTransfers: boolean = false): string => {
-  if (!onlyCoinTransfers) return defaultAbiCoder.encode([signatureTransferAppStateEncoding], [state]);
+const encodeAppState = (
+  state: SimpleSignatureTransferAppState,
+  onlyCoinTransfers: boolean = false,
+): string => {
+  if (!onlyCoinTransfers)
+    return defaultAbiCoder.encode([signatureTransferAppStateEncoding], [state]);
   return defaultAbiCoder.encode([singleAssetTwoPartyCoinTransferEncoding], [state.coinTransfers]);
 };
 
@@ -87,7 +92,12 @@ function encodeAppAction(state: SolidityValueType): string {
   return defaultAbiCoder.encode([signatureTransferAppActionEncoding], [state]);
 }
 
-async function createSignedData(amount: BigNumber, assetId: string, paymentId: string, data: string): Promise<string> {
+async function createSignature(
+  amount: BigNumber,
+  assetId: string,
+  paymentId: string,
+  data: string,
+): Promise<string> {
   const msg = [
     { type: "uint256", value: amount },
     { type: "address", value: assetId },
@@ -95,7 +105,10 @@ async function createSignedData(amount: BigNumber, assetId: string, paymentId: s
     { type: "bytes32", value: data },
   ];
 
-  const hash = solidityKeccak256(msg.map(d => d.type), msg.map(d => d.value));
+  const types = msg.map(d => d.type);
+  const values = msg.map(d => d.value);
+
+  const hash = solidityKeccak256(types, values);
   const signature = await wallet.signMessage(arrayify(hash));
   return signature;
 }
@@ -108,7 +121,10 @@ describe("SimpleSignatureTransferApp", () => {
   }
 
   async function applyAction(state: any, action: SolidityValueType): Promise<string> {
-    return await simpleSignatureTransferApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
+    return await simpleSignatureTransferApp.functions.applyAction(
+      encodeAppState(state),
+      encodeAppAction(action),
+    );
   }
 
   before(async () => {
@@ -127,7 +143,7 @@ describe("SimpleSignatureTransferApp", () => {
       const data = formatBytes32String(JSON.stringify(dummyData));
       const signer = address;
 
-      const signature = await createSignedData(transferAmount, assetId, paymentId, data);
+      const signature = await createSignature(transferAmount, assetId, paymentId, data);
 
       const preState: SimpleSignatureTransferAppState = {
         amount: transferAmount,
