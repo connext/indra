@@ -24,27 +24,28 @@ import "../../adjudicator/interfaces/CounterfactualApp.sol";
 ///    fails halfway, the intermediary can dispute both channels safely
 contract TimeLockedPassThrough {
 
-  struct AppState {
-    address challengeRegistryAddress;
-    bytes32 targetAppIdentityHash;
-    uint256 switchesOutcomeAt;
-    bytes defaultOutcome;
-  }
+    struct AppState {
+        address challengeRegistryAddress;
+        bytes32 targetAppIdentityHash;
+        uint256 switchesOutcomeAt;
+        bytes defaultOutcome;
+    }
 
-  function computeOutcome(bytes calldata encodedState)
-    external
-    view
-    returns (bytes memory)
-  {
-    AppState memory appState = abi.decode(encodedState, (AppState));
+    function computeOutcome(bytes calldata encodedState)
+        external
+        view
+        returns (bytes memory)
+    {
+        AppState memory appState = abi.decode(encodedState, (AppState));
 
-    if (block.number >= appState.switchesOutcomeAt)
-      return appState.defaultOutcome;
+        if (block.number >= appState.switchesOutcomeAt) {
+            return appState.defaultOutcome;
+        }
 
-    return ChallengeRegistry(
-      appState.challengeRegistryAddress
-    ).getOutcome(
-      appState.targetAppIdentityHash
-    );
-  }
+        return ChallengeRegistry(
+            appState.challengeRegistryAddress
+        ).getOutcome(
+            appState.targetAppIdentityHash
+        );
+    }
 }

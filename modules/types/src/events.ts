@@ -1,3 +1,6 @@
+import EventEmitter from "eventemitter3";
+import { CFCoreTypes } from "./cfCore";
+
 export const CREATE_CHANNEL_EVENT = "CREATE_CHANNEL_EVENT";
 export const DEPOSIT_CONFIRMED_EVENT = "DEPOSIT_CONFIRMED_EVENT";
 export const DEPOSIT_FAILED_EVENT = "DEPOSIT_FAILED_EVENT";
@@ -22,6 +25,7 @@ export const RECIEVE_TRANSFER_FAILED_EVENT = "RECIEVE_TRANSFER_FAILED_EVENT";
 export const RECIEVE_TRANSFER_FINISHED_EVENT = "RECIEVE_TRANSFER_FINISHED_EVENT";
 export const RECIEVE_TRANSFER_STARTED_EVENT = "RECIEVE_TRANSFER_STARTED_EVENT";
 
+// TODO: should really be named "ProtocolEventNames"
 export const EventNames = {
   [CREATE_CHANNEL_EVENT]: CREATE_CHANNEL_EVENT,
   [DEPOSIT_CONFIRMED_EVENT]: DEPOSIT_CONFIRMED_EVENT,
@@ -41,8 +45,6 @@ export const EventNames = {
 };
 export type EventName = keyof typeof EventNames;
 
-// TODO: merge ConnextEvents and EventNames???
-
 export const ConnextEvents = {
   ...EventNames,
   [RECEIVE_TRANSFER_FAILED_EVENT]: RECEIVE_TRANSFER_FAILED_EVENT,
@@ -54,6 +56,8 @@ export const ConnextEvents = {
   [RECIEVE_TRANSFER_STARTED_EVENT]: RECIEVE_TRANSFER_STARTED_EVENT,
 };
 export type ConnextEvent = keyof typeof ConnextEvents;
+
+export class ConnextEventEmitter extends EventEmitter<string | ConnextEvent | CFCoreTypes.RpcMethodName> {}
 
 export type NodeEvent = EventName;
 export const NODE_EVENTS = EventNames;

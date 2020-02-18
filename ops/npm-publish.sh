@@ -5,7 +5,7 @@ set -e
 packages="types,crypto,cf-core,messaging,store,channel-provider,client"
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../package.json | jq .name | tr -d '"'`"
+project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
 
 ########################################
 ## Helper functions

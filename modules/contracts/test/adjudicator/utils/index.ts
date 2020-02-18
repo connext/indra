@@ -19,13 +19,13 @@ export const computeAppChallengeHash = (
   id: string,
   appStateHash: string,
   versionNumber: BigNumberish,
-  timeout: number
+  timeout: number,
 ) =>
   keccak256(
     solidityPack(
       ["bytes1", "bytes32", "uint256", "uint256", "bytes32"],
-      ["0x19", id, versionNumber, timeout, appStateHash]
-    )
+      ["0x19", id, versionNumber, timeout, appStateHash],
+    ),
   );
 
 // TS version of MChallengeRegistryCore::computeActionHash
@@ -33,22 +33,19 @@ export const computeActionHash = (
   turnTaker: string,
   previousState: string,
   action: string,
-  versionNumber: number
+  versionNumber: number,
 ) =>
   keccak256(
     solidityPack(
       ["bytes1", "address", "bytes", "bytes", "uint256"],
-      ["0x19", turnTaker, previousState, action, versionNumber]
-    )
+      ["0x19", turnTaker, previousState, action, versionNumber],
+    ),
   );
 
 export class AppIdentityTestClass {
   get identityHash(): string {
     return keccak256(
-      defaultAbiCoder.encode(
-        ["uint256", "address[]"],
-        [this.channelNonce, this.participants]
-      )
+      defaultAbiCoder.encode(["uint256", "address[]"], [this.channelNonce, this.participants]),
     );
   }
 
@@ -57,7 +54,7 @@ export class AppIdentityTestClass {
       participants: this.participants,
       appDefinition: this.appDefinition,
       defaultTimeout: this.defaultTimeout,
-      channelNonce: this.channelNonce
+      channelNonce: this.channelNonce,
     };
   }
 
@@ -65,7 +62,7 @@ export class AppIdentityTestClass {
     readonly participants: string[],
     readonly appDefinition: string,
     readonly defaultTimeout: number,
-    readonly channelNonce: number
+    readonly channelNonce: number,
   ) {}
 }
 
@@ -88,7 +85,7 @@ export function signaturesToBytes(...signatures: Signature[]): string {
  */
 export function sortSignaturesBySignerAddress(
   digest: string,
-  signatures: Signature[]
+  signatures: Signature[],
 ): Signature[] {
   const ret = signatures.slice();
   ret.sort((sigA, sigB) => {
@@ -109,7 +106,5 @@ export function signaturesToBytesSortedBySignerAddress(
   digest: string,
   ...signatures: Signature[]
 ): string {
-  return signaturesToBytes(
-    ...sortSignaturesBySignerAddress(digest, signatures)
-  );
+  return signaturesToBytes(...sortSignaturesBySignerAddress(digest, signatures));
 }

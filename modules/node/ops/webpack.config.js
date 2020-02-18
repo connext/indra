@@ -1,29 +1,30 @@
-const path = require('path');
-const nodeExternals = require('webpack-node-externals');
+const path = require("path");
+const nodeExternals = require("webpack-node-externals");
 
 const mode = process.env.MODE === "release" ? "release" : "staging";
-const whitelist = mode === "release" ? '' : /@connext\/.*/;
+const whitelist = mode === "release" ? "" : /@connext\/.*/;
 console.log(`Building ${mode}-mode bundle`);
 
 module.exports = {
   mode: "development",
-  target: 'node',
-  externals: {
-    '@nestjs/microservices': 'commonjs @nestjs/microservices',
-    '@nestjs/common': 'commonjs @nestjs/common',
-    'pg': 'commonjs pg',
-  },
+  target: "node",
+  externals: [
+    nodeExternals({
+      modulesDir: path.resolve(__dirname, "../../../node_modules"),
+      whitelist,
+    }),
+  ],
 
   resolve: {
-    extensions: [ '.js', '.ts', '.json' ],
-    symlinks: false
+    extensions: [".js", ".ts", ".json"],
+    symlinks: false,
   },
 
-  entry: path.join(__dirname, '../src/main.ts'),
+  entry: path.join(__dirname, "../src/main.ts"),
 
   output: {
-    path: path.join(__dirname, '../dist/src'),
-    filename: 'main.js',
+    path: path.join(__dirname, "../dist/src"),
+    filename: "main.js",
   },
 
   module: {
@@ -32,9 +33,9 @@ module.exports = {
         test: /\.js$/,
         exclude: /node_modules/,
         use: {
-          loader: 'babel-loader',
+          loader: "babel-loader",
           options: {
-            presets: ['@babel/env'],
+            presets: ["@babel/env"],
           },
         },
       },
@@ -42,12 +43,12 @@ module.exports = {
         test: /\.ts$/,
         exclude: /node_modules/,
         use: {
-          loader: 'ts-loader',
+          loader: "ts-loader",
           options: {
-            configFile: path.join(__dirname, '../tsconfig.json')
+            configFile: path.join(__dirname, "../tsconfig.json"),
           },
         },
       },
     ],
-  }
+  },
 };
