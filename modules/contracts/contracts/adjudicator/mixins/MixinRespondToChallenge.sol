@@ -74,13 +74,13 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibAppCaller, MChallenge
             "respondToChallenge called with action signed by incorrect turn taker"
           );
 
-          require(req.timeout > 0, "Timeout must be greater than 0");
+          require(stateReq.timeout > 0, "Timeout must be greater than 0");
 
           // This should throw an error if reverts
           bytes memory newState = LibAppCaller.applyAction(
               appIdentity.appDefinition,
-              appState,
-              action
+              stateReq.appState,
+              actionReq.encodedAction
           );
 
           // do not apply the timeout of the challenge update
@@ -96,13 +96,10 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibAppCaller, MChallenge
           uint256 finalizesAt = block.number + appIdentity.defaultTimeout;
           require(finalizesAt >= appIdentity.defaultTimeout, "uint248 addition overflow");
 
-          // update the challenge
+          // update the challenge fields dependent on the takeAction
           challenge.finalizesAt = finalizesAt;
           challenge.status = ChallengeStatus.FINALIZES_AFTER_DEADLINE;
           challenge.appStateHash = keccak256(newState);
-          challenge.versionNumber = req.versionNumber;
-          challenge.challengeCounter += 1;
-          challenge.latestSubmitter = msg.sender;
         } else {
           // advance the state using the setState action (correct sigs
           // on state already asserted)
@@ -113,17 +110,20 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibAppCaller, MChallenge
             "respondToChallenge was called with an outdated state"
           );
 
-          uint256 finalizesAt = block.number + req.timeout;
-          require(finalizesAt >= req.timeout, "uint248 addition overflow");
+          uint256 finalizesAt = block.number + stateReq.timeout;
+          require(finalizesAt >= stateReq.timeout, "uint248 addition overflow");
 
-          // update the challenge
-          challenge.status = req.timeout > 0 ? ChallengeStatus.FINALIZES_AFTER_DEADLINE : ChallengeStatus.EXPLICITLY_FINALIZED;
-          challenge.appStateHash = keccak256(req.appState);
-          challenge.versionNumber = req.versionNumber;
+          // update the challenge fields dependent on setState
+          challenge.status = stateReq.timeout > 0 ? ChallengeStatus.FINALIZES_AFTER_DEADLINE : ChallengeStatus.EXPLICITLY_FINALIZED;
+          challenge.appStateHash = keccak256(stateReq.appState);
           challenge.finalizesAt = finalizesAt;
-          challenge.challengeCounter += 1;
-          challenge.latestSubmitter = msg.sender;
         }
+
+        // update remaining challenge fields
+        // should this be +1 in the set state with action case?
+        challenge.versionNumber = stateReq.versionNumber;
+        challenge.challengeCounter += 1;
+        challenge.latestSubmitter = msg.sender;
     }
 
     function correctKeysSignedAppChallengeUpdate(
