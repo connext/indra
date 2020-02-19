@@ -18,6 +18,7 @@ import { NetworkContext, CFCoreTypes, NodeMessageWrappedProtocolMessage } from "
 import { timeout } from "./utils";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
 import { PROTOCOL_MESSAGE_EVENT, NODE_EVENTS } from "@connext/types";
+import { Store } from "./store";
 
 export interface NodeConfig {
   // The prefix for any keys used in the store by this Node depends on the
@@ -45,10 +46,11 @@ export class Node {
   private signer!: SigningKey;
   protected requestHandler!: RequestHandler;
   public rpcRouter!: RpcRouter;
+  private store: Store;
 
   static async create(
     messagingService: CFCoreTypes.IMessagingService,
-    storeService: CFCoreTypes.IStoreService,
+    storeService: CFCoreTypes.IStoreServiceNew,
     networkContext: NetworkContext,
     nodeConfig: NodeConfig,
     provider: BaseProvider,
@@ -93,10 +95,14 @@ export class Node {
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
     this.protocolRunner = this.buildProtocolRunner();
+    this.store = new Store(
+      storeService,
+      `${this.nodeConfig.STORE_KEY_PREFIX}/${this.publicIdentifier}`,
+    );
     log.info(`Waiting for ${this.blocksNeededForConfirmation} block confirmations`);
   }
 
-  private async asynchronouslySetupUsingRemoteServices(): Promise<Node> {
+  public async asynchronouslySetupUsingRemoteServices(): Promise<Node> {
     // TODO: is "0" a reasonable path to derive `signer` private key from?
     this.signer = new SigningKey(await this.privateKeyGetter.getPrivateKey("0"));
     log.info(`Node signer address: ${this.signer.address}`);
@@ -105,13 +111,12 @@ export class Node {
       this.publicIdentifier,
       this.incoming,
       this.outgoing,
-      this.storeService,
+      this.store,
       this.messagingService,
       this.protocolRunner,
       this.networkContext,
       this.provider,
       new AutoNonceWallet(this.signer.privateKey, this.provider),
-      `${this.nodeConfig.STORE_KEY_PREFIX}/${this.publicIdentifier}`,
       this.blocksNeededForConfirmation!,
       new ProcessQueue(this.lockService),
     );
@@ -142,11 +147,7 @@ export class Node {
    * for the OP_SIGN, IO_SEND, and IO_SEND_AND_WAIT opcodes.
    */
   private buildProtocolRunner(): ProtocolRunner {
-    const protocolRunner = new ProtocolRunner(
-      this.networkContext,
-      this.provider,
-      this.storeService,
-    );
+    const protocolRunner = new ProtocolRunner(this.networkContext, this.provider, this.store);
 
     protocolRunner.register(Opcode.OP_SIGN, async (args: any[]) => {
       if (args.length !== 1 && args.length !== 2) {

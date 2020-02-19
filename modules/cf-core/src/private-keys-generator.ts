@@ -54,7 +54,7 @@ export class PrivateKeysGetter {
 }
 
 export async function getPrivateKeysGeneratorAndXPubOrThrow(
-  storeService: CFCoreTypes.IStoreService,
+  storeService: CFCoreTypes.IStoreServiceNew,
   privateKeyGenerator?: CFCoreTypes.IPrivateKeyGenerator,
   publicExtendedKey?: string,
 ): Promise<[PrivateKeysGetter, string]> {
@@ -74,14 +74,14 @@ export async function getPrivateKeysGeneratorAndXPubOrThrow(
     return Promise.resolve([new PrivateKeysGetter(privateKeyGenerator), publicExtendedKey]);
   }
 
-  let extendedPrvKey = await storeService.get(EXTENDED_PRIVATE_KEY_PATH);
+  let extendedPrvKey = await storeService.getExtendedPrvKey();
 
   if (!extendedPrvKey) {
     log.info(
       "No (extended public key, private key generation function) pair was provided and no extended private key was found in store. Generating a random extended private key",
     );
     extendedPrvKey = fromMnemonic(Wallet.createRandom().mnemonic).extendedKey;
-    await storeService.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedPrvKey }]);
+    await storeService.saveExtendedPrvKey(extendedPrvKey);
   } else {
     log.info("Using extended private key found in the store.");
   }

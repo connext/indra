@@ -86,6 +86,8 @@ export interface IStoreServiceNew {
     multisigAddress: string,
     commitment: CFCoreTypes.MinimalTransaction,
   ): Promise<void>;
+  getExtendedPrvKey(): Promise<string>;
+  saveExtendedPrvKey(extendedPrvKey: string): Promise<void>;
   clear(): Promise<void>;
   restore(): Promise<void>;
 }

@@ -96,7 +96,7 @@ export class ConfigService implements OnModuleInit {
   }
 
   async getTestnetTokenConfig(): Promise<TestnetTokenConfig> {
-    const testnetTokenConfig = this.get("INDRA_TESTNET_TOKEN_CONFIG")
+    const testnetTokenConfig: TokenConfig[] = this.get("INDRA_TESTNET_TOKEN_CONFIG")
       ? JSON.parse(this.get("INDRA_TESTNET_TOKEN_CONFIG"))
       : [];
     const currentChainId = (await this.getEthNetwork()).chainId;
@@ -120,6 +120,7 @@ export class ConfigService implements OnModuleInit {
 
     if (currentChainId !== 1) {
       const tokenConfig = await this.getTestnetTokenConfig();
+      console.log('tokenConfig: ', tokenConfig);
       const configIndex = tokenConfig.findIndex(tc =>
         tc.find(t => t.chainId === currentChainId && t.address === tokenAddress),
       );
