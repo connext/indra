@@ -1,4 +1,4 @@
-import { CHALLENGE_INITIATED_EVENT, ChallengeInitiatedMessage } from "@connext/types";
+import { CHALLENGE_INITIATED_EVENT, ChallengeInitiatedMessage, JsonRpcProvider } from "@connext/types";
 import { jsonRpcMethod } from "rpc-server";
 
 import { NodeController } from "../../controller";
@@ -10,6 +10,8 @@ import {
   INVALID_FACTORY_ADDRESS,
   INVALID_MASTERCOPY_ADDRESS,
   INCORRECT_MULTISIG_ADDRESS,
+  INCORRECT_CHALLENGE_STATUS,
+  CHALLENGE_PERIOD_ELAPSED,
 } from "../../errors";
 import { getCreate2MultisigAddress } from "../../../utils";
 
@@ -60,8 +62,22 @@ export default class SetStateController extends NodeController {
       throw Error(INCORRECT_MULTISIG_ADDRESS);
     }
 
-    // TODO: figure out how to store challenges -- in its own key or in
-    // the `channel/` namespace
+    const challenge = channel.getChallengeByAppID(appInstanceId);
+    if (!challenge) {
+      // just because it does not exist does not mean it is not
+      // an active challenge
+      return;
+    }
+
+    // make sure its status is fine and the timeout is compatible
+    if (challenge.status === "OUTCOME_SET" || challenge.status === "EXPLICITLY_FINALIZED") {
+      throw Error(INCORRECT_CHALLENGE_STATUS);
+    }
+
+    const currBlock = await provider.getBlockNumber();
+    if (challenge.finalizesAt.lte(currBlock)) {
+      throw Error(CHALLENGE_PERIOD_ELAPSED(currBlock, challenge.finalizesAt));
+    }
   }
 
   protected async executeMethodImplementation(

@@ -132,3 +132,12 @@ export const WITHDRAWAL_FAILED = "Failed to withdraw funds out of the multisig c
 
 export const NO_MULTISIG_FOR_COUNTERPARTIES = (owners: string[]): string =>
   `Could not find multisig address between counterparties ${prettyPrintObject(owners)}`;
+
+//// Challenge errors
+export const CHALLENGE_PERIOD_ELAPSED = (currentBlock: number, finalizesAt: BigNumber): string =>
+  `Challenge period ended at ${finalizesAt.toString()} and the current block number is ${currentBlock}`;
+
+export const INCORRECT_CHALLENGE_STATUS = `Challenge does not have the correct status`;
+
+export const SET_STATE_FAILED = (appInstanceId: string) =>
+  `Failed to call 'setState' on challenge registry for app ${appInstanceId}`;
