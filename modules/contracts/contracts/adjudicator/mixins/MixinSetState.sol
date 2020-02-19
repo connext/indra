@@ -30,7 +30,7 @@ contract MixinSetState is LibStateChannelApp, MChallengeRegistryCore {
         // to be reset, allows the same app to be challenged multiple
         // times in the case of long-lived applications
         require(
-            challenge.status == ChallengeStatus.NO_CHALLENGE || challenge.status == ChallengeStatus.OUTCOME_SET
+            challenge.status == ChallengeStatus.NO_CHALLENGE || challenge.status == ChallengeStatus.OUTCOME_SET,
             "setState was called on an app that already has an active challenge"
         );
 
@@ -62,7 +62,7 @@ contract MixinSetState is LibStateChannelApp, MChallengeRegistryCore {
     function correctKeysSignedAppChallengeUpdate(
         bytes32 identityHash,
         address[] memory participants,
-        SignedAppChallengeUpdate memory req
+        SignedAppChallengeUpdateWithAppState memory req
     )
         private
         pure

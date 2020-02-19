@@ -34,7 +34,7 @@ contract MixinSetStateWithAction is LibStateChannelApp, LibAppCaller, MChallenge
         // to be reset, allows the same app to be challenged multiple
         // times in the case of long-lived applications
         require(
-            challenge.status == ChallengeStatus.NO_CHALLENGE || challenge.status == ChallengeStatus.OUTCOME_SET
+            challenge.status == ChallengeStatus.NO_CHALLENGE || challenge.status == ChallengeStatus.OUTCOME_SET,
             "setStateWithAction was called on an app that already has an active challenge"
         );
 
