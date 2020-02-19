@@ -1,7 +1,7 @@
 import { ChallengeRegistry } from "@connext/contracts";
 import {
-  CHALLENGE_INTIATION_FAILED_EVENT,
-  CHALLENGE_INTIATION_STARTED_EVENT,
+  CHALLENGE_INITIATION_FAILED_EVENT,
+  CHALLENGE_INITIATION_STARTED_EVENT,
 } from "@connext/types";
 import { Contract } from "ethers";
 
@@ -52,22 +52,22 @@ export async function submitSetState(
     } catch (e) {
       errors.push(e.toString());
       if (e.toString().includes(`reject`) || e.toString().includes(`denied`)) {
-        outgoing.emit(CHALLENGE_INTIATION_FAILED_EVENT, { errors, params });
+        outgoing.emit(CHALLENGE_INITIATION_FAILED_EVENT, { errors, params });
         throw Error(`${SET_STATE_FAILED(appInstanceId)}: ${e.message}`);
       }
 
       retryCount -= 1;
 
       if (retryCount === 0) {
-        outgoing.emit(CHALLENGE_INTIATION_FAILED_EVENT, { errors, params });
+        outgoing.emit(CHALLENGE_INITIATION_FAILED_EVENT, { errors, params });
         throw Error(`${SET_STATE_FAILED(appInstanceId)}: ${e.message}`);
       }
     }
   }
 
-  outgoing.emit(CHALLENGE_INTIATION_STARTED_EVENT, {
+  outgoing.emit(CHALLENGE_INITIATION_STARTED_EVENT, {
     from: publicIdentifier,
-    type: CHALLENGE_INTIATION_STARTED_EVENT,
+    type: CHALLENGE_INITIATION_STARTED_EVENT,
     data: {
       txHash: txResponse!.hash,
     },
