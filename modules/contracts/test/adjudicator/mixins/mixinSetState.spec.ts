@@ -30,7 +30,7 @@ const bob =
   // 0xb37e49bFC97A948617bF3B63BC6942BB15285715
   new Wallet("0x4ccac8b1e81fb18a98bbaf29b9bfe307885561f71b76bd4680d7aec9d0ddfcfd");
 
-describe("MixinSetState.sol", () => {
+describe.only("MixinSetState.sol", () => {
   const provider = buidler.provider;
   const intialStateHash = encodeAppState(getAppWithActionState());
   let wallet: Wallet;
@@ -107,22 +107,30 @@ describe("MixinSetState.sol", () => {
     expect(await isStateFinalized(appIdentityTestObject.identityHash, challengeRegistry)).to.be
       .true;
     await expect(setChallenge()).revertedWith(
-      "setState was called on an app that has already been finalized",
+      "setState was called on an app that already has an active challenge",
     );
   });
 
-  it("should fail if the status is NO_CHALLENGE", async () => {
+  it("should fail if the challenge is in progress", async () => {
+    await setChallenge();
+    const challenge = await getChallenge(appIdentityTestObject.identityHash, challengeRegistry);
+    expect(challenge.status).to.be.equal(ChallengeStatus.FINALIZES_AFTER_DEADLINE);
+    await expect(setChallenge()).revertedWith(
+      "setState was called on an app that already has an active challenge",
+    );
+  });
+
+  it("should fail if the nonce is outdated", async () => {
     await setChallenge(undefined, 0);
     await setOutcome(appIdentityTestObject, challengeRegistry);
     const challenge = await getChallenge(appIdentityTestObject.identityHash, challengeRegistry);
     expect(challenge.status).to.be.equal(ChallengeStatus.OUTCOME_SET);
     await expect(setChallenge()).revertedWith(
-      "setState was called on an app that has already been finalized",
+      "Tried to call setState with an outdated versionNumber version",
     );
   });
 
   it("should fail if the signatures are incorrect", async () => {
-    const stateHash = keccak256(intialStateHash);
     const versionNumber = await latestVersionNumber(
       appIdentityTestObject.identityHash,
       challengeRegistry,
@@ -131,13 +139,13 @@ describe("MixinSetState.sol", () => {
     const timeout = Zero;
     const digest = computeAppChallengeHash(
       appIdentityTestObject.identityHash,
-      stateHash,
+      keccak256(intialStateHash),
       submittedVersionNo,
       timeout,
     );
     await expect(
       challengeRegistry.functions.setState(appIdentityTestObject.appIdentity, {
-        appStateHash: keccak256(encodeAppState(getAppWithActionState(5))),
+        appState: encodeAppState(getAppWithActionState(5)),
         signatures: sortSignaturesBySignerAddress(digest, [
           await new SigningKey(alice.privateKey).signDigest(digest),
           await new SigningKey(bob.privateKey).signDigest(digest),
@@ -146,13 +154,6 @@ describe("MixinSetState.sol", () => {
         versionNumber: submittedVersionNo,
       }),
     ).to.be.revertedWith("Invalid signature");
-  });
-
-  it("should fail if the version number is stale", async () => {
-    await setChallenge();
-    await expect(setChallenge(undefined, undefined, Zero)).to.be.revertedWith(
-      "Tried to call setState with an outdated versionNumber version",
-    );
   });
 
   it("should fail if the timeout < finalizesAt", async () => {
