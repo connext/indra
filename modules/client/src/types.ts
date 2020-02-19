@@ -82,6 +82,8 @@ export {
   ResolveLinkedTransferToRecipientParameters,
   SimpleLinkedTransferAppState,
   SimpleLinkedTransferAppStateBigNumber,
+  SimpleSignatureTransferAppState,
+  SimpleSignatureTransferAppStateBigNumber,
   SimpleSwapAppState,
   SimpleSwapAppStateBigNumber,
   SimpleTransferAppState,

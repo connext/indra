@@ -10,6 +10,8 @@ import {
   DefaultApp,
   SimpleLinkedTransferAppState,
   SimpleLinkedTransferAppStateBigNumber,
+  SimpleSignatureTransferAppState,
+  SimpleSignatureTransferAppStateBigNumber,
   SimpleSwapAppState,
   SimpleSwapAppStateBigNumber,
   SimpleTransferAppState,
@@ -110,6 +112,80 @@ export const validateSimpleTransferApp = async (
 
   const coinTransferErrs = validateCoinTransfers(coinTransfers);
   if (coinTransferErrs) return invalidAppMessage(coinTransferErrs, params);
+
+  return undefined;
+};
+
+export const validateSignatureTransferApp = async (
+  params: CFCoreTypes.ProposeInstallParams,
+  proposedByIdentifier: string,
+  registeredInfo: DefaultApp,
+  connext: ConnextClient,
+): Promise<string | undefined> => {
+  const baseValidation = await baseAppValidation(
+    params,
+    proposedByIdentifier,
+    registeredInfo,
+    connext,
+  );
+  if (baseValidation) {
+    return baseValidation;
+  }
+
+  const { responderDeposit, initialState, initiatorDeposit, initiatorDepositTokenAddress } = params;
+
+  // check that the receivers deposit is 0
+  // assume the recipient is always the responder
+  if (!responderDeposit.isZero()) {
+    return invalidAppMessage(`Responder (payee) must have a zero balance in proposed app`, params);
+  }
+
+  if (initiatorDeposit.isZero()) {
+    return invalidAppMessage(`Initiator (payor) must have nonzero balance in proposed app`, params);
+  }
+
+  // validate initial state
+  const { coinTransfers, amount, assetId, paymentId, signer } = convert.SignatureTransferAppState(
+    "bignumber",
+    initialState as SimpleSignatureTransferAppState,
+  ) as SimpleSignatureTransferAppStateBigNumber;
+
+  // check valid addresses and non-negative coin transfers
+  const coinTransferErrs = validateCoinTransfers(coinTransfers);
+  if (coinTransferErrs) return invalidAppMessage(coinTransferErrs, params);
+
+  // make sure amount is same as coin transfer amount
+  const nonzeroCoinTransfer = coinTransfers.filter((transfer: CoinTransferBigNumber) => {
+    return !transfer.amount.isZero();
+  });
+
+  if (nonzeroCoinTransfer.length > 1) {
+    return invalidAppMessage(
+      `Not installing an app with two nonzero coin transfer entries`,
+      params,
+    );
+  }
+
+  if (!nonzeroCoinTransfer[0].amount.eq(initiatorDeposit)) {
+    return invalidAppMessage(`Responder deposit does not match amount in coin transfers`, params);
+  }
+
+  if (!amount.eq(initiatorDeposit)) {
+    return invalidAppMessage(`Responder deposit does not match amount in initial state`, params);
+  }
+
+  // make sure assetId is the same as initiator token address
+  if (assetId !== initiatorDepositTokenAddress) {
+    return invalidAppMessage(
+      `Initiator deposit token address does not match the assetId of the initial state`,
+      params,
+    );
+  }
+
+  // make sure hash, paymentId, and preimage are 32 byte hex strings
+  if (invalid32ByteHexString(paymentId) || invalid32ByteHexString(signer)) {
+    return invalidAppMessage(`Invalid 32 byte hex string detected in paymentId, or signer`, params);
+  }
 
   return undefined;
 };
@@ -324,6 +400,7 @@ const validateCoinTransfers = (coinTransfers: CoinTransferBigNumber[]): string =
 
 export const appProposalValidation: ProposalValidator = {
   CoinBalanceRefundApp: baseAppValidation,
+  SimpleSignatureTransferApp: validateSignatureTransferApp,
   SimpleLinkedTransferApp: validateLinkedTransferApp,
   SimpleTransferApp: validateSimpleTransferApp,
   SimpleTwoPartySwapApp: validateSwapApp,

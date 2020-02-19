@@ -46,16 +46,10 @@ export class PeerToPeerTransfer {
   @Column("enum", { default: PeerToPeerTransferStatus.PENDING, enum: PeerToPeerTransferStatus })
   status!: PeerToPeerTransferStatus;
 
-  @ManyToOne(
-    (type: any) => Channel,
-    (channel: Channel) => channel.senderPeerToPeerTransfers,
-  )
+  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.senderPeerToPeerTransfers)
   senderChannel!: Channel;
 
-  @ManyToOne(
-    (type: any) => Channel,
-    (channel: Channel) => channel.receiverPeerToPeerTransfers,
-  )
+  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.receiverPeerToPeerTransfers)
   receiverChannel!: Channel;
 
   @Column("json")
@@ -100,6 +94,9 @@ export class LinkedTransfer {
   @Column("text")
   linkedHash!: string;
 
+  @Column("text")
+  signer!: string;
+
   @Column("text", { nullable: true })
   preImage!: string;
 
@@ -115,19 +112,12 @@ export class LinkedTransfer {
   @Column("enum", { default: LinkedTransferStatus.PENDING, enum: LinkedTransferStatus })
   status!: LinkedTransferStatus;
 
-  @ManyToOne(
-    (type: any) => Channel,
-    (channel: Channel) => channel.senderLinkedTransfers,
-  )
+  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.senderLinkedTransfers)
   senderChannel!: Channel;
 
-  @ManyToOne(
-    (type: any) => Channel,
-    (channel: Channel) => channel.receiverLinkedTransfers,
-    {
-      nullable: true,
-    },
-  )
+  @ManyToOne((type: any) => Channel, (channel: Channel) => channel.receiverLinkedTransfers, {
+    nullable: true,
+  })
   receiverChannel!: Channel;
 
   @Column({ type: "json" })

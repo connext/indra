@@ -1,4 +1,7 @@
-const { CF_PATH, EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT: coreContracts } = require("@connext/types");
+const {
+  CF_PATH,
+  EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT: coreContracts,
+} = require("@connext/types");
 const fs = require("fs");
 const eth = require("ethers");
 const tokenArtifacts = require("@openzeppelin/contracts/build/contracts/ERC20Mintable.json");
@@ -19,7 +22,12 @@ const EXPECTED_CONTRACT_NAMES_IN_NETWORK_CONTEXT = [
 ];
 */
 
-const appContracts = ["SimpleLinkedTransferApp", "SimpleTransferApp", "SimpleTwoPartySwapApp"];
+const appContracts = [
+  "SimpleSignatureTransferApp",
+  "SimpleLinkedTransferApp",
+  "SimpleTransferApp",
+  "SimpleTwoPartySwapApp",
+];
 
 const hash = input => eth.utils.keccak256(`0x${input.replace(/^0x/, "")}`);
 

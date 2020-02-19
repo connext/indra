@@ -6,6 +6,7 @@ import {
   SimpleTransferApp,
   SimpleTwoPartySwapApp,
   SimpleLinkedTransferApp,
+  SimpleSignatureTransferApp,
   CoinBalanceRefundApp,
   SwapRate,
 } from "@connext/types";
@@ -189,6 +190,26 @@ export class ConfigService implements OnModuleInit {
         name: SimpleLinkedTransferApp,
         outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
         stateEncoding: `tuple(${singleAssetTwoPartyCoinTransferEncoding} coinTransfers, bytes32 linkedHash, uint256 amount, address assetId, bytes32 paymentId, bytes32 preImage)`,
+      },
+      {
+        actionEncoding: `tuple(
+          bytes32 data,
+          bytes signature,
+        )`,
+        allowNodeInstall: true,
+        appDefinitionAddress: addressBook[SimpleSignatureTransferApp],
+        chainId: ethNetwork.chainId,
+        name: SimpleSignatureTransferApp,
+        outcomeType: OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+        stateEncoding: `tuple(
+          ${singleAssetTwoPartyCoinTransferEncoding} coinTransfers,
+          uint256 amount,
+          address assetId,
+          bytes32 paymentId,
+          address signer,
+          bytes32 data,
+          bytes signature
+        )`,
       },
       {
         allowNodeInstall: true,

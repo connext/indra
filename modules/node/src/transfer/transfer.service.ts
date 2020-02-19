@@ -85,6 +85,7 @@ export class TransferService {
     amount: BigNumber,
     appInstanceId: string,
     linkedHash: string,
+    signer: string,
     paymentId: string,
     meta?: object,
   ): Promise<LinkedTransfer> {
@@ -102,6 +103,7 @@ export class TransferService {
     transfer.senderChannel = senderChannel;
     transfer.status = LinkedTransferStatus.PENDING;
     transfer.meta = meta;
+    transfer.signer = signer;
 
     return await this.linkedTransferRepository.save(transfer);
   }

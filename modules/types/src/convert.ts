@@ -6,6 +6,7 @@ import {
   CoinBalanceRefundAppState,
   CoinTransfer,
   SimpleLinkedTransferAppState,
+  SimpleSignatureTransferAppState,
 } from "./app";
 import { AssetAmount, RebalanceProfile } from "./channel";
 import {
@@ -249,6 +250,19 @@ function convertLinkedTransferAppState<To extends NumericTypeName>(
   };
 }
 
+function convertSignatureTransferAppState<To extends NumericTypeName>(
+  to: To,
+  obj: AppState<any>,
+): SimpleSignatureTransferAppState<NumericTypes[To]> {
+  return {
+    ...convertAmountField(to, obj),
+    coinTransfers: [
+      convertAmountField(to, obj.coinTransfers[0]),
+      convertAmountField(to, obj.coinTransfers[1]),
+    ],
+  };
+}
+
 // DEFINE CONVERSION OBJECT TO BE EXPORTED
 export const convert = {
   AppState: convertAppState,
@@ -257,6 +271,7 @@ export const convert = {
   Deposit: convertDepositParametersToAsset,
   LinkedTransfer: convertLinkedTransferParametersToAsset,
   LinkedTransferAppState: convertLinkedTransferAppState,
+  SignatureTransferAppState: convertSignatureTransferAppState,
   LinkedTransferToRecipient: convertLinkedTransferToRecipientParametersToAsset,
   RebalanceProfile: convertRebalanceProfile,
   ResolveLinkedTransfer: convertAssetAmountWithId,

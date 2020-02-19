@@ -5,10 +5,12 @@ import {
   CoinTransfer,
   CoinTransferBigNumber,
   DefaultApp,
+  SimpleLinkedTransferApp,
   SimpleLinkedTransferAppStateBigNumber,
+  SimpleSignatureTransferApp,
+  SimpleSignatureTransferAppStateBigNumber,
   SimpleTransferAppStateBigNumber,
   CoinBalanceRefundApp,
-  SimpleLinkedTransferApp,
   SimpleTwoPartySwapApp,
   SimpleTransferApp,
 } from "@connext/types";
@@ -124,7 +126,35 @@ export class AppRegistryService implements OnModuleInit {
           bigNumberify(proposeInstallParams.initiatorDeposit),
           appInstanceId,
           initialState.linkedHash,
+          "0x0",
           initialState.paymentId,
+          proposeInstallParams.meta,
+        );
+        logger.debug(`Linked transfer saved!`);
+        break;
+      // TODO: add something for swap app? maybe for history preserving reasons.
+      case SimpleSignatureTransferApp:
+        logger.debug(`Saving linked transfer`);
+        const initialStateSignature = proposeInstallParams.initialState as SimpleSignatureTransferAppStateBigNumber;
+
+        const isResolvingSignature = proposeInstallParams.responderDeposit.gt(Zero);
+        if (isResolvingSignature) {
+          const transfer = await this.transferService.getLinkedTransferByPaymentId(
+            initialStateSignature.paymentId,
+          );
+          transfer.receiverAppInstanceId = appInstanceId;
+          await this.linkedTransferRepository.save(transfer);
+          logger.debug(`Updated transfer with receiver appId!`);
+          return;
+        }
+        await this.transferService.saveLinkedTransfer(
+          from,
+          proposeInstallParams.initiatorDepositTokenAddress,
+          bigNumberify(proposeInstallParams.initiatorDeposit),
+          appInstanceId,
+          "0x0",
+          initialStateSignature.signer,
+          initialStateSignature.paymentId,
           proposeInstallParams.meta,
         );
         logger.debug(`Linked transfer saved!`);
@@ -287,6 +317,146 @@ export class AppRegistryService implements OnModuleInit {
     }
 
     logger.log(`Exchange amounts are within ${ALLOWED_DISCREPANCY_PCT}% of our rate ${ourRate}`);
+  }
+
+  // TODO most of the code is duplicated from validateSimpleLinkedTransfer
+  // should refactor this into single validation method based on condition type
+  private async validateSimpleSignatureTransfer(
+    params: CFCoreTypes.ProposeInstallParams,
+  ): Promise<void> {
+    const {
+      responderDeposit,
+      initiatorDeposit,
+      initiatorDepositTokenAddress,
+      responderDepositTokenAddress,
+      initialState: initialStateBadType,
+    } = bigNumberifyObj(params);
+
+    const supportedAddresses = await this.configService.getSupportedTokenAddresses();
+    if (!supportedAddresses.includes(initiatorDepositTokenAddress)) {
+      throw new Error(`Unsupported "initiatorDepositTokenAddress" provided`);
+    }
+
+    if (!supportedAddresses.includes(responderDepositTokenAddress)) {
+      throw new Error(`Unsupported "responderDepositTokenAddress" provided`);
+    }
+
+    const initialState = bigNumberifyObj(
+      initialStateBadType,
+    ) as SimpleSignatureTransferAppStateBigNumber;
+
+    initialState.coinTransfers = initialState.coinTransfers.map(
+      (transfer: CoinTransfer<BigNumber>) => bigNumberifyObj(transfer),
+    ) as any;
+
+    const nodeTransfer = initialState.coinTransfers.filter((transfer: CoinTransferBigNumber) => {
+      return transfer.to === this.cfCoreService.cfCore.freeBalanceAddress;
+    })[0];
+    const counterpartyTransfer = initialState.coinTransfers.filter(
+      (transfer: CoinTransferBigNumber) => {
+        return transfer.to !== this.cfCoreService.cfCore.freeBalanceAddress;
+      },
+    )[0];
+
+    if (
+      !counterpartyTransfer.amount.eq(initiatorDeposit) ||
+      !nodeTransfer.amount.eq(responderDeposit)
+    ) {
+      throw new Error(`Mismatch between deposits and initial state, refusing to install.`);
+    }
+
+    const initiatorReclaiming = responderDeposit.gt(Zero) && initiatorDeposit.eq(Zero);
+    if (initiatorReclaiming) {
+      if (!initialState.amount.eq(responderDeposit)) {
+        throw new Error(
+          `Payment amount must be the same as responder deposit ${stringify(params)}`,
+        );
+      }
+
+      if (nodeTransfer.amount.lte(Zero)) {
+        throw new Error(
+          `Cannot install a linked transfer app with a sender transfer of <= 0. Transfer amount: ${bigNumberify(
+            initialState.coinTransfers[0].amount,
+          ).toString()}`,
+        );
+      }
+
+      if (!counterpartyTransfer.amount.eq(Zero)) {
+        throw new Error(
+          `Cannot install a linked transfer app with a redeemer transfer of != 0. Transfer amount: ${bigNumberify(
+            initialState.coinTransfers[1].amount,
+          ).toString()}`,
+        );
+      }
+
+      // check that we have recorded this transfer in our db
+      const transfer = await this.linkedTransferRepository.findByPaymentId(initialState.paymentId);
+      if (!transfer) {
+        throw new Error(`No transfer exists for paymentId ${initialState.paymentId}`);
+      }
+
+      if (initialState.signer !== transfer.signer) {
+        throw new Error(`No transfer exists for signer ${initialState.signer}`);
+      }
+
+      if (transfer.status === LinkedTransferStatus.REDEEMED) {
+        throw new Error(`Transfer with signer ${initialState.signer} has already been redeemed`);
+      }
+
+      // check that linked transfer app has been installed from sender
+      const defaultApp = (await this.configService.getDefaultApps()).find(
+        (app: DefaultApp) => app.name === SimpleSignatureTransferApp,
+      );
+      const installedApps = await this.cfCoreService.getAppInstances();
+      const senderApp = installedApps.find(
+        (app: AppInstanceJson) =>
+          app.appInterface.addr === defaultApp!.appDefinitionAddress &&
+          (app.latestState as SimpleSignatureTransferAppStateBigNumber).paymentId ===
+            initialState.paymentId,
+      );
+
+      if (!senderApp) {
+        throw new Error(
+          `App with provided paymentId has not been installed: ${initialState.paymentId}`,
+        );
+      }
+
+      return;
+    }
+
+    if (!responderDeposit.eq(Zero)) {
+      throw new Error(
+        `Will not accept linked transfer install where node deposit is != 0 ${stringify(params)}`,
+      );
+    }
+
+    if (initiatorDeposit.lte(Zero)) {
+      throw new Error(
+        `Will not accept linked transfer install where initiator deposit is <=0 ${stringify(
+          params,
+        )}`,
+      );
+    }
+
+    if (!initialState.amount.eq(initiatorDeposit)) {
+      throw new Error(`Payment amount bust be the same as initiator deposit ${stringify(params)}`);
+    }
+
+    if (counterpartyTransfer.amount.lte(Zero)) {
+      throw new Error(
+        `Cannot install a linked transfer app with a sender transfer of <= 0. Transfer amount: ${bigNumberify(
+          initialState.coinTransfers[0].amount,
+        ).toString()}`,
+      );
+    }
+
+    if (!nodeTransfer.amount.eq(Zero)) {
+      throw new Error(
+        `Cannot install a linked transfer app with a redeemer transfer of != 0. Transfer amount: ${bigNumberify(
+          initialState.coinTransfers[1].amount,
+        ).toString()}`,
+      );
+    }
   }
 
   private async validateSimpleLinkedTransfer(
@@ -538,6 +708,9 @@ export class AppRegistryService implements OnModuleInit {
         await this.validateSwap(proposeInstallParams);
         break;
       // TODO: add validation of simple transfer validateSimpleTransfer
+      case SimpleSignatureTransferApp:
+        await this.validateSimpleSignatureTransfer(proposeInstallParams);
+        break;
       case SimpleLinkedTransferApp:
         await this.validateSimpleLinkedTransfer(proposeInstallParams);
         break;

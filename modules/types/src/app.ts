@@ -117,12 +117,14 @@ export type MatchAppInstanceResponse = {
 
 export const CoinBalanceRefundApp = "CoinBalanceRefundApp";
 export const SimpleLinkedTransferApp = "SimpleLinkedTransferApp";
+export const SimpleSignatureTransferApp = "SimpleSignatureTransferApp";
 export const SimpleTransferApp = "SimpleTransferApp";
 export const SimpleTwoPartySwapApp = "SimpleTwoPartySwapApp";
 
 export const SupportedApplications = {
   [CoinBalanceRefundApp]: CoinBalanceRefundApp,
   [SimpleLinkedTransferApp]: SimpleLinkedTransferApp,
+  [SimpleSignatureTransferApp]: SimpleSignatureTransferApp,
   [SimpleTransferApp]: SimpleTransferApp,
   [SimpleTwoPartySwapApp]: SimpleTwoPartySwapApp,
 };
@@ -211,9 +213,29 @@ export type SimpleLinkedTransferAppState<T = string> = {
   paymentId: string;
   preImage: string;
 };
+
 export type SimpleLinkedTransferAppStateBigNumber = SimpleLinkedTransferAppState<BigNumber>;
 export type SimpleLinkedTransferAppAction = {
   preImage: string;
+};
+
+////////////////////////////////////
+// Simple Signature Transfer App
+
+export type SimpleSignatureTransferAppState<T = string> = {
+  coinTransfers: CoinTransfer<T>[];
+  amount: BigNumber;
+  assetId: string;
+  data: string;
+  paymentId: string;
+  signature: string;
+  signer: string;
+};
+
+export type SimpleSignatureTransferAppStateBigNumber = SimpleSignatureTransferAppState<BigNumber>;
+export type SimpleSignatureTransferAppAction = {
+  data: string;
+  signature: string;
 };
 
 ////////////////////////////////////
