@@ -283,16 +283,15 @@ export async function setStateWithSignatures(
   appState: string = HashZero,
   timeout: BigNumberish = ONCHAIN_CHALLENGE_TIMEOUT,
 ): Promise<void> {
-  const stateHash = keccak256(appState);
   const digest = computeAppChallengeHash(
     appIdentity.identityHash,
-    stateHash,
+    keccak256(appState),
     versionNumber,
     timeout,
   );
   expect(participants.length).to.be.eq(2);
   await challengeRegistry.functions.setState(appIdentity.appIdentity, {
-    appStateHash: stateHash,
+    appState,
     signatures: sortSignaturesBySignerAddress(digest, [
       await new SigningKey(participants[0].privateKey).signDigest(digest),
       await new SigningKey(participants[1].privateKey).signDigest(digest),
