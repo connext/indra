@@ -157,6 +157,28 @@ export interface WithdrawStartedMessage extends NodeMessage {
   };
 }
 
+///////////////////////////
+// Dispute Messages
+export interface ChallengeInitiatedMessage extends NodeMessage {
+  data: {
+    params: ProtocolTypes.SetStateParams;
+    txHash?: string;
+  };
+}
+
+export interface ChallengeInitiationFailedMessage extends NodeMessage {
+  data: {
+    params: ProtocolTypes.SetStateParams;
+    errors: string[];
+  };
+}
+
+export interface ChallengeInitiationStartedMessage extends NodeMessage {
+  data: {
+    txHash: string;
+  };
+}
+
 export type EventEmittedMessage =
   | RejectProposalMessage
   | RejectInstallVirtualMessage
@@ -173,4 +195,7 @@ export type EventEmittedMessage =
   | DepositStartedMessage
   | DepositFailedMessage
   | CreateChannelMessage
-  | NodeMessageWrappedProtocolMessage;
+  | NodeMessageWrappedProtocolMessage
+  | ChallengeInitiationStartedMessage
+  | ChallengeInitiationFailedMessage
+  | ChallengeInitiatedMessage;
