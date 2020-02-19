@@ -77,4 +77,8 @@ export namespace CFCoreTypes {
   export type WithdrawCommitmentResult = ProtocolTypes.WithdrawCommitmentResult;
   export type WithdrawParams = ProtocolTypes.WithdrawParams;
   export type WithdrawResult = ProtocolTypes.WithdrawResult;
+
+  // disputes
+  export type SetStateParams = ProtocolTypes.SetStateParams;
+  export type SetStateResult = ProtocolTypes.SetStateResult;
 }
