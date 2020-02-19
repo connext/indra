@@ -43,8 +43,11 @@ contract MixinSetState is LibStateChannelApp, MChallengeRegistryCore {
             "Call to setState included incorrectly signed state update"
         );
 
+        // will just enforce the req.versionNumber is gte zero
+        // (can dispute the initial state) or whatever the state after
+        // a dispute completes can be re-disputed
         require(
-            req.versionNumber > challenge.versionNumber,
+            req.versionNumber > challenge.versionNumber || req.versionNumber == 0,
             "Tried to call setState with an outdated versionNumber version"
         );
 

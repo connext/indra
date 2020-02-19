@@ -39,10 +39,9 @@ contract MixinSetStateWithAction is LibStateChannelApp, LibAppCaller, MChallenge
         );
 
         // will just enforce the req.versionNumber is gte zero
-        // (can dispute the initial state) or whatever the state after
-        // a dispute completes can be re-disputed
+        // (can dispute the initial state)
         require(
-            req.versionNumber >= challenge.versionNumber,
+            req.versionNumber > challenge.versionNumber || req.versionNumber == 0,
             "setStateWithAction was called with outdated state"
         );
 
