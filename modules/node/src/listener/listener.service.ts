@@ -1,5 +1,11 @@
 import {
   SimpleLinkedTransferAppState,
+  CHALLENGE_INITIATED_EVENT,
+  CHALLENGE_INITIATION_FAILED_EVENT,
+  CHALLENGE_INITIATION_STARTED_EVENT,
+  ChallengeInitiatedMessage,
+  ChallengeInitiationFailedMessage,
+  ChallengeInitiationStartedMessage,
   CREATE_CHANNEL_EVENT,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
@@ -79,6 +85,15 @@ export default class ListenerService implements OnModuleInit {
 
   getEventListeners(): CallbackStruct {
     return {
+      CHALLENGE_INITIATED_EVENT: (data: ChallengeInitiatedMessage): void => {
+        logEvent(CHALLENGE_INITIATED_EVENT, data);
+      },
+      CHALLENGE_INITIATION_FAILED_EVENT: (data: ChallengeInitiationFailedMessage): void => {
+        logEvent(CHALLENGE_INITIATION_FAILED_EVENT, data);
+      },
+      CHALLENGE_INITIATION_STARTED_EVENT: (data: ChallengeInitiationStartedMessage): void => {
+        logEvent(CHALLENGE_INITIATION_STARTED_EVENT, data);
+      },
       CREATE_CHANNEL_EVENT: async (data: CreateChannelMessage): Promise<void> => {
         logEvent(CREATE_CHANNEL_EVENT, data);
         this.channelService.makeAvailable(data);

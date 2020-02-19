@@ -27,6 +27,12 @@ import {
 import { appProposalValidation } from "./validation/appProposals";
 import {
   ProtocolTypes,
+  CHALLENGE_INITIATED_EVENT,
+  CHALLENGE_INITIATION_FAILED_EVENT,
+  CHALLENGE_INITIATION_STARTED_EVENT,
+  ChallengeInitiatedMessage,
+  ChallengeInitiationFailedMessage,
+  ChallengeInitiationStartedMessage,
   CREATE_CHANNEL_EVENT,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,
@@ -59,6 +65,15 @@ export class ConnextListener extends ConnextEventEmitter {
   // TODO: add custom parsing functions here to convert event data
   // to something more usable?
   private defaultCallbacks: CallbackStruct = {
+    CHALLENGE_INITIATED_EVENT: (data: ChallengeInitiatedMessage): void => {
+      this.emitAndLog(CHALLENGE_INITIATED_EVENT, data);
+    },
+    CHALLENGE_INITIATION_FAILED_EVENT: (data: ChallengeInitiationFailedMessage): void => {
+      this.emitAndLog(CHALLENGE_INITIATION_FAILED_EVENT, data);
+    },
+    CHALLENGE_INITIATION_STARTED_EVENT: (data: ChallengeInitiationStartedMessage): void => {
+      this.emitAndLog(CHALLENGE_INITIATION_STARTED_EVENT, data);
+    },
     CREATE_CHANNEL_EVENT: (msg: CreateChannelMessage): void => {
       this.emitAndLog(CREATE_CHANNEL_EVENT, msg.data);
     },
