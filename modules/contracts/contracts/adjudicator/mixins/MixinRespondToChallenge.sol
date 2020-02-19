@@ -8,7 +8,7 @@ import "./MChallengeRegistryCore.sol";
 
 contract MixinRespondToChallenge is LibStateChannelApp, LibAppCaller, MChallengeRegistryCore {
 
-    /// @notice Respond to a challenge with a valid action
+    /// @notice Respond to a challenge with a valid action or a valid higher state
     /// @param appIdentity an AppIdentity object pointing to the app for which there is a challenge to progress
     /// @param appState The ABI encoded latest signed application state
     /// @param action The ABI encoded action the submitter wishes to take
@@ -17,9 +17,8 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibAppCaller, MChallenge
     /// @dev This function is only callable when the application has an open challenge
     function respondToChallenge(
         AppIdentity memory appIdentity,
-        bytes memory appState,
-        bytes memory action,
-        bytes memory actionSignature
+        SignedAppChallengeUpdateWithAppState memory stateReq,
+        SignedAction memory actionReq
     )
         public
     {
@@ -34,29 +33,141 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibAppCaller, MChallenge
         );
 
         require(
-            keccak256(appState) == challenge.appStateHash,
-            "Tried to progress a challenge with non-agreed upon app"
+            correctKeysSignedAppChallengeUpdate(identityHash, appIdentity.participants, stateReq),
+            "Call to respondToChallenge included incorrectly signed state update"
         );
 
-        address turnTaker = getTurnTaker(
-            appIdentity.appDefinition,
-            appIdentity.participants,
-            appState
-        );
-
+        // if req.versionNumber > challenge.versionNumber, will be trying
+        // to progress with setState. if req.versionNumber ==
+        // challenge.versionNumber will be trying to progress by using
+        // setStateWithAtion
         require(
-            turnTaker == keccak256(action).recover(actionSignature),
-            "Action must have been signed by correct turn taker"
+            stateReq.versionNumber >= challenge.versionNumber,
+            "respondToChallenge was called with outdated state"
         );
 
-        // This should throw an error if reverts
-        applyAction(
-            appIdentity.appDefinition,
-            appState,
-            action
+        // if the app state in the `stateReq` is *not* the current
+        // state of the challenge, then it is advancing by several nonces
+        // and you DO NOT apply the action
+
+        // NOTE: this logic indicates that if you need to respond to
+        // a challenge with an action on a much higher nonced state,
+        // you will need to first call `respondToChallenge` with a higher
+        // nonced state, then you will need to call `respondToChallenge`
+        // with the higher nonce state + valid action
+        if (keccak256(stateReq.appState) == challenge.appStateHash) {
+
+          // assert that req.versionNumber == challenge.versionNumber
+          require(
+            stateReq.versionNumber == challenge.versionNumber,
+            "respondToChallenge was called with an incorrect state"
+          );
+
+          // assert the turn taker signed the action
+          require(
+            correctKeySignedTheAction(
+                appIdentity.appDefinition,
+                appIdentity.participants,
+                stateReq,
+                actionReq
+            ),
+            "respondToChallenge called with action signed by incorrect turn taker"
+          );
+
+          require(req.timeout > 0, "Timeout must be greater than 0");
+
+          // This should throw an error if reverts
+          bytes memory newState = LibAppCaller.applyAction(
+              appIdentity.appDefinition,
+              appState,
+              action
+          );
+
+          // do not apply the timeout of the challenge update
+          // to the resultant state, instead use the default timeout.
+          // Doing otherwise could violate the signers intention. For
+          // example:
+          // Signer may be fine signing a very small timeout for a favorable
+          // state. ("I made the last move in this state, so I'll win if i
+          // finalized!"). Then counterparty applies an action to it, and now 
+          // signer has very little time to react to this potentially
+          // unfavorable state. ("Now they made the last move and will win!")
+          // instead use the default timeout.
+          uint256 finalizesAt = block.number + appIdentity.defaultTimeout;
+          require(finalizesAt >= appIdentity.defaultTimeout, "uint248 addition overflow");
+
+          // update the challenge
+          challenge.finalizesAt = finalizesAt;
+          challenge.status = ChallengeStatus.FINALIZES_AFTER_DEADLINE;
+          challenge.appStateHash = keccak256(newState);
+          challenge.versionNumber = req.versionNumber;
+          challenge.challengeCounter += 1;
+          challenge.latestSubmitter = msg.sender;
+        } else {
+          // advance the state using the setState action (correct sigs
+          // on state already asserted)
+
+          // assert that req.versionNumber > challenge.versionNumber
+          require(
+            stateReq.versionNumber > challenge.versionNumber,
+            "respondToChallenge was called with an outdated state"
+          );
+
+          uint256 finalizesAt = block.number + req.timeout;
+          require(finalizesAt >= req.timeout, "uint248 addition overflow");
+
+          // update the challenge
+          challenge.status = req.timeout > 0 ? ChallengeStatus.FINALIZES_AFTER_DEADLINE : ChallengeStatus.EXPLICITLY_FINALIZED;
+          challenge.appStateHash = keccak256(req.appState);
+          challenge.versionNumber = req.versionNumber;
+          challenge.finalizesAt = finalizesAt;
+          challenge.challengeCounter += 1;
+          challenge.latestSubmitter = msg.sender;
+        }
+    }
+
+    function correctKeysSignedAppChallengeUpdate(
+        bytes32 identityHash,
+        address[] memory participants,
+        SignedAppChallengeUpdateWithAppState memory req
+    )
+        private
+        pure
+        returns (bool)
+    {
+        bytes32 digest = computeAppChallengeHash(
+            identityHash,
+            keccak256(req.appState),
+            req.versionNumber,
+            req.timeout
+        );
+        return verifySignatures(req.signatures, digest, participants);
+    }
+
+
+    function correctKeySignedTheAction(
+        address appDefinition,
+        address[] memory participants,
+        SignedAppChallengeUpdateWithAppState memory req,
+        SignedAction memory action
+    )
+        private
+        pure
+        returns (bool)
+    {
+        address turnTaker = LibAppCaller.getTurnTaker(
+            appDefinition,
+            participants,
+            req.appState
         );
 
-        delete appChallenges[identityHash];
+        address signer = computeActionHash(
+            turnTaker,
+            keccak256(req.appState),
+            action.encodedAction,
+            req.versionNumber
+        ).recover(action.signature);
 
+        return turnTaker == signer;
     }
 }

@@ -39,6 +39,21 @@ contract LibStateChannelApp {
         uint256 finalizesAt;
     }
 
+    // A structure representing a doubly signed app state
+    struct SignedAppChallengeUpdateWithAppState {
+        bytes appState; // will be hashed in MixinSetState
+        uint128 versionNumber;
+        uint256 timeout;
+        bytes[] signatures;
+    }
+
+    // A structure representing a signed action to be taken
+    // on top of an app by the correct turn taker
+    struct SignedAction {
+        bytes encodedAction;
+        bytes signature;
+    }
+
     /// @dev Verifies signatures given the signer addresses
     /// @param signatures message `txHash` signature
     /// @param txHash operation ethereum signed message hash

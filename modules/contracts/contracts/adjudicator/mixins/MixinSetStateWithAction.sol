@@ -8,20 +8,6 @@ import "./MChallengeRegistryCore.sol";
 
 contract MixinSetStateWithAction is LibStateChannelApp, LibAppCaller, MChallengeRegistryCore {
 
-    struct SignedAppChallengeUpdateWithAppState {
-        // NOTE: We include the full bytes of the state update,
-        //       not just the hash of it as in MixinSetState.
-        bytes appState;
-        uint128 versionNumber;
-        uint256 timeout;
-        bytes[] signatures;
-    }
-
-    struct SignedAction {
-        bytes encodedAction;
-        bytes signature;
-    }
-
     /// @notice Create a challenge regarding the latest signed state and immediately after,
     /// performs a unilateral action to update it.
     /// @param appIdentity An AppIdentity pointing to the app having its challenge progressed
@@ -44,14 +30,19 @@ contract MixinSetStateWithAction is LibStateChannelApp, LibAppCaller, MChallenge
             "Call to setStateWithAction included incorrectly signed state update"
         );
 
+        // enforce that the challenge is either non existent or ready
+        // to be reset, allows the same app to be challenged multiple
+        // times in the case of long-lived applications
         require(
-            challenge.status == ChallengeStatus.NO_CHALLENGE ||
-            isChallengeNotFinalized(challenge.status, challenge.finalizesAt),
-            "setStateWithAction was called on an app that has already been finalized"
+            challenge.status == ChallengeStatus.NO_CHALLENGE || challenge.status == ChallengeStatus.OUTCOME_SET
+            "setStateWithAction was called on an app that already has an active challenge"
         );
 
+        // will just enforce the req.versionNumber is gte zero
+        // (can dispute the initial state) or whatever the state after
+        // a dispute completes can be re-disputed
         require(
-            req.versionNumber > challenge.versionNumber,
+            req.versionNumber >= challenge.versionNumber,
             "setStateWithAction was called with outdated state"
         );
 
