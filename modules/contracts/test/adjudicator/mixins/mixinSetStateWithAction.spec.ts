@@ -20,6 +20,7 @@ import {
   computeAppChallengeHash,
   sortSignaturesBySignerAddress,
   computeActionHash,
+  setOutcome,
 } from "../utils";
 import { Zero, One } from "ethers/constants";
 import {
@@ -129,7 +130,25 @@ describe("MixinSetStateWithAction.sol", () => {
   });
 
   it("should fail if the version number is outdated", async () => {
-    await setStateWithAction();
+    await setStateWithSignatures(
+      appIdentityTestObject,
+      [alice, bob],
+      challengeRegistry,
+      versionNumber.add(1),
+      encodedState,
+      0,
+    );
+    const challengeFinalized = await getChallenge(
+      appIdentityTestObject.identityHash,
+      challengeRegistry,
+    );
+    expect(challengeFinalized.status).to.be.equal(ChallengeStatus.EXPLICITLY_FINALIZED);
+    await setOutcome(appIdentityTestObject, challengeRegistry, encodedState);
+    const challengeOutcome = await getChallenge(
+      appIdentityTestObject.identityHash,
+      challengeRegistry,
+    );
+    expect(challengeOutcome.status).to.be.equal(ChallengeStatus.OUTCOME_SET);
     await expect(setStateWithAction()).to.be.revertedWith(
       `setStateWithAction was called with outdated state`,
     );
@@ -167,7 +186,7 @@ describe("MixinSetStateWithAction.sol", () => {
     const challenge = await getChallenge(appIdentityTestObject.identityHash, challengeRegistry);
     expect(challenge.status).to.be.equal(ChallengeStatus.EXPLICITLY_FINALIZED);
     await expect(setStateWithAction()).to.be.revertedWith(
-      `setStateWithAction was called on an app that has already been finalized`,
+      `setStateWithAction was called on an app that already has an active challenge`,
     );
   });
 
