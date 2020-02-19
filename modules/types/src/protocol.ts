@@ -195,6 +195,7 @@ export namespace ProtocolTypes {
   export const chan_withdrawCommitment = "chan_withdrawCommitment";
   // dispute protocol methods
   export const chan_setState = "chan_setState";
+  export const chan_setStateWithAction = "chan_setStateWithAction";
 
   export const RpcMethodNames = {
     [chan_create]: chan_create,
@@ -222,6 +223,7 @@ export namespace ProtocolTypes {
     [chan_withdraw]: chan_withdraw,
     [chan_withdrawCommitment]: chan_withdrawCommitment,
     [chan_setState]: chan_setState,
+    [chan_setStateWithAction]: chan_setStateWithAction,
   };
   export type RpcMethodName = keyof typeof RpcMethodNames;
 
@@ -464,12 +466,21 @@ export namespace ProtocolTypes {
     transaction: MinimalTransaction;
   };
 
+  /////////////////////////////////
   // dispute method types
   export type SetStateParams = {
     appInstanceId: string;
   };
-  // minimal transaction? state set with?
+
   export type SetStateResult = {
+    txHash?: string;
+  };
+
+  export type SetStateWithActionParams = {
+    appInstanceId: string;
+  };
+
+  export type SetStateWithActionResult = {
     txHash?: string;
   };
 
@@ -488,7 +499,8 @@ export namespace ProtocolTypes {
     | CreateChannelParams
     | GetChannelAddressesParams
     | DeployStateDepositHolderParams
-    | SetStateParams;
+    | SetStateParams
+    | SetStateWithActionParams;
   export type MethodResult =
     | GetAppInstancesResult
     | GetProposedAppInstancesResult
@@ -504,7 +516,8 @@ export namespace ProtocolTypes {
     | CreateChannelResult
     | GetChannelAddressesResult
     | DeployStateDepositHolderResult
-    | SetStateResult;
+    | SetStateResult
+    | SetStateWithActionResult;
 
   export type CreateMultisigEventData = {
     owners: string[];

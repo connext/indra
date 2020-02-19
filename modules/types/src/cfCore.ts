@@ -81,4 +81,6 @@ export namespace CFCoreTypes {
   // disputes
   export type SetStateParams = ProtocolTypes.SetStateParams;
   export type SetStateResult = ProtocolTypes.SetStateResult;
+  export type SetStateWithActionParams = ProtocolTypes.SetStateWithActionParams;
+  export type SetStateWithActionResult = ProtocolTypes.SetStateWithActionResult;
 }
