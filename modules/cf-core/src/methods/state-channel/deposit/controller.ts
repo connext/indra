@@ -1,3 +1,4 @@
+import { DEPOSIT_CONFIRMED_EVENT } from "@connext/types";
 import { Contract } from "ethers";
 import { BigNumber } from "ethers/utils";
 import { jsonRpcMethod } from "rpc-server";
@@ -21,7 +22,6 @@ import {
 
 import { installBalanceRefundApp, makeDeposit, uninstallBalanceRefundApp } from "./operation";
 import { getCreate2MultisigAddress } from "../../../utils";
-import { DEPOSIT_CONFIRMED_EVENT } from "@connext/types";
 
 export default class DepositController extends NodeController {
   @jsonRpcMethod(ProtocolTypes.chan_deposit)
