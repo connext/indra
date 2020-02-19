@@ -7,7 +7,7 @@ import { toBeEq } from "../machine/integration/bignumber-jest-matcher";
 import { installAndRedeemLink, installLink, makeSimpleTransfer } from "./connext-utils";
 import { initialLinkedState } from "./linked-transfer";
 import { setup, SetupContext } from "./setup";
-import { collateralizeChannel, createChannel, deposit } from "./utils";
+import { createChannel, deposit } from "./utils";
 
 jest.setTimeout(10_000);
 
