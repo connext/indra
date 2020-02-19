@@ -119,7 +119,7 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibAppCaller, MChallenge
         }
 
         // update remaining challenge fields
-        // should this be +1 in the set state with action case?
+        // TODO: should this be +1 in the set state with action case?
         challenge.versionNumber = stateReq.versionNumber;
         challenge.challengeCounter += 1;
         challenge.latestSubmitter = msg.sender;
