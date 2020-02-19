@@ -638,7 +638,7 @@ export class StateChannel {
         new Map(
           [...Object.values(dropNulls(json.challenges) || [])].map((challenge): [
             string,
-            ChallengeJson,
+            Challenge,
           ] => {
             return [challenge[0], Challenge.fromJson(challenge[1])];
           }),
