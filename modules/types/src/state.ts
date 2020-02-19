@@ -1,5 +1,6 @@
 import { AppInstanceProposal, AppInstanceJson } from "./app";
 import { SingleAssetTwoPartyIntermediaryAgreement } from "./contracts";
+import { ChallengeJson } from "./challenge";
 
 // Increment this every time StateChannelJSON is modified
 // This is used to signal to clients that they need to delete/restore their state
@@ -27,4 +28,5 @@ export type StateChannelJSON = {
   ][];
   readonly freeBalanceAppInstance: AppInstanceJson | undefined;
   readonly monotonicNumProposedApps: number;
+  readonly challenges: [string, ChallengeJson][];
 };

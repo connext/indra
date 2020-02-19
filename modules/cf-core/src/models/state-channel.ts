@@ -1,4 +1,5 @@
 import {
+  ChallengeJson,
   CriticalStateChannelAddresses,
   SingleAssetTwoPartyIntermediaryAgreement,
   StateChannelJSON,
@@ -21,6 +22,7 @@ import {
   TokenIndexedCoinTransferMap,
 } from "./free-balance";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
+import { Challenge } from "./challenge";
 
 // TODO: Hmmm this code should probably be somewhere else?
 export const HARD_CODED_ASSUMPTIONS = {
@@ -58,6 +60,8 @@ export class StateChannel {
     private readonly freeBalanceAppInstance?: AppInstance,
     private readonly monotonicNumProposedApps: number = 0,
     public readonly schemaVersion: number = StateSchemaVersion,
+    // TODO: keyed on challenge hash or appIdHash?
+    public readonly challenges: ReadonlyMap<string, Challenge> = new Map<string, Challenge>([]),
   ) {
     userNeuteredExtendedKeys.forEach(xpub => {
       if (!xpub.startsWith("xpub")) {
@@ -264,6 +268,7 @@ export class StateChannel {
     freeBalanceAppInstance?: AppInstance;
     monotonicNumProposedApps?: number;
     schemaVersion?: number;
+    challenges?: ReadonlyMap<string, Challenge>;
   }) {
     return new StateChannel(
       args.multisigAddress || this.multisigAddress,
@@ -276,6 +281,7 @@ export class StateChannel {
       args.freeBalanceAppInstance || this.freeBalanceAppInstance,
       args.monotonicNumProposedApps || this.monotonicNumProposedApps,
       args.schemaVersion || this.schemaVersion,
+      args.challenges || this.challenges,
     );
   }
 
@@ -411,6 +417,33 @@ export class StateChannel {
     });
   }
 
+  public removeChallenge(appInstanceId: string) {
+    const challenges = new Map<string, Challenge>(this.challenges.entries());
+
+    challenges.delete(appInstanceId);
+
+    return this.build({
+      challenges,
+    });
+  }
+
+  public addChallenge(challenge: Challenge) {
+    const challenges = new Map<string, Challenge>(this.challenges.entries());
+
+    challenges.set(challenge.appIdentityHash, challenge);
+
+    return this.build({
+      challenges,
+    });
+  }
+
+  public getChallengeByAppID(appIdentityHash: string): Challenge | undefined {
+    if (!this.appInstances.has(appIdentityHash)) {
+      return undefined;
+    }
+    return this.challenges.get(appIdentityHash)!;
+  }
+
   public setState(appInstanceIdentityHash: string, state: SolidityValueType) {
     const appInstance = this.getAppInstance(appInstanceIdentityHash);
 
@@ -482,7 +515,6 @@ export class StateChannel {
     // If the app is in the proposed apps, make sure it is
     // removed (otherwise channel is persisted with proposal +
     // installed application after protocol)
-    // NOTE: `deposit` will install an app, but never propose it
 
     let proposedAppInstances;
     if (this.proposedAppInstances.has(appInstance.identityHash)) {
@@ -559,6 +591,9 @@ export class StateChannel {
         ...this.singleAssetTwoPartyIntermediaryAgreements.entries(),
       ],
       schemaVersion: this.schemaVersion,
+      challenges: [...this.challenges.entries()].map((challenge): [string, ChallengeJson] => {
+        return [challenge[0], challenge[1].toJson()];
+      }),
     };
   }
 
@@ -600,6 +635,14 @@ export class StateChannel {
         json.freeBalanceAppInstance ? AppInstance.fromJson(json.freeBalanceAppInstance) : undefined,
         json.monotonicNumProposedApps,
         json.schemaVersion,
+        new Map(
+          [...Object.values(dropNulls(json.challenges) || [])].map((challenge): [
+            string,
+            ChallengeJson,
+          ] => {
+            return [challenge[0], Challenge.fromJson(challenge[1])];
+          }),
+        ),
       );
     } catch (e) {
       throw new Error(
