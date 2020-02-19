@@ -7,8 +7,13 @@ import { Contract } from "ethers";
 
 import { RequestHandler } from "../../../request-handler";
 import { CFCoreTypes } from "../../../types";
-import { TransactionResponse } from "ethers/providers";
-import { SET_STATE_FAILED } from "../../errors";
+import { TransactionResponse, BaseProvider } from "ethers/providers";
+import {
+  SET_STATE_FAILED,
+  INCORRECT_CHALLENGE_STATUS,
+  CHALLENGE_PERIOD_ELAPSED,
+} from "../../errors";
+import { StateChannel } from "../../../models";
 
 const SET_STATE_RETRY_COUNT = 3;
 
@@ -16,23 +21,52 @@ export async function submitSetState(
   requestHandler: RequestHandler,
   params: CFCoreTypes.SetStateParams,
 ): Promise<string | undefined> {
+  const { store } = requestHandler;
+  const { appInstanceId } = params;
+
+  const app = await store.getAppInstance(appInstanceId);
+
+  const signatures = ["wtf", "where"];
+
+  const contractParameters = [
+    app.identity,
+    {
+      appStateHash: app.hashOfLatestState,
+      signatures,
+      timeout: app.timeout,
+      versionNumber: app.versionNumber,
+    },
+  ];
+  return sendDisputeTransaction(
+    "setState",
+    contractParameters,
+    SET_STATE_RETRY_COUNT,
+    requestHandler,
+    params,
+  );
+}
+
+export async function sendDisputeTransaction(
+  functionName: string,
+  contractParameters: any,
+  retries: number,
+  requestHandler: RequestHandler,
+  params: CFCoreTypes.SetStateParams, // ANY dispute params
+): Promise<string | undefined> {
   const {
     blocksNeededForConfirmation,
     networkContext,
     outgoing,
     publicIdentifier,
-    store,
   } = requestHandler;
+
   const { appInstanceId } = params;
 
-  const app = await store.getAppInstance(appInstanceId);
-
   const signer = await requestHandler.getSigner();
-  const signatures = ["wtf", "where"];
 
   let txResponse: TransactionResponse;
 
-  let retryCount = SET_STATE_RETRY_COUNT;
+  let retryCount = retries;
   const errors: string[] = [];
   while (retryCount > 0) {
     try {
@@ -41,13 +75,7 @@ export async function submitSetState(
         ChallengeRegistry.abi,
         signer,
       );
-      txResponse = await challengeRegistry.functions.setState(app.identity, {
-        appStateHash: app.hashOfLatestState,
-        signatures,
-        timeout: app.timeout,
-        versionNumber: app.versionNumber,
-      });
-
+      txResponse = await challengeRegistry.functions[functionName](...contractParameters);
       break;
     } catch (e) {
       errors.push(e.toString());
@@ -75,4 +103,27 @@ export async function submitSetState(
 
   await txResponse!.wait(blocksNeededForConfirmation);
   return txResponse!.hash;
+}
+
+export async function validateChallenge(
+  appInstanceId: string,
+  provider: BaseProvider,
+  channel: StateChannel,
+): Promise<void> {
+  const challenge = channel.getChallengeByAppID(appInstanceId);
+  if (!challenge) {
+    // just because it does not exist does not mean it is not
+    // an active challenge
+    return;
+  }
+
+  // make sure its status is fine and the timeout is compatible
+  if (challenge.status === "OUTCOME_SET" || challenge.status === "EXPLICITLY_FINALIZED") {
+    throw Error(INCORRECT_CHALLENGE_STATUS);
+  }
+
+  const currBlock = await provider.getBlockNumber();
+  if (challenge.finalizesAt.lte(currBlock)) {
+    throw Error(CHALLENGE_PERIOD_ELAPSED(currBlock, challenge.finalizesAt));
+  }
 }
