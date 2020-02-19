@@ -10,10 +10,9 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibAppCaller, MChallenge
 
     /// @notice Respond to a challenge with a valid action or a valid higher state
     /// @param appIdentity an AppIdentity object pointing to the app for which there is a challenge to progress
-    /// @param appState The ABI encoded latest signed application state
-    /// @param action The ABI encoded action the submitter wishes to take
-    /// @param actionSignature A bytes string of a single signature by the address of the
-    /// participant for which it is their turn to take the submitted `action`
+    /// @param stateReq An object of the form `SignedAppChallengeUpdateWithAppState` defined in `LibAppCaller` that represents the doubly signed state to either update the challenge with or to apply an action to
+    /// @param actionReq An object of form `SignedAction` defined in `LibAppCaller` that represents the encoded and signed action to be
+    // taken on the `stateReq`
     /// @dev This function is only callable when the application has an open challenge
     function respondToChallenge(
         AppIdentity memory appIdentity,
