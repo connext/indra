@@ -470,7 +470,7 @@ export namespace ProtocolTypes {
   };
   // minimal transaction? state set with?
   export type SetStateResult = {
-    txHash: string;
+    txHash?: string;
   };
 
   export type MethodParams =
