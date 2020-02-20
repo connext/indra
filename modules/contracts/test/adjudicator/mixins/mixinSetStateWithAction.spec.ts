@@ -17,20 +17,12 @@ import {
   getChallenge,
   ChallengeStatus,
   setStateWithSignatures,
-  computeAppChallengeHash,
-  sortSignaturesBySignerAddress,
-  computeActionHash,
   setOutcome,
+  getActionSignature,
+  getStateSignatures,
 } from "../utils";
 import { Zero, One } from "ethers/constants";
-import {
-  BigNumberish,
-  keccak256,
-  bigNumberify,
-  BigNumber,
-  SigningKey,
-  joinSignature,
-} from "ethers/utils";
+import { BigNumberish, keccak256, bigNumberify, BigNumber } from "ethers/utils";
 
 const alice =
   // 0xaeF082d339D227646DB914f0cA9fF02c8544F30b
@@ -161,9 +153,16 @@ describe("MixinSetStateWithAction.sol", () => {
   });
 
   it("should fail if the timeouts are 0", async () => {
-    await expect(setStateWithAction(undefined, undefined, undefined, 0)).to.be.revertedWith(
-      `Timeout must be greater than 0`,
+    const zeroTimeout = new AppIdentityTestClass(
+      [alice.address, bob.address],
+      appWithAction.address,
+      0,
+      globalChannelNonce,
     );
+    globalChannelNonce += 1;
+    await expect(
+      setStateWithAction(undefined, undefined, undefined, undefined, undefined, zeroTimeout),
+    ).to.be.revertedWith(`Timeout must be greater than 0`);
   });
 
   it("should fail if the timeout < finalizes", async () => {
@@ -191,26 +190,20 @@ describe("MixinSetStateWithAction.sol", () => {
   });
 
   it("should fail if the signatures on the state are incorrect", async () => {
-    const stateHash = keccak256(encodedState);
-    const submittedVersionNo = versionNumber.add(1);
     const timeout = Zero;
-    const stateDigest = computeAppChallengeHash(
+    const stateSigs = await getStateSignatures(
       appIdentityTestObject.identityHash,
-      stateHash,
-      submittedVersionNo,
+      [alice, bob],
+      encodedState,
+      versionNumber,
       timeout,
     );
-    const stateSigs = sortSignaturesBySignerAddress(stateDigest, [
-      await new SigningKey(alice.privateKey).signDigest(stateDigest),
-      await new SigningKey(bob.privateKey).signDigest(stateDigest),
-    ]).map(joinSignature);
-    const actionDigest = computeActionHash(
-      bob.address,
-      stateHash,
+    const actionSig = await getActionSignature(
+      bob,
+      keccak256(encodedState),
       encodedAction,
-      bigNumberify(versionNumber).toNumber(),
+      versionNumber,
     );
-    const actionSig = joinSignature(await new SigningKey(bob.privateKey).signDigest(actionDigest));
     await expect(
       challengeRegistry.functions.setStateWithAction(
         appIdentityTestObject.appIdentity,
