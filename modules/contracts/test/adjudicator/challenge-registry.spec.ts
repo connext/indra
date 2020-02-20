@@ -24,8 +24,10 @@ import {
   setOutcome,
   setStateWithSignatures,
   setStateWithSignedAction,
+  getStateSignatures,
+  getActionSignature,
 } from "./utils";
-import { Zero } from "ethers/constants";
+import { Zero, HashZero } from "ethers/constants";
 
 const ALICE =
   // 0xaeF082d339D227646DB914f0cA9fF02c8544F30b
@@ -53,9 +55,22 @@ describe("ChallengeRegistry", () => {
     appState?: string,
     timeout?: number,
   ) => Promise<Challenge>;
+  let respondToChallengeWithHigherState: (
+    versionNumber: BigNumberish,
+    appState?: string,
+    timeout?: number,
+  ) => Promise<Challenge>;
   let cancel: () => Promise<void>;
   let outcome: (finalState?: string) => Promise<void>;
   let setStateWithAction: (
+    versionNo: BigNumberish,
+    action?: string,
+    appState?: string,
+    turnTaker?: Wallet,
+    timeout?: BigNumberish,
+    appIdentity?: AppIdentityTestClass,
+  ) => Promise<Challenge>;
+  let respondToChallengeWithValidAction: (
     versionNo: BigNumberish,
     action?: string,
     appState?: string,
@@ -84,7 +99,7 @@ describe("ChallengeRegistry", () => {
 
     setStateWithSigs = async (
       versionNumber: BigNumberish,
-      appState: string = encodeAppState(getAppWithActionState()),
+      appState: string = encodeAppState(getAppWithActionState(versionNumber)),
       timeout: number = ONCHAIN_CHALLENGE_TIMEOUT,
     ): Promise<Challenge> => {
       await setStateWithSignatures(
@@ -109,11 +124,51 @@ describe("ChallengeRegistry", () => {
       return challenge;
     };
 
+    respondToChallengeWithHigherState = async (
+      versionNumber: BigNumberish,
+      encodedAppState: string = encodeAppState(getAppWithActionState(versionNumber)),
+      timeout: number = ONCHAIN_CHALLENGE_TIMEOUT,
+    ) => {
+      const stateSigs = await getStateSignatures(
+        appIdentityTestObject.identityHash,
+        [ALICE, BOB],
+        encodedAppState,
+        versionNumber,
+        timeout,
+      );
+      await challengeRegistry.functions.respondToChallenge(
+        appIdentityTestObject.appIdentity,
+        {
+          appState: encodedAppState,
+          versionNumber,
+          timeout,
+          signatures: stateSigs,
+        },
+        {
+          encodedAction: HashZero,
+          signature: HashZero,
+        },
+      );
+
+      // make sure the challenge is correct
+      const challenge = await getChallenge(appIdentityTestObject.identityHash, challengeRegistry);
+      expect(challenge).to.containSubset({
+        appStateHash: keccak256(encodedAppState),
+        finalizesAt: bigNumberify(timeout).add(await provider.getBlockNumber()),
+        latestSubmitter: wallet.address,
+        status: bigNumberify(timeout).isZero()
+          ? ChallengeStatus.EXPLICITLY_FINALIZED
+          : ChallengeStatus.FINALIZES_AFTER_DEADLINE,
+        versionNumber: bigNumberify(versionNumber),
+      });
+      return challenge;
+    };
+
     setStateWithAction = async (
       versionNo: BigNumberish,
       action: string = encodeAppAction(getIncrementCounterAction()),
-      appState: string = encodeAppState(getAppWithActionState()),
-      turnTaker: Wallet = BOB,
+      appState: string = encodeAppState(getAppWithActionState(versionNo)),
+      turnTaker: Wallet = ALICE,
       timeout: BigNumberish = ONCHAIN_CHALLENGE_TIMEOUT,
       appIdentity: AppIdentityTestClass = appIdentityTestObject,
     ): Promise<Challenge> => {
@@ -139,7 +194,58 @@ describe("ChallengeRegistry", () => {
         status: bigNumberify(timeout).isZero()
           ? ChallengeStatus.EXPLICITLY_FINALIZED
           : ChallengeStatus.FINALIZES_AFTER_DEADLINE,
-        versionNumber: bigNumberify(versionNo),
+        versionNumber: bigNumberify(versionNo).add(1),
+      });
+      return challenge;
+    };
+
+    respondToChallengeWithValidAction = async (
+      versionNumber: BigNumberish,
+      encodedAction: string = encodeAppAction(getIncrementCounterAction()),
+      encodedAppState: string = encodeAppState(getAppWithActionState(versionNumber)),
+      turnTaker: Wallet = ALICE,
+      timeout: BigNumberish = ONCHAIN_CHALLENGE_TIMEOUT,
+      appIdentity: AppIdentityTestClass = appIdentityTestObject,
+    ) => {
+      const stateSigs = await getStateSignatures(
+        appIdentity.identityHash,
+        [ALICE, BOB],
+        encodedAppState,
+        versionNumber,
+        timeout,
+      );
+      const actionSig = await getActionSignature(
+        turnTaker,
+        keccak256(encodedAppState),
+        encodedAction,
+        versionNumber,
+      );
+      await challengeRegistry.functions.respondToChallenge(
+        appIdentity.appIdentity,
+        {
+          appState: encodedAppState,
+          versionNumber,
+          timeout,
+          signatures: stateSigs,
+        },
+        {
+          encodedAction: encodedAction,
+          signature: actionSig,
+        },
+      );
+
+      const newState = await getFinalState(encodedAppState, encodedAction);
+
+      // make sure the challenge is correct
+      const challenge = await getChallenge(appIdentityTestObject.identityHash, challengeRegistry);
+      expect(challenge).to.containSubset({
+        appStateHash: keccak256(newState),
+        finalizesAt: bigNumberify(appIdentityTestObject.defaultTimeout).add(
+          await provider.getBlockNumber(),
+        ),
+        latestSubmitter: wallet.address,
+        status: ChallengeStatus.FINALIZES_AFTER_DEADLINE,
+        versionNumber: bigNumberify(versionNumber).add(1),
       });
       return challenge;
     };
@@ -215,7 +321,7 @@ describe("ChallengeRegistry", () => {
           await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
         ).to.eq(1);
         await advanceBlocks(provider, challenge.finalizesAt);
-        await outcome();
+        await outcome(await getFinalState());
       });
 
       it("should work many times", async () => {
@@ -237,10 +343,10 @@ describe("ChallengeRegistry", () => {
           await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
         ).to.eq(3);
         await advanceBlocks(provider, challenge.finalizesAt);
-        await outcome();
+        await outcome(await getFinalState(encodeAppState(getAppWithActionState(2))));
       });
 
-      it("should work many times without cancelling challenges", async () => {
+      it("should not be able to call many times without cancelling", async () => {
         expect(
           await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
         ).to.eq(0);
@@ -248,40 +354,63 @@ describe("ChallengeRegistry", () => {
         expect(
           await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
         ).to.eq(1);
-        await setStateWithSigs(2);
+        await expect(setStateWithSigs(2)).to.be.revertedWith(
+          `revert setState was called on an app that already has an active challenge`,
+        );
+      });
+
+      it("should be able to respond many times to a challenge", async () => {
+        expect(
+          await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
+        ).to.eq(0);
+        await setStateWithSigs(1);
+        expect(
+          await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
+        ).to.eq(1);
+        await respondToChallengeWithHigherState(2);
         expect(
           await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
         ).to.eq(2);
-        const challenge = await setStateWithSigs(3);
+        const challenge = await respondToChallengeWithHigherState(3);
         expect(
           await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
         ).to.eq(3);
         await advanceBlocks(provider, challenge.finalizesAt);
-        await outcome();
+        await outcome(encodeAppState(getAppWithActionState(3)));
       });
 
       it("should work with much higher versionNumber", async () => {
         expect(
           await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
         ).to.eq(0);
-        const challenge = await setStateWithSigs(1000);
+        const challenge = await setStateWithSigs(1);
+        expect(
+          await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
+        ).to.eq(1);
+        await respondToChallengeWithHigherState(1000);
         expect(
           await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
         ).to.eq(1000);
         await advanceBlocks(provider, challenge.finalizesAt);
-        await outcome();
+        await outcome(encodeAppState(getAppWithActionState(1000)));
       });
 
       it("shouldn't work with an equal versionNumber", async () => {
-        await expect(setStateWithSigs(0)).to.be.reverted;
+        await setStateWithSigs(1);
         expect(
           await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
-        ).to.eq(0);
+        ).to.eq(1);
+        await expect(
+          respondToChallengeWithHigherState(1, encodeAppState(getAppWithActionState())),
+        ).to.be.revertedWith(`revert respondToChallenge was called with an outdated state`);
+        expect(
+          await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
+        ).to.eq(1);
       });
 
       it("shouldn't work with a lower versionNumber", async () => {
         await setStateWithSigs(1);
-        await expect(setStateWithSigs(0)).to.be.reverted;
+        await expect(respondToChallengeWithHigherState(0)).to.be.reverted;
         expect(
           await latestVersionNumber(appIdentityTestObject.identityHash, challengeRegistry),
         ).to.eq(1);
@@ -297,60 +426,71 @@ describe("ChallengeRegistry", () => {
 
       it("should be able to respond to challenge with a valid action", async () => {
         await setStateWithSigs(1);
-        const challenge = await setStateWithAction(2);
+        const challenge = await respondToChallengeWithValidAction(1, undefined, undefined, ALICE);
         await advanceBlocks(provider, challenge.finalizesAt);
-        const finalState = await getFinalState();
+        const finalState = await getFinalState(encodeAppState(getAppWithActionState(1)));
         await outcome(finalState);
       });
     });
 
     describe("with signing keys and setStateWithAction", async () => {
       it("should work many times", async () => {
-        await setStateWithAction(1);
+        await setStateWithAction(1); // nonced at 2 after action applied
         await cancel();
-        await setStateWithAction(2);
+        await setStateWithAction(3); // nonced at 4 after action applied
         await cancel();
-        const challenge = await setStateWithAction(3);
+        const challenge = await setStateWithAction(5); // nonced at 6 after action applied
         await advanceBlocks(provider, challenge.finalizesAt);
-        const finalState = await getFinalState();
+        const finalState = await getFinalState(encodeAppState(getAppWithActionState(5))); // applies an action
         await outcome(finalState);
       });
 
-      it("should work many times without cancelling", async () => {
+      it("should not work many times without cancelling", async () => {
+        const original = await setStateWithAction(1);
+        await expect(setStateWithAction(2)).to.be.reverted;
+        const challenge = await getChallenge(appIdentityTestObject.identityHash, challengeRegistry);
+        expect(original).to.containSubset(challenge);
+      });
+
+      it("should be able to respond many times with actions", async () => {
         await setStateWithAction(1);
-        await setStateWithAction(2);
-        const challenge = await setStateWithAction(3);
+        await respondToChallengeWithValidAction(2);
+        await respondToChallengeWithValidAction(3);
+        const challenge = await respondToChallengeWithValidAction(4);
         await advanceBlocks(provider, challenge.finalizesAt);
-        const finalState = await getFinalState();
+        const finalState = await getFinalState(encodeAppState(getAppWithActionState(4)));
         await outcome(finalState);
       });
 
       it("should work with much higher version number", async () => {
         await setStateWithAction(1);
-        const challenge = await setStateWithAction(200);
+        // NOTE: calling without `respondToChallengeWithHigherState` first
+        // does not fail, but will not result in the action being applied
+        await respondToChallengeWithHigherState(200);
+        const challenge = await respondToChallengeWithValidAction(200);
         await advanceBlocks(provider, challenge.finalizesAt);
-        const finalState = await getFinalState();
+        const finalState = await getFinalState(encodeAppState(getAppWithActionState(200)));
         await outcome(finalState);
       });
 
       it("should fail with an equal version number", async () => {
         await setStateWithAction(1);
-        await expect(setStateWithAction(1)).to.be.revertedWith(
-          `setStateWithAction was called with outdated state`,
+        await expect(respondToChallengeWithValidAction(1)).to.be.revertedWith(
+          `respondToChallenge was called with outdated state`,
         );
       });
 
       it("should fail with a lower version number", async () => {
         await setStateWithAction(3);
-        await expect(setStateWithAction(1)).to.be.revertedWith(
-          `setStateWithAction was called with outdated state`,
+        await expect(respondToChallengeWithValidAction(1)).to.be.revertedWith(
+          `respondToChallenge was called with outdated state`,
         );
       });
 
-      it("should be able to respond with a valid higher state using `setState`", async () => {
-        await setStateWithAction(1);
-        const updatedState = await getFinalState();
-        const challenge = await setStateWithSigs(2, updatedState);
+      it("should be able to respond with a valid higher state using `respondToChallengeWithHigherState`", async () => {
+        await setStateWithAction(1); // state is nonced at 2 after call
+        const updatedState = await getFinalState(encodeAppState(getAppWithActionState(2))); // resultant from action applied
+        const challenge = await respondToChallengeWithHigherState(3);
         await advanceBlocks(provider, challenge.finalizesAt);
         await outcome(updatedState);
       });
