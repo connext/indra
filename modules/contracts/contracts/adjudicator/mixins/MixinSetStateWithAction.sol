@@ -55,7 +55,7 @@ contract MixinSetStateWithAction is LibStateChannelApp, LibAppCaller, MChallenge
             "setStateWithAction called with action signed by incorrect turn taker"
         );
 
-        require(req.timeout > 0, "Timeout must be greater than 0");
+        require(appIdentity.defaultTimeout > 0, "Timeout must be greater than 0");
 
         bytes memory newState = LibAppCaller.applyAction(
             appIdentity.appDefinition,
