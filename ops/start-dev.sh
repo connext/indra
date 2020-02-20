@@ -7,7 +7,7 @@ project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 
 # Turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
 
-localProvider="http://localhost:8545"
+localProvider="http://ethprovider:8545"
 
 ####################
 # External Env Vars
@@ -48,6 +48,10 @@ allowed_swaps="[{\"from\":\"$token_address\",\"to\":\"0x000000000000000000000000
 if [[ -z "$chainId" ]]
 then echo "Failed to fetch chainId from provider ${INDRA_ETH_PROVIDER}" && exit 1;
 else echo "Got chainId $chainId, using token $token_address"
+fi
+
+if [[ "$chainId" == "$ganacheId" ]]
+then make deployed-contracts
 fi
 
 # database connection settings
