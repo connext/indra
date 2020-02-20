@@ -155,7 +155,9 @@ describe("MixinRespondToChallenge.sol", () => {
 
       const currBlock = await provider.getBlockNumber();
       expect(challenge).to.containSubset({
-        versionNumber: bigNumberify(versionNumber),
+        versionNumber: isApplyingAction
+          ? bigNumberify(versionNumber).add(1)
+          : bigNumberify(versionNumber),
         challengeCounter: existingChallenge.challengeCounter.add(1),
         latestSubmitter: wallet.address,
         status: bigNumberify(timeout).isZero()

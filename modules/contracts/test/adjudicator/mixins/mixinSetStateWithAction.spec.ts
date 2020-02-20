@@ -111,7 +111,7 @@ describe("MixinSetStateWithAction.sol", () => {
         status: bigNumberify(timeout).isZero()
           ? ChallengeStatus.EXPLICITLY_FINALIZED
           : ChallengeStatus.FINALIZES_AFTER_DEADLINE,
-        versionNumber: One,
+        versionNumber: bigNumberify(versionNo).add(1),
       });
       return challenge;
     };
