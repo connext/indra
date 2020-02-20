@@ -2,6 +2,7 @@ pragma solidity 0.5.11;
 pragma experimental "ABIEncoderV2";
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/cryptography/ECDSA.sol";
 import "../adjudicator/interfaces/CounterfactualApp.sol";
 import "../funding/libs/LibOutcome.sol";
 
@@ -13,15 +14,7 @@ import "../funding/libs/LibOutcome.sol";
 contract FastGenericSignedTransferApp is CounterfactualApp {
 
     using SafeMath for uint256;
-
-    // Do we need a payment status? An unlocked or rejected payment should be
-    // removed from the lockedPayments array entirely
-
-    // enum PaymentStatus {
-    //     CREATED,
-    //     UNLOCKED,
-    //     REJECTED
-    // }
+    using ECDSA for bytes32;
 
     enum ActionType {
         CREATE,
@@ -37,23 +30,19 @@ contract FastGenericSignedTransferApp is CounterfactualApp {
         bytes32 paymentID;
         uint256 timeout; // Block height. 0 is special case where there's no timeout.
         address recipient;
-        // PaymentStatus status;
+        bytes32 data;
+        bytes signature;
     }
 
     struct AppState {
-        Payment[10] lockedPayments;
+        Payment[] lockedPayments; // TODO: should this be a fixed size array? What happens with many locked payments in a dispute?
         LibOutcome.CoinTransfer[2] transfers; // balances
         bool finalized;
         uint256 turnNum;
     }
 
     struct Action {
-        bytes32 paymentID;
-        // sender-supplied
-        Payment newLockedPayment;
-        // receiver-supplied
-        bytes32 signature;
-        bytes32 data;
+        Payment newLockedPayments; // TODO: turn this into an array
         ActionType actionType;
     }
 
@@ -87,7 +76,7 @@ contract FastGenericSignedTransferApp is CounterfactualApp {
         if (state.finalized) {
             return abi.encode(state.transfers);
         } else {
-            revert("State is not finalized. Please finalize before uninstalling"); // TODO: Revert here? Or do something else?
+            revert("State is not finalized. Please finalize before uninstalling");
         }
     }
 
@@ -132,12 +121,13 @@ contract FastGenericSignedTransferApp is CounterfactualApp {
         internal
         pure
     {
-        // TODO require that this can only be called by sender
-        require(action.paymentID != "" && action.paymentID != 0, "PaymentID cannot be 0 or empty string");
+        require(state.turnNum % 2 == 0);
+        require(action.newLockedPayment.paymentID != "" && action.newLockedPayment.paymentID != 0, "PaymentID cannot be 0 or empty string");
         require(find(state.lockedPayments, action.paymentID) == 0, "Locked payment with this paymentID already exists.");
-        require(action.paymentID == action.newLockedPayment.paymentID, "PaymentIDs in action and payment object should be the same.");
-        // TODO require that the created payment is for less than the amount allocated to locked/completed payments so far
-        // TODO reduce the "balance" by this locked payment
+        
+        require(action.newLockedPayment.amount <= state.transfers[0].amount);
+        state.transfers[0].amount = state.transfers[0].amount.sub(action.newLockedPayment.amount);
+
         return insert(state.lockedPayments, action.newLockedPayment);
     }
 
@@ -148,15 +138,17 @@ contract FastGenericSignedTransferApp is CounterfactualApp {
         internal
         pure
     {
-        // TODO require that this can only be called by receiver
+        require(state.turnNum % 2 == 1);
         require(action.paymentID != "" && action.paymentID != 0, "PaymentID cannot be 0 or empty string");
-        require(find(state.lockedPayments, action.paymentID), "No locked payment with that paymentID exists");
+        require(find(state.lockedPayments, action.paymentID) != 0, "No locked payment with that paymentID exists");
         Payment memory lockedPayment = find(state.lockedPayments, action.paymentID);
 
-        //TODO convention for block number vs block time?
-        require(lockedPayment.timeout == 0 || lockedPayment.timeout >= block.number, "Timeout must be 0 or not have expired");
-        bytes32 memory rawHash = keccak256(bytes32(action.data), bytes32(lockedPayment.paymentID));
-        require(recoverSigner(rawHash, action.signature) == lockedPayment.signer, "Incorrect signer recovered from signature");
+        require(lockedPayment.timeout == 0 || lockedPayment.timeout <= block.number, "Timeout must be 0 or not have expired");
+        if (lockedPayment.timeout <= block.number) {
+            return remove(state.lockedPayments, action.paymentID);
+        }
+        bytes32 memory rawHash = keccak256(bytes32(action.data), bytes32(lockedPayment.paymentID)); // TODO any possibility of collision?
+        require(lockedPayment.signer == rawHash.recover(action.signature), "Incorrect signer recovered from signature");
 
         //TODO if this unlocks, add to balances
         return remove(state.lockedPayments, action.paymentID);
@@ -246,15 +238,5 @@ contract FastGenericSignedTransferApp is CounterfactualApp {
             }
         }
         return element;
-    }
-
-    function recoverSigner(
-        bytes32 memory rawHash,
-        bytes32 memory signature
-    )
-        internal
-        pure
-    {
-
     }
 }
