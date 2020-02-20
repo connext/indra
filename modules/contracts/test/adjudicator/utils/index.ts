@@ -301,6 +301,43 @@ export async function setStateWithSignatures(
   });
 }
 
+export async function getActionSignature(
+  signer: Wallet,
+  stateHash: string, // keccak(encode(state))
+  encodedAction: string,
+  versionNumber: BigNumberish,
+) {
+  const actionDigest = computeActionHash(
+    signer.address,
+    stateHash,
+    encodedAction,
+    bigNumberify(versionNumber).toNumber(),
+  );
+  const actionSig = joinSignature(await new SigningKey(signer.privateKey).signDigest(actionDigest));
+  return actionSig;
+}
+
+export async function getStateSignatures(
+  appIdentityHash: string,
+  participants: Wallet[],
+  encodedAppState: string,
+  versionNumber: BigNumberish,
+  timeout: BigNumberish,
+) {
+  const stateDigest = computeAppChallengeHash(
+    appIdentityHash,
+    keccak256(encodedAppState),
+    versionNumber,
+    timeout,
+  );
+  expect(participants.length).to.be.eq(2);
+  const stateSigs = sortSignaturesBySignerAddress(stateDigest, [
+    await new SigningKey(participants[0].privateKey).signDigest(stateDigest),
+    await new SigningKey(participants[1].privateKey).signDigest(stateDigest),
+  ]).map(joinSignature);
+  return stateSigs;
+}
+
 /**
  * Sets the state in the challenge registry by calling `setStateWithAction
  */
@@ -314,26 +351,18 @@ export async function setStateWithSignedAction(
   appState: string = HashZero,
   timeout: BigNumberish = ONCHAIN_CHALLENGE_TIMEOUT,
 ): Promise<void> {
-  const stateHash = keccak256(appState);
-  const stateDigest = computeAppChallengeHash(
+  const stateSigs = await getStateSignatures(
     appIdentity.identityHash,
-    stateHash,
+    participants,
+    appState,
     versionNumber,
     timeout,
   );
-  expect(participants.length).to.be.eq(2);
-  const stateSigs = sortSignaturesBySignerAddress(stateDigest, [
-    await new SigningKey(participants[0].privateKey).signDigest(stateDigest),
-    await new SigningKey(participants[1].privateKey).signDigest(stateDigest),
-  ]).map(joinSignature);
-  const actionDigest = computeActionHash(
-    turnTaker.address,
-    stateHash,
+  const actionSig = await getActionSignature(
+    turnTaker,
+    keccak256(appState),
     encodedAction,
     bigNumberify(versionNumber).toNumber(),
-  );
-  const actionSig = joinSignature(
-    await new SigningKey(turnTaker.privateKey).signDigest(actionDigest),
   );
   await challengeRegistry.functions.setStateWithAction(
     appIdentity.appIdentity,
