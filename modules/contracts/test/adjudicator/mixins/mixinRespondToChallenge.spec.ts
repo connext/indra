@@ -16,12 +16,14 @@ import {
   AppWithActionState,
   encodeAppState,
   encodeAppAction,
-  signaturesToBytes,
   getAppWithActionState,
   getIncrementCounterAction,
+  getStateSignatures,
+  getActionSignature,
 } from "../utils";
-import { BigNumberish, keccak256, bigNumberify, SigningKey } from "ethers/utils";
+import { BigNumberish, keccak256, bigNumberify } from "ethers/utils";
 import { HashZero, Zero, One } from "ethers/constants";
+import { AppWithAction } from "../../..";
 
 const alice =
   // 0xaeF082d339D227646DB914f0cA9fF02c8544F30b
@@ -44,6 +46,8 @@ describe("MixinRespondToChallenge.sol", () => {
     state?: AppWithActionState,
     action?: AppWithActionAction,
     signer?: Wallet,
+    versionNumber?: BigNumberish,
+    timeout?: BigNumberish,
   ) => Promise<void>;
 
   before(async () => {
@@ -73,7 +77,7 @@ describe("MixinRespondToChallenge.sol", () => {
 
     // sets the state and begins a challenge
     setChallenge = async (
-      appState: string = HashZero,
+      appState: string = encodeAppState(getAppWithActionState()),
       timeout: BigNumberish = ONCHAIN_CHALLENGE_TIMEOUT,
     ): Promise<Challenge> => {
       await setStateWithSignatures(
@@ -104,17 +108,64 @@ describe("MixinRespondToChallenge.sol", () => {
       state: AppWithActionState = getAppWithActionState(),
       action: AppWithActionAction = getIncrementCounterAction(),
       signer: Wallet = bob,
+      versionNumber: BigNumberish = One,
+      timeout: BigNumberish = ONCHAIN_CHALLENGE_TIMEOUT,
     ): Promise<void> => {
-      const hashedAndEncodedAction = keccak256(encodeAppAction(action));
-      const signingKey = new SigningKey(signer.privateKey);
-      const signature = await signingKey.signDigest(hashedAndEncodedAction);
-      const bytes = signaturesToBytes(signature);
-      return await challengeRegistry.functions.respondToChallenge(
+      const existingChallenge = await getChallenge(
+        appIdentityTestObject.identityHash,
+        challengeRegistry,
+      );
+      expect(existingChallenge).to.be.ok;
+
+      const actionSig = await getActionSignature(
+        signer,
+        keccak256(encodeAppState(state)),
+        encodeAppAction(action),
+        versionNumber,
+      );
+      const stateSigs = await getStateSignatures(
+        appIdentityTestObject.identityHash,
+        [alice, bob],
+        encodeAppState(state),
+        versionNumber,
+        timeout,
+      );
+      const isApplyingAction = existingChallenge.appStateHash === keccak256(encodeAppState(state));
+      await challengeRegistry.functions.respondToChallenge(
         appIdentityTestObject.appIdentity,
+        {
+          appState: encodeAppState(state),
+          versionNumber,
+          timeout,
+          signatures: stateSigs,
+        },
+        {
+          encodedAction: encodeAppAction(action),
+          signature: actionSig,
+        },
+      );
+
+      // validating updated challenge
+      const challenge = await getChallenge(appIdentityTestObject.identityHash, challengeRegistry);
+      const app = new Contract(appIdentityTestObject.appDefinition, AppWithAction.abi, wallet);
+      const newState = await app.functions.applyAction(
         encodeAppState(state),
         encodeAppAction(action),
-        bytes,
       );
+
+      const currBlock = await provider.getBlockNumber();
+      expect(challenge).to.containSubset({
+        versionNumber: bigNumberify(versionNumber),
+        challengeCounter: existingChallenge.challengeCounter.add(1),
+        latestSubmitter: wallet.address,
+        status: bigNumberify(timeout).isZero()
+          ? ChallengeStatus.EXPLICITLY_FINALIZED
+          : ChallengeStatus.FINALIZES_AFTER_DEADLINE,
+        appStateHash: isApplyingAction ? keccak256(newState) : keccak256(encodeAppState(state)),
+        finalizesAt: isApplyingAction
+          ? bigNumberify(appIdentityTestObject.defaultTimeout).add(currBlock)
+          : bigNumberify(timeout).add(currBlock),
+      });
     };
   });
 
@@ -126,63 +177,146 @@ describe("MixinRespondToChallenge.sol", () => {
     );
   });
 
-  it("should fail if the app state hash is not the same as the challenge app state hash", async () => {
+  it("should fail if the state is not correctly signed", async () => {
     await setChallenge();
-    await expect(respond(getAppWithActionState(2))).to.be.revertedWith(
-      "Tried to progress a challenge with non-agreed upon app",
-    );
-  });
-
-  it("should fail if it cannot get a turn taker", async () => {
-    appWithAction = await deployApp(wallet, { getTurnTakerFails: true });
-    appIdentityTestObject = new AppIdentityTestClass(
-      [alice.address, bob.address], // participants
-      appWithAction.address, // app def
-      10, // default timeout
-      globalChannelNonce,
-    );
-    globalChannelNonce += 1;
-    await setChallenge();
-    await expect(respond()).to.be.revertedWith(
-      "The getTurnTaker method has no implementation for this App",
-    );
-  });
-
-  it("should fail if the action is not signed by the turn taker", async () => {
-    await setChallenge();
-    await expect(respond(undefined, undefined, alice)).to.be.revertedWith(
-      "Action must have been signed by correct turn taker",
-    );
-  });
-
-  it("should fail if applyAction fails", async () => {
-    appWithAction = await deployApp(wallet, { applyActionFails: true });
-    appIdentityTestObject = new AppIdentityTestClass(
-      [alice.address, bob.address], // participants
-      appWithAction.address, // app def
-      10, // default timeout
-      globalChannelNonce,
-    );
-    globalChannelNonce += 1;
-    await setChallenge();
-    await expect(respond()).to.be.revertedWith(
-      "The applyAction method has no implementation for this App",
-    );
-  });
-
-  it.skip("should be able to respond to a challenge", async () => {
-    const initialChallenge = await setChallenge();
-    expect(initialChallenge.challengeCounter).to.be.eq(One);
-    await respond();
-    const respondedChallenge = await getChallenge(
+    const versionNumber = await latestVersionNumber(
       appIdentityTestObject.identityHash,
       challengeRegistry,
     );
-    // TODO: will be an empty challenge, is this expected? is this a problem?
-    expect(respondedChallenge).to.be.equal(undefined);
+    const submittedVersionNo = versionNumber.add(1);
+    const timeout = Zero;
+    const stateSigs = await getStateSignatures(
+      appIdentityTestObject.identityHash,
+      [alice, bob],
+      encodeAppState(getAppWithActionState()),
+      submittedVersionNo,
+      timeout,
+    );
+    await expect(
+      challengeRegistry.functions.respondToChallenge(
+        appIdentityTestObject.appIdentity,
+        {
+          appState: encodeAppState(getAppWithActionState(5)),
+          signatures: stateSigs,
+          timeout,
+          versionNumber: submittedVersionNo,
+        },
+        {
+          encodedAction: HashZero,
+          signature: HashZero,
+        },
+      ),
+    ).to.be.revertedWith("Invalid signature");
   });
 
-  // TODO: is this test correct? need to circle up with liam to verify the
-  // intended use of `respondToChallenge`
-  it.skip("should be able to call setOutcome after a challenge response", async () => {});
+  it("should fail if it is called with an outdated state", async () => {
+    const challenge = await setChallenge();
+    expect(challenge.versionNumber).to.be.equal(One);
+    await expect(respond(undefined, undefined, undefined, 0)).to.be.revertedWith(
+      "respondToChallenge was called with outdated state",
+    );
+  });
+
+  describe("Responds to the challenge by taking an action", () => {
+    it("should fail if it is called with the same state hash that is already onchain, and the version number is not the same as the challenge version number", async () => {
+      await setChallenge();
+      await expect(respond(undefined, undefined, undefined, 4)).to.be.revertedWith(
+        "respondToChallenge was called with an incorrect state",
+      );
+    });
+
+    it("should fail if action is not signed by the correct turn taker", async () => {
+      await setChallenge();
+      await expect(respond(undefined, undefined, alice)).to.be.revertedWith(
+        "respondToChallenge called with action signed by incorrect turn taker",
+      );
+    });
+
+    it("should fail if it cannot get a turn taker", async () => {
+      appWithAction = await deployApp(wallet, { getTurnTakerFails: true });
+      appIdentityTestObject = new AppIdentityTestClass(
+        [alice.address, bob.address], // participants
+        appWithAction.address, // app def
+        10, // default timeout
+        globalChannelNonce,
+      );
+      globalChannelNonce += 1;
+      await setChallenge();
+      await expect(respond()).to.be.revertedWith(
+        "The getTurnTaker method has no implementation for this App",
+      );
+    });
+
+    it("should fail if the default timeout on the appIdentity is zero", async () => {
+      appIdentityTestObject = new AppIdentityTestClass(
+        [alice.address, bob.address], // participants
+        appWithAction.address, // app def
+        0, // default timeout
+        globalChannelNonce,
+      );
+      globalChannelNonce += 1;
+      await setChallenge();
+      await expect(respond()).to.be.revertedWith(
+        "respondToChallenge called with an app identity that has a zero default timeout",
+      );
+    });
+
+    it("should fail if apply action fails", async () => {
+      appWithAction = await deployApp(wallet, { applyActionFails: true });
+      appIdentityTestObject = new AppIdentityTestClass(
+        [alice.address, bob.address], // participants
+        appWithAction.address, // app def
+        10, // default timeout
+        globalChannelNonce,
+      );
+      globalChannelNonce += 1;
+      await setChallenge();
+      await expect(respond()).to.be.revertedWith(
+        "The applyAction method has no implementation for this App",
+      );
+    });
+
+    it("should fail if there is an overflow", async () => {
+      await setChallenge();
+      try {
+        await respond(undefined, undefined, undefined, undefined, 1e24);
+      } catch (e) {
+        expect(e.message.includes(`underflow`)).to.be.true;
+      }
+    });
+
+    it("should successfully respond to a challenge with a valid action", async () => {
+      await setChallenge();
+      await respond();
+    });
+  });
+
+  describe("Responds to the challenge by advancing the state", () => {
+    it("should fail if trying to respond with an old state", async () => {
+      await setChallenge();
+      const challenge = await getChallenge(appIdentityTestObject.identityHash, challengeRegistry);
+      expect(challenge.versionNumber).to.be.eq(1);
+      await expect(
+        respond(getAppWithActionState(5), undefined, undefined, Zero),
+      ).to.be.revertedWith("revert respondToChallenge was called with outdated state");
+    });
+
+    it("should fail if there is an overflow", async () => {
+      await setChallenge();
+      try {
+        await respond(getAppWithActionState(5), undefined, undefined, undefined, 1e24);
+      } catch (e) {
+        expect(e.message.includes(`underflow`)).to.be.true;
+      }
+    });
+
+    it("should be able to respond to a challenge with a newer state", async () => {
+      await setChallenge();
+      let challenge = await getChallenge(appIdentityTestObject.identityHash, challengeRegistry);
+      expect(challenge.versionNumber).to.be.eq(1);
+      await respond(getAppWithActionState(5), undefined, undefined, 8);
+      challenge = await getChallenge(appIdentityTestObject.identityHash, challengeRegistry);
+      expect(challenge.versionNumber).to.be.eq(8);
+    });
+  });
 });
