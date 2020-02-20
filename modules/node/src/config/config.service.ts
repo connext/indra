@@ -123,7 +123,8 @@ export class ConfigService implements OnModuleInit {
       const configIndex = tokenConfig.findIndex(tc =>
         tc.find(t => t.chainId === currentChainId && t.address === tokenAddress),
       );
-      const configExists = tokenConfig[configIndex].find(tc => tc.chainId === 1);
+      const configExists =
+        configIndex < 0 ? undefined : tokenConfig[configIndex].find(tc => tc.chainId === 1);
       tokenAddress = configExists ? configExists.address : tokenAddress;
     }
 
