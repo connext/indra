@@ -99,6 +99,7 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibAppCaller, MChallenge
           challenge.finalizesAt = finalizesAt;
           challenge.appStateHash = keccak256(newState);
           challenge.status = ChallengeStatus.FINALIZES_AFTER_DEADLINE;
+          challenge.versionNumber = stateReq.versionNumber + 1;
         } else {
           // advance the state using the setState action (correct sigs
           // on state already asserted)
@@ -116,10 +117,10 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibAppCaller, MChallenge
           challenge.appStateHash = keccak256(stateReq.appState);
           challenge.finalizesAt = finalizesAt;
           challenge.status = stateReq.timeout > 0 ? ChallengeStatus.FINALIZES_AFTER_DEADLINE : ChallengeStatus.EXPLICITLY_FINALIZED;
+          challenge.versionNumber = stateReq.versionNumber;
         }
 
         // update remaining challenge fields
-        challenge.versionNumber = stateReq.versionNumber;
         challenge.challengeCounter += 1;
         challenge.latestSubmitter = msg.sender;
     }
