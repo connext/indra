@@ -73,7 +73,7 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibAppCaller, MChallenge
             "respondToChallenge called with action signed by incorrect turn taker"
           );
 
-          require(stateReq.timeout > 0, "Timeout must be greater than 0");
+          require(appIdentity.defaultTimeout > 0, "respondToChallenge called with an app identity that has a zero default timeout");
 
           // This should throw an error if reverts
           bytes memory newState = LibAppCaller.applyAction(
@@ -97,7 +97,6 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibAppCaller, MChallenge
 
           // update the challenge fields dependent on the takeAction
           challenge.finalizesAt = finalizesAt;
-          challenge.status = ChallengeStatus.FINALIZES_AFTER_DEADLINE;
           challenge.appStateHash = keccak256(newState);
         } else {
           // advance the state using the setState action (correct sigs
@@ -113,14 +112,13 @@ contract MixinRespondToChallenge is LibStateChannelApp, LibAppCaller, MChallenge
           require(finalizesAt >= stateReq.timeout, "uint248 addition overflow");
 
           // update the challenge fields dependent on setState
-          challenge.status = stateReq.timeout > 0 ? ChallengeStatus.FINALIZES_AFTER_DEADLINE : ChallengeStatus.EXPLICITLY_FINALIZED;
           challenge.appStateHash = keccak256(stateReq.appState);
           challenge.finalizesAt = finalizesAt;
         }
 
         // update remaining challenge fields
-        // TODO: should this be +1 in the set state with action case?
         challenge.versionNumber = stateReq.versionNumber;
+        challenge.status = stateReq.timeout > 0 ? ChallengeStatus.FINALIZES_AFTER_DEADLINE : ChallengeStatus.EXPLICITLY_FINALIZED;
         challenge.challengeCounter += 1;
         challenge.latestSubmitter = msg.sender;
     }
