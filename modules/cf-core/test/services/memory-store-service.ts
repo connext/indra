@@ -1,4 +1,6 @@
-import { CFCoreTypes, StateChannelJSON } from "@connext/types";
+import { CFCoreTypes, StateChannelJSON, AppInstanceJson, ProtocolTypes } from "@connext/types";
+import { StateChannel } from "../../src";
+import { AppInstance } from "../../src/models";
 
 export class MemoryStoreService implements CFCoreTypes.IStoreService {
   private readonly store: Map<string, any> = new Map();
@@ -43,7 +45,11 @@ export class MemoryStoreService implements CFCoreTypes.IStoreService {
 }
 
 export class MemoryStoreServiceNew implements CFCoreTypes.IStoreServiceNew {
-  private readonly channels: Map<string, StateChannelJSON> = new Map();
+  private channels: Map<string, StateChannelJSON> = new Map();
+  private commitments: Map<string, any> = new Map();
+  private withdrawals: Map<string, ProtocolTypes.MinimalTransaction> = new Map();
+  private extendedPrivKey: string = "";
+
   constructor(private readonly delay: number = 0) {}
 
   async getAllChannels(): Promise<StateChannelJSON[]> {
@@ -51,69 +57,90 @@ export class MemoryStoreServiceNew implements CFCoreTypes.IStoreServiceNew {
   }
 
   async getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined> {
-    const channels = this.store.get("channels");
-    return channels ? channels[multisigAddress] : undefined;
+    return this.channels.get(multisigAddress);
   }
 
-  getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
-    const channels = this.store.get("channels");
+  async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
+    return [...this.channels.values()].find(
+      channel => channel.userNeuteredExtendedKeys.sort().toString() === owners.sort().toString(),
+    );
   }
 
-  getStateChannelByAppInstanceId(appInstanceId: string): Promise<StateChannelJSON | undefined> {
-    throw new Error("Method not implemented.");
+  async getStateChannelByAppInstanceId(
+    appInstanceId: string,
+  ): Promise<StateChannelJSON | undefined> {
+    return [...this.channels.values()].find(channel =>
+      channel.proposedAppInstances.find(([appInstId]) => appInstanceId === appInstId) ||
+      channel.appInstances.find(([appInstId]) => appInstanceId === appInstId) ||
+      channel.freeBalanceAppInstance
+        ? channel.freeBalanceAppInstance!.identityHash === appInstanceId
+        : undefined,
+    );
   }
 
   async saveStateChannel(stateChannel: StateChannelJSON): Promise<void> {
-    this.store.set("channels", {
-      ...this.store.get("channels"),
-      [stateChannel.multisigAddress]: stateChannel,
+    this.channels.set(stateChannel.multisigAddress, stateChannel);
+  }
+
+  async getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined> {
+    let app: AppInstanceJson | undefined;
+    [...this.channels.values()].find(channel => {
+      const appExists = StateChannel.fromJson(channel).appInstances.get(appInstanceId);
+      if (appExists) {
+        app = appExists.toJson();
+      }
     });
+    return app;
   }
 
-  getAppInstance(appInstanceId: string): Promise<import("@connext/types").AppInstanceJson> {
-    throw new Error("Method not implemented.");
+  async saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
+    const channel = this.channels.get(multisigAddress);
+    if (!channel) {
+      throw new Error(`Channel not found: ${multisigAddress}`);
+    }
+    const sc = StateChannel.fromJson(channel);
+    sc.addAppInstance(AppInstance.fromJson(appInstance));
+    return this.saveStateChannel(sc.toJson());
   }
 
-  saveAppInstance(appInstance: import("@connext/types").AppInstanceJson): Promise<void> {
-    throw new Error("Method not implemented.");
-  }
-
-  getCommitment(
+  async getCommitment(
     commitmentHash: string,
-  ): Promise<import("@connext/types").ProtocolTypes.MinimalTransaction> {
-    throw new Error("Method not implemented.");
+  ): Promise<ProtocolTypes.MinimalTransaction | undefined> {
+    return this.commitments.get(commitmentHash);
   }
 
-  saveCommitment(commitmentHash: string, commitment: any[]): Promise<void> {
-    throw new Error("Method not implemented.");
+  async saveCommitment(commitmentHash: string, commitment: any[]): Promise<void> {
+    this.commitments.set(commitmentHash, commitment.join(","));
   }
 
-  getWithdrawalCommitment(
+  async getWithdrawalCommitment(
     multisigAddress: string,
-  ): Promise<import("@connext/types").ProtocolTypes.MinimalTransaction> {
-    throw new Error("Method not implemented.");
+  ): Promise<ProtocolTypes.MinimalTransaction | undefined> {
+    return this.withdrawals.get(multisigAddress);
   }
 
-  saveWithdrawalCommitment(
+  async saveWithdrawalCommitment(
     multisigAddress: string,
-    commitment: import("@connext/types").ProtocolTypes.MinimalTransaction,
+    commitment: ProtocolTypes.MinimalTransaction,
   ): Promise<void> {
-    throw new Error("Method not implemented.");
+    this.withdrawals.set(multisigAddress, commitment);
   }
 
-  getExtendedPrvKey(): Promise<string> {
-    throw new Error("Method not implemented.");
+  async getExtendedPrvKey(): Promise<string> {
+    return this.extendedPrivKey;
   }
 
-  saveExtendedPrvKey(extendedPrvKey: string): Promise<void> {
-    throw new Error("Method not implemented.");
+  async saveExtendedPrvKey(extendedPrvKey: string): Promise<void> {
+    this.extendedPrivKey = extendedPrvKey;
   }
 
-  clear(): Promise<void> {
-    throw new Error("Method not implemented.");
+  async clear(): Promise<void> {
+    this.channels = new Map();
+    this.withdrawals = new Map();
+    this.commitments = new Map();
   }
 
-  restore(): Promise<void> {
+  async restore(): Promise<void> {
     throw new Error("Method not implemented.");
   }
 }

@@ -75,13 +75,15 @@ export interface IStoreServiceNew {
   getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined>;
   getStateChannelByAppInstanceId(appInstanceId: string): Promise<StateChannelJSON | undefined>;
   saveStateChannel(stateChannel: StateChannelJSON): Promise<void>;
-  getAppInstance(appInstanceId: string): Promise<AppInstanceJson>;
+  getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined>;
   saveAppInstance(appInstance: AppInstanceJson): Promise<void>;
   // getAppProposals(multisigAddress: string): Promise<AppProposal[]>;
   // saveAppProposal(appProposal: AppInstanceProposal): Promise<void>;
-  getCommitment(commitmentHash: string): Promise<CFCoreTypes.MinimalTransaction>;
+  getCommitment(commitmentHash: string): Promise<CFCoreTypes.MinimalTransaction | undefined>;
   saveCommitment(commitmentHash: string, commitment: any[]): Promise<void>;
-  getWithdrawalCommitment(multisigAddress: string): Promise<CFCoreTypes.MinimalTransaction>;
+  getWithdrawalCommitment(
+    multisigAddress: string,
+  ): Promise<CFCoreTypes.MinimalTransaction | undefined>;
   saveWithdrawalCommitment(
     multisigAddress: string,
     commitment: CFCoreTypes.MinimalTransaction,
