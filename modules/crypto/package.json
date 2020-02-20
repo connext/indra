@@ -12,7 +12,6 @@
     "build": "./node_modules/.bin/tsc -p tsconfig.json",
     "rebuild": "npm run clean && npm run build",
     "clean": "rm -rf ./dist",
-    "prepare": "npm run build",
     "test": "./node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
