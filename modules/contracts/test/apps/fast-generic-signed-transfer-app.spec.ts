@@ -1,11 +1,14 @@
 /* global before */
 import { expect, use } from "chai";
-import { solidity, createMockProvider, getWallets, deployContract } from "ethereum-waffle";
+import { solidity, getWallets, deployContract } from "ethereum-waffle";
+import { waffle } from "@nomiclabs/buidler";
 import { Contract } from "ethers";
-import { Zero } from "ethers/constants";
-import { BigNumber, defaultAbiCoder } from "ethers/utils";
+import { BigNumber, defaultAbiCoder, bigNumberify } from "ethers/utils";
 
 import FastGenericSignedTransferApp from "../../build/FastGenericSignedTransferApp.json";
+
+import { mkAddress, mkHash, mkXpub, mkSig } from "../utils";
+import { Zero, One, AddressZero } from "ethers/constants";
 
 use(solidity);
 
@@ -55,7 +58,7 @@ const paymentsEncoding = `
     address signer,
     bytes32 paymentID,
     uint256 timeout,
-    bytes recipientXpub,
+    string recipientXpub,
     bytes32 data,
     bytes signature
   )[]
@@ -84,6 +87,10 @@ const encodeAppState = (state: FastGenericSignedTransferAppState): string => {
   return defaultAbiCoder.encode([transferAppStateEncoding], [state]);
 };
 
+const encodeAppAction = (action: FastGenericSignedTransferAppAction): string => {
+  return defaultAbiCoder.encode([transferAppActionEncoding], [action]);
+};
+
 describe("FastGenericSignedTransferApp", () => {
   let transferApp: Contract;
 
@@ -91,13 +98,57 @@ describe("FastGenericSignedTransferApp", () => {
     return await transferApp.functions.computeOutcome(encodeAppState(state));
   }
 
+  async function takeAction(
+    state: FastGenericSignedTransferAppState,
+    action: FastGenericSignedTransferAppAction,
+  ): Promise<string> {
+    return await transferApp.functions.applyAction(encodeAppState(state), encodeAppAction(action));
+  }
+
   beforeEach(async () => {
-    const provider = createMockProvider();
+    const provider = waffle.provider;
     const wallet = getWallets(provider)[0];
     transferApp = await deployContract(wallet, FastGenericSignedTransferApp);
   });
 
-  it("happy case: sender creates locked tranfers", () => {});
+  it.only("happy case: sender creates locked tranfers", async () => {
+    const sender = mkAddress("0xa");
+    const receiver = mkAddress("0xb");
+    const preState: FastGenericSignedTransferAppState = {
+      coinTransfers: [
+        {
+          amount: bigNumberify(10),
+          to: sender,
+        },
+        {
+          amount: bigNumberify(10),
+          to: receiver,
+        },
+      ],
+      finalized: false,
+      lockedPayments: [],
+      turnNum: Zero,
+    };
+
+    const action: FastGenericSignedTransferAppAction = {
+      actionType: ActionType.CREATE,
+      newLockedPayments: [
+        {
+          amount: One,
+          assetId: AddressZero,
+          data: mkHash("0x0"),
+          paymentID: mkHash("0xa"),
+          recipientXpub: mkXpub("xpubB"),
+          signature: mkSig("0x0"),
+          signer: mkAddress("0xc"),
+          timeout: Zero,
+        },
+      ],
+    };
+
+    const ret = await takeAction(preState, action);
+    console.log('ret: ', decodeAppState(ret));
+  });
 
   it("happy case: receiver unlocks tranfers", () => {});
 

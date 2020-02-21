@@ -32,7 +32,7 @@ contract FastGenericSignedTransferApp is CounterfactualApp {
         // intermediaries can't steal money by replaying state.
         bytes32 paymentID;
         uint256 timeout; // Block height. 0 is special case where there's no timeout.
-        bytes recipientXpub; // Not checked in app, but is part of the state for intermediaries to use
+        string recipientXpub; // Not checked in app, but is part of the state for intermediaries to use
         bytes32 data;
         bytes signature;
     }
@@ -136,7 +136,6 @@ contract FastGenericSignedTransferApp is CounterfactualApp {
             );
             require(action.newLockedPayments[i].amount <= state.transfers[0].amount, "Insufficient balance for new locked payment");
             require(action.newLockedPayments[i].data == 0 || action.newLockedPayments[i].data == "", "Data field must be empty");
-            require(action.newLockedPayments[i].signature.length == 0, "Signature field must be empty");
 
             // Reduce sender's balance by locked payment amount and then insert into state lockedPayments array
             state.transfers[0].amount = state.transfers[0].amount.sub(action.newLockedPayments[i].amount);
