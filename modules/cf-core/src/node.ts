@@ -46,11 +46,11 @@ export class Node {
   private signer!: SigningKey;
   protected requestHandler!: RequestHandler;
   public rpcRouter!: RpcRouter;
-  private store: Store;
+  private store!: Store;
 
   static async create(
     messagingService: CFCoreTypes.IMessagingService,
-    storeService: CFCoreTypes.IStoreServiceNew,
+    storeService: CFCoreTypes.IStoreService,
     networkContext: NetworkContext,
     nodeConfig: NodeConfig,
     provider: BaseProvider,
@@ -84,7 +84,7 @@ export class Node {
     private readonly publicExtendedKey: string,
     private readonly privateKeyGetter: PrivateKeysGetter,
     private readonly messagingService: CFCoreTypes.IMessagingService,
-    private readonly storeService: CFCoreTypes.IStoreServiceNew,
+    private readonly storeService: CFCoreTypes.IStoreService,
     private readonly nodeConfig: NodeConfig,
     private readonly provider: BaseProvider,
     public readonly networkContext: NetworkContext,
@@ -94,11 +94,11 @@ export class Node {
     this.networkContext.provider = this.provider;
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
-    this.protocolRunner = this.buildProtocolRunner();
     this.store = new Store(
-      storeService,
+      this.storeService,
       `${this.nodeConfig.STORE_KEY_PREFIX}/${this.publicIdentifier}`,
     );
+    this.protocolRunner = this.buildProtocolRunner();
     log.info(`Waiting for ${this.blocksNeededForConfirmation} block confirmations`);
   }
 

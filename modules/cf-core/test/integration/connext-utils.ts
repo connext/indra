@@ -81,6 +81,7 @@ export async function makeSimpleTransfer(
 export async function installLink(
   funder: Node,
   redeemer: Node,
+  multisigAddress: string,
   state: UnidirectionalLinkedTransferAppState,
   action: UnidirectionalLinkedTransferAppAction,
 ): Promise<string> {
@@ -89,6 +90,7 @@ export async function installLink(
   const res = await installApp(
     funder,
     redeemer,
+    multisigAddress,
     linkDef,
     state,
     bigNumberify(action.amount),
@@ -133,11 +135,13 @@ export async function installAndRedeemLink(
   funder: Node,
   intermediary: Node,
   redeemer: Node,
+  multisigAddressFunderIntermediary: string,
+  multisigAddressIntermediaryRedeemer: string,
   stateAndAction: { action: any; state: any },
 ) {
   const linkDef = UnidirectionalLinkedTransferApp;
 
-  const hubApps = await getApps(intermediary);
+  const hubApps = await getApps(intermediary, multisigAddressFunderIntermediary);
 
   const { state, action } = stateAndAction;
 
@@ -161,7 +165,13 @@ export async function installAndRedeemLink(
   expect(matchedApp).toBeDefined();
 
   // install an app between the intermediary and redeemer
-  const redeemerAppId = await installLink(intermediary, redeemer, state, action);
+  const redeemerAppId = await installLink(
+    intermediary,
+    redeemer,
+    multisigAddressIntermediaryRedeemer,
+    state,
+    action,
+  );
 
   // redeemer take action to finalize state and claim funds from intermediary
   await redeemLink(redeemer, intermediary, redeemerAppId, action);

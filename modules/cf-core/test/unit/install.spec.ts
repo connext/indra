@@ -35,7 +35,11 @@ describe("Can handle correct & incorrect installs", () => {
 
   beforeAll(() => {
     store = new Store(new MemoryStoreService(), "install.spec.ts-test-store");
-    protocolRunner = new ProtocolRunner(NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES, {} as BaseProvider);
+    protocolRunner = new ProtocolRunner(
+      NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES,
+      {} as BaseProvider,
+      store,
+    );
     initiatorIdentifier = HDNode.fromMnemonic(Wallet.createRandom().mnemonic).neuter().extendedKey;
   });
 
@@ -67,7 +71,7 @@ describe("Can handle correct & incorrect installs", () => {
 
     when(mockedStore.getAppInstanceProposal(appInstanceId)).thenResolve(appInstanceProposal);
 
-    when(mockedStore.getChannelFromAppInstanceID(appInstanceId)).thenThrow(
+    when(mockedStore.getStateChannelFromAppInstanceID(appInstanceId)).thenThrow(
       Error(NO_MULTISIG_FOR_APP_INSTANCE_ID),
     );
 
@@ -112,14 +116,12 @@ describe("Can handle correct & incorrect installs", () => {
 
     when(mockedStore.getAppInstanceProposal(appInstanceId)).thenResolve(appInstanceProposal);
 
-    when(mockedStore.getChannelFromAppInstanceID(appInstanceId)).thenResolve(stateChannel);
+    when(mockedStore.getStateChannelFromAppInstanceID(appInstanceId)).thenResolve(stateChannel);
 
     // Gets around having to register middleware into the machine
     // and just returns a basic <string, StateChannel> map with the
     // expected multisigAddress in it.
-    when(
-      mockedProtocolRunner.initiateProtocol(Protocol.Install, anything(), anything()),
-    ).thenResolve(new Map([[multisigAddress, stateChannel]]));
+    when(mockedProtocolRunner.initiateProtocol(Protocol.Install, anything())).thenResolve();
 
     // The AppInstanceProposal that's returned is the one that was installed, which
     // is the same one as the one that was proposed

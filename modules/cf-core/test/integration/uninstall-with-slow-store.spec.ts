@@ -35,12 +35,18 @@ describe("Node method follows spec - uninstall", () => {
         ],
       };
 
-      await createChannel(nodeA, nodeB);
+      const multisigAddess = await createChannel(nodeA, nodeB);
 
       // FIXME: There is some timing issue with slow stores @snario noticed
       await timeout(2000);
 
-      const [appInstanceId] = await installApp(nodeA, nodeB, TicTacToeApp, initialState);
+      const [appInstanceId] = await installApp(
+        nodeA,
+        nodeB,
+        multisigAddess,
+        TicTacToeApp,
+        initialState,
+      );
 
       nodeB.once("UNINSTALL_EVENT", async (msg: UninstallMessage) => {
         expect(msg.data.appInstanceId).toBe(appInstanceId);
@@ -48,13 +54,13 @@ describe("Node method follows spec - uninstall", () => {
         // FIXME: There is some timing issue with slow stores @snario noticed
         await timeout(1000);
 
-        expect(await getInstalledAppInstances(nodeB)).toEqual([]);
+        expect(await getInstalledAppInstances(nodeB, multisigAddess)).toEqual([]);
         done();
       });
 
       await nodeA.rpcRouter.dispatch(constructUninstallRpc(appInstanceId));
 
-      expect(await getInstalledAppInstances(nodeA)).toEqual([]);
+      expect(await getInstalledAppInstances(nodeA, multisigAddess)).toEqual([]);
     });
   });
 });

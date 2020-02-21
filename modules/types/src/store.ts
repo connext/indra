@@ -1,5 +1,5 @@
 import { StateChannelJSON } from "./state";
-import { AppInstanceJson } from "./app";
+import { AppInstanceJson, AppInstanceProposal } from "./app";
 import { CFCoreTypes } from "./cfCore";
 
 export const ConnextNodeStorePrefix = "INDRA_NODE_CF_CORE";
@@ -63,22 +63,22 @@ export interface FileStorageOptions {
  * have the same behaviour if the `allowDelete` flag is passed; otherwise, any null values or
  * subvalues throws an error.
  */
-export interface IStoreService {
+export interface IStoreServiceOld {
   get(path: string): Promise<any>;
   set(pairs: { path: string; value: any }[], allowDelete?: Boolean): Promise<void>;
   reset?(): Promise<void>;
 }
 
-export interface IStoreServiceNew {
+export interface IStoreService {
   getAllChannels(): Promise<StateChannelJSON[]>;
   getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined>;
   getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined>;
   getStateChannelByAppInstanceId(appInstanceId: string): Promise<StateChannelJSON | undefined>;
   saveStateChannel(stateChannel: StateChannelJSON): Promise<void>;
   getAppInstance(appInstanceId: string): Promise<AppInstanceJson | undefined>;
-  saveAppInstance(appInstance: AppInstanceJson): Promise<void>;
-  // getAppProposals(multisigAddress: string): Promise<AppProposal[]>;
-  // saveAppProposal(appProposal: AppInstanceProposal): Promise<void>;
+  saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void>;
+  // getAppProposals(multisigAddress: string): Promise<AppInstanceJson[]>;
+  // saveAppProposal(appProposal: AppInstanceJson): Promise<void>;
   getCommitment(commitmentHash: string): Promise<CFCoreTypes.MinimalTransaction | undefined>;
   saveCommitment(commitmentHash: string, commitment: any[]): Promise<void>;
   getWithdrawalCommitment(
@@ -94,7 +94,7 @@ export interface IStoreServiceNew {
   restore(): Promise<void>;
 }
 
-export interface Store extends IStoreService {
+export interface Store extends IStoreServiceOld {
   set(pairs: StorePair[], shouldBackup?: Boolean): Promise<void>;
   restore(): Promise<StorePair[]>;
 }

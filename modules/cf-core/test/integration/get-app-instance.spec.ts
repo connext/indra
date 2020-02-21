@@ -17,9 +17,14 @@ describe("Node method follows spec - getAppInstanceDetails", () => {
   });
 
   it("can accept a valid call to get the desired AppInstance details", async () => {
-    await createChannel(nodeA, nodeB);
+    const multisigAddress = await createChannel(nodeA, nodeB);
 
-    const [appInstanceId, proposedParams] = await installApp(nodeA, nodeB, TicTacToeApp);
+    const [appInstanceId, proposedParams] = await installApp(
+      nodeA,
+      nodeB,
+      multisigAddress,
+      TicTacToeApp,
+    );
 
     const appInstanceNodeA = await getAppInstance(nodeA, appInstanceId);
     confirmAppInstanceInstallation(proposedParams, appInstanceNodeA);

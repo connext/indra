@@ -18,7 +18,7 @@ import {
 
 export interface NodeContext {
   node: Node;
-  store: CFCoreTypes.IStoreServiceNew;
+  store: CFCoreTypes.IStoreService;
 }
 
 export interface SetupContext {

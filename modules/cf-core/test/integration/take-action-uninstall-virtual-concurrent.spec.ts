@@ -49,7 +49,7 @@ describe("Concurrently taking action on regular app and uninstallling virtual ap
     virtualId = await installVirtualApp(nodeA, nodeB, nodeC, TicTacToeApp);
 
     // install regular app to take action
-    [appId] = await installApp(nodeA, nodeB, TicTacToeApp);
+    [appId] = await installApp(nodeA, nodeB, multisigAddressAB, TicTacToeApp);
   });
 
   it("can handle concurrent uninstall virtual and take action by the same node", async done => {

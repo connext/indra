@@ -7,7 +7,7 @@ import { toBeEq } from "../machine/integration/bignumber-jest-matcher";
 import { installAndRedeemLink, installLink, makeSimpleTransfer } from "./connext-utils";
 import { initialLinkedState } from "./linked-transfer";
 import { setup, SetupContext } from "./setup";
-import { collateralizeChannel, createChannel, deposit } from "./utils";
+import { createChannel, deposit } from "./utils";
 
 jest.setTimeout(10_000);
 
@@ -61,10 +61,15 @@ function generateInitialLinkedTransferStates(
 // installs an array of linked transfer apps between a
 // "funder" node and a "redeemer" node
 // TODO: fix typings
-async function installLinks(funder: Node, redeemer: Node, statesAndActions: any[]) {
+async function installLinks(
+  funder: Node,
+  redeemer: Node,
+  multisig: string,
+  statesAndActions: any[],
+) {
   const appIds: string[] = [];
   for (const { state, action } of statesAndActions) {
-    appIds.push(await installLink(funder, redeemer, state, action));
+    appIds.push(await installLink(funder, redeemer, multisig, state, action));
   }
 
   return appIds;
@@ -75,12 +80,21 @@ function redeemLinkPoller(
   funder: Node,
   intermediary: Node,
   redeemer: Node,
+  multisigFunderIntermediary: string,
+  multisigIntermediaryRedeemer: string,
   statesAndActions: any[],
   done: any,
 ) {
   setTimeout(async () => {
     while (statesAndActions.length > 0) {
-      await installAndRedeemLink(funder, intermediary, redeemer, statesAndActions.pop());
+      await installAndRedeemLink(
+        funder,
+        intermediary,
+        redeemer,
+        multisigFunderIntermediary,
+        multisigIntermediaryRedeemer,
+        statesAndActions.pop(),
+      );
     }
     done();
   }, 200);
@@ -136,10 +150,18 @@ describe("Can update and install multiple apps simultaneously", () => {
     );
 
     // try to install a linked app
-    await installLinks(nodeA, nodeB, linkStatesSender);
+    await installLinks(nodeA, nodeB, multisigAddressAB, linkStatesSender);
 
     // begin redeeming apps as the receiver on an interval
-    redeemLinkPoller(nodeA, nodeB, nodeC, linkStatesRedeemer, done);
+    redeemLinkPoller(
+      nodeA,
+      nodeB,
+      nodeC,
+      multisigAddressAB,
+      multisigAddressBC,
+      linkStatesRedeemer,
+      done,
+    );
 
     // while links are redeeming, try to send receiver a
     // direct transfer

@@ -27,9 +27,9 @@ describe("Node method follows spec - getAppInstances", () => {
   });
 
   it("returns the right state for an installed AppInstance", async () => {
-    await createChannel(nodeA, nodeB);
+    const multisigAddress = await createChannel(nodeA, nodeB);
 
-    const [appInstanceId, params] = await installApp(nodeA, nodeB, TicTacToeApp);
+    const [appInstanceId, params] = await installApp(nodeA, nodeB, multisigAddress, TicTacToeApp);
 
     const state = await getState(nodeA, appInstanceId);
 

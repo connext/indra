@@ -54,7 +54,7 @@ export class PrivateKeysGetter {
 }
 
 export async function getPrivateKeysGeneratorAndXPubOrThrow(
-  storeService: CFCoreTypes.IStoreServiceNew,
+  storeService: CFCoreTypes.IStoreService,
   privateKeyGenerator?: CFCoreTypes.IPrivateKeyGenerator,
   publicExtendedKey?: string,
 ): Promise<[PrivateKeysGetter, string]> {

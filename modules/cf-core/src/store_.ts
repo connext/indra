@@ -18,7 +18,7 @@ import { getCreate2MultisigAddress } from "./utils";
  * StoreService.
  */
 export class Store {
-  constructor(private readonly storeService: CFCoreTypes.IStoreService, private readonly storeKeyPrefix: string) {}
+  constructor(private readonly storeService: CFCoreTypes.IStoreServiceOld, private readonly storeKeyPrefix: string) {}
 
   public static async getMultisigAddressWithCounterpartyFromMap(
     stateChannelsMap: Map<string, StateChannel>,

@@ -95,8 +95,8 @@ describe(`Uses a provided signing key generation function to sign channel state 
         });
 
         nodeA.on(`INSTALL_EVENT`, async () => {
-          const [appInstanceNodeA] = await getInstalledAppInstances(nodeA);
-          const [appInstanceNodeB] = await getInstalledAppInstances(nodeB);
+          const [appInstanceNodeA] = await getInstalledAppInstances(nodeA, multisigAddress);
+          const [appInstanceNodeB] = await getInstalledAppInstances(nodeB, multisigAddress);
           expect(appInstanceNodeA).toBeDefined();
           expect(appInstanceNodeA).toEqual(appInstanceNodeB);
 

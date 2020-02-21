@@ -124,7 +124,7 @@ async function getOutgoingEventDataFromProtocol(
             proposedToIdentifier: responderXpub,
           },
           appInstanceId: (
-            await store.getStateChannel((params as ProposeInstallProtocolParams).multisigAddress)
+            await store.getStateChannel(multisigAddress)
           ).mostRecentlyProposedAppInstance().identityHash,
         },
       };
@@ -138,7 +138,7 @@ async function getOutgoingEventDataFromProtocol(
           params: {
             appInstanceId: (
               await store.getStateChannel((params as InstallProtocolParams).multisigAddress)
-            ).mostRecentlyProposedAppInstance().identityHash,
+            ).mostRecentlyInstalledAppInstance().identityHash,
           },
         },
       };

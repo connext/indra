@@ -6,6 +6,7 @@ import { HDNode } from "ethers/utils/hdnode";
 import { EthereumCommitment } from "../../../src/types";
 import { Opcode, ProtocolRunner } from "../../../src/machine";
 import { StateChannel } from "../../../src/models";
+import { Store } from "../../../src/store";
 
 import { getRandomHDNodes } from "./random-signing-keys";
 
@@ -31,17 +32,21 @@ export class MiniNode {
   public scm: Map<string, StateChannel>;
   public readonly xpub: string;
 
-  constructor(readonly networkContext: NetworkContext, readonly provider: JsonRpcProvider) {
+  constructor(
+    readonly networkContext: NetworkContext,
+    readonly provider: JsonRpcProvider,
+    readonly store: Store,
+  ) {
     [this.hdNode] = getRandomHDNodes(1);
     this.xpub = this.hdNode.neuter().extendedKey;
+    this.protocolRunner = new ProtocolRunner(networkContext, provider, store);
     this.scm = new Map<string, StateChannel>();
-    this.protocolRunner = new ProtocolRunner(networkContext, provider);
     this.protocolRunner.register(Opcode.OP_SIGN, makeSigner(this.hdNode));
     this.protocolRunner.register(Opcode.WRITE_COMMITMENT, () => {});
     this.protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, () => {});
   }
 
   public async dispatchMessage(message: any) {
-    this.scm = await this.protocolRunner.runProtocolWithMessage(message, this.scm);
+    await this.protocolRunner.runProtocolWithMessage(message);
   }
 }

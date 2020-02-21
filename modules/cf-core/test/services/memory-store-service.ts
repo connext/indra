@@ -2,7 +2,7 @@ import { CFCoreTypes, StateChannelJSON, AppInstanceJson, ProtocolTypes } from "@
 import { StateChannel } from "../../src";
 import { AppInstance } from "../../src/models";
 
-export class MemoryStoreService implements CFCoreTypes.IStoreService {
+export class MemoryStoreServiceOld implements CFCoreTypes.IStoreServiceOld {
   private readonly store: Map<string, any> = new Map();
   constructor(private readonly delay: number = 0) {}
   async get(path: string): Promise<any> {
@@ -44,7 +44,7 @@ export class MemoryStoreService implements CFCoreTypes.IStoreService {
   }
 }
 
-export class MemoryStoreServiceNew implements CFCoreTypes.IStoreServiceNew {
+export class MemoryStoreService implements CFCoreTypes.IStoreService {
   private channels: Map<string, StateChannelJSON> = new Map();
   private commitments: Map<string, any> = new Map();
   private withdrawals: Map<string, ProtocolTypes.MinimalTransaction> = new Map();
@@ -69,13 +69,14 @@ export class MemoryStoreServiceNew implements CFCoreTypes.IStoreServiceNew {
   async getStateChannelByAppInstanceId(
     appInstanceId: string,
   ): Promise<StateChannelJSON | undefined> {
-    return [...this.channels.values()].find(channel =>
-      channel.proposedAppInstances.find(([appInstId]) => appInstanceId === appInstId) ||
-      channel.appInstances.find(([appInstId]) => appInstanceId === appInstId) ||
-      channel.freeBalanceAppInstance
-        ? channel.freeBalanceAppInstance!.identityHash === appInstanceId
-        : undefined,
-    );
+    return [...this.channels.values()].find(channel => {
+      const sc = StateChannel.fromJson(channel);
+      return (
+        sc.proposedAppInstances.get(appInstanceId) ||
+        sc.appInstances.get(appInstanceId) ||
+        sc.freeBalance.identityHash === appInstanceId
+      );
+    });
   }
 
   async saveStateChannel(stateChannel: StateChannelJSON): Promise<void> {

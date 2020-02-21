@@ -7,6 +7,7 @@ import {
   NO_PROPOSED_APP_INSTANCE_FOR_APP_INSTANCE_ID,
   NO_STATE_CHANNEL_FOR_MULTISIG_ADDR,
   NO_MULTISIG_FOR_COUNTERPARTIES,
+  NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID,
 } from "./methods/errors";
 import { AppInstance, AppInstanceProposal, StateChannel } from "./models";
 import { CFCoreTypes, SolidityValueType } from "./types";
@@ -18,7 +19,7 @@ import { getCreate2MultisigAddress } from "./utils";
  */
 export class Store {
   constructor(
-    private readonly storeService: CFCoreTypes.IStoreServiceNew,
+    private readonly storeService: CFCoreTypes.IStoreService,
     private readonly storeKeyPrefix: string,
   ) {}
 
@@ -93,7 +94,7 @@ export class Store {
     const stateChannelJson = await this.storeService.getStateChannelByAppInstanceId(appInstanceId);
 
     if (!stateChannelJson) {
-      throw Error(NO_STATE_CHANNEL_FOR_MULTISIG_ADDR(appInstanceId));
+      throw Error(NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appInstanceId));
     }
 
     const channel = StateChannel.fromJson(stateChannelJson);
@@ -148,6 +149,7 @@ export class Store {
   // TODO: make sure this isn't being called to get all channels
   public async getProposedAppInstances(multisigAddress: string): Promise<AppInstanceProposal[]> {
     const sc = await this.getStateChannel(multisigAddress);
+    console.log('sc: ', JSON.stringify(sc.toJson()));
     return [...sc.proposedAppInstances.values()];
   }
 
@@ -175,7 +177,11 @@ export class Store {
   public async getWithdrawalCommitment(
     multisigAddress: string,
   ): Promise<CFCoreTypes.MinimalTransaction> {
-    return this.storeService.getWithdrawalCommitment(multisigAddress);
+    const withdrawalCommitment = await this.storeService.getWithdrawalCommitment(multisigAddress);
+    if (!withdrawalCommitment) {
+      throw new Error("Could not find withdrawal commitment");
+    }
+    return withdrawalCommitment;
   }
 
   public async storeWithdrawalCommitment(

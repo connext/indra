@@ -1,4 +1,4 @@
-import { CFCoreTypes, NetworkContext, ProtocolMessage, SolidityValueType, IStoreServiceNew } from "@connext/types";
+import { CFCoreTypes, NetworkContext, ProtocolMessage, SolidityValueType, IStoreService } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import { Signature } from "ethers/utils";
 

@@ -7,11 +7,11 @@ import { CFCoreTypes } from "./types";
 export const EXTENDED_PRIVATE_KEY_PATH = "EXTENDED_PRIVATE_KEY";
 
 export async function getHDNode(storeService: CFCoreTypes.IStoreService): Promise<HDNode> {
-  let xprv = await storeService.get(EXTENDED_PRIVATE_KEY_PATH);
+  let xprv = await storeService.getExtendedPrvKey();
 
   if (!xprv) {
     xprv = computeRandomExtendedPrvKey();
-    await storeService.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: xprv }]);
+    await storeService.saveExtendedPrvKey(xprv);
   }
 
   try {
