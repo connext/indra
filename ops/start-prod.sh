@@ -13,7 +13,7 @@ INDRA_DOMAINNAME="${INDRA_DOMAINNAME:-localhost}"
 INDRA_EMAIL="${INDRA_EMAIL:-noreply@gmail.com}" # for notifications when ssl certs expire
 INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER}"
 INDRA_LOGDNA_KEY="${INDRA_LOGDNA_KEY:-abc123}"
-INDRA_MODE="${INDRA_MODE:-test-staging}" # One of: release, staging, test-staging, or test-release
+INDRA_MODE="${INDRA_MODE:-release}" # One of: release, staging, test-staging, or test-release
 INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-cxt1234}" # pass this in through CI
 
 ####################
