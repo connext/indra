@@ -111,7 +111,7 @@ describe("FastGenericSignedTransferApp", () => {
     transferApp = await deployContract(wallet, FastGenericSignedTransferApp);
   });
 
-  it.only("happy case: sender creates locked tranfers", async () => {
+  it("happy case: sender creates locked tranfers", async () => {
     const sender = mkAddress("0xa");
     const receiver = mkAddress("0xb");
     const preState: FastGenericSignedTransferAppState = {
