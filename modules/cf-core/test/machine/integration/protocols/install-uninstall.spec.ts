@@ -1,18 +1,18 @@
-// import { OutcomeType } from "@connext/types";
-// import { Two, Zero } from "ethers/constants";
+import { OutcomeType } from "@connext/types";
+import { Two, Zero } from "ethers/constants";
 
-// import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
-// import { toBeEq } from "../bignumber-jest-matcher";
+import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
+import { toBeEq } from "../bignumber-jest-matcher";
 
 // import { Participant, TestRunner } from "./test-runner";
 
-// expect.extend({ toBeEq });
+expect.extend({ toBeEq });
 
-// export enum TestFundingType {
-//   ETH = "ETH",
-//   ERC20 = "ERC20",
-//   SPLIT = "SPLIT",
-// }
+export enum TestFundingType {
+  ETH = "ETH",
+  ERC20 = "ERC20",
+  SPLIT = "SPLIT",
+}
 
 // async function runDirectInstallUninstallTest(
 //   outcomeType: OutcomeType,
@@ -51,54 +51,55 @@
 //   }
 // }
 
-// describe("Install-then-uninstall in a direct channel", () => {
-//   for (const outcomeType of [
-//     OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-//     OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-//     OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
-//   ]) {
-//     for (const testFundingType of [
-//       TestFundingType.ETH,
-//       TestFundingType.ERC20,
-//       TestFundingType.SPLIT,
-//     ]) {
-//       if (
-//         testFundingType === TestFundingType.SPLIT &&
-//         outcomeType !== OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER
-//       ) {
-//         continue;
-//       }
+describe.skip("Install-then-uninstall in a direct channel", () => {
+  it.skip("", () => {});
+  // for (const outcomeType of [
+  //   OutcomeType.TWO_PARTY_FIXED_OUTCOME,
+  //   OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+  //   OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER,
+  // ]) {
+  //   for (const testFundingType of [
+  //     TestFundingType.ETH,
+  //     TestFundingType.ERC20,
+  //     TestFundingType.SPLIT,
+  //   ]) {
+  //     if (
+  //       testFundingType === TestFundingType.SPLIT &&
+  //       outcomeType !== OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER
+  //     ) {
+  //       continue;
+  //     }
 
-//       it(`${outcomeType}/${testFundingType}`, async () => {
-//         await runDirectInstallUninstallTest(outcomeType, testFundingType);
-//       });
-//     }
-//   }
-// });
+  //     it(`${outcomeType}/${testFundingType}`, async () => {
+  //       await runDirectInstallUninstallTest(outcomeType, testFundingType);
+  //     });
+  //   }
+  // }
+});
 
-// describe("Install-then-uninstall of a virtual app", () => {
-//   for (const outcomeType of [
-//     OutcomeType.TWO_PARTY_FIXED_OUTCOME,
-//     OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
-//   ]) {
-//     for (const tokenAddress of [CONVENTION_FOR_ETH_TOKEN_ADDRESS, TestRunner.TEST_TOKEN_ADDRESS]) {
-//       it(`${outcomeType}/${tokenAddress}`, async () => {
-//         const tr = new TestRunner();
-//         await tr.connectToGanache();
+describe.skip("Install-then-uninstall of a virtual app", () => {
+  // for (const outcomeType of [
+  //   OutcomeType.TWO_PARTY_FIXED_OUTCOME,
+  //   OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
+  // ]) {
+  //   for (const tokenAddress of [CONVENTION_FOR_ETH_TOKEN_ADDRESS, TestRunner.TEST_TOKEN_ADDRESS]) {
+  //     it(`${outcomeType}/${tokenAddress}`, async () => {
+  //       const tr = new TestRunner();
+  //       await tr.connectToGanache();
 
-//         await tr.setup();
-//         await tr.unsafeFund();
+  //       await tr.setup();
+  //       await tr.unsafeFund();
 
-//         await tr.installVirtualEqualDeposits(outcomeType, tokenAddress);
+  //       await tr.installVirtualEqualDeposits(outcomeType, tokenAddress);
 
-//         tr.assertFB(Participant.A, tokenAddress, Zero);
-//         tr.assertFB(Participant.C, tokenAddress, Zero);
+  //       tr.assertFB(Participant.A, tokenAddress, Zero);
+  //       tr.assertFB(Participant.C, tokenAddress, Zero);
 
-//         await tr.uninstallVirtual();
+  //       await tr.uninstallVirtual();
 
-//         tr.assertFB(Participant.A, tokenAddress, Two);
-//         tr.assertFB(Participant.C, tokenAddress, Zero);
-//       });
-//     }
-//   }
-// });
+  //       tr.assertFB(Participant.A, tokenAddress, Two);
+  //       tr.assertFB(Participant.C, tokenAddress, Zero);
+  //     });
+  //   }
+  // }
+});

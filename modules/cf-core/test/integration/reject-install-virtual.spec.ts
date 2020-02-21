@@ -15,7 +15,7 @@ import { REJECT_INSTALL_EVENT } from "@connext/types";
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
-describe("Node method follows spec - rejectInstallVirtual", () => {
+describe.skip("Node method follows spec - rejectInstallVirtual", () => {
   let nodeA: Node;
   let nodeB: Node;
   let nodeC: Node;

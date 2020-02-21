@@ -1,6 +1,6 @@
 import { v4 as generateUUID } from "uuid";
 
-import { NO_MULTISIG_FOR_APP_INSTANCE_ID, Node } from "../../src";
+import { Node, NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID } from "../../src";
 import { NetworkContextForTestSuite } from "../contracts";
 
 import { setup, SetupContext } from "./setup";
@@ -20,9 +20,10 @@ describe("Node method follows spec - getAppInstances", () => {
   });
 
   it("returns the right response for getting the state of a non-existent AppInstance", async () => {
-    const getStateReq = constructGetStateRpc(generateUUID());
+    const appId = generateUUID();
+    const getStateReq = constructGetStateRpc(appId);
     await expect(nodeA.rpcRouter.dispatch(getStateReq)).rejects.toThrowError(
-      NO_MULTISIG_FOR_APP_INSTANCE_ID,
+      NO_STATE_CHANNEL_FOR_APP_INSTANCE_ID(appId),
     );
   });
 

@@ -19,7 +19,7 @@ import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
-describe("Node method follows spec - proposeInstallVirtual", () => {
+describe.skip("Node method follows spec - proposeInstallVirtual", () => {
   let nodeA: Node;
   let nodeB: Node;
   let nodeC: Node;
@@ -35,7 +35,7 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
     "Node A makes a proposal through an intermediary Node B to install a " +
       "Virtual AppInstance with Node C. All Nodes confirm receipt of proposal",
     () => {
-      it.only("sends proposal with non-null initial state", async done => {
+      it("sends proposal with non-null initial state", async done => {
         const multisigAddressAB = await createChannel(nodeA, nodeB);
         const multisigAddressBC = await createChannel(nodeB, nodeC);
 
@@ -81,14 +81,13 @@ describe("Node method follows spec - proposeInstallVirtual", () => {
         const { params } = await proposal;
 
         const [proposedAppNodeA] = await getProposedAppInstances(nodeA, multisigAddressAB);
-        console.log('proposedAppNodeA: ', proposedAppNodeA);
 
         confirmProposedAppInstance(params, proposedAppNodeA);
       });
     },
   );
 
-  describe("Node A makes a virtual proposal through intermediary B to install a virtual app instance with c", () => {
+  describe.skip("Node A makes a virtual proposal through intermediary B to install a virtual app instance with c", () => {
     let nodeA: Node;
     let nodeB: Node;
     let nodeC: Node;

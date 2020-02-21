@@ -16,7 +16,7 @@ jest.setTimeout(10000);
 
 const { TicTacToeApp } = global["networkContext"] as NetworkContextForTestSuite;
 
-describe("Node method follows spec - uninstall virtual", () => {
+describe.skip("Node method follows spec - uninstall virtual", () => {
   let nodeA: Node;
   let nodeB: Node;
   let nodeC: Node;

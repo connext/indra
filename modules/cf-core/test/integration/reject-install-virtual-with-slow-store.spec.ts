@@ -16,7 +16,7 @@ import {
 const { TicTacToeApp } = global[`networkContext`] as NetworkContextForTestSuite;
 
 // Postgres testing is pretty pointless here, since it's using a different interface
-describe(`Node method follows spec - rejectInstallVirtual`, () => {
+describe.skip(`Node method follows spec - rejectInstallVirtual`, () => {
   let nodeA: Node;
   let nodeB: Node;
   let nodeC: Node;

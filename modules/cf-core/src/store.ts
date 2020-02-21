@@ -149,7 +149,6 @@ export class Store {
   // TODO: make sure this isn't being called to get all channels
   public async getProposedAppInstances(multisigAddress: string): Promise<AppInstanceProposal[]> {
     const sc = await this.getStateChannel(multisigAddress);
-    console.log('sc: ', JSON.stringify(sc.toJson()));
     return [...sc.proposedAppInstances.values()];
   }
 
