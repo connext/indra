@@ -11,6 +11,7 @@ import "../funding/libs/LibOutcome.sol";
 ///         using takeAction which are resolves with a sig
 ///         from a predefined signer
 
+
 contract FastGenericSignedTransferApp is CounterfactualApp {
 
     using SafeMath for uint256;
@@ -27,6 +28,8 @@ contract FastGenericSignedTransferApp is CounterfactualApp {
         uint256 amount;
         address assetId; // TODO: Do we need this?
         address signer;
+        // This needs to be unique to each payment - the entropy is used to ensure that
+        // intermediaries can't steal money by replaying state.
         bytes32 paymentID;
         uint256 timeout; // Block height. 0 is special case where there's no timeout.
         bytes recipientXpub; // Not checked in app, but is part of the state for intermediaries to use
@@ -35,14 +38,14 @@ contract FastGenericSignedTransferApp is CounterfactualApp {
     }
 
     struct AppState {
-        Payment[] lockedPayments; // TODO: should this be a fixed size array? What happens with many locked payments in a dispute?
+        Payment[] lockedPayments; // What happens with many locked payments in a dispute?
         LibOutcome.CoinTransfer[2] transfers; // balances
         bool finalized;
         uint256 turnNum;
     }
 
     struct Action {
-        Payment[] newLockedPayments; // TODO: fixed size array?
+        Payment[] newLockedPayments;
         ActionType actionType;
     }
 
@@ -100,6 +103,7 @@ contract FastGenericSignedTransferApp is CounterfactualApp {
 
         AppState memory postState;
 
+        require(!state.finalized, "Cannot take actions in a finalized channel, please reinstall.");
         if (action.actionType == ActionType.CREATE) {
             postState = doCreate(state, action);
         } else if (action.actionType == ActionType.UNLOCK) {
@@ -123,9 +127,13 @@ contract FastGenericSignedTransferApp is CounterfactualApp {
         returns (AppState memory)
     {
         require(state.turnNum % 2 == 0, "Only senders can create locked payments.");
-        for (uint8 i = 0; i < action.newLockedPayments.length(); i++) { // TODO uint8?
-            require(action.newLockedPayments[i].paymentID != "" && action.newLockedPayments[i].paymentID != 0, "PaymentID cannot be 0 or empty string");
-            require(find(state.lockedPayments, action.newLockedPayments[i].paymentID) == 0, "Locked payment with this paymentID already exists.");
+        for (uint8 i = 0; i < action.newLockedPayments.length; i++) { // TODO uint8?
+            require(
+                action.newLockedPayments[i].paymentID != "" && action.newLockedPayments[i].paymentID != 0, "PaymentID cannot be 0 or empty string"
+            );
+            require(
+                find(state.lockedPayments, action.newLockedPayments[i].paymentID) == 0, "Locked payment with this paymentID already exists."
+            );
             require(action.newLockedPayments[i].amount <= state.transfers[0].amount, "Insufficient balance for new locked payment");
             require(action.newLockedPayments[i].data == 0 || action.newLockedPayments[i].data == "", "Data field must be empty");
             require(action.newLockedPayments[i].signature == 0 || action.newLockedPayments[i].signature == "", "Signature field must be empty");
@@ -137,6 +145,7 @@ contract FastGenericSignedTransferApp is CounterfactualApp {
         return state;
     }
 
+    // TODO Can we safely batch unlock payments? Sender has incentive to choose the least unlocked one.
     function doUnlock(
         AppState memory state,
         Action memory action
@@ -146,20 +155,20 @@ contract FastGenericSignedTransferApp is CounterfactualApp {
         returns (AppState memory)
     {
         require(state.turnNum % 2 == 1, "Only receivers can unlock payments.");
-        for (uint8 i = 0; i < action.newLockedPayments.length(); i++) {
+        for (uint8 i = 0; i < action.newLockedPayments.length; i++) {
             require(action.newLockedPayments[i].paymentID != "" && action.newLockedPayments[i].paymentID != 0, "PaymentID cannot be 0 or empty string");
             require(find(state.lockedPayments, action.newLockedPayments[i].paymentID) != 0, "No locked payment with that paymentID exists");
 
             Payment memory lockedPayment = find(state.lockedPayments, action.newLockedPayments[i].paymentID);
             // If timeout exists and has expired, remove the locked payment without applying balances
-            if (lockedPayment.timeout <= block.number && lockedPayment.timeout != 0) {
+            if (lockedPayment.timeout <= block.number && lockedPayment.timeout != 0) { // TODO timeouts may not work w/ single-signed updates because node can just wait to countersign
                 state.lockedPayments = remove(state.lockedPayments, action.newLockedPayments[i].paymentID);
             } else {
-                bytes32 memory rawHash = keccak256(bytes32(action.newLockedPayments[i].data), bytes32(lockedPayment.paymentID)); // TODO any possibility of collision?
+                bytes32 rawHash = keccak256(abi.encodePacked(action.newLockedPayments[i].data, lockedPayment.paymentID)); // TODO any possibility of collision?
                 require(lockedPayment.signer == rawHash.recover(action.newLockedPayments[i].signature), "Incorrect signer recovered from signature");
 
                 // Add balances to transfers
-                state.transfers[1].amount = state.transfer[1].amount.add(lockedPayment.amount);
+                state.transfers[1].amount = state.transfers[1].amount.add(lockedPayment.amount);
                 state.lockedPayments = remove(state.lockedPayments, action.newLockedPayments[i].paymentID);
             }
         }
@@ -175,7 +184,7 @@ contract FastGenericSignedTransferApp is CounterfactualApp {
         returns (AppState memory)
     {
         require(state.turnNum % 2 == 1, "Only receivers can reject payments.");
-        for (uint8 i = 0; i < action.newLockedPayments.length(); i++) {
+        for (uint8 i = 0; i < action.newLockedPayments.length; i++) {
             require(action.newLockedPayments[i].paymentID != "" && action.newLockedPayments[i].paymentID != 0, "PaymentID cannot be 0 or empty string");
             state.lockedPayments = remove(state.lockedPayments, action.newLockedPayments[i].paymentID);
         }
@@ -203,21 +212,29 @@ contract FastGenericSignedTransferApp is CounterfactualApp {
         pure
         returns (Payment[] memory)
     {
-        lockedPayments[lockedPayments.length()] = newLockedPayment;
-        return lockedPayments;
+        // Can't dynamically size arrays in-memory in solidity. Must copy to new array.
+        Payment[] memory newLockedPayments = new Payment[](lockedPayments.length+1); // TODO is this the right pattern?
+        for (uint i = 0; i <= lockedPayments.length; i++) {
+            if (i == lockedPayments.length) {
+                newLockedPayments[i] = newLockedPayment;
+            } else {
+                newLockedPayments[i] = lockedPayments[i];
+            }
+        }
+        return newLockedPayments;
     }
 
     function remove(
         Payment[] memory lockedPayments,
-        bytes32 memory paymentID
+        bytes32 paymentID
     )
         internal
         pure
         returns (Payment[] memory)
     {
-        uint memory j = 0;
-        Payment[] memory newLockedPayments;
-        for (uint i = 0; i < lockedPayments.length(); i++) { // TODO uint size?
+        uint j = 0;
+        Payment[] memory newLockedPayments = new Payment[](lockedPayments.length-1);
+        for (uint i = 0; i < lockedPayments.length; i++) { // TODO uint size?
             // If the element should stay, write it to a new array
             if (lockedPayments[i].paymentID != paymentID) {
                 newLockedPayments[j] = lockedPayments[i];
@@ -229,22 +246,22 @@ contract FastGenericSignedTransferApp is CounterfactualApp {
 
     function find(
         Payment[] memory lockedPayments,
-        bytes32 memory paymentID
+        bytes32 paymentID
     )
         internal
         pure
         returns (Payment[] memory)
     {
-        bool memory found = false;
+        bool found = false;
         Payment memory element = 0;
-        for (uint i = 0; i < lockedPayments.length(); i++) {
+        for (uint i = 0; i < lockedPayments.length; i++) {
             if (lockedPayments[i].paymentID == paymentID && !found) {
                 element = lockedPayments[i];
                 found = true;
             }
             // Multiple elements with this paymentID -- if this happens, it's real bad
             if (lockedPayments[i].paymentID = paymentID && found) {
-                revert("Multiple elements with this paymentID, THIS SHOULD NEVER HAPPEN!!");
+                revert("Multiple elements with this paymentID, THIS SHOULD NEVER HAPPEN!");
             }
         }
         return element;
