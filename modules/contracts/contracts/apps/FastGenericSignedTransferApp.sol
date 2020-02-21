@@ -132,11 +132,11 @@ contract FastGenericSignedTransferApp is CounterfactualApp {
                 action.newLockedPayments[i].paymentID != "" && action.newLockedPayments[i].paymentID != 0, "PaymentID cannot be 0 or empty string"
             );
             require(
-                find(state.lockedPayments, action.newLockedPayments[i].paymentID) == 0, "Locked payment with this paymentID already exists."
+                (find(state.lockedPayments, action.newLockedPayments[i].paymentID)).paymentID == bytes32(0), "Locked payment with this paymentID already exists."
             );
             require(action.newLockedPayments[i].amount <= state.transfers[0].amount, "Insufficient balance for new locked payment");
             require(action.newLockedPayments[i].data == 0 || action.newLockedPayments[i].data == "", "Data field must be empty");
-            require(action.newLockedPayments[i].signature == 0 || action.newLockedPayments[i].signature == "", "Signature field must be empty");
+            require(action.newLockedPayments[i].signature.length == 0, "Signature field must be empty");
 
             // Reduce sender's balance by locked payment amount and then insert into state lockedPayments array
             state.transfers[0].amount = state.transfers[0].amount.sub(action.newLockedPayments[i].amount);
@@ -156,12 +156,20 @@ contract FastGenericSignedTransferApp is CounterfactualApp {
     {
         require(state.turnNum % 2 == 1, "Only receivers can unlock payments.");
         for (uint8 i = 0; i < action.newLockedPayments.length; i++) {
-            require(action.newLockedPayments[i].paymentID != "" && action.newLockedPayments[i].paymentID != 0, "PaymentID cannot be 0 or empty string");
-            require(find(state.lockedPayments, action.newLockedPayments[i].paymentID) != 0, "No locked payment with that paymentID exists");
+            require(
+                action.newLockedPayments[i].paymentID != bytes32(0),
+                "PaymentID cannot be 0"
+            );
+            require(
+                (find(state.lockedPayments, action.newLockedPayments[i].paymentID)).paymentID != bytes32(0),
+                "No locked payment with that paymentID exists"
+            );
 
             Payment memory lockedPayment = find(state.lockedPayments, action.newLockedPayments[i].paymentID);
             // If timeout exists and has expired, remove the locked payment without applying balances
-            if (lockedPayment.timeout <= block.number && lockedPayment.timeout != 0) { // TODO timeouts may not work w/ single-signed updates because node can just wait to countersign
+            // TODO timeouts may not work w/ single-signed updates because node can just wait to countersign
+            // TODO: need this to be lockedPayment.timeout <= block.number but that makes visibiity "view" which breaks
+            if (lockedPayment.timeout <= 0 && lockedPayment.timeout != 0) {
                 state.lockedPayments = remove(state.lockedPayments, action.newLockedPayments[i].paymentID);
             } else {
                 bytes32 rawHash = keccak256(abi.encodePacked(action.newLockedPayments[i].data, lockedPayment.paymentID)); // TODO any possibility of collision?
@@ -185,7 +193,10 @@ contract FastGenericSignedTransferApp is CounterfactualApp {
     {
         require(state.turnNum % 2 == 1, "Only receivers can reject payments.");
         for (uint8 i = 0; i < action.newLockedPayments.length; i++) {
-            require(action.newLockedPayments[i].paymentID != "" && action.newLockedPayments[i].paymentID != 0, "PaymentID cannot be 0 or empty string");
+            require(
+                action.newLockedPayments[i].paymentID != bytes32(0),
+                "PaymentID cannot be 0"
+            );
             state.lockedPayments = remove(state.lockedPayments, action.newLockedPayments[i].paymentID);
         }
         return state;
@@ -250,18 +261,13 @@ contract FastGenericSignedTransferApp is CounterfactualApp {
     )
         internal
         pure
-        returns (Payment[] memory)
+        returns (Payment memory)
     {
-        bool found = false;
-        Payment memory element = 0;
+        Payment memory element;
         for (uint i = 0; i < lockedPayments.length; i++) {
-            if (lockedPayments[i].paymentID == paymentID && !found) {
+            if (lockedPayments[i].paymentID == paymentID) {
                 element = lockedPayments[i];
-                found = true;
-            }
-            // Multiple elements with this paymentID -- if this happens, it's real bad
-            if (lockedPayments[i].paymentID = paymentID && found) {
-                revert("Multiple elements with this paymentID, THIS SHOULD NEVER HAPPEN!");
+                break;
             }
         }
         return element;
