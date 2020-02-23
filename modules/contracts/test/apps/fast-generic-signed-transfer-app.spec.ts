@@ -80,7 +80,7 @@ const transferAppActionEncoding = `
   )
 `;
 
-const decodeAppState = (encodedAppState: string): FastGenericSignedTransferAppState =>
+const decodeAppState = (encodedAppState: string): FastGenericSignedTransferAppState[] =>
   defaultAbiCoder.decode([transferAppStateEncoding], encodedAppState);
 
 const encodeAppState = (state: FastGenericSignedTransferAppState): string => {
@@ -111,7 +111,7 @@ describe("FastGenericSignedTransferApp", () => {
     transferApp = await deployContract(wallet, FastGenericSignedTransferApp);
   });
 
-  it("happy case: sender creates locked tranfers", async () => {
+  it.only("happy case: sender creates locked tranfers", async () => {
     const sender = mkAddress("0xa");
     const receiver = mkAddress("0xb");
     const preState: FastGenericSignedTransferAppState = {
@@ -121,7 +121,7 @@ describe("FastGenericSignedTransferApp", () => {
           to: sender,
         },
         {
-          amount: bigNumberify(10),
+          amount: Zero,
           to: receiver,
         },
       ],
@@ -147,7 +147,35 @@ describe("FastGenericSignedTransferApp", () => {
     };
 
     const ret = await takeAction(preState, action);
-    console.log('ret: ', decodeAppState(ret));
+    const decoded = decodeAppState(ret);
+    const destructured = decoded[0];
+
+    // coin transfers decrement from sender
+    expect({
+      to: destructured.coinTransfers[0].to,
+      amount: destructured.coinTransfers[0].amount,
+    }).contain({
+      ...preState.coinTransfers[0],
+      amount: preState.coinTransfers[0].amount.sub(action.newLockedPayments[0].amount),
+    });
+    // coin transfers increment receiver
+    expect({
+      to: destructured.coinTransfers[1].to,
+      amount: destructured.coinTransfers[1].amount,
+    }).contain({
+      ...preState.coinTransfers[1],
+      amount: preState.coinTransfers[1].amount.add(action.newLockedPayments[0].amount),
+    });
+
+    // not finalized
+    expect(destructured.finalized).is.false;
+
+    // locked payment added to state
+    expect(destructured.lockedPayments.length).to.eq(1);
+    expect(destructured.lockedPayments).contain(action.newLockedPayments[0]);
+
+    // turn num incremented
+    expect(destructured.turnNum).to.eq(1);
   });
 
   it("happy case: receiver unlocks tranfers", () => {});
