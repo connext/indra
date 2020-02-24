@@ -8,6 +8,7 @@ const colors = {
   Blink: "\x1b[5m",
   Reverse: "\x1b[7m",
   Hidden: "\x1b[8m",
+
   FgBlack: "\x1b[30m",
   FgRed: "\x1b[31m",
   FgGreen: "\x1b[32m",
@@ -16,6 +17,7 @@ const colors = {
   FgMagenta: "\x1b[35m",
   FgCyan: "\x1b[36m",
   FgWhite: "\x1b[37m",
+
   BgBlack: "\x1b[40m",
   BgRed: "\x1b[41m",
   BgGreen: "\x1b[42m",
@@ -74,7 +76,7 @@ export class LoggerService extends Logger {
     if (this.levels[level] > this.logLevel) return;
     const now = new Date().toISOString();
     return (console as any)[level](
-      `${colors.Reset}${now} ${colors.FgYellow}[${this.context}]${colors.Reset} ${this.color[level]}${msg}`,
+      `${colors.Reset}${now} ${colors.FgCyan}[${this.context}]${colors.Reset} ${this.color[level]}${msg}${colors.Reset}`,
     );
   }
 }

@@ -411,7 +411,8 @@ export class TransferService {
       return;
     }
 
-    this.logger.log(
+    this.logger.log(`Reclaiming linked transfer ${transfer.paymentId}`);
+    this.logger.debug(
       `Taking action with preImage ${transfer.preImage} and uninstalling app ${transfer.senderAppInstanceId} to reclaim collateral`,
     );
     await this.cfCoreService.takeAction(transfer.senderAppInstanceId, {

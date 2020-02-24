@@ -13,7 +13,7 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
     public readonly logger: LoggerService,
     protected readonly messaging: IMessagingService,
   ) {
-    this.logger.setContext("AbstractMessagingProvider");
+    this.logger.setContext("MessagingInterface");
   }
 
   getPublicIdentifierFromSubject(subject: string): string {
@@ -35,7 +35,20 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
       );
       if (msg.reply) {
         try {
+          const start = Date.now();
+          const subject = msg.subject
+            .split(".")
+            .slice(0, 2)
+            .join(".");
           const response = await processor(msg.subject, msg.data);
+          const diff = Date.now() - start;
+          if (diff >= 10 && diff < 100) {
+            this.logger.log(`Responded to ${subject} in ${Date.now() - start} ms`);
+          } else if (diff >= 100 && diff < 1000) {
+            this.logger.warn(`Responded to ${subject} in ${Date.now() - start} ms`);
+          } else if (diff >= 1000) {
+            this.logger.error(`Responded to ${subject} in ${Date.now() - start} ms`);
+          }
           this.messaging.publish(msg.reply, {
             err: null,
             response,

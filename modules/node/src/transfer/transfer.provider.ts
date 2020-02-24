@@ -37,7 +37,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
     pubId: string,
     data: { paymentId: string; linkedHash: string },
   ): Promise<ResolveLinkedTransferResponse> {
-    this.logger.log(`Got resolve link request with data: ${JSON.stringify(data, replaceBN, 2)}`);
+    this.logger.debug(`Got resolve link request with data: ${JSON.stringify(data, replaceBN, 2)}`);
     const { paymentId, linkedHash } = data;
     if (!paymentId || !linkedHash) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);

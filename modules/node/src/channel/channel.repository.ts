@@ -50,7 +50,7 @@ export class ChannelRepository extends Repository<Channel> {
       await transactionalEntityManager.save(rebalanceProfile);
 
       if (existing) {
-        logger.log(`Found existing profile for token ${rebalanceProfile.assetId}, replacing`);
+        logger.debug(`Found existing profile for token ${rebalanceProfile.assetId}, replacing`);
         await transactionalEntityManager
           .createQueryBuilder()
           .relation(Channel, "rebalanceProfiles")

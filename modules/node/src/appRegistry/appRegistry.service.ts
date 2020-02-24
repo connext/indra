@@ -69,7 +69,7 @@ export class AppRegistryService implements OnModuleInit {
       if (registryAppInfo.name !== CoinBalanceRefundApp) {
         await this.cfCoreService.installApp(appInstanceId);
       } else {
-        this.logger.log(`Not installing coin balance refund app, returning registry information`);
+        this.logger.debug(`Not installing coin balance refund app, returning registry information`);
       }
     } catch (e) {
       if (!e.message.includes(`Node has insufficient balance`)) {
@@ -266,11 +266,11 @@ export class AppRegistryService implements OnModuleInit {
       initiatorDepositTokenAddress,
       responderDepositTokenAddress,
     );
-    this.logger.log(
+    this.logger.debug(
       `Our ${initiatorDepositTokenAddress} -> ${responderDepositTokenAddress} Swap Rate: ${ourRate}`,
     );
     const calculated = calculateExchange(initiatorDeposit, ourRate);
-    this.logger.log(
+    this.logger.debug(
       `initiatorDeposit=${initiatorDeposit} -> ${calculated} vs responderDeposit=${responderDeposit}`,
     );
 
@@ -287,7 +287,7 @@ export class AppRegistryService implements OnModuleInit {
       );
     }
 
-    this.logger.log(
+    this.logger.debug(
       `Exchange amounts are within ${ALLOWED_DISCREPANCY_PCT}% of our rate ${ourRate}`,
     );
   }
@@ -532,7 +532,7 @@ export class AppRegistryService implements OnModuleInit {
       throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
     }
 
-    this.logger.log(
+    this.logger.debug(
       `App with params ${stringify(proposeInstallParams, 2)} allowed to be installed`,
     );
 
@@ -549,7 +549,7 @@ export class AppRegistryService implements OnModuleInit {
       default:
         break;
     }
-    this.logger.log(`Validation completed for app ${registryAppInfo.name}`);
+    this.logger.log(`Validation succeeded for app ${registryAppInfo.name}`);
     return registryAppInfo;
   }
 
@@ -622,7 +622,7 @@ export class AppRegistryService implements OnModuleInit {
       default:
         break;
     }
-    this.logger.log(`Validation completed for app ${registryAppInfo.name}`);
+    this.logger.log(`Validation succeeded for app ${registryAppInfo.name}`);
   }
 
   async onModuleInit() {
