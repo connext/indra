@@ -83,7 +83,8 @@ export class ConfigService implements OnModuleInit {
     const ethAddresses = {} as any;
     const ethAddressBook = this.getEthAddressBook();
     Object.keys(ethAddressBook[chainId]).map(
-      (contract: string) => (ethAddresses[contract] = getAddress(ethAddressBook[chainId][contract].address)),
+      (contract: string) =>
+        (ethAddresses[contract] = getAddress(ethAddressBook[chainId][contract].address)),
     );
     return ethAddresses as ContractAddresses;
   }
@@ -122,7 +123,8 @@ export class ConfigService implements OnModuleInit {
       const configIndex = tokenConfig.findIndex(tc =>
         tc.find(t => t.chainId === currentChainId && t.address === tokenAddress),
       );
-      const configExists = tokenConfig[configIndex].find(tc => tc.chainId === 1);
+      const configExists =
+        configIndex < 0 ? undefined : tokenConfig[configIndex].find(tc => tc.chainId === 1);
       tokenAddress = configExists ? configExists.address : tokenAddress;
     }
 
@@ -131,7 +133,10 @@ export class ConfigService implements OnModuleInit {
 
   getSupportedTokenAddresses(): string[] {
     const swaps = this.getAllowedSwaps();
-    const tokens = swaps.reduce((tokensArray, swap) => tokensArray.concat([swap.from, swap.to]), []);
+    const tokens = swaps.reduce(
+      (tokensArray, swap) => tokensArray.concat([swap.from, swap.to]),
+      [],
+    );
     tokens.push(AddressZero);
     const tokenSet = new Set(tokens);
     return [...tokenSet];
@@ -240,7 +245,9 @@ export class ConfigService implements OnModuleInit {
     return this.get(`INDRA_REBALANCING_SERVICE_URL`);
   }
 
-  async getDefaultRebalanceProfile(assetId: string = AddressZero): Promise<RebalanceProfile | undefined> {
+  async getDefaultRebalanceProfile(
+    assetId: string = AddressZero,
+  ): Promise<RebalanceProfile | undefined> {
     const tokenAddress = await this.getTokenAddress();
     switch (assetId) {
       case AddressZero:

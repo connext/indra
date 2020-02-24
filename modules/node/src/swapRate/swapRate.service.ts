@@ -2,7 +2,7 @@ import { IMessagingService } from "@connext/messaging";
 import { AllowedSwap, PriceOracleType, SwapRate } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { getMarketDetails, getTokenReserves } from "@uniswap/sdk";
-import { Contract, ethers } from "ethers";
+import { ethers } from "ethers";
 import { AddressZero } from "ethers/constants";
 
 import { ConfigService } from "../config/config.service";
@@ -14,7 +14,6 @@ const logger = new CLogger("SwapService");
 
 @Injectable()
 export class SwapRateService implements OnModuleInit {
-  private medianizer: Contract;
   private latestSwapRates: SwapRate[] = [];
 
   constructor(
@@ -42,13 +41,18 @@ export class SwapRateService implements OnModuleInit {
     if (!this.config.getAllowedSwaps().find((s: AllowedSwap) => s.from === from && s.to === to)) {
       throw new Error(`No valid swap exists for ${from} to ${to}`);
     }
-    const rateIndex = this.latestSwapRates.findIndex((s: SwapRate) => s.from === from && s.to === to);
+    const rateIndex = this.latestSwapRates.findIndex(
+      (s: SwapRate) => s.from === from && s.to === to,
+    );
     let oldRate: string | undefined;
     if (rateIndex !== -1) {
       oldRate = this.latestSwapRates[rateIndex].rate;
     }
 
-    if (this.latestSwapRates[rateIndex] && this.latestSwapRates[rateIndex].blockNumber === blockNumber) {
+    if (
+      this.latestSwapRates[rateIndex] &&
+      this.latestSwapRates[rateIndex].blockNumber === blockNumber
+    ) {
       // already have rates for this block
       return undefined;
     }
@@ -64,11 +68,11 @@ export class SwapRateService implements OnModuleInit {
           throw new Error(`Price oracle not configured for swap ${from} -> ${to}`);
       }
     } catch (e) {
-      logger.warn(`Failed to fetch swap rate from ${priceOracleType}`);
+      logger.warn(`Failed to fetch swap rate from ${priceOracleType} for ${from} to ${to}`);
       if (process.env.NODE_ENV === "development") {
         newRate = await this.config.getDefaultSwapRate(from, to);
         if (!newRate) {
-          throw e;
+          return "0";
         }
       }
     }

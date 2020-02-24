@@ -27,7 +27,10 @@ const exists = (obj: any): boolean => {
   return !!obj && !!Object.keys(obj).length;
 };
 
-const createMessagingService = async (messagingUrl: string, logLevel: number): Promise<IMessagingService> => {
+const createMessagingService = async (
+  messagingUrl: string,
+  logLevel: number,
+): Promise<IMessagingService> => {
   // create a messaging service client
   const messagingFactory = new MessagingServiceFactory({ logLevel, messagingUrl });
   const messaging = messagingFactory.createService("messaging");
@@ -73,8 +76,16 @@ export const connect = async (
   overrideOptions?: Partial<ClientOptions>,
 ): Promise<IConnextClient> => {
   const opts =
-    typeof clientOptions === "string" ? await getDefaultOptions(clientOptions, overrideOptions) : clientOptions;
-  const { logLevel, ethProviderUrl, nodeUrl, mnemonic, channelProvider: providedChannelProvider } = opts;
+    typeof clientOptions === "string"
+      ? await getDefaultOptions(clientOptions, overrideOptions)
+      : clientOptions;
+  const {
+    logLevel,
+    ethProviderUrl,
+    nodeUrl,
+    mnemonic,
+    channelProvider: providedChannelProvider,
+  } = opts;
   let { xpub, keyGen, store, messaging } = opts;
 
   const log = new Logger("ConnextConnect", logLevel);
@@ -131,7 +142,8 @@ export const connect = async (
       // Convert mnemonic into xpub + keyGen if provided
       const hdNode = fromExtendedKey(fromMnemonic(mnemonic).extendedKey).derivePath(CF_PATH);
       xpub = hdNode.neuter().extendedKey;
-      keyGen = (index: string): Promise<string> => Promise.resolve(hdNode.derivePath(index).privateKey);
+      keyGen = (index: string): Promise<string> =>
+        Promise.resolve(hdNode.derivePath(index).privateKey);
     } else {
       log.debug(`Creating channelProvider with xpub: ${xpub}`);
       log.debug(`Creating channelProvider with keyGen: ${keyGen}`);
@@ -151,7 +163,9 @@ export const connect = async (
 
     // ensure that node and user xpub are different
     if (config.nodePublicIdentifier === xpub) {
-      throw new Error("Client must be instantiated with a mnemonic that is different from the node's mnemonic");
+      throw new Error(
+        "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
+      );
     }
 
     channelProvider = await createCFChannelProvider({
@@ -262,7 +276,13 @@ export const connect = async (
   // no need to await this if it needs collateral
   // TODO: without await causes race conditions in bot, refactor to
   // use events
-  await client.reclaimPendingAsyncTransfers();
+  try {
+    await client.reclaimPendingAsyncTransfers();
+  } catch (e) {
+    log.error(
+      `Could not reclaim pending async transfers: ${e}... will attempt again on next connection`,
+    );
+  }
 
   // check in with node to do remaining work
   await client.clientCheckIn();

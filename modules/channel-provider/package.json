@@ -1,6 +1,6 @@
 {
   "name": "@connext/channel-provider",
-  "version": "4.0.16",
+  "version": "4.2.0",
   "description": "Channel Provider module for Connext client",
   "main": "dist/index.js",
   "files": [
@@ -12,22 +12,23 @@
     "build": "./node_modules/.bin/tsc -p tsconfig.json",
     "rebuild": "npm run clean && npm run build",
     "clean": "rm -rf ./dist",
-    "prepare": "npm run build",
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
     "test": "./node_modules/.bin/ts-mocha --watch"
   },
   "dependencies": {
-    "@connext/types": "4.0.16"
+    "@connext/types": "4.2.0",
+    "eventemitter3": "4.0.0"
   },
   "devDependencies": {
-    "@babel/polyfill": "7.7.0",
-    "@types/chai": "4.2.7",
+    "@babel/polyfill": "7.8.3",
+    "@types/chai": "4.2.9",
     "@types/chai-as-promised": "7.1.2",
-    "@types/mocha": "5.2.7",
-    "@types/node": "13.1.7",
+    "@types/mocha": "7.0.1",
+    "@types/node": "13.7.1",
     "chai": "4.2.0",
     "chai-as-promised": "7.1.1",
-    "mocha": "6.2.2",
+    "mocha": "7.0.1",
     "ts-mocha": "6.0.0",
-    "typescript": "3.5.3"
+    "typescript": "3.7.5"
   }
 }

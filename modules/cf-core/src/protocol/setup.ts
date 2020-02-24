@@ -2,11 +2,7 @@ import { SetupCommitment } from "../ethereum";
 import { ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
 import { StateChannel } from "../models/state-channel";
-import {
-  Context,
-  ProtocolMessage,
-  SetupProtocolParams
-} from "../types";
+import { Context, ProtocolMessage, SetupProtocolParams } from "../types";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
@@ -25,30 +21,26 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     const { processID, params } = message;
 
-    const {
-      multisigAddress,
-      responderXpub,
-      initiatorXpub
-    } = params as SetupProtocolParams;
+    const { multisigAddress, responderXpub, initiatorXpub } = params as SetupProtocolParams;
 
     const stateChannel = StateChannel.setupChannel(
       network.IdentityApp,
       { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
       multisigAddress,
-      [initiatorXpub, responderXpub]
+      [initiatorXpub, responderXpub],
     );
 
     const setupCommitment = new SetupCommitment(
       network,
       stateChannel.multisigAddress,
       stateChannel.multisigOwners,
-      stateChannel.freeBalance.identity
+      stateChannel.freeBalance.identity,
     );
 
     const initiatorSignature = yield [OP_SIGN, setupCommitment];
 
     const {
-      customData: { signature: responderSignature }
+      customData: { signature: responderSignature },
     } = yield [
       IO_SEND_AND_WAIT,
       {
@@ -58,16 +50,12 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         seq: 1,
         toXpub: responderXpub,
         customData: {
-          signature: initiatorSignature
-        }
-      } as ProtocolMessage
+          signature: initiatorSignature,
+        },
+      } as ProtocolMessage,
     ];
 
-    assertIsValidSignature(
-      xkeyKthAddress(responderXpub, 0),
-      setupCommitment,
-      responderSignature
-    );
+    assertIsValidSignature(xkeyKthAddress(responderXpub, 0), setupCommitment, responderSignature);
 
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
 
@@ -80,34 +68,26 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     const {
       processID,
       params,
-      customData: { signature: initiatorSignature }
+      customData: { signature: initiatorSignature },
     } = message;
 
-    const {
-      multisigAddress,
-      initiatorXpub,
-      responderXpub
-    } = params as SetupProtocolParams;
+    const { multisigAddress, initiatorXpub, responderXpub } = params as SetupProtocolParams;
 
     const stateChannel = StateChannel.setupChannel(
       network.IdentityApp,
       { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
       multisigAddress,
-      [initiatorXpub, responderXpub]
+      [initiatorXpub, responderXpub],
     );
 
     const setupCommitment = new SetupCommitment(
       network,
       stateChannel.multisigAddress,
       stateChannel.multisigOwners,
-      stateChannel.freeBalance.identity
+      stateChannel.freeBalance.identity,
     );
 
-    assertIsValidSignature(
-      xkeyKthAddress(initiatorXpub, 0),
-      setupCommitment,
-      initiatorSignature
-    );
+    assertIsValidSignature(xkeyKthAddress(initiatorXpub, 0), setupCommitment, initiatorSignature);
 
     const responderSignature = yield [OP_SIGN, setupCommitment];
 
@@ -121,11 +101,11 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
         toXpub: initiatorXpub,
         seq: UNASSIGNED_SEQ_NO,
         customData: {
-          signature: responderSignature
-        }
-      } as ProtocolMessage
+          signature: responderSignature,
+        },
+      } as ProtocolMessage,
     ];
 
     context.stateChannelsMap.set(stateChannel.multisigAddress, stateChannel);
-  }
+  },
 };

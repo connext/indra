@@ -56,6 +56,11 @@ const StatsTransfers = props => {
       pastWeekAvg = [],
       pastMonthAvg = [];
 
+    let pastDayReduced;
+    let pastWeekReduced;
+    let pastMonthReduced;
+    let totalTransfersReduced;
+
     if (res) {
       for (let transfer of res) {
         totalTransfers.push(parseInt(transfer.amount._hex, 16));
@@ -75,26 +80,26 @@ const StatsTransfers = props => {
           pastMonthAvg.push(parseInt(transfer.amount._hex, 16));
         }
       }
-      var pastDayReduced = pastDayAvg.reduce((a, b) => {
+      pastDayReduced = pastDayAvg.reduce((a, b) => {
         return a + b;
       }, 0);
-      var pastWeekReduced = pastWeekAvg.reduce((a, b) => {
+      pastWeekReduced = pastWeekAvg.reduce((a, b) => {
         return a + b;
       }, 0);
-      var pastMonthReduced = pastMonthAvg.reduce((a, b) => {
+      pastMonthReduced = pastMonthAvg.reduce((a, b) => {
         return a + b;
       }, 0);
 
-      var totalTransfersReduced = totalTransfers.reduce((a, b) => {
+      totalTransfersReduced = totalTransfers.reduce((a, b) => {
         return a + b;
       }, 0);
     }
-    var averageTransfer = totalTransfersReduced / res.length / WeiPerEther;
-    var averageTransferDay = pastDayReduced / pastDayAvg.length / WeiPerEther;
-    var averageTransferWeek = pastWeekReduced / pastWeekAvg.length / WeiPerEther;
-    var averageTransferMonth = pastMonthReduced / pastMonthAvg.length / WeiPerEther;
+    let averageTransfer = totalTransfersReduced / res.length / WeiPerEther;
+    let averageTransferDay = pastDayReduced / pastDayAvg.length / WeiPerEther;
+    let averageTransferWeek = pastWeekReduced / pastWeekAvg.length / WeiPerEther;
+    let averageTransferMonth = pastMonthReduced / pastMonthAvg.length / WeiPerEther;
 
-    var transferDateWindows = {
+    let transferDateWindows = {
       pastDayTotal: pastDayTotal,
       averageTransferDay: averageTransferDay.toFixed(2),
       pastWeekTotal: pastWeekTotal,

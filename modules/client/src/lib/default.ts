@@ -72,8 +72,8 @@ export async function getDefaultOptions(
   const baseUrl = isMainnet(network)
     ? "indra.connext.network/api"
     : isRinkeby(network)
-      ? "rinkeby.indra.connext.network/api"
-      : null;
+    ? "rinkeby.indra.connext.network/api"
+    : null;
 
   log.debug(`Using default baseUrl: ${baseUrl}`);
 

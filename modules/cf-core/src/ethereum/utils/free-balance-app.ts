@@ -15,14 +15,14 @@ export function getFreeBalanceAppInterface(addr: string): AppInterface {
 }
 
 export function flipTokenIndexedBalances(
-  tokenIndexedBalances: TokenIndexedCoinTransferMap
+  tokenIndexedBalances: TokenIndexedCoinTransferMap,
 ): TokenIndexedCoinTransferMap {
   return Object.entries(tokenIndexedBalances).reduce(
     (returnValueAccumulator, [tokenAddress, balances]) => ({
       ...returnValueAccumulator,
-      [tokenAddress]: flip(balances)
+      [tokenAddress]: flip(balances),
     }),
-    {}
+    {},
   );
 }
 
@@ -33,9 +33,9 @@ export function flip(coinTransferMap: CoinTransferMap): CoinTransferMap {
   return Object.entries(coinTransferMap).reduce(
     (returnValueAccumulator, [to, amount]) => ({
       ...returnValueAccumulator,
-      [to]: Zero.sub(amount)
+      [to]: Zero.sub(amount),
     }),
-    {}
+    {},
   );
 }
 
@@ -45,10 +45,7 @@ export function flip(coinTransferMap: CoinTransferMap): CoinTransferMap {
  * sets them to the increment. Keys in the base mapping which are not explicitly
  * incremented are returned unchanged.
  */
-export function merge(
-  base: { [s: string]: BigNumber },
-  increments: { [s: string]: BigNumber }
-) {
+export function merge(base: { [s: string]: BigNumber }, increments: { [s: string]: BigNumber }) {
   const ret = {} as { [s: string]: BigNumber };
 
   const s1 = new Set(Object.keys(base));

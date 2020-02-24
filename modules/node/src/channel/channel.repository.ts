@@ -37,7 +37,9 @@ export class ChannelRepository extends Repository<Channel> {
       .getOne();
 
     if (!channel) {
-      throw new NotFoundException(`Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`);
+      throw new NotFoundException(
+        `Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`,
+      );
     }
 
     const existing = channel.rebalanceProfiles.find(
@@ -75,7 +77,9 @@ export class ChannelRepository extends Repository<Channel> {
       .getOne();
 
     if (!channel) {
-      throw new NotFoundException(`Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`);
+      throw new NotFoundException(
+        `Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`,
+      );
     }
 
     const profile = channel.rebalanceProfiles.find(
@@ -85,7 +89,10 @@ export class ChannelRepository extends Repository<Channel> {
     return profile;
   }
 
-  async setInflightCollateralization(channel: Channel, collateralizationInFlight: boolean): Promise<Channel> {
+  async setInflightCollateralization(
+    channel: Channel,
+    collateralizationInFlight: boolean,
+  ): Promise<Channel> {
     channel.collateralizationInFlight = collateralizationInFlight;
     return await this.save(channel);
   }

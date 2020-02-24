@@ -17,7 +17,7 @@ export const tttAbiEncodings: AppABIEncodings = {
         uint256 idx
       ) winClaim
     )"
-  `
+  `,
 };
 
 export const validAction = {
@@ -26,14 +26,18 @@ export const validAction = {
   playY: 0,
   winClaim: {
     winClaimType: 0,
-    idx: 0
-  }
+    idx: 0,
+  },
 };
 
 export function initialEmptyTTTState() {
   return {
     versionNumber: 0,
     winner: 0,
-    board: [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+    board: [
+      [0, 0, 0],
+      [0, 0, 0],
+      [0, 0, 0],
+    ],
   };
 }

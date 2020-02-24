@@ -14,13 +14,13 @@ export default class GetAppInstancesController extends NodeController {
 
   protected async executeMethodImplementation(
     requestHandler: RequestHandler,
-    params: CFCoreTypes.GetAppInstancesParams
+    params: CFCoreTypes.GetAppInstancesParams,
   ): Promise<CFCoreTypes.GetAppInstancesResult> {
     const { store } = requestHandler;
     const { multisigAddress } = params;
 
     return {
-      appInstances: await store.getAppInstances(multisigAddress)
+      appInstances: await store.getAppInstances(multisigAddress),
     };
   }
 }

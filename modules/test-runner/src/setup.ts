@@ -1,11 +1,10 @@
+import { after, before } from "mocha";
 import { connectDb, disconnectDb } from "./util";
 
-before("Global Setup", async () => {
+before(async () => {
   await connectDb();
-  console.log("DB Connected!");
 });
 
-after("Global Teardown", async () => {
+after(async () => {
   await disconnectDb();
-  console.log("DB Disconnected!");
 });

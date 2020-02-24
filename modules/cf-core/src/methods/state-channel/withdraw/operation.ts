@@ -6,7 +6,7 @@ import { CFCoreTypes, ProtocolTypes } from "../../../types";
 
 export async function runWithdrawProtocol(
   requestHandler: RequestHandler,
-  params: CFCoreTypes.WithdrawParams
+  params: CFCoreTypes.WithdrawParams,
 ) {
   const { publicIdentifier, protocolRunner, store } = requestHandler;
   const { multisigAddress, amount } = params;
@@ -16,7 +16,7 @@ export async function runWithdrawProtocol(
   const [peerAddress] = await StateChannel.getPeersAddressFromChannel(
     publicIdentifier,
     store,
-    multisigAddress
+    multisigAddress,
   );
 
   const stateChannel = await store.getStateChannel(multisigAddress);
@@ -30,7 +30,7 @@ export async function runWithdrawProtocol(
       recipient: params.recipient as string,
       initiatorXpub: publicIdentifier,
       responderXpub: peerAddress,
-      multisigAddress: stateChannel.multisigAddress
-    }
+      multisigAddress: stateChannel.multisigAddress,
+    },
   );
 }

@@ -35,7 +35,7 @@ export class RequestHandler {
     readonly wallet: Signer,
     storeKeyPrefix: string,
     readonly blocksNeededForConfirmation: number,
-    public readonly processQueue: ProcessQueue
+    public readonly processQueue: ProcessQueue,
   ) {
     this.store = new Store(storeService, storeKeyPrefix);
   }
@@ -54,12 +54,12 @@ export class RequestHandler {
    */
   public async callMethod(
     method: CFCoreTypes.MethodName,
-    req: CFCoreTypes.MethodRequest
+    req: CFCoreTypes.MethodRequest,
   ): Promise<CFCoreTypes.MethodResponse> {
     const result: CFCoreTypes.MethodResponse = {
       type: req.type,
       requestId: req.requestId,
-      result: await this.methods.get(method)(this, req.params)
+      result: await this.methods.get(method)(this, req.params),
     };
 
     return result;
@@ -77,10 +77,7 @@ export class RequestHandler {
         const res: CFCoreTypes.MethodResponse = {
           type: req.type,
           requestId: req.requestId,
-          result: await this.methods.get(methodName)(
-            this,
-            bigNumberifyJson(req.params)
-          )
+          result: await this.methods.get(methodName)(this, bigNumberifyJson(req.params)),
         };
 
         // @ts-ignore
@@ -117,8 +114,8 @@ export class RequestHandler {
           `No event handler for counter depositing into channel: ${JSON.stringify(
             msg,
             undefined,
-            4
-          )}`
+            4,
+          )}`,
         );
       } else {
         throw Error(`Recent ${event} which has no event handler`);

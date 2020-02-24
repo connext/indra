@@ -54,7 +54,10 @@ type CallbackStruct = {
   [index in CFCoreTypes.EventName]: (data: any) => Promise<any> | void;
 };
 
-function logEvent(event: CFCoreTypes.EventName, res: CFCoreTypes.NodeMessage & { data: any }): void {
+function logEvent(
+  event: CFCoreTypes.EventName,
+  res: CFCoreTypes.NodeMessage & { data: any },
+): void {
   logger.debug(
     `${event} event fired from ${res && res.from ? res.from : null}, data: ${
       res ? JSON.stringify(res.data) : `event did not have a result`
@@ -107,7 +110,11 @@ export default class ListenerService implements OnModuleInit {
           return;
         }
         logEvent(PROPOSE_INSTALL_EVENT, data);
-        this.appRegistryService.validateAndInstallOrReject(data.data.appInstanceId, data.data.params, data.from);
+        this.appRegistryService.validateAndInstallOrReject(
+          data.data.appInstanceId,
+          data.data.params,
+          data.from,
+        );
       },
       PROTOCOL_MESSAGE_EVENT: (data: NodeMessageWrappedProtocolMessage): void => {
         logEvent(PROTOCOL_MESSAGE_EVENT, data);
@@ -115,7 +122,9 @@ export default class ListenerService implements OnModuleInit {
       REJECT_INSTALL_EVENT: async (data: RejectProposalMessage): Promise<void> => {
         logEvent(REJECT_INSTALL_EVENT, data);
 
-        const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(data.data.appInstanceId);
+        const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(
+          data.data.appInstanceId,
+        );
         if (!transfer) {
           logger.debug(`Transfer not found`);
           return;
@@ -127,7 +136,9 @@ export default class ListenerService implements OnModuleInit {
         logEvent(UNINSTALL_EVENT, data);
         // check if app being uninstalled is a receiver app for a transfer
         // if so, try to uninstall the sender app
-        this.transferService.reclaimLinkedTransferCollateralByAppInstanceId(data.data.appInstanceId);
+        this.transferService.reclaimLinkedTransferCollateralByAppInstanceId(
+          data.data.appInstanceId,
+        );
       },
       UNINSTALL_VIRTUAL_EVENT: (data: UninstallVirtualMessage): void => {
         logEvent(UNINSTALL_VIRTUAL_EVENT, data);
@@ -164,9 +175,11 @@ export default class ListenerService implements OnModuleInit {
   }
 
   onModuleInit(): void {
-    Object.entries(this.getEventListeners()).forEach(([event, callback]: [CFCoreTypes.EventName, () => any]): void => {
-      this.cfCoreService.registerCfCoreListener(event, callback, logger.cxt);
-    });
+    Object.entries(this.getEventListeners()).forEach(
+      ([event, callback]: [CFCoreTypes.EventName, () => any]): void => {
+        this.cfCoreService.registerCfCoreListener(event, callback, logger.cxt);
+      },
+    );
 
     this.cfCoreService.registerCfCoreListener(
       ProtocolTypes.chan_install as any,

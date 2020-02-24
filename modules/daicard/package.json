@@ -8,13 +8,14 @@
     "start-test": "make start-test",
     "build": "./node_modules/.bin/react-scripts --max_old_space_size=4096 build",
     "eject": "./node_modules/.bin/react-scripts eject",
+    "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*.js'",
     "logs": "bash ops/logs.sh",
     "format": "prettier --write \"src/**/*.js\""
   },
   "dependencies": {
-    "@connext/client": "4.0.16",
-    "@connext/store": "4.0.16",
-    "@connext/types": "4.0.16",
+    "@connext/client": "4.2.0",
+    "@connext/store": "4.2.0",
+    "@connext/types": "4.2.0",
     "@material-ui/core": "4.9.3",
     "@material-ui/icons": "4.9.1",
     "@walletconnect/browser": "1.0.0-beta.47",
@@ -24,7 +25,8 @@
     "classnames": "2.2.6",
     "connext": "4.2.5",
     "ethereum-blockies-png": "0.1.3",
-    "ethers": "4.0.41",
+    "ethers": "4.0.45",
+    "human-standard-token-abi": "2.0.0",
     "interval-promise": "1.4.0",
     "mdi-material-ui": "6.12.0",
     "pisa-client": "0.1.4-connext-beta.1",
@@ -40,7 +42,7 @@
     "xstate": "4.7.8"
   },
   "devDependencies": {
-    "@connext/types": "4.0.16",
+    "@connext/types": "4.2.0",
     "bn.js": "5.1.1",
     "chai-bn": "0.2.0"
   },

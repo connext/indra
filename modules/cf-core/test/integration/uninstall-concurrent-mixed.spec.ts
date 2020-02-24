@@ -3,10 +3,7 @@ import { parseEther } from "ethers/utils";
 
 import { Node } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
-import {
-  InstallMessage,
-  ProposeMessage
-} from "../../src/types";
+import { InstallMessage, ProposeMessage } from "../../src/types";
 import { NetworkContextForTestSuite } from "../contracts";
 import { toBeLt } from "../machine/integration/bignumber-jest-matcher";
 
@@ -18,7 +15,7 @@ import {
   createChannel,
   installVirtualApp,
   makeInstallCall,
-  makeProposeCall
+  makeProposeCall,
 } from "./utils";
 
 expect.extend({ toBeLt });
@@ -43,19 +40,9 @@ describe("Concurrently uninstalling virtual and regular applications without iss
     multisigAddressAB = await createChannel(nodeA, nodeB);
     multisigAddressBC = await createChannel(nodeB, nodeC);
 
-    await collateralizeChannel(
-      multisigAddressAB,
-      nodeA,
-      nodeB,
-      parseEther("2")
-    );
+    await collateralizeChannel(multisigAddressAB, nodeA, nodeB, parseEther("2"));
 
-    await collateralizeChannel(
-      multisigAddressBC,
-      nodeB,
-      nodeC,
-      parseEther("2")
-    );
+    await collateralizeChannel(multisigAddressBC, nodeB, nodeC, parseEther("2"));
   });
 
   it("can handle a virtual and regular TTT app uninstall", async done => {
@@ -92,18 +79,13 @@ describe("Concurrently uninstalling virtual and regular applications without iss
           One,
           CONVENTION_FOR_ETH_TOKEN_ADDRESS,
           One,
-          CONVENTION_FOR_ETH_TOKEN_ADDRESS
-        )
+          CONVENTION_FOR_ETH_TOKEN_ADDRESS,
+        ),
       );
     });
 
     // install a virtual app
-    const virtualId = await installVirtualApp(
-      nodeA,
-      nodeB,
-      nodeC,
-      TicTacToeApp
-    );
+    const virtualId = await installVirtualApp(nodeA, nodeB, nodeC, TicTacToeApp);
 
     // set up uninstall handlers
     nodeC.on("UNINSTALL_VIRTUAL_EVENT", () => {
@@ -117,9 +99,7 @@ describe("Concurrently uninstalling virtual and regular applications without iss
     });
 
     // uninstall both simultaneously
-    nodeA.rpcRouter.dispatch(
-      constructUninstallVirtualRpc(virtualId, nodeB.publicIdentifier)
-    );
+    nodeA.rpcRouter.dispatch(constructUninstallVirtualRpc(virtualId, nodeB.publicIdentifier));
 
     nodeB.rpcRouter.dispatch(constructUninstallRpc(appId as string));
   });

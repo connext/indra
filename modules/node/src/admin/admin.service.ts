@@ -136,9 +136,13 @@ export class AdminService {
    * Add these critical addresses to the channel's state
    */
   async repairCriticalStateChannelAddresses(): Promise<RepairCriticalAddressesResponse> {
-    const states = (await Promise.all((await this.getAllChannels()).map(channel =>
-      this.cfCoreService.getStateChannel(channel.multisigAddress)
-    ))).map(state => state.data);
+    const states = (
+      await Promise.all(
+        (await this.getAllChannels()).map(channel =>
+          this.cfCoreService.getStateChannel(channel.multisigAddress),
+        ),
+      )
+    ).map(state => state.data);
     const output: RepairCriticalAddressesResponse = { fixed: [], broken: [] };
     logger.log(`Scanning ${states.length} channels to see if any need to be repaired..`);
     // First loop: Identify all channels that need to be repaired
@@ -147,11 +151,12 @@ export class AdminService {
         !state.addresses ||
         !state.addresses.proxyFactory ||
         !state.addresses.multisigMastercopy ||
-        state.multisigAddress !== await getCreate2MultisigAddress(
-          state.userNeuteredExtendedKeys,
-          state.addresses,
-          this.configService.getEthProvider(),
-        )
+        state.multisigAddress !==
+          (await getCreate2MultisigAddress(
+            state.userNeuteredExtendedKeys,
+            state.addresses,
+            this.configService.getEthProvider(),
+          ))
       ) {
         output.broken.push(state.multisigAddress);
       }
@@ -173,13 +178,19 @@ export class AdminService {
         this.configService.getEthProvider(),
       );
       if (!criticalAddresses) {
-        logger.warn(`Could not find critical addresses that would fix channel ${state.multisigAddress}`);
+        logger.warn(
+          `Could not find critical addresses that would fix channel ${state.multisigAddress}`,
+        );
         continue;
       }
       if (criticalAddresses.toxicBytecode) {
-        logger.warn(`Channel ${state.multisigAddress} was created with toxic bytecode, it is unrepairable`);
+        logger.warn(
+          `Channel ${state.multisigAddress} was created with toxic bytecode, it is unrepairable`,
+        );
       } else if (criticalAddresses.legacyKeygen) {
-        logger.warn(`Channel ${state.multisigAddress} was created with legacyKeygen, it needs to be repaired manually`);
+        logger.warn(
+          `Channel ${state.multisigAddress} was created with legacyKeygen, it needs to be repaired manually`,
+        );
       }
       logger.log(`Found critical addresses that fit, repairing channel: ${brokenMultisig}`);
       const repoPath = `${ConnextNodeStorePrefix}/${this.cfCoreService.cfCore.publicIdentifier}/channel/${brokenMultisig}`;

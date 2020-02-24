@@ -17,7 +17,10 @@ export function keccak256(data: utils.Arrayish): string {
   return utils.keccak256(data);
 }
 
-export function toUtf8Bytes(str: string, form?: utils.UnicodeNormalizationForm | undefined): Uint8Array {
+export function toUtf8Bytes(
+  str: string,
+  form?: utils.UnicodeNormalizationForm | undefined,
+): Uint8Array {
   return utils.toUtf8Bytes(str, form);
 }
 
@@ -37,7 +40,10 @@ export function safeJsonStringify(value: any): string {
   return typeof value === "string" ? value : JSON.stringify(value);
 }
 
-export function removeAsyncStorageTest(storage: Storage | IAsyncStorage, promiseTest: Promise<void>): void {
+export function removeAsyncStorageTest(
+  storage: Storage | IAsyncStorage,
+  promiseTest: Promise<void>,
+): void {
   if (promiseTest && promiseTest.then) {
     promiseTest.then(() => {
       storage.removeItem(ASYNC_STORAGE_TEST_KEY);
@@ -58,7 +64,10 @@ export function isAsyncStorage(storage: Storage | IAsyncStorage): boolean {
   return result;
 }
 
-export function wrapAsyncStorage(asyncStorage: IAsyncStorage, asyncStorageKey?: string): WrappedStorage {
+export function wrapAsyncStorage(
+  asyncStorage: IAsyncStorage,
+  asyncStorageKey?: string,
+): WrappedStorage {
   const storage: WrappedStorage = new WrappedAsyncStorage(asyncStorage, asyncStorageKey);
   return storage;
 }
@@ -69,7 +78,9 @@ export function wrapLocalStorage(localStorage: Storage): WrappedStorage {
 }
 
 export function wrapStorage(storage: any, asyncStorageKey?: string): WrappedStorage {
-  return isAsyncStorage(storage) ? wrapAsyncStorage(storage, asyncStorageKey) : wrapLocalStorage(storage);
+  return isAsyncStorage(storage)
+    ? wrapAsyncStorage(storage, asyncStorageKey)
+    : wrapLocalStorage(storage);
 }
 
 export function reduceChannelsMap(entries: [string, any][]): ChannelsMap {

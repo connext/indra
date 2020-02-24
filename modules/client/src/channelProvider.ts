@@ -1,7 +1,13 @@
+import {
+  chan_storeSet,
+  chan_storeGet,
+  chan_nodeAuth,
+  chan_restoreState,
+  IChannelProvider,
+  ConnextEventEmitter,
+} from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
 import { Wallet } from "ethers";
-import { arrayify } from "ethers/utils";
-import EventEmitter from "events";
 
 import { CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
 import {
@@ -13,7 +19,6 @@ import {
   Store,
   StorePair,
 } from "./types";
-import { chan_storeSet, chan_storeGet, chan_nodeAuth, chan_restoreState, IChannelProvider } from "@connext/types";
 
 export const createCFChannelProvider = async ({
   ethProvider,
@@ -47,7 +52,7 @@ export const createCFChannelProvider = async ({
   return channelProvider;
 };
 
-export class CFCoreRpcConnection extends EventEmitter implements IRpcConnection {
+export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConnection {
   public connected: boolean = true;
   public cfCore: CFCore;
   public store: Store;
@@ -85,12 +90,18 @@ export class CFCoreRpcConnection extends EventEmitter implements IRpcConnection 
     return result;
   }
 
-  public on = (event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, listener: (...args: any[]) => void): any => {
+  public on = (
+    event: string | CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
+    listener: (...args: any[]) => void,
+  ): any => {
     this.cfCore.on(event as any, listener);
     return this.cfCore;
   };
 
-  public once = (event: CFCoreTypes.EventName | CFCoreTypes.RpcMethodName, listener: (...args: any[]) => void): any => {
+  public once = (
+    event: string | CFCoreTypes.EventName | CFCoreTypes.RpcMethodName,
+    listener: (...args: any[]) => void,
+  ): any => {
     this.cfCore.once(event as any, listener);
     return this.cfCore;
   };
@@ -106,7 +117,7 @@ export class CFCoreRpcConnection extends EventEmitter implements IRpcConnection 
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
   private walletSign = async (message: string): Promise<string> => {
-    return await this.wallet.signMessage(arrayify(message));
+    return this.wallet.signMessage(message);
   };
 
   private storeGet = async (path: string): Promise<any> => {

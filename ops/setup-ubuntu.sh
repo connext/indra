@@ -1,15 +1,15 @@
 #!/bin/bash
 set -e
 
-hostname="$1"
-network="${2:-rinkeby}"
-
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-project="`cat $dir/../package.json | jq .name | tr -d '"'`"
-user="ubuntu"
-key_name="${project}_mnemonic_$network" # name of docker secret to store mnemonic in
-pubkey="$HOME/.ssh/circleci.pub"
-prvkey="$HOME/.ssh/connext-aws"
+project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 4`"
+
+hostname="$1"
+prvkey="${SSH_KEY:-$HOME/.ssh/connext-aws}"
+pubkey="${PUB_KEY:-$HOME/.ssh/autodeployer.pub}"
+user="${USER:-ubuntu}"
+
+secret_name="${project}_mnemonic" # name of docker secret to store mnemonic in
 
 # Sanity checks
 if [[ -z "$1" ]]
@@ -20,14 +20,10 @@ if [[ ! -f "$prvkey" ]]
 then echo "Couldn't find the ssh private key: $prvkey" && exit
 fi
 
-if [[ ! -f "$pubkey" ]]
-then echo "Couldn't find the CI public key: $pubkey" && exit
-fi
-
 # Prepare to load the node's private key into the server's secret store
-echo "Copy the $key_name secret to your clipboard then paste it below & hit enter (no echo)"
+echo "Copy the $secret_name secret to your clipboard then paste it below & hit enter (no echo)"
 echo -n "> "
-read -s key
+read -s mnemonic
 echo
 
 if ssh -q -i $prvkey ubuntu@$hostname exit 2> /dev/null
@@ -82,15 +78,20 @@ else
 	echo "root login disabled, skipping user setup"
 fi
 
-scp -i $prvkey $pubkey $user@$hostname:~/.ssh/another_authorized_key
+if [[ -f "$pubkey" ]]
+then scp -i $prvkey $pubkey $user@$hostname:~/.ssh/another_authorized_key
+fi
 
 ssh -i $prvkey $user@$hostname "sudo -S bash -s" <<EOF
 $password
 set -e
 
-# add the circle ci key to guest list
-cat ~/.ssh/another_authorized_key >> ~/.ssh/authorized_keys
-rm -f ~/.ssh/another_authorized_key
+# add our auto-deployer key to the guest list
+if [[ -f "~/.ssh/another_authorized_key" ]]
+then
+  cat ~/.ssh/another_authorized_key >> ~/.ssh/authorized_keys
+  rm -f ~/.ssh/another_authorized_key
+fi
 
 # Remove stale apt cache & lock files
 sudo rm -rf /var/lib/apt/lists/*
@@ -123,18 +124,18 @@ privateip=\`ifconfig eth1 | grep 'inet ' | awk '{print \$2;exit}' | sed 's/addr:
 docker swarm init "--advertise-addr=\$privateip" 2> /dev/null || true
 
 # Setup docker secret
-if [[ -z "$key" ]]
+if [[ -z "$mnemonic" ]]
 then echo "No mnemonic provided, skipping secret creation"
-elif [[ -n "\`docker secret ls | grep "$key_name"\`" ]]
-then echo "A secret called $key_name already exists, aborting key load"
+elif [[ -n "\`docker secret ls | grep "$secret_name"\`" ]]
+then echo "A secret called $secret_name already exists, skipping secret setup"
 else
-  id="\`echo $key | tr -d '\n\r' | docker secret create $key_name -\`"
+  id="\`echo $mnemonic | tr -d '\n\r' | docker secret create $secret_name -\`"
   if [[ "$?" == "0" ]]
   then
-    echo "Successfully loaded private key into secret store"
-    echo "name=$key_name id=\$id"
+    echo "Successfully loaded mnemonic into secret store"
+    echo "name=$secret_name id=\$id"
     echo
-  else echo "Something went wrong creating secret called $key_name"
+  else echo "Something went wrong creating secret called $secret_name"
   fi
 fi
 

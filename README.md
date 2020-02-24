@@ -1,279 +1,231 @@
 [![](https://github.com/ConnextProject/indra/workflows/CD%20Master/badge.svg)](https://github.com/ConnextProject/indra/actions)
+[![](https://github.com/ConnextProject/indra/workflows/CD%20Staging/badge.svg)](https://github.com/ConnextProject/indra/actions)
+
 [![Discord](https://img.shields.io/discord/454734546869551114)](https://discord.gg/m93Sqf4)
 [![Twitter Follow](https://img.shields.io/twitter/follow/ConnextNetwork?style=social)](https://twitter.com/ConnextNetwork)
 
-# Indra 2.0
+# Indra
 
-Connext's new & improved state channel network!
-
-## TL;DR
-
-Make sure the following tools are installed: `make`, `jq`, and `docker` and then run `make start`. This will build everything & launch a pre-configured payment hub + a simple UI, play with it from your browser at 127.0.0.1:3000.
-
-Run `bash ops/logs.sh node` to see the node server's logs or replace "node" with one of the other service names, list services with: `make dls` (short for **D**ocker **L**i**s**t).
-
-To run e2e UI tests use: `make watch-ui`, to run unit tests for the hub use: `make test-hub`. Browse the `Makefile` for all available shortcut commands and the `ops/` folder for all available helper scripts.
-
-When you're done testing it out, shut the whole thing down with `make stop`.
+Connext's counterfactually-instantiated generalized state-channel platform. To learn more about this project, check out our [docs](https://docs.connext.network).
 
 ## Contents
 
-- [Deploy for local development](#deploy-for-local-development)
-- [Deploy to production](#deploying-to-production)
-- [How to interact with the Hub](#how-to-interact-with-hub)
-- [Debugging & Troubleshooting](#debugging)
+ - TBD
 
-If you encounter any problems, check out the [debugging guide](#debugging) at the bottom of this doc. For any unanswered questions, open an [issue](https://github.com/ConnextProject/indra/issues/new) or reach out on our Discord channel & we'll be happy to help.
+For any unanswered questions, open a [new issue](https://github.com/ConnextProject/indra/issues/new) or reach out on our [Discord channel](https://discord.gg/SmMSFf) & we'll be happy to help.
 
-Discord Invitation: <https://discord.gg/SmMSFf>
+## Launch Indra in developer mode
 
-## Deploy for local development
-
-### Prerequisites
+**Prerequisites:**
 
 - `make`: Probably already installed, otherwise install w `brew install make` or `apt install make` or similar.
 - `jq`: Probably not installed yet, install w `brew install jq` or `apt install jq` or similar.
-- [`docker`](https://www.docker.com/): sadly, Docker is kinda annoying to install. See website for instructions.
+- `docker`: sadly, Docker is kinda annoying to install. See [website](https://www.docker.com/) for instructions.
 
-To download this repo, build, and deploy in dev-mode, run the following:
+To start, clone & enter the Indra repo:
 
-```
+```bash
 git clone https://github.com/ConnextProject/indra.git
 cd indra
+```
+
+To build everything and deploy Indra in dev-mode, run the following:
+
+```bash
 make start
 ```
 
-Beware! The first time `make start` is run, it will take a very long time (maybe as long as 5 minutes depending on your internet speed) but have no fear: downloads will be cached & most build steps won't ever need to be repeated again so subsequent `make start` runs will go much more quickly. Get this started asap & browse the rest of the README while the first build/deploy completes.
+That's all! But beware: the first time `make start` is run, it will take a very long time (maybe 10 minutes, depends on your internet speed) but have no fear: downloads will be cached & most build steps won't ever need to be repeated again so subsequent `make start` runs will go much more quickly. Get this started asap & browse the rest of the README while the first `make start` runs.
+
+By default, Indra will launch using a local blockchain (ganache) but you can also run a local Indra stack against a public chain such as Rinkeby. To do so, build everything and then run the start-script directly with a custom `INDRA_ETH_PROVIDER` environment variable:
+
+```bash
+make # build everything
+INDRA_ETH_PROVIDER="https://rinkeby.infura.io/abc123" bash ops/start-dev.sh
+```
 
 ### Interacting with your Local Node
 
-You can interact with the node by browsing to our reference implementation, the Dai Card, available at `localhost:3000`.
+Once the Indra stack is awake, you can interact with the node via the UI reference implementation: The Daicard, available at http://localhost:3000.
 
-Note that the local node runs on a local blockchain (ganache) in a docker container. To test your node, point a wallet to your local chain at `localhost:8545` and then recover the following "sugar daddy" mnemonic:
+Try visiting the Daicard, find your address (top left) & copy it to your clipboard, and then run the following to send a bit of test-ETH to your account:
+
+```bash
+bash ops/fund.sh <PASTE>
+```
+
+Daicard should detect this transfer & automatically deposit these funds into your channel.
+
+If you're using the local dev-mode blockchain that Indra uses by default, the classic truffle mnemonic is used as a source of funds:
 
 `candy maple cake sugar pudding cream honey rich smooth crumble sweet treat`
 
-Then, try sending some Eth to the Dai Card's deposit address (top left of the app).
+If you use metamask, you can load this mnemonic into your wallet to directly access funds on this local blockchain.
+
+Note: Each Daicard stores account info in localStorage so if you want to play with two different Daicard accounts at the same time (eg to experiment with sending payments back and forth), open one of them in an incognito window or in a different browser.
+
+As you play with the Daicard, you can monitor the node's logs with `bash ops/logs.sh node` or substitute "node" with any other service of the Indra stack (see all services with `make dls`).
 
 ### Useful Commands
 
-- `make start`: Builds everything & then starts the app
+- `make`: Builds everything that has changed since the last build
+- `make start`: Builds anything out of date & then starts the app
 - `make stop`: Stop the app once it's been started
 - `make restart`: Stop the app & start it again, rebuilding anything that's out of date
-- `make clean`: Stops the app & deletes all build artifacts eg transpiled typescript.
-- `make reset`: Stops the app & removes all persistent data (eg database & chaindata)
-- `make restart-prod`: Restarts the app in production-mode
+- `make clean`: Stops the app & deletes all build artifacts eg transpiled typescript
+- `make reset`: Stops the app & removes all persistent data eg database data
 - `make dls`: Show all running services (groups of containers) plus list all running containers.
-- `bash ops/db.sh`: Opens a console attached to the running app's database. You can also run `npm run db '\d+'` to run a single PostgreSQL query (eg `\d+` to list table details) and then exit.
-- `bash ops/logs.sh hub`: Monitor the hub's logs. Similar commands can be run to monitor logs for the `proxy`, `chainsaw`, `ethprovider` (for migrations output), `ganache` (for log of rpc calls to ganache), `database`, `redis`, etc.
+- `bash ops/db.sh`: Opens a console attached to the running app's database. You can also run `bash ops/db.sh '\d+'` to run a single PostgreSQL query (eg `\d+` to list table details).
+- `bash ops/logs.sh node`: Monitor the node's logs.
 
-### Running Unit Tests
+### Running Tests
 
-- `make watch-ui`: Start a test-optimized browser that will use cypress to run automated e2e tests.
-- `make watch-node`: start a test watcher that will re-run node server's unit tests when source code changes
-- `make test-ui` or `make test-node`: run either one-off ui-based e2e tests or node unit tests that will exit once tests are finished.
+- `make test-cf`: run unit tests for core protocol logic (cf-core).
+- `make test-contracts`: run unit tests for Ethereum smart contracts.
+- `make test-client`: run unit tests for the channel client.
+- `make test-node`: run unit tests for the node server.
+- `make start && make test-daicard`: run integration tests for the Daicard UI.
+- `make start && make test-integration`: run client-node integration test suite.
+- `make start && make watch-ui`: Open a test-optimized browser & use cypress to run automated e2e tests. Tests will be re-run any time test files change.
+- `make start && make watch-integration`: start a test watcher that will re-run integration tests whenever test code changes (great to use while debugging).
 
-### Deploying local indra to non-local chains
+## Deploying Contracts
 
-To start a local indra instance pointed at a non-ganache chain (rinkeby, kovan, etc), run the following:
+If you're using Mainnet or Rinkeby, contracts have already been deployed for everyone to use. You'll find addresses for all the contracts powering our state channel platform here: `modules/contracts/address-book.json`.
+
+If you want to use custom contracts or a new network though, you'll have to deploy them yourself.
+
+For example: to deploy to Goerli testnet, you'll first need to retrieve the mnemonic for an account that has enough funds to pay the gas fees. Copy that mnemonic to your clipboard & then run:
 
 ```bash
-export INDRA_ETH_PROVIDER="https://ethprovider.com" # eth provider url (note: this is not a working eth provider, just a sample)
-export INDRA_ETH_NETWORK="rinkeby" # string of network
-make start
+ETH_PROVIDER="https://goerli.infura.io/abc123" bash ops/deploy-contracts.sh
 ```
 
-## Deploying to Production
+This will update the address-book to include new addresses for either the new contracts or new network you're deploying to.
 
-### TL;DR
+If you want to share these updates with everyone, then commit the new address-book & submit a PR. If these updates are specific to your situation/organization then add a copy of the updated address-book to the project root:
 
-1. Push to staging, make sure CI passes & the staging deployment looks healthy
-2. If there are contracts that have changed, delete their addresses from `address-book.json` and redeploy them with `bash ops/deploy-contracts.sh <network>`
-2. If any npm packages have changed, run `bash ops/npm-publish.sh` from staging
-3. Run `bash ops/deploy-indra.sh` from staging to merge to master & trigger the deployment to prod
-
-### First, setup CircleCI Environment Variables
-
-**Once per CircleCI account or organization**
-
-Run `ssh-keygen -t rsa -b 4096 -C "circleci" -m pem -f .ssh/circleci` to generate a new ssh key pair. Load the private key (`.ssh/circleci`) into CircleCI -> Settings -> Permissions -> SSH Permissions.
-
-Go to CircleCI -> Settings -> Build Settings -> Environment Variables
-
-- `DOCKER_USER` & `DOCKER_PASSWORD`: Login credentials for someone with push access to the docker repository specified by the `registry` vars at the top of the Makefile & `ops/start-prod.sh`.
-- `STAGING_DOMAINNAME` & `RINKEBY_DOMAINNAME` & `MAINNET_DOMAINNAME`: The URLs from which the Indra application will be served.
-- `RINKEBY_ETH_PROVIDER` & `MAINNET_ETH_PROVIDER`: [Alchemy](https://alchemyapi.io/) or Infura URLs that let us read/write to the blockchain
-
-Note: If `STAGING_URL=staging.example.com` then
-
-- DNS needs to be properly configured so that `staging.example.com` will resolve to the IP address of your staging server
-- The admin should have ssh access via `ssh root@$STAGING_URL` or `ssh ubuntu@$STAGING_URL` after completing the next step.
-- The application will be accessible from `https://staging.example.com` after deploying.
-
-### Second, setup the production server
-
-**Once per server**
-
- 1. Create a new server via AWS or DigitalOcean or whichever is your favorite cloud provider. Note it's IP address.
- 2. Set up DNS so that eg the `$RINKEBY_DOMAINNAME` you specified in CI env vars points to this server.
- 3. Copy your indra hub's mnemonic to your clipboard. You can generate a new random mnemonic from a node console with ethers by doing something like this: `require('ethers').Wallet.createRandom()`
- 4. Run the following script (for best results, run it with a `$SERVER_IP` that points to a fresh Ubuntu VM)
-
-`bash ops/setup-ubuntu.sh $SERVER_IP rinkeby`
-
-To run the setup script, we need to be able to ssh into this server via either `root@$SERVER_IP` or `ubuntu@$SERVER_IP`. If root, this script will setup the ubuntu user and disable root login for security.
-
-This setup script expects to find the private key for ssh access to the server at `~/.ssh/connext-aws` & CircleCI's public key at `~/.ssh/circleci.pub`.
-
-By default, this script will load your hub's rinkeby private key into a docker secret stored on the server. To setup a server for another network (eg mainnet) add a network arg to the end, eg: `bash ops/setup-ubuntu.sh $SERVER_IP mainnet`
-
-You can remove the server's private key like this:
-
-(Make sure that this server doesn't have a hub running on it before removing it's key)
-
-```
-ssh -t -i ~/.ssh/connext-aws ubuntu@$SERVER_IP docker secret rm hub_key_mainnet
+```bash
+cp modules/contracts/address-book.json ./address-book.json
 ```
 
-And add a new private key by re-running the `setup-ubuntu` script. Note: this script is idempotent ie you can run it over and over again w/out causing any problems.
-
-### Third, deploy the contracts
-
-**Once per update to smart contracts**
-
-To deploy the ChannelManager contract & dependencies to Rinkeby:
+An address-book in the project root will take precedence over one in the contracts module. It's also added to the git-ignore so you can pull updates to the rest of the code without worrying about your addresses getting overwritten. If you're deploying an Indra node to prod, then keep this custom address-book safe, we'll need to give it to the prod-server too.
 
 ```
-export ETH_PROVIDER="https://rinkeby.infura.io/abc123"
-bash ops/deploy.contracts.sh rinkeby
+bash ops/deploy.contracts.sh https://rinkeby.infura.io/abc123
 ```
 
-This script will prompt you to paste in the deployment address's private key if one called `hub_key_rinkeby` hasn't already been saved to the secret store, this address will be used to deploy contracts. See saved secrets with `docker secret ls`.
+One exception: if you want to redeploy some contract(s), then delete their addresses from the address book & re-run the above deployment script.
 
-The contract deployment script will save the addresses of your deployed contracts in `modules/contracts/ops/address-book.json`. This file is automatically generated and you probably won't need to mess with it. One exception: if you want to redeploy some contract(s), then delete their addresses from the address book & re-run the above deployment script.
 
-You can upload a custom address book to your prod server's project root like this:
 
-`scp -i ~/.ssh/connext-aws address-book.json ubuntu@$SERVER_IP:~/indra/`
 
-### Fourth, deploy a new version of the connext npm packages
+## Deploy an Indra node to production
 
-**Once per update to npm packages eg messaging, types, or client**
+Lets say you want to deploy an Indra payment node to `https://indra.example.com` (we'll call this url `$DOMAINNAME`)
 
-To publish a new version of the client:
+First step: get a server via AWS or DigitalOcean or whichever cloud provider is your favorite. For best results, use the most recent LTS version of Ubuntu. Note this new server's IP address (we'll call it `$SERVER_IP`). Make sure it's able to connect to the internet via ports 80, 443, 4222, and 4223 (no action required on DigitalOcean, Security Group config needs to be setup properly on AWS).
 
-```
-bash ops/npm-publish.sh
-```
+Set up DNS so that `$DOMAINNAME` points to this server's IP address.
 
-This script will prompt you for a new version number. Heuristics:
+Every Indra node needs access to a hot wallet, you should generate a fresh mnemonic for your node's wallet that isn't used anywhere else. You can generate a new mnemonic from a node console with ethers by doing something like this: `require('ethers').Wallet.createRandom()`.
 
-- Is this minor bug fix? Then increment the minor version eg `1.0.0` -> `1.0.1`
-- Did you add a new, backwards-compatible feature? Then increment the middle version eg `1.0.0` -> `1.1.0`
-- Did you add a new, backwards-incompatible feature? Then increment the major version eg `1.0.0` -> `2.0.0`
+Save this mnemonic somewhere safe, copy it to your clipboard, and then run:
 
-Once you specify the version, it will automatically:
-
-- update `modules/{packages-to-publish}/package.json` with the new version
-- run npm publish
-- update `modules/{packages-that-depend-on-newly-published-packages}/package.json` to import the new version of the package
-- create & push a new git commit
-- create & push a new git tag
-
-### Lastly, deploy a new Indra hub
-
-There is a long-lived staging branch that is the intermediate step between Indra development and production. All merges and PRs should be made from a feature branch onto staging. The master branch is dealt with automatically so you shouldn't need to manually commit or merge to master unless you're updating the readme or something that doesn't affect any of the actual source code.
-
-Updating origin/staging will kick off the first round of CI and, if all tests pass, it will deploy the changes to the `$STAGING_URL` configured by your circle ci env.
-
-```
-git checkout staging && git mege feature-branch # alternatively, do a code review & merge via a GitHub PR
+```bash
+SSH_KEY=$HOME/.ssh/id_rsa bash ops/setup-ubuntu.sh $SERVER_IP
 ```
 
-Once the staging branch's CI runs and deploys, check out your staging env. Does everything look good? Seem ready to deploy to production?
+If this is a fresh Ubuntu server from DigitalOcean or AWS then the above script should:
+ - configure an "ubuntu" user and disable root login (if enabled)
+ - give an additional ssh public key login access if provided (useful for CD/auto-deployment)
+ - install docker & make & other dependencies
+ - upgrade everything to the latest version
+ - save your mnemonic in a docker secret called `indra_mnemonic
+ - reboot
 
-To deploy a new Indra hub to production, run:
+Note: this script is idempotent aka you can run it over and over again w/out causing any problems. In fact, re-running it every month or so will help keep things up-to-date (you can skip inputting the mnemonic on subsequent runs).
 
-```
-bash ops/deploy-indra.sh
-```
+For convenience sake, we recommend adding an entry to your ssh config to easily access this server. Add something that looks like the following to `$HOME/.ssh/config`:
 
-This script will prompt you for a new version number. See the previous step for versioning heuristics. Once you specify the version, it will automatically:
-
-- merge staging into master
-- update the project root's `package.json` with the version you provided & amend this change to the merge commit
-- push this commit to origin/master
-- create & push a new git tag
-
-Pushing to origin/master will trigger another CI run that will deploy a new Indra hub to production if no tests fail.
-
-Monitor the prod hub's logs with
-
-```
-ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash indra/ops/logs.sh hub
+```bash
+Host new-indra
+  Hostname $SERVER_IP
+  User ubuntu
+  IdentityFile ~/.ssh/id_rsa
+  ServerAliveInterval 120
 ```
 
-The ChannelManager contract needs collateral to keep doing its thing. Make sure the hub's wallet has enough funds before deploying. Funds can be moved from the hub's wallet to the contract manually via:
+Now you can login to this server with just `ssh new-indra`. Once the server wakes up again after rebooting at the end of `ops/setup-ubuntu`, login to finish setup.
 
+First step: clone & the git repo on your prod server:
+
+```bash
+ssh new-indra git clone https://github.com/ConnextProject/indra.git
 ```
-ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash indra/ops/collateralize.sh 3.14 eth
-# To move Eth, or to move tokens:
-ssh -i ~/.ssh/connext-aws ubuntu@SERVER_IP bash indra/ops/collateralize.sh 1000 token
+
+If you're using a custom address book, upload it to your prod server:
+
+```bash
+scp address-book.json new-indra:~/indra/
 ```
 
-## How to interact with an Indra hub
+We need to add a couple env vars before launching our indra node. `~/.bashrc` is a good place to add them as they'll be loaded automatically every time you login to the server.
 
-A prod-mode indra hub exposes the following API ([source](https://github.com/ConnextProject/indra/blob/master/modules/proxy/prod.conf#L53)):
+Open `~/.bashrc` on your prod server in a text editor and add these required env vars:
 
-- `/api/hub` is the prefix for the hub's api
-- `/api/hub/config` returns the hub's config for example
-- `/api/hub/subscribe` connects to the hub's websocket server for real-time exchange rate & gas price updates
-- `/api/eth` connects to the hub's eth provider
-- anything else, redirects the user to a daicard client
+```bash
+export INDRA_DOMAINNAME="$DOMAINNAME"
+export INDRA_ETH_PROVIDER="https://eth-rinkeby.alchemyapi.io/jsonrpc/abc123"
+```
 
-### ..from a [dai card](https://github.com/ConnextProject/card)
+Optionally, add any of the following env vars to enable extra features:
 
-Dai card in production runs a proxy with endpoints:
+```bash
+export INDRA_MODE="release" # "release": deploy latest release (more stable), "staging": run code at current commit (easier to hotfix)
+export INDRA_EMAIL="noreply@gmail.com" # To recieve alerts if https certs fail to auto-renew
+export INDRA_AWS_ACCESS_KEY_ID="" # creds to access AWS S3 storage, db will send perodic backups here if provided.
+export INDRA_AWS_SECRET_ACCESS_KEY="" # see above, both of these must be provided for remote db backups
+export INDRA_LOGDNA_KEY="abc123" # if provided, all node logs will be sent to LogDNA for further analysis
+export INDRA_ADMIN_TOKEN="cxt1234" # To control access to admin functions on the dashboard.
+```
 
-- `/api/rinkeby/hub` -> `https://rinkeby.hub.connext.network/api/hub`
-- `/api/rinkeby/eth` -> `https://rinkeby.hub.connext.network/api/eth`
-- `/api/mainnet/hub` -> `https://hub.connext.network/api/hub`
-- `/api/mainnet/eth` -> `https://hub.connext.network/api/eth`
-- anything else: serves the daicard html/css/js files
+Once your env vars are setup, load them into your current session (`source ~/.bashrc`) and we're ready to roll.
 
-### Hub API
+Login to your prod server then run the following to launch your Indra node:
 
- 1. AuthApiService
+```bash
+cd indra
+make restart-prod
+```
 
-- GET /auth/status: returns success and address if a valid auth token is provided
-- POST /auth/challenge: returns a challenge nonce
-- POST /auth/response:
-  - nonce: returned by /auth/challenge
-  - address
-  - origin
-  - signature
+The above will download & run docker images associated with the commit/release you have checked out. If you want to launch a specific version of indra, checkout that version's tag & restart:
 
- 2. ChannelsApiService
+```bash
+git checkout indra-4.1.0 && make restart-prod
+```
 
-- POST /channel/:user/request-deposit:
-  - depositWei
-  - depositToken
-  - lastChanTx
-  - lastThreadUpdateId
-- GET /channel/:user/sync
-  - params
-    - lastChanTx
-    - lastThreadUpdateId
+## FAQ
 
-TODO: Complete this section
-
-## Debugging
+### What's wrong with Indra?
 
 If you encounter problems while the app is running, the first thing to do is check the logs of each component:
 
-- `bash ops/logs.sh node`: Core hub logic logs
-- `bash ops/logs.sh database`
-- `bash ops/logs.sh proxy`
+`make dls`: which services are running? Any services that aren't running (labeled has having `0/1` replicas) are worth investigating further.
+
+If the node isn't running for example, check it's logs with: `bash ops/logs.sh node`.
+
+If a fix isn't obvious, then ask us for help on [Discord](https://discord.gg/SmMSFf) & make sure to provide the output from `make dls` and the logs of any services that aren't running.
+
+### Have you tried turning it off and back on again?
+
+Restarting: the debugger's most valuable tool.
+
+Some problems will be fixed by just restarting the app so try this first: `make restart`
+
+If this doesn't work, try resetting all persistent data (database + the ethprovider's chain data) and starting the app again: `make reset && npm start`. After doing this, you'll likely need to reset your MetaMask account to get your tx nonces synced up correctly.
+
+If that still doesn't work either, try rebuilding everything with `make clean && make start`.
 
 ### `The container name "/indra_buidler" is already in use`
 
@@ -307,9 +259,11 @@ You'll notice this by an error that looks like this in some module's logs:
 2019-03-04T15:13:46.214023700Z     at Module._compile (internal/modules/cjs/loader.js:689:30)
 ```
 
-If you noticed this error in the node, for example, you can reinstall dependencies by running `make clean && make start`.
+If you notice this kind of error in the node logs, for example, you can reinstall dependencies by running `make clean && make start` (this will take a few minutes).
 
 This happen when you run `npm install` manually and then try to deploy the app using docker. Some dependencies (eg scrypt) have pieces in C that need to be compiled. If they get compiled for your local machine, they won't work in docker & vice versa.
+
+In general, if you manually run `npm install` or add any new dependencies, you'll need to rebuild and restart (`make && make restart`) before the Indra stack will start up properly again.
 
 ### Ethprovider or Ganache not working
 
@@ -324,18 +278,25 @@ EOF
 
 This lets us do a simple `bash curleth.sh net_version '[]'` as a sanity check to make sure the ethprovider is alive & listening. If not, curl might give more useful errors that direct you towards investigating either metamask or ganache.
 
-One other sanity check is to run `docker service ls` and make sure that you see an ethprovider service that has port 8545 exposed.
+One other sanity check is to run `make dls` and make sure that you see an ethprovider service that has port 8545 exposed (PORTS should look like: `*:8545->8545/tcp`).
 
-You can also run `docker exec -it indra_ethprovider.1.<containerId> bash` to start a shell inside the docker container. Even if there are networking issues between the container & host, you can still ping localhost:8545 here to see if ganache is listening & run `ps` to see if it's even alive.
+You can also run `docker exec -it indra_ethprovider.1.<containerId> bash` to start a shell inside the docker container. Even if there are networking issues between the container & host, you can still ping http://localhost:8545 here to see if ganache is listening & run `ps` to see if it's even alive.
 
-Ganache should dump its logs onto your host and you can print/follow them with: `tail -f modules/contracts/ops/ganache.log` as another way to make sure it's alive. Try deleting this file then running `npm restart` to see if it gets recreated & if so, check to see if there is anything suspicious there
+### How to generate node db migrations
 
-## Have you tried turning it off and back on again
+Typeorm is cool, if we update db entity files then typeorm can automatically generate SQL db migrations from the entity changes.
 
-Restarting: the debugger's most useful tool.
+Start up the stack in a clean state (eg `make clean && make reset && make start`) then something like the following should work to generate migrations called "foo":
 
-Some problems will be fixed by just restarting the app so try this first: `make restart`
+```
+$ cd modules/node && npm run migration:generate foo
 
-If this doesn't work, try resetting all persistent data (database + the ethprovider's chain data) and starting the app again: `make reset && npm start`. After doing this, you'll likely need to reset your MetaMask account to get your tx nonces synced up correctly.
+> indra-node@4.0.12 migration:generate /home/username/Documents/connext/indra/modules/node
+> typeorm migration:generate -d migrations -n  "foo"
 
-If that doesn't work either, try rebuilding everything with `make clean && make start`.
+Migration /home/username/Documents/connext/indra/modules/node/migrations/1581311685857-foo.ts has been generated successfully.
+```
+
+Note: if entity files have *not* changed since the last db migration, the above will print something like "No changes detected" & not generate anything.
+
+Once the migrations are generated, you should skim them & make sure the auto-generated code is sane & doing what you expect it to do. If it looks good, import it & add it to the migrations array in `modules/node/src/database/database.service.ts`.
