@@ -1,4 +1,4 @@
-import { bigNumberify } from "ethers/utils";
+import { bigNumberify, formatEther } from "ethers/utils";
 
 import { ConnextClient } from "./connext";
 import { Logger, stringify } from "./lib";
@@ -70,7 +70,7 @@ export class ConnextListener extends ConnextEventEmitter {
     },
     DEPOSIT_STARTED_EVENT: (msg: DepositStartedMessage): void => {
       const { value, txHash } = msg.data;
-      this.log.info(`deposit for ${value.toString()} started. hash: ${txHash}`);
+      this.log.info(`Deposit transaction: ${txHash}`);
       this.emitAndLog(DEPOSIT_STARTED_EVENT, msg.data);
     },
     INSTALL_EVENT: (msg: InstallMessage): void => {
@@ -97,7 +97,7 @@ export class ConnextListener extends ConnextEventEmitter {
       } = msg;
       // return if its from us
       if (from === this.connext.publicIdentifier) {
-        this.log.info(`Received proposal from our own node, doing nothing: ${stringify(msg)}`);
+        this.log.info(`Received proposal from our own node, doing nothing`);
         return;
       }
       // matched app, take appropriate default actions
@@ -108,10 +108,11 @@ export class ConnextListener extends ConnextEventEmitter {
         (app: DefaultApp) => app.name === CoinBalanceRefundApp,
       )[0];
       if (params.appDefinition !== coinBalanceDef.appDefinitionAddress) {
-        this.log.info("not sending propose message, not the coinbalance refund app");
+        this.log.debug("Not sending propose message, not the coinbalance refund app");
         return;
       }
-      this.log.info(
+      this.log.info(`Sending proposal acceptance message`);
+      this.log.debug(
         `Sending acceptance message to: indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
       );
       await this.connext.messaging.publish(
@@ -146,7 +147,7 @@ export class ConnextListener extends ConnextEventEmitter {
         params: { amount },
         txHash,
       } = msg.data;
-      this.log.info(`withdrawal for ${amount.toString()} started. hash: ${txHash}`);
+      this.log.info(`Withdrawal transaction: ${txHash}`);
       this.emitAndLog(WITHDRAWAL_STARTED_EVENT, msg.data);
     },
   };
@@ -223,7 +224,7 @@ export class ConnextListener extends ConnextEventEmitter {
   private emitAndLog = (event: CFCoreTypes.EventName, data: any): void => {
     const protocol =
       event === PROTOCOL_MESSAGE_EVENT ? (data.data ? data.data.protocol : data.protocol) : "";
-    this.log.info(`Received ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
+    this.log.debug(`Received ${event}${protocol ? ` for ${protocol} protocol` : ""}`);
     this.log.debug(`Emitted ${event} with data ${stringify(data)} at ${Date.now()}`);
     this.emit(event, data);
   };
@@ -236,7 +237,8 @@ export class ConnextListener extends ConnextEventEmitter {
     });
 
     if (!filteredApps || filteredApps.length === 0) {
-      this.log.info(`Proposed app not in registered applications. App: ${stringify(msg)}`);
+      this.log.info(`Proposed app not in registered applications.`);
+      this.log.debug(`App: ${stringify(msg)}`);
       return undefined;
     }
 
@@ -338,7 +340,8 @@ export class ConnextListener extends ConnextEventEmitter {
   private registerLinkedTransferSubscription = async (): Promise<void> => {
     const subject = `transfer.send-async.${this.connext.publicIdentifier}`;
     await this.connext.messaging.subscribe(subject, async (msg: any) => {
-      this.log.info(`Received message for subscription: ${stringify(msg)}`);
+      this.log.debug(`Received message for ${subject} subscription`);
+      this.log.debug(`Message data: ${stringify(JSON.parse(msg.data))}`);
       if (!msg.paymentId && !msg.data) {
         throw new Error(`Could not parse data from message: ${stringify(msg)}`);
       }
