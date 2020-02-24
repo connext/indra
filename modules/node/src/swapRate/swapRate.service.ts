@@ -28,7 +28,12 @@ export class SwapRateService implements OnModuleInit {
     if (swap) {
       rate = swap.rate;
     } else {
-      rate = await this.getSwapRate(from, to, swap.priceOracleType);
+      const targetSwap = this.config.getAllowedSwaps().find(s => s.from === from && s.to === to);
+      if (targetSwap) {
+        rate = await this.getSwapRate(from, to, targetSwap.priceOracleType);
+      } else {
+        throw new Error(`No valid swap exists for ${from} to ${to}`);
+      }
     }
     return rate;
   }
