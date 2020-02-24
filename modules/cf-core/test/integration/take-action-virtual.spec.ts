@@ -38,7 +38,7 @@ function confirmMessages(
   });
 }
 
-describe("Node method follows spec - takeAction virtual", () => {
+describe.skip("Node method follows spec - takeAction virtual", () => {
   let nodeA: Node;
   let nodeB: Node;
   let nodeC: Node;

@@ -32,6 +32,15 @@ export const encodeSingleAssetTwoPartyIntermediaryAgreementParams = params =>
  *
  * FIXME: This file over-uses the xkeyKthAddress function which
  *        is quite computationally expensive. Refactor to use it less.
+ *
+ * FIXME: Need to verify the proper private key is being used in signing
+ *        here
+ *
+ * FIXME: Need to make adjustments to the `propose` protocol to allow for
+ *        the intermediary to refuse to support a virtual app (rn they only
+ *        find out in a meaningful way through the `INSTALL_VIRTUAL_EVENT`
+ *        triggered at the end of the protocol, or parsing every protocol
+ *        message and trying to stop a protocol mid-execution)
  */
 
 const protocol = Protocol.InstallVirtualApp;
@@ -45,6 +54,7 @@ const { OP_SIGN, WRITE_COMMITMENT, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHAN
  */
 export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
+    throw Error(`Virtual app protocols not supported.`);
     const {
       message: { params, processID },
       stateChannelsMap,
@@ -296,6 +306,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   1 /* Intermediary */: async function*(context: Context) {
+    throw Error(`Virtual app protocols not supported.`);
     const { message: m1, stateChannelsMap, network } = context;
 
     const {
@@ -605,6 +616,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   2 /* Responding */: async function*(context: Context) {
+    throw Error(`Virtual app protocols not supported.`);
     const { message: m2, stateChannelsMap, network, provider } = context;
 
     const {

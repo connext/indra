@@ -20,6 +20,22 @@ import { computeTokenIndexedFreeBalanceIncrements } from "./utils/get-outcome-in
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
 
+/**
+ * File notes:
+ *
+ * FIXME: This file should use the xkeyKthAddress function instead of a
+ *        file-specific helper.
+ *
+ * FIXME: Need to verify the proper private key is being used in signing
+ *        here
+ *
+ * FIXME: Need to make adjustments to the `propose` protocol to allow for
+ *        the intermediary to refuse to support a virtual app (rn they only
+ *        find out in a meaningful way through the `INSTALL_VIRTUAL_EVENT`
+ *        triggered at the end of the protocol, or parsing every protocol
+ *        message and trying to stop a protocol mid-execution)
+ */
+
 function xkeyTo0thAddress(xpub: string) {
   return fromExtendedKey(xpub).derivePath("0").address;
 }
@@ -50,6 +66,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
    */
 
   0 /* Initiating */: async function*(context: Context) {
+    throw Error(`Virtual app protocols not supported.`);
     const {
       message: { processID, params },
       provider,
@@ -188,6 +205,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   1 /* Intermediary */: async function*(context: Context) {
+    throw Error(`Virtual app protocols not supported.`);
     const {
       message: {
         processID,
@@ -377,6 +395,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
   },
 
   2 /* Responding */: async function*(context: Context) {
+    throw Error(`Virtual app protocols not supported.`);
     const {
       message: {
         processID,
