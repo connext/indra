@@ -80,32 +80,3 @@ export class LoggerService extends Logger {
     );
   }
 }
-
-/*
-export class MyLogger implements Logger {
-  public cxt: string;
-  constructor(context: string) {
-    this.cxt = context || "UNKNOWN";
-  }
-  log(message: string): void {
-    super.log(message, this.cxt);
-  }
-  error(message: string, trace: string = "No stack trace"): void {
-    try {
-      super.error(message, trace, this.cxt);
-    } catch (e) {
-      console.error(message);
-      console.error(`WARNING Nest logger failed: ${e.message}`);
-    }
-  }
-  warn(message: string): void {
-    super.warn(message, this.cxt);
-  }
-  debug(message: string): void {
-    super.debug(message, this.cxt);
-  }
-  verbose(message: string): void {
-    super.verbose(message, this.cxt);
-  }
-}
-*/
