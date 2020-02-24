@@ -556,7 +556,6 @@ export class CFCoreService {
   registerCfCoreListener(
     event: CFCoreTypes.EventName,
     callback: (data: any) => any,
-    context: string = `CFCoreService`,
   ): void {
     this.logger.log(`Registering cfCore callback for event ${event}`);
     this.cfCore.on(event, callback);

@@ -1,17 +1,20 @@
 import { IMessagingService } from "@connext/messaging";
 import { RpcException } from "@nestjs/microservices";
 
-import { CLogger } from "./logger";
+import { LoggerService } from "../logger/logger.service";
 import { isXpub } from "./validate";
-
-const logger = new CLogger("MessagingProvider");
 
 export interface IMessagingProvider {
   setupSubscriptions(): void;
 }
 
 export abstract class AbstractMessagingProvider implements IMessagingProvider {
-  constructor(protected readonly messaging: IMessagingService) {}
+  constructor(
+    public readonly logger: LoggerService,
+    protected readonly messaging: IMessagingService,
+  ) {
+    this.logger.setContext("AbstractMessagingProvider");
+  }
 
   getPublicIdentifierFromSubject(subject: string): string {
     const pubId = subject.split(".").pop(); // last item of subscription is pubId
@@ -27,7 +30,7 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
   ): Promise<void> {
     // TODO: timeout
     await this.messaging.subscribe(pattern, async (msg: any) => {
-      logger.debug(
+      this.logger.debug(
         `Got NATS message for subject ${msg.subject} with data ${JSON.stringify(msg.data)}`,
       );
       if (msg.reply) {
@@ -42,11 +45,11 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
             err: e ? e.toString() : e,
             message: `Error during processor function: ${processor.name}`,
           });
-          logger.error(`Error processing message ${msg.subject}: ${e.message}`, e.stack);
+          this.logger.error(`Error processing message ${msg.subject}: ${e.message}`, e.stack);
         }
       }
     });
-    logger.log(`Connected message pattern "${pattern}" to function ${processor.name}`);
+    this.logger.log(`Connected message pattern "${pattern}" to function ${processor.name}`);
   }
 
   abstract setupSubscriptions(): void;

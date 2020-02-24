@@ -49,6 +49,10 @@ export class LoggerService extends Logger {
     this.context = typeof context !== "undefined" ? context : "UnknownContext";
   }
 
+  public setContext(context: string): void {
+    this.context = typeof context !== "undefined" ? context : "UnknownContext";
+  }
+
   public error(msg: string, stack?: string): void {
     this.print("error", msg);
     stack && this.print("error", stack);
@@ -68,7 +72,10 @@ export class LoggerService extends Logger {
 
   private print(level: string, msg: any): void {
     if (this.levels[level] > this.logLevel) return;
-    return (console as any)[level](`${this.color[level]}${level}: [${this.context}] ${msg}`);
+    const now = new Date().toISOString();
+    return (console as any)[level](
+      `${colors.Reset}${now} ${colors.FgYellow}[${this.context}]${colors.Reset} ${this.color[level]}${msg}`,
+    );
   }
 }
 

@@ -19,10 +19,10 @@ import { CFCoreService } from "./cfCore.service";
   imports: [
     ConfigModule,
     DatabaseModule,
+    LockModule,
     LoggerModule,
     MessagingModule,
     TypeOrmModule.forFeature([CFCoreRecordRepository, AppRegistryRepository]),
-    LockModule,
   ],
   providers: [cfCoreProviderFactory, CFCoreService],
 })

@@ -2,12 +2,12 @@ import { NotFoundException } from "@nestjs/common";
 import { AddressZero } from "ethers/constants";
 import { EntityManager, EntityRepository, Repository } from "typeorm";
 
+import { LoggerService } from "../logger/logger.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { CLogger } from "../util";
 
 import { Channel } from "./channel.entity";
 
-const logger = new CLogger("ChannelRepository");
+const logger = new LoggerService("ChannelRepository");
 
 @EntityRepository(Channel)
 export class ChannelRepository extends Repository<Channel> {
