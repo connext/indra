@@ -1,5 +1,18 @@
-import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import {
+  CriticalStateChannelAddresses,
+  SingleAssetTwoPartyIntermediaryAgreement,
+} from "@connext/types";
+import {
+  Column,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  OneToOne,
+} from "typeorm";
 
+import { AppInstance } from "../appInstance/appInstance.entity";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { LinkedTransfer, PeerToPeerTransfer } from "../transfer/transfer.entity";
@@ -9,6 +22,15 @@ import { IsEthAddress, IsXpub } from "../util";
 export class Channel {
   @PrimaryGeneratedColumn()
   id!: number;
+
+  @Column("number")
+  schemaVersion!: number;
+
+  @Column("json")
+  addresses!: CriticalStateChannelAddresses;
+
+  @Column("array")
+  userNeuteredExtendedKeys!: string[];
 
   @Column("text")
   @IsXpub()
@@ -28,6 +50,24 @@ export class Channel {
 
   @Column("boolean", { default: false })
   collateralizationInFlight!: boolean;
+
+  @OneToMany(
+    (type: any) => AppInstance,
+    (appInstance: AppInstance) => appInstance.channel,
+  )
+  appInstances!: AppInstance[];
+
+  @OneToOne(
+    (type: any) => AppInstance,
+    (appInstance: AppInstance) => appInstance.channel,
+  )
+  freeBalanceAppInstance!: AppInstance;
+
+  @Column("array")
+  singleAssetTwoPartyIntermediaryAgreements!: [string, SingleAssetTwoPartyIntermediaryAgreement][];
+
+  @Column("number")
+  monotonicNumProposedApps!: number;
 
   @ManyToMany(
     (type: any) => RebalanceProfile,
