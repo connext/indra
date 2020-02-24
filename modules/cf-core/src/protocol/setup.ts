@@ -37,6 +37,8 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannel.freeBalance.identity,
     );
 
+    // setup installs the free balance app, and on creation the state channel
+    // will have nonce 1, so use hardcoded 0th key
     const initiatorSignature = yield [OP_SIGN, setupCommitment];
 
     const {
@@ -55,6 +57,8 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessage,
     ];
 
+    // setup installs the free balance app, and on creation the state channel
+    // will have nonce 1, so use hardcoded 0th key
     assertIsValidSignature(xkeyKthAddress(responderXpub, 0), setupCommitment, responderSignature);
 
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
@@ -87,8 +91,12 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannel.freeBalance.identity,
     );
 
+    // setup installs the free balance app, and on creation the state channel
+    // will have nonce 1, so use hardcoded 0th key
     assertIsValidSignature(xkeyKthAddress(initiatorXpub, 0), setupCommitment, initiatorSignature);
 
+    // setup installs the free balance app, and on creation the state channel
+    // will have nonce 1, so use hardcoded 0th key
     const responderSignature = yield [OP_SIGN, setupCommitment];
 
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];

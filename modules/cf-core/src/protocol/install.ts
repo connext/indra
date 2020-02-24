@@ -3,7 +3,7 @@ import { BigNumber } from "ethers/utils";
 
 import { SetStateCommitment } from "../ethereum";
 import { ConditionalTransaction } from "../ethereum/conditional-transaction-commitment";
-import { ProtocolExecutionFlow } from "../machine";
+import { ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../methods/errors";
 import { AppInstance, StateChannel } from "../models";
@@ -88,7 +88,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel,
     );
 
-    const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTransactionData];
+    // TODO: what index signs conditional tx?
+    const mySignatureOnConditionalTransaction = yield [
+      OP_SIGN,
+      conditionalTransactionData,
+      newAppInstance.appSeqNo,
+    ];
 
     const {
       customData: {
@@ -109,8 +114,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessage,
     ];
 
+    // TODO: what index signs conditional tx?
     assertIsValidSignature(
-      preProtocolStateChannel.getFreeBalanceAddrOf(responderXpub),
+      xkeyKthAddress(responderXpub, newAppInstance.appSeqNo),
       conditionalTransactionData,
       counterpartySignatureOnConditionalTransaction,
     );
@@ -135,12 +141,14 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel.freeBalance.timeout,
     );
 
+    // always use free balance key to sign free balance update
     assertIsValidSignature(
-      preProtocolStateChannel.getFreeBalanceAddrOf(responderXpub),
+      xkeyKthAddress(responderXpub, 0),
       freeBalanceUpdateData,
       counterpartySignatureOnFreeBalanceStateUpdate,
     );
 
+    // always use free balance key to sign free balance update
     const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateData];
 
     const signedFreeBalanceStateUpdate = freeBalanceUpdateData.getSignedTransaction([
@@ -232,13 +240,19 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       postProtocolStateChannel,
     );
 
+    // TODO: what index signs conditional tx?
     assertIsValidSignature(
-      preProtocolStateChannel.getFreeBalanceAddrOf(initiatorXpub),
+      xkeyKthAddress(initiatorXpub, newAppInstance.appSeqNo),
       conditionalTransactionData,
       counterpartySignatureOnConditionalTransaction,
     );
 
-    const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTransactionData];
+    // TODO: what index signs conditional tx?
+    const mySignatureOnConditionalTransaction = yield [
+      OP_SIGN,
+      conditionalTransactionData,
+      newAppInstance.appSeqNo,
+    ];
 
     const signedConditionalTransaction = conditionalTransactionData.getSignedTransaction([
       mySignatureOnConditionalTransaction,
@@ -278,8 +292,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessage,
     ];
 
+    // always use freeBalanceAddress to sign updates
     assertIsValidSignature(
-      preProtocolStateChannel.getFreeBalanceAddrOf(initiatorXpub),
+      xkeyKthAddress(initiatorXpub, 0),
       freeBalanceUpdateData,
       counterpartySignatureOnFreeBalanceStateUpdate,
     );

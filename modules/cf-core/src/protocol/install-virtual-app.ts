@@ -67,12 +67,21 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       provider,
     );
 
-    const intermediaryAddress = stateChannelWithIntermediary.getMultisigOwnerAddrOf(
+    // get all signing addresses
+    const intermediaryFreeBalanceAddress = stateChannelWithIntermediary.getMultisigOwnerAddrOf(
       intermediaryXpub,
     );
+    const intermediaryEphemeralAddress = xkeyKthAddress(
+      intermediaryXpub,
+      virtualAppInstance.appSeqNo,
+    );
 
-    const responderAddress = stateChannelWithResponding.getMultisigOwnerAddrOf(responderXpub);
+    const responderFreeBalanceAddress = stateChannelWithResponding.getMultisigOwnerAddrOf(
+      responderXpub,
+    );
+    const responderEphemeralAddress = xkeyKthAddress(responderXpub, virtualAppInstance.appSeqNo);
 
+    // TODO: who signs a conditional tx?
     const presignedMultisigTxForAliceIngridVirtualAppAgreement = new ConditionalTransaction(
       network,
       stateChannelWithIntermediary.multisigAddress,
@@ -90,6 +99,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     const initiatorSignatureOnAliceIngridVirtualAppAgreement = yield [
       OP_SIGN,
       presignedMultisigTxForAliceIngridVirtualAppAgreement,
+      virtualAppInstance.appSeqNo,
     ];
 
     const m1 = {
@@ -118,8 +128,9 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       },
     } = m4;
 
+    // TODO: who signs a conditional tx?
     assertIsValidSignature(
-      intermediaryAddress,
+      intermediaryEphemeralAddress,
       presignedMultisigTxForAliceIngridVirtualAppAgreement,
       intermediarySignatureOnAliceIngridVirtualAppAgreement,
     );
@@ -142,12 +153,16 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelWithIntermediary.freeBalance.timeout,
     );
 
+    // always use free balance address when signing free balance
+    // updates
     assertIsValidSignature(
-      intermediaryAddress,
+      intermediaryFreeBalanceAddress,
       freeBalanceAliceIngridVirtualAppAgreementActivationCommitment,
       intermediarySignatureOnAliceIngridFreeBalanceAppActivation,
     );
 
+    // always use free balance address when signing free balance
+    // updates
     const initiatorSignatureOnAliceIngridFreeBalanceAppActivation = yield [
       OP_SIGN,
       freeBalanceAliceIngridVirtualAppAgreementActivationCommitment,
@@ -179,14 +194,17 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       timeLockedPassThroughAppInstance.defaultTimeout,
     );
 
+    // TODO: who signs time locked pass through app?
     const initiatorSignatureOnTimeLockedPassThroughSetStateCommitment = yield [
       OP_SIGN,
       timeLockedPassThroughSetStateCommitment,
+      timeLockedPassThroughAppInstance.appSeqNo,
     ];
 
     const initiatorSignatureOnVirtualAppSetStateCommitment = yield [
       OP_SIGN,
       virtualAppSetStateCommitment,
+      virtualAppInstance.appSeqNo,
     ];
 
     const m5 = {
@@ -211,20 +229,22 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       },
     } = m8;
 
+    // TODO: who signs time locked pass through app?
     assertIsValidSignature(
-      intermediaryAddress,
+      intermediaryEphemeralAddress,
       timeLockedPassThroughSetStateCommitment,
       intermediarySignatureOnTimeLockedPassThroughSetStateCommitment,
     );
 
+    // TODO: who signs time locked pass through app?
     assertIsValidSignature(
-      responderAddress,
+      responderEphemeralAddress,
       timeLockedPassThroughSetStateCommitment,
       responderSignatureOnTimeLockedPassThroughSetStateCommitment,
     );
 
     assertIsValidSignature(
-      responderAddress,
+      responderEphemeralAddress,
       virtualAppSetStateCommitment,
       responderSignatureOnVirtualAppSetStateCommitment,
     );
@@ -292,14 +312,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       },
     } = m1;
 
-    const {
-      initiatorXpub,
-      responderXpub,
-      intermediaryXpub,
-      tokenAddress,
-      responderBalanceDecrement,
-      initiatorBalanceDecrement,
-    } = params as InstallVirtualAppProtocolParams;
+    const { initiatorXpub, responderXpub } = params as InstallVirtualAppProtocolParams;
 
     const [
       stateChannelBetweenVirtualAppUsers,
@@ -314,9 +327,21 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       network,
     );
 
-    const initiatorAddress = stateChannelWithInitiating.getMultisigOwnerAddrOf(initiatorXpub);
+    const initiatorFreeBalanceAddress = stateChannelWithInitiating.getMultisigOwnerAddrOf(
+      initiatorXpub,
+    );
+    const initiatorEphemeralAddress = xkeyKthAddress(
+      initiatorXpub,
+      timeLockedPassThroughAppInstance.appSeqNo,
+    );
 
-    const responderAddress = stateChannelWithResponding.getMultisigOwnerAddrOf(responderXpub);
+    const responderFreeBalanceAddress = stateChannelWithResponding.getMultisigOwnerAddrOf(
+      responderXpub,
+    );
+    const responderEphemeralAddress = xkeyKthAddress(
+      responderXpub,
+      timeLockedPassThroughAppInstance.appSeqNo,
+    );
 
     const presignedMultisigTxForAliceIngridVirtualAppAgreement = new ConditionalTransaction(
       network,
@@ -332,8 +357,9 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       ),
     );
 
+    // TODO: who signs conditional txs?
     assertIsValidSignature(
-      initiatorAddress,
+      initiatorEphemeralAddress,
       presignedMultisigTxForAliceIngridVirtualAppAgreement,
       initiatorSignatureOnAliceIngridVirtualAppAgreement,
     );
@@ -352,9 +378,11 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       ),
     );
 
+    // TODO: who signs conditional txs?
     const intermediarySignatureOnIngridBobVirtualAppAgreement = yield [
       OP_SIGN,
       presignedMultisigTxForIngridBobVirtualAppAgreement,
+      timeLockedPassThroughAppInstance.appSeqNo,
     ];
 
     const m2 = {
@@ -377,8 +405,9 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       },
     } = m3;
 
+    // TODO: who signs conditional txs?
     assertIsValidSignature(
-      responderAddress,
+      responderEphemeralAddress,
       presignedMultisigTxForIngridBobVirtualAppAgreement,
       responderSignatureOnIngridBobVirtualAppAgreement,
     );
@@ -391,8 +420,9 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelWithResponding.freeBalance.timeout,
     );
 
+    // free balance address always signs fb app
     assertIsValidSignature(
-      responderAddress,
+      responderFreeBalanceAddress,
       freeBalanceIngridBobVirtualAppAgreementActivationCommitment,
       responderSignatureOnIngridBobFreeBalanceAppActivation,
     );
@@ -405,6 +435,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelWithInitiating.freeBalance.timeout,
     );
 
+    // free balance address always signs fb app
     const intermediarySignatureOnAliceIngridFreeBalanceAppActivation = yield [
       OP_SIGN,
       freeBalanceAliceIngridVirtualAppAgreementActivationCommitment,
@@ -413,6 +444,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     const intermediarySignatureOnAliceIngridVirtualAppAgreement = yield [
       OP_SIGN,
       presignedMultisigTxForAliceIngridVirtualAppAgreement,
+      timeLockedPassThroughAppInstance.appSeqNo,
     ];
 
     yield [
@@ -446,8 +478,9 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       },
     } = m5;
 
+    // free balance address always signs fb app
     assertIsValidSignature(
-      initiatorAddress,
+      initiatorFreeBalanceAddress,
       freeBalanceAliceIngridVirtualAppAgreementActivationCommitment,
       initiatorSignatureOnAliceIngridFreeBalanceAppActivation,
     );
@@ -471,7 +504,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     assertIsValidSignature(
-      initiatorAddress,
+      initiatorEphemeralAddress,
       timeLockedPassThroughSetStateCommitment,
       initiatorSignatureOnTimeLockedPassThroughSetStateCommitment,
     );
@@ -494,6 +527,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     const intermediarySignatureOnTimeLockedPassThroughSetStateCommitment = yield [
       OP_SIGN,
       timeLockedPassThroughSetStateCommitment,
+      timeLockedPassThroughAppInstance.appSeqNo,
     ];
 
     const m6 = {
@@ -519,7 +553,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     } = m7;
 
     assertIsValidSignature(
-      responderAddress,
+      responderEphemeralAddress,
       timeLockedPassThroughSetStateCommitment,
       responderSignatureOnTimeLockedPassThroughSetStateCommitment,
     );
@@ -594,11 +628,18 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       provider,
     );
 
-    const intermediaryAddress = stateChannelWithIntermediary.getMultisigOwnerAddrOf(
+    const intermediaryFreeBalanceAddress = stateChannelWithIntermediary.getMultisigOwnerAddrOf(
       intermediaryXpub,
     );
+    const intermediaryEphemeralAddress = xkeyKthAddress(
+      intermediaryXpub,
+      virtualAppInstance.appSeqNo,
+    );
 
-    const initiatorAddress = stateChannelWithInitiating.getMultisigOwnerAddrOf(initiatorXpub);
+    const initiatorFreeBalanceAddress = stateChannelWithInitiating.getMultisigOwnerAddrOf(
+      initiatorXpub,
+    );
+    const initiatorEphemeralAddress = xkeyKthAddress(initiatorXpub, virtualAppInstance.appSeqNo);
 
     const presignedMultisigTxForIngridBobVirtualAppAgreement = new ConditionalTransaction(
       network,
@@ -614,15 +655,18 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       ),
     );
 
+    // TODO: who signs conditional txs?
     assertIsValidSignature(
-      intermediaryAddress,
+      intermediaryEphemeralAddress,
       presignedMultisigTxForIngridBobVirtualAppAgreement,
       intermediarySignatureOnIngridBobVirtualAppAgreement,
     );
 
+    // TODO: who signs conditional txs?
     const responderSignatureOnIngridBobVirtualAppAgreement = yield [
       OP_SIGN,
       presignedMultisigTxForIngridBobVirtualAppAgreement,
+      virtualAppInstance.appSeqNo,
     ];
 
     yield [
@@ -643,6 +687,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannelWithIntermediary.freeBalance.timeout,
     );
 
+    // always use free balance addr for fb app
     const responderSignatureOnIngridBobFreeBalanceAppActivation = yield [
       OP_SIGN,
       freeBalanceIngridBobVirtualAppAgreementActivationCommitment,
@@ -670,8 +715,9 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       },
     } = m6;
 
+    // always use free balance addr for fb app
     assertIsValidSignature(
-      intermediaryAddress,
+      intermediaryFreeBalanceAddress,
       freeBalanceIngridBobVirtualAppAgreementActivationCommitment,
       intermediarySignatureOnIngridBobFreeBalanceAppActivation,
     );
@@ -703,19 +749,19 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     assertIsValidSignature(
-      intermediaryAddress,
+      intermediaryEphemeralAddress,
       timeLockedPassThroughSetStateCommitment,
       intermediarySignatureOnTimeLockedPassThroughSetStateCommitment,
     );
 
     assertIsValidSignature(
-      initiatorAddress,
+      initiatorEphemeralAddress,
       timeLockedPassThroughSetStateCommitment,
       initiatorSignatureOnTimeLockedPassThroughSetStateCommitment,
     );
 
     assertIsValidSignature(
-      initiatorAddress,
+      initiatorEphemeralAddress,
       virtualAppSetStateCommitment,
       initiatorSignatureOnVirtualAppSetStateCommitment,
     );
@@ -723,11 +769,13 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     const responderSignatureOnTimeLockedPassThroughSetStateCommitment = yield [
       OP_SIGN,
       timeLockedPassThroughSetStateCommitment,
+      timeLockedPassThroughAppInstance.appSeqNo,
     ];
 
     const responderSignatureOnVirtualAppSetStateCommitment = yield [
       OP_SIGN,
       virtualAppSetStateCommitment,
+      virtualAppInstance.appSeqNo,
     ];
 
     yield [
