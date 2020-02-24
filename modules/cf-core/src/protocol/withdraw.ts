@@ -84,14 +84,10 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       responderXpub,
     );
 
-    const responderAppEphemeralAddress = xkeyKthAddress(responderXpub, refundApp.appSeqNo);
+    const responderEphemeralKey = xkeyKthAddress(responderXpub, refundApp.appSeqNo);
 
-    // TODO: who signs conditional tx data?
-    const mySignatureOnConditionalTransaction = yield [
-      OP_SIGN,
-      conditionalTransactionData,
-      refundApp.appSeqNo,
-    ];
+    // free balance address signs conditional transaction data
+    const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTransactionData];
 
     const {
       customData: {
@@ -112,9 +108,9 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessage,
     ];
 
-    // TODO: who signs conditional tx data?
+    // free balance address signs conditional transaction data
     assertIsValidSignature(
-      responderAppEphemeralAddress,
+      responderFreeBalanceAddress,
       conditionalTransactionData,
       counterpartySignatureOnConditionalTransaction,
     );
@@ -166,7 +162,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       postInstallRefundAppStateChannel.freeBalance.identityHash,
     ];
 
-    // TODO: who signs the withdrawal commitment? (assume fb)
+    // free balance address signs withdrawal transaction data
     const withdrawCommitment = constructWithdrawalCommitment(
       postInstallRefundAppStateChannel,
       recipient,
@@ -174,7 +170,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       tokenAddress,
     );
 
-    // TODO: who signs the withdrawal commitment? (assume fb)
+    // free balance address signs withdrawal transaction data
     const mySignatureOnWithdrawalCommitment = yield [OP_SIGN, withdrawCommitment];
 
     const {
@@ -196,7 +192,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessage,
     ];
 
-    // TODO: who signs the withdrawal commitment? (assume fb)
+    // free balance address signs withdrawal transaction data
     assertIsValidSignature(
       responderFreeBalanceAddress,
       withdrawCommitment,
@@ -221,14 +217,14 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       postUninstallRefundAppStateChannel.freeBalance.timeout,
     );
 
-    // TODO: who signs uninstall commitments?
+    // ephemeral key signs refund app
     assertIsValidSignature(
-      responderAppEphemeralAddress,
+      responderEphemeralKey,
       uninstallRefundAppCommitment,
       counterpartySignatureOnUninstallCommitment,
     );
 
-    // TODO: who signs uninstall commitments?
+    // ephemeral key signs refund app
     const mySignatureOnUninstallCommitment = yield [
       OP_SIGN,
       uninstallRefundAppCommitment,
@@ -320,21 +316,17 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       initiatorXpub,
     );
 
-    const initiatorAppEphemeralAddress = xkeyKthAddress(initiatorXpub, refundApp.appSeqNo);
+    const initiatorEphemeralKey = xkeyKthAddress(initiatorXpub, refundApp.appSeqNo);
 
-    // TODO: what index signs conditional tx?
+    // free balance address signs conditional transaction data
     assertIsValidSignature(
-      initiatorAppEphemeralAddress,
+      initiatorFreeBalanceAddress,
       conditionalTransactionData,
       counterpartySignatureOnConditionalTransaction,
     );
 
-    // TODO: what index signs conditional tx?
-    const mySignatureOnConditionalTransaction = yield [
-      OP_SIGN,
-      conditionalTransactionData,
-      refundApp.appSeqNo,
-    ];
+    // free balance address signs conditional transaction data
+    const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTransactionData];
 
     const signedConditionalTransaction = conditionalTransactionData.getSignedTransaction([
       mySignatureOnConditionalTransaction,
@@ -409,14 +401,14 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       tokenAddress,
     );
 
-    // TODO: who signs withdrawal commitments (assume fb)
+    // free balance address signs withdraw commitment
     assertIsValidSignature(
       initiatorFreeBalanceAddress,
       withdrawCommitment,
       counterpartySignatureOnWithdrawalCommitment,
     );
 
-    // TODO: who signs withdrawal commitments (assume fb)
+    // free balance address signs withdraw commitment
     const mySignatureOnWithdrawalCommitment = yield [OP_SIGN, withdrawCommitment];
 
     const signedWithdrawalCommitment = withdrawCommitment.getSignedTransaction([
@@ -467,7 +459,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     assertIsValidSignature(
-      initiatorAppEphemeralAddress,
+      initiatorEphemeralKey,
       uninstallRefundAppCommitment,
       counterpartySignatureOnUninstallCommitment,
     );

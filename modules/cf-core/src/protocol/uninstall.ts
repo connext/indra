@@ -33,7 +33,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       provider,
     );
 
-    const responderSigningAddress = xkeyKthAddress(responderXpub, appToUninstall.appSeqNo);
+    const responderEphemeralKey = xkeyKthAddress(responderXpub, appToUninstall.appSeqNo);
 
     const uninstallCommitment = new SetStateCommitment(
       network,
@@ -59,7 +59,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessage,
     ];
 
-    assertIsValidSignature(responderSigningAddress, uninstallCommitment, responderSignature);
+    assertIsValidSignature(responderEphemeralKey, uninstallCommitment, responderSignature);
 
     const finalCommitment = uninstallCommitment.getSignedTransaction([
       signature,
@@ -90,7 +90,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
       provider,
     );
 
-    const initiatorSigningAddress = xkeyKthAddress(initiatorXpub, appToUninstall.appSeqNo);
+    const initiatorEphemeralKey = xkeyKthAddress(initiatorXpub, appToUninstall.appSeqNo);
 
     const uninstallCommitment = new SetStateCommitment(
       network,
@@ -102,7 +102,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const initiatorSignature = context.message.customData.signature;
 
-    assertIsValidSignature(initiatorSigningAddress, uninstallCommitment, initiatorSignature);
+    assertIsValidSignature(initiatorEphemeralKey, uninstallCommitment, initiatorSignature);
 
     const responderSignature = yield [OP_SIGN, uninstallCommitment, appToUninstall.appSeqNo];
 
