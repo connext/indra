@@ -4,7 +4,7 @@ export class CLogger extends Logger {
   public cxt: string;
   constructor(context: string) {
     super();
-    this.cxt = context || "UNKNOWN CONTEXT";
+    this.cxt = context || "UNKNOWN";
   }
   log(message: string): void {
     super.log(message, this.cxt);
