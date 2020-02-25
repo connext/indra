@@ -9,7 +9,7 @@
     "types"
   ],
   "scripts": {
-    "build": "rm -r ./dist/* && ./node_modules/.bin/tsc -p tsconfig.json",
+    "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -p tsconfig.json",
     "rebuild": "npm run clean && npm run build",
     "clean": "rm -rf ./dist",
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
