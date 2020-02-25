@@ -13,6 +13,7 @@ import { getAddress } from "ethers/utils";
 
 import { AuthService } from "../auth/auth.service";
 import { ConfigService } from "../config/config.service";
+import { LoggerService } from "../logger/logger.service";
 import { CFCoreProviderId, ChannelMessagingProviderId, MessagingProviderId } from "../constants";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { AbstractMessagingProvider } from "../util";
@@ -24,11 +25,12 @@ import { ChannelService, RebalanceType } from "./channel.service";
 // This should be done in the config module but i didnt want to create a circular dependency
 class ConfigMessaging extends AbstractMessagingProvider {
   constructor(
-    messaging: IMessagingService,
     private readonly cfCore: CFCore,
     private readonly configService: ConfigService,
+    logger: LoggerService,
+    messaging: IMessagingService,
   ) {
-    super(messaging);
+    super(logger, messaging);
   }
 
   async getConfig(): Promise<GetConfigResponse> {
@@ -47,12 +49,13 @@ class ConfigMessaging extends AbstractMessagingProvider {
 
 class ChannelMessaging extends AbstractMessagingProvider {
   constructor(
-    messaging: IMessagingService,
+    private readonly authService: AuthService,
     private readonly channelRepository: ChannelRepository,
     private readonly channelService: ChannelService,
-    private readonly authService: AuthService,
+    logger: LoggerService,
+    messaging: IMessagingService,
   ) {
-    super(messaging);
+    super(logger, messaging);
   }
 
   async getChannel(pubId: string, data?: unknown): Promise<GetChannelResponse> {
@@ -175,25 +178,33 @@ class ChannelMessaging extends AbstractMessagingProvider {
 
 export const channelProviderFactory: FactoryProvider<Promise<void>> = {
   inject: [
-    MessagingProviderId,
-    ChannelRepository,
-    ConfigService,
-    CFCoreProviderId,
-    ChannelService,
     AuthService,
+    CFCoreProviderId,
+    ChannelRepository,
+    ChannelService,
+    ConfigService,
+    LoggerService,
+    MessagingProviderId,
   ],
   provide: ChannelMessagingProviderId,
   useFactory: async (
-    messaging: IMessagingService,
-    channelRepo: ChannelRepository,
-    configService: ConfigService,
-    cfCore: CFCore,
-    channelService: ChannelService,
     authService: AuthService,
+    cfCore: CFCore,
+    channelRepo: ChannelRepository,
+    channelService: ChannelService,
+    configService: ConfigService,
+    logger: LoggerService,
+    messaging: IMessagingService,
   ): Promise<void> => {
-    const channel = new ChannelMessaging(messaging, channelRepo, channelService, authService);
+    const channel = new ChannelMessaging(
+      authService,
+      channelRepo,
+      channelService,
+      logger,
+      messaging,
+    );
     await channel.setupSubscriptions();
-    const config = new ConfigMessaging(messaging, cfCore, configService);
+    const config = new ConfigMessaging(cfCore, configService, logger, messaging);
     await config.setupSubscriptions();
   },
 };
