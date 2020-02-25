@@ -7,6 +7,7 @@ import { CFCoreModule } from "../cfCore/cfCore.module";
 import { ChannelModule } from "../channel/channel.module";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigModule } from "../config/config.module";
+import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 
 import { transferProviderFactory } from "./transfer.provider";
@@ -21,8 +22,12 @@ import { TransferService } from "./transfer.service";
   controllers: [],
   exports: [TransferService],
   imports: [
-    ConfigModule,
+    AuthModule,
     CFCoreModule,
+    ChannelModule,
+    ConfigModule,
+    LoggerModule,
+    MessagingModule,
     TypeOrmModule.forFeature([
       ChannelRepository,
       AppRegistryRepository,
@@ -30,9 +35,6 @@ import { TransferService } from "./transfer.service";
       PeerToPeerTransferRepository,
       TransferRepository,
     ]),
-    MessagingModule,
-    ChannelModule,
-    AuthModule,
   ],
   providers: [TransferService, transferProviderFactory],
 })

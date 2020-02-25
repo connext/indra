@@ -10,6 +10,7 @@ import { ConfigModule } from "./config/config.module";
 import { DatabaseModule } from "./database/database.module";
 import { ListenerModule } from "./listener/listener.module";
 import { LockModule } from "./lock/lock.module";
+import { LoggerModule } from "./logger/logger.module";
 import { MessagingModule } from "./messaging/messaging.module";
 import { RedisModule } from "./redis/redis.module";
 import { SwapRateModule } from "./swapRate/swapRate.module";
@@ -18,7 +19,7 @@ import { CollateralModule } from "./collateral/collateral.module";
 
 @Module({
   controllers: [CFCoreController],
-  exports: [ConfigModule],
+  exports: [ConfigModule, LoggerModule],
   imports: [
     AdminModule,
     AppRegistryModule,
@@ -30,6 +31,7 @@ import { CollateralModule } from "./collateral/collateral.module";
     DatabaseModule,
     ListenerModule,
     LockModule,
+    LoggerModule,
     MessagingModule,
     RedisModule,
     SwapRateModule,

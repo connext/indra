@@ -1,5 +1,5 @@
-import { Zero } from "ethers/constants";
-import { BigNumber, parseEther } from "ethers/utils";
+import { AddressZero, Zero } from "ethers/constants";
+import { BigNumber, formatEther, parseEther } from "ethers/utils";
 
 import { CF_METHOD_TIMEOUT, delayAndThrow } from "../lib";
 import { xpubToAddress } from "../lib/cfCore";
@@ -46,7 +46,6 @@ export class SwapController extends AbstractController {
 
     // install the swap app
     const appId = await this.swapAppInstall(amount, toAssetId, fromAssetId, swapRate, appInfo);
-
     this.log.info(`Swap app installed! Uninstalling without updating state.`);
 
     // if app installed, that means swap was accepted now uninstall
@@ -98,8 +97,9 @@ export class SwapController extends AbstractController {
     const swappedAmount = calculateExchange(amount, swapRate);
 
     this.log.info(
-      `Installing swap app. Swapping ${amount.toString()} of ${fromAssetId}` +
-        ` for ${swappedAmount.toString()} of ${toAssetId}`,
+      `Swapping ${formatEther(amount)} ${
+        fromAssetId === AddressZero ? "ETH" : "Tokens"
+      } for ${formatEther(swappedAmount)} ${toAssetId === AddressZero ? "ETH" : "Tokens"}`,
     );
 
     // NOTE: always put the initiators swap information FIRST
@@ -143,6 +143,7 @@ export class SwapController extends AbstractController {
     };
 
     const appInstanceId = await this.proposeAndInstallLedgerApp(params);
+    this.log.info(`Successfully installed swap app with id ${appInstanceId}`);
     return appInstanceId;
   };
 }

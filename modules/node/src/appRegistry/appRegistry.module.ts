@@ -5,6 +5,7 @@ import { CFCoreModule } from "../cfCore/cfCore.module";
 import { ChannelModule } from "../channel/channel.module";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ConfigModule } from "../config/config.module";
+import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { SwapRateModule } from "../swapRate/swapRate.module";
 import { TransferModule } from "../transfer/transfer.module";
@@ -21,6 +22,7 @@ import { AppRegistryService } from "./appRegistry.service";
     CFCoreModule,
     ChannelModule,
     ConfigModule,
+    LoggerModule,
     MessagingModule,
     SwapRateModule,
     TransferModule,
