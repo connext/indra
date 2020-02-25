@@ -4,6 +4,7 @@ import { NetworkContext } from "./contracts";
 import { CFCoreChannel, ChannelAppSequences, RebalanceProfile } from "./channel";
 import { IChannelProvider } from "./channelProvider";
 import { ResolveLinkedTransferResponse } from "./inputs";
+import { ILogger } from "./logger";
 import { IMessagingService, MessagingConfig } from "./messaging";
 import { ProtocolTypes } from "./protocol";
 
@@ -77,7 +78,7 @@ export interface PendingAsyncTransfer {
 
 export interface NodeInitializationParameters {
   messaging: IMessagingService;
-  logLevel?: number;
+  logger?: ILogger;
   userPublicIdentifier?: string;
   nodePublicIdentifier?: string;
   channelProvider?: IChannelProvider;

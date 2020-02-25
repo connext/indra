@@ -16,7 +16,7 @@ export class WsMessagingService implements IMessagingService {
     private readonly config: MessagingConfig,
     private readonly messagingServiceKey: string,
   ) {
-    this.log = config.log || nullLogger;
+    this.log = config.logger || nullLogger;
     this.log.debug(`Created with config: ${JSON.stringify(config, null, 2)}`);
   }
 

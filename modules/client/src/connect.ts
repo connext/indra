@@ -1,16 +1,16 @@
-import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { CF_PATH, CREATE_CHANNEL_EVENT, StateSchemaVersion } from "@connext/types";
 import "core-js/stable";
+import "regenerator-runtime/runtime";
+
+import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
+import { CF_PATH, CREATE_CHANNEL_EVENT, ILogger, StateSchemaVersion } from "@connext/types";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
-import "regenerator-runtime/runtime";
 
 import { createCFChannelProvider } from "./channelProvider";
 import { ConnextClient } from "./connext";
-import { getDefaultOptions, isWalletProvided, getDefaultStore } from "./lib/default";
-import { delayAndThrow, Logger, stringify } from "./lib";
+import { delayAndThrow, getDefaultOptions, getDefaultStore, Logger, stringify } from "./lib";
 import { NodeApiClient } from "./node";
 import {
   CFCoreTypes,
@@ -23,16 +23,9 @@ import {
   INodeApiClient,
 } from "./types";
 
-const exists = (obj: any): boolean => {
-  return !!obj && !!Object.keys(obj).length;
-};
-
-const createMessagingService = async (
-  messagingUrl: string,
-  logLevel: number,
-): Promise<IMessagingService> => {
+const createMessagingService = async (messagingUrl: string): Promise<IMessagingService> => {
   // create a messaging service client
-  const messagingFactory = new MessagingServiceFactory({ logLevel, messagingUrl });
+  const messagingFactory = new MessagingServiceFactory({ messagingUrl });
   const messaging = messagingFactory.createService("messaging");
   await messaging.connect();
   return messaging;
@@ -41,7 +34,7 @@ const createMessagingService = async (
 const setupMultisigAddress = async (
   node: INodeApiClient,
   channelProvider: IChannelProvider,
-  log: Logger,
+  log: ILogger,
 ): Promise<IChannelProvider> => {
   const myChannel = await node.getChannel();
 
@@ -80,15 +73,15 @@ export const connect = async (
       ? await getDefaultOptions(clientOptions, overrideOptions)
       : clientOptions;
   const {
-    logLevel,
-    ethProviderUrl,
-    nodeUrl,
-    mnemonic,
     channelProvider: providedChannelProvider,
+    ethProviderUrl,
+    logger,
+    mnemonic,
+    nodeUrl,
   } = opts;
   let { xpub, keyGen, store, messaging } = opts;
 
-  const log = new Logger("ConnextConnect", logLevel);
+  const log = (logger || new Logger("ConnextConnect", opts.logLevel)) as ILogger;
 
   // setup ethProvider + network information
   log.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
@@ -105,20 +98,20 @@ export const connect = async (
 
   if (providedChannelProvider) {
     channelProvider = providedChannelProvider;
-    if (!exists(channelProvider.config)) {
+    if (typeof channelProvider.config === "undefined") {
       await channelProvider.enable();
     }
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);
 
     log.debug(`Creating messaging service client ${channelProvider.config.nodeUrl}`);
     if (!messaging) {
-      messaging = await createMessagingService(channelProvider.config.nodeUrl, logLevel);
+      messaging = await createMessagingService(channelProvider.config.nodeUrl);
     } else {
       await messaging.connect();
     }
 
     // create a new node api instance
-    node = new NodeApiClient({ channelProvider, logLevel, messaging });
+    node = new NodeApiClient({ channelProvider, logger: log, messaging });
     config = await node.config();
     log.debug(`Node provided config: ${stringify(config)}`);
 
@@ -128,14 +121,12 @@ export const connect = async (
     node.nodePublicIdentifier = config.nodePublicIdentifier;
 
     isInjected = true;
-  } else if (isWalletProvided(opts)) {
+  } else if (opts && (opts.mnemonic || (opts.xpub && opts.keyGen))) {
     if (!nodeUrl) {
       throw new Error("Client must be instantiated with nodeUrl if not using a channelProvider");
     }
 
-    if (!store) {
-      store = getDefaultStore(opts);
-    }
+    store = store || getDefaultStore(opts);
 
     if (mnemonic) {
       log.debug(`Creating channelProvider with mnemonic: ${mnemonic}`);
@@ -151,13 +142,13 @@ export const connect = async (
 
     log.debug(`Creating messaging service client ${nodeUrl}`);
     if (!messaging) {
-      messaging = await createMessagingService(nodeUrl, logLevel);
+      messaging = await createMessagingService(nodeUrl);
     } else {
       await messaging.connect();
     }
 
     // create a new node api instance
-    node = new NodeApiClient({ logLevel, messaging });
+    node = new NodeApiClient({ logger: log, messaging });
     config = await node.config();
     log.debug(`Node provided config: ${stringify(config)}`);
 
@@ -206,6 +197,7 @@ export const connect = async (
     config,
     ethProvider,
     keyGen,
+    logger: log,
     messaging,
     network,
     node,

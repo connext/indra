@@ -43,7 +43,7 @@ export interface IRpcNodeProvider {
 
 export interface MessagingConfig {
   clusterId?: string;
-  log?: ILogger;
+  logger?: ILogger;
   messagingUrl: string | string[];
   options?: any;
   token?: string;

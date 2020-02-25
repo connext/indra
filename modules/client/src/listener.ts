@@ -1,7 +1,8 @@
-import { bigNumberify, formatEther } from "ethers/utils";
+import { ILogger } from "@connext/types";
+import { bigNumberify } from "ethers/utils";
 
 import { ConnextClient } from "./connext";
-import { Logger, stringify } from "./lib";
+import { stringify } from "./lib";
 import {
   CFCoreTypes,
   CreateChannelMessage,
@@ -52,7 +53,7 @@ type CallbackStruct = {
 };
 
 export class ConnextListener extends ConnextEventEmitter {
-  private log: Logger;
+  private log: ILogger;
   private channelProvider: IChannelProvider;
   private connext: ConnextClient;
 
@@ -69,8 +70,7 @@ export class ConnextListener extends ConnextEventEmitter {
       this.emitAndLog(DEPOSIT_FAILED_EVENT, msg.data);
     },
     DEPOSIT_STARTED_EVENT: (msg: DepositStartedMessage): void => {
-      const { value, txHash } = msg.data;
-      this.log.info(`Deposit transaction: ${txHash}`);
+      this.log.info(`Deposit transaction: ${msg.data.txHash}`);
       this.emitAndLog(DEPOSIT_STARTED_EVENT, msg.data);
     },
     INSTALL_EVENT: (msg: InstallMessage): void => {
@@ -143,11 +143,7 @@ export class ConnextListener extends ConnextEventEmitter {
       this.emitAndLog(WITHDRAWAL_FAILED_EVENT, msg.data);
     },
     WITHDRAWAL_STARTED_EVENT: (msg: WithdrawStartedMessage): void => {
-      const {
-        params: { amount },
-        txHash,
-      } = msg.data;
-      this.log.info(`Withdrawal transaction: ${txHash}`);
+      this.log.info(`Withdrawal transaction: ${msg.data.txHash}`);
       this.emitAndLog(WITHDRAWAL_STARTED_EVENT, msg.data);
     },
   };
@@ -156,7 +152,7 @@ export class ConnextListener extends ConnextEventEmitter {
     super();
     this.channelProvider = channelProvider;
     this.connext = connext;
-    this.log = new Logger("ConnextListener", connext.log.logLevel);
+    this.log = connext.log.newContext("ConnextListener");
   }
 
   public register = async (): Promise<void> => {

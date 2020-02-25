@@ -22,6 +22,7 @@ import {
   TransferParameters,
   WithdrawParameters,
 } from "./inputs";
+import { ILogger } from "./logger";
 import { IMessagingService } from "./messaging";
 import {
   CreateChannelResponse,
@@ -40,6 +41,7 @@ export type InternalClientOptions = ClientOptions & {
   channelProvider: IChannelProvider;
   config: GetConfigResponse;
   ethProvider: JsonRpcProvider;
+  logger: ILogger;
   messaging: IMessagingService;
   network: Network;
   node: INodeApiClient;
@@ -57,6 +59,7 @@ export interface ClientOptions {
   xpub?: string;
   store?: Store;
   logLevel?: number;
+  logger?: ILogger;
   asyncStorage?: IAsyncStorage;
   messaging?: IMessagingService;
   backupService?: IBackupServiceAPI;

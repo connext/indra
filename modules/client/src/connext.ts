@@ -5,6 +5,7 @@ import {
   IChannelProvider,
   LinkedTransferToRecipientParameters,
   LINKED_TRANSFER_TO_RECIPIENT,
+  ILogger,
   chan_storeGet,
   chan_storeSet,
   chan_restoreState,
@@ -25,7 +26,7 @@ import { RequestDepositRightsController } from "./controllers/RequestDepositRigh
 import { ResolveConditionController } from "./controllers/ResolveConditionController";
 import { SwapController } from "./controllers/SwapController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
-import { Logger, stringify, withdrawalKey, xpubToAddress } from "./lib";
+import { stringify, withdrawalKey, xpubToAddress } from "./lib";
 import { ConnextListener } from "./listener";
 import {
   Address,
@@ -82,7 +83,7 @@ export class ConnextClient implements IConnextClient {
   public ethProvider: providers.JsonRpcProvider;
   public freeBalanceAddress: string;
   public listener: ConnextListener;
-  public log: Logger;
+  public log: ILogger;
   public messaging: IMessagingService;
   public multisigAddress: Address;
   public network: Network;
@@ -121,7 +122,7 @@ export class ConnextClient implements IConnextClient {
     this.publicIdentifier = this.channelProvider.config.userPublicIdentifier;
     this.multisigAddress = this.channelProvider.config.multisigAddress;
     this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
-    this.log = new Logger("ConnextClient", opts.logLevel);
+    this.log = opts.logger.newContext("ConnextClient");
 
     // establish listeners
     this.listener = new ConnextListener(opts.channelProvider, this);

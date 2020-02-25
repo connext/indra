@@ -1,15 +1,15 @@
-import { CFCoreTypes, IChannelProvider, REJECT_INSTALL_EVENT } from "@connext/types";
+import { CFCoreTypes, IChannelProvider, ILogger, REJECT_INSTALL_EVENT } from "@connext/types";
 import { providers } from "ethers";
 
 import { ConnextClient } from "../connext";
-import { CF_METHOD_TIMEOUT, delayAndThrow, Logger, stringify } from "../lib";
+import { CF_METHOD_TIMEOUT, delayAndThrow, stringify } from "../lib";
 import { ConnextListener } from "../listener";
 import { INodeApiClient } from "../types";
 
 export abstract class AbstractController {
   public name: string;
   public connext: ConnextClient;
-  public log: Logger;
+  public log: ILogger;
   public node: INodeApiClient;
   public channelProvider: IChannelProvider;
   public listener: ConnextListener;
@@ -21,7 +21,7 @@ export abstract class AbstractController {
     this.node = connext.node;
     this.channelProvider = connext.channelProvider;
     this.listener = connext.listener;
-    this.log = new Logger(name, connext.log.logLevel);
+    this.log = this.log.newContext(name);
     this.ethProvider = connext.ethProvider;
   }
 

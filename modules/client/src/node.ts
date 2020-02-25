@@ -1,8 +1,9 @@
 import { IMessagingService } from "@connext/messaging";
+import { ILogger } from "@connext/types";
 import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
 import uuid from "uuid";
-import { Logger, NATS_ATTEMPTS, NATS_TIMEOUT, stringify } from "./lib";
+import { NATS_ATTEMPTS, NATS_TIMEOUT, stringify } from "./lib";
 import {
   AppRegistry,
   CFCoreTypes,
@@ -35,7 +36,7 @@ const sendFailed = "Failed to send message";
 export class NodeApiClient implements INodeApiClient {
   public messaging: IMessagingService;
   public latestSwapRates: { [key: string]: string } = {};
-  public log: Logger;
+  public log: ILogger;
 
   private _userPublicIdentifier: string | undefined;
   private _nodePublicIdentifier: string | undefined;
@@ -44,7 +45,7 @@ export class NodeApiClient implements INodeApiClient {
 
   constructor(opts: NodeInitializationParameters) {
     this.messaging = opts.messaging;
-    this.log = new Logger("NodeApiClient", opts.logLevel);
+    this.log = opts.logger.newContext("NodeApiClient");
     this._userPublicIdentifier = opts.userPublicIdentifier;
     this._nodePublicIdentifier = opts.nodePublicIdentifier;
     this._channelProvider = opts.channelProvider;
