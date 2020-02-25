@@ -7,7 +7,6 @@ import {
   ConnextEventEmitter,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
-import { signMessage } from "@connext/crypto";
 import { Wallet } from "ethers";
 
 import { CFCore, deBigNumberifyJson, xpubToAddress } from "./lib";
