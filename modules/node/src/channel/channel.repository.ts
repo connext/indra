@@ -1,58 +1,18 @@
-import { StateChannelJSON, AppInstanceJson, AppInstanceProposal } from "@connext/types";
+import { StateChannelJSON } from "@connext/types";
 import { NotFoundException } from "@nestjs/common";
 import { AddressZero } from "ethers/constants";
 import { EntityManager, EntityRepository, Repository } from "typeorm";
 
-import { AppInstance } from "../appInstance/appInstance.entity";
+import {
+  convertAppToInstanceJSON,
+  convertAppToProposedInstanceJSON,
+} from "../appInstance/appInstance.repository";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 import { CLogger } from "../util";
 
 import { Channel } from "./channel.entity";
 
 const logger = new CLogger("ChannelRepository");
-
-const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): AppInstanceJson => {
-  return {
-    appInterface: app.appInterface,
-    appSeqNo: app.appSeqNo,
-    defaultTimeout: parseInt(app.timeout), // TODO: is this right?
-    identityHash: app.identityHash,
-    isVirtualApp: false, // hardcode
-    latestState: app.latestState,
-    latestTimeout: app.latestTimeout,
-    latestVersionNumber: app.latestVersionNumber,
-    multisigAddress: channel.multisigAddress,
-    outcomeType: (app.outcomeType as unknown) as number,
-    participants: channel.userNeuteredExtendedKeys,
-    multiAssetMultiPartyCoinTransferInterpreterParams:
-      app.multiAssetMultiPartyCoinTransferInterpreterParams,
-    singleAssetTwoPartyCoinTransferInterpreterParams:
-      app.singleAssetTwoPartyCoinTransferInterpreterParams,
-    twoPartyOutcomeInterpreterParams: app.twoPartyOutcomeInterpreterParams,
-  };
-};
-
-const convertAppToProposedInstanceJSON = (app: AppInstance): AppInstanceProposal => {
-  return {
-    abiEncodings,
-    appDefinition,
-    appSeqNo,
-    identityHash,
-    initialState,
-    initiatorDeposit,
-    initiatorDepositTokenAddress,
-    outcomeType,
-    proposedByIdentifier,
-    proposedToIdentifier,
-    responderDeposit,
-    responderDepositTokenAddress,
-    timeout,
-    intermediaryIdentifier,
-    multiAssetMultiPartyCoinTransferInterpreterParams,
-    singleAssetTwoPartyCoinTransferInterpreterParams,
-    twoPartyOutcomeInterpreterParams
-  }
-}
 
 const convertChannelToJSON = (channel: Channel): StateChannelJSON => {
   return {
@@ -64,38 +24,71 @@ const convertChannelToJSON = (channel: Channel): StateChannelJSON => {
     freeBalanceAppInstance: convertAppToInstanceJSON(channel.freeBalanceAppInstance, channel),
     monotonicNumProposedApps: channel.monotonicNumProposedApps,
     multisigAddress: channel.multisigAddress,
-    proposedAppInstances,
-    schemaVersion,
-    singleAssetTwoPartyIntermediaryAgreements,
-    userNeuteredExtendedKeys,
+    proposedAppInstances: channel.proposedAppInstances.map(app => [
+      app.identityHash,
+      convertAppToProposedInstanceJSON(app),
+    ]),
+    schemaVersion: channel.schemaVersion,
+    singleAssetTwoPartyIntermediaryAgreements: channel.singleAssetTwoPartyIntermediaryAgreements,
+    userNeuteredExtendedKeys: [channel.nodePublicIdentifier, channel.userPublicIdentifier],
   };
 };
 
 @EntityRepository(Channel)
 export class ChannelRepository extends Repository<Channel> {
-  async findAll(available: boolean = true): Promise<Channel[]> {
-    return await this.find({ where: { available } });
-  }
-
-  async findByMultisigAddress(multisigAddress: string): Promise<Channel | undefined> {
-    return await this.findOne({
-      where: { multisigAddress },
-    });
-  }
-
-  async findByMultisigAddressAsJSON(
-    multisigAddress: string,
-  ): Promise<StateChannelJSON | undefined> {
+  async getStateChannel(multisigAddress: string): Promise<StateChannelJSON | undefined> {
     const channel = await this.findByMultisigAddress(multisigAddress);
     if (!channel) {
       return undefined;
     }
+    return convertChannelToJSON(channel);
+  }
+
+  async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON | undefined> {
+    const [channel] = (
+      await Promise.all(owners.map(owner => this.findByUserPublicIdentifier(owner)))
+    ).filter(chan => !!chan);
+    if (!channel) {
+      return undefined;
+    }
+    return convertChannelToJSON(channel);
+  }
+
+  async getStateChannelByAppInstanceId(
+    appInstanceId: string,
+  ): Promise<StateChannelJSON | undefined> {
+    const channel = await this.findByAppInstanceId(appInstanceId);
+    if (!channel) {
+      return undefined;
+    }
+    return convertChannelToJSON(channel);
+  }
+
+  async findAll(available: boolean = true): Promise<Channel[]> {
+    return this.find({ where: { available } });
+  }
+
+  async findByMultisigAddress(multisigAddress: string): Promise<Channel | undefined> {
+    return this.findOne({
+      where: { multisigAddress },
+    });
   }
 
   async findByUserPublicIdentifier(userPublicIdentifier: string): Promise<Channel | undefined> {
-    return await this.findOne({
+    return this.findOne({
       where: { userPublicIdentifier },
     });
+  }
+
+  async findByAppInstanceId(appInstanceId: string): Promise<Channel | undefined> {
+    return this.createQueryBuilder("channel")
+      .leftJoinAndSelect("channel.proposedAppInstances", "proposedAppInstance")
+      .leftJoinAndSelect("channel.appInstances", "appInstance")
+      .leftJoinAndSelect("channel.freeBalanceAppInstance", "freeBalanceAppInstance")
+      .where("proposedAppInstance.identityHash = :appInstanceId", { appInstanceId })
+      .orWhere("appInstance.identityHash = :appInstanceId", { appInstanceId })
+      .orWhere("freeBalanceAppInstance.identityHash = :appInstanceId", { appInstanceId })
+      .getOne();
   }
 
   async addRebalanceProfileToChannel(

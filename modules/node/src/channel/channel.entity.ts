@@ -29,9 +29,6 @@ export class Channel {
   @Column("json")
   addresses!: CriticalStateChannelAddresses;
 
-  @Column("array")
-  userNeuteredExtendedKeys!: string[];
-
   @Column("text")
   @IsXpub()
   userPublicIdentifier!: string;
@@ -56,6 +53,12 @@ export class Channel {
     (appInstance: AppInstance) => appInstance.channel,
   )
   appInstances!: AppInstance[];
+
+  @OneToMany(
+    (type: any) => AppInstance,
+    (appInstance: AppInstance) => appInstance.channel,
+  )
+  proposedAppInstances!: AppInstance[];
 
   @OneToOne(
     (type: any) => AppInstance,

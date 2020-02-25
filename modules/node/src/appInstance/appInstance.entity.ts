@@ -1,22 +1,16 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm";
 import { IsEthAddress, IsKeccak256Hash, IsXpub } from "src/util";
-import {
-  SolidityValueType,
-  OutcomeType,
-  TwoPartyFixedOutcomeInterpreterParams,
-  MultiAssetMultiPartyCoinTransferInterpreterParams,
-  SingleAssetTwoPartyCoinTransferInterpreterParams,
-  AppInterface,
-} from "@connext/types";
-import { Channel } from "src/channel/channel.entity";
+import { SolidityValueType, OutcomeType, AppABIEncodings } from "@connext/types";
 
-enum AppType {
+import { Channel } from "../channel/channel.entity";
+
+export enum AppType {
   PROPOSAL,
   INSTANCE,
   FREE_BALANCE,
 }
 
-@Entity()
+@Entity("app_instance")
 export class AppInstance {
   @PrimaryGeneratedColumn()
   id!: number;
@@ -29,7 +23,7 @@ export class AppInstance {
   appDefinition!: string;
 
   @Column("json")
-  appInterface!: AppInterface;
+  abiEncodings!: AppABIEncodings;
 
   @Column("number")
   appSeqNo!: number;
