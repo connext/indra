@@ -7,10 +7,12 @@ project="`cat $dir/../package.json | grep '"name":' | head -n 1 | cut -d '"' -f 
 # Turn on swarm mode if it's not already on
 docker swarm init 2> /dev/null || true
 
+localProvider="http://ethprovider:8545"
+
 ####################
 # External Env Vars
 
-INDRA_ETH_NETWORK="${INDRA_ETH_NETWORK:-ganache}"
+INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER:-$localProvider}"
 INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-foo}"
 INDRA_UI="${INDRA_UI:-daicard}"
 
@@ -19,12 +21,12 @@ INDRA_UI="${INDRA_UI:-daicard}"
 # config & hard-coded stuff you might want to change
 
 number_of_services=5 # NOTE: Gotta update this manually when adding/removing services :(
-
 log_level=3
 nats_port=4222
 node_port=8080
 dash_port=9999
-port=3000
+ui_port=3000
+ganacheId="4447"
 
 # Prefer top-level address-book override otherwise default to one in contracts
 if [[ -f address-book.json ]]
@@ -33,30 +35,24 @@ else eth_contract_addresses="`cat modules/contracts/address-book.json | tr -d ' 
 fi
 eth_mnemonic="candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
 
-# TODO, could not get the command to work with a variable
-# token_address="`echo $eth_contract_addresses | jq '.["$chainId"].Token.address' | tr -d '"'`"
-if [[ "$INDRA_ETH_NETWORK" == "rinkeby" ]]
-then 
-  eth_rpc_url="https://rinkeby.infura.io/metamask"
-  token_address="`echo $eth_contract_addresses | jq '.["4"].Token.address' | tr -d '"'`"
-elif [[ "$INDRA_ETH_NETWORK" == "kovan" ]]
-then 
-  eth_rpc_url="https://kovan.infura.io/metamask"
-  token_address="`echo $eth_contract_addresses | jq '.["42"].Token.address' | tr -d '"'`"
-elif [[ "$INDRA_ETH_NETWORK" == "ganache" ]]
-then
-  eth_rpc_url="http://ethprovider:8545"
-  token_address="`echo $eth_contract_addresses | jq '.["4447"].Token.address' | tr -d '"'`"
-  make deployed-contracts
+if [[ "$INDRA_ETH_PROVIDER" == "$localProvider" ]]
+then chainId="$ganacheId"
 else
-  eth_rpc_url="${INDRA_ETH_PROVIDER}"
+  echo "Fetching chainId from ${INDRA_ETH_PROVIDER}"
+  chainId="`curl -q -k -s -H "Content-Type: application/json" -X POST --data '{"id":1,"jsonrpc":"2.0","method":"net_version","params":[]}' $INDRA_ETH_PROVIDER | jq .result | tr -d '"'`"
 fi
 
-if [[ -z "$eth_rpc_url" ]]
-then echo "An env var called 'INDRA_ETH_PROVIDER' is required or you must be running on ganache" && exit 1
-fi
-
+token_address="`echo $eth_contract_addresses | jq '.["'"$chainId"'"].Token.address' | tr -d '"'`"
 allowed_swaps="[{\"from\":\"$token_address\",\"to\":\"0x0000000000000000000000000000000000000000\",\"priceOracleType\":\"UNISWAP\"},{\"from\":\"0x0000000000000000000000000000000000000000\",\"to\":\"$token_address\",\"priceOracleType\":\"UNISWAP\"}]"
+
+if [[ -z "$chainId" ]]
+then echo "Failed to fetch chainId from provider ${INDRA_ETH_PROVIDER}" && exit 1;
+else echo "Got chainId $chainId, using token $token_address"
+fi
+
+if [[ "$chainId" == "$ganacheId" ]]
+then make deployed-contracts
+fi
 
 # database connection settings
 pg_db="$project"
@@ -102,14 +98,14 @@ else
     image: $proxy_image
     environment:
       DOMAINNAME: localhost
-      ETH_RPC_URL: $eth_rpc_url
+      ETH_RPC_URL: $INDRA_ETH_PROVIDER
       MESSAGING_URL: http://relay:4223
       MODE: $proxy_mode
       UI_URL: $proxy_ui_url
     networks:
       - $project
     ports:
-      - "$port:80"
+      - "$ui_port:80"
     volumes:
       - certs:/etc/letsencrypt
 
@@ -194,7 +190,7 @@ services:
       INDRA_ALLOWED_SWAPS: '$allowed_swaps'
       INDRA_ETH_CONTRACT_ADDRESSES: '$eth_contract_addresses'
       INDRA_ETH_MNEMONIC: $eth_mnemonic
-      INDRA_ETH_RPC_URL: $eth_rpc_url
+      INDRA_ETH_RPC_URL: $INDRA_ETH_PROVIDER
       INDRA_LOG_LEVEL: $log_level
       INDRA_NATS_CLUSTER_ID:
       INDRA_NATS_SERVERS: nats://nats:$nats_port

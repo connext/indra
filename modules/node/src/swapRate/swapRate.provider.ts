@@ -1,28 +1,28 @@
 import { IMessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { AddressZero } from "ethers/constants";
 import { getAddress } from "ethers/utils";
 
 import { ConfigService } from "../config/config.service";
+import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, SwapRateProviderId } from "../constants";
-import { AbstractMessagingProvider, CLogger } from "../util";
+import { AbstractMessagingProvider } from "../util";
 
 import { SwapRateService } from "./swapRate.service";
 
-const logger = new CLogger("ChannelService");
-
 export class SwapRateMessaging extends AbstractMessagingProvider {
   constructor(
-    private readonly swapRateService: SwapRateService,
     private readonly config: ConfigService,
-    public messaging: IMessagingService,
+    logger: LoggerService,
+    messaging: IMessagingService,
+    private readonly swapRateService: SwapRateService,
   ) {
-    super(messaging);
+    super(logger, messaging);
+    this.logger.setContext("SwapRateMessaging");
   }
 
   async getLatestSwapRate(subject: string): Promise<string> {
-    const pieces = subject.split(".");
-    const [subj, from, to] = pieces;
+    const from = subject.split(".")[1];
+    const to = subject.split(".")[2];
     return this.swapRateService.getOrFetchRate(getAddress(from), getAddress(to));
   }
 
@@ -32,14 +32,15 @@ export class SwapRateMessaging extends AbstractMessagingProvider {
 }
 
 export const swapRateProviderFactory: FactoryProvider<Promise<IMessagingService>> = {
-  inject: [MessagingProviderId, ConfigService, SwapRateService],
+  inject: [ConfigService, LoggerService, MessagingProviderId, SwapRateService],
   provide: SwapRateProviderId,
   useFactory: async (
-    messaging: IMessagingService,
     config: ConfigService,
+    logger: LoggerService,
+    messaging: IMessagingService,
     swapRateService: SwapRateService,
   ): Promise<IMessagingService> => {
-    const swapRate = new SwapRateMessaging(swapRateService, config, messaging);
+    const swapRate = new SwapRateMessaging(config, logger, messaging, swapRateService);
     await swapRate.setupSubscriptions();
     return messaging;
   },

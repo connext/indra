@@ -21,6 +21,7 @@ build/
 dist/
 node_modules/
 .makeflags
+modules/test-runner/*.0x/
 
 # Logs
 lerna-debug.log*

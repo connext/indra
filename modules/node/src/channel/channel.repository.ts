@@ -7,12 +7,12 @@ import {
   convertAppToInstanceJSON,
   convertAppToProposedInstanceJSON,
 } from "../appInstance/appInstance.repository";
+import { LoggerService } from "../logger/logger.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { CLogger } from "../util";
 
 import { Channel } from "./channel.entity";
 
-const logger = new CLogger("ChannelRepository");
+const logger = new LoggerService("ChannelRepository");
 
 const convertChannelToJSON = (channel: Channel): StateChannelJSON => {
   return {
@@ -114,7 +114,7 @@ export class ChannelRepository extends Repository<Channel> {
       await transactionalEntityManager.save(rebalanceProfile);
 
       if (existing) {
-        logger.log(`Found existing profile for token ${rebalanceProfile.assetId}, replacing`);
+        logger.debug(`Found existing profile for token ${rebalanceProfile.assetId}, replacing`);
         await transactionalEntityManager
           .createQueryBuilder()
           .relation(Channel, "rebalanceProfiles")
