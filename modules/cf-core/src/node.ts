@@ -92,7 +92,7 @@ export class Node {
     public readonly log: ILogger = nullLogger,
     private readonly lockService?: CFCoreTypes.ILockService,
   ) {
-    this.log = log.newContext("CFCoreNode");
+    this.log = log.newContext("CF-Node");
     this.networkContext.provider = this.provider;
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
