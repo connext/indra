@@ -71,12 +71,14 @@ export class ChannelRepository extends Repository<Channel> {
   async findByMultisigAddress(multisigAddress: string): Promise<Channel | undefined> {
     return this.findOne({
       where: { multisigAddress },
+      relations: ["proposedAppInstances", "appInstances", "freeBalanceAppInstance"],
     });
   }
 
   async findByUserPublicIdentifier(userPublicIdentifier: string): Promise<Channel | undefined> {
     return this.findOne({
       where: { userPublicIdentifier },
+      relations: ["proposedAppInstances", "appInstances", "freeBalanceAppInstance"],
     });
   }
 

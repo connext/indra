@@ -61,6 +61,7 @@ export class AppInstanceRepository extends Repository<AppInstance> {
       where: {
         identityHash,
       },
+      relations: ["channel"],
     });
   }
 
@@ -69,7 +70,6 @@ export class AppInstanceRepository extends Repository<AppInstance> {
     if (!app) {
       return undefined;
     }
-
-    return 
+    return convertAppToInstanceJSON(app, app.channel);
   }
 }

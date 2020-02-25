@@ -3,6 +3,7 @@ import { IStoreService, StateChannelJSON, AppInstanceJson, ProtocolTypes } from 
 
 import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
+import { CommitmentRepository } from "../commitment/commitment.repository";
 import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 
@@ -11,6 +12,7 @@ export class CFCoreStore implements IStoreService {
   constructor(
     private readonly channelRepository: ChannelRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
+    private readonly commitmentRepository: CommitmentRepository,
   ) {}
 
   async getAllChannels(): Promise<StateChannelJSON[]> {
@@ -87,36 +89,44 @@ export class CFCoreStore implements IStoreService {
   }
 
   getAppInstance(appInstanceId: string): Promise<AppInstanceJson> {
-    throw new Error("Method not implemented.");
+    return this.appInstanceRepository.getAppInstance(appInstanceId);
   }
 
   saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
     throw new Error("Method not implemented.");
   }
+
   getCommitment(commitmentHash: string): Promise<ProtocolTypes.MinimalTransaction> {
-    throw new Error("Method not implemented.");
+    return this.commitmentRepository.getCommitment(commitmentHash);
   }
+
   saveCommitment(commitmentHash: string, commitment: any[]): Promise<void> {
-    throw new Error("Method not implemented.");
+    return this.commitmentRepository.saveCommitment(commitmentHash, commitment);
   }
+
   getWithdrawalCommitment(multisigAddress: string): Promise<ProtocolTypes.MinimalTransaction> {
-    throw new Error("Method not implemented.");
+    return this.commitmentRepository.getWithdrawalCommitment(multisigAddress);
   }
+
   saveWithdrawalCommitment(
     multisigAddress: string,
     commitment: ProtocolTypes.MinimalTransaction,
   ): Promise<void> {
-    throw new Error("Method not implemented.");
+    return this.commitmentRepository.saveWithdrawalCommitment(multisigAddress, commitment);
   }
+
   getExtendedPrvKey(): Promise<string> {
     throw new Error("Method not implemented.");
   }
+
   saveExtendedPrvKey(extendedPrvKey: string): Promise<void> {
     throw new Error("Method not implemented.");
   }
+
   clear(): Promise<void> {
     throw new Error("Method not implemented.");
   }
+
   restore(): Promise<void> {
     throw new Error("Method not implemented.");
   }
