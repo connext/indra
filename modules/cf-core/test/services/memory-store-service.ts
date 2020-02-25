@@ -70,11 +70,11 @@ export class MemoryStoreService implements CFCoreTypes.IStoreService {
     appInstanceId: string,
   ): Promise<StateChannelJSON | undefined> {
     return [...this.channels.values()].find(channel => {
-      const sc = StateChannel.fromJson(channel);
       return (
-        sc.proposedAppInstances.get(appInstanceId) ||
-        sc.appInstances.get(appInstanceId) ||
-        sc.freeBalance.identityHash === appInstanceId
+        channel.proposedAppInstances.find(([app]) => app === appInstanceId) ||
+        channel.appInstances.find(([app]) => app === appInstanceId) ||
+        (channel.freeBalanceAppInstance &&
+          channel.freeBalanceAppInstance.identityHash === appInstanceId)
       );
     });
   }
@@ -90,6 +90,7 @@ export class MemoryStoreService implements CFCoreTypes.IStoreService {
       if (appExists) {
         app = appExists.toJson();
       }
+      return appExists;
     });
     return app;
   }

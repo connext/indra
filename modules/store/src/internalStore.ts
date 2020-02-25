@@ -6,6 +6,7 @@ import {
   wrapStorage,
   ChannelsMap,
 } from "./helpers";
+import { StateChannelJSON } from "@connext/types";
 
 class InternalStore {
   private wrappedStorage: WrappedStorage;
@@ -23,7 +24,7 @@ class InternalStore {
     return this.wrappedStorage;
   }
 
-  async getItem(path: string): Promise<string | null> {
+  async getItem(path: string): Promise<any | null> {
     const store = await this.getStore();
     let result = await store.getItem(`${path}`);
     if (result) {
@@ -63,6 +64,56 @@ class InternalStore {
   async clear(): Promise<void> {
     const store = await this.getStore();
     await store.clear(this.channelPrefix);
+  }
+
+  async getAllChannels(): Promise<StateChannelJSON[]> {
+    throw new Error("Method not implemented.");
+  }
+
+  async getStateChannel(multisigAddress: string): Promise<StateChannelJSON> {
+    const store = await this.getStore();
+  }
+
+  async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON> {
+    const store = await this.getStore();
+  }
+  async getStateChannelByAppInstanceId(appInstanceId: string): Promise<StateChannelJSON> {
+    const store = await this.getStore();
+  }
+  async saveStateChannel(stateChannel: StateChannelJSON): Promise<void> {
+    const store = await this.getStore();
+  }
+  async getAppInstance(appInstanceId: string): Promise<AppInstanceJson> {
+    const store = await this.getStore();
+  }
+  async saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  async getCommitment(commitmentHash: string): Promise<ProtocolTypes.MinimalTransaction> {
+    throw new Error("Method not implemented.");
+  }
+  async saveCommitment(commitmentHash: string, commitment: any[]): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  async getWithdrawalCommitment(
+    multisigAddress: string,
+  ): Promise<ProtocolTypes.MinimalTransaction> {
+    throw new Error("Method not implemented.");
+  }
+  async saveWithdrawalCommitment(
+    multisigAddress: string,
+    commitment: ProtocolTypes.MinimalTransaction,
+  ): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  getExtendedPrvKey(): Promise<string> {
+    throw new Error("Method not implemented.");
+  }
+  saveExtendedPrvKey(extendedPrvKey: string): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+  async restore(): Promise<void> {
+    throw new Error("Method not implemented.");
   }
 }
 
