@@ -1,12 +1,7 @@
 import { ILogger } from "@connext/types";
 
 export class Logger implements ILogger {
-  private levels: { [key: string]: number } = {
-    debug: 4,
-    error: 1,
-    info: 3,
-    warn: 2,
-  };
+  private levels: { [key: string]: number } = { debug: 4, error: 1, info: 3, warn: 2 };
   private defaultLevel = "info";
   private context = "Logger";
   public logLevel = 3;

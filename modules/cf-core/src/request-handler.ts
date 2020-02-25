@@ -130,13 +130,22 @@ export class RequestHandler {
       await controllerExecutionMethod(this, msg);
     }
 
-    this.log.info(
-      `Event ${
-        event !== PROTOCOL_MESSAGE_EVENT
-          ? event
-          : `for ${(msg as NodeMessageWrappedProtocolMessage).data.protocol} protocol`
-      } was processed in ${Date.now() - start} ms`,
-    );
+    const diff = Date.now() - start;
+    const message = `Event ${
+      event !== PROTOCOL_MESSAGE_EVENT
+        ? event
+        : `for ${(msg as NodeMessageWrappedProtocolMessage).data.protocol} protocol`
+    } was processed in ${diff} ms`;
+
+    if (diff < 10) {
+      this.log.debug(message);
+    } else if (diff < 100) {
+      this.log.info(message);
+    } else if (diff < 1000) {
+      this.log.warn(message);
+    } else {
+      this.log.error(message);
+    }
     this.router.emit(event, msg);
   }
 
