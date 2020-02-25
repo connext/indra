@@ -41,6 +41,8 @@ export const cfCoreProviderFactory: Provider = {
       (uniqueId: string): Promise<string> => {
         return Promise.resolve(hdNode.derivePath(uniqueId).privateKey);
       },
+      undefined,
+      log.newContext("CFCore"),
     );
     const signerAddr = await cfCore.signerAddress();
     const balance = (await provider.getBalance(signerAddr)).toString();

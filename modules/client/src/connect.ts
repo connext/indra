@@ -169,6 +169,7 @@ export const connect = async (
       nodeUrl,
       store,
       xpub,
+      logger: log,
     });
 
     log.debug(`Using channelProvider config: ${stringify(channelProvider.config)}`);

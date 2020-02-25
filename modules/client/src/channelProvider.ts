@@ -30,6 +30,7 @@ export const createCFChannelProvider = async ({
   nodeUrl,
   store,
   xpub,
+  logger,
 }: CFChannelProviderOptions): Promise<IChannelProvider> => {
   const cfCore = await CFCore.create(
     messaging as any,

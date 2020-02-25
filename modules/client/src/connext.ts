@@ -222,6 +222,7 @@ export class ConnextClient implements IConnextClient {
       nodeUrl: this.channelProvider.config.nodeUrl,
       store: this.store,
       xpub: this.publicIdentifier,
+      logger: this.log.newContext("CFChannelProvider"),
     });
     // TODO: this is very confusing to have to do, lets try to figure out a better way
     channelProvider.multisigAddress = this.multisigAddress;
