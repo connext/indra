@@ -170,6 +170,9 @@ dls:
 	@echo "====="
 	@docker container ls -a
 
+flamegraph:
+	bash ops/test/integration.sh flamegraph
+
 ########################################
 # Test Runner Shortcuts
 
@@ -205,7 +208,7 @@ watch-cf: cf-core
 	bash ops/test/cf.sh --watch
 
 watch-integration:
-	bash ops/test/integration.sh --watch
+	bash ops/test/integration.sh watch
 
 # You can interactively select daicard or dashboard tests after running below
 watch-ui: node-modules
@@ -346,7 +349,7 @@ types: node-modules $(shell find $(types)/src $(find_options))
 ########################################
 # Common Prerequisites
 
-contracts: node-modules contract-artifacts types $(shell find $(contracts)/address-book.json $(contracts)/index.ts $(contracts)/test $(contracts)/tsconfig.json $(find_options))
+contracts: node-modules contract-artifacts types $(shell find $(contracts)/index.ts $(contracts)/test $(contracts)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/contracts && npm run transpile"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@

@@ -276,7 +276,13 @@ export const connect = async (
   // no need to await this if it needs collateral
   // TODO: without await causes race conditions in bot, refactor to
   // use events
-  await client.reclaimPendingAsyncTransfers();
+  try {
+    await client.reclaimPendingAsyncTransfers();
+  } catch (e) {
+    log.error(
+      `Could not reclaim pending async transfers: ${e}... will attempt again on next connection`,
+    );
+  }
 
   // check in with node to do remaining work
   await client.clientCheckIn();

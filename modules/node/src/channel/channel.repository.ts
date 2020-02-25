@@ -4,12 +4,12 @@ import { AddressZero } from "ethers/constants";
 import { EntityManager, EntityRepository, Repository } from "typeorm";
 
 import { AppInstance } from "../appInstance/appInstance.entity";
+import { LoggerService } from "../logger/logger.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { CLogger } from "../util";
 
 import { Channel } from "./channel.entity";
 
-const logger = new CLogger("ChannelRepository");
+const logger = new LoggerService("ChannelRepository");
 
 const convertAppToInstanceJSON = (app: AppInstance, channel: Channel): AppInstanceJson => {
   return {
@@ -121,7 +121,7 @@ export class ChannelRepository extends Repository<Channel> {
       await transactionalEntityManager.save(rebalanceProfile);
 
       if (existing) {
-        logger.log(`Found existing profile for token ${rebalanceProfile.assetId}, replacing`);
+        logger.debug(`Found existing profile for token ${rebalanceProfile.assetId}, replacing`);
         await transactionalEntityManager
           .createQueryBuilder()
           .relation(Channel, "rebalanceProfiles")

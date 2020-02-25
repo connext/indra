@@ -5,6 +5,7 @@ import { AuthModule } from "../auth/auth.module";
 import { CFCoreModule } from "../cfCore/cfCore.module";
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { ConfigModule } from "../config/config.module";
+import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { OnchainTransactionModule } from "../onchainTransactions/onchainTransaction.module";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
@@ -18,18 +19,19 @@ import { ChannelService } from "./channel.service";
   controllers: [],
   exports: [ChannelService],
   imports: [
-    MessagingModule,
+    AuthModule,
     CFCoreModule,
+    ConfigModule,
+    HttpModule,
+    LoggerModule,
+    MessagingModule,
+    OnchainTransactionModule,
     TypeOrmModule.forFeature([
       ChannelRepository,
       RebalanceProfileRepository,
       CFCoreRecordRepository,
       OnchainTransactionRepository,
     ]),
-    ConfigModule,
-    AuthModule,
-    HttpModule,
-    OnchainTransactionModule,
   ],
   providers: [ChannelService, channelProviderFactory],
 })
