@@ -27,8 +27,6 @@ export class AppRegistryController {
 
   @MessagePattern("app-registry-hello")
   hello(@Payload() data: any, @Ctx() context: NatsContext) {
-    console.log("context: ", context);
-    console.log("data: ", data);
     return "Hi";
   }
 

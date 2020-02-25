@@ -6,7 +6,6 @@ export class Logger {
     warn: 2,
   };
   private name: string = "Logger";
-
   public logLevel: number = 3;
 
   public constructor(name?: string, logLevel?: number) {
@@ -33,6 +32,7 @@ export class Logger {
 
   private log(level: string, msg: any): void {
     if (this.levels[level] > this.logLevel) return;
-    return (console as any)[level](`${level}: [${this.name}] ${msg}`);
+    const now = new Date().toISOString();
+    return (console as any)[level](`${now} [${this.name}] ${msg}`);
   }
 }

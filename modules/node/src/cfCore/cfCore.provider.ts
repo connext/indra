@@ -7,22 +7,21 @@ import { fromMnemonic } from "ethers/utils/hdnode";
 import { ConfigService } from "../config/config.service";
 import { CFCoreProviderId, MessagingProviderId } from "../constants";
 import { LockService } from "../lock/lock.service";
-import { CLogger } from "../util";
+import { LoggerService } from "../logger/logger.service";
 import { CFCore } from "../util/cfCore";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
 import { HashZero } from "ethers/constants";
 
-const logger = new CLogger("CFCoreProvider");
-
 export const cfCoreProviderFactory: Provider = {
-  inject: [ConfigService, MessagingProviderId, CFCoreRecordRepository, LockService],
+  inject: [ConfigService, LockService, LoggerService, MessagingProviderId, CFCoreRecordRepository],
   provide: CFCoreProviderId,
   useFactory: async (
     config: ConfigService,
+    lockService: LockService,
+    logger: LoggerService,
     messaging: IMessagingService,
     store: CFCoreRecordRepository,
-    lockService: LockService,
   ): Promise<CFCore> => {
     const hdNode = fromMnemonic(config.getMnemonic()).derivePath(CF_PATH);
     const publicExtendedKey = hdNode.neuter().extendedKey;

@@ -60,7 +60,7 @@ export abstract class AbstractController {
         }),
       ]);
 
-      this.log.info(`Installed app ${appInstanceId}`);
+      this.log.info(`Installed app with id: ${appInstanceId}`);
       this.log.debug(`Installed app details: ${stringify(res as object)}`);
       return appInstanceId;
     } catch (e) {
@@ -119,7 +119,7 @@ export abstract class AbstractController {
           },
         ),
       ]);
-      this.log.info(`App was proposed successfully!: ${appId}`);
+      this.log.info(`Successfully proposed app with id ${appId}`);
       return appId;
     } catch (e) {
       this.log.error(`Error proposing app: ${e.stack || e.message}`);

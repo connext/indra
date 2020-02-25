@@ -210,7 +210,7 @@ const baseAppValidation = async (
 ): Promise<string | undefined> => {
   const log = new Logger("baseAppValidation", connext.log.logLevel);
   // check the initial state is consistent
-  log.info(`Validating app: ${stringify(params)}`);
+  log.debug(`Validating app: ${stringify(params)}`);
   // check that the app definition is the same
   if (params.appDefinition !== registeredInfo.appDefinitionAddress) {
     return invalidAppMessage(`Incorrect app definition detected`, params);

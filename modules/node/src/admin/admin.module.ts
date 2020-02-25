@@ -6,6 +6,7 @@ import { CFCoreModule } from "../cfCore/cfCore.module";
 import { CFCoreRecordRepository } from "../cfCore/cfCore.repository";
 import { ChannelModule } from "../channel/channel.module";
 import { ConfigModule } from "../config/config.module";
+import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 import { TransferModule } from "../transfer/transfer.module";
 
@@ -16,12 +17,13 @@ import { AdminService } from "./admin.service";
   controllers: [],
   exports: [AdminService],
   imports: [
-    MessagingModule,
+    AuthModule,
     CFCoreModule,
     ChannelModule,
-    AuthModule,
-    TransferModule,
     ConfigModule,
+    LoggerModule,
+    MessagingModule,
+    TransferModule,
     TypeOrmModule.forFeature([CFCoreRecordRepository]),
   ],
   providers: [AdminService, adminProviderFactory],

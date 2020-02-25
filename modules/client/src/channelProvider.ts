@@ -7,7 +7,6 @@ import {
   ConnextEventEmitter,
 } from "@connext/types";
 import { ChannelProvider } from "@connext/channel-provider";
-import { signMessage } from "@connext/crypto";
 import { Wallet } from "ethers";
 import { HashZero } from "ethers/constants";
 
@@ -120,15 +119,15 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   ///////////////////////////////////////////////
   ///// PRIVATE METHODS
   private walletSign = async (message: string): Promise<string> => {
-    return await signMessage(this.wallet.privateKey, message);
+    return this.wallet.signMessage(message);
   };
 
   private storeGet = async (path: string): Promise<any> => {
-    return await this.store.get(path);
+    return this.store.get(path);
   };
 
   private storeSet = async (pairs: StorePair[], allowDelete?: Boolean): Promise<void> => {
-    return await this.store.set(pairs, allowDelete);
+    return this.store.set(pairs, allowDelete);
   };
 
   private storeRestore = async (): Promise<StorePair[]> => {
