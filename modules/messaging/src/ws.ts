@@ -17,7 +17,8 @@ export class WsMessagingService implements IMessagingService {
     private readonly messagingServiceKey: string,
   ) {
     this.log = config.logger || nullLogger;
-    this.log.debug(`Created with config: ${JSON.stringify(config, null, 2)}`);
+    nullLogger.debug(`shhh`);
+    this.log.debug(`Created WsMessagingService with config: ${JSON.stringify(config, null, 2)}`);
   }
 
   async connect(): Promise<void> {

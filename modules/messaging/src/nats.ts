@@ -17,7 +17,7 @@ export class NatsMessagingService implements IMessagingService {
     private readonly messagingServiceKey: string,
   ) {
     this.log = config.logger || nullLogger;
-    this.log.debug(`Created with config: ${JSON.stringify(config, null, 2)}`);
+    this.log.debug(`Created NatsMessagingService with config: ${JSON.stringify(config, null, 2)}`);
   }
 
   async connect(): Promise<void> {
