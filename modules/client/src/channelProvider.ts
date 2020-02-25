@@ -121,11 +121,11 @@ export class CFCoreRpcConnection extends ConnextEventEmitter implements IRpcConn
   };
 
   private storeGet = async (path: string): Promise<any> => {
-    return await this.store.get(path);
+    return this.store.get(path);
   };
 
   private storeSet = async (pairs: StorePair[], allowDelete?: Boolean): Promise<void> => {
-    return await this.store.set(pairs, allowDelete);
+    return this.store.set(pairs, allowDelete);
   };
 
   private storeRestore = async (): Promise<StorePair[]> => {
