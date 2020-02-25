@@ -9,7 +9,7 @@
     "types"
   ],
   "scripts": {
-    "build": "./node_modules/.bin/tsc -p tsconfig.json",
+    "build": "rm -r ./dist/* && ./node_modules/.bin/tsc -p tsconfig.json",
     "rebuild": "npm run clean && npm run build",
     "clean": "rm -rf ./dist",
     "test": "./node_modules/.bin/jest --runInBand"

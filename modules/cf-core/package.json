@@ -11,7 +11,7 @@
     "src"
   ],
   "scripts": {
-    "build": "node_modules/.bin/tsc -b . && rollup -c",
+    "build": "rm -r ./dist/* && ./node_modules/.bin/tsc -b . && rollup -c",
     "build:ts": "node_modules/.bin/tsc -b .",
     "build:rollup": "rollup -c",
     "build:watch": "node_modules/.bin/tsc -b . && rollup -c -w",
