@@ -1,7 +1,11 @@
-import { CFCoreTypes, ILogger, IMessagingService, MessagingConfig } from "@connext/types";
+import {
+  CFCoreTypes,
+  ILogger,
+  IMessagingService,
+  MessagingConfig,
+  nullLogger,
+} from "@connext/types";
 import * as wsNats from "websocket-nats";
-
-import { nullLogger } from "./constants";
 
 export class WsMessagingService implements IMessagingService {
   private connection: any;

@@ -1,7 +1,11 @@
-import { CFCoreTypes, ILogger, IMessagingService, MessagingConfig } from "@connext/types";
+import {
+  CFCoreTypes,
+  ILogger,
+  IMessagingService,
+  MessagingConfig,
+  nullLogger,
+} from "@connext/types";
 import * as nats from "ts-nats";
-
-import { nullLogger } from "./constants";
 
 export class NatsMessagingService implements IMessagingService {
   private connection: nats.Client | undefined;
