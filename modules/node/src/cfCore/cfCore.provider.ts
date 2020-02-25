@@ -18,14 +18,14 @@ export const cfCoreProviderFactory: Provider = {
   useFactory: async (
     config: ConfigService,
     lockService: LockService,
-    logger: LoggerService,
+    log: LoggerService,
     messaging: IMessagingService,
     store: CFCoreRecordRepository,
   ): Promise<CFCore> => {
     const hdNode = fromMnemonic(config.getMnemonic()).derivePath(CF_PATH);
     const publicExtendedKey = hdNode.neuter().extendedKey;
     const provider = config.getEthProvider();
-    logger.log(`Derived xpub from mnemonic: ${publicExtendedKey}`);
+    log.info(`Derived xpub from mnemonic: ${publicExtendedKey}`);
 
     // test that provider works
     const { chainId, name: networkName } = await config.getEthNetwork();
@@ -44,12 +44,12 @@ export const cfCoreProviderFactory: Provider = {
     );
     const signerAddr = await cfCore.signerAddress();
     const balance = (await provider.getBalance(signerAddr)).toString();
-    logger.log(
+    log.info(
       `Balance of signer address ${signerAddr} on ${networkName} (chainId ${chainId}): ${balance}`,
     );
-    logger.log("CFCore created");
-    logger.log(`Public Identifier ${JSON.stringify(cfCore.publicIdentifier)}`);
-    logger.log(`Free balance address ${cfCore.freeBalanceAddress}`);
+    log.info("CFCore created");
+    log.info(`Public Identifier ${JSON.stringify(cfCore.publicIdentifier)}`);
+    log.info(`Free balance address ${cfCore.freeBalanceAddress}`);
     return cfCore;
   },
 };

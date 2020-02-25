@@ -14,12 +14,12 @@ import { TransferService } from "./transfer.service";
 export class TransferMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
-    logger: LoggerService,
+    log: LoggerService,
     messaging: IMessagingService,
     private readonly transferService: TransferService,
   ) {
-    super(logger, messaging);
-    this.logger.setContext("TransferMessaging");
+    super(log, messaging);
+    this.log.setContext("TransferMessaging");
   }
 
   async getLinkedTransferByPaymentId(
@@ -29,7 +29,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
     if (!data.paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
-    this.logger.log(`Got fetch link request for: ${data.paymentId}`);
+    this.log.info(`Got fetch link request for: ${data.paymentId}`);
     return await this.transferService.getTransferByPaymentId(data.paymentId);
   }
 
@@ -37,7 +37,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
     pubId: string,
     data: { paymentId: string; linkedHash: string },
   ): Promise<ResolveLinkedTransferResponse> {
-    this.logger.debug(`Got resolve link request with data: ${JSON.stringify(data, replaceBN, 2)}`);
+    this.log.debug(`Got resolve link request with data: ${JSON.stringify(data, replaceBN, 2)}`);
     const { paymentId, linkedHash } = data;
     if (!paymentId || !linkedHash) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);

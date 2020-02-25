@@ -12,10 +12,10 @@ import { stringify } from "querystring";
 class AuthMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly authService: AuthService,
-    logger: LoggerService,
+    log: LoggerService,
     messaging: IMessagingService,
   ) {
-    super(logger, messaging);
+    super(log, messaging);
   }
 
   async getNonce(subject: string, data: { address: string }): Promise<string> {
@@ -35,10 +35,10 @@ export const authProviderFactory: FactoryProvider<Promise<void>> = {
   provide: AuthProviderId,
   useFactory: async (
     authService: AuthService,
-    logger: LoggerService,
+    log: LoggerService,
     messaging: IMessagingService,
   ): Promise<void> => {
-    const auth = new AuthMessaging(authService, logger, messaging);
+    const auth = new AuthMessaging(authService, log, messaging);
     await auth.setupSubscriptions();
   },
 };

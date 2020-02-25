@@ -14,9 +14,9 @@ class IdDeserializer implements ConsumerDeserializer {
 }
 
 async function bootstrap(): Promise<void> {
-  const logger = new LoggerService("Main");
-  logger.log(`Deploying Indra ${version}`);
-  const app = await NestFactory.create(AppModule, { logger });
+  const log = new LoggerService("Main");
+  log.info(`Deploying Indra ${version}`);
+  const app = await NestFactory.create(AppModule, { logger: log });
   const config = app.get(ConfigService);
   const messagingUrl = config.getMessagingConfig().messagingUrl;
   app.connectMicroservice({

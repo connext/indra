@@ -16,10 +16,10 @@ class AdminMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly adminService: AdminService,
     private readonly authService: AuthService,
-    logger: LoggerService,
+    log: LoggerService,
     messaging: IMessagingService,
   ) {
-    super(logger, messaging);
+    super(log, messaging);
   }
 
   /**
@@ -133,10 +133,10 @@ export const adminProviderFactory: FactoryProvider<Promise<void>> = {
   useFactory: async (
     adminService: AdminService,
     authService: AuthService,
-    logger: LoggerService,
+    log: LoggerService,
     messaging: IMessagingService,
   ): Promise<void> => {
-    const admin = new AdminMessaging(adminService, authService, logger, messaging);
+    const admin = new AdminMessaging(adminService, authService, log, messaging);
     await admin.setupSubscriptions();
   },
 };

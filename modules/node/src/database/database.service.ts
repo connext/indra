@@ -5,7 +5,6 @@ import { AppRegistry } from "../appRegistry/appRegistry.entity";
 import { CFCoreRecord } from "../cfCore/cfCore.entity";
 import { Channel } from "../channel/channel.entity";
 import { ConfigService } from "../config/config.service";
-import { LoggerService } from "../logger/logger.service";
 import {
   OnchainTransaction,
   AnonymizedOnchainTransaction,
@@ -64,7 +63,7 @@ export const migrations = [
 
 @Injectable()
 export class TypeOrmConfigService implements TypeOrmOptionsFactory {
-  constructor(private readonly config: ConfigService, private readonly logger: LoggerService) {}
+  constructor(private readonly config: ConfigService) {}
   createTypeOrmOptions(): TypeOrmModuleOptions {
     return {
       ...this.config.getPostgresConfig(),
