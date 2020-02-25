@@ -55,6 +55,10 @@ export class LoggerService extends NestLogger implements ILogger {
     this.context = context;
   }
 
+  public newContext(context: string): LoggerService {
+    return new LoggerService(context);
+  }
+
   public error(msg: string, stack?: string): void {
     this.print("error", msg);
     stack && this.print("error", stack);
