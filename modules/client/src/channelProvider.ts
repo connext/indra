@@ -41,6 +41,8 @@ export const createCFChannelProvider = async ({
     lockService,
     xpub,
     keyGen,
+    undefined,
+    logger,
   );
   const channelProviderConfig: ChannelProviderConfig = {
     freeBalanceAddress: xpubToAddress(xpub),

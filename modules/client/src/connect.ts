@@ -2,7 +2,12 @@ import "core-js/stable";
 import "regenerator-runtime/runtime";
 
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { CF_PATH, CREATE_CHANNEL_EVENT, ILogger, StateSchemaVersion } from "@connext/types";
+import {
+  CF_PATH,
+  CREATE_CHANNEL_EVENT,
+  ILogger,
+  StateSchemaVersion,
+} from "@connext/types";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
@@ -82,6 +87,7 @@ export const connect = async (
   let { xpub, keyGen, store, messaging } = opts;
 
   const log = (logger || new Logger("ConnextConnect", opts.logLevel)) as ILogger;
+  log.info(logger ? "Using provided logger" : "Using built-in logger");
 
   // setup ethProvider + network information
   log.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);

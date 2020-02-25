@@ -21,7 +21,7 @@ export abstract class AbstractController {
     this.node = connext.node;
     this.channelProvider = connext.channelProvider;
     this.listener = connext.listener;
-    this.log = this.log.newContext(name);
+    this.log = connext.log.newContext(name);
     this.ethProvider = connext.ethProvider;
   }
 
