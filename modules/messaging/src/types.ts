@@ -1,1 +1,1 @@
-export { IMessagingService, MessagingConfig } from "@connext/types";
+export { ILogger, IMessagingService, MessagingConfig } from "@connext/types";

@@ -217,7 +217,6 @@ export class ConfigService implements OnModuleInit {
   getMessagingConfig(): MessagingConfig {
     return {
       clusterId: this.get(`INDRA_NATS_CLUSTER_ID`),
-      logLevel: 2,
       messagingUrl: (this.get(`INDRA_NATS_SERVERS`) || ``).split(`,`),
       token: this.get(`INDRA_NATS_TOKEN`),
     };

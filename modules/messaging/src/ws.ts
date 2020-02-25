@@ -1,19 +1,18 @@
-import { CFCoreTypes } from "@connext/types";
+import { CFCoreTypes, ILogger, IMessagingService, MessagingConfig } from "@connext/types";
 import * as wsNats from "websocket-nats";
 
-import { Logger } from "./logger";
-import { IMessagingService, MessagingConfig } from "./types";
+import { nullLogger } from "./constants";
 
 export class WsMessagingService implements IMessagingService {
   private connection: any;
-  private log: Logger;
+  private log: ILogger;
   private subscriptions: { [key: string]: number } = {};
 
   constructor(
     private readonly config: MessagingConfig,
     private readonly messagingServiceKey: string,
   ) {
-    this.log = new Logger(`WsMessagingService`, config.logLevel);
+    this.log = config.log || nullLogger;
     this.log.debug(`Created with config: ${JSON.stringify(config, null, 2)}`);
   }
 

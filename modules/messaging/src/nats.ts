@@ -1,19 +1,18 @@
-import { CFCoreTypes } from "@connext/types";
+import { CFCoreTypes, ILogger, IMessagingService, MessagingConfig } from "@connext/types";
 import * as nats from "ts-nats";
 
-import { Logger } from "./logger";
-import { IMessagingService, MessagingConfig } from "./types";
+import { nullLogger } from "./constants";
 
 export class NatsMessagingService implements IMessagingService {
   private connection: nats.Client | undefined;
-  private log: Logger;
+  private log: ILogger;
   private subscriptions: { [key: string]: nats.Subscription } = {};
 
   constructor(
     private readonly config: MessagingConfig,
     private readonly messagingServiceKey: string,
   ) {
-    this.log = new Logger(`NatsMessagingService`, config.logLevel);
+    this.log = config.log || nullLogger;
     this.log.debug(`Created with config: ${JSON.stringify(config, null, 2)}`);
   }
 

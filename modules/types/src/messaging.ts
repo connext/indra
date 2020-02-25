@@ -1,5 +1,6 @@
 import { BigNumber, TransactionReceipt } from "./basic";
 import { EventName } from "./events";
+import { ILogger } from "./logger";
 import { ProtocolMessage, ProtocolTypes } from "./protocol";
 
 ////////////////////////////////////////
@@ -42,7 +43,7 @@ export interface IRpcNodeProvider {
 
 export interface MessagingConfig {
   clusterId?: string;
-  logLevel: number;
+  log?: ILogger;
   messagingUrl: string | string[];
   options?: any;
   token?: string;
