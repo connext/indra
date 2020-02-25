@@ -1,7 +1,7 @@
+import { ILogger } from "@connext/types";
 import { Signer } from "ethers";
 import { BaseProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
-import log from "loglevel";
 
 import { eventNameToImplementation, methodNameToImplementation } from "./api";
 import { ProtocolRunner } from "./machine";
@@ -36,8 +36,10 @@ export class RequestHandler {
     storeKeyPrefix: string,
     readonly blocksNeededForConfirmation: number,
     public readonly processQueue: ProcessQueue,
+    public readonly log: ILogger,
   ) {
     this.store = new Store(storeService, storeKeyPrefix);
+    this.log = this.log.newContext("CF-RequestHandler");
   }
 
   injectRouter(router: RpcRouter) {
@@ -66,8 +68,8 @@ export class RequestHandler {
   }
 
   /**
-   * This registers all of the methods the Node is expected to have
-   * as described at https://github.com/counterfactual/monorepo/blob/master/packages/cf.js/API_REFERENCE.md#public-methods
+   * This registers all of the methods the Node is expected to have as described at
+   * https://github.com/counterfactual/monorepo/blob/master/packages/cf.js/API_REFERENCE.md#public-methods
    */
   private mapPublicApiMethods() {
     for (const methodName in methodNameToImplementation) {
@@ -80,8 +82,7 @@ export class RequestHandler {
           result: await this.methods.get(methodName)(this, bigNumberifyJson(req.params)),
         };
 
-        // @ts-ignore
-        this.router.emit(req.methodName, res, "outgoing");
+        this.router.emit((req as any).methodName, res, "outgoing");
       });
     }
   }
@@ -110,7 +111,7 @@ export class RequestHandler {
 
     if (!controllerExecutionMethod && controllerCount === 0) {
       if (event === DEPOSIT_CONFIRMED_EVENT) {
-        log.info(
+        this.log.info(
           `No event handler for counter depositing into channel: ${JSON.stringify(
             msg,
             undefined,

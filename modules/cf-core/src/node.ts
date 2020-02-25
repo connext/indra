@@ -1,7 +1,7 @@
+import { ILogger, nullLogger } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import { SigningKey } from "ethers/utils";
 import EventEmitter from "eventemitter3";
-import log from "loglevel";
 import { Memoize } from "typescript-memoize";
 
 import { createRpcRouter } from "./api";
@@ -56,6 +56,7 @@ export class Node {
     publicExtendedKey?: string,
     privateKeyGenerator?: CFCoreTypes.IPrivateKeyGenerator,
     blocksNeededForConfirmation?: number,
+    logger?: ILogger,
   ): Promise<Node> {
     const [privateKeysGenerator, extendedPubKey] = await getPrivateKeysGeneratorAndXPubOrThrow(
       storeService,
@@ -72,6 +73,7 @@ export class Node {
       provider,
       networkContext,
       blocksNeededForConfirmation,
+      logger,
       lockService,
     );
 
@@ -87,20 +89,20 @@ export class Node {
     private readonly provider: BaseProvider,
     public readonly networkContext: NetworkContext,
     public readonly blocksNeededForConfirmation: number = REASONABLE_NUM_BLOCKS_TO_WAIT,
+    public readonly log: ILogger = nullLogger,
     private readonly lockService?: CFCoreTypes.ILockService,
   ) {
+    this.log = log.newContext("CFCoreNode");
     this.networkContext.provider = this.provider;
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
     this.protocolRunner = this.buildProtocolRunner();
-    log.info(`Waiting for ${this.blocksNeededForConfirmation} block confirmations`);
   }
 
   private async asynchronouslySetupUsingRemoteServices(): Promise<Node> {
-    // TODO: is "0" a reasonable path to derive `signer` private key from?
     this.signer = new SigningKey(await this.privateKeyGetter.getPrivateKey("0"));
-    log.info(`Node signer address: ${this.signer.address}`);
-    log.info(`Node public identifier: ${this.publicIdentifier}`);
+    this.log.info(`Node signer address: ${this.signer.address}`);
+    this.log.info(`Node public identifier: ${this.publicIdentifier}`);
     this.requestHandler = new RequestHandler(
       this.publicIdentifier,
       this.incoming,
@@ -114,11 +116,11 @@ export class Node {
       `${this.nodeConfig.STORE_KEY_PREFIX}/${this.publicIdentifier}`,
       this.blocksNeededForConfirmation!,
       new ProcessQueue(this.lockService),
+      this.log,
     );
     this.registerMessagingConnection();
     this.rpcRouter = createRpcRouter(this.requestHandler);
     this.requestHandler.injectRouter(this.rpcRouter);
-
     return this;
   }
 

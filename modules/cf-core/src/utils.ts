@@ -33,7 +33,6 @@ export const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 export const bigNumberifyJson = (json: object) =>
   JSON.parse(JSON.stringify(json), (
-    // @ts-ignore
     key,
     val,
   ) => (val && val["_hex"] ? bigNumberify(val) : val));
@@ -183,7 +182,6 @@ export const scanForCriticalAddresses = async (
     toxicBytecodes = toxicBytecodes.concat(moreAddressHistory.ToxicBytecode);
   }
   toxicBytecodes = [...new Set(toxicBytecodes)]; // de-dup
-  //console.log(`Scanning toxic bytecode: ${toxicBytecodes}`);
 
   let mastercopies: string[] = [];
   if (addressHistory[chainId] && addressHistory[chainId].MinimumViableMultisig) {
@@ -196,7 +194,6 @@ export const scanForCriticalAddresses = async (
     mastercopies = mastercopies.concat(moreAddressHistory.MinimumViableMultisig);
   }
   mastercopies = [...new Set(mastercopies)]; // de-dup
-  //console.log(`Scanning multisig mastercopies: ${mastercopies}`);
 
   let proxyFactories: string[] = [];
   if (addressHistory[chainId] && addressHistory[chainId].ProxyFactory) {
@@ -209,7 +206,6 @@ export const scanForCriticalAddresses = async (
     proxyFactories = proxyFactories.concat(moreAddressHistory.ProxyFactory);
   }
   proxyFactories = [...new Set(proxyFactories)]; // de-dup
-  //console.log(`Scanning proxy factories: ${proxyFactories}`);
 
   // Second, scan these addresses looking for ones that match the given multisg
   for (const legacyKeygen of [false, true]) {
