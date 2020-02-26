@@ -71,6 +71,7 @@ export {
   CoinBalanceRefundState,
   coinBalanceRefundStateEncoding,
   Commitment,
+  ConditionalTransactionCommitmentJSON,
   CreateChannelMessage,
   DeployedContractNetworksFileEntry,
   DepositConfirmationMessage,
