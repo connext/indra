@@ -2,7 +2,7 @@ import { AddressZero, HashZero, WeiPerEther } from "ethers/constants";
 import { getAddress, hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
-import { ConditionalTransaction } from "../../../../src/ethereum";
+import { ConditionalTransactionCommitment } from "../../../../src/ethereum";
 import { MultisigTransaction } from "../../../../src/types";
 import { appIdentityToHash } from "../../../../src/ethereum/utils/app-identity";
 import { StateChannel } from "../../../../src/models";
@@ -12,7 +12,7 @@ import { createAppInstanceForTest } from "../../../unit/utils";
 import { getRandomExtendedPubKey } from "../../integration/random-signing-keys";
 import { generateRandomNetworkContext } from "../../mocks";
 
-describe("ConditionalTransaction", () => {
+describe("ConditionalTransactionCommitment", () => {
   let tx: MultisigTransaction;
 
   // Test network context
@@ -47,7 +47,7 @@ describe("ConditionalTransaction", () => {
   const appInstance = createAppInstanceForTest(stateChannel);
 
   beforeAll(() => {
-    tx = new ConditionalTransaction(
+    tx = new ConditionalTransactionCommitment(
       networkContext,
       stateChannel.multisigAddress,
       stateChannel.multisigOwners,
