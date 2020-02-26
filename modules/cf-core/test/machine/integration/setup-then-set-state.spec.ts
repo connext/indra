@@ -83,17 +83,18 @@ describe("Scenario: Setup, set state on free balance, go on chain", () => {
       const freeBalance = stateChannel.freeBalance;
 
       const setStateCommitment = new SetStateCommitment(
-        network,
+        network.ChallengeRegistry,
         freeBalance.identity,
         keccak256(freeBalance.encodedLatestState),
         freeBalance.versionNumber,
         freeBalance.timeout,
       );
-
-      const setStateTx = setStateCommitment.getSignedTransaction([
+      setStateCommitment.signatures = [
         multisigOwnerKeys[0].signDigest(setStateCommitment.hashToSign()),
         multisigOwnerKeys[1].signDigest(setStateCommitment.hashToSign()),
-      ]);
+      ];
+
+      const setStateTx = setStateCommitment.getSignedTransaction();
 
       await wallet.sendTransaction({
         ...setStateTx,

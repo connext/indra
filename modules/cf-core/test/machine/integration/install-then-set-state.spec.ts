@@ -141,34 +141,37 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
       });
 
       const setStateCommitment = new SetStateCommitment(
-        network,
+        network.ChallengeRegistry,
         identityAppInstance.identity,
         keccak256(identityAppInstance.encodedLatestState),
         identityAppInstance.versionNumber + 1,
         identityAppInstance.timeout,
       );
 
+      setStateCommitment.signatures = [
+        uniqueAppSigningKeys[0].signDigest(setStateCommitment.hashToSign()),
+        uniqueAppSigningKeys[1].signDigest(setStateCommitment.hashToSign()),
+      ];
+
       await wallet.sendTransaction({
-        ...setStateCommitment.getSignedTransaction([
-          uniqueAppSigningKeys[0].signDigest(setStateCommitment.hashToSign()),
-          uniqueAppSigningKeys[1].signDigest(setStateCommitment.hashToSign()),
-        ]),
+        ...setStateCommitment.getSignedTransaction(),
         gasLimit: SETSTATE_COMMITMENT_GAS,
       });
 
       const setStateCommitmentForFreeBalance = new SetStateCommitment(
-        network,
+        network.ChallengeRegistry,
         stateChannel.freeBalance.identity,
         stateChannel.freeBalance.hashOfLatestState,
         stateChannel.freeBalance.versionNumber,
         stateChannel.freeBalance.timeout,
       );
+      setStateCommitmentForFreeBalance.signatures = [
+        multisigOwnerKeys[0].signDigest(setStateCommitmentForFreeBalance.hashToSign()),
+        multisigOwnerKeys[1].signDigest(setStateCommitmentForFreeBalance.hashToSign()),
+      ];
 
       await wallet.sendTransaction({
-        ...setStateCommitmentForFreeBalance.getSignedTransaction([
-          multisigOwnerKeys[0].signDigest(setStateCommitmentForFreeBalance.hashToSign()),
-          multisigOwnerKeys[1].signDigest(setStateCommitmentForFreeBalance.hashToSign()),
-        ]),
+        ...setStateCommitmentForFreeBalance.getSignedTransaction(),
         gasLimit: SETSTATE_COMMITMENT_GAS,
       });
 

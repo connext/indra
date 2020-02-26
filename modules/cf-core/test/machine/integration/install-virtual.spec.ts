@@ -181,18 +181,19 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
       stateChannel: StateChannel,
     ) {
       const setStateCommitment = new SetStateCommitment(
-        network,
+        network.ChallengeRegistry,
         targetAppInstance.identity,
         targetAppInstance.hashOfLatestState,
         targetAppInstance.versionNumber,
         targetAppInstance.timeout,
       );
-
-      const setStateTx = setStateCommitment.getSignedTransaction([
+      setStateCommitment.signatures = [
         // TODO: Replace with k-th signing keys later
         multisigOwnerKeys[0].signDigest(setStateCommitment.hashToSign()),
         multisigOwnerKeys[1].signDigest(setStateCommitment.hashToSign()),
-      ]);
+      ];
+
+      const setStateTx = setStateCommitment.getSignedTransaction();
 
       await wallet.sendTransaction({
         ...setStateTx,
@@ -200,18 +201,19 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
       });
 
       const setStateCommitmentForFreeBalance = new SetStateCommitment(
-        network,
+        network.ChallengeRegistry,
         stateChannel.freeBalance.identity,
         stateChannel.freeBalance.hashOfLatestState,
         stateChannel.freeBalance.versionNumber,
         0, // make the timeout 0 so this ends without a challenge timeout
       );
+      setStateCommitmentForFreeBalance.signatures = [
+        multisigOwnerKeys[0].signDigest(setStateCommitmentForFreeBalance.hashToSign()),
+        multisigOwnerKeys[1].signDigest(setStateCommitmentForFreeBalance.hashToSign()),
+      ];
 
       await wallet.sendTransaction({
-        ...setStateCommitmentForFreeBalance.getSignedTransaction([
-          multisigOwnerKeys[0].signDigest(setStateCommitmentForFreeBalance.hashToSign()),
-          multisigOwnerKeys[1].signDigest(setStateCommitmentForFreeBalance.hashToSign()),
-        ]),
+        ...setStateCommitmentForFreeBalance.getSignedTransaction(),
         gasLimit: SETSTATE_COMMITMENT_GAS,
       });
 
