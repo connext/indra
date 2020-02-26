@@ -1,7 +1,7 @@
-import { Interface } from "ethers/utils";
+import { Interface, Signature } from "ethers/utils";
 
 import { ConditionalTransactionDelegateTarget } from "../contracts";
-import { MultisigOperation, NetworkContext } from "../types";
+import { ConditionalTransactionCommitmentJSON, MultisigOperation, NetworkContext } from "../types";
 
 import { MultisigCommitment } from "./multisig-commitment";
 
@@ -14,7 +14,7 @@ const iface = new Interface(ConditionalTransactionDelegateTarget.abi);
  *
  * @extends {MultisigCommitment}
  */
-export class ConditionalTransaction extends MultisigCommitment {
+export class ConditionalTransactionCommitment extends MultisigCommitment {
   constructor(
     public readonly networkContext: NetworkContext,
     public readonly multisig: string,
@@ -23,8 +23,35 @@ export class ConditionalTransaction extends MultisigCommitment {
     public readonly freeBalanceAppIdentityHash: string,
     public readonly interpreterAddr: string,
     public readonly interpreterParams: string,
+    participantSignatures: Signature[] = [],
   ) {
-    super(multisig, multisigOwners);
+    super(multisig, multisigOwners, participantSignatures);
+  }
+
+  toJson(): ConditionalTransactionCommitmentJSON {
+    return {
+      appIdentityHash: this.appIdentityHash,
+      freeBalanceAppIdentityHash: this.freeBalanceAppIdentityHash,
+      interpreterAddr: this.interpreterAddr,
+      interpreterParams: this.interpreterParams,
+      multisigAddress: this.multisigAddress,
+      multisigOwners: this.multisigOwners,
+      networkContext: this.networkContext,
+      signatures: this.signatures,
+    };
+  }
+
+  public static fromJson(json: ConditionalTransactionCommitmentJSON) {
+    return new ConditionalTransactionCommitment(
+      json.networkContext,
+      json.multisigAddress,
+      json.multisigOwners,
+      json.appIdentityHash,
+      json.freeBalanceAppIdentityHash,
+      json.interpreterAddr,
+      json.interpreterParams,
+      json.signatures,
+    );
   }
 
   /**
@@ -32,7 +59,7 @@ export class ConditionalTransaction extends MultisigCommitment {
    * encodes them into a bytes array for the data field of the transaction.
    *
    * @returns The (to, value, data, op) data required by MultisigCommitment
-   * @memberof ConditionalTransaction
+   * @memberof ConditionalTransactionCommitment
    */
   public getTransactionDetails() {
     return {
