@@ -20,6 +20,7 @@ import {
   TOKEN_AMOUNT,
   requestCollateral,
   delay,
+  ZERO_ZERO_TWO_ETH,
 } from "../util";
 import { connectNats, closeNats } from "../util/nats";
 import { Client } from "ts-nats";
@@ -51,11 +52,21 @@ describe("Async Transfers", () => {
     closeNats();
   });
 
-  it("happy case: client A transfers eth to client B through node", async () => {
+  it.only("happy case: client A transfers eth to client B through node", async () => {
     const transfer: AssetOptions = { amount: ETH_AMOUNT_SM, assetId: AddressZero };
-    await fundChannel(clientA, transfer.amount, transfer.assetId);
+    await fundChannel(clientA, ZERO_ZERO_TWO_ETH, transfer.assetId);
     await requestCollateral(clientB, transfer.assetId);
+    console.log(`${new Date().toISOString()} [TestRunner] start transfers`);
+    let start = Date.now();
     await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
+    console.log(
+      `${new Date().toISOString()} [TestRunner] Transfer #1 finished in ${Date.now() - start} ms`,
+    );
+    start = Date.now();
+    await asyncTransferAsset(clientA, clientB, transfer.amount, transfer.assetId, nats);
+    console.log(
+      `${new Date().toISOString()} [TestRunner] Transfer #2 finished in ${Date.now() - start} ms`,
+    );
   });
 
   it("happy case: client A transfers tokens to client B through node", async () => {

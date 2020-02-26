@@ -50,15 +50,25 @@ export async function asyncTransferAsset(
     }),
   ]);
 
+  let start = Date.now();
+  console.log(`${new Date().toISOString()} [TestRunner] call client.transfer()`);
   const { paymentId: senderPaymentId } = await clientA.transfer({
     amount: transferAmount.toString(),
     assetId,
     meta: { hello: "world" },
     recipient: clientB.publicIdentifier,
   });
+  console.log(
+    `${new Date().toISOString()} [TestRunner] transfer() returned in ${Date.now() - start} ms`,
+  );
+  start = Date.now();
   paymentId = senderPaymentId;
 
   await transferFinished;
+  console.log(
+    `${new Date().toISOString()} [TestRunner] transfer_finished ${Date.now() - start} ms later`,
+  );
+
   expect((await clientB.getAppInstances()).length).to.be.eq(0);
   expect((await clientA.getAppInstances()).length).to.be.eq(0);
 
