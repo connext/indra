@@ -26,7 +26,6 @@ contract LightningHTLCTransferApp is CounterfactualApp {
     struct AppState {
         LibOutcome.CoinTransfer[2] coinTransfers;
         bytes32 lockHash;
-        uint256 expiry;
         bytes32 preimage;
     }
 
@@ -46,7 +45,6 @@ contract LightningHTLCTransferApp is CounterfactualApp {
         Action memory action = abi.decode(encodedAction, (Action));
 
         // TODO: do we need a turntaker here?
-        require(state.expiry == 0 || state.expiry <= block.number, "Expiry must be zero or have not expired");
         state.preimage = action.preimage;
 
         return abi.encode(state);
