@@ -4,7 +4,11 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
 import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ChannelRepository } from "../channel/channel.repository";
-import { CommitmentRepository } from "../commitment/commitment.repository";
+import {
+  ConditionalTransactionCommitmentRepository,
+  SetStateCommitmentRepository,
+  WithdrawCommitmentRepository,
+} from "../commitment/commitment.repository";
 import { ConfigModule } from "../config/config.module";
 import { DatabaseModule } from "../database/database.module";
 import { LockModule } from "../lock/lock.module";
@@ -31,7 +35,9 @@ import { CFCoreStore } from "./cfCore.store";
       AppRegistryRepository,
       ChannelRepository,
       AppInstanceRepository,
-      CommitmentRepository,
+      ConditionalTransactionCommitmentRepository,
+      SetStateCommitmentRepository,
+      WithdrawCommitmentRepository,
     ]),
   ],
   providers: [cfCoreProviderFactory, CFCoreService, CFCoreStore],
