@@ -328,7 +328,7 @@ messaging: node-modules types $(shell find $(messaging)/src $(find_options))
 
 node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
 	$(log_start)
-	$(docker_run) "cd modules/node && npm run build"
+	$(docker_run) "cd modules/node && npm run build && touch src/main.ts"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
 store: node-modules types $(shell find $(store)/src $(find_options))
