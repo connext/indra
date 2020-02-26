@@ -27,10 +27,10 @@ class ConfigMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly cfCore: CFCore,
     private readonly configService: ConfigService,
-    logger: LoggerService,
+    log: LoggerService,
     messaging: IMessagingService,
   ) {
-    super(logger, messaging);
+    super(log, messaging);
   }
 
   async getConfig(): Promise<GetConfigResponse> {
@@ -52,10 +52,10 @@ class ChannelMessaging extends AbstractMessagingProvider {
     private readonly authService: AuthService,
     private readonly channelRepository: ChannelRepository,
     private readonly channelService: ChannelService,
-    logger: LoggerService,
+    log: LoggerService,
     messaging: IMessagingService,
   ) {
-    super(logger, messaging);
+    super(log, messaging);
   }
 
   async getChannel(pubId: string, data?: unknown): Promise<GetChannelResponse> {
@@ -193,18 +193,18 @@ export const channelProviderFactory: FactoryProvider<Promise<void>> = {
     channelRepo: ChannelRepository,
     channelService: ChannelService,
     configService: ConfigService,
-    logger: LoggerService,
+    log: LoggerService,
     messaging: IMessagingService,
   ): Promise<void> => {
     const channel = new ChannelMessaging(
       authService,
       channelRepo,
       channelService,
-      logger,
+      log,
       messaging,
     );
     await channel.setupSubscriptions();
-    const config = new ConfigMessaging(cfCore, configService, logger, messaging);
+    const config = new ConfigMessaging(cfCore, configService, log, messaging);
     await config.setupSubscriptions();
   },
 };

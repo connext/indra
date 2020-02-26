@@ -7,7 +7,7 @@ import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
 
 import { Channel } from "./channel.entity";
 
-const logger = new LoggerService("ChannelRepository");
+const log = new LoggerService("ChannelRepository");
 
 @EntityRepository(Channel)
 export class ChannelRepository extends Repository<Channel> {
@@ -50,7 +50,7 @@ export class ChannelRepository extends Repository<Channel> {
       await transactionalEntityManager.save(rebalanceProfile);
 
       if (existing) {
-        logger.debug(`Found existing profile for token ${rebalanceProfile.assetId}, replacing`);
+        log.debug(`Found existing profile for token ${rebalanceProfile.assetId}, replacing`);
         await transactionalEntityManager
           .createQueryBuilder()
           .relation(Channel, "rebalanceProfiles")

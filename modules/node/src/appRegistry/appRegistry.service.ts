@@ -50,12 +50,12 @@ export class AppRegistryService implements OnModuleInit {
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
     private readonly linkedTransferRepository: LinkedTransferRepository,
-    private readonly logger: LoggerService,
+    private readonly log: LoggerService,
     @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
     private readonly swapRateService: SwapRateService,
     private readonly transferService: TransferService,
   ) {
-    this.logger.setContext("AppRegistryService");
+    this.log.setContext("AppRegistryService");
   }
 
   async validateAndInstallOrReject(
@@ -69,11 +69,11 @@ export class AppRegistryService implements OnModuleInit {
       if (registryAppInfo.name !== CoinBalanceRefundApp) {
         await this.cfCoreService.installApp(appInstanceId);
       } else {
-        this.logger.debug(`Not installing coin balance refund app, returning registry information`);
+        this.log.debug(`Not installing coin balance refund app, returning registry information`);
       }
     } catch (e) {
       if (!e.message.includes(`Node has insufficient balance`)) {
-        this.logger.warn(`App install failed, . Error: ${e.stack || e.message}`);
+        this.log.warn(`App install failed, . Error: ${e.stack || e.message}`);
         await this.cfCoreService.rejectInstallApp(appInstanceId);
         return;
       }
@@ -90,7 +90,7 @@ export class AppRegistryService implements OnModuleInit {
       try {
         await this.cfCoreService.installApp(appInstanceId);
       } catch (e) {
-        this.logger.warn(`App install failed, . Error: ${e.stack || e.message}`);
+        this.log.warn(`App install failed, . Error: ${e.stack || e.message}`);
         await this.cfCoreService.rejectInstallApp(appInstanceId);
         return;
       }
@@ -106,7 +106,7 @@ export class AppRegistryService implements OnModuleInit {
   ) {
     switch (registryAppInfo.name) {
       case SimpleLinkedTransferApp:
-        this.logger.debug(`Saving linked transfer`);
+        this.log.debug(`Saving linked transfer`);
         const initialState = proposeInstallParams.initialState as SimpleLinkedTransferAppStateBigNumber;
 
         const isResolving = proposeInstallParams.responderDeposit.gt(Zero);
@@ -116,7 +116,7 @@ export class AppRegistryService implements OnModuleInit {
           );
           transfer.receiverAppInstanceId = appInstanceId;
           await this.linkedTransferRepository.save(transfer);
-          this.logger.debug(`Updated transfer with receiver appId!`);
+          this.log.debug(`Updated transfer with receiver appId!`);
           return;
         }
         await this.transferService.saveLinkedTransfer(
@@ -128,7 +128,7 @@ export class AppRegistryService implements OnModuleInit {
           initialState.paymentId,
           proposeInstallParams.meta,
         );
-        this.logger.debug(`Linked transfer saved!`);
+        this.log.debug(`Linked transfer saved!`);
         break;
       // TODO: add something for swap app? maybe for history preserving reasons.
       case CoinBalanceRefundApp:
@@ -136,7 +136,7 @@ export class AppRegistryService implements OnModuleInit {
         if (!channel) {
           throw new Error(`Channel does not exist for ${from}`);
         }
-        this.logger.debug(
+        this.log.debug(
           `sending acceptance message to indra.node.${this.cfCoreService.cfCore.publicIdentifier}.proposalAccepted.${channel.multisigAddress}`,
         );
         await this.messagingClient
@@ -147,7 +147,7 @@ export class AppRegistryService implements OnModuleInit {
           .toPromise();
         break;
       default:
-        this.logger.debug(`No post-install actions configured.`);
+        this.log.debug(`No post-install actions configured.`);
     }
     // rebalance at the end without blocking
     this.channelService.rebalance(
@@ -266,11 +266,11 @@ export class AppRegistryService implements OnModuleInit {
       initiatorDepositTokenAddress,
       responderDepositTokenAddress,
     );
-    this.logger.debug(
+    this.log.debug(
       `Our ${initiatorDepositTokenAddress} -> ${responderDepositTokenAddress} Swap Rate: ${ourRate}`,
     );
     const calculated = calculateExchange(initiatorDeposit, ourRate);
-    this.logger.debug(
+    this.log.debug(
       `initiatorDeposit=${initiatorDeposit} -> ${calculated} vs responderDeposit=${responderDeposit}`,
     );
 
@@ -287,7 +287,7 @@ export class AppRegistryService implements OnModuleInit {
       );
     }
 
-    this.logger.debug(
+    this.log.debug(
       `Exchange amounts are within ${ALLOWED_DISCREPANCY_PCT}% of our rate ${ourRate}`,
     );
   }
@@ -532,7 +532,7 @@ export class AppRegistryService implements OnModuleInit {
       throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
     }
 
-    this.logger.debug(
+    this.log.debug(
       `App with params ${stringify(proposeInstallParams, 2)} allowed to be installed`,
     );
 
@@ -549,7 +549,7 @@ export class AppRegistryService implements OnModuleInit {
       default:
         break;
     }
-    this.logger.log(`Validation succeeded for app ${registryAppInfo.name}`);
+    this.log.info(`Validation succeeded for app ${registryAppInfo.name}`);
     return registryAppInfo;
   }
 
@@ -570,7 +570,7 @@ export class AppRegistryService implements OnModuleInit {
     const registryAppInfo = await this.appProposalMatchesRegistry(proposedAppParams.params);
 
     if (registryAppInfo.name !== `SimpleTransferApp`) {
-      this.logger.debug(
+      this.log.debug(
         `Caught propose install virtual for what should always be a regular app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
       );
       return;
@@ -622,7 +622,7 @@ export class AppRegistryService implements OnModuleInit {
       default:
         break;
     }
-    this.logger.log(`Validation succeeded for app ${registryAppInfo.name}`);
+    this.log.info(`Validation succeeded for app ${registryAppInfo.name}`);
   }
 
   async onModuleInit() {
@@ -634,7 +634,7 @@ export class AppRegistryService implements OnModuleInit {
       if (!appRegistry) {
         appRegistry = new AppRegistry();
       }
-      this.logger.log(
+      this.log.info(
         `Creating ${app.name} app on chain ${app.chainId}: ${app.appDefinitionAddress}`,
       );
       appRegistry.actionEncoding = app.actionEncoding;

@@ -1,8 +1,9 @@
+import { CFCoreTypes } from "./cfCore";
 import { NetworkContext } from "./contracts";
 import { ConnextEventEmitter } from "./events";
+import { ILoggerService } from "./logger";
 import { ProtocolTypes } from "./protocol";
 import { Store, StorePair } from "./store";
-import { CFCoreTypes } from "./cfCore";
 
 export interface IChannelProvider extends ConnextEventEmitter {
   ////////////////////////////////////////
@@ -74,6 +75,7 @@ export interface CFChannelProviderOptions {
   ethProvider: any;
   keyGen: ProtocolTypes.IPrivateKeyGenerator;
   lockService?: ProtocolTypes.ILockService;
+  logger?: ILoggerService;
   messaging: any;
   networkContext: NetworkContext;
   nodeConfig: any;

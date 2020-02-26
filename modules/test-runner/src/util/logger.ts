@@ -1,5 +1,4 @@
 import { ILoggerService } from "@connext/types";
-import { Injectable, Scope, Logger as NestLogger } from "@nestjs/common";
 
 const colors = {
   Reset: "\x1b[0m",
@@ -27,50 +26,36 @@ const colors = {
   BgWhite: "\x1b[47m",
 };
 
-@Injectable({ scope: Scope.TRANSIENT })
-export class LoggerService extends NestLogger implements ILoggerService {
-  private levels: { [key: string]: number } = {
-    debug: 4,
-    error: 1,
-    info: 3,
-    warn: 2,
-  };
-  private defaultLevel = "info";
+export class Logger implements ILoggerService {
   private color: { [key: string]: string } = {
     debug: colors.FgMagenta,
     error: colors.FgRed,
     info: colors.FgGreen,
     warn: colors.FgYellow,
   };
+  private context = "UnknownContext";
+  private level = 3;
+  private levels: { [key: string]: number } = { debug: 4, error: 1, info: 3, warn: 2 };
 
-  public context: string;
-  public logLevel: number = parseInt(process.env.INDRA_LOG_LEVEL, 10) || 3;
-
-  public constructor(context?: string) {
-    super();
-    this.context = typeof context !== "undefined" ? context : "UnknownContext";
+  public constructor(context?: string, level?: number) {
+    this.context = typeof context !== "undefined" ? context : this.context;
+    this.level = typeof level !== "undefined" ? parseInt(level.toString(), 10) : this.level;
   }
 
   public setContext(context: string): void {
     this.context = context;
   }
 
-  public newContext(context: string): LoggerService {
-    return new LoggerService(context);
+  public newContext(context: string): Logger {
+    return new Logger(context, this.level);
   }
 
-  public error(msg: string, stack?: string): void {
+  public error(msg: string): void {
     this.print("error", msg);
-    stack && this.print("error", stack);
   }
 
   public warn(msg: string): void {
     this.print("warn", msg);
-  }
-
-  // Nest internals expect a method called log
-  public log(msg: string): void {
-    this.print(this.defaultLevel, msg);
   }
 
   public info(msg: string): void {
@@ -81,10 +66,10 @@ export class LoggerService extends NestLogger implements ILoggerService {
     this.print("debug", msg);
   }
 
-  private print(level: string, msg: any): void {
-    if (this.levels[level] > this.logLevel) return;
+  private print(level: string, msg: string): void {
+    if (this.levels[level] > this.level) return;
     const now = new Date().toISOString();
-    return (console as any)[level](
+    console[level](
       `${colors.Reset}${now} ${colors.FgCyan}[${this.context}]${colors.Reset} ${this.color[level]}${msg}${colors.Reset}`,
     );
   }

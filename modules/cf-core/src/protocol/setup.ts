@@ -3,6 +3,7 @@ import { ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
 import { StateChannel } from "../models/state-channel";
 import { Context, ProtocolMessage, SetupProtocolParams } from "../types";
+import { logTime } from "../utils";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
@@ -18,11 +19,14 @@ const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
 export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
     const { message, network, domainSeparator, provider } = context;
+    const log = context.log.newContext("CF-SetupProtocol");
+    const start = Date.now();
 
     const { processID, params } = message;
 
     const { multisigAddress, responderXpub, initiatorXpub } = params as SetupProtocolParams;
 
+    // 56 ms
     const stateChannel = StateChannel.setupChannel(
       network.IdentityApp,
       { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
@@ -40,8 +44,10 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannel.numProposedApps,
     );
 
+    // 32 ms
     const initiatorSignature = yield [OP_SIGN, setupCommitment];
 
+    // 201 ms (waits for responder to respond)
     const {
       customData: { signature: responderSignature },
     } = yield [
@@ -58,15 +64,20 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessage,
     ];
 
+    // 34 ms
     assertIsValidSignature(xkeyKthAddress(responderXpub, 0), setupCommitment, responderSignature);
 
+    // 33 ms
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
 
     context.stateChannelsMap.set(stateChannel.multisigAddress, stateChannel);
+    logTime(log, start, `Finished initiating`);
   },
 
   1 /* Responding */: async function*(context: Context) {
     const { message, network, provider, domainSeparator } = context;
+    const log = context.log.newContext("CF-SetupProtocol");
+    const start = Date.now();
 
     const {
       processID,
@@ -76,6 +87,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     const { multisigAddress, initiatorXpub, responderXpub } = params as SetupProtocolParams;
 
+    // 73 ms
     const stateChannel = StateChannel.setupChannel(
       network.IdentityApp,
       { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
@@ -93,8 +105,10 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannel.numProposedApps,
     );
 
+    // 94 ms
     assertIsValidSignature(xkeyKthAddress(initiatorXpub, 0), setupCommitment, initiatorSignature);
 
+    // 49 ms
     const responderSignature = yield [OP_SIGN, setupCommitment];
 
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
@@ -113,5 +127,6 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     context.stateChannelsMap.set(stateChannel.multisigAddress, stateChannel);
+    logTime(log, start, `Finished responding`);
   },
 };

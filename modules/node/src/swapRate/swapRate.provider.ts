@@ -12,12 +12,12 @@ import { SwapRateService } from "./swapRate.service";
 export class SwapRateMessaging extends AbstractMessagingProvider {
   constructor(
     private readonly config: ConfigService,
-    logger: LoggerService,
+    log: LoggerService,
     messaging: IMessagingService,
     private readonly swapRateService: SwapRateService,
   ) {
-    super(logger, messaging);
-    this.logger.setContext("SwapRateMessaging");
+    super(log, messaging);
+    this.log.setContext("SwapRateMessaging");
   }
 
   async getLatestSwapRate(subject: string): Promise<string> {
@@ -36,11 +36,11 @@ export const swapRateProviderFactory: FactoryProvider<Promise<IMessagingService>
   provide: SwapRateProviderId,
   useFactory: async (
     config: ConfigService,
-    logger: LoggerService,
+    log: LoggerService,
     messaging: IMessagingService,
     swapRateService: SwapRateService,
   ): Promise<IMessagingService> => {
-    const swapRate = new SwapRateMessaging(config, logger, messaging, swapRateService);
+    const swapRate = new SwapRateMessaging(config, log, messaging, swapRateService);
     await swapRate.setupSubscriptions();
     return messaging;
   },

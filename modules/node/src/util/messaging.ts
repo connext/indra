@@ -10,10 +10,10 @@ export interface IMessagingProvider {
 
 export abstract class AbstractMessagingProvider implements IMessagingProvider {
   constructor(
-    public readonly logger: LoggerService,
+    public readonly log: LoggerService,
     protected readonly messaging: IMessagingService,
   ) {
-    this.logger.setContext("MessagingInterface");
+    this.log.setContext("MessagingInterface");
   }
 
   getPublicIdentifierFromSubject(subject: string): string {
@@ -30,7 +30,7 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
   ): Promise<void> {
     // TODO: timeout
     await this.messaging.subscribe(pattern, async (msg: any) => {
-      this.logger.debug(
+      this.log.debug(
         `Got NATS message for subject ${msg.subject} with data ${JSON.stringify(msg.data)}`,
       );
       if (msg.reply) {
@@ -43,11 +43,11 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
           const response = await processor(msg.subject, msg.data);
           const diff = Date.now() - start;
           if (diff >= 10 && diff < 100) {
-            this.logger.log(`Responded to ${subject} in ${diff} ms`);
+            this.log.info(`Responded to ${subject} in ${diff} ms`);
           } else if (diff >= 100 && diff < 1000) {
-            this.logger.warn(`Responded to ${subject} in ${diff} ms`);
+            this.log.warn(`Responded to ${subject} in ${diff} ms`);
           } else if (diff >= 1000) {
-            this.logger.error(`Responded to ${subject} in ${diff} ms`);
+            this.log.error(`Responded to ${subject} in ${diff} ms`);
           }
           this.messaging.publish(msg.reply, {
             err: null,
@@ -58,11 +58,11 @@ export abstract class AbstractMessagingProvider implements IMessagingProvider {
             err: e ? e.toString() : e,
             message: `Error during processor function: ${processor.name}`,
           });
-          this.logger.error(`Error processing message ${msg.subject}: ${e.message}`, e.stack);
+          this.log.error(`Error processing message ${msg.subject}: ${e.message}`, e.stack);
         }
       }
     });
-    this.logger.log(`Connected message pattern "${pattern}" to function ${processor.name}`);
+    this.log.info(`Connected message pattern "${pattern}" to function ${processor.name}`);
   }
 
   abstract setupSubscriptions(): void;

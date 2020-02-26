@@ -31,6 +31,7 @@ export const createCFChannelProvider = async ({
   nodeUrl,
   store,
   xpub,
+  logger,
 }: CFChannelProviderOptions): Promise<IChannelProvider> => {
   const cfCore = await CFCore.create(
     messaging as any,
@@ -42,6 +43,8 @@ export const createCFChannelProvider = async ({
     lockService,
     xpub,
     keyGen,
+    undefined,
+    logger,
   );
   const channelProviderConfig: ChannelProviderConfig = {
     freeBalanceAddress: xpubToAddress(xpub),

@@ -1,3 +1,4 @@
+import { ILoggerService } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import uuid from "uuid";
 
@@ -73,6 +74,7 @@ export class ProtocolRunner {
     public readonly network: NetworkContext,
     public readonly provider: BaseProvider,
     public readonly domainSeparator: DomainSeparator,
+    public readonly log: ILoggerService,
   ) {
     this.network.provider = network.provider || provider;
     this.middlewares = new MiddlewareContainer();
@@ -127,11 +129,12 @@ export class ProtocolRunner {
     message: ProtocolMessage,
   ): Promise<Map<string, StateChannel>> {
     const context: Context = {
+      domainSeparator: this.domainSeparator,
+      log: this.log,
       message,
-      stateChannelsMap,
       network: this.network,
       provider: this.provider,
-      domainSeparator: this.domainSeparator,
+      stateChannelsMap,
     };
 
     let lastMiddlewareRet: any = undefined;

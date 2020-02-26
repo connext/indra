@@ -1,13 +1,10 @@
 import { Wallet } from "ethers";
 import { BigNumber } from "ethers/utils";
-import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
-import log from "loglevel";
+import { fromExtendedKey } from "ethers/utils/hdnode";
 import { Memoize } from "typescript-memoize";
 
 import { CF_PATH } from "./constants";
 import { CFCoreTypes } from "./types";
-
-export const EXTENDED_PRIVATE_KEY_PATH = "EXTENDED_PRIVATE_KEY";
 
 export class PrivateKeysGetter {
   private appInstanceIdentityHashToPrivateKey: Map<string, string> = new Map();
@@ -58,35 +55,15 @@ export async function getPrivateKeysGeneratorAndXPubOrThrow(
   privateKeyGenerator?: CFCoreTypes.IPrivateKeyGenerator,
   publicExtendedKey?: string,
 ): Promise<[PrivateKeysGetter, string]> {
-  if (publicExtendedKey && !privateKeyGenerator) {
-    throw new Error(
-      "Cannot provide an extended public key but not provide a private key generation function",
-    );
+  if (!privateKeyGenerator) {
+    throw new Error("A private key generator function is required");
   }
 
-  if (!publicExtendedKey && privateKeyGenerator) {
-    throw new Error(
-      "Cannot provide a private key generation function but not provide an extended public key",
-    );
+  if (!publicExtendedKey) {
+    throw new Error("An extended public key is required");
   }
 
-  if (publicExtendedKey && privateKeyGenerator) {
-    return Promise.resolve([new PrivateKeysGetter(privateKeyGenerator), publicExtendedKey]);
-  }
-
-  let extendedPrvKey = await storeService.get(EXTENDED_PRIVATE_KEY_PATH);
-
-  if (!extendedPrvKey) {
-    log.info(
-      "No (extended public key, private key generation function) pair was provided and no extended private key was found in store. Generating a random extended private key",
-    );
-    extendedPrvKey = fromMnemonic(Wallet.createRandom().mnemonic).extendedKey;
-    await storeService.set([{ path: EXTENDED_PRIVATE_KEY_PATH, value: extendedPrvKey }]);
-  } else {
-    log.info("Using extended private key found in the store.");
-  }
-  const [privKeyGenerator, extendedPubKey] = generatePrivateKeyGeneratorAndXPubPair(extendedPrvKey);
-  return Promise.resolve([new PrivateKeysGetter(privKeyGenerator), extendedPubKey]);
+  return Promise.resolve([new PrivateKeysGetter(privateKeyGenerator!), publicExtendedKey!]);
 }
 
 // Reference implementation for how the `IPrivateKeyGenerator` interface
