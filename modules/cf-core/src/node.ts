@@ -144,7 +144,11 @@ export class Node {
    * for the OP_SIGN, IO_SEND, and IO_SEND_AND_WAIT opcodes.
    */
   private buildProtocolRunner(): ProtocolRunner {
-    const protocolRunner = new ProtocolRunner(this.networkContext, this.provider);
+    const protocolRunner = new ProtocolRunner(
+      this.networkContext,
+      this.provider,
+      this.log.newContext("CF-ProtocolRunner"),
+    );
 
     protocolRunner.register(Opcode.OP_SIGN, async (args: any[]) => {
       if (args.length !== 1 && args.length !== 2) {
