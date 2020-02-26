@@ -119,12 +119,14 @@ export const CoinBalanceRefundApp = "CoinBalanceRefundApp";
 export const SimpleLinkedTransferApp = "SimpleLinkedTransferApp";
 export const SimpleTransferApp = "SimpleTransferApp";
 export const SimpleTwoPartySwapApp = "SimpleTwoPartySwapApp";
+export const FastSignedTransferApp = "FastSignedTransferApp";
 
 export const SupportedApplications = {
   [CoinBalanceRefundApp]: CoinBalanceRefundApp,
   [SimpleLinkedTransferApp]: SimpleLinkedTransferApp,
   [SimpleTransferApp]: SimpleTransferApp,
   [SimpleTwoPartySwapApp]: SimpleTwoPartySwapApp,
+  [FastSignedTransferApp]: FastSignedTransferApp,
 };
 export type SupportedApplication = keyof typeof SupportedApplications;
 
@@ -273,6 +275,38 @@ export enum UnidirectionalLinkedTransferAppStage {
   PAYMENT_CLAIMED,
   CHANNEL_CLOSED,
 }
+
+////////////////////////////////////
+// Fast Signed Transfer App
+export enum FastSignedTransferActionType {
+  CREATE,
+  UNLOCK,
+  REJECT,
+  FINALIZE,
+}
+
+export type FastSignedTransfer<T = string> = {
+  amount: T;
+  assetId: Address;
+  signer: Address;
+  paymentId: string;
+  timeout: T;
+  receipientXpub: string;
+  data: string;
+  signature: string;
+};
+
+export type FastSignedTransferAppState<T = string> = {
+  lockedPayments: FastSignedTransfer<T>[];
+  coinTransfers: [CoinTransfer<T>, CoinTransfer<T>];
+  finalized: boolean;
+  turnNum: T;
+};
+
+export type FastSignedTransferAppAction<T = string> = {
+  newLockedPayments: FastSignedTransfer<T>[];
+  actionType: FastSignedTransferActionType;
+};
 
 ////////////////////////////////////
 // CoinBalanceRefund

@@ -518,9 +518,9 @@ export class ConnextClient implements IConnextClient {
     } as CFCoreTypes.DepositParams);
   };
 
-  public getAppInstances = async (multisigAddress?: string): Promise<AppInstanceJson[]> => {
+  public getAppInstances = async (): Promise<AppInstanceJson[]> => {
     const { appInstances } = await this.channelProvider.send(ProtocolTypes.chan_getAppInstances, {
-      multisigAddress,
+      multisigAddress: this.multisigAddress,
     } as CFCoreTypes.GetAppInstancesParams);
     return appInstances;
   };
