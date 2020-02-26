@@ -7,7 +7,7 @@ import { Memoize } from "typescript-memoize";
 import { createRpcRouter } from "./api";
 import AutoNonceWallet from "./auto-nonce-wallet";
 import { Deferred } from "./deferred";
-import { Opcode, Protocol, ProtocolMessage, ProtocolRunner } from "./machine";
+import { Opcode, Commitment, ProtocolMessage, ProtocolRunner } from "./machine";
 import { StateChannel } from "./models";
 import { getFreeBalanceAddress } from "./models/free-balance";
 import { getPrivateKeysGeneratorAndXPubOrThrow, PrivateKeysGetter } from "./private-keys-generator";
@@ -211,14 +211,29 @@ export class Node {
     protocolRunner.register(Opcode.WRITE_COMMITMENT, async (args: any[]) => {
       const { store } = this.requestHandler;
 
-      const [protocol, commitment, ...key] = args;
+      const [commitmentType, commitment, ...res] = args;
 
-      if (protocol === Protocol.Withdraw) {
-        const [multisigAddress] = key;
-        await store.storeWithdrawalCommitment(multisigAddress, commitment);
-      } else {
-        await store.setCommitment([protocol, ...key], commitment);
+      switch (commitmentType) {
+        case Commitment.Withdraw:
+          const [multisigAddress] = res;
+          await store.storeWithdrawalCommitment(multisigAddress, commitment);
+          break;
+
+        case Commitment.SetState:
+          const [appIdentityHash] = res;
+          await store.saveLatestSetStateCommitment(appIdentityHash, commitment);
+          break;
+
+        case Commitment.Conditional:
+          // const [appId] = res;
+          // await store.saveConditionalTransactionCommitment(appId, commitment);
+          await store.setCommitment([commitmentType, ...res], commitment);
+          break;
+
+        default:
+          throw new Error(`Unrecognized commitment type: ${commitmentType}`);
       }
+      return;
     });
 
     protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, async (args: [StateChannel[]]) => {
