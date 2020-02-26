@@ -1,13 +1,14 @@
 import { SetStateCommitment } from "../ethereum";
 import { ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
-import { Opcode, Protocol } from "../machine/enums";
+import { Commitment, Opcode, Protocol } from "../machine/enums";
 import { Context, ProtocolMessage, UpdateProtocolParams } from "../types";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
 
 const protocol = Protocol.Update;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
+const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;
+const { SetState } = Commitment;
 
 /**
  * @description This exchange is described at the following URL:
@@ -35,7 +36,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
     const setStateCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       appInstance.identity,
       appInstance.hashOfLatestState,
       appInstance.versionNumber,
@@ -66,6 +67,10 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
       responderSignature,
     );
 
+    setStateCommitment.signatures = [initiatorSignature, responderSignature];
+
+    yield [WRITE_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
+
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
   },
 
@@ -92,7 +97,7 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
     const setStateCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       appInstance.identity,
       appInstance.hashOfLatestState,
       appInstance.versionNumber,
@@ -106,6 +111,10 @@ export const UPDATE_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     const responderSignature = yield [OP_SIGN, setStateCommitment, appInstance.appSeqNo];
+
+    setStateCommitment.signatures = [initiatorSignature, responderSignature];
+
+    yield [WRITE_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 

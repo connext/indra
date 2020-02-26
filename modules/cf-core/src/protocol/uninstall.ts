@@ -2,7 +2,7 @@ import { BaseProvider } from "ethers/providers";
 
 import { SetStateCommitment } from "../ethereum";
 import { xkeyKthAddress } from "../machine";
-import { Opcode, Protocol } from "../machine/enums";
+import { Commitment, Opcode, Protocol } from "../machine/enums";
 import { Context, ProtocolExecutionFlow, ProtocolMessage, UninstallProtocolParams } from "../types";
 
 import { computeTokenIndexedFreeBalanceIncrements } from "./utils/get-outcome-increments";
@@ -12,6 +12,7 @@ import { Store } from "../store";
 
 const protocol = Protocol.Uninstall;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;
+const { SetState } = Commitment;
 
 /**
  * @description This exchange is described at the following URL:
@@ -33,7 +34,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     const uninstallCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       postProtocolStateChannel.freeBalance.identity,
       postProtocolStateChannel.freeBalance.hashOfLatestState,
       postProtocolStateChannel.freeBalance.versionNumber,
@@ -58,12 +59,9 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     assertIsValidSignature(responderAddress, uninstallCommitment, responderSignature);
 
-    const finalCommitment = uninstallCommitment.getSignedTransaction([
-      signature,
-      responderSignature,
-    ]);
+    uninstallCommitment.signatures = [signature, responderSignature];
 
-    yield [WRITE_COMMITMENT, protocol, finalCommitment, appIdentityHash];
+    yield [WRITE_COMMITMENT, SetState, uninstallCommitment, appIdentityHash];
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
   },
@@ -82,7 +80,7 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     const uninstallCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       postProtocolStateChannel.freeBalance.identity,
       postProtocolStateChannel.freeBalance.hashOfLatestState,
       postProtocolStateChannel.freeBalance.versionNumber,
@@ -95,12 +93,9 @@ export const UNINSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const responderSignature = yield [OP_SIGN, uninstallCommitment];
 
-    const finalCommitment = uninstallCommitment.getSignedTransaction([
-      responderSignature,
-      initiatorSignature,
-    ]);
+    uninstallCommitment.signatures = [responderSignature, initiatorSignature];
 
-    yield [WRITE_COMMITMENT, protocol, finalCommitment, appIdentityHash];
+    yield [WRITE_COMMITMENT, SetState, uninstallCommitment, appIdentityHash];
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 

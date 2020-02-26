@@ -1,13 +1,14 @@
 import { SetStateCommitment } from "../ethereum";
 import { ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
-import { Opcode, Protocol } from "../machine/enums";
+import { Commitment, Opcode, Protocol } from "../machine/enums";
 import { Context, ProtocolMessage, TakeActionProtocolParams } from "../types";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
 
 const protocol = Protocol.TakeAction;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
+const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;
+const { SetState } = Commitment;
 
 /**
  * @description This exchange is described at the following URL:
@@ -40,7 +41,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
     const setStateCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       appInstance.identity,
       appInstance.hashOfLatestState,
       appInstance.versionNumber,
@@ -70,6 +71,11 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
       setStateCommitment,
       responderSignature,
     );
+
+    // add signatures and write commitment to store
+    setStateCommitment.signatures = [initiatorSignature, responderSignature];
+
+    yield [WRITE_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
   },
@@ -102,7 +108,7 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     const appInstance = postProtocolStateChannel.getAppInstance(appIdentityHash);
 
     const setStateCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       appInstance.identity,
       appInstance.hashOfLatestState,
       appInstance.versionNumber,
@@ -116,6 +122,11 @@ export const TAKE_ACTION_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     const responderSignature = yield [OP_SIGN, setStateCommitment, appInstance.appSeqNo];
+
+    // add signatures and write commitment to store
+    setStateCommitment.signatures = [initiatorSignature, responderSignature];
+
+    yield [WRITE_COMMITMENT, SetState, setStateCommitment, appIdentityHash];
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 

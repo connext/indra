@@ -3,7 +3,7 @@ import { defaultAbiCoder, keccak256 } from "ethers/utils";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import { SetStateCommitment } from "../ethereum";
 import { appIdentityToHash, ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
-import { Opcode, Protocol } from "../machine/enums";
+import { Commitment, Opcode, Protocol } from "../machine/enums";
 import { Context, ProposeInstallProtocolParams, ProtocolMessage } from "../types";
 import { AppInstanceProposal, StateChannel } from "../models";
 
@@ -12,6 +12,7 @@ import { assertIsValidSignature } from "./utils/signature-validator";
 
 const protocol = Protocol.Propose;
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;
+const { SetState } = Commitment;
 
 export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
@@ -116,13 +117,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderSignatureOnInitialState,
     ];
 
-    yield [
-      WRITE_COMMITMENT,
-      Protocol.Propose,
-      setStateCommitment,
-      appInstanceProposal.identityHash,
-      false,
-    ];
+    yield [WRITE_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
   },
 
   1 /* Responding */: async function*(context: Context) {
@@ -213,13 +208,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
       responderSignatureOnInitialState,
     ];
 
-    yield [
-      WRITE_COMMITMENT,
-      Protocol.Propose,
-      setStateCommitment,
-      appInstanceProposal.identityHash,
-      false,
-    ];
+    yield [WRITE_COMMITMENT, SetState, setStateCommitment, appInstanceProposal.identityHash];
 
     yield [
       IO_SEND,

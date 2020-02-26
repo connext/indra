@@ -4,7 +4,7 @@ import { BigNumber } from "ethers/utils";
 import { SetStateCommitment } from "../ethereum";
 import { ConditionalTransaction } from "../ethereum/conditional-transaction-commitment";
 import { ProtocolExecutionFlow } from "../machine";
-import { Opcode, Protocol } from "../machine/enums";
+import { Commitment, Opcode, Protocol } from "../machine/enums";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../methods/errors";
 import { AppInstance, StateChannel } from "../models";
 import { TokenIndexedCoinTransferMap } from "../models/free-balance";
@@ -24,7 +24,8 @@ import { assertIsValidSignature } from "./utils/signature-validator";
 import { assertSufficientFundsWithinFreeBalance } from "../utils";
 
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, WRITE_COMMITMENT, PERSIST_STATE_CHANNEL } = Opcode;
-const { Update, Install } = Protocol;
+const { Install } = Protocol;
+const { Conditional, SetState } = Commitment;
 
 /**
  * @description This exchange is described at the following URL:
@@ -120,7 +121,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnConditionalTransaction,
     ]);
 
-    yield [WRITE_COMMITMENT, Install, signedConditionalTransaction, newAppInstance.identityHash];
+    yield [
+      WRITE_COMMITMENT,
+      Conditional,
+      signedConditionalTransaction,
+      newAppInstance.identityHash,
+    ];
 
     const freeBalanceUpdateData = new SetStateCommitment(
       network.ChallengeRegistry,
@@ -146,10 +152,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       WRITE_COMMITMENT,
-      Update,
+      SetState,
       freeBalanceUpdateData,
       postProtocolStateChannel.freeBalance.identityHash,
-      false,
     ];
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
@@ -242,7 +247,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnConditionalTransaction,
     ]);
 
-    yield [WRITE_COMMITMENT, Install, signedConditionalTransaction, newAppInstance.identityHash];
+    yield [
+      WRITE_COMMITMENT,
+      Conditional,
+      signedConditionalTransaction,
+      newAppInstance.identityHash,
+    ];
 
     const freeBalanceUpdateData = new SetStateCommitment(
       network.ChallengeRegistry,
@@ -284,10 +294,9 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     yield [
       WRITE_COMMITMENT,
-      Update,
+      SetState,
       freeBalanceUpdateData,
       postProtocolStateChannel.freeBalance.identityHash,
-      false,
     ];
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
