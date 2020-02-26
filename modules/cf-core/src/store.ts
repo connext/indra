@@ -12,6 +12,7 @@ import {
 import { AppInstance, AppInstanceProposal, StateChannel } from "./models";
 import { CFCoreTypes, SolidityValueType } from "./types";
 import { getCreate2MultisigAddress } from "./utils";
+import { SetStateCommitment } from "./ethereum";
 
 /**
  * A simple ORM around StateChannels and AppInstances stored using the
@@ -198,6 +199,13 @@ export class Store {
       ),
       args.concat([commitment]),
     );
+  }
+
+  public async saveLatestSetStateCommitment(
+    appInstanceId: string,
+    commitment: SetStateCommitment,
+  ): Promise<void> {
+    return this.storeService.saveLatestSetStateCommitment(appInstanceId, commitment.toJson());
   }
 
   public async getAppInstance(appInstanceId: string): Promise<AppInstance> {
