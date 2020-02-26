@@ -97,6 +97,7 @@ export {
   ProtocolTypes,
   RejectInstallVirtualMessage,
   RejectProposalMessage,
+  SetStateCommitmentJSON,
   SetupProtocolParams,
   SignedStateHashUpdate,
   SingleAssetTwoPartyCoinTransferInterpreterParams,
