@@ -73,7 +73,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
     const setStateCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       {
         appDefinition,
         channelNonce: preProtocolStateChannel.numProposedApps + 1,
@@ -170,7 +170,7 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     };
 
     const setStateCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       {
         appDefinition,
         channelNonce: preProtocolStateChannel.numProposedApps + 1,
