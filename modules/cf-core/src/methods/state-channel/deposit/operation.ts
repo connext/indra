@@ -149,7 +149,7 @@ export async function makeDeposit(
   });
 
   await txResponse!.wait(blocksNeededForConfirmation);
-  logTime(log, `Deposit tx ${txResponse!.hash} was confirmed`, start);
+  logTime(log, start, `Deposit tx ${txResponse!.hash} was confirmed`);
   return txResponse!.hash;
 }
 

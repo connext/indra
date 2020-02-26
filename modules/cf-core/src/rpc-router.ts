@@ -45,7 +45,7 @@ export default class RpcRouter extends Router {
 
     this.requestHandler.outgoing.emit(rpc.methodName, result);
 
-    logTime(this.log, `Processed ${rpc.methodName} method`, start);
+    logTime(this.log, start, `Processed ${rpc.methodName} method`);
     return result;
   }
 

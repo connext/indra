@@ -3,6 +3,7 @@ import { ProtocolExecutionFlow, xkeyKthAddress } from "../machine";
 import { Opcode, Protocol } from "../machine/enums";
 import { StateChannel } from "../models/state-channel";
 import { Context, ProtocolMessage, SetupProtocolParams } from "../types";
+import { logTime } from "../utils";
 
 import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
@@ -18,6 +19,8 @@ const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
 export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
     const { message, network } = context;
+    const log = context.log.newContext("CF-SetupProtocol");
+    const start = Date.now();
 
     const { processID, params } = message;
 
@@ -60,10 +63,13 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
 
     context.stateChannelsMap.set(stateChannel.multisigAddress, stateChannel);
+    logTime(log, start, `Finished initiating`);
   },
 
   1 /* Responding */: async function*(context: Context) {
     const { message, network } = context;
+    const log = context.log.newContext("CF-SetupProtocol");
+    const start = Date.now();
 
     const {
       processID,
@@ -107,5 +113,6 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     context.stateChannelsMap.set(stateChannel.multisigAddress, stateChannel);
+    logTime(log, start, `Finished responding`);
   },
 };

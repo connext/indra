@@ -70,7 +70,7 @@ export class RequestHandler {
       requestId: req.requestId,
       result: await this.methods.get(method)(this, req.params),
     };
-    logTime(this.log, `Method ${method} was executed`, start);
+    logTime(this.log, start, `Method ${method} was executed`);
     return result;
   }
 
@@ -132,12 +132,12 @@ export class RequestHandler {
 
     logTime(
       this.log,
+      start,
       `Event ${
         event !== PROTOCOL_MESSAGE_EVENT
           ? event
           : `for ${(msg as NodeMessageWrappedProtocolMessage).data.protocol} protocol`
       } was processed`,
-      start,
     );
     this.router.emit(event, msg);
   }
