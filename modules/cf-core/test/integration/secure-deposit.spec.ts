@@ -2,7 +2,6 @@ import { DepositConfirmationMessage, DepositStartedMessage } from "@connext/type
 import { Contract } from "ethers";
 import { One, Two, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
-import log from "loglevel";
 
 import { Node } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
@@ -21,8 +20,6 @@ import {
 import { CFCoreTypes } from "@connext/types";
 
 expect.extend({ toBeEq });
-
-log.setLevel(log.levels.SILENT);
 
 // NOTE: no deposit started event emitted for responder
 function confirmDepositMessages(

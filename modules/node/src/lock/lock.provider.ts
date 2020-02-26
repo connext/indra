@@ -1,8 +1,8 @@
 import { IMessagingService } from "@connext/messaging";
 import { FactoryProvider } from "@nestjs/common/interfaces";
-import { Lock } from "redlock";
 
 import { AuthService } from "../auth/auth.service";
+import { LoggerService } from "../logger/logger.service";
 import { LockProviderId, MessagingProviderId } from "../constants";
 import { AbstractMessagingProvider } from "../util";
 
@@ -10,11 +10,12 @@ import { LockService } from "./lock.service";
 
 class LockMessaging extends AbstractMessagingProvider {
   constructor(
-    messaging: IMessagingService,
-    private readonly lockService: LockService,
     private readonly authService: AuthService,
+    private readonly lockService: LockService,
+    log: LoggerService,
+    messaging: IMessagingService,
   ) {
-    super(messaging);
+    super(log, messaging);
   }
 
   async acquireLock(multisig: string, data: { lockTTL: number }): Promise<string> {
@@ -38,14 +39,15 @@ class LockMessaging extends AbstractMessagingProvider {
 }
 
 export const lockProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [MessagingProviderId, LockService, AuthService],
+  inject: [AuthService, LockService, LoggerService, MessagingProviderId],
   provide: LockProviderId,
   useFactory: async (
-    messaging: IMessagingService,
-    lockService: LockService,
     authService: AuthService,
+    lockService: LockService,
+    log: LoggerService,
+    messaging: IMessagingService,
   ): Promise<void> => {
-    const lock = new LockMessaging(messaging, lockService, authService);
+    const lock = new LockMessaging(authService, lockService, log, messaging);
     await lock.setupSubscriptions();
   },
 };

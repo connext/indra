@@ -123,7 +123,8 @@ export class ConfigService implements OnModuleInit {
       const configIndex = tokenConfig.findIndex(tc =>
         tc.find(t => t.chainId === currentChainId && t.address === tokenAddress),
       );
-      const configExists = tokenConfig[configIndex].find(tc => tc.chainId === 1);
+      const configExists =
+        configIndex < 0 ? undefined : tokenConfig[configIndex].find(tc => tc.chainId === 1);
       tokenAddress = configExists ? configExists.address : tokenAddress;
     }
 
@@ -216,7 +217,6 @@ export class ConfigService implements OnModuleInit {
   getMessagingConfig(): MessagingConfig {
     return {
       clusterId: this.get(`INDRA_NATS_CLUSTER_ID`),
-      logLevel: this.getLogLevel(), // <- this is very verbose just fyi
       messagingUrl: (this.get(`INDRA_NATS_SERVERS`) || ``).split(`,`),
       token: this.get(`INDRA_NATS_TOKEN`),
     };

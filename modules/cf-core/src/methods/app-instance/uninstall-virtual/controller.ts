@@ -69,7 +69,6 @@ export default class UninstallVirtualController extends NodeController {
   }
 
   protected async beforeExecution(
-    // @ts-ignore
     requestHandler: RequestHandler,
     params: CFCoreTypes.UninstallVirtualParams,
   ) {

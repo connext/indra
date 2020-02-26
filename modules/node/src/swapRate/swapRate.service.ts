@@ -2,25 +2,25 @@ import { IMessagingService } from "@connext/messaging";
 import { AllowedSwap, PriceOracleType, SwapRate } from "@connext/types";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { getMarketDetails, getTokenReserves } from "@uniswap/sdk";
-import { Contract, ethers } from "ethers";
+import { ethers } from "ethers";
 import { AddressZero } from "ethers/constants";
 
 import { ConfigService } from "../config/config.service";
+import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId } from "../constants";
-import { CLogger } from "../util";
 import { parseEther } from "ethers/utils";
-
-const logger = new CLogger("SwapService");
 
 @Injectable()
 export class SwapRateService implements OnModuleInit {
-  private medianizer: Contract;
   private latestSwapRates: SwapRate[] = [];
 
   constructor(
     private readonly config: ConfigService,
+    private readonly log: LoggerService,
     @Inject(MessagingProviderId) private readonly messaging: IMessagingService,
-  ) {}
+  ) {
+    this.log.setContext("SwapRateService");
+  }
 
   async getOrFetchRate(from: string, to: string): Promise<string> {
     const swap = this.latestSwapRates.find((s: SwapRate) => s.from === from && s.to === to);
@@ -28,7 +28,12 @@ export class SwapRateService implements OnModuleInit {
     if (swap) {
       rate = swap.rate;
     } else {
-      rate = await this.getSwapRate(from, to, swap.priceOracleType);
+      const targetSwap = this.config.getAllowedSwaps().find(s => s.from === from && s.to === to);
+      if (targetSwap) {
+        rate = await this.getSwapRate(from, to, targetSwap.priceOracleType);
+      } else {
+        throw new Error(`No valid swap exists for ${from} to ${to}`);
+      }
     }
     return rate;
   }
@@ -69,11 +74,11 @@ export class SwapRateService implements OnModuleInit {
           throw new Error(`Price oracle not configured for swap ${from} -> ${to}`);
       }
     } catch (e) {
-      logger.warn(`Failed to fetch swap rate from ${priceOracleType}`);
+      this.log.warn(`Failed to fetch swap rate from ${priceOracleType} for ${from} to ${to}`);
       if (process.env.NODE_ENV === "development") {
         newRate = await this.config.getDefaultSwapRate(from, to);
         if (!newRate) {
-          throw e;
+          return "0";
         }
       }
     }
@@ -88,7 +93,7 @@ export class SwapRateService implements OnModuleInit {
     const oldRateBn = parseEther(oldRate || "0");
     const newRateBn = parseEther(newRate);
     if (!oldRateBn.eq(newRateBn)) {
-      logger.log(`Got swap rate from Uniswap at block ${blockNumber}: ${newRate}`);
+      this.log.info(`Got swap rate from Uniswap at block ${blockNumber}: ${newRate}`);
       this.broadcastRate(from, to); // Only broadcast the rate if it's changed
     }
     return newRate;
