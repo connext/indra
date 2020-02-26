@@ -2,7 +2,7 @@ import { MaxUint256 } from "ethers/constants";
 import { BaseProvider } from "ethers/providers";
 import { BigNumber, bigNumberify, defaultAbiCoder } from "ethers/utils";
 
-import { ConditionalTransaction, SetStateCommitment } from "../ethereum";
+import { ConditionalTransactionCommitment, SetStateCommitment } from "../ethereum";
 import { Commitment, Opcode, Protocol } from "../machine/enums";
 import { sortAddresses, xkeyKthAddress } from "../machine/xkeys";
 import { AppInstance, StateChannel } from "../models";
@@ -75,7 +75,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
 
     const responderAddress = stateChannelWithResponding.getMultisigOwnerAddrOf(responderXpub);
 
-    const presignedMultisigTxForAliceIngridVirtualAppAgreement = new ConditionalTransaction(
+    const presignedMultisigTxForAliceIngridVirtualAppAgreement = new ConditionalTransactionCommitment(
       network,
       stateChannelWithIntermediary.multisigAddress,
       stateChannelWithIntermediary.multisigOwners,
@@ -126,13 +126,15 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       intermediarySignatureOnAliceIngridVirtualAppAgreement,
     );
 
+    presignedMultisigTxForAliceIngridVirtualAppAgreement.signatures = [
+      initiatorSignatureOnAliceIngridVirtualAppAgreement,
+      intermediarySignatureOnAliceIngridVirtualAppAgreement,
+    ];
+
     yield [
       WRITE_COMMITMENT,
       Conditional, // TODO: Figure out how to map this to save to DB correctly
-      presignedMultisigTxForAliceIngridVirtualAppAgreement.getSignedTransaction([
-        initiatorSignatureOnAliceIngridVirtualAppAgreement,
-        intermediarySignatureOnAliceIngridVirtualAppAgreement,
-      ]),
+      presignedMultisigTxForAliceIngridVirtualAppAgreement,
       virtualAppInstance.identityHash,
     ];
 
@@ -303,7 +305,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
 
     const responderAddress = stateChannelWithResponding.getMultisigOwnerAddrOf(responderXpub);
 
-    const presignedMultisigTxForAliceIngridVirtualAppAgreement = new ConditionalTransaction(
+    const presignedMultisigTxForAliceIngridVirtualAppAgreement = new ConditionalTransactionCommitment(
       network,
       stateChannelWithInitiating.multisigAddress,
       stateChannelWithInitiating.multisigOwners,
@@ -323,7 +325,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       initiatorSignatureOnAliceIngridVirtualAppAgreement,
     );
 
-    const presignedMultisigTxForIngridBobVirtualAppAgreement = new ConditionalTransaction(
+    const presignedMultisigTxForIngridBobVirtualAppAgreement = new ConditionalTransactionCommitment(
       network,
       stateChannelWithResponding.multisigAddress,
       stateChannelWithResponding.multisigOwners,
@@ -400,13 +402,15 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       presignedMultisigTxForAliceIngridVirtualAppAgreement,
     ];
 
+    presignedMultisigTxForAliceIngridVirtualAppAgreement.signatures = [
+      initiatorSignatureOnAliceIngridVirtualAppAgreement,
+      intermediarySignatureOnAliceIngridVirtualAppAgreement,
+    ];
+
     yield [
       WRITE_COMMITMENT,
       Conditional,
-      presignedMultisigTxForAliceIngridVirtualAppAgreement.getSignedTransaction([
-        initiatorSignatureOnAliceIngridVirtualAppAgreement,
-        intermediarySignatureOnAliceIngridVirtualAppAgreement,
-      ]),
+      presignedMultisigTxForAliceIngridVirtualAppAgreement,
       timeLockedPassThroughAppInstance.identityHash,
     ];
 
@@ -575,7 +579,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
 
     const initiatorAddress = stateChannelWithInitiating.getMultisigOwnerAddrOf(initiatorXpub);
 
-    const presignedMultisigTxForIngridBobVirtualAppAgreement = new ConditionalTransaction(
+    const presignedMultisigTxForIngridBobVirtualAppAgreement = new ConditionalTransactionCommitment(
       network,
       stateChannelWithIntermediary.multisigAddress,
       stateChannelWithIntermediary.multisigOwners,
@@ -600,13 +604,15 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       presignedMultisigTxForIngridBobVirtualAppAgreement,
     ];
 
+    presignedMultisigTxForIngridBobVirtualAppAgreement.signatures = [
+      responderSignatureOnIngridBobVirtualAppAgreement,
+      intermediarySignatureOnIngridBobVirtualAppAgreement,
+    ];
+
     yield [
       WRITE_COMMITMENT,
       Conditional, // TODO: Figure out how to map this to save to DB correctly
-      presignedMultisigTxForIngridBobVirtualAppAgreement.getSignedTransaction([
-        responderSignatureOnIngridBobVirtualAppAgreement,
-        intermediarySignatureOnIngridBobVirtualAppAgreement,
-      ]),
+      presignedMultisigTxForIngridBobVirtualAppAgreement,
       virtualAppInstance.identityHash,
     ];
 

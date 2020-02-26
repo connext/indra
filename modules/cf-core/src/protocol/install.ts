@@ -2,7 +2,7 @@ import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
 import { SetStateCommitment } from "../ethereum";
-import { ConditionalTransaction } from "../ethereum/conditional-transaction-commitment";
+import { ConditionalTransactionCommitment } from "../ethereum/conditional-transaction-commitment";
 import { ProtocolExecutionFlow } from "../machine";
 import { Commitment, Opcode, Protocol } from "../machine/enums";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../methods/errors";
@@ -116,17 +116,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnConditionalTransaction,
     );
 
-    const signedConditionalTransaction = conditionalTransactionData.getSignedTransaction([
+    conditionalTransactionData.signatures = [
       mySignatureOnConditionalTransaction,
       counterpartySignatureOnConditionalTransaction,
-    ]);
-
-    yield [
-      WRITE_COMMITMENT,
-      Conditional,
-      signedConditionalTransaction,
-      newAppInstance.identityHash,
     ];
+
+    yield [WRITE_COMMITMENT, Conditional, conditionalTransactionData, newAppInstance.identityHash];
 
     const freeBalanceUpdateData = new SetStateCommitment(
       network.ChallengeRegistry,
@@ -242,17 +237,12 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTransactionData];
 
-    const signedConditionalTransaction = conditionalTransactionData.getSignedTransaction([
+    conditionalTransactionData.signatures = [
       mySignatureOnConditionalTransaction,
       counterpartySignatureOnConditionalTransaction,
-    ]);
-
-    yield [
-      WRITE_COMMITMENT,
-      Conditional,
-      signedConditionalTransaction,
-      newAppInstance.identityHash,
     ];
+
+    yield [WRITE_COMMITMENT, Conditional, conditionalTransactionData, newAppInstance.identityHash];
 
     const freeBalanceUpdateData = new SetStateCommitment(
       network.ChallengeRegistry,
@@ -504,21 +494,21 @@ function computeInterpreterParameters(
 }
 
 /**
- * Computes the ConditionalTransaction unsigned transaction from the multisignature
+ * Computes the ConditionalTransactionCommitment unsigned transaction from the multisignature
  * wallet that is required to be signed by all parties involved in the protocol.
  *
  * @param {NetworkContext} network - Metadata on the current blockchain
  * @param {OutcomeType} outcomeType - The outcome type of the AppInstance
  * @param {StateChannel} stateChannel - The post-protocol StateChannel
  *
- * @returns {ConditionalTransaction} A ConditionalTransaction object, ready to sign.
+ * @returns {ConditionalTransactionCommitment} A ConditionalTransactionCommitment object, ready to sign.
  */
 function constructConditionalTransactionData(
   networkContext: NetworkContext,
   stateChannel: StateChannel,
-): ConditionalTransaction {
+): ConditionalTransactionCommitment {
   const appInstance = stateChannel.mostRecentlyInstalledAppInstance();
-  return new ConditionalTransaction(
+  return new ConditionalTransactionCommitment(
     networkContext,
     stateChannel.multisigAddress,
     stateChannel.multisigOwners,

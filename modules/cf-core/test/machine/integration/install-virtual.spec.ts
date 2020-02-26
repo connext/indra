@@ -5,7 +5,7 @@ import { JsonRpcProvider } from "ethers/providers";
 import { BigNumber, Interface, parseEther, SigningKey } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../src/constants";
-import { ConditionalTransaction, SetStateCommitment } from "../../../src/ethereum";
+import { ConditionalTransactionCommitment, SetStateCommitment } from "../../../src/ethereum";
 import { xkeysToSortedKthSigningKeys } from "../../../src/machine/xkeys";
 import { AppInstance, StateChannel } from "../../../src/models";
 import { FreeBalanceClass } from "../../../src/models/free-balance";
@@ -264,7 +264,7 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
 
       await setStatesAndOutcomes(targetAppInstance, stateChannel);
 
-      const commitment = new ConditionalTransaction(
+      const commitment = new ConditionalTransactionCommitment(
         network, // network
         proxyAddress, // multisigAddress
         multisigOwnerKeys.map(x => x.address), // signing
@@ -274,11 +274,12 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
         encodeSingleAssetTwoPartyIntermediaryAgreementParams(agreement),
       );
 
+      commitment.signatures = [
+        multisigOwnerKeys[0].signDigest(commitment.hashToSign()),
+        multisigOwnerKeys[1].signDigest(commitment.hashToSign()),
+      ];
       await wallet.sendTransaction({
-        ...commitment.getSignedTransaction([
-          multisigOwnerKeys[0].signDigest(commitment.hashToSign()),
-          multisigOwnerKeys[1].signDigest(commitment.hashToSign()),
-        ]),
+        ...commitment.getSignedTransaction(),
         gasLimit: 6e9,
       });
 
@@ -324,7 +325,7 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
 
       await setStatesAndOutcomes(targetAppInstance, stateChannel);
 
-      const commitment = new ConditionalTransaction(
+      const commitment = new ConditionalTransactionCommitment(
         network, // network
         proxyAddress, // multisigAddress
         multisigOwnerKeys.map(x => x.address), // signing
@@ -334,11 +335,13 @@ describe("Scenario: Install virtual app with and put on-chain", () => {
         encodeSingleAssetTwoPartyIntermediaryAgreementParams(agreement),
       );
 
+      commitment.signatures = [
+        multisigOwnerKeys[0].signDigest(commitment.hashToSign()),
+        multisigOwnerKeys[1].signDigest(commitment.hashToSign()),
+      ];
+
       await wallet.sendTransaction({
-        ...commitment.getSignedTransaction([
-          multisigOwnerKeys[0].signDigest(commitment.hashToSign()),
-          multisigOwnerKeys[1].signDigest(commitment.hashToSign()),
-        ]),
+        ...commitment.getSignedTransaction(),
         gasLimit: 6e9,
       });
 
