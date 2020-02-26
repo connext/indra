@@ -6,8 +6,8 @@ import {
   RECIEVE_TRANSFER_FINISHED_EVENT,
   RECIEVE_TRANSFER_STARTED_EVENT,
 } from "@connext/types";
-import { HashZero, Zero } from "ethers/constants";
-import { BigNumber, bigNumberify } from "ethers/utils";
+import { AddressZero, HashZero, Zero } from "ethers/constants";
+import { BigNumber, bigNumberify, formatEther } from "ethers/utils";
 
 import { createLinkedHash, stringify, xpubToAddress } from "../lib";
 import {
@@ -33,7 +33,7 @@ export class ResolveConditionController extends AbstractController {
   public resolve = async (
     params: ResolveConditionParameters,
   ): Promise<ResolveConditionResponse> => {
-    this.log.info(`Resolve condition called with parameters: ${stringify(params)}`);
+    this.log.debug(`Resolve condition parameters: ${stringify(params)}`);
 
     const res = await this.conditionResolvers[params.conditionType](params);
     return res;
@@ -61,7 +61,7 @@ export class ResolveConditionController extends AbstractController {
   private resolveLinkedTransfer = async (
     params: ResolveLinkedTransferParameters,
   ): Promise<ResolveLinkedTransferResponse> => {
-    this.log.info(`Resolving link: ${stringify(params)}`);
+    this.log.info(`Resolving link payment with id ${params.paymentId}`);
     const { paymentId, preImage } = params;
 
     // convert and validate
@@ -74,7 +74,6 @@ export class ResolveConditionController extends AbstractController {
       invalid32ByteHexString(params.paymentId),
       invalid32ByteHexString(preImage),
     );
-    this.log.info(`Found link payment for ${amount} ${assetId}`);
     const amountBN = bigNumberify(amount);
 
     // handle collateral issues by pinging the node to see if the app can be
@@ -121,7 +120,9 @@ export class ResolveConditionController extends AbstractController {
       invalid32ByteHexString(paymentId),
       invalid32ByteHexString(preImage),
     );
-    this.log.info(`Found link payment for ${amount} ${assetId}`);
+    this.log.info(`Resolving link transfer of ${formatEther(params.amount)} ${
+      params.assetId === AddressZero ? "ETH" : "Tokens"
+    } with id ${params.paymentId}`);
 
     this.connext.emit(RECEIVE_TRANSFER_STARTED_EVENT, {
       paymentId,
