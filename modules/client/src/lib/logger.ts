@@ -1,15 +1,15 @@
-import { ILogger } from "@connext/types";
+import { ILog, ILogger } from "@connext/types";
 
 export class Logger implements ILogger {
   private levels: { [key: string]: number } = { debug: 4, error: 1, info: 3, warn: 2 };
-  private defaultLevel = "info";
-  private context = "Logger";
-  public logLevel = 3;
+  private context = "UnknownContext";
+  private log: ILog = console;
+  public level = 3;
 
-  public constructor(context?: string, logLevel?: number) {
+  public constructor(context?: string, level?: number, log?: ILog) {
     this.context = typeof context !== "undefined" ? context : this.context;
-    this.logLevel =
-      typeof logLevel !== "undefined" ? parseInt(logLevel.toString(), 10) : this.logLevel;
+    this.level = typeof level !== "undefined" ? parseInt(level.toString(), 10) : this.level;
+    this.log = typeof log !== "undefined" ? log : this.log;
   }
 
   public setContext(context: string): void {
@@ -17,7 +17,7 @@ export class Logger implements ILogger {
   }
 
   public newContext(context: string): Logger {
-    return new Logger(context, this.logLevel);
+    return new Logger(context, this.level);
   }
 
   public error(msg: string): void {
@@ -36,9 +36,8 @@ export class Logger implements ILogger {
     this.print("debug", msg);
   }
 
-  private print(level: string, msg: any): void {
-    if (this.levels[level] > this.logLevel) return;
-    const now = new Date().toISOString();
-    return (console as any)[level](`${now} [${this.context}] ${msg}`);
+  private print(level: string, msg: string): void {
+    if (this.levels[level] > this.level) return;
+    this.log[level](`${new Date().toISOString()} [${this.context}] ${msg}`);
   }
 }

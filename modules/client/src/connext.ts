@@ -111,18 +111,18 @@ export class ConnextClient implements IConnextClient {
     this.config = opts.config;
     this.ethProvider = opts.ethProvider;
     this.keyGen = opts.keyGen;
+    this.log = opts.logger.newContext("ConnextClient");
     this.messaging = opts.messaging;
     this.network = opts.network;
     this.node = opts.node;
-    this.token = opts.token;
     this.store = opts.store;
+    this.token = opts.token;
 
     this.freeBalanceAddress = this.channelProvider.config.freeBalanceAddress;
     this.signerAddress = this.channelProvider.config.signerAddress;
     this.publicIdentifier = this.channelProvider.config.userPublicIdentifier;
     this.multisigAddress = this.channelProvider.config.multisigAddress;
     this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
-    this.log = opts.logger.newContext("ConnextClient");
 
     // establish listeners
     this.listener = new ConnextListener(opts.channelProvider, this);
@@ -206,7 +206,7 @@ export class ConnextClient implements IConnextClient {
     // ensure that node and user xpub are different
     if (this.nodePublicIdentifier === this.publicIdentifier) {
       throw new Error(
-        "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
+        "Client must be instantiated with a secret that is different from the node's secret",
       );
     }
 
@@ -825,18 +825,7 @@ export class ConnextClient implements IConnextClient {
   ): Promise<ResolveLinkedTransferResponse> => {
     this.log.info(`Reclaiming transfer ${paymentId}`);
     // decrypt secret and resolve
-    let privateKey: string;
-    if (this.opts.mnemonic) {
-      privateKey = fromMnemonic(this.opts.mnemonic)
-        .derivePath(CF_PATH)
-        .derivePath("0").privateKey;
-    } else if (this.keyGen) {
-      // TODO: make this use app key?
-      privateKey = await this.keyGen("0");
-    } else {
-      throw new Error("No way to decode transfer, this should never happen!");
-    }
-
+    let privateKey = await this.keyGen("0");
     const preImage = await decryptWithPrivateKey(privateKey, encryptedPreImage);
     this.log.debug(`Decrypted message and recovered preImage: ${preImage}`);
     const response = await this.resolveCondition({

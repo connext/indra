@@ -22,7 +22,7 @@ import {
   TransferParameters,
   WithdrawParameters,
 } from "./inputs";
-import { ILogger } from "./logger";
+import { ILog } from "./logger";
 import { IMessagingService } from "./messaging";
 import {
   CreateChannelResponse,
@@ -45,7 +45,7 @@ export interface ClientOptions {
   xpub?: string;
   store?: Store;
   logLevel?: number;
-  logger?: ILogger;
+  logger?: ILog;
   asyncStorage?: IAsyncStorage;
   messaging?: IMessagingService;
   backupService?: IBackupServiceAPI;

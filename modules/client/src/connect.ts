@@ -81,7 +81,7 @@ export const connect = async (
   } = opts;
   let { xpub, keyGen, store, messaging } = opts;
 
-  const log = (logger || new Logger("ConnextConnect", opts.logLevel)) as ILogger;
+  const log = new Logger("ConnextConnect", opts.logLevel, logger) as ILogger;
 
   // setup ethProvider + network information
   log.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);
@@ -204,7 +204,7 @@ export const connect = async (
     node,
     store,
     token,
-    ...opts, // use any provided opts by default
+    xpub,
   });
 
   // return before any cleanup using the assumption that all injected clients
