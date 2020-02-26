@@ -1,4 +1,11 @@
-import { CFCoreTypes, StateChannelJSON, AppInstanceJson, ProtocolTypes } from "@connext/types";
+import {
+  CFCoreTypes,
+  ConditionalTransactionCommitmentJSON,
+  StateChannelJSON,
+  AppInstanceJson,
+  ProtocolTypes,
+  SetStateCommitmentJSON,
+} from "@connext/types";
 import { StateChannel } from "../../src";
 import { AppInstance } from "../../src/models";
 
@@ -47,6 +54,11 @@ export class MemoryStoreServiceOld implements CFCoreTypes.IStoreServiceOld {
 export class MemoryStoreService implements CFCoreTypes.IStoreService {
   private channels: Map<string, StateChannelJSON> = new Map();
   private commitments: Map<string, any> = new Map();
+  private setStateCommitments: Map<string, SetStateCommitmentJSON> = new Map();
+  private conditionalTransactionCommitment: Map<
+    string,
+    ConditionalTransactionCommitmentJSON
+  > = new Map();
   private withdrawals: Map<string, ProtocolTypes.MinimalTransaction> = new Map();
   private extendedPrivKey: string = "";
 
@@ -113,6 +125,32 @@ export class MemoryStoreService implements CFCoreTypes.IStoreService {
 
   async saveCommitment(commitmentHash: string, commitment: any[]): Promise<void> {
     this.commitments.set(commitmentHash, commitment.join(","));
+  }
+
+  async getLatestSetStateCommitment(
+    appInstanceId: string,
+  ): Promise<SetStateCommitmentJSON | undefined> {
+    return this.setStateCommitments.get(appInstanceId);
+  }
+
+  async saveLatestSetStateCommitment(
+    appInstanceId: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    this.setStateCommitments.set(appInstanceId, commitment);
+  }
+
+  async getConditionalTransactionCommitment(
+    appInstanceId: string,
+  ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
+    return this.conditionalTransactionCommitment.get(appInstanceId);
+  }
+
+  async saveConditionalTransactionCommitment(
+    appInstanceId: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void> {
+    this.conditionalTransactionCommitment.set(appInstanceId, commitment);
   }
 
   async getWithdrawalCommitment(

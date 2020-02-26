@@ -1,6 +1,7 @@
 import { StateChannelJSON } from "./state";
-import { AppInstanceJson, AppInstanceProposal } from "./app";
+import { AppInstanceJson } from "./app";
 import { CFCoreTypes } from "./cfCore";
+import { SetStateCommitmentJSON, ConditionalTransactionCommitmentJSON } from "./challenge";
 
 export const ConnextNodeStorePrefix = "INDRA_NODE_CF_CORE";
 export const ConnextClientStorePrefix = "INDRA_CLIENT_CF_CORE";
@@ -79,8 +80,18 @@ export interface IStoreService {
   saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void>;
   // getAppProposals(multisigAddress: string): Promise<AppInstanceJson[]>;
   // saveAppProposal(appProposal: AppInstanceJson): Promise<void>;
-  getCommitment(commitmentHash: string): Promise<CFCoreTypes.MinimalTransaction | undefined>;
-  saveCommitment(commitmentHash: string, commitment: any[]): Promise<void>;
+  getLatestSetStateCommitment(appIdentityHash: string): Promise<SetStateCommitmentJSON | undefined>;
+  saveLatestSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void>;
+  getConditionalTransactionCommitment(
+    appIdentityHash: string,
+  ): Promise<ConditionalTransactionCommitmentJSON | undefined>;
+  saveConditionalTransactionCommitment(
+    appIdentityHash: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void>;
   getWithdrawalCommitment(
     multisigAddress: string,
   ): Promise<CFCoreTypes.MinimalTransaction | undefined>;
