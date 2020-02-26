@@ -10,6 +10,9 @@ const expectedNetwork = {
 };
 const expectedAddresses = addressBook[expectedNetwork.chainId];
 
+// TODO: might be better to not hard-code this
+const expectedNumberOfApps = 5;
+
 const verifyApp = (app: DefaultApp): void => {
   expect(app.chainId).to.be.equal(expectedNetwork.chainId);
   expect(app.name).to.exist;
@@ -26,7 +29,7 @@ describe("Get App Registry", () => {
     client = await createClient();
     expect(client.multisigAddress).to.exist;
     const appRegistry = await client.getAppRegistry();
-    expect(appRegistry.length).to.equal(4);
+    expect(appRegistry.length).to.equal(expectedNumberOfApps);
     appRegistry.forEach((app: DefaultApp) => verifyApp(app));
   });
 
