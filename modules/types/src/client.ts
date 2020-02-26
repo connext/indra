@@ -2,7 +2,7 @@ import { providers } from "ethers";
 
 import { AppInstanceJson } from "./app";
 import { AppActionBigNumber, AppRegistry, AppState, DefaultApp, SupportedApplication } from "./app";
-import { BigNumber, Contract, JsonRpcProvider, Network } from "./basic";
+import { BigNumber, JsonRpcProvider } from "./basic";
 import { CFCoreChannel, ChannelAppSequences, ChannelState, RebalanceProfile } from "./channel";
 import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvider";
 import { ConnextEvent } from "./events";
@@ -28,26 +28,12 @@ import {
   CreateChannelResponse,
   GetChannelResponse,
   GetConfigResponse,
-  INodeApiClient,
   RequestCollateralResponse,
   Transfer,
 } from "./node";
 import { ProtocolTypes } from "./protocol";
 import { IAsyncStorage, IBackupServiceAPI, Store } from "./store";
 import { CFCoreTypes } from "./cfCore";
-
-export type InternalClientOptions = ClientOptions & {
-  appRegistry: AppRegistry;
-  channelProvider: IChannelProvider;
-  config: GetConfigResponse;
-  ethProvider: JsonRpcProvider;
-  logger: ILogger;
-  messaging: IMessagingService;
-  network: Network;
-  node: INodeApiClient;
-  store: Store;
-  token: Contract;
-};
 
 // channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
 export interface ClientOptions {

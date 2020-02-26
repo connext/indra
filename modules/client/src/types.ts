@@ -1,3 +1,32 @@
+import { JsonRpcProvider } from "ethers/providers";
+import {
+  AppRegistry,
+  ClientOptions,
+  Contract,
+  GetConfigResponse,
+  IChannelProvider,
+  ILogger,
+  IMessagingService,
+  INodeApiClient,
+  Network,
+  Store,
+} from "@connext/client";
+
+// This type is only ever used inside the client
+// No need to keep it in the global types package.
+export type InternalClientOptions = ClientOptions & {
+  appRegistry: AppRegistry;
+  channelProvider: IChannelProvider;
+  config: GetConfigResponse;
+  ethProvider: JsonRpcProvider;
+  logger: ILogger;
+  messaging: IMessagingService;
+  network: Network;
+  node: INodeApiClient;
+  store: Store;
+  token: Contract;
+};
+
 export {
   Address,
   App,
@@ -45,7 +74,6 @@ export {
   INodeApiClient,
   InstallMessage,
   InstallVirtualMessage,
-  InternalClientOptions,
   inverse,
   IRpcConnection,
   isBN,
