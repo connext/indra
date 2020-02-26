@@ -11,7 +11,7 @@ import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
 
 const protocol = Protocol.Propose;
-const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
+const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;
 
 export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
   0 /* Initiating */: async function*(context: Context) {
@@ -109,6 +109,20 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     const responderAddress = xkeyKthAddress(responderXpub, 0);
 
     assertIsValidSignature(responderAddress, setStateCommitment, responderSignatureOnInitialState);
+
+    // add signatures to commitment and save
+    setStateCommitment.signatures = [
+      initiatorSignatureOnInitialState,
+      responderSignatureOnInitialState,
+    ];
+
+    yield [
+      WRITE_COMMITMENT,
+      Protocol.Propose,
+      setStateCommitment,
+      appInstanceProposal.identityHash,
+      false,
+    ];
   },
 
   1 /* Responding */: async function*(context: Context) {
@@ -193,6 +207,19 @@ export const PROPOSE_PROTOCOL: ProtocolExecutionFlow = {
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
 
     const responderSignatureOnInitialState = yield [OP_SIGN, setStateCommitment];
+
+    setStateCommitment.signatures = [
+      initiatorSignatureOnInitialState,
+      responderSignatureOnInitialState,
+    ];
+
+    yield [
+      WRITE_COMMITMENT,
+      Protocol.Propose,
+      setStateCommitment,
+      appInstanceProposal.identityHash,
+      false,
+    ];
 
     yield [
       IO_SEND,
