@@ -36,7 +36,7 @@ export class SetStateCommitmentEntity {
   @Column("enum", { enum: CommitmentType })
   type!: CommitmentType;
 
-  @Column("string")
+  @Column("text")
   appIdentityHash!: string;
 
   @Column("json")
@@ -53,10 +53,10 @@ export class SetStateCommitmentEntity {
   @Column("json", { nullable: true })
   signatures!: object; // Signature[]
 
-  @Column("number")
+  @Column("integer")
   timeout!: number;
 
-  @Column("number")
+  @Column("integer")
   versionNumber!: number;
 }
 
@@ -80,10 +80,10 @@ export class ConditionalTransactionCommitmentEntity {
   @IsEthAddress()
   interpreterAddr!: string;
 
-  @Column("string")
+  @Column("text")
   interpreterParams!: string;
 
-  @Column("string")
+  @Column("text")
   @IsEthAddress()
   multisigAddress!: string;
 
