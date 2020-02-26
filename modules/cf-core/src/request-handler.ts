@@ -15,7 +15,7 @@ import {
   NodeEvent,
   NodeMessageWrappedProtocolMessage,
 } from "./types";
-import { bigNumberifyJson } from "./utils";
+import { bigNumberifyJson, logTime } from "./utils";
 import { DEPOSIT_CONFIRMED_EVENT, PROTOCOL_MESSAGE_EVENT } from "@connext/types";
 
 /**
@@ -70,7 +70,7 @@ export class RequestHandler {
       requestId: req.requestId,
       result: await this.methods.get(method)(this, req.params),
     };
-    this.log.info(`Method ${method} was executed in ${Date.now() - start} ms`);
+    logTime(this.log, `Method ${method} was executed`, start);
     return result;
   }
 
@@ -130,22 +130,15 @@ export class RequestHandler {
       await controllerExecutionMethod(this, msg);
     }
 
-    const diff = Date.now() - start;
-    const message = `Event ${
-      event !== PROTOCOL_MESSAGE_EVENT
-        ? event
-        : `for ${(msg as NodeMessageWrappedProtocolMessage).data.protocol} protocol`
-    } was processed in ${diff} ms`;
-
-    if (diff < 10) {
-      this.log.debug(message);
-    } else if (diff < 100) {
-      this.log.info(message);
-    } else if (diff < 1000) {
-      this.log.warn(message);
-    } else {
-      this.log.error(message);
-    }
+    logTime(
+      this.log,
+      `Event ${
+        event !== PROTOCOL_MESSAGE_EVENT
+          ? event
+          : `for ${(msg as NodeMessageWrappedProtocolMessage).data.protocol} protocol`
+      } was processed`,
+      start,
+    );
     this.router.emit(event, msg);
   }
 

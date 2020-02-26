@@ -12,7 +12,7 @@ import {
   Store,
 } from "@connext/types";
 
-// This type is only ever used inside the client
+// This type is only ever used inside the client,
 // No need to keep it in the global types package.
 export type InternalClientOptions = {
   appRegistry: AppRegistry;

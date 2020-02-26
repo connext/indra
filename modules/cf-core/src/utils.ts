@@ -1,4 +1,4 @@
-import { CriticalStateChannelAddresses } from "@connext/types";
+import { CriticalStateChannelAddresses, ILogger } from "@connext/types";
 import { Contract } from "ethers";
 import { Provider } from "ethers/providers";
 import {
@@ -21,6 +21,20 @@ import { xkeyKthAddress } from "./machine";
 import { Zero } from "ethers/constants";
 import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./methods/errors";
 
+export const logTime = (log: ILogger, msg: string, start: number) => {
+  const diff = Date.now() - start;
+  const message = `${msg} in ${diff} ms`;
+  if (diff < 10) {
+    log.debug(message);
+  } else if (diff < 100) {
+    log.info(message);
+  } else if (diff < 1000) {
+    log.warn(message);
+  } else {
+    log.error(message);
+  }
+};
+
 export function getFirstElementInListNotEqualTo(test: string, list: string[]) {
   return list.filter(x => x !== test)[0];
 }
@@ -32,10 +46,7 @@ export function timeout(ms: number) {
 export const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 export const bigNumberifyJson = (json: object) =>
-  JSON.parse(JSON.stringify(json), (
-    key,
-    val,
-  ) => (val && val["_hex"] ? bigNumberify(val) : val));
+  JSON.parse(JSON.stringify(json), (key, val) => (val && val["_hex"] ? bigNumberify(val) : val));
 
 export const deBigNumberifyJson = (json: object) =>
   JSON.parse(JSON.stringify(json), (key, val) =>
