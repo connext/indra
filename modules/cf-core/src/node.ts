@@ -225,9 +225,8 @@ export class Node {
           break;
 
         case Commitment.Conditional:
-          // const [appId] = res;
-          // await store.saveConditionalTransactionCommitment(appId, commitment);
-          await store.setCommitment([commitmentType, ...res], commitment);
+          const [appId] = res;
+          await store.saveConditionalTransactionCommitment(appId, commitment);
           break;
 
         default:
