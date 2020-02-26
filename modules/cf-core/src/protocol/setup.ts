@@ -26,6 +26,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     const { multisigAddress, responderXpub, initiatorXpub } = params as SetupProtocolParams;
 
+    // 56 ms
     const stateChannel = StateChannel.setupChannel(
       network.IdentityApp,
       { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
@@ -40,8 +41,10 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannel.freeBalance.identity,
     );
 
+    // 32 ms
     const initiatorSignature = yield [OP_SIGN, setupCommitment];
 
+    // 201 ms (waits for responder to respond)
     const {
       customData: { signature: responderSignature },
     } = yield [
@@ -58,8 +61,10 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       } as ProtocolMessage,
     ];
 
+    // 34 ms
     assertIsValidSignature(xkeyKthAddress(responderXpub, 0), setupCommitment, responderSignature);
 
+    // 33 ms
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
 
     context.stateChannelsMap.set(stateChannel.multisigAddress, stateChannel);
@@ -79,6 +84,7 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
 
     const { multisigAddress, initiatorXpub, responderXpub } = params as SetupProtocolParams;
 
+    // 73 ms
     const stateChannel = StateChannel.setupChannel(
       network.IdentityApp,
       { proxyFactory: network.ProxyFactory, multisigMastercopy: network.MinimumViableMultisig },
@@ -93,8 +99,10 @@ export const SETUP_PROTOCOL: ProtocolExecutionFlow = {
       stateChannel.freeBalance.identity,
     );
 
+    // 94 ms
     assertIsValidSignature(xkeyKthAddress(initiatorXpub, 0), setupCommitment, initiatorSignature);
 
+    // 49 ms
     const responderSignature = yield [OP_SIGN, setupCommitment];
 
     yield [PERSIST_STATE_CHANNEL, [stateChannel]];
