@@ -1,6 +1,6 @@
 import { appIdentityToHash } from "../ethereum/utils/app-identity";
 
-import { Opcode, Protocol } from "./enums";
+import { Commitment, Opcode, Protocol } from "./enums";
 import { ProtocolRunner } from "./protocol-runner";
 import {
   Context,
@@ -26,6 +26,7 @@ import {
 
 export {
   appIdentityToHash,
+  Commitment,
   Context,
   Instruction,
   Middleware,

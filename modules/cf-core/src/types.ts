@@ -70,6 +70,7 @@ export {
   CFCoreTypes,
   CoinBalanceRefundState,
   coinBalanceRefundStateEncoding,
+  Commitment,
   CreateChannelMessage,
   DeployedContractNetworksFileEntry,
   DepositConfirmationMessage,
