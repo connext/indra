@@ -1,402 +1,393 @@
-// import { OutcomeType } from "@connext/types";
-// import { Contract, ContractFactory } from "ethers";
-// import { One, Two, Zero } from "ethers/constants";
-// import { JsonRpcProvider } from "ethers/providers";
-// import { BigNumber } from "ethers/utils";
+import { OutcomeType } from "@connext/types";
+import { Contract, ContractFactory } from "ethers";
+import { One, Two, Zero } from "ethers/constants";
+import { JsonRpcProvider } from "ethers/providers";
+import { BigNumber } from "ethers/utils";
 
-// import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
-// import { Protocol, xkeyKthAddress } from "../../../../src/machine";
-// import { sortAddresses } from "../../../../src/machine/xkeys";
-// import { getCreate2MultisigAddress } from "../../../../src/utils";
-// import { IdentityApp } from "../../../contracts";
-// import { toBeEq } from "../bignumber-jest-matcher";
-// import { connectToGanache } from "../connect-ganache";
-// import { MessageRouter } from "../message-router";
-// import { MiniNode } from "../mininode";
-// import { Store } from "../../../../src/store";
-// import { MemoryStoreService } from "../../../services/memory-store-service";
+import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
+import { Protocol, xkeyKthAddress } from "../../../../src/machine";
+import { sortAddresses } from "../../../../src/machine/xkeys";
+import { getCreate2MultisigAddress } from "../../../../src/utils";
+import { IdentityApp } from "../../../contracts";
+import { toBeEq } from "../bignumber-jest-matcher";
+import { connectToGanache } from "../connect-ganache";
+import { MessageRouter } from "../message-router";
+import { MiniNode } from "../mininode";
+import { Store } from "../../../../src/store";
+import { MemoryStoreService } from "../../../services/memory-store-service";
 
-// expect.extend({ toBeEq });
+expect.extend({ toBeEq });
 
-// export enum Participant {
-//   A,
-//   B,
-//   C,
-// }
+export enum Participant {
+  A,
+  B,
+  C,
+}
 
-// export class TestRunner {
-//   static readonly TEST_TOKEN_ADDRESS: string = "0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290";
+export class TestRunner {
+  static readonly TEST_TOKEN_ADDRESS: string = "0x88a5C2d9919e46F883EB62F7b8Dd9d0CC45bc290";
 
-//   private identityApp!: Contract;
-//   public mininodeA!: MiniNode;
-//   public mininodeB!: MiniNode;
-//   public mininodeC!: MiniNode;
-//   public multisigAB!: string;
-//   public multisigAC!: string;
-//   public multisigBC!: string;
-//   public provider!: JsonRpcProvider;
-//   private mr!: MessageRouter;
+  private identityApp!: Contract;
+  public mininodeA!: MiniNode;
+  public mininodeB!: MiniNode;
+  public mininodeC!: MiniNode;
+  public multisigAB!: string;
+  public multisigAC!: string;
+  public multisigBC!: string;
+  public provider!: JsonRpcProvider;
+  private mr!: MessageRouter;
 
-//   async connectToGanache(): Promise<void> {
-//     const [provider, wallet] = await connectToGanache();
-//     this.provider = provider;
-//     const network = global["networkContext"];
-//     const store = new Store(new MemoryStoreService(), "");
+  async connectToGanache(): Promise<void> {
+    const [provider, wallet] = await connectToGanache();
+    this.provider = provider;
+    const network = global["networkContext"];
+    const store = new Store(new MemoryStoreService());
 
-//     this.identityApp = await new ContractFactory(
-//       IdentityApp.abi,
-//       IdentityApp.evm.bytecode,
-//       wallet,
-//     ).deploy();
+    this.identityApp = await new ContractFactory(
+      IdentityApp.abi,
+      IdentityApp.evm.bytecode,
+      wallet,
+    ).deploy();
 
-//     this.mininodeA = new MiniNode(network, provider, store);
-//     this.mininodeB = new MiniNode(network, provider, store);
-//     this.mininodeC = new MiniNode(network, provider, store);
+    this.mininodeA = new MiniNode(network, provider, store);
+    this.mininodeB = new MiniNode(network, provider, store);
+    this.mininodeC = new MiniNode(network, provider, store);
 
-//     this.multisigAB = await getCreate2MultisigAddress(
-//       [this.mininodeA.xpub, this.mininodeB.xpub],
-//       {
-//         proxyFactory: network.ProxyFactory,
-//         multisigMastercopy: network.MinimumViableMultisig,
-//       },
-//       provider,
-//     );
+    this.multisigAB = await getCreate2MultisigAddress(
+      [this.mininodeA.xpub, this.mininodeB.xpub],
+      {
+        proxyFactory: network.ProxyFactory,
+        multisigMastercopy: network.MinimumViableMultisig,
+      },
+      provider,
+    );
 
-//     this.multisigAC = await getCreate2MultisigAddress(
-//       [this.mininodeA.xpub, this.mininodeC.xpub],
-//       {
-//         proxyFactory: network.ProxyFactory,
-//         multisigMastercopy: network.MinimumViableMultisig,
-//       },
-//       provider,
-//     );
+    this.multisigAC = await getCreate2MultisigAddress(
+      [this.mininodeA.xpub, this.mininodeC.xpub],
+      {
+        proxyFactory: network.ProxyFactory,
+        multisigMastercopy: network.MinimumViableMultisig,
+      },
+      provider,
+    );
 
-//     this.multisigBC = await getCreate2MultisigAddress(
-//       [this.mininodeB.xpub, this.mininodeC.xpub],
-//       {
-//         proxyFactory: network.ProxyFactory,
-//         multisigMastercopy: network.MinimumViableMultisig,
-//       },
-//       provider,
-//     );
+    this.multisigBC = await getCreate2MultisigAddress(
+      [this.mininodeB.xpub, this.mininodeC.xpub],
+      {
+        proxyFactory: network.ProxyFactory,
+        multisigMastercopy: network.MinimumViableMultisig,
+      },
+      provider,
+    );
 
-//     this.mr = new MessageRouter([this.mininodeA, this.mininodeB, this.mininodeC]);
-//   }
+    this.mr = new MessageRouter([this.mininodeA, this.mininodeB, this.mininodeC]);
+  }
 
-//   /*
-//   Run the setup protocol to create the AB and BC channels, and update the
-//   state channel maps accordingly
-//   */
-//   async setup() {
-//     this.mininodeA.scm.set(
-//       this.multisigAB,
-//       (
-//         await this.mininodeA.protocolRunner.runSetupProtocol({
-//           initiatorXpub: this.mininodeA.xpub,
-//           responderXpub: this.mininodeB.xpub,
-//           multisigAddress: this.multisigAB,
-//         })
-//       ).get(this.multisigAB)!,
-//     );
+  /*
+  Run the setup protocol to create the AB and BC channels, and update the
+  state channel maps accordingly
+  */
+  async setup() {
+    await this.mininodeA.protocolRunner.runSetupProtocol({
+      initiatorXpub: this.mininodeA.xpub,
+      responderXpub: this.mininodeB.xpub,
+      multisigAddress: this.multisigAB,
+    });
+    this.mininodeA.scm.set(
+      this.multisigAB,
+      await this.mininodeA.store.getStateChannel(this.multisigAB),
+    );
 
-//     await this.mr.waitForAllPendingPromises();
+    await this.mr.waitForAllPendingPromises();
 
-//     this.mininodeB.scm.set(
-//       this.multisigBC,
-//       (
-//         await this.mininodeB.protocolRunner.runSetupProtocol({
-//           initiatorXpub: this.mininodeB.xpub,
-//           responderXpub: this.mininodeC.xpub,
-//           multisigAddress: this.multisigBC,
-//         })
-//       ).get(this.multisigBC)!,
-//     );
+    await this.mininodeB.protocolRunner.runSetupProtocol({
+      initiatorXpub: this.mininodeB.xpub,
+      responderXpub: this.mininodeC.xpub,
+      multisigAddress: this.multisigBC,
+    });
 
-//     await this.mr.waitForAllPendingPromises();
-//   }
+    this.mininodeB.scm.set(
+      this.multisigBC,
+      await this.mininodeB.store.getStateChannel(this.multisigBC),
+    );
 
-//   /*
-//   Adds one ETH and one TEST_TOKEN to the free balance of everyone. Note this
-//   does not actually transfer any tokens.
-//   */
-//   async unsafeFund() {
-//     for (const mininode of [this.mininodeA, this.mininodeB]) {
-//       const sc = mininode.scm.get(this.multisigAB)!;
-//       mininode.scm.set(
-//         this.multisigAB,
-//         sc.incrementFreeBalance({
-//           [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
-//             [sc.getFreeBalanceAddrOf(this.mininodeA.xpub)]: One,
-//             [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
-//           },
-//           [TestRunner.TEST_TOKEN_ADDRESS]: {
-//             [sc.getFreeBalanceAddrOf(this.mininodeA.xpub)]: One,
-//             [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
-//           },
-//         }),
-//       );
-//     }
+    await this.mr.waitForAllPendingPromises();
+  }
 
-//     for (const mininode of [this.mininodeB, this.mininodeC]) {
-//       const sc = mininode.scm.get(this.multisigBC)!;
-//       mininode.scm.set(
-//         this.multisigBC,
-//         sc.incrementFreeBalance({
-//           [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
-//             [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
-//             [sc.getFreeBalanceAddrOf(this.mininodeC.xpub)]: One,
-//           },
-//           [TestRunner.TEST_TOKEN_ADDRESS]: {
-//             [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
-//             [sc.getFreeBalanceAddrOf(this.mininodeC.xpub)]: One,
-//           },
-//         }),
-//       );
-//     }
-//   }
+  /*
+  Adds one ETH and one TEST_TOKEN to the free balance of everyone. Note this
+  does not actually transfer any tokens.
+  */
+  async unsafeFund() {
+    for (const mininode of [this.mininodeA, this.mininodeB]) {
+      const sc = mininode.scm.get(this.multisigAB)!;
+      mininode.scm.set(
+        this.multisigAB,
+        sc.incrementFreeBalance({
+          [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
+            [sc.getFreeBalanceAddrOf(this.mininodeA.xpub)]: One,
+            [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
+          },
+          [TestRunner.TEST_TOKEN_ADDRESS]: {
+            [sc.getFreeBalanceAddrOf(this.mininodeA.xpub)]: One,
+            [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
+          },
+        }),
+      );
+    }
 
-//   async installVirtualEqualDeposits(outcomeType: OutcomeType, tokenAddress: string) {
-//     const stateEncoding = {
-//       [OutcomeType.TWO_PARTY_FIXED_OUTCOME]: "uint8",
-//       [OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER]: "tuple(address to, uint256 amount)[2]",
-//       [OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER]: "tuple(address to, uint256 amount)[][]",
-//     }[outcomeType];
+    for (const mininode of [this.mininodeB, this.mininodeC]) {
+      const sc = mininode.scm.get(this.multisigBC)!;
+      mininode.scm.set(
+        this.multisigBC,
+        sc.incrementFreeBalance({
+          [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
+            [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
+            [sc.getFreeBalanceAddrOf(this.mininodeC.xpub)]: One,
+          },
+          [TestRunner.TEST_TOKEN_ADDRESS]: {
+            [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
+            [sc.getFreeBalanceAddrOf(this.mininodeC.xpub)]: One,
+          },
+        }),
+      );
+    }
+  }
 
-//     const initialState = {
-//       [OutcomeType.TWO_PARTY_FIXED_OUTCOME]: 0,
-//       [OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER]: [
-//         {
-//           to: xkeyKthAddress(this.mininodeA.xpub, 0),
-//           amount: Two,
-//         },
-//         {
-//           to: xkeyKthAddress(this.mininodeC.xpub, 0),
-//           amount: Zero,
-//         },
-//       ],
-//       [OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER]: [
-//         [
-//           {
-//             to: xkeyKthAddress(this.mininodeA.xpub, 0),
-//             amount: Two,
-//           },
-//           {
-//             to: xkeyKthAddress(this.mininodeC.xpub, 0),
-//             amount: Zero,
-//           },
-//         ],
-//       ],
-//     }[outcomeType];
+  async installVirtualEqualDeposits(outcomeType: OutcomeType, tokenAddress: string) {
+    const stateEncoding = {
+      [OutcomeType.TWO_PARTY_FIXED_OUTCOME]: "uint8",
+      [OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER]: "tuple(address to, uint256 amount)[2]",
+      [OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER]: "tuple(address to, uint256 amount)[][]",
+    }[outcomeType];
 
-//     await this.mininodeA.protocolRunner.initiateProtocol(
-//       Protocol.InstallVirtualApp,
-//       this.mininodeA.scm,
-//       {
-//         outcomeType,
-//         tokenAddress,
-//         initialState,
-//         initiatorXpub: this.mininodeA.xpub,
-//         intermediaryXpub: this.mininodeB.xpub,
-//         responderXpub: this.mininodeC.xpub,
-//         initiatorBalanceDecrement: One,
-//         responderBalanceDecrement: One,
-//         appSeqNo: 1,
-//         appInterface: {
-//           stateEncoding,
-//           addr: this.identityApp.address,
-//           actionEncoding: undefined,
-//         },
-//         defaultTimeout: 40,
-//       },
-//     );
-//   }
+    const initialState = {
+      [OutcomeType.TWO_PARTY_FIXED_OUTCOME]: 0,
+      [OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER]: [
+        {
+          to: xkeyKthAddress(this.mininodeA.xpub, 0),
+          amount: Two,
+        },
+        {
+          to: xkeyKthAddress(this.mininodeC.xpub, 0),
+          amount: Zero,
+        },
+      ],
+      [OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER]: [
+        [
+          {
+            to: xkeyKthAddress(this.mininodeA.xpub, 0),
+            amount: Two,
+          },
+          {
+            to: xkeyKthAddress(this.mininodeC.xpub, 0),
+            amount: Zero,
+          },
+        ],
+      ],
+    }[outcomeType];
 
-//   async installEqualDeposits(outcomeType: OutcomeType, tokenAddress: string) {
-//     const stateEncoding = {
-//       [OutcomeType.TWO_PARTY_FIXED_OUTCOME]: "uint8",
-//       [OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER]: "tuple(address to, uint256 amount)[2]",
-//       [OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER]: "tuple(address to, uint256 amount)[][]",
-//     }[outcomeType];
+    await this.mininodeA.protocolRunner.initiateProtocol(Protocol.InstallVirtualApp, {
+      outcomeType,
+      tokenAddress,
+      initialState,
+      initiatorXpub: this.mininodeA.xpub,
+      intermediaryXpub: this.mininodeB.xpub,
+      responderXpub: this.mininodeC.xpub,
+      initiatorBalanceDecrement: One,
+      responderBalanceDecrement: One,
+      appSeqNo: 1,
+      appInterface: {
+        stateEncoding,
+        addr: this.identityApp.address,
+        actionEncoding: undefined,
+      },
+      defaultTimeout: 40,
+    });
+  }
 
-//     const initialState = {
-//       [OutcomeType.TWO_PARTY_FIXED_OUTCOME]: 0,
-//       [OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER]: [
-//         {
-//           to: xkeyKthAddress(this.mininodeA.xpub, 0),
-//           amount: Two,
-//         },
-//         {
-//           to: xkeyKthAddress(this.mininodeB.xpub, 0),
-//           amount: Zero,
-//         },
-//       ],
-//       [OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER]: [
-//         [
-//           {
-//             to: xkeyKthAddress(this.mininodeA.xpub, 0),
-//             amount: Two,
-//           },
-//           {
-//             to: xkeyKthAddress(this.mininodeB.xpub, 0),
-//             amount: Zero,
-//           },
-//         ],
-//       ],
-//     }[outcomeType];
+  async installEqualDeposits(outcomeType: OutcomeType, tokenAddress: string) {
+    const stateEncoding = {
+      [OutcomeType.TWO_PARTY_FIXED_OUTCOME]: "uint8",
+      [OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER]: "tuple(address to, uint256 amount)[2]",
+      [OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER]: "tuple(address to, uint256 amount)[][]",
+    }[outcomeType];
 
-//     const participants = sortAddresses([
-//       xkeyKthAddress(this.mininodeA.xpub, 1),
-//       xkeyKthAddress(this.mininodeB.xpub, 1),
-//     ]);
+    const initialState = {
+      [OutcomeType.TWO_PARTY_FIXED_OUTCOME]: 0,
+      [OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER]: [
+        {
+          to: xkeyKthAddress(this.mininodeA.xpub, 0),
+          amount: Two,
+        },
+        {
+          to: xkeyKthAddress(this.mininodeB.xpub, 0),
+          amount: Zero,
+        },
+      ],
+      [OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER]: [
+        [
+          {
+            to: xkeyKthAddress(this.mininodeA.xpub, 0),
+            amount: Two,
+          },
+          {
+            to: xkeyKthAddress(this.mininodeB.xpub, 0),
+            amount: Zero,
+          },
+        ],
+      ],
+    }[outcomeType];
 
-//     await this.mininodeA.protocolRunner.initiateProtocol(Protocol.Install, this.mininodeA.scm, {
-//       appInterface: {
-//         stateEncoding,
-//         addr: this.identityApp.address,
-//         actionEncoding: undefined,
-//       },
-//       appSeqNo: 1,
-//       defaultTimeout: 40,
-//       disableLimit: false,
-//       initialState,
-//       initiatorBalanceDecrement: One,
-//       initiatorDepositTokenAddress: tokenAddress,
-//       initiatorXpub: this.mininodeA.xpub,
-//       multisigAddress: this.multisigAB,
-//       outcomeType,
-//       participants,
-//       responderBalanceDecrement: One,
-//       responderDepositTokenAddress: tokenAddress,
-//       responderXpub: this.mininodeB.xpub,
-//     });
-//   }
+    const participants = sortAddresses([
+      xkeyKthAddress(this.mininodeA.xpub, 1),
+      xkeyKthAddress(this.mininodeB.xpub, 1),
+    ]);
 
-//   async installSplitDeposits(
-//     outcomeType: OutcomeType,
-//     tokenAddressA: string,
-//     tokenAddressB: string,
-//   ) {
-//     const stateEncoding = {
-//       [OutcomeType.TWO_PARTY_FIXED_OUTCOME]: "uint8",
-//       [OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER]: "tuple(address to, uint256 amount)[2]",
-//       [OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER]: "tuple(address to, uint256 amount)[][]",
-//     }[outcomeType];
+    await this.mininodeA.protocolRunner.initiateProtocol(Protocol.Install, {
+      appInterface: {
+        stateEncoding,
+        addr: this.identityApp.address,
+        actionEncoding: undefined,
+      },
+      appSeqNo: 1,
+      defaultTimeout: 40,
+      disableLimit: false,
+      initialState,
+      initiatorBalanceDecrement: One,
+      initiatorDepositTokenAddress: tokenAddress,
+      initiatorXpub: this.mininodeA.xpub,
+      multisigAddress: this.multisigAB,
+      outcomeType,
+      participants,
+      responderBalanceDecrement: One,
+      responderDepositTokenAddress: tokenAddress,
+      responderXpub: this.mininodeB.xpub,
+    });
+  }
 
-//     const initialState = {
-//       [OutcomeType.TWO_PARTY_FIXED_OUTCOME]: 0,
-//       [OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER]: [
-//         {
-//           to: xkeyKthAddress(this.mininodeA.xpub, 0),
-//           amount: Two,
-//         },
-//         {
-//           to: xkeyKthAddress(this.mininodeB.xpub, 0),
-//           amount: Zero,
-//         },
-//       ],
-//       [OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER]: [
-//         [
-//           {
-//             to: xkeyKthAddress(this.mininodeA.xpub, 0),
-//             amount: Two,
-//           },
-//           {
-//             to: xkeyKthAddress(this.mininodeB.xpub, 0),
-//             amount: Zero,
-//           },
-//         ],
-//       ],
-//     }[outcomeType];
+  async installSplitDeposits(
+    outcomeType: OutcomeType,
+    tokenAddressA: string,
+    tokenAddressB: string,
+  ) {
+    const stateEncoding = {
+      [OutcomeType.TWO_PARTY_FIXED_OUTCOME]: "uint8",
+      [OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER]: "tuple(address to, uint256 amount)[2]",
+      [OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER]: "tuple(address to, uint256 amount)[][]",
+    }[outcomeType];
 
-//     const participants = sortAddresses([
-//       xkeyKthAddress(this.mininodeA.xpub, 1),
-//       xkeyKthAddress(this.mininodeB.xpub, 1),
-//     ]);
+    const initialState = {
+      [OutcomeType.TWO_PARTY_FIXED_OUTCOME]: 0,
+      [OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER]: [
+        {
+          to: xkeyKthAddress(this.mininodeA.xpub, 0),
+          amount: Two,
+        },
+        {
+          to: xkeyKthAddress(this.mininodeB.xpub, 0),
+          amount: Zero,
+        },
+      ],
+      [OutcomeType.MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER]: [
+        [
+          {
+            to: xkeyKthAddress(this.mininodeA.xpub, 0),
+            amount: Two,
+          },
+          {
+            to: xkeyKthAddress(this.mininodeB.xpub, 0),
+            amount: Zero,
+          },
+        ],
+      ],
+    }[outcomeType];
 
-//     await this.mininodeA.protocolRunner.initiateProtocol(Protocol.Install, this.mininodeA.scm, {
-//       participants,
-//       outcomeType,
-//       initialState,
-//       initiatorXpub: this.mininodeA.xpub,
-//       responderXpub: this.mininodeB.xpub,
-//       multisigAddress: this.multisigAB,
-//       initiatorBalanceDecrement: One,
-//       responderBalanceDecrement: One,
-//       appInterface: {
-//         stateEncoding,
-//         addr: this.identityApp.address,
-//         actionEncoding: undefined,
-//       },
-//       appSeqNo: 1,
-//       defaultTimeout: 40,
-//       initiatorDepositTokenAddress: tokenAddressA,
-//       responderDepositTokenAddress: tokenAddressB,
-//       disableLimit: false,
-//     });
-//   }
+    const participants = sortAddresses([
+      xkeyKthAddress(this.mininodeA.xpub, 1),
+      xkeyKthAddress(this.mininodeB.xpub, 1),
+    ]);
 
-//   async uninstallVirtual() {
-//     const multisig = this.mininodeA.scm.get(this.multisigAC);
-//     if (!multisig) {
-//       throw new Error(`uninstallVirtual: Couldn't find multisig for ${this.multisigAC}`);
-//     }
-//     const [virtualAppInstance] = [...multisig.appInstances.values()];
+    await this.mininodeA.protocolRunner.initiateProtocol(Protocol.Install, {
+      participants,
+      outcomeType,
+      initialState,
+      initiatorXpub: this.mininodeA.xpub,
+      responderXpub: this.mininodeB.xpub,
+      multisigAddress: this.multisigAB,
+      initiatorBalanceDecrement: One,
+      responderBalanceDecrement: One,
+      appInterface: {
+        stateEncoding,
+        addr: this.identityApp.address,
+        actionEncoding: undefined,
+      },
+      appSeqNo: 1,
+      defaultTimeout: 40,
+      initiatorDepositTokenAddress: tokenAddressA,
+      responderDepositTokenAddress: tokenAddressB,
+      disableLimit: false,
+    });
+  }
 
-//     await this.mininodeA.protocolRunner.initiateProtocol(
-//       Protocol.UninstallVirtualApp,
-//       this.mininodeA.scm,
-//       {
-//         // todo(xuanji): this should be computed by the protocol
-//         targetOutcome: await virtualAppInstance.computeOutcome(
-//           virtualAppInstance.latestState,
-//           this.provider,
-//         ),
-//         initiatorXpub: this.mininodeA.xpub,
-//         intermediaryXpub: this.mininodeB.xpub,
-//         responderXpub: this.mininodeC.xpub,
-//         targetAppIdentityHash: virtualAppInstance.identityHash,
-//       },
-//     );
+  async uninstallVirtual() {
+    const multisig = this.mininodeA.scm.get(this.multisigAC);
+    if (!multisig) {
+      throw new Error(`uninstallVirtual: Couldn't find multisig for ${this.multisigAC}`);
+    }
+    const [virtualAppInstance] = [...multisig.appInstances.values()];
 
-//     await this.mr.waitForAllPendingPromises();
-//   }
+    await this.mininodeA.protocolRunner.initiateProtocol(Protocol.UninstallVirtualApp, {
+      // todo(xuanji): this should be computed by the protocol
+      targetOutcome: await virtualAppInstance.computeOutcome(
+        virtualAppInstance.latestState,
+        this.provider,
+      ),
+      initiatorXpub: this.mininodeA.xpub,
+      intermediaryXpub: this.mininodeB.xpub,
+      responderXpub: this.mininodeC.xpub,
+      targetAppIdentityHash: virtualAppInstance.identityHash,
+    });
 
-//   async uninstall() {
-//     const multisig = this.mininodeA.scm.get(this.multisigAB);
-//     if (!multisig) {
-//       throw new Error(`uninstall: Couldn't find multisig for ${this.multisigAC}`);
-//     }
-//     const appInstances = multisig.appInstances;
+    await this.mr.waitForAllPendingPromises();
+  }
 
-//     const [key] = [...appInstances.keys()].filter(key => {
-//       return key !== this.mininodeA.scm.get(this.multisigAB)!.freeBalance.identityHash;
-//     });
+  async uninstall() {
+    const multisig = this.mininodeA.scm.get(this.multisigAB);
+    if (!multisig) {
+      throw new Error(`uninstall: Couldn't find multisig for ${this.multisigAC}`);
+    }
+    const appInstances = multisig.appInstances;
 
-//     await this.mininodeA.protocolRunner.initiateProtocol(Protocol.Uninstall, this.mininodeA.scm, {
-//       appIdentityHash: key,
-//       initiatorXpub: this.mininodeA.xpub,
-//       responderXpub: this.mininodeB.xpub,
-//       multisigAddress: this.multisigAB,
-//     });
+    const [key] = [...appInstances.keys()].filter(key => {
+      return key !== this.mininodeA.scm.get(this.multisigAB)!.freeBalance.identityHash;
+    });
 
-//     await this.mr.waitForAllPendingPromises();
-//   }
+    await this.mininodeA.protocolRunner.initiateProtocol(Protocol.Uninstall, {
+      appIdentityHash: key,
+      initiatorXpub: this.mininodeA.xpub,
+      responderXpub: this.mininodeB.xpub,
+      multisigAddress: this.multisigAB,
+    });
 
-//   assertFB(participant: Participant, tokenAddress: string, expected: BigNumber) {
-//     const mininode = {
-//       [Participant.A]: this.mininodeA,
-//       [Participant.B]: this.mininodeB,
-//       [Participant.C]: this.mininodeC,
-//     }[participant];
-//     for (const multisig in [this.multisigAB, this.multisigBC, this.multisigAC]) {
-//       if (mininode.scm.has(multisig)) {
-//         expect(
-//           mininode.scm
-//             .get(multisig)!
-//             .getFreeBalanceClass()
-//             .getBalance(tokenAddress, xkeyKthAddress(mininode.xpub, 0)),
-//         ).toBeEq(expected);
-//       }
-//     }
-//   }
-// }
+    await this.mr.waitForAllPendingPromises();
+  }
+
+  assertFB(participant: Participant, tokenAddress: string, expected: BigNumber) {
+    const mininode = {
+      [Participant.A]: this.mininodeA,
+      [Participant.B]: this.mininodeB,
+      [Participant.C]: this.mininodeC,
+    }[participant];
+    for (const multisig in [this.multisigAB, this.multisigBC, this.multisigAC]) {
+      if (mininode.scm.has(multisig)) {
+        expect(
+          mininode.scm
+            .get(multisig)!
+            .getFreeBalanceClass()
+            .getBalance(tokenAddress, xkeyKthAddress(mininode.xpub, 0)),
+        ).toBeEq(expected);
+      }
+    }
+  }
+}
