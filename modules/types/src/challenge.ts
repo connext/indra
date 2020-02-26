@@ -4,9 +4,10 @@ import { NetworkContext } from "./contracts";
 
 export type SetStateCommitmentJSON = {
   readonly appIdentity: AppIdentity;
+  readonly appIdentityHash: string;
   readonly appStateHash: string;
   readonly challengeRegistryAddress: string;
-  readonly participantSignatures: Signature[];
+  readonly signatures: Signature[];
   readonly timeout: number;
   readonly versionNumber: number;
 };
