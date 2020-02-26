@@ -31,8 +31,10 @@ export class SetStateCommitment extends EthereumCommitment {
   }
 
   set signatures(sigs: Signature[]) {
-    if (sigs.length !== 2) {
-      throw new Error(`Incorrect number of signatures supplied. Expected 2, got ${sigs.length}`);
+    if (sigs.length < 2) {
+      throw new Error(
+        `Incorrect number of signatures supplied. Expected at least 2, got ${sigs.length}`,
+      );
     }
     this.participantSignatures = sigs;
   }
@@ -100,9 +102,9 @@ export class SetStateCommitment extends EthereumCommitment {
       throw new Error(`No signatures detected`);
     }
 
-    if (this.signatures.length !== 2) {
+    if (this.signatures.length < 2) {
       throw new Error(
-        `Incorrect number of signatures supplied. Expected 2, got ${this.signatures.length}`,
+        `Incorrect number of signatures supplied. Expected at least 2, got ${this.signatures.length}`,
       );
     }
   }
