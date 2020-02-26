@@ -5,6 +5,7 @@ import { AppRegistryRepository } from "../appRegistry/appRegistry.repository";
 import { ConfigModule } from "../config/config.module";
 import { DatabaseModule } from "../database/database.module";
 import { LockModule } from "../lock/lock.module";
+import { LoggerModule } from "../logger/logger.module";
 import { MessagingModule } from "../messaging/messaging.module";
 
 import { CFCoreController } from "./cfCore.controller";
@@ -18,9 +19,10 @@ import { CFCoreService } from "./cfCore.service";
   imports: [
     ConfigModule,
     DatabaseModule,
+    LockModule,
+    LoggerModule,
     MessagingModule,
     TypeOrmModule.forFeature([CFCoreRecordRepository, AppRegistryRepository]),
-    LockModule,
   ],
   providers: [cfCoreProviderFactory, CFCoreService],
 })

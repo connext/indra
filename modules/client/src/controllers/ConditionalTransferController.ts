@@ -1,7 +1,8 @@
 import { LINKED_TRANSFER, SimpleLinkedTransferApp } from "@connext/types";
 import { encryptWithPublicKey } from "@connext/crypto";
-import { HashZero, Zero } from "ethers/constants";
+import { AddressZero, HashZero, Zero } from "ethers/constants";
 import { fromExtendedKey } from "ethers/utils/hdnode";
+import { formatEther } from "ethers/utils";
 
 import { createLinkedHash, stringify, xpubToAddress } from "../lib";
 import {
@@ -35,7 +36,12 @@ type ConditionalExecutors = {
 
 export class ConditionalTransferController extends AbstractController {
   public conditionalTransfer = async (params: ConditionalTransferParameters): Promise<ConditionalTransferResponse> => {
-    this.log.info(`Conditional transfer called with parameters: ${stringify(params)}`);
+    this.log.info(
+      `Generating conditional transfer of ${formatEther(params.amount)} ${
+        params.assetId === AddressZero ? "ETH" : "Tokens"
+      }`,
+    );
+    this.log.debug(`Conditional transfer parameters: ${stringify(params)}`);
 
     const res = await this.conditionalExecutors[params.conditionType](params);
     return res;
