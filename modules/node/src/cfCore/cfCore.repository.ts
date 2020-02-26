@@ -1,10 +1,9 @@
 import { EntityRepository, Like, Repository } from "typeorm";
 
-import { CLogger } from "../util";
-
 import { CFCoreRecord } from "./cfCore.entity";
 
-const logger = new CLogger("CFCoreRecordRepository");
+// import { LoggerService } from "../logger/logger.service";
+// const log = new LoggerService("CFCoreRepository");
 
 type StringKeyValue = { [path: string]: StringKeyValue };
 
@@ -15,7 +14,7 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
   }
 
   async get(path: string): Promise<StringKeyValue | string | undefined> {
-    // logger.log(`Getting path from store: ${path}`);
+    // log.info(`Getting path from store: ${path}`);
     let res: any;
     // FIXME: this queries for all channels or proposed app instances, which
     // are nested under the respective keywords, hence the 'like' keyword
@@ -45,14 +44,14 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
           records[key] = value;
         }
       });
-      // logger.log(`Got ${Object.keys(records).length} values: ${JSON.stringify(records)}`);
+      // log.info(`Got ${Object.keys(records).length} values: ${JSON.stringify(records)}`);
       return records;
     }
     res = await this.findOne({ path });
     if (!res) {
       return undefined;
     }
-    // logger.debug(`Got value: ${stringify(res.value[path])}`);
+    // log.debug(`Got value: ${stringify(res.value[path])}`);
     return res.value[path];
   }
 
@@ -62,7 +61,7 @@ export class CFCoreRecordRepository extends Repository<CFCoreRecord> {
       // if you use anything other than JSON (i.e. a raw string).
       // In some cases, the cf core code is inserting strings as values instead of objects :(
       const record = { path: pair.path, value: { [pair.path]: pair.value } };
-      // logger.debug(`Saving record: ${stringify(record)}`);
+      // log.debug(`Saving record: ${stringify(record)}`);
       await this.save(record);
     }
   }

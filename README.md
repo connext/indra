@@ -6,7 +6,7 @@
 
 # Indra
 
-Connext's counterfactually-instantiated generalized state-channel platform.
+Connext's counterfactually-instantiated generalized state-channel platform. To learn more about this project, check out our [docs](https://docs.connext.network).
 
 ## Contents
 

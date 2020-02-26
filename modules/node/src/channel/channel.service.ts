@@ -15,19 +15,18 @@ import tokenAbi from "human-standard-token-abi";
 
 import { CFCoreService } from "../cfCore/cfCore.service";
 import { ConfigService } from "../config/config.service";
+import { LoggerService } from "../logger/logger.service";
 import { MessagingClientProviderId } from "../constants";
 import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.entity";
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { CLogger, stringify, xpubToAddress } from "../util";
+import { stringify, xpubToAddress } from "../util";
 import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";
 import { ChannelRepository } from "./channel.repository";
 import { ClientProxy } from "@nestjs/microservices";
-
-const logger = new CLogger(`ChannelService`);
 
 type RebalancingTargetsResponse<T = string> = {
   assetId: string;
@@ -46,13 +45,16 @@ export enum RebalanceType {
 export class ChannelService {
   constructor(
     private readonly cfCoreService: CFCoreService,
-    private readonly configService: ConfigService,
-    private readonly onchainTransactionService: OnchainTransactionService,
-    private readonly httpService: HttpService,
-    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
     private readonly channelRepository: ChannelRepository,
+    private readonly configService: ConfigService,
+    private readonly log: LoggerService,
+    private readonly httpService: HttpService,
     private readonly onchainTransactionRepository: OnchainTransactionRepository,
-  ) {}
+    private readonly onchainTransactionService: OnchainTransactionService,
+    @Inject(MessagingClientProviderId) private readonly messagingClient: ClientProxy,
+  ) {
+    this.log.setContext("ChannelService");
+  }
 
   /**
    * Returns all channel records.
@@ -74,7 +76,8 @@ export class ChannelService {
       throw new Error(`Channel already exists for ${counterpartyPublicIdentifier}`);
     }
 
-    return await this.cfCoreService.createChannel(counterpartyPublicIdentifier);
+    const createResult = await this.cfCoreService.createChannel(counterpartyPublicIdentifier);
+    return createResult;
   }
 
   private async deposit(
@@ -105,7 +108,7 @@ export class ChannelService {
       balanceRefundApp &&
       balanceRefundApp.latestState[`recipient`] === this.cfCoreService.cfCore.freeBalanceAddress
     ) {
-      logger.log(`Node's CoinBalanceRefundApp is installed, removing first.`);
+      this.log.info(`Removing node's installed CoinBalanceRefundApp before depositing`);
       await this.cfCoreService.rescindDepositRights(channel.multisigAddress, assetId);
     }
 
@@ -140,7 +143,7 @@ export class ChannelService {
       balanceRefundApp &&
       balanceRefundApp.latestState[`recipient`] === this.cfCoreService.cfCore.freeBalanceAddress
     ) {
-      logger.log(`Node's CoinBalanceRefundApp is installed, removing first.`);
+      this.log.info(`Removing node's installed CoinBalanceRefundApp before reclaiming`);
       await this.cfCoreService.rescindDepositRights(channel.multisigAddress, assetId);
     }
 
@@ -231,7 +234,7 @@ export class ChannelService {
     // option 1: rebalancing service, option 2: rebalance profile, option 3: default
     let rebalancingTargets = await this.getDataFromRebalancingService(userPubId, assetId);
     if (!rebalancingTargets) {
-      logger.log(`Unable to get rebalancing targets from service, falling back to profile`);
+      this.log.debug(`Unable to get rebalancing targets from service, falling back to profile`);
       rebalancingTargets = await this.getRebalanceProfileForChannelAndAsset(
         userPubId,
         normalizedAssetId,
@@ -239,7 +242,7 @@ export class ChannelService {
       if (!rebalancingTargets) {
         rebalancingTargets = await this.configService.getDefaultRebalanceProfile(assetId);
         if (rebalancingTargets) {
-          logger.debug(`Rebalancing with default profile: ${stringify(rebalancingTargets)}`);
+          this.log.debug(`Rebalancing with default profile: ${stringify(rebalancingTargets)}`);
         }
       }
     }
@@ -292,7 +295,7 @@ export class ChannelService {
     lowerBoundCollateral: BigNumber,
   ) {
     if (channel.collateralizationInFlight) {
-      logger.warn(
+      this.log.warn(
         `Collateral request is in flight, try request again for user ${channel.userPublicIdentifier} later`,
       );
       return undefined;
@@ -306,24 +309,29 @@ export class ChannelService {
       assetId,
     );
     if (nodeFreeBalance.gte(lowerBoundCollateral)) {
-      logger.log(
-        `${channel.userPublicIdentifier} already has sufficient collateral of ${nodeFreeBalance} for asset ${assetId}`,
+      this.log.info(
+        `User with multisig ${channel.multisigAddress} already has sufficient collateral, ignoring request for more.`,
+      );
+      this.log.debug(
+        `User ${channel.userPublicIdentifier} already has collateral of ${nodeFreeBalance} for asset ${assetId}`,
       );
       return undefined;
     }
 
     const amountDeposit = collateralNeeded.sub(nodeFreeBalance);
-    logger.log(
-      `Collateralizing ${
-        channel.multisigAddress
-      } with ${amountDeposit.toString()}, token: ${assetId}`,
+    this.log.info(
+      `User with multisig ${channel.multisigAddress} needs more collateral, preparing to deposit.`,
+    );
+    this.log.debug(
+      `Collateralizing ${channel.userPublicIdentifier} with ${amountDeposit}, token: ${assetId}`,
     );
 
     // set in flight so that it cant be double sent
     await this.channelRepository.setInflightCollateralization(channel, true);
     const result = this.deposit(channel.multisigAddress, amountDeposit, assetId)
       .then(async (res: CFCoreTypes.DepositResult) => {
-        logger.log(`Deposit result: ${stringify(res)}`);
+        this.log.info(`Channel ${channel.multisigAddress} successfully collateralized`);
+        this.log.debug(`Collateralization result: ${stringify(res)}`);
         return res;
       })
       .catch(async (e: any) => {
@@ -341,7 +349,9 @@ export class ChannelService {
     lowerBoundReclaim: BigNumber,
   ): Promise<TransactionResponse | undefined> {
     if (upperBoundReclaim.isZero() && lowerBoundReclaim.isZero()) {
-      logger.log(`Upper bound and lower bound for reclaim are 0, doing nothing.`);
+      this.log.info(
+        `Collateral for channel ${channel.multisigAddress} is within bounds, nothing to reclaim.`,
+      );
       return undefined;
     }
     const {
@@ -352,8 +362,11 @@ export class ChannelService {
       assetId,
     );
     if (nodeFreeBalance.lte(upperBoundReclaim)) {
-      logger.log(
-        `${channel.multisigAddress} does not need to be reclaimed, ${nodeFreeBalance} for asset ${assetId}`,
+      this.log.info(
+        `Collateral for channel ${channel.multisigAddress} is below upper bound, nothing to reclaim.`,
+      );
+      this.log.debug(
+        `Node has balance of ${nodeFreeBalance} for asset ${assetId} in channel with user ${channel.userPublicIdentifier}`,
       );
       return undefined;
     }
@@ -364,7 +377,8 @@ export class ChannelService {
     // lowerBound = 6
     // amountWithdrawal = freeBalance - lowerBound = 10 - 6 = 4
     const amountWithdrawal = nodeFreeBalance.sub(lowerBoundReclaim);
-    logger.log(
+    this.log.info(`Reclaiming collateral from channel ${channel.multisigAddress}`);
+    this.log.debug(
       `Reclaiming ${channel.multisigAddress}, ${amountWithdrawal.toString()}, token: ${assetId}`,
     );
 
@@ -448,12 +462,13 @@ export class ChannelService {
         );
       }
       if (existing.available) {
-        logger.log(`Channel is already available, doing nothing`);
+        this.log.debug(`Channel is already available, doing nothing`);
         return;
       }
-      logger.log(`Channel already exists in database, marking as available`);
+      this.log.debug(`Channel already exists in database, marking as available`);
     } else {
-      logger.log(`Creating new channel from data ${stringify(creationData)}`);
+      this.log.info(`Creating new channel for multisig ${creationData.data.multisigAddress}`);
+      this.log.debug(`Creating channel from data ${stringify(creationData)}`);
       existing = new Channel();
       existing.userPublicIdentifier = creationData.data.counterpartyXpub;
       existing.nodePublicIdentifier = this.cfCoreService.cfCore.publicIdentifier;
@@ -487,7 +502,7 @@ export class ChannelService {
     });
     const nodeSequenceNumber = appJson.appSeqNo;
     if (nodeSequenceNumber !== userSequenceNumber) {
-      logger.warn(
+      this.log.warn(
         `Node app sequence number (${nodeSequenceNumber}) !== user app sequence number (${userSequenceNumber})`,
       );
     }
@@ -509,15 +524,15 @@ export class ChannelService {
     const { transactionHash: deployTx } = await this.cfCoreService.deployMultisig(
       channel.multisigAddress,
     );
-    logger.debug(`Deploy multisig tx: ${deployTx}`);
+    this.log.debug(`Deploy multisig tx: ${deployTx}`);
 
     const wallet = this.configService.getEthWallet();
     if (deployTx !== HashZero) {
-      logger.debug(`Waiting for deployment transaction...`);
+      this.log.debug(`Waiting for deployment transaction...`);
       wallet.provider.waitForTransaction(deployTx);
-      logger.debug(`Deployment transaction complete!`);
+      this.log.debug(`Deployment transaction complete!`);
     } else {
-      logger.debug(`Multisig already deployed, proceeding with withdrawal`);
+      this.log.debug(`Multisig already deployed, proceeding with withdrawal`);
     }
 
     const txRes = await this.onchainTransactionService.sendUserWithdrawal(channel, tx);
@@ -530,7 +545,7 @@ export class ChannelService {
   ): Promise<RebalancingTargetsResponse<BigNumber> | undefined> {
     const rebalancingServiceUrl = this.configService.getRebalancingServiceUrl();
     if (!rebalancingServiceUrl) {
-      logger.debug(`Rebalancing service URL not configured`);
+      this.log.debug(`Rebalancing service URL not configured`);
       return undefined;
     }
 
@@ -545,7 +560,7 @@ export class ChannelService {
       .toPromise();
 
     if (status !== 200) {
-      logger.warn(`Rebalancing service returned a non-200 response: ${status}`);
+      this.log.warn(`Rebalancing service returned a non-200 response: ${status}`);
       return undefined;
     }
     return {

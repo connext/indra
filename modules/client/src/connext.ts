@@ -1,10 +1,10 @@
 import { IMessagingService } from "@connext/messaging";
 import {
   AppInstanceProposal,
-  CF_PATH,
   IChannelProvider,
   LinkedTransferToRecipientParameters,
   LINKED_TRANSFER_TO_RECIPIENT,
+  ILoggerService,
   chan_storeGet,
   chan_storeSet,
   chan_restoreState,
@@ -14,7 +14,6 @@ import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { BigNumber, bigNumberify, hexlify, Network, randomBytes, Transaction } from "ethers/utils";
-import { fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
@@ -25,7 +24,7 @@ import { RequestDepositRightsController } from "./controllers/RequestDepositRigh
 import { ResolveConditionController } from "./controllers/ResolveConditionController";
 import { SwapController } from "./controllers/SwapController";
 import { WithdrawalController } from "./controllers/WithdrawalController";
-import { Logger, stringify, withdrawalKey, xpubToAddress } from "./lib";
+import { stringify, withdrawalKey, xpubToAddress } from "./lib";
 import { ConnextListener } from "./listener";
 import {
   Address,
@@ -82,7 +81,7 @@ export class ConnextClient implements IConnextClient {
   public ethProvider: providers.JsonRpcProvider;
   public freeBalanceAddress: string;
   public listener: ConnextListener;
-  public log: Logger;
+  public log: ILoggerService;
   public messaging: IMessagingService;
   public multisigAddress: Address;
   public network: Network;
@@ -110,18 +109,18 @@ export class ConnextClient implements IConnextClient {
     this.config = opts.config;
     this.ethProvider = opts.ethProvider;
     this.keyGen = opts.keyGen;
+    this.log = opts.logger.newContext("ConnextClient");
     this.messaging = opts.messaging;
     this.network = opts.network;
     this.node = opts.node;
-    this.token = opts.token;
     this.store = opts.store;
+    this.token = opts.token;
 
     this.freeBalanceAddress = this.channelProvider.config.freeBalanceAddress;
     this.signerAddress = this.channelProvider.config.signerAddress;
     this.publicIdentifier = this.channelProvider.config.userPublicIdentifier;
     this.multisigAddress = this.channelProvider.config.multisigAddress;
     this.nodePublicIdentifier = this.opts.config.nodePublicIdentifier;
-    this.log = new Logger("ConnextClient", opts.logLevel);
 
     // establish listeners
     this.listener = new ConnextListener(opts.channelProvider, this);
@@ -198,7 +197,7 @@ export class ConnextClient implements IConnextClient {
     // ensure that node and user xpub are different
     if (this.nodePublicIdentifier === this.publicIdentifier) {
       throw new Error(
-        "Client must be instantiated with a mnemonic that is different from the node's mnemonic",
+        "Client must be instantiated with a secret that is different from the node's secret",
       );
     }
 
@@ -214,6 +213,7 @@ export class ConnextClient implements IConnextClient {
       nodeUrl: this.channelProvider.config.nodeUrl,
       store: this.store,
       xpub: this.publicIdentifier,
+      logger: this.log.newContext("CFChannelProvider"),
     });
     // TODO: this is very confusing to have to do, lets try to figure out a better way
     channelProvider.multisigAddress = this.multisigAddress;
@@ -230,7 +230,8 @@ export class ConnextClient implements IConnextClient {
   public requestCollateral = async (
     tokenAddress: string,
   ): Promise<RequestCollateralResponse | void> => {
-    return await this.node.requestCollateral(tokenAddress);
+    const res = await this.node.requestCollateral(tokenAddress);
+    return res;
   };
 
   public setRecipientAndEncryptedPreImageForLinkedTransfer = async (
@@ -265,7 +266,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   public createChannel = async (): Promise<CreateChannelResponse> => {
-    return await this.node.createChannel();
+    return this.node.createChannel();
   };
 
   public subscribeToSwapRates = async (from: string, to: string, callback: any): Promise<any> => {
@@ -292,7 +293,7 @@ export class ConnextClient implements IConnextClient {
   // CORE CHANNEL METHODS
 
   public deposit = async (params: DepositParameters): Promise<ChannelState> => {
-    return await this.depositController.deposit(params);
+    return this.depositController.deposit(params);
   };
 
   public requestDepositRights = async (
@@ -304,7 +305,7 @@ export class ConnextClient implements IConnextClient {
   public rescindDepositRights = async (
     params: RescindDepositRightsParameters,
   ): Promise<CFCoreTypes.DepositResult> => {
-    return await this.channelProvider.send(ProtocolTypes.chan_rescindDepositRights, {
+    return this.channelProvider.send(ProtocolTypes.chan_rescindDepositRights, {
       multisigAddress: this.multisigAddress,
       tokenAddress: params.assetId,
     } as CFCoreTypes.RescindDepositRightsParams);
@@ -334,7 +335,8 @@ export class ConnextClient implements IConnextClient {
   };
 
   public swap = async (params: SwapParameters): Promise<CFCoreChannel> => {
-    return await this.swapController.swap(params);
+    const res = await this.swapController.swap(params);
+    return res;
   };
 
   /**
@@ -342,7 +344,7 @@ export class ConnextClient implements IConnextClient {
    * async payments are the default transfer.
    */
   public transfer = async (params: TransferParameters): Promise<ConditionalTransferResponse> => {
-    return await this.conditionalTransferController.conditionalTransfer({
+    const res = await this.conditionalTransferController.conditionalTransfer({
       amount: params.amount,
       assetId: params.assetId,
       conditionType: LINKED_TRANSFER_TO_RECIPIENT,
@@ -351,6 +353,7 @@ export class ConnextClient implements IConnextClient {
       preImage: hexlify(randomBytes(32)),
       recipient: params.recipient,
     } as LinkedTransferToRecipientParameters);
+    return res;
   };
 
   public withdraw = async (params: WithdrawParameters): Promise<WithdrawalResponse> => {
@@ -360,13 +363,15 @@ export class ConnextClient implements IConnextClient {
   public resolveCondition = async (
     params: ResolveConditionParameters,
   ): Promise<ResolveConditionResponse> => {
-    return await this.resolveConditionController.resolve(params);
+    const res = await this.resolveConditionController.resolve(params);
+    return res;
   };
 
   public conditionalTransfer = async (
     params: ConditionalTransferParameters,
   ): Promise<ConditionalTransferResponse> => {
-    return await this.conditionalTransferController.conditionalTransfer(params);
+    const res = await this.conditionalTransferController.conditionalTransfer(params);
+    return res;
   };
 
   public getLatestNodeSubmittedWithdrawal = async (): Promise<
@@ -433,13 +438,15 @@ export class ConnextClient implements IConnextClient {
     let state;
     try {
       state = await this.channelProvider.send(chan_restoreState, { path });
-      this.log.info(`Found state to restore from store's backup: ${stringify(state.path)}`);
+      this.log.info(`Found state to restore from store's backup`);
+      this.log.debug(`Restored state: ${stringify(state.path)}`);
     } catch (e) {
       state = await this.node.restoreState(this.publicIdentifier);
       if (!state) {
         throw new Error(`No matching states found by node for ${this.publicIdentifier}`);
       }
-      this.log.info(`Found state to restore from node: ${stringify(state)}`);
+      this.log.debug(`Found state to restore from node`);
+      this.log.debug(`Restored state: ${stringify(state)}`);
     }
     await this.channelProvider.send(chan_storeSet, {
       pairs: [{ path, value: state }],
@@ -801,18 +808,7 @@ export class ConnextClient implements IConnextClient {
   ): Promise<ResolveLinkedTransferResponse> => {
     this.log.info(`Reclaiming transfer ${paymentId}`);
     // decrypt secret and resolve
-    let privateKey: string;
-    if (this.opts.mnemonic) {
-      privateKey = fromMnemonic(this.opts.mnemonic)
-        .derivePath(CF_PATH)
-        .derivePath("0").privateKey;
-    } else if (this.keyGen) {
-      // TODO: make this use app key?
-      privateKey = await this.keyGen("0");
-    } else {
-      throw new Error("No way to decode transfer, this should never happen!");
-    }
-
+    let privateKey = await this.keyGen("0");
     const preImage = await decryptWithPrivateKey(privateKey, encryptedPreImage);
     this.log.debug(`Decrypted message and recovered preImage: ${preImage}`);
     const response = await this.resolveCondition({
@@ -822,7 +818,7 @@ export class ConnextClient implements IConnextClient {
       paymentId,
       preImage,
     });
-    this.log.info(`Redeemed transfer ${stringify(response)}`);
+    this.log.info(`Reclaimed transfer ${paymentId}`);
     return response;
   };
 

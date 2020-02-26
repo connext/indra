@@ -7,26 +7,26 @@ import { fromMnemonic } from "ethers/utils/hdnode";
 import { ConfigService } from "../config/config.service";
 import { CFCoreProviderId, MessagingProviderId } from "../constants";
 import { LockService } from "../lock/lock.service";
-import { CLogger } from "../util";
+import { LoggerService } from "../logger/logger.service";
 import { CFCore } from "../util/cfCore";
 
 import { CFCoreRecordRepository } from "./cfCore.repository";
 
-const logger = new CLogger("CFCoreProvider");
-
 export const cfCoreProviderFactory: Provider = {
-  inject: [ConfigService, MessagingProviderId, CFCoreRecordRepository, LockService],
+  inject: [ConfigService, LockService, LoggerService, MessagingProviderId, CFCoreRecordRepository],
   provide: CFCoreProviderId,
   useFactory: async (
     config: ConfigService,
+    lockService: LockService,
+    log: LoggerService,
     messaging: IMessagingService,
     store: CFCoreRecordRepository,
-    lockService: LockService,
   ): Promise<CFCore> => {
     const hdNode = fromMnemonic(config.getMnemonic()).derivePath(CF_PATH);
     const publicExtendedKey = hdNode.neuter().extendedKey;
     const provider = config.getEthProvider();
-    logger.log(`Derived xpub from mnemonic: ${publicExtendedKey}`);
+    log.setContext("CFCoreProvider");
+    log.info(`Derived xpub from mnemonic: ${publicExtendedKey}`);
 
     // test that provider works
     const { chainId, name: networkName } = await config.getEthNetwork();
@@ -42,15 +42,15 @@ export const cfCoreProviderFactory: Provider = {
       (uniqueId: string): Promise<string> => {
         return Promise.resolve(hdNode.derivePath(uniqueId).privateKey);
       },
+      undefined,
+      log.newContext("CFCore"),
     );
     const signerAddr = await cfCore.signerAddress();
     const balance = (await provider.getBalance(signerAddr)).toString();
-    logger.log(
+    log.info(
       `Balance of signer address ${signerAddr} on ${networkName} (chainId ${chainId}): ${balance}`,
     );
-    logger.log("CFCore created");
-    logger.log(`Public Identifier ${JSON.stringify(cfCore.publicIdentifier)}`);
-    logger.log(`Free balance address ${cfCore.freeBalanceAddress}`);
+    log.info("CFCore created");
     return cfCore;
   },
 };

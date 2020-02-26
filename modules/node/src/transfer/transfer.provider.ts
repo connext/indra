@@ -4,21 +4,22 @@ import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 
 import { AuthService } from "../auth/auth.service";
+import { LoggerService } from "../logger/logger.service";
 import { MessagingProviderId, TransferProviderId } from "../constants";
-import { AbstractMessagingProvider, CLogger, replaceBN } from "../util";
+import { AbstractMessagingProvider, replaceBN } from "../util";
 
 import { LinkedTransfer } from "./transfer.entity";
 import { TransferService } from "./transfer.service";
 
-const logger = new CLogger("TransferMessaging");
-
 export class TransferMessaging extends AbstractMessagingProvider {
   constructor(
+    private readonly authService: AuthService,
+    log: LoggerService,
     messaging: IMessagingService,
     private readonly transferService: TransferService,
-    private readonly authService: AuthService,
   ) {
-    super(messaging);
+    super(log, messaging);
+    this.log.setContext("TransferMessaging");
   }
 
   async getLinkedTransferByPaymentId(
@@ -28,7 +29,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
     if (!data.paymentId) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
     }
-    logger.log(`Got fetch link request for: ${data.paymentId}`);
+    this.log.info(`Got fetch link request for: ${data.paymentId}`);
     return await this.transferService.getTransferByPaymentId(data.paymentId);
   }
 
@@ -36,7 +37,7 @@ export class TransferMessaging extends AbstractMessagingProvider {
     pubId: string,
     data: { paymentId: string; linkedHash: string },
   ): Promise<ResolveLinkedTransferResponse> {
-    logger.log(`Got resolve link request with data: ${JSON.stringify(data, replaceBN, 2)}`);
+    this.log.debug(`Got resolve link request with data: ${JSON.stringify(data, replaceBN, 2)}`);
     const { paymentId, linkedHash } = data;
     if (!paymentId || !linkedHash) {
       throw new RpcException(`Incorrect data received. Data: ${JSON.stringify(data)}`);
@@ -120,14 +121,15 @@ export class TransferMessaging extends AbstractMessagingProvider {
 }
 
 export const transferProviderFactory: FactoryProvider<Promise<void>> = {
-  inject: [MessagingProviderId, TransferService, AuthService],
+  inject: [AuthService, LoggerService, MessagingProviderId, TransferService],
   provide: TransferProviderId,
   useFactory: async (
+    authService: AuthService,
+    logging: LoggerService,
     messaging: IMessagingService,
     transferService: TransferService,
-    authService: AuthService,
   ): Promise<void> => {
-    const transfer = new TransferMessaging(messaging, transferService, authService);
+    const transfer = new TransferMessaging(authService, logging, messaging, transferService);
     await transfer.setupSubscriptions();
   },
 };

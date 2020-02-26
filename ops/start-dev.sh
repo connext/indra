@@ -15,13 +15,13 @@ localProvider="http://ethprovider:8545"
 INDRA_ETH_PROVIDER="${INDRA_ETH_PROVIDER:-$localProvider}"
 INDRA_ADMIN_TOKEN="${INDRA_ADMIN_TOKEN:-foo}"
 INDRA_UI="${INDRA_UI:-daicard}"
+log_level="${LOG_LEVEL:-3}"
 
 ####################
 # Internal Config
 # config & hard-coded stuff you might want to change
 
 number_of_services=5 # NOTE: Gotta update this manually when adding/removing services :(
-log_level=3
 nats_port=4222
 node_port=8080
 dash_port=9999

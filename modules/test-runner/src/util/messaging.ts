@@ -91,7 +91,6 @@ const zeroCounter = (): MessageCounter => {
 const defaultOpts = (): TestMessagingConfig => {
   return {
     messagingConfig: {
-      logLevel: env.logLevel,
       messagingUrl: env.nodeUrl,
     },
     protocolDefaults: {
@@ -132,7 +131,6 @@ export class TestMessagingService extends ConnextEventEmitter implements IMessag
 
     // NOTE: high maxPingOut prevents stale connection errors while time-travelling
     this.connection = new MessagingServiceFactory({
-      logLevel: this.options.messagingConfig.logLevel,
       messagingUrl: this.options.messagingConfig.messagingUrl,
       options: {
         maxPingOut: 1_000_000_000,
