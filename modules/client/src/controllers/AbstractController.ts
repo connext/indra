@@ -28,6 +28,7 @@ export abstract class AbstractController {
   proposeAndInstallLedgerApp = async (
     params: CFCoreTypes.ProposeInstallParams,
   ): Promise<string> => {
+    // 163 ms
     const proposeRes = await Promise.race([
       this.connext.proposeInstallApp(params),
       delayAndThrow(
@@ -41,6 +42,7 @@ export abstract class AbstractController {
     let boundReject: (reason?: any) => void;
 
     try {
+      // 1676 ms TODO: why does this step take so long?
       const res = await Promise.race([
         delayAndThrow(
           CF_METHOD_TIMEOUT,

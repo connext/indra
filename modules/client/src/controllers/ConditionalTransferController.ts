@@ -90,7 +90,7 @@ export class ConditionalTransferController extends AbstractController {
     params.meta["encryptedPreImage"] = encryptedPreImage;
     params.meta["recipient"] = recipient;
 
-    // wait for linked transfer
+    // wait for linked transfer (2562 ms)
     const ret = await this.handleLinkedTransfers({
       ...params,
       conditionType: LINKED_TRANSFER,
@@ -159,6 +159,7 @@ export class ConditionalTransferController extends AbstractController {
       preImage: HashZero,
     };
 
+    // 1811 ms
     const appId = await this.conditionalTransferAppInstalled(
       amount,
       assetId,
