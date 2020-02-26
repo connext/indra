@@ -1,9 +1,20 @@
 import { Injectable } from "@nestjs/common";
-import { IStoreService, StateChannelJSON, AppInstanceJson, ProtocolTypes } from "@connext/types";
+import {
+  ConditionalTransactionCommitmentJSON,
+  IStoreService,
+  SetStateCommitmentJSON,
+  StateChannelJSON,
+  AppInstanceJson,
+  ProtocolTypes,
+} from "@connext/types";
 
 import { AppInstance, AppType } from "../appInstance/appInstance.entity";
 import { AppInstanceRepository } from "../appInstance/appInstance.repository";
-import { CommitmentRepository } from "../commitment/commitment.repository";
+import {
+  ConditionalTransactionCommitmentRepository,
+  SetStateCommitmentRepository,
+  WithdrawCommitmentRepository,
+} from "../commitment/commitment.repository";
 import { Channel } from "../channel/channel.entity";
 import { ChannelRepository } from "../channel/channel.repository";
 
@@ -12,7 +23,9 @@ export class CFCoreStore implements IStoreService {
   constructor(
     private readonly channelRepository: ChannelRepository,
     private readonly appInstanceRepository: AppInstanceRepository,
-    private readonly commitmentRepository: CommitmentRepository,
+    private readonly conditionalTransactionCommitmentRepository: ConditionalTransactionCommitmentRepository,
+    private readonly setStateCommitmentRepository: SetStateCommitmentRepository,
+    private readonly withdrawCommitmentRepository: WithdrawCommitmentRepository,
   ) {}
 
   async getAllChannels(): Promise<StateChannelJSON[]> {
@@ -96,23 +109,49 @@ export class CFCoreStore implements IStoreService {
     throw new Error("Method not implemented.");
   }
 
-  getCommitment(commitmentHash: string): Promise<ProtocolTypes.MinimalTransaction> {
-    return this.commitmentRepository.getCommitment(commitmentHash);
+  getLatestSetStateCommitment(
+    appIdentityHash: string,
+  ): Promise<SetStateCommitmentJSON | undefined> {
+    return this.setStateCommitmentRepository.getLatestSetStateCommitment(appIdentityHash);
   }
 
-  saveCommitment(commitmentHash: string, commitment: any[]): Promise<void> {
-    return this.commitmentRepository.saveCommitment(commitmentHash, commitment);
+  saveLatestSetStateCommitment(
+    appIdentityHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    return this.setStateCommitmentRepository.saveLatestSetStateCommitment(
+      appIdentityHash,
+      commitment,
+    );
+  }
+
+  getConditionalTransactionCommitment(
+    appIdentityHash: string,
+  ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
+    return this.conditionalTransactionCommitmentRepository.getConditionalTransactionCommitment(
+      appIdentityHash,
+    );
+  }
+
+  saveConditionalTransactionCommitment(
+    appIdentityHash: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void> {
+    return this.conditionalTransactionCommitmentRepository.saveConditionalTransactionCommitment(
+      appIdentityHash,
+      commitment,
+    );
   }
 
   getWithdrawalCommitment(multisigAddress: string): Promise<ProtocolTypes.MinimalTransaction> {
-    return this.commitmentRepository.getWithdrawalCommitment(multisigAddress);
+    return this.withdrawCommitmentRepository.getWithdrawalCommitment(multisigAddress);
   }
 
   saveWithdrawalCommitment(
     multisigAddress: string,
     commitment: ProtocolTypes.MinimalTransaction,
   ): Promise<void> {
-    return this.commitmentRepository.saveWithdrawalCommitment(multisigAddress, commitment);
+    return this.withdrawCommitmentRepository.saveWithdrawalCommitment(multisigAddress, commitment);
   }
 
   getExtendedPrvKey(): Promise<string> {
