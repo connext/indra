@@ -21,6 +21,7 @@ export class SetStateCommitment extends EthereumCommitment {
     public readonly appStateHash: string,
     public readonly versionNumber: number, // app nonce
     public readonly timeout: number,
+    public readonly appIdentityHash: string = appIdentityToHash(appIdentity),
     private participantSignatures: Signature[] = [],
   ) {
     super();
@@ -65,10 +66,11 @@ export class SetStateCommitment extends EthereumCommitment {
 
   public toJson(): SetStateCommitmentJSON {
     return {
+      appIdentityHash: this.appIdentityHash,
       appIdentity: this.appIdentity,
       appStateHash: this.appStateHash,
       challengeRegistryAddress: this.challengeRegistryAddress,
-      participantSignatures: this.signatures,
+      signatures: this.signatures,
       timeout: this.timeout,
       versionNumber: this.versionNumber,
     };
@@ -81,7 +83,8 @@ export class SetStateCommitment extends EthereumCommitment {
       json.appStateHash,
       json.versionNumber,
       json.timeout,
-      json.participantSignatures,
+      json.appIdentityHash,
+      json.signatures,
     );
   }
 
