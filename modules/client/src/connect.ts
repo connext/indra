@@ -10,7 +10,14 @@ import tokenAbi from "human-standard-token-abi";
 
 import { createCFChannelProvider } from "./channelProvider";
 import { ConnextClient } from "./connext";
-import { delayAndThrow, getDefaultOptions, getDefaultStore, Logger, stringify } from "./lib";
+import {
+  delayAndThrow,
+  getDefaultOptions,
+  getDefaultStore,
+  Logger,
+  logTime,
+  stringify,
+} from "./lib";
 import { NodeApiClient } from "./node";
 import {
   CFCoreTypes,
@@ -68,6 +75,7 @@ export const connect = async (
   clientOptions: string | ClientOptions,
   overrideOptions?: Partial<ClientOptions>,
 ): Promise<IConnextClient> => {
+  const start = Date.now();
   const opts =
     typeof clientOptions === "string"
       ? await getDefaultOptions(clientOptions, overrideOptions)
@@ -212,6 +220,7 @@ export const connect = async (
   // return before any cleanup using the assumption that all injected clients
   // have an online client that it can access that has don the cleanup
   if (isInjected) {
+    logTime(log, start, `Client successfully connected`);
     return client;
   }
 
@@ -285,7 +294,6 @@ export const connect = async (
   // check if client is available
   await client.isAvailable();
 
-  log.debug("Done creating channel client");
-
+  logTime(log, start, `Client successfully connected`);
   return client;
 };

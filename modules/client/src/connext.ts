@@ -163,13 +163,6 @@ export class ConnextClient implements IConnextClient {
     );
   };
 
-  private logTimeElapsed = async (fn: any, msg: string): Promise<any> => {
-    const start = Date.now();
-    const result = await fn();
-    this.log.info(`${msg} succeeded in ${Date.now() - start}ms`);
-    return result;
-  };
-
   /**
    * Checks if the coin balance refund app is installed.
    *
@@ -237,10 +230,8 @@ export class ConnextClient implements IConnextClient {
   public requestCollateral = async (
     tokenAddress: string,
   ): Promise<RequestCollateralResponse | void> => {
-    return this.logTimeElapsed(
-      async () => await this.node.requestCollateral(tokenAddress),
-      `Collateral request for ${tokenAddress}`,
-    );
+    const res = await this.node.requestCollateral(tokenAddress);
+    return res;
   };
 
   public setRecipientAndEncryptedPreImageForLinkedTransfer = async (
@@ -302,7 +293,7 @@ export class ConnextClient implements IConnextClient {
   // CORE CHANNEL METHODS
 
   public deposit = async (params: DepositParameters): Promise<ChannelState> => {
-    return this.logTimeElapsed(async () => await this.depositController.deposit(params), `Deposit`);
+    return this.depositController.deposit(params);
   };
 
   public requestDepositRights = async (
@@ -344,7 +335,8 @@ export class ConnextClient implements IConnextClient {
   };
 
   public swap = async (params: SwapParameters): Promise<CFCoreChannel> => {
-    return this.logTimeElapsed(async () => await this.swapController.swap(params), `Swap`);
+    const res = await this.swapController.swap(params);
+    return res;
   };
 
   /**
@@ -352,19 +344,16 @@ export class ConnextClient implements IConnextClient {
    * async payments are the default transfer.
    */
   public transfer = async (params: TransferParameters): Promise<ConditionalTransferResponse> => {
-    return this.logTimeElapsed(
-      async () =>
-        await this.conditionalTransferController.conditionalTransfer({
-          amount: params.amount,
-          assetId: params.assetId,
-          conditionType: LINKED_TRANSFER_TO_RECIPIENT,
-          meta: params.meta,
-          paymentId: hexlify(randomBytes(32)),
-          preImage: hexlify(randomBytes(32)),
-          recipient: params.recipient,
-        } as LinkedTransferToRecipientParameters),
-      `Transfer`,
-    );
+    const res = await this.conditionalTransferController.conditionalTransfer({
+      amount: params.amount,
+      assetId: params.assetId,
+      conditionType: LINKED_TRANSFER_TO_RECIPIENT,
+      meta: params.meta,
+      paymentId: hexlify(randomBytes(32)),
+      preImage: hexlify(randomBytes(32)),
+      recipient: params.recipient,
+    } as LinkedTransferToRecipientParameters);
+    return res;
   };
 
   public withdraw = async (params: WithdrawParameters): Promise<WithdrawalResponse> => {
@@ -374,19 +363,15 @@ export class ConnextClient implements IConnextClient {
   public resolveCondition = async (
     params: ResolveConditionParameters,
   ): Promise<ResolveConditionResponse> => {
-    return this.logTimeElapsed(
-      async () => await this.resolveConditionController.resolve(params),
-      `Resolve condition`,
-    );
+    const res = await this.resolveConditionController.resolve(params);
+    return res;
   };
 
   public conditionalTransfer = async (
     params: ConditionalTransferParameters,
   ): Promise<ConditionalTransferResponse> => {
-    return this.logTimeElapsed(
-      async () => await this.conditionalTransferController.conditionalTransfer(params),
-      `Conditional transfer`
-    );
+    const res = await this.conditionalTransferController.conditionalTransfer(params);
+    return res;
   };
 
   public getLatestNodeSubmittedWithdrawal = async (): Promise<

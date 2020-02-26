@@ -3,7 +3,7 @@ import { ILoggerService } from "@connext/types";
 import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
 import uuid from "uuid";
-import { NATS_ATTEMPTS, NATS_TIMEOUT, stringify } from "./lib";
+import { logTime, NATS_ATTEMPTS, NATS_TIMEOUT, stringify } from "./lib";
 import {
   AppRegistry,
   CFCoreTypes,
@@ -304,6 +304,7 @@ export class NodeApiClient implements INodeApiClient {
   }
 
   private async sendAttempt(subject: string, data?: any): Promise<any | undefined> {
+    const start = Date.now();
     this.log.debug(
       `Sending request to ${subject} ${data ? `with data: ${stringify(data)}` : "without data"}`,
     );
@@ -337,6 +338,11 @@ export class NodeApiClient implements INodeApiClient {
       throw new Error(`Error sending request. Message: ${stringify(msg)}`);
     }
     const isEmptyObj = typeof response === "object" && Object.keys(response).length === 0;
+    logTime(
+      this.log,
+      start,
+      `Node responded to ${subject.split(".").slice(0, 2).join(".")} request`, // prettier-ignore
+    );
     return !response || isEmptyObj ? undefined : response;
   }
 }
