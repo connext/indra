@@ -22,7 +22,7 @@ import {
   TransferParameters,
   WithdrawParameters,
 } from "./inputs";
-import { ILogger } from "./logger";
+import { ILogger, ILoggerService } from "./logger";
 import { IMessagingService } from "./messaging";
 import {
   CreateChannelResponse,
@@ -37,18 +37,19 @@ import { CFCoreTypes } from "./cfCore";
 
 // channelProvider, mnemonic, and xpub+keyGen are all optional but one of them needs to be provided
 export interface ClientOptions {
-  ethProviderUrl: string;
-  nodeUrl?: string; // ws:// or nats:// urls are supported
-  channelProvider?: IChannelProvider;
-  keyGen?: KeyGen;
-  mnemonic?: string;
-  xpub?: string;
-  store?: Store;
-  logLevel?: number;
-  logger?: ILogger;
   asyncStorage?: IAsyncStorage;
-  messaging?: IMessagingService;
   backupService?: IBackupServiceAPI;
+  channelProvider?: IChannelProvider;
+  ethProviderUrl: string;
+  keyGen?: KeyGen;
+  logger?: ILogger;
+  loggerService?: ILoggerService;
+  logLevel?: number;
+  messaging?: IMessagingService;
+  mnemonic?: string;
+  nodeUrl?: string; // ws:// or nats:// urls are supported
+  store?: Store;
+  xpub?: string;
 }
 
 export interface IConnextClient {

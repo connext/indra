@@ -76,12 +76,14 @@ export const connect = async (
     channelProvider: providedChannelProvider,
     ethProviderUrl,
     logger,
+    loggerService,
+    logLevel,
     mnemonic,
     nodeUrl,
   } = opts;
   let { xpub, keyGen, store, messaging } = opts;
 
-  const log = new Logger("ConnextConnect", opts.logLevel, logger) as ILoggerService;
+  const log = (loggerService || new Logger("ConnextConnect", logLevel, logger)) as ILoggerService;
 
   // setup ethProvider + network information
   log.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);

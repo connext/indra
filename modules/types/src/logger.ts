@@ -6,13 +6,13 @@ export interface ILogger {
   error(msg: string): void;
 }
 
-// Designed to give Indra devs flexibility in managing logger context tags
-// These methods are internal, our users shouldn't know/care about them.
+// Designed to give devs power over log format & context switching
 export interface ILoggerService extends ILogger {
   setContext(context: string): void;
   newContext(context: string): ILoggerService;
 }
 
+// Example implementation that can be used as a silent default
 export const nullLogger: ILoggerService = {
   debug: (msg: string): void => {},
   info: (msg: string): void => {},
