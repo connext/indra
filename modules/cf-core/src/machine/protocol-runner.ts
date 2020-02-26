@@ -1,3 +1,4 @@
+import { ILoggerService } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import uuid from "uuid";
 
@@ -68,7 +69,11 @@ function firstRecipientFromProtocolName(protocolName: Protocol) {
 export class ProtocolRunner {
   public middlewares: MiddlewareContainer;
 
-  constructor(public readonly network: NetworkContext, public readonly provider: BaseProvider) {
+  constructor(
+    public readonly network: NetworkContext,
+    public readonly provider: BaseProvider,
+    public readonly log: ILoggerService,
+  ) {
     this.network.provider = network.provider || provider;
     this.middlewares = new MiddlewareContainer();
   }
@@ -122,10 +127,11 @@ export class ProtocolRunner {
     message: ProtocolMessage,
   ): Promise<Map<string, StateChannel>> {
     const context: Context = {
+      log: this.log,
       message,
-      stateChannelsMap,
       network: this.network,
       provider: this.provider,
+      stateChannelsMap,
     };
 
     let lastMiddlewareRet: any = undefined;

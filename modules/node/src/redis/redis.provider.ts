@@ -3,18 +3,16 @@ import Redis from "ioredis";
 import Redlock from "redlock";
 
 import { ConfigService } from "../config/config.service";
+import { LoggerService } from "../logger/logger.service";
 import { RedisProviderId, RedlockProviderId } from "../constants";
-import { CLogger } from "../util";
-
-const logger = new CLogger("RedisService");
 
 export const redisClientFactory: FactoryProvider = {
-  inject: [ConfigService],
+  inject: [ConfigService, LoggerService],
   provide: RedisProviderId,
-  useFactory: (config: ConfigService): Redis.Redis => {
+  useFactory: (config: ConfigService, log: LoggerService): Redis.Redis => {
     const redisClient = new Redis(config.getRedisUrl(), {
       retryStrategy: (times: number): number => {
-        logger.warn("Lost connection to redis. Retrying to connect...");
+        log.warn("Lost connection to redis. Retrying to connect...");
         const delay = Math.min(times * 50, 2000);
         return delay;
       },
@@ -24,9 +22,9 @@ export const redisClientFactory: FactoryProvider = {
 };
 
 export const redlockClientFactory: FactoryProvider = {
-  inject: [RedisProviderId],
+  inject: [RedisProviderId, LoggerService],
   provide: RedlockProviderId,
-  useFactory: (redis: Redis.Redis): Redlock => {
+  useFactory: (redis: Redis.Redis, log: LoggerService): Redlock => {
     const redlockClient = new Redlock([redis], {
       // the expected clock drift; for more details
       // see http://redis.io/topics/distlock
@@ -46,7 +44,7 @@ export const redlockClientFactory: FactoryProvider = {
     });
 
     redlockClient.on("clientError", (e: any) => {
-      logger.error(`A redis error has occurred: ${e.message}`, e.stack);
+      log.error(`A redis error has occurred: ${e.message}`, e.stack);
     });
 
     return redlockClient;

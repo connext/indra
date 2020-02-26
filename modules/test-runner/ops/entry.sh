@@ -2,6 +2,7 @@
 set -e
 
 project="indra"
+cmd="${1:-test}"
 
 export STORE_DIR="./.test-store"
 export INDRA_CLIENT_LOG_LEVEL="${INDRA_CLIENT_LOG_LEVEL:-0}"
@@ -29,22 +30,27 @@ bash ops/wait-for.sh ${INDRA_NODE_URL#*://}
 
 bundle=dist/tests.bundle.js
 
-if [[ ! -f "$bundle" || "$NODE_ENV" == "development" ]]
+if [[ ! -f "$bundle" ]]
 then webpack --config ops/webpack.config.js
 fi
 
-if [[ $1 == "--watch" ]]
+if [[ "$NODE_ENV" == "production" ]]
+then noOnly="--forbid-only"
+else noOnly=""
+fi
+
+if [[ "$cmd" == "watch" ]]
 then
   webpack --watch --config ops/webpack.config.js &
   sleep 5 # give webpack a sec to finish the first watch-mode build
   mocha --slow 1000 --timeout 120000 --bail --check-leaks --bail --watch $bundle
-elif [[ $1 == "--flamegraph" ]]
+elif [[ "$cmd" == "flamegraph" ]]
 then
   node dist/flamegraphPrep.bundle.js
   sleep 2
   0x -o dist/flamegraph.bundle.js
 else
-  mocha --slow 1000 --timeout 120000 --bail --check-leaks --bail --exit $bundle
+  mocha --slow 1000 --timeout 120000 --bail --check-leaks --bail --exit $noOnly $bundle
 fi
 
 rm -rf $STORE_DIR

@@ -1,4 +1,10 @@
-import { CFCoreTypes, NetworkContext, ProtocolMessage, SolidityValueType } from "@connext/types";
+import {
+  CFCoreTypes,
+  ILoggerService,
+  NetworkContext,
+  ProtocolMessage,
+  SolidityValueType,
+} from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import { Signature } from "ethers/utils";
 
@@ -46,10 +52,11 @@ export type Instruction = Function | Opcode;
 
 /// Arguments passed to a protocol execulion flow
 export interface Context {
-  network: NetworkContext;
-  stateChannelsMap: Map<string, StateChannel>;
+  log: ILoggerService;
   message: ProtocolMessage;
+  network: NetworkContext;
   provider: BaseProvider;
+  stateChannelsMap: Map<string, StateChannel>;
 }
 
 export type TakeActionProtocolParams = {
