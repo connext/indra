@@ -123,7 +123,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     yield [WRITE_COMMITMENT, Install, signedConditionalTransaction, newAppInstance.identityHash];
 
     const freeBalanceUpdateData = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       postProtocolStateChannel.freeBalance.identity,
       postProtocolStateChannel.freeBalance.hashOfLatestState,
       postProtocolStateChannel.freeBalance.versionNumber,
@@ -138,16 +138,18 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateData];
 
-    const signedFreeBalanceStateUpdate = freeBalanceUpdateData.getSignedTransaction([
+    // add signatures to commitment
+    freeBalanceUpdateData.signatures = [
       mySignatureOnFreeBalanceStateUpdate,
       counterpartySignatureOnFreeBalanceStateUpdate,
-    ]);
+    ];
 
     yield [
       WRITE_COMMITMENT,
       Update,
-      signedFreeBalanceStateUpdate,
+      freeBalanceUpdateData,
       postProtocolStateChannel.freeBalance.identityHash,
+      false,
     ];
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
@@ -243,7 +245,7 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
     yield [WRITE_COMMITMENT, Install, signedConditionalTransaction, newAppInstance.identityHash];
 
     const freeBalanceUpdateData = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       postProtocolStateChannel.freeBalance.identity,
       postProtocolStateChannel.freeBalance.hashOfLatestState,
       postProtocolStateChannel.freeBalance.versionNumber,
@@ -274,16 +276,18 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnFreeBalanceStateUpdate,
     );
 
-    const signedFreeBalanceStateUpdate = freeBalanceUpdateData.getSignedTransaction([
+    // add signature
+    freeBalanceUpdateData.signatures = [
       mySignatureOnFreeBalanceStateUpdate,
       counterpartySignatureOnFreeBalanceStateUpdate,
-    ]);
+    ];
 
     yield [
       WRITE_COMMITMENT,
       Update,
-      signedFreeBalanceStateUpdate,
+      freeBalanceUpdateData,
       postProtocolStateChannel.freeBalance.identityHash,
+      false,
     ];
 
     yield [PERSIST_STATE_CHANNEL, [postProtocolStateChannel]];
