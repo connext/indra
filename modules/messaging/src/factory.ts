@@ -1,5 +1,5 @@
+import { IMessagingService, MessagingConfig } from "@connext/types";
 import { NatsMessagingService } from "./nats";
-import { IMessagingService, MessagingConfig } from "./types";
 import { WsMessagingService } from "./ws";
 
 export class MessagingServiceFactory {

@@ -44,9 +44,9 @@ export class WithdrawalController extends AbstractController {
     const preWithdrawBalances = await this.connext.getFreeBalance(assetId);
 
     this.log.info(
-      `\nWithdrawing ${formatEther(amount)} ${assetId === AddressZero ? "ETH" : "Tokens"} from ${
-        this.connext.multisigAddress
-      } to ${recipient}\n`,
+      `Withdrawing ${formatEther(amount)} ${
+        assetId === AddressZero ? "ETH" : "Tokens"
+      } from multisig to ${recipient}`,
     );
 
     let transaction: TransactionResponse | undefined;

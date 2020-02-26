@@ -9,7 +9,7 @@
   "license": "MIT",
   "files": ["dist", "src"],
   "scripts": {
-    "build": "./node_modules/.bin/tsc -b . && ./node_modules/.bin/rollup -c",
+    "build": "rm -rf ./dist/* && ./node_modules/.bin/tsc -b . && ./node_modules/.bin/rollup -c",
     "lint": "../../node_modules/.bin/eslint -c '../../.eslintrc.js' --fix 'src/**/*'",
     "test": "./node_modules/.bin/jest"
   },

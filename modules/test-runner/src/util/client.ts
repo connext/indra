@@ -9,6 +9,7 @@ import localStorage from "localStorage";
 import { ETH_AMOUNT_MD, TOKEN_AMOUNT } from "./constants";
 import { env } from "./env";
 import { ethWallet } from "./ethprovider";
+import { Logger } from "./logger";
 import { MessageCounter, TestMessagingService } from "./messaging";
 
 let mnemonics: { [xpub: string]: string } = {};
@@ -21,7 +22,7 @@ export const createClient = async (opts: Partial<ClientOptions> = {}): Promise<I
   const mnemonic = Wallet.createRandom().mnemonic;
   const clientOpts: ClientOptions = {
     ethProviderUrl: env.ethProviderUrl,
-    logLevel: env.logLevel,
+    loggerService: new Logger("TestRunner", env.logLevel),
     mnemonic,
     nodeUrl: env.nodeUrl,
     store,
@@ -48,7 +49,7 @@ export const createRemoteClient = async (
   const clientOpts: ClientOptions = {
     channelProvider,
     ethProviderUrl: env.ethProviderUrl,
-    logLevel: env.logLevel,
+    loggerService: new Logger("TestRunner", env.logLevel),
   };
   const client = await connect(clientOpts);
   expect(client.freeBalanceAddress).to.be.ok;
@@ -65,7 +66,7 @@ export const createDefaultClient = async (network: string, opts?: Partial<Client
   let clientOpts: Partial<ClientOptions> = {
     ...opts,
     ...urlOptions,
-    logLevel: env.logLevel,
+    loggerService: new Logger("TestRunner", env.logLevel),
     store: new ConnextStore(localStorage), // TODO: replace with polyfilled window.localStorage
   };
   if (network === "mainnet") {

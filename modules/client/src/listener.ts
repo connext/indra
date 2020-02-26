@@ -1,7 +1,8 @@
-import { bigNumberify, formatEther } from "ethers/utils";
+import { ILoggerService } from "@connext/types";
+import { bigNumberify } from "ethers/utils";
 
 import { ConnextClient } from "./connext";
-import { Logger, stringify } from "./lib";
+import { stringify } from "./lib";
 import {
   CFCoreTypes,
   CreateChannelMessage,
@@ -52,7 +53,7 @@ type CallbackStruct = {
 };
 
 export class ConnextListener extends ConnextEventEmitter {
-  private log: Logger;
+  private log: ILoggerService;
   private channelProvider: IChannelProvider;
   private connext: ConnextClient;
 
@@ -69,8 +70,7 @@ export class ConnextListener extends ConnextEventEmitter {
       this.emitAndLog(DEPOSIT_FAILED_EVENT, msg.data);
     },
     DEPOSIT_STARTED_EVENT: (msg: DepositStartedMessage): void => {
-      const { value, txHash } = msg.data;
-      this.log.info(`Deposit transaction: ${txHash}`);
+      this.log.info(`Deposit transaction: ${msg.data.txHash}`);
       this.emitAndLog(DEPOSIT_STARTED_EVENT, msg.data);
     },
     INSTALL_EVENT: (msg: InstallMessage): void => {
@@ -81,6 +81,8 @@ export class ConnextListener extends ConnextEventEmitter {
       this.emitAndLog(INSTALL_VIRTUAL_EVENT, msg.data);
     },
     PROPOSE_INSTALL_EVENT: async (msg: ProposeMessage): Promise<void> => {
+      const start = Date.now();
+      const time = () => `in ${Date.now() - start} ms`;
       // validate and automatically install for the known and supported
       // applications
       this.emitAndLog(PROPOSE_INSTALL_EVENT, msg.data);
@@ -88,7 +90,7 @@ export class ConnextListener extends ConnextEventEmitter {
       // matched app, take appropriate default actions
       const matchedResult = await this.matchAppInstance(msg);
       if (!matchedResult) {
-        this.log.warn(`No matched app, doing nothing, ${stringify(msg)}`);
+        this.log.warn(`No matched app, doing nothing ${time()}, ${stringify(msg)}`);
         return;
       }
       const {
@@ -97,7 +99,7 @@ export class ConnextListener extends ConnextEventEmitter {
       } = msg;
       // return if its from us
       if (from === this.connext.publicIdentifier) {
-        this.log.info(`Received proposal from our own node, doing nothing`);
+        this.log.debug(`Received proposal from our own node, doing nothing ${time()}`);
         return;
       }
       // matched app, take appropriate default actions
@@ -108,10 +110,11 @@ export class ConnextListener extends ConnextEventEmitter {
         (app: DefaultApp) => app.name === CoinBalanceRefundApp,
       )[0];
       if (params.appDefinition !== coinBalanceDef.appDefinitionAddress) {
-        this.log.debug("Not sending propose message, not the coinbalance refund app");
+        this.log.info(
+          `Proposed app isn't a coinbalance refund app, not sending propose message ${time()}`,
+        );
         return;
       }
-      this.log.info(`Sending proposal acceptance message`);
       this.log.debug(
         `Sending acceptance message to: indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
       );
@@ -119,6 +122,7 @@ export class ConnextListener extends ConnextEventEmitter {
         `indra.client.${this.connext.publicIdentifier}.proposalAccepted.${this.connext.multisigAddress}`,
         stringify(params),
       );
+      this.log.info(`Done processing propose install event ${time()}`);
       return;
     },
     PROTOCOL_MESSAGE_EVENT: (msg: NodeMessageWrappedProtocolMessage): void => {
@@ -143,11 +147,7 @@ export class ConnextListener extends ConnextEventEmitter {
       this.emitAndLog(WITHDRAWAL_FAILED_EVENT, msg.data);
     },
     WITHDRAWAL_STARTED_EVENT: (msg: WithdrawStartedMessage): void => {
-      const {
-        params: { amount },
-        txHash,
-      } = msg.data;
-      this.log.info(`Withdrawal transaction: ${txHash}`);
+      this.log.info(`Withdrawal transaction: ${msg.data.txHash}`);
       this.emitAndLog(WITHDRAWAL_STARTED_EVENT, msg.data);
     },
   };
@@ -156,7 +156,7 @@ export class ConnextListener extends ConnextEventEmitter {
     super();
     this.channelProvider = channelProvider;
     this.connext = connext;
-    this.log = new Logger("ConnextListener", connext.log.logLevel);
+    this.log = connext.log.newContext("ConnextListener");
   }
 
   public register = async (): Promise<void> => {

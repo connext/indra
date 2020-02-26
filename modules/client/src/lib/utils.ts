@@ -1,5 +1,20 @@
+import { ILogger } from "@connext/types";
 import { BigNumber, bigNumberify, hexlify, randomBytes, solidityKeccak256 } from "ethers/utils";
 import { isNullOrUndefined } from "util";
+
+export const logTime = (log: ILogger, start: number, msg: string) => {
+  const diff = Date.now() - start;
+  const message = `${msg} in ${diff} ms`;
+  if (diff < 10) {
+    log.debug(message);
+  } else if (diff < 100) {
+    log.info(message);
+  } else if (diff < 1000) {
+    log.warn(message);
+  } else {
+    log.error(message);
+  }
+};
 
 // Give abrv = true to abbreviate hex strings and xpubs to look like "xpub6FEC..kuQk"
 export const stringify = (obj: object, abrv: boolean = false): string =>
