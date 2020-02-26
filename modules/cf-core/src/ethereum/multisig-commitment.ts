@@ -6,16 +6,29 @@ import { sortSignaturesBySignerAddress } from "../utils";
 
 /// A commitment to make MinimumViableMultisig perform a message call
 export abstract class MultisigCommitment extends EthereumCommitment {
-  constructor(readonly multisigAddress: string, readonly multisigOwners: string[]) {
+  constructor(
+    readonly multisigAddress: string,
+    readonly multisigOwners: string[],
+    private participantSignatures: Signature[] = [],
+  ) {
     super();
   }
 
   abstract getTransactionDetails(): MultisigTransaction;
 
-  public getSignedTransaction(sigs: Signature[]): CFCoreTypes.MinimalTransaction {
+  get signatures() {
+    return this.participantSignatures;
+  }
+
+  set signatures(sigs: Signature[]) {
+    this.participantSignatures = sigs;
+  }
+
+  public getSignedTransaction(): CFCoreTypes.MinimalTransaction {
+    this.assertSignatures();
     const multisigInput = this.getTransactionDetails();
 
-    const signaturesList = sortSignaturesBySignerAddress(this.hashToSign(), sigs).map(
+    const signaturesList = sortSignaturesBySignerAddress(this.hashToSign(), this.signatures).map(
       joinSignature,
     );
 
@@ -27,7 +40,6 @@ export abstract class MultisigCommitment extends EthereumCommitment {
       signaturesList,
     ]);
 
-    // TODO: Deterministically compute `to` address
     return { to: this.multisigAddress, value: 0, data: txData };
   }
 
@@ -39,5 +51,11 @@ export abstract class MultisigCommitment extends EthereumCommitment {
         ["0x19", this.multisigOwners, to, value, data, operation],
       ),
     );
+  }
+
+  private assertSignatures() {
+    if (!this.signatures || this.signatures.length === 0) {
+      throw new Error(`No signatures detected`);
+    }
   }
 }
