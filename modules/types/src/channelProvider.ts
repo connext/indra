@@ -1,7 +1,7 @@
 import { CFCoreTypes } from "./cfCore";
 import { NetworkContext } from "./contracts";
 import { ConnextEventEmitter } from "./events";
-import { ILogger } from "./logger";
+import { ILoggerService } from "./logger";
 import { ProtocolTypes } from "./protocol";
 import { Store, StorePair } from "./store";
 
@@ -75,7 +75,7 @@ export interface CFChannelProviderOptions {
   ethProvider: any;
   keyGen: ProtocolTypes.IPrivateKeyGenerator;
   lockService?: ProtocolTypes.ILockService;
-  logger?: ILogger;
+  logger?: ILoggerService;
   messaging: any;
   networkContext: NetworkContext;
   nodeConfig: any;

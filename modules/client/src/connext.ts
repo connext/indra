@@ -1,11 +1,10 @@
 import { IMessagingService } from "@connext/messaging";
 import {
   AppInstanceProposal,
-  CF_PATH,
   IChannelProvider,
   LinkedTransferToRecipientParameters,
   LINKED_TRANSFER_TO_RECIPIENT,
-  ILogger,
+  ILoggerService,
   chan_storeGet,
   chan_storeSet,
   chan_restoreState,
@@ -15,7 +14,6 @@ import "core-js/stable";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { BigNumber, bigNumberify, hexlify, Network, randomBytes, Transaction } from "ethers/utils";
-import { fromMnemonic } from "ethers/utils/hdnode";
 import tokenAbi from "human-standard-token-abi";
 import "regenerator-runtime/runtime";
 
@@ -83,7 +81,7 @@ export class ConnextClient implements IConnextClient {
   public ethProvider: providers.JsonRpcProvider;
   public freeBalanceAddress: string;
   public listener: ConnextListener;
-  public log: ILogger;
+  public log: ILoggerService;
   public messaging: IMessagingService;
   public multisigAddress: Address;
   public network: Network;

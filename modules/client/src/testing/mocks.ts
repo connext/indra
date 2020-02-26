@@ -1,5 +1,5 @@
 import { IMessagingService } from "@connext/messaging";
-import { ILogger } from "@connext/types";
+import { ILoggerService } from "@connext/types";
 import { providers } from "ethers";
 import { BigNumber, Transaction } from "ethers/utils";
 
@@ -35,7 +35,7 @@ export const nodeUrl: string = process.env.NODE_URL || "nats://morecoolstuffs";
 
 export class MockMessagingService implements IMessagingService {
   private returnVals: any = MockNodeClientApi.returnValues;
-  private log: ILogger;
+  private log: ILoggerService;
 
   public constructor(opts?: any) {
     this.log = opts.logger || new Logger("MockMessagingService", 3);
@@ -85,7 +85,7 @@ export class MockMessagingService implements IMessagingService {
 
 export class MockNodeClientApi implements INodeApiClient {
   // public receivedUpdateRequests: UpdateRequest[] = []
-  public log: ILogger;
+  public log: ILoggerService;
 
   private nodeUrl: string;
   private messaging: IMessagingService;

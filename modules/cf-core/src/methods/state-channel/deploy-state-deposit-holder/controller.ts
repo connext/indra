@@ -1,4 +1,4 @@
-import { ILogger } from "@connext/types";
+import { ILoggerService } from "@connext/types";
 import { Contract, Signer } from "ethers";
 import { HashZero } from "ethers/constants";
 import { JsonRpcProvider, Provider, TransactionResponse } from "ethers/providers";
@@ -94,7 +94,7 @@ async function sendMultisigDeployTx(
   stateChannel: StateChannel,
   networkContext: NetworkContext,
   retryCount: number = 1,
-  log: ILogger,
+  log: ILoggerService,
 ): Promise<TransactionResponse> {
   // make sure that the proxy factory used to deploy is the same as the one
   // used when the channel was created

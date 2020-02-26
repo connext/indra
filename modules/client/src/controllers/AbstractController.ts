@@ -1,4 +1,4 @@
-import { CFCoreTypes, IChannelProvider, ILogger, REJECT_INSTALL_EVENT } from "@connext/types";
+import { CFCoreTypes, IChannelProvider, ILoggerService, REJECT_INSTALL_EVENT } from "@connext/types";
 import { providers } from "ethers";
 
 import { ConnextClient } from "../connext";
@@ -9,7 +9,7 @@ import { INodeApiClient } from "../types";
 export abstract class AbstractController {
   public name: string;
   public connext: ConnextClient;
-  public log: ILogger;
+  public log: ILoggerService;
   public node: INodeApiClient;
   public channelProvider: IChannelProvider;
   public listener: ConnextListener;

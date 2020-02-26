@@ -1,4 +1,4 @@
-import { ILogger } from "@connext/types";
+import { ILoggerService } from "@connext/types";
 import { Controller, JsonRpcResponse, jsonRpcSerializeAsResponse, Router, Rpc } from "rpc-server";
 
 import { RequestHandler } from "./request-handler";
@@ -8,7 +8,7 @@ type AsyncCallback = (...args: any) => Promise<any>;
 
 export default class RpcRouter extends Router {
   private readonly requestHandler: RequestHandler;
-  private readonly log: ILogger;
+  private readonly log: ILoggerService;
 
   constructor({
     controllers,

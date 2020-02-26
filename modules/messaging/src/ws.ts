@@ -1,6 +1,6 @@
 import {
   CFCoreTypes,
-  ILogger,
+  ILoggerService,
   IMessagingService,
   MessagingConfig,
   nullLogger,
@@ -9,7 +9,7 @@ import * as wsNats from "websocket-nats";
 
 export class WsMessagingService implements IMessagingService {
   private connection: any;
-  private log: ILogger;
+  private log: ILoggerService;
   private subscriptions: { [key: string]: number } = {};
 
   constructor(

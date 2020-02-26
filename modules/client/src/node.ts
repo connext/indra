@@ -1,5 +1,5 @@
 import { IMessagingService } from "@connext/messaging";
-import { ILogger } from "@connext/types";
+import { ILoggerService } from "@connext/types";
 import { TransactionResponse } from "ethers/providers";
 import { Transaction } from "ethers/utils";
 import uuid from "uuid";
@@ -36,7 +36,7 @@ const sendFailed = "Failed to send message";
 export class NodeApiClient implements INodeApiClient {
   public messaging: IMessagingService;
   public latestSwapRates: { [key: string]: string } = {};
-  public log: ILogger;
+  public log: ILoggerService;
 
   private _userPublicIdentifier: string | undefined;
   private _nodePublicIdentifier: string | undefined;

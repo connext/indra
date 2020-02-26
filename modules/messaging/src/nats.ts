@@ -1,6 +1,6 @@
 import {
   CFCoreTypes,
-  ILogger,
+  ILoggerService,
   IMessagingService,
   MessagingConfig,
   nullLogger,
@@ -9,7 +9,7 @@ import * as nats from "ts-nats";
 
 export class NatsMessagingService implements IMessagingService {
   private connection: nats.Client | undefined;
-  private log: ILogger;
+  private log: ILoggerService;
   private subscriptions: { [key: string]: nats.Subscription } = {};
 
   constructor(

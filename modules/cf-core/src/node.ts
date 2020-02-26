@@ -1,4 +1,4 @@
-import { ILogger, nullLogger } from "@connext/types";
+import { ILoggerService, nullLogger } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
 import { SigningKey } from "ethers/utils";
 import EventEmitter from "eventemitter3";
@@ -56,7 +56,7 @@ export class Node {
     publicExtendedKey?: string,
     privateKeyGenerator?: CFCoreTypes.IPrivateKeyGenerator,
     blocksNeededForConfirmation?: number,
-    logger?: ILogger,
+    logger?: ILoggerService,
   ): Promise<Node> {
     const [privateKeysGenerator, extendedPubKey] = await getPrivateKeysGeneratorAndXPubOrThrow(
       storeService,
@@ -89,7 +89,7 @@ export class Node {
     private readonly provider: BaseProvider,
     public readonly networkContext: NetworkContext,
     public readonly blocksNeededForConfirmation: number = REASONABLE_NUM_BLOCKS_TO_WAIT,
-    public readonly log: ILogger = nullLogger,
+    public readonly log: ILoggerService = nullLogger,
     private readonly lockService?: CFCoreTypes.ILockService,
   ) {
     this.log = log.newContext("CF-Node");

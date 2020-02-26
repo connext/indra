@@ -1,4 +1,4 @@
-import { CriticalStateChannelAddresses, ILogger } from "@connext/types";
+import { CriticalStateChannelAddresses, ILoggerService } from "@connext/types";
 import { Contract } from "ethers";
 import { Provider } from "ethers/providers";
 import {
@@ -21,7 +21,7 @@ import { xkeyKthAddress } from "./machine";
 import { Zero } from "ethers/constants";
 import { INSUFFICIENT_FUNDS_IN_FREE_BALANCE_FOR_ASSET } from "./methods/errors";
 
-export const logTime = (log: ILogger, msg: string, start: number) => {
+export const logTime = (log: ILoggerService, msg: string, start: number) => {
   const diff = Date.now() - start;
   const message = `${msg} in ${diff} ms`;
   if (diff < 10) {

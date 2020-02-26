@@ -1,12 +1,12 @@
-import { ILog, ILogger } from "@connext/types";
+import { ILogger, ILoggerService } from "@connext/types";
 
-export class Logger implements ILogger {
+export class Logger implements ILoggerService {
   private levels: { [key: string]: number } = { debug: 4, error: 1, info: 3, warn: 2 };
   private context = "UnknownContext";
-  private log: ILog = console;
+  private log: ILogger = console;
   public level = 3;
 
-  public constructor(context?: string, level?: number, log?: ILog) {
+  public constructor(context?: string, level?: number, log?: ILogger) {
     this.context = typeof context !== "undefined" ? context : this.context;
     this.level = typeof level !== "undefined" ? parseInt(level.toString(), 10) : this.level;
     this.log = typeof log !== "undefined" ? log : this.log;

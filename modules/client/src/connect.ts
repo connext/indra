@@ -2,7 +2,7 @@ import "core-js/stable";
 import "regenerator-runtime/runtime";
 
 import { IMessagingService, MessagingServiceFactory } from "@connext/messaging";
-import { CF_PATH, CREATE_CHANNEL_EVENT, ILog, ILogger, StateSchemaVersion } from "@connext/types";
+import { CF_PATH, CREATE_CHANNEL_EVENT, ILoggerService, StateSchemaVersion } from "@connext/types";
 import { Contract, providers } from "ethers";
 import { AddressZero } from "ethers/constants";
 import { fromExtendedKey, fromMnemonic } from "ethers/utils/hdnode";
@@ -34,7 +34,7 @@ const createMessagingService = async (messagingUrl: string): Promise<IMessagingS
 const setupMultisigAddress = async (
   node: INodeApiClient,
   channelProvider: IChannelProvider,
-  log: ILogger,
+  log: ILoggerService,
 ): Promise<IChannelProvider> => {
   const myChannel = await node.getChannel();
 
@@ -81,7 +81,7 @@ export const connect = async (
   } = opts;
   let { xpub, keyGen, store, messaging } = opts;
 
-  const log = new Logger("ConnextConnect", opts.logLevel, logger) as ILogger;
+  const log = new Logger("ConnextConnect", opts.logLevel, logger) as ILoggerService;
 
   // setup ethProvider + network information
   log.debug(`Creating ethereum provider - ethProviderUrl: ${ethProviderUrl}`);

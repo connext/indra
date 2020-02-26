@@ -1,4 +1,4 @@
-import { ILogger } from "@connext/types";
+import { ILoggerService } from "@connext/types";
 import { Signer } from "ethers";
 import { BaseProvider } from "ethers/providers";
 import EventEmitter from "eventemitter3";
@@ -42,7 +42,7 @@ export class RequestHandler {
     storeKeyPrefix: string,
     readonly blocksNeededForConfirmation: number,
     public readonly processQueue: ProcessQueue,
-    public readonly log: ILogger,
+    public readonly log: ILoggerService,
   ) {
     this.store = new Store(storeService, storeKeyPrefix);
     this.log = this.log.newContext("CF-RequestHandler");

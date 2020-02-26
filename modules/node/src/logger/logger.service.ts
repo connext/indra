@@ -1,4 +1,4 @@
-import { ILogger } from "@connext/types";
+import { ILoggerService } from "@connext/types";
 import { Injectable, Scope, Logger as NestLogger } from "@nestjs/common";
 
 const colors = {
@@ -28,7 +28,7 @@ const colors = {
 };
 
 @Injectable({ scope: Scope.TRANSIENT })
-export class LoggerService extends NestLogger implements ILogger {
+export class LoggerService extends NestLogger implements ILoggerService {
   private levels: { [key: string]: number } = {
     debug: 4,
     error: 1,

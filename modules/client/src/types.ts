@@ -4,7 +4,7 @@ import {
   Contract,
   GetConfigResponse,
   IChannelProvider,
-  ILogger,
+  ILoggerService,
   IMessagingService,
   INodeApiClient,
   KeyGen,
@@ -20,7 +20,7 @@ export type InternalClientOptions = {
   config: GetConfigResponse;
   ethProvider: JsonRpcProvider;
   keyGen: KeyGen;
-  logger: ILogger;
+  logger: ILoggerService;
   messaging: IMessagingService;
   network: Network;
   node: INodeApiClient;

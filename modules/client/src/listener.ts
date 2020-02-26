@@ -1,4 +1,4 @@
-import { ILogger } from "@connext/types";
+import { ILoggerService } from "@connext/types";
 import { bigNumberify } from "ethers/utils";
 
 import { ConnextClient } from "./connext";
@@ -53,7 +53,7 @@ type CallbackStruct = {
 };
 
 export class ConnextListener extends ConnextEventEmitter {
-  private log: ILogger;
+  private log: ILoggerService;
   private channelProvider: IChannelProvider;
   private connext: ConnextClient;
 
