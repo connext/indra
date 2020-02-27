@@ -1,10 +1,4 @@
-import {
-  WrappedStorage,
-  reduceChannelsMap,
-  ChannelsMap,
-  safeJsonParse,
-  safeJsonStringify,
-} from "../helpers";
+import { WrappedStorage, safeJsonParse, safeJsonStringify } from "../helpers";
 import { StateChannelJSON, AppInstanceJson, ProtocolTypes } from "@connext/types";
 
 const CHANNEL_KEY = "channel";
@@ -46,7 +40,7 @@ export class WrappedLocalStorage implements WrappedStorage {
     });
   }
 
-  async getAllChannels(): Promise<StateChannelJSON[]> {
+  async getChannels(): Promise<StateChannelJSON[]> {
     const keys = await this.getKeys();
     const channelKeys = keys.filter(key => key.includes(CHANNEL_KEY));
     return Promise.all(channelKeys.map(async key => safeJsonParse(await this.getItem(key))));
@@ -57,12 +51,12 @@ export class WrappedLocalStorage implements WrappedStorage {
   }
 
   async getStateChannelByOwners(owners: string[]): Promise<StateChannelJSON> {
-    const channels = await this.getAllChannels();
+    const channels = await this.getChannels();
     return channels.find(channel => channel.userNeuteredExtendedKeys.sort() === owners.sort());
   }
 
   async getStateChannelByAppInstanceId(appInstanceId: string): Promise<StateChannelJSON> {
-    const channels = await this.getAllChannels();
+    const channels = await this.getChannels();
     return channels.find(channel => {
       return (
         channel.proposedAppInstances.find(([app]) => app === appInstanceId) ||
@@ -77,7 +71,7 @@ export class WrappedLocalStorage implements WrappedStorage {
   }
 
   async getAppInstance(appInstanceId: string): Promise<AppInstanceJson> {
-    const channels = await this.getAllChannels();
+    const channels = await this.getChannels();
     let appInstance: AppInstanceJson;
 
     channels.find(channel => {

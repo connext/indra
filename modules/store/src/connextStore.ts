@@ -1,4 +1,11 @@
-import { IStoreService, StateChannelJSON, AppInstanceJson, ProtocolTypes } from "@connext/types";
+import {
+  AppInstanceJson,
+  ConditionalTransactionCommitmentJSON,
+  IStoreService,
+  ProtocolTypes,
+  SetStateCommitmentJSON,
+  StateChannelJSON,
+} from "@connext/types";
 
 import {
   DEFAULT_STORE_PREFIX,
@@ -119,13 +126,27 @@ export class ConnextStore implements IStoreService {
   saveAppInstance(multisigAddress: string, appInstance: AppInstanceJson): Promise<void> {
     throw new Error("Method not implemented.");
   }
-  getCommitment(commitmentHash: string): Promise<ProtocolTypes.MinimalTransaction> {
+  getLatestSetStateCommitment(commitmentHash: string): Promise<SetStateCommitmentJSON> {
     throw new Error("Method not implemented.");
   }
-  saveCommitment(commitmentHash: string, commitment: any[]): Promise<void> {
+  saveLatestSetStateCommitment(
+    commitmentHash: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
     throw new Error("Method not implemented.");
   }
   getWithdrawalCommitment(multisigAddress: string): Promise<ProtocolTypes.MinimalTransaction> {
+    throw new Error("Method not implemented.");
+  }
+  getConditionalTransactionCommitment(
+    appIdentityHash: string,
+  ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
+    throw new Error("Method not implemented.");
+  }
+  saveConditionalTransactionCommitment(
+    appIdentityHash: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void> {
     throw new Error("Method not implemented.");
   }
   saveWithdrawalCommitment(
