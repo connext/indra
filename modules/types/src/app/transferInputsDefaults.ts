@@ -25,10 +25,11 @@ export type TransferResponse = {
   meta?: object;
 };
 
-export type ResolveTransferParameters<T = string> = Omit<
-  TransferParameters<T>,
-  "amount" | "assetId" | "meta"
->;
+export type ResolveTransferParameters<T = string> = {
+  amount: T;
+  assetId?: Address;
+  paymentId: string;
+};
 
 export type ResolveTransferResponse = {
   appId: string;

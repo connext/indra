@@ -23,8 +23,6 @@ export type SignatureTransferResponse = TransferResponse & {
 
 // resolve params
 export type ResolveSignatureTransferParameters<T = string> = ResolveTransferParameters<T> & {
-  amount: T;
-  assetId: string;
   conditionType: typeof SIGNATURE_TRANSFER;
 };
 
