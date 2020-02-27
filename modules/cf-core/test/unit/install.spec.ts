@@ -34,7 +34,7 @@ describe("Can handle correct & incorrect installs", () => {
   let initiatorIdentifier: string;
 
   beforeAll(() => {
-    store = new Store(new MemoryStoreService(), "install.spec.ts-test-store");
+    store = new Store(new MemoryStoreService());
     protocolRunner = new ProtocolRunner(
       NETWORK_CONTEXT_OF_ALL_ZERO_ADDRESSES,
       {} as BaseProvider,

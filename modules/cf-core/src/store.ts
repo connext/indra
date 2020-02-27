@@ -18,10 +18,7 @@ import { SetStateCommitment, ConditionalTransactionCommitment } from "./ethereum
  * StoreService.
  */
 export class Store {
-  constructor(
-    private readonly storeService: CFCoreTypes.IStoreService,
-    private readonly storeKeyPrefix: string,
-  ) {}
+  constructor(private readonly storeService: CFCoreTypes.IStoreService) {}
 
   public async getMultisigAddressWithCounterparty(
     owners: string[],

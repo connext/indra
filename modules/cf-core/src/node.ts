@@ -99,10 +99,7 @@ export class Node {
     this.networkContext.provider = this.provider;
     this.incoming = new EventEmitter();
     this.outgoing = new EventEmitter();
-    this.store = new Store(
-      this.storeService,
-      `${this.nodeConfig.STORE_KEY_PREFIX}/${this.publicIdentifier}`,
-    );
+    this.store = new Store(this.storeService);
     this.protocolRunner = this.buildProtocolRunner();
     log.info(`Waiting for ${this.blocksNeededForConfirmation} block confirmations`);
   }
