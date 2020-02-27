@@ -21,6 +21,9 @@ export abstract class MultisigCommitment extends EthereumCommitment {
   }
 
   set signatures(sigs: Signature[]) {
+    if (sigs.length !== 2) {
+      throw new Error(`Incorrect number of signatures supplied. Expected 2, got ${sigs.length}`);
+    }
     this.participantSignatures = sigs;
   }
 
