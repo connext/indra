@@ -2,7 +2,7 @@ import { Zero } from "ethers/constants";
 import { bigNumberify, getAddress } from "ethers/utils";
 
 import { ConnextClient } from "../connext";
-import { Logger, stringify, xpubToAddress } from "../lib";
+import { stringify, xpubToAddress } from "../lib";
 import {
   CFCoreTypes,
   CoinTransferBigNumber,
@@ -30,6 +30,122 @@ type ProposalValidator = {
     registeredInfo: DefaultApp,
     connext: ConnextClient,
   ) => Promise<string | undefined>;
+};
+
+const invalidAppMessage = (prefix: string, params: CFCoreTypes.ProposeInstallParams): string => {
+  return `${prefix}. Proposed app: ${stringify(params)}`;
+};
+
+const baseAppValidation = async (
+  params: CFCoreTypes.ProposeInstallParams,
+  proposedByIdentifier: string,
+  registeredInfo: DefaultApp,
+  connext: ConnextClient,
+): Promise<string | undefined> => {
+  const log = connext.log.newContext("AppValidation");
+  // check the initial state is consistent
+  log.debug(`Validating app: ${stringify(params)}`);
+  // check that the app definition is the same
+  if (params.appDefinition !== registeredInfo.appDefinitionAddress) {
+    return invalidAppMessage(`Incorrect app definition detected`, params);
+  }
+
+  // check that the encoding is the same
+  // FIXME: stupid hacky thing for null vs undefined
+  params.abiEncodings.actionEncoding = params.abiEncodings.actionEncoding
+    ? params.abiEncodings.actionEncoding
+    : null;
+  registeredInfo.actionEncoding = registeredInfo.actionEncoding
+    ? registeredInfo.actionEncoding
+    : null;
+  if (params.abiEncodings.actionEncoding !== registeredInfo.actionEncoding) {
+    return invalidAppMessage(`Incorrect action encoding detected`, params);
+  }
+
+  if (params.abiEncodings.stateEncoding !== registeredInfo.stateEncoding) {
+    return invalidAppMessage(`Incorrect state encoding detected`, params);
+  }
+
+  // neither deposit should be negative
+  if (bigNumberify(params.initiatorDeposit).lt(0) || bigNumberify(params.responderDeposit).lt(0)) {
+    return invalidAppMessage(`Refusing to install app with negative deposits`, params);
+  }
+
+  // neither token address should be invalid
+  if (
+    invalidAddress(params.initiatorDepositTokenAddress) ||
+    invalidAddress(params.responderDepositTokenAddress)
+  ) {
+    return invalidAppMessage(`Refusing to install app with negative deposits`, params);
+  }
+
+  // make sure there are no two person 0 value deposits for all but the
+  // coinbalance refund app
+  const isRefund =
+    params.appDefinition === connext.config.contractAddresses["CoinBalanceRefundApp"];
+  if (
+    !isRefund &&
+    bigNumberify(params.initiatorDeposit).isZero() &&
+    bigNumberify(params.responderDeposit).isZero()
+  ) {
+    return invalidAppMessage(`Refusing to install app with two zero value deposits`, params);
+  }
+
+  // make sure that the app is allowed to be installed by the node
+  if (proposedByIdentifier === connext.nodePublicIdentifier && !registeredInfo.allowNodeInstall) {
+    return invalidAppMessage(`Node is not allowed to install this app`, params);
+  }
+
+  // check that there is enough in the free balance of desired currency
+  // to install apps
+  const responderAssetBalance = await connext.getFreeBalance(
+    getAddress(params.responderDepositTokenAddress),
+  );
+  const userFreeBalance = responderAssetBalance[xpubToAddress(connext.publicIdentifier)];
+  if (userFreeBalance.lt(params.responderDeposit)) {
+    return invalidAppMessage(
+      `Insufficient free balance for requested asset,
+      freeBalance: ${userFreeBalance.toString()}
+      required: ${params.responderDeposit}`,
+      params,
+    );
+  }
+
+  // check that the intermediary has sufficient collateral in your
+  // channel
+  const initiatorAssetBalance = await connext.getFreeBalance(
+    getAddress(params.initiatorDepositTokenAddress),
+  );
+  const nodeFreeBalance = initiatorAssetBalance[xpubToAddress(connext.nodePublicIdentifier)];
+  if (nodeFreeBalance.lt(params.initiatorDeposit)) {
+    return invalidAppMessage(
+      `Insufficient free balance for requested asset,
+      freeBalance: ${nodeFreeBalance.toString()}
+      required: ${params.initiatorDeposit}`,
+      params,
+    );
+  }
+
+  return undefined;
+};
+
+const validateCoinTransfers = (coinTransfers: CoinTransferBigNumber[]): string => {
+  const errs = validator(
+    coinTransfers.map((coinTransfer: CoinTransferBigNumber) => {
+      if (coinTransfer.amount.lt(Zero)) {
+        return `Will not install swap app with negative coin transfer amounts`;
+      }
+      if (invalidAddress(coinTransfer.to)) {
+        return `Will not install app with invalid coin transfer addresses`;
+      }
+      return undefined;
+    }),
+  );
+  if (errs.length > 0) {
+    // all error messages will be the same, only return first
+    return errs.toString();
+  }
+  return undefined;
 };
 
 export const validateSwapApp = async (
@@ -273,126 +389,6 @@ export const validateLinkedTransferApp = async (
       `Invalid 32 byte hex string detected in paymentId, preImage, or linkedHash`,
       params,
     );
-  }
-
-  return undefined;
-};
-
-const baseAppValidation = async (
-  params: CFCoreTypes.ProposeInstallParams,
-  proposedByIdentifier: string,
-  registeredInfo: DefaultApp,
-  connext: ConnextClient,
-): Promise<string | undefined> => {
-  const log = new Logger("baseAppValidation", connext.log.logLevel);
-  // check the initial state is consistent
-  log.info(`Validating app: ${stringify(params)}`);
-  // check that the app definition is the same
-  if (params.appDefinition !== registeredInfo.appDefinitionAddress) {
-    return invalidAppMessage(`Incorrect app definition detected`, params);
-  }
-
-  // check that the encoding is the same
-  // FIXME: stupid hacky thing for null vs undefined
-  params.abiEncodings.actionEncoding = params.abiEncodings.actionEncoding
-    ? params.abiEncodings.actionEncoding
-    : null;
-  registeredInfo.actionEncoding = registeredInfo.actionEncoding
-    ? registeredInfo.actionEncoding
-    : null;
-  if (params.abiEncodings.actionEncoding !== registeredInfo.actionEncoding) {
-    return invalidAppMessage(`Incorrect action encoding detected`, params);
-  }
-
-  if (params.abiEncodings.stateEncoding !== registeredInfo.stateEncoding) {
-    return invalidAppMessage(`Incorrect state encoding detected`, params);
-  }
-
-  // neither deposit should be negative
-  if (bigNumberify(params.initiatorDeposit).lt(0) || bigNumberify(params.responderDeposit).lt(0)) {
-    return invalidAppMessage(`Refusing to install app with negative deposits`, params);
-  }
-
-  // neither token address should be invalid
-  if (
-    invalidAddress(params.initiatorDepositTokenAddress) ||
-    invalidAddress(params.responderDepositTokenAddress)
-  ) {
-    return invalidAppMessage(`Refusing to install app with negative deposits`, params);
-  }
-
-  // make sure there are no two person 0 value deposits for all but the
-  // coinbalance refund app
-  const isRefund =
-    params.appDefinition === connext.config.contractAddresses["CoinBalanceRefundApp"];
-  if (
-    !isRefund &&
-    bigNumberify(params.initiatorDeposit).isZero() &&
-    bigNumberify(params.responderDeposit).isZero()
-  ) {
-    return invalidAppMessage(`Refusing to install app with two zero value deposits`, params);
-  }
-
-  // make sure that the app is allowed to be installed by the node
-  if (proposedByIdentifier === connext.nodePublicIdentifier && !registeredInfo.allowNodeInstall) {
-    return invalidAppMessage(`Node is not allowed to install this app`, params);
-  }
-
-  // check that there is enough in the free balance of desired currency
-  // to install apps
-  const responderAssetBalance = await connext.getFreeBalance(
-    getAddress(params.responderDepositTokenAddress),
-  );
-  const userFreeBalance = responderAssetBalance[xpubToAddress(connext.publicIdentifier)];
-  if (userFreeBalance.lt(params.responderDeposit)) {
-    return invalidAppMessage(
-      `Insufficient free balance for requested asset,
-      freeBalance: ${userFreeBalance.toString()}
-      required: ${params.responderDeposit}`,
-      params,
-    );
-  }
-
-  // check that the intermediary has sufficient collateral in your
-  // channel
-  const initiatorAssetBalance = await connext.getFreeBalance(
-    getAddress(params.initiatorDepositTokenAddress),
-  );
-  const nodeFreeBalance = initiatorAssetBalance[xpubToAddress(connext.nodePublicIdentifier)];
-  if (nodeFreeBalance.lt(params.initiatorDeposit)) {
-    return invalidAppMessage(
-      `Insufficient free balance for requested asset,
-      freeBalance: ${nodeFreeBalance.toString()}
-      required: ${params.initiatorDeposit}`,
-      params,
-    );
-  }
-
-  return undefined;
-};
-
-const invalidAppMessage = (prefix: string, params: CFCoreTypes.ProposeInstallParams): string => {
-  return `${prefix}. Proposed app: ${stringify(params)}`;
-};
-
-const validateCoinTransfers = (coinTransfers: CoinTransferBigNumber[]): string => {
-  const errs = validator(
-    coinTransfers.map((coinTransfer: CoinTransferBigNumber) => {
-      if (coinTransfer.amount.lt(Zero)) {
-        return `Will not install swap app with negative coin transfer amounts`;
-      }
-
-      if (invalidAddress(coinTransfer.to)) {
-        return `Will not install app with invalid coin transfer addresses`;
-      }
-
-      return undefined;
-    }),
-  );
-
-  if (errs.length > 0) {
-    // all error messages will be the same, only return first
-    return errs.toString();
   }
 
   return undefined;

@@ -1,7 +1,6 @@
 import { HashZero, One, Zero } from "ethers/constants";
 import { JsonRpcProvider } from "ethers/providers";
 import { getAddress, hexlify, randomBytes } from "ethers/utils";
-import log from "loglevel";
 
 import { Node } from "../../src";
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../src/constants";
@@ -11,8 +10,6 @@ import { setup, SetupContext } from "./setup";
 import { constructWithdrawRpc, createChannel, deployStateDepositHolder, deposit } from "./utils";
 
 expect.extend({ toBeEq });
-
-log.setLevel(log.levels.SILENT);
 
 describe("Node method follows spec - deploy state deposit holder", () => {
   let nodeA: Node;

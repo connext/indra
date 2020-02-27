@@ -10,6 +10,7 @@ export * from "./contracts";
 export * from "./convert";
 export * from "./events";
 export * from "./inputs";
+export * from "./logger";
 export * from "./messaging";
 export * from "./node";
 export * from "./protocol";

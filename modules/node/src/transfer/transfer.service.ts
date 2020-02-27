@@ -19,7 +19,8 @@ import { CFCoreService } from "../cfCore/cfCore.service";
 import { ChannelRepository } from "../channel/channel.repository";
 import { ChannelService, RebalanceType } from "../channel/channel.service";
 import { ConfigService } from "../config/config.service";
-import { CLogger, xpubToAddress } from "../util";
+import { LoggerService } from "../logger/logger.service";
+import { xpubToAddress } from "../util";
 import { AppInstanceJson } from "../util/cfCore";
 
 import {
@@ -35,19 +36,20 @@ import {
   TransferRepository,
 } from "./transfer.repository";
 
-const logger = new CLogger(`TransferService`);
-
 @Injectable()
 export class TransferService {
   constructor(
     private readonly cfCoreService: CFCoreService,
+    private readonly channelRepository: ChannelRepository,
     private readonly channelService: ChannelService,
     private readonly configService: ConfigService,
-    private readonly channelRepository: ChannelRepository,
-    private readonly p2pTransferRepository: PeerToPeerTransferRepository,
     private readonly linkedTransferRepository: LinkedTransferRepository,
+    private readonly log: LoggerService,
+    private readonly p2pTransferRepository: PeerToPeerTransferRepository,
     private readonly transferRepositiory: TransferRepository,
-  ) {}
+  ) {
+    this.log.setContext("TransferService");
+  }
 
   async savePeerToPeerTransfer(
     senderPubId: string,
@@ -127,7 +129,7 @@ export class TransferService {
     encryptedPreImage: string,
     linkedHash: string,
   ): Promise<LinkedTransfer> {
-    logger.debug(
+    this.log.debug(
       `setRecipientAndEncryptedPreImageOnLinkedTransfer(${senderPublicIdentifier}, ${recipientPublicIdentifier}, ${encryptedPreImage}, ${linkedHash}`,
     );
 
@@ -169,7 +171,7 @@ export class TransferService {
     paymentId: string,
     linkedHash: string,
   ): Promise<ResolveLinkedTransferResponse> {
-    logger.debug(`resolveLinkedTransfer(${userPubId}, ${paymentId}, ${linkedHash})`);
+    this.log.debug(`resolveLinkedTransfer(${userPubId}, ${paymentId}, ${linkedHash})`);
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
     if (!channel) {
       throw new Error(`No channel exists for userPubId ${userPubId}`);
@@ -194,7 +196,7 @@ export class TransferService {
       );
     }
 
-    logger.debug(`Found linked transfer in our database, attempting to install...`);
+    this.log.debug(`Found linked transfer in our database, attempting to install...`);
 
     // check that linked transfer app has been installed from sender
     const defaultApp = (await this.configService.getDefaultApps()).find(
@@ -228,7 +230,7 @@ export class TransferService {
             if (msg.from !== this.cfCoreService.cfCore.publicIdentifier) {
               // do not reject promise here, since theres a chance the event is
               // emitted for another user depositing into their channel
-              logger.debug(
+              this.log.debug(
                 `Deposit event from field: ${msg.from}, did not match public identifier: ${this.cfCoreService.cfCore.publicIdentifier}`,
               );
               return;
@@ -236,7 +238,7 @@ export class TransferService {
             if (msg.data.multisigAddress !== channel.multisigAddress) {
               // do not reject promise here, since theres a chance the event is
               // emitted for node collateralizing another users' channel
-              logger.debug(
+              this.log.debug(
                 `Deposit event multisigAddress: ${msg.data.multisigAddress}, did not match channel multisig address: ${channel.multisigAddress}`,
               );
               return;
@@ -330,7 +332,7 @@ export class TransferService {
     amount: BigNumber,
     assetId: string,
   ): Promise<string> {
-    logger.debug(`sendTransferToClient(${userPubId}, ${amount}, ${assetId}`);
+    this.log.debug(`sendTransferToClient(${userPubId}, ${amount}, ${assetId}`);
     const channel = await this.channelRepository.findByUserPublicIdentifier(userPubId);
     if (!channel) {
       throw new Error(`No channel exists for userPubId ${userPubId}`);
@@ -369,20 +371,20 @@ export class TransferService {
   async reclaimLinkedTransferCollateralByAppInstanceId(appInstanceId: string): Promise<void> {
     const transfer = await this.linkedTransferRepository.findByReceiverAppInstanceId(appInstanceId);
     if (!transfer) {
-      logger.debug(`Did not find transfer`);
+      this.log.debug(`Did not find transfer`);
       return;
     }
-    logger.debug(`Found transfer: ${JSON.stringify(transfer)}`);
+    this.log.debug(`Found transfer: ${JSON.stringify(transfer)}`);
     await this.reclaimLinkedTransferCollateral(transfer);
   }
 
   async reclaimLinkedTransferCollateralByPaymentId(paymentId: string): Promise<void> {
     const transfer = await this.linkedTransferRepository.findByPaymentId(paymentId);
     if (!transfer) {
-      logger.debug(`Did not find transfer`);
+      this.log.debug(`Did not find transfer`);
       return;
     }
-    logger.debug(`Found transfer: ${JSON.stringify(transfer)}`);
+    this.log.debug(`Found transfer: ${JSON.stringify(transfer)}`);
     await this.reclaimLinkedTransferCollateral(transfer);
   }
 
@@ -394,7 +396,7 @@ export class TransferService {
     }
 
     const uninstall = async (): Promise<void> => {
-      logger.debug(`Action taken, uninstalling app. ${Date.now()}`);
+      this.log.debug(`Action taken, uninstalling app. ${Date.now()}`);
       await this.cfCoreService.uninstallApp(transfer.senderAppInstanceId);
       await this.linkedTransferRepository.markAsReclaimed(transfer);
     };
@@ -404,14 +406,15 @@ export class TransferService {
     const app = await this.cfCoreService.getAppInstanceDetails(transfer.senderAppInstanceId);
     if ((app.latestState as SimpleLinkedTransferAppState).preImage === transfer.preImage) {
       // just uninstall
-      logger.debug(
+      this.log.debug(
         `Action has already been taken on app ${transfer.senderAppInstanceId}, uninstalling`,
       );
       await uninstall();
       return;
     }
 
-    logger.log(
+    this.log.info(`Reclaiming linked transfer ${transfer.paymentId}`);
+    this.log.debug(
       `Taking action with preImage ${transfer.preImage} and uninstalling app ${transfer.senderAppInstanceId} to reclaim collateral`,
     );
     await this.cfCoreService.takeAction(transfer.senderAppInstanceId, {

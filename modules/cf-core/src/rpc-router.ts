@@ -1,12 +1,14 @@
+import { ILoggerService } from "@connext/types";
 import { Controller, JsonRpcResponse, jsonRpcSerializeAsResponse, Router, Rpc } from "rpc-server";
 
 import { RequestHandler } from "./request-handler";
-import { bigNumberifyJson } from "./utils";
+import { bigNumberifyJson, logTime } from "./utils";
 
 type AsyncCallback = (...args: any) => Promise<any>;
 
 export default class RpcRouter extends Router {
   private readonly requestHandler: RequestHandler;
+  private readonly log: ILoggerService;
 
   constructor({
     controllers,
@@ -16,11 +18,12 @@ export default class RpcRouter extends Router {
     requestHandler: RequestHandler;
   }) {
     super({ controllers });
-
     this.requestHandler = requestHandler;
+    this.log = requestHandler.log.newContext("CF-RpcRouter");
   }
 
   async dispatch(rpc: Rpc): Promise<JsonRpcResponse> {
+    const start = Date.now();
     const controller = Object.values(Controller.rpcMethods).find(
       mapping => mapping.method === rpc.methodName,
     );
@@ -42,6 +45,7 @@ export default class RpcRouter extends Router {
 
     this.requestHandler.outgoing.emit(rpc.methodName, result);
 
+    logTime(this.log, start, `Processed ${rpc.methodName} method`);
     return result;
   }
 
