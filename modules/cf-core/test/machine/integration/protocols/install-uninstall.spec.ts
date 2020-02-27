@@ -51,8 +51,8 @@ async function runDirectInstallUninstallTest(
   }
 }
 
-describe.skip("Install-then-uninstall in a direct channel", () => {
-  it.skip("", () => {});
+describe("Install-then-uninstall in a direct channel", () => {
+  it("", () => {});
   for (const outcomeType of [
     OutcomeType.TWO_PARTY_FIXED_OUTCOME,
     OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,
@@ -69,7 +69,6 @@ describe.skip("Install-then-uninstall in a direct channel", () => {
       ) {
         continue;
       }
-
       it(`${outcomeType}/${testFundingType}`, async () => {
         await runDirectInstallUninstallTest(outcomeType, testFundingType);
       });
@@ -77,7 +76,7 @@ describe.skip("Install-then-uninstall in a direct channel", () => {
   }
 });
 
-describe.skip("Install-then-uninstall of a virtual app", () => {
+describe("Install-then-uninstall of a virtual app", () => {
   for (const outcomeType of [
     OutcomeType.TWO_PARTY_FIXED_OUTCOME,
     OutcomeType.SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER,

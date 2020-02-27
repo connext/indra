@@ -31,8 +31,8 @@ beforeAll(async () => {
   ).deploy();
 });
 
-describe.skip("Three mininodes", () => {
-  it.skip("Can run all the protocols", async () => {
+describe("Three mininodes", () => {
+  it("Can run all the protocols", async () => {
     const tr = new TestRunner();
     await tr.connectToGanache();
 
@@ -58,7 +58,9 @@ describe.skip("Three mininodes", () => {
       outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME,
     });
 
-    const [virtualAppInstance] = [...tr.mininodeA.scm.get(tr.multisigAC)!.appInstances.values()];
+    const [virtualAppInstance] = [
+      ...(await tr.mininodeA.store.getStateChannel(tr.multisigAC))!.appInstances.values(),
+    ];
 
     expect(virtualAppInstance.isVirtualApp);
 

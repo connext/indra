@@ -41,7 +41,6 @@ export class TestRunner {
     const [provider, wallet] = await connectToGanache();
     this.provider = provider;
     const network = global["networkContext"];
-    const store = new Store(new MemoryStoreService());
 
     this.identityApp = await new ContractFactory(
       IdentityApp.abi,
@@ -49,9 +48,9 @@ export class TestRunner {
       wallet,
     ).deploy();
 
-    this.mininodeA = new MiniNode(network, provider, store);
-    this.mininodeB = new MiniNode(network, provider, store);
-    this.mininodeC = new MiniNode(network, provider, store);
+    this.mininodeA = new MiniNode(network, provider, new Store(new MemoryStoreService()));
+    this.mininodeB = new MiniNode(network, provider, new Store(new MemoryStoreService()));
+    this.mininodeC = new MiniNode(network, provider, new Store(new MemoryStoreService()));
 
     this.multisigAB = await getCreate2MultisigAddress(
       [this.mininodeA.xpub, this.mininodeB.xpub],
@@ -93,6 +92,8 @@ export class TestRunner {
       responderXpub: this.mininodeB.xpub,
       multisigAddress: this.multisigAB,
     });
+
+    await this.mininodeA.store.getStateChannel(this.multisigAB);
     this.mininodeA.scm.set(
       this.multisigAB,
       await this.mininodeA.store.getStateChannel(this.multisigAB),
@@ -120,37 +121,35 @@ export class TestRunner {
   */
   async unsafeFund() {
     for (const mininode of [this.mininodeA, this.mininodeB]) {
-      const sc = mininode.scm.get(this.multisigAB)!;
-      mininode.scm.set(
-        this.multisigAB,
-        sc.incrementFreeBalance({
-          [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
-            [sc.getFreeBalanceAddrOf(this.mininodeA.xpub)]: One,
-            [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
-          },
-          [TestRunner.TEST_TOKEN_ADDRESS]: {
-            [sc.getFreeBalanceAddrOf(this.mininodeA.xpub)]: One,
-            [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
-          },
-        }),
-      );
+      const sc = await mininode.store.getStateChannel(this.multisigAB)!;
+      const updatedBalance = sc.incrementFreeBalance({
+        [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
+          [sc.getFreeBalanceAddrOf(this.mininodeA.xpub)]: One,
+          [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
+        },
+        [TestRunner.TEST_TOKEN_ADDRESS]: {
+          [sc.getFreeBalanceAddrOf(this.mininodeA.xpub)]: One,
+          [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
+        },
+      });
+      await mininode.store.saveStateChannel(updatedBalance);
+      mininode.scm.set(this.multisigAB, updatedBalance);
     }
 
     for (const mininode of [this.mininodeB, this.mininodeC]) {
-      const sc = mininode.scm.get(this.multisigBC)!;
-      mininode.scm.set(
-        this.multisigBC,
-        sc.incrementFreeBalance({
-          [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
-            [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
-            [sc.getFreeBalanceAddrOf(this.mininodeC.xpub)]: One,
-          },
-          [TestRunner.TEST_TOKEN_ADDRESS]: {
-            [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
-            [sc.getFreeBalanceAddrOf(this.mininodeC.xpub)]: One,
-          },
-        }),
-      );
+      const sc = await mininode.store.getStateChannel(this.multisigBC)!;
+      const updatedSc = sc.incrementFreeBalance({
+        [CONVENTION_FOR_ETH_TOKEN_ADDRESS]: {
+          [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
+          [sc.getFreeBalanceAddrOf(this.mininodeC.xpub)]: One,
+        },
+        [TestRunner.TEST_TOKEN_ADDRESS]: {
+          [sc.getFreeBalanceAddrOf(this.mininodeB.xpub)]: One,
+          [sc.getFreeBalanceAddrOf(this.mininodeC.xpub)]: One,
+        },
+      });
+      await mininode.store.saveStateChannel(updatedSc);
+      mininode.scm.set(this.multisigBC, updatedSc);
     }
   }
 
@@ -331,7 +330,7 @@ export class TestRunner {
   }
 
   async uninstallVirtual() {
-    const multisig = this.mininodeA.scm.get(this.multisigAC);
+    const multisig = await this.mininodeA.store.getStateChannel(this.multisigAC);
     if (!multisig) {
       throw new Error(`uninstallVirtual: Couldn't find multisig for ${this.multisigAC}`);
     }
@@ -353,7 +352,7 @@ export class TestRunner {
   }
 
   async uninstall() {
-    const multisig = this.mininodeA.scm.get(this.multisigAB);
+    const multisig = await this.mininodeA.store.getStateChannel(this.multisigAB);
     if (!multisig) {
       throw new Error(`uninstall: Couldn't find multisig for ${this.multisigAC}`);
     }
