@@ -6,7 +6,6 @@ import {
   CoinBalanceRefundAppState,
   CoinTransfer,
   SimpleLinkedTransferAppState,
-  FastSignedTransferAppState,
 } from "./app";
 import { AssetAmount, RebalanceProfile } from "./channel";
 import {
@@ -16,7 +15,6 @@ import {
   SwapParameters,
   TransferParameters,
   WithdrawParameters,
-  FastSignedTransferParameters,
 } from "./inputs";
 
 /////////////////////////////////////////////
@@ -33,7 +31,7 @@ export interface NumericTypes {
 
 export type NumericTypeName = keyof NumericTypes;
 
-const getType = (input: any): NumericTypeName => {
+export const getType = (input: any): NumericTypeName => {
   if (typeof input === "string") return "str";
   if (BigNumber.isBigNumber(input)) return "bignumber";
   if (typeof input === "number") return "number"; // used for testing purposes
@@ -111,7 +109,7 @@ export function makeChecksumOrEthAddress(address: string | undefined): string {
 type GenericAmountObject<T> = any & {
   amount: T;
 };
-function convertAmountField<To extends NumericTypeName>(
+export function convertAmountField<To extends NumericTypeName>(
   to: To,
   obj: GenericAmountObject<any>,
 ): GenericAmountObject<NumericTypes[To]> {
@@ -119,22 +117,22 @@ function convertAmountField<To extends NumericTypeName>(
   return convertFields(fromType, to, ["amount"], obj);
 }
 
-function convertAssetAmount<To extends NumericTypeName>(
+export function convertAssetAmount<To extends NumericTypeName>(
   to: To,
   obj: AssetAmount<any>,
 ): AssetAmount<NumericTypes[To]>;
-function convertAssetAmount<To extends NumericTypeName>(
+export function convertAssetAmount<To extends NumericTypeName>(
   to: To,
   obj: CoinTransfer<any>,
 ): CoinTransfer<NumericTypes[To]>;
-function convertAssetAmount<To extends NumericTypeName>(
+export function convertAssetAmount<To extends NumericTypeName>(
   to: To,
   obj: AssetAmount<any> | CoinTransfer<any>,
 ): any {
   return convertAmountField(to, obj);
 }
 
-function convertAssetAmountWithId<To extends NumericTypeName>(
+export function convertAssetAmountWithId<To extends NumericTypeName>(
   to: To,
   obj: GenericAmountObject<any> & { assetId?: string },
 ): any {
@@ -211,28 +209,6 @@ function convertLinkedTransferParametersToAsset<To extends NumericTypeName>(
   return convertAssetAmountWithId(to, obj);
 }
 
-function convertFastSignedTransferParametersToAsset<To extends NumericTypeName>(
-  to: To,
-  obj: FastSignedTransferParameters<any>,
-): FastSignedTransferParameters<NumericTypes[To]> {
-  const fromType = getType(obj.amount);
-  return convertFields(fromType, to, ["maxAllocation", "amount"], obj);
-}
-
-function convertFastSignedTransferAppState<To extends NumericTypeName>(
-  to: To,
-  obj: FastSignedTransferAppState<any>,
-): FastSignedTransferAppState<NumericTypes[To]> {
-  return {
-    ...obj,
-    coinTransfers: [
-      convertAmountField(to, obj.coinTransfers[0]),
-      convertAmountField(to, obj.coinTransfers[1]),
-    ],
-    lockedPayments: obj.lockedPayments.map(lockedPayment => convertAmountField(to, lockedPayment)),
-  };
-}
-
 function convertLinkedTransferToRecipientParametersToAsset<To extends NumericTypeName>(
   to: To,
   obj: LinkedTransferToRecipientParameters<any>,
@@ -279,8 +255,6 @@ export const convert = {
   Asset: convertAssetAmount,
   CoinBalanceRefundApp: convertCoinBalanceRefund,
   Deposit: convertDepositParametersToAsset,
-  FastSignedTransfer: convertFastSignedTransferParametersToAsset,
-  FastSignedTransferAppState: convertFastSignedTransferAppState,
   LinkedTransfer: convertLinkedTransferParametersToAsset,
   LinkedTransferAppState: convertLinkedTransferAppState,
   LinkedTransferToRecipient: convertLinkedTransferToRecipientParametersToAsset,

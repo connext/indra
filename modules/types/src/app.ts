@@ -106,35 +106,13 @@ export type AppInstanceProposal = {
   singleAssetTwoPartyCoinTransferInterpreterParams?: SingleAssetTwoPartyCoinTransferInterpreterParams;
 };
 
-export type MatchAppInstanceResponse = {
-  matchedApp: DefaultApp;
-  proposeParams: CFCoreTypes.ProposeInstallParams;
-  appInstanceId: string;
-};
-
 ////////////////////////////////////
 ////// App Registry
-
-export const CoinBalanceRefundApp = "CoinBalanceRefundApp";
-export const SimpleLinkedTransferApp = "SimpleLinkedTransferApp";
-export const SimpleTransferApp = "SimpleTransferApp";
-export const SimpleTwoPartySwapApp = "SimpleTwoPartySwapApp";
-export const FastSignedTransferApp = "FastSignedTransferApp";
-
-export const SupportedApplications = {
-  [CoinBalanceRefundApp]: CoinBalanceRefundApp,
-  [SimpleLinkedTransferApp]: SimpleLinkedTransferApp,
-  [SimpleTransferApp]: SimpleTransferApp,
-  [SimpleTwoPartySwapApp]: SimpleTwoPartySwapApp,
-  [FastSignedTransferApp]: FastSignedTransferApp,
-};
-export type SupportedApplication = keyof typeof SupportedApplications;
-
 export type DefaultApp = {
   actionEncoding?: string;
   allowNodeInstall: boolean;
   appDefinitionAddress: string;
-  name: SupportedApplication;
+  name: string;
   chainId: number;
   outcomeType: OutcomeType;
   stateEncoding: string;
@@ -144,30 +122,6 @@ export type AppRegistry = DefaultApp[];
 
 ////////////////////////////////////
 // Generic Apps
-
-export type App<T = string> = {
-  id: number;
-  channel: CFCoreChannel;
-  appRegistry: DefaultApp; // TODO: is this right?
-  appId: number;
-  xpubPartyA: string;
-  xpubPartyB: string;
-  depositA: T;
-  depositB: T;
-  intermediaries: string[];
-  initialState: any; // TODO: BAD!!
-  timeout: number;
-  updates: AppUpdate[];
-};
-export type AppBigNumber = App<BigNumber>;
-
-export type AppUpdate<T = string> = {
-  id: number;
-  app: App<T>;
-  action: any; // TODO: BAD!!
-  sigs: string[];
-};
-export type AppUpdateBigNumber = AppUpdate<BigNumber>;
 
 export type CoinTransfer<T = string> = {
   amount: T;
@@ -275,38 +229,6 @@ export enum UnidirectionalLinkedTransferAppStage {
   PAYMENT_CLAIMED,
   CHANNEL_CLOSED,
 }
-
-////////////////////////////////////
-// Fast Signed Transfer App
-export enum FastSignedTransferActionType {
-  CREATE,
-  UNLOCK,
-  REJECT,
-  FINALIZE,
-}
-
-export type FastSignedTransfer<T = string> = {
-  amount: T;
-  assetId: Address;
-  signer: Address;
-  paymentId: string;
-  timeout: T;
-  receipientXpub: string;
-  data: string;
-  signature: string;
-};
-
-export type FastSignedTransferAppState<T = string> = {
-  lockedPayments: FastSignedTransfer<T>[];
-  coinTransfers: [CoinTransfer<T>, CoinTransfer<T>];
-  finalized: boolean;
-  turnNum: T;
-};
-
-export type FastSignedTransferAppAction<T = string> = {
-  newLockedPayments: FastSignedTransfer<T>[];
-  actionType: FastSignedTransferActionType;
-};
 
 ////////////////////////////////////
 // CoinBalanceRefund

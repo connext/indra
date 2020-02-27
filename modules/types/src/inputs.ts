@@ -52,7 +52,6 @@ export type RescindDepositRightsResponse = ProtocolTypes.DepositResult;
 ////// Transfer types
 export const LINKED_TRANSFER = "LINKED_TRANSFER";
 export const LINKED_TRANSFER_TO_RECIPIENT = "LINKED_TRANSFER_TO_RECIPIENT";
-export const FAST_SIGNED_TRANSFER = "FAST_GENERIC_SIGNEFAST_SIGNED_TRANSFERD_TRANSFER";
 
 // TODO: would we ever want to pay people in the same app with multiple currencies?
 export type TransferParameters<T = string> = DepositParameters<T> & {
@@ -121,7 +120,6 @@ export type ResolveConditionResponse = ResolveLinkedTransferResponse;
 export const TransferConditions = {
   [LINKED_TRANSFER]: LINKED_TRANSFER,
   [LINKED_TRANSFER_TO_RECIPIENT]: LINKED_TRANSFER_TO_RECIPIENT,
-  [FAST_SIGNED_TRANSFER]: FAST_SIGNED_TRANSFER,
 };
 export type TransferCondition = keyof typeof TransferConditions;
 
@@ -156,16 +154,6 @@ export type LinkedTransferToRecipientParametersBigNumber = LinkedTransferToRecip
 export type LinkedTransferToRecipientResponse = LinkedTransferResponse & {
   recipient: string;
 };
-
-export type FastSignedTransferParameters<T = string> = Omit<
-  LinkedTransferToRecipientParameters<T>,
-  "conditionType"
-> & {
-  conditionType: typeof FAST_SIGNED_TRANSFER;
-  maxAllocation: T;
-  signer: Address;
-};
-export type FastSignedTransferParametersBigNumber = FastSignedTransferParameters<BigNumber>;
 
 export type ConditionalTransferParameters<T = string> =
   | LinkedTransferParameters<T>

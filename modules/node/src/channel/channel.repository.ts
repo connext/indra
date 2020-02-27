@@ -27,6 +27,23 @@ export class ChannelRepository extends Repository<Channel> {
     });
   }
 
+  async findByMultisigAddressOrThrow(multisigAddress: string): Promise<Channel> {
+    const channel = await this.findByMultisigAddress(multisigAddress);
+    if (!channel) {
+      throw new Error(`Channel does not exist for multisig ${multisigAddress}`);
+    }
+    return channel;
+  }
+
+  async findByUserPublicIdentifierOrThrow(userPublicIdentifier: string): Promise<Channel> {
+    const channel = await this.findByUserPublicIdentifier(userPublicIdentifier);
+    if (!channel) {
+      throw new Error(`Channel does not exist for userPublicIdentifier ${userPublicIdentifier}`);
+    }
+
+    return channel;
+  }
+
   async addRebalanceProfileToChannel(
     userPublicIdentifier: string,
     rebalanceProfile: RebalanceProfile,

@@ -15,3 +15,4 @@ export * from "./node";
 export * from "./protocol";
 export * from "./state";
 export * from "./store";
+export * from "./utils";

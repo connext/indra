@@ -1,13 +1,13 @@
 import {
   FastSignedTransferParameters,
-  convert,
-  AppInstanceJson,
   FastSignedTransferAppState,
-  FastSignedTransferAppAction,
+  convertFastSignedTransferParameters,
+  convertFastSignedTransferAppState,
   FastSignedTransferActionType,
-  ProtocolTypes,
+  FastSignedTransferAppAction,
   FastSignedTransferApp,
-} from "@connext/types";
+} from "@connext/apps";
+import { AppInstanceJson, ProtocolTypes } from "@connext/types";
 import { Zero, MaxUint256, HashZero } from "ethers/constants";
 
 import { stringify, xpubToAddress } from "../lib";
@@ -48,12 +48,11 @@ export class FastSignedTransferController extends AbstractController {
       amount,
       assetId,
       paymentId,
-      preImage,
       recipient,
       maxAllocation,
       meta,
       signer,
-    } = convert.FastSignedTransfer(`bignumber`, params);
+    } = convertFastSignedTransferParameters(`bignumber`, params);
 
     const freeBalance = await this.connext.getFreeBalance(assetId);
     const preTransferBal = freeBalance[this.connext.freeBalanceAddress];
@@ -66,7 +65,6 @@ export class FastSignedTransferController extends AbstractController {
       notLessThan(amount, maxAllocation || MaxUint256), // if maxAllocation not provided, dont fail this check
       notGreaterThan(maxAllocation || Zero, preTransferBal),
       invalid32ByteHexString(paymentId),
-      invalid32ByteHexString(preImage),
     );
 
     const installedApps = await this.connext.getAppInstances();
@@ -81,7 +79,7 @@ export class FastSignedTransferController extends AbstractController {
 
     let transferAppInstanceId: string;
     if (installedTransferApp) {
-      const latestState = convert.FastSignedTransferAppState(
+      const latestState = convertFastSignedTransferAppState(
         `bignumber`,
         installedTransferApp.latestState as FastSignedTransferAppState,
       );

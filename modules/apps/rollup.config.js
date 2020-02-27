@@ -17,7 +17,7 @@ export default [
       {
         file: pkg.iife,
         format: "iife",
-        name: "window.types",
+        name: "window.apps",
       },
     ],
     plugins: [typescript()],

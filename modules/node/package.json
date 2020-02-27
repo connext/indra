@@ -22,6 +22,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
+    "@connext/apps": "0.0.1",
     "@connext/cf-core": "4.1.0",
     "@connext/contracts": "1.0.4",
     "@connext/messaging": "4.1.0",

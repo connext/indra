@@ -1,4 +1,13 @@
 import {
+  CoinBalanceRefundApp,
+  SimpleLinkedTransferApp,
+  SimpleTwoPartySwapApp,
+  FastSignedTransferApp,
+  AppRegistry as RegistryOfApps,
+  validateApp,
+} from "@connext/apps";
+import { xkeyKthAddress } from "@connext/cf-core";
+import {
   AllowedSwap,
   AppInstanceJson,
   calculateExchange,
@@ -6,11 +15,8 @@ import {
   CoinTransferBigNumber,
   DefaultApp,
   SimpleLinkedTransferAppStateBigNumber,
-  SimpleTransferAppStateBigNumber,
-  CoinBalanceRefundApp,
-  SimpleLinkedTransferApp,
-  SimpleTwoPartySwapApp,
-  SimpleTransferApp,
+  stringify,
+  bigNumberifyObj,
 } from "@connext/types";
 import { Injectable, Inject, OnModuleInit } from "@nestjs/common";
 import { ClientProxy } from "@nestjs/microservices";
@@ -26,14 +32,7 @@ import { SwapRateService } from "../swapRate/swapRate.service";
 import { LinkedTransferStatus } from "../transfer/transfer.entity";
 import { LinkedTransferRepository } from "../transfer/transfer.repository";
 import { TransferService } from "../transfer/transfer.service";
-import {
-  bigNumberifyObj,
-  CLogger,
-  isEthAddress,
-  normalizeEthAddresses,
-  stringify,
-  xpubToAddress,
-} from "../util";
+import { CLogger, isEthAddress, normalizeEthAddresses, xpubToAddress } from "../util";
 import { CFCoreTypes } from "../util/cfCore";
 
 import { AppRegistry } from "./appRegistry.entity";
@@ -62,9 +61,54 @@ export class AppRegistryService implements OnModuleInit {
     proposeInstallParams: CFCoreTypes.ProposeInstallParams,
     from: string,
   ): Promise<void> {
-    let registryAppInfo: AppRegistry;
+    let registryAppInfo = await this.appRegistryRepository.findByAppDefinitionAddress(
+      proposeInstallParams.appDefinition,
+    );
+
+    if (!registryAppInfo) {
+      throw new Error(
+        `App does not exist in registry for definition ${proposeInstallParams.appDefinition}`,
+      );
+    }
+
+    const channel = await this.channelRepository.findByUserPublicIdentifierOrThrow(from);
+    const userFreeBalanceAddress = xkeyKthAddress(from);
+
+    const initiatorFreeBalanceRes = await this.cfCoreService.getFreeBalance(
+      from,
+      channel.multisigAddress,
+      proposeInstallParams.initiatorDepositTokenAddress,
+    );
+    const userFreeBalance = initiatorFreeBalanceRes[userFreeBalanceAddress];
+    let nodeFreeBalance = initiatorFreeBalanceRes[this.cfCoreService.cfCore.freeBalanceAddress];
+    if (
+      proposeInstallParams.initiatorDepositTokenAddress !==
+      proposeInstallParams.responderDepositTokenAddress
+    ) {
+      const responderFreeBalanceRes = await this.cfCoreService.getFreeBalance(
+        from,
+        channel.multisigAddress,
+        proposeInstallParams.initiatorDepositTokenAddress,
+      );
+      nodeFreeBalance = responderFreeBalanceRes[this.cfCoreService.cfCore.freeBalanceAddress];
+    }
+    const supportedTokenAddresses = this.configService.getSupportedTokenAddresses();
     try {
-      registryAppInfo = await this.verifyAppProposal(proposeInstallParams, from);
+      if (registryAppInfo.name === FastSignedTransferApp) {
+        // NEW APP VALIDATION, MAKE EVERYTHING USE THIS
+        validateApp(
+          proposeInstallParams,
+          registryAppInfo,
+          channel.userPublicIdentifier,
+          userFreeBalanceAddress,
+          userFreeBalance,
+          this.cfCoreService.cfCore.freeBalanceAddress,
+          nodeFreeBalance,
+          supportedTokenAddresses,
+        );
+      } else {
+        registryAppInfo = await this.verifyAppProposal(proposeInstallParams, from);
+      }
       if (registryAppInfo.name !== CoinBalanceRefundApp) {
         await this.cfCoreService.installApp(appInstanceId);
       } else {
@@ -106,6 +150,7 @@ export class AppRegistryService implements OnModuleInit {
     switch (registryAppInfo.name) {
       case SimpleLinkedTransferApp:
         logger.debug(`Saving linked transfer`);
+        // eslint-disable-next-line max-len
         const initialState = proposeInstallParams.initialState as SimpleLinkedTransferAppStateBigNumber;
 
         const isResolving = proposeInstallParams.responderDeposit.gt(Zero);
@@ -184,46 +229,6 @@ export class AppRegistryService implements OnModuleInit {
     return registryAppInfo;
   }
 
-  // should validate any of the transfer-specific conditions,
-  // specifically surrounding the initial state of the applications
-  private async validateTransfer(params: CFCoreTypes.ProposeInstallParams): Promise<void> {
-    // perform any validation that is relevant to both virtual
-    // and ledger applications sent from a client
-    const {
-      initialState: initialStateBadType,
-      initiatorDeposit,
-      responderDeposit,
-    } = normalizeEthAddresses(bigNumberifyObj(params));
-    if (!responderDeposit.isZero()) {
-      throw new Error(`Cannot install virtual transfer app with a nonzero responder deposit.`);
-    }
-
-    if (!initiatorDeposit.gt(Zero)) {
-      throw new Error(`Cannot install a transfer app with an initiator deposit greater than zero`);
-    }
-
-    // validate the initial state is kosher
-    const initialState = bigNumberifyObj(initialStateBadType) as SimpleTransferAppStateBigNumber;
-
-    // transfers[0] is the senders value in the array, and the transfers[1]
-    // is the recipients value in the array
-    if (
-      bigNumberify(initialState.coinTransfers[0].amount).lt(Zero) ||
-      !bigNumberify(initialState.coinTransfers[0].amount).eq(initiatorDeposit)
-    ) {
-      throw new Error(
-        `Cannot install a transfer app with initiator deposit values that are ` +
-          `different in the initial state than the params.`,
-      );
-    }
-
-    if (!bigNumberify(initialState.coinTransfers[1].amount).isZero()) {
-      throw new Error(
-        `Cannot install a transfer app with nonzero values for the recipient in the initial state.`,
-      );
-    }
-  }
-
   private async validateSwap(params: CFCoreTypes.ProposeInstallParams): Promise<void> {
     const {
       initiatorDeposit,
@@ -237,7 +242,7 @@ export class AppRegistryService implements OnModuleInit {
       responderDepositTokenAddress: string;
     } = normalizeEthAddresses(bigNumberifyObj(params));
 
-    const supportedAddresses = await this.configService.getSupportedTokenAddresses();
+    const supportedAddresses = this.configService.getSupportedTokenAddresses();
     if (!supportedAddresses.includes(initiatorDepositTokenAddress)) {
       throw new Error(`Unsupported "initiatorDepositTokenAddress" provided`);
     }
@@ -548,78 +553,6 @@ export class AppRegistryService implements OnModuleInit {
     return registryAppInfo;
   }
 
-  // TODO: will need to remove this
-  private async verifyVirtualAppProposal(
-    proposedAppParams: {
-      params: CFCoreTypes.ProposeInstallParams;
-      appInstanceId: string;
-    },
-    initiatorIdentifier: string,
-  ): Promise<void> {
-    const {
-      initiatorDeposit,
-      initiatorDepositTokenAddress,
-      proposedToIdentifier,
-    } = bigNumberifyObj(proposedAppParams.params);
-
-    const registryAppInfo = await this.appProposalMatchesRegistry(proposedAppParams.params);
-
-    if (registryAppInfo.name !== `SimpleTransferApp`) {
-      logger.debug(
-        `Caught propose install virtual for what should always be a regular app. CF should also emit a virtual app install event, so let this callback handle and verify. Will need to refactor soon!`,
-      );
-      return;
-    }
-
-    await this.commonAppProposalValidation(proposedAppParams.params, initiatorIdentifier);
-
-    // check if there is sufficient collateral in the channel
-    const recipientChan = await this.channelRepository.findByUserPublicIdentifier(
-      proposedAppParams.params.proposedToIdentifier,
-    );
-
-    const collateralFreeBal = await this.cfCoreService.getFreeBalance(
-      proposedToIdentifier,
-      recipientChan.multisigAddress,
-      initiatorDepositTokenAddress,
-    );
-
-    const collateralAvailable = collateralFreeBal[this.cfCoreService.cfCore.freeBalanceAddress];
-
-    if (collateralAvailable.lt(initiatorDeposit)) {
-      // TODO: best way to handle case where user is sending payment
-      // *above* amounts specified in the rebalance profile
-      // also, do we want to request collateral in a different location?
-      await this.channelService.rebalance(
-        proposedToIdentifier,
-        initiatorDepositTokenAddress,
-        RebalanceType.COLLATERALIZE,
-        initiatorDeposit,
-      );
-      throw new Error(
-        `Insufficient collateral detected in responders channel, retry after channel has been collateralized.`,
-      );
-    }
-
-    switch (registryAppInfo.name) {
-      case SimpleTransferApp:
-        // TODO: move this to install
-        // TODO: this doesn't work with the new paradigm, we won't know this info
-        await this.transferService.savePeerToPeerTransfer(
-          initiatorIdentifier,
-          proposedAppParams.params.proposedToIdentifier,
-          proposedAppParams.params.initiatorDepositTokenAddress,
-          bigNumberify(proposedAppParams.params.initiatorDeposit),
-          proposedAppParams.appInstanceId,
-          proposedAppParams.params.meta,
-        );
-        break;
-      default:
-        break;
-    }
-    logger.log(`Validation completed for app ${registryAppInfo.name}`);
-  }
-
   async onModuleInit() {
     for (const app of await this.configService.getDefaultApps()) {
       let appRegistry = await this.appRegistryRepository.findByNameAndNetwork(
@@ -634,6 +567,30 @@ export class AppRegistryService implements OnModuleInit {
       appRegistry.appDefinitionAddress = app.appDefinitionAddress;
       appRegistry.name = app.name;
       appRegistry.chainId = app.chainId;
+      appRegistry.outcomeType = app.outcomeType;
+      appRegistry.stateEncoding = app.stateEncoding;
+      appRegistry.allowNodeInstall = app.allowNodeInstall;
+      await this.appRegistryRepository.save(appRegistry);
+    }
+
+    const ethNetwork = await this.configService.getEthNetwork();
+    const addressBook = await this.configService.getContractAddresses();
+    for (const app of RegistryOfApps) {
+      let appRegistry = await this.appRegistryRepository.findByNameAndNetwork(
+        app.name,
+        ethNetwork.chainId,
+      );
+      if (!appRegistry) {
+        appRegistry = new AppRegistry();
+      }
+      const appDefinitionAddress = addressBook[app.name];
+      logger.log(
+        `Creating ${app.name} app on chain ${ethNetwork.chainId}: ${app.appDefinitionAddress}`,
+      );
+      appRegistry.actionEncoding = app.actionEncoding;
+      appRegistry.appDefinitionAddress = appDefinitionAddress;
+      appRegistry.name = app.name;
+      appRegistry.chainId = ethNetwork.chainId;
       appRegistry.outcomeType = app.outcomeType;
       appRegistry.stateEncoding = app.stateEncoding;
       appRegistry.allowNodeInstall = app.allowNodeInstall;

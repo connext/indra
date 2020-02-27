@@ -1,11 +1,11 @@
 import { IMessagingService } from "@connext/messaging";
-import { ResolveLinkedTransferResponse, Transfer } from "@connext/types";
+import { ResolveLinkedTransferResponse, Transfer, replaceBN } from "@connext/types";
 import { FactoryProvider } from "@nestjs/common/interfaces";
 import { RpcException } from "@nestjs/microservices";
 
 import { AuthService } from "../auth/auth.service";
 import { MessagingProviderId, TransferProviderId } from "../constants";
-import { AbstractMessagingProvider, CLogger, replaceBN } from "../util";
+import { AbstractMessagingProvider, CLogger } from "../util";
 
 import { LinkedTransfer } from "./transfer.entity";
 import { TransferService } from "./transfer.service";

@@ -172,7 +172,7 @@ export class ConnextClient implements IConnextClient {
   public getBalanceRefundApp = async (
     assetId: string = AddressZero,
   ): Promise<AppInstanceJson | undefined> => {
-    const apps = await this.getAppInstances(this.multisigAddress);
+    const apps = await this.getAppInstances();
     const filtered = apps.filter(
       (app: AppInstanceJson) =>
         app.appInterface.addr === this.config.contractAddresses.CoinBalanceRefundApp &&
@@ -1060,7 +1060,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   private appNotInstalled = async (appInstanceId: string): Promise<string | undefined> => {
-    const apps = await this.getAppInstances(this.multisigAddress);
+    const apps = await this.getAppInstances();
     const app = apps.filter((app: AppInstanceJson): boolean => app.identityHash === appInstanceId);
     if (!app || app.length === 0) {
       return (
@@ -1078,7 +1078,7 @@ export class ConnextClient implements IConnextClient {
   };
 
   private appInstalled = async (appInstanceId: string): Promise<string | undefined> => {
-    const apps = await this.getAppInstances(this.multisigAddress);
+    const apps = await this.getAppInstances();
     const app = apps.filter((app: AppInstanceJson): boolean => app.identityHash === appInstanceId);
     if (app.length > 0) {
       return (

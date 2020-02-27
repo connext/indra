@@ -1,4 +1,4 @@
-import { AppRegistry, SupportedApplication } from "./app";
+import { AppRegistry } from "./app";
 import { BigNumber, Network, Transaction, TransactionResponse } from "./basic";
 import { NetworkContext } from "./contracts";
 import { CFCoreChannel, ChannelAppSequences, RebalanceProfile } from "./channel";
@@ -92,7 +92,7 @@ export interface INodeApiClient {
   appRegistry(
     appDetails?:
       | {
-          name: SupportedApplication;
+          name: string;
           chainId: number;
         }
       | { appDefinitionAddress: string },

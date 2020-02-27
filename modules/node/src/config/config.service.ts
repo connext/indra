@@ -1,14 +1,12 @@
-import { MessagingConfig } from "@connext/messaging";
 import {
-  ContractAddresses,
-  DefaultApp,
   SupportedApplication,
   SimpleTransferApp,
   SimpleTwoPartySwapApp,
   SimpleLinkedTransferApp,
   CoinBalanceRefundApp,
-  SwapRate,
-} from "@connext/types";
+} from "@connext/apps";
+import { MessagingConfig } from "@connext/messaging";
+import { ContractAddresses, DefaultApp, SwapRate } from "@connext/types";
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { Wallet } from "ethers";
 import { AddressZero, Zero } from "ethers/constants";

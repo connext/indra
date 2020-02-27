@@ -72,7 +72,7 @@ export class DepositController extends AbstractController {
     }
 
     return {
-      apps: await this.connext.getAppInstances(this.connext.multisigAddress),
+      apps: await this.connext.getAppInstances(),
       freeBalance: await this.connext.getFreeBalance(assetId),
     };
   };

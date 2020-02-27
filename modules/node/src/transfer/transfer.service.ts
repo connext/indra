@@ -1,11 +1,11 @@
+import { SimpleLinkedTransferApp, SimpleTransferApp } from "@connext/apps";
+
 import {
   DefaultApp,
   DepositConfirmationMessage,
   ResolveLinkedTransferResponse,
   SimpleLinkedTransferAppStateBigNumber,
   SimpleTransferAppStateBigNumber,
-  SimpleLinkedTransferApp,
-  SimpleTransferApp,
   SimpleLinkedTransferAppState,
   DEPOSIT_CONFIRMED_EVENT,
   DEPOSIT_FAILED_EVENT,

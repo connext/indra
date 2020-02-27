@@ -1,9 +1,10 @@
+import { CoinBalanceRefundApp } from "@connext/apps";
 import {
   ChannelAppSequences,
   StateChannelJSON,
-  CoinBalanceRefundApp,
   maxBN,
   RebalanceProfileBigNumber,
+  stringify,
 } from "@connext/types";
 import { Injectable, HttpService, Inject } from "@nestjs/common";
 import { AxiosResponse } from "axios";
@@ -20,7 +21,7 @@ import { OnchainTransaction } from "../onchainTransactions/onchainTransaction.en
 import { OnchainTransactionRepository } from "../onchainTransactions/onchainTransaction.repository";
 import { OnchainTransactionService } from "../onchainTransactions/onchainTransaction.service";
 import { RebalanceProfile } from "../rebalanceProfile/rebalanceProfile.entity";
-import { CLogger, stringify, xpubToAddress } from "../util";
+import { CLogger, xpubToAddress } from "../util";
 import { CFCoreTypes, CreateChannelMessage } from "../util/cfCore";
 
 import { Channel } from "./channel.entity";

@@ -2,10 +2,10 @@ import { NatsMessagingService } from "@connext/messaging";
 import {
   AppActionBigNumber,
   ConnextNodeStorePrefix,
-  SupportedApplication,
   StateChannelJSON,
   REJECT_INSTALL_EVENT,
   ProtocolTypes,
+  stringify,
 } from "@connext/types";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { AddressZero, Zero } from "ethers/constants";
@@ -22,7 +22,6 @@ import {
   CLogger,
   InstallMessage,
   RejectProposalMessage,
-  stringify,
   xpubToAddress,
 } from "../util";
 
@@ -254,7 +253,7 @@ export class CFCoreService {
     initiatorDepositTokenAddress: string,
     responderDeposit: BigNumber,
     responderDepositTokenAddress: string,
-    app: SupportedApplication,
+    app: string,
     meta: object = {},
   ): Promise<CFCoreTypes.ProposeInstallResult | undefined> {
     let boundReject: (reason?: any) => void;

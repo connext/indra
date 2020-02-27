@@ -1,7 +1,7 @@
 import { providers } from "ethers";
 
-import { AppInstanceJson } from "./app";
-import { AppActionBigNumber, AppRegistry, AppState, DefaultApp, SupportedApplication } from "./app";
+import { AppInstanceJson, AppRegistry, DefaultApp } from "./app";
+import { AppActionBigNumber, AppState } from "./app";
 import { BigNumber, Contract, JsonRpcProvider, Network } from "./basic";
 import { CFCoreChannel, ChannelAppSequences, ChannelState, RebalanceProfile } from "./channel";
 import { ChannelProviderConfig, IChannelProvider, KeyGen } from "./channelProvider";
@@ -122,12 +122,12 @@ export interface IConnextClient {
   getAppRegistry(
     appDetails?:
       | {
-          name: SupportedApplication;
+          name: string;
           chainId: number;
         }
       | { appDefinitionAddress: string },
   ): Promise<AppRegistry>;
-  getRegisteredAppDetails(appName: SupportedApplication): DefaultApp;
+  getRegisteredAppDetails(appName: string): DefaultApp;
   createChannel(): Promise<CreateChannelResponse>;
   subscribeToSwapRates(from: string, to: string, callback: any): Promise<any>;
   getLatestSwapRate(from: string, to: string): Promise<string>;

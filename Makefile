@@ -34,6 +34,7 @@ ssh-action=$(cwd)/ops/ssh-action
 store=$(cwd)/modules/store
 tests=$(cwd)/modules/test-runner
 types=$(cwd)/modules/types
+apps=$(cwd)/modules/apps
 
 find_options=-type f -not -path "*/node_modules/*" -not -name "*.swp" -not -path "*/.*" -not -name "*.log"
 
@@ -288,22 +289,22 @@ ws-tcp-relay: ops/ws-tcp-relay.dockerfile
 ########################################
 # JS & bundles
 
-client: cf-core contracts types crypto messaging store channel-provider $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
+client: cf-core contracts types apps crypto messaging store channel-provider $(shell find $(client)/src $(client)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/client && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-cf-core: node-modules types contracts $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
+cf-core: node-modules types apps contracts $(shell find $(cf-core)/src $(cf-core)/test $(cf-core)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/cf-core && npm run build:ts"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-channel-provider: node-modules types $(shell find $(channel-provider)/src $(find_options))
+channel-provider: node-modules types apps $(shell find $(channel-provider)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/channel-provider && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 	
-crypto: node-modules types $(shell find $(crypto)/src $(find_options))
+crypto: node-modules types apps $(shell find $(crypto)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/crypto && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
@@ -318,17 +319,17 @@ dashboard-prod: node-modules client $(shell find $(dashboard)/src $(find_options
 	$(docker_run) "cd modules/dashboard && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-messaging: node-modules types $(shell find $(messaging)/src $(find_options))
+messaging: node-modules types apps $(shell find $(messaging)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/messaging && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-node: cf-core contracts types messaging $(shell find $(node)/src $(node)/migrations $(find_options))
+node: cf-core contracts types apps messaging $(shell find $(node)/src $(node)/migrations $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/node && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
-store: node-modules types $(shell find $(store)/src $(find_options))
+store: node-modules types apps $(shell find $(store)/src $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/store && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
@@ -343,10 +344,15 @@ types: node-modules $(shell find $(types)/src $(find_options))
 	$(docker_run) "cd modules/types && npm run build"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
 
+apps: node-modules $(shell find $(apps) $(find_options))
+	$(log_start)
+	$(docker_run) "cd modules/apps && npm run build"
+	$(log_finish) && mv -f $(totalTime) $(flags)/$@
+
 ########################################
 # Common Prerequisites
 
-contracts: node-modules contract-artifacts types $(shell find $(contracts)/address-book.json $(contracts)/index.ts $(contracts)/test $(contracts)/tsconfig.json $(find_options))
+contracts: node-modules contract-artifacts types apps $(shell find $(contracts)/address-book.json $(contracts)/index.ts $(contracts)/test $(contracts)/tsconfig.json $(find_options))
 	$(log_start)
 	$(docker_run) "cd modules/contracts && npm run transpile"
 	$(log_finish) && mv -f $(totalTime) $(flags)/$@
