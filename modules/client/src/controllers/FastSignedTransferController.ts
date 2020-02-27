@@ -8,6 +8,7 @@ import {
   ProtocolTypes,
   FastSignedTransferApp,
 } from "@connext/types";
+import { Zero, MaxUint256, HashZero } from "ethers/constants";
 
 import { stringify, xpubToAddress } from "../lib";
 import {
@@ -18,10 +19,12 @@ import {
   invalid32ByteHexString,
   invalidXpub,
   notLessThan,
+  notGreaterThan,
 } from "../validation";
 
 import { AbstractController } from "./AbstractController";
 import { BigNumber } from "ethers/utils";
+import { xkeyKthAddress } from "@connext/cf-core";
 
 const findInstalledFastSignedApp = (
   apps: AppInstanceJson[],
@@ -49,6 +52,7 @@ export class FastSignedTransferController extends AbstractController {
       recipient,
       maxAllocation,
       meta,
+      signer,
     } = convert.FastSignedTransfer(`bignumber`, params);
 
     const freeBalance = await this.connext.getFreeBalance(assetId);
@@ -58,7 +62,9 @@ export class FastSignedTransferController extends AbstractController {
       invalidAddress(assetId),
       invalidXpub(recipient),
       notLessThanOrEqualTo(amount, preTransferBal),
-      notLessThan(amount, maxAllocation),
+      // eslint-disable-next-line max-len
+      notLessThan(amount, maxAllocation || MaxUint256), // if maxAllocation not provided, dont fail this check
+      notGreaterThan(maxAllocation || Zero, preTransferBal),
       invalid32ByteHexString(paymentId),
       invalid32ByteHexString(preImage),
     );
@@ -72,6 +78,8 @@ export class FastSignedTransferController extends AbstractController {
 
     // assume the app needs to be installed
     let needsInstall = true;
+
+    let transferAppInstanceId: string;
     if (installedTransferApp) {
       const latestState = convert.FastSignedTransferAppState(
         `bignumber`,
@@ -87,41 +95,80 @@ export class FastSignedTransferController extends AbstractController {
         await this.connext.takeAction(installedTransferApp.identityHash, {
           actionType: FastSignedTransferActionType.FINALIZE,
           newLockedPayments: [],
-        } as FastSignedTransferAppAction);
+        } as FastSignedTransferAppAction<BigNumber>);
 
         // uninstall
         await this.connext.uninstallApp(installedTransferApp.identityHash);
       } else {
         // app is installed and has funds, can directly take action
         needsInstall = false;
-      }
-
-      if (needsInstall) {
-        const {
-          actionEncoding,
-          stateEncoding,
-          outcomeType,
-          appDefinitionAddress,
-        } = this.connext.getRegisteredAppDetails(FastSignedTransferApp);
-
-        
-        const installParams = {
-          abiEncodings: {
-            actionEncoding,
-            stateEncoding,
-          },
-          appDefinition: appDefinitionAddress,
-          initialState,
-          initiatorDeposit,
-          outcomeType,
-          proposedToIdentifier,
-          responderDeposit,
-          timeout,
-          initiatorDepositTokenAddress,
-          meta,
-          responderDepositTokenAddress,
-        } as ProtocolTypes.ProposeInstallParams;
+        transferAppInstanceId = installedTransferApp.identityHash;
       }
     }
+
+    if (needsInstall) {
+      const {
+        actionEncoding,
+        stateEncoding,
+        outcomeType,
+        appDefinitionAddress,
+      } = this.connext.getRegisteredAppDetails(FastSignedTransferApp);
+
+      // if max allocation not provided, use the full free balnce
+      const initalAmount = maxAllocation ? maxAllocation : preTransferBal;
+
+      const installParams = {
+        abiEncodings: {
+          actionEncoding,
+          stateEncoding,
+        },
+        appDefinition: appDefinitionAddress,
+        initialState: {
+          coinTransfers: [
+            // sender
+            {
+              amount: initalAmount,
+              to: this.connext.freeBalanceAddress,
+            },
+            // receiver
+            {
+              amount: Zero,
+              to: xkeyKthAddress(recipient),
+            },
+          ],
+          finalized: false,
+          turnNum: Zero,
+          lockedPayments: [], // TODO: figure out if we can add initial state here
+        } as FastSignedTransferAppState<BigNumber>,
+        proposedToIdentifier: this.connext.nodePublicIdentifier,
+        initiatorDeposit: initalAmount,
+        initiatorDepositTokenAddress: assetId,
+        responderDeposit: Zero,
+        responderDepositTokenAddress: assetId,
+        outcomeType,
+        timeout: Zero, // TODO
+        meta,
+      } as ProtocolTypes.ProposeInstallParams;
+
+      transferAppInstanceId = await this.proposeAndInstallLedgerApp(installParams);
+    }
+
+    await this.connext.takeAction(transferAppInstanceId, {
+      actionType: FastSignedTransferActionType.CREATE,
+      newLockedPayments: [
+        {
+          amount,
+          assetId, // TODO: do we need this?
+          data: HashZero,
+          paymentId,
+          receipientXpub: recipient,
+          signature: "",
+          signer,
+          timeout: Zero,
+        },
+      ],
+    } as FastSignedTransferAppAction<BigNumber>);
+
+    return { transferAppInstanceId };
   };
 }
