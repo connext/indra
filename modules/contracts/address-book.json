@@ -271,28 +271,28 @@
       "txHash": "0x073cfe836de10a2a723fb728ad075b1abea202594b9700a75b75fd4861085898"
     },
     "SingleAssetTwoPartyCoinTransferInterpreter": {
-      "address": "0xA5737C0615ebd27b5AB72a6dC8F16626B8792849",
+      "address": "0xf204a4Ef082f5c04bB89F7D5E6568B796096735a",
       "creationCodeHash": "0xacae1fa0a52f07fdd4f55a0c3263a4f7ef629080ccf35406c943bd318a0ef14d",
       "runtimeCodeHash": "0x9e0e0e5baea8baf89a543441328df1ac31e4d40db95644153feca6d30323668c",
-      "txHash": "0x919f4b38068f43fb5b6d62aee567e59a84a8db9d7938ad02ea75e08a27112d67"
+      "txHash": "0x8ea83b42ec6d1dc54c7901bdfa52d109853511244ea55ca6632ee12183af0507"
     },
     "TimeLockedPassThrough": {
-      "address": "0x63D46DB9BF22286E964191Af46e280CEcE94CB50",
+      "address": "0x75c35C980C0d37ef46DF04d31A140b65503c0eEd",
       "creationCodeHash": "0x2f9cf9ff2c676523028df5d12d7632e6b137bf488c14beeb39a3deea7ba8fa83",
       "runtimeCodeHash": "0x6e085629701357f30752919f785045746960d5b16f85d2ab1dc2d7e5dc4b8223",
-      "txHash": "0x6ebdf678549d4030f4782dd57a3a9ec0d218377c60eaae5de9393a756f06ff0f"
+      "txHash": "0x220bc21ba90391afe02ae41384a750e6c0c6ee5bce52aeef1cf2aab15c182278"
     },
     "TwoPartyFixedOutcomeInterpreter": {
-      "address": "0x7F86f894b595E74f413849c459e7310Bc7475Bd7",
+      "address": "0xdDA6327139485221633A1FcD65f4aC932E60A2e1",
       "creationCodeHash": "0xc6df75aaf6a672ffcccb0d0ac7f122212bcd9573001453752506212e05b66ba2",
       "runtimeCodeHash": "0xd0e87a9d06bb8a3ac9d7c66622206da16437c04851040308461111637364d761",
-      "txHash": "0x3b25d473b508bc5d73fbae29c322a42b6d0dc693313f8cc5ab8fa99449712a41"
+      "txHash": "0xfda78cf72a9a6448f28a3794cd3f2ee05c467c74a2234643351794dd57c0099c"
     },
     "TwoPartyFixedOutcomeFromVirtualAppInterpreter": {
-      "address": "0x005E62d9386c2f464f9e098dde8512969b3FB8e9",
+      "address": "0x82D50AD3C1091866E258Fd0f1a7cC9674609D254",
       "creationCodeHash": "0x4c88180d1a5df5adbb999599a273b448db66c994b96738a407e8f7c30628a77a",
       "runtimeCodeHash": "0xc7642c13fe9b24ece2f08c55ad7b4cf663c8aef49b9a2d8d4ae7cf6005e5733f",
-      "txHash": "0xf1662e91115dbd9426741a565cda30c9237093ff9f2dbee79aa33bf5f31b60b6"
+      "txHash": "0x58abcfc4ca79869e08ef89b540b029c8bd0ea8a4debd20b7b6ca6a75ce4f2756"
     },
     "SimpleLinkedTransferApp": {
       "address": "0x30753E4A8aad7F8597332E813735Def5dD395028",
@@ -301,22 +301,22 @@
       "txHash": "0x7137192ea45d1dde8584f80939cf5b5c58829c6f28bf89643bfa0c63bf053e6a"
     },
     "SimpleTransferApp": {
-      "address": "0x137865Fbf2fF1796dE0E52C3f733e5E8334ed393",
+      "address": "0xFB88dE099e13c3ED21F80a7a1E49f8CAEcF10df6",
       "creationCodeHash": "0xe76f7d6fee01486dd30fca0630e140aefd06f63a6a8c1314d55521d6a24adf43",
       "runtimeCodeHash": "0x6b8a8ff24fcd080ffcf43e1a1edc19fc89000e08cbd5905c4d5fac667caad2b3",
-      "txHash": "0xb86ad6643c283783f07b59e724e18237507179e07977cc1f8dbc77eb0a78d4ca"
+      "txHash": "0x3326948a268ea8b45f097007ea92bad5fc5b461587701b3740b1d8fdd9b31e3f"
     },
     "SimpleTwoPartySwapApp": {
-      "address": "0x19C36798a82DC185ABaB7e3cf7501005455B9F3C",
+      "address": "0xAa588d3737B611baFD7bD713445b314BD453a5C8",
       "creationCodeHash": "0xad9d584257f619bb2048029392b7a643b9aaf5626f11178f9b413f0fd42c26e0",
       "runtimeCodeHash": "0x6b1fb2f2c4cfd00e81cc4f76099d5192787f3ce2c5677689ccac553b85e49737",
-      "txHash": "0x56e5a272e182599d729eaf7e72568c890c826f204cef9961d47a93f06c433546"
+      "txHash": "0x4f32cb1a18e9fa6f0866ba5ee3f268a273447b58b8af4b1d5ccf326ffd459155"
     },
     "Token": {
-      "address": "0xB199fd7f9b37Db50e241bcf27844303A545cC4eA",
+      "address": "0xeec918d74c746167564401103096D45BbD494B74",
       "creationCodeHash": "0x15a50be77512dde6420d6d79ac5a273236c93850c92a2564596570aa33961e61",
       "runtimeCodeHash": "0x94ee377930298d1af932c16a0da2468327125f76c93d99ed3b650bb3cc9433ec",
-      "txHash": "0x8cf1104afd0cb3027cd1c3301885fe6c97f309492d68dab7730f011e8130974a"
+      "txHash": "0x308e3a097f3fb27d46fddfde3c12f983fa1abb7f5b5f50de8d261330b7fbe465"
     }
   }
 }
