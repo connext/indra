@@ -3,13 +3,13 @@ import { BigNumber, defaultAbiCoder } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../constants";
 import {
-  ConditionalTransaction,
+  ConditionalTransactionCommitment,
   SetStateCommitment,
   WithdrawERC20Commitment,
   WithdrawETHCommitment,
 } from "../ethereum";
 import { ProtocolExecutionFlow } from "../machine";
-import { Opcode, Protocol } from "../machine/enums";
+import { Opcode, Protocol, Commitment } from "../machine/enums";
 import { AppInstance, StateChannel } from "../models";
 import {
   coinBalanceRefundStateEncoding,
@@ -25,7 +25,7 @@ import { UNASSIGNED_SEQ_NO } from "./utils/signature-forwarder";
 import { assertIsValidSignature } from "./utils/signature-validator";
 
 const { IO_SEND, IO_SEND_AND_WAIT, OP_SIGN, PERSIST_STATE_CHANNEL, WRITE_COMMITMENT } = Opcode;
-const { Install, Update, Withdraw } = Protocol;
+const { Withdraw } = Protocol;
 /**
  * @description This exchange is described at the following URL:
  * https://specs.counterfactual.com/11-withdraw-protocol *
@@ -34,7 +34,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
   /**
    * Sequence 0 of the WITHDRAW_PROTOCOL looks a bit like this:
    *
-   * 1. Sign a `ConditionalTransaction` for an ETHBalanceRefund AppInstance
+   * 1. Sign a `ConditionalTransactionCommitment` for an ETHBalanceRefund AppInstance
    * 2. Get the countersignature, then sign the FreeBalance state update to activate
    * 3. Sign the WithdrawETHCommitment and wait for counterparty
    * 4. Countersign the uninstallation FreeBalance state update
@@ -109,20 +109,20 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnConditionalTransaction,
     );
 
-    const signedConditionalTransaction = conditionalTransactionData.getSignedTransaction([
+    conditionalTransactionData.signatures = [
       mySignatureOnConditionalTransaction,
       counterpartySignatureOnConditionalTransaction,
-    ]);
+    ];
 
     yield [
       WRITE_COMMITMENT,
-      Install, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
-      signedConditionalTransaction,
+      Commitment.Conditional, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
+      conditionalTransactionData,
       refundApp.identityHash,
     ];
 
     const freeBalanceUpdateData = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       postInstallRefundAppStateChannel.freeBalance.identity,
       postInstallRefundAppStateChannel.freeBalance.hashOfLatestState,
       postInstallRefundAppStateChannel.freeBalance.versionNumber,
@@ -137,15 +137,15 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateData];
 
-    const signedFreeBalanceStateUpdate = freeBalanceUpdateData.getSignedTransaction([
+    freeBalanceUpdateData.signatures = [
       mySignatureOnFreeBalanceStateUpdate,
       counterpartySignatureOnFreeBalanceStateUpdate,
-    ]);
+    ];
 
     yield [
       WRITE_COMMITMENT,
-      Update, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
-      signedFreeBalanceStateUpdate,
+      Commitment.SetState, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
+      freeBalanceUpdateData,
       postInstallRefundAppStateChannel.freeBalance.identityHash,
     ];
 
@@ -189,7 +189,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     const uninstallRefundAppCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       postUninstallRefundAppStateChannel.freeBalance.identity,
       postUninstallRefundAppStateChannel.freeBalance.hashOfLatestState,
       postUninstallRefundAppStateChannel.freeBalance.versionNumber,
@@ -217,22 +217,27 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       },
     ] as [Opcode, ProtocolMessage];
 
-    const signedWithdrawalCommitment = withdrawCommitment.getSignedTransaction([
+    withdrawCommitment.signatures = [
       mySignatureOnWithdrawalCommitment,
       counterpartySignatureOnWithdrawalCommitment,
-    ]);
-
-    yield [WRITE_COMMITMENT, Withdraw, signedWithdrawalCommitment, multisigAddress];
-
-    const signedUninstallCommitment = uninstallRefundAppCommitment.getSignedTransaction([
-      mySignatureOnUninstallCommitment,
-      counterpartySignatureOnUninstallCommitment,
-    ]);
+    ];
 
     yield [
       WRITE_COMMITMENT,
-      Update, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
-      signedUninstallCommitment,
+      Commitment.Withdraw,
+      withdrawCommitment.getSignedTransaction(),
+      multisigAddress,
+    ];
+
+    uninstallRefundAppCommitment.signatures = [
+      mySignatureOnUninstallCommitment,
+      counterpartySignatureOnUninstallCommitment,
+    ];
+
+    yield [
+      WRITE_COMMITMENT,
+      Commitment.SetState, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
+      uninstallRefundAppCommitment,
       postUninstallRefundAppStateChannel.freeBalance.identityHash,
     ];
 
@@ -242,7 +247,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
   /**
    * Sequence 1 of the WITHDRAW_PROTOCOL looks very similar but the inverse:
    *
-   * 1. Countersign the received `ConditionalTransaction` from the initiator
+   * 1. Countersign the received `ConditionalTransactionCommitment` from the initiator
    * 2. Sign the free balance state update to install the AppInstance and send
    * 3. Countersign the WithdrawETHCommitment you receive back
    * 4. Sign and send the FreeBalance state update and wait for the countersignature
@@ -295,20 +300,20 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTransactionData];
 
-    const signedConditionalTransaction = conditionalTransactionData.getSignedTransaction([
+    conditionalTransactionData.signatures = [
       mySignatureOnConditionalTransaction,
       counterpartySignatureOnConditionalTransaction,
-    ]);
+    ];
 
     yield [
       WRITE_COMMITMENT,
-      Install, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
-      signedConditionalTransaction,
+      Commitment.Conditional, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
+      conditionalTransactionData,
       refundApp.identityHash,
     ];
 
     const freeBalanceUpdateData = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       postInstallRefundAppStateChannel.freeBalance.identity,
       postInstallRefundAppStateChannel.freeBalance.hashOfLatestState,
       postInstallRefundAppStateChannel.freeBalance.versionNumber,
@@ -342,15 +347,15 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnFreeBalanceStateUpdate,
     );
 
-    const signedFreeBalanceStateUpdate = freeBalanceUpdateData.getSignedTransaction([
+    freeBalanceUpdateData.signatures = [
       mySignatureOnFreeBalanceStateUpdate,
       counterpartySignatureOnFreeBalanceStateUpdate,
-    ]);
+    ];
 
     yield [
       WRITE_COMMITMENT,
-      Update, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
-      signedFreeBalanceStateUpdate,
+      Commitment.SetState, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
+      freeBalanceUpdateData,
       postInstallRefundAppStateChannel.freeBalance.identityHash,
     ];
 
@@ -369,12 +374,17 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
 
     const mySignatureOnWithdrawalCommitment = yield [OP_SIGN, withdrawCommitment];
 
-    const signedWithdrawalCommitment = withdrawCommitment.getSignedTransaction([
+    withdrawCommitment.signatures = [
       mySignatureOnWithdrawalCommitment,
       counterpartySignatureOnWithdrawalCommitment,
-    ]);
+    ];
 
-    yield [WRITE_COMMITMENT, Withdraw, signedWithdrawalCommitment, multisigAddress];
+    yield [
+      WRITE_COMMITMENT,
+      Commitment.Withdraw,
+      withdrawCommitment.getSignedTransaction(),
+      multisigAddress,
+    ];
 
     const postUninstallRefundAppStateChannel = postInstallRefundAppStateChannel.uninstallApp(
       refundApp.identityHash,
@@ -382,7 +392,7 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     const uninstallRefundAppCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       postUninstallRefundAppStateChannel.freeBalance.identity,
       postUninstallRefundAppStateChannel.freeBalance.hashOfLatestState,
       postUninstallRefundAppStateChannel.freeBalance.versionNumber,
@@ -413,15 +423,15 @@ export const WITHDRAW_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnUninstallCommitment,
     );
 
-    const signedUninstallCommitment = uninstallRefundAppCommitment.getSignedTransaction([
+    uninstallRefundAppCommitment.signatures = [
       mySignatureOnUninstallCommitment,
       counterpartySignatureOnUninstallCommitment,
-    ]);
+    ];
 
     yield [
       WRITE_COMMITMENT,
-      Update, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
-      signedUninstallCommitment,
+      Commitment.SetState, // NOTE: The WRITE_COMMITMENT API is awkward in this situation
+      uninstallRefundAppCommitment,
       postUninstallRefundAppStateChannel.freeBalance.identityHash,
     ];
 
@@ -493,7 +503,7 @@ function addRefundAppToStateChannel(
 }
 
 /**
- * Computes the ConditionalTransaction unsigned transaction pertaining to the
+ * Computes the ConditionalTransactionCommitment unsigned transaction pertaining to the
  * installation of the ETHBalanceRefundApp.
  *
  * Note that this app is hard-coded to the MultiAssetMultiPartyCoinTransferInterpreter. You can see this
@@ -503,15 +513,15 @@ function addRefundAppToStateChannel(
  * @param {NetworkContext} network - Metadata on the current blockchain
  * @param {StateChannel} stateChannel - The post-refund-app-installed StateChannel
  *
- * @returns {ConditionalTransaction} A ConditionalTransaction object, ready to sign.
+ * @returns {ConditionalTransactionCommitment} A ConditionalTransactionCommitment object, ready to sign.
  */
 function constructConditionalTransactionForRefundApp(
   network: NetworkContext,
   stateChannel: StateChannel,
-): ConditionalTransaction {
+): ConditionalTransactionCommitment {
   const appInstance = stateChannel.mostRecentlyInstalledAppInstance();
 
-  return new ConditionalTransaction(
+  return new ConditionalTransactionCommitment(
     network,
     stateChannel.multisigAddress,
     stateChannel.multisigOwners,

@@ -2,8 +2,8 @@ import { MaxUint256 } from "ethers/constants";
 import { BaseProvider } from "ethers/providers";
 import { BigNumber, bigNumberify, defaultAbiCoder } from "ethers/utils";
 
-import { ConditionalTransaction, SetStateCommitment } from "../ethereum";
-import { Opcode, Protocol } from "../machine/enums";
+import { ConditionalTransactionCommitment, SetStateCommitment } from "../ethereum";
+import { Commitment, Opcode, Protocol } from "../machine/enums";
 import { sortAddresses, xkeyKthAddress } from "../machine/xkeys";
 import { AppInstance, StateChannel } from "../models";
 import {
@@ -37,6 +37,8 @@ export const encodeSingleAssetTwoPartyIntermediaryAgreementParams = params =>
 const protocol = Protocol.InstallVirtualApp;
 
 const { OP_SIGN, WRITE_COMMITMENT, IO_SEND, IO_SEND_AND_WAIT, PERSIST_STATE_CHANNEL } = Opcode;
+
+const { Conditional, SetState } = Commitment;
 
 /**
  * This exchange is described at the following URL:
@@ -73,7 +75,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
 
     const responderAddress = stateChannelWithResponding.getMultisigOwnerAddrOf(responderXpub);
 
-    const presignedMultisigTxForAliceIngridVirtualAppAgreement = new ConditionalTransaction(
+    const presignedMultisigTxForAliceIngridVirtualAppAgreement = new ConditionalTransactionCommitment(
       network,
       stateChannelWithIntermediary.multisigAddress,
       stateChannelWithIntermediary.multisigOwners,
@@ -124,18 +126,20 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       intermediarySignatureOnAliceIngridVirtualAppAgreement,
     );
 
+    presignedMultisigTxForAliceIngridVirtualAppAgreement.signatures = [
+      initiatorSignatureOnAliceIngridVirtualAppAgreement,
+      intermediarySignatureOnAliceIngridVirtualAppAgreement,
+    ];
+
     yield [
       WRITE_COMMITMENT,
-      Protocol.InstallVirtualApp, // TODO: Figure out how to map this to save to DB correctly
-      presignedMultisigTxForAliceIngridVirtualAppAgreement.getSignedTransaction([
-        initiatorSignatureOnAliceIngridVirtualAppAgreement,
-        intermediarySignatureOnAliceIngridVirtualAppAgreement,
-      ]),
+      Conditional, // TODO: Figure out how to map this to save to DB correctly
+      presignedMultisigTxForAliceIngridVirtualAppAgreement,
       virtualAppInstance.identityHash,
     ];
 
     const freeBalanceAliceIngridVirtualAppAgreementActivationCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       stateChannelWithIntermediary.freeBalance.identity,
       stateChannelWithIntermediary.freeBalance.hashOfLatestState,
       stateChannelWithIntermediary.freeBalance.versionNumber,
@@ -152,19 +156,20 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       OP_SIGN,
       freeBalanceAliceIngridVirtualAppAgreementActivationCommitment,
     ];
+    freeBalanceAliceIngridVirtualAppAgreementActivationCommitment.signatures = [
+      initiatorSignatureOnAliceIngridFreeBalanceAppActivation,
+      intermediarySignatureOnAliceIngridFreeBalanceAppActivation,
+    ];
 
     yield [
       WRITE_COMMITMENT,
-      Protocol.Update,
-      freeBalanceAliceIngridVirtualAppAgreementActivationCommitment.getSignedTransaction([
-        initiatorSignatureOnAliceIngridFreeBalanceAppActivation,
-        intermediarySignatureOnAliceIngridFreeBalanceAppActivation,
-      ]),
+      SetState,
+      freeBalanceAliceIngridVirtualAppAgreementActivationCommitment,
       stateChannelWithIntermediary.freeBalance.identityHash,
     ];
 
     const virtualAppSetStateCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       virtualAppInstance.identity,
       virtualAppInstance.hashOfLatestState,
       virtualAppInstance.versionNumber,
@@ -172,7 +177,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       timeLockedPassThroughAppInstance.identity,
       timeLockedPassThroughAppInstance.hashOfLatestState,
       timeLockedPassThroughAppInstance.versionNumber,
@@ -229,24 +234,28 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       responderSignatureOnVirtualAppSetStateCommitment,
     );
 
-    yield [
-      WRITE_COMMITMENT,
-      Protocol.Update,
-      timeLockedPassThroughSetStateCommitment.getSignedTransaction([
-        initiatorSignatureOnTimeLockedPassThroughSetStateCommitment,
-        responderSignatureOnTimeLockedPassThroughSetStateCommitment,
-        intermediarySignatureOnTimeLockedPassThroughSetStateCommitment,
-      ]),
-      timeLockedPassThroughAppInstance.identityHash,
+    timeLockedPassThroughSetStateCommitment.signatures = [
+      initiatorSignatureOnTimeLockedPassThroughSetStateCommitment,
+      responderSignatureOnTimeLockedPassThroughSetStateCommitment,
+      intermediarySignatureOnTimeLockedPassThroughSetStateCommitment,
     ];
 
     yield [
       WRITE_COMMITMENT,
-      Protocol.Update,
-      virtualAppSetStateCommitment.getSignedTransaction([
-        initiatorSignatureOnVirtualAppSetStateCommitment,
-        responderSignatureOnVirtualAppSetStateCommitment,
-      ]),
+      SetState,
+      timeLockedPassThroughSetStateCommitment,
+      timeLockedPassThroughAppInstance.identityHash,
+    ];
+
+    virtualAppSetStateCommitment.signatures = [
+      initiatorSignatureOnVirtualAppSetStateCommitment,
+      responderSignatureOnVirtualAppSetStateCommitment,
+    ];
+
+    yield [
+      WRITE_COMMITMENT,
+      SetState,
+      virtualAppSetStateCommitment,
       virtualAppInstance.identityHash,
     ];
 
@@ -296,7 +305,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
 
     const responderAddress = stateChannelWithResponding.getMultisigOwnerAddrOf(responderXpub);
 
-    const presignedMultisigTxForAliceIngridVirtualAppAgreement = new ConditionalTransaction(
+    const presignedMultisigTxForAliceIngridVirtualAppAgreement = new ConditionalTransactionCommitment(
       network,
       stateChannelWithInitiating.multisigAddress,
       stateChannelWithInitiating.multisigOwners,
@@ -316,7 +325,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       initiatorSignatureOnAliceIngridVirtualAppAgreement,
     );
 
-    const presignedMultisigTxForIngridBobVirtualAppAgreement = new ConditionalTransaction(
+    const presignedMultisigTxForIngridBobVirtualAppAgreement = new ConditionalTransactionCommitment(
       network,
       stateChannelWithResponding.multisigAddress,
       stateChannelWithResponding.multisigOwners,
@@ -362,7 +371,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     const freeBalanceIngridBobVirtualAppAgreementActivationCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       stateChannelWithResponding.freeBalance.identity,
       stateChannelWithResponding.freeBalance.hashOfLatestState,
       stateChannelWithResponding.freeBalance.versionNumber,
@@ -376,7 +385,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     const freeBalanceAliceIngridVirtualAppAgreementActivationCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       stateChannelWithInitiating.freeBalance.identity,
       stateChannelWithInitiating.freeBalance.hashOfLatestState,
       stateChannelWithInitiating.freeBalance.versionNumber,
@@ -393,13 +402,15 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       presignedMultisigTxForAliceIngridVirtualAppAgreement,
     ];
 
+    presignedMultisigTxForAliceIngridVirtualAppAgreement.signatures = [
+      initiatorSignatureOnAliceIngridVirtualAppAgreement,
+      intermediarySignatureOnAliceIngridVirtualAppAgreement,
+    ];
+
     yield [
       WRITE_COMMITMENT,
-      Protocol.InstallVirtualApp,
-      presignedMultisigTxForAliceIngridVirtualAppAgreement.getSignedTransaction([
-        initiatorSignatureOnAliceIngridVirtualAppAgreement,
-        intermediarySignatureOnAliceIngridVirtualAppAgreement,
-      ]),
+      Conditional,
+      presignedMultisigTxForAliceIngridVirtualAppAgreement,
       timeLockedPassThroughAppInstance.identityHash,
     ];
 
@@ -429,19 +440,20 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       freeBalanceAliceIngridVirtualAppAgreementActivationCommitment,
       initiatorSignatureOnAliceIngridFreeBalanceAppActivation,
     );
+    freeBalanceIngridBobVirtualAppAgreementActivationCommitment.signatures = [
+      initiatorSignatureOnAliceIngridFreeBalanceAppActivation,
+      intermediarySignatureOnAliceIngridFreeBalanceAppActivation,
+    ];
 
     yield [
       WRITE_COMMITMENT,
-      Protocol.Update,
-      freeBalanceIngridBobVirtualAppAgreementActivationCommitment.getSignedTransaction([
-        initiatorSignatureOnAliceIngridFreeBalanceAppActivation,
-        intermediarySignatureOnAliceIngridFreeBalanceAppActivation,
-      ]),
+      SetState,
+      freeBalanceIngridBobVirtualAppAgreementActivationCommitment,
       stateChannelWithResponding.freeBalance.identityHash,
     ];
 
     const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       timeLockedPassThroughAppInstance.identity,
       timeLockedPassThroughAppInstance.hashOfLatestState,
       timeLockedPassThroughAppInstance.versionNumber,
@@ -459,13 +471,15 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       freeBalanceIngridBobVirtualAppAgreementActivationCommitment,
     ];
 
+    freeBalanceIngridBobVirtualAppAgreementActivationCommitment.signatures = [
+      responderSignatureOnIngridBobFreeBalanceAppActivation,
+      intermediarySignatureOnIngridBobFreeBalanceAppActivation,
+    ];
+
     yield [
       WRITE_COMMITMENT,
-      Protocol.Update,
-      freeBalanceIngridBobVirtualAppAgreementActivationCommitment.getSignedTransaction([
-        responderSignatureOnIngridBobFreeBalanceAppActivation,
-        intermediarySignatureOnIngridBobFreeBalanceAppActivation,
-      ]),
+      SetState,
+      freeBalanceIngridBobVirtualAppAgreementActivationCommitment,
       stateChannelWithResponding.freeBalance.identityHash,
     ];
 
@@ -502,14 +516,16 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       responderSignatureOnTimeLockedPassThroughSetStateCommitment,
     );
 
+    timeLockedPassThroughSetStateCommitment.signatures = [
+      initiatorSignatureOnTimeLockedPassThroughSetStateCommitment,
+      responderSignatureOnTimeLockedPassThroughSetStateCommitment,
+      intermediarySignatureOnTimeLockedPassThroughSetStateCommitment,
+    ];
+
     yield [
       WRITE_COMMITMENT,
-      Protocol.Update,
-      timeLockedPassThroughSetStateCommitment.getSignedTransaction([
-        initiatorSignatureOnTimeLockedPassThroughSetStateCommitment,
-        responderSignatureOnTimeLockedPassThroughSetStateCommitment,
-        intermediarySignatureOnTimeLockedPassThroughSetStateCommitment,
-      ]),
+      SetState,
+      timeLockedPassThroughSetStateCommitment,
       timeLockedPassThroughAppInstance.identityHash,
     ];
 
@@ -563,7 +579,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
 
     const initiatorAddress = stateChannelWithInitiating.getMultisigOwnerAddrOf(initiatorXpub);
 
-    const presignedMultisigTxForIngridBobVirtualAppAgreement = new ConditionalTransaction(
+    const presignedMultisigTxForIngridBobVirtualAppAgreement = new ConditionalTransactionCommitment(
       network,
       stateChannelWithIntermediary.multisigAddress,
       stateChannelWithIntermediary.multisigOwners,
@@ -588,18 +604,20 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       presignedMultisigTxForIngridBobVirtualAppAgreement,
     ];
 
+    presignedMultisigTxForIngridBobVirtualAppAgreement.signatures = [
+      responderSignatureOnIngridBobVirtualAppAgreement,
+      intermediarySignatureOnIngridBobVirtualAppAgreement,
+    ];
+
     yield [
       WRITE_COMMITMENT,
-      Protocol.InstallVirtualApp, // TODO: Figure out how to map this to save to DB correctly
-      presignedMultisigTxForIngridBobVirtualAppAgreement.getSignedTransaction([
-        responderSignatureOnIngridBobVirtualAppAgreement,
-        intermediarySignatureOnIngridBobVirtualAppAgreement,
-      ]),
+      Conditional, // TODO: Figure out how to map this to save to DB correctly
+      presignedMultisigTxForIngridBobVirtualAppAgreement,
       virtualAppInstance.identityHash,
     ];
 
     const freeBalanceIngridBobVirtualAppAgreementActivationCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       stateChannelWithIntermediary.freeBalance.identity,
       stateChannelWithIntermediary.freeBalance.hashOfLatestState,
       stateChannelWithIntermediary.freeBalance.versionNumber,
@@ -639,18 +657,20 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       intermediarySignatureOnIngridBobFreeBalanceAppActivation,
     );
 
+    freeBalanceIngridBobVirtualAppAgreementActivationCommitment.signatures = [
+      intermediarySignatureOnIngridBobFreeBalanceAppActivation,
+      responderSignatureOnIngridBobFreeBalanceAppActivation,
+    ];
+
     yield [
       WRITE_COMMITMENT,
-      Protocol.Update,
-      freeBalanceIngridBobVirtualAppAgreementActivationCommitment.getSignedTransaction([
-        intermediarySignatureOnIngridBobFreeBalanceAppActivation,
-        responderSignatureOnIngridBobFreeBalanceAppActivation,
-      ]),
+      SetState,
+      freeBalanceIngridBobVirtualAppAgreementActivationCommitment,
       stateChannelWithIntermediary.freeBalance.identityHash,
     ];
 
     const virtualAppSetStateCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       virtualAppInstance.identity,
       virtualAppInstance.hashOfLatestState,
       virtualAppInstance.versionNumber,
@@ -658,7 +678,7 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       timeLockedPassThroughAppInstance.identity,
       timeLockedPassThroughAppInstance.hashOfLatestState,
       timeLockedPassThroughAppInstance.versionNumber,
@@ -692,25 +712,27 @@ export const INSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
       OP_SIGN,
       virtualAppSetStateCommitment,
     ];
-
-    yield [
-      WRITE_COMMITMENT,
-      Protocol.Update,
-      timeLockedPassThroughSetStateCommitment.getSignedTransaction([
-        initiatorSignatureOnTimeLockedPassThroughSetStateCommitment,
-        responderSignatureOnTimeLockedPassThroughSetStateCommitment,
-        intermediarySignatureOnTimeLockedPassThroughSetStateCommitment,
-      ]),
-      timeLockedPassThroughAppInstance.identityHash,
+    timeLockedPassThroughSetStateCommitment.signatures = [
+      initiatorSignatureOnTimeLockedPassThroughSetStateCommitment,
+      responderSignatureOnTimeLockedPassThroughSetStateCommitment,
+      intermediarySignatureOnTimeLockedPassThroughSetStateCommitment,
     ];
 
     yield [
       WRITE_COMMITMENT,
-      Protocol.Update,
-      virtualAppSetStateCommitment.getSignedTransaction([
-        initiatorSignatureOnVirtualAppSetStateCommitment,
-        responderSignatureOnVirtualAppSetStateCommitment,
-      ]),
+      SetState,
+      timeLockedPassThroughSetStateCommitment,
+      timeLockedPassThroughAppInstance.identityHash,
+    ];
+
+    virtualAppSetStateCommitment.signatures = [
+      initiatorSignatureOnVirtualAppSetStateCommitment,
+      responderSignatureOnVirtualAppSetStateCommitment,
+    ];
+    yield [
+      WRITE_COMMITMENT,
+      SetState,
+      virtualAppSetStateCommitment,
       virtualAppInstance.identityHash,
     ];
 

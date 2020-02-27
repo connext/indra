@@ -1,22 +1,35 @@
 import { AddressZero, HashZero, WeiPerEther } from "ethers/constants";
-import { getAddress, hexlify, Interface, randomBytes, TransactionDescription } from "ethers/utils";
+import {
+  getAddress,
+  hexlify,
+  Interface,
+  randomBytes,
+  TransactionDescription,
+  SigningKey,
+} from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../../src/constants";
-import { ConditionalTransaction } from "../../../../src/ethereum";
+import { ConditionalTransactionCommitment } from "../../../../src/ethereum";
 import { MultisigTransaction } from "../../../../src/types";
 import { appIdentityToHash } from "../../../../src/ethereum/utils/app-identity";
 import { StateChannel } from "../../../../src/models";
 import { FreeBalanceClass } from "../../../../src/models/free-balance";
 import { ConditionalTransactionDelegateTarget } from "../../../contracts";
 import { createAppInstanceForTest } from "../../../unit/utils";
-import { getRandomExtendedPubKey } from "../../integration/random-signing-keys";
+import { getRandomExtendedPubKey, getRandomHDNodes } from "../../integration/random-signing-keys";
 import { generateRandomNetworkContext } from "../../mocks";
+import { MemoryStoreService } from "../../../services/memory-store-service";
+import { Store } from "../../../../src/store";
 
-describe("ConditionalTransaction", () => {
+describe("ConditionalTransactionCommitment", () => {
   let tx: MultisigTransaction;
+  let commitment: ConditionalTransactionCommitment;
 
   // Test network context
   const networkContext = generateRandomNetworkContext();
+
+  // signing keys
+  const hdNodes = getRandomHDNodes(2);
 
   // General interaction testing values
   const interaction = {
@@ -47,7 +60,7 @@ describe("ConditionalTransaction", () => {
   const appInstance = createAppInstanceForTest(stateChannel);
 
   beforeAll(() => {
-    tx = new ConditionalTransaction(
+    commitment = new ConditionalTransactionCommitment(
       networkContext,
       stateChannel.multisigAddress,
       stateChannel.multisigOwners,
@@ -55,7 +68,8 @@ describe("ConditionalTransaction", () => {
       freeBalanceETH.identityHash,
       AddressZero,
       HashZero,
-    ).getTransactionDetails();
+    );
+    tx = commitment.getTransactionDetails();
   });
 
   it("should be to the ConditionalTransactionDelegateTarget contract", () => {
@@ -64,6 +78,22 @@ describe("ConditionalTransaction", () => {
 
   it("should have no value", () => {
     expect(tx.value).toBe(0);
+  });
+
+  describe("storage", () => {
+    it("should be stored correctly", async () => {
+      const store = new Store(new MemoryStoreService(), "prefix");
+      await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
+      const retrieved = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
+      expect(retrieved).toMatchObject(commitment);
+      commitment.signatures = [
+        new SigningKey(hdNodes[0]).signDigest(randomBytes(20)),
+        new SigningKey(hdNodes[1]).signDigest(randomBytes(20)),
+      ];
+      await store.saveConditionalTransactionCommitment(commitment.appIdentityHash, commitment);
+      const signed = await store.getConditionalTransactionCommitment(commitment.appIdentityHash);
+      expect(signed).toMatchObject(commitment);
+    });
   });
 
   describe("the calldata", () => {

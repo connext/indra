@@ -17,6 +17,11 @@ import {
   Transfer,
   AnonymizedTransfer,
 } from "../transfer/transfer.entity";
+import {
+  ConditionalTransactionCommitmentEntity,
+  SetStateCommitmentEntity,
+  WithdrawCommitment,
+} from "../commitment/commitment.entity"
 
 // Import Migrations
 import { InitNodeRecords1567158660577 } from "../../migrations/1567158660577-init-node-records";
@@ -32,6 +37,7 @@ import { EditViewTable1578621554000 } from "../../migrations/1578621554000-edit-
 import { NetworkToChainId1579686361011 } from "../../migrations/1579686361011-network-to-chain-id";
 import { AddAnonymizedViewTables1581090243171 } from "../../migrations/1581090243171-add-anonymized-view-tables";
 import { RebalancingProfile1581796200880 } from "../../migrations/1581796200880-rebalancing-profile";
+import { InitCommitmentTable1582692126872 } from "../../migrations/1582692126872-init-commitment-table";
 
 export const entities = [
   AppRegistry,
@@ -44,6 +50,9 @@ export const entities = [
   Transfer,
   AnonymizedOnchainTransaction,
   AnonymizedTransfer,
+  ConditionalTransactionCommitmentEntity,
+  SetStateCommitmentEntity,
+  WithdrawCommitment,
 ];
 
 export const migrations = [
@@ -60,6 +69,7 @@ export const migrations = [
   NetworkToChainId1579686361011,
   AddAnonymizedViewTables1581090243171,
   RebalancingProfile1581796200880,
+  InitCommitmentTable1582692126872,
 ];
 
 @Injectable()

@@ -7,7 +7,7 @@ import { Memoize } from "typescript-memoize";
 import { createRpcRouter } from "./api";
 import AutoNonceWallet from "./auto-nonce-wallet";
 import { Deferred } from "./deferred";
-import { Opcode, Protocol, ProtocolMessage, ProtocolRunner } from "./machine";
+import { Opcode, Commitment, ProtocolMessage, ProtocolRunner } from "./machine";
 import { StateChannel } from "./models";
 import { getFreeBalanceAddress } from "./models/free-balance";
 import { getPrivateKeysGeneratorAndXPubOrThrow, PrivateKeysGetter } from "./private-keys-generator";
@@ -17,8 +17,13 @@ import RpcRouter from "./rpc-router";
 import { NetworkContext, CFCoreTypes, NodeMessageWrappedProtocolMessage } from "./types";
 import { timeout } from "./utils";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
-import { PROTOCOL_MESSAGE_EVENT, NODE_EVENTS } from "@connext/types";
+import { PROTOCOL_MESSAGE_EVENT, NODE_EVENTS, ProtocolTypes } from "@connext/types";
 import { Store } from "./store";
+import {
+  ConditionalTransactionCommitment,
+  MultisigCommitment,
+  SetStateCommitment,
+} from "./ethereum";
 
 export interface NodeConfig {
   // The prefix for any keys used in the store by this Node depends on the
@@ -205,18 +210,50 @@ export class Node {
       return (msg as NodeMessageWrappedProtocolMessage).data;
     });
 
-    protocolRunner.register(Opcode.WRITE_COMMITMENT, async (args: any[]) => {
-      const { store } = this.requestHandler;
+    protocolRunner.register(
+      Opcode.WRITE_COMMITMENT,
+      async (
+        args: [
+          Commitment,
+          MultisigCommitment | SetStateCommitment | ProtocolTypes.MinimalTransaction,
+          string,
+        ],
+      ) => {
+        const { store } = this.requestHandler;
 
-      const [protocol, commitment, ...key] = args;
+        const [commitmentType, commitment, ...res] = args;
 
-      if (protocol === Protocol.Withdraw) {
-        const [multisigAddress] = key;
-        await store.storeWithdrawalCommitment(multisigAddress, commitment);
-      } else {
-        await store.setCommitment([protocol, ...key], commitment);
-      }
-    });
+        switch (commitmentType) {
+          case Commitment.Withdraw:
+            const [multisigAddress] = res;
+            await store.storeWithdrawalCommitment(
+              multisigAddress,
+              commitment as ProtocolTypes.MinimalTransaction,
+            );
+            break;
+
+          case Commitment.SetState:
+            const [appIdentityHash] = res;
+            await store.saveLatestSetStateCommitment(
+              appIdentityHash,
+              commitment as SetStateCommitment,
+            );
+            break;
+
+          case Commitment.Conditional:
+            const [appId] = res;
+            await store.saveConditionalTransactionCommitment(
+              appId,
+              commitment as ConditionalTransactionCommitment,
+            );
+            break;
+
+          default:
+            throw new Error(`Unrecognized commitment type: ${commitmentType}`);
+        }
+        return;
+      },
+    );
 
     protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, async (args: [StateChannel[]]) => {
       const { store } = this.requestHandler;

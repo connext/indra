@@ -5,6 +5,7 @@ import {
   keccak256,
   solidityPack,
   TransactionDescription,
+  SigningKey,
 } from "ethers/utils";
 
 import { SetStateCommitment } from "../../../../src/ethereum";
@@ -12,6 +13,7 @@ import { appIdentityToHash } from "../../../../src/ethereum/utils/app-identity";
 import { ChallengeRegistry } from "../../../contracts";
 import { createAppInstanceForTest } from "../../../unit/utils";
 import { generateRandomNetworkContext } from "../../mocks";
+import { getRandomHDNodes } from "../../integration/random-signing-keys";
 
 /**
  * This test suite decodes a constructed SetState Commitment transaction object
@@ -26,20 +28,24 @@ describe("Set State Commitment", () => {
 
   const appInstance = createAppInstanceForTest();
 
+  const hdNodes = getRandomHDNodes(2);
+
   beforeAll(() => {
     commitment = new SetStateCommitment(
-      networkContext,
+      networkContext.ChallengeRegistry,
       appInstance.identity,
       appInstance.hashOfLatestState,
       appInstance.versionNumber,
       appInstance.timeout,
     );
+    commitment.signatures = [
+      new SigningKey(hdNodes[0].privateKey).signDigest(commitment.hashToSign()),
+      new SigningKey(hdNodes[1].privateKey).signDigest(commitment.hashToSign()),
+    ];
     // TODO: (question) Should there be a way to retrieve the version
     //       of this transaction sent to the multisig vs sent
     //       directly to the app registry?
-    tx = commitment.getSignedTransaction([
-      /* NOTE: Passing in no signatures for test only */
-    ]);
+    tx = commitment.getSignedTransaction();
   });
 
   it("should be to ChallengeRegistry", () => {

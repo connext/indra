@@ -2,9 +2,9 @@ import { MaxUint256 } from "ethers/constants";
 import { BigNumber } from "ethers/utils";
 
 import { SetStateCommitment } from "../ethereum";
-import { ConditionalTransaction } from "../ethereum/conditional-transaction-commitment";
+import { ConditionalTransactionCommitment } from "../ethereum/conditional-transaction-commitment";
 import { ProtocolExecutionFlow } from "../machine";
-import { Opcode, Protocol } from "../machine/enums";
+import { Commitment, Opcode, Protocol } from "../machine/enums";
 import { TWO_PARTY_OUTCOME_DIFFERENT_ASSETS } from "../methods/errors";
 import { AppInstance, StateChannel } from "../models";
 import { TokenIndexedCoinTransferMap } from "../models/free-balance";
@@ -24,7 +24,8 @@ import { assertIsValidSignature } from "./utils/signature-validator";
 import { assertSufficientFundsWithinFreeBalance } from "../utils";
 
 const { OP_SIGN, IO_SEND, IO_SEND_AND_WAIT, WRITE_COMMITMENT, PERSIST_STATE_CHANNEL } = Opcode;
-const { Update, Install } = Protocol;
+const { Install } = Protocol;
+const { Conditional, SetState } = Commitment;
 
 /**
  * @description This exchange is described at the following URL:
@@ -115,15 +116,15 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnConditionalTransaction,
     );
 
-    const signedConditionalTransaction = conditionalTransactionData.getSignedTransaction([
+    conditionalTransactionData.signatures = [
       mySignatureOnConditionalTransaction,
       counterpartySignatureOnConditionalTransaction,
-    ]);
+    ];
 
-    yield [WRITE_COMMITMENT, Install, signedConditionalTransaction, newAppInstance.identityHash];
+    yield [WRITE_COMMITMENT, Conditional, conditionalTransactionData, newAppInstance.identityHash];
 
     const freeBalanceUpdateData = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       postProtocolStateChannel.freeBalance.identity,
       postProtocolStateChannel.freeBalance.hashOfLatestState,
       postProtocolStateChannel.freeBalance.versionNumber,
@@ -138,15 +139,16 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const mySignatureOnFreeBalanceStateUpdate = yield [OP_SIGN, freeBalanceUpdateData];
 
-    const signedFreeBalanceStateUpdate = freeBalanceUpdateData.getSignedTransaction([
+    // add signatures to commitment
+    freeBalanceUpdateData.signatures = [
       mySignatureOnFreeBalanceStateUpdate,
       counterpartySignatureOnFreeBalanceStateUpdate,
-    ]);
+    ];
 
     yield [
       WRITE_COMMITMENT,
-      Update,
-      signedFreeBalanceStateUpdate,
+      SetState,
+      freeBalanceUpdateData,
       postProtocolStateChannel.freeBalance.identityHash,
     ];
 
@@ -235,15 +237,15 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
 
     const mySignatureOnConditionalTransaction = yield [OP_SIGN, conditionalTransactionData];
 
-    const signedConditionalTransaction = conditionalTransactionData.getSignedTransaction([
+    conditionalTransactionData.signatures = [
       mySignatureOnConditionalTransaction,
       counterpartySignatureOnConditionalTransaction,
-    ]);
+    ];
 
-    yield [WRITE_COMMITMENT, Install, signedConditionalTransaction, newAppInstance.identityHash];
+    yield [WRITE_COMMITMENT, Conditional, conditionalTransactionData, newAppInstance.identityHash];
 
     const freeBalanceUpdateData = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       postProtocolStateChannel.freeBalance.identity,
       postProtocolStateChannel.freeBalance.hashOfLatestState,
       postProtocolStateChannel.freeBalance.versionNumber,
@@ -274,15 +276,16 @@ export const INSTALL_PROTOCOL: ProtocolExecutionFlow = {
       counterpartySignatureOnFreeBalanceStateUpdate,
     );
 
-    const signedFreeBalanceStateUpdate = freeBalanceUpdateData.getSignedTransaction([
+    // add signature
+    freeBalanceUpdateData.signatures = [
       mySignatureOnFreeBalanceStateUpdate,
       counterpartySignatureOnFreeBalanceStateUpdate,
-    ]);
+    ];
 
     yield [
       WRITE_COMMITMENT,
-      Update,
-      signedFreeBalanceStateUpdate,
+      SetState,
+      freeBalanceUpdateData,
       postProtocolStateChannel.freeBalance.identityHash,
     ];
 
@@ -491,21 +494,21 @@ function computeInterpreterParameters(
 }
 
 /**
- * Computes the ConditionalTransaction unsigned transaction from the multisignature
+ * Computes the ConditionalTransactionCommitment unsigned transaction from the multisignature
  * wallet that is required to be signed by all parties involved in the protocol.
  *
  * @param {NetworkContext} network - Metadata on the current blockchain
  * @param {OutcomeType} outcomeType - The outcome type of the AppInstance
  * @param {StateChannel} stateChannel - The post-protocol StateChannel
  *
- * @returns {ConditionalTransaction} A ConditionalTransaction object, ready to sign.
+ * @returns {ConditionalTransactionCommitment} A ConditionalTransactionCommitment object, ready to sign.
  */
 function constructConditionalTransactionData(
   networkContext: NetworkContext,
   stateChannel: StateChannel,
-): ConditionalTransaction {
+): ConditionalTransactionCommitment {
   const appInstance = stateChannel.mostRecentlyInstalledAppInstance();
-  return new ConditionalTransaction(
+  return new ConditionalTransactionCommitment(
     networkContext,
     stateChannel.multisigAddress,
     stateChannel.multisigOwners,

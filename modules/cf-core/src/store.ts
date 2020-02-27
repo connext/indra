@@ -1,6 +1,5 @@
 import { CriticalStateChannelAddresses, AppInstanceJson } from "@connext/types";
 import { BaseProvider } from "ethers/providers";
-import { solidityKeccak256 } from "ethers/utils";
 
 import {
   NO_MULTISIG_FOR_APP_INSTANCE_ID,
@@ -12,6 +11,7 @@ import {
 import { AppInstance, AppInstanceProposal, StateChannel } from "./models";
 import { CFCoreTypes, SolidityValueType } from "./types";
 import { getCreate2MultisigAddress } from "./utils";
+import { SetStateCommitment, ConditionalTransactionCommitment } from "./ethereum";
 
 /**
  * A simple ORM around StateChannels and AppInstances stored using the
@@ -187,13 +187,40 @@ export class Store {
     return this.storeService.saveWithdrawalCommitment(multisigAddress, commitment);
   }
 
-  public async setCommitment(args: any[], commitment: CFCoreTypes.MinimalTransaction) {
-    return this.storeService.saveCommitment(
-      solidityKeccak256(
-        ["address", "uint256", "bytes"],
-        [commitment.to, commitment.value, commitment.data],
-      ),
-      args.concat([commitment]),
+  public async getLatestSetStateCommitment(
+    appInstanceId: string,
+  ): Promise<SetStateCommitment | undefined> {
+    const json = await this.storeService.getLatestSetStateCommitment(appInstanceId);
+    if (!json) {
+      return undefined;
+    }
+    return SetStateCommitment.fromJson(json);
+  }
+
+  public async saveLatestSetStateCommitment(
+    appInstanceId: string,
+    commitment: SetStateCommitment,
+  ): Promise<void> {
+    return this.storeService.saveLatestSetStateCommitment(appInstanceId, commitment.toJson());
+  }
+
+  public async getConditionalTransactionCommitment(
+    appInstanceId: string,
+  ): Promise<ConditionalTransactionCommitment | undefined> {
+    const json = await this.storeService.getConditionalTransactionCommitment(appInstanceId);
+    if (!json) {
+      return undefined;
+    }
+    return ConditionalTransactionCommitment.fromJson(json);
+  }
+
+  public async saveConditionalTransactionCommitment(
+    appInstanceId: string,
+    commitment: ConditionalTransactionCommitment, // ConditionalTransactionJSON,
+  ): Promise<void> {
+    return this.storeService.saveConditionalTransactionCommitment(
+      appInstanceId,
+      commitment.toJson(),
     );
   }
 

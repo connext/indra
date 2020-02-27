@@ -16,6 +16,13 @@ export enum Protocol {
   Withdraw = "withdraw",
 }
 
+export enum Commitment {
+  Conditional = "conditional",
+  SetState = "setState",
+  Setup = "setup",
+  Withdraw = "withdraw",
+}
+
 export type ProtocolMessage = {
   processID: string;
   protocol: Protocol;

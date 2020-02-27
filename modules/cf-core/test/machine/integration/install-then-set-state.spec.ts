@@ -10,7 +10,7 @@ import { JsonRpcProvider } from "ethers/providers";
 import { defaultAbiCoder, Interface, keccak256, parseEther } from "ethers/utils";
 
 import { CONVENTION_FOR_ETH_TOKEN_ADDRESS } from "../../../src/constants";
-import { ConditionalTransaction, SetStateCommitment, SetupCommitment } from "../../../src/ethereum";
+import { ConditionalTransactionCommitment, SetStateCommitment, SetupCommitment } from "../../../src/ethereum";
 import { xkeysToSortedKthSigningKeys } from "../../../src/machine/xkeys";
 import { AppInstance, StateChannel } from "../../../src/models";
 import { FreeBalanceClass } from "../../../src/models/free-balance";
@@ -141,34 +141,37 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
       });
 
       const setStateCommitment = new SetStateCommitment(
-        network,
+        network.ChallengeRegistry,
         identityAppInstance.identity,
         keccak256(identityAppInstance.encodedLatestState),
         identityAppInstance.versionNumber + 1,
         identityAppInstance.timeout,
       );
 
+      setStateCommitment.signatures = [
+        uniqueAppSigningKeys[0].signDigest(setStateCommitment.hashToSign()),
+        uniqueAppSigningKeys[1].signDigest(setStateCommitment.hashToSign()),
+      ];
+
       await wallet.sendTransaction({
-        ...setStateCommitment.getSignedTransaction([
-          uniqueAppSigningKeys[0].signDigest(setStateCommitment.hashToSign()),
-          uniqueAppSigningKeys[1].signDigest(setStateCommitment.hashToSign()),
-        ]),
+        ...setStateCommitment.getSignedTransaction(),
         gasLimit: SETSTATE_COMMITMENT_GAS,
       });
 
       const setStateCommitmentForFreeBalance = new SetStateCommitment(
-        network,
+        network.ChallengeRegistry,
         stateChannel.freeBalance.identity,
         stateChannel.freeBalance.hashOfLatestState,
         stateChannel.freeBalance.versionNumber,
         stateChannel.freeBalance.timeout,
       );
+      setStateCommitmentForFreeBalance.signatures = [
+        multisigOwnerKeys[0].signDigest(setStateCommitmentForFreeBalance.hashToSign()),
+        multisigOwnerKeys[1].signDigest(setStateCommitmentForFreeBalance.hashToSign()),
+      ];
 
       await wallet.sendTransaction({
-        ...setStateCommitmentForFreeBalance.getSignedTransaction([
-          multisigOwnerKeys[0].signDigest(setStateCommitmentForFreeBalance.hashToSign()),
-          multisigOwnerKeys[1].signDigest(setStateCommitmentForFreeBalance.hashToSign()),
-        ]),
+        ...setStateCommitmentForFreeBalance.getSignedTransaction(),
         gasLimit: SETSTATE_COMMITMENT_GAS,
       });
 
@@ -186,7 +189,7 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         stateChannel.freeBalance.encodedLatestState,
       );
 
-      const conditionalTransaction = new ConditionalTransaction(
+      const conditionalTransaction = new ConditionalTransactionCommitment(
         network,
         stateChannel.multisigAddress,
         stateChannel.multisigOwners,
@@ -199,10 +202,11 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         ),
       );
 
-      const multisigDelegateCallTx = conditionalTransaction.getSignedTransaction([
+      conditionalTransaction.signatures = [
         multisigOwnerKeys[0].signDigest(conditionalTransaction.hashToSign()),
         multisigOwnerKeys[1].signDigest(conditionalTransaction.hashToSign()),
-      ]);
+      ];
+      const multisigDelegateCallTx = conditionalTransaction.getSignedTransaction();
 
       await wallet.sendTransaction({
         to: proxyAddress,
@@ -239,10 +243,12 @@ describe("Scenario: install AppInstance, set state, put on-chain", () => {
         stateChannel.freeBalance.identity,
       );
 
-      const multisigDelegateCallTx2 = freeBalanceConditionalTransaction.getSignedTransaction([
+      freeBalanceConditionalTransaction.signatures = [
         multisigOwnerKeys[0].signDigest(freeBalanceConditionalTransaction.hashToSign()),
         multisigOwnerKeys[1].signDigest(freeBalanceConditionalTransaction.hashToSign()),
-      ]);
+      ];
+
+      const multisigDelegateCallTx2 = freeBalanceConditionalTransaction.getSignedTransaction();
 
       await wallet.sendTransaction({
         ...multisigDelegateCallTx2,

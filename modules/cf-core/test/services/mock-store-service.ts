@@ -1,4 +1,11 @@
-import { CFCoreTypes, StateChannelJSON, AppInstanceJson, ProtocolTypes } from "@connext/types";
+import {
+  CFCoreTypes,
+  ConditionalTransactionCommitmentJSON,
+  SetStateCommitmentJSON,
+  StateChannelJSON,
+  AppInstanceJson,
+  ProtocolTypes,
+} from "@connext/types";
 
 class MockStoreServiceOld implements CFCoreTypes.IStoreServiceOld {
   get() {
@@ -37,6 +44,27 @@ class MockStoreService implements CFCoreTypes.IStoreService {
     return Promise.resolve(undefined);
   }
   saveCommitment(commitmentHash: string, commitment: any[]): Promise<void> {
+    return Promise.resolve();
+  }
+  getLatestSetStateCommitment(appInstanceId: string): Promise<SetStateCommitmentJSON | undefined> {
+    return Promise.resolve(undefined);
+  }
+  saveLatestSetStateCommitment(
+    appInstanceId: string,
+    commitment: SetStateCommitmentJSON,
+  ): Promise<void> {
+    return Promise.resolve();
+  }
+  getConditionalTransactionCommitment(
+    appInstanceId: string,
+  ): Promise<ConditionalTransactionCommitmentJSON | undefined> {
+    return Promise.resolve(undefined);
+  }
+
+  async saveConditionalTransactionCommitment(
+    appInstanceId: string,
+    commitment: ConditionalTransactionCommitmentJSON,
+  ): Promise<void> {
     return Promise.resolve();
   }
   getWithdrawalCommitment(

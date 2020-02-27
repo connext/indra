@@ -1,4 +1,4 @@
-export { Protocol } from "../types";
+export { Commitment, Protocol } from "../types";
 
 enum Opcode {
   /**

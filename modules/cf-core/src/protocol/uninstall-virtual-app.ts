@@ -75,7 +75,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       timeLockedPassThroughAppInstance.identity,
       timeLockedPassThroughAppInstance.hashOfLatestState,
       timeLockedPassThroughAppInstance.appSeqNo,
@@ -120,7 +120,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     const aliceIngridAppDisactivationCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       stateChannelWithIntermediary.freeBalance.identity,
       stateChannelWithIntermediary.freeBalance.hashOfLatestState,
       stateChannelWithIntermediary.freeBalance.versionNumber,
@@ -190,7 +190,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       timeLockedPassThroughAppInstance.identity,
       timeLockedPassThroughAppInstance.hashOfLatestState,
       timeLockedPassThroughAppInstance.appSeqNo,
@@ -250,7 +250,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     } = m5;
 
     const aliceIngridAppDisactivationCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       stateChannelWithInitiating.freeBalance.identity,
       stateChannelWithInitiating.freeBalance.hashOfLatestState,
       stateChannelWithInitiating.freeBalance.versionNumber,
@@ -269,7 +269,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     ];
 
     const ingridBobAppDisactivationCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       stateChannelWithResponding.freeBalance.identity,
       stateChannelWithResponding.freeBalance.hashOfLatestState,
       stateChannelWithResponding.freeBalance.versionNumber,
@@ -354,7 +354,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     );
 
     const timeLockedPassThroughSetStateCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       timeLockedPassThroughAppInstance.identity,
       timeLockedPassThroughAppInstance.hashOfLatestState,
       timeLockedPassThroughAppInstance.appSeqNo,
@@ -395,7 +395,7 @@ export const UNINSTALL_VIRTUAL_APP_PROTOCOL: ProtocolExecutionFlow = {
     } = m6;
 
     const ingridBobAppDisactivationCommitment = new SetStateCommitment(
-      network,
+      network.ChallengeRegistry,
       stateChannelWithIntermediary.freeBalance.identity,
       stateChannelWithIntermediary.freeBalance.hashOfLatestState,
       stateChannelWithIntermediary.freeBalance.versionNumber,
