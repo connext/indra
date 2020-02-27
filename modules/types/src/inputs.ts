@@ -3,6 +3,36 @@ import { Address, BigNumber } from "./basic";
 import { AssetAmount } from "./channel";
 import { ProtocolTypes } from "./protocol";
 
+// REFACTOR START
+// TODO: import all signatureTransferTypes (will only need the ones used by conditional types)
+import {
+  SignatureTransferParameters,
+  SignatureTransferParametersBigNumber,
+  SignatureTransferResponse,
+  ResolveSignatureTransferParameters,
+  ResolveSignatureTransferParametersBigNumber,
+  ResolveSignatureTransferParametersResponse,
+} from "./app/signatureTransferInputs";
+
+// TODO: export all signatureTransferTypes (not need if we import directly into index)
+export {
+  SignatureTransferParameters,
+  SignatureTransferParametersBigNumber,
+  SignatureTransferResponse,
+  ResolveSignatureTransferParameters,
+  ResolveSignatureTransferParametersBigNumber,
+  ResolveSignatureTransferParametersResponse,
+};
+
+import {
+  LINKED_TRANSFER,
+  LINKED_TRANSFER_TO_RECIPIENT,
+  TransferCondition,
+} from "./app/transferInputsDefaults";
+
+////// Transfer types
+export { LINKED_TRANSFER, LINKED_TRANSFER_TO_RECIPIENT, TransferCondition };
+
 /////////////////////////////////
 ///////// SWAP
 export type AllowedSwap = {
@@ -48,10 +78,6 @@ export type CheckDepositRightsResponse<T = string> = {
 export type RescindDepositRightsParameters = RequestDepositRightsParameters;
 
 export type RescindDepositRightsResponse = ProtocolTypes.DepositResult;
-
-////// Transfer types
-export const LINKED_TRANSFER = "LINKED_TRANSFER";
-export const LINKED_TRANSFER_TO_RECIPIENT = "LINKED_TRANSFER_TO_RECIPIENT";
 
 // TODO: would we ever want to pay people in the same app with multiple currencies?
 export type TransferParameters<T = string> = DepositParameters<T> & {
@@ -115,14 +141,6 @@ export type ResolveLinkedTransferResponse = {
 // FIXME: should be union type of all supported conditions
 export type ResolveConditionResponse = ResolveLinkedTransferResponse;
 
-///// Conditional transfer types
-
-export const TransferConditions = {
-  [LINKED_TRANSFER]: LINKED_TRANSFER,
-  [LINKED_TRANSFER_TO_RECIPIENT]: LINKED_TRANSFER_TO_RECIPIENT,
-};
-export type TransferCondition = keyof typeof TransferConditions;
-
 // linked transfer types
 export type LinkedTransferParameters<T = string> = {
   conditionType: typeof LINKED_TRANSFER;
@@ -157,12 +175,15 @@ export type LinkedTransferToRecipientResponse = LinkedTransferResponse & {
 
 export type ConditionalTransferParameters<T = string> =
   | LinkedTransferParameters<T>
-  | LinkedTransferToRecipientParameters<T>;
+  | LinkedTransferToRecipientParameters<T>
+  | SignatureTransferParameters<T>;
+
 export type ConditionalTransferParametersBigNumber = ConditionalTransferParameters<BigNumber>;
 
 export type ConditionalTransferResponse =
   | LinkedTransferResponse
-  | LinkedTransferToRecipientResponse;
+  | LinkedTransferToRecipientResponse
+  | ResolveSignatureTransferParametersResponse;
 
 // condition initial states
 // FIXME: should be union type of all supported conditions

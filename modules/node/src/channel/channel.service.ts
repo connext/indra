@@ -535,7 +535,10 @@ export class ChannelService {
     }
 
     const hashedPublicIdentifier = sha256(toUtf8Bytes(userPublicIdentifier));
-    const { data: rebalancingTargets, status } = await this.httpService
+    const {
+      data: rebalancingTargets,
+      status,
+    }: AxiosResponse<RebalancingTargetsResponse<string>> = await this.httpService
       .get(
         `${rebalancingServiceUrl}/api/v1/recommendations/asset/${assetId}/channel/${hashedPublicIdentifier}`,
       )
