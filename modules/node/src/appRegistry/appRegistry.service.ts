@@ -135,7 +135,7 @@ export class AppRegistryService implements OnModuleInit {
         break;
       // TODO: add something for swap app? maybe for history preserving reasons.
       case SimpleSignatureTransferApp:
-        logger.debug(`Saving linked transfer`);
+        this.log.debug(`Saving linked transfer`);
         const initialStateSignature = proposeInstallParams.initialState as SimpleSignatureTransferAppStateBigNumber;
 
         const isResolvingSignature = proposeInstallParams.responderDeposit.gt(Zero);
@@ -145,7 +145,7 @@ export class AppRegistryService implements OnModuleInit {
           );
           transfer.receiverAppInstanceId = appInstanceId;
           await this.linkedTransferRepository.save(transfer);
-          logger.debug(`Updated transfer with receiver appId!`);
+          this.log.debug(`Updated transfer with receiver appId!`);
           return;
         }
         await this.transferService.saveLinkedTransfer(
@@ -158,7 +158,7 @@ export class AppRegistryService implements OnModuleInit {
           initialStateSignature.paymentId,
           proposeInstallParams.meta,
         );
-        logger.debug(`Linked transfer saved!`);
+        this.log.debug(`Linked transfer saved!`);
         break;
       // TODO: add something for swap app? maybe for history preserving reasons.
       case CoinBalanceRefundApp:
@@ -702,9 +702,7 @@ export class AppRegistryService implements OnModuleInit {
       throw new Error(`App ${registryAppInfo.name} is not allowed to be installed on the node`);
     }
 
-    this.log.debug(
-      `App with params ${stringify(proposeInstallParams, 2)} allowed to be installed`,
-    );
+    this.log.debug(`App with params ${stringify(proposeInstallParams, 2)} allowed to be installed`);
 
     await this.commonAppProposalValidation(proposeInstallParams, initiatorIdentifier);
 
