@@ -163,6 +163,7 @@ export type FastSignedTransferParameters<T = string> = Omit<
 > & {
   conditionType: typeof FAST_SIGNED_TRANSFER;
   maxAllocation: T;
+  signer: Address;
 };
 export type FastSignedTransferParametersBigNumber = FastSignedTransferParameters<BigNumber>;
 
