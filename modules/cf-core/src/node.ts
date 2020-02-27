@@ -17,8 +17,13 @@ import RpcRouter from "./rpc-router";
 import { NetworkContext, CFCoreTypes, NodeMessageWrappedProtocolMessage } from "./types";
 import { timeout } from "./utils";
 import { IO_SEND_AND_WAIT_TIMEOUT } from "./constants";
-import { PROTOCOL_MESSAGE_EVENT, NODE_EVENTS } from "@connext/types";
+import { PROTOCOL_MESSAGE_EVENT, NODE_EVENTS, ProtocolTypes } from "@connext/types";
 import { Store } from "./store";
+import {
+  ConditionalTransactionCommitment,
+  MultisigCommitment,
+  SetStateCommitment,
+} from "./ethereum";
 
 export interface NodeConfig {
   // The prefix for any keys used in the store by this Node depends on the
@@ -208,32 +213,50 @@ export class Node {
       return (msg as NodeMessageWrappedProtocolMessage).data;
     });
 
-    protocolRunner.register(Opcode.WRITE_COMMITMENT, async (args: any[]) => {
-      const { store } = this.requestHandler;
+    protocolRunner.register(
+      Opcode.WRITE_COMMITMENT,
+      async (
+        args: [
+          Commitment,
+          MultisigCommitment | SetStateCommitment | ProtocolTypes.MinimalTransaction,
+          string,
+        ],
+      ) => {
+        const { store } = this.requestHandler;
 
-      const [commitmentType, commitment, ...res] = args;
+        const [commitmentType, commitment, ...res] = args;
 
-      switch (commitmentType) {
-        case Commitment.Withdraw:
-          const [multisigAddress] = res;
-          await store.storeWithdrawalCommitment(multisigAddress, commitment);
-          break;
+        switch (commitmentType) {
+          case Commitment.Withdraw:
+            const [multisigAddress] = res;
+            await store.storeWithdrawalCommitment(
+              multisigAddress,
+              commitment as ProtocolTypes.MinimalTransaction,
+            );
+            break;
 
-        case Commitment.SetState:
-          const [appIdentityHash] = res;
-          await store.saveLatestSetStateCommitment(appIdentityHash, commitment);
-          break;
+          case Commitment.SetState:
+            const [appIdentityHash] = res;
+            await store.saveLatestSetStateCommitment(
+              appIdentityHash,
+              commitment as SetStateCommitment,
+            );
+            break;
 
-        case Commitment.Conditional:
-          const [appId] = res;
-          await store.saveConditionalTransactionCommitment(appId, commitment);
-          break;
+          case Commitment.Conditional:
+            const [appId] = res;
+            await store.saveConditionalTransactionCommitment(
+              appId,
+              commitment as ConditionalTransactionCommitment,
+            );
+            break;
 
-        default:
-          throw new Error(`Unrecognized commitment type: ${commitmentType}`);
-      }
-      return;
-    });
+          default:
+            throw new Error(`Unrecognized commitment type: ${commitmentType}`);
+        }
+        return;
+      },
+    );
 
     protocolRunner.register(Opcode.PERSIST_STATE_CHANNEL, async (args: [StateChannel[]]) => {
       const { store } = this.requestHandler;
